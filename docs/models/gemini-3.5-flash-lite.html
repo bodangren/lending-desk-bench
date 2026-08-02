@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gemini 3.5 Flash Lite · Lending Desk Bench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/site.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="wrap inner">
+      <a class="brand" href="../"><span class="brand-mark"></span> Lending Desk Bench</a>
+      <div class="nav-links">
+        <a href="../">Overview</a>
+        <a href="../methodology.html">Methodology</a>
+        <a href="../results.html">Results</a>
+        <a class="active" href="./">Models</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero hero-model wrap">
+    <p class="kicker">Model · Arm A</p>
+    <h1 id="name">…</h1>
+    <p class="lede" id="summary"></p>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <main class="wrap stack" id="main">
+    <div class="loading">Loading…</div>
+  </main>
+
+  <footer class="site-footer wrap">
+    <a href="./">← All models</a>
+  </footer>
+
+  <script type="module">
+    import {
+      loadData, fmtTokens, fmtUsd, fmtSecs, pct, domainRate, DOMAIN_ORDER,
+      modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
+    } from "../assets/js/site.js";
+
+    const MODEL_ID = "gemini-3.5-flash-lite";
+    setActiveNav();
+    const main = document.getElementById("main");
+
+    try {
+      const data = await loadData();
+      const idx = data.models.findIndex((m) => m.id === MODEL_ID);
+      const m = data.models[idx];
+      if (!m) throw new Error("Model not found: " + MODEL_ID);
+
+      document.title = m.name + " · Lending Desk Bench";
+      document.getElementById("name").textContent = m.name;
+      document.getElementById("summary").textContent = m.summary;
+      document.getElementById("chips").innerHTML = `
+        <span class="chip">Score <strong>${m.score.total.toFixed(1)}</strong></span>
+        <span class="chip">Passes <strong>${m.passes.passed}/${m.passes.total}</strong></span>
+        <span class="chip">Reasoning <strong>${escapeHtml(m.thinking || "—")}</strong></span>
+        <span class="chip">Cost <strong>${fmtUsd(m.usage.costUsd)}</strong></span>
+        <span class="chip">Wall <strong>${fmtSecs(m.wall_seconds)}</strong></span>
+      `;
+
+      const domains = DOMAIN_ORDER.filter((d) => m.domains?.[d]);
+      const failed = domains.flatMap((d) => m.domains[d].failed || []);
+      const color = modelColor(idx);
+      const { grid } = chartDefaults();
+
+      main.innerHTML = `
+        <section class="card">
+          <div class="stat-grid">
+            <div class="stat"><span>Soft score</span><strong>${m.score.total.toFixed(1)}</strong></div>
+            <div class="stat"><span>Passes</span><strong>${m.passes.passed}/${m.passes.total}</strong></div>
+            <div class="stat"><span>Advisory</span><strong>${m.advisory.passed}/${m.advisory.total}</strong></div>
+            <div class="stat"><span>Input tokens</span><strong>${fmtTokens(m.usage.input)}</strong></div>
+            <div class="stat"><span>Output tokens</span><strong>${fmtTokens(m.usage.output)}</strong></div>
+            <div class="stat"><span>Cache read</span><strong>${fmtTokens(m.usage.cacheRead)}</strong></div>
+            <div class="stat"><span>Cache write</span><strong>${fmtTokens(m.usage.cacheWrite)}</strong></div>
+            <div class="stat"><span>API cost</span><strong>${fmtUsd(m.usage.costUsd)}</strong></div>
+            <div class="stat"><span>Assistant turns</span><strong>${m.usage.assistantTurns ?? "—"}</strong></div>
+          </div>
+        </section>
+
+        <section class="grid-2">
+          <article class="card">
+            <h2>Domain profile</h2>
+            <div class="chart-box sm"><canvas id="radar"></canvas></div>
+          </article>
+          <article class="card">
+            <h2>Domain pass rates</h2>
+            <div class="chart-box sm"><canvas id="bars"></canvas></div>
+          </article>
+        </section>
+
+        <section class="card">
+          <h2>By domain</h2>
+          <div class="domain-grid" id="domain-detail"></div>
+        </section>
+
+        <section class="card">
+          <h2>Failed checks (${failed.length})</h2>
+          <div class="fail-list" id="fails"></div>
+        </section>
+
+        <section class="card">
+          <h2>Compared to peers</h2>
+          <div class="chart-box"><canvas id="peer"></canvas></div>
+        </section>
+      `;
+
+      document.getElementById("fails").innerHTML = failed.length
+        ? failed.map((id) => `<code>${escapeHtml(id)}</code>`).join("")
+        : `<span class="muted">No scored failures.</span>`;
+
+      document.getElementById("domain-detail").innerHTML = domains.map((d) => {
+        const b = m.domains[d];
+        const meta = data.domains[d] || { title: d, why: "" };
+        return `
+          <article class="domain-card">
+            <h3><span class="badge">${d}</span>${escapeHtml(meta.title)}
+              <span class="muted" style="margin-left:auto;font-weight:600">${pct(b.rate)}</span></h3>
+            <p>${escapeHtml(meta.why || "")}</p>
+            <p class="who">${b.pass} passed · ${b.fail} failed</p>
+            ${b.failed?.length ? `<div class="fail-list mt-1">${b.failed.map((x) => `<code>${escapeHtml(x)}</code>`).join("")}</div>` : ""}
+          </article>
+        `;
+      }).join("");
+
+      new Chart(document.getElementById("radar"), {
+        type: "radar",
+        data: {
+          labels: domains,
+          datasets: [{
+            data: domains.map((d) => Math.round(100 * domainRate(m, d))),
+            borderColor: color,
+            backgroundColor: color + "44",
+            pointBackgroundColor: color,
+            borderWidth: 2,
+            fill: true,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { r: {
+            min: 0, max: 100,
+            ticks: { display: false },
+            grid: { color: grid },
+            angleLines: { color: grid },
+            pointLabels: { color: "#c5d0e0", font: { size: 12 } },
+          } },
+        },
+      });
+
+      new Chart(document.getElementById("bars"), {
+        type: "bar",
+        data: {
+          labels: domains,
+          datasets: [{
+            data: domains.map((d) => Math.round(100 * domainRate(m, d))),
+            backgroundColor: color,
+            borderRadius: 6,
+            maxBarThickness: 36,
+          }],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, max: 100, grid: { color: grid } },
+            y: { grid: { display: false } },
+          },
+        },
+      });
+
+      // Peer comparison radar
+      new Chart(document.getElementById("peer"), {
+        type: "radar",
+        data: {
+          labels: domains,
+          datasets: data.models.map((peer, i) => ({
+            label: peer.name,
+            data: domains.map((d) => Math.round(100 * domainRate(peer, d))),
+            borderColor: modelColor(i),
+            backgroundColor: peer.id === m.id ? modelColor(i) + "33" : "transparent",
+            borderWidth: peer.id === m.id ? 3 : 1,
+            pointRadius: peer.id === m.id ? 3 : 0,
+            fill: peer.id === m.id,
+          })),
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom", labels: { boxWidth: 10 } } },
+          scales: { r: {
+            min: 0, max: 100,
+            ticks: { stepSize: 25, backdropColor: "transparent" },
+            grid: { color: grid },
+            pointLabels: { color: "#e8eef6", font: { weight: "600" } },
+          } },
+        },
+      });
+    } catch (err) {
+      mountError(main, err);
+    }
+  </script>
+</body>
+</html>

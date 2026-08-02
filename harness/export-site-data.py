@@ -27,6 +27,16 @@ MODELS = [
         "summary": "Best flash result on this task — near-reference functional quality at very low cost.",
     },
     {
+        "id": "inkling-small",
+        "name": "Inkling Small",
+        "provider_model": "openrouter/thinkingmachines/inkling-small",
+        "arm": "a",
+        # Agent-run grade (results.json); no separate soft regrade path yet.
+        "regrade": "runs/a-inkling-small-r1",
+        "agent": "runs/a-inkling-small-r1",
+        "summary": "Strong second place: perfect Tier 0, high Tier 1 — competitive quality at modest cost.",
+    },
+    {
         "id": "ling-3.0-flash",
         "name": "Ling 3.0 Flash",
         "provider_model": "openrouter/inclusionai/ling-3.0-flash:free",
@@ -45,6 +55,15 @@ MODELS = [
         "summary": "Highest API spend and output volume; strong catalogue/API surface, weaker mutation/form path.",
     },
     {
+        "id": "doubao-seed-2-1-turbo",
+        "name": "Doubao Seed 2.1 Turbo",
+        "provider_model": "vocengine-coding/doubao-seed-2-1-turbo",
+        "arm": "a",
+        "regrade": "runs/a-doubao-seed-2-1-turbo-r1",
+        "agent": "runs/a-doubao-seed-2-1-turbo-r1",
+        "summary": "Mid-pack on Ark Coding Plan; solid gate pass with zero billed cost on this plan path.",
+    },
+    {
         "id": "qwen-3.7-flash",
         "name": "Qwen 3.7 Flash",
         "provider_model": "openrouter/qwen/qwen3.7-flash",
@@ -52,6 +71,24 @@ MODELS = [
         "regrade": "runs/rg-qwen3-7-flash-20260802-1307",
         "agent": "runs/a-qwen3.7-flash-r1",
         "summary": "Solid mid-pack; large input/cache footprint. Arm B experiment is separate and not averaged in.",
+    },
+    {
+        "id": "minimax-m2-7",
+        "name": "MiniMax M2.7",
+        "provider_model": "minimax-cn/MiniMax-M2.7",
+        "arm": "a",
+        "regrade": "runs/a-minimax-m2-7-r2",
+        "agent": "runs/a-minimax-m2-7-r2",
+        "summary": "CN coding-plan path; mid-lower pack with efficient token use after auth fix.",
+    },
+    {
+        "id": "gemini-3.5-flash-lite",
+        "name": "Gemini 3.5 Flash Lite",
+        "provider_model": "openrouter/google/gemini-3.5-flash-lite",
+        "arm": "a",
+        "regrade": "runs/a-gemini-3-5-flash-lite-r1",
+        "agent": "runs/a-gemini-3-5-flash-lite-r1",
+        "summary": "Gate-passing lite model; higher spend for this score band, weaker Tier 0 than leaders.",
     },
     {
         "id": "mimo-v2.5",
@@ -185,7 +222,12 @@ def domain_of(cid: str) -> str:
 
 
 def load_entry(spec: dict) -> dict | None:
-    regrade = ROOT / spec["regrade"] / "artifacts"
+    # Prefer dedicated regrade dir; fall back to agent run (has results.json post-grade).
+    regrade_rel = spec.get("regrade") or spec.get("agent")
+    if not regrade_rel:
+        print(f"skip {spec.get('id')}: no regrade/agent path")
+        return None
+    regrade = ROOT / regrade_rel / "artifacts"
     results_path = regrade / "results.json"
     if not results_path.exists():
         print(f"skip missing {results_path}")
