@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Methodology · Lending Desk Bench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/site.css" />
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="wrap inner">
+      <a class="brand" href="./"><span class="brand-mark"></span> Lending Desk Bench</a>
+      <div class="nav-links">
+        <a href="./">Overview</a>
+        <a class="active" href="./methodology.html">Methodology</a>
+        <a href="./results.html">Results</a>
+        <a href="./models/">Models</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero wrap">
+    <p class="kicker">Methodology</p>
+    <h1>How the benchmark works</h1>
+    <p class="lede">
+      Hermetic evaluation: the model sees only an incomplete app and a Measure track.
+      A hidden harness grades the result with typecheck, build, unit, API, browser, and adversarial probes.
+    </p>
+  </header>
+
+  <main class="wrap stack">
+    <section class="card" id="task">
+      <h2>The task</h2>
+      <p class="section-lede">
+        The fixture is an equipment-lending app. <code>/members</code> already works.
+        The agent must implement the <code>/items</code> slice by filling <strong>existing stub files only</strong>
+        — no new files, no dependency changes, no renames. Conventions must match the members slice.
+      </p>
+      <ul class="muted" style="padding-left:1.15rem">
+        <li>Next.js 16 App Router, React 19, TypeScript strict, Tailwind v4</li>
+        <li>Fixed clock via <code>now()</code> (no <code>Date.now()</code>)</li>
+        <li>Server Actions for checkout/return, REST route for loans</li>
+        <li>Phased Measure plan with closeout metadata</li>
+      </ul>
+    </section>
+
+    <section class="card" id="isolation">
+      <h2>Isolation</h2>
+      <p class="section-lede">
+        Agents run in a container with a private view: candidate source is writable;
+        fixture dependencies are read-only during the agent phase. The harness, reference
+        golden overlay, host home, and unrelated workspace paths are absent.
+      </p>
+      <div class="grid-2 mt-1">
+        <div class="kpi">
+          <div class="label">Arm A (primary)</div>
+          <div class="value" style="font-size:1.05rem;font-weight:600">Fixture + prompt only</div>
+          <div class="hint">No skills or extra context files. Fair head-to-head.</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Arm B (experimental)</div>
+          <div class="value" style="font-size:1.05rem;font-weight:600">+ AGENTS.md + 5 skills</div>
+          <div class="hint">Not averaged into Arm A rankings when the matrix is incomplete.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="grading">
+      <h2>Grading pipeline</h2>
+      <ol class="muted" style="padding-left:1.2rem; color:#c5d0e0">
+        <li>Candidate filesystem contract (writable set + public API surface)</li>
+        <li><code>npm run typecheck</code> and <code>npm run build</code> (gate)</li>
+        <li>Unit tests, API tests against a live Next server</li>
+        <li>Playwright browser suite + separate error-boundary boot</li>
+        <li>Score: soft-tier completion (60%), adversarial probes (20%), quality (20%)</li>
+      </ol>
+      <div class="callout">
+        <strong>Soft tier gates.</strong> Higher tiers always contribute, scaled by
+        <code>min(1, lower_rate / 0.9)</code>. A hard binary unlock previously collapsed
+        every mid-pack model into ~17 points and destroyed discrimination.
+      </div>
+    </section>
+
+    <section class="card" id="domains">
+      <h2>Domains</h2>
+      <p class="section-lede">Executable check clusters tied to product surfaces.</p>
+      <div class="domain-grid" id="domain-grid"></div>
+      <div class="callout">
+        <strong>Advisory (unscored).</strong>
+        <code>ADV.useActionState</code> and <code>ADV.useOptimistic</code> detect preferred React 19
+        form idioms. They never change the total — modernization signal only.
+      </div>
+    </section>
+
+    <section class="card" id="economics">
+      <h2>Cost &amp; tokens</h2>
+      <p class="section-lede">
+        Usage is extracted from the agent transcript (input, output, cache read/write, USD).
+        Functional scores on this site are regraded on the current suite; economics come from
+        the original session that produced the code.
+      </p>
+    </section>
+
+    <section class="card" id="limits">
+      <h2>Limits &amp; honesty</h2>
+      <ul class="muted" style="padding-left:1.15rem; color:#c5d0e0">
+        <li>Scores are publishable only with current provenance, agent isolation, and a quiet host.</li>
+        <li>Host load can affect timing-sensitive browser assertions.</li>
+        <li>One Arm B run is not a skills ablation study.</li>
+        <li>Reference is a golden overlay ceiling, not a model competitor.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer wrap">
+    <a href="./results.html">View results →</a>
+  </footer>
+
+  <script type="module">
+    import { loadData, setActiveNav, mountError } from "./assets/js/site.js";
+    setActiveNav();
+    try {
+      const data = await loadData();
+      const grid = document.getElementById("domain-grid");
+      grid.innerHTML = Object.entries(data.domains).map(([id, d]) => `
+        <article class="domain-card">
+          <h3><span class="badge">${id}</span>${d.title}</h3>
+          <p>${d.why}</p>
+          <p class="who">Audience: <strong>${d.audience}</strong></p>
+        </article>
+      `).join("");
+    } catch (e) {
+      mountError(document.querySelector("main"), e);
+    }
+  </script>
+</body>
+</html>

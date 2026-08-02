@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-labelledby="title">
+  <title id="title">Lending Desk tool</title>
+  <rect width="160" height="120" rx="16" fill="#e5e7eb"/>
+  <path d="M36 88 88 36l20 20-52 52H36Z" fill="#334155"/>
+  <path d="m80 28 16-16 28 28-16 16z" fill="#f59e0b"/>
+  <circle cx="48" cy="80" r="9" fill="#f8fafc"/>
+  <path d="M103 70h31v14h-31z" fill="#0f766e"/>
+  <path d="M111 62h14v30h-14z" fill="#14b8a6"/>
+</svg>

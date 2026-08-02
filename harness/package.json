@@ -1,0 +1,20 @@
+{
+  "name": "lending-desk-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:unit": "vitest run tests/unit",
+    "test:e2e": "playwright test tests/e2e",
+    "test:meta": "BENCH_META=1 vitest run tests/meta --maxWorkers=1",
+    "test:meta:logic": "BENCH_META=1 vitest run tests/meta --maxWorkers=1 --exclude 'tests/meta/runtime-isolation*.ts' --exclude 'tests/meta/run-executor-provenance.test.ts'",
+    "test:meta:score": "BENCH_META=1 vitest run tests/meta/score-attestation.test.ts tests/meta/executor-provenance.test.ts tests/meta/provenance-validation.test.ts tests/meta/grade-exit.test.ts tests/meta/publication-freshness.test.ts --maxWorkers=1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "26.1.2",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "react-doctor": "0.9.2"
+  }
+}

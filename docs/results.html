@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Results · Lending Desk Bench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/site.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="wrap inner">
+      <a class="brand" href="./"><span class="brand-mark"></span> Lending Desk Bench</a>
+      <div class="nav-links">
+        <a href="./">Overview</a>
+        <a href="./methodology.html">Methodology</a>
+        <a class="active" href="./results.html">Results</a>
+        <a href="./models/">Models</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero wrap">
+    <p class="kicker">Results</p>
+    <h1>Arm A matrix</h1>
+    <p class="lede">
+      Functional soft scores, pass counts, reasoning level, tokens, and API cost.
+      Domain heatmap shows where each model is strong or weak.
+    </p>
+  </header>
+
+  <main class="wrap stack" id="main">
+    <div class="loading">Loading results…</div>
+  </main>
+
+  <footer class="site-footer wrap"></footer>
+
+  <script type="module">
+    import {
+      loadData, fmtTokens, fmtUsd, fmtSecs, pct, domainRate, DOMAIN_ORDER,
+      modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
+    } from "./assets/js/site.js";
+
+    setActiveNav();
+    const main = document.getElementById("main");
+
+    try {
+      const data = await loadData();
+      const models = data.models;
+      const { grid } = chartDefaults();
+
+      const domainKeys = DOMAIN_ORDER.filter((d) =>
+        models.some((m) => m.domains?.[d])
+      );
+
+      main.innerHTML = `
+        <section class="card">
+          <h2>Score &amp; economics</h2>
+          <div class="grid-2 mt-1">
+            <div class="chart-box"><canvas id="chart-scores"></canvas></div>
+            <div class="chart-box"><canvas id="chart-cost-score"></canvas></div>
+          </div>
+          <div class="table-wrap mt-2">
+            <table class="data" id="full-table">
+              <thead>
+                <tr>
+                  <th class="num">#</th>
+                  <th>Model</th>
+                  <th class="num">Score</th>
+                  <th class="num">Passes</th>
+                  <th class="num">Reasoning</th>
+                  <th class="num">In</th>
+                  <th class="num">Out</th>
+                  <th class="num">Cache R</th>
+                  <th class="num">Cost</th>
+                  <th class="num">Wall</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Domain heatmap</h2>
+          <p class="section-lede">Pass rate within each domain (fraction of checks green).</p>
+          <div class="table-wrap">
+            <table class="matrix" id="heatmap"></table>
+          </div>
+          <div class="chart-box tall mt-2"><canvas id="chart-domains"></canvas></div>
+        </section>
+
+        <section class="card" id="arm-b-note"></section>
+      `;
+
+      // Table
+      document.querySelector("#full-table tbody").innerHTML = models.map((m, i) => `
+        <tr>
+          <td class="num">${i + 1}</td>
+          <td>
+            <a class="model-link" href="./models/${m.id}.html">${escapeHtml(m.name)}</a>
+            <div class="subline">${escapeHtml(m.provider_model)}</div>
+          </td>
+          <td class="num score">${m.score.total.toFixed(1)}</td>
+          <td class="num">${m.passes.passed}/${m.passes.total}</td>
+          <td class="num">${escapeHtml(m.thinking || "—")}</td>
+          <td class="num">${fmtTokens(m.usage.input)}</td>
+          <td class="num">${fmtTokens(m.usage.output)}</td>
+          <td class="num">${fmtTokens(m.usage.cacheRead)}</td>
+          <td class="num">${fmtUsd(m.usage.costUsd)}</td>
+          <td class="num">${fmtSecs(m.wall_seconds)}</td>
+        </tr>
+      `).join("");
+
+      // Heatmap
+      const heat = document.getElementById("heatmap");
+      heat.innerHTML = `
+        <thead><tr><th>Model</th>${domainKeys.map((d) => `<th title="${escapeHtml(data.domains[d]?.title || d)}">${d}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${models.map((m, i) => `
+            <tr>
+              <th scope="row">${escapeHtml(m.name)}</th>
+              ${domainKeys.map((d) => {
+                const rate = domainRate(m, d);
+                const cls = rate >= 0.95 ? "cell-good" : rate >= 0.75 ? "cell-ok" : rate >= 0.5 ? "cell-mid" : rate > 0 ? "cell-bad" : "cell-dead";
+                return `<td class="${cls}">${pct(rate)}</td>`;
+              }).join("")}
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+
+      // Arm B footnote
+      const exp = data.experiments?.arm_b;
+      const note = document.getElementById("arm-b-note");
+      if (exp) {
+        note.innerHTML = `
+          <h2>Arm B experiment (not ranked)</h2>
+          <p class="section-lede">${escapeHtml(exp.summary)}</p>
+          <p>
+            <strong>${escapeHtml(exp.name)}</strong> —
+            score <strong>${exp.score.total.toFixed(1)}</strong>,
+            passes <strong>${exp.passes.passed}/${exp.passes.total}</strong>,
+            cost <strong>${fmtUsd(exp.usage.costUsd)}</strong>,
+            reasoning <strong>${escapeHtml(exp.thinking || "—")}</strong>.
+            Not averaged into Arm A totals.
+          </p>
+        `;
+      } else {
+        note.remove();
+      }
+
+      // Charts
+      new Chart(document.getElementById("chart-scores"), {
+        type: "bar",
+        data: {
+          labels: models.map((m) => m.name),
+          datasets: [{
+            data: models.map((m) => m.score.total),
+            backgroundColor: models.map((_, i) => modelColor(i)),
+            borderRadius: 8,
+            maxBarThickness: 48,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: "Soft score", color: "#e8eef6", font: { size: 14, weight: "600" } },
+          },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: grid } },
+            x: { grid: { display: false }, ticks: { maxRotation: 35 } },
+          },
+        },
+      });
+
+      new Chart(document.getElementById("chart-cost-score"), {
+        type: "bubble",
+        data: {
+          datasets: [{
+            data: models.map((m, i) => ({
+              x: m.usage.costUsd || 0,
+              y: m.score.total,
+              r: Math.max(6, Math.min(26, Math.sqrt((m.usage.output || 0) / 900))),
+              m,
+            })),
+            backgroundColor: models.map((_, i) => modelColor(i) + "cc"),
+            borderColor: models.map((_, i) => modelColor(i)),
+            borderWidth: 2,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: "Cost (x) vs score (y)", color: "#e8eef6", font: { size: 14, weight: "600" } },
+            tooltip: {
+              callbacks: {
+                label(ctx) {
+                  const m = ctx.raw.m;
+                  return ` ${m.name}: ${m.score.total} @ ${fmtUsd(m.usage.costUsd)}`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: { title: { display: true, text: "USD" }, beginAtZero: true, grid: { color: grid } },
+            y: { title: { display: true, text: "Score" }, min: 0, max: 100, grid: { color: grid } },
+          },
+        },
+      });
+
+      new Chart(document.getElementById("chart-domains"), {
+        type: "bar",
+        data: {
+          labels: domainKeys,
+          datasets: models.map((m, i) => ({
+            label: m.name,
+            data: domainKeys.map((d) => Math.round(100 * domainRate(m, d))),
+            backgroundColor: modelColor(i),
+            borderRadius: 4,
+            maxBarThickness: 16,
+          })),
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: "Domain pass rates (%)", color: "#e8eef6", font: { size: 14, weight: "600" } },
+            legend: { position: "bottom", labels: { boxWidth: 10 } },
+          },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: grid } },
+            x: { grid: { display: false } },
+          },
+        },
+      });
+    } catch (err) {
+      mountError(main, err);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Local vitest / playwright output (never part of the suite contract)
+results.json
+e2e-results.json
+test-results/
+playwright-report/

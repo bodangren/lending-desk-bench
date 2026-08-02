@@ -1,0 +1,36 @@
+# Dependencies (keep package-lock files)
+node_modules/
+**/node_modules/
+
+# Next / TS build noise
+.next/
+**/.next/
+*.tsbuildinfo
+
+# Large / ephemeral benchmark working state
+runs/
+reports/
+test-results/
+**/test-results/
+playwright-report/
+harness/results.json
+harness/e2e-results.json
+*-overlay-src/
+
+# Logs & pids
+*.log
+*.pid
+.tmp/
+tmp/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Secrets
+.env
+.env.*
+!.env.example

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Models · Lending Desk Bench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/site.css" />
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="wrap inner">
+      <a class="brand" href="../"><span class="brand-mark"></span> Lending Desk Bench</a>
+      <div class="nav-links">
+        <a href="../">Overview</a>
+        <a href="../methodology.html">Methodology</a>
+        <a href="../results.html">Results</a>
+        <a class="active" href="./">Models</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero wrap">
+    <p class="kicker">Models</p>
+    <h1>Individual runs</h1>
+    <p class="lede">Arm A submissions ranked by soft score. Open a model for domain profile, failures, and token economics.</p>
+  </header>
+
+  <main class="wrap" id="main">
+    <div class="loading">Loading models…</div>
+  </main>
+
+  <footer class="site-footer wrap"></footer>
+
+  <script type="module">
+    import { loadData, fmtUsd, fmtTokens, modelColor, setActiveNav, mountError, escapeHtml } from "../assets/js/site.js";
+    setActiveNav();
+    const main = document.getElementById("main");
+    try {
+      const data = await loadData();
+      main.innerHTML = `
+        <div class="stack">
+          ${data.models.map((m, i) => `
+            <a class="card" href="./${m.id}.html" style="display:block; color:inherit; text-decoration:none">
+              <div style="display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; flex-wrap:wrap">
+                <div>
+                  <h2 style="margin:0; display:flex; align-items:center; gap:0.5rem">
+                    <span class="swatch" style="background:${modelColor(i)};width:12px;height:12px;border-radius:3px;display:inline-block"></span>
+                    ${escapeHtml(m.name)}
+                  </h2>
+                  <p class="subline" style="margin:0.35rem 0 0">${escapeHtml(m.provider_model)}</p>
+                  <p class="muted" style="margin:0.65rem 0 0; max-width:60ch">${escapeHtml(m.summary)}</p>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:2rem; font-weight:700; letter-spacing:-0.03em">${m.score.total.toFixed(1)}</div>
+                  <div class="muted" style="font-size:0.85rem">${m.passes.passed}/${m.passes.total} passes · ${fmtUsd(m.usage.costUsd)}</div>
+                  <div class="muted" style="font-size:0.8rem">out ${fmtTokens(m.usage.output)} · ${escapeHtml(m.thinking || "—")} reasoning</div>
+                </div>
+              </div>
+            </a>
+          `).join("")}
+        </div>
+      `;
+    } catch (e) {
+      mountError(main, e);
+    }
+  </script>
+</body>
+</html>
