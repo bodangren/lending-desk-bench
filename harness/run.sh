@@ -369,11 +369,37 @@ run_agent_container() {
     cerebras) secret_name="${BENCH_PROVIDER_ENV:-CEREBRAS_API_KEY}" ;;
     fireworks) secret_name="${BENCH_PROVIDER_ENV:-FIREWORKS_API_KEY}" ;;
     xiaomi) secret_name="${BENCH_PROVIDER_ENV:-XIAOMI_API_KEY}" ;;
+    minimax) secret_name="${BENCH_PROVIDER_ENV:-MINIMAX_API_KEY}" ;;
+    minimax-cn) secret_name="${BENCH_PROVIDER_ENV:-MINIMAX_CN_API_KEY}" ;;
+    vocengine-coding|volcengine-coding|ark) secret_name="${BENCH_PROVIDER_ENV:-ARK_API_KEY}" ;;
   esac
   case "$secret_name" in
-    ANTHROPIC_API_KEY|OPENAI_API_KEY|OPENROUTER_API_KEY|GOOGLE_API_KEY|GEMINI_API_KEY|DEEPSEEK_API_KEY|GROQ_API_KEY|MISTRAL_API_KEY|XAI_API_KEY|TOGETHER_API_KEY|CEREBRAS_API_KEY|FIREWORKS_API_KEY|XIAOMI_API_KEY) ;;
+    ANTHROPIC_API_KEY|OPENAI_API_KEY|OPENROUTER_API_KEY|GOOGLE_API_KEY|GEMINI_API_KEY|DEEPSEEK_API_KEY|GROQ_API_KEY|MISTRAL_API_KEY|XAI_API_KEY|TOGETHER_API_KEY|CEREBRAS_API_KEY|FIREWORKS_API_KEY|XIAOMI_API_KEY|MINIMAX_API_KEY|MINIMAX_CN_API_KEY|ARK_API_KEY) ;;
     *) echo "set BENCH_PROVIDER_ENV to one allowlisted provider key for $PROVIDER" >&2; return 2 ;;
   esac
+
+  # Stage a private Pi agent dir for the container: custom models.json providers
+  # (e.g. vocengine-coding) are not built into Pi and require host models.json +
+  # a single-provider auth snapshot. Built-in providers still use the env key.
+  local pi_agent_dir="$OUT/pi-agent"
+  mkdir -p "$pi_agent_dir"
+  if [ -f "${HOME}/.pi/agent/models.json" ]; then
+    cp "${HOME}/.pi/agent/models.json" "$pi_agent_dir/models.json"
+  else
+    printf '{}\n' > "$pi_agent_dir/models.json"
+  fi
+  PROVIDER_NAME="$PROVIDER" AUTH_SRC="${HOME}/.pi/agent/auth.json" AUTH_DST="$pi_agent_dir/auth.json" \
+    node -e '
+      const fs = require("node:fs");
+      const provider = process.env.PROVIDER_NAME;
+      let auth = {};
+      try { auth = JSON.parse(fs.readFileSync(process.env.AUTH_SRC, "utf8")); } catch {}
+      const out = {};
+      if (auth[provider]) out[provider] = auth[provider];
+      fs.writeFileSync(process.env.AUTH_DST, JSON.stringify(out, null, 2) + "\n", { mode: 0o600 });
+    ' || true
+  chmod 600 "$pi_agent_dir/auth.json" 2>/dev/null || true
+
   mkdir -p "$CAND/node_modules"
   podman_args=(run --rm --pull=never --read-only
     --tmpfs /tmp:rw,nosuid,nodev,noexec,size=512m
@@ -391,7 +417,8 @@ run_agent_container() {
     --env "$secret_name"
     --mount "type=bind,src=$CAND,dst=/workspace,rw"
     --mount "type=bind,src=$ROOT/fixture/node_modules,dst=/workspace/node_modules,ro"
-    --mount "type=bind,src=$pi_root,dst=/opt/pi,ro")
+    --mount "type=bind,src=$pi_root,dst=/opt/pi,ro"
+    --mount "type=bind,src=$pi_agent_dir,dst=/tmp/pi,ro")
 
   if [ "$RUNTIME_PROBE" = "container" ]; then
     podman_args+=(--label "lending-desk.runtime-probe=$BENCH_RUNTIME_PROBE_LABEL")
