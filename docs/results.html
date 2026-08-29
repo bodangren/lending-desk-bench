@@ -145,7 +145,7 @@
         </ul>
       `;
 
-      if (typeof Chart === "undefined") return;
+      if (typeof Chart !== "undefined") {
       new Chart(document.getElementById("chart-scores"), {
         type: "bar",
         data: {
@@ -230,6 +230,7 @@
           },
         },
       });
+      }
     } catch (err) {
       mountError(main, err);
     }

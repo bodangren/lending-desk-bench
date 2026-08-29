@@ -144,9 +144,9 @@
         </tr>
       `).join("");
 
-      if (!models.length || typeof Chart === "undefined") return;
-      const { grid } = chartDefaults();
-      const points = models.map((m, i) => ({
+      if (models.length && typeof Chart !== "undefined") {
+        const { grid } = chartDefaults();
+        const points = models.map((m, i) => ({
         x: m.go?.monthly_pct || 0,
         y: m.score.total,
         r: Math.max(6, Math.min(28, Math.sqrt((m.usage.output || 0) / 800))),
@@ -201,6 +201,7 @@
           },
         },
       });
+      }
     } catch (err) {
       const lede = document.getElementById("hero-lede");
       if (lede) lede.textContent = "Could not load results.";
