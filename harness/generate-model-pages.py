@@ -35,7 +35,7 @@ TEMPLATE = """<!DOCTYPE html>
   </nav>
 
   <header class="hero hero-model wrap">
-    <p class="kicker">Model · Arm A</p>
+    <p class="kicker">Model · No Skills</p>
     <h1 id="name">…</h1>
     <p class="lede" id="summary"></p>
     <div class="chips" id="chips"></div>
@@ -51,7 +51,7 @@ TEMPLATE = """<!DOCTYPE html>
 
   <script type="module">
     import {{
-      loadData, fmtTokens, fmtUsd, fmtSecs, pct, domainRate, DOMAIN_ORDER,
+      loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, pct, domainRate, DOMAIN_ORDER,
       modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
     }} from "../assets/js/site.js";
 
@@ -72,7 +72,7 @@ TEMPLATE = """<!DOCTYPE html>
         <span class="chip">Score <strong>${{m.score.total.toFixed(1)}}</strong></span>
         <span class="chip">Passes <strong>${{m.passes.passed}}/${{m.passes.total}}</strong></span>
         <span class="chip">Reasoning <strong>${{escapeHtml(m.thinking || "—")}}</strong></span>
-        <span class="chip">Cost <strong>${{fmtUsd(m.usage.costUsd)}}</strong></span>
+        <span class="chip">% monthly <strong>${{fmtMonthlyPct(m.go?.monthly_pct)}}</strong></span>
         <span class="chip">Wall <strong>${{fmtSecs(m.wall_seconds)}}</strong></span>
       `;
 
@@ -91,7 +91,7 @@ TEMPLATE = """<!DOCTYPE html>
             <div class="stat"><span>Output tokens</span><strong>${{fmtTokens(m.usage.output)}}</strong></div>
             <div class="stat"><span>Cache read</span><strong>${{fmtTokens(m.usage.cacheRead)}}</strong></div>
             <div class="stat"><span>Cache write</span><strong>${{fmtTokens(m.usage.cacheWrite)}}</strong></div>
-            <div class="stat"><span>API cost</span><strong>${{fmtUsd(m.usage.costUsd)}}</strong></div>
+            <div class="stat"><span>% monthly</span><strong>${{fmtMonthlyPct(m.go?.monthly_pct)}}</strong></div>
             <div class="stat"><span>Assistant turns</span><strong>${{m.usage.assistantTurns ?? "—"}}</strong></div>
           </div>
         </section>

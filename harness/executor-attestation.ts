@@ -120,8 +120,9 @@ export function attestExecutorFromEnvironment(record: unknown): ExecutorAttestat
     if (!isArm(record.arm) || typeof record.run_id !== "string") throw new Error("provenance run binding is invalid");
     const executor = record.executor as JsonRecord;
     const frozen = record.executor_cohort as JsonRecord;
-    const piRoot = process.env.BENCH_PI_ROOT ?? "/home/daniel-bo/.local/share/fnm/node-versions/v22.22.3/installation";
-    const skillRoot = process.env.BENCH_SKILL_ROOT ?? "/home/daniel-bo/.agents/skills";
+    const piRoot = process.env.BENCH_PI_ROOT;
+    if (!piRoot) throw new Error("BENCH_PI_ROOT is not set");
+    const skillRoot = process.env.BENCH_SKILL_ROOT ?? join(process.env.HOME ?? "", ".agents/skills");
     const live: JsonRecord = {
       run_id: record.run_id,
       arm: record.arm,

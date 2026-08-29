@@ -55,6 +55,7 @@ export function currentHashes() {
       "harness/public-api.ts",
       "harness/preflight.sh",
       "harness/usage.ts",
+      "harness/go-cost.ts",
     ]),
     suite_sha256: hashPaths([
       ...testFiles,

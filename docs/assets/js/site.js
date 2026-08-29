@@ -40,6 +40,11 @@ export function fmtUsd(n) {
   return `$${n.toFixed(3)}`;
 }
 
+export function fmtMonthlyPct(n) {
+  if (n == null) return "—";
+  return `${Number(n).toFixed(2)}%`;
+}
+
 export function fmtSecs(n) {
   if (n == null) return "—";
   n = Math.round(n);

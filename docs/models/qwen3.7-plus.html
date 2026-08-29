@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MiniMax M2.7 · Lending Desk Bench</title>
+  <title>Qwen3.7 Plus · Lending Desk Bench</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -24,7 +24,7 @@
   </nav>
 
   <header class="hero hero-model wrap">
-    <p class="kicker">Model · Arm A</p>
+    <p class="kicker">Model · No Skills</p>
     <h1 id="name">…</h1>
     <p class="lede" id="summary"></p>
     <div class="chips" id="chips"></div>
@@ -40,11 +40,11 @@
 
   <script type="module">
     import {
-      loadData, fmtTokens, fmtUsd, fmtSecs, pct, domainRate, DOMAIN_ORDER,
+      loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, pct, domainRate, DOMAIN_ORDER,
       modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
     } from "../assets/js/site.js";
 
-    const MODEL_ID = "minimax-m2-7";
+    const MODEL_ID = "qwen3.7-plus";
     setActiveNav();
     const main = document.getElementById("main");
 
@@ -61,7 +61,7 @@
         <span class="chip">Score <strong>${m.score.total.toFixed(1)}</strong></span>
         <span class="chip">Passes <strong>${m.passes.passed}/${m.passes.total}</strong></span>
         <span class="chip">Reasoning <strong>${escapeHtml(m.thinking || "—")}</strong></span>
-        <span class="chip">Cost <strong>${fmtUsd(m.usage.costUsd)}</strong></span>
+        <span class="chip">% monthly <strong>${fmtMonthlyPct(m.go?.monthly_pct)}</strong></span>
         <span class="chip">Wall <strong>${fmtSecs(m.wall_seconds)}</strong></span>
       `;
 
@@ -80,7 +80,7 @@
             <div class="stat"><span>Output tokens</span><strong>${fmtTokens(m.usage.output)}</strong></div>
             <div class="stat"><span>Cache read</span><strong>${fmtTokens(m.usage.cacheRead)}</strong></div>
             <div class="stat"><span>Cache write</span><strong>${fmtTokens(m.usage.cacheWrite)}</strong></div>
-            <div class="stat"><span>API cost</span><strong>${fmtUsd(m.usage.costUsd)}</strong></div>
+            <div class="stat"><span>% monthly</span><strong>${fmtMonthlyPct(m.go?.monthly_pct)}</strong></div>
             <div class="stat"><span>Assistant turns</span><strong>${m.usage.assistantTurns ?? "—"}</strong></div>
           </div>
         </section>

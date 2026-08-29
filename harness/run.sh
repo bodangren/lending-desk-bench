@@ -51,6 +51,8 @@ port_for_run() {
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 H="$ROOT/harness"
+# shellcheck source=env.sh
+source "$H/env.sh"
 WORK="$ROOT/runs/$RUN_ID"
 OUT="$WORK/artifacts"
 CAND="$WORK/candidate"
@@ -264,10 +266,10 @@ hydrate_candidate_dependencies() {
 
 run_container_probe() {
   local probe_image="${BENCH_AGENT_IMAGE:-docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3}"
-  local skill_root="${BENCH_SKILL_ROOT:-/home/daniel-bo/.agents/skills}"
-  local probe_pi_root="${BENCH_PI_ROOT:-/home/daniel-bo/.local/share/fnm/node-versions/v22.22.3/installation}"
+  local skill_root="${BENCH_SKILL_ROOT:-$HOME/.agents/skills}"
+  local probe_pi_root="${BENCH_PI_ROOT:-}"
   local probe_loopback_port="${BENCH_RUNTIME_PROBE_LOOPBACK_PORT:-9}"
-  local probe_host_home_path="${BENCH_RUNTIME_PROBE_HOST_HOME_PATH:-${HOME:-/home/daniel-bo}}"
+  local probe_host_home_path="${BENCH_RUNTIME_PROBE_HOST_HOME_PATH:-${HOME}}"
   local probe_sibling_run_path="${BENCH_RUNTIME_PROBE_SIBLING_RUN_PATH:-$ROOT/runs}"
   local skill arm_a_agents_backup="" probe_contract=phase9 probe_rc
   local -a podman_args
@@ -342,11 +344,11 @@ run_container_probe() {
 }
 
 run_agent_container() {
-  local pi_root="${BENCH_PI_ROOT:-/home/daniel-bo/.local/share/fnm/node-versions/v22.22.3/installation}"
+  local pi_root="${BENCH_PI_ROOT:-}"
   # BENCH_AGENT_IMAGE remains an explicit override; this default is the locally
   # verified Node image digest, so --pull=never cannot silently change it.
   local pi_image="${BENCH_AGENT_IMAGE:-docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3}"
-  local skill_root="${BENCH_SKILL_ROOT:-/home/daniel-bo/.agents/skills}"
+  local skill_root="${BENCH_SKILL_ROOT:-$HOME/.agents/skills}"
   local secret_name="${BENCH_PROVIDER_ENV:-}" skill arm_a_agents_backup="" agent_rc
   local -a podman_args pi_flags
 
@@ -372,32 +374,44 @@ run_agent_container() {
     minimax) secret_name="${BENCH_PROVIDER_ENV:-MINIMAX_API_KEY}" ;;
     minimax-cn) secret_name="${BENCH_PROVIDER_ENV:-MINIMAX_CN_API_KEY}" ;;
     vocengine-coding|volcengine-coding|ark) secret_name="${BENCH_PROVIDER_ENV:-ARK_API_KEY}" ;;
+    opencode-go) secret_name="${BENCH_PROVIDER_ENV:-OPENCODE_API_KEY}" ;;
   esac
   case "$secret_name" in
-    ANTHROPIC_API_KEY|OPENAI_API_KEY|OPENROUTER_API_KEY|GOOGLE_API_KEY|GEMINI_API_KEY|DEEPSEEK_API_KEY|GROQ_API_KEY|MISTRAL_API_KEY|XAI_API_KEY|TOGETHER_API_KEY|CEREBRAS_API_KEY|FIREWORKS_API_KEY|XIAOMI_API_KEY|MINIMAX_API_KEY|MINIMAX_CN_API_KEY|ARK_API_KEY) ;;
+    ANTHROPIC_API_KEY|OPENAI_API_KEY|OPENROUTER_API_KEY|GOOGLE_API_KEY|GEMINI_API_KEY|DEEPSEEK_API_KEY|GROQ_API_KEY|MISTRAL_API_KEY|XAI_API_KEY|TOGETHER_API_KEY|CEREBRAS_API_KEY|FIREWORKS_API_KEY|XIAOMI_API_KEY|MINIMAX_API_KEY|MINIMAX_CN_API_KEY|ARK_API_KEY|OPENCODE_API_KEY) ;;
     *) echo "set BENCH_PROVIDER_ENV to one allowlisted provider key for $PROVIDER" >&2; return 2 ;;
   esac
 
   # Stage a private Pi agent dir for the container: custom models.json providers
   # (e.g. vocengine-coding) are not built into Pi and require host models.json +
   # a single-provider auth snapshot. Built-in providers still use the env key.
+  # OpenCode Go uses the harness-pinned table, never the host models.json.
   local pi_agent_dir="$OUT/pi-agent"
   mkdir -p "$pi_agent_dir"
-  if [ -f "${HOME}/.pi/agent/models.json" ]; then
-    cp "${HOME}/.pi/agent/models.json" "$pi_agent_dir/models.json"
-  else
-    printf '{}\n' > "$pi_agent_dir/models.json"
-  fi
-  PROVIDER_NAME="$PROVIDER" AUTH_SRC="${HOME}/.pi/agent/auth.json" AUTH_DST="$pi_agent_dir/auth.json" \
-    node -e '
+  if [ "$PROVIDER" = "opencode-go" ]; then
+    "$H/node_modules/.bin/tsx" "$H/go-cost.ts" --models-json > "$pi_agent_dir/models.json" || return 2
+    OPENCODE_API_KEY="${OPENCODE_API_KEY:-}" AUTH_DST="$pi_agent_dir/auth.json" node -e '
       const fs = require("node:fs");
-      const provider = process.env.PROVIDER_NAME;
-      let auth = {};
-      try { auth = JSON.parse(fs.readFileSync(process.env.AUTH_SRC, "utf8")); } catch {}
-      const out = {};
-      if (auth[provider]) out[provider] = auth[provider];
+      const key = process.env.OPENCODE_API_KEY || "";
+      const out = key ? { "opencode-go": { type: "api_key", key } } : {};
       fs.writeFileSync(process.env.AUTH_DST, JSON.stringify(out, null, 2) + "\n", { mode: 0o600 });
-    ' || true
+    '
+  else
+    if [ -f "${HOME}/.pi/agent/models.json" ]; then
+      cp "${HOME}/.pi/agent/models.json" "$pi_agent_dir/models.json"
+    else
+      printf '{}\n' > "$pi_agent_dir/models.json"
+    fi
+    PROVIDER_NAME="$PROVIDER" AUTH_SRC="${HOME}/.pi/agent/auth.json" AUTH_DST="$pi_agent_dir/auth.json" \
+      node -e '
+        const fs = require("node:fs");
+        const provider = process.env.PROVIDER_NAME;
+        let auth = {};
+        try { auth = JSON.parse(fs.readFileSync(process.env.AUTH_SRC, "utf8")); } catch {}
+        const out = {};
+        if (auth[provider]) out[provider] = auth[provider];
+        fs.writeFileSync(process.env.AUTH_DST, JSON.stringify(out, null, 2) + "\n", { mode: 0o600 });
+      ' || true
+  fi
   chmod 600 "$pi_agent_dir/auth.json" 2>/dev/null || true
 
   mkdir -p "$CAND/node_modules"
@@ -418,7 +432,7 @@ run_agent_container() {
     --mount "type=bind,src=$CAND,dst=/workspace,rw"
     --mount "type=bind,src=$ROOT/fixture/node_modules,dst=/workspace/node_modules,ro"
     --mount "type=bind,src=$pi_root,dst=/opt/pi,ro"
-    --mount "type=bind,src=$pi_agent_dir,dst=/tmp/pi,ro")
+    --mount "type=bind,src=$pi_agent_dir,dst=/tmp/pi,rw")
 
   if [ "$RUNTIME_PROBE" = "container" ]; then
     podman_args+=(--label "lending-desk.runtime-probe=$BENCH_RUNTIME_PROBE_LABEL")

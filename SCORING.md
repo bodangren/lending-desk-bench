@@ -45,7 +45,7 @@ weight_T2 = scale(T0_rate) × scale(T1_rate)
 
 A model at 80% Tier 0 still receives ~89% of its Tier 1 credit, not zero. A hard binary
 unlock (credit only when Tier 0 ≥ 90%) collapsed every near-complete submission into the
-same ~17-point pile and destroyed discrimination among flash models. Soft scaling keeps
+same ~17-point pile and destroyed discrimination among near-complete models. Soft scaling keeps
 the incentive not to bank polish without basics, without a dead zone.
 
 ## Adversarial probes (20%)
@@ -151,5 +151,5 @@ Before comparing any model runs:
    untrusted and excluded from summary ranking.
 
 Only after these gates may a model matrix use `batch.sh`. Use multiple repetitions and report
-both the trusted distribution and the arm delta; a single flash-model run is not a stable
-ranking.
+both the trusted distribution and the No Skills / Skills delta; a single weekly run is not a
+stable ranking. Report EMA and the 4-week range after the second week.

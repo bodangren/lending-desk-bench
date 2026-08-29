@@ -1,8 +1,8 @@
 # Lending Desk Bench
 
-A hermetic Next.js implementation benchmark. A model receives an intentionally incomplete
-`fixture/` and must complete the Measure track. The hidden harness grades the resulting
-application through typecheck, build, API, browser, stream, and mutation-safety checks.
+A hermetic Next.js implementation benchmark for OpenCode Go High Usage models. Pi receives an
+intentionally incomplete `fixture/` and must complete the Measure track. The hidden harness
+grades the result through typecheck, build, API, browser, stream, and mutation-safety checks.
 
 The fixture is deliberately incomplete. `reference/` is the golden answer used only for
 calibration; it is never mounted into a model container.
@@ -26,8 +26,10 @@ GitHub Pages is served from the `docs/` folder on `main`.
 | `fixture/` | The complete model-visible repository and task contract. |
 | `reference/` | Golden writable-file overlay for calibration only. |
 | `harness/` | Hidden runner, tests, collector, scorer, and control manifest. |
+| `harness/go-pricing.json` | Pinned OpenCode Go prices and monthly Usage column. |
 | `runs/<id>/` | One isolated candidate and its immutable grading artifacts. |
 | `SCORING.md` | Scoring, validity, and calibration rules. |
+| `PLAN.md` | OpenCode Go rewrite plan. |
 
 ## Harness self-tests (read this before "fixing" scoring)
 
@@ -80,37 +82,48 @@ cd ../harness && npm ci
 cd ..
 ```
 
-A real model run additionally needs rootless Podman, the local `pi` executable, and one
-allowlisted provider key. The runner passes only the selected provider credential into the
-container; it does not mount host home, model configuration, harness, reference, or unrelated
-workspace files.
+A Go run needs rootless Podman, the local `pi` executable, and `OPENCODE_API_KEY`. The runner
+passes only that credential into the container. It does not mount host home, harness, or
+reference.
 
 ## Run a model
 
 ```bash
-./harness/run.sh <provider> <model> a run-001
-./harness/run.sh <provider> <model> b run-002
+./harness/run.sh opencode-go mimo-v2.5 a a-mimo-v2-5-2026w35
+./harness/run.sh opencode-go mimo-v2.5 b b-mimo-v2-5-2026w35
+```
+
+Arm `a` is **No Skills**. Arm `b` is **Skills**. Run both once per model each week.
+
+```bash
+ARMS="a b" ./harness/batch.sh
+./harness/weekly.sh
 ```
 
 Run IDs must match `[A-Za-z0-9][A-Za-z0-9_-]{0,79}`. A run ID is replaced only after that
 validation and host preflight succeed.
 
-| Arm | Model-visible material |
-|---|---|
-| `a` | The fixture and task prompt only; no skills, extensions, or context files. |
-| `b` | The fixture `AGENTS.md` plus the five explicitly mounted skills named there. |
+| Arm | Public name | Model-visible material |
+|---|---|---|
+| `a` | No Skills | The fixture and task prompt only; no skills, extensions, or context files. |
+| `b` | Skills | The fixture `AGENTS.md` plus the five explicitly mounted skills named there. |
 
 Both arms start from the same fixture and receive the same prompt. The only intentional
 difference is the allowed instructional material.
 
+Cost is percent of that model’s monthly Go Usage column. After a price change, update
+`harness/go-pricing.json` and run `./harness/recost.sh`. Do not re-run the agent.
+
 ### Provider credentials
 
-Built-in providers select one environment variable: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
-`OPENROUTER_API_KEY`, `GOOGLE_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`,
-`MISTRAL_API_KEY`, `XAI_API_KEY`, `TOGETHER_API_KEY`, `CEREBRAS_API_KEY`,
-`FIREWORKS_API_KEY`, or `XIAOMI_API_KEY`. For another provider, set
-`BENCH_PROVIDER_ENV` to exactly one name from that allowlist. Missing or unallowlisted
-credentials stop the run before an agent starts.
+Put `OPENCODE_API_KEY` in `.env.local` at the repo root (gitignored). `run.sh` loads `.env` then `.env.local`. A live environment variable still wins.
+
+OpenCode Go uses `OPENCODE_API_KEY`. Other built-in providers still select one of
+`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`,
+`DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `XAI_API_KEY`, `TOGETHER_API_KEY`,
+`CEREBRAS_API_KEY`, `FIREWORKS_API_KEY`, `XIAOMI_API_KEY`, or `ARK_API_KEY`. For another
+provider, set `BENCH_PROVIDER_ENV` to exactly one name from that allowlist. Missing or
+unallowlisted credentials stop the run before an agent starts.
 
 `BENCH_PI_ROOT` and `BENCH_AGENT_IMAGE` are explicit operator overrides. The default agent
 image is pinned and runs read-only with a writable candidate bind mount and temporary `/tmp`.
@@ -191,7 +204,7 @@ score. See `SCORING.md` for the exact policy.
 ## Batch and reporting
 
 ```bash
-ARMS="a b" REPS=5 ./harness/batch.sh
+ARMS="a b" ./harness/weekly.sh
 ./harness/summarize.sh
 ```
 

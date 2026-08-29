@@ -16,101 +16,44 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "assets" / "data" / "benchmark.json"
 GATE = 0.9
 
-MODELS = [
-    {
-        "id": "deepseek-v4-flash",
-        "name": "DeepSeek V4 Flash",
-        "provider_model": "deepseek/deepseek-v4-flash",
-        "arm": "a",
-        "regrade": "runs/rg-deepseek-v4-flash-20260802-1248",
-        "agent": "runs/a-deepseek-v4-flash-r1",
-        "summary": "Best flash result on this task — near-reference functional quality at very low cost.",
-    },
-    {
-        "id": "inkling-small",
-        "name": "Inkling Small",
-        "provider_model": "openrouter/thinkingmachines/inkling-small",
-        "arm": "a",
-        # Agent-run grade (results.json); no separate soft regrade path yet.
-        "regrade": "runs/a-inkling-small-r1",
-        "agent": "runs/a-inkling-small-r1",
-        "summary": "Strong second place: perfect Tier 0, high Tier 1 — competitive quality at modest cost.",
-    },
-    {
-        "id": "ling-3.0-flash",
-        "name": "Ling 3.0 Flash",
-        "provider_model": "openrouter/inclusionai/ling-3.0-flash:free",
-        "arm": "a",
-        "regrade": "runs/rg-ling-3-0-flash-20260802-1307",
-        "agent": "runs/a-ling-3.0-flash-r1",
-        "summary": "Competitive mid-pack score; relatively stronger on forms/auth than peers, weaker on probes.",
-    },
-    {
-        "id": "gpt-5.6-luna",
-        "name": "GPT-5.6 Luna",
-        "provider_model": "openrouter/openai/gpt-5.6-luna",
-        "arm": "a",
-        "regrade": "runs/rg-gpt-5-6-luna-20260802-1307",
-        "agent": "runs/a-gpt-5.6-luna-r1",
-        "summary": "Highest API spend and output volume; strong catalogue/API surface, weaker mutation/form path.",
-    },
-    {
-        "id": "doubao-seed-2-1-turbo",
-        "name": "Doubao Seed 2.1 Turbo",
-        "provider_model": "vocengine-coding/doubao-seed-2-1-turbo",
-        "arm": "a",
-        "regrade": "runs/a-doubao-seed-2-1-turbo-r1",
-        "agent": "runs/a-doubao-seed-2-1-turbo-r1",
-        "summary": "Mid-pack on Ark Coding Plan; solid gate pass with zero billed cost on this plan path.",
-    },
-    {
-        "id": "qwen-3.7-flash",
-        "name": "Qwen 3.7 Flash",
-        "provider_model": "openrouter/qwen/qwen3.7-flash",
-        "arm": "a",
-        "regrade": "runs/rg-qwen3-7-flash-20260802-1307",
-        "agent": "runs/a-qwen3.7-flash-r1",
-        "summary": "Solid mid-pack; large input/cache footprint. Arm B experiment is separate and not averaged in.",
-    },
-    {
-        "id": "minimax-m2-7",
-        "name": "MiniMax M2.7",
-        "provider_model": "minimax-cn/MiniMax-M2.7",
-        "arm": "a",
-        "regrade": "runs/a-minimax-m2-7-r2",
-        "agent": "runs/a-minimax-m2-7-r2",
-        "summary": "CN coding-plan path; mid-lower pack with efficient token use after auth fix.",
-    },
-    {
-        "id": "gemini-3.5-flash-lite",
-        "name": "Gemini 3.5 Flash Lite",
-        "provider_model": "openrouter/google/gemini-3.5-flash-lite",
-        "arm": "a",
-        "regrade": "runs/a-gemini-3-5-flash-lite-r1",
-        "agent": "runs/a-gemini-3-5-flash-lite-r1",
-        "summary": "Gate-passing lite model; higher spend for this score band, weaker Tier 0 than leaders.",
-    },
-    {
-        "id": "mimo-v2.5",
-        "name": "MiMo V2.5",
-        "provider_model": "xiaomi/mimo-v2.5",
-        "arm": "a",
-        "regrade": "runs/rg-mimo-v2-5-20260802-1307",
-        "agent": "runs/a-mimo-v2.5-r1",
-        "summary": "Cheapest run; more regressions on probes and interactive UI.",
-    },
-]
+def slugify(model_id: str) -> str:
+    return model_id.replace(".", "-")
 
-# Optional footnote only — not in ranked models list
-ARM_B = {
-    "id": "qwen-3.7-flash-arm-b",
-    "name": "Qwen 3.7 Flash (Arm B experiment)",
-    "provider_model": "openrouter/qwen/qwen3.7-flash",
-    "arm": "b",
-    "regrade": "runs/rg-qwen3-7-flash-b-20260802-1307",
-    "agent": "runs/b-qwen3.7-flash-r1",
-    "summary": "Only Arm B run in this corpus (skills mounted). Not ranked against Arm A models.",
-}
+
+def load_go_pricing() -> dict:
+    return json.loads((ROOT / "harness/go-pricing.json").read_text(encoding="utf8"))
+
+
+def batch_models(pricing: dict) -> list[tuple[str, dict]]:
+    rows = [
+        (mid, spec)
+        for mid, spec in pricing.get("models", {}).items()
+        if spec.get("high_usage") and spec.get("batch")
+    ]
+    rows.sort(key=lambda item: item[1].get("requests_per_month", 0), reverse=True)
+    return rows
+
+
+def find_arm_runs(arm: str, slug: str) -> list[Path]:
+    runs_dir = ROOT / "runs"
+    if not runs_dir.exists():
+        return []
+    prefix = f"{arm}-{slug}-"
+    found = []
+    for path in runs_dir.iterdir():
+        if path.name.startswith(prefix) and (path / "artifacts" / "score.json").exists():
+            found.append(path)
+    return sorted(found, key=lambda p: p.stat().st_mtime)
+
+
+def ema(values: list[float], half_life: float = 2.0) -> float | None:
+    if not values:
+        return None
+    alpha = 1 - 0.5 ** (1 / half_life)
+    acc = values[0]
+    for value in values[1:]:
+        acc = alpha * value + (1 - alpha) * acc
+    return round(acc, 1)
 
 DOMAINS = {
     "A": {
@@ -265,6 +208,7 @@ def load_entry(spec: dict) -> dict | None:
     thinking = None
     wall = None
     hist_total = None
+    go = None
     if spec.get("agent"):
         sp = ROOT / spec["agent"] / "artifacts" / "score.json"
         if sp.exists():
@@ -276,12 +220,14 @@ def load_entry(spec: dict) -> dict | None:
             thinking = s.get("thinking_requested")
             wall = s.get("time_on_task_seconds")
             hist_total = s.get("total")
+            go = s.get("go")
 
     return {
         "id": spec["id"],
         "name": spec["name"],
         "provider_model": spec["provider_model"],
         "arm": spec["arm"],
+        "arm_label": "No Skills" if spec["arm"] == "a" else "Skills",
         "summary": spec["summary"],
         "score": metrics,
         "passes": {"passed": scored_pass, "failed": scored_fail, "total": scored_pass + scored_fail},
@@ -293,6 +239,7 @@ def load_entry(spec: dict) -> dict | None:
         "domains": by_domain,
         "results": {k: bool(v) for k, v in results.items()},
         "usage": usage,
+        "go": go,
         "thinking": thinking,
         "wall_seconds": wall,
         "historical_score": hist_total,
@@ -300,15 +247,72 @@ def load_entry(spec: dict) -> dict | None:
     }
 
 
-def main() -> None:
-    models = []
-    for spec in MODELS:
-        row = load_entry(spec)
-        if row:
-            models.append(row)
-    models.sort(key=lambda m: m["score"]["total"], reverse=True)
+def spec_for(model_id: str, spec: dict, arm: str, run: Path) -> dict:
+    rel = str(run.relative_to(ROOT))
+    return {
+        "id": model_id if arm == "a" else f"{model_id}-skills",
+        "name": spec["name"] if arm == "a" else f"{spec['name']} (Skills)",
+        "provider_model": f"opencode-go/{model_id}",
+        "arm": arm,
+        "regrade": rel,
+        "agent": rel,
+        "summary": "",
+    }
 
-    arm_b = load_entry(ARM_B)
+
+def trend_for(runs: list[Path]) -> dict | None:
+    totals = []
+    for run in runs:
+        score = json.loads((run / "artifacts" / "score.json").read_text(encoding="utf8"))
+        total = score.get("total")
+        if isinstance(total, (int, float)):
+            totals.append(float(total))
+    if not totals:
+        return None
+    last4 = totals[-4:]
+    return {
+        "ema": ema(totals),
+        "min": min(last4),
+        "max": max(last4),
+        "n": len(totals),
+    }
+
+
+def latest_scored_run(runs: list[Path]) -> Path | None:
+    for run in reversed(runs):
+        if (run / "artifacts" / "results.json").exists() and (run / "artifacts" / "score.json").exists():
+            total = json.loads((run / "artifacts" / "score.json").read_text(encoding="utf8")).get("total")
+            if isinstance(total, (int, float)):
+                return run
+    return None
+
+
+def main() -> None:
+    pricing = load_go_pricing()
+    models = []
+    for model_id, spec in batch_models(pricing):
+        slug = slugify(model_id)
+        no_skills_runs = find_arm_runs("a", slug)
+        skills_runs = find_arm_runs("b", slug)
+        a_run = latest_scored_run(no_skills_runs)
+        b_run = latest_scored_run(skills_runs)
+        a_row = load_entry(spec_for(model_id, spec, "a", a_run)) if a_run else None
+        b_row = load_entry(spec_for(model_id, spec, "b", b_run)) if b_run else None
+        if not a_row and not b_row:
+            continue
+        primary = a_row or b_row
+        row = {
+            **primary,
+            "id": model_id,
+            "name": spec["name"],
+            "no_skills": a_row,
+            "skills": b_row,
+            "trend": trend_for(no_skills_runs),
+            "skills_trend": trend_for(skills_runs),
+            "rank_score": primary["score"]["total"],
+        }
+        models.append(row)
+    models.sort(key=lambda m: m["rank_score"], reverse=True)
 
     ref_path = ROOT / "runs/rg-reference-20260802-1248/artifacts/results.json"
     reference = None
@@ -330,7 +334,7 @@ def main() -> None:
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "benchmark": {
             "name": "Lending Desk Bench",
-            "tagline": "Can a flash-class coding agent finish a real App Router feature under a strict contract?",
+            "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
             "purpose": (
                 "Hermetic evaluation of multi-file Next.js / React product work matching "
                 "Reading Advantage monorepo practice — not trivia or greenfield toys."
@@ -341,8 +345,8 @@ def main() -> None:
                 "Staff engineers who care about auth, races, and App Router pitfalls",
             ],
             "arms": {
-                "a": "Fixture + prompt only (no skills). Primary fair comparison.",
-                "b": "Same task with AGENTS.md + five skills. Experimental; not averaged into Arm A rankings when incomplete.",
+                "a": "No Skills: fixture + prompt only. Primary fair comparison.",
+                "b": "Skills: same task with AGENTS.md + five skills.",
             },
             "scoring": {
                 "weights": {"completion": 0.6, "adversarial": 0.2, "quality": 0.2},
@@ -352,7 +356,8 @@ def main() -> None:
                 "advisory_checks": len(ADVISORY),
                 "note": (
                     "Soft tiers scale higher-tier credit by lower-tier rates "
-                    "(no binary cliff at 90% Tier 0). Advisory checks never affect totals."
+                    "(no binary cliff at 90% Tier 0). Advisory checks never affect totals. "
+                    "Week 2026w35 grades ran under host load; totals are diagnostic, not a trusted ranking."
                 ),
             },
         },
@@ -362,18 +367,25 @@ def main() -> None:
         "advisory_ids": ADVISORY,
         "reference": reference,
         "models": models,
-        "experiments": {"arm_b": arm_b},
+        "experiments": {},
+        "pricing": {
+            "source": pricing.get("source"),
+            "retrieved": pricing.get("retrieved"),
+            "high_usage_min_requests_per_month": pricing.get("high_usage_min_requests_per_month"),
+        },
     }
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
     print(f"wrote {OUT}")
     for m in models:
-        u = m["usage"]
+        go = m.get("go") or {}
+        pct = go.get("monthly_pct")
+        pct_s = f"{pct:.3f}%" if isinstance(pct, (int, float)) else "—"
         print(
             f"  {m['name']:22} score={m['score']['total']:5.1f} "
             f"pass={m['passes']['passed']}/{m['passes']['total']} "
-            f"cost=${u['costUsd']:.4f}"
+            f"monthly={pct_s}"
         )
 
 

@@ -25,7 +25,7 @@
   <header class="hero wrap">
     <p class="kicker">Models</p>
     <h1>Individual runs</h1>
-    <p class="lede">Arm A submissions ranked by soft score. Open a model for domain profile, failures, and token economics.</p>
+    <p class="lede">No Skills submissions ranked by soft score. Open a model for domain profile, failures, and monthly Go usage.</p>
   </header>
 
   <main class="wrap" id="main">
@@ -35,7 +35,7 @@
   <footer class="site-footer wrap"></footer>
 
   <script type="module">
-    import { loadData, fmtUsd, fmtTokens, modelColor, setActiveNav, mountError, escapeHtml } from "../assets/js/site.js";
+    import { loadData, fmtMonthlyPct, fmtTokens, modelColor, setActiveNav, mountError, escapeHtml } from "../assets/js/site.js";
     setActiveNav();
     const main = document.getElementById("main");
     try {
@@ -55,7 +55,7 @@
                 </div>
                 <div style="text-align:right">
                   <div style="font-size:2rem; font-weight:700; letter-spacing:-0.03em">${m.score.total.toFixed(1)}</div>
-                  <div class="muted" style="font-size:0.85rem">${m.passes.passed}/${m.passes.total} passes · ${fmtUsd(m.usage.costUsd)}</div>
+                  <div class="muted" style="font-size:0.85rem">${m.passes.passed}/${m.passes.total} passes · ${fmtMonthlyPct(m.go?.monthly_pct)}</div>
                   <div class="muted" style="font-size:0.8rem">out ${fmtTokens(m.usage.output)} · ${escapeHtml(m.thinking || "—")} reasoning</div>
                 </div>
               </div>

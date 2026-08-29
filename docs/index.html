@@ -39,7 +39,7 @@
     <section class="card">
       <h2>Cost vs score</h2>
       <p class="section-lede mb-0">
-        Each point is an Arm A agent run. X = API cost (USD), Y = functional soft score (0–100).
+        Each point is a No Skills agent run. X = percent of monthly Go usage, Y = functional soft score (0–100).
         Bubble size scales with output tokens. Hover for details.
       </p>
       <div class="chart-box tall mt-1"><canvas id="scatter-cost-score"></canvas></div>
@@ -67,16 +67,17 @@
 
     <section class="card">
       <h2>Leaderboard snapshot</h2>
-      <p class="section-lede">Arm A only. Soft-tier functional score from the current harness.</p>
+      <p class="section-lede">OpenCode Go High Usage, week 2026w35. Diagnostic totals (graded under load). Ranked by No Skills when present, else Skills.</p>
       <div class="table-wrap">
         <table class="data" id="leaderboard">
           <thead>
             <tr>
               <th class="num">#</th>
               <th>Model</th>
-              <th class="num">Score</th>
+              <th class="num">No Skills</th>
+              <th class="num">Skills</th>
               <th class="num">Passes</th>
-              <th class="num">Cost</th>
+              <th class="num">% monthly</th>
               <th class="num">Out tokens</th>
             </tr>
           </thead>
@@ -92,7 +93,7 @@
 
   <script type="module">
     import {
-      loadData, fmtTokens, fmtUsd, modelColor, chartDefaults, mountError, setActiveNav,
+      loadData, fmtTokens, fmtUsd, fmtMonthlyPct, modelColor, chartDefaults, mountError, setActiveNav,
     } from "./assets/js/site.js";
 
     setActiveNav();
@@ -106,22 +107,22 @@
       document.getElementById("hero-title").textContent = b.name;
       document.getElementById("hero-lede").textContent = b.tagline + " " + b.purpose;
 
-      const totalCost = models.reduce((s, m) => s + (m.usage?.costUsd || 0), 0);
+      const totalPct = models.reduce((s, m) => s + (m.go?.monthly_pct || 0), 0);
       const totalOut = models.reduce((s, m) => s + (m.usage?.output || 0), 0);
       document.getElementById("hero-chips").innerHTML = `
         <span class="chip">Generated <strong>${data.generated_at}</strong></span>
         <span class="chip">Scored checks <strong>${b.scoring.scored_checks}</strong></span>
-        <span class="chip">Models <strong>${models.length}</strong> (Arm A)</span>
-        <span class="chip">Matrix cost <strong>${fmtUsd(totalCost)}</strong></span>
+        <span class="chip">Models <strong>${models.length}</strong> (No Skills)</span>
+        <span class="chip">Matrix % monthly <strong>${fmtMonthlyPct(totalPct)}</strong></span>
         <span class="chip">Output tokens <strong>${fmtTokens(totalOut)}</strong></span>
       `;
 
       const top = models[0];
-      root.innerHTML = `
+      root.innerHTML = top ? `
         <div class="kpi"><div class="label">Top model</div><div class="value" style="font-size:1.25rem">${top.name}</div><div class="hint">${top.score.total} soft score · ${top.passes.passed}/${top.passes.total} passes</div></div>
-        <div class="kpi"><div class="label">Matrix API cost</div><div class="value">${fmtUsd(totalCost)}</div><div class="hint">Across ${models.length} Arm A agent runs</div></div>
+        <div class="kpi"><div class="label">Matrix % monthly</div><div class="value">${fmtMonthlyPct(totalPct)}</div><div class="hint">Across ${models.length} No Skills agent runs</div></div>
         <div class="kpi"><div class="label">Reference ceiling</div><div class="value">${data.reference?.score?.total ?? "—"}</div><div class="hint">Golden overlay on current suite</div></div>
-      `;
+      ` : `<div class="kpi"><div class="label">No Skills runs</div><div class="value">None yet</div><div class="hint">Run harness/weekly.sh on a quiet host</div></div>`;
 
       document.getElementById("audiences").innerHTML = b.audiences
         .map((a) => `<li style="margin:0.35rem 0;color:#c5d0e0">${a}</li>`)
@@ -135,17 +136,19 @@
             <a class="model-link" href="./models/${m.id}.html">${m.name}</a>
             <div class="subline">${m.provider_model}</div>
           </td>
-          <td class="num score">${m.score.total.toFixed(1)}</td>
+          <td class="num score">${m.no_skills ? m.no_skills.score.total.toFixed(1) : "—"}</td>
+          <td class="num">${m.skills ? m.skills.score.total.toFixed(1) : "—"}</td>
           <td class="num">${m.passes.passed}/${m.passes.total}</td>
-          <td class="num">${fmtUsd(m.usage.costUsd)}</td>
+          <td class="num">${fmtMonthlyPct(m.go?.monthly_pct)}</td>
           <td class="num">${fmtTokens(m.usage.output)}</td>
         </tr>
       `).join("");
 
-      // Scatter: cost vs score
+      if (!models.length) return;
+      // Scatter: monthly usage vs score
       const { grid } = chartDefaults();
       const points = models.map((m, i) => ({
-        x: m.usage.costUsd || 0,
+        x: m.go?.monthly_pct || 0,
         y: m.score.total,
         r: Math.max(6, Math.min(28, Math.sqrt((m.usage.output || 0) / 800))),
         model: m,
@@ -176,7 +179,7 @@
                   return [
                     ` ${m.name}`,
                     ` Score: ${m.score.total}`,
-                    ` Cost: ${fmtUsd(m.usage.costUsd)}`,
+                     ` Monthly usage: ${fmtMonthlyPct(m.go?.monthly_pct)}`,
                     ` Out tokens: ${fmtTokens(m.usage.output)}`,
                     ` Passes: ${m.passes.passed}/${m.passes.total}`,
                   ];
@@ -186,7 +189,7 @@
           },
           scales: {
             x: {
-              title: { display: true, text: "API cost (USD)", color: "#e8eef6" },
+              title: { display: true, text: "% of monthly Go usage", color: "#e8eef6" },
               beginAtZero: true,
               grid: { color: grid },
             },

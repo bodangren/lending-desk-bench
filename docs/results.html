@@ -25,9 +25,9 @@
 
   <header class="hero wrap">
     <p class="kicker">Results</p>
-    <h1>Arm A matrix</h1>
+    <h1>No Skills matrix</h1>
     <p class="lede">
-      Functional soft scores, pass counts, reasoning level, tokens, and API cost.
+      Functional soft scores, pass counts, reasoning level, tokens, and percent of monthly Go usage.
       Domain heatmap shows where each model is strong or weak.
     </p>
   </header>
@@ -40,7 +40,7 @@
 
   <script type="module">
     import {
-      loadData, fmtTokens, fmtUsd, fmtSecs, pct, domainRate, DOMAIN_ORDER,
+      loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, pct, domainRate, DOMAIN_ORDER,
       modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
     } from "./assets/js/site.js";
 
@@ -75,7 +75,7 @@
                   <th class="num">In</th>
                   <th class="num">Out</th>
                   <th class="num">Cache R</th>
-                  <th class="num">Cost</th>
+                  <th class="num">% monthly</th>
                   <th class="num">Wall</th>
                 </tr>
               </thead>
@@ -110,7 +110,7 @@
           <td class="num">${fmtTokens(m.usage.input)}</td>
           <td class="num">${fmtTokens(m.usage.output)}</td>
           <td class="num">${fmtTokens(m.usage.cacheRead)}</td>
-          <td class="num">${fmtUsd(m.usage.costUsd)}</td>
+          <td class="num">${fmtMonthlyPct(m.go?.monthly_pct)}</td>
           <td class="num">${fmtSecs(m.wall_seconds)}</td>
         </tr>
       `).join("");
@@ -133,25 +133,17 @@
         </tbody>
       `;
 
-      // Arm B footnote
-      const exp = data.experiments?.arm_b;
       const note = document.getElementById("arm-b-note");
-      if (exp) {
-        note.innerHTML = `
-          <h2>Arm B experiment (not ranked)</h2>
-          <p class="section-lede">${escapeHtml(exp.summary)}</p>
-          <p>
-            <strong>${escapeHtml(exp.name)}</strong> —
-            score <strong>${exp.score.total.toFixed(1)}</strong>,
-            passes <strong>${exp.passes.passed}/${exp.passes.total}</strong>,
-            cost <strong>${fmtUsd(exp.usage.costUsd)}</strong>,
-            reasoning <strong>${escapeHtml(exp.thinking || "—")}</strong>.
-            Not averaged into Arm A totals.
-          </p>
-        `;
-      } else {
-        note.remove();
-      }
+      note.innerHTML = `
+        <h2>Skills runs</h2>
+        <p class="section-lede">Same models with AGENTS.md and five skills. Not mixed into the No Skills ranking.</p>
+        <ul class="muted" style="padding-left:1.15rem">
+          ${models.filter((m) => m.skills).map((m) => `
+            <li><strong>${escapeHtml(m.name)}</strong> — Skills score ${m.skills.score.total.toFixed(1)},
+            ${fmtMonthlyPct(m.skills.go?.monthly_pct)} monthly</li>
+          `).join("") || "<li>No Skills-arm runs yet.</li>"}
+        </ul>
+      `;
 
       // Charts
       new Chart(document.getElementById("chart-scores"), {
@@ -183,7 +175,7 @@
         data: {
           datasets: [{
             data: models.map((m, i) => ({
-              x: m.usage.costUsd || 0,
+              x: m.go?.monthly_pct || 0,
               y: m.score.total,
               r: Math.max(6, Math.min(26, Math.sqrt((m.usage.output || 0) / 900))),
               m,
@@ -197,18 +189,18 @@
           responsive: true, maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            title: { display: true, text: "Cost (x) vs score (y)", color: "#e8eef6", font: { size: 14, weight: "600" } },
+            title: { display: true, text: "% monthly (x) vs score (y)", color: "#e8eef6", font: { size: 14, weight: "600" } },
             tooltip: {
               callbacks: {
                 label(ctx) {
                   const m = ctx.raw.m;
-                  return ` ${m.name}: ${m.score.total} @ ${fmtUsd(m.usage.costUsd)}`;
+                  return ` ${m.name}: ${m.score.total} @ ${fmtMonthlyPct(m.go?.monthly_pct)}`;
                 },
               },
             },
           },
           scales: {
-            x: { title: { display: true, text: "USD" }, beginAtZero: true, grid: { color: grid } },
+            x: { title: { display: true, text: "% of monthly Go usage" }, beginAtZero: true, grid: { color: grid } },
             y: { title: { display: true, text: "Score" }, min: 0, max: 100, grid: { color: grid } },
           },
         },

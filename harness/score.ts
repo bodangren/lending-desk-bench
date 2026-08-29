@@ -12,6 +12,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CRITERIA, PROBES, ADVISORY } from "./tests/criteria.js";
 import { extractUsage } from "./usage.js";
+import { recostUsage } from "./go-cost.js";
 import { runDoctor, loadBaseline, penaltyOver, PENALTY_FULL, DOCTOR_VERSION, type DoctorReport } from "./doctor.js";
 import { currentHashes } from "./provenance.js";
 import { assessCandidateContract, type CandidateContract } from "./candidate-contract.js";
@@ -229,6 +230,7 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
   const rankable = valid && gatePassed && mode === "agent" && agentIsolated && !host.under_load;
   const trusted = rankable;
   const total = valid ? (gatePassed ? Math.round(metrics.raw * 10) / 10 : 0) : null;
+  const usage = await extractUsage(join(artifacts, "session.json"));
 
   return {
     schema: 2,
@@ -244,7 +246,8 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
     thinking_requested: input.thinking ?? "unknown",
     time_on_task_seconds: input.wallSeconds ?? 0,
     grading_seconds: input.gradingSeconds ?? 0,
-    usage: await extractUsage(join(artifacts, "session.json")),
+    usage,
+    go: recostUsage(usage, model),
     agent_exit: input.agentExit ?? 0,
     gate: { typecheck, build, passed: gatePassed },
     tiers: metrics.tiers,

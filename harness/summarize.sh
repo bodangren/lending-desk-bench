@@ -8,6 +8,8 @@
 # GATE-BLOCKED zero is displayed as status, never ranked.
 set -u
 cd "$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=env.sh
+source "./env.sh"
 python3 - <<'PY'
 import datetime, glob, json, math, os, subprocess
 

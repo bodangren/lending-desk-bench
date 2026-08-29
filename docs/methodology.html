@@ -56,14 +56,14 @@
       </p>
       <div class="grid-2 mt-1">
         <div class="kpi">
-          <div class="label">Arm A (primary)</div>
+          <div class="label">No Skills (primary)</div>
           <div class="value" style="font-size:1.05rem;font-weight:600">Fixture + prompt only</div>
           <div class="hint">No skills or extra context files. Fair head-to-head.</div>
         </div>
         <div class="kpi">
-          <div class="label">Arm B (experimental)</div>
+          <div class="label">Skills</div>
           <div class="value" style="font-size:1.05rem;font-weight:600">+ AGENTS.md + 5 skills</div>
-          <div class="hint">Not averaged into Arm A rankings when the matrix is incomplete.</div>
+          <div class="hint">Same task. Not mixed into the No Skills ranking.</div>
         </div>
       </div>
     </section>
@@ -98,9 +98,8 @@
     <section class="card" id="economics">
       <h2>Cost &amp; tokens</h2>
       <p class="section-lede">
-        Usage is extracted from the agent transcript (input, output, cache read/write, USD).
-        Functional scores on this site are regraded on the current suite; economics come from
-        the original session that produced the code.
+        Usage is extracted from the agent transcript. Published cost is percent of that
+        model’s monthly OpenCode Go Usage column, recomputed from tokens when prices change.
       </p>
     </section>
 
@@ -109,7 +108,7 @@
       <ul class="muted" style="padding-left:1.15rem; color:#c5d0e0">
         <li>Scores are publishable only with current provenance, agent isolation, and a quiet host.</li>
         <li>Host load can affect timing-sensitive browser assertions.</li>
-        <li>One Arm B run is not a skills ablation study.</li>
+        <li>One weekly run is a point estimate. The 4-week range is stability, not a confidence interval.</li>
         <li>Reference is a golden overlay ceiling, not a model competitor.</li>
       </ul>
     </section>
