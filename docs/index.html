@@ -32,7 +32,7 @@
   </header>
 
   <main class="wrap stack">
-    <section class="grid-3" id="kpis">
+    <section class="grid-2" id="kpis">
       <div class="kpi loading">…</div>
     </section>
 
@@ -68,7 +68,7 @@
 
     <section class="card">
       <h2>Leaderboard snapshot</h2>
-      <p class="section-lede">OpenCode Go High Usage models, week 2026w35. The host had load during grading. Treat totals as diagnostic. Ranking uses the No Skills score. If no No Skills score exists, ranking uses the Skills score.</p>
+      <p class="section-lede">OpenCode Go High Usage models, week 2026w35. The host had load during grading. Treat totals as diagnostic. Ranking uses the No Skills score. If no No Skills score exists, ranking uses the Skills score. See results for tokens, cost, and run time.</p>
       <div class="table-wrap">
         <table class="data" id="leaderboard">
           <thead>
@@ -78,8 +78,6 @@
               <th class="num">No Skills</th>
               <th class="num">Skills</th>
               <th class="num">Passes</th>
-              <th class="num">% monthly</th>
-              <th class="num">Out tokens</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -108,20 +106,15 @@
       document.getElementById("hero-title").textContent = b.name;
       document.getElementById("hero-lede").textContent = b.tagline + " " + b.purpose;
 
-      const totalPct = models.reduce((s, m) => s + (m.go?.monthly_pct || 0), 0);
-      const totalOut = models.reduce((s, m) => s + (m.usage?.output || 0), 0);
       document.getElementById("hero-chips").innerHTML = `
-        <span class="chip">Generated <strong>${data.generated_at}</strong></span>
+        <span class="chip">Last updated <strong>${data.generated_at}</strong></span>
         <span class="chip">Scored checks <strong>${b.scoring.scored_checks}</strong></span>
-        <span class="chip">Models <strong>${models.length}</strong> (No Skills)</span>
-        <span class="chip">Matrix % monthly <strong>${fmtMonthlyPct(totalPct)}</strong></span>
-        <span class="chip">Output tokens <strong>${fmtTokens(totalOut)}</strong></span>
+        <span class="chip">Models <strong>${models.length}</strong></span>
       `;
 
       const top = models[0];
       root.innerHTML = top ? `
         <div class="kpi"><div class="label">Top model</div><div class="value" style="font-size:1.25rem">${top.name}</div><div class="hint">${top.score.total} soft score · ${top.passes.passed}/${top.passes.total} passes</div></div>
-        <div class="kpi"><div class="label">Matrix % monthly</div><div class="value">${fmtMonthlyPct(totalPct)}</div><div class="hint">Across ${models.length} No Skills agent runs</div></div>
         <div class="kpi"><div class="label">Reference ceiling</div><div class="value">${data.reference?.score?.total ?? "—"}</div><div class="hint">Reference overlay on the current suite</div></div>
       ` : `<div class="kpi"><div class="label">No Skills runs</div><div class="value">None yet</div><div class="hint">Run harness/weekly.sh on a quiet host.</div></div>`;
 
@@ -140,8 +133,6 @@
           <td class="num score">${m.no_skills ? m.no_skills.score.total.toFixed(1) : "—"}</td>
           <td class="num">${m.skills ? m.skills.score.total.toFixed(1) : "—"}</td>
           <td class="num">${m.passes.passed}/${m.passes.total}</td>
-          <td class="num">${fmtMonthlyPct(m.go?.monthly_pct)}</td>
-          <td class="num">${fmtTokens(m.usage.output)}</td>
         </tr>
       `).join("");
 

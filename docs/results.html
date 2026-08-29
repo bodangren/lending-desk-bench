@@ -61,7 +61,7 @@
           <h2>Score &amp; economics</h2>
           <div class="grid-2 mt-1">
             <div class="chart-box"><canvas id="chart-scores"></canvas></div>
-            <div class="chart-box"><canvas id="chart-cost-score"></canvas></div>
+            <div class="chart-box"><canvas id="chart-run-time"></canvas></div>
           </div>
           <div class="table-wrap mt-2">
             <table class="data" id="full-table">
@@ -170,38 +170,26 @@
         },
       });
 
-      new Chart(document.getElementById("chart-cost-score"), {
-        type: "bubble",
+      new Chart(document.getElementById("chart-run-time"), {
+        type: "bar",
         data: {
+          labels: models.map((m) => m.name),
           datasets: [{
-            data: models.map((m, i) => ({
-              x: m.go?.monthly_pct || 0,
-              y: m.score.total,
-              r: Math.max(6, Math.min(26, Math.sqrt((m.usage.output || 0) / 900))),
-              m,
-            })),
-            backgroundColor: models.map((_, i) => modelColor(i) + "cc"),
-            borderColor: models.map((_, i) => modelColor(i)),
-            borderWidth: 2,
+            data: models.map((m) => Math.round((m.wall_seconds || 0) / 60)),
+            backgroundColor: models.map((_, i) => modelColor(i)),
+            borderRadius: 8,
+            maxBarThickness: 48,
           }],
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            title: { display: true, text: "% monthly (x) vs score (y)", color: "#e8eef6", font: { size: 14, weight: "600" } },
-            tooltip: {
-              callbacks: {
-                label(ctx) {
-                  const m = ctx.raw.m;
-                  return ` ${m.name}: ${m.score.total} @ ${fmtMonthlyPct(m.go?.monthly_pct)}`;
-                },
-              },
-            },
+            title: { display: true, text: "Run time (minutes)", color: "#e8eef6", font: { size: 14, weight: "600" } },
           },
           scales: {
-            x: { title: { display: true, text: "% of monthly Go usage" }, beginAtZero: true, grid: { color: grid } },
-            y: { title: { display: true, text: "Score" }, min: 0, max: 100, grid: { color: grid } },
+            y: { beginAtZero: true, grid: { color: grid } },
+            x: { grid: { display: false }, ticks: { maxRotation: 35 } },
           },
         },
       });
