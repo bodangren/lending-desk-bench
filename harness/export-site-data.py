@@ -58,27 +58,27 @@ def ema(values: list[float], half_life: float = 2.0) -> float | None:
 DOMAINS = {
     "A": {
         "title": "Business rules",
-        "why": "Pure domain logic with a fixed clock. Wrong here means every status badge and filter lies.",
+        "why": "Pure domain logic with a fixed clock. A wrong result gives wrong status badges and filter results.",
         "audience": "Backend / domain correctness",
     },
     "B": {
         "title": "UI composition",
-        "why": "Reusable card: link, alt text, loan badge. List consistency and accessibility.",
-        "audience": "Frontend / a11y",
+        "why": "One reusable card: link, alt text, loan badge. Checks list consistency and accessibility.",
+        "audience": "Frontend / accessibility",
     },
     "C": {
         "title": "Catalogue & data fetching",
-        "why": "List page with search/category filters and parallel reads — everyday App Router list work.",
+        "why": "List page with search filters, category filters, and parallel reads. This is common App Router list work.",
         "audience": "Full-stack product",
     },
     "D": {
         "title": "Detail & history",
-        "why": "Dynamic route, not-found, metadata, ordered loan history with live status.",
+        "why": "Dynamic route, not-found page, metadata, ordered loan history with live status.",
         "audience": "Full-stack product",
     },
     "E": {
         "title": "Interactive forms",
-        "why": "Checkout/return UX: pending labels, optimistic UI, error display.",
+        "why": "Checkout and return flows: pending labels, optimistic UI, error display.",
         "audience": "Frontend / UX",
     },
     "F": {
@@ -88,23 +88,23 @@ DOMAINS = {
     },
     "G": {
         "title": "HTTP API contract",
-        "why": "REST handler filters, status codes, conflicts, freshness.",
+        "why": "REST handler filters, status codes, conflicts, and data freshness.",
         "audience": "API / integration",
     },
     "H": {
         "title": "Resilience UX",
-        "why": "loading.tsx and error.tsx — streaming shells and failure boundaries.",
+        "why": "loading.tsx and error.tsx: streaming shells and failure boundaries.",
         "audience": "Reliability / UX",
     },
     "M": {
         "title": "Process closeout",
-        "why": "Did the agent finish the phased plan and metadata?",
-        "audience": "Agent ops / eval design",
+        "why": "Did the agent finish the phased plan and the metadata?",
+        "audience": "Agent ops / evaluation design",
     },
     "P": {
         "title": "Adversarial probes",
-        "why": "Hidden checks: revalidation, races, waterfalls, N+1, credential leak.",
-        "audience": "Staff eng / platform",
+        "why": "Hidden checks: revalidation, races, waterfalls, N+1 queries, credential leaks.",
+        "audience": "Staff engineering / platform",
     },
     "ADV": {
         "title": "Advisory (unscored)",
@@ -321,7 +321,7 @@ def main() -> None:
         metrics = soft_score(results)
         reference = {
             "id": "reference",
-            "name": "Reference (golden overlay)",
+            "name": "Reference (overlay)",
             "score": metrics,
             "passes": {
                 "passed": sum(1 for i in SCORED if results.get(i)),
@@ -336,17 +336,18 @@ def main() -> None:
             "name": "Lending Desk Bench",
             "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
             "purpose": (
-                "Hermetic evaluation of multi-file Next.js / React product work matching "
-                "Reading Advantage monorepo practice — not trivia or greenfield toys."
+                "The evaluation measures multi-file Next.js and React product work. "
+                "The work matches practice in the Reading Advantage monorepo. "
+                "The tasks are not trivia and not small demo apps."
             ),
             "audiences": [
-                "Engineering leads choosing models for agentic coding",
-                "Eval / platform teams measuring cost vs quality",
-                "Staff engineers who care about auth, races, and App Router pitfalls",
+                "Engineering leads who choose models for agent coding",
+                "Evaluation and platform teams who measure cost and quality",
+                "Staff engineers who check auth, race conditions, and App Router risks",
             ],
             "arms": {
-                "a": "No Skills: fixture + prompt only. Primary fair comparison.",
-                "b": "Skills: same task with AGENTS.md + five skills.",
+                "a": "No Skills: the fixture and the prompt only. This is the primary comparison.",
+                "b": "Skills: the same task with AGENTS.md and five skills.",
             },
             "scoring": {
                 "weights": {"completion": 0.6, "adversarial": 0.2, "quality": 0.2},
@@ -355,9 +356,11 @@ def main() -> None:
                 "scored_checks": len(SCORED),
                 "advisory_checks": len(ADVISORY),
                 "note": (
-                    "Soft tiers scale higher-tier credit by lower-tier rates "
-                    "(no binary cliff at 90% Tier 0). Advisory checks never affect totals. "
-                    "Week 2026w35 grades ran under host load; totals are diagnostic, not a trusted ranking."
+                    "Soft tiers scale higher-tier credit by lower-tier rates. "
+                    "There is no binary rule at 90 percent Tier 0. "
+                    "Advisory checks never affect totals. "
+                    "Week 2026w35 grades ran under host load. "
+                    "Treat these totals as diagnostic, not as a trusted ranking."
                 ),
             },
         },

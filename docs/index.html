@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lending Desk Bench</title>
-  <meta name="description" content="Hermetic Next.js agent benchmark for real App Router feature work." />
+  <meta name="description" content="Agents finish a real Next.js App Router feature. A hidden harness grades the result." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -39,8 +39,8 @@
     <section class="card">
       <h2>Cost vs score</h2>
       <p class="section-lede mb-0">
-        Each point is a No Skills agent run. X = percent of monthly Go usage, Y = functional soft score (0–100).
-        Bubble size scales with output tokens. Hover for details.
+        Each point shows one No Skills agent run. The X axis shows percent of monthly Go usage.
+        The Y axis shows the soft score (0–100). Point size shows output tokens. Hover for details.
       </p>
       <div class="chart-box tall mt-1"><canvas id="scatter-cost-score"></canvas></div>
     </section>
@@ -53,9 +53,10 @@
       <article class="card">
         <h2>What we measure</h2>
         <p class="muted" style="margin:0.5rem 0 0">
-          A constrained full-stack feature in a real Next.js 16 / React 19 app:
-          catalogue, detail, server actions, REST handlers, optimistic UI, auth, and hidden
-          adversarial probes — the shape of work we do in the Reading Advantage monorepo.
+          Each agent implements one feature in a real Next.js 16 / React 19 app.
+          The feature includes a catalogue, a detail page, server actions, REST handlers,
+          optimistic UI, and auth. Hidden probes check extra cases. This matches our
+          product work in the Reading Advantage monorepo.
         </p>
         <p style="margin:0.9rem 0 0">
           <a href="./methodology.html">Read methodology →</a>
@@ -67,7 +68,7 @@
 
     <section class="card">
       <h2>Leaderboard snapshot</h2>
-      <p class="section-lede">OpenCode Go High Usage, week 2026w35. Diagnostic totals (graded under load). Ranked by No Skills when present, else Skills.</p>
+      <p class="section-lede">OpenCode Go High Usage models, week 2026w35. The host had load during grading. Treat totals as diagnostic. Ranking uses the No Skills score. If no No Skills score exists, ranking uses the Skills score.</p>
       <div class="table-wrap">
         <table class="data" id="leaderboard">
           <thead>
@@ -88,7 +89,7 @@
   </main>
 
   <footer class="site-footer wrap">
-    Data from hermetic agent runs + current-suite regrades. Not a publishable ranking unless provenance is trusted and host-quiet.
+    Data comes from isolated agent runs and new grades on the current suite. This is not a publishable ranking. Publishing needs trusted provenance and a quiet host.
   </footer>
 
   <script type="module">
@@ -121,8 +122,8 @@
       root.innerHTML = top ? `
         <div class="kpi"><div class="label">Top model</div><div class="value" style="font-size:1.25rem">${top.name}</div><div class="hint">${top.score.total} soft score · ${top.passes.passed}/${top.passes.total} passes</div></div>
         <div class="kpi"><div class="label">Matrix % monthly</div><div class="value">${fmtMonthlyPct(totalPct)}</div><div class="hint">Across ${models.length} No Skills agent runs</div></div>
-        <div class="kpi"><div class="label">Reference ceiling</div><div class="value">${data.reference?.score?.total ?? "—"}</div><div class="hint">Golden overlay on current suite</div></div>
-      ` : `<div class="kpi"><div class="label">No Skills runs</div><div class="value">None yet</div><div class="hint">Run harness/weekly.sh on a quiet host</div></div>`;
+        <div class="kpi"><div class="label">Reference ceiling</div><div class="value">${data.reference?.score?.total ?? "—"}</div><div class="hint">Reference overlay on the current suite</div></div>
+      ` : `<div class="kpi"><div class="label">No Skills runs</div><div class="value">None yet</div><div class="hint">Run harness/weekly.sh on a quiet host.</div></div>`;
 
       document.getElementById("audiences").innerHTML = b.audiences
         .map((a) => `<li style="margin:0.35rem 0;color:#c5d0e0">${a}</li>`)

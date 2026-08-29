@@ -1,18 +1,18 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-29T20:05:31",
+  "generated_at": "2026-08-29T20:49:14",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
-    "purpose": "Hermetic evaluation of multi-file Next.js / React product work matching Reading Advantage monorepo practice \u2014 not trivia or greenfield toys.",
+    "purpose": "The evaluation measures multi-file Next.js and React product work. The work matches practice in the Reading Advantage monorepo. The tasks are not trivia and not small demo apps.",
     "audiences": [
-      "Engineering leads choosing models for agentic coding",
-      "Eval / platform teams measuring cost vs quality",
-      "Staff engineers who care about auth, races, and App Router pitfalls"
+      "Engineering leads who choose models for agent coding",
+      "Evaluation and platform teams who measure cost and quality",
+      "Staff engineers who check auth, race conditions, and App Router risks"
     ],
     "arms": {
-      "a": "No Skills: fixture + prompt only. Primary fair comparison.",
-      "b": "Skills: same task with AGENTS.md + five skills."
+      "a": "No Skills: the fixture and the prompt only. This is the primary comparison.",
+      "b": "Skills: the same task with AGENTS.md and five skills."
     },
     "scoring": {
       "weights": {
@@ -24,33 +24,33 @@
       "tier_mode": "soft",
       "scored_checks": 74,
       "advisory_checks": 2,
-      "note": "Soft tiers scale higher-tier credit by lower-tier rates (no binary cliff at 90% Tier 0). Advisory checks never affect totals. Week 2026w35 grades ran under host load; totals are diagnostic, not a trusted ranking."
+      "note": "Soft tiers scale higher-tier credit by lower-tier rates. There is no binary rule at 90 percent Tier 0. Advisory checks never affect totals. Week 2026w35 grades ran under host load. Treat these totals as diagnostic, not as a trusted ranking."
     }
   },
   "domains": {
     "A": {
       "title": "Business rules",
-      "why": "Pure domain logic with a fixed clock. Wrong here means every status badge and filter lies.",
+      "why": "Pure domain logic with a fixed clock. A wrong result gives wrong status badges and filter results.",
       "audience": "Backend / domain correctness"
     },
     "B": {
       "title": "UI composition",
-      "why": "Reusable card: link, alt text, loan badge. List consistency and accessibility.",
-      "audience": "Frontend / a11y"
+      "why": "One reusable card: link, alt text, loan badge. Checks list consistency and accessibility.",
+      "audience": "Frontend / accessibility"
     },
     "C": {
       "title": "Catalogue & data fetching",
-      "why": "List page with search/category filters and parallel reads \u2014 everyday App Router list work.",
+      "why": "List page with search filters, category filters, and parallel reads. This is common App Router list work.",
       "audience": "Full-stack product"
     },
     "D": {
       "title": "Detail & history",
-      "why": "Dynamic route, not-found, metadata, ordered loan history with live status.",
+      "why": "Dynamic route, not-found page, metadata, ordered loan history with live status.",
       "audience": "Full-stack product"
     },
     "E": {
       "title": "Interactive forms",
-      "why": "Checkout/return UX: pending labels, optimistic UI, error display.",
+      "why": "Checkout and return flows: pending labels, optimistic UI, error display.",
       "audience": "Frontend / UX"
     },
     "F": {
@@ -60,23 +60,23 @@
     },
     "G": {
       "title": "HTTP API contract",
-      "why": "REST handler filters, status codes, conflicts, freshness.",
+      "why": "REST handler filters, status codes, conflicts, and data freshness.",
       "audience": "API / integration"
     },
     "H": {
       "title": "Resilience UX",
-      "why": "loading.tsx and error.tsx \u2014 streaming shells and failure boundaries.",
+      "why": "loading.tsx and error.tsx: streaming shells and failure boundaries.",
       "audience": "Reliability / UX"
     },
     "M": {
       "title": "Process closeout",
-      "why": "Did the agent finish the phased plan and metadata?",
-      "audience": "Agent ops / eval design"
+      "why": "Did the agent finish the phased plan and the metadata?",
+      "audience": "Agent ops / evaluation design"
     },
     "P": {
       "title": "Adversarial probes",
-      "why": "Hidden checks: revalidation, races, waterfalls, N+1, credential leak.",
-      "audience": "Staff eng / platform"
+      "why": "Hidden checks: revalidation, races, waterfalls, N+1 queries, credential leaks.",
+      "audience": "Staff engineering / platform"
     },
     "ADV": {
       "title": "Advisory (unscored)",
@@ -4003,6 +4003,647 @@
         "n": 1
       },
       "rank_score": 73.4
+    },
+    {
+      "id": "muse-spark-1.2-contributor",
+      "name": "Muse Spark 1.2 Contributor",
+      "provider_model": "opencode-go/muse-spark-1.2-contributor",
+      "arm": "b",
+      "arm_label": "Skills",
+      "summary": "",
+      "score": {
+        "total": 71.2,
+        "completion": 0.7399,
+        "adversarial": 0.601,
+        "quality": 0.7399,
+        "tiers": {
+          "0": {
+            "rate": 0.8571,
+            "scale": 1.0
+          },
+          "1": {
+            "rate": 0.7568,
+            "scale": 0.9524
+          },
+          "2": {
+            "rate": 0.8182,
+            "scale": 0.8008
+          }
+        }
+      },
+      "passes": {
+        "passed": 57,
+        "failed": 17,
+        "total": 74
+      },
+      "advisory": {
+        "passed": 0,
+        "total": 2,
+        "results": {
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false
+        }
+      },
+      "domains": {
+        "A": {
+          "pass": 5,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "A.boundary",
+            "A.due-soon",
+            "A.ok",
+            "A.overdue",
+            "A.returned"
+          ],
+          "rate": 1.0
+        },
+        "M": {
+          "pass": 3,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "M.closeout",
+            "M.metadata-valid",
+            "M.plan-complete"
+          ],
+          "rate": 1.0
+        },
+        "G": {
+          "pass": 13,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "G.400",
+            "G.401",
+            "G.409",
+            "G.filter-both",
+            "G.filter-item",
+            "G.filter-overdue",
+            "G.fresh",
+            "G.get200",
+            "G.patch200",
+            "G.patch400",
+            "G.patch409",
+            "G.post-fields",
+            "G.post201"
+          ],
+          "rate": 1.0
+        },
+        "P": {
+          "pass": 8,
+          "fail": 4,
+          "failed": [
+            "P.concurrent-return",
+            "P.dedup-item",
+            "P.stale-after-mutate",
+            "P.streams-shell"
+          ],
+          "passed": [
+            "P.concurrent-checkout",
+            "P.filter-literal",
+            "P.hydration-clean",
+            "P.n-plus-one",
+            "P.no-key-leak",
+            "P.no-waterfall",
+            "P.searchparams-async",
+            "P.validate-before-io"
+          ],
+          "rate": 0.6667
+        },
+        "C": {
+          "pass": 8,
+          "fail": 1,
+          "failed": [
+            "C.summary"
+          ],
+          "passed": [
+            "C.empty",
+            "C.filter-both",
+            "C.filter-case",
+            "C.filter-category",
+            "C.filter-q",
+            "C.parallel-reads",
+            "C.renders",
+            "C.renders-all"
+          ],
+          "rate": 0.8889
+        },
+        "B": {
+          "pass": 5,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "B.badge",
+            "B.image-alt",
+            "B.image-response",
+            "B.link",
+            "B.name-category"
+          ],
+          "rate": 1.0
+        },
+        "H": {
+          "pass": 2,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "H.error",
+            "H.loading"
+          ],
+          "rate": 1.0
+        },
+        "D": {
+          "pass": 6,
+          "fail": 1,
+          "failed": [
+            "D.history-status"
+          ],
+          "passed": [
+            "D.form-hidden",
+            "D.history-order",
+            "D.metadata",
+            "D.notfound",
+            "D.renders",
+            "D.return-visible"
+          ],
+          "rate": 0.8571
+        },
+        "E": {
+          "pass": 4,
+          "fail": 5,
+          "failed": [
+            "E.error-shown",
+            "E.member-options",
+            "E.optimistic",
+            "E.pending",
+            "E.submits"
+          ],
+          "passed": [
+            "E.return-error",
+            "E.return-optimistic",
+            "E.return-pending",
+            "E.return-submits"
+          ],
+          "rate": 0.4444
+        },
+        "F": {
+          "pass": 3,
+          "fail": 6,
+          "failed": [
+            "F.auth-checkout",
+            "F.checkout-conflict",
+            "F.checkout-record",
+            "F.future-due-date",
+            "F.lifecycle",
+            "F.post-mutation-state"
+          ],
+          "passed": [
+            "F.auth-return",
+            "F.return-not-on-loan",
+            "F.return-record"
+          ],
+          "rate": 0.3333
+        },
+        "ADV": {
+          "pass": 0,
+          "fail": 2,
+          "failed": [
+            "ADV.useActionState",
+            "ADV.useOptimistic"
+          ],
+          "passed": [],
+          "rate": 0.0
+        }
+      },
+      "results": {
+        "A.returned": true,
+        "A.overdue": true,
+        "A.due-soon": true,
+        "A.ok": true,
+        "A.boundary": true,
+        "M.metadata-valid": true,
+        "M.plan-complete": true,
+        "M.closeout": true,
+        "G.get200": true,
+        "G.401": true,
+        "G.filter-item": true,
+        "G.filter-overdue": true,
+        "G.filter-both": true,
+        "G.fresh": true,
+        "G.post201": true,
+        "G.400": true,
+        "G.409": true,
+        "P.concurrent-checkout": true,
+        "G.patch200": true,
+        "G.patch409": true,
+        "G.patch400": true,
+        "P.concurrent-return": false,
+        "G.post-fields": true,
+        "C.renders": true,
+        "C.renders-all": true,
+        "B.name-category": true,
+        "B.badge": true,
+        "B.link": true,
+        "B.image-alt": true,
+        "C.filter-q": true,
+        "C.filter-case": true,
+        "P.searchparams-async": true,
+        "P.filter-literal": true,
+        "C.filter-category": true,
+        "C.filter-both": true,
+        "C.empty": true,
+        "P.hydration-clean": true,
+        "H.loading": true,
+        "B.image-response": true,
+        "C.summary": false,
+        "C.parallel-reads": true,
+        "D.renders": true,
+        "D.history-order": true,
+        "D.history-status": false,
+        "D.notfound": true,
+        "D.metadata": true,
+        "D.form-hidden": true,
+        "D.return-visible": true,
+        "E.return-submits": true,
+        "E.return-pending": true,
+        "E.return-optimistic": true,
+        "E.submits": false,
+        "E.pending": false,
+        "E.optimistic": false,
+        "E.error-shown": false,
+        "P.stale-after-mutate": false,
+        "E.member-options": false,
+        "F.auth-checkout": false,
+        "F.auth-return": true,
+        "F.checkout-conflict": false,
+        "F.return-not-on-loan": true,
+        "F.checkout-record": false,
+        "F.return-record": true,
+        "F.future-due-date": false,
+        "F.post-mutation-state": false,
+        "F.lifecycle": false,
+        "E.return-error": true,
+        "P.no-key-leak": true,
+        "P.no-waterfall": true,
+        "P.n-plus-one": true,
+        "P.validate-before-io": true,
+        "P.dedup-item": false,
+        "P.streams-shell": false,
+        "ADV.useActionState": false,
+        "ADV.useOptimistic": false,
+        "H.error": true
+      },
+      "usage": {
+        "input": 46411,
+        "output": 30215,
+        "cacheRead": 933378,
+        "cacheWrite": 0,
+        "totalTokens": 1010004,
+        "costUsd": 0.012551,
+        "assistantTurns": 34,
+        "toolCalls": 53
+      },
+      "go": {
+        "model_id": "muse-spark-1.2-contributor",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
+        "usd": 0.012551,
+        "monthly_usage_usd": 60,
+        "monthly_pct": 0.021,
+        "unmapped": false,
+        "rate": "off-peak"
+      },
+      "thinking": "max",
+      "wall_seconds": 402,
+      "historical_score": 71.2,
+      "sources": {
+        "regrade": "runs/b-muse-spark-1-2-contributor-2026w35",
+        "agent": "runs/b-muse-spark-1-2-contributor-2026w35"
+      },
+      "no_skills": null,
+      "skills": {
+        "id": "muse-spark-1.2-contributor-skills",
+        "name": "Muse Spark 1.2 Contributor (Skills)",
+        "provider_model": "opencode-go/muse-spark-1.2-contributor",
+        "arm": "b",
+        "arm_label": "Skills",
+        "summary": "",
+        "score": {
+          "total": 71.2,
+          "completion": 0.7399,
+          "adversarial": 0.601,
+          "quality": 0.7399,
+          "tiers": {
+            "0": {
+              "rate": 0.8571,
+              "scale": 1.0
+            },
+            "1": {
+              "rate": 0.7568,
+              "scale": 0.9524
+            },
+            "2": {
+              "rate": 0.8182,
+              "scale": 0.8008
+            }
+          }
+        },
+        "passes": {
+          "passed": 57,
+          "failed": 17,
+          "total": 74
+        },
+        "advisory": {
+          "passed": 0,
+          "total": 2,
+          "results": {
+            "ADV.useActionState": false,
+            "ADV.useOptimistic": false
+          }
+        },
+        "domains": {
+          "A": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "A.boundary",
+              "A.due-soon",
+              "A.ok",
+              "A.overdue",
+              "A.returned"
+            ],
+            "rate": 1.0
+          },
+          "M": {
+            "pass": 3,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "M.closeout",
+              "M.metadata-valid",
+              "M.plan-complete"
+            ],
+            "rate": 1.0
+          },
+          "G": {
+            "pass": 13,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "G.400",
+              "G.401",
+              "G.409",
+              "G.filter-both",
+              "G.filter-item",
+              "G.filter-overdue",
+              "G.fresh",
+              "G.get200",
+              "G.patch200",
+              "G.patch400",
+              "G.patch409",
+              "G.post-fields",
+              "G.post201"
+            ],
+            "rate": 1.0
+          },
+          "P": {
+            "pass": 8,
+            "fail": 4,
+            "failed": [
+              "P.concurrent-return",
+              "P.dedup-item",
+              "P.stale-after-mutate",
+              "P.streams-shell"
+            ],
+            "passed": [
+              "P.concurrent-checkout",
+              "P.filter-literal",
+              "P.hydration-clean",
+              "P.n-plus-one",
+              "P.no-key-leak",
+              "P.no-waterfall",
+              "P.searchparams-async",
+              "P.validate-before-io"
+            ],
+            "rate": 0.6667
+          },
+          "C": {
+            "pass": 8,
+            "fail": 1,
+            "failed": [
+              "C.summary"
+            ],
+            "passed": [
+              "C.empty",
+              "C.filter-both",
+              "C.filter-case",
+              "C.filter-category",
+              "C.filter-q",
+              "C.parallel-reads",
+              "C.renders",
+              "C.renders-all"
+            ],
+            "rate": 0.8889
+          },
+          "B": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "B.badge",
+              "B.image-alt",
+              "B.image-response",
+              "B.link",
+              "B.name-category"
+            ],
+            "rate": 1.0
+          },
+          "H": {
+            "pass": 2,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "H.error",
+              "H.loading"
+            ],
+            "rate": 1.0
+          },
+          "D": {
+            "pass": 6,
+            "fail": 1,
+            "failed": [
+              "D.history-status"
+            ],
+            "passed": [
+              "D.form-hidden",
+              "D.history-order",
+              "D.metadata",
+              "D.notfound",
+              "D.renders",
+              "D.return-visible"
+            ],
+            "rate": 0.8571
+          },
+          "E": {
+            "pass": 4,
+            "fail": 5,
+            "failed": [
+              "E.error-shown",
+              "E.member-options",
+              "E.optimistic",
+              "E.pending",
+              "E.submits"
+            ],
+            "passed": [
+              "E.return-error",
+              "E.return-optimistic",
+              "E.return-pending",
+              "E.return-submits"
+            ],
+            "rate": 0.4444
+          },
+          "F": {
+            "pass": 3,
+            "fail": 6,
+            "failed": [
+              "F.auth-checkout",
+              "F.checkout-conflict",
+              "F.checkout-record",
+              "F.future-due-date",
+              "F.lifecycle",
+              "F.post-mutation-state"
+            ],
+            "passed": [
+              "F.auth-return",
+              "F.return-not-on-loan",
+              "F.return-record"
+            ],
+            "rate": 0.3333
+          },
+          "ADV": {
+            "pass": 0,
+            "fail": 2,
+            "failed": [
+              "ADV.useActionState",
+              "ADV.useOptimistic"
+            ],
+            "passed": [],
+            "rate": 0.0
+          }
+        },
+        "results": {
+          "A.returned": true,
+          "A.overdue": true,
+          "A.due-soon": true,
+          "A.ok": true,
+          "A.boundary": true,
+          "M.metadata-valid": true,
+          "M.plan-complete": true,
+          "M.closeout": true,
+          "G.get200": true,
+          "G.401": true,
+          "G.filter-item": true,
+          "G.filter-overdue": true,
+          "G.filter-both": true,
+          "G.fresh": true,
+          "G.post201": true,
+          "G.400": true,
+          "G.409": true,
+          "P.concurrent-checkout": true,
+          "G.patch200": true,
+          "G.patch409": true,
+          "G.patch400": true,
+          "P.concurrent-return": false,
+          "G.post-fields": true,
+          "C.renders": true,
+          "C.renders-all": true,
+          "B.name-category": true,
+          "B.badge": true,
+          "B.link": true,
+          "B.image-alt": true,
+          "C.filter-q": true,
+          "C.filter-case": true,
+          "P.searchparams-async": true,
+          "P.filter-literal": true,
+          "C.filter-category": true,
+          "C.filter-both": true,
+          "C.empty": true,
+          "P.hydration-clean": true,
+          "H.loading": true,
+          "B.image-response": true,
+          "C.summary": false,
+          "C.parallel-reads": true,
+          "D.renders": true,
+          "D.history-order": true,
+          "D.history-status": false,
+          "D.notfound": true,
+          "D.metadata": true,
+          "D.form-hidden": true,
+          "D.return-visible": true,
+          "E.return-submits": true,
+          "E.return-pending": true,
+          "E.return-optimistic": true,
+          "E.submits": false,
+          "E.pending": false,
+          "E.optimistic": false,
+          "E.error-shown": false,
+          "P.stale-after-mutate": false,
+          "E.member-options": false,
+          "F.auth-checkout": false,
+          "F.auth-return": true,
+          "F.checkout-conflict": false,
+          "F.return-not-on-loan": true,
+          "F.checkout-record": false,
+          "F.return-record": true,
+          "F.future-due-date": false,
+          "F.post-mutation-state": false,
+          "F.lifecycle": false,
+          "E.return-error": true,
+          "P.no-key-leak": true,
+          "P.no-waterfall": true,
+          "P.n-plus-one": true,
+          "P.validate-before-io": true,
+          "P.dedup-item": false,
+          "P.streams-shell": false,
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false,
+          "H.error": true
+        },
+        "usage": {
+          "input": 46411,
+          "output": 30215,
+          "cacheRead": 933378,
+          "cacheWrite": 0,
+          "totalTokens": 1010004,
+          "costUsd": 0.012551,
+          "assistantTurns": 34,
+          "toolCalls": 53
+        },
+        "go": {
+          "model_id": "muse-spark-1.2-contributor",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
+          "usd": 0.012551,
+          "monthly_usage_usd": 60,
+          "monthly_pct": 0.021,
+          "unmapped": false,
+          "rate": "off-peak"
+        },
+        "thinking": "max",
+        "wall_seconds": 402,
+        "historical_score": 71.2,
+        "sources": {
+          "regrade": "runs/b-muse-spark-1-2-contributor-2026w35",
+          "agent": "runs/b-muse-spark-1-2-contributor-2026w35"
+        }
+      },
+      "trend": null,
+      "skills_trend": {
+        "ema": 71.2,
+        "min": 71.2,
+        "max": 71.2,
+        "n": 1
+      },
+      "rank_score": 71.2
     },
     {
       "id": "qwen3.7-plus",

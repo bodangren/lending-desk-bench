@@ -73,7 +73,7 @@ TEMPLATE = """<!DOCTYPE html>
         <span class="chip">Passes <strong>${{m.passes.passed}}/${{m.passes.total}}</strong></span>
         <span class="chip">Reasoning <strong>${{escapeHtml(m.thinking || "—")}}</strong></span>
         <span class="chip">% monthly <strong>${{fmtMonthlyPct(m.go?.monthly_pct)}}</strong></span>
-        <span class="chip">Wall <strong>${{fmtSecs(m.wall_seconds)}}</strong></span>
+        <span class="chip">Run time <strong>${{fmtSecs(m.wall_seconds)}}</strong></span>
       `;
 
       const domains = DOMAIN_ORDER.filter((d) => m.domains?.[d]);
@@ -125,7 +125,7 @@ TEMPLATE = """<!DOCTYPE html>
 
       document.getElementById("fails").innerHTML = failed.length
         ? failed.map((id) => `<code>${{escapeHtml(id)}}</code>`).join("")
-        : `<span class="muted">No scored failures.</span>`;
+        : `<span class="muted">No failed scored checks.</span>`;
 
       document.getElementById("domain-detail").innerHTML = domains.map((d) => {{
         const b = m.domains[d];

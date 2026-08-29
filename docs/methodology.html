@@ -26,8 +26,9 @@
     <p class="kicker">Methodology</p>
     <h1>How the benchmark works</h1>
     <p class="lede">
-      Hermetic evaluation: the model sees only an incomplete app and a Measure track.
-      A hidden harness grades the result with typecheck, build, unit, API, browser, and adversarial probes.
+      The evaluation is isolated. The model sees only an incomplete app and a Measure track.
+      A hidden harness grades the result. The harness runs typecheck, build, unit tests,
+      API tests, browser tests, and adversarial probes.
     </p>
   </header>
 
@@ -36,8 +37,9 @@
       <h2>The task</h2>
       <p class="section-lede">
         The fixture is an equipment-lending app. <code>/members</code> already works.
-        The agent must implement the <code>/items</code> slice by filling <strong>existing stub files only</strong>
-        — no new files, no dependency changes, no renames. Conventions must match the members slice.
+        The agent implements the <code>/items</code> slice and fills <strong>existing stub files only</strong>.
+        The agent must not add files. The agent must not change dependencies. The agent must not rename files.
+        Conventions must match the members slice.
       </p>
       <ul class="muted" style="padding-left:1.15rem">
         <li>Next.js 16 App Router, React 19, TypeScript strict, Tailwind v4</li>
@@ -50,20 +52,20 @@
     <section class="card" id="isolation">
       <h2>Isolation</h2>
       <p class="section-lede">
-        Agents run in a container with a private view: candidate source is writable;
-        fixture dependencies are read-only during the agent phase. The harness, reference
-        golden overlay, host home, and unrelated workspace paths are absent.
+        Each agent runs in a container. The container shows only the task files.
+        Candidate source is writable. Fixture dependencies are read-only during the agent phase.
+        The harness, the reference overlay, the host home directory, and unrelated workspace paths are absent.
       </p>
       <div class="grid-2 mt-1">
         <div class="kpi">
           <div class="label">No Skills (primary)</div>
           <div class="value" style="font-size:1.05rem;font-weight:600">Fixture + prompt only</div>
-          <div class="hint">No skills or extra context files. Fair head-to-head.</div>
+          <div class="hint">No skills and no extra context files. This gives a direct comparison.</div>
         </div>
         <div class="kpi">
           <div class="label">Skills</div>
           <div class="value" style="font-size:1.05rem;font-weight:600">+ AGENTS.md + 5 skills</div>
-          <div class="hint">Same task. Not mixed into the No Skills ranking.</div>
+          <div class="hint">The task is the same. Do not mix these scores into the No Skills ranking.</div>
         </div>
       </div>
     </section>
@@ -78,38 +80,39 @@
         <li>Score: soft-tier completion (60%), adversarial probes (20%), quality (20%)</li>
       </ol>
       <div class="callout">
-        <strong>Soft tier gates.</strong> Higher tiers always contribute, scaled by
-        <code>min(1, lower_rate / 0.9)</code>. A hard binary unlock previously collapsed
-        every mid-pack model into ~17 points and destroyed discrimination.
+        <strong>Soft tier gates.</strong> Higher tiers always contribute. The harness scales
+        their credit by <code>min(1, lower_rate / 0.9)</code>. A previous hard binary rule
+        compressed mid-pack models into a 17-point band. That rule reduced score separation.
       </div>
     </section>
 
     <section class="card" id="domains">
       <h2>Domains</h2>
-      <p class="section-lede">Executable check clusters tied to product surfaces.</p>
+      <p class="section-lede">Executable check groups. Each group maps to one product surface.</p>
       <div class="domain-grid" id="domain-grid"></div>
       <div class="callout">
         <strong>Advisory (unscored).</strong>
         <code>ADV.useActionState</code> and <code>ADV.useOptimistic</code> detect preferred React 19
-        form idioms. They never change the total — modernization signal only.
+        form idioms. They never change the total. They show one signal only: use of modern APIs.
       </div>
     </section>
 
     <section class="card" id="economics">
       <h2>Cost &amp; tokens</h2>
       <p class="section-lede">
-        Usage is extracted from the agent transcript. Published cost is percent of that
-        model’s monthly OpenCode Go Usage column, recomputed from tokens when prices change.
+        The harness extracts usage from the agent transcript. The published cost is a percent of
+        the monthly OpenCode Go Usage for that model. The harness recomputes the cost from tokens
+        when prices change.
       </p>
     </section>
 
     <section class="card" id="limits">
-      <h2>Limits &amp; honesty</h2>
+      <h2>Limits</h2>
       <ul class="muted" style="padding-left:1.15rem; color:#c5d0e0">
         <li>Scores are publishable only with current provenance, agent isolation, and a quiet host.</li>
         <li>Host load can affect timing-sensitive browser assertions.</li>
-        <li>One weekly run is a point estimate. The 4-week range is stability, not a confidence interval.</li>
-        <li>Reference is a golden overlay ceiling, not a model competitor.</li>
+        <li>One weekly run is a point estimate. The 4-week range shows stability. The range is not a confidence interval.</li>
+        <li>The reference score is a ceiling. The reference is not a model.</li>
       </ul>
     </section>
   </main>
