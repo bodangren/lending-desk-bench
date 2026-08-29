@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./assets/css/site.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="./assets/js/chart.umd.min.js"></script>
 </head>
 <body>
   <nav class="site-nav">
@@ -144,8 +144,7 @@
         </tr>
       `).join("");
 
-      if (!models.length) return;
-      // Scatter: monthly usage vs score
+      if (!models.length || typeof Chart === "undefined") return;
       const { grid } = chartDefaults();
       const points = models.map((m, i) => ({
         x: m.go?.monthly_pct || 0,
@@ -203,6 +202,8 @@
         },
       });
     } catch (err) {
+      const lede = document.getElementById("hero-lede");
+      if (lede) lede.textContent = "Could not load results.";
       mountError(document.querySelector("main"), err);
     }
   </script>

@@ -19,7 +19,7 @@ TEMPLATE = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../assets/css/site.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="../assets/js/chart.umd.min.js"></script>
 </head>
 <body>
   <nav class="site-nav">

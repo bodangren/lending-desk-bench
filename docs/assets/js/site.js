@@ -85,12 +85,13 @@ export function setActiveNav() {
 }
 
 export function chartDefaults() {
-  if (typeof Chart === "undefined") return;
   const tick = "#8b9bb0";
   const grid = "rgba(139,155,176,0.15)";
-  Chart.defaults.color = tick;
-  Chart.defaults.borderColor = grid;
-  Chart.defaults.font.family = '"DM Sans", "Segoe UI", system-ui, sans-serif';
+  if (typeof Chart !== "undefined") {
+    Chart.defaults.color = tick;
+    Chart.defaults.borderColor = grid;
+    Chart.defaults.font.family = '"DM Sans", "Segoe UI", system-ui, sans-serif';
+  }
   return { tick, grid };
 }
 
