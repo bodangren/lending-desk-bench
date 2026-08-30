@@ -17,7 +17,7 @@ let _dataPromise = null;
 
 export function loadData() {
   if (!_dataPromise) {
-    _dataPromise = fetch(new URL("../data/benchmark.json", import.meta.url))
+    _dataPromise = fetch(new URL("../data/benchmark.json", import.meta.url), { cache: "no-cache" })
       .then((r) => {
         if (!r.ok) throw new Error(`Failed to load benchmark.json (${r.status})`);
         return r.json();
