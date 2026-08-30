@@ -241,6 +241,11 @@ table.data td.num, table.data th.num {
   font-family: var(--mono); font-size: 0.85rem;
 }
 table.data td.score { font-size: 1.12rem; font-weight: 700; color: var(--accent); }
+table.data th.sortable { cursor: pointer; user-select: none; }
+table.data th.sortable:hover { color: var(--text); }
+table.data th.sortable::after { content: " ↕"; color: var(--line); font-weight: 400; }
+table.data th.sortable[aria-sort="descending"]::after { content: " ↓"; color: var(--accent); }
+table.data th.sortable[aria-sort="ascending"]::after { content: " ↑"; color: var(--accent); }
 table.data tbody tr { transition: background 100ms ease; }
 table.data tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
 table.data tbody tr:hover td { background: rgba(226, 178, 90, 0.05); }

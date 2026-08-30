@@ -113,9 +113,9 @@
       `;
 
       const top = models[0];
+      root.style.gridTemplateColumns = "1fr";
       root.innerHTML = top ? `
         <div class="kpi"><div class="label">Top model</div><div class="value" style="font-size:1.25rem">${top.name}</div><div class="hint">${top.score.total} soft score · ${top.passes.passed}/${top.passes.total} passes</div></div>
-        <div class="kpi"><div class="label">Reference ceiling</div><div class="value">${data.reference?.score?.total ?? "—"}</div><div class="hint">Reference overlay on the current suite</div></div>
       ` : `<div class="kpi"><div class="label">No Skills runs</div><div class="value">None yet</div><div class="hint">Run harness/weekly.sh on a quiet host.</div></div>`;
 
       document.getElementById("audiences").innerHTML = b.audiences

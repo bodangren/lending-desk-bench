@@ -56,6 +56,68 @@ export function pct(x) {
   return `${Math.round(100 * x)}%`;
 }
 
+export function fmtPct1(x) {
+  if (x == null || !Number.isFinite(x)) return "—";
+  return `${(100 * x).toFixed(1)}%`;
+}
+
+export function cacheHitRate(usage) {
+  if (!usage) return null;
+  const promptTokens = (usage.cacheRead || 0) + (usage.input || 0);
+  if (!promptTokens) return null;
+  return (usage.cacheRead || 0) / promptTokens;
+}
+
+export function initSortable(table, { initialKey = null, initialDir = -1, renumber = false } = {}) {
+  const ths = [...table.querySelectorAll("thead th[data-col]")];
+  const tbody = table.querySelector("tbody");
+  if (!tbody) return;
+
+  const valueFor = (tr, key) => {
+    const raw = tr.getAttribute(`data-sort-${key}`);
+    if (raw == null || raw === "") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : raw.toLowerCase();
+  };
+
+  const apply = (key, dir) => {
+    const rows = [...tbody.querySelectorAll("tr")];
+    rows.sort((a, b) => {
+      const va = valueFor(a, key);
+      const vb = valueFor(b, key);
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+      return String(va).localeCompare(String(vb)) * dir;
+    });
+    rows.forEach((r) => tbody.appendChild(r));
+    if (renumber) {
+      rows.forEach((r, i) => {
+        const first = r.querySelector("td");
+        if (first) first.textContent = String(i + 1);
+      });
+    }
+    ths.forEach((th) => {
+      if (th.dataset.col === key) {
+        th.setAttribute("aria-sort", dir < 0 ? "descending" : "ascending");
+      } else {
+        th.removeAttribute("aria-sort");
+      }
+    });
+  };
+
+  ths.forEach((th) => {
+    th.classList.add("sortable");
+    th.addEventListener("click", () => {
+      const dir = th.getAttribute("aria-sort") === "descending" ? 1 : -1;
+      apply(th.dataset.col, dir);
+    });
+  });
+
+  if (initialKey) apply(initialKey, initialDir);
+}
+
 export function domainRate(model, d) {
   return model.domains?.[d]?.rate ?? 0;
 }

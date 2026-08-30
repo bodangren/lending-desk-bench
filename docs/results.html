@@ -27,8 +27,8 @@
     <p class="kicker">Results</p>
     <h1>No Skills matrix</h1>
     <p class="lede">
-      The table shows soft scores, pass counts, reasoning level, tokens, and percent of monthly Go usage.
-      The domain heatmap shows strong and weak areas for each model.
+      The table shows soft scores, pass counts, run time, cost, cache hit rate, and tokens.
+      Click a column header to sort. The domain heatmap shows strong and weak areas for each model.
     </p>
   </header>
 
@@ -40,8 +40,8 @@
 
   <script type="module">
     import {
-      loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, pct, domainRate, DOMAIN_ORDER,
-      modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
+      loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, fmtPct1, pct, domainRate, DOMAIN_ORDER,
+      modelColor, chartDefaults, mountError, setActiveNav, escapeHtml, cacheHitRate, initSortable,
     } from "./assets/js/site.js";
 
     setActiveNav();
@@ -68,15 +68,15 @@
               <thead>
                 <tr>
                   <th class="num">#</th>
-                  <th>Model</th>
-                  <th class="num">Score</th>
-                  <th class="num">Passes</th>
+                  <th data-col="name">Model</th>
+                  <th class="num" data-col="score">Score</th>
+                  <th class="num" data-col="passes">Passes</th>
+                  <th class="num" data-col="runtime">Run time</th>
+                  <th class="num" data-col="monthly">% monthly</th>
+                  <th class="num" data-col="cache" title="Cache reads as a share of prompt tokens (cache reads plus new input)">Cache hit</th>
+                  <th class="num" data-col="in">In</th>
+                  <th class="num" data-col="out">Out</th>
                   <th class="num">Reasoning</th>
-                  <th class="num">In</th>
-                  <th class="num">Out</th>
-                  <th class="num">Cache R</th>
-                  <th class="num">% monthly</th>
-                  <th class="num">Run time</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -97,8 +97,16 @@
       `;
 
       // Table
-      document.querySelector("#full-table tbody").innerHTML = models.map((m, i) => `
-        <tr>
+      document.querySelector("#full-table tbody").innerHTML = models.map((m, i) => {
+        const cache = cacheHitRate(m.usage);
+        return `
+        <tr data-sort-name="${escapeHtml(m.name)}" data-sort-score="${m.score.total}"
+            data-sort-passes="${m.passes.passed / m.passes.total}"
+            data-sort-runtime="${m.wall_seconds ?? ""}"
+            data-sort-monthly="${m.go?.monthly_pct ?? ""}"
+            data-sort-cache="${cache ?? ""}"
+            data-sort-in="${m.usage.input ?? ""}"
+            data-sort-out="${m.usage.output ?? ""}">
           <td class="num">${i + 1}</td>
           <td>
             <a class="model-link" href="./models/${m.id}.html">${escapeHtml(m.name)}</a>
@@ -106,14 +114,15 @@
           </td>
           <td class="num score">${m.score.total.toFixed(1)}</td>
           <td class="num">${m.passes.passed}/${m.passes.total}</td>
-          <td class="num">${escapeHtml(m.thinking || "—")}</td>
+          <td class="num">${fmtSecs(m.wall_seconds)}</td>
+          <td class="num">${fmtMonthlyPct(m.go?.monthly_pct)}</td>
+          <td class="num">${fmtPct1(cache)}</td>
           <td class="num">${fmtTokens(m.usage.input)}</td>
           <td class="num">${fmtTokens(m.usage.output)}</td>
-          <td class="num">${fmtTokens(m.usage.cacheRead)}</td>
-          <td class="num">${fmtMonthlyPct(m.go?.monthly_pct)}</td>
-          <td class="num">${fmtSecs(m.wall_seconds)}</td>
+          <td class="num">${escapeHtml(m.thinking || "—")}</td>
         </tr>
-      `).join("");
+      `; }).join("");
+      initSortable(document.getElementById("full-table"), { renumber: true });
 
       // Heatmap
       const heat = document.getElementById("heatmap");
