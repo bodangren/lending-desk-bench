@@ -6,11 +6,15 @@
 import { describe, expect, it } from "vitest";
 import http from "node:http";
 import { STAFF_KEY } from "@candidate/src/lib/auth";
+// Read the fixed instant and the seed from the protected tree rather than
+// repeating the literal. grade.sh pins BENCH_NOW to the same value, and three
+// copies of one constant can drift apart silently.
+import { NOW, seedLoans } from "@candidate/src/db/seed";
 
 const BASE = process.env.BASE_URL ?? "http://127.0.0.1:3000";
 const staff = { "x-staff-key": STAFF_KEY, "content-type": "application/json" };
 const anon = { "content-type": "application/json" };
-const future = new Date(Date.parse("2026-03-15T12:00:00.000Z") + 240 * 3600_000).toISOString();
+const future = new Date(Date.parse(NOW) + 240 * 3600_000).toISOString();
 
 const get = (qs = "", h: HeadersInit = staff) =>
   fetch(`${BASE}/api/loans${qs}`, { headers: h, cache: "no-store" });
@@ -25,8 +29,15 @@ describe("GET /api/loans", () => {
     expect(r.status).toBe(200);
     const j = await r.json();
     expect(Array.isArray(j.loans)).toBe(true);
-    expect(j.loans.length).toBeGreaterThanOrEqual(19);
-    expect(j.loans[0]).toHaveProperty("dueAt");
+    // G.1 asks GET to return the loans. A lower bound let a route drop four seeded
+    // records and still pass, so compare against the seed itself.
+    expect(j.loans).toHaveLength(seedLoans.length);
+    expect(j.loans[0]).toEqual(
+      expect.objectContaining({
+        id: expect.any(String), itemId: expect.any(String), memberId: expect.any(String),
+        borrowedAt: expect.any(String), dueAt: expect.any(String),
+      }),
+    );
   });
 
   it("G.401", async () => {
@@ -38,21 +49,26 @@ describe("GET /api/loans", () => {
     expect(bad.status).toBe(401);
     // The policy applies to every mutating method, not merely GET. Both a
     // missing and a wrong key must be rejected before either write can land.
-    const beforeCheckout = await (await get("?itemId=itm-024")).json();
-    const beforeReturn = await (await get("?itemId=itm-027")).json();
+    // itm-015 is free and itm-010 carries the open loan lon-003. Neither appears in
+    // any other test, so a candidate that omits the staff check loses this criterion
+    // alone. The probes used to write to itm-024 and itm-027, which G.post-fields and
+    // G.patch200 need later, so one Tier 0 authorization defect also cost a Tier 0
+    // and two Tier 1 criteria that no control declared.
+    const beforeCheckout = await (await get("?itemId=itm-015")).json();
+    const beforeReturn = await (await get("?itemId=itm-010")).json();
     for (const headers of [anon, invalid]) {
       const checkout = await post(
-        { itemId: "itm-024", memberId: "mbr-001", dueAt: future },
+        { itemId: "itm-015", memberId: "mbr-001", dueAt: future },
         headers,
       );
       expect(checkout.status).toBe(401);
       expect((await checkout.json()).error).toBe("Unauthorized");
-      const returning = await patch({ itemId: "itm-027" }, headers);
+      const returning = await patch({ itemId: "itm-010" }, headers);
       expect(returning.status).toBe(401);
       expect((await returning.json()).error).toBe("Unauthorized");
     }
-    expect(await (await get("?itemId=itm-024")).json()).toEqual(beforeCheckout);
-    expect(await (await get("?itemId=itm-027")).json()).toEqual(beforeReturn);
+    expect(await (await get("?itemId=itm-015")).json()).toEqual(beforeCheckout);
+    expect(await (await get("?itemId=itm-010")).json()).toEqual(beforeReturn);
   });
 
   it("G.filter-item", async () => {
@@ -149,8 +165,11 @@ describe("PATCH /api/loans", () => {
     const r = await patch({ itemId: "itm-029" });
     expect(r.status).toBe(409);
     expect((await r.json()).error).toBe("Item is not on loan");
-    // And an already-returned item is equally not on loan.
-    const again = await patch({ itemId: "itm-027" });
+    // And an already-returned item is equally not on loan. Close one here rather than
+    // relying on G.patch200 having closed itm-027 earlier in the file: itm-007 carries
+    // the open loan lon-002 and no other test touches it.
+    expect((await patch({ itemId: "itm-007" })).status).toBe(200);
+    const again = await patch({ itemId: "itm-007" });
     expect(again.status).toBe(409);
   });
 

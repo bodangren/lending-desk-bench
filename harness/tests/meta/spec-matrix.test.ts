@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ADVISORY, CRITERIA, PROBES } from "../criteria";
 import { SPEC_MATRIX } from "../spec-matrix";
-import { REQUIRED_PRIMARY_ROWS } from "./spec-matrix-contract";
+import { REQUIRED_PRIMARY_ROWS, UNMAPPED_CRITERIA } from "./spec-matrix-contract";
 
 const HARNESS = resolve(import.meta.dirname, "../..");
 const ROOT = resolve(HARNESS, "..");
@@ -45,6 +45,33 @@ describe("spec matrix", () => {
       ).toBe(true);
       expect(Object.prototype.hasOwnProperty.call(PROBES, row.primary), row.id + " primary leaked into PROBES").toBe(false);
       expect(ADVISORY).not.toContain(row.primary);
+    }
+  });
+
+  // The reverse of M.matrix-primary-ownership. That test only proves a matrix primary
+  // exists in CRITERIA; nothing proved that a criterion has a contract basis. Any id
+  // that names no checkbox grades whatever reference/ happens to do.
+  it("M.criteria-provenance", () => {
+    const primaries = new Set(SPEC_MATRIX.map((row) => row.primary));
+    const orphans = Object.keys(CRITERIA).filter(
+      (id) => !primaries.has(id) && !Object.prototype.hasOwnProperty.call(UNMAPPED_CRITERIA, id),
+    );
+    expect(
+      orphans,
+      "these criteria map to no spec checkbox and are not declared splits or closeout "
+        + "checks, so they can only grade an incidental detail of reference/: "
+        + orphans.join(", "),
+    ).toEqual([]);
+
+    // A stale allow-list entry hides the same defect, so the list may not outlive its
+    // criterion, and it may not shadow a real matrix row.
+    for (const [id, derivation] of Object.entries(UNMAPPED_CRITERIA)) {
+      expect(
+        Object.prototype.hasOwnProperty.call(CRITERIA, id),
+        id + " is allow-listed but no longer exists in CRITERIA",
+      ).toBe(true);
+      expect(primaries.has(id), id + " has a matrix row and needs no allow-list entry").toBe(false);
+      expect(derivation, id + " must name the checkbox it derives from").toMatch(/\S/);
     }
   });
 

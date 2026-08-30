@@ -1,0 +1,19 @@
+{
+  "id": "harness_audit",
+  "title": "Harness audit \u2014 verified grading defects",
+  "type": "Bug",
+  "status": "in_progress",
+  "created": "2026-08-30",
+  "estimated_tasks": 39,
+  "actual_tasks": 35,
+  "source": {
+    "method": "five-agent review, then a second adversarial verification pass per scope",
+    "reviewed": 60,
+    "confirmed": 24,
+    "partial": 27,
+    "refuted": 9,
+    "added_by_verifiers": 13,
+    "evidence": "runs/*/artifacts/score.json \u2014 28 run directories, 19 valid records",
+    "raw": "scratchpad/verified-*.json"
+  }
+}

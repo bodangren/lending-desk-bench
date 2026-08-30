@@ -16,6 +16,8 @@ import { PENALTY_FULL, type DoctorReport } from "./doctor.js";
  * a dead zone.
  */
 export const TIER_GATE = 0.9;
+/** Completion below this earns a proportionally reduced quality axis, not a copy of it. */
+export const QUALITY_GATE = 0.6;
 export const AXIS_WEIGHTS = { completion: 0.6, adversarial: 0.2, quality: 0.2 };
 
 export type ScoreMetrics = {
@@ -82,7 +84,14 @@ export function deriveScoreMetrics(
   const adversarial = probeEntries.length
     ? probeEntries.reduce((sum, [id, probe]) => sum + (probes[id] ? scale[probe.tier] : 0), 0) / probeEntries.length
     : 0;
-  const quality = doctorReport.ok ? Math.max(0, 1 - penalty / PENALTY_FULL) * completion : 0;
+  // Gate the axis on completion instead of multiplying by it. The old form made
+  // quality a scaled copy of completion, so one defect was charged on two axes, and
+  // with a zero penalty in every run the axis carried no information of its own.
+  // The gate keeps the original intent: a candidate that implemented almost nothing
+  // may not collect clean-code points for the little it wrote.
+  const quality = doctorReport.ok
+    ? softTiercale(completion, QUALITY_GATE) * Math.max(0, 1 - penalty / PENALTY_FULL)
+    : 0;
   const raw = 100 * (
     AXIS_WEIGHTS.completion * completion +
     AXIS_WEIGHTS.adversarial * adversarial +

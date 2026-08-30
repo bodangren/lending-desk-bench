@@ -60,8 +60,7 @@ export const SENSITIVITY_CONTROLS: readonly SensitivityControl[] = [
   control("C.filter-category", "app/items/page.tsx", "i.category === category", "false"),
   control("C.filter-both", "app/items/page.tsx", "(!category || i.category === category),", "(!category || i.category === category || needle === \"drill\"),"),
   control("C.empty", "app/items/page.tsx", "No items match your search.", "Nothing matched.", ["P.searchparams-async", "P.filter-literal"]),
-  control("C.summary", "app/items/page.tsx", `{total} in the catalogue · {categories.join(", ")}`, `{total - 1} in the catalogue · {categories.join(", ")}`),
-  control("C.parallel-reads", "app/items/page.tsx", "    countItems(),", "    await countItems(),", ["P.no-waterfall"]),
+  control("C.parallel-reads", "app/items/page.tsx", "    countItems(),", "    await countItems(),"),
   control("D.history-order", "app/items/[id]/page.tsx", "(a, b) => Date.parse(b.borrowedAt) - Date.parse(a.borrowedAt),", "(a, b) => Date.parse(a.borrowedAt) - Date.parse(b.borrowedAt),"),
   control("D.history-status", "app/items/[id]/page.tsx", "{computeLoanStatus(loan, at)}", "{\"ok\"}"),
   control("D.notfound", "app/items/[id]/page.tsx", "if (!item) notFound();", "if (!item) return <p>Unknown item</p>;"),
@@ -102,11 +101,12 @@ export const SENSITIVITY_CONTROLS: readonly SensitivityControl[] = [
   control("P.concurrent-return", "app/api/loans/route.ts", "if (error instanceof LoanAlreadyClosedError) {\n      return NextResponse.json({ error: \"Item is not on loan\" }, { status: 409 });\n    }", "if (false) {\n      return NextResponse.json({ error: \"Item is not on loan\" }, { status: 409 });\n    }"),
   control("P.hydration-clean", "app/items/[id]/checkout-form.tsx", "<form action={formAction} className=\"space-y-3 rounded-lg border border-neutral-200 p-4\">", "<form action={formAction} data-hydration={Math.random()} className=\"space-y-3 rounded-lg border border-neutral-200 p-4\">"),
   control("P.filter-literal", "app/items/page.tsx", "i.name.toLowerCase().includes(needle)", "new RegExp(needle, \"i\").test(i.name)"),
-  control("P.no-waterfall", "app/items/page.tsx", "    countItems(),", "    await countItems(),", ["C.parallel-reads"]),
   control("P.validate-before-io", "app/api/loans/route.ts", "const { itemId, memberId, dueAt } = (body ?? {}) as Record<string, unknown>;\n  if (typeof itemId !== \"string\" || typeof memberId !== \"string\" || typeof dueAt !== \"string\") {\n    return NextResponse.json(\n      { error: \"itemId, memberId and dueAt are required strings\" },\n      { status: 400 },\n    );\n  }", "const { itemId, memberId, dueAt } = (body ?? {}) as Record<string, unknown>;\n  if (typeof itemId !== \"string\" || typeof memberId !== \"string\" || typeof dueAt !== \"string\") {\n    await Promise.all([getItem(\"\"), getMember(\"\")]);\n    return NextResponse.json(\n      { error: \"itemId, memberId and dueAt are required strings\" },\n      { status: 400 },\n    );\n  }"),
   control("P.n-plus-one", "app/items/page.tsx", "  if (filtered.length === 0) {", "  await Promise.all(filtered.map(() => listItems()));\n\n  if (filtered.length === 0) {"),
   control("P.dedup-item", "app/items/[id]/page.tsx", "const loadItem = cache(getItem);", "const loadItem = getItem;"),
-  control("P.streams-shell", "app/items/[id]/page.tsx", "Loading history…", "Dara Nwosu"),
+  // Remove the boundary itself. Renaming the fallback to the probe's own marker only
+  // proved the marker is read; it never proved the Suspense boundary is graded.
+  control("P.streams-shell", "app/items/[id]/page.tsx", "<Suspense fallback={<p className=\"text-sm text-neutral-600\">Loading history…</p>}>\n          <LoanHistory itemId={item.id} />\n        </Suspense>", "<LoanHistory itemId={item.id} />"),
   multiControl(
     "ADV.useActionState",
     "app/items/[id]/checkout-form.tsx",

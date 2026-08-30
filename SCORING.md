@@ -61,9 +61,19 @@ adversarial points. Probe definitions and advertised failure modes are in `crite
 ## Code quality (20%)
 
 `harness/doctor.ts` invokes the lockfile-pinned local `react-doctor` binary with supply-chain
-and dead-code scans disabled. It has no network dependency during a grading run. Quality is a
+and dead-code scans disabled, and adds the deterministic source signals in
+`harness/source-signals.ts`. It has no network dependency during a grading run. Quality is a
 weighted penalty for diagnostics introduced above `reference/doctor.json`, not the tool's raw
 health score. This avoids rewarding a candidate for deleting implementation.
+
+react-doctor 0.9.2 reports zero diagnostics on every candidate in this benchmark, with linting
+and dead-code analysis both enabled, so it cannot carry the axis alone. The source signals scan
+the writable candidate paths only, and 9 of the 19 valid runs raise at least one.
+
+The axis is gated on completion rather than multiplied by it. Multiplying made quality a scaled
+copy of completion, so one functional defect was charged on two axes. The gate keeps the
+intent: a candidate that implemented almost nothing may not bank clean-code points for the
+little it wrote.
 
 Quality is evaluated only after a valid, compiling functional result exists. A missing,
 malformed, or nonlocal doctor baseline invalidates the score rather than silently changing the
@@ -82,7 +92,7 @@ For a valid non-gate-blocked record:
 ```text
 completion = Σ (passed_criterion × tier_scale) / |criteria|
 adversarial = Σ (passed_probe × tier_scale) / |probes|
-quality = completion × max(0, 1 - doctor_penalty / PENALTY_FULL)
+quality = min(1, completion / QUALITY_GATE) × max(0, 1 - doctor_penalty / PENALTY_FULL)
 total = round1(100 × (0.60 × completion + 0.20 × adversarial + 0.20 × quality))
 ```
 

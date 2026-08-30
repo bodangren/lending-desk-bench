@@ -14,6 +14,15 @@ export type NegativeControl = {
   expectedFailures: readonly string[];
 };
 
+/**
+ * Fixture for the mutation engine, not a second control suite.
+ *
+ * applyNegativeControl below is the engine every sensitivity control runs through
+ * (verify-controls.ts:268). This array exercises it in tests/meta/negative-controls.test.ts.
+ * Three of its four entries duplicate a live control in sensitivity-controls.ts on
+ * purpose: a mutation that the live suite already depends on is the right regression
+ * fixture. Do not read this list as calibration evidence — it grades no candidate.
+ */
 export const NEGATIVE_CONTROLS: readonly NegativeControl[] = [
   {
     id: "catalogue-cap",

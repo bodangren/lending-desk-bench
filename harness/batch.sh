@@ -32,6 +32,44 @@ if [ "${#MODELS[@]}" -eq 0 ]; then
   exit 2
 fi
 
+# ---- Harness self-check ------------------------------------------------------
+# Neither of these ran in the grading path before. The meta suite polices the
+# criteria, the spec matrix and the control manifest. The sensitivity controls
+# prove that each test fails when its target behaviour breaks. Without them a
+# criterion written from reference/ rather than from spec.md could not be
+# detected, and several were not: see measure/tracks/harness_audit/spec.md.
+#
+# BENCH_SELFCHECK: meta (default) | full | skip
+#   meta -> the meta suite plus the representative control set (--fast)
+#   full -> the meta suite plus every declared control (--all); use monthly,
+#           after a task rotation, because each control costs one graded run
+#   skip -> neither; the batch prints a warning and grades anyway
+SELFCHECK="${BENCH_SELFCHECK:-meta}"
+case "$SELFCHECK" in
+  meta|full|skip) ;;
+  *) echo "BENCH_SELFCHECK must be meta, full or skip" >&2; exit 2 ;;
+esac
+
+if [ "$SELFCHECK" = skip ]; then
+  echo "WARNING: harness self-check skipped; these results are not calibrated"
+else
+  echo "SELF-CHECK $(date -Is) — meta suite"
+  if ! npm run --silent test:meta > "meta-selfcheck.log" 2>&1; then
+    echo "harness self-check failed: the meta suite did not pass" >&2
+    echo "see harness/meta-selfcheck.log" >&2
+    exit 3
+  fi
+
+  control_scope="--fast"
+  if [ "$SELFCHECK" = full ]; then control_scope="--all"; fi
+  echo "SELF-CHECK $(date -Is) — sensitivity controls $control_scope"
+  if ! ./node_modules/.bin/tsx verify-controls.ts "$control_scope"; then
+    echo "harness self-check failed: a sensitivity control did not break its targets" >&2
+    exit 3
+  fi
+  echo "SELF-CHECK PASS $(date -Is)"
+fi
+
 NARMS=$(echo "$ARMS" | wc -w)
 TOTAL=$(( ${#MODELS[@]} * REPS * NARMS ))
 echo "BATCH START $(date -Is) — ${#MODELS[@]} models x arms[$ARMS] x ${REPS} reps = ${TOTAL} runs"

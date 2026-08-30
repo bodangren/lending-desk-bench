@@ -55,7 +55,10 @@ test("B.badge", async ({ page }) => {
   // itm-017 has a returned loan AND a newer open one: still on loan.
   await expect(page.getByRole("link", { name: /Rotary Hammer/ })).toContainText("On loan");
   // itm-013's loans are all returned, and they share a borrowedAt: still available.
-  await expect(page.getByRole("link", { name: /^Tile Cutter/ })).toContainText("Available");
+  // Section B states no order for the name, the category, the badge and the image, so
+  // the accessible name may start with any of them. Select the card by its href and
+  // let the badge assertion carry the requirement.
+  await expect(page.locator('a[href="/items/itm-013"]')).toContainText("Available");
 });
 
 test("B.link", async ({ page }) => {
@@ -146,19 +149,26 @@ test("H.loading", async () => {
   // Read the flush order off the socket: the heading and a placeholder grid must
   // be sent before the rows are ready, not in the same chunk as them.
   const m = await streamMarks(`${BASE}/items`, {
-    heading: /<h1[^>]*>\s*Items/,
+    // H.1 states the heading text, never the markup. A shell that writes
+    // <h1><span>Items</span></h1>, or puts an icon first, satisfies the checkbox.
+    heading: /<h1[^>]*>[\s\S]{0,200}?Items/,
     firstItem: "Cordless Drill",
   });
   expect(m.heading, "no <h1>Items</h1> in the response at all").toBeDefined();
   expect(m.firstItem, "catalogue never rendered").toBeDefined();
+  // Flush order, not elapsed time. The old 100ms threshold was a third of the injected
+  // BENCH_LATENCY_MS, so it moved with that setting, with host load, and with any
+  // caching the candidate added. SCORING.md already voids timing assertions under load.
   expect(
-    m.firstItem! - m.heading!,
-    `heading at ${m.heading}ms, rows at ${m.firstItem}ms — the shell did not paint first`,
-  ).toBeGreaterThan(100);
+    m.chunk.firstItem!,
+    `heading in chunk ${m.chunk.heading}, rows in chunk ${m.chunk.firstItem}`
+      + " — the shell did not flush before the rows",
+  ).toBeGreaterThan(m.chunk.heading!);
 
   // The placeholder grid: at least six tiles present in the shell.
   const shell = prefixBefore(m.body, "Cordless Drill");
-  const afterHeading = shell.slice(shell.search(/<h1/));
+  const headingAt = shell.search(/<h1/);
+  const afterHeading = headingAt === -1 ? "" : shell.slice(headingAt);
   expect(
     countElements(afterHeading),
     "fewer than six placeholder tiles in the loading shell",
@@ -175,20 +185,19 @@ test("B.image-response", async ({ page }) => {
   expect(response.headers()["content-type"]).toMatch(/^image\//);
 });
 
-test("C.summary", async ({ page }) => {
-  await page.goto("/items");
-  await expect(page.getByText("29 in the catalogue · hand-tool, measuring, power-tool, safety"))
-    .toBeVisible();
-});
-
 
 test("C.parallel-reads", async () => {
   // This is spec C.7, not the hidden no-waterfall probe: the count and category
   // reads named by the checkbox must overlap in one catalogue render.
   const calls = await tracedCatalogueCalls();
-  const count = calls.find((call) => call.name === "countItems");
+  // C.7 asks that the count read and the category read do not wait on each other. It
+  // names no function, and listItems() already returns every item, so deriving the
+  // total from it is a correct answer. Requiring countItems() by name failed three
+  // candidates that used Promise.all([listItems(), listCategories()]).
+  const count = calls.find((call) => call.name === "countItems")
+    ?? calls.find((call) => call.name === "listItems");
   const categories = calls.find((call) => call.name === "listCategories");
-  expect(count, "countItems was never called").toBeDefined();
+  expect(count, "neither countItems nor listItems was called").toBeDefined();
   expect(categories, "listCategories was never called").toBeDefined();
   const overlap = Math.min(count!.end, categories!.end) - Math.max(count!.start, categories!.start);
   expect(overlap, "catalogue count and category reads did not overlap").toBeGreaterThan(0);

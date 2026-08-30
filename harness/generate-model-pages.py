@@ -53,6 +53,7 @@ TEMPLATE = """<!DOCTYPE html>
     import {{
       loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, pct, domainRate, DOMAIN_ORDER,
       modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
+      fmtPct1, cacheHitRate,
     }} from "../assets/js/site.js";
 
     const MODEL_ID = {id_js};
@@ -87,7 +88,8 @@ TEMPLATE = """<!DOCTYPE html>
             <div class="stat"><span>Soft score</span><strong>${{m.score.total.toFixed(1)}}</strong></div>
             <div class="stat"><span>Passes</span><strong>${{m.passes.passed}}/${{m.passes.total}}</strong></div>
             <div class="stat"><span>Advisory</span><strong>${{m.advisory.passed}}/${{m.advisory.total}}</strong></div>
-            <div class="stat"><span>Input tokens</span><strong>${{fmtTokens(m.usage.input)}}</strong></div>
+            <div class="stat"><span>Uncached input</span><strong>${{fmtTokens(m.usage.input)}}</strong></div>
+            <div class="stat"><span>Cache hit</span><strong>${{fmtPct1(cacheHitRate(m.usage))}}</strong></div>
             <div class="stat"><span>Output tokens</span><strong>${{fmtTokens(m.usage.output)}}</strong></div>
             <div class="stat"><span>Cache read</span><strong>${{fmtTokens(m.usage.cacheRead)}}</strong></div>
             <div class="stat"><span>Cache write</span><strong>${{fmtTokens(m.usage.cacheWrite)}}</strong></div>

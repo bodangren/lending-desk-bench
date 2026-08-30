@@ -385,3 +385,13 @@ footer.site-footer a { color: var(--accent); }
   border: 2px solid var(--bg);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--panel-2); }
+
+/* A total that failed a SCORING.md trust flag. Shown, but never presented as a rank. */
+.unranked {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}

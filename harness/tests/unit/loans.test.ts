@@ -2,8 +2,10 @@
 import { describe, expect, it } from "vitest";
 import { computeLoanStatus } from "@candidate/src/lib/loans";
 import type { Loan } from "@candidate/src/db/schema";
+import { NOW as NOW_ISO } from "@candidate/src/db/seed";
 
-const NOW = new Date("2026-03-15T12:00:00.000Z");
+// The fixed clock comes from the protected seed, not from a repeated literal.
+const NOW = new Date(NOW_ISO);
 const at = (h: number) => new Date(NOW.getTime() + h * 3600_000).toISOString();
 const loan = (dueAt: string, returnedAt: string | null = null): Loan => ({
   id: "lon-x", itemId: "itm-001", memberId: "mbr-001",

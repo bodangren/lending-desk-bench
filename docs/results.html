@@ -74,7 +74,7 @@
                   <th class="num" data-col="runtime">Run time</th>
                   <th class="num" data-col="monthly">% monthly</th>
                   <th class="num" data-col="cache" title="Cache reads as a share of prompt tokens (cache reads plus new input)">Cache hit</th>
-                  <th class="num" data-col="in">In</th>
+                  <th class="num" data-col="in" title="New input tokens only. Cache reads are counted in the Cache hit column, and providers differ in how they split the two.">Uncached input</th>
                   <th class="num" data-col="out">Out</th>
                   <th class="num">Reasoning</th>
                 </tr>
@@ -99,6 +99,13 @@
       // Table
       document.querySelector("#full-table tbody").innerHTML = models.map((m, i) => {
         const cache = cacheHitRate(m.usage);
+        // SCORING.md: a record that fails a trust flag must not be ranked. Publish the
+        // total, but say plainly that it does not count.
+        const t = m.trust;
+        const unranked = t && !t.rankable;
+        const why = !t ? "" : t.under_load
+          ? "graded while the host was busy"
+          : !t.valid ? "the run is invalid" : "a trust flag failed";
         return `
         <tr data-sort-name="${escapeHtml(m.name)}" data-sort-score="${m.score.total}"
             data-sort-passes="${m.passes.passed / m.passes.total}"
@@ -112,7 +119,9 @@
             <a class="model-link" href="./models/${m.id}.html">${escapeHtml(m.name)}</a>
             <div class="subline">${escapeHtml(m.provider_model)}</div>
           </td>
-          <td class="num score">${m.score.total.toFixed(1)}</td>
+          <td class="num score">${m.score.total.toFixed(1)}${
+            unranked ? `<span class="unranked" title="Unranked: ${why}.">unranked</span>` : ""
+          }</td>
           <td class="num">${m.passes.passed}/${m.passes.total}</td>
           <td class="num">${fmtSecs(m.wall_seconds)}</td>
           <td class="num">${fmtMonthlyPct(m.go?.monthly_pct)}</td>

@@ -41,33 +41,18 @@ test("P.no-key-leak", async ({ page }) => {
   // The staff key authenticates every mutation. Handing the session object (or
   // the key itself) to a client component ships it to every browser that loads
   // the page, in the RSC payload if not in the markup.
+  // Both assertions are negative, so a page that returns 500 or an empty body used to
+  // earn this Tier 0 probe by rendering nothing at all. Require the page first.
   const res = await page.request.get("/items/itm-001");
+  expect(res.ok(), `detail page returned ${res.status()}`).toBe(true);
   const html = await res.text();
+  expect(html, "detail page never rendered the item").toContain("Cordless Drill");
   expect(html).not.toContain("staff-key-7f3a");
   const detail = await page.request.get("/items/itm-003");
-  expect(await detail.text()).not.toContain("staff-key-7f3a");
-});
-
-test("P.no-waterfall", async () => {
-  // Timing alone cannot separate parallel from sequential here — measured variance on
-  // identical correct code was 1128ms vs 1723ms. Instead read the call trace that
-  // src/db writes when BENCH_TRACE_FILE is set, and check the two independent reads
-  // actually overlapped in time.
-  const traceFile = process.env.BENCH_TRACE_FILE;
-  test.skip(!traceFile, "BENCH_TRACE_FILE not set");
-
-  const calls = await tracedGet("/items");
-  const count = calls.find((c) => c.name === "countItems");
-  const cats = calls.find((c) => c.name === "listCategories");
-  expect(count, "countItems was never called").toBeDefined();
-  expect(cats, "listCategories was never called").toBeDefined();
-
-  const overlap =
-    Math.min(count!.end, cats!.end) - Math.max(count!.start, cats!.start);
-  expect(
-    overlap,
-    `countItems ${count!.start}-${count!.end}, listCategories ${cats!.start}-${cats!.end}`,
-  ).toBeGreaterThan(0);
+  expect(detail.ok(), `detail page returned ${detail.status()}`).toBe(true);
+  const detailHtml = await detail.text();
+  expect(detailHtml, "detail page never rendered the item").toContain("Circular Saw");
+  expect(detailHtml).not.toContain("staff-key-7f3a");
 });
 
 test("P.n-plus-one", async () => {
@@ -124,16 +109,27 @@ test("P.streams-shell", async () => {
   // The detail route has no loading.tsx, so nothing paints until the slowest
   // await in the page resolves — unless the loan history sits behind its own
   // boundary. Read the flush order off the socket rather than polling the DOM.
-  const m = await streamMarks(`${BASE}/items/itm-018`, {
-    name: /<h1[^>]*>\s*Scaffold Tower/,
-    history: "Dara Nwosu",
+  // itm-017 carries an open loan, so spec D forbids CheckoutForm here and no member
+  // <option> exists on the page. On itm-018 the form does render, and its option list
+  // repeats every member name, so the marker matched the shell rather than the
+  // history: a candidate that suspends the history but not the form failed for a
+  // boundary the spec never asked for.
+  // "Bruno Silva" holds only the returned loan lon-009, so the name can come from a
+  // history row alone, never from the open-loan state above it.
+  const m = await streamMarks(`${BASE}/items/itm-017`, {
+    name: /<h1[^>]*>[\s\S]{0,200}?Rotary Hammer/,
+    history: "Bruno Silva",
   });
   expect(m.name, "item name never rendered").toBeDefined();
   expect(m.history, "loan history never rendered").toBeDefined();
+  // Flush order, not elapsed time. Measured deltas here were -4ms to 0ms even when the
+  // boundary was genuinely absent, because the inlined RSC payload can precede the HTML
+  // that consumes it. The chunk ordinal answers the actual question.
   expect(
-    m.history! - m.name!,
-    `name at ${m.name}ms, history at ${m.history}ms — both arrived in one flush`,
-  ).toBeGreaterThan(100);
+    m.chunk.history!,
+    `name in chunk ${m.chunk.name}, history in chunk ${m.chunk.history}`
+      + " — both arrived in one flush",
+  ).toBeGreaterThan(m.chunk.name!);
 });
 
 test.describe("advisory — modernization signals", () => {

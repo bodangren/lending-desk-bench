@@ -34,26 +34,53 @@ const ORIGINAL_TASKS = [
   "Every checkbox in `spec.md` is satisfied",
 ] as const;
 
+/** Checklist tasks from plan.md, under any bullet character and either marker case. */
+function planTasks(): { done: boolean; text: string }[] {
+  const rows: { done: boolean; text: string }[] = [];
+  for (const line of track("plan.md").split("\n")) {
+    const match = /^\s*[-*+] \[([ xX])\] (.+?)\s*$/.exec(line);
+    if (match) rows.push({ done: match[1] !== " ", text: match[2] });
+  }
+  return rows;
+}
+
 describe("Measure track closeout", () => {
   it("M.metadata-valid", () => {
+    // The untouched fixture already satisfied every clause of this criterion, including
+    // status "pending", so it discriminated nothing: all 19 valid runs passed it and 10
+    // of them never opened the file. Keep the corruption check and let M.closeout own
+    // the closeout values.
     const metadata = JSON.parse(track("metadata.json"));
     expect(metadata).toMatchObject({
       id: "lending_desk",
       title: "Lending Desk — items slice",
       type: "Feature",
     });
-    expect(["pending", "in_progress", "complete"]).toContain(metadata.status);
+    expect(metadata.status, "status must stay one of the Measure states").toMatch(
+      /^(pending|in_progress|complete)$/,
+    );
+    // The untouched fixture omits the key entirely, so absent is valid here. M.closeout
+    // is the criterion that requires the closeout value.
+    expect(
+      metadata.actual_tasks == null || Number.isInteger(metadata.actual_tasks),
+      "actual_tasks must be absent, null, or an integer",
+    ).toBe(true);
   });
 
   it("M.plan-complete", () => {
-    const unchecked = track("plan.md").match(/^- \[ \] .+$/gm) ?? [];
+    // Read the markers rather than searching for "- [ ]". The old form matched no line
+    // in an emptied plan.md and then passed, and it rejected the valid GFM marker
+    // "- [X]" and a "*" bullet, neither of which AGENTS.md forbids.
+    const tasks = planTasks();
+    expect(tasks, "plan.md holds no checklist tasks at all").toHaveLength(ORIGINAL_TASKS.length);
+    const unchecked = tasks.filter((task) => !task.done).map((task) => task.text);
     expect(unchecked, `uncompleted track tasks:\n${unchecked.join("\n")}`).toEqual([]);
   });
 
   it("M.closeout", () => {
-    const taskLines = track("plan.md").match(/^- \[[ x]\] .+$/gm) ?? [];
-    expect(taskLines.map((line) => line.replace(/^- \[[ x]\] /, ""))).toEqual(ORIGINAL_TASKS);
-    expect(taskLines).toEqual(ORIGINAL_TASKS.map((task) => `- [x] ${task}`));
+    // AGENTS.md states the metadata contract in plain words. It states nothing about
+    // the bullet character or the marker case, so compare the task text alone.
+    expect(planTasks().map((task) => task.text)).toEqual([...ORIGINAL_TASKS]);
 
     const metadata = JSON.parse(track("metadata.json"));
     expect(metadata.status).toBe("complete");
