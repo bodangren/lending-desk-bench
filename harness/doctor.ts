@@ -10,7 +10,6 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, cpSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { scanSourceSignals } from "./source-signals.js";
 
 export const DOCTOR_VERSION = "0.9.2";
 const LOCAL_DOCTOR = resolve(import.meta.dirname, "node_modules/.bin/react-doctor");
@@ -97,13 +96,6 @@ export function runDoctor(dir: string, rawOut?: string): DoctorReport {
     rule: d.rule, severity: d.severity, category: d.category,
     filePath: d.normalizedFilePath ?? d.filePath, line: d.line,
   }));
-
-  // react-doctor 0.9.2 reports zero diagnostics on every candidate in this benchmark,
-  // with linting and dead-code analysis both enabled, so the quality axis was an exact
-  // copy of completion in all 19 valid runs. These deterministic source signals restore
-  // resolution: 9 of those 19 candidates raise at least one. They carry the same shape,
-  // so the penalty and baseline arithmetic below is unchanged.
-  diagnostics.push(...scanSourceSignals(dir));
 
   const byCategory: Record<string, number> = {};
   const byRule: Record<string, number> = {};
