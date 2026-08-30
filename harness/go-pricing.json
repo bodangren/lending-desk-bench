@@ -251,6 +251,7 @@
       "batch": true,
       "requests_per_month": 21500,
       "monthly_usage_usd": 60,
+      "max_tokens": 32768,
       "rates": { "input": 0.14, "output": 0.58, "cacheRead": 0.035, "cacheWrite": 0 }
     }
   }

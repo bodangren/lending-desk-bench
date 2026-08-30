@@ -33,6 +33,8 @@ export type GoModel = {
   rates: GoRates;
   tiers?: GoRates[];
   peak_rates?: GoRates;
+  max_tokens?: number;
+  context_window?: number;
 };
 
 export type GoPricing = {
@@ -209,6 +211,12 @@ export function emitPiModelsJson(pricing: GoPricing = loadPricing().pricing): un
       cost,
     };
     if (apiBase?.baseUrl) row.baseUrl = apiBase.baseUrl;
+    // Pi defaults to 16384 max output tokens. hy3 spends its whole budget on
+    // thinking at --thinking max and dies with stopReason "length" before any
+    // write, which the runner then voids as "agent produced no changes".
+    // The Go endpoint accepts larger budgets, so pin hy3's real one here.
+    if (spec.max_tokens) row.maxTokens = spec.max_tokens;
+    if (spec.context_window) row.contextWindow = spec.context_window;
     return row;
   });
   const defaultApi = pricing.apis["openai-completions"];
