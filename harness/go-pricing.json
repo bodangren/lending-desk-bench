@@ -153,7 +153,7 @@
       "name": "Muse Spark 1.2 Contributor",
       "api": "openai-responses",
       "high_usage": true,
-      "batch": false,
+      "batch": true,
       "requests_per_month": 226600,
       "monthly_usage_usd": 60,
       "rates": { "input": 0.1, "output": 0.2, "cacheRead": 0.002, "cacheWrite": 0 }
@@ -229,7 +229,7 @@
       "name": "DeepSeek V4 Flash Vision Exp",
       "api": "openai-completions",
       "high_usage": true,
-      "batch": false,
+      "batch": true,
       "requests_per_month": 18900,
       "monthly_usage_usd": 15,
       "rates": { "input": 0.22, "output": 0.66, "cacheRead": 0.007, "cacheWrite": 0 },

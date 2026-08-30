@@ -32,8 +32,10 @@ describe("OpenCode Go recost", () => {
     const batch = batchModels(pricing);
     expect(batch).toContain("mimo-v2.5");
     expect(batch).toContain("gpt-5.6-luna");
-    expect(batch).not.toContain("muse-spark-1.2-contributor");
-    expect(batch).not.toContain("deepseek-v4-flash-vision-exp");
+    expect(batch).toContain("muse-spark-1.2-contributor");
+    expect(batch).toContain("deepseek-v4-flash-vision-exp");
+    expect(batch).toContain("hy3");
+    expect(batch).toContain("deepseek-v4-flash");
     expect(batch).not.toContain("kimi-k2.7-code");
     for (const id of batch) {
       expect(pricing.models[id].requests_per_month).toBeGreaterThan(7000);
