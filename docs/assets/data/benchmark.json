@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-30T09:52:30",
+  "generated_at": "2026-08-30T10:49:30",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
@@ -176,10 +176,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 89.3,
+        "total": 89.6,
         "completion": 0.9355,
         "adversarial": 0.8333,
-        "quality": 0.8263,
+        "quality": 0.8419,
         "tiers": {
           "0": {
             "rate": 1.0,
@@ -477,7 +477,7 @@
       },
       "thinking": "max",
       "wall_seconds": 496,
-      "historical_score": 89.3,
+      "historical_score": 89.6,
       "trust": {
         "valid": true,
         "trusted": true,
@@ -497,10 +497,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 89.3,
+          "total": 89.6,
           "completion": 0.9355,
           "adversarial": 0.8333,
-          "quality": 0.8263,
+          "quality": 0.8419,
           "tiers": {
             "0": {
               "rate": 1.0,
@@ -798,7 +798,7 @@
         },
         "thinking": "max",
         "wall_seconds": 496,
-        "historical_score": 89.3,
+        "historical_score": 89.6,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -819,10 +819,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 81.9,
+          "total": 82.2,
           "completion": 0.8448,
           "adversarial": 0.8161,
-          "quality": 0.7463,
+          "quality": 0.7603,
           "tiers": {
             "0": {
               "rate": 0.9286,
@@ -1121,7 +1121,7 @@
         },
         "thinking": "max",
         "wall_seconds": 665,
-        "historical_score": 81.9,
+        "historical_score": 82.2,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -1135,18 +1135,18 @@
         }
       },
       "trend": {
-        "ema": 89.3,
-        "min": 89.3,
-        "max": 89.3,
+        "ema": 89.6,
+        "min": 89.6,
+        "max": 89.6,
         "n": 1
       },
       "skills_trend": {
-        "ema": 81.9,
-        "min": 81.9,
-        "max": 81.9,
+        "ema": 82.2,
+        "min": 82.2,
+        "max": 82.2,
         "n": 1
       },
-      "rank_score": 89.3
+      "rank_score": 89.6
     },
     {
       "id": "glm-5.3-flash",
@@ -3445,10 +3445,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 70.9,
+        "total": 71.1,
         "completion": 0.746,
         "adversarial": 0.6081,
-        "quality": 0.6963,
+        "quality": 0.7087,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -3747,7 +3747,7 @@
       },
       "thinking": "max",
       "wall_seconds": 398,
-      "historical_score": 70.9,
+      "historical_score": 71.1,
       "trust": {
         "valid": true,
         "trusted": true,
@@ -3767,10 +3767,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 70.9,
+          "total": 71.1,
           "completion": 0.746,
           "adversarial": 0.6081,
-          "quality": 0.6963,
+          "quality": 0.7087,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -4069,7 +4069,7 @@
         },
         "thinking": "max",
         "wall_seconds": 398,
-        "historical_score": 70.9,
+        "historical_score": 71.1,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -4404,9 +4404,9 @@
         }
       },
       "trend": {
-        "ema": 70.9,
-        "min": 70.9,
-        "max": 70.9,
+        "ema": 71.1,
+        "min": 71.1,
+        "max": 71.1,
         "n": 1
       },
       "skills_trend": {
@@ -4415,7 +4415,7 @@
         "max": 87.1,
         "n": 1
       },
-      "rank_score": 70.9
+      "rank_score": 71.1
     },
     {
       "id": "muse-spark-1.2-contributor",
@@ -5080,10 +5080,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 66.6,
+        "total": 67.3,
         "completion": 0.7327,
         "adversarial": 0.6184,
-        "quality": 0.5129,
+        "quality": 0.5495,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -5383,7 +5383,7 @@
       },
       "thinking": "max",
       "wall_seconds": 411,
-      "historical_score": 66.6,
+      "historical_score": 67.3,
       "trust": {
         "valid": true,
         "trusted": true,
@@ -5403,10 +5403,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 66.6,
+          "total": 67.3,
           "completion": 0.7327,
           "adversarial": 0.6184,
-          "quality": 0.5129,
+          "quality": 0.5495,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -5706,7 +5706,7 @@
         },
         "thinking": "max",
         "wall_seconds": 411,
-        "historical_score": 66.6,
+        "historical_score": 67.3,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -6043,9 +6043,9 @@
         }
       },
       "trend": {
-        "ema": 66.6,
-        "min": 66.6,
-        "max": 66.6,
+        "ema": 67.3,
+        "min": 67.3,
+        "max": 67.3,
         "n": 1
       },
       "skills_trend": {
@@ -6054,7 +6054,7 @@
         "max": 83.2,
         "n": 1
       },
-      "rank_score": 66.6
+      "rank_score": 67.3
     },
     {
       "id": "qwen3.7-plus",
@@ -6064,10 +6064,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 64.0,
+        "total": 64.5,
         "completion": 0.683,
         "adversarial": 0.5938,
-        "quality": 0.5578,
+        "quality": 0.5806,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -6365,7 +6365,7 @@
       },
       "thinking": "max",
       "wall_seconds": 363,
-      "historical_score": 64,
+      "historical_score": 64.5,
       "trust": {
         "valid": true,
         "trusted": true,
@@ -6385,10 +6385,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 64.0,
+          "total": 64.5,
           "completion": 0.683,
           "adversarial": 0.5938,
-          "quality": 0.5578,
+          "quality": 0.5806,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -6686,7 +6686,7 @@
         },
         "thinking": "max",
         "wall_seconds": 363,
-        "historical_score": 64,
+        "historical_score": 64.5,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -6701,13 +6701,13 @@
       },
       "skills": null,
       "trend": {
-        "ema": 64.0,
-        "min": 64.0,
-        "max": 64.0,
+        "ema": 64.5,
+        "min": 64.5,
+        "max": 64.5,
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 64.0
+      "rank_score": 64.5
     },
     {
       "id": "mimo-v2.5",
@@ -7372,10 +7372,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 60.1,
+        "total": 60.5,
         "completion": 0.6375,
         "adversarial": 0.6241,
-        "quality": 0.4675,
+        "quality": 0.4888,
         "tiers": {
           "0": {
             "rate": 0.7857,
@@ -7677,7 +7677,7 @@
       },
       "thinking": "max",
       "wall_seconds": 430,
-      "historical_score": 60.1,
+      "historical_score": 60.5,
       "trust": {
         "valid": true,
         "trusted": true,
@@ -7697,10 +7697,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 60.1,
+          "total": 60.5,
           "completion": 0.6375,
           "adversarial": 0.6241,
-          "quality": 0.4675,
+          "quality": 0.4888,
           "tiers": {
             "0": {
               "rate": 0.7857,
@@ -8002,7 +8002,7 @@
         },
         "thinking": "max",
         "wall_seconds": 430,
-        "historical_score": 60.1,
+        "historical_score": 60.5,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -8023,10 +8023,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 66.3,
+          "total": 66.5,
           "completion": 0.7399,
           "adversarial": 0.601,
-          "quality": 0.4933,
+          "quality": 0.5056,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -8325,7 +8325,7 @@
         },
         "thinking": "max",
         "wall_seconds": 754,
-        "historical_score": 66.3,
+        "historical_score": 66.5,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -8339,18 +8339,18 @@
         }
       },
       "trend": {
-        "ema": 60.1,
-        "min": 60.1,
-        "max": 60.1,
+        "ema": 60.5,
+        "min": 60.5,
+        "max": 60.5,
         "n": 1
       },
       "skills_trend": {
-        "ema": 66.3,
-        "min": 66.3,
-        "max": 66.3,
+        "ema": 66.5,
+        "min": 66.5,
+        "max": 66.5,
         "n": 1
       },
-      "rank_score": 60.1
+      "rank_score": 60.5
     },
     {
       "id": "mimo-v2.5-pro",
@@ -9009,10 +9009,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 65.9,
+          "total": 66.7,
           "completion": 0.727,
           "adversarial": 0.5343,
-          "quality": 0.5816,
+          "quality": 0.6179,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -9310,7 +9310,7 @@
         },
         "thinking": "max",
         "wall_seconds": 312,
-        "historical_score": 65.9,
+        "historical_score": 66.7,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -9330,9 +9330,9 @@
         "n": 1
       },
       "skills_trend": {
-        "ema": 65.9,
-        "min": 65.9,
-        "max": 65.9,
+        "ema": 66.7,
+        "min": 66.7,
+        "max": 66.7,
         "n": 1
       },
       "rank_score": 60.1
@@ -9345,10 +9345,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 54.6,
+        "total": 54.8,
         "completion": 0.6261,
         "adversarial": 0.3606,
-        "quality": 0.4904,
+        "quality": 0.5009,
         "tiers": {
           "0": {
             "rate": 0.7857,
@@ -9648,7 +9648,7 @@
       },
       "thinking": "max",
       "wall_seconds": 243,
-      "historical_score": 54.6,
+      "historical_score": 54.8,
       "trust": {
         "valid": true,
         "trusted": true,
@@ -9668,10 +9668,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 54.6,
+          "total": 54.8,
           "completion": 0.6261,
           "adversarial": 0.3606,
-          "quality": 0.4904,
+          "quality": 0.5009,
           "tiers": {
             "0": {
               "rate": 0.7857,
@@ -9971,7 +9971,7 @@
         },
         "thinking": "max",
         "wall_seconds": 243,
-        "historical_score": 54.6,
+        "historical_score": 54.8,
         "trust": {
           "valid": true,
           "trusted": true,
@@ -10308,9 +10308,9 @@
         }
       },
       "trend": {
-        "ema": 54.6,
-        "min": 54.6,
-        "max": 54.6,
+        "ema": 54.8,
+        "min": 54.8,
+        "max": 54.8,
         "n": 1
       },
       "skills_trend": {
@@ -10319,7 +10319,7 @@
         "max": 74.1,
         "n": 1
       },
-      "rank_score": 54.6
+      "rank_score": 54.8
     }
   ],
   "experiments": {},
