@@ -77,7 +77,7 @@
         <li><code>npm run typecheck</code> and <code>npm run build</code> (gate)</li>
         <li>Unit tests, API tests against a live Next server</li>
         <li>Playwright browser suite + separate error-boundary boot</li>
-        <li>Score: soft-tier completion (60%), adversarial probes (20%), quality (20%)</li>
+        <li>Score: soft-tier completion (60%), adversarial probes (20%), react-doctor quality (20%)</li>
       </ol>
       <div class="callout">
         <strong>Soft tier gates.</strong> Higher tiers always contribute. The harness scales
@@ -95,6 +95,53 @@
         <code>ADV.useActionState</code> and <code>ADV.useOptimistic</code> detect preferred React 19
         form idioms. They never change the total. They show one signal only: use of modern APIs.
       </div>
+    </section>
+
+    <section class="card" id="sources">
+      <h2>Sources behind the harness</h2>
+      <p class="section-lede">
+        The test checks and the quality scoring come from two external sources. The harness pins both sources.
+        Pinned versions keep grades comparable across weeks.
+      </p>
+
+      <h3 style="margin:1.3rem 0 0.5rem">Vercel React Best Practices</h3>
+      <p class="muted">
+        Vercel maintains this guide for React and Next.js performance. The guide holds 70 rules across 8 categories.
+        Each rule has a priority. The critical categories are request waterfalls and bundle size.
+        The harness turns the rules that fit this task into executable probes:
+      </p>
+      <ul class="muted" style="padding-left:1.15rem">
+        <li><strong>Parallel data fetching.</strong> Independent reads must use <code>Promise.all</code>. Probe <code>C.parallel-reads</code> and <code>P.no-waterfall</code>.</li>
+        <li><strong>Per-request deduplication.</strong> The rule is <code>React.cache()</code> for repeated item reads. Probes <code>P.dedup-item</code> and <code>P.n-plus-one</code>.</li>
+        <li><strong>Auth on server actions.</strong> Server actions need the same auth checks as API routes. Probes <code>F.auth-checkout</code> and <code>F.auth-return</code>.</li>
+        <li><strong>Streaming with Suspense.</strong> The loading shell must stream while data loads. Probes <code>P.streams-shell</code> and <code>H.loading</code>.</li>
+        <li><strong>Modern React 19 idioms.</strong> <code>useActionState</code> and <code>useOptimistic</code> for form state. These probes are advisory. They never change the score.</li>
+      </ul>
+      <p class="muted">
+        The Skills arm receives the same guide as a mounted skill
+        (<code>vercel-react-best-practices</code>). It also receives <code>measure</code>,
+        <code>next-best-practices</code>, <code>vercel-composition-patterns</code>, and <code>build-graph</code>.
+        The No Skills arm sees none of them.
+      </p>
+
+      <h3 style="margin:1.3rem 0 0.5rem">react-doctor</h3>
+      <p class="muted">
+        react-doctor is a static analyzer for React and Next.js code. The harness pins version 0.9.2.
+        The analyzer reads the candidate source without running it. It emits diagnostics in five categories.
+        Each category has a weight: Security 2.0, Bugs 1.5, Performance 1.0, Accessibility 1.0, Maintainability 0.5.
+        Each severity also has a weight: error 3, warning 1.
+      </p>
+      <p class="muted">
+        The quality axis does not use the raw health score. An empty repository scores near 100, so the raw
+        score rewards writing no code. Instead, the harness counts weighted diagnostics <strong>above the
+        reference baseline</strong>. The baseline is the reference solution's own diagnostic set. Diagnostics
+        already present in the reference are subtracted. A candidate that adds 30 weighted penalty points gets
+        zero quality credit. Quality is 20% of the total score.
+      </p>
+      <p class="muted">
+        Current caveat: on this fixture's small file set, react-doctor 0.9.2 reports zero diagnostics for every
+        candidate. The quality axis therefore adds no separation between models in the current week.
+      </p>
     </section>
 
     <section class="card" id="economics">

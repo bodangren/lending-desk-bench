@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-30T06:26:01",
+  "generated_at": "2026-08-30T08:41:06",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
@@ -22,7 +22,7 @@
       },
       "tier_gate": 0.9,
       "tier_mode": "soft",
-      "scored_checks": 74,
+      "scored_checks": 72,
       "advisory_checks": 2,
       "note": "Soft tiers scale higher-tier credit by lower-tier rates. There is no binary rule at 90 percent Tier 0. Advisory checks never affect totals. Week 2026w35 grades ran under host load. Treat these totals as diagnostic, not as a trusted ranking."
     }
@@ -109,7 +109,6 @@
     "C.filter-category": 1,
     "C.filter-both": 1,
     "C.empty": 1,
-    "C.summary": 1,
     "D.history-order": 1,
     "D.history-status": 1,
     "D.notfound": 1,
@@ -151,12 +150,11 @@
   "probe_tiers": {
     "P.searchparams-async": 1,
     "P.no-key-leak": 0,
-    "P.stale-after-mutate": 0,
+    "P.stale-after-mutate": 1,
     "P.concurrent-checkout": 1,
     "P.concurrent-return": 1,
     "P.hydration-clean": 1,
     "P.filter-literal": 1,
-    "P.no-waterfall": 2,
     "P.validate-before-io": 2,
     "P.n-plus-one": 2,
     "P.dedup-item": 2,
@@ -176,17 +174,17 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 91.5,
-        "completion": 0.9355,
-        "adversarial": 0.8333,
-        "quality": 0.9355,
+        "total": 92.4,
+        "completion": 0.9508,
+        "adversarial": 0.8182,
+        "quality": 0.9508,
         "tiers": {
           "0": {
             "rate": 1.0,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.9459,
+            "rate": 0.9722,
             "scale": 1.0
           },
           "2": {
@@ -196,9 +194,9 @@
         }
       },
       "passes": {
-        "passed": 68,
-        "failed": 6,
-        "total": 74
+        "passed": 67,
+        "failed": 5,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -490,17 +488,17 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 91.5,
-          "completion": 0.9355,
-          "adversarial": 0.8333,
-          "quality": 0.9355,
+          "total": 92.4,
+          "completion": 0.9508,
+          "adversarial": 0.8182,
+          "quality": 0.9508,
           "tiers": {
             "0": {
               "rate": 1.0,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9459,
+              "rate": 0.9722,
               "scale": 1.0
             },
             "2": {
@@ -510,9 +508,9 @@
           }
         },
         "passes": {
-          "passed": 68,
-          "failed": 6,
-          "total": 74
+          "passed": 67,
+          "failed": 5,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -805,29 +803,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 83.9,
-          "completion": 0.8448,
-          "adversarial": 0.8161,
-          "quality": 0.8448,
+          "total": 85.2,
+          "completion": 0.8625,
+          "adversarial": 0.8103,
+          "quality": 0.8625,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.8378,
+              "rate": 0.8611,
               "scale": 1.0
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.9309
+              "scale": 0.9568
             }
           }
         },
         "passes": {
-          "passed": 63,
-          "failed": 11,
-          "total": 74
+          "passed": 62,
+          "failed": 10,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -1125,7 +1123,7 @@
         "max": 83.9,
         "n": 1
       },
-      "rank_score": 91.5
+      "rank_score": 92.4
     },
     {
       "id": "glm-5.3-flash",
@@ -1135,17 +1133,17 @@
       "arm_label": "Skills",
       "summary": "",
       "score": {
-        "total": 91.5,
-        "completion": 0.9355,
-        "adversarial": 0.8333,
-        "quality": 0.9355,
+        "total": 92.4,
+        "completion": 0.9508,
+        "adversarial": 0.8182,
+        "quality": 0.9508,
         "tiers": {
           "0": {
             "rate": 0.9286,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.9189,
+            "rate": 0.9444,
             "scale": 1.0
           },
           "2": {
@@ -1155,9 +1153,9 @@
         }
       },
       "passes": {
-        "passed": 68,
-        "failed": 6,
-        "total": 74
+        "passed": 67,
+        "failed": 5,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -1450,17 +1448,17 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 91.5,
-          "completion": 0.9355,
-          "adversarial": 0.8333,
-          "quality": 0.9355,
+          "total": 92.4,
+          "completion": 0.9508,
+          "adversarial": 0.8182,
+          "quality": 0.9508,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9189,
+              "rate": 0.9444,
               "scale": 1.0
             },
             "2": {
@@ -1470,9 +1468,9 @@
           }
         },
         "passes": {
-          "passed": 68,
-          "failed": 6,
-          "total": 74
+          "passed": 67,
+          "failed": 5,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -1764,7 +1762,7 @@
         "max": 91.5,
         "n": 1
       },
-      "rank_score": 91.5
+      "rank_score": 92.4
     },
     {
       "id": "deepseek-v4-flash",
@@ -1774,17 +1772,17 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 88.5,
-        "completion": 0.9194,
-        "adversarial": 0.75,
-        "quality": 0.9194,
+        "total": 89.3,
+        "completion": 0.9344,
+        "adversarial": 0.7273,
+        "quality": 0.9344,
         "tiers": {
           "0": {
             "rate": 0.9286,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.9189,
+            "rate": 0.9444,
             "scale": 1.0
           },
           "2": {
@@ -1794,9 +1792,9 @@
         }
       },
       "passes": {
-        "passed": 66,
-        "failed": 8,
-        "total": 74
+        "passed": 65,
+        "failed": 7,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -2089,17 +2087,17 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 88.5,
-          "completion": 0.9194,
-          "adversarial": 0.75,
-          "quality": 0.9194,
+          "total": 89.3,
+          "completion": 0.9344,
+          "adversarial": 0.7273,
+          "quality": 0.9344,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9189,
+              "rate": 0.9444,
               "scale": 1.0
             },
             "2": {
@@ -2109,9 +2107,9 @@
           }
         },
         "passes": {
-          "passed": 66,
-          "failed": 8,
-          "total": 74
+          "passed": 65,
+          "failed": 7,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -2405,7 +2403,7 @@
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 88.5
+      "rank_score": 89.3
     },
     {
       "id": "gpt-5.6-luna",
@@ -2415,29 +2413,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 73.4,
-        "completion": 0.746,
-        "adversarial": 0.6875,
-        "quality": 0.746,
+        "total": 74.5,
+        "completion": 0.7613,
+        "adversarial": 0.6788,
+        "quality": 0.7613,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7838,
+            "rate": 0.8056,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.7273,
-            "scale": 0.8294
+            "scale": 0.8524
           }
         }
       },
       "passes": {
-        "passed": 58,
-        "failed": 16,
-        "total": 74
+        "passed": 57,
+        "failed": 15,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -2730,29 +2728,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 73.4,
-          "completion": 0.746,
-          "adversarial": 0.6875,
-          "quality": 0.746,
+          "total": 74.5,
+          "completion": 0.7613,
+          "adversarial": 0.6788,
+          "quality": 0.7613,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7838,
+              "rate": 0.8056,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.7273,
-              "scale": 0.8294
+              "scale": 0.8524
             }
           }
         },
         "passes": {
-          "passed": 58,
-          "failed": 16,
-          "total": 74
+          "passed": 57,
+          "failed": 15,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -3046,29 +3044,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 72.8,
-          "completion": 0.7399,
-          "adversarial": 0.6804,
-          "quality": 0.7399,
+          "total": 73.9,
+          "completion": 0.7553,
+          "adversarial": 0.6735,
+          "quality": 0.7553,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7568,
+              "rate": 0.7778,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.8008
+              "scale": 0.823
             }
           }
         },
         "passes": {
-          "passed": 58,
-          "failed": 16,
-          "total": 74
+          "passed": 57,
+          "failed": 15,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -3365,7 +3363,7 @@
         "max": 72.8,
         "n": 1
       },
-      "rank_score": 73.4
+      "rank_score": 74.5
     },
     {
       "id": "minimax-m3",
@@ -3375,29 +3373,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 71.8,
-        "completion": 0.746,
-        "adversarial": 0.6081,
-        "quality": 0.746,
+        "total": 72.7,
+        "completion": 0.7613,
+        "adversarial": 0.5922,
+        "quality": 0.7613,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7838,
+            "rate": 0.8056,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.7273,
-            "scale": 0.8294
+            "scale": 0.8524
           }
         }
       },
       "passes": {
-        "passed": 57,
-        "failed": 17,
-        "total": 74
+        "passed": 56,
+        "failed": 16,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -3690,29 +3688,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 71.8,
-          "completion": 0.746,
-          "adversarial": 0.6081,
-          "quality": 0.746,
+          "total": 72.7,
+          "completion": 0.7613,
+          "adversarial": 0.5922,
+          "quality": 0.7613,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7838,
+              "rate": 0.8056,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.7273,
-              "scale": 0.8294
+              "scale": 0.8524
             }
           }
         },
         "passes": {
-          "passed": 57,
-          "failed": 17,
-          "total": 74
+          "passed": 56,
+          "failed": 16,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -4006,17 +4004,17 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 88.9,
-          "completion": 0.9032,
-          "adversarial": 0.8333,
-          "quality": 0.9032,
+          "total": 89.8,
+          "completion": 0.918,
+          "adversarial": 0.8182,
+          "quality": 0.918,
           "tiers": {
             "0": {
               "rate": 1.0,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9189,
+              "rate": 0.9444,
               "scale": 1.0
             },
             "2": {
@@ -4026,9 +4024,9 @@
           }
         },
         "passes": {
-          "passed": 66,
-          "failed": 8,
-          "total": 74
+          "passed": 65,
+          "failed": 7,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -4324,7 +4322,7 @@
         "max": 88.9,
         "n": 1
       },
-      "rank_score": 71.8
+      "rank_score": 72.7
     },
     {
       "id": "muse-spark-1.2-contributor",
@@ -4334,29 +4332,29 @@
       "arm_label": "Skills",
       "summary": "",
       "score": {
-        "total": 71.2,
-        "completion": 0.7399,
-        "adversarial": 0.601,
-        "quality": 0.7399,
+        "total": 72.2,
+        "completion": 0.7553,
+        "adversarial": 0.5869,
+        "quality": 0.7553,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7568,
+            "rate": 0.7778,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.8182,
-            "scale": 0.8008
+            "scale": 0.823
           }
         }
       },
       "passes": {
-        "passed": 57,
-        "failed": 17,
-        "total": 74
+        "passed": 56,
+        "failed": 16,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -4650,29 +4648,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 71.2,
-          "completion": 0.7399,
-          "adversarial": 0.601,
-          "quality": 0.7399,
+          "total": 72.2,
+          "completion": 0.7553,
+          "adversarial": 0.5869,
+          "quality": 0.7553,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7568,
+              "rate": 0.7778,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.8008
+              "scale": 0.823
             }
           }
         },
         "passes": {
-          "passed": 57,
-          "failed": 17,
-          "total": 74
+          "passed": 56,
+          "failed": 16,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -4965,7 +4963,7 @@
         "max": 71.2,
         "n": 1
       },
-      "rank_score": 71.2
+      "rank_score": 72.2
     },
     {
       "id": "qwen3.6-plus",
@@ -4975,29 +4973,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 71.0,
-        "completion": 0.7327,
-        "adversarial": 0.6184,
-        "quality": 0.7327,
+        "total": 71.8,
+        "completion": 0.7473,
+        "adversarial": 0.6013,
+        "quality": 0.7473,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7838,
+            "rate": 0.8056,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.6364,
-            "scale": 0.8294
+            "scale": 0.8524
           }
         }
       },
       "passes": {
-        "passed": 56,
-        "failed": 18,
-        "total": 74
+        "passed": 55,
+        "failed": 17,
+        "total": 72
       },
       "advisory": {
         "passed": 1,
@@ -5291,29 +5289,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 71.0,
-          "completion": 0.7327,
-          "adversarial": 0.6184,
-          "quality": 0.7327,
+          "total": 71.8,
+          "completion": 0.7473,
+          "adversarial": 0.6013,
+          "quality": 0.7473,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7838,
+              "rate": 0.8056,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.6364,
-              "scale": 0.8294
+              "scale": 0.8524
             }
           }
         },
         "passes": {
-          "passed": 56,
-          "failed": 18,
-          "total": 74
+          "passed": 55,
+          "failed": 17,
+          "total": 72
         },
         "advisory": {
           "passed": 1,
@@ -5608,29 +5606,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 85.8,
-          "completion": 0.8858,
-          "adversarial": 0.7485,
-          "quality": 0.8858,
+          "total": 86.7,
+          "completion": 0.9016,
+          "adversarial": 0.7273,
+          "quality": 0.9016,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.8919,
+              "rate": 0.9167,
               "scale": 1.0
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.991
+              "scale": 1.0
             }
           }
         },
         "passes": {
-          "passed": 64,
-          "failed": 10,
-          "total": 74
+          "passed": 63,
+          "failed": 9,
+          "total": 72
         },
         "advisory": {
           "passed": 1,
@@ -5928,7 +5926,7 @@
         "max": 85.8,
         "n": 1
       },
-      "rank_score": 71.0
+      "rank_score": 71.8
     },
     {
       "id": "qwen3.7-plus",
@@ -5938,29 +5936,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 66.5,
-        "completion": 0.683,
-        "adversarial": 0.5938,
-        "quality": 0.683,
+        "total": 67.3,
+        "completion": 0.6963,
+        "adversarial": 0.5815,
+        "quality": 0.6963,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7297,
+            "rate": 0.75,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.5455,
-            "scale": 0.7722
+            "scale": 0.7937
           }
         }
       },
       "passes": {
-        "passed": 53,
-        "failed": 21,
-        "total": 74
+        "passed": 52,
+        "failed": 20,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -6252,29 +6250,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 66.5,
-          "completion": 0.683,
-          "adversarial": 0.5938,
-          "quality": 0.683,
+          "total": 67.3,
+          "completion": 0.6963,
+          "adversarial": 0.5815,
+          "quality": 0.6963,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7297,
+              "rate": 0.75,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.5455,
-              "scale": 0.7722
+              "scale": 0.7937
             }
           }
         },
         "passes": {
-          "passed": 53,
-          "failed": 21,
-          "total": 74
+          "passed": 52,
+          "failed": 20,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -6567,7 +6565,648 @@
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 66.5
+      "rank_score": 67.3
+    },
+    {
+      "id": "mimo-v2.5",
+      "name": "MiMo V2.5",
+      "provider_model": "opencode-go/mimo-v2.5",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "summary": "",
+      "score": {
+        "total": 66.3,
+        "completion": 0.7013,
+        "adversarial": 0.5121,
+        "quality": 0.7013,
+        "tiers": {
+          "0": {
+            "rate": 0.8571,
+            "scale": 1.0
+          },
+          "1": {
+            "rate": 0.7778,
+            "scale": 0.9524
+          },
+          "2": {
+            "rate": 0.4545,
+            "scale": 0.823
+          }
+        }
+      },
+      "passes": {
+        "passed": 51,
+        "failed": 21,
+        "total": 72
+      },
+      "advisory": {
+        "passed": 0,
+        "total": 2,
+        "results": {
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false
+        }
+      },
+      "domains": {
+        "A": {
+          "pass": 5,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "A.boundary",
+            "A.due-soon",
+            "A.ok",
+            "A.overdue",
+            "A.returned"
+          ],
+          "rate": 1.0
+        },
+        "M": {
+          "pass": 2,
+          "fail": 1,
+          "failed": [
+            "M.closeout"
+          ],
+          "passed": [
+            "M.metadata-valid",
+            "M.plan-complete"
+          ],
+          "rate": 0.6667
+        },
+        "G": {
+          "pass": 13,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "G.400",
+            "G.401",
+            "G.409",
+            "G.filter-both",
+            "G.filter-item",
+            "G.filter-overdue",
+            "G.fresh",
+            "G.get200",
+            "G.patch200",
+            "G.patch400",
+            "G.patch409",
+            "G.post-fields",
+            "G.post201"
+          ],
+          "rate": 1.0
+        },
+        "P": {
+          "pass": 6,
+          "fail": 6,
+          "failed": [
+            "P.concurrent-return",
+            "P.dedup-item",
+            "P.n-plus-one",
+            "P.no-waterfall",
+            "P.stale-after-mutate",
+            "P.streams-shell"
+          ],
+          "passed": [
+            "P.concurrent-checkout",
+            "P.filter-literal",
+            "P.hydration-clean",
+            "P.no-key-leak",
+            "P.searchparams-async",
+            "P.validate-before-io"
+          ],
+          "rate": 0.5
+        },
+        "C": {
+          "pass": 7,
+          "fail": 2,
+          "failed": [
+            "C.parallel-reads",
+            "C.summary"
+          ],
+          "passed": [
+            "C.empty",
+            "C.filter-both",
+            "C.filter-case",
+            "C.filter-category",
+            "C.filter-q",
+            "C.renders",
+            "C.renders-all"
+          ],
+          "rate": 0.7778
+        },
+        "B": {
+          "pass": 5,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "B.badge",
+            "B.image-alt",
+            "B.image-response",
+            "B.link",
+            "B.name-category"
+          ],
+          "rate": 1.0
+        },
+        "H": {
+          "pass": 2,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "H.error",
+            "H.loading"
+          ],
+          "rate": 1.0
+        },
+        "D": {
+          "pass": 7,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "D.form-hidden",
+            "D.history-order",
+            "D.history-status",
+            "D.metadata",
+            "D.notfound",
+            "D.renders",
+            "D.return-visible"
+          ],
+          "rate": 1.0
+        },
+        "E": {
+          "pass": 1,
+          "fail": 8,
+          "failed": [
+            "E.error-shown",
+            "E.member-options",
+            "E.optimistic",
+            "E.pending",
+            "E.return-error",
+            "E.return-optimistic",
+            "E.return-pending",
+            "E.submits"
+          ],
+          "passed": [
+            "E.return-submits"
+          ],
+          "rate": 0.1111
+        },
+        "F": {
+          "pass": 3,
+          "fail": 6,
+          "failed": [
+            "F.auth-checkout",
+            "F.checkout-conflict",
+            "F.checkout-record",
+            "F.future-due-date",
+            "F.lifecycle",
+            "F.post-mutation-state"
+          ],
+          "passed": [
+            "F.auth-return",
+            "F.return-not-on-loan",
+            "F.return-record"
+          ],
+          "rate": 0.3333
+        },
+        "ADV": {
+          "pass": 0,
+          "fail": 2,
+          "failed": [
+            "ADV.useActionState",
+            "ADV.useOptimistic"
+          ],
+          "passed": [],
+          "rate": 0.0
+        }
+      },
+      "results": {
+        "A.returned": true,
+        "A.overdue": true,
+        "A.due-soon": true,
+        "A.ok": true,
+        "A.boundary": true,
+        "M.metadata-valid": true,
+        "M.plan-complete": true,
+        "M.closeout": false,
+        "G.get200": true,
+        "G.401": true,
+        "G.filter-item": true,
+        "G.filter-overdue": true,
+        "G.filter-both": true,
+        "G.fresh": true,
+        "G.post201": true,
+        "G.400": true,
+        "G.409": true,
+        "P.concurrent-checkout": true,
+        "G.patch200": true,
+        "G.patch409": true,
+        "G.patch400": true,
+        "P.concurrent-return": false,
+        "G.post-fields": true,
+        "C.renders": true,
+        "C.renders-all": true,
+        "B.name-category": true,
+        "B.badge": true,
+        "B.link": true,
+        "B.image-alt": true,
+        "C.filter-q": true,
+        "C.filter-case": true,
+        "P.searchparams-async": true,
+        "P.filter-literal": true,
+        "C.filter-category": true,
+        "C.filter-both": true,
+        "C.empty": true,
+        "P.hydration-clean": true,
+        "H.loading": true,
+        "B.image-response": true,
+        "C.summary": false,
+        "C.parallel-reads": false,
+        "D.renders": true,
+        "D.history-order": true,
+        "D.history-status": true,
+        "D.notfound": true,
+        "D.metadata": true,
+        "D.form-hidden": true,
+        "D.return-visible": true,
+        "E.return-submits": true,
+        "E.return-pending": false,
+        "E.return-optimistic": false,
+        "E.submits": false,
+        "E.pending": false,
+        "E.optimistic": false,
+        "E.error-shown": false,
+        "P.stale-after-mutate": false,
+        "E.member-options": false,
+        "F.auth-checkout": false,
+        "F.auth-return": true,
+        "F.checkout-conflict": false,
+        "F.return-not-on-loan": true,
+        "F.checkout-record": false,
+        "F.return-record": true,
+        "F.future-due-date": false,
+        "F.post-mutation-state": false,
+        "F.lifecycle": false,
+        "E.return-error": false,
+        "P.no-key-leak": true,
+        "P.no-waterfall": false,
+        "P.n-plus-one": false,
+        "P.validate-before-io": true,
+        "P.dedup-item": false,
+        "P.streams-shell": false,
+        "ADV.useActionState": false,
+        "ADV.useOptimistic": false,
+        "H.error": true
+      },
+      "usage": {
+        "input": 18709,
+        "output": 6612,
+        "cacheRead": 214656,
+        "cacheWrite": 0,
+        "totalTokens": 239977,
+        "costUsd": 0.005072,
+        "assistantTurns": 18,
+        "toolCalls": 34
+      },
+      "go": {
+        "model_id": "mimo-v2.5",
+        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "usd": 0.005072,
+        "monthly_usage_usd": 60,
+        "monthly_pct": 0.008,
+        "unmapped": false,
+        "rate": "off-peak"
+      },
+      "thinking": "max",
+      "wall_seconds": 140,
+      "historical_score": 64.4,
+      "sources": {
+        "regrade": "runs/a-mimo-v2-5-2026w35",
+        "agent": "runs/a-mimo-v2-5-2026w35"
+      },
+      "no_skills": {
+        "id": "mimo-v2.5",
+        "name": "MiMo V2.5",
+        "provider_model": "opencode-go/mimo-v2.5",
+        "arm": "a",
+        "arm_label": "No Skills",
+        "summary": "",
+        "score": {
+          "total": 66.3,
+          "completion": 0.7013,
+          "adversarial": 0.5121,
+          "quality": 0.7013,
+          "tiers": {
+            "0": {
+              "rate": 0.8571,
+              "scale": 1.0
+            },
+            "1": {
+              "rate": 0.7778,
+              "scale": 0.9524
+            },
+            "2": {
+              "rate": 0.4545,
+              "scale": 0.823
+            }
+          }
+        },
+        "passes": {
+          "passed": 51,
+          "failed": 21,
+          "total": 72
+        },
+        "advisory": {
+          "passed": 0,
+          "total": 2,
+          "results": {
+            "ADV.useActionState": false,
+            "ADV.useOptimistic": false
+          }
+        },
+        "domains": {
+          "A": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "A.boundary",
+              "A.due-soon",
+              "A.ok",
+              "A.overdue",
+              "A.returned"
+            ],
+            "rate": 1.0
+          },
+          "M": {
+            "pass": 2,
+            "fail": 1,
+            "failed": [
+              "M.closeout"
+            ],
+            "passed": [
+              "M.metadata-valid",
+              "M.plan-complete"
+            ],
+            "rate": 0.6667
+          },
+          "G": {
+            "pass": 13,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "G.400",
+              "G.401",
+              "G.409",
+              "G.filter-both",
+              "G.filter-item",
+              "G.filter-overdue",
+              "G.fresh",
+              "G.get200",
+              "G.patch200",
+              "G.patch400",
+              "G.patch409",
+              "G.post-fields",
+              "G.post201"
+            ],
+            "rate": 1.0
+          },
+          "P": {
+            "pass": 6,
+            "fail": 6,
+            "failed": [
+              "P.concurrent-return",
+              "P.dedup-item",
+              "P.n-plus-one",
+              "P.no-waterfall",
+              "P.stale-after-mutate",
+              "P.streams-shell"
+            ],
+            "passed": [
+              "P.concurrent-checkout",
+              "P.filter-literal",
+              "P.hydration-clean",
+              "P.no-key-leak",
+              "P.searchparams-async",
+              "P.validate-before-io"
+            ],
+            "rate": 0.5
+          },
+          "C": {
+            "pass": 7,
+            "fail": 2,
+            "failed": [
+              "C.parallel-reads",
+              "C.summary"
+            ],
+            "passed": [
+              "C.empty",
+              "C.filter-both",
+              "C.filter-case",
+              "C.filter-category",
+              "C.filter-q",
+              "C.renders",
+              "C.renders-all"
+            ],
+            "rate": 0.7778
+          },
+          "B": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "B.badge",
+              "B.image-alt",
+              "B.image-response",
+              "B.link",
+              "B.name-category"
+            ],
+            "rate": 1.0
+          },
+          "H": {
+            "pass": 2,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "H.error",
+              "H.loading"
+            ],
+            "rate": 1.0
+          },
+          "D": {
+            "pass": 7,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "D.form-hidden",
+              "D.history-order",
+              "D.history-status",
+              "D.metadata",
+              "D.notfound",
+              "D.renders",
+              "D.return-visible"
+            ],
+            "rate": 1.0
+          },
+          "E": {
+            "pass": 1,
+            "fail": 8,
+            "failed": [
+              "E.error-shown",
+              "E.member-options",
+              "E.optimistic",
+              "E.pending",
+              "E.return-error",
+              "E.return-optimistic",
+              "E.return-pending",
+              "E.submits"
+            ],
+            "passed": [
+              "E.return-submits"
+            ],
+            "rate": 0.1111
+          },
+          "F": {
+            "pass": 3,
+            "fail": 6,
+            "failed": [
+              "F.auth-checkout",
+              "F.checkout-conflict",
+              "F.checkout-record",
+              "F.future-due-date",
+              "F.lifecycle",
+              "F.post-mutation-state"
+            ],
+            "passed": [
+              "F.auth-return",
+              "F.return-not-on-loan",
+              "F.return-record"
+            ],
+            "rate": 0.3333
+          },
+          "ADV": {
+            "pass": 0,
+            "fail": 2,
+            "failed": [
+              "ADV.useActionState",
+              "ADV.useOptimistic"
+            ],
+            "passed": [],
+            "rate": 0.0
+          }
+        },
+        "results": {
+          "A.returned": true,
+          "A.overdue": true,
+          "A.due-soon": true,
+          "A.ok": true,
+          "A.boundary": true,
+          "M.metadata-valid": true,
+          "M.plan-complete": true,
+          "M.closeout": false,
+          "G.get200": true,
+          "G.401": true,
+          "G.filter-item": true,
+          "G.filter-overdue": true,
+          "G.filter-both": true,
+          "G.fresh": true,
+          "G.post201": true,
+          "G.400": true,
+          "G.409": true,
+          "P.concurrent-checkout": true,
+          "G.patch200": true,
+          "G.patch409": true,
+          "G.patch400": true,
+          "P.concurrent-return": false,
+          "G.post-fields": true,
+          "C.renders": true,
+          "C.renders-all": true,
+          "B.name-category": true,
+          "B.badge": true,
+          "B.link": true,
+          "B.image-alt": true,
+          "C.filter-q": true,
+          "C.filter-case": true,
+          "P.searchparams-async": true,
+          "P.filter-literal": true,
+          "C.filter-category": true,
+          "C.filter-both": true,
+          "C.empty": true,
+          "P.hydration-clean": true,
+          "H.loading": true,
+          "B.image-response": true,
+          "C.summary": false,
+          "C.parallel-reads": false,
+          "D.renders": true,
+          "D.history-order": true,
+          "D.history-status": true,
+          "D.notfound": true,
+          "D.metadata": true,
+          "D.form-hidden": true,
+          "D.return-visible": true,
+          "E.return-submits": true,
+          "E.return-pending": false,
+          "E.return-optimistic": false,
+          "E.submits": false,
+          "E.pending": false,
+          "E.optimistic": false,
+          "E.error-shown": false,
+          "P.stale-after-mutate": false,
+          "E.member-options": false,
+          "F.auth-checkout": false,
+          "F.auth-return": true,
+          "F.checkout-conflict": false,
+          "F.return-not-on-loan": true,
+          "F.checkout-record": false,
+          "F.return-record": true,
+          "F.future-due-date": false,
+          "F.post-mutation-state": false,
+          "F.lifecycle": false,
+          "E.return-error": false,
+          "P.no-key-leak": true,
+          "P.no-waterfall": false,
+          "P.n-plus-one": false,
+          "P.validate-before-io": true,
+          "P.dedup-item": false,
+          "P.streams-shell": false,
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false,
+          "H.error": true
+        },
+        "usage": {
+          "input": 18709,
+          "output": 6612,
+          "cacheRead": 214656,
+          "cacheWrite": 0,
+          "totalTokens": 239977,
+          "costUsd": 0.005072,
+          "assistantTurns": 18,
+          "toolCalls": 34
+        },
+        "go": {
+          "model_id": "mimo-v2.5",
+          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "usd": 0.005072,
+          "monthly_usage_usd": 60,
+          "monthly_pct": 0.008,
+          "unmapped": false,
+          "rate": "off-peak"
+        },
+        "thinking": "max",
+        "wall_seconds": 140,
+        "historical_score": 64.4,
+        "sources": {
+          "regrade": "runs/a-mimo-v2-5-2026w35",
+          "agent": "runs/a-mimo-v2-5-2026w35"
+        }
+      },
+      "skills": null,
+      "trend": {
+        "ema": 64.4,
+        "min": 64.4,
+        "max": 64.4,
+        "n": 1
+      },
+      "skills_trend": null,
+      "rank_score": 66.3
     },
     {
       "id": "longcat-2.0",
@@ -6577,29 +7216,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 63.5,
-        "completion": 0.6375,
-        "adversarial": 0.6241,
-        "quality": 0.6375,
+        "total": 64.4,
+        "completion": 0.6502,
+        "adversarial": 0.62,
+        "quality": 0.6502,
         "tiers": {
           "0": {
             "rate": 0.7857,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7297,
+            "rate": 0.75,
             "scale": 0.873
           },
           "2": {
             "rate": 0.6364,
-            "scale": 0.7079
+            "scale": 0.7275
           }
         }
       },
       "passes": {
-        "passed": 54,
-        "failed": 20,
-        "total": 74
+        "passed": 53,
+        "failed": 19,
+        "total": 72
       },
       "advisory": {
         "passed": 1,
@@ -6895,29 +7534,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 63.5,
-          "completion": 0.6375,
-          "adversarial": 0.6241,
-          "quality": 0.6375,
+          "total": 64.4,
+          "completion": 0.6502,
+          "adversarial": 0.62,
+          "quality": 0.6502,
           "tiers": {
             "0": {
               "rate": 0.7857,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7297,
+              "rate": 0.75,
               "scale": 0.873
             },
             "2": {
               "rate": 0.6364,
-              "scale": 0.7079
+              "scale": 0.7275
             }
           }
         },
         "passes": {
-          "passed": 54,
-          "failed": 20,
-          "total": 74
+          "passed": 53,
+          "failed": 19,
+          "total": 72
         },
         "advisory": {
           "passed": 1,
@@ -7214,29 +7853,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 71.2,
-          "completion": 0.7399,
-          "adversarial": 0.601,
-          "quality": 0.7399,
+          "total": 72.2,
+          "completion": 0.7553,
+          "adversarial": 0.5869,
+          "quality": 0.7553,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7568,
+              "rate": 0.7778,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.8008
+              "scale": 0.823
             }
           }
         },
         "passes": {
-          "passed": 57,
-          "failed": 17,
-          "total": 74
+          "passed": 56,
+          "failed": 16,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -7534,971 +8173,7 @@
         "max": 71.2,
         "n": 1
       },
-      "rank_score": 63.5
-    },
-    {
-      "id": "mimo-v2.5",
-      "name": "MiMo V2.5",
-      "provider_model": "opencode-go/mimo-v2.5",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "summary": "",
-      "score": {
-        "total": 62.0,
-        "completion": 0.6375,
-        "adversarial": 0.5513,
-        "quality": 0.6375,
-        "tiers": {
-          "0": {
-            "rate": 0.7857,
-            "scale": 1.0
-          },
-          "1": {
-            "rate": 0.7297,
-            "scale": 0.873
-          },
-          "2": {
-            "rate": 0.6364,
-            "scale": 0.7079
-          }
-        }
-      },
-      "passes": {
-        "passed": 53,
-        "failed": 21,
-        "total": 74
-      },
-      "advisory": {
-        "passed": 0,
-        "total": 2,
-        "results": {
-          "ADV.useActionState": false,
-          "ADV.useOptimistic": false
-        }
-      },
-      "domains": {
-        "A": {
-          "pass": 5,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "A.boundary",
-            "A.due-soon",
-            "A.ok",
-            "A.overdue",
-            "A.returned"
-          ],
-          "rate": 1.0
-        },
-        "M": {
-          "pass": 2,
-          "fail": 1,
-          "failed": [
-            "M.closeout"
-          ],
-          "passed": [
-            "M.metadata-valid",
-            "M.plan-complete"
-          ],
-          "rate": 0.6667
-        },
-        "G": {
-          "pass": 12,
-          "fail": 1,
-          "failed": [
-            "G.401"
-          ],
-          "passed": [
-            "G.400",
-            "G.409",
-            "G.filter-both",
-            "G.filter-item",
-            "G.filter-overdue",
-            "G.fresh",
-            "G.get200",
-            "G.patch200",
-            "G.patch400",
-            "G.patch409",
-            "G.post-fields",
-            "G.post201"
-          ],
-          "rate": 0.9231
-        },
-        "P": {
-          "pass": 8,
-          "fail": 4,
-          "failed": [
-            "P.concurrent-return",
-            "P.dedup-item",
-            "P.stale-after-mutate",
-            "P.streams-shell"
-          ],
-          "passed": [
-            "P.concurrent-checkout",
-            "P.filter-literal",
-            "P.hydration-clean",
-            "P.n-plus-one",
-            "P.no-key-leak",
-            "P.no-waterfall",
-            "P.searchparams-async",
-            "P.validate-before-io"
-          ],
-          "rate": 0.6667
-        },
-        "C": {
-          "pass": 8,
-          "fail": 1,
-          "failed": [
-            "C.summary"
-          ],
-          "passed": [
-            "C.empty",
-            "C.filter-both",
-            "C.filter-case",
-            "C.filter-category",
-            "C.filter-q",
-            "C.parallel-reads",
-            "C.renders",
-            "C.renders-all"
-          ],
-          "rate": 0.8889
-        },
-        "B": {
-          "pass": 5,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "B.badge",
-            "B.image-alt",
-            "B.image-response",
-            "B.link",
-            "B.name-category"
-          ],
-          "rate": 1.0
-        },
-        "H": {
-          "pass": 2,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "H.error",
-            "H.loading"
-          ],
-          "rate": 1.0
-        },
-        "D": {
-          "pass": 6,
-          "fail": 1,
-          "failed": [
-            "D.history-status"
-          ],
-          "passed": [
-            "D.form-hidden",
-            "D.history-order",
-            "D.metadata",
-            "D.notfound",
-            "D.renders",
-            "D.return-visible"
-          ],
-          "rate": 0.8571
-        },
-        "E": {
-          "pass": 2,
-          "fail": 7,
-          "failed": [
-            "E.error-shown",
-            "E.member-options",
-            "E.optimistic",
-            "E.pending",
-            "E.return-error",
-            "E.return-optimistic",
-            "E.submits"
-          ],
-          "passed": [
-            "E.return-pending",
-            "E.return-submits"
-          ],
-          "rate": 0.2222
-        },
-        "F": {
-          "pass": 3,
-          "fail": 6,
-          "failed": [
-            "F.auth-checkout",
-            "F.checkout-conflict",
-            "F.checkout-record",
-            "F.future-due-date",
-            "F.lifecycle",
-            "F.post-mutation-state"
-          ],
-          "passed": [
-            "F.auth-return",
-            "F.return-not-on-loan",
-            "F.return-record"
-          ],
-          "rate": 0.3333
-        },
-        "ADV": {
-          "pass": 0,
-          "fail": 2,
-          "failed": [
-            "ADV.useActionState",
-            "ADV.useOptimistic"
-          ],
-          "passed": [],
-          "rate": 0.0
-        }
-      },
-      "results": {
-        "A.returned": true,
-        "A.overdue": true,
-        "A.due-soon": true,
-        "A.ok": true,
-        "A.boundary": true,
-        "M.metadata-valid": true,
-        "M.plan-complete": true,
-        "M.closeout": false,
-        "G.get200": true,
-        "G.401": false,
-        "G.filter-item": true,
-        "G.filter-overdue": true,
-        "G.filter-both": true,
-        "G.fresh": true,
-        "G.post201": true,
-        "G.400": true,
-        "G.409": true,
-        "P.concurrent-checkout": true,
-        "G.patch200": true,
-        "G.patch409": true,
-        "G.patch400": true,
-        "P.concurrent-return": false,
-        "G.post-fields": true,
-        "C.renders": true,
-        "C.renders-all": true,
-        "B.name-category": true,
-        "B.badge": true,
-        "B.link": true,
-        "B.image-alt": true,
-        "C.filter-q": true,
-        "C.filter-case": true,
-        "P.searchparams-async": true,
-        "P.filter-literal": true,
-        "C.filter-category": true,
-        "C.filter-both": true,
-        "C.empty": true,
-        "P.hydration-clean": true,
-        "H.loading": true,
-        "B.image-response": true,
-        "C.summary": false,
-        "C.parallel-reads": true,
-        "D.renders": true,
-        "D.history-order": true,
-        "D.history-status": false,
-        "D.notfound": true,
-        "D.metadata": true,
-        "D.form-hidden": true,
-        "D.return-visible": true,
-        "E.return-submits": true,
-        "E.return-pending": true,
-        "E.return-optimistic": false,
-        "E.submits": false,
-        "E.pending": false,
-        "E.optimistic": false,
-        "E.error-shown": false,
-        "P.stale-after-mutate": false,
-        "E.member-options": false,
-        "F.auth-checkout": false,
-        "F.auth-return": true,
-        "F.checkout-conflict": false,
-        "F.return-not-on-loan": true,
-        "F.checkout-record": false,
-        "F.return-record": true,
-        "F.future-due-date": false,
-        "F.post-mutation-state": false,
-        "F.lifecycle": false,
-        "E.return-error": false,
-        "P.no-key-leak": true,
-        "P.no-waterfall": true,
-        "P.n-plus-one": true,
-        "P.validate-before-io": true,
-        "P.dedup-item": false,
-        "P.streams-shell": false,
-        "ADV.useActionState": false,
-        "ADV.useOptimistic": false,
-        "H.error": true
-      },
-      "usage": {
-        "input": 22155,
-        "output": 10208,
-        "cacheRead": 241600,
-        "cacheWrite": 0,
-        "totalTokens": 273963,
-        "costUsd": 0.019394,
-        "assistantTurns": 18,
-        "toolCalls": 35
-      },
-      "go": {
-        "model_id": "mimo-v2.5-pro",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
-        "usd": 0.019394,
-        "monthly_usage_usd": 15,
-        "monthly_pct": 0.129,
-        "unmapped": false,
-        "rate": "off-peak"
-      },
-      "thinking": "max",
-      "wall_seconds": 248,
-      "historical_score": 62,
-      "sources": {
-        "regrade": "runs/a-mimo-v2-5-pro-2026w35",
-        "agent": "runs/a-mimo-v2-5-pro-2026w35"
-      },
-      "no_skills": {
-        "id": "mimo-v2.5",
-        "name": "MiMo V2.5",
-        "provider_model": "opencode-go/mimo-v2.5",
-        "arm": "a",
-        "arm_label": "No Skills",
-        "summary": "",
-        "score": {
-          "total": 62.0,
-          "completion": 0.6375,
-          "adversarial": 0.5513,
-          "quality": 0.6375,
-          "tiers": {
-            "0": {
-              "rate": 0.7857,
-              "scale": 1.0
-            },
-            "1": {
-              "rate": 0.7297,
-              "scale": 0.873
-            },
-            "2": {
-              "rate": 0.6364,
-              "scale": 0.7079
-            }
-          }
-        },
-        "passes": {
-          "passed": 53,
-          "failed": 21,
-          "total": 74
-        },
-        "advisory": {
-          "passed": 0,
-          "total": 2,
-          "results": {
-            "ADV.useActionState": false,
-            "ADV.useOptimistic": false
-          }
-        },
-        "domains": {
-          "A": {
-            "pass": 5,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "A.boundary",
-              "A.due-soon",
-              "A.ok",
-              "A.overdue",
-              "A.returned"
-            ],
-            "rate": 1.0
-          },
-          "M": {
-            "pass": 2,
-            "fail": 1,
-            "failed": [
-              "M.closeout"
-            ],
-            "passed": [
-              "M.metadata-valid",
-              "M.plan-complete"
-            ],
-            "rate": 0.6667
-          },
-          "G": {
-            "pass": 12,
-            "fail": 1,
-            "failed": [
-              "G.401"
-            ],
-            "passed": [
-              "G.400",
-              "G.409",
-              "G.filter-both",
-              "G.filter-item",
-              "G.filter-overdue",
-              "G.fresh",
-              "G.get200",
-              "G.patch200",
-              "G.patch400",
-              "G.patch409",
-              "G.post-fields",
-              "G.post201"
-            ],
-            "rate": 0.9231
-          },
-          "P": {
-            "pass": 8,
-            "fail": 4,
-            "failed": [
-              "P.concurrent-return",
-              "P.dedup-item",
-              "P.stale-after-mutate",
-              "P.streams-shell"
-            ],
-            "passed": [
-              "P.concurrent-checkout",
-              "P.filter-literal",
-              "P.hydration-clean",
-              "P.n-plus-one",
-              "P.no-key-leak",
-              "P.no-waterfall",
-              "P.searchparams-async",
-              "P.validate-before-io"
-            ],
-            "rate": 0.6667
-          },
-          "C": {
-            "pass": 8,
-            "fail": 1,
-            "failed": [
-              "C.summary"
-            ],
-            "passed": [
-              "C.empty",
-              "C.filter-both",
-              "C.filter-case",
-              "C.filter-category",
-              "C.filter-q",
-              "C.parallel-reads",
-              "C.renders",
-              "C.renders-all"
-            ],
-            "rate": 0.8889
-          },
-          "B": {
-            "pass": 5,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "B.badge",
-              "B.image-alt",
-              "B.image-response",
-              "B.link",
-              "B.name-category"
-            ],
-            "rate": 1.0
-          },
-          "H": {
-            "pass": 2,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "H.error",
-              "H.loading"
-            ],
-            "rate": 1.0
-          },
-          "D": {
-            "pass": 6,
-            "fail": 1,
-            "failed": [
-              "D.history-status"
-            ],
-            "passed": [
-              "D.form-hidden",
-              "D.history-order",
-              "D.metadata",
-              "D.notfound",
-              "D.renders",
-              "D.return-visible"
-            ],
-            "rate": 0.8571
-          },
-          "E": {
-            "pass": 2,
-            "fail": 7,
-            "failed": [
-              "E.error-shown",
-              "E.member-options",
-              "E.optimistic",
-              "E.pending",
-              "E.return-error",
-              "E.return-optimistic",
-              "E.submits"
-            ],
-            "passed": [
-              "E.return-pending",
-              "E.return-submits"
-            ],
-            "rate": 0.2222
-          },
-          "F": {
-            "pass": 3,
-            "fail": 6,
-            "failed": [
-              "F.auth-checkout",
-              "F.checkout-conflict",
-              "F.checkout-record",
-              "F.future-due-date",
-              "F.lifecycle",
-              "F.post-mutation-state"
-            ],
-            "passed": [
-              "F.auth-return",
-              "F.return-not-on-loan",
-              "F.return-record"
-            ],
-            "rate": 0.3333
-          },
-          "ADV": {
-            "pass": 0,
-            "fail": 2,
-            "failed": [
-              "ADV.useActionState",
-              "ADV.useOptimistic"
-            ],
-            "passed": [],
-            "rate": 0.0
-          }
-        },
-        "results": {
-          "A.returned": true,
-          "A.overdue": true,
-          "A.due-soon": true,
-          "A.ok": true,
-          "A.boundary": true,
-          "M.metadata-valid": true,
-          "M.plan-complete": true,
-          "M.closeout": false,
-          "G.get200": true,
-          "G.401": false,
-          "G.filter-item": true,
-          "G.filter-overdue": true,
-          "G.filter-both": true,
-          "G.fresh": true,
-          "G.post201": true,
-          "G.400": true,
-          "G.409": true,
-          "P.concurrent-checkout": true,
-          "G.patch200": true,
-          "G.patch409": true,
-          "G.patch400": true,
-          "P.concurrent-return": false,
-          "G.post-fields": true,
-          "C.renders": true,
-          "C.renders-all": true,
-          "B.name-category": true,
-          "B.badge": true,
-          "B.link": true,
-          "B.image-alt": true,
-          "C.filter-q": true,
-          "C.filter-case": true,
-          "P.searchparams-async": true,
-          "P.filter-literal": true,
-          "C.filter-category": true,
-          "C.filter-both": true,
-          "C.empty": true,
-          "P.hydration-clean": true,
-          "H.loading": true,
-          "B.image-response": true,
-          "C.summary": false,
-          "C.parallel-reads": true,
-          "D.renders": true,
-          "D.history-order": true,
-          "D.history-status": false,
-          "D.notfound": true,
-          "D.metadata": true,
-          "D.form-hidden": true,
-          "D.return-visible": true,
-          "E.return-submits": true,
-          "E.return-pending": true,
-          "E.return-optimistic": false,
-          "E.submits": false,
-          "E.pending": false,
-          "E.optimistic": false,
-          "E.error-shown": false,
-          "P.stale-after-mutate": false,
-          "E.member-options": false,
-          "F.auth-checkout": false,
-          "F.auth-return": true,
-          "F.checkout-conflict": false,
-          "F.return-not-on-loan": true,
-          "F.checkout-record": false,
-          "F.return-record": true,
-          "F.future-due-date": false,
-          "F.post-mutation-state": false,
-          "F.lifecycle": false,
-          "E.return-error": false,
-          "P.no-key-leak": true,
-          "P.no-waterfall": true,
-          "P.n-plus-one": true,
-          "P.validate-before-io": true,
-          "P.dedup-item": false,
-          "P.streams-shell": false,
-          "ADV.useActionState": false,
-          "ADV.useOptimistic": false,
-          "H.error": true
-        },
-        "usage": {
-          "input": 22155,
-          "output": 10208,
-          "cacheRead": 241600,
-          "cacheWrite": 0,
-          "totalTokens": 273963,
-          "costUsd": 0.019394,
-          "assistantTurns": 18,
-          "toolCalls": 35
-        },
-        "go": {
-          "model_id": "mimo-v2.5-pro",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
-          "usd": 0.019394,
-          "monthly_usage_usd": 15,
-          "monthly_pct": 0.129,
-          "unmapped": false,
-          "rate": "off-peak"
-        },
-        "thinking": "max",
-        "wall_seconds": 248,
-        "historical_score": 62,
-        "sources": {
-          "regrade": "runs/a-mimo-v2-5-pro-2026w35",
-          "agent": "runs/a-mimo-v2-5-pro-2026w35"
-        }
-      },
-      "skills": {
-        "id": "mimo-v2.5-skills",
-        "name": "MiMo V2.5 (Skills)",
-        "provider_model": "opencode-go/mimo-v2.5",
-        "arm": "b",
-        "arm_label": "Skills",
-        "summary": "",
-        "score": {
-          "total": 68.8,
-          "completion": 0.727,
-          "adversarial": 0.5343,
-          "quality": 0.727,
-          "tiers": {
-            "0": {
-              "rate": 0.8571,
-              "scale": 1.0
-            },
-            "1": {
-              "rate": 0.7568,
-              "scale": 0.9524
-            },
-            "2": {
-              "rate": 0.7273,
-              "scale": 0.8008
-            }
-          }
-        },
-        "passes": {
-          "passed": 55,
-          "failed": 19,
-          "total": 74
-        },
-        "advisory": {
-          "passed": 0,
-          "total": 2,
-          "results": {
-            "ADV.useActionState": false,
-            "ADV.useOptimistic": false
-          }
-        },
-        "domains": {
-          "A": {
-            "pass": 5,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "A.boundary",
-              "A.due-soon",
-              "A.ok",
-              "A.overdue",
-              "A.returned"
-            ],
-            "rate": 1.0
-          },
-          "M": {
-            "pass": 3,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "M.closeout",
-              "M.metadata-valid",
-              "M.plan-complete"
-            ],
-            "rate": 1.0
-          },
-          "G": {
-            "pass": 13,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "G.400",
-              "G.401",
-              "G.409",
-              "G.filter-both",
-              "G.filter-item",
-              "G.filter-overdue",
-              "G.fresh",
-              "G.get200",
-              "G.patch200",
-              "G.patch400",
-              "G.patch409",
-              "G.post-fields",
-              "G.post201"
-            ],
-            "rate": 1.0
-          },
-          "P": {
-            "pass": 7,
-            "fail": 5,
-            "failed": [
-              "P.concurrent-return",
-              "P.dedup-item",
-              "P.n-plus-one",
-              "P.stale-after-mutate",
-              "P.streams-shell"
-            ],
-            "passed": [
-              "P.concurrent-checkout",
-              "P.filter-literal",
-              "P.hydration-clean",
-              "P.no-key-leak",
-              "P.no-waterfall",
-              "P.searchparams-async",
-              "P.validate-before-io"
-            ],
-            "rate": 0.5833
-          },
-          "C": {
-            "pass": 8,
-            "fail": 1,
-            "failed": [
-              "C.summary"
-            ],
-            "passed": [
-              "C.empty",
-              "C.filter-both",
-              "C.filter-case",
-              "C.filter-category",
-              "C.filter-q",
-              "C.parallel-reads",
-              "C.renders",
-              "C.renders-all"
-            ],
-            "rate": 0.8889
-          },
-          "B": {
-            "pass": 5,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "B.badge",
-              "B.image-alt",
-              "B.image-response",
-              "B.link",
-              "B.name-category"
-            ],
-            "rate": 1.0
-          },
-          "H": {
-            "pass": 2,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "H.error",
-              "H.loading"
-            ],
-            "rate": 1.0
-          },
-          "D": {
-            "pass": 7,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "D.form-hidden",
-              "D.history-order",
-              "D.history-status",
-              "D.metadata",
-              "D.notfound",
-              "D.renders",
-              "D.return-visible"
-            ],
-            "rate": 1.0
-          },
-          "E": {
-            "pass": 2,
-            "fail": 7,
-            "failed": [
-              "E.error-shown",
-              "E.member-options",
-              "E.optimistic",
-              "E.pending",
-              "E.return-error",
-              "E.return-optimistic",
-              "E.submits"
-            ],
-            "passed": [
-              "E.return-pending",
-              "E.return-submits"
-            ],
-            "rate": 0.2222
-          },
-          "F": {
-            "pass": 3,
-            "fail": 6,
-            "failed": [
-              "F.auth-checkout",
-              "F.checkout-conflict",
-              "F.checkout-record",
-              "F.future-due-date",
-              "F.lifecycle",
-              "F.post-mutation-state"
-            ],
-            "passed": [
-              "F.auth-return",
-              "F.return-not-on-loan",
-              "F.return-record"
-            ],
-            "rate": 0.3333
-          },
-          "ADV": {
-            "pass": 0,
-            "fail": 2,
-            "failed": [
-              "ADV.useActionState",
-              "ADV.useOptimistic"
-            ],
-            "passed": [],
-            "rate": 0.0
-          }
-        },
-        "results": {
-          "A.returned": true,
-          "A.overdue": true,
-          "A.due-soon": true,
-          "A.ok": true,
-          "A.boundary": true,
-          "M.metadata-valid": true,
-          "M.plan-complete": true,
-          "M.closeout": true,
-          "G.get200": true,
-          "G.401": true,
-          "G.filter-item": true,
-          "G.filter-overdue": true,
-          "G.filter-both": true,
-          "G.fresh": true,
-          "G.post201": true,
-          "G.400": true,
-          "G.409": true,
-          "P.concurrent-checkout": true,
-          "G.patch200": true,
-          "G.patch409": true,
-          "G.patch400": true,
-          "P.concurrent-return": false,
-          "G.post-fields": true,
-          "C.renders": true,
-          "C.renders-all": true,
-          "B.name-category": true,
-          "B.badge": true,
-          "B.link": true,
-          "B.image-alt": true,
-          "C.filter-q": true,
-          "C.filter-case": true,
-          "P.searchparams-async": true,
-          "P.filter-literal": true,
-          "C.filter-category": true,
-          "C.filter-both": true,
-          "C.empty": true,
-          "P.hydration-clean": true,
-          "H.loading": true,
-          "B.image-response": true,
-          "C.summary": false,
-          "C.parallel-reads": true,
-          "D.renders": true,
-          "D.history-order": true,
-          "D.history-status": true,
-          "D.notfound": true,
-          "D.metadata": true,
-          "D.form-hidden": true,
-          "D.return-visible": true,
-          "E.return-submits": true,
-          "E.return-pending": true,
-          "E.return-optimistic": false,
-          "E.submits": false,
-          "E.pending": false,
-          "E.optimistic": false,
-          "E.error-shown": false,
-          "P.stale-after-mutate": false,
-          "E.member-options": false,
-          "F.auth-checkout": false,
-          "F.auth-return": true,
-          "F.checkout-conflict": false,
-          "F.return-not-on-loan": true,
-          "F.checkout-record": false,
-          "F.return-record": true,
-          "F.future-due-date": false,
-          "F.post-mutation-state": false,
-          "F.lifecycle": false,
-          "E.return-error": false,
-          "P.no-key-leak": true,
-          "P.no-waterfall": true,
-          "P.n-plus-one": false,
-          "P.validate-before-io": true,
-          "P.dedup-item": false,
-          "P.streams-shell": false,
-          "ADV.useActionState": false,
-          "ADV.useOptimistic": false,
-          "H.error": true
-        },
-        "usage": {
-          "input": 27732,
-          "output": 11491,
-          "cacheRead": 382464,
-          "cacheWrite": 0,
-          "totalTokens": 421687,
-          "costUsd": 0.023447,
-          "assistantTurns": 22,
-          "toolCalls": 39
-        },
-        "go": {
-          "model_id": "mimo-v2.5-pro",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
-          "usd": 0.023447,
-          "monthly_usage_usd": 15,
-          "monthly_pct": 0.156,
-          "unmapped": false,
-          "rate": "off-peak"
-        },
-        "thinking": "max",
-        "wall_seconds": 312,
-        "historical_score": 68.8,
-        "sources": {
-          "regrade": "runs/b-mimo-v2-5-pro-2026w35",
-          "agent": "runs/b-mimo-v2-5-pro-2026w35"
-        }
-      },
-      "trend": {
-        "ema": 63.7,
-        "min": 62.0,
-        "max": 64.4,
-        "n": 2
-      },
-      "skills_trend": {
-        "ema": 68.8,
-        "min": 68.8,
-        "max": 68.8,
-        "n": 1
-      },
-      "rank_score": 62.0
+      "rank_score": 64.4
     },
     {
       "id": "mimo-v2.5-pro",
@@ -8508,29 +8183,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 62.0,
-        "completion": 0.6375,
-        "adversarial": 0.5513,
-        "quality": 0.6375,
+        "total": 62.8,
+        "completion": 0.6502,
+        "adversarial": 0.5406,
+        "quality": 0.6502,
         "tiers": {
           "0": {
             "rate": 0.7857,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7297,
+            "rate": 0.75,
             "scale": 0.873
           },
           "2": {
             "rate": 0.6364,
-            "scale": 0.7079
+            "scale": 0.7275
           }
         }
       },
       "passes": {
-        "passed": 53,
-        "failed": 21,
-        "total": 74
+        "passed": 52,
+        "failed": 20,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -8825,29 +8500,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 62.0,
-          "completion": 0.6375,
-          "adversarial": 0.5513,
-          "quality": 0.6375,
+          "total": 62.8,
+          "completion": 0.6502,
+          "adversarial": 0.5406,
+          "quality": 0.6502,
           "tiers": {
             "0": {
               "rate": 0.7857,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7297,
+              "rate": 0.75,
               "scale": 0.873
             },
             "2": {
               "rate": 0.6364,
-              "scale": 0.7079
+              "scale": 0.7275
             }
           }
         },
         "passes": {
-          "passed": 53,
-          "failed": 21,
-          "total": 74
+          "passed": 52,
+          "failed": 20,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -9143,29 +8818,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 68.8,
-          "completion": 0.727,
-          "adversarial": 0.5343,
-          "quality": 0.727,
+          "total": 69.6,
+          "completion": 0.7418,
+          "adversarial": 0.5121,
+          "quality": 0.7418,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7568,
+              "rate": 0.7778,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.7273,
-              "scale": 0.8008
+              "scale": 0.823
             }
           }
         },
         "passes": {
-          "passed": 55,
-          "failed": 19,
-          "total": 74
+          "passed": 54,
+          "failed": 18,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -9462,7 +9137,7 @@
         "max": 68.8,
         "n": 1
       },
-      "rank_score": 62.0
+      "rank_score": 62.8
     },
     {
       "id": "minimax-m2.7",
@@ -9472,29 +9147,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 57.3,
-        "completion": 0.6261,
-        "adversarial": 0.3606,
-        "quality": 0.6261,
+        "total": 59.0,
+        "completion": 0.6383,
+        "adversarial": 0.3951,
+        "quality": 0.6383,
         "tiers": {
           "0": {
             "rate": 0.7857,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7297,
+            "rate": 0.75,
             "scale": 0.873
           },
           "2": {
             "rate": 0.5455,
-            "scale": 0.7079
+            "scale": 0.7275
           }
         }
       },
       "passes": {
         "passed": 49,
-        "failed": 25,
-        "total": 74
+        "failed": 23,
+        "total": 72
       },
       "advisory": {
         "passed": 0,
@@ -9788,29 +9463,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 57.3,
-          "completion": 0.6261,
-          "adversarial": 0.3606,
-          "quality": 0.6261,
+          "total": 59.0,
+          "completion": 0.6383,
+          "adversarial": 0.3951,
+          "quality": 0.6383,
           "tiers": {
             "0": {
               "rate": 0.7857,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7297,
+              "rate": 0.75,
               "scale": 0.873
             },
             "2": {
               "rate": 0.5455,
-              "scale": 0.7079
+              "scale": 0.7275
             }
           }
         },
         "passes": {
           "passed": 49,
-          "failed": 25,
-          "total": 74
+          "failed": 23,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -10105,29 +9780,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 79.6,
-          "completion": 0.8698,
-          "adversarial": 0.4992,
-          "quality": 0.8698,
+          "total": 81.7,
+          "completion": 0.8852,
+          "adversarial": 0.5455,
+          "quality": 0.8852,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.8919,
+              "rate": 0.9167,
               "scale": 1.0
             },
             "2": {
               "rate": 0.7273,
-              "scale": 0.991
+              "scale": 1.0
             }
           }
         },
         "passes": {
           "passed": 60,
-          "failed": 14,
-          "total": 74
+          "failed": 12,
+          "total": 72
         },
         "advisory": {
           "passed": 0,
@@ -10425,7 +10100,7 @@
         "max": 79.6,
         "n": 1
       },
-      "rank_score": 57.3
+      "rank_score": 59.0
     }
   ],
   "experiments": {},

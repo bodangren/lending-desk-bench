@@ -38,10 +38,13 @@ def find_arm_runs(arm: str, slug: str) -> list[Path]:
     runs_dir = ROOT / "runs"
     if not runs_dir.exists():
         return []
-    prefix = f"{arm}-{slug}-"
+    # Run ids are "<arm>-<slug>-<iso-week>" (e.g. a-mimo-v2-5-2026w35). A bare
+    # prefix match would also collect sibling slugs such as mimo-v2-5-pro or
+    # deepseek-v4-flash-vision-exp, so require the week token boundary.
+    run_id = re.compile(rf"^{re.escape(arm)}-{re.escape(slug)}-\d{{4}}w\d{{2}}$")
     found = []
     for path in runs_dir.iterdir():
-        if path.name.startswith(prefix) and (path / "artifacts" / "score.json").exists():
+        if run_id.match(path.name) and (path / "artifacts" / "score.json").exists():
             found.append(path)
     return sorted(found, key=lambda p: p.stat().st_mtime)
 
