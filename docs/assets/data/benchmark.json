@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-30T08:41:06",
+  "generated_at": "2026-08-30T08:47:04",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
@@ -22,7 +22,7 @@
       },
       "tier_gate": 0.9,
       "tier_mode": "soft",
-      "scored_checks": 72,
+      "scored_checks": 74,
       "advisory_checks": 2,
       "note": "Soft tiers scale higher-tier credit by lower-tier rates. There is no binary rule at 90 percent Tier 0. Advisory checks never affect totals. Week 2026w35 grades ran under host load. Treat these totals as diagnostic, not as a trusted ranking."
     }
@@ -109,6 +109,7 @@
     "C.filter-category": 1,
     "C.filter-both": 1,
     "C.empty": 1,
+    "C.summary": 1,
     "D.history-order": 1,
     "D.history-status": 1,
     "D.notfound": 1,
@@ -150,11 +151,12 @@
   "probe_tiers": {
     "P.searchparams-async": 1,
     "P.no-key-leak": 0,
-    "P.stale-after-mutate": 1,
+    "P.stale-after-mutate": 0,
     "P.concurrent-checkout": 1,
     "P.concurrent-return": 1,
     "P.hydration-clean": 1,
     "P.filter-literal": 1,
+    "P.no-waterfall": 2,
     "P.validate-before-io": 2,
     "P.n-plus-one": 2,
     "P.dedup-item": 2,
@@ -174,17 +176,17 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 92.4,
-        "completion": 0.9508,
-        "adversarial": 0.8182,
-        "quality": 0.9508,
+        "total": 91.5,
+        "completion": 0.9355,
+        "adversarial": 0.8333,
+        "quality": 0.9355,
         "tiers": {
           "0": {
             "rate": 1.0,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.9722,
+            "rate": 0.9459,
             "scale": 1.0
           },
           "2": {
@@ -194,9 +196,9 @@
         }
       },
       "passes": {
-        "passed": 67,
-        "failed": 5,
-        "total": 72
+        "passed": 68,
+        "failed": 6,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -488,17 +490,17 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 92.4,
-          "completion": 0.9508,
-          "adversarial": 0.8182,
-          "quality": 0.9508,
+          "total": 91.5,
+          "completion": 0.9355,
+          "adversarial": 0.8333,
+          "quality": 0.9355,
           "tiers": {
             "0": {
               "rate": 1.0,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9722,
+              "rate": 0.9459,
               "scale": 1.0
             },
             "2": {
@@ -508,9 +510,9 @@
           }
         },
         "passes": {
-          "passed": 67,
-          "failed": 5,
-          "total": 72
+          "passed": 68,
+          "failed": 6,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -803,29 +805,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 85.2,
-          "completion": 0.8625,
-          "adversarial": 0.8103,
-          "quality": 0.8625,
+          "total": 83.9,
+          "completion": 0.8448,
+          "adversarial": 0.8161,
+          "quality": 0.8448,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.8611,
+              "rate": 0.8378,
               "scale": 1.0
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.9568
+              "scale": 0.9309
             }
           }
         },
         "passes": {
-          "passed": 62,
-          "failed": 10,
-          "total": 72
+          "passed": 63,
+          "failed": 11,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -1123,7 +1125,7 @@
         "max": 83.9,
         "n": 1
       },
-      "rank_score": 92.4
+      "rank_score": 91.5
     },
     {
       "id": "glm-5.3-flash",
@@ -1133,17 +1135,17 @@
       "arm_label": "Skills",
       "summary": "",
       "score": {
-        "total": 92.4,
-        "completion": 0.9508,
-        "adversarial": 0.8182,
-        "quality": 0.9508,
+        "total": 91.5,
+        "completion": 0.9355,
+        "adversarial": 0.8333,
+        "quality": 0.9355,
         "tiers": {
           "0": {
             "rate": 0.9286,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.9444,
+            "rate": 0.9189,
             "scale": 1.0
           },
           "2": {
@@ -1153,9 +1155,9 @@
         }
       },
       "passes": {
-        "passed": 67,
-        "failed": 5,
-        "total": 72
+        "passed": 68,
+        "failed": 6,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -1448,17 +1450,17 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 92.4,
-          "completion": 0.9508,
-          "adversarial": 0.8182,
-          "quality": 0.9508,
+          "total": 91.5,
+          "completion": 0.9355,
+          "adversarial": 0.8333,
+          "quality": 0.9355,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9444,
+              "rate": 0.9189,
               "scale": 1.0
             },
             "2": {
@@ -1468,9 +1470,9 @@
           }
         },
         "passes": {
-          "passed": 67,
-          "failed": 5,
-          "total": 72
+          "passed": 68,
+          "failed": 6,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -1762,7 +1764,7 @@
         "max": 91.5,
         "n": 1
       },
-      "rank_score": 92.4
+      "rank_score": 91.5
     },
     {
       "id": "deepseek-v4-flash",
@@ -1772,17 +1774,17 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 89.3,
-        "completion": 0.9344,
-        "adversarial": 0.7273,
-        "quality": 0.9344,
+        "total": 88.5,
+        "completion": 0.9194,
+        "adversarial": 0.75,
+        "quality": 0.9194,
         "tiers": {
           "0": {
             "rate": 0.9286,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.9444,
+            "rate": 0.9189,
             "scale": 1.0
           },
           "2": {
@@ -1792,9 +1794,9 @@
         }
       },
       "passes": {
-        "passed": 65,
-        "failed": 7,
-        "total": 72
+        "passed": 66,
+        "failed": 8,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -2087,17 +2089,17 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 89.3,
-          "completion": 0.9344,
-          "adversarial": 0.7273,
-          "quality": 0.9344,
+          "total": 88.5,
+          "completion": 0.9194,
+          "adversarial": 0.75,
+          "quality": 0.9194,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9444,
+              "rate": 0.9189,
               "scale": 1.0
             },
             "2": {
@@ -2107,9 +2109,9 @@
           }
         },
         "passes": {
-          "passed": 65,
-          "failed": 7,
-          "total": 72
+          "passed": 66,
+          "failed": 8,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -2403,7 +2405,7 @@
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 89.3
+      "rank_score": 88.5
     },
     {
       "id": "gpt-5.6-luna",
@@ -2413,29 +2415,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 74.5,
-        "completion": 0.7613,
-        "adversarial": 0.6788,
-        "quality": 0.7613,
+        "total": 73.4,
+        "completion": 0.746,
+        "adversarial": 0.6875,
+        "quality": 0.746,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.8056,
+            "rate": 0.7838,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.7273,
-            "scale": 0.8524
+            "scale": 0.8294
           }
         }
       },
       "passes": {
-        "passed": 57,
-        "failed": 15,
-        "total": 72
+        "passed": 58,
+        "failed": 16,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -2728,29 +2730,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 74.5,
-          "completion": 0.7613,
-          "adversarial": 0.6788,
-          "quality": 0.7613,
+          "total": 73.4,
+          "completion": 0.746,
+          "adversarial": 0.6875,
+          "quality": 0.746,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.8056,
+              "rate": 0.7838,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.7273,
-              "scale": 0.8524
+              "scale": 0.8294
             }
           }
         },
         "passes": {
-          "passed": 57,
-          "failed": 15,
-          "total": 72
+          "passed": 58,
+          "failed": 16,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -3044,29 +3046,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 73.9,
-          "completion": 0.7553,
-          "adversarial": 0.6735,
-          "quality": 0.7553,
+          "total": 72.8,
+          "completion": 0.7399,
+          "adversarial": 0.6804,
+          "quality": 0.7399,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7778,
+              "rate": 0.7568,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.823
+              "scale": 0.8008
             }
           }
         },
         "passes": {
-          "passed": 57,
-          "failed": 15,
-          "total": 72
+          "passed": 58,
+          "failed": 16,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -3363,7 +3365,7 @@
         "max": 72.8,
         "n": 1
       },
-      "rank_score": 74.5
+      "rank_score": 73.4
     },
     {
       "id": "minimax-m3",
@@ -3373,29 +3375,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 72.7,
-        "completion": 0.7613,
-        "adversarial": 0.5922,
-        "quality": 0.7613,
+        "total": 71.8,
+        "completion": 0.746,
+        "adversarial": 0.6081,
+        "quality": 0.746,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.8056,
+            "rate": 0.7838,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.7273,
-            "scale": 0.8524
+            "scale": 0.8294
           }
         }
       },
       "passes": {
-        "passed": 56,
-        "failed": 16,
-        "total": 72
+        "passed": 57,
+        "failed": 17,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -3688,29 +3690,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 72.7,
-          "completion": 0.7613,
-          "adversarial": 0.5922,
-          "quality": 0.7613,
+          "total": 71.8,
+          "completion": 0.746,
+          "adversarial": 0.6081,
+          "quality": 0.746,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.8056,
+              "rate": 0.7838,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.7273,
-              "scale": 0.8524
+              "scale": 0.8294
             }
           }
         },
         "passes": {
-          "passed": 56,
-          "failed": 16,
-          "total": 72
+          "passed": 57,
+          "failed": 17,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -4004,17 +4006,17 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 89.8,
-          "completion": 0.918,
-          "adversarial": 0.8182,
-          "quality": 0.918,
+          "total": 88.9,
+          "completion": 0.9032,
+          "adversarial": 0.8333,
+          "quality": 0.9032,
           "tiers": {
             "0": {
               "rate": 1.0,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9444,
+              "rate": 0.9189,
               "scale": 1.0
             },
             "2": {
@@ -4024,9 +4026,9 @@
           }
         },
         "passes": {
-          "passed": 65,
-          "failed": 7,
-          "total": 72
+          "passed": 66,
+          "failed": 8,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -4322,7 +4324,7 @@
         "max": 88.9,
         "n": 1
       },
-      "rank_score": 72.7
+      "rank_score": 71.8
     },
     {
       "id": "muse-spark-1.2-contributor",
@@ -4332,29 +4334,29 @@
       "arm_label": "Skills",
       "summary": "",
       "score": {
-        "total": 72.2,
-        "completion": 0.7553,
-        "adversarial": 0.5869,
-        "quality": 0.7553,
+        "total": 71.2,
+        "completion": 0.7399,
+        "adversarial": 0.601,
+        "quality": 0.7399,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7778,
+            "rate": 0.7568,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.8182,
-            "scale": 0.823
+            "scale": 0.8008
           }
         }
       },
       "passes": {
-        "passed": 56,
-        "failed": 16,
-        "total": 72
+        "passed": 57,
+        "failed": 17,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -4648,29 +4650,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 72.2,
-          "completion": 0.7553,
-          "adversarial": 0.5869,
-          "quality": 0.7553,
+          "total": 71.2,
+          "completion": 0.7399,
+          "adversarial": 0.601,
+          "quality": 0.7399,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7778,
+              "rate": 0.7568,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.823
+              "scale": 0.8008
             }
           }
         },
         "passes": {
-          "passed": 56,
-          "failed": 16,
-          "total": 72
+          "passed": 57,
+          "failed": 17,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -4963,7 +4965,7 @@
         "max": 71.2,
         "n": 1
       },
-      "rank_score": 72.2
+      "rank_score": 71.2
     },
     {
       "id": "qwen3.6-plus",
@@ -4973,29 +4975,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 71.8,
-        "completion": 0.7473,
-        "adversarial": 0.6013,
-        "quality": 0.7473,
+        "total": 71.0,
+        "completion": 0.7327,
+        "adversarial": 0.6184,
+        "quality": 0.7327,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.8056,
+            "rate": 0.7838,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.6364,
-            "scale": 0.8524
+            "scale": 0.8294
           }
         }
       },
       "passes": {
-        "passed": 55,
-        "failed": 17,
-        "total": 72
+        "passed": 56,
+        "failed": 18,
+        "total": 74
       },
       "advisory": {
         "passed": 1,
@@ -5289,29 +5291,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 71.8,
-          "completion": 0.7473,
-          "adversarial": 0.6013,
-          "quality": 0.7473,
+          "total": 71.0,
+          "completion": 0.7327,
+          "adversarial": 0.6184,
+          "quality": 0.7327,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.8056,
+              "rate": 0.7838,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.6364,
-              "scale": 0.8524
+              "scale": 0.8294
             }
           }
         },
         "passes": {
-          "passed": 55,
-          "failed": 17,
-          "total": 72
+          "passed": 56,
+          "failed": 18,
+          "total": 74
         },
         "advisory": {
           "passed": 1,
@@ -5606,29 +5608,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 86.7,
-          "completion": 0.9016,
-          "adversarial": 0.7273,
-          "quality": 0.9016,
+          "total": 85.8,
+          "completion": 0.8858,
+          "adversarial": 0.7485,
+          "quality": 0.8858,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9167,
+              "rate": 0.8919,
               "scale": 1.0
             },
             "2": {
               "rate": 0.8182,
-              "scale": 1.0
+              "scale": 0.991
             }
           }
         },
         "passes": {
-          "passed": 63,
-          "failed": 9,
-          "total": 72
+          "passed": 64,
+          "failed": 10,
+          "total": 74
         },
         "advisory": {
           "passed": 1,
@@ -5926,7 +5928,7 @@
         "max": 85.8,
         "n": 1
       },
-      "rank_score": 71.8
+      "rank_score": 71.0
     },
     {
       "id": "qwen3.7-plus",
@@ -5936,29 +5938,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 67.3,
-        "completion": 0.6963,
-        "adversarial": 0.5815,
-        "quality": 0.6963,
+        "total": 66.5,
+        "completion": 0.683,
+        "adversarial": 0.5938,
+        "quality": 0.683,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.75,
+            "rate": 0.7297,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.5455,
-            "scale": 0.7937
+            "scale": 0.7722
           }
         }
       },
       "passes": {
-        "passed": 52,
-        "failed": 20,
-        "total": 72
+        "passed": 53,
+        "failed": 21,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -6250,29 +6252,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 67.3,
-          "completion": 0.6963,
-          "adversarial": 0.5815,
-          "quality": 0.6963,
+          "total": 66.5,
+          "completion": 0.683,
+          "adversarial": 0.5938,
+          "quality": 0.683,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.75,
+              "rate": 0.7297,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.5455,
-              "scale": 0.7937
+              "scale": 0.7722
             }
           }
         },
         "passes": {
-          "passed": 52,
-          "failed": 20,
-          "total": 72
+          "passed": 53,
+          "failed": 21,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -6565,7 +6567,7 @@
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 67.3
+      "rank_score": 66.5
     },
     {
       "id": "mimo-v2.5",
@@ -6575,29 +6577,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 66.3,
-        "completion": 0.7013,
-        "adversarial": 0.5121,
-        "quality": 0.7013,
+        "total": 64.4,
+        "completion": 0.6882,
+        "adversarial": 0.4675,
+        "quality": 0.6882,
         "tiers": {
           "0": {
             "rate": 0.8571,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.7778,
+            "rate": 0.7568,
             "scale": 0.9524
           },
           "2": {
             "rate": 0.4545,
-            "scale": 0.823
+            "scale": 0.8008
           }
         }
       },
       "passes": {
         "passed": 51,
-        "failed": 21,
-        "total": 72
+        "failed": 23,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -6890,29 +6892,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 66.3,
-          "completion": 0.7013,
-          "adversarial": 0.5121,
-          "quality": 0.7013,
+          "total": 64.4,
+          "completion": 0.6882,
+          "adversarial": 0.4675,
+          "quality": 0.6882,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7778,
+              "rate": 0.7568,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.4545,
-              "scale": 0.823
+              "scale": 0.8008
             }
           }
         },
         "passes": {
           "passed": 51,
-          "failed": 21,
-          "total": 72
+          "failed": 23,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -7206,7 +7208,7 @@
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 66.3
+      "rank_score": 64.4
     },
     {
       "id": "longcat-2.0",
@@ -7216,29 +7218,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 64.4,
-        "completion": 0.6502,
-        "adversarial": 0.62,
-        "quality": 0.6502,
+        "total": 63.5,
+        "completion": 0.6375,
+        "adversarial": 0.6241,
+        "quality": 0.6375,
         "tiers": {
           "0": {
             "rate": 0.7857,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.75,
+            "rate": 0.7297,
             "scale": 0.873
           },
           "2": {
             "rate": 0.6364,
-            "scale": 0.7275
+            "scale": 0.7079
           }
         }
       },
       "passes": {
-        "passed": 53,
-        "failed": 19,
-        "total": 72
+        "passed": 54,
+        "failed": 20,
+        "total": 74
       },
       "advisory": {
         "passed": 1,
@@ -7534,29 +7536,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 64.4,
-          "completion": 0.6502,
-          "adversarial": 0.62,
-          "quality": 0.6502,
+          "total": 63.5,
+          "completion": 0.6375,
+          "adversarial": 0.6241,
+          "quality": 0.6375,
           "tiers": {
             "0": {
               "rate": 0.7857,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.75,
+              "rate": 0.7297,
               "scale": 0.873
             },
             "2": {
               "rate": 0.6364,
-              "scale": 0.7275
+              "scale": 0.7079
             }
           }
         },
         "passes": {
-          "passed": 53,
-          "failed": 19,
-          "total": 72
+          "passed": 54,
+          "failed": 20,
+          "total": 74
         },
         "advisory": {
           "passed": 1,
@@ -7853,29 +7855,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 72.2,
-          "completion": 0.7553,
-          "adversarial": 0.5869,
-          "quality": 0.7553,
+          "total": 71.2,
+          "completion": 0.7399,
+          "adversarial": 0.601,
+          "quality": 0.7399,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7778,
+              "rate": 0.7568,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.8182,
-              "scale": 0.823
+              "scale": 0.8008
             }
           }
         },
         "passes": {
-          "passed": 56,
-          "failed": 16,
-          "total": 72
+          "passed": 57,
+          "failed": 17,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -8173,7 +8175,7 @@
         "max": 71.2,
         "n": 1
       },
-      "rank_score": 64.4
+      "rank_score": 63.5
     },
     {
       "id": "mimo-v2.5-pro",
@@ -8183,29 +8185,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 62.8,
-        "completion": 0.6502,
-        "adversarial": 0.5406,
-        "quality": 0.6502,
+        "total": 62.0,
+        "completion": 0.6375,
+        "adversarial": 0.5513,
+        "quality": 0.6375,
         "tiers": {
           "0": {
             "rate": 0.7857,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.75,
+            "rate": 0.7297,
             "scale": 0.873
           },
           "2": {
             "rate": 0.6364,
-            "scale": 0.7275
+            "scale": 0.7079
           }
         }
       },
       "passes": {
-        "passed": 52,
-        "failed": 20,
-        "total": 72
+        "passed": 53,
+        "failed": 21,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -8500,29 +8502,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 62.8,
-          "completion": 0.6502,
-          "adversarial": 0.5406,
-          "quality": 0.6502,
+          "total": 62.0,
+          "completion": 0.6375,
+          "adversarial": 0.5513,
+          "quality": 0.6375,
           "tiers": {
             "0": {
               "rate": 0.7857,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.75,
+              "rate": 0.7297,
               "scale": 0.873
             },
             "2": {
               "rate": 0.6364,
-              "scale": 0.7275
+              "scale": 0.7079
             }
           }
         },
         "passes": {
-          "passed": 52,
-          "failed": 20,
-          "total": 72
+          "passed": 53,
+          "failed": 21,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -8818,29 +8820,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 69.6,
-          "completion": 0.7418,
-          "adversarial": 0.5121,
-          "quality": 0.7418,
+          "total": 68.8,
+          "completion": 0.727,
+          "adversarial": 0.5343,
+          "quality": 0.727,
           "tiers": {
             "0": {
               "rate": 0.8571,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.7778,
+              "rate": 0.7568,
               "scale": 0.9524
             },
             "2": {
               "rate": 0.7273,
-              "scale": 0.823
+              "scale": 0.8008
             }
           }
         },
         "passes": {
-          "passed": 54,
-          "failed": 18,
-          "total": 72
+          "passed": 55,
+          "failed": 19,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -9137,7 +9139,7 @@
         "max": 68.8,
         "n": 1
       },
-      "rank_score": 62.8
+      "rank_score": 62.0
     },
     {
       "id": "minimax-m2.7",
@@ -9147,29 +9149,29 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 59.0,
-        "completion": 0.6383,
-        "adversarial": 0.3951,
-        "quality": 0.6383,
+        "total": 57.3,
+        "completion": 0.6261,
+        "adversarial": 0.3606,
+        "quality": 0.6261,
         "tiers": {
           "0": {
             "rate": 0.7857,
             "scale": 1.0
           },
           "1": {
-            "rate": 0.75,
+            "rate": 0.7297,
             "scale": 0.873
           },
           "2": {
             "rate": 0.5455,
-            "scale": 0.7275
+            "scale": 0.7079
           }
         }
       },
       "passes": {
         "passed": 49,
-        "failed": 23,
-        "total": 72
+        "failed": 25,
+        "total": 74
       },
       "advisory": {
         "passed": 0,
@@ -9463,29 +9465,29 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 59.0,
-          "completion": 0.6383,
-          "adversarial": 0.3951,
-          "quality": 0.6383,
+          "total": 57.3,
+          "completion": 0.6261,
+          "adversarial": 0.3606,
+          "quality": 0.6261,
           "tiers": {
             "0": {
               "rate": 0.7857,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.75,
+              "rate": 0.7297,
               "scale": 0.873
             },
             "2": {
               "rate": 0.5455,
-              "scale": 0.7275
+              "scale": 0.7079
             }
           }
         },
         "passes": {
           "passed": 49,
-          "failed": 23,
-          "total": 72
+          "failed": 25,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -9780,29 +9782,29 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 81.7,
-          "completion": 0.8852,
-          "adversarial": 0.5455,
-          "quality": 0.8852,
+          "total": 79.6,
+          "completion": 0.8698,
+          "adversarial": 0.4992,
+          "quality": 0.8698,
           "tiers": {
             "0": {
               "rate": 0.9286,
               "scale": 1.0
             },
             "1": {
-              "rate": 0.9167,
+              "rate": 0.8919,
               "scale": 1.0
             },
             "2": {
               "rate": 0.7273,
-              "scale": 1.0
+              "scale": 0.991
             }
           }
         },
         "passes": {
           "passed": 60,
-          "failed": 12,
-          "total": 72
+          "failed": 14,
+          "total": 74
         },
         "advisory": {
           "passed": 0,
@@ -10100,7 +10102,7 @@
         "max": 79.6,
         "n": 1
       },
-      "rank_score": 59.0
+      "rank_score": 57.3
     }
   ],
   "experiments": {},
