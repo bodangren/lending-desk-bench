@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-30T08:47:04",
+  "generated_at": "2026-08-30T09:52:30",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
@@ -24,7 +24,7 @@
       "tier_mode": "soft",
       "scored_checks": 74,
       "advisory_checks": 2,
-      "note": "Soft tiers scale higher-tier credit by lower-tier rates. There is no binary rule at 90 percent Tier 0. Advisory checks never affect totals. Week 2026w35 grades ran under host load. Treat these totals as diagnostic, not as a trusted ranking."
+      "note": "Soft tiers scale higher-tier credit by lower-tier rates. There is no binary rule at 90 percent Tier 0. Advisory checks never affect totals. A row marked Unranked failed a trust flag in SCORING.md, most often because the host was busy during the grade. Treat an unranked total as diagnostic, not as a ranking."
     }
   },
   "domains": {
@@ -176,10 +176,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 91.5,
+        "total": 89.3,
         "completion": 0.9355,
         "adversarial": 0.8333,
-        "quality": 0.9355,
+        "quality": 0.8263,
         "tiers": {
           "0": {
             "rate": 1.0,
@@ -468,7 +468,7 @@
       },
       "go": {
         "model_id": "qwen3.8-flash",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
         "usd": 0.037762,
         "monthly_usage_usd": 30,
         "monthly_pct": 0.126,
@@ -477,7 +477,14 @@
       },
       "thinking": "max",
       "wall_seconds": 496,
-      "historical_score": 91.5,
+      "historical_score": 89.3,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-qwen3-8-flash-2026w35",
         "agent": "runs/a-qwen3-8-flash-2026w35"
@@ -490,10 +497,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 91.5,
+          "total": 89.3,
           "completion": 0.9355,
           "adversarial": 0.8333,
-          "quality": 0.9355,
+          "quality": 0.8263,
           "tiers": {
             "0": {
               "rate": 1.0,
@@ -782,7 +789,7 @@
         },
         "go": {
           "model_id": "qwen3.8-flash",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.037762,
           "monthly_usage_usd": 30,
           "monthly_pct": 0.126,
@@ -791,7 +798,14 @@
         },
         "thinking": "max",
         "wall_seconds": 496,
-        "historical_score": 91.5,
+        "historical_score": 89.3,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-qwen3-8-flash-2026w35",
           "agent": "runs/a-qwen3-8-flash-2026w35"
@@ -805,10 +819,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 83.9,
+          "total": 81.9,
           "completion": 0.8448,
           "adversarial": 0.8161,
-          "quality": 0.8448,
+          "quality": 0.7463,
           "tiers": {
             "0": {
               "rate": 0.9286,
@@ -1098,7 +1112,7 @@
         },
         "go": {
           "model_id": "qwen3.8-flash",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.053805,
           "monthly_usage_usd": 30,
           "monthly_pct": 0.179,
@@ -1107,25 +1121,32 @@
         },
         "thinking": "max",
         "wall_seconds": 665,
-        "historical_score": 83.9,
+        "historical_score": 81.9,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-qwen3-8-flash-2026w35",
           "agent": "runs/b-qwen3-8-flash-2026w35"
         }
       },
       "trend": {
-        "ema": 91.5,
-        "min": 91.5,
-        "max": 91.5,
+        "ema": 89.3,
+        "min": 89.3,
+        "max": 89.3,
         "n": 1
       },
       "skills_trend": {
-        "ema": 83.9,
-        "min": 83.9,
-        "max": 83.9,
+        "ema": 81.9,
+        "min": 81.9,
+        "max": 81.9,
         "n": 1
       },
-      "rank_score": 91.5
+      "rank_score": 89.3
     },
     {
       "id": "glm-5.3-flash",
@@ -1135,10 +1156,10 @@
       "arm_label": "Skills",
       "summary": "",
       "score": {
-        "total": 91.5,
+        "total": 87.8,
         "completion": 0.9355,
         "adversarial": 0.8333,
-        "quality": 0.9355,
+        "quality": 0.7484,
         "tiers": {
           "0": {
             "rate": 0.9286,
@@ -1427,7 +1448,7 @@
       },
       "go": {
         "model_id": "glm-5.3-flash",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
         "usd": 0.034082,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.227,
@@ -1436,7 +1457,14 @@
       },
       "thinking": "max",
       "wall_seconds": 525,
-      "historical_score": 91.5,
+      "historical_score": 87.8,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/b-glm-5-3-flash-2026w35",
         "agent": "runs/b-glm-5-3-flash-2026w35"
@@ -1450,10 +1478,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 91.5,
+          "total": 87.8,
           "completion": 0.9355,
           "adversarial": 0.8333,
-          "quality": 0.9355,
+          "quality": 0.7484,
           "tiers": {
             "0": {
               "rate": 0.9286,
@@ -1742,7 +1770,7 @@
         },
         "go": {
           "model_id": "glm-5.3-flash",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.034082,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.227,
@@ -1751,7 +1779,14 @@
         },
         "thinking": "max",
         "wall_seconds": 525,
-        "historical_score": 91.5,
+        "historical_score": 87.8,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-glm-5-3-flash-2026w35",
           "agent": "runs/b-glm-5-3-flash-2026w35"
@@ -1759,12 +1794,12 @@
       },
       "trend": null,
       "skills_trend": {
-        "ema": 91.5,
-        "min": 91.5,
-        "max": 91.5,
+        "ema": 87.8,
+        "min": 87.8,
+        "max": 87.8,
         "n": 1
       },
-      "rank_score": 91.5
+      "rank_score": 87.8
     },
     {
       "id": "deepseek-v4-flash",
@@ -1774,10 +1809,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 88.5,
+        "total": 84.0,
         "completion": 0.9194,
         "adversarial": 0.75,
-        "quality": 0.9194,
+        "quality": 0.6895,
         "tiers": {
           "0": {
             "rate": 0.9286,
@@ -2076,7 +2111,14 @@
       },
       "thinking": "max",
       "wall_seconds": 1318,
-      "historical_score": 88.5,
+      "historical_score": 84,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-deepseek-v4-flash-2026w35",
         "agent": "runs/a-deepseek-v4-flash-2026w35"
@@ -2089,10 +2131,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 88.5,
+          "total": 84.0,
           "completion": 0.9194,
           "adversarial": 0.75,
-          "quality": 0.9194,
+          "quality": 0.6895,
           "tiers": {
             "0": {
               "rate": 0.9286,
@@ -2391,7 +2433,14 @@
         },
         "thinking": "max",
         "wall_seconds": 1318,
-        "historical_score": 88.5,
+        "historical_score": 84,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-deepseek-v4-flash-2026w35",
           "agent": "runs/a-deepseek-v4-flash-2026w35"
@@ -2399,13 +2448,13 @@
       },
       "skills": null,
       "trend": {
-        "ema": 88.5,
-        "min": 88.5,
-        "max": 88.5,
+        "ema": 84.0,
+        "min": 84.0,
+        "max": 84.0,
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 88.5
+      "rank_score": 84.0
     },
     {
       "id": "gpt-5.6-luna",
@@ -2415,10 +2464,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 73.4,
+        "total": 72.7,
         "completion": 0.746,
         "adversarial": 0.6875,
-        "quality": 0.746,
+        "quality": 0.7087,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -2708,7 +2757,7 @@
       },
       "go": {
         "model_id": "gpt-5.6-luna",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
         "usd": 0.082666,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.551,
@@ -2717,7 +2766,14 @@
       },
       "thinking": "max",
       "wall_seconds": 365,
-      "historical_score": 73.4,
+      "historical_score": 72.7,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-gpt-5-6-luna-2026w35",
         "agent": "runs/a-gpt-5-6-luna-2026w35"
@@ -2730,10 +2786,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 73.4,
+          "total": 72.7,
           "completion": 0.746,
           "adversarial": 0.6875,
-          "quality": 0.746,
+          "quality": 0.7087,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -3023,7 +3079,7 @@
         },
         "go": {
           "model_id": "gpt-5.6-luna",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.082666,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.551,
@@ -3032,7 +3088,14 @@
         },
         "thinking": "max",
         "wall_seconds": 365,
-        "historical_score": 73.4,
+        "historical_score": 72.7,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-gpt-5-6-luna-2026w35",
           "agent": "runs/a-gpt-5-6-luna-2026w35"
@@ -3046,10 +3109,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 72.8,
+          "total": 71.3,
           "completion": 0.7399,
           "adversarial": 0.6804,
-          "quality": 0.7399,
+          "quality": 0.6659,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -3338,7 +3401,7 @@
         },
         "go": {
           "model_id": "gpt-5.6-luna",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.102457,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.683,
@@ -3347,25 +3410,32 @@
         },
         "thinking": "max",
         "wall_seconds": 668,
-        "historical_score": 72.8,
+        "historical_score": 71.3,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-gpt-5-6-luna-2026w35",
           "agent": "runs/b-gpt-5-6-luna-2026w35"
         }
       },
       "trend": {
-        "ema": 73.4,
-        "min": 73.4,
-        "max": 73.4,
+        "ema": 72.7,
+        "min": 72.7,
+        "max": 72.7,
         "n": 1
       },
       "skills_trend": {
-        "ema": 72.8,
-        "min": 72.8,
-        "max": 72.8,
+        "ema": 71.3,
+        "min": 71.3,
+        "max": 71.3,
         "n": 1
       },
-      "rank_score": 73.4
+      "rank_score": 72.7
     },
     {
       "id": "minimax-m3",
@@ -3375,10 +3445,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 71.8,
+        "total": 70.9,
         "completion": 0.746,
         "adversarial": 0.6081,
-        "quality": 0.746,
+        "quality": 0.6963,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -3677,7 +3747,14 @@
       },
       "thinking": "max",
       "wall_seconds": 398,
-      "historical_score": 71.8,
+      "historical_score": 70.9,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-minimax-m3-2026w35",
         "agent": "runs/a-minimax-m3-2026w35"
@@ -3690,10 +3767,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 71.8,
+          "total": 70.9,
           "completion": 0.746,
           "adversarial": 0.6081,
-          "quality": 0.746,
+          "quality": 0.6963,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -3992,7 +4069,14 @@
         },
         "thinking": "max",
         "wall_seconds": 398,
-        "historical_score": 71.8,
+        "historical_score": 70.9,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-minimax-m3-2026w35",
           "agent": "runs/a-minimax-m3-2026w35"
@@ -4006,10 +4090,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 88.9,
+          "total": 87.1,
           "completion": 0.9032,
           "adversarial": 0.8333,
-          "quality": 0.9032,
+          "quality": 0.8129,
           "tiers": {
             "0": {
               "rate": 1.0,
@@ -4297,7 +4381,7 @@
         },
         "go": {
           "model_id": "minimax-m3",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.120439,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.201,
@@ -4306,25 +4390,32 @@
         },
         "thinking": "max",
         "wall_seconds": 579,
-        "historical_score": 88.9,
+        "historical_score": 87.1,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-minimax-m3-2026w35",
           "agent": "runs/b-minimax-m3-2026w35"
         }
       },
       "trend": {
-        "ema": 71.8,
-        "min": 71.8,
-        "max": 71.8,
+        "ema": 70.9,
+        "min": 70.9,
+        "max": 70.9,
         "n": 1
       },
       "skills_trend": {
-        "ema": 88.9,
-        "min": 88.9,
-        "max": 88.9,
+        "ema": 87.1,
+        "min": 87.1,
+        "max": 87.1,
         "n": 1
       },
-      "rank_score": 71.8
+      "rank_score": 70.9
     },
     {
       "id": "muse-spark-1.2-contributor",
@@ -4334,10 +4425,10 @@
       "arm_label": "Skills",
       "summary": "",
       "score": {
-        "total": 71.2,
+        "total": 68.7,
         "completion": 0.7399,
         "adversarial": 0.601,
-        "quality": 0.7399,
+        "quality": 0.6166,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -4636,7 +4727,14 @@
       },
       "thinking": "max",
       "wall_seconds": 402,
-      "historical_score": 71.2,
+      "historical_score": 68.7,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/b-muse-spark-1-2-contributor-2026w35",
         "agent": "runs/b-muse-spark-1-2-contributor-2026w35"
@@ -4650,10 +4748,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 71.2,
+          "total": 68.7,
           "completion": 0.7399,
           "adversarial": 0.601,
-          "quality": 0.7399,
+          "quality": 0.6166,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -4952,7 +5050,14 @@
         },
         "thinking": "max",
         "wall_seconds": 402,
-        "historical_score": 71.2,
+        "historical_score": 68.7,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-muse-spark-1-2-contributor-2026w35",
           "agent": "runs/b-muse-spark-1-2-contributor-2026w35"
@@ -4960,12 +5065,12 @@
       },
       "trend": null,
       "skills_trend": {
-        "ema": 71.2,
-        "min": 71.2,
-        "max": 71.2,
+        "ema": 68.7,
+        "min": 68.7,
+        "max": 68.7,
         "n": 1
       },
-      "rank_score": 71.2
+      "rank_score": 68.7
     },
     {
       "id": "qwen3.6-plus",
@@ -4975,10 +5080,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 71.0,
+        "total": 66.6,
         "completion": 0.7327,
         "adversarial": 0.6184,
-        "quality": 0.7327,
+        "quality": 0.5129,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -5278,7 +5383,14 @@
       },
       "thinking": "max",
       "wall_seconds": 411,
-      "historical_score": 71,
+      "historical_score": 66.6,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-qwen3-6-plus-2026w35",
         "agent": "runs/a-qwen3-6-plus-2026w35"
@@ -5291,10 +5403,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 71.0,
+          "total": 66.6,
           "completion": 0.7327,
           "adversarial": 0.6184,
-          "quality": 0.7327,
+          "quality": 0.5129,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -5594,7 +5706,14 @@
         },
         "thinking": "max",
         "wall_seconds": 411,
-        "historical_score": 71,
+        "historical_score": 66.6,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-qwen3-6-plus-2026w35",
           "agent": "runs/a-qwen3-6-plus-2026w35"
@@ -5608,10 +5727,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 85.8,
+          "total": 83.2,
           "completion": 0.8858,
           "adversarial": 0.7485,
-          "quality": 0.8858,
+          "quality": 0.7529,
           "tiers": {
             "0": {
               "rate": 0.9286,
@@ -5901,7 +6020,7 @@
         },
         "go": {
           "model_id": "qwen3.6-plus",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.291645,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.486,
@@ -5910,25 +6029,32 @@
         },
         "thinking": "max",
         "wall_seconds": 417,
-        "historical_score": 85.8,
+        "historical_score": 83.2,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-qwen3-6-plus-2026w35",
           "agent": "runs/b-qwen3-6-plus-2026w35"
         }
       },
       "trend": {
-        "ema": 71.0,
-        "min": 71.0,
-        "max": 71.0,
+        "ema": 66.6,
+        "min": 66.6,
+        "max": 66.6,
         "n": 1
       },
       "skills_trend": {
-        "ema": 85.8,
-        "min": 85.8,
-        "max": 85.8,
+        "ema": 83.2,
+        "min": 83.2,
+        "max": 83.2,
         "n": 1
       },
-      "rank_score": 71.0
+      "rank_score": 66.6
     },
     {
       "id": "qwen3.7-plus",
@@ -5938,10 +6064,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 66.5,
+        "total": 64.0,
         "completion": 0.683,
         "adversarial": 0.5938,
-        "quality": 0.683,
+        "quality": 0.5578,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -6230,7 +6356,7 @@
       },
       "go": {
         "model_id": "qwen3.7-plus",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
         "usd": 0.165067,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.275,
@@ -6239,7 +6365,14 @@
       },
       "thinking": "max",
       "wall_seconds": 363,
-      "historical_score": 66.5,
+      "historical_score": 64,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-qwen3-7-plus-2026w35",
         "agent": "runs/a-qwen3-7-plus-2026w35"
@@ -6252,10 +6385,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 66.5,
+          "total": 64.0,
           "completion": 0.683,
           "adversarial": 0.5938,
-          "quality": 0.683,
+          "quality": 0.5578,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -6544,7 +6677,7 @@
         },
         "go": {
           "model_id": "qwen3.7-plus",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.165067,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.275,
@@ -6553,7 +6686,14 @@
         },
         "thinking": "max",
         "wall_seconds": 363,
-        "historical_score": 66.5,
+        "historical_score": 64,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-qwen3-7-plus-2026w35",
           "agent": "runs/a-qwen3-7-plus-2026w35"
@@ -6561,13 +6701,13 @@
       },
       "skills": null,
       "trend": {
-        "ema": 66.5,
-        "min": 66.5,
-        "max": 66.5,
+        "ema": 64.0,
+        "min": 64.0,
+        "max": 64.0,
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 66.5
+      "rank_score": 64.0
     },
     {
       "id": "mimo-v2.5",
@@ -6577,10 +6717,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 64.4,
+        "total": 62.3,
         "completion": 0.6882,
         "adversarial": 0.4675,
-        "quality": 0.6882,
+        "quality": 0.585,
         "tiers": {
           "0": {
             "rate": 0.8571,
@@ -6870,7 +7010,7 @@
       },
       "go": {
         "model_id": "mimo-v2.5",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
         "usd": 0.005072,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.008,
@@ -6879,7 +7019,14 @@
       },
       "thinking": "max",
       "wall_seconds": 140,
-      "historical_score": 64.4,
+      "historical_score": 62.3,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-mimo-v2-5-2026w35",
         "agent": "runs/a-mimo-v2-5-2026w35"
@@ -6892,10 +7039,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 64.4,
+          "total": 62.3,
           "completion": 0.6882,
           "adversarial": 0.4675,
-          "quality": 0.6882,
+          "quality": 0.585,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -7185,7 +7332,7 @@
         },
         "go": {
           "model_id": "mimo-v2.5",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.005072,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.008,
@@ -7194,7 +7341,14 @@
         },
         "thinking": "max",
         "wall_seconds": 140,
-        "historical_score": 64.4,
+        "historical_score": 62.3,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-mimo-v2-5-2026w35",
           "agent": "runs/a-mimo-v2-5-2026w35"
@@ -7202,13 +7356,13 @@
       },
       "skills": null,
       "trend": {
-        "ema": 64.4,
-        "min": 64.4,
-        "max": 64.4,
+        "ema": 62.3,
+        "min": 62.3,
+        "max": 62.3,
         "n": 1
       },
       "skills_trend": null,
-      "rank_score": 64.4
+      "rank_score": 62.3
     },
     {
       "id": "longcat-2.0",
@@ -7218,10 +7372,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 63.5,
+        "total": 60.1,
         "completion": 0.6375,
         "adversarial": 0.6241,
-        "quality": 0.6375,
+        "quality": 0.4675,
         "tiers": {
           "0": {
             "rate": 0.7857,
@@ -7514,7 +7668,7 @@
       },
       "go": {
         "model_id": "longcat-2.0",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
         "usd": 0.022481,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.037,
@@ -7523,7 +7677,14 @@
       },
       "thinking": "max",
       "wall_seconds": 430,
-      "historical_score": 63.5,
+      "historical_score": 60.1,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-longcat-2-0-2026w35",
         "agent": "runs/a-longcat-2-0-2026w35"
@@ -7536,10 +7697,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 63.5,
+          "total": 60.1,
           "completion": 0.6375,
           "adversarial": 0.6241,
-          "quality": 0.6375,
+          "quality": 0.4675,
           "tiers": {
             "0": {
               "rate": 0.7857,
@@ -7832,7 +7993,7 @@
         },
         "go": {
           "model_id": "longcat-2.0",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.022481,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.037,
@@ -7841,7 +8002,14 @@
         },
         "thinking": "max",
         "wall_seconds": 430,
-        "historical_score": 63.5,
+        "historical_score": 60.1,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-longcat-2-0-2026w35",
           "agent": "runs/a-longcat-2-0-2026w35"
@@ -7855,10 +8023,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 71.2,
+          "total": 66.3,
           "completion": 0.7399,
           "adversarial": 0.601,
-          "quality": 0.7399,
+          "quality": 0.4933,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -8148,7 +8316,7 @@
         },
         "go": {
           "model_id": "longcat-2.0",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.049233,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.082,
@@ -8157,25 +8325,32 @@
         },
         "thinking": "max",
         "wall_seconds": 754,
-        "historical_score": 71.2,
+        "historical_score": 66.3,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-longcat-2-0-2026w35",
           "agent": "runs/b-longcat-2-0-2026w35"
         }
       },
       "trend": {
-        "ema": 63.5,
-        "min": 63.5,
-        "max": 63.5,
+        "ema": 60.1,
+        "min": 60.1,
+        "max": 60.1,
         "n": 1
       },
       "skills_trend": {
-        "ema": 71.2,
-        "min": 71.2,
-        "max": 71.2,
+        "ema": 66.3,
+        "min": 66.3,
+        "max": 66.3,
         "n": 1
       },
-      "rank_score": 63.5
+      "rank_score": 60.1
     },
     {
       "id": "mimo-v2.5-pro",
@@ -8185,10 +8360,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 62.0,
+        "total": 60.1,
         "completion": 0.6375,
         "adversarial": 0.5513,
-        "quality": 0.6375,
+        "quality": 0.5419,
         "tiers": {
           "0": {
             "rate": 0.7857,
@@ -8480,7 +8655,7 @@
       },
       "go": {
         "model_id": "mimo-v2.5-pro",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
         "usd": 0.019394,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.129,
@@ -8489,7 +8664,14 @@
       },
       "thinking": "max",
       "wall_seconds": 248,
-      "historical_score": 62,
+      "historical_score": 60.1,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-mimo-v2-5-pro-2026w35",
         "agent": "runs/a-mimo-v2-5-pro-2026w35"
@@ -8502,10 +8684,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 62.0,
+          "total": 60.1,
           "completion": 0.6375,
           "adversarial": 0.5513,
-          "quality": 0.6375,
+          "quality": 0.5419,
           "tiers": {
             "0": {
               "rate": 0.7857,
@@ -8797,7 +8979,7 @@
         },
         "go": {
           "model_id": "mimo-v2.5-pro",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.019394,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.129,
@@ -8806,7 +8988,14 @@
         },
         "thinking": "max",
         "wall_seconds": 248,
-        "historical_score": 62,
+        "historical_score": 60.1,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-mimo-v2-5-pro-2026w35",
           "agent": "runs/a-mimo-v2-5-pro-2026w35"
@@ -8820,10 +9009,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 68.8,
+          "total": 65.9,
           "completion": 0.727,
           "adversarial": 0.5343,
-          "quality": 0.727,
+          "quality": 0.5816,
           "tiers": {
             "0": {
               "rate": 0.8571,
@@ -9112,7 +9301,7 @@
         },
         "go": {
           "model_id": "mimo-v2.5-pro",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.023447,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.156,
@@ -9121,25 +9310,32 @@
         },
         "thinking": "max",
         "wall_seconds": 312,
-        "historical_score": 68.8,
+        "historical_score": 65.9,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-mimo-v2-5-pro-2026w35",
           "agent": "runs/b-mimo-v2-5-pro-2026w35"
         }
       },
       "trend": {
-        "ema": 62.0,
-        "min": 62.0,
-        "max": 62.0,
+        "ema": 60.1,
+        "min": 60.1,
+        "max": 60.1,
         "n": 1
       },
       "skills_trend": {
-        "ema": 68.8,
-        "min": 68.8,
-        "max": 68.8,
+        "ema": 65.9,
+        "min": 65.9,
+        "max": 65.9,
         "n": 1
       },
-      "rank_score": 62.0
+      "rank_score": 60.1
     },
     {
       "id": "minimax-m2.7",
@@ -9149,10 +9345,10 @@
       "arm_label": "No Skills",
       "summary": "",
       "score": {
-        "total": 57.3,
+        "total": 54.6,
         "completion": 0.6261,
         "adversarial": 0.3606,
-        "quality": 0.6261,
+        "quality": 0.4904,
         "tiers": {
           "0": {
             "rate": 0.7857,
@@ -9443,7 +9639,7 @@
       },
       "go": {
         "model_id": "minimax-m2.7",
-        "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+        "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
         "usd": 0.137256,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.229,
@@ -9452,7 +9648,14 @@
       },
       "thinking": "max",
       "wall_seconds": 243,
-      "historical_score": 57.3,
+      "historical_score": 54.6,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
       "sources": {
         "regrade": "runs/a-minimax-m2-7-2026w35",
         "agent": "runs/a-minimax-m2-7-2026w35"
@@ -9465,10 +9668,10 @@
         "arm_label": "No Skills",
         "summary": "",
         "score": {
-          "total": 57.3,
+          "total": 54.6,
           "completion": 0.6261,
           "adversarial": 0.3606,
-          "quality": 0.6261,
+          "quality": 0.4904,
           "tiers": {
             "0": {
               "rate": 0.7857,
@@ -9759,7 +9962,7 @@
         },
         "go": {
           "model_id": "minimax-m2.7",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.137256,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.229,
@@ -9768,7 +9971,14 @@
         },
         "thinking": "max",
         "wall_seconds": 243,
-        "historical_score": 57.3,
+        "historical_score": 54.6,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/a-minimax-m2-7-2026w35",
           "agent": "runs/a-minimax-m2-7-2026w35"
@@ -9782,10 +9992,10 @@
         "arm_label": "Skills",
         "summary": "",
         "score": {
-          "total": 79.6,
+          "total": 74.1,
           "completion": 0.8698,
           "adversarial": 0.4992,
-          "quality": 0.8698,
+          "quality": 0.5944,
           "tiers": {
             "0": {
               "rate": 0.9286,
@@ -10075,7 +10285,7 @@
         },
         "go": {
           "model_id": "minimax-m2.7",
-          "pricing_sha256": "0561447b9fdd67f77bed910937ed586e1878e1694f456c074735503cfbad8b73",
+          "pricing_sha256": "ee7565f7a00c526166260bd845bbb140784a4ca5130a04fa4919b278e0a56356",
           "usd": 0.205035,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.342,
@@ -10084,25 +10294,32 @@
         },
         "thinking": "max",
         "wall_seconds": 239,
-        "historical_score": 79.6,
+        "historical_score": 74.1,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
         "sources": {
           "regrade": "runs/b-minimax-m2-7-2026w35",
           "agent": "runs/b-minimax-m2-7-2026w35"
         }
       },
       "trend": {
-        "ema": 57.3,
-        "min": 57.3,
-        "max": 57.3,
+        "ema": 54.6,
+        "min": 54.6,
+        "max": 54.6,
         "n": 1
       },
       "skills_trend": {
-        "ema": 79.6,
-        "min": 79.6,
-        "max": 79.6,
+        "ema": 74.1,
+        "min": 74.1,
+        "max": 74.1,
         "n": 1
       },
-      "rank_score": 57.3
+      "rank_score": 54.6
     }
   ],
   "experiments": {},

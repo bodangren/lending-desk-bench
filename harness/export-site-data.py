@@ -212,6 +212,7 @@ def load_entry(spec: dict) -> dict | None:
     wall = None
     hist_total = None
     go = None
+    trust = None
     if spec.get("agent"):
         sp = ROOT / spec["agent"] / "artifacts" / "score.json"
         if sp.exists():
@@ -224,6 +225,35 @@ def load_entry(spec: dict) -> dict | None:
             wall = s.get("time_on_task_seconds")
             hist_total = s.get("total")
             go = s.get("go")
+            # SCORING.md requires every trust flag before a record may be ranked, and
+            # states that a result graded under host load must not be ranked. Carry the
+            # flags to the page instead of publishing the totals bare.
+            host = s.get("host") or {}
+            trust = {
+                "valid": bool(s.get("valid")),
+                "trusted": bool(s.get("trusted")),
+                "publishable": bool(s.get("publishable")),
+                "rankable": bool(s.get("rankable")),
+                "under_load": bool(host.get("under_load")),
+            }
+            # The score record is authoritative for the three axes. Its quality axis
+            # carries the react-doctor penalty; soft_score() above cannot see it.
+            axes = s.get("axes") or {}
+            tiers_in = s.get("tiers") or {}
+            if s.get("valid") and isinstance(axes.get("quality"), (int, float)) and s.get("total") is not None:
+                metrics = {
+                    "total": round(float(s["total"]), 1),
+                    "completion": round(float(axes.get("completion", metrics["completion"])), 4),
+                    "adversarial": round(float(axes.get("adversarial", metrics["adversarial"])), 4),
+                    "quality": round(float(axes["quality"]), 4),
+                    "tiers": {
+                        t: {
+                            "rate": round(float(tiers_in.get(t, {}).get("rate", metrics["tiers"][t]["rate"])), 4),
+                            "scale": round(float(tiers_in.get(t, {}).get("scale", metrics["tiers"][t]["scale"])), 4),
+                        }
+                        for t in ("0", "1", "2")
+                    },
+                }
 
     return {
         "id": spec["id"],
@@ -246,6 +276,7 @@ def load_entry(spec: dict) -> dict | None:
         "thinking": thinking,
         "wall_seconds": wall,
         "historical_score": hist_total,
+        "trust": trust,
         "sources": {"regrade": spec["regrade"], "agent": spec.get("agent")},
     }
 
@@ -362,8 +393,9 @@ def main() -> None:
                     "Soft tiers scale higher-tier credit by lower-tier rates. "
                     "There is no binary rule at 90 percent Tier 0. "
                     "Advisory checks never affect totals. "
-                    "Week 2026w35 grades ran under host load. "
-                    "Treat these totals as diagnostic, not as a trusted ranking."
+                    "A row marked Unranked failed a trust flag in SCORING.md, most "
+                    "often because the host was busy during the grade. "
+                    "Treat an unranked total as diagnostic, not as a ranking."
                 ),
             },
         },

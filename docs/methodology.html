@@ -139,8 +139,12 @@
         zero quality credit. Quality is 20% of the total score.
       </p>
       <p class="muted">
-        Current caveat: on this fixture's small file set, react-doctor 0.9.2 reports zero diagnostics for every
-        candidate. The quality axis therefore adds no separation between models in the current week.
+        The analyzer scans a relocated copy of the candidate source. The candidate tree lives in a
+        git-ignored directory during grading, and the analyzer skips git-ignored files, so an in-place
+        scan reports zero findings. The copy lives outside every repository, so every source file is scanned.
+        In the current week the analyzer finds real warnings in most candidates (missing button types, raw
+        image elements, loading flags not reset in a finally block). The warnings differentiate the quality
+        axis from the completion axis.
       </p>
     </section>
 
