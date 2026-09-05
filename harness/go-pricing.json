@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "source": "https://opencode.ai/docs/go/",
-  "retrieved": "2026-08-29",
+  "retrieved": "2026-09-06",
   "high_usage_min_requests_per_month": 7000,
   "deepseek_rate": "off-peak",
   "provider": "opencode-go",
@@ -149,8 +149,26 @@
       "monthly_usage_usd": 60,
       "rates": { "input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375 }
     },
+    "minimax-m2.5": {
+      "name": "MiniMax M2.5",
+      "api": "anthropic-messages",
+      "high_usage": true,
+      "batch": true,
+      "requests_per_month": 17000,
+      "monthly_usage_usd": 60,
+      "rates": { "input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375 }
+    },
     "muse-spark-1.2-contributor": {
       "name": "Muse Spark 1.2 Contributor",
+      "api": "openai-responses",
+      "high_usage": true,
+      "batch": true,
+      "requests_per_month": 226600,
+      "monthly_usage_usd": 60,
+      "rates": { "input": 0.1, "output": 0.2, "cacheRead": 0.002, "cacheWrite": 0 }
+    },
+    "muse-spark-1.3-contributor": {
+      "name": "Muse Spark 1.3 Contributor",
       "api": "openai-responses",
       "high_usage": true,
       "batch": true,
@@ -181,8 +199,8 @@
       "api": "anthropic-messages",
       "high_usage": false,
       "batch": false,
-      "requests_per_month": 1690,
-      "monthly_usage_usd": 60,
+      "requests_per_month": 840,
+      "monthly_usage_usd": 30,
       "rates": { "input": 2.5, "output": 7.5, "cacheRead": 0.5, "cacheWrite": 3.125 }
     },
     "qwen3.7-plus": {
@@ -253,6 +271,15 @@
       "monthly_usage_usd": 60,
       "max_tokens": 32768,
       "rates": { "input": 0.14, "output": 0.58, "cacheRead": 0.035, "cacheWrite": 0 }
+    },
+    "omen-alpha": {
+      "name": "Omen Alpha",
+      "api": "openai-completions",
+      "high_usage": true,
+      "batch": true,
+      "requests_per_month": 57900,
+      "monthly_usage_usd": 100,
+      "rates": { "input": 0.2, "output": 0.66, "cacheRead": 0.04, "cacheWrite": 0 }
     }
   }
 }
