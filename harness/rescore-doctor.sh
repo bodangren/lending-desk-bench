@@ -1,18 +1,38 @@
 #!/usr/bin/env bash
-# One-off: rescore all 2026w35 runs with the patched react-doctor (relocated scan).
-# Regenerates provenance (runner/suite hashes) then rebuilds score.json from the
-# persisted results.json — no agent re-runs, no test re-runs.
+# Rescore runs for one week with current harness code: regenerate provenance
+# (runner/suite hashes) then rebuild score.json from the persisted results.json
+# — no agent re-runs, no test re-runs. This also drops the BENCH_IGNORE_LOAD
+# under_load flag the batch runs carry, matching the 2026w35 finalize flow.
+#
+#   WEEK=2026w36 ./rescore-doctor.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; H="$ROOT/harness"
 cd "$H" || exit 1
 TSX="$H/node_modules/.bin/tsx"
+WEEK="${WEEK:-$(date -u +%Gw%V)}"
 
 mapfile -t HASHES < <("$TSX" provenance.ts --shell)
 RUNNER_HASH="${HASHES[0]%%$'\t'*}"; SUITE_HASH="${HASHES[0]#*$'\t'}"
-echo "runner=$RUNNER_HASH suite=$SUITE_HASH"
+echo "runner=$RUNNER_HASH suite=$SUITE_HASH week=$WEEK"
 
-for ART in "$ROOT"/runs/*-2026w35/artifacts; do
+# slug -> model id map derived from go-pricing.json (slug is the id with dots
+# replaced by hyphens; a hyphen in the id would make the reversal ambiguous).
+node -e 'const p=require(process.argv[1]).models; for (const id of Object.keys(p)) console.log(id.replaceAll(".","-")+"\t"+id);' \
+  "$H/go-pricing.json" > "$H/.tmp-rescore-model-map.txt" || exit 1
+
+for ART in "$ROOT"/runs/*-"$WEEK"/artifacts; do
+  [ -d "$ART" ] || { echo "no runs for week $WEEK"; exit 0; }
   RUN_ID="$(basename "$(dirname "$ART")")"
+  if [[ "$RUN_ID" =~ ^([ab])-(.+)-$WEEK(-r[0-9]+)?$ ]]; then
+    ARM="${BASH_REMATCH[1]}"; SLUG="${BASH_REMATCH[2]}"
+  else
+    echo "SKIP $RUN_ID (run id not <arm>-<slug>-$WEEK)"; continue
+  fi
+  MODEL_ID="$(awk -F'\t' -v s="$SLUG" '$1==s{print $2; exit}' "$H/.tmp-rescore-model-map.txt")"
+  if [ -z "$MODEL_ID" ]; then
+    MODEL_ID="${SLUG//-/.}"
+    echo "WARN $RUN_ID: slug not in go-pricing.json, guessing model id $MODEL_ID"
+  fi
   CAND="$ROOT/runs/$RUN_ID/candidate"
   [ -d "$CAND" ] || { echo "SKIP $RUN_ID (no candidate)"; continue; }
   [ -f "$ART/results.json" ] || { echo "SKIP $RUN_ID (no results.json)"; continue; }
@@ -20,28 +40,7 @@ for ART in "$ROOT"/runs/*-2026w35/artifacts; do
   [ -f "$ART/execution-identity.json" ] || { echo "SKIP $RUN_ID (no identity)"; continue; }
   [ -f "$ART/executor-cohort.json" ] || { echo "SKIP $RUN_ID (no cohort)"; continue; }
 
-  ARM="${RUN_ID:0:1}"
-  SLUG="${RUN_ID:2}"; SLUG="${SLUG%-2026w35}"
-  MODEL_ID="${SLUG//-/.}"
-  # slug dots->hyphens reversal is imperfect for ids containing hyphens; map explicitly:
-  case "$SLUG" in
-    glm-5-3-flash) MODEL_ID="glm-5.3-flash" ;;
-    gpt-5-6-luna) MODEL_ID="gpt-5.6-luna" ;;
-    deepseek-v4-flash) MODEL_ID="deepseek-v4-flash" ;;
-    deepseek-v4-flash-vision-exp) MODEL_ID="deepseek-v4-flash-vision-exp" ;;
-    muse-spark-1-2-contributor) MODEL_ID="muse-spark-1.2-contributor" ;;
-    qwen3-6-plus) MODEL_ID="qwen3.6-plus" ;;
-    qwen3-7-plus) MODEL_ID="qwen3.7-plus" ;;
-    qwen3-8-flash) MODEL_ID="qwen3.8-flash" ;;
-    longcat-2-0) MODEL_ID="longcat-2.0" ;;
-    mimo-v2-5) MODEL_ID="mimo-v2.5" ;;
-    mimo-v2-5-pro) MODEL_ID="mimo-v2.5-pro" ;;
-    minimax-m3) MODEL_ID="minimax-m3" ;;
-    minimax-m2-7) MODEL_ID="minimax-m2.7" ;;
-    hy3) MODEL_ID="hy3" ;;
-  esac
-
-  CONTRACT="$("node" -e 'const c=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(`${c.candidate_sha256}\t${c.fixture_protected_sha256}`)' "$ART/candidate-contract.json")"
+  CONTRACT="$(node -e 'const c=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(`${c.candidate_sha256}\t${c.fixture_protected_sha256}`)' "$ART/candidate-contract.json")"
   CAND_HASH="${CONTRACT%%$'\t'*}"; FIX_HASH="${CONTRACT#*$'\t'}"
   IDENTITY_HASH="$("$TSX" execution-identity.ts --fingerprint "$ART/execution-identity.json")" || { echo "FAIL $RUN_ID (identity fp)"; continue; }
 
@@ -66,4 +65,5 @@ for ART in "$ROOT"/runs/*-2026w35/artifacts; do
     echo "FAIL $RUN_ID ($VALID)"; rm -f "$ART/score.json.new"
   fi
 done
+rm -f "$H/.tmp-rescore-model-map.txt"
 echo "RESCORE DONE"

@@ -20,6 +20,9 @@ else
   echo "catalog fetch failed; continue with the pinned table" >&2
 fi
 ./batch.sh
+# Rebuild score.json from persisted results with current harness hashes; drops
+# the under_load flag batch runs carry under BENCH_IGNORE_LOAD=1.
+WEEK="$WEEK" ./rescore-doctor.sh
 ./recost.sh
 python3 "$H/export-site-data.py"
 python3 "$H/generate-model-pages.py"
