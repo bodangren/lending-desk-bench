@@ -20,8 +20,10 @@ MSG_FILE="$ROOT/.tmp/weekly-commit-msg.txt"
 CATALOG="$ROOT/reports/go-catalog-$WEEK.json"
 
 # This host never meets the preflight idle budget, so every run proceeds
-# flagged under_load. All results still publish; see score-freshness.ts.
+# flagged under_load and no settling wait is spent before it. All results
+# still publish; see score-freshness.ts.
 export BENCH_IGNORE_LOAD="${BENCH_IGNORE_LOAD:-1}"
+export BENCH_WAIT_FOR_IDLE="${BENCH_WAIT_FOR_IDLE:-0}"
 
 {
   echo "CRON START $(date -Is) week=$WEEK"
