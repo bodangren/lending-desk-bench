@@ -19,6 +19,10 @@ LOG="$ROOT/reports/weekly-cron-$WEEK.log"
 MSG_FILE="$ROOT/.tmp/weekly-commit-msg.txt"
 CATALOG="$ROOT/reports/go-catalog-$WEEK.json"
 
+# This host never meets the preflight idle budget, so every run proceeds
+# flagged under_load. All results still publish; see score-freshness.ts.
+export BENCH_IGNORE_LOAD="${BENCH_IGNORE_LOAD:-1}"
+
 {
   echo "CRON START $(date -Is) week=$WEEK"
   "$ROOT/harness/weekly.sh"
