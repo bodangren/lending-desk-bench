@@ -63,7 +63,9 @@ export function fmtPct1(x) {
 
 export function cacheHitRate(usage) {
   if (!usage) return null;
-  const promptTokens = (usage.cacheRead || 0) + (usage.input || 0);
+  // Prompt tokens = cache reads + uncached input + cache writes (written
+  // tokens were not served from cache, so they belong in the denominator).
+  const promptTokens = (usage.cacheRead || 0) + (usage.input || 0) + (usage.cacheWrite || 0);
   if (!promptTokens) return null;
   return (usage.cacheRead || 0) / promptTokens;
 }
