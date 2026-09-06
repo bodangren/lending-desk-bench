@@ -20,10 +20,13 @@ MSG_FILE="$ROOT/.tmp/weekly-commit-msg.txt"
 CATALOG="$ROOT/reports/go-catalog-$WEEK.json"
 
 # This host never meets the preflight idle budget, so every run proceeds
-# flagged under_load and no settling wait is spent before it. All results
-# still publish; see score-freshness.ts.
+# flagged under_load and no settling wait is spent before it. The meta
+# self-check cannot complete here either (podman probes hang; see
+# reports/weekly-2026w36-manual.log), so it is skipped with the documented
+# warning. All results still publish; see score-freshness.ts.
 export BENCH_IGNORE_LOAD="${BENCH_IGNORE_LOAD:-1}"
 export BENCH_WAIT_FOR_IDLE="${BENCH_WAIT_FOR_IDLE:-0}"
+export BENCH_SELFCHECK="${BENCH_SELFCHECK:-skip}"
 
 {
   echo "CRON START $(date -Is) week=$WEEK"
