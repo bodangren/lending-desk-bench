@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-11T21:41:00",
+  "generated_at": "2026-09-11T22:46:56",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
@@ -2095,6 +2095,966 @@
       "rank_score": 94.4
     },
     {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "provider_model": "opencode-go/deepseek-v4.1-flash",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "summary": "",
+      "score": {
+        "total": 93.4,
+        "completion": 0.9836,
+        "adversarial": 0.8182,
+        "quality": 0.9,
+        "tiers": {
+          "0": {
+            "rate": 1.0,
+            "scale": 1.0
+          },
+          "1": {
+            "rate": 1.0,
+            "scale": 1.0
+          },
+          "2": {
+            "rate": 0.9091,
+            "scale": 1.0
+          }
+        }
+      },
+      "passes": {
+        "passed": 69,
+        "failed": 3,
+        "total": 72
+      },
+      "advisory": {
+        "passed": 0,
+        "total": 2,
+        "results": {
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false
+        }
+      },
+      "domains": {
+        "A": {
+          "pass": 5,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "A.boundary",
+            "A.due-soon",
+            "A.ok",
+            "A.overdue",
+            "A.returned"
+          ],
+          "rate": 1.0
+        },
+        "M": {
+          "pass": 2,
+          "fail": 1,
+          "failed": [
+            "M.closeout"
+          ],
+          "passed": [
+            "M.metadata-valid",
+            "M.plan-complete"
+          ],
+          "rate": 0.6667
+        },
+        "G": {
+          "pass": 13,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "G.400",
+            "G.401",
+            "G.409",
+            "G.filter-both",
+            "G.filter-item",
+            "G.filter-overdue",
+            "G.fresh",
+            "G.get200",
+            "G.patch200",
+            "G.patch400",
+            "G.patch409",
+            "G.post-fields",
+            "G.post201"
+          ],
+          "rate": 1.0
+        },
+        "P": {
+          "pass": 9,
+          "fail": 2,
+          "failed": [
+            "P.dedup-item",
+            "P.streams-shell"
+          ],
+          "passed": [
+            "P.concurrent-checkout",
+            "P.concurrent-return",
+            "P.filter-literal",
+            "P.hydration-clean",
+            "P.n-plus-one",
+            "P.no-key-leak",
+            "P.searchparams-async",
+            "P.stale-after-mutate",
+            "P.validate-before-io"
+          ],
+          "rate": 0.8182
+        },
+        "C": {
+          "pass": 8,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "C.empty",
+            "C.filter-both",
+            "C.filter-case",
+            "C.filter-category",
+            "C.filter-q",
+            "C.parallel-reads",
+            "C.renders",
+            "C.renders-all"
+          ],
+          "rate": 1.0
+        },
+        "B": {
+          "pass": 5,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "B.badge",
+            "B.image-alt",
+            "B.image-response",
+            "B.link",
+            "B.name-category"
+          ],
+          "rate": 1.0
+        },
+        "H": {
+          "pass": 2,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "H.error",
+            "H.loading"
+          ],
+          "rate": 1.0
+        },
+        "D": {
+          "pass": 7,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "D.form-hidden",
+            "D.history-order",
+            "D.history-status",
+            "D.metadata",
+            "D.notfound",
+            "D.renders",
+            "D.return-visible"
+          ],
+          "rate": 1.0
+        },
+        "E": {
+          "pass": 9,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "E.error-shown",
+            "E.member-options",
+            "E.optimistic",
+            "E.pending",
+            "E.return-error",
+            "E.return-optimistic",
+            "E.return-pending",
+            "E.return-submits",
+            "E.submits"
+          ],
+          "rate": 1.0
+        },
+        "F": {
+          "pass": 9,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "F.auth-checkout",
+            "F.auth-return",
+            "F.checkout-conflict",
+            "F.checkout-record",
+            "F.future-due-date",
+            "F.lifecycle",
+            "F.post-mutation-state",
+            "F.return-not-on-loan",
+            "F.return-record"
+          ],
+          "rate": 1.0
+        },
+        "ADV": {
+          "pass": 0,
+          "fail": 2,
+          "failed": [
+            "ADV.useActionState",
+            "ADV.useOptimistic"
+          ],
+          "passed": [],
+          "rate": 0.0
+        }
+      },
+      "results": {
+        "A.returned": true,
+        "A.overdue": true,
+        "A.due-soon": true,
+        "A.ok": true,
+        "A.boundary": true,
+        "M.metadata-valid": true,
+        "M.plan-complete": true,
+        "M.closeout": false,
+        "G.get200": true,
+        "G.401": true,
+        "G.filter-item": true,
+        "G.filter-overdue": true,
+        "G.filter-both": true,
+        "G.fresh": true,
+        "G.post201": true,
+        "G.400": true,
+        "G.409": true,
+        "P.concurrent-checkout": true,
+        "G.patch200": true,
+        "G.patch409": true,
+        "G.patch400": true,
+        "P.concurrent-return": true,
+        "G.post-fields": true,
+        "C.renders": true,
+        "C.renders-all": true,
+        "B.name-category": true,
+        "B.badge": true,
+        "B.link": true,
+        "B.image-alt": true,
+        "C.filter-q": true,
+        "C.filter-case": true,
+        "P.searchparams-async": true,
+        "P.filter-literal": true,
+        "C.filter-category": true,
+        "C.filter-both": true,
+        "C.empty": true,
+        "P.hydration-clean": true,
+        "H.loading": true,
+        "B.image-response": true,
+        "C.parallel-reads": true,
+        "D.renders": true,
+        "D.history-order": true,
+        "D.history-status": true,
+        "D.notfound": true,
+        "D.metadata": true,
+        "D.form-hidden": true,
+        "D.return-visible": true,
+        "E.return-submits": true,
+        "E.return-pending": true,
+        "E.return-optimistic": true,
+        "E.submits": true,
+        "E.pending": true,
+        "E.optimistic": true,
+        "E.error-shown": true,
+        "P.stale-after-mutate": true,
+        "E.member-options": true,
+        "F.auth-checkout": true,
+        "F.auth-return": true,
+        "F.checkout-conflict": true,
+        "F.return-not-on-loan": true,
+        "F.checkout-record": true,
+        "F.return-record": true,
+        "F.future-due-date": true,
+        "F.post-mutation-state": true,
+        "F.lifecycle": true,
+        "E.return-error": true,
+        "P.no-key-leak": true,
+        "P.n-plus-one": true,
+        "P.validate-before-io": true,
+        "P.dedup-item": false,
+        "P.streams-shell": false,
+        "ADV.useActionState": false,
+        "ADV.useOptimistic": false,
+        "H.error": true
+      },
+      "usage": {
+        "input": 21168,
+        "output": 41252,
+        "cacheRead": 1181568,
+        "cacheWrite": 0,
+        "totalTokens": 1243988,
+        "costUsd": 0.031471,
+        "assistantTurns": 36,
+        "toolCalls": 59
+      },
+      "go": {
+        "model_id": "deepseek-v4.1-flash",
+        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "usd": 0.031471,
+        "monthly_usage_usd": 15,
+        "monthly_pct": 0.21,
+        "unmapped": false,
+        "rate": "off-peak"
+      },
+      "thinking": "max",
+      "wall_seconds": 496,
+      "historical_score": 93.4,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
+      "sources": {
+        "regrade": "runs/a-deepseek-v4-1-flash-2026w37",
+        "agent": "runs/a-deepseek-v4-1-flash-2026w37"
+      },
+      "no_skills": {
+        "id": "deepseek-v4.1-flash",
+        "name": "DeepSeek V4.1 Flash",
+        "provider_model": "opencode-go/deepseek-v4.1-flash",
+        "arm": "a",
+        "arm_label": "No Skills",
+        "summary": "",
+        "score": {
+          "total": 93.4,
+          "completion": 0.9836,
+          "adversarial": 0.8182,
+          "quality": 0.9,
+          "tiers": {
+            "0": {
+              "rate": 1.0,
+              "scale": 1.0
+            },
+            "1": {
+              "rate": 1.0,
+              "scale": 1.0
+            },
+            "2": {
+              "rate": 0.9091,
+              "scale": 1.0
+            }
+          }
+        },
+        "passes": {
+          "passed": 69,
+          "failed": 3,
+          "total": 72
+        },
+        "advisory": {
+          "passed": 0,
+          "total": 2,
+          "results": {
+            "ADV.useActionState": false,
+            "ADV.useOptimistic": false
+          }
+        },
+        "domains": {
+          "A": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "A.boundary",
+              "A.due-soon",
+              "A.ok",
+              "A.overdue",
+              "A.returned"
+            ],
+            "rate": 1.0
+          },
+          "M": {
+            "pass": 2,
+            "fail": 1,
+            "failed": [
+              "M.closeout"
+            ],
+            "passed": [
+              "M.metadata-valid",
+              "M.plan-complete"
+            ],
+            "rate": 0.6667
+          },
+          "G": {
+            "pass": 13,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "G.400",
+              "G.401",
+              "G.409",
+              "G.filter-both",
+              "G.filter-item",
+              "G.filter-overdue",
+              "G.fresh",
+              "G.get200",
+              "G.patch200",
+              "G.patch400",
+              "G.patch409",
+              "G.post-fields",
+              "G.post201"
+            ],
+            "rate": 1.0
+          },
+          "P": {
+            "pass": 9,
+            "fail": 2,
+            "failed": [
+              "P.dedup-item",
+              "P.streams-shell"
+            ],
+            "passed": [
+              "P.concurrent-checkout",
+              "P.concurrent-return",
+              "P.filter-literal",
+              "P.hydration-clean",
+              "P.n-plus-one",
+              "P.no-key-leak",
+              "P.searchparams-async",
+              "P.stale-after-mutate",
+              "P.validate-before-io"
+            ],
+            "rate": 0.8182
+          },
+          "C": {
+            "pass": 8,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "C.empty",
+              "C.filter-both",
+              "C.filter-case",
+              "C.filter-category",
+              "C.filter-q",
+              "C.parallel-reads",
+              "C.renders",
+              "C.renders-all"
+            ],
+            "rate": 1.0
+          },
+          "B": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "B.badge",
+              "B.image-alt",
+              "B.image-response",
+              "B.link",
+              "B.name-category"
+            ],
+            "rate": 1.0
+          },
+          "H": {
+            "pass": 2,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "H.error",
+              "H.loading"
+            ],
+            "rate": 1.0
+          },
+          "D": {
+            "pass": 7,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "D.form-hidden",
+              "D.history-order",
+              "D.history-status",
+              "D.metadata",
+              "D.notfound",
+              "D.renders",
+              "D.return-visible"
+            ],
+            "rate": 1.0
+          },
+          "E": {
+            "pass": 9,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "E.error-shown",
+              "E.member-options",
+              "E.optimistic",
+              "E.pending",
+              "E.return-error",
+              "E.return-optimistic",
+              "E.return-pending",
+              "E.return-submits",
+              "E.submits"
+            ],
+            "rate": 1.0
+          },
+          "F": {
+            "pass": 9,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "F.auth-checkout",
+              "F.auth-return",
+              "F.checkout-conflict",
+              "F.checkout-record",
+              "F.future-due-date",
+              "F.lifecycle",
+              "F.post-mutation-state",
+              "F.return-not-on-loan",
+              "F.return-record"
+            ],
+            "rate": 1.0
+          },
+          "ADV": {
+            "pass": 0,
+            "fail": 2,
+            "failed": [
+              "ADV.useActionState",
+              "ADV.useOptimistic"
+            ],
+            "passed": [],
+            "rate": 0.0
+          }
+        },
+        "results": {
+          "A.returned": true,
+          "A.overdue": true,
+          "A.due-soon": true,
+          "A.ok": true,
+          "A.boundary": true,
+          "M.metadata-valid": true,
+          "M.plan-complete": true,
+          "M.closeout": false,
+          "G.get200": true,
+          "G.401": true,
+          "G.filter-item": true,
+          "G.filter-overdue": true,
+          "G.filter-both": true,
+          "G.fresh": true,
+          "G.post201": true,
+          "G.400": true,
+          "G.409": true,
+          "P.concurrent-checkout": true,
+          "G.patch200": true,
+          "G.patch409": true,
+          "G.patch400": true,
+          "P.concurrent-return": true,
+          "G.post-fields": true,
+          "C.renders": true,
+          "C.renders-all": true,
+          "B.name-category": true,
+          "B.badge": true,
+          "B.link": true,
+          "B.image-alt": true,
+          "C.filter-q": true,
+          "C.filter-case": true,
+          "P.searchparams-async": true,
+          "P.filter-literal": true,
+          "C.filter-category": true,
+          "C.filter-both": true,
+          "C.empty": true,
+          "P.hydration-clean": true,
+          "H.loading": true,
+          "B.image-response": true,
+          "C.parallel-reads": true,
+          "D.renders": true,
+          "D.history-order": true,
+          "D.history-status": true,
+          "D.notfound": true,
+          "D.metadata": true,
+          "D.form-hidden": true,
+          "D.return-visible": true,
+          "E.return-submits": true,
+          "E.return-pending": true,
+          "E.return-optimistic": true,
+          "E.submits": true,
+          "E.pending": true,
+          "E.optimistic": true,
+          "E.error-shown": true,
+          "P.stale-after-mutate": true,
+          "E.member-options": true,
+          "F.auth-checkout": true,
+          "F.auth-return": true,
+          "F.checkout-conflict": true,
+          "F.return-not-on-loan": true,
+          "F.checkout-record": true,
+          "F.return-record": true,
+          "F.future-due-date": true,
+          "F.post-mutation-state": true,
+          "F.lifecycle": true,
+          "E.return-error": true,
+          "P.no-key-leak": true,
+          "P.n-plus-one": true,
+          "P.validate-before-io": true,
+          "P.dedup-item": false,
+          "P.streams-shell": false,
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false,
+          "H.error": true
+        },
+        "usage": {
+          "input": 21168,
+          "output": 41252,
+          "cacheRead": 1181568,
+          "cacheWrite": 0,
+          "totalTokens": 1243988,
+          "costUsd": 0.031471,
+          "assistantTurns": 36,
+          "toolCalls": 59
+        },
+        "go": {
+          "model_id": "deepseek-v4.1-flash",
+          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "usd": 0.031471,
+          "monthly_usage_usd": 15,
+          "monthly_pct": 0.21,
+          "unmapped": false,
+          "rate": "off-peak"
+        },
+        "thinking": "max",
+        "wall_seconds": 496,
+        "historical_score": 93.4,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
+        "sources": {
+          "regrade": "runs/a-deepseek-v4-1-flash-2026w37",
+          "agent": "runs/a-deepseek-v4-1-flash-2026w37"
+        }
+      },
+      "skills": {
+        "id": "deepseek-v4.1-flash-skills",
+        "name": "DeepSeek V4.1 Flash (Skills)",
+        "provider_model": "opencode-go/deepseek-v4.1-flash",
+        "arm": "b",
+        "arm_label": "Skills",
+        "summary": "",
+        "score": {
+          "total": 91.4,
+          "completion": 1.0,
+          "adversarial": 0.8182,
+          "quality": 0.75,
+          "tiers": {
+            "0": {
+              "rate": 1.0,
+              "scale": 1.0
+            },
+            "1": {
+              "rate": 1.0,
+              "scale": 1.0
+            },
+            "2": {
+              "rate": 1.0,
+              "scale": 1.0
+            }
+          }
+        },
+        "passes": {
+          "passed": 70,
+          "failed": 2,
+          "total": 72
+        },
+        "advisory": {
+          "passed": 0,
+          "total": 2,
+          "results": {
+            "ADV.useActionState": false,
+            "ADV.useOptimistic": false
+          }
+        },
+        "domains": {
+          "A": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "A.boundary",
+              "A.due-soon",
+              "A.ok",
+              "A.overdue",
+              "A.returned"
+            ],
+            "rate": 1.0
+          },
+          "M": {
+            "pass": 3,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "M.closeout",
+              "M.metadata-valid",
+              "M.plan-complete"
+            ],
+            "rate": 1.0
+          },
+          "G": {
+            "pass": 13,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "G.400",
+              "G.401",
+              "G.409",
+              "G.filter-both",
+              "G.filter-item",
+              "G.filter-overdue",
+              "G.fresh",
+              "G.get200",
+              "G.patch200",
+              "G.patch400",
+              "G.patch409",
+              "G.post-fields",
+              "G.post201"
+            ],
+            "rate": 1.0
+          },
+          "P": {
+            "pass": 9,
+            "fail": 2,
+            "failed": [
+              "P.dedup-item",
+              "P.streams-shell"
+            ],
+            "passed": [
+              "P.concurrent-checkout",
+              "P.concurrent-return",
+              "P.filter-literal",
+              "P.hydration-clean",
+              "P.n-plus-one",
+              "P.no-key-leak",
+              "P.searchparams-async",
+              "P.stale-after-mutate",
+              "P.validate-before-io"
+            ],
+            "rate": 0.8182
+          },
+          "C": {
+            "pass": 8,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "C.empty",
+              "C.filter-both",
+              "C.filter-case",
+              "C.filter-category",
+              "C.filter-q",
+              "C.parallel-reads",
+              "C.renders",
+              "C.renders-all"
+            ],
+            "rate": 1.0
+          },
+          "B": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "B.badge",
+              "B.image-alt",
+              "B.image-response",
+              "B.link",
+              "B.name-category"
+            ],
+            "rate": 1.0
+          },
+          "H": {
+            "pass": 2,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "H.error",
+              "H.loading"
+            ],
+            "rate": 1.0
+          },
+          "D": {
+            "pass": 7,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "D.form-hidden",
+              "D.history-order",
+              "D.history-status",
+              "D.metadata",
+              "D.notfound",
+              "D.renders",
+              "D.return-visible"
+            ],
+            "rate": 1.0
+          },
+          "E": {
+            "pass": 9,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "E.error-shown",
+              "E.member-options",
+              "E.optimistic",
+              "E.pending",
+              "E.return-error",
+              "E.return-optimistic",
+              "E.return-pending",
+              "E.return-submits",
+              "E.submits"
+            ],
+            "rate": 1.0
+          },
+          "F": {
+            "pass": 9,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "F.auth-checkout",
+              "F.auth-return",
+              "F.checkout-conflict",
+              "F.checkout-record",
+              "F.future-due-date",
+              "F.lifecycle",
+              "F.post-mutation-state",
+              "F.return-not-on-loan",
+              "F.return-record"
+            ],
+            "rate": 1.0
+          },
+          "ADV": {
+            "pass": 0,
+            "fail": 2,
+            "failed": [
+              "ADV.useActionState",
+              "ADV.useOptimistic"
+            ],
+            "passed": [],
+            "rate": 0.0
+          }
+        },
+        "results": {
+          "A.returned": true,
+          "A.overdue": true,
+          "A.due-soon": true,
+          "A.ok": true,
+          "A.boundary": true,
+          "M.metadata-valid": true,
+          "M.plan-complete": true,
+          "M.closeout": true,
+          "G.get200": true,
+          "G.401": true,
+          "G.filter-item": true,
+          "G.filter-overdue": true,
+          "G.filter-both": true,
+          "G.fresh": true,
+          "G.post201": true,
+          "G.400": true,
+          "G.409": true,
+          "P.concurrent-checkout": true,
+          "G.patch200": true,
+          "G.patch409": true,
+          "G.patch400": true,
+          "P.concurrent-return": true,
+          "G.post-fields": true,
+          "C.renders": true,
+          "C.renders-all": true,
+          "B.name-category": true,
+          "B.badge": true,
+          "B.link": true,
+          "B.image-alt": true,
+          "C.filter-q": true,
+          "C.filter-case": true,
+          "P.searchparams-async": true,
+          "P.filter-literal": true,
+          "C.filter-category": true,
+          "C.filter-both": true,
+          "C.empty": true,
+          "P.hydration-clean": true,
+          "H.loading": true,
+          "B.image-response": true,
+          "C.parallel-reads": true,
+          "D.renders": true,
+          "D.history-order": true,
+          "D.history-status": true,
+          "D.notfound": true,
+          "D.metadata": true,
+          "D.form-hidden": true,
+          "D.return-visible": true,
+          "E.return-submits": true,
+          "E.return-pending": true,
+          "E.return-optimistic": true,
+          "E.submits": true,
+          "E.pending": true,
+          "E.optimistic": true,
+          "E.error-shown": true,
+          "P.stale-after-mutate": true,
+          "E.member-options": true,
+          "F.auth-checkout": true,
+          "F.auth-return": true,
+          "F.checkout-conflict": true,
+          "F.return-not-on-loan": true,
+          "F.checkout-record": true,
+          "F.return-record": true,
+          "F.future-due-date": true,
+          "F.post-mutation-state": true,
+          "F.lifecycle": true,
+          "E.return-error": true,
+          "P.no-key-leak": true,
+          "P.n-plus-one": true,
+          "P.validate-before-io": true,
+          "P.dedup-item": false,
+          "P.streams-shell": false,
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false,
+          "H.error": true
+        },
+        "usage": {
+          "input": 38942,
+          "output": 63826,
+          "cacheRead": 4120448,
+          "cacheWrite": 0,
+          "totalTokens": 4223216,
+          "costUsd": 0.056498,
+          "assistantTurns": 65,
+          "toolCalls": 100
+        },
+        "go": {
+          "model_id": "deepseek-v4.1-flash",
+          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "usd": 0.056498,
+          "monthly_usage_usd": 15,
+          "monthly_pct": 0.377,
+          "unmapped": false,
+          "rate": "off-peak"
+        },
+        "thinking": "max",
+        "wall_seconds": 1089,
+        "historical_score": 91.4,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
+        "sources": {
+          "regrade": "runs/b-deepseek-v4-1-flash-2026w37",
+          "agent": "runs/b-deepseek-v4-1-flash-2026w37"
+        }
+      },
+      "trend": {
+        "ema": 93.4,
+        "min": 93.4,
+        "max": 93.4,
+        "n": 1
+      },
+      "skills_trend": {
+        "ema": 91.4,
+        "min": 91.4,
+        "max": 91.4,
+        "n": 1
+      },
+      "rank_score": 93.4
+    },
+    {
       "id": "muse-spark-1.3-contributor",
       "name": "Muse Spark 1.3 Contributor",
       "provider_model": "opencode-go/muse-spark-1.3-contributor",
@@ -2732,645 +3692,6 @@
         "n": 1
       },
       "rank_score": 92.5
-    },
-    {
-      "id": "deepseek-v4.1-flash",
-      "name": "DeepSeek V4.1 Flash",
-      "provider_model": "opencode-go/deepseek-v4.1-flash",
-      "arm": "b",
-      "arm_label": "Skills",
-      "summary": "",
-      "score": {
-        "total": 91.7,
-        "completion": 1.0,
-        "adversarial": 0.8182,
-        "quality": 0.7667,
-        "tiers": {
-          "0": {
-            "rate": 1.0,
-            "scale": 1.0
-          },
-          "1": {
-            "rate": 1.0,
-            "scale": 1.0
-          },
-          "2": {
-            "rate": 1.0,
-            "scale": 1.0
-          }
-        }
-      },
-      "passes": {
-        "passed": 70,
-        "failed": 2,
-        "total": 72
-      },
-      "advisory": {
-        "passed": 0,
-        "total": 2,
-        "results": {
-          "ADV.useActionState": false,
-          "ADV.useOptimistic": false
-        }
-      },
-      "domains": {
-        "A": {
-          "pass": 5,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "A.boundary",
-            "A.due-soon",
-            "A.ok",
-            "A.overdue",
-            "A.returned"
-          ],
-          "rate": 1.0
-        },
-        "M": {
-          "pass": 3,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "M.closeout",
-            "M.metadata-valid",
-            "M.plan-complete"
-          ],
-          "rate": 1.0
-        },
-        "G": {
-          "pass": 13,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "G.400",
-            "G.401",
-            "G.409",
-            "G.filter-both",
-            "G.filter-item",
-            "G.filter-overdue",
-            "G.fresh",
-            "G.get200",
-            "G.patch200",
-            "G.patch400",
-            "G.patch409",
-            "G.post-fields",
-            "G.post201"
-          ],
-          "rate": 1.0
-        },
-        "P": {
-          "pass": 9,
-          "fail": 2,
-          "failed": [
-            "P.dedup-item",
-            "P.streams-shell"
-          ],
-          "passed": [
-            "P.concurrent-checkout",
-            "P.concurrent-return",
-            "P.filter-literal",
-            "P.hydration-clean",
-            "P.n-plus-one",
-            "P.no-key-leak",
-            "P.searchparams-async",
-            "P.stale-after-mutate",
-            "P.validate-before-io"
-          ],
-          "rate": 0.8182
-        },
-        "C": {
-          "pass": 8,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "C.empty",
-            "C.filter-both",
-            "C.filter-case",
-            "C.filter-category",
-            "C.filter-q",
-            "C.parallel-reads",
-            "C.renders",
-            "C.renders-all"
-          ],
-          "rate": 1.0
-        },
-        "B": {
-          "pass": 5,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "B.badge",
-            "B.image-alt",
-            "B.image-response",
-            "B.link",
-            "B.name-category"
-          ],
-          "rate": 1.0
-        },
-        "H": {
-          "pass": 2,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "H.error",
-            "H.loading"
-          ],
-          "rate": 1.0
-        },
-        "D": {
-          "pass": 7,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "D.form-hidden",
-            "D.history-order",
-            "D.history-status",
-            "D.metadata",
-            "D.notfound",
-            "D.renders",
-            "D.return-visible"
-          ],
-          "rate": 1.0
-        },
-        "E": {
-          "pass": 9,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "E.error-shown",
-            "E.member-options",
-            "E.optimistic",
-            "E.pending",
-            "E.return-error",
-            "E.return-optimistic",
-            "E.return-pending",
-            "E.return-submits",
-            "E.submits"
-          ],
-          "rate": 1.0
-        },
-        "F": {
-          "pass": 9,
-          "fail": 0,
-          "failed": [],
-          "passed": [
-            "F.auth-checkout",
-            "F.auth-return",
-            "F.checkout-conflict",
-            "F.checkout-record",
-            "F.future-due-date",
-            "F.lifecycle",
-            "F.post-mutation-state",
-            "F.return-not-on-loan",
-            "F.return-record"
-          ],
-          "rate": 1.0
-        },
-        "ADV": {
-          "pass": 0,
-          "fail": 2,
-          "failed": [
-            "ADV.useActionState",
-            "ADV.useOptimistic"
-          ],
-          "passed": [],
-          "rate": 0.0
-        }
-      },
-      "results": {
-        "A.returned": true,
-        "A.overdue": true,
-        "A.due-soon": true,
-        "A.ok": true,
-        "A.boundary": true,
-        "M.metadata-valid": true,
-        "M.plan-complete": true,
-        "M.closeout": true,
-        "G.get200": true,
-        "G.401": true,
-        "G.filter-item": true,
-        "G.filter-overdue": true,
-        "G.filter-both": true,
-        "G.fresh": true,
-        "G.post201": true,
-        "G.400": true,
-        "G.409": true,
-        "P.concurrent-checkout": true,
-        "G.patch200": true,
-        "G.patch409": true,
-        "G.patch400": true,
-        "P.concurrent-return": true,
-        "G.post-fields": true,
-        "C.renders": true,
-        "C.renders-all": true,
-        "B.name-category": true,
-        "B.badge": true,
-        "B.link": true,
-        "B.image-alt": true,
-        "C.filter-q": true,
-        "C.filter-case": true,
-        "P.searchparams-async": true,
-        "P.filter-literal": true,
-        "C.filter-category": true,
-        "C.filter-both": true,
-        "C.empty": true,
-        "P.hydration-clean": true,
-        "H.loading": true,
-        "B.image-response": true,
-        "C.parallel-reads": true,
-        "D.renders": true,
-        "D.history-order": true,
-        "D.history-status": true,
-        "D.notfound": true,
-        "D.metadata": true,
-        "D.form-hidden": true,
-        "D.return-visible": true,
-        "E.return-submits": true,
-        "E.return-pending": true,
-        "E.return-optimistic": true,
-        "E.submits": true,
-        "E.pending": true,
-        "E.optimistic": true,
-        "E.error-shown": true,
-        "P.stale-after-mutate": true,
-        "E.member-options": true,
-        "F.auth-checkout": true,
-        "F.auth-return": true,
-        "F.checkout-conflict": true,
-        "F.return-not-on-loan": true,
-        "F.checkout-record": true,
-        "F.return-record": true,
-        "F.future-due-date": true,
-        "F.post-mutation-state": true,
-        "F.lifecycle": true,
-        "E.return-error": true,
-        "P.no-key-leak": true,
-        "P.n-plus-one": true,
-        "P.validate-before-io": true,
-        "P.dedup-item": false,
-        "P.streams-shell": false,
-        "ADV.useActionState": false,
-        "ADV.useOptimistic": false,
-        "H.error": true
-      },
-      "usage": {
-        "input": 38942,
-        "output": 63826,
-        "cacheRead": 4120448,
-        "cacheWrite": 0,
-        "totalTokens": 4223216,
-        "costUsd": 0.056498,
-        "assistantTurns": 65,
-        "toolCalls": 100
-      },
-      "go": {
-        "model_id": "deepseek-v4.1-flash",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
-        "usd": 0.056498,
-        "monthly_usage_usd": 15,
-        "monthly_pct": 0.377,
-        "unmapped": false,
-        "rate": "off-peak"
-      },
-      "thinking": "max",
-      "wall_seconds": 1089,
-      "historical_score": 91.7,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      },
-      "sources": {
-        "regrade": "runs/b-deepseek-v4-1-flash-2026w37",
-        "agent": "runs/b-deepseek-v4-1-flash-2026w37"
-      },
-      "no_skills": null,
-      "skills": {
-        "id": "deepseek-v4.1-flash-skills",
-        "name": "DeepSeek V4.1 Flash (Skills)",
-        "provider_model": "opencode-go/deepseek-v4.1-flash",
-        "arm": "b",
-        "arm_label": "Skills",
-        "summary": "",
-        "score": {
-          "total": 91.7,
-          "completion": 1.0,
-          "adversarial": 0.8182,
-          "quality": 0.7667,
-          "tiers": {
-            "0": {
-              "rate": 1.0,
-              "scale": 1.0
-            },
-            "1": {
-              "rate": 1.0,
-              "scale": 1.0
-            },
-            "2": {
-              "rate": 1.0,
-              "scale": 1.0
-            }
-          }
-        },
-        "passes": {
-          "passed": 70,
-          "failed": 2,
-          "total": 72
-        },
-        "advisory": {
-          "passed": 0,
-          "total": 2,
-          "results": {
-            "ADV.useActionState": false,
-            "ADV.useOptimistic": false
-          }
-        },
-        "domains": {
-          "A": {
-            "pass": 5,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "A.boundary",
-              "A.due-soon",
-              "A.ok",
-              "A.overdue",
-              "A.returned"
-            ],
-            "rate": 1.0
-          },
-          "M": {
-            "pass": 3,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "M.closeout",
-              "M.metadata-valid",
-              "M.plan-complete"
-            ],
-            "rate": 1.0
-          },
-          "G": {
-            "pass": 13,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "G.400",
-              "G.401",
-              "G.409",
-              "G.filter-both",
-              "G.filter-item",
-              "G.filter-overdue",
-              "G.fresh",
-              "G.get200",
-              "G.patch200",
-              "G.patch400",
-              "G.patch409",
-              "G.post-fields",
-              "G.post201"
-            ],
-            "rate": 1.0
-          },
-          "P": {
-            "pass": 9,
-            "fail": 2,
-            "failed": [
-              "P.dedup-item",
-              "P.streams-shell"
-            ],
-            "passed": [
-              "P.concurrent-checkout",
-              "P.concurrent-return",
-              "P.filter-literal",
-              "P.hydration-clean",
-              "P.n-plus-one",
-              "P.no-key-leak",
-              "P.searchparams-async",
-              "P.stale-after-mutate",
-              "P.validate-before-io"
-            ],
-            "rate": 0.8182
-          },
-          "C": {
-            "pass": 8,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "C.empty",
-              "C.filter-both",
-              "C.filter-case",
-              "C.filter-category",
-              "C.filter-q",
-              "C.parallel-reads",
-              "C.renders",
-              "C.renders-all"
-            ],
-            "rate": 1.0
-          },
-          "B": {
-            "pass": 5,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "B.badge",
-              "B.image-alt",
-              "B.image-response",
-              "B.link",
-              "B.name-category"
-            ],
-            "rate": 1.0
-          },
-          "H": {
-            "pass": 2,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "H.error",
-              "H.loading"
-            ],
-            "rate": 1.0
-          },
-          "D": {
-            "pass": 7,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "D.form-hidden",
-              "D.history-order",
-              "D.history-status",
-              "D.metadata",
-              "D.notfound",
-              "D.renders",
-              "D.return-visible"
-            ],
-            "rate": 1.0
-          },
-          "E": {
-            "pass": 9,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "E.error-shown",
-              "E.member-options",
-              "E.optimistic",
-              "E.pending",
-              "E.return-error",
-              "E.return-optimistic",
-              "E.return-pending",
-              "E.return-submits",
-              "E.submits"
-            ],
-            "rate": 1.0
-          },
-          "F": {
-            "pass": 9,
-            "fail": 0,
-            "failed": [],
-            "passed": [
-              "F.auth-checkout",
-              "F.auth-return",
-              "F.checkout-conflict",
-              "F.checkout-record",
-              "F.future-due-date",
-              "F.lifecycle",
-              "F.post-mutation-state",
-              "F.return-not-on-loan",
-              "F.return-record"
-            ],
-            "rate": 1.0
-          },
-          "ADV": {
-            "pass": 0,
-            "fail": 2,
-            "failed": [
-              "ADV.useActionState",
-              "ADV.useOptimistic"
-            ],
-            "passed": [],
-            "rate": 0.0
-          }
-        },
-        "results": {
-          "A.returned": true,
-          "A.overdue": true,
-          "A.due-soon": true,
-          "A.ok": true,
-          "A.boundary": true,
-          "M.metadata-valid": true,
-          "M.plan-complete": true,
-          "M.closeout": true,
-          "G.get200": true,
-          "G.401": true,
-          "G.filter-item": true,
-          "G.filter-overdue": true,
-          "G.filter-both": true,
-          "G.fresh": true,
-          "G.post201": true,
-          "G.400": true,
-          "G.409": true,
-          "P.concurrent-checkout": true,
-          "G.patch200": true,
-          "G.patch409": true,
-          "G.patch400": true,
-          "P.concurrent-return": true,
-          "G.post-fields": true,
-          "C.renders": true,
-          "C.renders-all": true,
-          "B.name-category": true,
-          "B.badge": true,
-          "B.link": true,
-          "B.image-alt": true,
-          "C.filter-q": true,
-          "C.filter-case": true,
-          "P.searchparams-async": true,
-          "P.filter-literal": true,
-          "C.filter-category": true,
-          "C.filter-both": true,
-          "C.empty": true,
-          "P.hydration-clean": true,
-          "H.loading": true,
-          "B.image-response": true,
-          "C.parallel-reads": true,
-          "D.renders": true,
-          "D.history-order": true,
-          "D.history-status": true,
-          "D.notfound": true,
-          "D.metadata": true,
-          "D.form-hidden": true,
-          "D.return-visible": true,
-          "E.return-submits": true,
-          "E.return-pending": true,
-          "E.return-optimistic": true,
-          "E.submits": true,
-          "E.pending": true,
-          "E.optimistic": true,
-          "E.error-shown": true,
-          "P.stale-after-mutate": true,
-          "E.member-options": true,
-          "F.auth-checkout": true,
-          "F.auth-return": true,
-          "F.checkout-conflict": true,
-          "F.return-not-on-loan": true,
-          "F.checkout-record": true,
-          "F.return-record": true,
-          "F.future-due-date": true,
-          "F.post-mutation-state": true,
-          "F.lifecycle": true,
-          "E.return-error": true,
-          "P.no-key-leak": true,
-          "P.n-plus-one": true,
-          "P.validate-before-io": true,
-          "P.dedup-item": false,
-          "P.streams-shell": false,
-          "ADV.useActionState": false,
-          "ADV.useOptimistic": false,
-          "H.error": true
-        },
-        "usage": {
-          "input": 38942,
-          "output": 63826,
-          "cacheRead": 4120448,
-          "cacheWrite": 0,
-          "totalTokens": 4223216,
-          "costUsd": 0.056498,
-          "assistantTurns": 65,
-          "toolCalls": 100
-        },
-        "go": {
-          "model_id": "deepseek-v4.1-flash",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
-          "usd": 0.056498,
-          "monthly_usage_usd": 15,
-          "monthly_pct": 0.377,
-          "unmapped": false,
-          "rate": "off-peak"
-        },
-        "thinking": "max",
-        "wall_seconds": 1089,
-        "historical_score": 91.7,
-        "trust": {
-          "valid": true,
-          "trusted": false,
-          "publishable": false,
-          "rankable": false,
-          "under_load": true
-        },
-        "sources": {
-          "regrade": "runs/b-deepseek-v4-1-flash-2026w37",
-          "agent": "runs/b-deepseek-v4-1-flash-2026w37"
-        }
-      },
-      "trend": null,
-      "skills_trend": {
-        "ema": 91.7,
-        "min": 91.7,
-        "max": 91.7,
-        "n": 1
-      },
-      "rank_score": 91.7
     },
     {
       "id": "omen-alpha",

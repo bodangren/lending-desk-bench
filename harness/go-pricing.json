@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "source": "https://opencode.ai/docs/go/",
-  "retrieved": "2026-09-06",
+  "retrieved": "2026-09-11",
   "high_usage_min_requests_per_month": 7000,
   "deepseek_rate": "off-peak",
   "provider": "opencode-go",
@@ -11,8 +11,11 @@
     "anthropic-messages": { "baseUrl": "https://opencode.ai/zen/go" }
   },
   "aliases": {
-    "deepseek/deepseek-v4-flash": "deepseek-v4-flash",
-    "opencode-go/deepseek-v4-flash": "deepseek-v4-flash",
+    "deepseek-v4-flash": "deepseek-v4.1-flash",
+    "deepseek/deepseek-v4-flash": "deepseek-v4.1-flash",
+    "opencode-go/deepseek-v4-flash": "deepseek-v4.1-flash",
+    "deepseek/deepseek-v4.1-flash": "deepseek-v4.1-flash",
+    "opencode-go/deepseek-v4.1-flash": "deepseek-v4.1-flash",
     "openrouter/openai/gpt-5.6-luna": "gpt-5.6-luna",
     "opencode-go/gpt-5.6-luna": "gpt-5.6-luna",
     "xiaomi/mimo-v2.5": "mimo-v2.5",
@@ -223,6 +226,16 @@
       "rates": { "input": 0.5, "output": 3.0, "cacheRead": 0.05, "cacheWrite": 0.625 },
       "tiers": [{ "inputTokensAbove": 256000, "input": 2.0, "output": 6.0, "cacheRead": 0.2, "cacheWrite": 2.5 }]
     },
+    "deepseek-v4.1-flash": {
+      "name": "DeepSeek V4.1 Flash",
+      "api": "openai-completions",
+      "high_usage": true,
+      "batch": true,
+      "requests_per_month": 32500,
+      "monthly_usage_usd": 15,
+      "rates": { "input": 0.15, "output": 0.6, "cacheRead": 0.003, "cacheWrite": 0 },
+      "peak_rates": { "input": 0.3, "output": 1.2, "cacheRead": 0.006, "cacheWrite": 0 }
+    },
     "deepseek-v4-pro": {
       "name": "DeepSeek V4 Pro",
       "api": "openai-completions",
@@ -232,16 +245,6 @@
       "monthly_usage_usd": 15,
       "rates": { "input": 0.66, "output": 1.98, "cacheRead": 0.022, "cacheWrite": 0 },
       "peak_rates": { "input": 1.32, "output": 3.96, "cacheRead": 0.044, "cacheWrite": 0 }
-    },
-    "deepseek-v4-flash": {
-      "name": "DeepSeek V4 Flash",
-      "api": "openai-completions",
-      "high_usage": true,
-      "batch": true,
-      "requests_per_month": 37800,
-      "monthly_usage_usd": 30,
-      "rates": { "input": 0.22, "output": 0.66, "cacheRead": 0.007, "cacheWrite": 0 },
-      "peak_rates": { "input": 0.44, "output": 1.32, "cacheRead": 0.014, "cacheWrite": 0 }
     },
     "deepseek-v4-flash-vision-exp": {
       "name": "DeepSeek V4 Flash Vision Exp",
