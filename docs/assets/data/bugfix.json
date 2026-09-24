@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "track": "bugfix",
-  "generated_at": "2026-09-20T19:59:08",
+  "generated_at": "2026-09-24T19:23:54",
   "scoring": {
     "weights": {
       "repair": 0.5,

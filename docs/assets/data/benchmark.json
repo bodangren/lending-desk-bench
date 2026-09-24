@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-20T19:59:08",
+  "generated_at": "2026-09-24T19:23:54",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
@@ -457,7 +457,7 @@
       },
       "go": {
         "model_id": "gpt-5.6-luna",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.115076,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.767,
@@ -771,7 +771,7 @@
         },
         "go": {
           "model_id": "gpt-5.6-luna",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.115076,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.767,
@@ -1094,7 +1094,7 @@
       },
       "go": {
         "model_id": "qwen3.8-flash",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.052532,
         "monthly_usage_usd": 30,
         "monthly_pct": 0.175,
@@ -1407,7 +1407,7 @@
         },
         "go": {
           "model_id": "qwen3.8-flash",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.052532,
           "monthly_usage_usd": 30,
           "monthly_pct": 0.175,
@@ -1722,7 +1722,7 @@
         },
         "go": {
           "model_id": "qwen3.8-flash",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.027028,
           "monthly_usage_usd": 30,
           "monthly_pct": 0.09,
@@ -2050,7 +2050,7 @@
       },
       "go": {
         "model_id": "muse-spark-1.3-contributor",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.008563,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.014,
@@ -2363,7 +2363,7 @@
         },
         "go": {
           "model_id": "muse-spark-1.3-contributor",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.008563,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.014,
@@ -2676,7 +2676,7 @@
         },
         "go": {
           "model_id": "muse-spark-1.3-contributor",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.011079,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.018,
@@ -3004,7 +3004,7 @@
       },
       "go": {
         "model_id": "deepseek-v4-flash-vision-exp",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.027284,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.182,
@@ -3317,7 +3317,7 @@
         },
         "go": {
           "model_id": "deepseek-v4-flash-vision-exp",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.027284,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.182,
@@ -3631,7 +3631,7 @@
         },
         "go": {
           "model_id": "deepseek-v4-flash-vision-exp",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.036217,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.241,
@@ -3961,7 +3961,7 @@
       },
       "go": {
         "model_id": "glm-5.3-flash",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.103888,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.693,
@@ -4276,7 +4276,7 @@
         },
         "go": {
           "model_id": "glm-5.3-flash",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.103888,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.693,
@@ -4591,7 +4591,7 @@
         },
         "go": {
           "model_id": "glm-5.3-flash",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.021293,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.142,
@@ -4922,7 +4922,7 @@
       },
       "go": {
         "model_id": "longcat-2.0",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.023322,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.039,
@@ -5238,7 +5238,7 @@
         },
         "go": {
           "model_id": "longcat-2.0",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.023322,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.039,
@@ -5554,7 +5554,7 @@
         },
         "go": {
           "model_id": "longcat-2.0",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.078344,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.131,
@@ -5882,7 +5882,7 @@
       },
       "go": {
         "model_id": "muse-spark-1.2-contributor",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.009961,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.017,
@@ -6195,7 +6195,7 @@
         },
         "go": {
           "model_id": "muse-spark-1.2-contributor",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.009961,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.017,
@@ -6519,7 +6519,7 @@
       },
       "go": {
         "model_id": "minimax-m3",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.102696,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.171,
@@ -6833,7 +6833,7 @@
         },
         "go": {
           "model_id": "minimax-m3",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.102696,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.171,
@@ -7158,7 +7158,7 @@
       },
       "go": {
         "model_id": "mimo-v2.5",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.004926,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.008,
@@ -7473,7 +7473,7 @@
         },
         "go": {
           "model_id": "mimo-v2.5",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.004926,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.008,
@@ -7787,7 +7787,7 @@
         },
         "go": {
           "model_id": "mimo-v2.5",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.011843,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.02,
@@ -8117,7 +8117,7 @@
       },
       "go": {
         "model_id": "mimo-v2.5-pro",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.018077,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.121,
@@ -8432,7 +8432,7 @@
         },
         "go": {
           "model_id": "mimo-v2.5-pro",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.018077,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.121,
@@ -8747,7 +8747,7 @@
         },
         "go": {
           "model_id": "mimo-v2.5-pro",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.025558,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.17,
@@ -9077,7 +9077,7 @@
       },
       "go": {
         "model_id": "minimax-m2.5",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.107302,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.179,
@@ -9392,7 +9392,7 @@
         },
         "go": {
           "model_id": "minimax-m2.5",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.107302,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.179,
@@ -9707,7 +9707,7 @@
         },
         "go": {
           "model_id": "minimax-m2.5",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.121497,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.202,
@@ -10037,7 +10037,7 @@
       },
       "go": {
         "model_id": "minimax-m2.7",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.120308,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.201,
@@ -10352,7 +10352,7 @@
         },
         "go": {
           "model_id": "minimax-m2.7",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.120308,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.201,
@@ -10668,7 +10668,7 @@
         },
         "go": {
           "model_id": "minimax-m2.7",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.145239,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.242,
@@ -10999,7 +10999,7 @@
       },
       "go": {
         "model_id": "qwen3.6-plus",
-        "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
         "usd": 0.203791,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.34,
@@ -11315,7 +11315,7 @@
         },
         "go": {
           "model_id": "qwen3.6-plus",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.203791,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.34,
@@ -11629,7 +11629,7 @@
         },
         "go": {
           "model_id": "qwen3.6-plus",
-          "pricing_sha256": "cbd8abebf87498dc2966343586cefdd693e372b5ca260c72a3b31b9b475b165f",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
           "usd": 0.046134,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.077,
@@ -11664,12 +11664,967 @@
         "n": 2
       },
       "rank_score": 17.9
+    },
+    {
+      "id": "mimo-v2.6-flash",
+      "name": "MiMo V2.6 Flash",
+      "provider_model": "opencode-go/mimo-v2.6-flash",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "summary": "",
+      "score": {
+        "total": 7.9,
+        "completion": 0.082,
+        "adversarial": 0.0397,
+        "quality": 0.1093,
+        "tiers": {
+          "0": {
+            "rate": 0.3571,
+            "scale": 1.0
+          },
+          "1": {
+            "rate": 0.0,
+            "scale": 0.3968
+          },
+          "2": {
+            "rate": 0.0909,
+            "scale": 0.0
+          }
+        }
+      },
+      "passes": {
+        "passed": 8,
+        "failed": 63,
+        "total": 71
+      },
+      "advisory": {
+        "passed": 0,
+        "total": 2,
+        "results": {
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false
+        }
+      },
+      "domains": {
+        "A": {
+          "pass": 5,
+          "fail": 0,
+          "failed": [],
+          "passed": [
+            "A.boundary",
+            "A.due-soon",
+            "A.ok",
+            "A.overdue",
+            "A.returned"
+          ],
+          "rate": 1.0
+        },
+        "M": {
+          "pass": 1,
+          "fail": 2,
+          "failed": [
+            "M.closeout",
+            "M.plan-complete"
+          ],
+          "passed": [
+            "M.metadata-valid"
+          ],
+          "rate": 0.3333
+        },
+        "G": {
+          "pass": 0,
+          "fail": 13,
+          "failed": [
+            "G.400",
+            "G.401",
+            "G.409",
+            "G.filter-both",
+            "G.filter-item",
+            "G.filter-overdue",
+            "G.fresh",
+            "G.get200",
+            "G.patch200",
+            "G.patch400",
+            "G.patch409",
+            "G.post-fields",
+            "G.post201"
+          ],
+          "passed": [],
+          "rate": 0.0
+        },
+        "P": {
+          "pass": 2,
+          "fail": 8,
+          "failed": [
+            "P.concurrent-checkout",
+            "P.concurrent-return",
+            "P.filter-literal",
+            "P.n-plus-one",
+            "P.no-key-leak",
+            "P.searchparams-async",
+            "P.stale-after-mutate",
+            "P.validate-before-io"
+          ],
+          "passed": [
+            "P.dedup-item",
+            "P.hydration-clean"
+          ],
+          "rate": 0.2
+        },
+        "C": {
+          "pass": 0,
+          "fail": 8,
+          "failed": [
+            "C.empty",
+            "C.filter-both",
+            "C.filter-case",
+            "C.filter-category",
+            "C.filter-q",
+            "C.parallel-reads",
+            "C.renders",
+            "C.renders-all"
+          ],
+          "passed": [],
+          "rate": 0.0
+        },
+        "B": {
+          "pass": 0,
+          "fail": 5,
+          "failed": [
+            "B.badge",
+            "B.image-alt",
+            "B.image-response",
+            "B.link",
+            "B.name-category"
+          ],
+          "passed": [],
+          "rate": 0.0
+        },
+        "H": {
+          "pass": 0,
+          "fail": 2,
+          "failed": [
+            "H.error",
+            "H.loading"
+          ],
+          "passed": [],
+          "rate": 0.0
+        },
+        "D": {
+          "pass": 0,
+          "fail": 7,
+          "failed": [
+            "D.form-hidden",
+            "D.history-order",
+            "D.history-status",
+            "D.metadata",
+            "D.notfound",
+            "D.renders",
+            "D.return-visible"
+          ],
+          "passed": [],
+          "rate": 0.0
+        },
+        "E": {
+          "pass": 0,
+          "fail": 9,
+          "failed": [
+            "E.error-shown",
+            "E.member-options",
+            "E.optimistic",
+            "E.pending",
+            "E.return-error",
+            "E.return-optimistic",
+            "E.return-pending",
+            "E.return-submits",
+            "E.submits"
+          ],
+          "passed": [],
+          "rate": 0.0
+        },
+        "F": {
+          "pass": 0,
+          "fail": 9,
+          "failed": [
+            "F.auth-checkout",
+            "F.auth-return",
+            "F.checkout-conflict",
+            "F.checkout-record",
+            "F.future-due-date",
+            "F.lifecycle",
+            "F.post-mutation-state",
+            "F.return-not-on-loan",
+            "F.return-record"
+          ],
+          "passed": [],
+          "rate": 0.0
+        },
+        "ADV": {
+          "pass": 0,
+          "fail": 2,
+          "failed": [
+            "ADV.useActionState",
+            "ADV.useOptimistic"
+          ],
+          "passed": [],
+          "rate": 0.0
+        }
+      },
+      "results": {
+        "A.returned": true,
+        "A.overdue": true,
+        "A.due-soon": true,
+        "A.ok": true,
+        "A.boundary": true,
+        "M.metadata-valid": true,
+        "M.plan-complete": false,
+        "M.closeout": false,
+        "G.get200": false,
+        "G.401": false,
+        "G.filter-item": false,
+        "G.filter-overdue": false,
+        "G.filter-both": false,
+        "G.fresh": false,
+        "G.post201": false,
+        "G.400": false,
+        "G.409": false,
+        "P.concurrent-checkout": false,
+        "G.patch200": false,
+        "G.patch409": false,
+        "G.patch400": false,
+        "P.concurrent-return": false,
+        "G.post-fields": false,
+        "C.renders": false,
+        "C.renders-all": false,
+        "B.name-category": false,
+        "B.badge": false,
+        "B.link": false,
+        "B.image-alt": false,
+        "C.filter-q": false,
+        "C.filter-case": false,
+        "P.searchparams-async": false,
+        "P.filter-literal": false,
+        "C.filter-category": false,
+        "C.filter-both": false,
+        "C.empty": false,
+        "P.hydration-clean": true,
+        "H.loading": false,
+        "B.image-response": false,
+        "C.parallel-reads": false,
+        "D.renders": false,
+        "D.history-order": false,
+        "D.history-status": false,
+        "D.notfound": false,
+        "D.metadata": false,
+        "D.form-hidden": false,
+        "D.return-visible": false,
+        "E.return-submits": false,
+        "E.return-pending": false,
+        "E.return-optimistic": false,
+        "E.submits": false,
+        "E.pending": false,
+        "E.optimistic": false,
+        "E.error-shown": false,
+        "P.stale-after-mutate": false,
+        "E.member-options": false,
+        "F.auth-checkout": false,
+        "F.auth-return": false,
+        "F.checkout-conflict": false,
+        "F.return-not-on-loan": false,
+        "F.checkout-record": false,
+        "F.return-record": false,
+        "F.future-due-date": false,
+        "F.post-mutation-state": false,
+        "F.lifecycle": false,
+        "E.return-error": false,
+        "P.no-key-leak": false,
+        "P.n-plus-one": false,
+        "P.validate-before-io": false,
+        "P.dedup-item": true,
+        "ADV.useActionState": false,
+        "ADV.useOptimistic": false,
+        "H.error": false
+      },
+      "usage": {
+        "input": 27769,
+        "output": 16278,
+        "cacheRead": 39296,
+        "cacheWrite": 0,
+        "totalTokens": 83343,
+        "costUsd": 0.008556,
+        "assistantTurns": 10,
+        "toolCalls": 33
+      },
+      "go": {
+        "model_id": "mimo-v2.6-flash",
+        "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
+        "usd": 0.008556,
+        "monthly_usage_usd": 60,
+        "monthly_pct": 0.014,
+        "unmapped": false,
+        "rate": "off-peak"
+      },
+      "thinking": "max",
+      "wall_seconds": 1017,
+      "historical_score": 7.9,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      },
+      "sources": {
+        "regrade": "runs/a-mimo-v2-6-flash-2026w39",
+        "agent": "runs/a-mimo-v2-6-flash-2026w39"
+      },
+      "no_skills": {
+        "id": "mimo-v2.6-flash",
+        "name": "MiMo V2.6 Flash",
+        "provider_model": "opencode-go/mimo-v2.6-flash",
+        "arm": "a",
+        "arm_label": "No Skills",
+        "summary": "",
+        "score": {
+          "total": 7.9,
+          "completion": 0.082,
+          "adversarial": 0.0397,
+          "quality": 0.1093,
+          "tiers": {
+            "0": {
+              "rate": 0.3571,
+              "scale": 1.0
+            },
+            "1": {
+              "rate": 0.0,
+              "scale": 0.3968
+            },
+            "2": {
+              "rate": 0.0909,
+              "scale": 0.0
+            }
+          }
+        },
+        "passes": {
+          "passed": 8,
+          "failed": 63,
+          "total": 71
+        },
+        "advisory": {
+          "passed": 0,
+          "total": 2,
+          "results": {
+            "ADV.useActionState": false,
+            "ADV.useOptimistic": false
+          }
+        },
+        "domains": {
+          "A": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "A.boundary",
+              "A.due-soon",
+              "A.ok",
+              "A.overdue",
+              "A.returned"
+            ],
+            "rate": 1.0
+          },
+          "M": {
+            "pass": 1,
+            "fail": 2,
+            "failed": [
+              "M.closeout",
+              "M.plan-complete"
+            ],
+            "passed": [
+              "M.metadata-valid"
+            ],
+            "rate": 0.3333
+          },
+          "G": {
+            "pass": 0,
+            "fail": 13,
+            "failed": [
+              "G.400",
+              "G.401",
+              "G.409",
+              "G.filter-both",
+              "G.filter-item",
+              "G.filter-overdue",
+              "G.fresh",
+              "G.get200",
+              "G.patch200",
+              "G.patch400",
+              "G.patch409",
+              "G.post-fields",
+              "G.post201"
+            ],
+            "passed": [],
+            "rate": 0.0
+          },
+          "P": {
+            "pass": 2,
+            "fail": 8,
+            "failed": [
+              "P.concurrent-checkout",
+              "P.concurrent-return",
+              "P.filter-literal",
+              "P.n-plus-one",
+              "P.no-key-leak",
+              "P.searchparams-async",
+              "P.stale-after-mutate",
+              "P.validate-before-io"
+            ],
+            "passed": [
+              "P.dedup-item",
+              "P.hydration-clean"
+            ],
+            "rate": 0.2
+          },
+          "C": {
+            "pass": 0,
+            "fail": 8,
+            "failed": [
+              "C.empty",
+              "C.filter-both",
+              "C.filter-case",
+              "C.filter-category",
+              "C.filter-q",
+              "C.parallel-reads",
+              "C.renders",
+              "C.renders-all"
+            ],
+            "passed": [],
+            "rate": 0.0
+          },
+          "B": {
+            "pass": 0,
+            "fail": 5,
+            "failed": [
+              "B.badge",
+              "B.image-alt",
+              "B.image-response",
+              "B.link",
+              "B.name-category"
+            ],
+            "passed": [],
+            "rate": 0.0
+          },
+          "H": {
+            "pass": 0,
+            "fail": 2,
+            "failed": [
+              "H.error",
+              "H.loading"
+            ],
+            "passed": [],
+            "rate": 0.0
+          },
+          "D": {
+            "pass": 0,
+            "fail": 7,
+            "failed": [
+              "D.form-hidden",
+              "D.history-order",
+              "D.history-status",
+              "D.metadata",
+              "D.notfound",
+              "D.renders",
+              "D.return-visible"
+            ],
+            "passed": [],
+            "rate": 0.0
+          },
+          "E": {
+            "pass": 0,
+            "fail": 9,
+            "failed": [
+              "E.error-shown",
+              "E.member-options",
+              "E.optimistic",
+              "E.pending",
+              "E.return-error",
+              "E.return-optimistic",
+              "E.return-pending",
+              "E.return-submits",
+              "E.submits"
+            ],
+            "passed": [],
+            "rate": 0.0
+          },
+          "F": {
+            "pass": 0,
+            "fail": 9,
+            "failed": [
+              "F.auth-checkout",
+              "F.auth-return",
+              "F.checkout-conflict",
+              "F.checkout-record",
+              "F.future-due-date",
+              "F.lifecycle",
+              "F.post-mutation-state",
+              "F.return-not-on-loan",
+              "F.return-record"
+            ],
+            "passed": [],
+            "rate": 0.0
+          },
+          "ADV": {
+            "pass": 0,
+            "fail": 2,
+            "failed": [
+              "ADV.useActionState",
+              "ADV.useOptimistic"
+            ],
+            "passed": [],
+            "rate": 0.0
+          }
+        },
+        "results": {
+          "A.returned": true,
+          "A.overdue": true,
+          "A.due-soon": true,
+          "A.ok": true,
+          "A.boundary": true,
+          "M.metadata-valid": true,
+          "M.plan-complete": false,
+          "M.closeout": false,
+          "G.get200": false,
+          "G.401": false,
+          "G.filter-item": false,
+          "G.filter-overdue": false,
+          "G.filter-both": false,
+          "G.fresh": false,
+          "G.post201": false,
+          "G.400": false,
+          "G.409": false,
+          "P.concurrent-checkout": false,
+          "G.patch200": false,
+          "G.patch409": false,
+          "G.patch400": false,
+          "P.concurrent-return": false,
+          "G.post-fields": false,
+          "C.renders": false,
+          "C.renders-all": false,
+          "B.name-category": false,
+          "B.badge": false,
+          "B.link": false,
+          "B.image-alt": false,
+          "C.filter-q": false,
+          "C.filter-case": false,
+          "P.searchparams-async": false,
+          "P.filter-literal": false,
+          "C.filter-category": false,
+          "C.filter-both": false,
+          "C.empty": false,
+          "P.hydration-clean": true,
+          "H.loading": false,
+          "B.image-response": false,
+          "C.parallel-reads": false,
+          "D.renders": false,
+          "D.history-order": false,
+          "D.history-status": false,
+          "D.notfound": false,
+          "D.metadata": false,
+          "D.form-hidden": false,
+          "D.return-visible": false,
+          "E.return-submits": false,
+          "E.return-pending": false,
+          "E.return-optimistic": false,
+          "E.submits": false,
+          "E.pending": false,
+          "E.optimistic": false,
+          "E.error-shown": false,
+          "P.stale-after-mutate": false,
+          "E.member-options": false,
+          "F.auth-checkout": false,
+          "F.auth-return": false,
+          "F.checkout-conflict": false,
+          "F.return-not-on-loan": false,
+          "F.checkout-record": false,
+          "F.return-record": false,
+          "F.future-due-date": false,
+          "F.post-mutation-state": false,
+          "F.lifecycle": false,
+          "E.return-error": false,
+          "P.no-key-leak": false,
+          "P.n-plus-one": false,
+          "P.validate-before-io": false,
+          "P.dedup-item": true,
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false,
+          "H.error": false
+        },
+        "usage": {
+          "input": 27769,
+          "output": 16278,
+          "cacheRead": 39296,
+          "cacheWrite": 0,
+          "totalTokens": 83343,
+          "costUsd": 0.008556,
+          "assistantTurns": 10,
+          "toolCalls": 33
+        },
+        "go": {
+          "model_id": "mimo-v2.6-flash",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
+          "usd": 0.008556,
+          "monthly_usage_usd": 60,
+          "monthly_pct": 0.014,
+          "unmapped": false,
+          "rate": "off-peak"
+        },
+        "thinking": "max",
+        "wall_seconds": 1017,
+        "historical_score": 7.9,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
+        "sources": {
+          "regrade": "runs/a-mimo-v2-6-flash-2026w39",
+          "agent": "runs/a-mimo-v2-6-flash-2026w39"
+        }
+      },
+      "skills": {
+        "id": "mimo-v2.6-flash-skills",
+        "name": "MiMo V2.6 Flash (Skills)",
+        "provider_model": "opencode-go/mimo-v2.6-flash",
+        "arm": "b",
+        "arm_label": "Skills",
+        "summary": "",
+        "score": {
+          "total": 95.0,
+          "completion": 0.9672,
+          "adversarial": 0.9,
+          "quality": 0.95,
+          "tiers": {
+            "0": {
+              "rate": 1.0,
+              "scale": 1.0
+            },
+            "1": {
+              "rate": 1.0,
+              "scale": 1.0
+            },
+            "2": {
+              "rate": 0.8182,
+              "scale": 1.0
+            }
+          }
+        },
+        "passes": {
+          "passed": 68,
+          "failed": 3,
+          "total": 71
+        },
+        "advisory": {
+          "passed": 0,
+          "total": 2,
+          "results": {
+            "ADV.useActionState": false,
+            "ADV.useOptimistic": false
+          }
+        },
+        "domains": {
+          "A": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "A.boundary",
+              "A.due-soon",
+              "A.ok",
+              "A.overdue",
+              "A.returned"
+            ],
+            "rate": 1.0
+          },
+          "M": {
+            "pass": 1,
+            "fail": 2,
+            "failed": [
+              "M.closeout",
+              "M.plan-complete"
+            ],
+            "passed": [
+              "M.metadata-valid"
+            ],
+            "rate": 0.3333
+          },
+          "G": {
+            "pass": 13,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "G.400",
+              "G.401",
+              "G.409",
+              "G.filter-both",
+              "G.filter-item",
+              "G.filter-overdue",
+              "G.fresh",
+              "G.get200",
+              "G.patch200",
+              "G.patch400",
+              "G.patch409",
+              "G.post-fields",
+              "G.post201"
+            ],
+            "rate": 1.0
+          },
+          "P": {
+            "pass": 9,
+            "fail": 1,
+            "failed": [
+              "P.dedup-item"
+            ],
+            "passed": [
+              "P.concurrent-checkout",
+              "P.concurrent-return",
+              "P.filter-literal",
+              "P.hydration-clean",
+              "P.n-plus-one",
+              "P.no-key-leak",
+              "P.searchparams-async",
+              "P.stale-after-mutate",
+              "P.validate-before-io"
+            ],
+            "rate": 0.9
+          },
+          "C": {
+            "pass": 8,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "C.empty",
+              "C.filter-both",
+              "C.filter-case",
+              "C.filter-category",
+              "C.filter-q",
+              "C.parallel-reads",
+              "C.renders",
+              "C.renders-all"
+            ],
+            "rate": 1.0
+          },
+          "B": {
+            "pass": 5,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "B.badge",
+              "B.image-alt",
+              "B.image-response",
+              "B.link",
+              "B.name-category"
+            ],
+            "rate": 1.0
+          },
+          "H": {
+            "pass": 2,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "H.error",
+              "H.loading"
+            ],
+            "rate": 1.0
+          },
+          "D": {
+            "pass": 7,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "D.form-hidden",
+              "D.history-order",
+              "D.history-status",
+              "D.metadata",
+              "D.notfound",
+              "D.renders",
+              "D.return-visible"
+            ],
+            "rate": 1.0
+          },
+          "E": {
+            "pass": 9,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "E.error-shown",
+              "E.member-options",
+              "E.optimistic",
+              "E.pending",
+              "E.return-error",
+              "E.return-optimistic",
+              "E.return-pending",
+              "E.return-submits",
+              "E.submits"
+            ],
+            "rate": 1.0
+          },
+          "F": {
+            "pass": 9,
+            "fail": 0,
+            "failed": [],
+            "passed": [
+              "F.auth-checkout",
+              "F.auth-return",
+              "F.checkout-conflict",
+              "F.checkout-record",
+              "F.future-due-date",
+              "F.lifecycle",
+              "F.post-mutation-state",
+              "F.return-not-on-loan",
+              "F.return-record"
+            ],
+            "rate": 1.0
+          },
+          "ADV": {
+            "pass": 0,
+            "fail": 2,
+            "failed": [
+              "ADV.useActionState",
+              "ADV.useOptimistic"
+            ],
+            "passed": [],
+            "rate": 0.0
+          }
+        },
+        "results": {
+          "A.returned": true,
+          "A.overdue": true,
+          "A.due-soon": true,
+          "A.ok": true,
+          "A.boundary": true,
+          "M.metadata-valid": true,
+          "M.plan-complete": false,
+          "M.closeout": false,
+          "G.get200": true,
+          "G.401": true,
+          "G.filter-item": true,
+          "G.filter-overdue": true,
+          "G.filter-both": true,
+          "G.fresh": true,
+          "G.post201": true,
+          "G.400": true,
+          "G.409": true,
+          "P.concurrent-checkout": true,
+          "G.patch200": true,
+          "G.patch409": true,
+          "G.patch400": true,
+          "P.concurrent-return": true,
+          "G.post-fields": true,
+          "C.renders": true,
+          "C.renders-all": true,
+          "B.name-category": true,
+          "B.badge": true,
+          "B.link": true,
+          "B.image-alt": true,
+          "C.filter-q": true,
+          "C.filter-case": true,
+          "P.searchparams-async": true,
+          "P.filter-literal": true,
+          "C.filter-category": true,
+          "C.filter-both": true,
+          "C.empty": true,
+          "P.hydration-clean": true,
+          "H.loading": true,
+          "B.image-response": true,
+          "C.parallel-reads": true,
+          "D.renders": true,
+          "D.history-order": true,
+          "D.history-status": true,
+          "D.notfound": true,
+          "D.metadata": true,
+          "D.form-hidden": true,
+          "D.return-visible": true,
+          "E.return-submits": true,
+          "E.return-pending": true,
+          "E.return-optimistic": true,
+          "E.submits": true,
+          "E.pending": true,
+          "E.optimistic": true,
+          "E.error-shown": true,
+          "P.stale-after-mutate": true,
+          "E.member-options": true,
+          "F.auth-checkout": true,
+          "F.auth-return": true,
+          "F.checkout-conflict": true,
+          "F.return-not-on-loan": true,
+          "F.checkout-record": true,
+          "F.return-record": true,
+          "F.future-due-date": true,
+          "F.post-mutation-state": true,
+          "F.lifecycle": true,
+          "E.return-error": true,
+          "P.no-key-leak": true,
+          "P.n-plus-one": true,
+          "P.validate-before-io": true,
+          "P.dedup-item": false,
+          "ADV.useActionState": false,
+          "ADV.useOptimistic": false,
+          "H.error": true
+        },
+        "usage": {
+          "input": 102994,
+          "output": 71525,
+          "cacheRead": 3958336,
+          "cacheWrite": 0,
+          "totalTokens": 4132855,
+          "costUsd": 0.04553,
+          "assistantTurns": 76,
+          "toolCalls": 102
+        },
+        "go": {
+          "model_id": "mimo-v2.6-flash",
+          "pricing_sha256": "2d9a4a9f064c93fc92523de94ca00c6bf0a8c1815fa8074cb789d547cfdf0cd3",
+          "usd": 0.04553,
+          "monthly_usage_usd": 60,
+          "monthly_pct": 0.076,
+          "unmapped": false,
+          "rate": "off-peak"
+        },
+        "thinking": "max",
+        "wall_seconds": 3601,
+        "historical_score": 95,
+        "trust": {
+          "valid": true,
+          "trusted": true,
+          "publishable": true,
+          "rankable": true,
+          "under_load": false
+        },
+        "sources": {
+          "regrade": "runs/b-mimo-v2-6-flash-2026w39",
+          "agent": "runs/b-mimo-v2-6-flash-2026w39"
+        }
+      },
+      "trend": {
+        "ema": 7.9,
+        "min": 7.9,
+        "max": 7.9,
+        "n": 1
+      },
+      "skills_trend": {
+        "ema": 95.0,
+        "min": 95.0,
+        "max": 95.0,
+        "n": 1
+      },
+      "rank_score": 7.9
     }
   ],
   "experiments": {},
   "pricing": {
     "source": "https://opencode.ai/docs/go/",
-    "retrieved": "2026-09-11",
+    "retrieved": "2026-09-22",
     "high_usage_min_requests_per_month": 7000
   }
 }
