@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tracks · Lending Desk Bench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/site.css" />
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="wrap inner">
+      <a class="brand" href="./"><span class="brand-mark"></span> Lending Desk Bench</a>
+      <div class="nav-links">
+        <a href="./">Overview</a>
+        <a href="./methodology.html">Methodology</a>
+        <a href="./results.html">Results</a>
+        <a href="./models/">Models</a>
+        <a class="active" href="./tracks.html">Tracks</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero wrap">
+    <p class="kicker">Tracks</p>
+    <h1>Bug fix, test writing, and change requests</h1>
+    <p class="lede">
+      The same models on three more tasks in the same app. Each total is the lower median of
+      the latest week's runs. Axes are shown as percentages of their maximum.
+    </p>
+  </header>
+
+  <main class="wrap stack" id="main">
+    <div class="loading">Loading tracks…</div>
+  </main>
+
+  <footer class="site-footer wrap"><a href="./methodology.html">How the tracks are graded →</a></footer>
+
+  <script type="module">
+    import { loadTracks, mountError, setActiveNav, escapeHtml, pct, fmtRepeats } from "./assets/js/site.js";
+
+    setActiveNav();
+    const main = document.getElementById("main");
+
+    const TRACKS = [
+      {
+        key: "bugfix",
+        title: "Bug fix",
+        lede: "The finished app with seeded, undisclosed defects. Repair counts security bugs twice; regression and robustness guard the rest of the app. An untouched app scores about 35, so read repair first.",
+        axes: ["repair", "regression", "robustness", "adherence", "quality"],
+        evidence: (row) => Object.entries(row.class_rates || {}).map(([k, v]) => `${k} ${pct(v)}`).join(" · "),
+      },
+      {
+        key: "tests",
+        title: "Test writing",
+        lede: "The model writes tests for the finished app. Kill is the share of defective versions that a valid test catches; validity is the share of tests that pass on both correct implementations.",
+        axes: ["kill", "validity", "adherence", "quality"],
+        evidence: (row) => row.tests ? `${row.tests.valid}/${row.tests.total} valid tests` : "",
+      },
+      {
+        key: "change",
+        title: "Change request",
+        lede: "Four new behaviors in the finished app. Change grades the requests; regression and robustness grade everything that must keep working. An untouched app scores about 35.",
+        axes: ["change", "regression", "robustness", "adherence", "quality"],
+        evidence: (row) => Object.entries(row.request_rates || {}).map(([k, v]) => `${k} ${pct(v)}`).join(" · "),
+      },
+    ];
+
+    function section(track, data) {
+      const block = data.tracks[track.key];
+      const rows = block ? block.models : [];
+      const weights = block ? block.weights : {};
+      const body = rows.length
+        ? rows.map((row, index) => {
+            const unranked = row.trust && !row.trust.rankable;
+            return `<tr>
+              <td class="num">${index + 1}</td>
+              <td>${escapeHtml(row.model || row.slug)}<div class="subline">${escapeHtml(row.arm_label)} · r${row.fixture_revision ?? 1}</div></td>
+              <td class="num score">${row.total.toFixed(1)}${unranked ? '<span class="unranked" title="Unranked: a trust flag failed.">unranked</span>' : ""}
+                <div class="subline">${escapeHtml(fmtRepeats(row.repeats))}</div></td>
+              ${track.axes.map((axis) => `<td class="num">${row.axes && row.axes[axis] != null ? pct(row.axes[axis]) : "—"}</td>`).join("")}
+              <td>${escapeHtml(track.evidence(row))}</td>
+            </tr>`;
+          }).join("")
+        : `<tr><td colspan="${track.axes.length + 4}" class="muted">No valid runs yet.</td></tr>`;
+      return `
+        <section class="card">
+          <h2>${track.title}</h2>
+          <p class="section-lede">${track.lede}</p>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr>
+                <th class="num">#</th><th>Model</th><th class="num">Score</th>
+                ${track.axes.map((axis) => `<th class="num" title="weight ${weights[axis] ?? "—"}">${axis}</th>`).join("")}
+                <th>Detail</th>
+              </tr></thead>
+              <tbody>${body}</tbody>
+            </table>
+          </div>
+        </section>`;
+    }
+
+    try {
+      const data = await loadTracks();
+      main.innerHTML = TRACKS.map((track) => section(track, data)).join("");
+    } catch (err) {
+      mountError(main, err);
+    }
+  </script>
+</body>
+</html>

@@ -19,6 +19,7 @@
         <a href="../methodology.html">Methodology</a>
         <a href="../results.html">Results</a>
         <a class="active" href="./">Models</a>
+        <a href="../tracks.html">Tracks</a>
       </div>
     </div>
   </nav>
@@ -42,7 +43,7 @@
     import {
       loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, pct, domainRate, DOMAIN_ORDER,
       modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
-      fmtPct1, cacheHitRate,
+      fmtPct1, cacheHitRate, fmtRepeats,
     } from "../assets/js/site.js";
 
     const MODEL_ID = "qwen3.6-plus";
@@ -60,6 +61,8 @@
       document.getElementById("summary").textContent = m.summary;
       document.getElementById("chips").innerHTML = `
         <span class="chip">Score <strong>${m.score.total.toFixed(1)}</strong></span>
+        <span class="chip">Repeats <strong>${escapeHtml(fmtRepeats(m.repeats) || "—")}</strong></span>
+        <span class="chip">Adherence <strong>${m.score.adherence == null ? "—" : pct(m.score.adherence)}</strong></span>
         <span class="chip">Passes <strong>${m.passes.passed}/${m.passes.total}</strong></span>
         <span class="chip">Reasoning <strong>${escapeHtml(m.thinking || "—")}</strong></span>
         <span class="chip">% monthly <strong>${fmtMonthlyPct(m.go?.monthly_pct)}</strong></span>
@@ -74,7 +77,9 @@
       main.innerHTML = `
         <section class="card">
           <div class="stat-grid">
-            <div class="stat"><span>Soft score</span><strong>${m.score.total.toFixed(1)}</strong></div>
+            <div class="stat"><span>Score (week median)</span><strong>${m.score.total.toFixed(1)}</strong></div>
+            <div class="stat"><span>Worst repeat</span><strong>${m.repeats ? m.repeats.worst.toFixed(1) : "—"}</strong></div>
+            <div class="stat"><span>Skills median</span><strong>${m.skills?.repeats ? m.skills.repeats.median.toFixed(1) : "—"}</strong></div>
             <div class="stat"><span>Passes</span><strong>${m.passes.passed}/${m.passes.total}</strong></div>
             <div class="stat"><span>Advisory</span><strong>${m.advisory.passed}/${m.advisory.total}</strong></div>
             <div class="stat"><span>Uncached input</span><strong>${fmtTokens(m.usage.input)}</strong></div>

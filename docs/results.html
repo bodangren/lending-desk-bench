@@ -19,6 +19,7 @@
         <a href="./methodology.html">Methodology</a>
         <a class="active" href="./results.html">Results</a>
         <a href="./models/">Models</a>
+        <a href="./tracks.html">Tracks</a>
       </div>
     </div>
   </nav>
@@ -27,8 +28,10 @@
     <p class="kicker">Results</p>
     <h1>No Skills matrix</h1>
     <p class="lede">
-      The table shows soft scores, pass counts, run time, cost, cache hit rate, and tokens.
-      Click a column header to sort. The domain heatmap shows strong and weak areas for each model.
+      The table shows each model's score for its latest week: the lower median of the week's
+      repeated runs, with the worst run below it. It also shows adherence, pass counts, run time,
+      cost, cache hit rate, and tokens. Click a column header to sort. The domain heatmap shows
+      strong and weak areas for each model.
     </p>
   </header>
 
@@ -42,6 +45,7 @@
     import {
       loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, fmtPct1, pct, domainRate, DOMAIN_ORDER,
       modelColor, chartDefaults, mountError, setActiveNav, escapeHtml, cacheHitRate, initSortable,
+      fmtRepeats,
     } from "./assets/js/site.js";
 
     setActiveNav();
@@ -69,7 +73,8 @@
                 <tr>
                   <th class="num">#</th>
                   <th data-col="name">Model</th>
-                  <th class="num" data-col="score">Score</th>
+                  <th class="num" data-col="score" title="Lower median of the week's repeated runs">Score</th>
+                  <th class="num" data-col="adherence" title="File contract and plan closeout (15% of the score)">Adherence</th>
                   <th class="num" data-col="passes">Passes</th>
                   <th class="num" data-col="runtime">Run time</th>
                   <th class="num" data-col="monthly">% monthly</th>
@@ -108,6 +113,7 @@
           : !t.valid ? "the run is invalid" : "a trust flag failed";
         return `
         <tr data-sort-name="${escapeHtml(m.name)}" data-sort-score="${m.score.total}"
+            data-sort-adherence="${m.score.adherence ?? ""}"
             data-sort-passes="${m.passes.passed / m.passes.total}"
             data-sort-runtime="${m.wall_seconds ?? ""}"
             data-sort-monthly="${m.go?.monthly_pct ?? ""}"
@@ -121,7 +127,8 @@
           </td>
           <td class="num score">${m.score.total.toFixed(1)}${
             unranked ? `<span class="unranked" title="Unranked: ${why}.">unranked</span>` : ""
-          }</td>
+          }<div class="subline">${escapeHtml(fmtRepeats(m.repeats))}${m.fixture_revision ? ` · r${m.fixture_revision}` : ""}</div></td>
+          <td class="num">${m.score.adherence == null ? "—" : pct(m.score.adherence)}</td>
           <td class="num">${m.passes.passed}/${m.passes.total}</td>
           <td class="num">${fmtSecs(m.wall_seconds)}</td>
           <td class="num">${fmtMonthlyPct(m.go?.monthly_pct)}</td>
@@ -152,9 +159,16 @@
       `;
 
       const note = document.getElementById("arm-b-note");
+      const delta = data.benchmark.skills_delta;
+      const deltaLine = delta
+        ? `<p class="section-lede"><strong>Paired Skills effect:</strong> ${delta.mean > 0 ? "+" : ""}${delta.mean.toFixed(1)} points on average
+           (median ${delta.median > 0 ? "+" : ""}${delta.median.toFixed(1)}) over ${delta.n} models with both arms in the same week;
+           ${delta.improved} improved and ${delta.worse} got worse with skills.</p>`
+        : `<p class="section-lede">No model has both arms in the same week yet.</p>`;
       note.innerHTML = `
         <h2>Skills runs</h2>
         <p class="section-lede">The same models with AGENTS.md and five skills. Do not mix these scores into the No Skills ranking.</p>
+        ${deltaLine}
         <ul class="muted" style="padding-left:1.15rem">
           ${models.filter((m) => m.skills).map((m) => `
             <li><strong>${escapeHtml(m.name)}</strong> — Skills score ${m.skills.score.total.toFixed(1)},

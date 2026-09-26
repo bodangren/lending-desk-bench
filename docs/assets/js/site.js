@@ -15,6 +15,26 @@ export const DOMAIN_ORDER = ["A", "B", "C", "D", "E", "F", "G", "H", "M", "P"];
 
 let _dataPromise = null;
 
+let _tracksPromise = null;
+
+/** Rows for the bugfix, tests, and change tracks (tracks.json). */
+export function loadTracks() {
+  if (!_tracksPromise) {
+    _tracksPromise = fetch(new URL("../data/tracks.json", import.meta.url), { cache: "no-cache" })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to load tracks.json (${r.status})`);
+        return r.json();
+      });
+  }
+  return _tracksPromise;
+}
+
+/** "median · worst · n" for a row's week of repeats. */
+export function fmtRepeats(repeats) {
+  if (!repeats) return "";
+  return repeats.n > 1 ? `worst ${repeats.worst.toFixed(1)} · ${repeats.n} runs · ${repeats.week}` : `1 run · ${repeats.week}`;
+}
+
 export function loadData() {
   if (!_dataPromise) {
     _dataPromise = fetch(new URL("../data/benchmark.json", import.meta.url), { cache: "no-cache" })
@@ -143,6 +163,8 @@ export function setActiveNav() {
       active = path.includes("results");
     } else if (href.includes("models")) {
       active = path.includes("models");
+    } else if (href.includes("tracks")) {
+      active = path.includes("tracks");
     }
     a.classList.toggle("active", active);
   });

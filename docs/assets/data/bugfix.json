@@ -1,12 +1,13 @@
 {
   "schema": 1,
   "track": "bugfix",
-  "generated_at": "2026-09-24T19:23:54",
+  "generated_at": "2026-09-27T02:07:09",
   "scoring": {
     "weights": {
-      "repair": 0.5,
-      "regression": 0.25,
+      "repair": 0.45,
+      "regression": 0.2,
       "robustness": 0.15,
+      "adherence": 0.1,
       "quality": 0.1
     }
   },
@@ -17,25 +18,47 @@
       "slug": "deepseek-v4-1-flash",
       "arm": "a",
       "arm_label": "No Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-a-deepseek-v4-1-flash-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -58,24 +81,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -89,13 +108,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -136,21 +153,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 86,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -160,25 +188,47 @@
       "slug": "deepseek-v4-1-flash",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-deepseek-v4-1-flash-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -201,24 +251,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -232,13 +278,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -279,21 +323,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 93,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -303,25 +358,47 @@
       "slug": "deepseek-v4-flash-vision-exp",
       "arm": "a",
       "arm_label": "No Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-a-deepseek-v4-flash-vision-exp-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -344,24 +421,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -375,13 +448,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -422,21 +493,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 87,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -446,25 +528,47 @@
       "slug": "deepseek-v4-flash-vision-exp",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-deepseek-v4-flash-vision-exp-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
       "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
+        "functional": 1,
+        "security": 1,
         "performance": 1,
-        "reliability": 0.5
+        "reliability": 1
       },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -487,24 +591,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -518,13 +618,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -565,166 +663,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 75,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-glm-5-3-flash-2026w37",
-      "model": "opencode-go/glm-5.3-flash",
-      "slug": "glm-5-3-flash",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 44.2,
-      "axes": {
-        "repair": 0.5384615384615384,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.8824786324786325,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 0.5,
-        "reliability": 0.5
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": true,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": true,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 87,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -734,25 +698,47 @@
       "slug": "glm-5-3-flash",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-glm-5-3-flash-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -775,24 +761,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -806,13 +788,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -853,21 +833,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 99,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -877,25 +868,47 @@
       "slug": "gpt-5-6-luna",
       "arm": "a",
       "arm_label": "No Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-a-gpt-5-6-luna-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -918,24 +931,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -949,13 +958,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -996,21 +1003,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 54,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -1020,25 +1038,47 @@
       "slug": "gpt-5-6-luna",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-gpt-5-6-luna-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -1061,24 +1101,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -1092,13 +1128,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -1139,21 +1173,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 77,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -1163,25 +1208,47 @@
       "slug": "hy3",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-hy3-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
       "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
+        "functional": 1,
+        "security": 1,
         "performance": 1,
-        "reliability": 0.5
+        "reliability": 1
       },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -1204,24 +1271,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -1235,13 +1298,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -1282,1513 +1343,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 72,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-longcat-2-0-2026w37",
-      "model": "opencode-go/longcat-2.0",
-      "slug": "longcat-2-0",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 28.9,
-      "axes": {
-        "repair": 0.3076923076923077,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.5042735042735043,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0,
-        "performance": 0,
-        "reliability": 0.5
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": [
-            "G.401"
-          ]
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": [
-            "C.parallel-reads"
-          ]
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": true,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 39,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-b-longcat-2-0-2026w37",
-      "model": "opencode-go/longcat-2.0",
-      "slug": "longcat-2-0",
-      "arm": "b",
-      "arm_label": "Skills",
-      "total": 39.1,
-      "axes": {
-        "repair": 0.46153846153846156,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.7564102564102564,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 0,
-        "reliability": 0.5
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": true,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": [
-            "C.parallel-reads"
-          ]
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": true,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 69,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-mimo-v2-5-2026w37",
-      "model": "opencode-go/mimo-v2.5",
-      "slug": "mimo-v2-5",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 44.2,
-      "axes": {
-        "repair": 0.5384615384615384,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.8824786324786325,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 0.5,
-        "reliability": 0.5
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": true,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": true,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 41,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-b-mimo-v2-5-2026w37",
-      "model": "opencode-go/mimo-v2.5",
-      "slug": "mimo-v2-5",
-      "arm": "b",
-      "arm_label": "Skills",
-      "total": 28.8,
-      "axes": {
-        "repair": 0.3076923076923077,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.4957264957264958,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0,
-        "performance": 0.5,
-        "reliability": 0
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": [
-            "G.401"
-          ]
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": [
-            "P.concurrent-checkout"
-          ]
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 46,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-mimo-v2-5-pro-2026w37",
-      "model": "opencode-go/mimo-v2.5-pro",
-      "slug": "mimo-v2-5-pro",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 28.8,
-      "axes": {
-        "repair": 0.3076923076923077,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.4957264957264958,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0,
-        "performance": 0.5,
-        "reliability": 0
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": [
-            "G.401"
-          ]
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": [
-            "P.concurrent-checkout"
-          ]
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 23,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-minimax-m2-5-2026w37",
-      "model": "opencode-go/minimax-m2.5",
-      "slug": "minimax-m2-5",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 38.6,
-      "axes": {
-        "repair": 0.46153846153846156,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.7051282051282052,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 0.5,
-        "reliability": 0
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": true,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": [
-            "P.concurrent-checkout"
-          ]
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 15,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-b-minimax-m2-5-2026w37",
-      "model": "opencode-go/minimax-m2.5",
-      "slug": "minimax-m2-5",
-      "arm": "b",
-      "arm_label": "Skills",
-      "total": 13.6,
-      "axes": {
-        "repair": 0.07692307692307693,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.12393162393162395,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.2,
-        "security": 0,
-        "performance": 0,
-        "reliability": 0
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": [
-            "A.boundary"
-          ]
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": [
-            "G.400"
-          ]
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": [
-            "G.401"
-          ]
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": [
-            "C.parallel-reads"
-          ]
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": [
-            "P.concurrent-checkout"
-          ]
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 45,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-minimax-m2-7-2026w37",
-      "model": "opencode-go/minimax-m2.7",
-      "slug": "minimax-m2-7",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 23.5,
-      "axes": {
-        "repair": 0.23076923076923078,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.3525641025641026,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0,
-        "performance": 0,
-        "reliability": 0
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": [
-            "G.401"
-          ]
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": [
-            "C.parallel-reads"
-          ]
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": [
-            "P.concurrent-checkout"
-          ]
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 8,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-b-minimax-m2-7-2026w37",
-      "model": "opencode-go/minimax-m2.7",
-      "slug": "minimax-m2-7",
-      "arm": "b",
-      "arm_label": "Skills",
-      "total": 13.6,
-      "axes": {
-        "repair": 0.07692307692307693,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.12393162393162395,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.2,
-        "security": 0,
-        "performance": 0,
-        "reliability": 0
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": [
-            "A.boundary"
-          ]
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": [
-            "G.400"
-          ]
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": [
-            "G.401"
-          ]
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": [
-            "C.parallel-reads"
-          ]
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": [
-            "P.concurrent-checkout"
-          ]
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 38,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-minimax-m3-2026w37",
-      "model": "opencode-go/minimax-m3",
-      "slug": "minimax-m3",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 44.2,
-      "axes": {
-        "repair": 0.5384615384615384,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.8824786324786325,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 0.5,
-        "reliability": 0.5
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": true,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": true,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 82,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -2798,25 +1378,47 @@
       "slug": "minimax-m3",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-minimax-m3-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -2839,24 +1441,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -2870,13 +1468,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -2917,21 +1513,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 95,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -2941,25 +1548,47 @@
       "slug": "muse-spark-1-2-contributor",
       "arm": "a",
       "arm_label": "No Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-a-muse-spark-1-2-contributor-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -2982,24 +1611,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -3013,13 +1638,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -3060,21 +1683,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 69,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -3084,25 +1718,47 @@
       "slug": "muse-spark-1-2-contributor",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-muse-spark-1-2-contributor-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -3125,24 +1781,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -3156,13 +1808,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -3203,164 +1853,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 91,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-muse-spark-1-3-contributor-2026w37",
-      "model": "opencode-go/muse-spark-1.3-contributor",
-      "slug": "muse-spark-1-3-contributor",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 49.2,
-      "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 1,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": true,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": true,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 89,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -3370,25 +1888,47 @@
       "slug": "muse-spark-1-3-contributor",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-muse-spark-1-3-contributor-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -3411,24 +1951,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -3442,13 +1978,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -3489,21 +2023,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 79,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -3513,25 +2058,47 @@
       "slug": "omen-alpha",
       "arm": "a",
       "arm_label": "No Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-a-omen-alpha-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
       "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
+        "functional": 1,
+        "security": 1,
         "performance": 1,
-        "reliability": 0.5
+        "reliability": 1
       },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -3554,24 +2121,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -3585,13 +2148,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -3632,315 +2193,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 65,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-a-qwen3-6-plus-2026w37",
-      "model": "opencode-go/qwen3.6-plus",
-      "slug": "qwen3-6-plus",
-      "arm": "a",
-      "arm_label": "No Skills",
-      "total": 39,
-      "axes": {
-        "repair": 0.46153846153846156,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.7435897435897436,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 0.5,
-        "reliability": 0
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": true,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": [
-            "P.concurrent-checkout"
-          ]
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 25,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
-        "under_load": true
-      }
-    },
-    {
-      "run_id": "bf-b-qwen3-6-plus-2026w37",
-      "model": "opencode-go/qwen3.6-plus",
-      "slug": "qwen3-6-plus",
-      "arm": "b",
-      "arm_label": "Skills",
-      "total": 33.7,
-      "axes": {
-        "repair": 0.38461538461538464,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
-        "quality": 0.5982905982905984,
-        "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
-          "robustness": 0.15,
-          "quality": 0.1
-        }
-      },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0,
-        "performance": 0.5,
-        "reliability": 0.5
-      },
-      "bugs": [
-        {
-          "id": "BUG-fn-status-precedence",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.returned"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-boundary",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "A.boundary"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-fn-history-order",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "D.history-order"
-          ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
-        },
-        {
-          "id": "BUG-fn-filter-case",
-          "class": "functional",
-          "repaired": false,
-          "detectors": [
-            "C.filter-case"
-          ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
-        },
-        {
-          "id": "BUG-fn-contract-400",
-          "class": "functional",
-          "repaired": true,
-          "detectors": [
-            "G.400"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-sec-action-auth",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "F.auth-checkout"
-          ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
-        },
-        {
-          "id": "BUG-sec-route-401",
-          "class": "security",
-          "repaired": false,
-          "detectors": [
-            "G.401"
-          ],
-          "failed_detectors": [
-            "G.401"
-          ]
-        },
-        {
-          "id": "BUG-perf-waterfall",
-          "class": "performance",
-          "repaired": true,
-          "detectors": [
-            "C.parallel-reads"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-perf-dedup",
-          "class": "performance",
-          "repaired": false,
-          "detectors": [
-            "P.dedup-item"
-          ],
-          "failed_detectors": [
-            "P.dedup-item"
-          ]
-        },
-        {
-          "id": "BUG-rel-race",
-          "class": "reliability",
-          "repaired": true,
-          "detectors": [
-            "P.concurrent-checkout"
-          ],
-          "failed_detectors": []
-        },
-        {
-          "id": "BUG-rel-return-unguarded",
-          "class": "reliability",
-          "repaired": false,
-          "detectors": [
-            "F.return-not-on-loan"
-          ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
-        }
-      ],
-      "churn_lines": 66,
-      "trust": {
-        "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -3950,25 +2228,47 @@
       "slug": "qwen3-8-flash",
       "arm": "a",
       "arm_label": "No Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-a-qwen3-8-flash-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -3991,24 +2291,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -4022,13 +2318,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -4069,21 +2363,32 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.return-not-on-loan"
           ],
-          "failed_detectors": [
-            "F.return-not-on-loan"
-          ]
+          "failed_detectors": []
         }
       ],
+      "tests": null,
       "churn_lines": 47,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     },
@@ -4093,25 +2398,47 @@
       "slug": "qwen3-8-flash",
       "arm": "b",
       "arm_label": "Skills",
-      "total": 49.2,
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-qwen3-8-flash-2026w37"
+        ]
+      },
       "axes": {
-        "repair": 0.6153846153846154,
-        "regression": 0.16721268995132063,
-        "robustness": 0.2857142857142857,
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
         "quality": 1,
         "weights": {
-          "repair": 0.5,
-          "regression": 0.25,
+          "repair": 0.45,
+          "regression": 0.2,
           "robustness": 0.15,
+          "adherence": 0.1,
           "quality": 0.1
         }
       },
-      "class_rates": {
-        "functional": 0.6,
-        "security": 0.5,
-        "performance": 1,
-        "reliability": 0.5
+      "adherence": {
+        "contract": 1,
+        "classes": []
       },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
       "bugs": [
         {
           "id": "BUG-fn-status-precedence",
@@ -4134,24 +2461,20 @@
         {
           "id": "BUG-fn-history-order",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "D.history-order"
           ],
-          "failed_detectors": [
-            "D.history-order"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-filter-case",
           "class": "functional",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "C.filter-case"
           ],
-          "failed_detectors": [
-            "C.filter-case"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-fn-contract-400",
@@ -4165,13 +2488,11 @@
         {
           "id": "BUG-sec-action-auth",
           "class": "security",
-          "repaired": false,
+          "repaired": true,
           "detectors": [
             "F.auth-checkout"
           ],
-          "failed_detectors": [
-            "F.auth-checkout"
-          ]
+          "failed_detectors": []
         },
         {
           "id": "BUG-sec-route-401",
@@ -4212,6 +2533,2262 @@
         {
           "id": "BUG-rel-return-unguarded",
           "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 84,
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-muse-spark-1-3-contributor-2026w37",
+      "model": "opencode-go/muse-spark-1.3-contributor",
+      "slug": "muse-spark-1-3-contributor",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 98.9,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 98.9,
+        "worst": 98.9,
+        "best": 98.9,
+        "totals": [
+          98.9
+        ],
+        "runs": [
+          "bf-a-muse-spark-1-3-contributor-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 1,
+        "regression": 0.9436619718309859,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 1,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 89,
+      "trend": {
+        "ema": 98.9,
+        "min": 98.9,
+        "max": 98.9,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          98.9
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-glm-5-3-flash-2026w37",
+      "model": "opencode-go/glm-5.3-flash",
+      "slug": "glm-5-3-flash",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 96.4,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 96.4,
+        "worst": 96.4,
+        "best": 96.4,
+        "totals": [
+          96.4
+        ],
+        "runs": [
+          "bf-a-glm-5-3-flash-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.9230769230769231,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9833333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 0.5,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 87,
+      "trend": {
+        "ema": 96.4,
+        "min": 96.4,
+        "max": 96.4,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          96.4
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-mimo-v2-5-2026w37",
+      "model": "opencode-go/mimo-v2.5",
+      "slug": "mimo-v2-5",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 96.4,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 96.4,
+        "worst": 96.4,
+        "best": 96.4,
+        "totals": [
+          96.4
+        ],
+        "runs": [
+          "bf-a-mimo-v2-5-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.9230769230769231,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9833333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 0.5,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 41,
+      "trend": {
+        "ema": 96.4,
+        "min": 96.4,
+        "max": 96.4,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          96.4
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-minimax-m3-2026w37",
+      "model": "opencode-go/minimax-m3",
+      "slug": "minimax-m3",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 96.4,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 96.4,
+        "worst": 96.4,
+        "best": 96.4,
+        "totals": [
+          96.4
+        ],
+        "runs": [
+          "bf-a-minimax-m3-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.9230769230769231,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9833333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 0.5,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 82,
+      "trend": {
+        "ema": 96.4,
+        "min": 96.4,
+        "max": 96.4,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          96.4
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-b-omen-alpha-2026w37",
+      "model": "opencode-go/omen-alpha",
+      "slug": "omen-alpha",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 95.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 95.0,
+        "worst": 95.0,
+        "best": 95.0,
+        "totals": [
+          95.0
+        ],
+        "runs": [
+          "bf-b-omen-alpha-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 0.5,
+        "quality": 1,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 0.5,
+        "classes": [
+          "protected_modified"
+        ]
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 0,
+      "trend": {
+        "ema": 95.0,
+        "min": 95.0,
+        "max": 95.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          95.0
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-b-longcat-2-0-2026w37",
+      "model": "opencode-go/longcat-2.0",
+      "slug": "longcat-2-0",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 92.9,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 92.9,
+        "worst": 92.9,
+        "best": 92.9,
+        "totals": [
+          92.9
+        ],
+        "runs": [
+          "bf-b-longcat-2-0-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.8461538461538461,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9833333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 0,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": [
+            "C.parallel-reads"
+          ]
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 69,
+      "trend": {
+        "ema": 92.9,
+        "min": 92.9,
+        "max": 92.9,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          92.9
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-qwen3-6-plus-2026w37",
+      "model": "opencode-go/qwen3.6-plus",
+      "slug": "qwen3-6-plus",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 92.7,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 92.7,
+        "worst": 92.7,
+        "best": 92.7,
+        "totals": [
+          92.7
+        ],
+        "runs": [
+          "bf-a-qwen3-6-plus-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.8461538461538461,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9666666666666667,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 0.5,
+        "reliability": 0.5
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": [
+            "P.concurrent-checkout"
+          ]
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 25,
+      "trend": {
+        "ema": 92.7,
+        "min": 92.7,
+        "max": 92.7,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          92.7
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-b-mimo-v2-5-pro-2026w37",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "slug": "mimo-v2-5-pro",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 91.4,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 91.4,
+        "worst": 91.4,
+        "best": 91.4,
+        "totals": [
+          91.4
+        ],
+        "runs": [
+          "bf-b-mimo-v2-5-pro-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.9230769230769231,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 0.5,
+        "quality": 0.9833333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 0.5,
+        "classes": [
+          "protected_modified"
+        ]
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 0.5,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 0,
+      "trend": {
+        "ema": 91.4,
+        "min": 91.4,
+        "max": 91.4,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          91.4
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-qwen3-7-plus-2026w37",
+      "model": "opencode-go/qwen3.7-plus",
+      "slug": "qwen3-7-plus",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 89.4,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 89.4,
+        "worst": 89.4,
+        "best": 89.4,
+        "totals": [
+          89.4
+        ],
+        "runs": [
+          "bf-a-qwen3-7-plus-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.7692307692307693,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9833333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 0.5,
+        "performance": 0.5,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": [
+            "G.401"
+          ]
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 39,
+      "trend": {
+        "ema": 89.4,
+        "min": 89.4,
+        "max": 89.4,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          89.4
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-b-qwen3-7-plus-2026w37",
+      "model": "opencode-go/qwen3.7-plus",
+      "slug": "qwen3-7-plus",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 87.9,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 87.9,
+        "worst": 87.9,
+        "best": 87.9,
+        "totals": [
+          87.9
+        ],
+        "runs": [
+          "bf-b-qwen3-7-plus-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.8461538461538461,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 0.5,
+        "quality": 0.9833333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 0.5,
+        "classes": [
+          "protected_modified"
+        ]
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 0,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": [
+            "C.parallel-reads"
+          ]
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 0,
+      "trend": {
+        "ema": 87.9,
+        "min": 87.9,
+        "max": 87.9,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          87.9
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-longcat-2-0-2026w37",
+      "model": "opencode-go/longcat-2.0",
+      "slug": "longcat-2-0",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 86.0,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 86.0,
+        "worst": 86.0,
+        "best": 86.0,
+        "totals": [
+          86.0
+        ],
+        "runs": [
+          "bf-a-longcat-2-0-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.6923076923076923,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9833333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 0.5,
+        "performance": 0,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": [
+            "G.401"
+          ]
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": [
+            "C.parallel-reads"
+          ]
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 39,
+      "trend": {
+        "ema": 86.0,
+        "min": 86.0,
+        "max": 86.0,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          86.0
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-b-mimo-v2-5-2026w37",
+      "model": "opencode-go/mimo-v2.5",
+      "slug": "mimo-v2-5",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 85.8,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 85.8,
+        "worst": 85.8,
+        "best": 85.8,
+        "totals": [
+          85.8
+        ],
+        "runs": [
+          "bf-b-mimo-v2-5-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.6923076923076923,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9666666666666667,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 0.5,
+        "performance": 0.5,
+        "reliability": 0.5
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": [
+            "G.401"
+          ]
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": [
+            "P.concurrent-checkout"
+          ]
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 46,
+      "trend": {
+        "ema": 85.8,
+        "min": 85.8,
+        "max": 85.8,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          85.8
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-b-qwen3-6-plus-2026w37",
+      "model": "opencode-go/qwen3.6-plus",
+      "slug": "qwen3-6-plus",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 85.5,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 85.5,
+        "worst": 85.5,
+        "best": 85.5,
+        "totals": [
+          85.5
+        ],
+        "runs": [
+          "bf-b-qwen3-6-plus-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.6923076923076923,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9333333333333333,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 0.5,
+        "performance": 0.5,
+        "reliability": 0.5
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": [
+            "G.401"
+          ]
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
           "repaired": false,
           "detectors": [
             "F.return-not-on-loan"
@@ -4221,12 +4798,933 @@
           ]
         }
       ],
-      "churn_lines": 84,
+      "tests": null,
+      "churn_lines": 66,
+      "trend": {
+        "ema": 85.5,
+        "min": 85.5,
+        "max": 85.5,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          85.5
+        ]
+      },
       "trust": {
         "valid": true,
-        "trusted": false,
-        "publishable": false,
-        "rankable": false,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-minimax-m2-5-2026w37",
+      "model": "opencode-go/minimax-m2.5",
+      "slug": "minimax-m2-5",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 85.3,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 85.3,
+        "worst": 85.3,
+        "best": 85.3,
+        "totals": [
+          85.3
+        ],
+        "runs": [
+          "bf-a-minimax-m2-5-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.6923076923076923,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 0.9166666666666666,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 0.8,
+        "security": 1,
+        "performance": 0.5,
+        "reliability": 0
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": false,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": [
+            "C.filter-case"
+          ]
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": [
+            "P.concurrent-checkout"
+          ]
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": [
+            "F.return-not-on-loan"
+          ]
+        }
+      ],
+      "tests": null,
+      "churn_lines": 15,
+      "trend": {
+        "ema": 85.3,
+        "min": 85.3,
+        "max": 85.3,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          85.3
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-mimo-v2-5-pro-2026w37",
+      "model": "opencode-go/mimo-v2.5-pro",
+      "slug": "mimo-v2-5-pro",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 76.9,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 76.9,
+        "worst": 76.9,
+        "best": 76.9,
+        "totals": [
+          76.9
+        ],
+        "runs": [
+          "bf-a-mimo-v2-5-pro-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.5384615384615384,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 0.8974358974358975,
+        "quality": 0.8675213675213675,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 0,
+        "performance": 0.5,
+        "reliability": 0.5
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": [
+            "F.auth-checkout"
+          ]
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": [
+            "G.401"
+          ]
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": [
+            "P.concurrent-checkout"
+          ]
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 23,
+      "trend": {
+        "ema": 76.9,
+        "min": 76.9,
+        "max": 76.9,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          76.9
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-b-minimax-m2-5-2026w37",
+      "model": "opencode-go/minimax-m2.5",
+      "slug": "minimax-m2-5",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 64.9,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 64.9,
+        "worst": 64.9,
+        "best": 64.9,
+        "totals": [
+          64.9
+        ],
+        "runs": [
+          "bf-b-minimax-m2-5-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.38461538461538464,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 0.6410256410256411,
+        "quality": 0.6196581196581197,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 0.4,
+        "security": 0.5,
+        "performance": 0,
+        "reliability": 0.5
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": false,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": [
+            "A.boundary"
+          ]
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": false,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": [
+            "C.filter-case"
+          ]
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": false,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": [
+            "G.400"
+          ]
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": [
+            "G.401"
+          ]
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": [
+            "C.parallel-reads"
+          ]
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": [
+            "P.concurrent-checkout"
+          ]
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 45,
+      "trend": {
+        "ema": 64.9,
+        "min": 64.9,
+        "max": 64.9,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          64.9
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-b-minimax-m2-7-2026w37",
+      "model": "opencode-go/minimax-m2.7",
+      "slug": "minimax-m2-7",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 64.9,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 64.9,
+        "worst": 64.9,
+        "best": 64.9,
+        "totals": [
+          64.9
+        ],
+        "runs": [
+          "bf-b-minimax-m2-7-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.38461538461538464,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 0.6410256410256411,
+        "quality": 0.6196581196581197,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 0.4,
+        "security": 0.5,
+        "performance": 0,
+        "reliability": 0.5
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": false,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": [
+            "A.boundary"
+          ]
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": false,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": [
+            "C.filter-case"
+          ]
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": false,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": [
+            "G.400"
+          ]
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": [
+            "G.401"
+          ]
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": [
+            "C.parallel-reads"
+          ]
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": [
+            "P.concurrent-checkout"
+          ]
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 38,
+      "trend": {
+        "ema": 64.9,
+        "min": 64.9,
+        "max": 64.9,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          64.9
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": true
+      }
+    },
+    {
+      "run_id": "bf-a-minimax-m2-7-2026w37",
+      "model": "opencode-go/minimax-m2.7",
+      "slug": "minimax-m2-7",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w37",
+      "fixture_revision": 1,
+      "total": 58.7,
+      "repeats": {
+        "week": "2026w37",
+        "n": 1,
+        "median": 58.7,
+        "worst": 58.7,
+        "best": 58.7,
+        "totals": [
+          58.7
+        ],
+        "runs": [
+          "bf-a-minimax-m2-7-2026w37"
+        ]
+      },
+      "axes": {
+        "repair": 0.3076923076923077,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 0.5128205128205129,
+        "quality": 0.47008547008547014,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 0.8,
+        "security": 0,
+        "performance": 0,
+        "reliability": 0
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": false,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": [
+            "C.filter-case"
+          ]
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": [
+            "F.auth-checkout"
+          ]
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": false,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": [
+            "G.401"
+          ]
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": [
+            "C.parallel-reads"
+          ]
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": false,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": [
+            "P.dedup-item"
+          ]
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": [
+            "P.concurrent-checkout"
+          ]
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": false,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": [
+            "F.return-not-on-loan"
+          ]
+        }
+      ],
+      "tests": null,
+      "churn_lines": 8,
+      "trend": {
+        "ema": 58.7,
+        "min": 58.7,
+        "max": 58.7,
+        "n": 1,
+        "weeks": [
+          "2026w37"
+        ],
+        "medians": [
+          58.7
+        ]
+      },
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
         "under_load": true
       }
     }

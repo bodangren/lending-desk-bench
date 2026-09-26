@@ -18,6 +18,7 @@
         <a class="active" href="./methodology.html">Methodology</a>
         <a href="./results.html">Results</a>
         <a href="./models/">Models</a>
+        <a href="./tracks.html">Tracks</a>
       </div>
     </div>
   </nav>
@@ -47,6 +48,13 @@
         <li>Server Actions for checkout/return, REST route for loans</li>
         <li>Phased Measure plan with closeout metadata</li>
       </ul>
+      <h3 style="margin:1.3rem 0 0.5rem">Four tracks</h3>
+      <ul class="muted" style="padding-left:1.15rem">
+        <li><strong>Build</strong> (the ranking above): fill the stubs of the <code>/items</code> slice.</li>
+        <li><strong>Bug fix</strong>: repair undisclosed defects in the finished app without regressions.</li>
+        <li><strong>Test writing</strong>: write a test suite for the finished app. The grader runs it against the app, against a second correct implementation, and against defective versions. A good suite passes on both correct apps and fails on the defects.</li>
+        <li><strong>Change request</strong>: add four requested behaviors to the finished app, and keep every existing behavior.</li>
+      </ul>
     </section>
 
     <section class="card" id="isolation">
@@ -73,12 +81,30 @@
     <section class="card" id="grading">
       <h2>Grading pipeline</h2>
       <ol class="muted" style="padding-left:1.2rem; color:#c5d0e0">
-        <li>Candidate filesystem contract (writable set + public API surface)</li>
+        <li>Canary: before any model run, the harness grades the reference solution. The batch stops unless it scores 100.</li>
+        <li>Candidate filesystem contract (writable set + public API surface). A symlink or a special file makes the run invalid. An added file, a protected edit, or a changed export costs adherence: the harness grades the model's writable files on a clean tree.</li>
         <li><code>npm run typecheck</code> and <code>npm run build</code> (gate)</li>
         <li>Unit tests, API tests against a live Next server</li>
-        <li>Playwright browser suite + separate error-boundary boot</li>
-        <li>Score: soft-tier completion (60%), adversarial probes (20%), react-doctor quality (20%)</li>
+        <li>Playwright browser suite + separate error-boundary boot. A browser that cannot start makes the run invalid, never a low score.</li>
+        <li>Score: completion (55%), adversarial probes (20%), adherence (15%), quality (10%)</li>
       </ol>
+      <div class="callout">
+        <strong>Weights inside completion.</strong> Seventeen checks pass on almost every run
+        (pure status logic, the item card, the catalogue filters). They still gate a broken
+        submission through the tiers, but each weighs a quarter of a normal check, so the
+        forms, the mutations, and the probes decide the order.
+      </div>
+      <div class="callout">
+        <strong>Adherence.</strong> Half the axis is the file contract: each class of
+        violation (an added file, a protected edit, a changed export) costs half of it.
+        The other half is the Measure closeout the task asks for.
+      </div>
+      <div class="callout">
+        <strong>Repeats.</strong> The build track runs each model three times a week per arm.
+        The published total is the lower median of the week; the worst run is shown beside it.
+        The Skills effect is one paired value: the mean over models of the Skills median minus
+        the No Skills median.
+      </div>
       <div class="callout">
         <strong>Soft tier gates.</strong> Higher tiers always contribute. The harness scales
         their credit by <code>min(1, lower_rate / 0.9)</code>. A previous hard binary rule
@@ -111,10 +137,12 @@
         The harness turns the rules that fit this task into executable probes:
       </p>
       <ul class="muted" style="padding-left:1.15rem">
-        <li><strong>Parallel data fetching.</strong> Independent reads must use <code>Promise.all</code>. Probe <code>C.parallel-reads</code> and <code>P.no-waterfall</code>.</li>
+        <li><strong>Parallel data fetching.</strong> Independent reads must use <code>Promise.all</code>. Check <code>C.parallel-reads</code>.</li>
         <li><strong>Per-request deduplication.</strong> The rule is <code>React.cache()</code> for repeated item reads. Probes <code>P.dedup-item</code> and <code>P.n-plus-one</code>.</li>
         <li><strong>Auth on server actions.</strong> Server actions need the same auth checks as API routes. Probes <code>F.auth-checkout</code> and <code>F.auth-return</code>.</li>
-        <li><strong>Streaming with Suspense.</strong> The loading shell must stream while data loads. Probes <code>P.streams-shell</code> and <code>H.loading</code>.</li>
+        <li><strong>Streaming with Suspense.</strong> The loading shell must stream while data loads. Check <code>H.loading</code>.</li>
+        <li><strong>Race handling.</strong> Two desks that check out one item at the same moment get one loan and one clear error. Probes <code>P.action-race</code>, <code>P.concurrent-checkout</code>, and <code>P.concurrent-return</code>.</li>
+        <li><strong>Accessibility.</strong> Named form controls, announced errors, and valid ARIA. Checks <code>E.labels</code>, <code>E.error-announced</code>, and probe <code>P.axe-clean</code> (pinned axe-core).</li>
         <li><strong>Modern React 19 idioms.</strong> <code>useActionState</code> and <code>useOptimistic</code> for form state. These probes are advisory. They never change the score.</li>
       </ul>
       <p class="muted">
@@ -136,7 +164,9 @@
         score rewards writing no code. Instead, the harness counts weighted diagnostics <strong>above the
         reference baseline</strong>. The baseline is the reference solution's own diagnostic set. Diagnostics
         already present in the reference are subtracted. A candidate that adds 30 weighted penalty points gets
-        zero quality credit. Quality is 20% of the total score.
+        zero quality credit. Quality is 10% of the total score. Deterministic source signals
+        (explicit <code>any</code>, non-null assertions, leftover console calls, unused imports,
+        repeated blocks) join the analyzer's diagnostics.
       </p>
       <p class="muted">
         The analyzer scans a relocated copy of the candidate source. The candidate tree lives in a
@@ -160,9 +190,10 @@
     <section class="card" id="limits">
       <h2>Limits</h2>
       <ul class="muted" style="padding-left:1.15rem; color:#c5d0e0">
-        <li>Scores are publishable only with current provenance, agent isolation, and a quiet host.</li>
+        <li>Scores are publishable only with current provenance and agent isolation. Host load is recorded as metadata.</li>
         <li>Host load can affect timing-sensitive browser assertions.</li>
-        <li>One weekly run is a point estimate. The 4-week range shows stability. The range is not a confidence interval.</li>
+        <li>Three repeats a week reduce single-run noise but do not remove it. The 4-week range over weekly medians shows stability. The range is not a confidence interval.</li>
+        <li>Fixture revision r2 (from week 2026w40) states the export rule and the spec-edit rule plainly. Earlier weeks ran on r1; the harness regraded their work on the r2 tree, so all weeks share one ruler.</li>
         <li>The reference score is a ceiling. The reference is not a model.</li>
       </ul>
     </section>
