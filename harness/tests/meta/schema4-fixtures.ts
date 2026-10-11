@@ -1,8 +1,9 @@
 import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { assessCandidateContract } from "../../candidate-contract";
+import { assessCandidateContract, type BenchTrack } from "../../candidate-contract";
 import { ARM_B_SKILLS, executionIdentityFingerprint, resolveExecutionIdentity } from "../../execution-identity";
 import { currentHashes } from "../../provenance";
+import { FIXTURE_REVISION } from "../../revisions";
 
 type Arm = "a" | "b";
 type Mode = "agent" | "overlay";
@@ -60,6 +61,7 @@ export function currentSchema4Provenance({
   arm,
   mode = "agent",
   live,
+  track = "build",
 }: {
   fixture: string;
   candidate: string;
@@ -68,9 +70,10 @@ export function currentSchema4Provenance({
   arm: Arm;
   mode?: Mode;
   live?: CurrentAgentRuntime;
+  track?: BenchTrack;
 }) {
-  const contract = assessCandidateContract(fixture, candidate);
-  if (!contract.valid) throw new Error("fixture candidate contract failed: " + contract.reasons.join("; "));
+  const contract = assessCandidateContract(fixture, candidate, { track });
+  if (!contract.gradeable) throw new Error("fixture candidate contract failed: " + contract.reasons.join("; "));
   const hashes = currentHashes();
   const executor = mode === "overlay"
     ? resolveExecutionIdentity({ runId, arm, mode })
@@ -99,7 +102,19 @@ export function currentSchema4Provenance({
         arms: { [arm]: { skills: executor.skills, skill_tree_sha256: executor.skill_tree_sha256 } },
       };
   return {
-    schema: 4,
+    schema: 6,
+    track: "build",
+    fixture_revision: FIXTURE_REVISION,
+    bug_set_id: null,
+    bug_set_sha256: null,
+    mutant_set_id: null,
+    mutant_set_sha256: null,
+    change_set_id: null,
+    change_set_sha256: null,
+    registry_sha256: null,
+    variant_sha256: null,
+    contract_violation_sha256: null,
+    graft: null,
     run_id: runId,
     arm,
     model,

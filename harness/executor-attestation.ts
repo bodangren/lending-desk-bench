@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { ARM_B_SKILLS, resolveExecutionIdentity, validateExecutionIdentity } from "./execution-identity.js";
 
 type JsonRecord = Record<string, unknown>;
@@ -120,8 +121,13 @@ export function attestExecutorFromEnvironment(record: unknown): ExecutorAttestat
     if (!isArm(record.arm) || typeof record.run_id !== "string") throw new Error("provenance run binding is invalid");
     const executor = record.executor as JsonRecord;
     const frozen = record.executor_cohort as JsonRecord;
-    const piRoot = process.env.BENCH_PI_ROOT;
-    if (!piRoot) throw new Error("BENCH_PI_ROOT is not set");
+    // Resolve the Pi install the run itself recorded. The ambient BENCH_PI_ROOT
+    // names the executor for new runs; a rescore of an older week (Pi 0.84.1 before
+    // the 2026-09-22 upgrade) must attest that week's binary, which still has to
+    // exist at its recorded path with its recorded hash.
+    const recordedPi = isRecord(executor.pi) && typeof executor.pi.path === "string" ? executor.pi.path : "";
+    const piRoot = recordedPi && existsSync(recordedPi) ? dirname(dirname(recordedPi)) : process.env.BENCH_PI_ROOT;
+    if (!piRoot) throw new Error("BENCH_PI_ROOT is not set and the recorded Pi path is missing");
     const skillRoot = process.env.BENCH_SKILL_ROOT ?? join(process.env.HOME ?? "", ".agents/skills");
     const live: JsonRecord = {
       run_id: record.run_id,

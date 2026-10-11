@@ -52,7 +52,8 @@ describe("soft tier scoring", () => {
 
   it("preserves discrimination among mid-pack suites instead of collapsing them", () => {
     const t0 = Object.entries(CRITERIA).filter(([, c]) => c.tier === 0).map(([id]) => id);
-    const t1 = Object.entries(CRITERIA).filter(([, c]) => c.tier === 1).map(([id]) => id);
+    // Full-weight Tier 1 criteria: saturated ones weigh a quarter by design (bench_v2).
+    const t1 = Object.entries(CRITERIA).filter(([, c]) => c.tier === 1 && (c.weight ?? 1) === 1).map(([id]) => id);
     // Same T0 damage; different T1 damage.
     const weaker = withFails([...t0.slice(0, 3), ...t1.slice(0, 8)]);
     const stronger = withFails([...t0.slice(0, 3), ...t1.slice(0, 2)]);

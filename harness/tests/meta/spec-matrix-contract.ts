@@ -9,7 +9,8 @@ export const REQUIRED_PRIMARY_ROWS = [
 export const REQUIRED_PRIMARY_COLLATERAL: Readonly<Record<string, readonly string[]>> = {
   "F.checkout-record": ["F.lifecycle"],
   "F.return-record": ["F.lifecycle"],
-  "F.future-due-date": ["E.error-shown"],
+  // Fixture r2: the announced-error check and the retry probe start from the same rejection.
+  "F.future-due-date": ["E.error-shown", "E.error-announced", "P.retry-after-error"],
   "F.post-mutation-state": ["P.stale-after-mutate"],
 };
 

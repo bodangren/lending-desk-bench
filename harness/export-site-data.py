@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import statistics
 import time
 from pathlib import Path
 
@@ -41,12 +42,67 @@ def find_arm_runs(arm: str, slug: str) -> list[Path]:
     # Run ids are "<arm>-<slug>-<iso-week>" (e.g. a-mimo-v2-5-2026w35). A bare
     # prefix match would also collect sibling slugs such as mimo-v2-5-pro or
     # deepseek-v4-flash-vision-exp, so require the week token boundary.
-    run_id = re.compile(rf"^{re.escape(arm)}-{re.escape(slug)}-\d{{4}}w\d{{2}}$")
+    # Batch runs end in -<week>-r<N> since bench_v2; older runs end in -<week>.
+    run_id = re.compile(rf"^{re.escape(arm)}-{re.escape(slug)}-\d{{4}}w\d{{2}}(-r\d+)?$")
     found = []
     for path in runs_dir.iterdir():
         if run_id.match(path.name) and (path / "artifacts" / "score.json").exists():
             found.append(path)
-    return sorted(found, key=lambda p: p.stat().st_mtime)
+    return sorted(found, key=lambda p: p.name)
+
+
+WEEK_TOKEN = re.compile(r"-(\d{4}w\d{2})(?:-r\d+)?$")
+
+
+def run_week(path: Path) -> str | None:
+    match = WEEK_TOKEN.search(path.name)
+    return match.group(1) if match else None
+
+
+def load_score(path: Path) -> dict | None:
+    try:
+        return json.loads((path / "artifacts" / "score.json").read_text(encoding="utf8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def valid_total(score: dict | None) -> float | None:
+    if not score or score.get("valid") is not True:
+        return None
+    total = score.get("total")
+    return float(total) if isinstance(total, (int, float)) else None
+
+
+def weekly_repeats(runs: list[Path]) -> dict[str, list[tuple[Path, dict]]]:
+    """Valid records grouped by ISO week. Invalid and stale records never count."""
+    by_week: dict[str, list[tuple[Path, dict]]] = {}
+    for run in runs:
+        week = run_week(run)
+        score = load_score(run)
+        if week and valid_total(score) is not None:
+            by_week.setdefault(week, []).append((run, score))
+    return by_week
+
+
+def repeat_summary(week: str, reps: list[tuple[Path, dict]]) -> dict:
+    """Headline = the lower median of the week's repeats, so it is a real run's total."""
+    totals = sorted(valid_total(score) for _, score in reps)
+    median = statistics.median_low(totals)
+    return {
+        "week": week,
+        "n": len(totals),
+        "median": round(median, 1),
+        "worst": round(totals[0], 1),
+        "best": round(totals[-1], 1),
+        "totals": [round(t, 1) for t in totals],
+        "runs": sorted(run.name for run, _ in reps),
+    }
+
+
+def representative(reps: list[tuple[Path, dict]]) -> Path:
+    """The run whose total is the lower median of the week."""
+    median = statistics.median_low(sorted(valid_total(score) for _, score in reps))
+    return min((run for run, score in reps if valid_total(score) == median), key=lambda run: run.name)
 
 
 def ema(values: list[float], half_life: float = 2.0) -> float | None:
@@ -120,7 +176,9 @@ DOMAINS = {
 def load_criteria():
     text = (ROOT / "harness/tests/criteria.ts").read_text(encoding="utf8")
     head, rest = text.split("export const PROBES", 1)
-    probes_part, adv_part = rest.split("export const ADVISORY", 1)
+    # CHANGE_CRITERIA (change track only) sits between the probes and the advisories.
+    probes_part, rest = rest.split("export const CHANGE_CRITERIA", 1)
+    adv_part = rest.split("export const ADVISORY", 1)[1]
     criteria = {k: int(v) for k, v in re.findall(r'"([^"]+)":\s*\{\s*tier:\s*(\d)', head)}
     probes = {k: int(v) for k, v in re.findall(r'"([^"]+)":\s*\{\s*tier:\s*(\d)', probes_part)}
     advisory = re.findall(r'"([^"]+)"', adv_part.split("];", 1)[0])
@@ -129,6 +187,7 @@ def load_criteria():
 
 CRITERIA, PROBES, ADVISORY = load_criteria()
 SCORED = list(CRITERIA) + list(PROBES)
+SATURATED_WEIGHT = 0.25
 
 
 def soft_scale(rate: float) -> float:
@@ -213,6 +272,8 @@ def load_entry(spec: dict) -> dict | None:
     hist_total = None
     go = None
     trust = None
+    fixture_revision = None
+    adherence = None
     if spec.get("agent"):
         sp = ROOT / spec["agent"] / "artifacts" / "score.json"
         if sp.exists():
@@ -236,8 +297,11 @@ def load_entry(spec: dict) -> dict | None:
                 "rankable": bool(s.get("rankable")),
                 "under_load": bool(host.get("under_load")),
             }
-            # The score record is authoritative for the three axes. Its quality axis
-            # carries the react-doctor penalty; soft_score() above cannot see it.
+            fixture_revision = s.get("fixture_revision", 1)
+            adherence = s.get("adherence")
+            # The score record is authoritative for the axes. Its quality axis
+            # carries the doctor penalty and its adherence axis the contract;
+            # soft_score() above can see neither.
             axes = s.get("axes") or {}
             tiers_in = s.get("tiers") or {}
             if s.get("valid") and isinstance(axes.get("quality"), (int, float)) and s.get("total") is not None:
@@ -245,7 +309,9 @@ def load_entry(spec: dict) -> dict | None:
                     "total": round(float(s["total"]), 1),
                     "completion": round(float(axes.get("completion", metrics["completion"])), 4),
                     "adversarial": round(float(axes.get("adversarial", metrics["adversarial"])), 4),
+                    "adherence": round(float(axes.get("adherence", 1.0)), 4),
                     "quality": round(float(axes["quality"]), 4),
+                    "weights": axes.get("weights"),
                     "tiers": {
                         t: {
                             "rate": round(float(tiers_in.get(t, {}).get("rate", metrics["tiers"][t]["rate"])), 4),
@@ -277,6 +343,8 @@ def load_entry(spec: dict) -> dict | None:
         "wall_seconds": wall,
         "historical_score": hist_total,
         "trust": trust,
+        "fixture_revision": fixture_revision,
+        "adherence": adherence,
         "sources": {"regrade": spec["regrade"], "agent": spec.get("agent")},
     }
 
@@ -295,30 +363,117 @@ def spec_for(model_id: str, spec: dict, arm: str, run: Path) -> dict:
 
 
 def trend_for(runs: list[Path]) -> dict | None:
-    totals = []
-    for run in runs:
-        score = json.loads((run / "artifacts" / "score.json").read_text(encoding="utf8"))
-        total = score.get("total")
-        if isinstance(total, (int, float)):
-            totals.append(float(total))
-    if not totals:
+    """EMA and 4-week range over weekly medians, oldest week first."""
+    by_week = weekly_repeats(runs)
+    if not by_week:
         return None
-    last4 = totals[-4:]
+    weeks = sorted(by_week)
+    medians = [statistics.median_low(sorted(valid_total(score) for _, score in by_week[week])) for week in weeks]
+    last4 = medians[-4:]
     return {
-        "ema": ema(totals),
+        "ema": ema(medians),
         "min": min(last4),
         "max": max(last4),
-        "n": len(totals),
+        "n": len(medians),
+        "weeks": weeks,
+        "medians": [round(m, 1) for m in medians],
     }
 
 
-def latest_scored_run(runs: list[Path]) -> Path | None:
-    for run in reversed(runs):
-        if (run / "artifacts" / "results.json").exists() and (run / "artifacts" / "score.json").exists():
-            total = json.loads((run / "artifacts" / "score.json").read_text(encoding="utf8")).get("total")
-            if isinstance(total, (int, float)):
-                return run
-    return None
+def latest_week_entry(model_id: str, spec: dict, arm: str, runs: list[Path]) -> dict | None:
+    """The row for the latest week with a valid repeat: lower-median run, plus repeat stats."""
+    by_week = weekly_repeats(runs)
+    if not by_week:
+        return None
+    week = max(by_week)
+    reps = [(run, score) for run, score in by_week[week] if (run / "artifacts" / "results.json").exists()]
+    if not reps:
+        return None
+    entry = load_entry(spec_for(model_id, spec, arm, representative(reps)))
+    if entry:
+        entry["repeats"] = repeat_summary(week, reps)
+    return entry
+
+
+def paired_skills_delta(models: list[dict]) -> dict | None:
+    """One paired Skills delta: mean over models of median(B) - median(A) in a shared week."""
+    pairs = []
+    for model in models:
+        a, b = model.get("no_skills"), model.get("skills")
+        if not a or not b:
+            continue
+        ra, rb = a.get("repeats") or {}, b.get("repeats") or {}
+        if ra.get("week") and ra.get("week") == rb.get("week"):
+            pairs.append({"id": model["id"], "week": ra["week"], "delta": round(rb["median"] - ra["median"], 1)})
+    if not pairs:
+        return None
+    deltas = [pair["delta"] for pair in pairs]
+    return {
+        "n": len(pairs),
+        "mean": round(statistics.fmean(deltas), 1),
+        "median": round(statistics.median(deltas), 1),
+        "improved": sum(1 for d in deltas if d > 0),
+        "worse": sum(1 for d in deltas if d < 0),
+        "pairs": pairs,
+    }
+
+
+TRACK_PREFIXES = {"bugfix": "bf-", "tests": "tt-", "change": "ch-"}
+TRACK_EVIDENCE = {"bugfix": "repair", "tests": "mutation", "change": "change"}
+
+
+def load_track_rows(track: str) -> list[dict]:
+    """Rows for one variant track: the latest week per model and arm, repeats grouped."""
+    runs_dir = ROOT / "runs"
+    if not runs_dir.exists():
+        return []
+    pattern = re.compile(rf"^{TRACK_PREFIXES[track]}([ab])-([a-z0-9-]+?)-(\d{{4}}w\d{{2}})(-r\d+)?$")
+    grouped: dict[tuple[str, str], list[Path]] = {}
+    for path in runs_dir.iterdir():
+        match = pattern.match(path.name)
+        if match and (path / "artifacts" / "score.json").exists():
+            grouped.setdefault((match.group(2), match.group(1)), []).append(path)
+    rows = []
+    for (slug, arm), paths in sorted(grouped.items()):
+        by_week = weekly_repeats(sorted(paths, key=lambda p: p.name))
+        by_week = {week: [(run, score) for run, score in reps if score.get("track") == track] for week, reps in by_week.items()}
+        by_week = {week: reps for week, reps in by_week.items() if reps}
+        if not by_week:
+            continue
+        week = max(by_week)
+        reps = by_week[week]
+        run = representative(reps)
+        score = load_score(run) or {}
+        host = score.get("host") or {}
+        evidence = score.get(TRACK_EVIDENCE[track]) or {}
+        rows.append({
+            "run_id": score.get("run_id") or run.name,
+            "model": score.get("model"),
+            "slug": slug,
+            "arm": arm,
+            "arm_label": "No Skills" if arm == "a" else "Skills",
+            "week": week,
+            "fixture_revision": score.get("fixture_revision", 1),
+            "total": round(float(score["total"]), 1),
+            "repeats": repeat_summary(week, reps),
+            "axes": score.get("axes"),
+            "adherence": score.get("adherence"),
+            "class_rates": evidence.get("class_rates"),
+            "request_rates": evidence.get("request_rates"),
+            "bugs": evidence.get("bugs"),
+            "tests": evidence.get("tests"),
+            "churn_lines": score.get("churn_lines"),
+            "trend": trend_for(paths),
+            "trust": {
+                "valid": bool(score.get("valid")),
+                "trusted": bool(score.get("trusted")),
+                "publishable": bool(score.get("publishable")),
+                "rankable": bool(score.get("rankable")),
+                "under_load": bool(host.get("under_load")),
+            },
+        })
+    rows.sort(key=lambda row: row["total"], reverse=True)
+    return rows
 
 
 def main() -> None:
@@ -328,10 +483,8 @@ def main() -> None:
         slug = slugify(model_id)
         no_skills_runs = find_arm_runs("a", slug)
         skills_runs = find_arm_runs("b", slug)
-        a_run = latest_scored_run(no_skills_runs)
-        b_run = latest_scored_run(skills_runs)
-        a_row = load_entry(spec_for(model_id, spec, "a", a_run)) if a_run else None
-        b_row = load_entry(spec_for(model_id, spec, "b", b_run)) if b_run else None
+        a_row = latest_week_entry(model_id, spec, "a", no_skills_runs)
+        b_row = latest_week_entry(model_id, spec, "b", skills_runs)
         if not a_row and not b_row:
             continue
         primary = a_row or b_row
@@ -348,20 +501,26 @@ def main() -> None:
         models.append(row)
     models.sort(key=lambda m: m["rank_score"], reverse=True)
 
-    ref_path = ROOT / "runs/rg-reference-20260802-1248/artifacts/results.json"
+    # The newest build canary is the reference calibration: it must score 100.
     reference = None
-    if ref_path.exists():
-        results = json.loads(ref_path.read_text(encoding="utf8"))
-        metrics = soft_score(results)
+    canaries = sorted((ROOT / "runs").glob("canary-build-*"), key=lambda p: p.name)
+    for canary in reversed(canaries):
+        score = load_score(canary)
+        results_path = canary / "artifacts" / "results.json"
+        if valid_total(score) is None or not results_path.exists():
+            continue
+        results = json.loads(results_path.read_text(encoding="utf8"))
         reference = {
             "id": "reference",
-            "name": "Reference (overlay)",
-            "score": metrics,
+            "name": "Reference (canary)",
+            "run_id": canary.name,
+            "score": {"total": valid_total(score), **{k: v for k, v in (score.get("axes") or {}).items() if k != "weights"}},
             "passes": {
                 "passed": sum(1 for i in SCORED if results.get(i)),
                 "total": len(SCORED),
             },
         }
+        break
 
     payload = {
         "schema": 1,
@@ -384,20 +543,22 @@ def main() -> None:
                 "b": "Skills: the same task with AGENTS.md and five skills.",
             },
             "scoring": {
-                "weights": {"completion": 0.6, "adversarial": 0.2, "quality": 0.2},
+                "weights": {"completion": 0.55, "adversarial": 0.2, "adherence": 0.15, "quality": 0.1},
+                "saturated_weight": SATURATED_WEIGHT,
                 "tier_gate": GATE,
                 "tier_mode": "soft",
                 "scored_checks": len(SCORED),
                 "advisory_checks": len(ADVISORY),
                 "note": (
-                    "Soft tiers scale higher-tier credit by lower-tier rates. "
-                    "There is no binary rule at 90 percent Tier 0. "
-                    "Advisory checks never affect totals. "
-                    "A row marked Unranked failed a trust flag in SCORING.md, most "
-                    "often because the host was busy during the grade. "
-                    "Treat an unranked total as diagnostic, not as a ranking."
+                    "Each total is the lower median of the week's repeated runs; the worst "
+                    "run and the repeat count are shown beside it. Soft tiers scale "
+                    "higher-tier credit by lower-tier rates. Checks that every competent "
+                    "model passes weigh a quarter. Adherence grades the file contract and "
+                    "the plan closeout. Advisory checks never affect totals. A row marked "
+                    "Unranked failed a trust flag in SCORING.md."
                 ),
             },
+            "skills_delta": paired_skills_delta(models),
         },
         "domains": DOMAINS,
         "criteria_tiers": CRITERIA,
@@ -416,6 +577,31 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf8")
     print(f"wrote {OUT}")
+    track_weights = {
+        "bugfix": {"repair": 0.45, "regression": 0.2, "robustness": 0.15, "adherence": 0.1, "quality": 0.1},
+        "tests": {"kill": 0.6, "validity": 0.2, "adherence": 0.1, "quality": 0.1},
+        "change": {"change": 0.45, "regression": 0.25, "robustness": 0.1, "adherence": 0.1, "quality": 0.1},
+    }
+    tracks = {track: load_track_rows(track) for track in TRACK_PREFIXES}
+    tracks_out = OUT.parent / "tracks.json"
+    tracks_out.write_text(json.dumps({
+        "schema": 1,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "tracks": {
+            track: {"weights": track_weights[track], "models": rows}
+            for track, rows in tracks.items()
+        },
+    }, indent=2) + "\n", encoding="utf8")
+    print(f"wrote {tracks_out} ({', '.join(f'{t}={len(r)}' for t, r in tracks.items())})")
+    # bugfix.json keeps its schema-1 shape for existing readers.
+    bugfix_out = OUT.parent / "bugfix.json"
+    bugfix_out.write_text(json.dumps({
+        "schema": 1,
+        "track": "bugfix",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "scoring": {"weights": track_weights["bugfix"]},
+        "models": tracks["bugfix"],
+    }, indent=2) + "\n", encoding="utf8")
     for m in models:
         go = m.get("go") or {}
         pct = go.get("monthly_pct")

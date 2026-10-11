@@ -49,12 +49,15 @@ export const NEGATIVE_CONTROLS: readonly NegativeControl[] = [
     id: "staff-key-leak",
     target: "app/items/[id]/checkout-form.tsx",
     from: "<form action={formAction} className=\"space-y-3 rounded-lg border border-neutral-200 p-4\">",
-    to: "<p>staff-key-7f3a</p><form action={formAction} className=\"space-y-3 rounded-lg border border-neutral-200 p-4\">",
+    to: "<form action={formAction} className=\"space-y-3 rounded-lg border border-neutral-200 p-4\"><p>staff-key-7f3a</p>",
     expectedFailures: ["P.no-key-leak"],
   },
 ];
 
-export function applyNegativeControl(source: string, control: NegativeControl): string {
+/** The fields the engine reads: registry bugs and tests-track mutants share this shape. */
+export type AnchoredMutation = Pick<NegativeControl, "id" | "target" | "from" | "to" | "replacements">;
+
+export function applyNegativeControl(source: string, control: AnchoredMutation): string {
   const replacements = control.replacements ?? [{ from: control.from, to: control.to }];
   if (replacements.length === 0) {
     throw new Error(`${control.id} must declare at least one source replacement`);

@@ -273,7 +273,19 @@ describe("current executor attestation", () => {
       expect(contract.valid).toBe(true);
       const hashes = currentHashes();
       const provenance: Json = {
-        schema: 4,
+        schema: 6,
+        track: "build",
+        fixture_revision: 2,
+        bug_set_id: null,
+        bug_set_sha256: null,
+        mutant_set_id: null,
+        mutant_set_sha256: null,
+        change_set_id: null,
+        change_set_sha256: null,
+        registry_sha256: null,
+        variant_sha256: null,
+        contract_violation_sha256: null,
+        graft: null,
         run_id: runId,
         arm: "b",
         model: MODEL,
@@ -334,7 +346,19 @@ describe("current executor attestation", () => {
       expect(contract.valid).toBe(true);
       const hashes = currentHashes();
       const provenance = {
-        schema: 4,
+        schema: 6,
+        track: "build",
+        fixture_revision: 2,
+        bug_set_id: null,
+        bug_set_sha256: null,
+        mutant_set_id: null,
+        mutant_set_sha256: null,
+        change_set_id: null,
+        change_set_sha256: null,
+        registry_sha256: null,
+        variant_sha256: null,
+        contract_violation_sha256: null,
+        graft: null,
         run_id: runId,
         arm: "b",
         model: MODEL,

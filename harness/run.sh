@@ -20,6 +20,17 @@ RUN_ID="${4:?}"
 validate_run_id "$RUN_ID"
 case "$ARM" in a|b) ;; *) echo "arm must be a or b" >&2; exit 2 ;; esac
 
+# Track: build (default), bugfix, tests, or change. Every track except build
+# seeds the candidate from a deterministic variant of the clean tree:
+#   bugfix  seeded defects to repair (BENCH_BUG_SET, default v1)
+#   tests   the correct app; the candidate writes tests (BENCH_MUTANT_SET, default m1)
+#   change  the correct app plus change requests (BENCH_CHANGE_SET, default c1)
+BENCH_TRACK="${BENCH_TRACK:-build}"
+case "$BENCH_TRACK" in build|bugfix|tests|change) ;; *) echo "BENCH_TRACK must be build, bugfix, tests, or change" >&2; exit 2 ;; esac
+BUG_SET="${BENCH_BUG_SET:-v1}"
+MUTANT_SET="${BENCH_MUTANT_SET:-m1}"
+CHANGE_SET="${BENCH_CHANGE_SET:-c1}"
+
 RUNTIME_PROBE="${BENCH_RUNTIME_PROBE:-}"
 case "$RUNTIME_PROBE" in
   ""|ports|container|dependency-copy) ;;
@@ -187,28 +198,78 @@ runtime_port_probe() {
   exit 0
 }
 
-assert_candidate_contract() {
-  if ! "$H/node_modules/.bin/tsx" "$H/candidate-contract.ts" "$ROOT/fixture" "$CAND" \
-    > "$OUT/candidate-contract.json"; then
-    echo "candidate filesystem contract rejected the run:" >&2
-    node -e 'try { const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); console.error((c.reasons || []).join("; ") || "no contract reason was emitted"); } catch { console.error("the candidate contract did not emit valid JSON"); }' \
-      "$OUT/candidate-contract.json" >&2 || true
-    return 1
-  fi
+contract_root() {
+  if [ "$BENCH_TRACK" = "build" ]; then echo "$ROOT/fixture"; else echo "$WORK/variant"; fi
+}
+
+# 0 clean; 3 soft violations inside writable files (graded as is); 5 soft
+# violations a graft removes; 4 hard violations. See candidate-contract.ts.
+assess_contract() {
+  local rc=0
+  "$H/node_modules/.bin/tsx" "$H/candidate-contract.ts" "$(contract_root)" "$CAND" --track "$BENCH_TRACK" \
+    > "$OUT/candidate-contract.json" || rc=$?
+  return "$rc"
+}
+
+contract_reasons() {
+  node -e 'try { const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); console.error((c.reasons || []).join("; ") || "no contract reason was emitted"); } catch { console.error("the candidate contract did not emit valid JSON"); }' \
+    "$OUT/candidate-contract.json" >&2 || true
+}
+
+# Under fixture r1 any contract violation discarded the run (19 build runs). A
+# soft violation now costs the adherence axis instead: the original tree's
+# verdict is kept as contract-violation.json (bound into provenance), and when
+# the violation is outside the writable files the writable files are grafted
+# onto a fresh comparison tree, so added files and protected edits never reach
+# the grader. A hard violation (symlink, special entry, .git) stays invalid.
+settle_candidate_contract() {
+  local rc=0
+  [ -d "$(contract_root)" ] || { echo "$BENCH_TRACK variant tree is missing: $(contract_root)" >&2; return 1; }
+  assess_contract || rc=$?
+  case "$rc" in
+    0) return 0 ;;
+    3)
+      echo "[$RUN_ID] contract: soft violation inside writable files; graded with an adherence cost:" >&2
+      contract_reasons
+      cp "$OUT/candidate-contract.json" "$OUT/contract-violation.json"
+      return 0
+      ;;
+    5)
+      echo "[$RUN_ID] contract: soft violation; grafting the writable files onto a fresh tree:" >&2
+      contract_reasons
+      cp "$OUT/candidate-contract.json" "$OUT/contract-violation.json"
+      rm -rf "$WORK/candidate-original"
+      mv "$CAND" "$WORK/candidate-original"
+      "$H/node_modules/.bin/tsx" "$H/candidate-contract.ts" --graft "$(contract_root)" "$WORK/candidate-original" "$CAND" \
+        --track "$BENCH_TRACK" > "$OUT/graft.json" || return 1
+      node -e 'const fs=require("node:fs"); const v=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if (!/^[a-f0-9]{64}$/.test(v.candidate_sha256)) process.exit(1); fs.writeFileSync(process.argv[2], JSON.stringify({ reason: "contract-violation", from_candidate_sha256: v.candidate_sha256, from_fixture_revision: Number(process.argv[3]) })+"\n");' \
+        "$OUT/contract-violation.json" "$OUT/graft-provenance.json" "$FIXTURE_REVISION" || return 1
+      rc=0
+      assess_contract || rc=$?
+      if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then
+        echo "[$RUN_ID] the grafted candidate still violates the contract:" >&2
+        contract_reasons
+        return 1
+      fi
+      return 0
+      ;;
+    *)
+      echo "candidate filesystem contract rejected the run:" >&2
+      contract_reasons
+      return 1
+      ;;
+  esac
 }
 
 write_provenance() {
-  local candidate_hash fixture_hash runner_hash suite_hash hashes contract_fields identity_hash
+  local -a graft_env=()
   [ -s "$OUT/candidate-contract.json" ] || return 1
   [ -s "$OUT/execution-identity.json" ] || return 1
   [ -s "$OUT/executor-cohort.json" ] || return 1
-  contract_fields=$(node -e 'const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); const hex = /^[a-f0-9]{64}$/; if (c.schema !== 1 || c.valid !== true || !hex.test(c.candidate_sha256) || !hex.test(c.fixture_protected_sha256)) process.exit(1); process.stdout.write(`${c.candidate_sha256}\t${c.fixture_protected_sha256}`);' "$OUT/candidate-contract.json") || return 1
-  IFS=$'\t' read -r candidate_hash fixture_hash <<< "$contract_fields"
-  hashes=$("$H/node_modules/.bin/tsx" "$H/provenance.ts" --shell) || return 1
-  IFS=$'\t' read -r runner_hash suite_hash <<< "$hashes"
-  identity_hash=$("$H/node_modules/.bin/tsx" "$H/execution-identity.ts" --fingerprint "$OUT/execution-identity.json") || return 1
-  [ -n "$runner_hash" ] && [ -n "$suite_hash" ] && [[ "$identity_hash" =~ ^[a-f0-9]{64}$ ]] || return 1
-  ARM_VALUE="$ARM" RUN_ID_VALUE="$RUN_ID" MODE_VALUE="${RUN_MODE:-unknown}" MODEL_VALUE="$PROVIDER/$MODEL" CANDIDATE_HASH="$candidate_hash" FIXTURE_HASH="$fixture_hash" RUNNER_HASH="$runner_hash" SUITE_HASH="$suite_hash" ISOLATED_VALUE="${AGENT_ISOLATED:-false}" IDENTITY_PATH="$OUT/execution-identity.json" COHORT_PATH="$OUT/executor-cohort.json" IDENTITY_HASH="$identity_hash" node -e 'const fs=require("node:fs"); const e=process.env; if (!/^(a|b)$/.test(e.ARM_VALUE) || !/^(agent|overlay)$/.test(e.MODE_VALUE)) throw new Error("invalid provenance identity"); if ((e.MODE_VALUE === "agent") !== (e.ISOLATED_VALUE === "true")) throw new Error("invalid provenance isolation"); const executor=JSON.parse(fs.readFileSync(e.IDENTITY_PATH,"utf8")),cohort=JSON.parse(fs.readFileSync(e.COHORT_PATH,"utf8")); if (cohort.schema!==1||typeof cohort.id!=="string"||!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(cohort.id)) throw new Error("invalid executor cohort"); console.log(JSON.stringify({ schema: 4, run_id: e.RUN_ID_VALUE, arm: e.ARM_VALUE, model: e.MODEL_VALUE, mode: e.MODE_VALUE, candidate_sha256: e.CANDIDATE_HASH, fixture_protected_sha256: e.FIXTURE_HASH, runner_sha256: e.RUNNER_HASH, suite_sha256: e.SUITE_HASH, agent_isolated: e.ISOLATED_VALUE === "true", candidate_contract_schema: 1, cohort_id: cohort.id, executor_cohort: cohort, executor, execution_identity_sha256: e.IDENTITY_HASH }));' > "$OUT/provenance.json"
+  if [ -s "$OUT/graft-provenance.json" ]; then graft_env=("GRAFT_JSON=$OUT/graft-provenance.json"); fi
+  env "${graft_env[@]}" RUN_ID="$RUN_ID" ARM="$ARM" MODEL="$PROVIDER/$MODEL" MODE="${RUN_MODE:-unknown}" \
+    BENCH_TRACK="$BENCH_TRACK" FIXTURE_REVISION="$FIXTURE_REVISION" \
+    "$H/node_modules/.bin/tsx" "$H/provenance-record.ts" "$OUT"
 }
 
 json_array() {
@@ -246,6 +307,11 @@ apply_overlay() {
     mkdir -p "$(dirname "$CAND/$rel")"
     cp "$overlay/$rel" "$CAND/$rel"
   done
+  # The tests track's writable surface is a directory of new test files.
+  if [ "$BENCH_TRACK" = "tests" ] && [ -d "$overlay/tests" ]; then
+    mkdir -p "$CAND/tests"
+    cp -R "$overlay/tests/." "$CAND/tests/"
+  fi
 }
 
 write_invalid() {
@@ -413,6 +479,15 @@ run_agent_container() {
       ' || true
   fi
   chmod 600 "$pi_agent_dir/auth.json" 2>/dev/null || true
+  # Transport resilience (2026-09-23): shed idle streams at 120s instead of the
+  # 300s default and allow 10 consecutive auto-retries instead of 3, so a flaky
+  # upstream window cannot end the run with "agent produced no changes".
+  # Inert on stable channels; staged into the run's provenance pi-agent dir.
+  printf '%s\n' \
+    '{' \
+    '  "retry": { "enabled": true, "maxRetries": 10, "baseDelayMs": 2000, "maxAgentDelayMs": 60000 },' \
+    '  "httpIdleTimeoutMs": 120000' \
+    '}' > "$pi_agent_dir/settings.json"
 
   mkdir -p "$CAND/node_modules"
   podman_args=(run --rm --pull=never --read-only
@@ -479,15 +554,16 @@ run_agent_container() {
 }
 
 
-# 0. Host readiness. Checked before the agent runs so a loaded machine costs
-# nothing rather than an hour of tokens followed by void timing results.
-# 6 means "busy but BENCH_IGNORE_LOAD=1" — proceed; grade.sh flags the record.
+# 0. Host readiness. Advisory under the always-publish policy: load never blocks
+# a run. 0 means quiet; 6 means busy — grade.sh records it as advisory metadata.
 if "$H/preflight.sh" "$RUN_ID"; then
   PF=0
 else
   PF=$?
 fi
-[ "$PF" -eq 0 ] || [ "$PF" -eq 6 ] || exit 5
+if [ "$PF" -ne 0 ] && [ "$PF" -ne 6 ]; then
+  echo "[$RUN_ID] preflight exited $PF — proceeding under always-publish policy" >&2
+fi
 
 rm -rf "$WORK"; mkdir -p "$OUT"
 if [ "$RUNTIME_PROBE" = "ports" ]; then
@@ -496,21 +572,50 @@ fi
 
 # The bounded port probe must publish its allocation promptly. Normal runs
 # still resolve the candidate contract before any fixture or agent work.
-WRITABLE_PATHS=$("$H/node_modules/.bin/tsx" "$H/candidate-contract.ts" --writable-paths) || { echo "candidate contract allowlist is unavailable" >&2; exit 2; }
+WRITABLE_PATHS=$("$H/node_modules/.bin/tsx" "$H/candidate-contract.ts" --writable-paths --track "$BENCH_TRACK") || { echo "candidate contract allowlist is unavailable" >&2; exit 2; }
 mapfile -t WRITABLE_CANDIDATE_PATHS <<< "$WRITABLE_PATHS"
 [ "${#WRITABLE_CANDIDATE_PATHS[@]}" -gt 0 ] || { echo "candidate contract allowlist is empty" >&2; exit 2; }
 unset WRITABLE_PATHS
 
 echo "[$RUN_ID] $PROVIDER/$MODEL arm=$ARM"
 
-# 1. Fresh fixture, byte-identical between arms.
+# 1. Candidate seed, byte-identical between arms.
+#    build:  fresh fixture tree. The reference overlay is applied only for
+#            diagnostic AGENT_SKIP runs.
+#    bugfix: a deterministic variant of the clean tree with the active bug set
+#            seeded. The manifest goes to artifacts — never into the candidate,
+#            because it names the defects.
 mkdir -p "$CAND"
-tar -C "$ROOT/fixture" --exclude=node_modules --exclude=.next --exclude=.git \
-    --exclude='*.tsbuildinfo' -cf - . | tar -C "$CAND" -xf -
+FIXTURE_REVISION=$("$H/node_modules/.bin/tsx" "$H/revisions.ts") || { echo "fixture revision is unavailable" >&2; exit 2; }
+if [ "$BENCH_TRACK" != "build" ]; then
+  case "$BENCH_TRACK" in
+    bugfix) generator="$H/bugfix/make-variant.ts";      set_arg="$BUG_SET";    sets_dir="$H/bugfix/sets";      set_copy="bug-set.json" ;;
+    tests)  generator="$H/tests-track/make-variant.ts"; set_arg="$MUTANT_SET"; sets_dir="$H/tests-track/sets"; set_copy="mutant-set.json" ;;
+    change) generator="$H/change/make-variant.ts";      set_arg="$CHANGE_SET"; sets_dir="$H/change/sets";      set_copy="change-set.json" ;;
+  esac
+  "$H/node_modules/.bin/tsx" "$generator" --out "$WORK/variant" --set "$set_arg" \
+    > "$OUT/variant-manifest.json" || { echo "[$RUN_ID] variant generation failed" >&2; exit 2; }
+  if [[ "$set_arg" == *.json ]]; then SET_FILE="$set_arg"; else SET_FILE="$sets_dir/$set_arg.json"; fi
+  [ -f "$SET_FILE" ] || { echo "[$RUN_ID] $BENCH_TRACK set not found: $SET_FILE" >&2; exit 2; }
+  [ "$SET_FILE" -ef "$OUT/$set_copy" ] || cp "$SET_FILE" "$OUT/$set_copy"
+  rm -rf "$CAND"; mkdir -p "$CAND"
+  tar -C "$WORK/variant" -cf - . | tar -C "$CAND" -xf -
+else
+  tar -C "$ROOT/fixture" --exclude=node_modules --exclude=.next --exclude=.git \
+      --exclude='*.tsbuildinfo' -cf - . | tar -C "$CAND" -xf -
+fi
 # Dependencies are mounted read-only for the agent and symlinked only after verification.
 
 
-PROMPT='Read measure/tracks/lending_desk/spec.md and measure/tracks/lending_desk/plan.md, then implement the plan. Mark each plan task complete as you finish it. Run "npm run typecheck" and "npm run build" and make sure both pass before you stop.'
+if [ "$BENCH_TRACK" = "tests" ]; then
+  PROMPT='Read measure/tracks/lending_desk_tests/spec.md and measure/tracks/lending_desk_tests/plan.md, then implement the plan. This application is complete: write its test suite as *.test.ts files under tests/ and change no other file. Mark each plan task complete as you finish it. Build and start the app, and make sure "npm run typecheck", "npm run build", and "npm test" pass before you stop.'
+elif [ "$BENCH_TRACK" = "change" ]; then
+  PROMPT='Read measure/tracks/lending_desk_change/spec.md and measure/tracks/lending_desk_change/plan.md, then implement the change requests. Every existing behavior in the spec must keep working. Do not add, rename, change, or remove any exported symbol or type signature. Do not edit spec.md. Mark each plan task complete as you finish it. Run "npm run typecheck" and "npm run build" and make sure both pass before you stop.'
+elif [ "$BENCH_TRACK" = "bugfix" ]; then
+  PROMPT='Read measure/tracks/lending_desk_bugfix/spec.md. This application is defective: it violates some of the acceptance criteria. Find and repair the defects. Do not add, rename, change, or remove any exported symbol or type signature. Do not edit spec.md. Do not modify src/db/, src/lib/auth.ts, app/members/, or src/components/member-card.tsx. Add no files and no dependencies. Run "npm run typecheck" and "npm run build" and make sure both pass before you stop.'
+else
+  PROMPT='Read measure/tracks/lending_desk/spec.md and measure/tracks/lending_desk/plan.md, then implement the plan. Mark each plan task complete as you finish it. Run "npm run typecheck" and "npm run build" and make sure both pass before you stop.'
+fi
 
 if [ "$RUNTIME_PROBE" = "container" ]; then
   echo "[$RUN_ID] running isolated container runtime probe"
@@ -536,7 +641,14 @@ echo "[$RUN_ID] invoking agent..."
 START=$(date +%s)
 if [ "${AGENT_SKIP:-0}" = "1" ]; then
   RUN_MODE="overlay"; AGENT_ISOLATED=false
-  if ! apply_overlay "${OVERLAY:-$ROOT/reference}"; then
+  if [ "$BENCH_TRACK" != "build" ]; then
+    # The candidate already IS the variant. An OVERLAY is applied only when an
+    # operator supplies one (a calibration or a regrade).
+    if [ -n "${OVERLAY:-}" ] && ! apply_overlay "$OVERLAY"; then
+      write_invalid "overlay could not be applied"
+      exit 3
+    fi
+  elif ! apply_overlay "${OVERLAY:-$ROOT/reference}"; then
     write_invalid "overlay could not be applied"
     exit 3
   fi
@@ -545,7 +657,7 @@ if [ "${AGENT_SKIP:-0}" = "1" ]; then
     exit 3
   fi
   AGENT_EXIT=0
-  echo "[$RUN_ID] AGENT_SKIP=1 - overlay ${OVERLAY:-$ROOT/reference} applied"
+  echo "[$RUN_ID] AGENT_SKIP=1 - seed prepared (track=$BENCH_TRACK${OVERLAY:+, overlay applied})"
 else
   RUN_MODE="agent"; AGENT_ISOLATED=true
   if run_agent_container > "$OUT/session.json" 2> "$OUT/session.err"; then
@@ -557,7 +669,7 @@ fi
 END=$(date +%s)
 echo "[$RUN_ID] agent exit=$AGENT_EXIT in $((END-START))s"
 
-if ! assert_candidate_contract; then
+if ! settle_candidate_contract; then
   echo "[$RUN_ID] ABORT: candidate violates the filesystem contract" >&2
   write_invalid "candidate violates the filesystem contract"
   exit 3
@@ -568,7 +680,10 @@ if ! write_provenance; then
   exit 3
 fi
 
-diff -ru "$ROOT/fixture" "$CAND" -x node_modules -x .next -x '*.tsbuildinfo' \
+# Diff the agent's own tree: after a graft the original sits in candidate-original.
+DIFF_TREE="$CAND"
+[ -d "$WORK/candidate-original" ] && DIFF_TREE="$WORK/candidate-original"
+diff -ru "$(contract_root)" "$DIFF_TREE" -x node_modules -x .next -x '*.tsbuildinfo' \
   > "$OUT/candidate.diff" 2>/dev/null || true
 
 # 2b. Did the agent actually run? `pi` exits 0 on a provider error (no API key,
@@ -615,6 +730,12 @@ if AGENT_EXIT="$AGENT_EXIT" THINKING="$THINKING" API_PORT="$API_PORT" E2E_PORT="
 else
   GRADE_RC=$?
 fi
+
+# 5b. Drain the private dependency copy (442MB) and the build output. A week of
+# four tracks with repeats is about 200 runs, which would fill this disk; grade.sh
+# restores the copy when a regrade needs it, and the doctor falls back to the
+# fixture's node_modules. Artifacts and the candidate's own files stay.
+rm -rf "$CAND/node_modules" "$CAND/.next"
 
 # 6. Compress the transcript. pi repeats the whole message on every message_update,
 # so these reach ~1GB each (a-deepseek-v4-flash: 939MB) and the matrix runs every

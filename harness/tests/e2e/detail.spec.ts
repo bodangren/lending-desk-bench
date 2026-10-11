@@ -1,5 +1,9 @@
-/** Spec D, E + probes. */
+/** Spec D, E, F + the stale-state probe. Helpers live in ./_forms. */
 import { expect, test, type Page } from "@playwright/test";
+import {
+  BENCH_NOW, CHECKOUT_DUE, checkoutForm, closeOpenLoan, createOpenLoan, dueDateInput,
+  expectDueOn, fillDueDate, loanCount, loansFor, openLoanCount,
+} from "./_forms";
 
 /**
  * Member names in render order, ignoring the checkout form's <option> list —
@@ -25,59 +29,6 @@ async function historyNames(page: Page): Promise<string[]> {
     }
   }
   return hits.sort((a, b) => a.at - b.at).map((h) => h.name);
-}
-
-/**
- * The due-date control, whatever input type the candidate chose. Spec E.1 asks for
- * "a due-date input" and names no type, so <input type="datetime-local"> and a text
- * input named dueAt are both correct answers. A bare input[type="date"] locator made
- * every one of those candidates fail eleven unrelated criteria on a timeout.
- */
-function dueDateInput(page: Page) {
-  return page
-    .locator('input[type="date"], input[type="datetime-local"], input[name="dueAt"]')
-    .first();
-}
-
-/** Fill the due date in the value form the chosen input type accepts. */
-async function fillDueDate(page: Page, date: string): Promise<void> {
-  const input = dueDateInput(page);
-  await expect(input, "the checkout form has no due-date input").toBeVisible({ timeout: 10_000 });
-  const type = (await input.getAttribute("type")) ?? "";
-  await input.fill(type === "datetime-local" ? `${date}T00:00` : date);
-}
-
-/** Wait until the store actually holds the loan, not just the optimistic badge. */
-type LoanRecord = {
-  itemId: string; memberId: string; borrowedAt: string; dueAt: string; returnedAt: string | null;
-};
-
-/**
- * Read every loan and select in the test, rather than asking the API to filter.
- *
- * Four Tier 0 section-F criteria take their evidence from this call. Sending
- * ?itemId= made them depend on G.filter-item as well, which is Tier 1, so a broken
- * query string could cost four Tier 0 points for a correct section F. The unfiltered
- * GET is checkbox G.1, which those criteria cannot avoid depending on.
- */
-async function allLoans(page: Page): Promise<LoanRecord[] | null> {
-  const res = await page.request.get("/api/loans", {
-    headers: { "x-staff-key": "staff-key-7f3a" },
-  });
-  if (!res.ok()) return null;
-  return ((await res.json()).loans ?? []) as LoanRecord[];
-}
-
-async function loanCount(page: Page, itemId: string): Promise<number> {
-  const loans = await allLoans(page);
-  return loans === null ? -1 : loans.filter((l) => l.itemId === itemId).length;
-}
-
-/** Open loans only — a return closes a loan rather than removing it. */
-async function openLoanCount(page: Page, itemId: string): Promise<number> {
-  const loans = await allLoans(page);
-  if (loans === null) return -1;
-  return loans.filter((l) => l.itemId === itemId && l.returnedAt === null).length;
 }
 
 test("D.renders", async ({ page }) => {
@@ -249,60 +200,6 @@ test("P.stale-after-mutate", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Moisture Meter/ })).toContainText("On loan");
 });
 
-const STAFF_HEADERS = { "x-staff-key": "staff-key-7f3a" };
-const BENCH_NOW = "2026-03-15T12:00:00.000Z";
-const CHECKOUT_DUE = "2026-04-30";
-const CHECKOUT_DUE_ISO = "2026-04-30T00:00:00.000Z";
-
-/**
- * F.1 records "the given `dueAt`". The form field holds a calendar date, and no
- * checkbox states a date-to-instant convention, so accept any instant inside that UTC
- * day. A raw string compare failed four candidates on a Tier 0 criterion for storing
- * "2026-04-30", which is exactly what the form gave them.
- */
-function onDueDate(value: string, day: string): boolean {
-  const at = Date.parse(value);
-  const start = Date.parse(day + "T00:00:00.000Z");
-  return Number.isFinite(at) && at >= start && at < start + 86_400_000;
-}
-
-async function expectDueOn(page: Page, itemId: string, day: string): Promise<void> {
-  const [loan] = await loansFor(page, itemId);
-  expect(onDueDate(loan.dueAt, day), `dueAt ${loan.dueAt} is not on ${day}`).toBe(true);
-}
-
-async function loansFor(page: Page, itemId: string): Promise<LoanRecord[]> {
-  const loans = await allLoans(page);
-  expect(loans, "GET /api/loans did not answer").not.toBeNull();
-  return loans!.filter((loan) => loan.itemId === itemId);
-}
-
-async function createOpenLoan(page: Page, itemId: string, memberId = "mbr-001") {
-  const response = await page.request.post("/api/loans", {
-    headers: { ...STAFF_HEADERS, "content-type": "application/json" },
-    data: { itemId, memberId, dueAt: CHECKOUT_DUE_ISO },
-  });
-  expect(response.status()).toBe(201);
-}
-
-async function closeOpenLoan(page: Page, itemId: string) {
-  const response = await page.request.patch("/api/loans", {
-    headers: { ...STAFF_HEADERS, "content-type": "application/json" },
-    data: { itemId },
-  });
-  expect(response.status()).toBe(200);
-}
-
-/**
- * The checkout form, found by a part spec.md states. E.1 requires a member selector;
- * the idle submit label is stated nowhere, and "Check out" appears only in
- * reference/app/items/[id]/checkout-form.tsx. Presence tests use this; the click sites
- * still need a button and keep the tolerant /check ?out/i pattern.
- */
-function checkoutForm(page: Page) {
-  return page.getByRole("combobox");
-}
-
 /** The five seeded members, sorted, so the assertion does not fix an option order. */
 const MEMBER_NAMES = ["Ada Okonkwo", "Bruno Silva", "Chen Wei", "Chen Weiming", "Dara Nwosu"];
 
@@ -319,6 +216,40 @@ test("E.member-options", async ({ page }) => {
     }, { timeout: 10_000 })
     .toEqual(MEMBER_NAMES);
   await expect(dueDateInput(page)).toBeVisible();
+});
+
+test("E.labels", async ({ page }) => {
+  // E.10: both inputs carry an accessible name, from a <label> or aria-label. A
+  // placeholder option or a nearby heading is not a name: a screen reader announces
+  // an unnamed control only by its role.
+  await page.goto("/items/itm-002");
+  await expect(checkoutForm(page).first()).toHaveAccessibleName(/\S/, { timeout: 10_000 });
+  await expect(dueDateInput(page)).toHaveAccessibleName(/\S/);
+});
+
+/** True when the text renders inside role="alert" or a live region. */
+async function isAnnounced(page: Page, text: string): Promise<boolean> {
+  return page.getByText(text).first().evaluate((element) => Boolean(element.closest(
+    '[role="alert"], [role="status"], [aria-live="polite"], [aria-live="assertive"]',
+  )));
+}
+
+test("E.error-announced", async ({ page }) => {
+  // E.11: an error string from either form sits in an alert or a live region, so
+  // assistive technology reads it when it appears. Both rejections change no state.
+  await page.goto("/items/itm-008");
+  await page.getByRole("combobox").first().selectOption({ label: "Ada Okonkwo" });
+  await fillDueDate(page, "2020-01-01");
+  await page.getByRole("button", { name: /check ?out/i }).click();
+  await expect(page.getByText("Due date must be in the future")).toBeVisible({ timeout: 10_000 });
+  expect(await isAnnounced(page, "Due date must be in the future"), "checkout error is not announced").toBe(true);
+
+  await page.goto("/items/itm-028");
+  await expect(page.getByRole("button", { name: "Return" })).toBeVisible();
+  await page.context().clearCookies();
+  await page.getByRole("button", { name: "Return" }).click();
+  await expect(page.getByText("Not authorized")).toBeVisible({ timeout: 10_000 });
+  expect(await isAnnounced(page, "Not authorized"), "return error is not announced").toBe(true);
 });
 
 test("F.auth-checkout", async ({ page }) => {

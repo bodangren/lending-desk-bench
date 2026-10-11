@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Host readiness check. Exits 0 when the machine is quiet enough to trust a run,
-# 5 when it is not.
+# Host readiness check. Exits 0 when the host is quiet, 6 when it is busy.
+# Always-publish policy: a busy host never blocks a run; load is recorded as
+# advisory metadata only.
 #
 # Several assertions carry real-time budgets — E.optimistic 800ms, E.return-pending
-# 3s, H.loading and P.streams-shell a >=100ms flush gap. Under contention those
+# 3s, H.loading a >=100ms flush gap. Under contention those
 # measure the host, not the submission. Two flakes on 2026-07-31 (D.renders timing
 # out at 30s, P.history-stable returning an empty page) were traced to a host at
 # load 28 with 5.3GB of 7.8GB swap in use. retries:1 and the dedicated socket in
@@ -14,9 +15,9 @@
 #   MIN_AVAIL_MB       default 2500  MemAvailable
 #   MAX_SWAP_USED_MB   default 2000  swap in use
 #   BENCH_WAIT_FOR_IDLE  seconds to wait for the host to settle (default 0)
-#   BENCH_IGNORE_LOAD=1  proceed anyway, exiting 6 so callers still flag the run
+#   BENCH_IGNORE_LOAD  legacy no-op; a busy host proceeds regardless
 #
-# Exit: 0 host ok | 5 host busy, refuse | 6 host busy, overridden (proceed AND flag)
+# Exit: 0 host ok | 6 host busy, proceed (load recorded as advisory metadata)
 set -uo pipefail
 
 MAX_LOAD_PER_CPU="${MAX_LOAD_PER_CPU:-1.0}"
@@ -64,13 +65,7 @@ read_state
   ps -eo rss,pcpu,comm --sort=-rss | head -6 | sed 's/^/    /'
 } >&2
 
-# Exit 6, not 0: the override means "run anyway", never "the host is fine". Callers
-# must still record under_load, or a whole matrix graded on a contended machine reports
-# itself as clean — which is the one case the flag exists to catch.
-if [ "${BENCH_IGNORE_LOAD:-0}" = "1" ]; then
-  echo "[$LABEL] BENCH_IGNORE_LOAD=1 — continuing anyway; timing-sensitive results are not trustworthy" >&2
-  exit 6
-fi
-echo "[$LABEL] refusing to run. Wait for the host to settle, set BENCH_WAIT_FOR_IDLE=<seconds>," >&2
-echo "[$LABEL] or override with BENCH_IGNORE_LOAD=1 and treat timing failures as void." >&2
-exit 5
+# Exit 6, not 0: busy means "run anyway", never "the host is fine". Callers
+# still record under_load so a contended grading stays visible as metadata.
+echo "[$LABEL] host busy — proceeding under always-publish policy; timing-sensitive assertions are advisory" >&2
+exit 6

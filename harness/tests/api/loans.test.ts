@@ -30,8 +30,12 @@ describe("GET /api/loans", () => {
     const j = await r.json();
     expect(Array.isArray(j.loans)).toBe(true);
     // G.1 asks GET to return the loans. A lower bound let a route drop four seeded
-    // records and still pass, so compare against the seed itself.
-    expect(j.loans).toHaveLength(seedLoans.length);
+    // records and still pass, so every seeded loan must be present. Other API files
+    // (change.test.ts on the change track) may have added loans first: Vitest does
+    // not order files by name, so the count is a floor, not an equality.
+    const ids = (j.loans as { id: string }[]).map((loan) => loan.id);
+    expect(ids).toEqual(expect.arrayContaining(seedLoans.map((loan) => loan.id)));
+    expect(new Set(ids).size, "GET repeated a loan").toBe(ids.length);
     expect(j.loans[0]).toEqual(
       expect.objectContaining({
         id: expect.any(String), itemId: expect.any(String), memberId: expect.any(String),
@@ -220,6 +224,31 @@ function raw(method: string, body: unknown): Promise<number> {
 const rawPost = (itemId: string, memberId: string) =>
   raw("POST", { itemId, memberId, dueAt: future });
 const rawPatch = (itemId: string) => raw("PATCH", { itemId });
+
+describe("malformed bodies", () => {
+  const send = (method: string, headers: HeadersInit) =>
+    fetch(`${BASE}/api/loans`, { method, headers, body: "{not json" });
+
+  it("P.malformed-json", async () => {
+    // A body that is not JSON is a request with missing fields: G.7 and G.11 make
+    // that a 400 with an error string. An unguarded request.json() throws a 500.
+    for (const method of ["POST", "PATCH"]) {
+      const r = await send(method, staff);
+      expect(r.status, method).toBe(400);
+      expect(typeof (await r.json()).error, method).toBe("string");
+    }
+  });
+
+  it("P.auth-before-parse", async () => {
+    // G.6: any request that is not from staff gets 401. Parsing first answers an
+    // anonymous caller with 400 and reads untrusted input before the guard.
+    for (const method of ["POST", "PATCH"]) {
+      const r = await send(method, anon);
+      expect(r.status, method).toBe(401);
+      expect((await r.json()).error, method).toBe("Unauthorized");
+    }
+  });
+});
 
 describe("API record fields", () => {
   it("G.post-fields", async () => {

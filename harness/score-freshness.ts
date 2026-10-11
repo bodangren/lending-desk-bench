@@ -8,10 +8,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { assessCandidateContract, type CandidateContract } from "./candidate-contract.js";
+import { assessCandidateContract, resolveTrack, type CandidateContract } from "./candidate-contract.js";
 import { currentHashes } from "./provenance.js";
-import { executionIdentityFingerprint, validateExecutionIdentity } from "./execution-identity.js";
-import { attestExecutorFromEnvironment } from "./executor-attestation.js";
+import { checkProvenance } from "./provenance-check.js";
 import { attestScoreRecord } from "./score-attestation.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -24,6 +23,7 @@ export type FreshnessState =
   | "TRUSTED"
   | "CALIBRATION"
   | "GATE-BLOCKED"
+  // Legacy-tolerant value: old records may carry it; this checker no longer emits it.
   | "UNDER-LOAD"
   | "UNTRUSTED"
   | "STALE-PROVENANCE"
@@ -62,7 +62,10 @@ function failedContract(reason: string): CandidateContract {
   return {
     schema: 1,
     valid: false,
+    gradeable: false,
     reasons: [reason],
+    hard: ["missing_root"],
+    soft: [],
     candidate_sha256: "",
     fixture_protected_sha256: "",
     candidate_protected_sha256: "",
@@ -71,9 +74,9 @@ function failedContract(reason: string): CandidateContract {
   };
 }
 
-function contractFor(candidate: string): CandidateContract {
+function contractFor(root: string, candidate: string, track: ReturnType<typeof resolveTrack>): CandidateContract {
   try {
-    return assessCandidateContract(FIXTURE, candidate);
+    return assessCandidateContract(root, candidate, { track });
   } catch (error) {
     return failedContract(error instanceof Error ? error.message : String(error));
   }
@@ -136,11 +139,24 @@ export function assessScoreFreshness(input: string): ScoreFreshness {
     );
   }
 
-  const contract = contractFor(candidate);
+  // The track decides which comparison root the candidate contract uses: the
+  // bugfix track grades against the run's generated variant, not fixture/.
+  const provenanceReadEarly = readJson(join(artifacts, "provenance.json"));
+  const provenanceEarly = isRecord(provenanceReadEarly.value) ? provenanceReadEarly.value : undefined;
+  const track = resolveTrack(
+    typeof provenanceEarly?.track === "string"
+      ? provenanceEarly.track
+      : typeof score.track === "string"
+        ? score.track
+        : "build",
+  );
+  const comparisonRoot = track === "build" ? FIXTURE : join(work, "variant");
+
+  const contract = contractFor(comparisonRoot, candidate, track);
   const provenanceRead = readJson(join(artifacts, "provenance.json"));
   const provenance = isRecord(provenanceRead.value) ? provenanceRead.value : undefined;
   const freshnessReasons: string[] = [];
-  if (!contract.valid) {
+  if (!contract.gradeable) {
     freshnessReasons.push(...contract.reasons.map((reason) => "candidate filesystem contract: " + reason));
   }
 
@@ -149,47 +165,12 @@ export function assessScoreFreshness(input: string): ScoreFreshness {
     freshnessReasons.push(provenanceRead.error ?? "provenance.json is not an object");
   } else {
     try {
-      const hashes = liveHashes();
-      const expectedArm = score.arm === "a" || score.arm === "b" ? score.arm : undefined;
-      const mode = provenance.mode === "agent" || provenance.mode === "overlay" ? provenance.mode : undefined;
-      const runnerAndSuiteCurrent =
-        provenance.schema === 4 &&
-        provenance.candidate_contract_schema === 1 &&
-        provenance.runner_sha256 === hashes.runner_sha256 &&
-        provenance.suite_sha256 === hashes.suite_sha256;
-      const identityMatches =
-        provenance.arm === score.arm &&
-        provenance.model === score.model;
-      const contractMatches =
-        contract.valid &&
-        provenance.candidate_sha256 === contract.candidate_sha256 &&
-        provenance.fixture_protected_sha256 === contract.fixture_protected_sha256;
-      const executionErrors = expectedArm && mode
-        ? validateExecutionIdentity(provenance.executor, { runId, arm: expectedArm, mode })
-        : ["provenance arm or mode is invalid"];
-      const executionFingerprintMatches =
-        typeof provenance.execution_identity_sha256 === "string" &&
-        provenance.execution_identity_sha256 === executionIdentityFingerprint(provenance.executor);
-      const modeBindingMatches =
-        (mode === "agent" && provenance.agent_isolated === true) ||
-        (mode === "overlay" && provenance.agent_isolated === false);
-      const recordedExecutionCurrent =
-        provenance.run_id === runId &&
-        executionErrors.length === 0 &&
-        executionFingerprintMatches &&
-        modeBindingMatches;
-      const executorAttestation = attestExecutorFromEnvironment(provenance);
-      const executionCurrent = recordedExecutionCurrent && executorAttestation.eligible;
-      provenanceCurrent = runnerAndSuiteCurrent && identityMatches && contractMatches && executionCurrent;
-      if (!runnerAndSuiteCurrent) freshnessReasons.push("runner or suite provenance is stale");
-      if (runnerAndSuiteCurrent && !identityMatches) freshnessReasons.push("provenance model or arm differs from score record");
-      if (contract.valid && !contractMatches) freshnessReasons.push("candidate contract differs from run provenance");
-      if (runnerAndSuiteCurrent && identityMatches && contractMatches && !recordedExecutionCurrent) {
-        freshnessReasons.push("execution identity differs from current run evidence");
-      }
-      if (runnerAndSuiteCurrent && identityMatches && contractMatches && recordedExecutionCurrent && !executorAttestation.eligible) {
-        freshnessReasons.push(...executorAttestation.reasons.map((reason) => "executor attestation: " + reason));
-      }
+      const check = checkProvenance({
+        provenance, hashes: liveHashes(), runId, model: score.model, arm: score.arm, track,
+        contract, artifacts, comparisonRoot,
+      });
+      provenanceCurrent = check.current;
+      freshnessReasons.push(...check.reasons);
     } catch (error) {
       freshnessReasons.push("could not recompute runner/suite hashes: " + (error instanceof Error ? error.message : String(error)));
     }
@@ -227,11 +208,12 @@ export function assessScoreFreshness(input: string): ScoreFreshness {
     provenanceCurrent,
   });
   const scoreCurrent = scoreFreshness.score_current === true;
-  const hostTrusted = isRecord(score.host) && score.host.under_load === false;
+  // Load is metadata, not a trust input: host trust means evidence was recorded.
+  const hostTrusted = isRecord(score.host);
   freshnessReasons.push(...scoreFreshness.reasons);
-  if (!contract.valid || !provenanceCurrent) {
+  if (!contract.gradeable || !provenanceCurrent) {
     return result(
-      scorePath, runId, "STALE-PROVENANCE", false, contract.valid, provenanceCurrent,
+      scorePath, runId, "STALE-PROVENANCE", false, contract.gradeable, provenanceCurrent,
       gatePassed, collectionCurrent, freshnessReasons, scoreCurrent, hostTrusted,
     );
   }
@@ -254,20 +236,11 @@ export function assessScoreFreshness(input: string): ScoreFreshness {
   }
 
   const mode = provenance?.mode;
-  const isolatedAgent = mode === "agent" && provenance.agent_isolated === true;
+  const isolatedAgent = mode === "agent" && provenance?.agent_isolated === true;
   if (!isolatedAgent) {
     return result(
       scorePath, runId, "CALIBRATION", false, true, true, true, true,
       ["overlay and non-isolated runs are diagnostic only"], scoreCurrent, hostTrusted,
-    );
-  }
-
-  const host = isRecord(score.host) ? score.host : {};
-  if (!hostTrusted) {
-    return result(
-      scorePath, runId, "UNDER-LOAD", false, true, true, true, true,
-      [host.under_load === true ? "host was contended during grading" : "host trust evidence lacks under_load: false"],
-      scoreCurrent, false,
     );
   }
 

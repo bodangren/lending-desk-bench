@@ -17,6 +17,7 @@ import {
 import { join, relative, resolve, sep } from "node:path";
 import { applyNegativeControl } from "./tests/negative-controls.js";
 import {
+  CHANGE_CONTROLS,
   SENSITIVITY_CONTROLS,
   type SensitivityControl,
 } from "./tests/sensitivity-controls.js";
@@ -26,6 +27,10 @@ import { assessScoreFreshness } from "./score-freshness.js";
 const ROOT = resolve(import.meta.dirname, "..");
 const RUNS = join(ROOT, "runs");
 const REFERENCE = join(ROOT, "reference");
+/** Change-track controls mutate the change reference and grade on the change track. */
+const REFERENCE_CHANGE = join(ROOT, "reference-change");
+const ALL_CONTROLS: readonly SensitivityControl[] = [...SENSITIVITY_CONTROLS, ...CHANGE_CONTROLS];
+const overlayBase = (control: SensitivityControl) => (control.track === "change" ? REFERENCE_CHANGE : REFERENCE);
 const FIXTURE = join(ROOT, "fixture");
 const RUNNER = join(ROOT, "harness", "run.sh");
 
@@ -163,10 +168,10 @@ function parseSelection(argv: string[]): { list: boolean; controls: SensitivityC
   }
   if (all && (fast || requested.length)) throw new Error("--all cannot be combined with --fast or --id");
 
-  const byId = new Map(SENSITIVITY_CONTROLS.map((control) => [control.id, control]));
+  const byId = new Map(ALL_CONTROLS.map((control) => [control.id, control]));
   const selected = new Map<string, SensitivityControl>();
   if (all) {
-    for (const control of SENSITIVITY_CONTROLS) selected.set(control.id, control);
+    for (const control of ALL_CONTROLS) selected.set(control.id, control);
   }
   if (fast) {
     for (const id of FAST_CONTROL_IDS) {
@@ -260,15 +265,18 @@ function runControl(control: SensitivityControl, index: number): ControlReport {
   const overlay = join(RUNS, runId + "-overlay");
   const artifactDir = join(RUNS, runId, "artifacts");
   const overlayTarget = resolveInside(overlay, control.target);
-  const referenceBefore = snapshotProtectedTree(REFERENCE);
+  const base = overlayBase(control);
+  const referenceBefore = snapshotProtectedTree(base);
   const fixtureBefore = snapshotProtectedTree(FIXTURE);
 
-  cpSync(REFERENCE, overlay, { recursive: true, errorOnExist: true });
+  cpSync(base, overlay, { recursive: true, errorOnExist: true });
   const source = readFileSync(overlayTarget, "utf8");
   const mutated = applyNegativeControl(source, control);
   writeFileSync(overlayTarget, mutated);
 
-  const childEnv: NodeJS.ProcessEnv = { ...process.env, AGENT_SKIP: "1", OVERLAY: overlay };
+  const childEnv: NodeJS.ProcessEnv = {
+    ...process.env, AGENT_SKIP: "1", OVERLAY: overlay, BENCH_TRACK: control.track ?? "build",
+  };
   delete childEnv.API_PORT;
   delete childEnv.E2E_PORT;
   // Preserve an explicit operator override; resulting control evidence remains untrusted.
@@ -340,7 +348,7 @@ function runControl(control: SensitivityControl, index: number): ControlReport {
   if (!scoreValid) issues.push("control did not yield a valid non-gate-blocked score");
   if (!scoreCurrent) issues.push("control score record does not match live artifacts");
 
-  const referenceUnchanged = protectedTreeUnchanged(referenceBefore, REFERENCE);
+  const referenceUnchanged = protectedTreeUnchanged(referenceBefore, base);
   const fixtureUnchanged = protectedTreeUnchanged(fixtureBefore, FIXTURE);
   if (!referenceUnchanged) issues.push("reference tree changed during control execution");
   if (!fixtureUnchanged) issues.push("fixture tree changed during control execution");
@@ -395,8 +403,8 @@ function runControl(control: SensitivityControl, index: number): ControlReport {
 function main(): void {
   const selection = parseSelection(process.argv.slice(2));
   if (selection.list) {
-    for (const control of SENSITIVITY_CONTROLS) {
-      console.log(control.id + "\t" + control.expectedFailures.join(",") + "\t" + control.target);
+    for (const control of ALL_CONTROLS) {
+      console.log(control.id + "\t" + control.expectedFailures.join(",") + "\t" + (control.track ?? "build") + ":" + control.target);
     }
     return;
   }

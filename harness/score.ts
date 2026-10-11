@@ -10,17 +10,19 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CRITERIA, PROBES, ADVISORY } from "./tests/criteria.js";
 import { extractUsage } from "./usage.js";
 import { recostUsage } from "./go-cost.js";
 import { runDoctor, loadBaseline, penaltyOver, PENALTY_FULL, DOCTOR_VERSION, type DoctorReport } from "./doctor.js";
 import { currentHashes } from "./provenance.js";
-import { assessCandidateContract, type CandidateContract } from "./candidate-contract.js";
-import { executionIdentityFingerprint, validateExecutionIdentity } from "./execution-identity.js";
-import { attestExecutorFromEnvironment } from "./executor-attestation.js";
-import { deriveScoreMetrics } from "./score-calculation.js";
+import { assessCandidateContract, resolveTrack, type BenchTrack, type CandidateContract } from "./candidate-contract.js";
+import { checkProvenance } from "./provenance-check.js";
+import { FIXTURE_REVISION } from "./revisions.js";
+import { contractScore, declaredIds, loadTrackContext, recordRevision, trackMetrics, type TrackContext } from "./track-scoring.js";
 
 const ROOT = resolve(import.meta.dirname, "..");
+
+/** Playwright's error when the browser binary cannot start (grade.sh greps the same text). */
+const BROWSER_LAUNCH_ERROR = /browserType\.launch|Executable doesn't exist/;
 
 const emptyDoctor = (): DoctorReport => ({
   ok: false, errors: 0, warnings: 0, byCategory: {}, byRule: {}, diagnostics: [],
@@ -54,7 +56,10 @@ function failedCandidateContract(reason: string): CandidateContract {
   return {
     schema: 1,
     valid: false,
+    gradeable: false,
     reasons: [reason],
+    hard: ["missing_root"],
+    soft: [],
     candidate_sha256: "",
     fixture_protected_sha256: "",
     candidate_protected_sha256: "",
@@ -63,9 +68,31 @@ function failedCandidateContract(reason: string): CandidateContract {
   };
 }
 
+/** The contract fields a score record carries; score-attestation compares the same shape. */
+export function contractSnapshot(contract: CandidateContract): Record<string, unknown> {
+  return {
+    schema: contract.schema,
+    valid: contract.valid,
+    gradeable: contract.gradeable,
+    reasons: contract.reasons,
+    hard: contract.hard,
+    soft: contract.soft,
+    candidate_sha256: contract.candidate_sha256,
+    fixture_protected_sha256: contract.fixture_protected_sha256,
+  };
+}
+
+/** Every track except build grades against the run's generated variant tree. */
+export function comparisonRootFor(track: BenchTrack, candidate: string, variant?: string): string {
+  return track === "build" ? join(ROOT, "fixture") : (variant ?? join(candidate, "..", "variant"));
+}
+
 export type ScoreEnv = {
   candidate: string;
   artifacts: string;
+  /** Variant-track runs grade against a generated variant instead of fixture/. */
+  variant?: string;
+  track?: BenchTrack;
   runId?: string;
   model?: string;
   arm?: string;
@@ -79,8 +106,19 @@ export type ScoreEnv = {
   hostAvailMb?: number;
 };
 
+function changedLineCount(diffPath: string): number {
+  if (!existsSync(diffPath)) return 0;
+  try {
+    return readFileSync(diffPath, "utf8")
+      .split("\n")
+      .filter((line) => /^[+-]/.test(line) && !/^\+\+\+|^---/.test(line)).length;
+  } catch {
+    return 0;
+  }
+}
+
 /**
- * Build a schema-2 score record for the given candidate/artifacts.
+ * Build a schema-3 score record for the given candidate/artifacts.
  * Prefer this over spawning `tsx score.ts` from meta tests.
  */
 export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, unknown>> {
@@ -91,17 +129,25 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
   const arm = input.arm;
 
   const invalidReasons: string[] = [];
+  // The track comes from the env/explicit input; provenance must agree below.
+  const track: BenchTrack = resolveTrack(input.track ?? process.env.BENCH_TRACK);
+  const comparisonRoot = comparisonRootFor(track, candidate, input.variant);
+  if (track !== "build" && !existsSync(comparisonRoot)) {
+    invalidReasons.push(`${track} variant tree is missing: ${comparisonRoot}`);
+  }
   let candidateContract: CandidateContract;
   if (!candidate) {
     candidateContract = failedCandidateContract("CANDIDATE is required");
   } else {
     try {
-      candidateContract = assessCandidateContract(join(ROOT, "fixture"), candidate);
+      candidateContract = assessCandidateContract(comparisonRoot, candidate, { track });
     } catch (error) {
       candidateContract = failedCandidateContract(error instanceof Error ? error.message : String(error));
     }
   }
-  if (!candidateContract.valid) {
+  // Soft violations inside writable files (a changed export, a suppression) are
+  // graded and cost adherence. Anything else must have been grafted away first.
+  if (!candidateContract.gradeable) {
     invalidReasons.push(...candidateContract.reasons.map((reason) => `candidate filesystem contract: ${reason}`));
   }
 
@@ -116,7 +162,6 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
   const build = gate.build === true;
   const gatePassed = typecheck && build;
 
-  let collectionCurrent = false;
   const collectionRead = readJson(join(artifacts, "collection.json"));
   const collection = isRecord(collectionRead.value) ? collectionRead.value : undefined;
   if (collectionRead.error || !collection) {
@@ -128,7 +173,7 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
   } else if (!gatePassed && collection.status !== "blocked_by_gate") {
     invalidReasons.push("collection.json must be blocked_by_gate after a failed gate");
   }
-  collectionCurrent = collection?.valid === true &&
+  const collectionCurrent = collection?.valid === true &&
     (gatePassed ? collection.status === "collected" : collection.status === "blocked_by_gate");
 
   const provenanceRead = readJson(join(artifacts, "provenance.json"));
@@ -137,43 +182,23 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
   if (provenanceRead.error || !provenance) {
     invalidReasons.push(provenanceRead.error ?? "provenance.json is not an object");
   } else {
-    const expected = liveHashes();
-    const expectedArm = arm === "a" || arm === "b" ? arm : undefined;
-    const mode = provenance.mode === "agent" || provenance.mode === "overlay" ? provenance.mode : undefined;
-    const runnerAndSuiteCurrent =
-      provenance.schema === 4 &&
-      provenance.candidate_contract_schema === 1 &&
-      provenance.runner_sha256 === expected.runner_sha256 &&
-      provenance.suite_sha256 === expected.suite_sha256;
-    const identityMatches = provenance.arm === arm && provenance.model === model;
-    const contractMatches = candidateContract.valid &&
-      provenance.candidate_sha256 === candidateContract.candidate_sha256 &&
-      provenance.fixture_protected_sha256 === candidateContract.fixture_protected_sha256;
-    const executionErrors = expectedArm && mode
-      ? validateExecutionIdentity(provenance.executor, { runId, arm: expectedArm, mode })
-      : ["provenance arm or mode is invalid"];
-    const executionFingerprintMatches =
-      typeof provenance.execution_identity_sha256 === "string" &&
-      provenance.execution_identity_sha256 === executionIdentityFingerprint(provenance.executor);
-    const modeBindingMatches =
-      (mode === "agent" && provenance.agent_isolated === true) ||
-      (mode === "overlay" && provenance.agent_isolated === false);
-    const recordedExecutionCurrent =
-      provenance.run_id === runId &&
-      executionErrors.length === 0 &&
-      executionFingerprintMatches &&
-      modeBindingMatches;
-    const executorAttestation = attestExecutorFromEnvironment(provenance);
-    const executionCurrent = recordedExecutionCurrent && executorAttestation.eligible;
-    provenanceCurrent = runnerAndSuiteCurrent && identityMatches && contractMatches && executionCurrent;
-    if (!runnerAndSuiteCurrent) invalidReasons.push("runner or suite provenance does not match this score implementation");
-    else if (!identityMatches) invalidReasons.push("provenance model or arm does not match this grading invocation");
-    else if (candidateContract.valid && !contractMatches) invalidReasons.push("candidate or fixture contract does not match run provenance");
-    else if (!recordedExecutionCurrent) invalidReasons.push("execution identity does not match this grading invocation");
-    else if (!executorAttestation.eligible) invalidReasons.push(...executorAttestation.reasons.map((reason) => "executor attestation: " + reason));
+    const check = checkProvenance({
+      provenance, hashes: liveHashes(), runId, model, arm, track,
+      contract: candidateContract, artifacts, comparisonRoot,
+    });
+    provenanceCurrent = check.current;
+    invalidReasons.push(...check.reasons);
   }
 
-  const declared = [...Object.keys(CRITERIA), ...Object.keys(PROBES), ...ADVISORY];
+  const loaded = loadTrackContext(track, artifacts);
+  invalidReasons.push(...loaded.reasons);
+  const context: TrackContext = loaded.context ?? (
+    track === "bugfix" ? { track, bugs: [] }
+      : track === "change" ? { track, changeIds: [], superseded: [] }
+      : track === "tests" ? { track, mutants: [], tests: { total: 0, valid: 0 } }
+      : { track: "build" }
+  );
+  const declared = declaredIds(context);
   let passed: Record<string, boolean> = {};
   if (gatePassed) {
     const resultRead = readJson(join(artifacts, "results.json"));
@@ -186,6 +211,19 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
     }
   }
 
+  // A missing browser fails every browser criterion inside a report that still
+  // parses. That is a harness failure: historical records graded this way must not
+  // rescore into a valid low total.
+  if (gatePassed) {
+    for (const report of ["e2e-raw.json", "e2e-error-raw.json"]) {
+      const reportPath = join(artifacts, report);
+      if (existsSync(reportPath) && BROWSER_LAUNCH_ERROR.test(readFileSync(reportPath, "utf8"))) {
+        invalidReasons.push("browser was unavailable during the e2e pass");
+        break;
+      }
+    }
+  }
+
   const missingCriteria = gatePassed ? declared.filter((id) => !(id in passed)) : [];
   const orphanResults = gatePassed ? Object.keys(passed).filter((id) => !declared.includes(id)) : [];
   if (missingCriteria.length) invalidReasons.push(`missing collected criteria: ${missingCriteria.join(", ")}`);
@@ -193,12 +231,14 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
   const suiteCurrent = provenanceCurrent && gateFieldsValid && collectionCurrent &&
     (!gatePassed || (missingCriteria.length === 0 && orphanResults.length === 0));
 
-  const preliminaryMetrics = deriveScoreMetrics(passed, emptyDoctor(), 0);
+  const adherence = contractScore(artifacts, candidateContract, provenance);
+  invalidReasons.push(...adherence.reasons);
 
+  const preliminary = trackMetrics(context, passed, emptyDoctor(), 0, adherence.score, recordRevision(provenance));
   let baseline = emptyDoctor();
   let doctorReport = emptyDoctor();
   let penalty = 0;
-  if (gatePassed && invalidReasons.length === 0 && preliminaryMetrics.axes.completion > 0) {
+  if (gatePassed && invalidReasons.length === 0 && preliminary.primary > 0) {
     const baselinePath = join(ROOT, "reference", "doctor.json");
     if (!existsSync(baselinePath)) {
       invalidReasons.push("missing reference react-doctor baseline");
@@ -211,12 +251,12 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
       }
     }
     if (invalidReasons.length === 0) {
-      doctorReport = runDoctor(candidate, join(artifacts, "doctor-raw.json"));
+      doctorReport = runDoctor(candidate, join(artifacts, "doctor-raw.json"), track);
       if (!doctorReport.ok) invalidReasons.push("local react-doctor did not produce a valid report");
       else penalty = penaltyOver(doctorReport, baseline);
     }
   }
-  const metrics = deriveScoreMetrics(passed, doctorReport, penalty);
+  const metrics = trackMetrics(context, passed, doctorReport, penalty, adherence.score, recordRevision(provenance));
 
   const valid = invalidReasons.length === 0;
   const host = {
@@ -227,13 +267,17 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
   };
   const mode = typeof provenance?.mode === "string" ? provenance.mode : "unknown";
   const agentIsolated = provenance?.agent_isolated === true;
-  const rankable = valid && gatePassed && mode === "agent" && agentIsolated && !host.under_load;
+  // Always-publish policy: under_load stays advisory host metadata, never a
+  // ranking input.
+  const rankable = valid && gatePassed && mode === "agent" && agentIsolated;
   const trusted = rankable;
   const total = valid ? (gatePassed ? Math.round(metrics.raw * 10) / 10 : 0) : null;
   const usage = await extractUsage(join(artifacts, "session.json"));
 
   return {
-    schema: 2,
+    schema: 3,
+    track,
+    fixture_revision: Number.isInteger(provenance?.fixture_revision) ? provenance!.fixture_revision : FIXTURE_REVISION,
     valid,
     trusted,
     publishable: trusted,
@@ -252,6 +296,9 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
     gate: { typecheck, build, passed: gatePassed },
     tiers: metrics.tiers,
     axes: metrics.axes,
+    adherence: { contract: adherence.score, classes: adherence.classes },
+    ...metrics.evidence,
+    ...(track !== "build" ? { churn_lines: changedLineCount(join(artifacts, "candidate.diff")) } : {}),
     doctor: {
       version: DOCTOR_VERSION,
       ran: doctorReport.ok,
@@ -268,13 +315,7 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
     probes: metrics.probes,
     missing_criteria: missingCriteria,
     orphan_results: orphanResults,
-    candidate_contract: {
-      schema: candidateContract.schema,
-      valid: candidateContract.valid,
-      reasons: candidateContract.reasons,
-      candidate_sha256: candidateContract.candidate_sha256,
-      fixture_protected_sha256: candidateContract.fixture_protected_sha256,
-    },
+    candidate_contract: contractSnapshot(candidateContract),
     provenance_valid: provenanceCurrent,
     suite_current: suiteCurrent,
     provenance: provenance ?? null,
@@ -288,6 +329,8 @@ export async function mainFromEnv(env: NodeJS.ProcessEnv = process.env): Promise
   return buildScoreRecord({
     candidate: env.CANDIDATE ?? "",
     artifacts: env.ARTIFACTS || join(ROOT, "__missing_artifacts__"),
+    variant: env.VARIANT,
+    track: env.BENCH_TRACK as BenchTrack | undefined,
     runId: env.RUN_ID,
     model: env.MODEL,
     arm: env.ARM,

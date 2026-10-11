@@ -22,6 +22,11 @@ ARM="${5:-a}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 H="$ROOT/harness"
 SRC="$ROOT/runs/$SRC_ID/candidate"
+# BENCH_TRACK=bugfix regrades a bugfix candidate: the writable list targets the
+# bugfix track, and run.sh seeds a fresh variant under the same bug set.
+BENCH_TRACK="${BENCH_TRACK:-build}"
+case "$BENCH_TRACK" in build|bugfix) ;; *) echo "BENCH_TRACK must be build or bugfix" >&2; exit 2 ;; esac
+BUG_SET="${BENCH_BUG_SET:-v1}"
 
 # Run IDs are [A-Za-z0-9_-] only. Sanitize dots from model slugs (e.g. gpt-5.6).
 DEST_ID=$(printf '%s' "$DEST_ID_RAW" | tr -c 'A-Za-z0-9_-' '-')
@@ -54,22 +59,38 @@ SRC_PATH_PATTERN='^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$'
 case "$ARM" in a|b) ;; *) echo "arm must be a or b" >&2; exit 2 ;; esac
 
 # Materialize an overlay directory containing only the writable task files from
-# the source submission (plus measure closeout if present).
+# the source submission (plus Measure closeout if present).
 rm -rf "$DEST_OVERLAY"
 mkdir -p "$DEST_OVERLAY"
-WRITABLE=(
-  "src/lib/loans.ts"
-  "src/components/item-card.tsx"
-  "src/actions/loans.ts"
-  "app/items/page.tsx"
-  "app/items/[id]/page.tsx"
-  "app/items/[id]/checkout-form.tsx"
-  "app/api/loans/route.ts"
-  "app/items/loading.tsx"
-  "app/items/error.tsx"
-  "measure/tracks/lending_desk/plan.md"
-  "measure/tracks/lending_desk/metadata.json"
-)
+if [ "$BENCH_TRACK" = "bugfix" ]; then
+  WRITABLE=(
+    "src/lib/loans.ts"
+    "src/components/item-card.tsx"
+    "src/actions/loans.ts"
+    "app/items/page.tsx"
+    "app/items/[id]/page.tsx"
+    "app/items/[id]/checkout-form.tsx"
+    "app/api/loans/route.ts"
+    "app/items/loading.tsx"
+    "app/items/error.tsx"
+    "measure/tracks/lending_desk_bugfix/plan.md"
+    "measure/tracks/lending_desk_bugfix/metadata.json"
+  )
+else
+  WRITABLE=(
+    "src/lib/loans.ts"
+    "src/components/item-card.tsx"
+    "src/actions/loans.ts"
+    "app/items/page.tsx"
+    "app/items/[id]/page.tsx"
+    "app/items/[id]/checkout-form.tsx"
+    "app/api/loans/route.ts"
+    "app/items/loading.tsx"
+    "app/items/error.tsx"
+    "measure/tracks/lending_desk/plan.md"
+    "measure/tracks/lending_desk/metadata.json"
+  )
+fi
 copied=0
 for rel in "${WRITABLE[@]}"; do
   if [ -f "$SRC/$rel" ]; then
@@ -111,6 +132,8 @@ echo "[regrade] $SRC_ID -> $DEST_ID ($copied writable files, provider=$PROVIDER 
 # Prefer a quiet host; if the operator set BENCH_IGNORE_LOAD, grade will flag under_load.
 export BENCH_WAIT_FOR_IDLE="${BENCH_WAIT_FOR_IDLE:-600}"
 export AGENT_SKIP=1
+export BENCH_TRACK
+export BENCH_BUG_SET="$BUG_SET"
 export OVERLAY="$DEST_OVERLAY"
 
 set +e

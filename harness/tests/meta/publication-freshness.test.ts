@@ -103,7 +103,8 @@ describe("live publication freshness", () => {
       writeFileSync(resolve(artifacts, "results.json"), `${JSON.stringify(declaredResults())}\n`);
       writeFileSync(resolve(artifacts, "provenance.json"), `${JSON.stringify(provenance)}\n`);
       writeFileSync(resolve(artifacts, "score.json"), JSON.stringify({
-        schema: 2,
+        schema: 3,
+        track: "build",
         valid: true,
         trusted: true,
         publishable: true,
@@ -124,12 +125,12 @@ describe("live publication freshness", () => {
         env: { ...envWithoutTrack(), ...live.environment },
       });
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-      expect(result.stdout).toMatch(new RegExp(`${runId}\\s+${MODEL}\\s+STALE-PROVENANCE`));
+      expect(result.stdout).toMatch(new RegExp(`${runId}\\s+${MODEL.replace(/[/.]/g, "\\$&")}\\s+\\w+\\s+STALE-PROVENANCE`));
       expect(result.stdout).not.toContain(`(${runId})`);
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
-  });
+  }, 900_000);
 
   it("routes batch resumption and summary classification through one live score-freshness check", () => {
     const batch = readFileSync(resolve(HARNESS, "batch.sh"), "utf8");

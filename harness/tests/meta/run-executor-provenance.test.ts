@@ -49,7 +49,11 @@ describe("run-level executor provenance", () => {
 
       const provenance = parseArtifact(id, "provenance.json");
       expect(provenance).toMatchObject({
-        schema: 4,
+        schema: 6,
+        track: "build",
+        fixture_revision: 2,
+        graft: null,
+        contract_violation_sha256: null,
         run_id: id,
         arm: "b",
         model: "local/reference-control",

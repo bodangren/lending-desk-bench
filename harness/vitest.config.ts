@@ -12,6 +12,10 @@ export default defineConfig({
   resolve: { alias: { "@candidate": CANDIDATE, "@": CANDIDATE } },
   test: {
     environment: "node",
+    // A CLI filter such as "tests/api" matches by substring. The tests-track oracle
+    // (tests-track/oracle-overlay/tests/api.test.ts) is a candidate suite for the
+    // tests track, never a product suite, so the harness never collects it.
+    exclude: ["**/node_modules/**", "tests-track/**"],
     env: {
       BASE_URL: process.env.BASE_URL || "http://127.0.0.1:3000",
     },

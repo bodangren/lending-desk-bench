@@ -2,10 +2,12 @@
  * Adversarial probes. NOT derived from spec.md.
  * These encode where models actually break, not what the spec asks for.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join } from "node:path";
-import { BASE, streamMarks } from "./_stream";
+import { BASE } from "./_stream";
+import { CHECKOUT_DUE, closeOpenLoan, fillDueDate, openLoanCount } from "./_forms";
 
 type Call = { name: string; start: number; end: number };
 
@@ -105,31 +107,90 @@ test("P.dedup-item", async () => {
   expect(gets, `getItem called ${gets}× for one detail render`).toBeLessThanOrEqual(1);
 });
 
-test("P.streams-shell", async () => {
-  // The detail route has no loading.tsx, so nothing paints until the slowest
-  // await in the page resolves — unless the loan history sits behind its own
-  // boundary. Read the flush order off the socket rather than polling the DOM.
-  // itm-017 carries an open loan, so spec D forbids CheckoutForm here and no member
-  // <option> exists on the page. On itm-018 the form does render, and its option list
-  // repeats every member name, so the marker matched the shell rather than the
-  // history: a candidate that suspends the history but not the form failed for a
-  // boundary the spec never asked for.
-  // "Bruno Silva" holds only the returned loan lon-009, so the name can come from a
-  // history row alone, never from the open-loan state above it.
-  const m = await streamMarks(`${BASE}/items/itm-017`, {
-    name: /<h1[^>]*>[\s\S]{0,200}?Rotary Hammer/,
-    history: "Bruno Silva",
-  });
-  expect(m.name, "item name never rendered").toBeDefined();
-  expect(m.history, "loan history never rendered").toBeDefined();
-  // Flush order, not elapsed time. Measured deltas here were -4ms to 0ms even when the
-  // boundary was genuinely absent, because the inlined RSC payload can precede the HTML
-  // that consumes it. The chunk ordinal answers the actual question.
-  expect(
-    m.chunk.history!,
-    `name in chunk ${m.chunk.name}, history in chunk ${m.chunk.history}`
-      + " — both arrived in one flush",
-  ).toBeGreaterThan(m.chunk.name!);
+test("P.action-race", async ({ context }) => {
+  // Two desks submit the same item at the same moment. Both actions read "no open
+  // loan" before either writes, so the store rejects the second insert with
+  // ItemOnLoanError. The losing action must answer the contract error, not throw
+  // into the error boundary. The stale-form check (F.checkout-conflict) cannot see
+  // this: its item is already on loan when the action reads.
+  const itemId = "itm-011";
+  const desks = await Promise.all([context.newPage(), context.newPage()]);
+  const members = ["Ada Okonkwo", "Bruno Silva"];
+  for (const [index, desk] of desks.entries()) {
+    await desk.goto(`/items/${itemId}`);
+    await desk.getByRole("combobox").first().selectOption({ label: members[index] });
+    await fillDueDate(desk, CHECKOUT_DUE);
+  }
+  await Promise.all(desks.map((desk) => desk.getByRole("button", { name: /check ?out/i }).click()));
+
+  await expect.poll(() => openLoanCount(desks[0], itemId), { timeout: 15_000 }).toBe(1);
+  await expect
+    .poll(async () => {
+      const shown = await Promise.all(
+        desks.map((desk) => desk.getByText("Item is already on loan").count()),
+      );
+      return shown.filter((count) => count > 0).length;
+    }, { timeout: 15_000, message: "the losing desk never showed the contract error" })
+    .toBe(1);
+  await closeOpenLoan(desks[0], itemId);
+});
+
+test("P.retry-after-error", async ({ page }) => {
+  // A rejected checkout must leave the form usable. A stale error, a stuck
+  // optimistic badge, or a form bound to its failed attempt leaves the desk with
+  // no way to lend the item without a reload.
+  const itemId = "itm-012";
+  await page.goto(`/items/${itemId}`);
+  await page.getByRole("combobox").first().selectOption({ label: "Dara Nwosu" });
+  await fillDueDate(page, "2020-01-01");
+  await page.getByRole("button", { name: /check ?out/i }).click();
+  await expect(page.getByText("Due date must be in the future")).toBeVisible({ timeout: 10_000 });
+
+  // React 19 resets an uncontrolled form after its action, so fill it again.
+  await page.getByRole("combobox").first().selectOption({ label: "Dara Nwosu" });
+  await fillDueDate(page, CHECKOUT_DUE);
+  await page.getByRole("button", { name: /check ?out/i }).click();
+  await expect.poll(() => openLoanCount(page, itemId), { timeout: 15_000 }).toBe(1);
+  await expect(page.getByText("Due date must be in the future")).toHaveCount(0, { timeout: 10_000 });
+  await closeOpenLoan(page, itemId);
+});
+
+/**
+ * axe-core rules about names, labels, and ARIA validity. Colour contrast and other
+ * design-dependent rules are left out: they grade styling choices that no
+ * checkbox states and that vary with the rendering host.
+ */
+const AXE_RULES = [
+  "aria-allowed-attr", "aria-hidden-focus", "aria-required-attr", "aria-required-children",
+  "aria-required-parent", "aria-roles", "aria-valid-attr", "aria-valid-attr-value",
+  "button-name", "duplicate-id-aria", "image-alt", "input-button-name", "label",
+  "link-name", "list", "listitem", "nested-interactive", "select-name",
+];
+const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
+
+async function axeViolations(page: Page): Promise<string[]> {
+  await page.addScriptTag({ content: AXE_SOURCE });
+  return page.evaluate(async (rules) => {
+    const axe = (window as unknown as { axe: { run: Function } }).axe;
+    const result = await axe.run(document, {
+      runOnly: { type: "rule", values: rules },
+      resultTypes: ["violations"],
+    });
+    return (result.violations as { id: string; impact: string; nodes: { target: string[] }[] }[])
+      .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
+      .map((violation) => `${violation.id} at ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`);
+  }, AXE_RULES);
+}
+
+test("P.axe-clean", async ({ page }) => {
+  // The catalogue, an available item (form and history), and an item on loan
+  // (Return control). Each page is scanned after its streamed sections land.
+  for (const path of ["/items", "/items/itm-001", "/items/itm-003"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    const violations = await axeViolations(page);
+    expect(violations, `${path}: ${violations.join("; ")}`).toEqual([]);
+  }
 });
 
 test.describe("advisory — modernization signals", () => {

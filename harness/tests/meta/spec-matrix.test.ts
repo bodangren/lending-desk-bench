@@ -19,15 +19,16 @@ function testTitles(path: string): Set<string> {
 describe("spec matrix", () => {
   it("M.matrix-valid", () => {
     const fixtureSpec = readFileSync(resolve(ROOT, "fixture/measure/tracks/lending_desk/spec.md"), "utf8");
-    expect(fixtureSpec.match(/^- \[ \] /gm)).toHaveLength(52);
-    expect(SPEC_MATRIX).toHaveLength(52);
-    expect(new Set(SPEC_MATRIX.map((row) => row.id)).size).toBe(52);
+    // Fixture r2 adds E.10 (accessible names) and E.11 (announced errors).
+    expect(fixtureSpec.match(/^- \[ \] /gm)).toHaveLength(54);
+    expect(SPEC_MATRIX).toHaveLength(54);
+    expect(new Set(SPEC_MATRIX.map((row) => row.id)).size).toBe(54);
     expect(SPEC_MATRIX.map((row) => row.id)).toEqual([
       ...Array.from({ length: 5 }, (_, i) => "A." + (i + 1)),
       ...Array.from({ length: 4 }, (_, i) => "B." + (i + 1)),
       ...Array.from({ length: 7 }, (_, i) => "C." + (i + 1)),
       ...Array.from({ length: 6 }, (_, i) => "D." + (i + 1)),
-      ...Array.from({ length: 9 }, (_, i) => "E." + (i + 1)),
+      ...Array.from({ length: 11 }, (_, i) => "E." + (i + 1)),
       ...Array.from({ length: 7 }, (_, i) => "F." + (i + 1)),
       ...Array.from({ length: 12 }, (_, i) => "G." + (i + 1)),
       ...Array.from({ length: 2 }, (_, i) => "H." + (i + 1)),
@@ -36,8 +37,8 @@ describe("spec matrix", () => {
 
   it("M.matrix-primary-ownership", () => {
     const primaries = SPEC_MATRIX.map((row) => row.primary);
-    expect(primaries).toHaveLength(52);
-    expect(new Set(primaries).size, "each spec checkbox needs one independent Axis-1 primary").toBe(52);
+    expect(primaries).toHaveLength(54);
+    expect(new Set(primaries).size, "each spec checkbox needs one independent Axis-1 primary").toBe(54);
     for (const row of SPEC_MATRIX) {
       expect(
         Object.prototype.hasOwnProperty.call(CRITERIA, row.primary),

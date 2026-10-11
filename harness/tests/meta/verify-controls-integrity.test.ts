@@ -134,10 +134,16 @@ describe("verify-controls protected-tree integrity", () => {
 
   it("binds every sensitivity control to complete reference and fixture snapshots", async () => {
     const { readFileSync } = await import("node:fs");
-    const control = runControlBody(readFileSync(resolve(HARNESS, "verify-controls.ts"), "utf8"));
-    expect(control).toContain("snapshotProtectedTree(REFERENCE)");
+    const source = readFileSync(resolve(HARNESS, "verify-controls.ts"), "utf8");
+    const control = runControlBody(source);
+    // A control snapshots the reference it mutates: reference/ for the build
+    // track, reference-change/ for the change track.
+    expect(source).toMatch(/const overlayBase = \(control: SensitivityControl\) => \(control\.track === "change" \? REFERENCE_CHANGE : REFERENCE\);/);
+    expect(control).toContain("const base = overlayBase(control);");
+    expect(control).toContain("snapshotProtectedTree(base)");
+    expect(control).toContain("cpSync(base, overlay");
     expect(control).toContain("snapshotProtectedTree(FIXTURE)");
-    expect(control).toContain("protectedTreeUnchanged(referenceBefore, REFERENCE)");
+    expect(control).toContain("protectedTreeUnchanged(referenceBefore, base)");
     expect(control).toContain("protectedTreeUnchanged(fixtureBefore, FIXTURE)");
     expect(control).toContain("reference_unchanged: referenceUnchanged");
     expect(control).toContain("fixture_unchanged: fixtureUnchanged");

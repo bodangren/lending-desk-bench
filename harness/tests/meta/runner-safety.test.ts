@@ -46,9 +46,13 @@ describe("runner safety contract", () => {
       { cwd: HARNESS, encoding: "utf8" },
     );
     try {
-      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      // Exit 5: a soft violation outside the writable files. run.sh records it and
+      // grafts the writable files onto a fresh tree; grade.sh refuses it as is.
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(5);
       const contract = JSON.parse(result.stdout);
       expect(contract.valid).toBe(false);
+      expect(contract.gradeable).toBe(false);
+      expect(contract.soft).toEqual(["protected_modified"]);
       expect(contract.reasons).toContain("candidate modified protected fixture files");
     } finally {
       rmSync(temp, { recursive: true, force: true });

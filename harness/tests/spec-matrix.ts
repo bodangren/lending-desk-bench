@@ -38,6 +38,8 @@ export const SPEC_MATRIX: readonly SpecMatrixRow[] = [
   { id: "E.7", spec: "return pending control", primary: "E.return-pending", testFile: "e2e/detail.spec.ts" },
   { id: "E.8", spec: "return optimistic update", primary: "E.return-optimistic", testFile: "e2e/detail.spec.ts" },
   { id: "E.9", spec: "return action error", primary: "E.return-error", testFile: "e2e/detail.spec.ts" },
+  { id: "E.10", spec: "accessible names on the checkout inputs", primary: "E.labels", testFile: "e2e/detail.spec.ts" },
+  { id: "E.11", spec: "announced form errors", primary: "E.error-announced", testFile: "e2e/detail.spec.ts" },
   { id: "F.1", spec: "checkout records now and due date", primary: "F.checkout-record", testFile: "e2e/detail.spec.ts" },
   { id: "F.2", spec: "return records now", primary: "F.return-record", testFile: "e2e/detail.spec.ts" },
   { id: "F.3", spec: "checkout action authorization", primary: "F.auth-checkout", testFile: "e2e/detail.spec.ts" },

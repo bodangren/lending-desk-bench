@@ -38,8 +38,14 @@ function allResults(value = false): Json {
   );
 }
 
-async function score(candidate: string, artifacts: string, runId: string, environment: NodeJS.ProcessEnv = {}): Promise<ScoreJson> {
-  return scoreInProcess({ candidate, artifacts, runId, model: MODEL, arm: ARM, environment });
+async function score(
+  candidate: string,
+  artifacts: string,
+  runId: string,
+  environment: NodeJS.ProcessEnv = {},
+  underLoad = false,
+): Promise<ScoreJson> {
+  return scoreInProcess({ candidate, artifacts, runId, model: MODEL, arm: ARM, environment, underLoad });
 }
 
 function freshness(artifacts: string, environment: NodeJS.ProcessEnv = {}): ScoreJson {
@@ -50,7 +56,7 @@ function writeJson(path: string, value: unknown): void {
   writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
 }
 
-async function prepareRun(): Promise<PreparedRun> {
+async function prepareRun(underLoad = false): Promise<PreparedRun> {
   const work = mkdtempSync(resolve(ROOT, "runs", "meta-score-attestation-"));
   const runId = basename(work);
   const artifacts = resolve(work, "artifacts");
@@ -64,7 +70,7 @@ async function prepareRun(): Promise<PreparedRun> {
     resolve(artifacts, "provenance.json"),
     currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live }),
   );
-  const record = await score(candidate, artifacts, runId, live.environment);
+  const record = await score(candidate, artifacts, runId, live.environment, underLoad);
   writeJson(resolve(artifacts, "score.json"), record);
   return { work, runId, artifacts, score: record, environment: live.environment };
 }
@@ -78,11 +84,12 @@ function expectAttestationRejected(artifacts: string, environment: NodeJS.Proces
 }
 
 describe("live score-record attestation", () => {
-  it("uses a complete schema-2 score fixture with matching run, provenance, and raw results", async () => {
+  it("uses a complete schema-3 score fixture with matching run, provenance, and raw results", async () => {
     const run = await prepareRun();
     try {
       expect(run.score).toMatchObject({
-        schema: 2,
+        schema: 3,
+        track: "build",
         valid: true,
         trusted: true,
         publishable: true,
@@ -91,7 +98,7 @@ describe("live score-record attestation", () => {
         host: { under_load: false },
         candidate_contract: { schema: 1, valid: true },
       });
-      expect(run.score.provenance).toMatchObject({ schema: 4, run_id: run.runId, model: MODEL, arm: ARM });
+      expect(run.score.provenance).toMatchObject({ schema: 6, fixture_revision: 2, run_id: run.runId, model: MODEL, arm: ARM });
       expect(run.score.criteria).toEqual(Object.fromEntries(Object.keys(CRITERIA).map((id) => [id, false])));
       expect(run.score.probes).toEqual(Object.fromEntries(Object.keys(PROBES).map((id) => [id, false])));
       expect(run.score.advisory).toEqual(Object.fromEntries(ADVISORY.map((id) => [id, false])));
@@ -119,7 +126,8 @@ describe("live score-record attestation", () => {
       writeJson(resolve(artifacts, "score.json"), record);
 
       expect(record).toMatchObject({
-        schema: 2,
+        schema: 3,
+        track: "build",
         valid: true,
         blocked_by_gate: true,
         rankable: false,
@@ -170,7 +178,7 @@ describe("live score-record attestation", () => {
     }
   });
 
-  it("rejects a score record with a non-schema-2 payload", async () => {
+  it("rejects a score record with a non-schema-3 payload", async () => {
     const run = await prepareRun();
     try {
       writeJson(resolve(run.artifacts, "score.json"), { ...run.score, schema: 1 });
@@ -241,17 +249,33 @@ describe("live score-record attestation", () => {
     }
   });
 
+  it("keeps an under-load agent score trusted and rankable with advisory host metadata", async () => {
+    const run = await prepareRun(true);
+    try {
+      expect(run.score).toMatchObject({
+        valid: true,
+        trusted: true,
+        publishable: true,
+        rankable: true,
+        host: { under_load: true },
+      });
+    } finally {
+      rmSync(run.work, { recursive: true, force: true });
+    }
+  });
+
   it.each([
-    ["missing", {}],
-    ["true", { under_load: true }],
+    ["empty", {}],
+    ["under load", { under_load: true }],
     ["non-boolean", { under_load: "false" }],
-  ])("requires boolean false host evidence before a score can be rankable (%s)", async (_name, host) => {
+  ])("keeps host load advisory: an eligible record stays rankable (%s host evidence)", async (_name, host) => {
     const run = await prepareRun();
     try {
       writeJson(resolve(run.artifacts, "score.json"), { ...run.score, host });
       expect(freshness(run.artifacts, run.environment)).toMatchObject({
-        host_trusted: false,
-        rankable: false,
+        state: "TRUSTED",
+        host_trusted: true,
+        rankable: true,
       });
     } finally {
       rmSync(run.work, { recursive: true, force: true });

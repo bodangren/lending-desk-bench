@@ -7,6 +7,12 @@ if (!Number.isInteger(PW_PORT) || PW_PORT < 1024 || PW_PORT > 65535) {
   throw new Error("PW_PORT must be an assigned unprivileged port");
 }
 const BASE_URL = process.env.PW_BASE_URL ?? `http://127.0.0.1:${PW_PORT}`;
+/**
+ * Key for the fixture's grader-only app/api/bench-state route (fixture r2).
+ * grade.sh sets a fresh value per grade; the config runs again in each worker,
+ * so a random fallback here would disagree between the server and the tests.
+ */
+const BENCH_STATE_KEY = process.env.BENCH_STATE_KEY || "bench-state-local";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -34,7 +40,7 @@ export default defineConfig({
     url: `${BASE_URL}/members`,
     reuseExistingServer: false,
     timeout: 120_000,
-    env: { BENCH_NOW: "2026-03-15T12:00:00.000Z", BENCH_LATENCY_MS: "300",
+    env: { BENCH_NOW: "2026-03-15T12:00:00.000Z", BENCH_LATENCY_MS: "300", BENCH_STATE_KEY,
       BENCH_TRACE_FILE: process.env.BENCH_TRACE_FILE ?? "/tmp/ldb-trace.jsonl",
       // Set only for the error-path pass, which boots its own server.
       ...(process.env.BENCH_FAIL_ITEMS ? { BENCH_FAIL_ITEMS: "1" } : {}) },

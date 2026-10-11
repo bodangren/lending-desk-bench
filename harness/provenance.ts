@@ -37,6 +37,16 @@ export function currentHashes() {
   const testFiles = walkFiles("harness/tests");
   const fixtureFiles = walkFiles("fixture");
   const referenceFiles = walkFiles("reference").filter((path) => path !== "reference/doctor-raw.json");
+  // The second correct implementation grades tests-track suites; the change
+  // reference is the change track's calibration overlay.
+  const variantReferenceFiles = walkFiles("reference-variant");
+  const changeReferenceFiles = walkFiles("reference-change");
+  const testsTrackFiles = [
+    ...walkFiles("harness/tests-track/model-visible"),
+    ...walkFiles("harness/tests-track/sets"),
+    ...walkFiles("harness/tests-track/oracle-overlay"),
+  ];
+  const changeTrackFiles = [...walkFiles("harness/change/model-visible"), ...walkFiles("harness/change/sets")];
   return {
     runner_sha256: hashPaths([
       "harness/run.sh",
@@ -45,10 +55,12 @@ export function currentHashes() {
       "harness/score-calculation.ts",
       "harness/score-attestation.ts",
       "harness/verify-controls.ts",
+      "harness/verify-bugs.ts",
       "harness/executor-attestation.ts",
       "harness/collect.ts",
       "harness/score-freshness.ts",
       "harness/doctor.ts",
+      "harness/source-signals.ts",
       "harness/provenance.ts",
       "harness/execution-identity.ts",
       "harness/candidate-contract.ts",
@@ -56,11 +68,35 @@ export function currentHashes() {
       "harness/preflight.sh",
       "harness/usage.ts",
       "harness/go-cost.ts",
+      "harness/bugfix/registry.ts",
+      "harness/bugfix/set-loader.ts",
+      "harness/bugfix/make-variant.ts",
+      "harness/bugfix/sets/v1.json",
+      "harness/bugfix/model-visible/AGENTS.md",
+      "harness/bugfix/model-visible/track/spec.md",
+      "harness/bugfix/model-visible/track/plan.md",
+      "harness/bugfix/model-visible/track/metadata.json",
+      "harness/browser-check.ts",
+      "harness/revisions.ts",
+      "harness/track-bindings.ts",
+      "harness/track-scoring.ts",
+      "harness/provenance-check.ts",
+      "harness/provenance-record.ts",
+      "harness/tests-track/mutants.ts",
+      "harness/tests-track/set-loader.ts",
+      "harness/tests-track/make-variant.ts",
+      "harness/tests-track/grade-tests.ts",
+      "harness/change/requests.ts",
+      "harness/change/make-variant.ts",
+      ...testsTrackFiles,
+      ...changeTrackFiles,
     ]),
     suite_sha256: hashPaths([
       ...testFiles,
       ...fixtureFiles,
       ...referenceFiles,
+      ...variantReferenceFiles,
+      ...changeReferenceFiles,
       "harness/package.json",
       "harness/package-lock.json",
       "harness/playwright.config.ts",

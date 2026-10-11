@@ -10,6 +10,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, cpSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { scanSourceSignals } from "./source-signals.js";
+import { candidateWritableFiles, resolveTrack, type BenchTrack } from "./candidate-contract.js";
 
 export const DOCTOR_VERSION = "0.9.2";
 const LOCAL_DOCTOR = resolve(import.meta.dirname, "node_modules/.bin/react-doctor");
@@ -49,7 +51,10 @@ function prepareScanDir(candidate: string): { dir: string; cleanup: () => void }
       return !/(^|\/)node_modules(\/|$)/.test(rel) && !/(^|\/)\.next(\/|$)/.test(rel);
     },
   });
-  const nm = join(candidate, "node_modules");
+  // run.sh drains a graded candidate's private copy; the fixture's dependencies
+  // are the same lockfile, so a rescore scans with the same resolution.
+  const own = join(candidate, "node_modules");
+  const nm = existsSync(own) ? own : resolve(import.meta.dirname, "..", "fixture", "node_modules");
   if (existsSync(nm)) symlinkSync(nm, join(scan, "node_modules"), "dir");
   return { dir: scan, cleanup: () => rmSync(scan, { recursive: true, force: true }) };
 }
@@ -63,10 +68,15 @@ export type DoctorReport = {
   raw?: unknown;
 };
 
-export function runDoctor(dir: string, rawOut?: string): DoctorReport {
+export function runDoctor(dir: string, rawOut?: string, trackInput?: BenchTrack): DoctorReport {
   const empty: DoctorReport = {
     ok: false, errors: 0, warnings: 0, byCategory: {}, byRule: {}, diagnostics: [],
   };
+  const track = trackInput ?? resolveTrack(process.env.BENCH_TRACK);
+  // Scan the writable candidate surface only. Protected fixture files hold the
+  // same bytes for every candidate, so scanning them would add a constant. On the
+  // tests track that surface is the candidate's own test files.
+  const signals = scanSourceSignals(dir, candidateWritableFiles(track, dir));
   // Scan a relocated copy: an in-place scan under the git-ignored runs/ tree
   // returns zero diagnostics because the analyzer's file discovery honors .gitignore.
   const { dir: scanDir, cleanup } = prepareScanDir(dir);
@@ -92,10 +102,13 @@ export function runDoctor(dir: string, rawOut?: string): DoctorReport {
   cleanup();
   if (rawOut) writeFileSync(rawOut, JSON.stringify(j, null, 2));
 
-  const diagnostics: Diagnostic[] = (j.diagnostics ?? []).map((d: any) => ({
-    rule: d.rule, severity: d.severity, category: d.category,
-    filePath: d.normalizedFilePath ?? d.filePath, line: d.line,
-  }));
+  const diagnostics: Diagnostic[] = [
+    ...(j.diagnostics ?? []).map((d: any) => ({
+      rule: d.rule, severity: d.severity, category: d.category,
+      filePath: d.normalizedFilePath ?? d.filePath, line: d.line,
+    })),
+    ...signals,
+  ];
 
   const byCategory: Record<string, number> = {};
   const byRule: Record<string, number> = {};

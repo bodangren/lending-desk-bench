@@ -81,14 +81,23 @@ runtime_server_probe() {
   printf '{"schema":1,"api_port":%s,"server_pid":%s,"ready":true}\n' "$API_PORT" "$SRV_PID" > "$OUT/runtime-server-probe.json"
 }
 
+BENCH_TRACK="${BENCH_TRACK:-build}"
+case "$BENCH_TRACK" in build|bugfix|tests|change) ;; *) echo "BENCH_TRACK must be build, bugfix, tests, or change" >&2; exit 2 ;; esac
+CONTRACT_ROOT="$ROOT/fixture"
+CONTRACT_ARGS=(--track "$BENCH_TRACK")
+if [ "$BENCH_TRACK" != "build" ]; then
+  CONTRACT_ROOT="$ROOT/runs/$RUN_ID/variant"
+  [ -d "$CONTRACT_ROOT" ] || { echo "[$RUN_ID] $BENCH_TRACK variant tree is missing: $CONTRACT_ROOT" >&2; exit 2; }
+fi
+
 write_invalid() {
   local reason="$1"
-  node -e 'const fs=require("node:fs"); fs.writeFileSync(process.argv[1], JSON.stringify({schema:2,valid:false,trusted:false,publishable:false,rankable:false,provenance_valid:false,suite_current:false,blocked_by_gate:false,invalid_reasons:[process.argv[5]],run_id:process.argv[2],model:process.argv[3],arm:process.argv[4],invalid:process.argv[5],total:null})+"\n");' "$OUT/score.json" "$RUN_ID" "$MODELFULL" "$ARM" "$reason"
+  node -e 'const fs=require("node:fs"); fs.writeFileSync(process.argv[1], JSON.stringify({schema:3,track:process.argv[6],valid:false,trusted:false,publishable:false,rankable:false,provenance_valid:false,suite_current:false,blocked_by_gate:false,invalid_reasons:[process.argv[5]],run_id:process.argv[2],model:process.argv[3],arm:process.argv[4],invalid:process.argv[5],total:null})+"\n");' "$OUT/score.json" "$RUN_ID" "$MODELFULL" "$ARM" "$reason" "$BENCH_TRACK"
 }
 
 score_record() {
   GRADE_END=$(date +%s)
-  CANDIDATE="$CAND" ARTIFACTS="$OUT" AGENT_EXIT="${AGENT_EXIT:-0}" \
+  CANDIDATE="$CAND" VARIANT="$CONTRACT_ROOT" BENCH_TRACK="$BENCH_TRACK" ARTIFACTS="$OUT" AGENT_EXIT="${AGENT_EXIT:-0}" \
     WALL_SECONDS="$WALL" GRADING_SECONDS="$((GRADE_END-GRADE_START))" \
     MODEL="$MODELFULL" ARM="$ARM" RUN_ID="$RUN_ID" THINKING="${THINKING:-max}" \
     GATE_BLOCKED="${GATE_BLOCKED:-0}" \
@@ -102,10 +111,23 @@ TRACE="$OUT/trace.jsonl"
 
 mkdir -p "$OUT"
 [ -d "$CAND" ] || { write_invalid "no candidate at $CAND"; echo "[$RUN_ID] no candidate at $CAND" >&2; exit 2; }
+# cleanup.sh drains node_modules from published weeks. A regrade of such a
+# candidate used to stop at the executable check below and overwrite a valid
+# record with "required local executable is unavailable" (12 w38 runs). Restore
+# the same private physical copy run.sh makes before the first grade.
+if [ ! -x "$NEXT" ] && [ -d "$ROOT/fixture/node_modules" ]; then
+  echo "[$RUN_ID] candidate dependencies are missing; restoring a private copy"
+  rm -rf "$CAND/node_modules"
+  cp -a "$ROOT/fixture/node_modules" "$CAND/node_modules"
+fi
 for executable in "$VITEST" "$PLAYWRIGHT" "$TSX" "$NEXT"; do
   [ -x "$executable" ] || { write_invalid "required local executable is unavailable"; exit 4; }
 done
-if ! "$TSX" "$H/candidate-contract.ts" "$ROOT/fixture" "$CAND" > "$OUT/candidate-contract.json"; then
+# 0 clean, 3 soft violations inside writable files (graded; adherence pays).
+# run.sh grafts every other soft violation away before it calls this script.
+CONTRACT_RC=0
+"$TSX" "$H/candidate-contract.ts" "$CONTRACT_ROOT" "$CAND" "${CONTRACT_ARGS[@]}" > "$OUT/candidate-contract.json" || CONTRACT_RC=$?
+if [ "$CONTRACT_RC" -ne 0 ] && [ "$CONTRACT_RC" -ne 3 ]; then
   echo "[$RUN_ID] candidate filesystem contract failed before grading" >&2
   write_invalid "candidate filesystem contract failed"
   exit 4
@@ -118,12 +140,19 @@ fi
 
 GRADE_START=$(date +%s)
 
-# Host readiness. Unlike run.sh this does NOT abort: by the time we get here the
-# agent may already have cost an hour, and throwing that away is worse than
-# grading it and saying so. A busy host is recorded on the score record instead,
-# so a result that fails only timing-sensitive assertions can be read as void.
-# Only exit 0 means the host was actually quiet. 6 (BENCH_IGNORE_LOAD) and 5 both
-# mean it was contended, so both flag the record.
+# A browser that cannot launch fails every browser-graded criterion inside a
+# record that would otherwise stay valid (w36-w38: ~20 build, ~49 bugfix). That
+# is a harness failure, so it must produce an invalid record, never a score.
+# The tests track runs no browser suite.
+if [ "$BENCH_TRACK" != "tests" ] && ! "$TSX" "$H/browser-check.ts" > "$OUT/browser-check.log" 2>&1; then
+  echo "[$RUN_ID] $(tail -1 "$OUT/browser-check.log")" >&2
+  write_invalid "browser unavailable: Playwright Chromium did not launch"
+  exit 4
+fi
+
+# Host readiness. Advisory only under the always-publish policy: a busy host is
+# recorded on the score record as advisory metadata; nothing is voided.
+# Only exit 0 means the host was actually quiet; any other code was contended.
 UNDER_LOAD=0
 "$H/preflight.sh" "$RUN_ID" || UNDER_LOAD=1
 [ "$UNDER_LOAD" -eq 1 ] && echo "[$RUN_ID] grading on a contended host — timing assertions are advisory" >&2
@@ -149,8 +178,31 @@ if [ "$TC" != true ] || [ "$BD" != true ]; then
   exit $?
 fi
 
+# The tests track grades the candidate's own suite against correct and defective
+# apps; grade-tests.ts writes results.json and tests-results.json itself.
+if [ "$BENCH_TRACK" = "tests" ]; then
+  if ! CANDIDATE="$CAND" ARTIFACTS="$OUT" PORT="$API_PORT" "$TSX" "$H/tests-track/grade-tests.ts" \
+      > "$OUT/tests-grade.log" 2>&1; then
+    write_invalid "tests-track grading failed; see tests-grade.log"
+    exit 4
+  fi
+  printf '{"valid":true,"status":"collected"}\n' > "$OUT/collection.json"
+  if score_record && score_is_valid; then exit 0; else exit 1; fi
+fi
+
+# Suite selection by track:
+#   M.* closeout criteria grade the build track's Measure files, which every
+#   variant replaces, so the variant tracks skip the plan unit test.
+#   X.* change criteria exist only on the change track.
+UNIT_EXCLUDE=()
+[ "$BENCH_TRACK" != "build" ] && UNIT_EXCLUDE=(--exclude 'tests/unit/track-plan.test.ts')
+API_ARGS=(--no-file-parallelism)
+[ "$BENCH_TRACK" != "change" ] && API_ARGS+=(--exclude 'tests/api/change.test.ts')
+E2E_EXCLUDE="H\.error"
+[ "$BENCH_TRACK" != "change" ] && E2E_EXCLUDE="H\.error|X\."
+
   CANDIDATE="$CAND" RESULT_FILE="$OUT/unit-raw.json" \
-    "$VITEST" run tests/unit --reporter=json --outputFile="$OUT/unit-raw.json" \
+    "$VITEST" run tests/unit "${UNIT_EXCLUDE[@]}" --reporter=json --outputFile="$OUT/unit-raw.json" \
     > "$OUT/unit.log" 2>&1
 
   ( cd "$CAND" && BENCH_NOW=2026-03-15T12:00:00.000Z BENCH_LATENCY_MS=50 \
@@ -169,18 +221,31 @@ fi
     exit 4
   fi
   CANDIDATE="$CAND" BASE_URL="http://127.0.0.1:$API_PORT" RESULT_FILE="$OUT/api-raw.json" \
-    "$VITEST" run tests/api --reporter=json --outputFile="$OUT/api-raw.json" \
+    "$VITEST" run tests/api "${API_ARGS[@]}" --reporter=json --outputFile="$OUT/api-raw.json" \
     > "$OUT/api.log" 2>&1
   cleanup_server
 
+  # The fixture's grader-only route app/api/bench-state answers only this key.
+  BENCH_STATE_KEY=$(node -e 'process.stdout.write(require("node:crypto").randomBytes(16).toString("hex"))')
+  export BENCH_STATE_KEY
+
   CANDIDATE="$CAND" PW_PORT="$E2E_PORT" PW_BASE_URL="http://127.0.0.1:$E2E_PORT" \
     BENCH_TRACE_FILE="$TRACE" E2E_RESULT_FILE="$OUT/e2e-raw.json" \
-    "$PLAYWRIGHT" test --grep-invert "H\.error" > "$OUT/e2e.log" 2>&1
+    "$PLAYWRIGHT" test --grep-invert "$E2E_EXCLUDE" > "$OUT/e2e.log" 2>&1
 
   # The error boundary receives a distinct Playwright web-server boot.
   CANDIDATE="$CAND" PW_PORT="$E2E_PORT" PW_BASE_URL="http://127.0.0.1:$E2E_PORT" \
     BENCH_FAIL_ITEMS=1 BENCH_TRACE_FILE="$TRACE" E2E_RESULT_FILE="$OUT/e2e-error-raw.json" \
     "$PLAYWRIGHT" test --grep "H\.error" > "$OUT/e2e-error.log" 2>&1
+
+# The launch check above can still race a cache cleanup. Any launch error in a
+# raw report voids the record for the same reason.
+for report in "$OUT/e2e-raw.json" "$OUT/e2e-error-raw.json"; do
+  if grep -qE "browserType\.launch|Executable doesn't exist" "$report" 2>/dev/null; then
+    write_invalid "browser failed during the e2e pass"
+    exit 4
+  fi
+done
 
 if ! "$TSX" collect.ts "$OUT/unit-raw.json" "$OUT/api-raw.json" \
   "$OUT/e2e-raw.json" "$OUT/e2e-error-raw.json" "$OUT/results.json" \
@@ -212,7 +277,7 @@ if m:
 h=d.get('host') or {}
 if h.get('under_load'):
     print(f\"[$RUN_ID] SUSPECT: graded under load {h.get('load1')} on {h.get('cpus')} cpu, \"
-          f\"{h.get('avail_mb')}MB avail — timing-sensitive failures are void, not scores\")
+          f\"{h.get('avail_mb')}MB avail — timing-sensitive failures are advisory under the always-publish policy\")
 "
 if [ "$SCORE_VALID" -ne 1 ]; then
   exit 1

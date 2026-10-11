@@ -19,6 +19,15 @@ fi
 n=0
 for path in "${paths[@]}"; do
   [ -f "$path" ] || continue
+  # Skip empty or truncated score files left by crashed runs.
+  if [ ! -s "$path" ]; then
+    echo "SKIP empty $path" >&2
+    continue
+  fi
+  if ! python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$path" 2>/dev/null; then
+    echo "SKIP invalid JSON $path" >&2
+    continue
+  fi
   "$TSX" "$H/go-cost.ts" --patch-score "$path" >/dev/null
   n=$((n + 1))
 done
