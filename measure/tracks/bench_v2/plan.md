@@ -74,7 +74,7 @@ Execution notes:
 
 ## Phase 7: Calibration and regrade
 
-- [~] 7.1 Update and extend the meta tests; reopened 2026-10-11 because the
+- [x] 7.1 Update and extend the meta tests; reopened 2026-10-11 because the
       `test:meta:logic` claim was false at the w41 cron. `BENCH_TRACK=change`
       produces 15 meta failures: class E1 is the `batch.sh` self-check
       environment leak, and class E2 is non-hermetic meta tests that inherit
@@ -87,6 +87,25 @@ Execution notes:
       2026-10-11T08:31:54+08:00: `BENCH_META=1 npx vitest run
       tests/meta/selfcheck-env.test.ts --maxWorkers=1` exited 1; both guards
       failed as expected (15s wall, 3.59s Vitest duration).
+      Green (accepted per `test-strategy.md` §8), all `npm run test:meta:logic`,
+      165/165 passed, 0 failed, 0 skipped, exit 0, stamped by the vitest
+      summary and cross-checked against `results.json` (condition 6):
+      R1 pass #1 09:28:33→09:37:36+08:00 is 165 passed; R1 pass #2
+      (consecutive) 09:37:53→09:46:03+08:00 is 165 passed; adversarial env R2
+      `BENCH_TRACK=change` 09:46:14→09:54:36+08:00 is 165 passed; bugfix
+      spot check `BENCH_TRACK=bugfix` 10:04:48→10:13:38+08:00 is 165 passed.
+      The E1/E2 fix commit is `79894bc945fe6783fe9164c782d0523194cf18f8`
+      (E1: `batch.sh` runs the self-check under `env -u BENCH_TRACK`; E2:
+      `score-helpers.ts` scrubs a leaked `BENCH_TRACK` unless a fixture pins
+      one, and the `spawnSync`/env-merge sites in executor-attestation,
+      grade-exit, runner-safety, publication-freshness use `envWithoutTrack`;
+      provenance-validation pins via `applyEnv({})`). No test was skipped,
+      deleted, or weakened; assertions, fixture payloads and the
+      `test:meta:logic` exclude list are unchanged; every negative test still
+      rejects its mutation cases in all four runs. Full evidence with
+      commands and timestamps: `measure/tracks/bench_v2/roles/
+      jr-green-20261011-wave1.log` (§8 acceptance conditions 1–6; role log
+      is gitignored by design).
 - [ ] 7.2 `verify-controls --id` for every new control; `verify-bugs --all`.
 - [x] 7.3 Canary for each of the four tracks scores 100.
 - [ ] 7.4 `regrade-run.sh` and `regrade-all.sh`; regrade every historical
