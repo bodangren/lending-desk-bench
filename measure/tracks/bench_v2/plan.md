@@ -106,8 +106,46 @@ Execution notes:
       commands and timestamps: `measure/tracks/bench_v2/roles/
       jr-green-20261011-wave1.log` (§8 acceptance conditions 1–6; role log
       is gitignored by design).
-- [ ] 7.2 `verify-controls --id` for every new control; `verify-bugs --all`.
+- [x] 7.2 `verify-controls --id` for every new control; `verify-bugs --all`.
+      Live verification 2026-10-11 on a quiet host at verification state
+      `213cc5aadb93bafb585167b8199e1920b3bf5ce8` (no code edit was needed,
+      so no fix commit exists; the verification-state SHA is the evidence
+      anchor). Controls: one sequential batch, started 10:33:55+08:00,
+      finished 10:58:55+08:00 —
+      `tsx verify-controls.ts --id sensitivity-E.labels --id
+      sensitivity-E.error-announced --id sensitivity-P.auth-before-parse
+      --id sensitivity-P.malformed-json --id sensitivity-P.action-race
+      --id sensitivity-P.retry-after-error --id sensitivity-P.axe-clean` —
+      labeled counts: CONTROLS 7, PASS 7, FAIL 0; every control
+      sensitivity_passed=true and calibration_passed=true; per-control
+      UNEXPECTED.COLLATERAL 0 and MISSING.EXPECTED 0 (E.labels's only
+      extra raw failure is its declared collateral P.axe-clean).
+      Bugs: `tsx verify-bugs --all`, started 11:00:32+08:00 — labeled
+      counts: BUGS 13, DETECTOR.PASS 13, DETECTOR.FAIL 0,
+      UNEXPECTED.COLLATERAL 0 (the two extra raw-failure sets match the
+      registry-declared collateral of BUG-fn-status-precedence and
+      BUG-fn-contract-400); all runs keep gate/collection/provenance/suite
+      integrity and the variant/fixture/reference trees unchanged.
+      Reports archived (gitignored): `reports/
+      control-verification-20261011-110032/` (batch summary + 7 reports),
+      `reports/bug-verification-20261011-120823/` (13 reports + summary
+      table). Full command log with timestamps:
+      `measure/tracks/bench_v2/roles/jr-green-20261011-wave2.log`.
 - [x] 7.3 Canary for each of the four tracks scores 100.
+      **Re-verification 2026-10-11 at verification state
+      `213cc5aadb93bafb585167b8199e1920b3bf5ce8`**: the exact batch.sh
+      canary arm ran per track with `BENCH_TRACK` exported and
+      `AGENT_SKIP=1` (build = reference overlay, bugfix = clean set,
+      tests = oracle overlay, change = change reference overlay), one
+      graded run at a time. Labeled results: SCORE.100 4 of 4,
+      VALID.RECORDS 4 of 4, FAILURES 0 — build 12:09:54+08:00
+      `canary-build-2026w41-1791691794` valid=true total=100; bugfix
+      12:13:14+08:00 `canary-bugfix-2026w41-1791691994` valid=true
+      total=100; tests 12:16:50+08:00
+      `canary-tests-2026w41-1791692210` valid=true total=100 (under-load
+      advisory notes in canary-tests.log; score unaffected); change
+      12:21:00+08:00 `canary-change-2026w41-1791692460` valid=true
+      total=100. The calibration candidates were not modified.
 - [ ] 7.4 `regrade-run.sh` and `regrade-all.sh`; regrade every historical
       agent run (w37–w39, both tracks).
 - [ ] 7.5 Export the site data and the model pages.
