@@ -5,8 +5,9 @@
 This repo is an equipment-lending app. The `/members` slice is built and working. Build the
 `/items` slice by filling in the stub files below.
 
-Every file, export name, and type signature already exists. Do not create files, rename
-exports, or change signatures — they are the contract.
+Every file, export name, and type signature already exists. Do not create files, and do not
+add, rename, remove, or change exports or signatures — they are the contract. Do not edit this
+spec; record progress in `plan.md`.
 
 Data access lives in `src/db/index.ts`. Types are in `src/db/schema.ts`. Seed data and the
 fixed clock are in `src/db/seed.ts`. Use `now()` from `src/db/index.ts` for the current time;
@@ -59,6 +60,10 @@ never `Date.now()` or a bare `new Date()`.
 - [ ] The item shows as available immediately on activation, before the server responds, and
       reverts if the server rejects it
 - [ ] When `returnItem` returns `{ ok: false }` the returned `error` string is rendered
+- [ ] The member selector and the due-date input each have an accessible name (a `<label>` or
+      an `aria-label`)
+- [ ] An `error` string from either form is announced to assistive technology: it renders inside
+      an element with `role="alert"` or inside an `aria-live` region
 
 ### F. `src/actions/loans.ts` — `checkoutItem`, `returnItem`
 - [ ] `checkoutItem` records a loan with `borrowedAt` of now and the given `dueAt`

@@ -18,7 +18,8 @@ should look in this codebase, read the `/members` equivalent and match it.
 ## Rules
 
 - Fill in the stub files named in the spec. Do not create new files.
-- Do not rename or change any exported symbol or type signature. They are the contract.
+- Do not add, rename, change, or remove any exported symbol or type signature. They are the contract.
+- Do not edit `spec.md`. Record progress in `plan.md` and `metadata.json` only.
 - Do not modify `src/db/`, `src/lib/auth.ts`, `app/members/`, or `src/components/member-card.tsx`.
 - No new dependencies.
 - Use `now()` from `src/db/index.ts` for the current time.
@@ -48,5 +49,6 @@ front — context spent on unread reference material is context unavailable for 
 
 ## Definition of done
 
-Every checkbox in `spec.md` is satisfied, `plan.md` is fully marked, and typecheck and build pass.
+Every acceptance criterion in `spec.md` is met. Do not edit `spec.md`: its checkboxes stay as
+they are. `plan.md` is fully marked, and typecheck and build pass.
 The final `metadata.json` records `status: "complete"` and `actual_tasks: 24`.

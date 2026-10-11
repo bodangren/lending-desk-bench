@@ -44,7 +44,7 @@ export function CheckoutForm({ itemId, members }: { itemId: string; members: Mem
         </button>
       </div>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
     </form>
   );
 }
@@ -77,7 +77,7 @@ export function ReturnButton({ itemId }: { itemId: string }) {
         {pending ? "Returning…" : "Return"}
       </button>
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
     </form>
   );
 }
