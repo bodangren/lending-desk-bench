@@ -3,6 +3,7 @@
 A hermetic Next.js implementation benchmark for OpenCode Go High Usage models. Pi receives an
 intentionally incomplete `fixture/` and must complete the Measure track. The hidden harness
 grades the result through typecheck, build, API, browser, stream, and mutation-safety checks.
+Three more tracks use the same app: bug fixing, test writing, and change requests.
 
 The fixture is deliberately incomplete. `reference/` is the golden answer used only for
 calibration; it is never mounted into a model container.
@@ -25,11 +26,37 @@ GitHub Pages is served from the `docs/` folder on `main`.
 |---|---|
 | `fixture/` | The complete model-visible repository and task contract. |
 | `reference/` | Golden writable-file overlay for calibration only. |
+| `reference-variant/` | A second correct implementation (different markup and structure). It must score 100; the tests track grades suites against it. |
+| `reference-change/` | The reference with the change requests implemented; the change track's canary. |
 | `harness/` | Hidden runner, tests, collector, scorer, and control manifest. |
+| `harness/bugfix/` | Bug registry, task sets, variant generator for the bug-fix track. |
+| `harness/tests-track/` | Mutant sets, variant generator, grader, and oracle suite for the test-writing track. |
+| `harness/change/` | Change requests, sets, and variant generator for the change-request track. |
 | `harness/go-pricing.json` | Pinned OpenCode Go prices and monthly Usage column. |
 | `runs/<id>/` | One isolated candidate and its immutable grading artifacts. |
 | `SCORING.md` | Scoring, validity, and calibration rules. |
 | `PLAN.md` | OpenCode Go rewrite plan. |
+| `measure/tracks/bugfix_bench/` | Spec and plan for the bug-fix track. |
+| `measure/tracks/bench_v2/` | Validity fixes, fixture r2, weights, adherence, new checks. |
+| `measure/tracks/tests_bench/`, `change_bench/` | Specs and plans for the two newest tracks. |
+
+## Tracks
+
+| `BENCH_TRACK` | Prefix | Task |
+|---|---|---|
+| `build` (default) | none | Complete the `/items` slice from stubs. |
+| `bugfix` | `bf-` | Repair seeded, undisclosed defects in a working variant, without regressions. |
+| `tests` | `tt-` | Write a test suite; graded by mutants killed and by tests that stay valid on a second correct implementation. |
+| `change` | `ch-` | Add four requested behaviors (set `c1`) and keep every existing behavior. |
+
+```bash
+BENCH_TRACK=bugfix ./harness/run.sh opencode-go mimo-v2.5 a bf-a-mimo-v2-5-2026w40-r1
+BENCH_TRACK=tests  ARMS="a b" ./harness/batch.sh
+./harness/verify-bugs.ts --list      # registry; --id / --set calibrate admission
+```
+
+Scoring, trust, arms, and provenance machinery are shared; see `SCORING.md` and the
+track specs under `measure/tracks/`.
 
 ## Harness self-tests (read this before "fixing" scoring)
 
@@ -51,25 +78,25 @@ npm run test:meta         # full meta, including runtime isolation
 
 Any edit under `harness/` that is hashed by `provenance.ts` changes `runner_sha256` / `suite_sha256` and **invalidates old `runs/*/artifacts/score.json`**. That is intended. Re-grade candidates; do not invent workarounds that weaken provenance.
 
-## Regrade existing candidates (no API keys)
+## Regrade and rescore existing runs (no API keys)
 
 Historical `runs/*/artifacts/score.json` become **STALE-PROVENANCE** whenever the
-harness or suite hash changes. To get current *functional* totals without re-running
-models:
+harness or suite hash changes.
 
 ```bash
-# One candidate → new run id (overlay provenance: diagnostic, not rankable)
-./harness/regrade.sh a-deepseek-v4-flash-r1 rg-deepseek-now deepseek deepseek-v4-flash a
+# Scoring-only change (weights, axes): rebuild score.json from the stored results.
+WEEK=2026w39 ./harness/rescore-doctor.sh
 
-# Full matrix + reference calibration + REPORT.md
-BENCH_IGNORE_LOAD=1 BENCH_WAIT_FOR_IDLE=60 ./harness/regrade-matrix.sh
-./harness/summarize.sh
-# → reports/REPORT.md
+# Test change: grade the agent's writable files again on the current tree (a graft).
+./harness/regrade-run.sh a-mimo-v2-5-2026w38
+WEEKS="2026w37 2026w38 2026w39" ./harness/regrade-all.sh
+python3 harness/export-site-data.py && python3 harness/generate-model-pages.py
 ```
 
-Overlay regrades are **CALIBRATION**: valid scores for comparison, never trusted
-publishable rankings. For rankable agent runs use `./harness/batch.sh` with keys on a
-quiet host.
+A regrade keeps the run's identity, transcript, and executor evidence, records a `graft`
+block in provenance, and takes contract violations from the run's original verdict. The
+previous artifacts stay in `artifacts.prev-<stamp>/`. A regraded agent run stays rankable;
+`regrade.sh` (overlay into a new run id) remains a diagnostic tool.
 
 ## Install once
 
@@ -89,11 +116,13 @@ reference.
 ## Run a model
 
 ```bash
-./harness/run.sh opencode-go mimo-v2.5 a a-mimo-v2-5-2026w35
-./harness/run.sh opencode-go mimo-v2.5 b b-mimo-v2-5-2026w35
+./harness/run.sh opencode-go mimo-v2.5 a a-mimo-v2-5-2026w40-r1
+./harness/run.sh opencode-go mimo-v2.5 b b-mimo-v2-5-2026w40-r1
 ```
 
-Arm `a` is **No Skills**. Arm `b` is **Skills**. Run both once per model each week.
+Arm `a` is **No Skills**. Arm `b` is **Skills**. The build track repeats three times a
+week per arm (`REPS_BUILD`, default 3); the other tracks run once (`REPS_BUGFIX`,
+`REPS_TESTS`, `REPS_CHANGE`). `REPS` overrides every track.
 
 ```bash
 ARMS="a b" ./harness/batch.sh
@@ -101,7 +130,7 @@ ARMS="a b" ./harness/batch.sh
 ```
 
 Run IDs must match `[A-Za-z0-9][A-Za-z0-9_-]{0,79}`. A run ID is replaced only after that
-validation and host preflight succeed.
+validation succeeds. Host preflight records load and never blocks the replacement.
 
 | Arm | Public name | Model-visible material |
 |---|---|---|
@@ -137,13 +166,17 @@ The model container has a private filesystem view:
 - the candidate gets a private physical dependency copy only after its protected files are
   verified;
 - `reference/`, `harness/`, host home, extensions, and host loopback are absent;
-- the candidate may modify only the nine task files and the Measure plan/metadata closeout
-  files; adding files, dependencies, symlinks, or changing protected files invalidates it.
+- the candidate may modify only the track's writable files (the nine task files and the
+  Measure closeout on the build, bugfix, and change tracks; new `tests/*.test.ts` files on
+  the tests track). A symlink or special file invalidates the run. Any other violation (an
+  added file, a protected edit, a changed export) is recorded, the writable files are
+  grafted onto a fresh tree, and the violation costs the adherence axis.
 
 The runner records protected-file checksums and hashes of the candidate, runner, and complete
-suite. Schema-4 provenance also binds the run ID to the resolved immutable image, Pi binary and
-version, exact Arm-B skill tree, and inspectable runtime/CLI flags. Scoring rechecks these values,
-so a stale regrade cannot become a current score.
+suite. Schema-6 provenance also binds the run ID to the resolved immutable image, Pi binary and
+version, exact Arm-B skill tree, inspectable runtime/CLI flags, the fixture revision, the
+contract-violation record, and any graft. Scoring rechecks these values, so a stale record
+cannot become a current score.
 
 ## Calibration and controls
 
@@ -173,8 +206,8 @@ harness/node_modules/.bin/tsx harness/verify-controls.ts --id sensitivity-G.get2
 harness/node_modules/.bin/tsx harness/verify-controls.ts --all
 ```
 
-If the host is busy, BENCH_IGNORE_LOAD=1 may prefix one of these commands for diagnostic
-evidence only. The verifier preserves that explicit override, and its resulting runs remain untrusted.
+Controls run regardless of host load. Preflight logs load, and `under_load` stays advisory
+metadata on the record.
 
 Every selection receives a fresh, valid run ID and an adjacent `runs/<id>-overlay` copy of the
 reference. The executor mutates only that copy, invokes the normal `run.sh`/`grade.sh` path, and
@@ -185,10 +218,11 @@ reports and `results.json`, and any gate, collection, or provenance invalidation
 
 ## Trust and host readiness
 
-Before agent execution, `harness/preflight.sh` requires a quiet host: at most one load unit per
-CPU, at least 2500 MB available memory, and at most 2000 MB used swap. `BENCH_WAIT_FOR_IDLE`
-waits for that condition. `BENCH_IGNORE_LOAD=1` deliberately records `under_load: true`; those
-results are retained for diagnosis but are never trusted, publishable, or ranked.
+Before agent execution, `harness/preflight.sh` measures host load: load units per
+CPU, available memory, and used swap. It never refuses a run; it waits only while
+`BENCH_WAIT_FOR_IDLE` allows. A busy host is recorded as advisory `under_load: true`
+metadata. Every valid agent record is trusted and publishable; load never blocks a
+run or demotes a score.
 
 Every score record has explicit validity fields. A total is rankable only when all are true:
 
@@ -208,9 +242,15 @@ ARMS="a b" ./harness/weekly.sh
 ./harness/summarize.sh
 ```
 
+Each batch first runs the self-check (`BENCH_SELFCHECK`: `meta`, `logic`, `full`, or `skip`;
+the cron uses `logic`) and then the track's canary: the calibration candidate must score a
+valid 100, or the batch grades nothing (`BENCH_CANARY=0` skips it with a warning).
+
 Batch resumes only current, trusted, publishable records. Stale or untrusted scores are
 re-run (there is no "accept any existing score" override). Summary shows invalid,
-gate-blocked, stale, under-load, and untrusted rows separately; only trusted rows enter a ranking.
+gate-blocked, stale, and untrusted rows separately; only trusted rows enter a ranking.
+The site shows each model's lower-median repeat, the worst repeat, and one paired Skills
+delta per week.
 
 Historical records from older runner or suite hashes remain on disk for audit but are excluded
 from current comparisons.

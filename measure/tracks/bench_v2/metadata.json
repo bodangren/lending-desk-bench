@@ -1,0 +1,29 @@
+{
+  "id": "bench_v2",
+  "title": "Benchmark v2 \u2014 validity, fixture r2, scoring rebalance",
+  "type": "Feature",
+  "status": "in-progress",
+  "created": "2026-09-24",
+  "estimated_tasks": 31,
+  "actual_tasks": null,
+  "source": {
+    "method": "evaluation of the published data and the harness on 2026-09-24",
+    "decisions": [
+      "repository stays public; leak risk accepted",
+      "fixture r2 goes live with the next weekly batch",
+      "new weights apply now; historical records are regraded",
+      "tests_bench and change_bench are built in full"
+    ],
+    "implementation_notes": [
+      "Calibration 2026-09-24 on this host: build reference 100, reference-variant 100, bugfix clean 100 and untouched v1 35 (only the 11 detectors and their declared collateral fail), tests oracle 100 and empty suite 0, change reference 100 and untouched 35.",
+      "reference-variant/ (datetime-local input, no placeholder option, table history, aria-live errors, no pre-read before insert) scores 100: the r2 build suite does not grade reference incidentals. This closes harness_audit task 1.5.",
+      "Meta logic suite: 163 of 163 pass (147 before).",
+      "Controls found four real defects before any model run: the F.checkout-conflict control removed only the race catch, which a stale form never reaches; the P.no-key-leak control inserted a sibling of the form root, which does not compile; X.due-limit-action shared an item with F.future-due-date, which charged a missed CR-3 twice; G.get200 required an exact seed count, which broke when change.test.ts ran first (Vitest does not order files by name).",
+      "Adherence is gated on the primary axis like quality: without the gate an untouched build candidate banked about 10 points.",
+      "Criteria carry `since`: E.labels and E.error-announced (r2) do not count for r1 records, so the regrade does not charge r1 agents for checkboxes they never saw.",
+      "BUG-fn-notfound left the tests-track mutant set: behind the /items loading boundary a not-found page streams with status 200 and plain HTTP sees only a noindex tag.",
+      "Vite sets BASE_URL to '/' inside Vitest; the tests-track vitest.config.mts passes the app address through test.env, as the harness config already did.",
+      "fixture npm ci on 2026-09-24 silently skipped the optional @next/swc-linux-x64-gnu after a network error, and next build then failed. Verify optional native packages after any reinstall."
+    ]
+  }
+}
