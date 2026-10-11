@@ -54,7 +54,9 @@ if [ "$SELFCHECK" = skip ]; then
   echo "WARNING: harness self-check skipped; these results are not calibrated"
 else
   echo "SELF-CHECK $(date -Is) — meta suite"
-  if ! npm run --silent test:meta > "meta-selfcheck.log" 2>&1; then
+  # The self-check is track-neutral: the meta suite grades build-track fixtures,
+  # so a non-build BENCH_TRACK exported for the batch must not leak into it.
+  if ! env -u BENCH_TRACK npm run --silent test:meta > "meta-selfcheck.log" 2>&1; then
     echo "harness self-check failed: the meta suite did not pass" >&2
     echo "see harness/meta-selfcheck.log" >&2
     exit 3

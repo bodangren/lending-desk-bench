@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { ADVISORY, CRITERIA, PROBES } from "../criteria";
 import { createCurrentAgentRuntime, currentSchema4Provenance, type CurrentAgentRuntime } from "./schema4-fixtures";
-import { scoreInProcess } from "./score-helpers";
+import { scoreInProcess, envWithoutTrack } from "./score-helpers";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
 const HARNESS = resolve(ROOT, "harness");
@@ -36,7 +36,7 @@ async function score(candidate: string, artifacts: string, environment: NodeJS.P
     runId,
     model: MODEL,
     arm: ARM,
-    environment: { ...process.env, ...environment },
+    environment: { ...envWithoutTrack(), ...environment },
   });
 }
 
@@ -121,7 +121,7 @@ describe("live publication freshness", () => {
       const result = spawnSync(resolve(HARNESS, "summarize.sh"), [], {
         cwd: HARNESS,
         encoding: "utf8",
-        env: { ...process.env, ...live.environment },
+        env: { ...envWithoutTrack(), ...live.environment },
       });
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
       expect(result.stdout).toMatch(new RegExp(`${runId}\\s+${MODEL}\\s+STALE-PROVENANCE`));

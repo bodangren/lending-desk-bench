@@ -3,6 +3,7 @@ import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { createCurrentAgentRuntime, currentSchema4Provenance, type CurrentAgentRuntime } from "./schema4-fixtures";
+import { envWithoutTrack } from "./score-helpers";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
 const HARNESS = resolve(ROOT, "harness");
@@ -31,7 +32,7 @@ function grade(runId: string, environment: NodeJS.ProcessEnv = {}) {
   return spawnSync(resolve(HARNESS, "grade.sh"), [runId, MODEL, ARM, "0"], {
     cwd: HARNESS,
     encoding: "utf8",
-    env: { ...process.env, ...environment, API_PORT: "38101", E2E_PORT: "38102", BENCH_IGNORE_LOAD: "1" },
+    env: { ...envWithoutTrack(), ...environment, API_PORT: "38101", E2E_PORT: "38102", BENCH_IGNORE_LOAD: "1" },
     maxBuffer: 10 * 1024 * 1024,
   });
 }

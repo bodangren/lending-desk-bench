@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { assessCandidateContract } from "../../candidate-contract";
 import { buildScoreRecord } from "../../score";
 import { currentSchema4Provenance } from "./schema4-fixtures";
+import { applyEnv } from "./score-helpers";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
 const MODEL = "meta/provenance";
@@ -37,6 +38,10 @@ describe("schema-4 provenance validation", () => {
       { name: "suite hash", provenance: { ...current, suite_sha256: "0".repeat(64) }, reason: "runner or suite provenance does not match this score implementation" },
       { name: "contract schema", provenance: { ...current, candidate_contract_schema: 2 }, reason: "runner or suite provenance does not match this score implementation" },
     ];
+    // Hermeticity (bench_v2 E2): buildScoreRecord reads BENCH_TRACK from
+    // process.env directly; scrub any ambient non-build value — the fixture is
+    // build-track and scores with the default track.
+    applyEnv({});
     try {
       for (const testCase of cases) {
         writeFileSync(resolve(artifacts, "provenance.json"), `${JSON.stringify(testCase.provenance)}\n`);

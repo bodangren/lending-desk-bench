@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
+import { envWithoutTrack } from "./score-helpers";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
 const HARNESS = resolve(ROOT, "harness");
@@ -76,7 +77,7 @@ describe("runner safety contract", () => {
         cwd: HARNESS,
         encoding: "utf8",
         env: {
-          ...process.env,
+          ...envWithoutTrack(),
           API_PORT: "38081",
           E2E_PORT: "38082",
         },

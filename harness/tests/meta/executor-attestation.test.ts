@@ -6,7 +6,7 @@ import { assessCandidateContract } from "../../candidate-contract";
 import { executionIdentityFingerprint, ARM_B_SKILLS, resolveExecutionIdentity } from "../../execution-identity";
 import { currentHashes } from "../../provenance";
 import { ADVISORY, CRITERIA, PROBES } from "../criteria";
-import { freshnessInProcess, scoreInProcess } from "./score-helpers";
+import { envWithoutTrack, freshnessInProcess, scoreInProcess } from "./score-helpers";
 
 const IMAGE = "docker.io/library/node@sha256:" + "a".repeat(64);
 const DRIFTED_IMAGE = "docker.io/library/node@sha256:" + "b".repeat(64);
@@ -259,7 +259,7 @@ describe("current executor attestation", () => {
       arms: { b: { skills: identity.skills, skill_tree_sha256: identity.skill_tree_sha256 } },
     };
     const liveEnv: NodeJS.ProcessEnv = {
-      ...process.env,
+      ...envWithoutTrack(),
       BENCH_AGENT_IMAGE: live.imageReference,
       BENCH_PI_ROOT: resolve(prepared.temp, "pi"),
       BENCH_SKILL_ROOT: resolve(prepared.temp, "skills"),
@@ -320,7 +320,7 @@ describe("current executor attestation", () => {
       arms: { b: { skills: identity.skills, skill_tree_sha256: identity.skill_tree_sha256 } },
     };
     const liveEnv: NodeJS.ProcessEnv = {
-      ...process.env,
+      ...envWithoutTrack(),
       BENCH_AGENT_IMAGE: live.imageReference,
       BENCH_PI_ROOT: resolve(prepared.temp, "pi"),
       BENCH_SKILL_ROOT: resolve(prepared.temp, "skills"),
