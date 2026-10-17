@@ -16,16 +16,30 @@ stays outside the hash lists: scheduling must not invalidate grades.
 
 ## Phase 2: Tests (Red)
 
-- [ ] 2.1 Meta tests: synthetic run trees classify `new`, `failing`, and
-  `current` per track and arm.
-- [ ] 2.2 Meta test: canary, calibration, control, and adhoc runs never
-  enter the work list.
-- [ ] 2.3 Meta test: selector output is identical under a leaked
-  `BENCH_TRACK` (A11 guard).
-- [ ] 2.4 Meta test: batch dry-run consumes the work list; `FORCE=1`
-  restores the full matrix.
-- [ ] 2.5 Site regression: sparse-week export still emits every current
-  model's latest row.
+- [x] 2.1 Meta tests: synthetic run trees classify `new`, `failing`, and
+  `current` per track and arm. Red test commit: `c95b1be`.
+- [x] 2.2 Meta test: canary, calibration, control, and adhoc runs never
+  enter the work list. Red test commit: `c95b1be`.
+- [x] 2.3 Meta test: selector output is identical under a leaked
+  `BENCH_TRACK` (A11 guard). Red test commit: `c95b1be`.
+- [x] 2.4 Meta test: batch dry-run consumes the work list; `FORCE=1`
+  restores the full matrix. Red test commit: `c95b1be`.
+- [x] 2.5 Site regression: sparse-week export still emits every current
+  model's latest row. The new regression test passes at the phase base.
+
+### Phase 2 Red evidence
+
+- `cd harness && npm run test:meta:logic` ran from 2026-10-17T13:52:09+08:00
+  to 2026-10-17T14:01:21+08:00 and exited 1.
+- Vitest summary: `Test Files  1 failed | 25 passed (26)` and
+  `Tests  4 failed | 166 passed (170)`.
+- Tasks 2.1 and 2.2 fail because `harness/plan-work.ts` is missing.
+- Task 2.3 fails because the selector command is missing.
+- Task 2.4 fails because `batch.sh` does not consume `plan-work.ts`.
+- Task 2.5 passes with the sparse-week synthetic export test.
+- Targeted command: `BENCH_META=1 npx vitest run
+  tests/meta/bench-incremental.test.ts --maxWorkers=1`; result was
+  `Tests  4 failed | 1 passed (5)`.
 
 ## Phase 3: Implement (Green)
 
