@@ -61,8 +61,11 @@ def classify(record, freshness):
     return "INVALID", note
 
 def existing_score_paths():
+    # BENCH_RUNS_DIR scopes the table to an alternative runs tree (meta tests
+    # exercise summarize against a synthetic tree). Default stays ../runs.
+    runs_dir = os.environ.get("BENCH_RUNS_DIR") or "../runs"
     paths = []
-    for path in glob.glob("../runs/*/artifacts/score.json"):
+    for path in glob.glob(os.path.join(runs_dir, "*/artifacts/score.json")):
         try:
             paths.append((os.path.getmtime(path), path))
         except FileNotFoundError:
