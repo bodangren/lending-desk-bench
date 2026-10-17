@@ -21,10 +21,46 @@
 #   REPS_CHANGE    default 1
 #
 # The model list comes from harness/go-pricing.json (high_usage && batch).
+# Incremental scheduling (bench_incremental): by default the batch runs the
+# plan-work.ts work list — only new models (no agent run for this track and
+# arm) and failing models (fewer trusted runs than the track's repeat count).
+#   FORCE=1        restores the full pricing matrix (exact-ID skip still applies)
+#   --dry-run /    print the planned run ids and exit; no self-check, canary,
+#   BENCH_DRY_RUN=1  or agent runs
+# A scheduled model runs its full track reps; failing models get the same reps
+# as new models. The work list never writes run artifacts.
 set -u
 cd "$(dirname "${BASH_SOURCE[0]}")"
 # shellcheck source=env.sh
 source "./env.sh"
+
+DRY_RUN=0
+case " $* " in
+  *" --dry-run "*) DRY_RUN=1 ;;
+esac
+[ "${BENCH_DRY_RUN:-0}" = "1" ] && DRY_RUN=1
+
+# Work-list rows (plan-work.ts JSON) -> model ids, new or failing, in order.
+work_list_models() {
+  node -e '
+let raw = "";
+process.stdin.on("data", (chunk) => { raw += chunk; });
+process.stdin.on("end", () => {
+  let payload;
+  try { payload = JSON.parse(raw); } catch { process.exit(2); }
+  const rows = Array.isArray(payload)
+    ? payload
+    : payload.classifications ?? payload.work_list ?? payload.entries ?? [];
+  const seen = new Set();
+  for (const row of rows) {
+    if (row && (row.class === "new" || row.class === "failing") && typeof row.model === "string" && !seen.has(row.model)) {
+      seen.add(row.model);
+      process.stdout.write(row.model + "\n");
+    }
+  }
+});
+'
+}
 
 ARMS="${ARMS:-a b}"
 WEEK="${WEEK:-$(date -u +%Gw%V)}"
@@ -51,10 +87,68 @@ is_current_trusted_score() {
   ./node_modules/.bin/tsx score-freshness.ts "$score" --rankable >/dev/null 2>&1
 }
 
-mapfile -t MODELS < <(./node_modules/.bin/tsx go-cost.ts --batch-lines)
-if [ "${#MODELS[@]}" -eq 0 ]; then
-  echo "go-cost.ts emitted no batch models" >&2
+# The pricing menu honors BENCH_PRICING_PATH (a dry run may exercise a
+# synthetic table); plan-work.ts --batch-lines delegates the line format to
+# go-cost.ts batchLines, so it is identical to `go-cost.ts --batch-lines`.
+PRICING_PATH="${BENCH_PRICING_PATH:-$PWD/go-pricing.json}"
+mapfile -t ALL_LINES < <(./node_modules/.bin/tsx plan-work.ts --batch-lines --pricing "$PRICING_PATH")
+if [ "${#ALL_LINES[@]}" -eq 0 ]; then
+  echo "go-pricing.json has no batch models" >&2
   exit 2
+fi
+
+declare -A LINE_BY_MODEL=()
+for entry in "${ALL_LINES[@]}"; do
+  IFS='|' read -r _provider _model _slug <<< "$entry"
+  LINE_BY_MODEL["$_model"]="$entry"
+done
+
+if [ "${FORCE:-0}" = "1" ]; then
+  # Escape hatch: the pre-bench_incremental behavior, every batch model.
+  MODELS=("${ALL_LINES[@]}")
+  echo "FORCE=1 — full pricing matrix: ${#MODELS[@]} models"
+else
+  # Work list (bench_incremental FR-2): schedule only new and failing models
+  # for this track. The selector is hermetic; the scrub keeps the batch's own
+  # BENCH_TRACK export from reaching it at all.
+  WORK_JSON="$(env -u BENCH_TRACK ./node_modules/.bin/tsx plan-work.ts --work-list "$TRACK")" || {
+    echo "plan-work.ts failed to produce the work list for $TRACK" >&2
+    exit 2
+  }
+  MODELS=()
+  while IFS= read -r model; do
+    [ -n "$model" ] || continue
+    entry="${LINE_BY_MODEL[$model]:-}"
+    if [ -z "$entry" ]; then
+      echo "work-list model has no pricing line: $model" >&2
+      exit 2
+    fi
+    MODELS+=("$entry")
+  done < <(work_list_models <<< "$WORK_JSON")
+  echo "WORK LIST $TRACK — ${#MODELS[@]} of ${#ALL_LINES[@]} batch models to schedule"
+fi
+
+# ---- Dry run ------------------------------------------------------------------
+# Print the planned run ids (work list or full matrix) and exit. No self-check,
+# no canary, no agent runs, no writes under runs/.
+if [ "$DRY_RUN" = "1" ]; then
+  NARMS=$(echo "$ARMS" | wc -w)
+  TOTAL=$(( ${#MODELS[@]} * REPS * NARMS ))
+  echo "BATCH START (dry run) $(date -Is) — ${#MODELS[@]} models x arms[$ARMS] x ${REPS} reps = ${TOTAL} runs"
+  N=0
+  for rep in $(seq 1 "$REPS"); do
+    for arm in $ARMS; do
+      for entry in "${MODELS[@]}"; do
+        IFS='|' read -r provider model slug <<< "$entry"
+        run_id="${TRACK_PREFIX}${arm}-${slug}-${WEEK}-r${rep}"
+        N=$((N+1))
+        echo "[$N/$TOTAL] DRY-RUN START $(date -Is)  $provider/$model  arm=$arm rep=$rep -> $run_id"
+      done
+    done
+  done
+  echo "=================================================================="
+  echo "BATCH COMPLETE (dry run) $(date -Is) — ${TOTAL} planned runs; nothing executed"
+  exit 0
 fi
 
 # ---- Harness self-check ------------------------------------------------------
