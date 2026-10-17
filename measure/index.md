@@ -14,6 +14,8 @@
 | Implementation Plan (tests_bench) | measure/tracks/tests_bench/plan.md |
 | Specification (change_bench) | measure/tracks/change_bench/spec.md |
 | Implementation Plan (change_bench) | measure/tracks/change_bench/plan.md |
+| Specification (bench_incremental) | measure/tracks/bench_incremental/spec.md |
+| Implementation Plan (bench_incremental) | measure/tracks/bench_incremental/plan.md |
 | Scoring contract | SCORING.md |
 | Model-visible spec (build) | fixture/measure/tracks/lending_desk/spec.md |
 | Model-visible spec (bugfix) | harness/bugfix/model-visible/track/spec.md |

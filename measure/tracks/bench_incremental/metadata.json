@@ -1,0 +1,15 @@
+{
+  "id": "bench_incremental",
+  "title": "Incremental benchmark runs — new models and failures only",
+  "type": "Feature",
+  "status": "pending",
+  "created": "2026-10-17",
+  "estimated_tasks": 16,
+  "actual_tasks": null,
+  "source": {
+    "method": "operator request 2026-10-17: stop weekly full-matrix retests; test new models and previous failures; recost on price-table changes",
+    "dependencies": [
+      "bench_v2"
+    ]
+  }
+}
