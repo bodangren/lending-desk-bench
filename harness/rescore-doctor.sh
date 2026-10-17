@@ -16,17 +16,31 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; H="$ROOT/harness"
 cd "$H" || exit 1
 TSX="$H/node_modules/.bin/tsx"
 WEEK="${WEEK:-$(date -u +%Gw%V)}"
-echo "rescore week=$WEEK $("$TSX" provenance.ts)"
+# WEEK=all (bench_incremental FR-3): cure provenance staleness for every run
+# with persisted results, across all weeks. Only the week glob and the run-id
+# pattern change; the per-run fail-closed contract is unchanged — score.json is
+# replaced only by a valid record, provenance.json.prev is restored on
+# failure, and a skipped run (missing candidate, missing artifact) prints SKIP
+# with its reason and never fails the batch.
+if [ "$WEEK" = "all" ]; then
+  RUN_GLOBS=("$ROOT"/runs/*/artifacts)
+  WEEK_PATTERN='[0-9]{4}w[0-9]{2}'
+  echo "rescore week=all $("$TSX" provenance.ts)"
+else
+  RUN_GLOBS=("$ROOT"/runs/*-"$WEEK"/artifacts "$ROOT"/runs/*-"$WEEK"-r[0-9]*/artifacts)
+  WEEK_PATTERN="$WEEK"
+  echo "rescore week=$WEEK $("$TSX" provenance.ts)"
+fi
 
 shopt -s nullglob
-for ART in "$ROOT"/runs/*-"$WEEK"/artifacts "$ROOT"/runs/*-"$WEEK"-r[0-9]*/artifacts; do
+for ART in "${RUN_GLOBS[@]}"; do
   RUN_ID="$(basename "$(dirname "$ART")")"
-  if [[ "$RUN_ID" =~ ^(bf-|tt-|ch-)?([ab])-(.+)-$WEEK(-r[0-9]+)?$ ]]; then
+  if [[ "$RUN_ID" =~ ^(bf-|tt-|ch-)?([ab])-(.+)-$WEEK_PATTERN(-r[0-9]+)?$ ]]; then
     case "${BASH_REMATCH[1]}" in
       bf-) TRACK=bugfix ;; tt-) TRACK=tests ;; ch-) TRACK=change ;; *) TRACK=build ;;
     esac
   else
-    echo "SKIP $RUN_ID (run id not [prefix]<arm>-<slug>-$WEEK[-rN])"; continue
+    echo "SKIP $RUN_ID (run id not [prefix]<arm>-<slug>-$WEEK_PATTERN[-rN])"; continue
   fi
   CAND="$ROOT/runs/$RUN_ID/candidate"
   [ -d "$CAND" ] || { echo "SKIP $RUN_ID (no candidate)"; continue; }
