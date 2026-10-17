@@ -89,7 +89,8 @@ describe("live publication freshness", () => {
   });
 
   it("summary rejects a forged trusted record when its live provenance is stale", () => {
-    const work = mkdtempSync(resolve(ROOT, "runs", "meta-stale-publication-"));
+    const runsDir = mkdtempSync(resolve(tmpdir(), "lending-desk-summary-runs-"));
+    const work = mkdtempSync(resolve(runsDir, "meta-stale-publication-"));
     const runId = basename(work);
     const artifacts = resolve(work, "artifacts");
     const candidate = copyCandidate(work);
@@ -122,13 +123,13 @@ describe("live publication freshness", () => {
       const result = spawnSync(resolve(HARNESS, "summarize.sh"), [], {
         cwd: HARNESS,
         encoding: "utf8",
-        env: { ...envWithoutTrack(), ...live.environment },
+        env: { ...envWithoutTrack(), ...live.environment, BENCH_RUNS_DIR: runsDir },
       });
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
       expect(result.stdout).toMatch(new RegExp(`${runId}\\s+${MODEL.replace(/[/.]/g, "\\$&")}\\s+\\w+\\s+STALE-PROVENANCE`));
       expect(result.stdout).not.toContain(`(${runId})`);
     } finally {
-      rmSync(work, { recursive: true, force: true });
+      rmSync(runsDir, { recursive: true, force: true });
     }
   }, 900_000);
 
