@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Weekly OpenCode Go matrix: catalog, No Skills + Skills runs per High Usage model on
-# all four tracks, recost, then refresh the public site. Repeats per track come from
-# batch.sh (build 3, others 1); set REPS to override every track.
+# Weekly OpenCode Go matrix: catalog fetch, recost if the pinned price table
+# changed, rescore if the harness hashes changed, then No Skills + Skills runs
+# per High Usage model on all four tracks (plan-work.ts work list per track),
+# recost, then refresh the public site. Repeats per track come from batch.sh
+# (build 3, others 1); set REPS to override every track.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 H="$ROOT/harness"
@@ -32,6 +34,32 @@ if "$H/node_modules/.bin/tsx" "$H/go-cost.ts" --catalog > "$ROOT/reports/go-cata
 else
   echo "catalog fetch failed; continue with the pinned table" >&2
 fi
+
+# Recost first if the pinned price table changed (bench_incremental FR-4): a
+# price edit is a pure go-pricing.json operation over existing score.json
+# files and schedules no agent runs. The marker under reports/ records the
+# last-seen sha256 after each recost decision.
+PRICE_SHA="$(sha256sum "$H/go-pricing.json" | cut -d" " -f1)"
+PRICE_MARKER="$ROOT/reports/go-pricing.sha"
+if [ ! -f "$PRICE_MARKER" ] || [ "$(cat "$PRICE_MARKER")" != "$PRICE_SHA" ]; then
+  echo "PRICING CHANGED — recost every score.json from harness/go-pricing.json"
+  ./recost.sh
+fi
+printf "%s\n" "$PRICE_SHA" > "$PRICE_MARKER"
+
+# Rescore next if the harness hashes changed (bench_incremental FR-3): a
+# scoring-only harness change cures provenance staleness for every run with
+# persisted results, across all weeks, without an agent re-run. A
+# suite-content change stays an operator decision (regrade-run.sh /
+# regrade-all.sh, or FORCE=1); the rescore never decides that.
+HASHES="$("$H/node_modules/.bin/tsx" "$H/provenance.ts" --shell)"
+HASH_MARKER="$ROOT/reports/harness-hashes.sha"
+if [ ! -f "$HASH_MARKER" ] || [ "$(cat "$HASH_MARKER")" != "$HASHES" ]; then
+  echo "HARNESS HASHES CHANGED — rescore-doctor WEEK=all (cure provenance staleness)"
+  WEEK=all ./rescore-doctor.sh
+fi
+printf "%s\n" "$HASHES" > "$HASH_MARKER"
+
 # Build track first, then the bugfix, tests, and change tracks. rescore/recost/site
 # cover all four. A failed self-check or canary stops that track only.
 FAILED_TRACKS=""
