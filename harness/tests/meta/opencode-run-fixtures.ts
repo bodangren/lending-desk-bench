@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createFakeOpencode, TEST_MODEL } from "./schema4-fixtures";
@@ -13,7 +13,7 @@ export function jsonIfPresent(path: string): any {
 }
 
 /** Runs the real runner with canaries and a Podman recorder. No container starts. */
-export function captureOpencodeRun(arm: "a" | "b") {
+export function prepareOpencodeRun(arm: "a" | "b") {
   mkdirSync("/tmp/opencode", { recursive: true });
   const temp = mkdtempSync("/tmp/opencode/executor-red-");
   const fake = createFakeOpencode(temp);
@@ -21,6 +21,8 @@ export function captureOpencodeRun(arm: "a" | "b") {
   const work = resolve(ROOT, "runs", id);
   const out = resolve(work, "artifacts");
   const podmanCapture = resolve(temp, "podman.json");
+  const podmanControl = resolve(temp, "podman-control.json");
+  writeFileSync(podmanControl, JSON.stringify({ mode: "entry" }));
   const piHit = resolve(temp, "PI-HIT");
   const runtime = resolve(temp, "runtime");
   const skillRoot = resolve(temp, "skills");
@@ -41,11 +43,30 @@ else process.exitCode = 97;
   writeFileSync(podman, `#!${process.execPath}
 const fs = require("node:fs"), crypto = require("node:crypto");
 const stdin = fs.readFileSync(0), argv = process.argv.slice(2);
-fs.writeFileSync(${JSON.stringify(podmanCapture)}, JSON.stringify({argv,
+const control = JSON.parse(fs.readFileSync(${JSON.stringify(podmanControl)},"utf8"));
+const mounts = argv.flatMap((arg,i) => arg === "--mount" ? [Object.fromEntries(argv[i+1].split(",").map(part => part.split("=")))] : []);
+const candidate = mounts.find(mount => mount.dst === "/workspace")?.src;
+const out = candidate ? require("node:path").resolve(candidate,"../artifacts") : ${JSON.stringify(out)};
+const staging = fs.readdirSync(${JSON.stringify(runtime)});
+const record = {argv,
   env: Object.entries(process.env).map(([k,v]) => k+"="+v).sort(),
   stdin_sha256: crypto.createHash("sha256").update(stdin).digest("hex"),
-  agents_exists: fs.existsSync(${JSON.stringify(resolve(work, "candidate", "AGENTS.md"))})}));
-const mounts = argv.flatMap((arg,i) => arg === "--mount" ? [Object.fromEntries(argv[i+1].split(",").map(part => part.split("=")))] : []);
+  agents_exists: fs.existsSync(candidate+"/AGENTS.md"), staging, candidate};
+fs.writeFileSync(${JSON.stringify(podmanCapture)}, JSON.stringify(record));
+fs.appendFileSync(${JSON.stringify(resolve(temp, "podman-calls.jsonl"))},JSON.stringify(record)+"\\n");
+fs.writeFileSync(${JSON.stringify(resolve(temp, "stdin-payload"))},stdin);
+fs.writeFileSync(${JSON.stringify(resolve(temp, "podman-started"))},"started");
+if(control.mode !== "entry") {
+  if(control.mode === "leak") {
+    fs.mkdirSync(out+"/executor",{recursive:true});
+    fs.writeFileSync(out+"/executor/session-export.json",JSON.stringify({info:{tokens:{output:211}},messages:[{text:"CANARY-ACCESS-1 CANARY-REFRESH-1 org_CANARY1"}]}));
+    fs.appendFileSync(candidate+"/src/lib/loans.ts","\\n// CANARY-ACCESS-1 CANARY-REFRESH-1 org_CANARY1\\n");
+    console.log("CANARY-ACCESS-1 CANARY-REFRESH-1 org_CANARY1");
+    console.error("CANARY-ACCESS-1 CANARY-REFRESH-1 org_CANARY1");
+  }
+  if(control.mode === "hold") setTimeout(()=>{},60000);
+  else process.exitCode = control.mode === "failure" ? 17 : control.mode === "timeout" ? 124 : 0;
+} else {
 const entry = mounts.find(mount => mount.dst === "/entry/opencode-entry.sh");
 if (!entry) process.exitCode = 97;
 else {
@@ -59,10 +80,11 @@ else {
   argv.forEach((arg,i) => { if(arg === "--env") { const value=argv[i+1],eq=value.indexOf("="); if(eq !== -1) env[value.slice(0,eq)]=translate(value.slice(eq+1)); } });
   const script = privateRoot+"/entry.sh";
   fs.writeFileSync(script,translate(fs.readFileSync(entry.src,"utf8")));
-  const child = require("node:child_process").spawnSync("/bin/bash",[script],{cwd:${JSON.stringify(resolve(work, "candidate"))},env,input:stdin,timeout:10000,maxBuffer:8*1024*1024});
+  const child = require("node:child_process").spawnSync("/bin/bash",[script],{cwd:candidate,env,input:stdin,timeout:10000,maxBuffer:8*1024*1024});
   if(child.stdout) process.stdout.write(child.stdout);
   if(child.stderr) process.stderr.write(child.stderr);
   process.exitCode = child.status === null ? 97 : child.status;
+}
 }
 `);
   chmodSync(podman, 0o755);
@@ -76,12 +98,21 @@ else {
     // A canary exercises the old API-key forwarding path without a real credential.
     OPENCODE_API_KEY: "CANARY-ACCESS-99", THINKING: "xhigh",
   };
-  const result = spawnSync(resolve(HARNESS, "run.sh"), ["opencode-go", TEST_MODEL, arm, id], {
-    cwd: HARNESS, env, encoding: "utf8", timeout: 25_000, maxBuffer: 8 * 1024 * 1024,
-  });
   return {
-    arm, temp, fake, id, work, out, runtime, skillRoot, piHit, podmanCapture, result,
-    podman: jsonIfPresent(podmanCapture),
+    arm, temp, fake, id, work, out, runtime, skillRoot, piHit, podmanCapture, podmanControl, env,
+    execute() { return spawnSync(resolve(HARNESS, "run.sh"), ["opencode-go", TEST_MODEL, arm, id], {
+      cwd: HARNESS, env, encoding: "utf8", timeout: 25_000, maxBuffer: 8 * 1024 * 1024,
+    }); },
+    start() { return spawn(resolve(HARNESS, "run.sh"), ["opencode-go", TEST_MODEL, arm, id], {
+      cwd: HARNESS, env, detached: true, stdio: "ignore",
+    }); },
     cleanup() { rmSync(work, { recursive: true, force: true }); rmSync(temp, { recursive: true, force: true }); },
   };
+}
+
+/** Runs the prepared fixture without changing the existing capture contract. */
+export function captureOpencodeRun(arm: "a" | "b") {
+  const fixture = prepareOpencodeRun(arm);
+  const result = fixture.execute();
+  return { ...fixture, result, podman: jsonIfPresent(fixture.podmanCapture) };
 }

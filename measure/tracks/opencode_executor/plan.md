@@ -283,6 +283,18 @@ model, no real credential (NFR-3).
     Start: 2026-10-18T16:01:20+08:00. End: 2026-10-18T16:02:42+08:00. Exit: 1.
     `Test Files  3 failed | 26 passed (29)`; `Tests  22 failed | 172 passed (194)`.
     The JSON reports contain the same 22 failing names. All 170 existing tests pass. The tripwire stays unhit.
+  - Completed Red coverage adds invalid expiry cases, connection selection, foreign integrations, staging, interruption, batch checks, warning boundaries, and output redaction.
+    The signal tests require the start marker and non-empty staging before they send a signal.
+    At HEAD, staging is absent. These tests fail at that explicit prerequisite, rather than claim an interruption result.
+    A planted-canary control proves that the leak scanner detects a hit.
+  - R1: `cd harness && npm run test:meta:logic`.
+    Start: 2026-10-18T16:16:34+08:00. End: 2026-10-18T16:19:50+08:00. Exit: 1.
+    `Test Files  3 failed | 26 passed (29)`; `Tests  41 failed | 173 passed (214)`.
+  - R3: `cd harness && BENCH_TRACK=change npm run test:meta:logic`.
+    Start: 2026-10-18T16:19:50+08:00. End: 2026-10-18T16:23:04+08:00. Exit: 1.
+    `Test Files  3 failed | 26 passed (29)`; `Tests  41 failed | 173 passed (214)`.
+    Both JSON reports contain the same failing names. All 170 existing tests pass.
+    Twenty credential tests fail for missing behavior. The scanner control passes.
 - [ ] 2.4 Provenance and attestation: prove the schema 7 fields. Prove that
   attestation reads only the recorded executor. A fake upgrade at the
   recorded path keeps an earlier run attested and not stale. A changed skill
