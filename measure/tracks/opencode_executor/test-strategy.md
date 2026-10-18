@@ -15,6 +15,10 @@ runnable gate variants TRIPWIRE_R, P3R, and P4R (sections 2, 6, and 7). It
 adds credential edge tests and an expiry warning test for task 2.3. It ties
 row 2.7 to the Node discovery rule of `design.md`.
 
+Amendment 3: 2026-10-18, strategy role, role base `ff607e6`, after Review B
+RB-10. EXACT_AUDIT and SECRET_SCAN_HISTORY read the history without the
+author and committer lines. EXACT_AUDIT exits 1 on a hit or on `values=0`.
+
 ## 1. Scope and risk summary
 
 This track replaces the Pi executor with OpenCode 2 and the host Console
@@ -99,12 +103,15 @@ audit roles run it unchanged. The two variants below contain no `>` and no
 denied command.
 
 **SECRET_SCAN_HISTORY.** It scans the patch text of a commit range, also the
-removed lines. Replace `RANGE` with the phase range, for
+removed lines. The input form `git log -p --format=%B%n%N` gives the commit
+messages, the git notes, and the diffs. It omits the author and committer
+lines: these are public git metadata in every commit, not phase output
+(amendment 3, Review B RB-10). Replace `RANGE` with the phase range, for
 example `d27d414..HEAD`. It prints `history-scan-ok` on a pass. It never
 prints a match.
 
 ```
-R=RANGE; test "$(git rev-list --count "$R")" -ge 1 && test "$(git log -p --text --no-color --no-ext-diff "$R" | grep -cP 'eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._~+/=-]{16,}|\b(?:sk|wrk|org)[-_][A-Za-z0-9]{12,}|"(?:access|refresh|token|accessToken|refreshToken|apiKey|secret)"\s*:\s*"[^"<]{8,}"|(?<![A-Za-z0-9_-])(?=[A-Za-z0-9_-]*[0-9])(?=[A-Za-z0-9_-]*[a-z])(?=[A-Za-z0-9_-]*[A-Z])[A-Za-z0-9_-]{32,}(?![A-Za-z0-9_-])')" = 0 && echo history-scan-ok
+R=RANGE; test "$(git rev-list --count "$R")" -ge 1 && test "$(git log -p --text --no-color --no-ext-diff --format=%B%n%N "$R" | grep -cP 'eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._~+/=-]{16,}|\b(?:sk|wrk|org)[-_][A-Za-z0-9]{12,}|"(?:access|refresh|token|accessToken|refreshToken|apiKey|secret)"\s*:\s*"[^"<]{8,}"|(?<![A-Za-z0-9_-])(?=[A-Za-z0-9_-]*[0-9])(?=[A-Za-z0-9_-]*[a-z])(?=[A-Za-z0-9_-]*[A-Z])[A-Za-z0-9_-]{32,}(?![A-Za-z0-9_-])')" = 0 && echo history-scan-ok
 ```
 
 The first `test` fails on an empty or unknown range (A4). The second `test`
@@ -115,16 +122,21 @@ fails on one matching line. The pattern is the SECRET_SCAN pattern, unchanged.
 `>` comparison. It collects each string leaf of 16 characters or more from
 the export, except `http` URLs. It scans the named folders, and it skips
 symbolic links. After `--range`, it reads the patch text of each commit range
-with `child_process.execFileSync('git', [...])`. It prints only
+with `child_process.execFileSync('git', [...])`. The input form is
+`git log -p --format=%B%n%N`, as in SECRET_SCAN_HISTORY: the commit messages,
+the git notes, and the diffs, without the author and committer lines. The
+scan keeps every export value and has no pattern exclusion (A7). It prints only
 `exact-scan values=N hits=M`. Every failure prints only
 `exact-scan failed stage=<args|export|tree|range>` and exits 3: no target, a
 missing folder, an export that is not JSON, and an empty or unknown range.
 
 ```
-EXACT_AUDIT='var g="args";try{var fs=require("fs"),path=require("path"),ch=require("child_process");var a=process.argv.slice(1),i=a.indexOf("--range"),roots=i===-1?a:a.slice(0,i),ranges=i===-1?[]:a.slice(i+1),s=new Set(),hits=0;if(roots.length+ranges.length===0)throw 0;g="export";(function w(v){if(typeof v==="string"){if(16<=v.length&&!/^https?:/.test(v))s.add(v)}else if(v&&typeof v==="object")Object.values(v).forEach(w)})(JSON.parse(fs.readFileSync(0,"utf8")));function has(t){for(var x of s)if(t.includes(x))return true;return false}function scan(f){var st=fs.lstatSync(f);if(st.isSymbolicLink())return;if(st.isDirectory())fs.readdirSync(f).forEach(function(n){scan(path.join(f,n))});else if(st.isFile()&&has(fs.readFileSync(f,"latin1")))hits++}g="tree";roots.forEach(function(r){fs.statSync(r);scan(r)});g="range";ranges.forEach(function(r){var t=ch.execFileSync("git",["log","-p","--text","--no-color","--no-ext-diff",r],{stdio:["ignore","pipe","ignore"],maxBuffer:1024*1024*1024}).toString("latin1");if(t.length===0)throw 0;if(has(t))hits++});console.log("exact-scan values="+s.size+" hits="+hits)}catch(e){console.log("exact-scan failed stage="+g);process.exit(3)}'; opencode auth export opencode | node -e "$EXACT_AUDIT" -- FOLDER... --range RANGE...
+EXACT_AUDIT='var g="args";try{var fs=require("fs"),path=require("path"),ch=require("child_process");var a=process.argv.slice(1),i=a.indexOf("--range"),roots=i===-1?a:a.slice(0,i),ranges=i===-1?[]:a.slice(i+1),s=new Set(),hits=0;if(roots.length+ranges.length===0)throw 0;g="export";(function w(v){if(typeof v==="string"){if(16<=v.length&&!/^https?:/.test(v))s.add(v)}else if(v&&typeof v==="object")Object.values(v).forEach(w)})(JSON.parse(fs.readFileSync(0,"utf8")));function has(t){for(var x of s)if(t.includes(x))return true;return false}function scan(f){var st=fs.lstatSync(f);if(st.isSymbolicLink())return;if(st.isDirectory())fs.readdirSync(f).forEach(function(n){scan(path.join(f,n))});else if(st.isFile()&&has(fs.readFileSync(f,"latin1")))hits++}g="tree";roots.forEach(function(r){fs.statSync(r);scan(r)});g="range";ranges.forEach(function(r){var t=ch.execFileSync("git",["log","-p","--text","--no-color","--no-ext-diff","--format=%B%n%N",r],{stdio:["ignore","pipe","ignore"],maxBuffer:1024*1024*1024}).toString("latin1");if(t.length===0)throw 0;if(has(t))hits++});console.log("exact-scan values="+s.size+" hits="+hits);process.exit(hits===0&&0<s.size?0:1)}catch(e){console.log("exact-scan failed stage="+g);process.exit(3)}'; opencode auth export opencode | node -e "$EXACT_AUDIT" -- FOLDER... --range RANGE...
 ```
 
-Pass: `hits=0` and `values>=1`. Exit 3 fails the audit. The `--` separator
+Exit status (amendment 3): exit 0 only for `hits=0` with `values>=1`. Exit 1
+for `hits` of 1 or more, or for `values=0`. Exit 3 for a stage failure. Any
+exit other than 0 fails the audit. The `--` separator
 is necessary: without it, `node` reads `--range` as its own option.
 
 Test record (2026-10-18, strategy role, synthetic data only). A fake
@@ -143,6 +155,27 @@ value and a JWT-like string in one commit and removed them in the next.
 | EXACT_AUDIT, missing folder; empty range; unknown range; no target | `failed stage=tree`; `stage=range`; `stage=range`; `stage=args`, exit 3 |
 | EXACT_AUDIT, export that is not JSON and holds a planted value | `failed stage=export`; the value is not printed |
 | Both command lines, check against the denied text of the audit roles | no denied text |
+
+Test record, amendment 3 (2026-10-18, strategy role, synthetic data only).
+The fake export held 4 values of 16 characters or more. One value was an
+account email. Every commit of the synthetic repository had that email as
+the author email.
+
+| Case | Result |
+|---|---|
+| EXACT_AUDIT before amendment 3, range with the author email only | `values=4 hits=1`, exit 0 (the RB-10 defect) |
+| EXACT_AUDIT, range with the author email only | `values=4 hits=0`, exit 0 |
+| EXACT_AUDIT, value planted in a commit message | `hits=1`, exit 1 |
+| EXACT_AUDIT, value planted in a diff | `hits=1`, exit 1 |
+| EXACT_AUDIT, value planted in a git note | `hits=1`, exit 1 |
+| EXACT_AUDIT, value planted in a folder | `hits=1`, exit 1 |
+| EXACT_AUDIT, clean folder and a range with the author email only | `values=4 hits=0`, exit 0 |
+| EXACT_AUDIT, export with no value of 16 characters or more | `values=0 hits=0`, exit 1 |
+| EXACT_AUDIT, empty range; unknown range; missing folder; no target; export that is not JSON | exit 3 each; the planted value is not printed |
+| SECRET_SCAN_HISTORY grep count, token-like author name only: before; after | 1; 0 |
+| SECRET_SCAN_HISTORY grep count, JWT-like message plant; Bearer diff plant; clean commit | 1; 1; 0 |
+| SECRET_SCAN_HISTORY on the real range `d27d414..ff607e6` (28 commits): before; after | 0 matching lines; 0 matching lines |
+| Both amended command lines, check against the denied text of the audit roles | no denied text |
 
 **Scan use per role.**
 
