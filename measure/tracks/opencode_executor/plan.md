@@ -105,6 +105,21 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   the helper supply method. Record the owner answers to O1–O6. Correct
   `spec.md` where a fact differs. [c15b603](design.md)
 
+### Phase 1 gate evidence (jr-green, evidence-fix turn, 2026-10-18)
+
+- P1 composite, run with
+  `PHASE_BASE_SHA=d27d414cfeb8474ca89f8ef0722d16f1edb128e1` from the
+  repo root:
+  - start: 2026-10-18T11:59:58+08:00; end: 2026-10-18T12:01:04+08:00.
+  - exit code: 0 (all three parts of the `&&` chain passed: the
+    commit-range check, the SECRET_SCAN, and the meta suite).
+  - labeled Vitest lines: `Test Files  26 passed (26)`,
+    `Tests  170 passed (170)`.
+- EXACT scan, one credential frame over
+  `measure/tracks/opencode_executor` and
+  `measure/runs/opencode_executor` (2026-10-18, before the gate):
+  `exact-scan values=6 hits=0`.
+
 ## Phase 2: Test
 
 Failing meta tests for the contract in `design.md`. No network, no real
