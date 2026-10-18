@@ -198,7 +198,42 @@ Results:
 - EXACT at the end of each frame, over
   `measure/tracks/opencode_executor` and
   `measure/runs/opencode_executor`: `exact-scan values=6 hits=0`
-  (three frames, three scans).
+  in frames 1, 3, and 4.
+
+## 8. Frame 2 has no ending EXACT scan (review B RB-13)
+
+The table of section 7 lists 4 credential frames; only frames 1,
+3, and 4 report an ending EXACT scan. The true cause, from the
+execution record of this session: in frame 2 the no-flag
+container exited 1 (the transient failure of the table), so its
+log held no model id lines. The frame then ran an unguarded id
+extraction `grep -oE '^[a-z0-9.-]+/<id pattern>'` on that log.
+The grep found no match and exited 1. The frame ran under
+`set -euo pipefail` (the `set +e` guard covered only the two
+`podman run` calls), so the frame stopped at the grep, before
+its EXACT step. The EXIT trap then removed `$d`. Frame 2 never
+ran its EXACT scan. This record does not claim otherwise, and it
+adds no fourth scan receipt.
+
+What limits the exposure of the gap:
+
+- Frame 2 wrote only to its `$d`: the raw export, the access-only
+  copy, and the two container logs. No file left `$d`. The EXIT
+  trap removed `$d` by exact path.
+- The EXACT scans of frames 1, 3, and 4 ran over the same trees
+  (`measure/tracks/opencode_executor` and
+  `measure/runs/opencode_executor`) after frame 2, each with
+  `values=6 hits=0`. Each scan collects the current export values
+  fresh, so the later scans covered the same values that frame 2
+  held.
+- The gate EXACT scan of the same day (plan.md gate blocks) and
+  the review B EXACT_AUDIT over the trees and the phase range
+  also report `hits=0`.
+
+What the record cannot show: it cannot show an ending scan for
+frame 2 itself, because that scan never ran. A repeat of frame 2
+with a fixed frame script is possible; the orchestrator
+authorizes any repeat.
 
 Decision: `OPENCODE_DISABLE_MODELS_FETCH=1` stays in the
 confirmed disable set and in the section 1.2 argument list of

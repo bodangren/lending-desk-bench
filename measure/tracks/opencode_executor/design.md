@@ -196,10 +196,12 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
   and `GET /api/config`
   (evidence/probe-agents-md-and-skill-activation.txt §4).
 - Open contract risk (review A R1, owner decision pending): the
-  activation endpoint returns 204 for the built-in skills
-  `opencode` and `report` in BOTH arms, even with
-  `deny skill *`, and in Arm A the activation appended the full
-  built-in skill content to the session. The permission filter
+  activation endpoint returns 204 for the built-in skill
+  `opencode` in BOTH arms, even with `deny skill *`, and in Arm A
+  the activation appended the full `opencode` skill content to
+  the session. The probe tested the activation of `opencode`
+  only; `report` appears in a `GET /api/skill` list response and
+  its activation was not probed (review A M1). The permission filter
   that removes built-ins from the model-visible skill list
   (`SkillInstructions.load`, the `b9` filter) is static evidence
   only. This puts the Arm A "no skills" contract at risk at

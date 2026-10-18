@@ -14,25 +14,38 @@ curl -fsSL -o ripgrep.tar.gz \
   https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz
 ```
 
-## 2. Upstream checksum check
+## 2. Upstream checksum check and tarball hash (review A M9)
 
-Command run for this record:
+Commands run for this record (2026-10-18, 15:25 +08:00, in a
+private `mktemp -d` frame under `$XDG_RUNTIME_DIR`, removed by the
+EXIT trap):
 
 ```
+curl -fsSL -o "$d/ripgrep.tar.gz" \
+  https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz
+sha256sum "$d/ripgrep.tar.gz"
 curl -fsSL https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz.sha256
 ```
 
-Output (verbatim, exit 0):
+`sha256sum` output of the downloaded tarball (verbatim):
+
+```
+1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599  /run/user/1000/oe-p1.pwEY9M/ripgrep.tar.gz
+```
+
+Upstream `.sha256` output (verbatim, exit 0):
 
 ```
 1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599  ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz
 ```
 
-The upstream value equals the tarball SHA-256 that design.md
-section 5 records
-(`1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599`).
-The operator setup downloads the tarball, computes its SHA-256,
-and compares it against this upstream value before extraction.
+The computed tarball hash equals the upstream value, and both
+equal the tarball SHA-256 that design.md section 5 records.
+The downloaded tarball was removed by its exact path inside the
+frame; the frame trap removed the rest. The binary is not
+committed. The operator setup downloads the tarball, computes its
+SHA-256, and compares it against the upstream value before
+extraction.
 
 ## 3. Extracted binary
 

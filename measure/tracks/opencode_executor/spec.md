@@ -301,7 +301,13 @@ Phase 1 must confirm every item that this list marks "to confirm".
   Claude-compatibility discovery never load.
 - **Arm A (No Skills):** the workspace has no `AGENTS.md` (the current
   move-out behavior stays). The container mounts no skill. The config has a
-  `skill` rule `deny *`, which also removes built-in skills. The run has no
+  `skill` rule `deny *`. The rule removes the built-in skills from the
+  model-visible skill list (static evidence). A Phase 1 no-prompt probe
+  shows that the session-activation API does not apply the rule: the
+  built-in `opencode` activates in both arms. This is an open contract
+  risk (`design.md` section 1.5). Task 4.3 tests the enforcement at
+  tool-call time; a loaded Arm A skill fails the task and goes to the
+  owner. The run has no
   context files.
 - **Arm B (Skills):** the fixture `AGENTS.md` stays. The Arm B
   config adds `instructions: ["/workspace/AGENTS.md"]` so the

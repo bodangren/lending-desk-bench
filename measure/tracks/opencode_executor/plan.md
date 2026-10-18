@@ -69,7 +69,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   stdin import and the file import both work without the flag —
   review-fix probe). Record
   the store location. Confirm that the import leaves no other copy (spec
-  FR-3). [9a638b6](evidence/task-1.3-1.4-credential.txt) (v2.0.32
+  FR-3). [9a638b6](evidence/task-1.3-1.4-credential.txt); the stdin import and models-fetch probes: (evidence/probe-stdin-import-and-models-fetch.txt) (v2.0.32
   --standalone limitation: see evidence; evidence-fix turn: hash
   values removed, addendum reworded — a container refresh stays
   unproven)
@@ -85,17 +85,17 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   Confirm the effect of
   `OPENCODE_DISABLE_CLAUDE_CODE`, `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS`,
   `OPENCODE_DISABLE_AUTOUPDATE`, `OPENCODE_DISABLE_PROJECT_CONFIG`, and
-  `OPENCODE_DISABLE_MODELS_FETCH` (spec FR-4). [d3ffe0c](evidence/task-1.5-isolation-and-config.txt)
+  `OPENCODE_DISABLE_MODELS_FETCH` (spec FR-4). [d3ffe0c](evidence/task-1.5-isolation-and-config.txt); the flag and arm probes: (evidence/probe-agents-md-and-skill-activation.txt), (evidence/probe-stdin-import-and-models-fetch.txt)
 - [x] 1.6 [1c767b8] Skill path and arm proof: list the built-in skill IDs. Confirm
   five-skill discovery from a read-only mount through a `skills` config entry
   or the XDG skills path. Confirm the `skill` deny and allow rules. Name the
   commands that list skills, instruction files, MCP servers, and plugins
-  without a model call (spec FR-4). [8f25f19](evidence/task-1.6-skill-path-and-arm-proof.txt)
+  without a model call (spec FR-4). [8f25f19](evidence/task-1.6-skill-path-and-arm-proof.txt); the skill activation probe: (evidence/probe-agents-md-and-skill-activation.txt)
 - [x] 1.7 [4fefda5] Container runtime needs: confirm that the binary starts in the
   pinned Node image. Record the helper downloads, such as ripgrep, language
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
-  Select one helper supply method (spec FR-4). [15c1805](evidence/task-1.7-container-runtime.txt)
+  Select one helper supply method (spec FR-4). [15c1805](evidence/task-1.7-container-runtime.txt); the ripgrep source check: (evidence/ripgrep-tarball-source.txt)
   (design turn: host rg fails in the image; the supply source becomes
   the static musl build, see evidence §9)
 - [x] 1.8 [4fefda5] Token usage format: record the event fields for input, output,
@@ -300,11 +300,21 @@ model, no real credential (NFR-3).
 - [ ] 4.1 Run both gate commands and the cron rehearsal on the final HEAD.
   Record the exit codes and the Vitest summaries.
 - [ ] 4.2 Container probe without a model call for Arm A and Arm B. Archive
-  the output under `reports/` (spec FR-4).
+  the output under `reports/` (spec FR-4). The probe writes the 16-line
+  `skill-probe` record in the form `skill-probe arm=<a|b> id=<id>
+  status=<http status>` and keeps the per-arm startup logs for the
+  watcher check (test-strategy.md section 7).
 - [ ] 4.3 Live smoke after 2026-10-21 21:44 (+08:00): one build-track run per
   arm with one low-cost batch model. Check the valid score, the schema 7
   provenance, and the recost. Check that the secret scan is clean and that
-  the host Console login works (spec acceptance criteria).
+  the host Console login works (spec acceptance criteria). Run the 10
+  `enforce` probes of test-strategy.md section 7 with the Arm B positive
+  control (`skill-measure` must complete), and write the record in the
+  form `enforce arm=<a|b> probe=<name> attempt=<yes|no>
+  status=<completed|denied|error|none>`. Check that the graded Arm A run
+  has no `skill` part and that the Arm B run has `skill` parts only for
+  the five ids. A loaded Arm A skill fails the task and goes to the
+  owner (the owner-decision rule).
 - [ ] 4.4 Host dry run: `BENCH_DRY_RUN=1 ./batch.sh` per track prints the
   OpenCode work list. The executor preflight passes on the host. `WEEK=all
   ./rescore-doctor.sh` prints SKIP for legacy Pi runs, and their `score.json`
