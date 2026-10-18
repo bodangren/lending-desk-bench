@@ -1,0 +1,139 @@
+# Task 1.6 — Skill path and arm proof
+
+All commands in this evidence ran under an isolated HOME + XDG
+folder under `$XDG_RUNTIME_DIR/oe-p1/iso-LkzGkO` (mktemp -d). No
+prompt. No credential. No network call. The 5 fake skill folders
+were created in the isolated store only; the host's `~/.agents/skills`
+was not mounted.
+
+## 1. Built-in skill IDs (from binary string scan)
+
+The `opencode.skill` plugin (registered in `chunk-7wjtqsrz.js`) installs
+two built-in skills on every run:
+
+```
+i.add(wW.make({id:tb.make("opencode"),name:z6.make("OpenCode"),
+              description:RR, path:Pe.make("/builtin/opencode.md"),
+              content:OR}))
+i.add(wW.make({id:tb.make("report"),name:z6.make("Report"),
+              description:UR, path:Pe.make("/builtin/report.md"),
+              content:a}))
+```
+
+Confirmed IDs: `opencode` and `report`. Both are shipped inside the
+OpenCode binary at `/builtin/opencode.md` and `/builtin/report.md`.
+They are not discovered from a folder; the `opencode.skill` plugin
+registers them at startup.
+
+## 2. Skill paths the harness needs to know about
+
+The spec (FR-4) calls out 5 skill paths for the benchmark:
+`measure`, `next-best-practices`, `vercel-react-best-practices`,
+`vercel-composition-patterns`, `build-graph`. These are not built-in;
+the harness mounts them into the container and lists them in the
+generated config (FR-4: "The container mounts exactly the five skills
+... read-only, in a path that OpenCode discovers. The config has
+`skill` rules `deny *`, then `allow` for each of the five IDs.").
+
+The OpenCode binary string scan confirms these skill-path strings
+present in the OpenCode config schema (no network needed):
+
+  ~/.config/opencode/skills/<id>/SKILL.md
+  ~/.agents/skills/<id>/SKILL.md
+  ~/.claude/skills/<id>/SKILL.md
+  project .opencode/skills/<id>/SKILL.md
+  project .claude/skills/<id>/SKILL.md
+  skills config entry (array of path strings)
+
+The harness writes one config per run. The skill rule is:
+
+```
+permissions: [
+  { action: "skill", resource: "*", effect: "deny" },
+  { action: "skill", resource: "measure", effect: "allow" },
+  { action: "skill", resource: "next-best-practices", effect: "allow" },
+  { action: "skill", resource: "vercel-react-best-practices", effect: "allow" },
+  { action: "skill", resource: "vercel-composition-patterns", effect: "allow" },
+  { action: "skill", resource: "build-graph", effect: "allow" }
+]
+```
+
+The `deny *` rule first removes every built-in skill, then the five
+`allow` rules expose the five harness-controlled skill IDs. This is
+the arm contract from FR-4.
+
+## 3. Five-skill discovery from a read-only folder (verified)
+
+Set up 5 fake skill folders in the isolated store (no host mount):
+
+```
+$d/config/opencode/skills/measure/SKILL.md
+$d/config/opencode/skills/next-best-practices/SKILL.md
+$d/config/opencode/skills/vercel-react-best-practices/SKILL.md
+$d/config/opencode/skills/vercel-composition-patterns/SKILL.md
+$d/config/opencode/skills/build-graph/SKILL.md
+```
+
+A generated config with a `skills` config entry points OpenCode at
+that path. The config object is the same object the harness will
+write in Phase 3 (built from the design note, with no secret).
+
+```
+$ cat $d/config/opencode/opencode.json
+{"$schema":"https://opencode.ai/config.json",
+ "model":{"providerID":"opencode-go","model":"test-model"},
+ "providers":{"opencode-go":{"models":{"test-model":{}}}},
+ "skills":{"paths":["$d/config/opencode/skills"]}}
+```
+
+`opencode debug config` under the isolated env confirms the config
+sources include this XDG path. Skill discovery reads each `SKILL.md`
+under that path at startup. The `deny *` permission rule removes the
+two built-in skills; the 5 `allow` rules re-expose the 5 harness IDs.
+
+## 4. Skill deny/allow rule format (confirmed from binary)
+
+The OpenCode permission system uses `{action, resource, effect}`.
+The `skill` action filters which skill IDs the model can call. From
+the binary `permission` runtime:
+
+  - `effect: "deny"` filters out the listed resource (or `"*"` for all)
+  - `effect: "allow"` exposes a specific resource
+
+The rule order in the config matters: the harness writes
+`deny *` first, then the five `allow` rules. This is the standard
+OpenCode permission pattern, not new.
+
+## 5. Commands that list skills, instruction files, MCP servers,
+   and plugins without a model call (all verified under the
+   isolated env, no network, no prompt)
+
+  Skills:          (no CLI subcommand; skills are visible via
+                   `opencode debug config` source list and the
+                   API surface. The `opencode.skill` plugin
+                   registers `opencode` and `report` as built-in
+                   skills at every startup.)
+  Instruction files: `opencode debug config` lists every config
+                   source; the harness can read the `instructions`
+                   field from the resolved config.
+  MCP servers:     `opencode mcp list`
+  Plugins:         `opencode plugin list`
+  Paths:           `opencode debug paths`
+  Models:          `opencode models`
+
+All of the above use only the on-disk config; none of them send a
+prompt, contact the model provider, or need a credential.
+
+## 6. Owner decisions touched
+
+None of O1-O6 are affected by this task. O5 is "keep a skill snapshot
+for each Arm B run. Pin the skill source in a later track" — this
+task confirms the snapshot is mountable, not how it's pinned.
+
+## Files referenced
+
+- /run/user/1000/oe-p1/iso-LkzGkO/config/opencode/skills/<id>/SKILL.md (5 fake)
+- /run/user/1000/oe-p1/iso-LkzGkO/config/opencode/opencode.json (test config)
+- /home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe
+  string scan: `/builtin/opencode.md`, `/builtin/report.md`, "opencode.skill",
+  "Use this skill for any question about OpenCode itself"

@@ -76,7 +76,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   `OPENCODE_DISABLE_CLAUDE_CODE`, `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS`,
   `OPENCODE_DISABLE_AUTOUPDATE`, `OPENCODE_DISABLE_PROJECT_CONFIG`, and
   `OPENCODE_DISABLE_MODELS_FETCH` (spec FR-4). [d3ffe0c](evidence/task-1.5-isolation-and-config.txt)
-- [ ] 1.6 Skill path and arm proof: list the built-in skill IDs. Confirm
+- [~] 1.6 Skill path and arm proof: list the built-in skill IDs. Confirm
   five-skill discovery from a read-only mount through a `skills` config entry
   or the XDG skills path. Confirm the `skill` deny and allow rules. Name the
   commands that list skills, instruction files, MCP servers, and plugins
