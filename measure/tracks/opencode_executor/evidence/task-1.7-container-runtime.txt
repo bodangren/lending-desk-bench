@@ -293,3 +293,39 @@ The earlier session cited its stdout/stderr excerpts under
   in the local Podman store.
 - `harness/run.sh` (the existing digest pin and the container
   flags).
+
+## 9. Correction (design turn, 2026-10-18): the host `rg` does not
+   run in the image; the supply method needs a static binary
+
+Section 4.4 named the host `/usr/bin/rg` (ripgrep 15.1.0 from the
+host distro package, glibc, dynamically linked) as the bind-mount
+source. That binary does **not** run in the pinned image:
+
+- The image is Debian GNU/Linux 12 (bookworm), glibc 2.36
+  (`/etc/os-release`).
+- The host `/usr/bin/rg` requires `GLIBC_2.39`. The exec test in
+  the container prints:
+  `/lib/x86_64-linux-gnu/libc.so.6: version 'GLIBC_2.39' not found
+  (required by /usr/local/bin/rg)`.
+- The live prompts of task 1.1 never invoked the `grep` tool, so
+  this break did not surface in Phase 1 runs.
+
+Section 4.1 also reconstructed the download URL without the
+`unknown-` name part. The real release asset is
+`ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz`.
+
+Verified replacement: the official ripgrep 15.1.0 release asset
+`ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz` holds a
+static-pie ELF. It runs in the pinned image:
+
+```
+$ /usr/local/bin/rg --version
+ripgrep 15.1.0 (rev af60c2de9d)
+
+$ sha256sum rg
+ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2
+```
+
+The mount point and flags of section 4.4 stay: bind-mount the
+binary read-only at `/usr/local/bin/rg`. Only the source of the
+binary changes. `design.md` section 5 records the full method.
