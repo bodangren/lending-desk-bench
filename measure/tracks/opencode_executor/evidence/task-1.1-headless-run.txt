@@ -213,7 +213,7 @@ model. The owner read the Go quota before and after the two live
 prompts: monthly 90.79623% before and 90.79700% after; 5-hour
 0.0000433% before and 0.00387% after. The cost was very small,
 but not proven zero. The quota numbers are in the ledger
-(`evidence/prompt-ledger.md`).
+(`design.md` section 8).
 
 ## 7. NFR-4 prompt count
 
@@ -221,7 +221,7 @@ but not proven zero. The quota numbers are in the ledger
 - Opencode `run` commands: 3 (T1a, T1b, T1c offline; 1 live).
   The offline runs are not live and are recorded in the
   evidence but not in the NFR-4 prompt count.
-- See `evidence/prompt-ledger.md` for the full ledger.
+- `design.md` section 8 holds the full ledger.
 
 ## 8. What this run proves (vs. what stays unproven)
 
@@ -255,5 +255,5 @@ The earlier session cited `/tmp/oe-p1-live1-stdout.json`,
 (evidence-fix turn). The repo evidence for this task is:
 
 - evidence/live1-event-stream.redacted.json (the redacted stream)
-- evidence/prompt-ledger.md (the ledger)
+- design.md section 8 (the ledger)
 - evidence/task-1.3-1.4-credential.txt (the credential shape)

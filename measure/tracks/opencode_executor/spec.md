@@ -67,9 +67,13 @@ Phase 1 must confirm every item that this list marks "to confirm".
   `--auto` approves every permission that a rule does not deny.
 - `opencode auth export [target]` prints stored credentials, secrets
   included, as JSON. `opencode auth import [file]` imports that JSON and
-  reads stdin when the file is omitted. Both accept `--standalone`. A running
-  OpenCode also serves `GET /api/credential` and `POST /api/credential`
-  (OpenChamber `lib/opencode/auth.js`, per the owner).
+  reads stdin when the file is omitted. The v2.0.32 help text lists
+  `--standalone` for these subcommands, but the binary's flag parser
+  rejects it: `Unrecognized flag: --standalone in command opencode auth`
+  (task 1.3 evidence). The import inside a container works without the
+  flag. A running OpenCode also serves `GET /api/credential` and
+  `POST /api/credential` (OpenChamber `lib/opencode/auth.js`, per the
+  owner).
 - `opencode auth list` shows the `opencode` integration ("OpenCode Console")
   with one OAuth connection. It shows no `opencode-go` integration. With that
   login, `opencode models` lists 30 `opencode-go/*` models.
@@ -165,14 +169,14 @@ Phase 1 must confirm every item that this list marks "to confirm".
 - `<id>` is the `go-pricing.json` model key. An agent run accepts only the
   `opencode-go` provider. Overlay runs (`AGENT_SKIP=1`) keep their current
   behavior.
-- Variant: the run uses the model's default variant and adds no `#variant`
-  (open question O1). `score.json` records the variant, or `default`, in
-  `thinking_requested`.
+- Variant (O1, fixed): the run uses the model's default variant and adds
+  no `#variant`. `score.json` records `default` in `thinking_requested`.
 - Tools: the `build` agent defaults, with `deny` rules for `question` (no
-  client can answer it) and `websearch` (open question O2).
-- Every token that the run spends must be in `session.json`. If subagent
-  usage is not in the event stream, the config denies `subagent` (open
-  question O3).
+  client can answer it) and `websearch` (O2, fixed: the Console web
+  search is outside the Go plan; `webfetch` stays allowed).
+- Subagents (O3, fixed): the config denies `subagent`. The subagent runs
+  its own session, and its token usage is not in the parent event stream
+  (task 1.8 evidence).
 - The "agent produced no changes" and "agent emitted no output tokens" gates
   stay. They read the OpenCode usage from FR-7.
 
@@ -204,11 +208,13 @@ Phase 1 must confirm every item that this list marks "to confirm".
   more than one Console connection, the harness uses the active one. It
   stops when the active one is ambiguous.
 - Token rotation design:
-  1. **Host refresh first.** If `expires` is earlier than now plus the run
-     window, the harness makes the host OpenCode refresh the login, then
-     exports again. Phase 1 names the refresh trigger. If the token still
-     does not cover the run window, the run stops before the agent. The
-     reason is "Console credential does not cover the run window".
+  1. **Run-window check, fail closed.** v2.0.32 has no refresh trigger
+     that sends no prompt, so the harness never forces a host refresh.
+     The preflight compares `expires` with now plus the run window. If
+     the token does not cover the run window, the run stops before the
+     agent. The reason is "Console credential does not cover the run
+     window". The weekly report warns when `expires` is within 7 days.
+     The operator renews the login interactively on the host.
   2. **Access-only copy.** The container credential omits the refresh token.
      If the import requires the field, the harness writes an inert
      placeholder. The container OpenCode cannot refresh, so it cannot rotate
@@ -218,8 +224,10 @@ Phase 1 must confirm every item that this list marks "to confirm".
      copy invalid.
 - Delivery: the harness streams the container credential on the container
   stdin. A read-only entry script (`harness/opencode-entry.sh`) imports it
-  into the isolated store with `opencode auth import --standalone`. Then it
-  starts `opencode run` with stdin from `/dev/null`.
+  into the empty isolated store with `opencode auth import` (no
+  `--standalone`; v2.0.32 rejects that flag for `auth`, and the import
+  into the empty isolated store works without it). Then it starts
+  `opencode run` with stdin from `/dev/null`.
 - Fallback delivery, only if Phase 1 shows that stdin import fails: one 0600
   file in a 0700 directory under
   `$XDG_RUNTIME_DIR/lending-desk-bench/<run-id>/`, mounted read-only. The
@@ -282,9 +290,12 @@ Phase 1 must confirm every item that this list marks "to confirm".
 - The current hardening stays: `--read-only`, `--cap-drop=ALL`,
   `no-new-privileges`, `--userns=keep-id`, `slirp4netns` with
   `allow_host_loopback=false`, `--pull=never`, and the digest-pinned image.
-- If OpenCode needs helper executables at run time (for example ripgrep or
-  language servers), Phase 1 selects one supply method. The runtime flags
-  record it.
+- OpenCode needs the ripgrep helper for its built-in `grep` tool. The
+  harness ships the static musl ripgrep 15.1.0 release binary
+  (`ripgrep-15.1.0-x86_64-unknown-linux-musl`, static-pie) and bind-mounts
+  it read-only at `/usr/local/bin/rg`. The host distro `rg` does not run
+  in the image (glibc mismatch, task 1.7 evidence §9). The preflight
+  verifies the helper SHA-256 before each batch.
 - A container probe without a model call proves the arm contract. Its output
   shows the config sources, the skills, the instruction files, the MCP
   servers, and the plugins for each arm.
@@ -298,6 +309,7 @@ Phase 1 must confirm every item that this list marks "to confirm".
   - `model_ref` (`opencode-go/<id>`) and `variant` (or `null`);
   - `config_sha256` of `artifacts/executor/opencode.json`;
   - `entry_sha256` of the entry script;
+  - `helpers`: `{rg: {path, sha256, version}}` of the shipped ripgrep;
   - `skills` (`{id: tree sha256}`), `skill_tree_sha256`, and the snapshot at
     `artifacts/executor/skills/<id>/`;
   - `runtime_flags`, `runtime_flags_sha256`, `cli_flags`, and
@@ -334,9 +346,13 @@ Phase 1 must confirm every item that this list marks "to confirm".
 
 ### FR-7 — Cost
 
-- `usage.ts` reads the OpenCode `--format json` event stream, plain or `.gz`.
-  It returns the current `Usage` shape. Phase 1 confirms the field mapping
-  for input, output, reasoning, cache read, and cache write.
+- `usage.ts` reads the OpenCode session export that the entry script
+  writes after the run (`opencode session export <sessionID>`), plain or
+  `.gz`. The whole-session totals come from `info.tokens`: `input`,
+  `output`, `reasoning`, `cache.read`, and `cache.write`. The
+  `--format json` event stream can lack the usage of the final step, so
+  it is a cross-check only (task 1.8 evidence). The parser returns the
+  current `Usage` shape.
 - Reasoning tokens count as output tokens, unless Phase 1 shows that the
   event stream already includes them in output.
 - `go-cost.ts` recosts from that usage with the same `go-pricing.json`
@@ -473,28 +489,30 @@ Phase 1 must confirm every item that this list marks "to confirm".
   edit) and the catalog drift refresh.
 - The cron schedule and the remaining bench_incremental tasks.
 
-## Open questions for the owner
+## Open questions for the owner — answered (2026-10-18)
 
-- **O1 — Variant.** Recommendation: the model's default variant, because
-  OpenCode users get it by default. The alternative is the highest advertised
-  variant, as close as possible to the earlier Pi `--thinking max` policy.
-- **O2 — Web tools.** Recommendation: deny `websearch`, because it can use
-  Console web search, which is outside the Go plan. Keep `webfetch`, per the
-  owner decision of 2026-09-24 (public repository, open container network).
-- **O3 — Subagents.** Recommendation: allow them if Phase 1 shows that their
-  token usage is in the event stream. Deny them otherwise.
-- **O4 — First week size.** The first OpenCode week schedules the full
-  matrix. That is 19 batch models, 2 arms, and 6 repeats across the tracks:
-  228 runs. Recommendation: accept it. The batch is serial, and the next week
-  continues from the work list. The alternative is `REPS_BUILD=1` for the
-  first week.
-- **O5 — Arm B skill drift.** The host `measure` skill changes hourly. The
-  per-run snapshot records each version, but Arm B content can differ
-  between runs. Recommendation: keep the snapshot in this track, and pin the
-  skill source in a later track (`tech-debt.md` option 1).
-- **O6 — Publish after a failed week.** The cron publishes the site even when
-  every track batch fails (commit `96b3498`). Recommendation: decide this
-  outside this track.
+Phase 1 recorded the owner answers in `design.md` section 7. The
+questions below keep their original wording for the record.
+
+- **O1 — Variant (fixed: default).** The run uses the model's
+  default variant and adds no `#variant`. `score.json` records
+  `default` in `thinking_requested`.
+- **O2 — Web tools (fixed: deny `websearch`, keep `webfetch`).**
+  Console web search is outside the Go plan. `webfetch` stays
+  allowed per the owner decision of 2026-09-24.
+- **O3 — Subagents (fixed: deny).** The subagent runs its own
+  session. Its token usage is not in the parent event stream, so
+  the config denies `subagent` (task 1.8 evidence).
+- **O4 — First week size (fixed: full matrix).** The first
+  OpenCode week schedules the full matrix: 19 batch models,
+  2 arms, and 6 repeats across the tracks, 228 runs. The batch
+  is serial, and the next week continues from the work list.
+- **O5 — Arm B skill drift (fixed: per-run snapshot).** The
+  harness copies the five skill folders per run. Pinning the
+  skill source happens in a later track (`tech-debt.md`
+  option 1).
+- **O6 — Publish after a failed week (out of scope).** The owner
+  decides this outside this track.
 
 ## Related tech debt (`tech-debt.md`)
 
