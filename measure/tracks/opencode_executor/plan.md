@@ -49,11 +49,11 @@ Read-only investigation of the host OpenCode 2. Phase 1 writes only files in
 `measure/tracks/opencode_executor/`: `design.md`, redacted evidence, and
 corrections to `spec.md`. Red starts only after task 1.9 is complete.
 
-- [~] 1.1 Headless run contract: confirm the flags `run --standalone --format
+- [x] 1.1 Headless run contract: confirm the flags `run --standalone --format
   json --auto --model opencode-go/<id>`. Record the exit codes for a provider
   error and for a timeout. Record the stdin behavior and the JSON event types.
   Confirm that `--auto` leaves no permission prompt. Use one tiny prompt with
-  a free Go model in a throwaway container (spec FR-1).
+  a free Go model in a throwaway container (spec FR-1). [52beaa3](evidence/task-1.1-headless-run.txt)
 - [x] 1.2 Cron self-check root cause: find the call that leaves the `tsx`
   output files (`score.json`, `candidate-contract.json`) empty under the
   crontab PATH. The 2026-10-18 reproduction failed 3 tests
@@ -86,11 +86,11 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
   Select one helper supply method (spec FR-4). [ed98b8e](evidence/task-1.7-container-runtime.txt)
-- [~] 1.8 Token usage format: record the event fields for input, output,
+- [x] 1.8 Token usage format: record the event fields for input, output,
   reasoning, cache read, and cache write. Record whether they are per step or
   cumulative. Confirm whether subagent usage reaches the parent event stream.
   Save one redacted event stream from task 1.1 in the track directory (spec
-  FR-7).
+  FR-7). [52beaa3](evidence/task-1.8-token-usage.txt)
 - [~] 1.9 Design note: write `design.md`. It gives the confirmed command line,
   environment, mounts, config, and credential flow. It gives the field lists
   of identity schema 2 and provenance schema 7. It gives the usage mapping and
