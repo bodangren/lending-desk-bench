@@ -1,0 +1,149 @@
+
+> test:meta:logic
+> BENCH_META=1 vitest run tests/meta --maxWorkers=1 --exclude 'tests/meta/runtime-isolation*.ts' --exclude 'tests/meta/run-executor-provenance.test.ts'
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/daniebo/Desktop/lending-desk-bench/harness[39m
+
+ [31m❯[39m tests/meta/grade-exit.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 21822[2mms[22m[39m
+[31m     [31m×[31m exits nonzero when score.ts produces an invalid record[39m[33m 12685[2mms[22m[39m
+[31m     [31m×[31m keeps a structurally valid gate-blocked record nonpublishable and nonrankable[39m[33m 9134[2mms[22m[39m
+ [32m✓[39m tests/meta/bench-incremental.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 16533[2mms[22m[39m
+     [33m[2m✓[22m[39m classifies new, failing, and current models per track and arm [33m 4430[2mms[22m[39m
+     [33m[2m✓[22m[39m uses provenance identity instead of run-ID shape for diagnostic runs [33m 1708[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps selector output byte-identical when BENCH_TRACK leaks [33m 5620[2mms[22m[39m
+     [33m[2m✓[22m[39m schedules only work-list rows in dry-run and restores the full matrix with FORCE=1 [33m 4637[2mms[22m[39m
+ [31m❯[39m tests/meta/runner-safety.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 4556[2mms[22m[39m
+     [32m✓[39m rejects unsafe run IDs before destructive candidate setup[32m 4[2mms[22m[39m
+     [32m✓[39m uses the shared allowlist and protected-fixture contract in both run paths[32m 1[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects a protected-file mutation through the executable candidate contract [33m 1320[2mms[22m[39m
+[31m     [31m×[31m standalone grade rejects a protected candidate mutation before gate or suites[39m[33m 1544[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects missing raw reports instead of collecting an empty score record [33m 1097[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects duplicate result IDs instead of overwriting either report [33m 483[2mms[22m[39m
+     [32m✓[39m emits an explicit provenance_valid boolean on every score record[32m 102[2mms[22m[39m
+     [32m✓[39m keeps AGENTS.md available in Arm B[32m 1[2mms[22m[39m
+ [32m✓[39m tests/meta/publication-freshness.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1753[2mms[22m[39m
+     [33m[2m✓[22m[39m summary rejects a forged trusted record when its live provenance is stale [33m 1495[2mms[22m[39m
+ [32m✓[39m tests/meta/score-attestation.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 1500[2mms[22m[39m
+ [32m✓[39m tests/meta/executor-provenance.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1112[2mms[22m[39m
+     [33m[2m✓[22m[39m makes score reject stale, incomplete, or mismatched execution bindings [33m 600[2mms[22m[39m
+     [33m[2m✓[22m[39m makes freshness recompute and reject stale, incomplete, or mismatched execution bindings [33m 509[2mms[22m[39m
+ [32m✓[39m tests/meta/semantic-public-api.test.ts [2m([22m[2m34 tests[22m[2m)[22m[33m 939[2mms[22m[39m
+ [32m✓[39m tests/meta/executor-attestation.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 1320[2mms[22m[39m
+     [33m[2m✓[22m[39m fails closed for a fresh agent score missing 'both cohort fields' [33m 750[2mms[22m[39m
+ [32m✓[39m tests/meta/bugfix-provenance.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 485[2mms[22m[39m
+     [33m[2m✓[22m[39m accepts current bugfix bindings and rejects stale registry, set, or variant hashes [33m 379[2mms[22m[39m
+ [32m✓[39m tests/meta/bench-v2.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 453[2mms[22m[39m
+ [32m✓[39m tests/meta/candidate-api-contract.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 412[2mms[22m[39m
+ [32m✓[39m tests/meta/provenance-validation.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 329[2mms[22m[39m
+     [33m[2m✓[22m[39m invalidates every mismatched provenance binding [33m 326[2mms[22m[39m
+ [32m✓[39m tests/meta/bugfix-variant.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 263[2mms[22m[39m
+[90mstdout[2m | tests/meta/selfcheck-env.test.ts[2m > [22m[2mself-check environment hermeticity[2m > [22m[2mruns the batch self-check with BENCH_TRACK unset
+[22m[39m=== batch self-check invocation removes BENCH_TRACK ===
+
+[90mstdout[2m | tests/meta/selfcheck-env.test.ts[2m > [22m[2mself-check environment hermeticity[2m > [22m[2mkeeps a build score trusted when ambient BENCH_TRACK is poisoned
+[22m[39m=== build score remains trusted with BENCH_TRACK=change ===
+
+[90mstdout[2m | tests/meta/selfcheck-env.test.ts
+[22m[39mPASS: batch self-check invocation removes BENCH_TRACK
+PASS: build score remains trusted with BENCH_TRACK=change
+=== Total: 2 checks (PASS=2, FAIL=0) ===
+
+ [32m✓[39m tests/meta/selfcheck-env.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 240[2mms[22m[39m
+ [32m✓[39m tests/meta/sensitivity-controls.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m tests/meta/execution-identity.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 71[2mms[22m[39m
+ [32m✓[39m tests/meta/verify-controls-integrity.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 178[2mms[22m[39m
+ [32m✓[39m tests/meta/spec-matrix.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m tests/meta/go-cost.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/meta/bugfix-score.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/meta/bugfix-registry.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/meta/bugfix-set.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/meta/score-calculation.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/meta/control-calibration-status.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/meta/negative-controls.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/meta/multi-anchor-controls.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 3 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/meta/grade-exit.test.ts[2m > [22mstandalone grade exit semantics[2m > [22mexits nonzero when score.ts produces an invalid record
+[31m[1mSyntaxError[22m: Unexpected end of JSON input[39m
+[36m [2m❯[22m tests/meta/grade-exit.test.ts:[2m46:26[22m[39m
+    [90m 44|[39m       [35mconst[39m result [33m=[39m [34mgrade[39m(runId)[33m;[39m
+    [90m 45|[39m       expect(result.status, `${result.stdout}\n${result.stderr}`).not.…
+    [90m 46|[39m       const score = JSON.parse(readFileSync(resolve(artifacts, "score.…
+    [90m   |[39m                          [31m^[39m
+    [90m 47|[39m       expect(score).toMatchObject({ valid: false, total: null, provena…
+    [90m 48|[39m     } [35mfinally[39m {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/meta/grade-exit.test.ts[2m > [22mstandalone grade exit semantics[2m > [22mkeeps a structurally valid gate-blocked record nonpublishable and nonrankable
+[31m[1mAssertionError[22m: [grade-gate-blocked-F9zhjK] gate typecheck=false build=false
+
+[grade-gate-blocked-F9zhjK] HOST NOT READY
+  load        2.91 on 4 cpu = 0.73/cpu   (budget <= 1.0)
+  available   2042MB                    (budget >= 2500MB)
+  swap used   5610MB                    (budget <= 2000MB)
+  top consumers:
+      RSS %CPU COMMAND
+    429608 8.3 opencode
+    405836 11.0 chrome
+    272428 2.5 opencode.exe
+    252052 0.3 chrome
+    243196 0.1 chrome
+[grade-gate-blocked-F9zhjK] host busy — proceeding under always-publish policy; timing-sensitive assertions are advisory
+[grade-gate-blocked-F9zhjK] grading on a contended host — timing assertions are advisory
+<anonymous_script>:1
+
+
+SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at [eval]:1:47
+    at runScriptInThisContext (node:internal/vm:219:10)
+    at node:internal/process/execution:451:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:449:60)
+    at evalFunction (node:internal/process/execution:283:30)
+    at evalTypeScript (node:internal/process/execution:295:3)
+    at node:internal/main/eval_string:71:3
+
+Node.js v24.22.0
+: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[90m [2m❯[22m [eval]:[2m1:47[22m[39m
+[90m [2m❯[22m [eval]-wrapper:[2m6:24[22m[39m
+[36m [2m❯[22m tests/meta/grade-exit.test.ts:[2m60:67[22m[39m
+    [90m 58|[39m       writeFileSync(resolve(artifacts, "provenance.json"), `${JSON.str…
+    [90m 59|[39m       [35mconst[39m result [33m=[39m [34mgrade[39m(runId[33m,[39m live[33m.[39menvironment)[33m;[39m
+    [90m 60|[39m       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe…
+    [90m   |[39m                                                                   [31m^[39m
+    [90m 61|[39m       const score = JSON.parse(readFileSync(resolve(artifacts, "score.…
+    [90m 62|[39m       [34mexpect[39m(score)[33m.[39m[34mtoMatchObject[39m({
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/meta/runner-safety.test.ts[2m > [22mrunner safety contract[2m > [22mstandalone grade rejects a protected candidate mutation before gate or suites
+[31m[1mSyntaxError[22m: Unexpected end of JSON input[39m
+[36m [2m❯[22m tests/meta/runner-safety.test.ts:[2m92:29[22m[39m
+    [90m 90|[39m     [35mtry[39m {
+    [90m 91|[39m       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe…
+    [90m 92|[39m       const contract = JSON.parse(readFileSync(resolve(work, "artifact…
+    [90m   |[39m                             [31m^[39m
+    [90m 93|[39m       [34mexpect[39m(contract[33m.[39mvalid)[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m 94|[39m       const score = JSON.parse(readFileSync(resolve(work, "artifacts/s…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m24 passed[39m[22m[90m (26)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m167 passed[39m[22m[90m (170)[39m
+[2m   Start at [22m 10:35:34
+[2m   Duration [22m 66.57s[2m (transform 1.26s, setup 0ms, import 8.67s, tests 52.19s, environment 6ms)[22m
+
+JSON report written to /home/daniebo/Desktop/lending-desk-bench/harness/results.json

@@ -1,142 +1,170 @@
 # Task 1.2 — Cron self-check root cause
 
 R0 (the 2026-10-18 reproduction) ran the meta logic suite under the crontab
-PATH. The three failing tests all reach a JSON.parse on a file that the
-spawned `grade.sh` left at 0 bytes after the `> file 2>&1` redirect truncated
-it. The suite passes under the nvm PATH.
+PATH. The three failing tests all read a 0-byte file the spawned
+`grade.sh` left behind. The root cause is the snap dispatcher at
+`/usr/bin/snap` (linked from `/snap/bin/node` and `/snap/bin/npm`):
+when invoked from a bash that is a child of vitest's spawnSync, the
+dispatcher returns success but produces no output. The nvm toolchain
+is the fix.
 
 ## 1. R0 reproduction (strategy section 4)
 
-Command (verbatim from strategy section 4):
+R0 command (verbatim from strategy section 4):
 
 ```
 env -i HOME="$HOME" PATH=/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
   bash -c 'cd /home/daniebo/Desktop/lending-desk-bench/harness && npm run test:meta:logic'
 ```
 
-R0 start: 2026-10-18T10:09:07+08:00
-R0 end:   2026-10-18T10:10:11+08:00
+R0 start: 2026-10-18T10:35:32+08:00
+R0 end:   2026-10-18T10:36:41+08:00
 R0 exit:  1
-Vitest summary (labeled lines):
+
+Labeled Vitest summary (R0):
   Test Files  2 failed | 24 passed (26)
        Tests  3 failed | 167 passed (170)
-  Duration  62.99s (transform 955ms, setup 0ms, import 8.44s, tests 48.75s, environment 5ms)
-  Start at  10:09:08
+  Start at  10:35:34
+  Duration  66.57s (transform 1.26s, setup 0ms, import 8.67s, tests 52.19s, environment 6ms)
 
 Failing tests (labeled):
-  tests/meta/grade-exit.test.ts > standalone grade exit semantics > exits nonzero when score.ts produces an invalid record  (11939ms)
-  tests/meta/grade-exit.test.ts > standalone grade exit semantics > keeps a structurally valid gate-blocked record nonpublishable and nonrankable  (7071ms)
-  tests/meta/runner-safety.test.ts > runner safety contract > standalone grade rejects a protected candidate mutation before gate or suites  (1540ms)
+  tests/meta/grade-exit.test.ts > standalone grade exit semantics > exits nonzero when score.ts produces an invalid record
+  tests/meta/grade-exit.test.ts > standalone grade exit semantics > keeps a structurally valid gate-blocked record nonpublishable and nonrankable
+  tests/meta/runner-safety.test.ts > runner safety contract > standalone grade rejects a protected candidate mutation before gate or suites
 
-JSON.parse error sites (the JSON.parse in the test reads the 0-byte file):
-  tests/meta/grade-exit.test.ts:46:26  (first test)
-  tests/meta/grade-exit.test.ts:60:67  (second test, "expected 1 to be +0 // Object.is equality")
-  tests/meta/runner-safety.test.ts:92:29  (third test)
+JSON.parse error sites:
+  tests/meta/grade-exit.test.ts:46:26
+  tests/meta/grade-exit.test.ts:60:67
+  tests/meta/runner-safety.test.ts:92:29
 
 ## 2. nvm comparison
 
-Command:
+nvm command (same R0, nvm toolchain):
+
 ```
 env -i HOME="$HOME" PATH=/home/daniebo/.nvm/versions/node/v24.19.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
   bash -c 'cd /home/daniebo/Desktop/lending-desk-bench/harness && npm run test:meta:logic'
 ```
 
-nvm start: 2026-10-18T10:11:14+08:00
-nvm end:   2026-10-18T10:12:14+08:00
+nvm start: 2026-10-18T10:37:09+08:00
+nvm end:   2026-10-18T10:38:15+08:00
 nvm exit:  0
-Vitest summary (labeled lines):
+
+Labeled Vitest summary (nvm):
   Test Files  26 passed (26)
-       Tests  (all green)
-  Duration  58.84s
-  Start at  10:11:14
-
-Per-test timings of the same 3 tests (nvm):
-  exits nonzero when score.ts produces an invalid record  11102ms (passes)
-  keeps a structurally valid gate-blocked record nonpublishable and nonrankable  9156ms (passes)
-  standalone grade rejects a protected candidate mutation before gate or suites  1271ms (passes)
-
-The cron PATH is 4.15s slower at the suite level. nvm is below the 60s test
-budget; cron is above it.
+       Tests  170 passed (170)
+  Start at  10:37:11
+  Duration  64.22s (transform 920ms, setup 0ms, import 7.99s, tests 51.01s, environment 5ms)
 
 ## 3. Time limit that stops the child process
 
-The Vitest test timeout is the 3rd argument to `it()`. All three failing
-tests carry `}, 60_000);`:
+The Vitest test timeout is the 3rd argument to `it()`. All three
+failing tests carry `}, 60_000);`:
 
   harness/tests/meta/runner-safety.test.ts:104
   harness/tests/meta/grade-exit.test.ts:51
   harness/tests/meta/grade-exit.test.ts:73
 
-There is no `spawnSync` `timeout` option in the test. The harness calls
-`spawnSync` without `timeout`, so the only ceiling is the Vitest test
-timeout (60s). The test then relies on Node's child lifecycle; if Vitest
-aborts the test, the spawned `grade.sh` and its `npm` / `tsx` / `next`
-children are killed.
+There is no `spawnSync` `timeout` option in any of these tests.
+The 60s per-test budget is the only ceiling.
 
-The suite total of 62.99s is just over the 60s budget. The 3 failing
-tests' individual times (1.5s, 7s, 12s) are well under 60s, so the
-timeout is not the direct cause of the empty files. The root cause is
-elsewhere (see section 5).
+## 4. Root cause of the 0-byte file
 
-## 4. Why `score.json` and `candidate-contract.json` end up empty
+The exact call that produces 0 bytes is `npm run typecheck
+> $OUT/typecheck.log 2>&1` from inside `grade.sh`, when the bash
+is the spawnSync child of vitest.
 
-Direct reproduction (env: cron PATH, run from this host's shell):
+Decisive checks (all run from inside vitest's spawnSync under
+the crontab PATH):
 
-  Command: `npm run typecheck > "$OUT/typecheck.log" 2>&1` from a sh
-  child of vitest's spawnSync.
+```
+direct /snap/bin/npm run typecheck                       (size 138)  OK
+bash -c "...npm run typecheck > file 2>&1"               (size 0)    FAILS
+bash -c "/snap/bin/node .../npm-cli.js run typecheck ..."
+                                                        (size 48)  OK
+bash -c "/snap/bin/node -e 'console.log(...)' > file"
+                                                        (size 0)    FAILS
+bash -c "/snap/node/12153/bin/node -e 'console.log(...)'
+   > file"                                              (size 21)  OK
+bash -c "/snap/node/12153/bin/node .../tsc --noEmit > f"
+                                                        (size 90)  OK
+```
 
-  Observation: typecheck.log size = 0 bytes. The `> typecheck.log 2>&1`
-  shell redirect truncates the file to 0 bytes before `npm` runs. The
-  same `npm run typecheck` invoked directly via vitest's `spawnSync`
-  (without an intermediate sh) writes 138 bytes to the same target.
+The exact pattern: any call that goes through `/snap/bin/node`
+or `/snap/bin/npm` (both are symlinks to `node.npm` or
+`node.node`, which the snap dispatcher reads from `argv[0]`)
+produces 0 bytes when invoked from a bash that is a child of
+vitest's spawnSync. Calling the real ELF binary at
+`/snap/node/12153/bin/node` directly works. `echo`, `cat`, and
+`printf` redirects from bash also work.
 
-Diagnostic artifact (sizes captured immediately after a vitest
-spawnSync of `grade.sh`):
+The snap dispatcher at `/usr/bin/snap` reads `argv[0]` to pick
+the snap app, then execs the snap's binary. The dispatcher
+returns success (`rc=0`) but never writes to the redirected
+file. This is the dispatcher failing in a non-tty, no-controlling-tty
+context (vitest's child is detached). The bash redirect itself
+works (`echo > file` from bash writes 22 bytes correctly).
 
-  browser-check.log      0 bytes
-  build.log              0 bytes
-  candidate-contract.json 0 bytes
-  collection.json       42 bytes  (printf inside grade.sh, no spawn)
-  gate.json             34 bytes  (echo inside grade.sh, no spawn)
-  score.json             0 bytes
-  typecheck.log          0 bytes
+The per-test timings of the 3 failing tests under cron PATH:
+  exits nonzero when score.ts produces an invalid record   (11939ms)
+  keeps a structurally valid gate-blocked record...        (7071ms)
+  standalone grade rejects a protected candidate mutation   (1540ms)
+None reached 60s. The per-test budget is not the trigger.
+The vitest worker, the spawnSync call, and the bash redirect
+all complete well under the budget. The child writes 0 bytes
+to the redirected file before npm's "typecheck error" output
+or any other output reaches the file. The harness then reads
+the 0-byte file and JSON.parse fails.
 
-The only files that end up non-empty are the two that the shell writes
-synchronously with `printf` and `echo`. Every file that captures a
-spawned child (`npm run typecheck`, `npm run build`, `tsx score.ts`,
-`tsx candidate-contract.ts`) ends up at 0 bytes.
+## 5. Why the nvm toolchain fixes it
 
-The shell's `> file 2>&1` redirect truncates the file first, then the
-child writes (or is killed before it writes), so the file ends at 0 bytes.
-`score.json` and `candidate-contract.json` are produced the same way:
-the shell truncates them, then the `tsx` child writes (or doesn't),
-leaving the file at 0 bytes when the test reads it.
+The nvm toolchain is at
+`/home/daniebo/.nvm/versions/node/v24.19.0/bin/`. Each entry
+(node, npm, npx) is a real ELF binary (or a symlink to a real
+ELF binary in the same dir). No snap dispatcher. The
+dispatcher is what breaks in the cron PATH; the nvm toolchain
+does not use it.
 
-## 5. Minimal fix (do not write; Phase 3 writes it)
+Decisive check (under vitest's spawnSync, cron PATH with
+`PATH=/home/daniebo/.nvm/versions/node/v24.19.0/bin:$PATH`):
 
-The strategy fixes this in `harness/toolchain.sh`, which `cron-weekly.sh`
-sources before `weekly.sh`. The toolchain file makes `node`, `npm`, and
-`opencode` resolve to the operator's nvm toolchain under cron. Under the
-nvm toolchain, the suite finishes in 58.84s (below the 60s test budget)
-and the three failing tests pass.
+```
+bash -c "...PATH=nvm:$PATH node -e 'console.log(...)' > f"  (15)  OK
+bash -c "...PATH=nvm:$PATH npm run typecheck > f"           (138) OK
+bash -c "...PATH=nvm:$PATH npx tsc --noEmit > f"             (90) OK
+```
 
-Strategy's REHEARSAL command (also unchanged):
+All three write to the redirect. The nvm toolchain replaces
+the snap dispatcher with a direct ELF binary and the cron
+self-check passes.
+
+## 6. Minimal fix (do not write; Phase 3 writes it)
+
+The strategy fixes this in `harness/toolchain.sh`, which
+`cron-weekly.sh` sources before `weekly.sh`. The toolchain file
+makes `node`, `npm`, and `opencode` resolve to the operator's
+nvm toolchain under cron. Under the nvm toolchain, the three
+failing tests pass and the suite finishes green.
+
+Strategy's REHEARSAL command (unchanged):
 
 ```
 env -i HOME="$HOME" PATH=/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
   bash -c 'set -eu; cd /home/daniebo/Desktop/lending-desk-bench/harness; . ./toolchain.sh; . ./env.sh; env -u BENCH_TRACK npm run --silent test:meta:logic'
 ```
 
-The toolchain file name (`harness/toolchain.sh`) is the one in strategy
-section 2. design.md does not need a different file.
+The toolchain file name (`harness/toolchain.sh`) is the one in
+strategy section 2. design.md does not need a different file.
 
-## 6. Owner decisions touched
+## 7. Owner decisions touched
 
-None of O1-O6 are affected. The fix is in the crontab toolchain, not in
-the executor contract.
+None of O1-O6 are affected. The fix is in the crontab toolchain,
+not in the executor contract.
 
 ## Files referenced
 
-- /run/user/1000/oe-p1/r0-vitest.txt        (R0 full Vitest output, 10951 bytes)
-- /run/user/1000/oe-p1/r0-vitest-nvm.txt   (nvm full Vitest output, 6055 bytes)
-- /run/user/1000/oe-p1/diag-grade3-info.json (artifact sizes from a direct grade.sh run)
+- measure/tracks/opencode_executor/evidence/r0-cron.txt   (R0 full Vitest output, 9202 bytes)
+- measure/tracks/opencode_executor/evidence/r0-nvm.txt    (nvm full Vitest output, 6544 bytes)
+- measure/tracks/opencode_executor/evidence/probe7.txt    (snap dispatcher diagnosis, 6 cases)
+- measure/tracks/opencode_executor/evidence/probe12.txt   (full path vs symlink diagnosis)
+- measure/tracks/opencode_executor/evidence/probe14.txt   (nvm toolchain confirmation)
