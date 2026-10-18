@@ -7,6 +7,15 @@ prompt. No credential. No network call. The host's opencode service
 service set port 51000` so `debug config` could start its own server in
 the isolated context.
 
+Correction (review A-N4, 2026-10-18): the `service set port 51000`
+call changed host service state during a read-only phase. The
+evidence does not record where that setting was written and does
+not record a revert. The orchestrator check at 2026-10-18 about
+12:35 (+08:00) shows the live host service state:
+`opencode service status` prints `http://127.0.0.1:49374`, and
+`opencode service get` prints `{}`. No residual 51000 setting is
+visible in either output.
+
 ## 1. Isolation proof (strategy 4.1 rule 2)
 
 ```

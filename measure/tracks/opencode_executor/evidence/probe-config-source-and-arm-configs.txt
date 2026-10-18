@@ -1,0 +1,137 @@
+# Probe: config source isolation, arm configs, skill listing
+# (jr-green review-fix turn, 2026-10-18, findings A-B4, A-B5)
+
+Date: 2026-10-18, after 12:30 (+08:00). No prompt was sent. No
+credential was used in this probe. Network was `none`.
+
+All runs used the pinned image
+`docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3`
+and the host binary bind-mounted at `/usr/local/bin/opencode`
+(v2.0.32). The private frame directory was removed by exact path
+after the probe.
+
+## 1. The one config key shape
+
+Both arm configs use one shape (JSON, UTF-8):
+
+```
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/<id>",
+  "skills": { "paths": ["/opt/skills"] },     // Arm B only
+  "permissions": [
+    { "action": "question",  "resource": "*",          "effect": "deny" },
+    { "action": "websearch", "resource": "*",          "effect": "deny" },
+    { "action": "subagent",  "resource": "*",          "effect": "deny" },
+    { "action": "read",      "resource": "/tmp/data/**", "effect": "deny" },
+    { "action": "edit",      "resource": "/tmp/data/**", "effect": "deny" },
+    { "action": "skill",     "resource": "*",          "effect": "deny" },
+    // Arm B only: five allow rules, one per harness skill id:
+    { "action": "skill", "resource": "measure", "effect": "allow" },
+    ... next-best-practices, vercel-react-best-practices,
+        vercel-composition-patterns, build-graph ...
+  ]
+}
+```
+
+`opencode debug config` normalizes the model string
+`"opencode-go/<id>"` to the object
+`{providerID, model}` and `skills.paths` to a flat `skills`
+array. Both forms load (see section 2).
+
+## 2. Result: one document per arm, fresh container each
+
+Command per arm (fresh container, `--network none`, empty private
+XDG dirs):
+
+```
+podman run --rm --pull=never --network none
+  --mount type=bind,src=<opencode>,dst=/usr/local/bin/opencode,ro
+  --mount type=bind,src=<arm-config>,dst=/config/arm-<a|b>.json,ro
+  --mount type=bind,src=<frame>,dst=/out,rw          # /out IS the frame
+  # Arm B only: --mount type=bind,src=<skills>,dst=/opt/skills,ro
+  --env HOME=/tmp/home --env XDG_CONFIG_HOME=/tmp/config
+  --env XDG_DATA_HOME=/tmp/data --env XDG_STATE_HOME=/tmp/state
+  --env XDG_CACHE_HOME=/tmp/cache
+  --env OPENCODE_CONFIG=/config/arm-<a|b>.json
+  --env OPENCODE_DISABLE_PROJECT_CONFIG=1
+  --env OPENCODE_DISABLE_CLAUDE_CODE=1
+  --env OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1
+  --env OPENCODE_DISABLE_AUTOUPDATE=1
+  --env OPENCODE_DISABLE_MODELS_FETCH=1
+  <image> /bin/sh -c 'mkdir -p /tmp/home /tmp/config ...;
+                      opencode debug config'
+```
+
+`opencode debug config` output, Arm A (rc=0): exactly one
+document, `/config/arm-a.json`, with the six deny rules of
+section 1 and no `skills` entry. Plus one empty directory entry,
+`/tmp/config/opencode`.
+
+Arm B (rc=0): exactly one document, `/config/arm-b.json`, with
+the six deny rules plus the five skill allow rules, and
+`"skills": ["/opt/skills"]` in the resolved info.
+
+## 3. Finding: OPENCODE_CONFIG does not suppress the directory
+   source
+
+Probe: the same container also planted a conflicting config at
+`/tmp/config/opencode/opencode.json` (marker model
+`opencode-go/conflicting-model`, an allow rule for `websearch`),
+with `OPENCODE_DISABLE_PROJECT_CONFIG=1` still set.
+
+Result: `opencode debug config` lists the planted file as a
+second document with its own `info`. So:
+
+- `OPENCODE_CONFIG` ADDS a document. It does not make the file
+  the only source.
+- The isolation rule is: `XDG_CONFIG_HOME` points at an empty
+  private tmpfs directory, so the directory source holds no
+  document. The project-config flag alone is not enough.
+- Design consequence: the run preflight must check that the
+  private config directory holds no document before the agent
+  starts.
+
+## 4. Finding: one config per fresh container
+
+In one container, the second `opencode debug config` invocation
+(with `OPENCODE_CONFIG` pointing at arm-b) listed the arm-a
+document again: a background service inside the container kept
+the first invocation's config. One config per fresh container is
+required for arm probes. The real harness runs one config in one
+`--rm` container, so this caching does not affect it. Task 4.2
+probes must use one fresh container per config.
+
+## 5. Finding: an invalid config loads silently
+
+The first Arm B attempt wrote a config with a literal `\n`
+between JSON tokens (invalid JSON). `opencode debug config`
+exited 0 and listed NO document, only the empty directory
+entry. No error named the file. Design consequence: the preflight
+must parse the generated config as JSON before the agent starts.
+
+## 6. Skill discovery: no no-prompt listing exists
+
+`opencode debug --help` lists only `agents`, `config`, `paths`.
+The `--standalone` server API exposes `GET /api/skill` (from
+`GET /openapi.json`). Results:
+
+- `GET /api/skill` with no param: `{"location":{"directory":"/tmp"},"data":[]}`
+  for both arms.
+- `--param "location[directory]=/opt/skills"` did not change the
+  location (the CLI did not pass the deepObject query).
+- With `--workdir /opt/skills` and probe `SKILL.md` files with
+  and without frontmatter: `{"location":{"directory":"/opt/skills"},"data":[]}`.
+
+So no no-prompt probe lists the discovered skill ids. The config
+load proof (section 2) shows the rules and the `skills` paths
+resolve per arm. The runtime discovery and enforcement effect
+stays static evidence that task 4.2 must prove (review A-B5
+allows this). `GET /api/config` returns the same source list as
+`debug config`.
+
+## 7. Files
+
+Probe outputs lived in the private frame under
+`$XDG_RUNTIME_DIR` and were removed by exact path after the
+record. This file is the repo evidence.

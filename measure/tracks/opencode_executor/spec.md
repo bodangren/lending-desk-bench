@@ -134,7 +134,10 @@ Phase 1 must confirm every item that this list marks "to confirm".
   PATH the same suite passes 170 of 170. In each failure, a JSON file that a
   `tsx` script writes is empty: `score.json` from `score.ts` (two tests, one
   of them at `grade.sh` line 108) or `candidate-contract.json` from
-  `candidate-contract.ts` (one test). The exact failing call is to confirm.
+  `candidate-contract.ts` (one test). The exact failing calls are
+  `"${TSX}" score.ts > score.json` (`grade.sh` line 108) and
+  `"${TSX}" candidate-contract.ts` (`grade.sh` line 129); `tsx` starts
+  with `#!/usr/bin/env node`, so the snap `node` in `PATH` breaks both.
 - The cron rescore marks many arm-B runs INVALID with "executor attestation:
   live executor differs from recorded executor". The attestation re-hashes
   the host skill folders under `BENCH_SKILL_ROOT` at rescore time. Probable
@@ -163,6 +166,10 @@ Phase 1 must confirm every item that this list marks "to confirm".
   host background service.
 - The JSON event stream goes to `artifacts/session.json`. Stderr goes to
   `artifacts/session.err`.
+- Every token that the run spends must be in the run artifacts. The usage
+  record is the session export at `artifacts/executor/session-export.json`
+  (FR-7). The event stream can lack the final step's usage, so it is a
+  cross-check only. A missing export makes the run invalid.
 - `--auto` approves every permission that the generated config does not
   deny. No permission prompt can stop a run.
 - `AGENT_TIMEOUT` (default 3600 s) and the `/usr/bin/timeout` entrypoint stay.
@@ -210,11 +217,15 @@ Phase 1 must confirm every item that this list marks "to confirm".
 - Token rotation design:
   1. **Run-window check, fail closed.** v2.0.32 has no refresh trigger
      that sends no prompt, so the harness never forces a host refresh.
-     The preflight compares `expires` with now plus the run window. If
-     the token does not cover the run window, the run stops before the
-     agent. The reason is "Console credential does not cover the run
-     window". The weekly report warns when `expires` is within 7 days.
-     The operator renews the login interactively on the host.
+     The check runs twice, with the same reason line both times: once
+     in the batch preflight, and again before each agent run. Each
+     check compares `expires` with now plus the run window
+     (`AGENT_TIMEOUT` plus 900 s). A serial batch can outlive a token
+     that covered the first run window. If the token does not cover
+     the run window, the run stops before the agent. The reason is
+     "Console credential does not cover the run window". The weekly
+     report warns when `expires` is within 7 days. The operator
+     renews the login interactively on the host.
   2. **Access-only copy.** The container credential omits the refresh token.
      If the import requires the field, the harness writes an inert
      placeholder. The container OpenCode cannot refresh, so it cannot rotate
@@ -248,19 +259,33 @@ Phase 1 must confirm every item that this list marks "to confirm".
 - The container sets `HOME`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`,
   `XDG_STATE_HOME`, and `XDG_CACHE_HOME` to private paths on the container
   tmpfs.
-- The container mounts only these host paths:
+- The container mounts only these host paths, read-only unless
+  stated (the full argument list is in `design.md` section 1.2):
   - the candidate tree, read-write, at `/workspace`;
-  - the fixture `node_modules`, read-only;
-  - the resolved OpenCode binary file, read-only;
-  - the entry script and the generated config, read-only;
-  - Arm B only: the per-run skill snapshot, read-only.
+  - the fixture `node_modules`, read-only, at
+    `/workspace/node_modules`;
+  - the resolved OpenCode binary file, read-only, at
+    `/usr/local/bin/opencode`;
+  - the per-run copy of the static ripgrep helper, read-only, at
+    `/usr/local/bin/rg`;
+  - the entry script, read-only, at `/entry/opencode-entry.sh`;
+  - the generated config `artifacts/executor/opencode.json`,
+    read-only, at `/config/opencode.json`;
+  - Arm B only: the per-run skill snapshot
+    `artifacts/executor/skills/`, read-only, at `/opt/skills`.
 - The container never mounts the host home directory or a host dotfile tree.
   This includes `~/.config/opencode`, `~/.local/share/opencode`,
   `~/.cache/opencode`, `~/.claude`, and `~/.agents`. It also never mounts
   `harness/`, the reference trees, or sibling runs.
 - The harness writes one OpenCode config per run to
-  `artifacts/executor/opencode.json`. The file holds no secret. The container
-  reads it as its only config source (Phase 1 confirms the mechanism).
+  `artifacts/executor/opencode.json`. The file holds no secret. The
+  container reads it as its only config document. `OPENCODE_CONFIG`
+  adds a document and does not suppress the XDG directory source,
+  so the isolation is the empty private `XDG_CONFIG_HOME` tmpfs
+  directory plus `OPENCODE_DISABLE_PROJECT_CONFIG=1`. The
+  preflight checks that the private config directory holds no
+  config document and that the generated config parses as JSON
+  (Phase 1 probe, 2026-10-18).
 - Config content:
   - self-updates disabled;
   - no MCP servers, no added plugins, no `instructions`, no `references`;
@@ -353,8 +378,10 @@ Phase 1 must confirm every item that this list marks "to confirm".
   `--format json` event stream can lack the usage of the final step, so
   it is a cross-check only (task 1.8 evidence). The parser returns the
   current `Usage` shape.
-- Reasoning tokens count as output tokens, unless Phase 1 shows that the
-  event stream already includes them in output.
+- Reasoning tokens count as output tokens. Phase 1 resolved the open
+  conditional: the event stream carries `reasoning` as a separate field
+  (task 1.8 evidence section 2). `Usage.output` is the export's
+  `output` plus `reasoning`.
 - `go-cost.ts` recosts from that usage with the same `go-pricing.json`
   formula. `recostUsage` and the formula stay unchanged.
 - The harness removes `emitPiModelsJson` and `--models-json`.
@@ -492,7 +519,7 @@ Phase 1 must confirm every item that this list marks "to confirm".
 ## Open questions for the owner — answered (2026-10-18)
 
 Phase 1 recorded the owner answers in `design.md` section 7. The
-questions below keep their original wording for the record.
+questions below are restated with their recorded answers.
 
 - **O1 — Variant (fixed: default).** The run uses the model's
   default variant and adds no `#variant`. `score.json` records

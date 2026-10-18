@@ -30,7 +30,8 @@ node  v22.23.1   (/usr/local/bin/node)
 npm   10.9.8     (/usr/local/bin/npm)
 npx   10.9.8     (/usr/local/bin/npx)
 corepack, yarn, yarnpkg   (also in /usr/local/bin)
-sh, bash, grep, find, ls, cat  (busybox-style base)
+sh, bash, grep, find, ls, cat  (Debian 12 bookworm base; not
+  busybox — corrected in the review-fix turn, section 9)
 apk, file, strings, curl, wget, rg, tsc  (NOT present)
 ```
 

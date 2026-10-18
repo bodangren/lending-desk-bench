@@ -31,20 +31,47 @@ timeout <AGENT_TIMEOUT> opencode run --standalone --format json \
 - The JSON event stream goes to `artifacts/session.json`. Stderr
   goes to `artifacts/session.err` (spec FR-1; the stream shape is
   in evidence/task-1.8-token-usage.txt §1).
+- `run.sh` resolves the binary from `BENCH_OPENCODE_BIN` when it
+  is set, otherwise with `command -v opencode` on the toolchain
+  PATH (FR-9). It records the resolved real path, the
+  `opencode --version` output, and the file SHA-256 (spec FR-2).
 
-### 1.2 Podman flags
+### 1.2 Podman argument list (the exact set)
 
 ```
 podman run --rm --pull=never --read-only
   --tmpfs /tmp:rw,nosuid,nodev,noexec,size=512m
+  --tmpfs /run/opencode:rw,nosuid,nodev,size=64m
   --cap-drop=ALL
   --security-opt=no-new-privileges
   --userns=keep-id
+  --user "$(id -u):$(id -g)"
   --network slirp4netns:allow_host_loopback=false
+  --mount type=bind,src=<candidate>,dst=/workspace,rw
+  --mount type=bind,src=<fixture>/node_modules,dst=/workspace/node_modules,ro
+  --mount type=bind,src=<resolved opencode>,dst=/usr/local/bin/opencode,ro
+  --mount type=bind,src=<run>/rg,dst=/usr/local/bin/rg,ro
+  --mount type=bind,src=harness/opencode-entry.sh,dst=/entry/opencode-entry.sh,ro
+  --mount type=bind,src=<run>/executor/opencode.json,dst=/config/opencode.json,ro
+  # Arm B only:
+  --mount type=bind,src=<run>/executor/skills,dst=/opt/skills,ro
+  --env HOME=/tmp/home --env XDG_CONFIG_HOME=/tmp/config
+  --env XDG_DATA_HOME=/tmp/data --env XDG_STATE_HOME=/tmp/state
+  --env XDG_CACHE_HOME=/tmp/cache
+  --env OPENCODE_CONFIG=/config/opencode.json
+  --env OPENCODE_DISABLE_PROJECT_CONFIG=1
+  --env OPENCODE_DISABLE_CLAUDE_CODE=1
+  --env OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1
+  --env OPENCODE_DISABLE_AUTOUPDATE=1
+  --env OPENCODE_DISABLE_MODELS_FETCH=1
+  --workdir /workspace
+  docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3
+  /entry/opencode-entry.sh
 ```
 
-(evidence/task-1.7-container-runtime.txt §2; `--read-only` is the
-existing `harness/run.sh` hardening.)
+(evidence/task-1.7-container-runtime.txt §2, §7 for the flags and
+the `/run/opencode` tmpfs; the mounts are this section's contract
+and section 1.4; spec FR-4 carries the same set.)
 
 ### 1.3 Container environment
 
@@ -75,11 +102,11 @@ existing `harness/run.sh` hardening.)
 |---|---|---|
 | Candidate tree | `/workspace` | rw |
 | `fixture/node_modules` | `/workspace/node_modules` | ro |
-| OpenCode binary | `/usr/local/bin/opencode` | ro |
-| Static `rg` binary | `/usr/local/bin/rg` | ro |
-| Entry script `harness/opencode-entry.sh` | its container path | ro |
-| Generated config | `/tmp/config/opencode/opencode.json` | ro |
-| Arm B only: per-run skill snapshot | a discovered skills path | ro |
+| Resolved OpenCode binary (`BENCH_OPENCODE_BIN` or PATH) | `/usr/local/bin/opencode` | ro |
+| Per-run copy of the static `rg` binary | `/usr/local/bin/rg` | ro |
+| Entry script `harness/opencode-entry.sh` | `/entry/opencode-entry.sh` | ro |
+| Generated config `artifacts/executor/opencode.json` | `/config/opencode.json` | ro |
+| Arm B only: per-run skill snapshot `artifacts/executor/skills/` | `/opt/skills` | ro |
 
 (evidence/task-1.7-container-runtime.txt §7; section 5 of this
 note; spec FR-4.) The container never mounts a host home, a host
@@ -87,19 +114,53 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
 
 ### 1.5 Config source and content
 
-- Mechanism: `OPENCODE_CONFIG` points at the generated per-run
-  config file. OpenCode loads that file and no other
-  (evidence/task-1.5-isolation-and-config.txt §3).
-- Content: no secret, no MCP server, no plugin, no `instructions`
-  (spec FR-4). Permission rules:
-  - deny `question` and deny `websearch` (O2),
-  - deny `subagent` (O3),
-  - Arm A: deny `skill *`;
-  - Arm B: deny `skill *`, then allow the five IDs `measure`,
-    `next-best-practices`, `vercel-react-best-practices`,
-    `vercel-composition-patterns`, `build-graph`.
-  (evidence/task-1.1-headless-run.txt §1;
-  evidence/task-1.6-skill-path-and-arm-proof.txt §2, §4.)
+- Mechanism: `OPENCODE_CONFIG=/config/opencode.json` points at
+  the generated per-run config. The config key shape (one shape
+  for both arms, probe-confirmed):
+  `$schema`, `model` (the string `opencode-go/<id>`), `skills`
+  (Arm B only: `{paths: ["/opt/skills"]}`), and `permissions`
+  (the rule list below). `debug config` normalizes the model
+  string to `{providerID, model}` and `skills.paths` to a flat
+  array; both forms load
+  (evidence/probe-config-source-and-arm-configs.txt §1, §2).
+- Isolation rule (probe-corrected): `OPENCODE_CONFIG` ADDS a
+  config document. It does not suppress the XDG directory
+  source. A planted config in `$XDG_CONFIG_HOME/opencode/` is
+  read as a second document
+  (evidence/probe-config-source-and-arm-configs.txt §3). The
+  isolation is the empty private `XDG_CONFIG_HOME` tmpfs
+  directory plus `OPENCODE_DISABLE_PROJECT_CONFIG=1`. Two
+  preflight checks follow: the private config directory holds
+  no config document, and the generated config parses as JSON
+  (an invalid config loads silently, §5 of the same file).
+- Content: no secret, no MCP server, no plugin, no
+  `instructions`. Self-update is off through
+  `OPENCODE_DISABLE_AUTOUPDATE=1`. Permission rules, both arms:
+  deny `question` (O2-side), deny `websearch` (O2), deny
+  `subagent` (O3), deny `read` and `edit` on the isolated store
+  path `/tmp/data/**` (spec FR-4), deny `skill *`;
+  Arm B adds `allow` rules for the five ids `measure`,
+  `next-best-practices`, `vercel-react-best-practices`,
+  `vercel-composition-patterns`, `build-graph`, plus the
+  `skills.paths` entry.
+- Probe proof (no prompt, offline): with the empty private XDG
+  directory, `opencode debug config` lists exactly one document
+  per arm: Arm A with the six deny rules and no skills entry,
+  Arm B with the six deny rules, the five allow rules, and the
+  skills paths
+  (evidence/probe-config-source-and-arm-configs.txt §2).
+- Static evidence that task 4.2 must prove (no no-prompt probe
+  exists): the runtime discovery of the five skill folders
+  (`GET /api/skill` lists nothing in any no-prompt form tried,
+  §6 of the same file) and the enforcement effect of every rule
+  (the resolved rules load; `debug agents` shows agent
+  defaults only). One fresh container per config is required:
+  a second invocation in one container reuses the first
+  config through the background service (§4 of the same file).
+- Removed operator interface (spec FR-3, FR-7, FR-10):
+  `BENCH_PI_ROOT`, `BENCH_PROVIDER_ENV`, `OPENCODE_API_KEY`, the
+  `.env.local` key, and `--models-json` are gone. The container
+  never receives `OPENCODE_API_KEY`.
 - Arm proof without a model call: `opencode debug config`,
   `opencode mcp list`, `opencode plugin list`,
   `opencode debug paths` (evidence/task-1.6-skill-path-and-arm-proof.txt §5).
@@ -134,22 +195,57 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
 - A container refresh did not happen in Phase 1. The access token
   was valid, so no renewal ran. "The container cannot refresh"
   stays unproven (evidence/task-1.1-headless-run.txt §5).
-- The host login survives: the refresh value compares
-  `equal=true` before and after both prompts, and the host
-  `auth.json` stays byte-identical
-  (evidence/task-1.1-headless-run.txt §4; section 8 of this note).
+- The host login survives: the proof is the refresh-value
+  comparison inside the credential frame, `equal=true` before
+  versus after both prompts. The host `auth.json` file metadata
+  alone is not proof (its mtime predates the runs). The record
+  never stores the compared value
+  (evidence/task-1.1-headless-run.txt §4; section 8 of this
+  note; review A-N3).
+- Stdin import is proven, no prompt: with `podman run -i`, stdin
+  from the access-only copy, the command
+  `opencode auth import` (no file argument) exits 0 and prints
+  "Imported 1 credential". A following `opencode auth list`
+  prints one table row (integration, label, state `stored`) and
+  no token values
+  (evidence/probe-stdin-import-and-models-fetch.txt §2).
+- Container credential payload (access-only copy, keys only;
+  the harness never records values):
+  `[ { id, integrationID, label, active, value: { type: "oauth",
+  methodID, refresh: <inert placeholder>, access, expires,
+  metadata } } ]`. The copy replaces `refresh` with the inert
+  placeholder; every other key is the exported value
+  (evidence/probe-stdin-import-and-models-fetch.txt §1;
+  evidence/auth-export.shape.json for the redacted shape).
+- `OPENCODE_DISABLE_MODELS_FETCH=1` stays in the confirmed
+  disable set: with the imported access-only credential and the
+  network on, `opencode models` prints 28 `opencode-go/*` ids,
+  byte-identical with and without the flag, exit 0
+  (evidence/probe-stdin-import-and-models-fetch.txt §3).
+  This also proves the FR-2 preflight can check a scheduled
+  `opencode-go/<id>` with `opencode models` without a prompt.
 
 ### 2.2 Selected FR-3 run-window option (fail closed)
 
-The batch preflight reads `expires` from the export. When
-`expires` is earlier than now plus the run window
-(`AGENT_TIMEOUT` plus 900 s), the preflight stops the batch
-before any agent run. The reason line is "Console credential does
-not cover the run window" (spec FR-3, NFR-6). The harness never
-forces a host refresh: v2.0.32 has no refresh trigger without a
-prompt. The weekly report prints a warning when `expires` is
-within 7 days of the next Sunday. The operator renews the login
-interactively with `opencode auth login` on the host.
+The check runs twice, with the same reason line both times. The
+batch preflight reads `expires` from the export once, before the
+first run. Each run checks again before the agent starts:
+`expires` must cover now plus the run window (`AGENT_TIMEOUT`
+plus 900 s). A serial batch of 228 runs can outlive a token that
+covered the first run window, so one batch check is not enough.
+When either check fails, the stop is fail-closed and the reason
+line is "Console credential does not cover the run window"
+(spec FR-3, NFR-6). The helper `harness/opencode-credential.sh`
+does the export, the selection, the access-only copy, and both
+window checks. The harness never forces a host refresh: v2.0.32
+has no refresh trigger without a prompt. The operator renews the
+login interactively with `opencode auth login` on the host.
+
+Weekly expiry warning (one rule, the same in `spec.md`): when
+`expires` is within 7 days of the report time, the weekly report
+prints one warning line with the `expires` time. The warning
+never stops the batch and never changes a run verdict; only the
+run-window check of this section stops a run.
 
 ### 2.3 Other options (not selected)
 
@@ -202,13 +298,19 @@ fixture_revision, the run binding fields,
 `contract_violation_sha256`, `graft`, `run_id`, `arm`, `model`,
 `mode`, `candidate_sha256`, `fixture_protected_sha256`,
 `runner_sha256`, `suite_sha256`, `agent_isolated`,
-`candidate_contract_schema`, `cohort_id`). The `executor` field
-becomes the identity of section 3.1, and
+`candidate_contract_schema`, `cohort_id`, `executor_cohort`).
+The `executor` field becomes the identity of section 3.1, and
 `execution_identity_sha256` hashes it. `executor-cohort.json`
 keeps its role: a frozen copy of the executor evidence for one
 run. New execution files join the runner hash list: the entry
-script, the credential helper, and the new usage parser (spec
-FR-5).
+script, the credential helper `harness/opencode-credential.sh`,
+and the new usage parser (spec FR-5).
+FR-8 site rows: `export-site-data.py` and
+`generate-model-pages.py` take the executor name and version
+from the provenance executor identity (`opencode.version` for
+OpenCode runs, `pi.version` for the legacy schema 1 rows).
+Phase 3 wires this from `provenance.json`, not from
+`score.json`.
 
 ## 4. Usage mapping and usage source (FR-7)
 
@@ -228,55 +330,117 @@ The stream alone is not a complete usage source
 
 ### 4.3 Selected usage source
 
-The entry script runs `opencode session export <sessionID>` inside
-the container after `opencode run` returns, and writes the JSON to
-the run artifacts. The sessionID comes from the event stream. The
-new parser reads `info.tokens` (whole-session totals) and
-`info.cost`. Evidence: the offline probe
-(evidence/task-1.8-token-usage.txt §5, §6;
-evidence/offline-session-export.redacted.json). The store holds
-the totals in the `session_v2` row of `opencode.db`
+The usage source is the session export, in this order of
+precedence:
+
+1. **Source of truth: the session export.** The entry script runs
+   `opencode session export <sessionID>` inside the container
+   after `opencode run` returns, and writes the JSON to
+   `artifacts/executor/session-export.json` (plain; the parser
+   also accepts the `.gz` form). The sessionID rule: the entry
+   script reads the newest row of
+   `opencode session list` in the isolated store. A fresh
+   container holds exactly one session, so the newest row is the
+   run's session (evidence/task-1.8-token-usage.txt §5.2, §5.3).
+2. **Cross-check only: the event stream.** `artifacts/session.json`
+   can lack the final step's usage (§4.2 of this note), so it
+   never feeds the `Usage` record. Task 4.3 cross-checks the
+   export totals against the stream. Subagents are denied (O3),
+   so no subagent mapping exists.
+
+Order against the agent timeout: `timeout` wraps only the
+`opencode run` command. The export step runs after the wrapped
+command returns, also after a `timeout` kill, because the
+session row exists from the start (the offline probe exported a
+session whose run had failed with `provider.no-route`,
+evidence/task-1.8-token-usage.txt §5). Missing or empty export
+result: the run is invalid. The parser returns zero usage only
+for an empty `info.tokens`, and `run.sh` fails the run when the
+export artifact is missing or unreadable (fail closed, NFR-6).
+
+The export artifact holds `messages` with assistant text and
+tool output. It stays inside the run directory, which is never
+committed. The parser reads `info` only (`tokens`, `cost`,
+`model`), never `messages` (review B RB-4).
+
+Evidence for the shape: evidence/task-1.8-token-usage.txt §5, §6;
+evidence/offline-session-export.redacted.json. The store holds
+the same totals in the `session_v2` row of `opencode.db`
 (`tokens_input`, `tokens_output`, `tokens_reasoning`,
 `tokens_cache_read`, `tokens_cache_write`, `cost`). The message
 rows hold no tokens.
 
+Open item for task 4.3: the offline probe proves the field shape
+on a zero-token session. The first live smoke run confirms the
+non-zero totals.
+
 ### 4.4 Mapping to the `Usage` shape
+
+The parser returns the `Usage` shape of `harness/usage.ts`
+(lines 6–11). One export file in, one record out:
 
 ```
 info.tokens.input        →  input
 info.tokens.output       →  output
-info.tokens.reasoning    →  counted as output (spec FR-7)
+info.tokens.reasoning    →  added to output (Usage.output =
+                            info.tokens.output + reasoning)
 info.tokens.cache.read   →  cacheRead
 info.tokens.cache.write  →  cacheWrite
-info.cost                →  costUsd (advisory)
+totalTokens              →  input + output + reasoning +
+                            cache.read + cache.write
+info.cost                →  costUsd (advisory, rounded like the
+                            Pi parser: *1e6 and back)
+info.model.providerID    →  provider
+info.model.model         →  model
+messages                 →  assistantTurns: count of assistant
+                            messages; toolCalls: count of
+                            tool-call parts; turns: count of
+                            user messages (the prompt count).
+                            Phase 2 tests these counts against
+                            a fixture export with known values.
+export file size         →  logBytes
 ```
 
-`harness/usage.ts` parses the Pi transcript today. FR-7 needs a
-new OpenCode parser for the export JSON, plain or `.gz` (spec
-FR-7; evidence/task-1.8-token-usage.txt §4). The event stream
-stays as a cross-check. Subagents are denied (O3), so the parser
-needs no subagent mapping (evidence/task-1.8-token-usage.txt §3).
+The reasoning rule (spec FR-7): `Usage.output` counts reasoning
+tokens as output. The live2 stream supports this: its reasoning
+value (32) is larger than its output value (31), so the stream
+carries reasoning as a separate field
+(evidence/task-1.8-token-usage.txt §2; review A-N12).
 
-Open item for task 4.3: the offline probe proves the field shape
-on a zero-token session. The first live smoke run confirms the
-non-zero totals. Phase 2 tests each candidate source (task 2.5).
+`harness/usage.ts` keeps the Pi transcript parser for legacy
+regrades. FR-7 adds the OpenCode export parser next to it.
 
 ## 5. Helper supply method (task 1.7)
 
 - The built-in `grep` tool needs ripgrep
   (evidence/task-1.7-container-runtime.txt §4.1).
 - Source of the `rg` binary: the official ripgrep 15.1.0 release
-  asset `ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz`
-  (static-pie ELF, SHA-256
-  `ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2`).
-  The host distro `rg` does not run in the image: it needs
-  `GLIBC_2.39`, the image is Debian 12 (glibc 2.36)
+  asset. The host distro `rg` does not run in the image: it needs
+  `GLIBC_2.39`, the image is Debian 12 bookworm (glibc 2.36)
   (evidence/task-1.7-container-runtime.txt §9).
-- Supply method: the harness keeps the static binary at
-  `harness/vendor/rg`, copies it into the per-run artifact tree,
-  and Podman bind-mounts it read-only at `/usr/local/bin/rg`.
-  The noexec `/tmp` stays. The download path of the binary is
-  never taken at run time
+- Source policy (verified this phase, review A-N11):
+  - Download command:
+    `curl -fsSL -o ripgrep.tar.gz
+    https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz`
+  - Tarball SHA-256:
+    `1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599`.
+  - Upstream check: the release publishes
+    `ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz.sha256`;
+    its value equals the computed tarball hash (verified,
+    2026-10-18).
+  - Extracted binary `rg` SHA-256:
+    `ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2`
+    (`ripgrep 15.1.0 (rev af60c2de9d)`, static-pie, verified to
+    exec in the pinned image).
+- No binary is vendored into the repository in this phase. The
+  operator setup downloads the tarball, checks it against the
+  upstream `.sha256` file, extracts the binary, and stores it
+  outside the repository. The preflight verifies the extracted
+  binary SHA-256 before each batch and stops the batch on a
+  mismatch. `run.sh` copies the binary into the per-run artifact
+  tree, and Podman bind-mounts that copy read-only at
+  `/usr/local/bin/rg`. The noexec `/tmp` stays. The download
+  never happens at run time
   (evidence/task-1.7-container-runtime.txt §4.4, §9).
 - The identity records the helper: `helpers.rg =
   { path, sha256, version: "15.1.0" }` (section 3.1). The
@@ -290,6 +454,16 @@ non-zero totals. Phase 2 tests each candidate source (task 2.5).
   `weekly.sh`. It makes `node`, `npm`, and `opencode` resolve to
   the operator nvm toolchain, not to the snap dispatcher
   (evidence/task-1.2-cron-self-check.txt §4, §5, §6).
+- Node discovery rule for `toolchain.sh`: the script resolves
+  Node from `NVM_DIR` (the nvm root) plus the nvm `default`
+  alias, and prepends that `bin` directory to `PATH`. It never
+  hard-codes a version path such as
+  `versions/node/v24.19.0/bin`, because a version path breaks
+  after a Node upgrade. A test can point `NVM_DIR` at a synthetic
+  tree (a `alias/default` file plus a `versions/node/<v>/bin`
+  directory) and check the resolved `node`. `npm` resolves from
+  the same `bin` directory. `opencode` resolves from the PATH
+  that remains after the prepend (the operator nvm global bin).
 - REHEARSAL command (test-strategy.md section 2, unchanged; the
   file name is confirmed by task 1.2):
 
@@ -321,6 +495,20 @@ env -i HOME="$HOME" PATH=/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr
   in a later track.
 - **O6 — Publish after a failed week: out of scope.** The owner
   decides this outside this track.
+
+Review-turn owner decisions (2026-10-18, about 13:10 +08:00):
+
+- **RB-1 exposure accepted.** The refresh-token hash values in
+  the git history (added in `52beaa3`, removed from the files in
+  `9a638b6`) and the short-lived access-only copy under `/tmp`
+  (turn 4, first Green session): the owner accepts them with no
+  action. The history is published unchanged by the next cron
+  push. See `evidence/protocol-incident-2026-10-18.md`.
+- **Free-model deviation accepted.** `opencode-go/beam-free` is
+  not proven free. The Go monthly quota moved from 90.79623% to
+  90.79700% over the 2 live prompts. The owner accepts the
+  deviation from the NFR-4 free-model rule (section 8 of this
+  note records the quota numbers).
 
 ## 8. Prompt ledger (NFR-4)
 
@@ -369,9 +557,10 @@ Phase 1 confirmed these differences from `spec.md`:
 4. FR-3 delivery: the import inside the container runs without
    `--standalone` on the empty isolated store.
 5. FR-3 rotation step 1: v2.0.32 has no refresh trigger without a
-   prompt. The harness never forces a host refresh. The preflight
-   stops the batch fail-closed when `expires` does not cover the
-   run window (section 2.2 of this note).
+   prompt. The harness never forces a host refresh. The window
+   check runs twice: once in the batch preflight and again before
+   each agent run. Both stops are fail-closed with the same
+   reason line (section 2.2 of this note).
 6. FR-4 helper supply: the harness ships the static musl ripgrep
    15.1.0; the host distro `rg` does not run in the image
    (evidence/task-1.7-container-runtime.txt §9).
@@ -381,8 +570,24 @@ Phase 1 confirmed these differences from `spec.md`:
    (`info.tokens`), not the event stream alone. The event stream
    can lack the final step's usage
    (evidence/task-1.8-token-usage.txt §1.3, §6).
+9. FR-4 config source: `OPENCODE_CONFIG` adds a document and does
+   not suppress the XDG directory source. The isolation is the
+   empty private XDG tmpfs directory plus
+   `OPENCODE_DISABLE_PROJECT_CONFIG=1`. The preflight checks
+   that the private config directory holds no document
+   (evidence/probe-config-source-and-arm-configs.txt §3).
+10. FR-2 preflight: `opencode models` with the imported
+    credential lists the `opencode-go/*` ids, with and without
+    `OPENCODE_DISABLE_MODELS_FETCH=1`
+    (evidence/probe-stdin-import-and-models-fetch.txt §3).
+11. FR-3 stdin delivery: `opencode auth import` with no file
+    argument reads the container stdin and prints
+    "Imported 1 credential"
+    (evidence/probe-stdin-import-and-models-fetch.txt §2).
 
 The corrected `spec.md` carries these changes. Unproven items that
 stay open: the container refresh path (task 4.3 or later), the
-timeout-kill exit code (Phase 2 fake), and the non-zero export
-totals (task 4.3).
+timeout-kill exit code (Phase 2 fake), the non-zero export
+totals (task 4.3), and the runtime skill discovery and rule
+enforcement effect (task 4.2; no no-prompt probe lists skills,
+evidence/probe-config-source-and-arm-configs.txt §6).

@@ -1,0 +1,85 @@
+# Probe: stdin credential import and models resolution
+# (jr-green review-fix turn, 2026-10-18, findings A-B1, A-B5(c))
+
+Date: 2026-10-18, before 13:00 (+08:00). No prompt was sent. The
+credential protocol (test-strategy.md section 4.1) framed this
+probe: private `mktemp -d` frame under `$XDG_RUNTIME_DIR`,
+`umask 077`, `set +x`, EXACT scan at the end, removal by exact
+path.
+
+## 1. Frame
+
+```
+opencode auth export opencode > "$d/raw.json"   # 615 bytes
+```
+
+One active Console connection: `integrationID` `opencode`,
+`methodID` `device`. The access-only copy keeps the keys
+`id, integrationID, label, active` and
+`value: {type, methodID, refresh, access, expires, metadata}`.
+The copy replaces `value.refresh` with the inert string. The
+payload shape for the design (keys only, values never recorded):
+
+```
+[ { id, integrationID, label, active,
+    value: { type: "oauth", methodID, refresh: <inert>,
+             access, expires, metadata } } ]
+```
+
+## 2. Stdin import (no file argument)
+
+Container: pinned image, network `slirp4netns` (on), private
+empty XDG tmpfs dirs, `podman run -i`, stdin from the access-only
+copy:
+
+```
+opencode auth import        # stdin, no file argument
+```
+
+Result: exit code 0, stdout `Imported 1 credential`.
+Then `opencode auth list` (rc=0) prints one table row, no token
+values:
+
+```
+OpenCode Console  Workspace1                  stored
+```
+
+So the stdin delivery path of spec FR-3 works. The 0600-file
+fallback stays unused.
+
+## 3. Models resolution with the fetch flag (A-B5(c))
+
+Same container, same frame, network on, imported access-only
+credential:
+
+- `opencode models` (no flag): exit 0. 58 ids: 28 `opencode-go/*`
+  ids (including `opencode-go/beam-free`) and 30 `opencode/*`
+  ids. No stderr.
+- `OPENCODE_DISABLE_MODELS_FETCH=1 opencode models`: exit 0.
+  Byte-identical output (diff is empty).
+
+Result: the flag does not remove the `opencode-go/*` ids. The
+flag stays in the confirmed disable set. The earlier offline
+observation (task 1.7: 12 `opencode/*` ids only, no credential)
+and this probe differ because the imported credential plus the
+network fetch add the Console plan models. `opencode models` with
+the credential is a valid no-prompt preflight check for a
+scheduled `opencode-go/<id>` (spec FR-2).
+
+## 4. EXACT and cleanup
+
+EXACT scan in the same credential frame over
+`measure/tracks/opencode_executor` and
+`measure/runs/opencode_executor`:
+
+```
+exact-scan values=6 hits=0
+```
+
+The frame and its files (`raw.json`, the access-only copy,
+container outputs) were then removed by exact path.
+
+## 5. Files
+
+All raw outputs lived only in the private frame and are deleted.
+This file is the repo evidence.

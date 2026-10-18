@@ -95,6 +95,9 @@ because `--network=none` blocks the model endpoint.
 $ timeout 90 podman run --rm --pull=never \
     --network=slirp4netns:allow_host_loopback=false \
     --mount ... <container setup> \
+    # (the full Podman argument set is in design.md section 1.2;
+    #  the review-fix probes record full commands in
+    #  probe-config-source-and-arm-configs.txt)
     /bin/sh -c "opencode auth import /tmp/cred.json && \
                 echo '=== run ===' && \
                 timeout 60 opencode run --standalone --format json --auto \

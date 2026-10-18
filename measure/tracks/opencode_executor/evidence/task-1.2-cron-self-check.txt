@@ -70,9 +70,15 @@ The 60s per-test budget is the only ceiling.
 
 ## 4. Root cause of the 0-byte file
 
-The exact call that produces 0 bytes is `npm run typecheck
-> $OUT/typecheck.log 2>&1` from inside `grade.sh`, when the bash
-is the spawnSync child of vitest.
+The exact failing calls (confirmed against `harness/grade.sh`)
+are:
+
+- `"${TSX}" score.ts > score.json 2>&1` — `grade.sh` line 108;
+- `"${TSX}" candidate-contract.ts` — `grade.sh` line 129.
+
+`tsx` starts with the shebang `#!/usr/bin/env node`, so both calls
+resolve `node` from `PATH`. Under the crontab PATH that is the
+snap dispatcher `/snap/bin/node`.
 
 Decisive checks (all run from inside vitest's spawnSync under
 the crontab PATH):
@@ -90,20 +96,18 @@ bash -c "/snap/node/12153/bin/node .../tsc --noEmit > f"
                                                         (size 90)  OK
 ```
 
-The exact pattern: any call that goes through `/snap/bin/node`
-or `/snap/bin/npm` (both are symlinks to `node.npm` or
-`node.node`, which the snap dispatcher reads from `argv[0]`)
-produces 0 bytes when invoked from a bash that is a child of
-vitest's spawnSync. Calling the real ELF binary at
-`/snap/node/12153/bin/node` directly works. `echo`, `cat`, and
-`printf` redirects from bash also work.
-
 The snap dispatcher at `/usr/bin/snap` reads `argv[0]` to pick
-the snap app, then execs the snap's binary. The dispatcher
-returns success (`rc=0`) but never writes to the redirected
-file. This is the dispatcher failing in a non-tty, no-controlling-tty
-context (vitest's child is detached). The bash redirect itself
-works (`echo > file` from bash writes 22 bytes correctly).
+the snap app, then execs the snap's binary. In the failing
+pattern the dispatcher returns success (`rc=0`) but never
+writes to the redirected file. Calling the real ELF binary at
+`/snap/node/12153/bin/node` directly works, and `echo`, `cat`,
+and `printf` redirects from the same bash also work, so the bash
+redirect itself is fine. Not every call through the snap
+dispatcher fails (the `npm-cli.js` call wrote 48 bytes), and a
+forced tty does not fix it (probe7 force_tty also writes 0
+bytes), so the trigger condition inside the dispatcher stays
+unidentified. The `harness/toolchain.sh` fix avoids the
+dispatcher for `node`, `npm`, and `tsx` entirely.
 
 The per-test timings of the 3 failing tests under cron PATH:
   exits nonzero when score.ts produces an invalid record   (11939ms)

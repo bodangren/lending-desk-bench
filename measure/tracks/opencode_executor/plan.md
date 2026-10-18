@@ -51,7 +51,8 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
 
 - [x] 1.1 [9a638b6] Headless run contract: confirm the flags `run --standalone --format
   json --auto --model opencode-go/<id>`. Record the exit codes for a provider
-  error and for a timeout. Record the stdin behavior and the JSON event types.
+  error and for a timeout (the timeout exit code stays unproven in Phase 1;
+  the Phase 2 fake covers it). Record the stdin behavior and the JSON event types.
   Confirm that `--auto` leaves no permission prompt. Use one tiny prompt with
   a free Go model in a throwaway container (spec FR-1). [9a638b6](evidence/task-1.1-headless-run.txt)
   (evidence-fix turn: hash values removed, free-model claim corrected,
@@ -63,8 +64,10 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   minimal fix (spec FR-9). [c643123](evidence/task-1.2-cron-self-check.txt)
 - [x] 1.3 [9a638b6] Credential export and import: record the redacted shape of `opencode
   auth export opencode`. Record how the active Console connection is
-  selected. Import it with `opencode auth import --standalone` from stdin into
-  an empty isolated store, with temporary XDG dirs and no model call. Record
+  selected. Import it into an empty isolated store, with temporary XDG
+  dirs and no model call (v2.0.32 rejects `--standalone` for `auth`; the
+  stdin import and the file import both work without the flag —
+  review-fix probe). Record
   the store location. Confirm that the import leaves no other copy (spec
   FR-3). [9a638b6](evidence/task-1.3-1.4-credential.txt) (v2.0.32
   --standalone limitation: see evidence; evidence-fix turn: hash
@@ -128,7 +131,9 @@ model, no real credential (NFR-3).
 - [ ] 2.1 Fake `opencode` fixture: replace the fake `pi` in
   `tests/meta/schema4-fixtures.ts` with a fake `opencode`. It prints a 2.x
   version. It captures its arguments, its environment names, and a stdin
-  hash. It emits the fixed event stream from task 1.8 (spec FR-10).
+  hash. It emits the fixed event stream and writes the fixed session
+  export of `design.md` section 4, so the usage parser reads the export,
+  not the stream (spec FR-1, FR-7).
 - [ ] 2.2 Executor and isolation contract: extend
   `run-executor-provenance.test.ts`, `runtime-isolation.test.ts`,
   `runtime-isolation-completion.test.ts`, and `execution-identity.test.ts`.
@@ -153,9 +158,12 @@ model, no real credential (NFR-3).
   `BENCH_EXECUTOR_RUNTIME_FLAGS`, `BENCH_EXECUTOR_CLI_FLAGS`,
   `BENCH_OPENCODE_BIN`, `BENCH_PI_ROOT`, `HOME`, and `PATH`. This carries the
   bench_incremental review A finding (spec FR-5, FR-6).
-- [ ] 2.5 Cost: `usage.ts` parses the fixed event stream, plain and `.gz`,
-  with the confirmed reasoning and subagent mapping. The recost equals the
-  `go-pricing.json` formula. The no-output-token gate reads the new parser
+- [ ] 2.5 Cost: `usage.ts` parses the fixed session export, plain and
+  `.gz`, with the FR-7 mapping of `design.md` section 4 (reasoning counts
+  as output; no subagent mapping — O3 denies `subagent`). The event
+  stream stays a cross-check. The recost equals the
+  `go-pricing.json` formula. The no-output-token gate reads the new
+  parser, and a missing or empty export makes the run invalid
   (spec FR-7).
 - [ ] 2.6 History and site: the rescore and the regrade print a SKIP line for
   legacy Pi runs and keep their `score.json` bytes. The runs stay out of the
@@ -179,9 +187,12 @@ model, no real credential (NFR-3).
   script `harness/opencode-entry.sh`, and the generated config. Add the
   per-run skill snapshot, the private HOME and XDG dirs, and the helper
   supply method (spec FR-1, FR-2, FR-4).
-- [ ] 3.3 Console credential helper: export, selection, run-window check,
-  host refresh, and access-only copy. Add the stdin delivery, the cleanup
-  trap, and the secret scan with redaction (spec FR-3, NFR-1).
+- [ ] 3.3 Console credential helper `harness/opencode-credential.sh`:
+  export, selection, run-window check (batch preflight and before each
+  agent run), access-only copy, and the weekly 7-day expiry warning
+  (the warning never stops the batch). Add the stdin delivery, the
+  cleanup trap, and the secret scan with redaction (spec FR-3, NFR-1,
+  `design.md` section 2).
 - [ ] 3.4 Execution identity schema 2, provenance schema 7, the executor
   cohort, and the runner hash list (spec FR-5).
 - [ ] 3.5 Recorded-executor attestation in `executor-attestation.ts` and

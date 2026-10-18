@@ -102,9 +102,10 @@ that the subagent ran its own session
 The subagent's token usage is **not** in the parent event stream:
 
 - The only usage record in the parent stream is the first step's
-  `step_finish.tokens` with `input: 80`. A second agent prompt
-  cannot fit in 80 input tokens. The parent prompt alone is
-  larger than that.
+  `step_finish.tokens` with `input: 80` and `cache.read: 4096`.
+  The 80-token input size alone is not the proof (a prompt could
+  in theory fit into the 4096 cache-read budget); the proof is
+  the two facts below.
 - No event in the parent stream carries the subagent session's
   own token totals.
 - The second step (the "DONE" reply) has no `step_finish` at all
