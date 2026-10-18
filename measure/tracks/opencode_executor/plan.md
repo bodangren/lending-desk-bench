@@ -59,17 +59,17 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   crontab PATH. The 2026-10-18 reproduction failed 3 tests
   under the crontab PATH and passed 170 of 170 under the nvm PATH. Record the
   minimal fix (spec FR-9). [c643123](evidence/task-1.2-cron-self-check.txt)
-- [~] 1.3 Credential export and import: record the redacted shape of `opencode
+- [x] 1.3 Credential export and import: record the redacted shape of `opencode
   auth export opencode`. Record how the active Console connection is
   selected. Import it with `opencode auth import --standalone` from stdin into
   an empty isolated store, with temporary XDG dirs and no model call. Record
   the store location. Confirm that the import leaves no other copy (spec
-  FR-3).
-- [~] 1.4 Refresh and rotation: record the access-token lifetime from
+  FR-3). [cef5b13](evidence/task-1.3-1.4-credential.txt) (v2.0.32 --standalone limitation: see evidence)
+- [x] 1.4 Refresh and rotation: record the access-token lifetime from
   `expires`. Find a host refresh trigger that sends no prompt, if one exists.
   Confirm the import result when the refresh field is absent or inert.
   Confirm that the container cannot refresh and that the host login survives
-  (spec FR-3).
+  (spec FR-3). [cef5b13](evidence/task-1.3-1.4-credential.txt)
 - [x] 1.5 Isolation variables and config source: confirm how the generated
   config becomes the only config source (`OPENCODE_CONFIG`,
   `OPENCODE_CONFIG_CONTENT`, or the XDG config path). Confirm the effect of
