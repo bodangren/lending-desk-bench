@@ -264,7 +264,7 @@ model, no real credential (NFR-3).
     The task 2.1 capture test also fails. All 170 existing tests pass.
     Arm A already removes `AGENTS.md` and has no snapshot. That control passes without a false Red assertion.
     The role log records each failing name and its missing behavior.
-- [~] 2.3 Credential tests: only the Console connection reaches the
+- [x] 2.3 [765e478] Credential tests: only the Console connection reaches the
   container, without the refresh token. Delivery uses stdin. No token is in a
   process argument list, the environment, the artifacts, a log, or
   provenance. Staging is gone after success, failure, and timeout. A token
@@ -295,7 +295,7 @@ model, no real credential (NFR-3).
     `Test Files  3 failed | 26 passed (29)`; `Tests  41 failed | 173 passed (214)`.
     Both JSON reports contain the same failing names. All 170 existing tests pass.
     Twenty credential tests fail for missing behavior. The scanner control passes.
-- [ ] 2.4 Provenance and attestation: prove the schema 7 fields. Prove that
+- [~] 2.4 Provenance and attestation: prove the schema 7 fields. Prove that
   attestation reads only the recorded executor. A fake upgrade at the
   recorded path keeps an earlier run attested and not stale. A changed skill
   or config snapshot makes the run invalid. Adversarial ambient values give
