@@ -39,7 +39,12 @@ timeout <AGENT_TIMEOUT> opencode run --standalone --format json \
 ### 1.2 Podman argument list (the exact set)
 
 ```
-podman run --rm --pull=never --read-only
+podman run --rm -i --pull=never --read-only
+  # -i connects the host stdin that carries the access-only
+  # credential payload for the entry script's stdin import
+  # (evidence/probe-stdin-import-and-models-fetch.txt §2, §6;
+  #  without -i the import reads nothing and every graded run
+  #  fails — review A R3)
   --tmpfs /tmp:rw,nosuid,nodev,noexec,size=512m
   --tmpfs /run/opencode:rw,nosuid,nodev,size=64m
   --cap-drop=ALL
@@ -71,7 +76,14 @@ podman run --rm --pull=never --read-only
 
 (evidence/task-1.7-container-runtime.txt §2, §7 for the flags and
 the `/run/opencode` tmpfs; the mounts are this section's contract
-and section 1.4; spec FR-4 carries the same set.)
+and section 1.4; spec FR-4 carries the same set.) The hardening
+flags `--read-only`, `--cap-drop=ALL`, `no-new-privileges`,
+`--userns=keep-id`, `--user`, the `/tmp` tmpfs, the slirp4netns
+network, and `--workdir /workspace` are the current
+`harness/run.sh` set (lines 359–366) that spec FR-4 keeps. The
+probe commands of evidence/probe-stdin-import-and-models-fetch.txt
+§6 and evidence/probe-config-source-and-arm-configs.txt §2 ran
+with subsets of this list and add no other argument.
 
 ### 1.3 Container environment
 
@@ -213,6 +225,10 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
   prints one table row (integration, label, state `stored`) and
   no token values
   (evidence/probe-stdin-import-and-models-fetch.txt §2).
+  The section 1.2 argument set carries `-i` for this reason:
+  the harness delivers the access-only payload on the Podman
+  stdin of every graded run, and the entry script consumes it
+  there (review A R3).
 - Container credential payload (access-only copy, keys only;
   the harness never records values):
   `[ { id, integrationID, label, active, value: { type: "oauth",
