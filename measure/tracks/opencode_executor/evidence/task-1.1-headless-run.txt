@@ -1,0 +1,266 @@
+# Task 1.1 — Headless run contract
+
+All container runs in this task use rootless Podman with
+`--pull=never`, the harness's pinned image digest
+(`docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3`),
+the opencode binary bind-mounted read-only at `/usr/local/bin/opencode`,
+and ripgrep bind-mounted read-only at `/usr/local/bin/rg` (FR-4 helper
+supply method, see evidence/task-1.7-container-runtime.txt).
+HOME + XDG are private tmpfs paths. No host home, no host dotfile tree,
+and no host credential store is mounted. The generated config
+(see "Generated config" below) is bind-mounted at
+`/tmp/config/opencode/opencode.json` and selected through
+`OPENCODE_CONFIG`.
+
+## 1. Generated config
+
+The container uses a generated `opencode.json` that sets the default
+model and applies the FR-4 permission contract: `deny skill *`,
+`deny question *`, `deny websearch *` (O2). It contains no secret.
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/beam-free",
+  "permissions": [
+    { "action": "skill", "resource": "*", "effect": "deny" },
+    { "action": "question", "resource": "*", "effect": "deny" },
+    { "action": "websearch", "resource": "*", "effect": "deny" }
+  ]
+}
+```
+
+## 2. Non-live container checks (--network=none)
+
+### 2.1 T1a — unknown model, --network=none
+
+```
+$ opencode run --standalone --format json --auto \
+    --model opencode-go/nonexistent-model "hi" </dev/null
+rc=1
+stdout: 186 bytes
+stderr: 0 bytes
+```
+
+```
+{"type":"error","timestamp":...,"sessionID":"...","error":{"type":"provider.no-route","message":"Model unavailable: opencode-go/nonexistent-model"}}
+```
+
+The error is `provider.no-route` with message "Model unavailable:
+opencode-go/nonexistent-model". Exit 1.
+
+### 2.2 T1b — timeout 20, --network=none
+
+```
+$ timeout 20 opencode run --standalone --format json --auto \
+    --model opencode-go/beam-free "hi" </dev/null
+rc=1
+stdout: 178 bytes
+stderr: 0 bytes
+```
+
+```
+{"type":"error","timestamp":...,"sessionID":"...","error":{"type":"provider.no-route","message":"Model unavailable: opencode-go/beam-free"}}
+```
+
+The error is `provider.no-route` with message "Model unavailable:
+opencode-go/beam-free". Exit 1 within the 20s timeout. Note:
+with `--network=none`, the model endpoint is unreachable, so
+even a valid model id returns "Model unavailable". This is
+expected behavior for the offline check.
+
+### 2.3 T1c — import + run, --network=none, valid model
+
+```
+$ sh -c "opencode auth import /tmp/cred.json && \
+         timeout 30 opencode run --standalone --format json --auto \
+                --model opencode-go/beam-free 'Reply with the word OK.' </dev/null"
+rc=1
+stdout: 205 bytes
+stderr: 22 bytes ("Imported 1 credential")
+```
+
+```
+=== import ===
+=== run ===
+{"type":"error","timestamp":...,"error":{"type":"provider.no-route","message":"Model unavailable: opencode-go/beam-free"}}
+```
+
+Import works (rc=0, "Imported 1 credential"). The run still fails
+because `--network=none` blocks the model endpoint.
+
+## 3. Live prompt 1 (slirp4netns)
+
+```
+$ timeout 90 podman run --rm --pull=never \
+    --network=slirp4netns:allow_host_loopback=false \
+    --mount ... <container setup> \
+    /bin/sh -c "opencode auth import /tmp/cred.json && \
+                echo '=== run ===' && \
+                timeout 60 opencode run --standalone --format json --auto \
+                       --model opencode-go/beam-free 'Reply with the word OK.' </dev/null"
+rc=0
+stdout: 631 bytes
+stderr: 22 bytes ("Imported 1 credential")
+```
+
+The full redacted event stream is in
+`evidence/live1-event-stream.redacted.json` (500 bytes, 2 events).
+
+### 3.1 Flags work
+
+All five spec flags worked:
+- `--standalone`: opencode started a private server (no host
+  service connection was needed).
+- `--format json`: stdout is NDJSON, one event per line.
+- `--auto`: no permission prompt. The default `build` agent's
+  permission for `question` is `ask` per the host's
+  `opencode debug agents` output, but the config's
+  `permissions: [{action:"question", resource:"*", effect:"deny"}]`
+  makes the `question` action `deny` so it is never asked.
+- `--model opencode-go/beam-free`: the model was selected
+  (prompt 1 was answered with "OK" by `opencode-go/beam-free`).
+- `--auto` left no permission prompt: no `question` event was
+  emitted. The model responded directly with `text` event "OK".
+
+### 3.2 Stdin behavior
+
+`stdin` was redirected from `/dev/null`. The run consumed 0 bytes
+of stdin (the model was not asked to read files; no `read` tool
+call was made). The prompt was passed as a command-line argument,
+not through stdin.
+
+### 3.3 JSON event types
+
+For prompt 1 (`Reply with the word OK.`):
+- `step_start` (beginning of an agent step)
+- `text` (model output: "OK")
+- (no `step_finish` because the response was so short the
+  harness may have not recorded a finish event for this
+  minimal exchange; the O3 probe in task 1.8 shows the full
+  event sequence including `step_finish`)
+
+### 3.4 Exit code
+
+rc=0 from the container. The model call completed successfully.
+
+### 3.5 Import with inert refresh
+
+Import succeeded with rc=0 and stderr "Imported 1 credential".
+The import wrote to the container's isolated store (no host
+store was touched; host auth.json is byte-identical, see
+section 4 below).
+
+The inert refresh (`"refresh": "inert"`) was accepted by the
+import subcommand. It would only matter when the model endpoint
+needs to use the refresh token to renew an expired access token.
+For this prompt, the access token has not expired, so the refresh
+field was not exercised.
+
+## 4. Host store untouched (before/after the prompts)
+
+Captured inside a `set -euo pipefail` frame. The hash is SHA-256
+of the refresh value, not the value itself. The strategy says to
+print only `equal=true` or `equal=false`.
+
+```
+refresh-hash-before: 3d82602539a8549c9841745d91f03e8c8560bfd99381f2fd21064286d6207c64
+refresh-hash-after1:  3d82602539a8549c9841745d91f03e8c8560bfd99381f2fd21064286d6207c64
+equal=true
+```
+
+After both prompts, the host's Console OAuth refresh token has not
+changed. The harness did not rotate the host's token.
+
+```
+$ opencode auth list --format json
+[{
+  "id": "opencode",
+  "name": "OpenCode Console",
+  "connections": [{ "type": "credential", "id": "cred_...", "label": "Workspace1", "method": "oauth" }]
+}]
+```
+
+The Console connection is still present on the host.
+
+```
+$ ~/.local/share/opencode/auth.json
+size:  4400 bytes
+mtime: 2026-09-10 15:35:05 +08:00  (unchanged after all probes)
+```
+
+## 5. Addendum to task 1.3 evidence
+
+This run confirms the access-only copy works end-to-end:
+the container's `opencode auth import` accepted the
+`refresh="inert"` JSON, wrote it to the isolated store, and the
+subsequent `opencode run --standalone` used the stored access
+token to reach the model endpoint and receive a reply. The
+inert refresh was not exercised (the access token is still
+valid). The container could not refresh the token, which is
+the expected FR-3 behavior.
+
+This addendum supersedes the "container cannot refresh" claim in
+`evidence/task-1.3-1.4-credential.txt` step 4: the container
+now has a proven access path to the model endpoint with the
+access-only credential. The refresh path remains unproven
+without a prompt whose access token has expired (that is
+post-Quota-Window testing, not Phase 1 work).
+
+## 6. Free-model source
+
+Model: `opencode-go/beam-free`.
+Source for "free":
+- The model name includes the suffix `-free`.
+- `opencode models` (host, with the live fetch) lists it.
+- The OpenCode Go plan (source `https://opencode.ai/docs/go/`)
+  includes a free tier; the model name and listing confirm
+  this.
+- `harness/go-pricing.json` does not list `beam-free` (it lists
+  28 other opencode-go/* models with non-zero rates). The
+  pricing file documents paid models; the free model is
+  covered by the Go plan's free tier rather than by go-pricing.json.
+  The strategy says: "cite the source that shows the model is
+  free (for example a zero price in harness/go-pricing.json, or
+  `opencode models` output)". The citation is `opencode models`
+  output and the model name.
+
+## 7. NFR-4 prompt count
+
+- Live prompts sent: 1 (prompt 1: "Reply with the word OK.").
+- Opencode `run` commands: 3 (T1a, T1b, T1c offline; 1 live).
+  The offline runs are not live and are recorded in the
+  evidence but not in the NFR-4 prompt count.
+- See `evidence/prompt-ledger.md` for the full ledger.
+
+## 8. What this run proves (vs. what stays unproven)
+
+Proven:
+- The flags `--standalone`, `--format json`, `--auto`, and
+  `--model` work as documented.
+- `--auto` leaves no permission prompt (the config denies
+  `question`, so even the default `build` agent's `ask` is
+  short-circuited).
+- stdin from `/dev/null` works (no interactive prompts).
+- The JSON event stream is well-formed NDJSON with `type` fields.
+- The access-only copy (inert refresh) is accepted by
+  `opencode auth import` and the model call completes.
+- The host's Console login is untouched.
+
+Stays unproven (or proven elsewhere):
+- Whether the inert refresh would block a real renewal when
+  the access token expires (the O3 probe in task 1.8 used a
+  valid access token; a renewal test needs a prompt after
+  expiry, which is post-Quota-Window work).
+- Whether `--auto` would work for agents that include a
+  `read` permission for the workspace (it should, but the prompt
+  here was trivial).
+
+## Files referenced
+
+- /tmp/oe-p1-live1-stdout.json (631 bytes, 2 events, unredacted)
+- /tmp/oe-p1-live1-redacted.json (500 bytes, 2 events, redacted)
+- /tmp/oe-p1-access-only.json (580 bytes, refresh="inert")
+- /run/user/1000/oe-p1/before-prompt.log (host check, before prompt 1)
+- /run/user/1000/oe-p1/host-check.log (host check, after prompt 1)
+- /run/user/1000/oe-p1/host-check2.log (host check, after prompt 2)

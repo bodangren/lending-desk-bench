@@ -49,7 +49,7 @@ Read-only investigation of the host OpenCode 2. Phase 1 writes only files in
 `measure/tracks/opencode_executor/`: `design.md`, redacted evidence, and
 corrections to `spec.md`. Red starts only after task 1.9 is complete.
 
-- [ ] 1.1 Headless run contract: confirm the flags `run --standalone --format
+- [~] 1.1 Headless run contract: confirm the flags `run --standalone --format
   json --auto --model opencode-go/<id>`. Record the exit codes for a provider
   error and for a timeout. Record the stdin behavior and the JSON event types.
   Confirm that `--auto` leaves no permission prompt. Use one tiny prompt with
@@ -86,12 +86,12 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
   Select one helper supply method (spec FR-4). [ed98b8e](evidence/task-1.7-container-runtime.txt)
-- [ ] 1.8 Token usage format: record the event fields for input, output,
+- [~] 1.8 Token usage format: record the event fields for input, output,
   reasoning, cache read, and cache write. Record whether they are per step or
   cumulative. Confirm whether subagent usage reaches the parent event stream.
   Save one redacted event stream from task 1.1 in the track directory (spec
   FR-7).
-- [ ] 1.9 Design note: write `design.md`. It gives the confirmed command line,
+- [~] 1.9 Design note: write `design.md`. It gives the confirmed command line,
   environment, mounts, config, and credential flow. It gives the field lists
   of identity schema 2 and provenance schema 7. It gives the usage mapping and
   the helper supply method. Record the owner answers to O1–O6. Correct

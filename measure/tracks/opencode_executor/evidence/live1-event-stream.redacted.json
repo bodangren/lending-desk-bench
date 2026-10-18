@@ -1,0 +1,2 @@
+{"type": "step_start", "timestamp": 1792294376815, "sessionID": "<redacted-sessionID>", "part": {"id": "<redacted-partID>", "sessionID": "<redacted-sessionID>", "messageID": "<redacted-messageID>", "type": "step-start"}}
+{"type": "text", "timestamp": 1792294376872, "sessionID": "<redacted-sessionID>", "part": {"id": "<redacted-partID>", "sessionID": "<redacted-sessionID>", "messageID": "<redacted-messageID>", "type": "text", "text": "OK", "time": {"start": 1792294375632, "end": 1792294376872}}}

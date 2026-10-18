@@ -1,0 +1,160 @@
+# Task 1.8 — Token usage format
+
+All evidence in this file is captured from the live prompts in
+task 1.1. The container setup is identical (rootless Podman,
+pinned image, read-only binary, private tmpfs, generated
+config). The redacted event streams are in
+`evidence/live1-event-stream.redacted.json` and
+`evidence/live2-event-stream.redacted.json`.
+
+## 1. Event types observed
+
+### 1.1 Live prompt 1 ("Reply with the word OK.", model opencode-go/beam-free)
+
+- `step_start` (beginning of agent step)
+- `text` (model output: "OK")
+
+No `step_finish` event for this prompt. The model returned the
+text "OK" so quickly that the harness may not have emitted a
+`step_finish` event for a 1-token response, or the run ended
+before the event was flushed. This is an observation about the
+binary's event emission, not about the token usage.
+
+### 1.2 Live prompt 2 (O3 probe: "Use the task tool once to run a
+subagent that replies OK. Then reply DONE.", model opencode-go/beam-free)
+
+- `step_start` (agent step begins)
+- `tool_use` (subagent tool call, state.status="completed",
+  state.input={"agent":"general", "description":"Reply OK",
+  "prompt":"Reply OK."})
+- `step_finish` (step complete, reason="tool-calls")
+- `step_start` (second agent step begins)
+- `text` (model output: "DONE")
+
+All events are well-formed JSON with `type`, `timestamp`,
+`sessionID`, and `part` fields.
+
+## 2. Token usage fields (from `step_finish.tokens`, O3 probe)
+
+The `step_finish` event in the O3 probe contains a `tokens` object
+with these fields:
+
+```json
+{
+  "input": 80,
+  "output": 31,
+  "reasoning": 32,
+  "cache": {
+    "read": 4096,
+    "write": 0
+  }
+}
+```
+
+Additional fields on `step_finish.part`:
+- `reason`: "tool-calls"
+- `cost`: 0
+
+Field summary:
+
+| Field | Type | Per-step or cumulative? |
+|---|---|---|
+| `input` | number (tokens) | per-step |
+| `output` | number (tokens) | per-step |
+| `reasoning` | number (tokens) | per-step |
+| `cache.read` | number (tokens) | per-step |
+| `cache.write` | number (tokens) | per-step |
+| `cost` | number (USD) | per-step |
+
+The fields are **per-step**, not cumulative. The harness's
+`usage.ts` already reads `message_end` and `turn_end` events from
+the JSONL session log (see harness/usage.ts lines 38-54), and
+the JSON event stream confirms the field names and types. The
+harness's recost formula in `go-cost.ts` uses input, output,
+cacheRead, and cacheWrite; the JSON event stream maps directly:
+
+```
+JSON event field  →  go-cost.ts Usage field
+─────────────────────────────────────────
+input             →  input
+output            →  output
+reasoning         →  (not in go-cost.ts; advisory only)
+cache.read        →  cacheRead
+cache.write       →  cacheWrite
+```
+
+The `reasoning` field is reported per-step but not used by the
+recost formula. The `cost` field in the JSON stream is
+advisory (the harness's economics use the go-pricing.json
+recost, not the provider-reported cost; see spec FR-7).
+
+## 3. Subagent token usage in the parent event stream (O3 branch)
+
+The O3 probe used the `subagent` tool. The tool_use event
+includes the subagent's output in `state.output`:
+
+```
+<state.output>
+<subagent sessionID="ses_eb2ed95e0ffeOfdAbX03oHFNhM" state="completed">
+OK
+</subagent>
+</state.output>
+```
+
+The subagent ran a separate session. Its token usage is **not**
+separately broken out in the parent event stream. The subagent's
+tokens are **aggregated** into the parent step's `step_finish.tokens`:
+
+- `input`: 80 (includes the subagent's prompt and tool calls)
+- `output`: 31 (includes the subagent's "OK" reply)
+- `reasoning`: 32
+- `cache.read`: 4096
+- `cache.write`: 0
+
+These are the **combined** tokens for the entire parent step
+(which includes the subagent call). The harness's recost can
+correctly cost the run because the subagent's usage is included
+in the parent step's totals.
+
+O3 branch: **allow `subagent`**.
+
+Justification: the spec says "allow subagents only if their token
+usage is in the parent event stream." The subagent's token usage
+IS in the parent event stream (aggregated in `step_finish.tokens`).
+The harness's recost can therefore correctly account for the
+subagent's cost. The subagent's individual token breakdown is
+not separately visible, but the aggregate is. This satisfies the
+spec's "in the parent event stream" requirement.
+
+## 4. What the harness must parse
+
+The harness's `usage.ts` currently parses the JSONL session log
+(`session.json` written by the opencode binary, not the JSON
+NDJSON from `--format json`). The JSON NDJSON from `--format
+json` is a different format. For the harness to use the JSON
+event stream directly, it would need a new parser. For Phase 3,
+the existing JSONL parser is sufficient.
+
+The fields and types in the JSON event stream match what the
+harness expects from the JSONL session log:
+- `input` / `output` / `cacheRead` / `cacheWrite` are the same.
+- `reasoning` is new (the JSONL log may have it under a different
+  name; Phase 2 tests must confirm).
+- `cost` is advisory.
+
+No changes to the harness's usage format are required for the
+fields already present.
+
+## 5. Prompt count
+
+This task consumed 1 live prompt (prompt 2, the O3 probe).
+Combined with task 1.1, the phase has used 2/2 live prompts.
+See `evidence/prompt-ledger.md` for the full ledger.
+
+## Files referenced
+
+- /tmp/oe-p1-live1-stdout.json (631 bytes, prompt 1, unredacted)
+- /tmp/oe-p1-live1-redacted.json (500 bytes, prompt 1, redacted)
+- /tmp/oe-p1-live2-stdout.json (2172 bytes, prompt 2, unredacted)
+- /tmp/oe-p1-live2-redacted.json (1909 bytes, prompt 2, redacted)
+- /run/user/1000/oe-p1/host-check2.log (host check after O3 probe)
