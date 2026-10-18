@@ -19,6 +19,12 @@ Amendment 3: 2026-10-18, strategy role, role base `ff607e6`, after Review B
 RB-10. EXACT_AUDIT and SECRET_SCAN_HISTORY read the history without the
 author and committer lines. EXACT_AUDIT exits 1 on a hit or on `values=0`.
 
+Amendment 4: 2026-10-18, strategy role, role base `6df0640`, after Review A
+R1 to R4. It adds contract rows for the Podman `-i` flag, the Arm B
+`instructions` entry, the `opencode models` retry, the one-row session rule,
+and the empty-export definition. It adds the task 4.2 arm records and the
+task 4.3 enforcement probes.
+
 ## 1. Scope and risk summary
 
 This track replaces the Pi executor with OpenCode 2 and the host Console
@@ -374,8 +380,10 @@ Each test uses the fake `opencode` (section 8) and canary credentials.
 | 2.1 | Fake `opencode` writes its capture file | A test that finds no capture file fails (A4) |
 | 2.2 | `run` argument list equals the `design.md` command line | An extra or missing flag fails; compare whole arrays |
 | 2.2 | Mount set equals the FR-4 set for each arm | Set equality; an extra host mount fails |
-| 2.2 | Container environment: private `HOME` and XDG paths; no `OPENCODE_API_KEY` | A host path or the key name fails |
-| 2.2 | Arm A versus Arm B: only skill rules, skill mounts, and `AGENTS.md` differ | Any other difference in arguments or config fails |
+| 2.2 (design "Podman argument list (the exact set)") | The `podman run` argument array equals the design list for each arm, in order, `-i` included (Review A R3) | Compare the whole array. Remove `-i`, or add or drop any flag: the test fails. A stdin content or hash check alone is not enough, because a fake `podman` reads stdin with or without `-i` |
+| 2.2 | Container environment: private `HOME` and XDG paths; `OPENCODE_DISABLE_PROJECT_CONFIG=1` in both arms; no `OPENCODE_API_KEY` | A host path, a missing flag in one arm, or the key name fails |
+| 2.2 (R4, NR5) | Arm A versus Arm B: the configs differ only in the skill rules, `skills.paths`, and the `instructions` entry. The arms differ only in the config, the skill mount, and the presence of the candidate `AGENTS.md` | Any other difference in arguments or config fails. Non-vacuous: each of the three config differences is present |
+| 2.2 (R4) | The Arm B config has `instructions` equal to exactly `["/workspace/AGENTS.md"]`. The Arm A config has no `instructions` key | A missing entry, an extra entry, another path, or an `instructions` key in Arm A fails |
 | 2.2 | No Pi: the `pi` tripwire in the test `PATH` stays unhit | A `HIT` file fails |
 | O1 | `--model opencode-go/<id>` has no `#`; `score.json` has `thinking_requested: "default"` | A `#variant` or another value fails |
 | O2 | Config denies `websearch` and `question`; it has no deny for `webfetch` | Remove the `websearch` deny, or add a `webfetch` deny: the test fails |
@@ -399,7 +407,8 @@ Each test uses the fake `opencode` (section 8) and canary credentials.
 | 2.5 | The parser reads the session export fixture, plain and `.gz`, and returns hand-computed values: `output` equals `info.tokens.output` plus `info.tokens.reasoning`; `input`, `cacheRead`, and `cacheWrite` equal their `info.tokens` fields; `costUsd` equals `info.cost` (design section 4.4) | Each field has a non-zero value that differs from the other fields. The stream fixture lacks the final `step_finish`. A parser that reads the stream, drops reasoning, or swaps two fields returns another record and fails |
 | 2.5 (design 4.3) | The entry script writes the export to the artifact path that design section 4.3 names | No file at that path fails |
 | 2.5 (design 4.3) | The export call gets the session ID by the design section 4.3 rule, as one argument | The fake records the `session export` argv. Another ID or a split argument fails. A fake ID with a space and a `;` arrives as one argument |
-| 2.5 (design 4.3) | A missing, empty, or unreadable export gives the run result that design section 4.3 names (run invalid, fail closed) | A valid run, or zero usage in a valid run, fails |
+| 2.5 (design 4.3, NR3) | The session ID rule selects a session only when `opencode session list` holds exactly one row. Two or more rows (for example an older parent and a newer subagent session) or zero rows make the run invalid, fail closed | A `session export` call, a valid run, or an export of the newest row fails |
+| 2.5 (design 4.3, NR6) | "Missing or empty export" by the design 4.3 definition makes the run invalid. Cases: file absent; 0 bytes; not valid JSON; `.gz` that is not valid gzip; `.gz` whose text is not valid JSON; no `info.tokens` object. Each case is a separate assertion | A valid run in any case fails. Control: an export whose `info.tokens` fields are all 0 is not invalid for the export reason (the zero-output gate can still apply); an export-invalid reason on this control fails |
 | 2.5 (design 4.3) | Timeout order: after a `timeout` kill of the fake `run`, the export step runs in the order that design section 4.3 gives | No `session export` call after the kill fails. An export call before `run` returns fails |
 | 2.5 (RB-4) | The parser reads `info` only. Canaries in the export `messages` do not change the record. Row 2.3 finds and redacts them | A changed record or a remaining canary fails |
 | 2.5 | Recost equals the formula computed in the test | A changed formula fails |
@@ -412,6 +421,7 @@ Each test uses the fake `opencode` (section 8) and canary credentials.
 | 2.7 | Under `env -i` with the crontab `PATH`, `toolchain.sh` resolves `node` by the Node discovery rule of the `design.md` section "Cron toolchain and REHEARSAL (FR-9)", not to `/snap/bin/node` | Without the toolchain the test fails. The test builds a synthetic toolchain tree that the rule selects, with a fake `node`. A resolved path outside that tree fails. The result must not depend on the host Node version |
 | 2.7 | `CRON START` logs the paths and versions of `node`, `npm`, and `opencode` | A missing item fails |
 | 2.7 | Preflight fails closed for: no binary, version 1.x, no Console login, model not listed | Exit 0, a new run directory, a `run` argv, or a `pi` hit fails |
+| 2.7 (R2) | The preflight retries a transient exit 1 of `opencode models`, by the retry limit that `design.md` gives. A fake that exits 1 once and then lists the model passes the preflight. A fake that always exits 1 stops the batch after the retry limit, before any agent run | For the fail-once fake: a stopped batch fails. For the always-fail fake: a `run` argv, a fake `podman` call, a new run directory, or a count of `models` calls other than the retry limit fails. A successful list without the model stops at once, with no retry |
 | 2.7 | `BENCH_DRY_RUN=1` runs the preflight and records no `run` argv | A `run` argv fails |
 
 Meta tests resolve the path of the real `opencode` at most. They never
@@ -550,6 +560,29 @@ of section 6 covers P4R.
 - 4.1: the composite output, with times, is in the plan.
 - 4.2: the probe output under `reports/` shows the FR-4 contract for each arm.
   The probe sends no prompt.
+- 4.2 arm contract records (Review A R1, R4). The probe sends no prompt and
+  uses one fresh container per arm.
+  - Skill probe: `POST /api/experimental/session/{id}/skill` with
+    `resume: null`. Record one line per arm and id in the form
+    `skill-probe arm=<a|b> id=<id> status=<http status>`. Ids: the five
+    Arm B ids, the unmounted control `pdf`, and the built-ins `opencode` and
+    `report` (16 lines). The five ids give 204 in Arm B and 404 in Arm A.
+    `pdf` gives 404 in both arms. The built-in lines are records only (the
+    open risk of design section "Config source and content").
+  - AGENTS.md probe: keep the startup log of each arm. The Arm B log has a
+    `watcher subscribe path=/workspace/AGENTS.md type=file` line. The Arm A
+    log has no `/workspace/AGENTS.md` watcher line, and it has 1 or more
+    other watcher lines (a non-vacuous log).
+  - Each `opencode run` command of the probe is a ledger row. It runs with
+    `--network=none`, so it is not live.
+  - Check commands (no denied text; any role can run them on the archived
+    files). Replace `SKILL_RECORD`, `ARM_A_LOG`, and `ARM_B_LOG` with the
+    paths under `reports/`:
+
+    ```
+    P=SKILL_RECORD; test "$(grep -cE '^skill-probe arm=b id=(measure|next-best-practices|vercel-react-best-practices|vercel-composition-patterns|build-graph) status=204$' "$P")" = 5 && test "$(grep -cE '^skill-probe arm=a id=(measure|next-best-practices|vercel-react-best-practices|vercel-composition-patterns|build-graph) status=404$' "$P")" = 5 && test "$(grep -cE '^skill-probe arm=[ab] id=pdf status=404$' "$P")" = 2 && test "$(grep -cE '^skill-probe arm=[ab] id=(opencode|report) status=[0-9]+$' "$P")" = 4 && test "$(grep -c '^skill-probe ' "$P")" = 16 && test "$(grep -oE '^skill-probe arm=[ab] id=[a-z-]+' "$P" | sort -u | wc -l)" = 16 && echo skill-probe-ok
+    A=ARM_A_LOG; B=ARM_B_LOG; test "$(grep -c 'watcher subscribe path=/workspace/AGENTS.md type=file' "$B")" -ge 1 && test "$(grep -c 'watcher subscribe path=/workspace/AGENTS.md' "$A")" = 0 && test "$(grep -c 'watcher subscribe path=' "$A")" -ge 1 && echo watcher-ok
+    ```
 - 4.3: run only after `test "$(date +%s)" -ge 1792590240` passes
   (2026-10-21 21:44 +08:00). Exactly one run per arm. Record
   `provenance.ts --shell` before 4.3. It must equal the value at the end of
@@ -570,7 +603,54 @@ of section 6 covers P4R.
   A failed check makes the export source unproven. Then task 4.3 fails, and
   a new Phase 2 test comes first.
 - 4.3 ledger: each `opencode run` command of task 4.3 is one ledger row in
-  the 4.3 evidence. The count-equality check of section 4.2 applies.
+  the 4.3 evidence, the enforcement probe prompts included. The
+  count-equality check of section 4.2 applies.
+- 4.3 enforcement probes (Review A R1). Run them after the time check
+  above, per arm, in fresh containers with the generated arm config. Each
+  probe prompt is 200 bytes or less and asks for one tool call. Each probe
+  prompt is a live ledger row.
+  - Arm A probes: `websearch`, `question`, `subagent`, and a `skill` load of
+    `opencode`, `report`, and `measure`.
+  - Arm B probes: `websearch`, `question`, and `subagent`. Positive control:
+    a `skill` load of `measure`, which must complete. The control shows that
+    a probe prompt can make the model call a tool (A4).
+  - Record one line per probe, from the export tool parts, in the form
+    `enforce arm=<a|b> probe=<name> attempt=<yes|no> status=<completed|denied|error|none>`.
+    The probe names are `websearch`, `question`, `subagent`,
+    `skill-opencode`, `skill-report`, and `skill-measure`. `denied` means
+    the tool part error names the permission rule. `attempt=no` means the
+    export has no tool part for the probe, for example because the deny
+    rule removes the tool from the model tool list.
+  - Pass: the 9 deny probes each have `attempt=yes status=denied` or
+    `attempt=no status=none`. The Arm B control has `attempt=yes
+    status=completed`. The record has exactly these 10 lines. A `completed`
+    deny probe fails. An `error` that does not name the permission rule
+    fails, because it does not prove the deny.
+  - Open risk (design section "Config source and content"): the built-in
+    skills activate through the session-skill API in both arms, even with
+    `deny skill *`. If an Arm A probe loads any skill, the built-ins
+    `opencode` and `report` included, task 4.3 fails. The orchestrator then
+    gets the owner decision. Green chooses no workaround.
+  - The graded runs add the static check of the design section: the Arm A
+    export has no `skill` part, and the Arm B export has `skill` parts only
+    for the five ids.
+  - Check command (no denied text). Replace `ENFORCE_RECORD` with the
+    record path:
+
+    ```
+    Q=ENFORCE_RECORD; test "$(grep -cE '^enforce arm=(a probe=(websearch|question|subagent|skill-opencode|skill-report|skill-measure)|b probe=(websearch|question|subagent)) attempt=(yes status=denied|no status=none)$' "$Q")" = 9 && test "$(grep -c '^enforce arm=b probe=skill-measure attempt=yes status=completed$' "$Q")" = 1 && test "$(grep -c '^enforce ' "$Q")" = 10 && test "$(grep -oE '^enforce arm=[ab] probe=[a-z-]+' "$Q" | sort -u | wc -l)" = 10 && echo enforce-ok
+    ```
+- Test record, amendment 4 (2026-10-18, strategy role, synthetic records
+  only). The skill check passed a correct record. It failed a missing id
+  with a duplicate line, an Arm A id with 204, an unmounted id with 204, a
+  record without the built-in lines, an empty record, and a missing file. The
+  watcher check passed correct logs. It failed an Arm A log with the
+  `/workspace/AGENTS.md` line, an Arm B log without it, and an empty or
+  missing Arm A log. The enforcement check passed a correct record and a
+  record with one `attempt=no status=none` probe. It failed a loaded Arm A
+  built-in, an `error` status, a missing or failed control, a missing probe,
+  an extra line, a duplicate line, and an empty record. The three lines
+  contain no denied text and pass `bash -n`.
 - 4.4: the dry run prints labeled `BATCH START (dry run)` counts per track.
   With 19 batch models the total is 228 (O4). `sha256sum` of each legacy Pi
   `score.json` is equal before and after `WEEK=all ./rescore-doctor.sh`.
@@ -692,7 +772,7 @@ does not pass a gate.
 
 | Review | Phase 1 | Phase 2 | Phase 3 | Phase 4 |
 |---|---|---|---|---|
-| A correctness | yes: facts against evidence; O3 deny | yes: falsification of each test | yes: FR-1 to FR-10; task order | yes: acceptance evidence; 4.3 usage proof |
+| A correctness | yes: facts against evidence; O3 deny | yes: falsification of each test | yes: FR-1 to FR-10; task order | yes: acceptance evidence; 4.3 usage proof; 4.2 arm records; 4.3 enforcement record |
 | B security | **yes, required**: protocol 4.1, SECRET_SCAN, SECRET_SCAN_HISTORY, EXACT_AUDIT, ledger | yes: canaries only; no real credential | yes: delivery, cleanup trap, redaction, argv and env | yes: frame rule 7.1, EXACT_AUDIT, SECRET_SCAN_HISTORY, host login, README risk text |
 | C UX/API | yes: CLI flags, event stream, schema 7 list in `design.md` | yes: contracts frozen at Red | yes: schema 7, site data rows, removed variables | yes: docs and site rows match code |
 | Adversarial testing | no: no harness change | yes: R3 and matrix 5.2 | yes: P3 composite, canary leak, TRIPWIRE | yes: P4 composite, EXACT on live output |
