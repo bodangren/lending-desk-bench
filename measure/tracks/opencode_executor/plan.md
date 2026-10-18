@@ -238,7 +238,7 @@ model, no real credential (NFR-3).
     Failure: `the runner invokes the fake OpenCode and creates its capture file`.
     The runner still invokes Pi. The fake fixture test passes. All 170 existing tests pass.
     `legacy-pi-fixtures.ts` preserves the existing schema-6 assertions during Red.
-- [~] 2.2 Executor and isolation contract: extend
+- [x] 2.2 [d54639b] Executor and isolation contract: extend
   `run-executor-provenance.test.ts`, `runtime-isolation.test.ts`,
   `runtime-isolation-completion.test.ts`, and `execution-identity.test.ts`.
   They prove the FR-1 command line, no Pi, and no `OPENCODE_API_KEY`. They
@@ -264,7 +264,7 @@ model, no real credential (NFR-3).
     The task 2.1 capture test also fails. All 170 existing tests pass.
     Arm A already removes `AGENTS.md` and has no snapshot. That control passes without a false Red assertion.
     The role log records each failing name and its missing behavior.
-- [ ] 2.3 Credential tests: only the Console connection reaches the
+- [~] 2.3 Credential tests: only the Console connection reaches the
   container, without the refresh token. Delivery uses stdin. No token is in a
   process argument list, the environment, the artifacts, a log, or
   provenance. Staging is gone after success, failure, and timeout. A token
