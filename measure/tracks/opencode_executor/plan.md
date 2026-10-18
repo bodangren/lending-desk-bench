@@ -81,11 +81,11 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   or the XDG skills path. Confirm the `skill` deny and allow rules. Name the
   commands that list skills, instruction files, MCP servers, and plugins
   without a model call (spec FR-4). [8f25f19](evidence/task-1.6-skill-path-and-arm-proof.txt)
-- [~] 1.7 Container runtime needs: confirm that the binary starts in the
+- [x] 1.7 Container runtime needs: confirm that the binary starts in the
   pinned Node image. Record the helper downloads, such as ripgrep, language
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
-  Select one helper supply method (spec FR-4).
+  Select one helper supply method (spec FR-4). [ed98b8e](evidence/task-1.7-container-runtime.txt)
 - [ ] 1.8 Token usage format: record the event fields for input, output,
   reasoning, cache read, and cache write. Record whether they are per step or
   cumulative. Confirm whether subagent usage reaches the parent event stream.
