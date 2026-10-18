@@ -238,12 +238,18 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
   (evidence/probe-stdin-import-and-models-fetch.txt §1;
   evidence/auth-export.shape.json for the redacted shape).
 - `OPENCODE_DISABLE_MODELS_FETCH=1` stays in the confirmed
-  disable set: with the imported access-only credential and the
-  network on, `opencode models` prints 28 `opencode-go/*` ids,
-  byte-identical with and without the flag, exit 0
-  (evidence/probe-stdin-import-and-models-fetch.txt §3).
+  disable set: one fresh container per configuration, the flag
+  set from the container start, the imported access-only
+  credential, and the network on. With the flag, `opencode
+  models` exits 0 and lists 30 `opencode-go/*` ids,
+  `opencode-go/beam-free` included. Without the flag it lists
+  29–30. The difference and the 28 of the earlier probe are live
+  catalog drift, not a flag effect
+  (evidence/probe-stdin-import-and-models-fetch.txt §7).
   This also proves the FR-2 preflight can check a scheduled
   `opencode-go/<id>` with `opencode models` without a prompt.
+  A transient rc=1 under slirp4netns is retryable and is not a
+  missing model (same section).
 
 ### 2.2 Selected FR-3 run-window option (fail closed)
 
@@ -600,8 +606,9 @@ Phase 1 confirmed these differences from `spec.md`:
    (evidence/probe-config-source-and-arm-configs.txt §3).
 10. FR-2 preflight: `opencode models` with the imported
     credential lists the `opencode-go/*` ids, with and without
-    `OPENCODE_DISABLE_MODELS_FETCH=1`
-    (evidence/probe-stdin-import-and-models-fetch.txt §3).
+    `OPENCODE_DISABLE_MODELS_FETCH=1`, each in a fresh container
+    with the flag set from the first command
+    (evidence/probe-stdin-import-and-models-fetch.txt §7).
 11. FR-3 stdin delivery: `opencode auth import` with no file
     argument reads the container stdin and prints
     "Imported 1 credential"

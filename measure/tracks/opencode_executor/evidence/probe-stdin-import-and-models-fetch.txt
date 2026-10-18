@@ -155,3 +155,53 @@ Results (all inside the frame above):
 
 The complete frame repeats the section 2 and section 3 results.
 The stdin delivery and the models resolution stand proven.
+
+## 7. R2 fresh-container probe (2026-10-18, about 14:10–14:30 +08:00)
+
+Review A R2 found a confound in section 3 and section 6: one
+container ran the no-flag call before the flag call, so the
+background service and the cache can carry the first result into
+the second. This section reruns the probe without the confound:
+one fresh container per configuration, the flag set as a container
+environment variable from the first command (`auth import`
+included), a fresh empty `XDG_CACHE_HOME` per container, network
+`slirp4netns` on. Each container received the access-only copy on
+stdin with `podman run -i` and ran `opencode auth import` then
+`opencode models`. The full strategy 4.1 frame applied (private
+`mktemp -d` under `$XDG_RUNTIME_DIR`, `umask 077`, `set +x`,
+trap on EXIT, INT, TERM, HUP). No prompt was sent.
+
+Attempts (one frame per row pair, all on 2026-10-18):
+
+| Frame | Flag container | No-flag container |
+|---|---|---|
+| 1 | rc=0, 30 `opencode-go/*` ids | rc=0, 29 `opencode-go/*` ids |
+| 2 | rc=0 | rc=1 (transient) |
+| 3 | rc=1 (transient) | rc=0, 30 `opencode-go/*` ids, `beam-free` present |
+| 4 | rc=0, 30 `opencode-go/*` ids, `beam-free` present | rc=0, 29 `opencode-go/*` ids, `beam-free` present |
+
+Results:
+
+- With `OPENCODE_DISABLE_MODELS_FETCH=1` set from the container
+  start, `opencode models` exits 0 and lists 30 `opencode-go/*`
+  ids, `opencode-go/beam-free` included. The R2 confound is
+  removed: the flag does not remove the `opencode-go/*` ids.
+- Without the flag, the same command lists 29–30 `opencode-go/*`
+  ids. The 28 of section 3 and the 29 and 30 here are live
+  catalog drift, not a flag effect.
+- Each configuration failed once with rc=1 in 4 frames
+  (symmetric, so a transient slirp4netns failure, not a flag
+  effect). A retry succeeded on the next attempt.
+- The cache check of frame 1 found no file under
+  `/tmp/cache` after either call, so the resolution comes from
+  the imported credential, not from a fetched cache file.
+- EXACT at the end of each frame, over
+  `measure/tracks/opencode_executor` and
+  `measure/runs/opencode_executor`: `exact-scan values=6 hits=0`
+  (three frames, three scans).
+
+Decision: `OPENCODE_DISABLE_MODELS_FETCH=1` stays in the
+confirmed disable set and in the section 1.2 argument list of
+design.md. The FR-2 preflight can resolve a scheduled
+`opencode-go/<id>` with the flag set. The preflight must treat a
+transient rc=1 as retryable, not as a missing model.
