@@ -7,4 +7,5 @@
 | bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | in-progress | 2026-09-24 |
 | tests_bench | Test-writing benchmark — lending_desk_tests | Feature | complete | 2026-09-24 |
 | change_bench | Change-request benchmark — lending_desk_change | Feature | complete | 2026-09-24 |
-| bench_incremental | Incremental benchmark runs — new models and failures only | Feature | pending | 2026-10-17 |
+| bench_incremental | Incremental benchmark runs — new models and failures only | Feature | paused — superseded in part by opencode_executor (Pi executor staging in plan-work.ts) | 2026-10-17 |
+| opencode_executor | Migrate the benchmark executor from Pi to OpenCode 2 with Console login | Feature | pending | 2026-10-18 |

@@ -1,0 +1,19 @@
+{
+  "id": "opencode_executor",
+  "title": "Migrate the benchmark executor from Pi to OpenCode 2 with Console login",
+  "type": "Feature",
+  "status": "pending",
+  "created": "2026-10-18",
+  "deadline": "2026-10-25T01:00:00+08:00",
+  "estimated_tasks": 32,
+  "actual_tasks": null,
+  "source": {
+    "method": "operator request 2026-10-18: OpenCode expired the Go API keys after an attack; run Go models through OpenCode 2 with the host Console login, no API key, latest installed version, cron stays enabled",
+    "dependencies": [
+      "bench_v2"
+    ],
+    "supersedes_in_part": [
+      "bench_incremental"
+    ]
+  }
+}
