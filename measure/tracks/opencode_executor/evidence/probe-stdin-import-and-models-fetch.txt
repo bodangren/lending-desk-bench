@@ -7,6 +7,12 @@ probe: private `mktemp -d` frame under `$XDG_RUNTIME_DIR`,
 `umask 077`, `set +x`, EXACT scan at the end, removal by exact
 path.
 
+Correction (review B RB-11, 2026-10-18): this record summarized
+the frame but did not show the complete invocation, so it did
+not establish the `set -euo pipefail` prologue or the EXIT, INT,
+TERM, and HUP trap. Section 6 records the gap and the authorized
+complete-frame re-run.
+
 ## 1. Frame
 
 ```
@@ -83,3 +89,69 @@ container outputs) were then removed by exact path.
 
 All raw outputs lived only in the private frame and are deleted.
 This file is the repo evidence.
+
+## 6. RB-11 complete-frame re-run (2026-10-18, about 13:50 +08:00)
+
+The exact invocation text of the first run is not available to
+this session, so the gap is recorded here. The orchestrator
+authorized one repeat of the stdin-import probe under the
+complete strategy 4.1 frame. No prompt was sent. The invocation,
+redacted to commands only (no values):
+
+```
+set -euo pipefail; set +x; umask 077
+cd <repo root>
+d="$(mktemp -d "$XDG_RUNTIME_DIR/oe-p1.XXXXXX")"
+trap 'rm -rf -- "$d"' EXIT INT TERM HUP
+opencode auth export opencode > "$d/raw.json" 2> "$d/export.err"
+node -e '<script: read "$d/raw.json"; for every connection, set
+         value.refresh to the inert string; write
+         "$d/access-only.json">'
+podman run --rm -i --pull=never \
+  --network slirp4netns:allow_host_loopback=false \
+  --mount type=bind,src=<opencode binary>,dst=/usr/local/bin/opencode,ro \
+  --env HOME=/tmp/home --env XDG_CONFIG_HOME=/tmp/config \
+  --env XDG_DATA_HOME=/tmp/data --env XDG_STATE_HOME=/tmp/state \
+  --env XDG_CACHE_HOME=/tmp/cache \
+  --env OPENCODE_DISABLE_PROJECT_CONFIG=1 \
+  --env OPENCODE_DISABLE_CLAUDE_CODE=1 \
+  --env OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1 \
+  --env OPENCODE_DISABLE_AUTOUPDATE=1 \
+  --workdir /tmp \
+  docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3 \
+  /bin/sh -c 'mkdir -p /tmp/home /tmp/config /tmp/data /tmp/state /tmp/cache;
+              opencode auth import; echo "import-rc=$?";
+              opencode auth list;
+              opencode models > /tmp/m1.txt 2>/tmp/m1.err;
+              OPENCODE_DISABLE_MODELS_FETCH=1 opencode models > /tmp/m2.txt 2>/tmp/m2.err;
+              diff -q /tmp/m1.txt /tmp/m2.txt' \
+  < "$d/access-only.json" > "$d/container.log" 2>&1
+node -e '<EXACT script of test-strategy.md section 4.1>' "$d/raw.json" \
+  <track dir> <runs dir>     # prints values and hits; the frame
+                             # exits nonzero unless hits=0
+# end of frame: the trap removes "$d" on EXIT, INT, TERM, HUP
+```
+
+Results (all inside the frame above):
+
+- `raw.json`: 615 bytes, same size as section 1.
+- stdin import: stdout `Imported 1 credential`, `import-rc=0`.
+- `opencode auth list`: one table row
+  (`OpenCode Console  Workspace1  stored`), no token values.
+- `opencode models`, no flag: rc=0, 29 `opencode-go/*` ids, 59
+  lines. The catalog listed 28 `opencode-go/*` ids at section 3;
+  the count difference is catalog drift, not a probe difference.
+- `OPENCODE_DISABLE_MODELS_FETCH=1 opencode models`: rc=0, 29
+  `opencode-go/*` ids, output byte-identical to the no-flag call
+  (`diff -q` empty).
+- EXACT at the end of the frame, over
+  `measure/tracks/opencode_executor` and
+  `measure/runs/opencode_executor`: `exact-scan values=6 hits=0`.
+- After the frame ended, the frame directory no longer existed:
+  the trap removed it. Three older `oe-p1.*` leftovers from
+  earlier turns (one empty, one ripgrep tarball, one config-probe
+  output set; none held a credential export) were removed by
+  exact path in the same turn.
+
+The complete frame repeats the section 2 and section 3 results.
+The stdin delivery and the models resolution stand proven.

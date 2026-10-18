@@ -80,10 +80,14 @@ and section 1.4; spec FR-4 carries the same set.)
   `XDG_CACHE_HOME=/tmp/cache` (evidence/task-1.7-container-runtime.txt §2).
 - The entry script pre-creates these directories before the agent
   starts (evidence/task-1.7-container-runtime.txt §2, §7).
-- `OPENCODE_CONFIG=/tmp/config/opencode/opencode.json` selects the
-  generated config as the only config source.
-  `OPENCODE_DISABLE_PROJECT_CONFIG=1` is the belt-and-braces switch.
-  (evidence/task-1.5-isolation-and-config.txt §3.)
+- `OPENCODE_CONFIG=/config/opencode.json` (the section 1.2 bind
+  mount) adds the generated config as a document. It does not
+  suppress the XDG directory source. The isolation is the empty
+  private `XDG_CONFIG_HOME` tmpfs directory plus
+  `OPENCODE_DISABLE_PROJECT_CONFIG=1`. The preflight checks
+  that the private config directory holds no config document
+  and that the generated config parses as JSON.
+  (evidence/probe-config-source-and-arm-configs.txt §3, §5.)
 - Confirmed disable flags, all set by the entry script:
   `OPENCODE_DISABLE_PROJECT_CONFIG=1`,
   `OPENCODE_DISABLE_CLAUDE_CODE=1`,
@@ -391,7 +395,9 @@ totalTokens              →  input + output + reasoning +
 info.cost                →  costUsd (advisory, rounded like the
                             Pi parser: *1e6 and back)
 info.model.providerID    →  provider
-info.model.model         →  model
+info.model.id            →  model  (the export key name;
+                                  `debug config` calls the same
+                                  field `model`)
 messages                 →  assistantTurns: count of assistant
                             messages; toolCalls: count of
                             tool-call parts; turns: count of

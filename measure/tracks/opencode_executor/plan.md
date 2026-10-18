@@ -78,9 +78,11 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   Confirm the import result when the refresh field is absent or inert.
   Confirm that the container cannot refresh and that the host login survives
   (spec FR-3). [cef5b13](evidence/task-1.3-1.4-credential.txt)
-- [x] 1.5 [f40b1a1] Isolation variables and config source: confirm how the generated
-  config becomes the only config source (`OPENCODE_CONFIG`,
-  `OPENCODE_CONFIG_CONTENT`, or the XDG config path). Confirm the effect of
+- [x] 1.5 [f40b1a1] Isolation variables and config source: confirm how the
+  generated config reaches the container (`OPENCODE_CONFIG`,
+  `OPENCODE_CONFIG_CONTENT`, or the XDG config path), and that
+  `OPENCODE_CONFIG` adds a document without suppressing the XDG source.
+  Confirm the effect of
   `OPENCODE_DISABLE_CLAUDE_CODE`, `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS`,
   `OPENCODE_DISABLE_AUTOUPDATE`, `OPENCODE_DISABLE_PROJECT_CONFIG`, and
   `OPENCODE_DISABLE_MODELS_FETCH` (spec FR-4). [d3ffe0c](evidence/task-1.5-isolation-and-config.txt)
@@ -156,8 +158,10 @@ model, no real credential (NFR-3).
   `run-executor-provenance.test.ts`, `runtime-isolation.test.ts`,
   `runtime-isolation-completion.test.ts`, and `execution-identity.test.ts`.
   They prove the FR-1 command line, no Pi, and no `OPENCODE_API_KEY`. They
-  prove private HOME and XDG dirs, no host mounts, and the generated config as
-  the only config source. They prove Arm A (no `AGENTS.md`, no skills,
+  prove private HOME and XDG dirs, no host mounts, and the config-source
+  isolation of spec FR-4: `OPENCODE_CONFIG` adds the generated config as a
+  document, and the isolation is the empty private XDG config directory plus
+  `OPENCODE_DISABLE_PROJECT_CONFIG=1`. They prove Arm A (no `AGENTS.md`, no skills,
   `deny *`) and Arm B (fixture `AGENTS.md`, five snapshot skills). They prove
   that the arms differ only in that material (spec FR-1, FR-4).
 - [ ] 2.3 Credential tests: only the Console connection reaches the

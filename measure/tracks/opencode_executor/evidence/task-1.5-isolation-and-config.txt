@@ -87,6 +87,16 @@ models: {
 
 ## 3. Confirmed mechanism for "the generated config is the only config source"
 
+Correction (review turn 2, 2026-10-18): the "only config source"
+reading of this section is superseded. The later probe
+(evidence/probe-config-source-and-arm-configs.txt §3) shows that
+`OPENCODE_CONFIG` ADDS a document and does not suppress the XDG
+directory source. The isolation is the empty private
+`XDG_CONFIG_HOME` directory plus
+`OPENCODE_DISABLE_PROJECT_CONFIG=1`. Spec FR-4 and design.md
+sections 1.3 and 1.5 carry the corrected rule. The text below
+records what task 1.5 believed at probe time.
+
 Set `OPENCODE_CONFIG=<path>` (the harness writes
 `artifacts/executor/opencode.json` to a tmpfs in the container and points
 this env at that file). OpenCode loads that file and no other. As a
