@@ -143,6 +143,27 @@ evidence `55540ef`.
   `measure/runs/opencode_executor` (2026-10-18, after the gate):
   `exact-scan values=6 hits=0`.
 
+### Phase 1 gate evidence (jr-green, re-review remediation turn, 2026-10-18)
+
+Run after the re-review remediation commit `9740328` and its
+plan evidence `ba8de93`. The RB-11 complete-frame re-run of the
+stdin-import probe (same day, about 13:50) also ended with an
+in-frame EXACT scan: `exact-scan values=6 hits=0`
+(evidence/probe-stdin-import-and-models-fetch.txt section 6).
+
+- P1 composite, run with
+  `PHASE_BASE_SHA=d27d414cfeb8474ca89f8ef0722d16f1edb128e1` from
+  the repo root:
+  - start: 2026-10-18T13:51:07+08:00; end: 2026-10-18T13:52:26+08:00.
+  - exit code: 0 (the commit-range check, the SECRET_SCAN, and
+    the meta suite all passed).
+  - labeled Vitest lines: `Test Files  26 passed (26)`,
+    `Tests  170 passed (170)`.
+- EXACT scan, one credential frame over
+  `measure/tracks/opencode_executor` and
+  `measure/runs/opencode_executor` (2026-10-18, after the gate):
+  `exact-scan values=6 hits=0`.
+
 ## Phase 2: Test
 
 Failing meta tests for the contract in `design.md`. No network, no real
