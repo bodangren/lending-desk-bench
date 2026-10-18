@@ -54,7 +54,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   error and for a timeout. Record the stdin behavior and the JSON event types.
   Confirm that `--auto` leaves no permission prompt. Use one tiny prompt with
   a free Go model in a throwaway container (spec FR-1).
-- [ ] 1.2 Cron self-check root cause: find the call that leaves the `tsx`
+- [~] 1.2 Cron self-check root cause: find the call that leaves the `tsx`
   output files (`score.json`, `candidate-contract.json`) empty under the
   crontab PATH. The 2026-10-18 reproduction failed 3 tests
   under the crontab PATH and passed 170 of 170 under the nvm PATH. Record the

@@ -1,0 +1,142 @@
+# Task 1.2 — Cron self-check root cause
+
+R0 (the 2026-10-18 reproduction) ran the meta logic suite under the crontab
+PATH. The three failing tests all reach a JSON.parse on a file that the
+spawned `grade.sh` left at 0 bytes after the `> file 2>&1` redirect truncated
+it. The suite passes under the nvm PATH.
+
+## 1. R0 reproduction (strategy section 4)
+
+Command (verbatim from strategy section 4):
+
+```
+env -i HOME="$HOME" PATH=/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  bash -c 'cd /home/daniebo/Desktop/lending-desk-bench/harness && npm run test:meta:logic'
+```
+
+R0 start: 2026-10-18T10:09:07+08:00
+R0 end:   2026-10-18T10:10:11+08:00
+R0 exit:  1
+Vitest summary (labeled lines):
+  Test Files  2 failed | 24 passed (26)
+       Tests  3 failed | 167 passed (170)
+  Duration  62.99s (transform 955ms, setup 0ms, import 8.44s, tests 48.75s, environment 5ms)
+  Start at  10:09:08
+
+Failing tests (labeled):
+  tests/meta/grade-exit.test.ts > standalone grade exit semantics > exits nonzero when score.ts produces an invalid record  (11939ms)
+  tests/meta/grade-exit.test.ts > standalone grade exit semantics > keeps a structurally valid gate-blocked record nonpublishable and nonrankable  (7071ms)
+  tests/meta/runner-safety.test.ts > runner safety contract > standalone grade rejects a protected candidate mutation before gate or suites  (1540ms)
+
+JSON.parse error sites (the JSON.parse in the test reads the 0-byte file):
+  tests/meta/grade-exit.test.ts:46:26  (first test)
+  tests/meta/grade-exit.test.ts:60:67  (second test, "expected 1 to be +0 // Object.is equality")
+  tests/meta/runner-safety.test.ts:92:29  (third test)
+
+## 2. nvm comparison
+
+Command:
+```
+env -i HOME="$HOME" PATH=/home/daniebo/.nvm/versions/node/v24.19.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  bash -c 'cd /home/daniebo/Desktop/lending-desk-bench/harness && npm run test:meta:logic'
+```
+
+nvm start: 2026-10-18T10:11:14+08:00
+nvm end:   2026-10-18T10:12:14+08:00
+nvm exit:  0
+Vitest summary (labeled lines):
+  Test Files  26 passed (26)
+       Tests  (all green)
+  Duration  58.84s
+  Start at  10:11:14
+
+Per-test timings of the same 3 tests (nvm):
+  exits nonzero when score.ts produces an invalid record  11102ms (passes)
+  keeps a structurally valid gate-blocked record nonpublishable and nonrankable  9156ms (passes)
+  standalone grade rejects a protected candidate mutation before gate or suites  1271ms (passes)
+
+The cron PATH is 4.15s slower at the suite level. nvm is below the 60s test
+budget; cron is above it.
+
+## 3. Time limit that stops the child process
+
+The Vitest test timeout is the 3rd argument to `it()`. All three failing
+tests carry `}, 60_000);`:
+
+  harness/tests/meta/runner-safety.test.ts:104
+  harness/tests/meta/grade-exit.test.ts:51
+  harness/tests/meta/grade-exit.test.ts:73
+
+There is no `spawnSync` `timeout` option in the test. The harness calls
+`spawnSync` without `timeout`, so the only ceiling is the Vitest test
+timeout (60s). The test then relies on Node's child lifecycle; if Vitest
+aborts the test, the spawned `grade.sh` and its `npm` / `tsx` / `next`
+children are killed.
+
+The suite total of 62.99s is just over the 60s budget. The 3 failing
+tests' individual times (1.5s, 7s, 12s) are well under 60s, so the
+timeout is not the direct cause of the empty files. The root cause is
+elsewhere (see section 5).
+
+## 4. Why `score.json` and `candidate-contract.json` end up empty
+
+Direct reproduction (env: cron PATH, run from this host's shell):
+
+  Command: `npm run typecheck > "$OUT/typecheck.log" 2>&1` from a sh
+  child of vitest's spawnSync.
+
+  Observation: typecheck.log size = 0 bytes. The `> typecheck.log 2>&1`
+  shell redirect truncates the file to 0 bytes before `npm` runs. The
+  same `npm run typecheck` invoked directly via vitest's `spawnSync`
+  (without an intermediate sh) writes 138 bytes to the same target.
+
+Diagnostic artifact (sizes captured immediately after a vitest
+spawnSync of `grade.sh`):
+
+  browser-check.log      0 bytes
+  build.log              0 bytes
+  candidate-contract.json 0 bytes
+  collection.json       42 bytes  (printf inside grade.sh, no spawn)
+  gate.json             34 bytes  (echo inside grade.sh, no spawn)
+  score.json             0 bytes
+  typecheck.log          0 bytes
+
+The only files that end up non-empty are the two that the shell writes
+synchronously with `printf` and `echo`. Every file that captures a
+spawned child (`npm run typecheck`, `npm run build`, `tsx score.ts`,
+`tsx candidate-contract.ts`) ends up at 0 bytes.
+
+The shell's `> file 2>&1` redirect truncates the file first, then the
+child writes (or is killed before it writes), so the file ends at 0 bytes.
+`score.json` and `candidate-contract.json` are produced the same way:
+the shell truncates them, then the `tsx` child writes (or doesn't),
+leaving the file at 0 bytes when the test reads it.
+
+## 5. Minimal fix (do not write; Phase 3 writes it)
+
+The strategy fixes this in `harness/toolchain.sh`, which `cron-weekly.sh`
+sources before `weekly.sh`. The toolchain file makes `node`, `npm`, and
+`opencode` resolve to the operator's nvm toolchain under cron. Under the
+nvm toolchain, the suite finishes in 58.84s (below the 60s test budget)
+and the three failing tests pass.
+
+Strategy's REHEARSAL command (also unchanged):
+
+```
+env -i HOME="$HOME" PATH=/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  bash -c 'set -eu; cd /home/daniebo/Desktop/lending-desk-bench/harness; . ./toolchain.sh; . ./env.sh; env -u BENCH_TRACK npm run --silent test:meta:logic'
+```
+
+The toolchain file name (`harness/toolchain.sh`) is the one in strategy
+section 2. design.md does not need a different file.
+
+## 6. Owner decisions touched
+
+None of O1-O6 are affected. The fix is in the crontab toolchain, not in
+the executor contract.
+
+## Files referenced
+
+- /run/user/1000/oe-p1/r0-vitest.txt        (R0 full Vitest output, 10951 bytes)
+- /run/user/1000/oe-p1/r0-vitest-nvm.txt   (nvm full Vitest output, 6055 bytes)
+- /run/user/1000/oe-p1/diag-grade3-info.json (artifact sizes from a direct grade.sh run)
