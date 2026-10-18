@@ -57,12 +57,12 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   a free Go model in a throwaway container (spec FR-1). [9a638b6](evidence/task-1.1-headless-run.txt)
   (evidence-fix turn: hash values removed, free-model claim corrected,
   addendum reworded)
-- [x] 1.2 [f40b1a1] Cron self-check root cause: find the call that leaves the `tsx`
+- [x] 1.2 [4fefda5] Cron self-check root cause: find the call that leaves the `tsx`
   output files (`score.json`, `candidate-contract.json`) empty under the
   crontab PATH. The 2026-10-18 reproduction failed 3 tests
   under the crontab PATH and passed 170 of 170 under the nvm PATH. Record the
   minimal fix (spec FR-9). [c643123](evidence/task-1.2-cron-self-check.txt)
-- [x] 1.3 [f40b1a1] Credential export and import: record the redacted shape of `opencode
+- [x] 1.3 [21e8c09] Credential export and import: record the redacted shape of `opencode
   auth export opencode`. Record how the active Console connection is
   selected. Import it into an empty isolated store, with temporary XDG
   dirs and no model call (v2.0.32 rejects `--standalone` for `auth`; the
@@ -78,7 +78,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   Confirm the import result when the refresh field is absent or inert.
   Confirm that the container cannot refresh and that the host login survives
   (spec FR-3). [cef5b13](evidence/task-1.3-1.4-credential.txt)
-- [x] 1.5 [9740328] Isolation variables and config source: confirm how the
+- [x] 1.5 [4fefda5] Isolation variables and config source: confirm how the
   generated config reaches the container (`OPENCODE_CONFIG`,
   `OPENCODE_CONFIG_CONTENT`, or the XDG config path), and that
   `OPENCODE_CONFIG` adds a document without suppressing the XDG source.
@@ -86,25 +86,25 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   `OPENCODE_DISABLE_CLAUDE_CODE`, `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS`,
   `OPENCODE_DISABLE_AUTOUPDATE`, `OPENCODE_DISABLE_PROJECT_CONFIG`, and
   `OPENCODE_DISABLE_MODELS_FETCH` (spec FR-4). [d3ffe0c](evidence/task-1.5-isolation-and-config.txt)
-- [x] 1.6 [8f25f19] Skill path and arm proof: list the built-in skill IDs. Confirm
+- [x] 1.6 [1c767b8] Skill path and arm proof: list the built-in skill IDs. Confirm
   five-skill discovery from a read-only mount through a `skills` config entry
   or the XDG skills path. Confirm the `skill` deny and allow rules. Name the
   commands that list skills, instruction files, MCP servers, and plugins
   without a model call (spec FR-4). [8f25f19](evidence/task-1.6-skill-path-and-arm-proof.txt)
-- [x] 1.7 [f40b1a1] Container runtime needs: confirm that the binary starts in the
+- [x] 1.7 [4fefda5] Container runtime needs: confirm that the binary starts in the
   pinned Node image. Record the helper downloads, such as ripgrep, language
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
   Select one helper supply method (spec FR-4). [15c1805](evidence/task-1.7-container-runtime.txt)
   (design turn: host rg fails in the image; the supply source becomes
   the static musl build, see evidence §9)
-- [x] 1.8 [f40b1a1] Token usage format: record the event fields for input, output,
+- [x] 1.8 [4fefda5] Token usage format: record the event fields for input, output,
   reasoning, cache read, and cache write. Record whether they are per step or
   cumulative. Confirm whether subagent usage reaches the parent event stream.
   Save one redacted event stream from task 1.1 in the track directory (spec
   FR-7). [9a638b6](evidence/task-1.8-token-usage.txt) (evidence-fix turn: O3
   becomes deny subagent; final-step usage finding; offline usage-source probe)
-- [x] 1.9 [9740328] Design note: write `design.md`. It gives the confirmed command line,
+- [x] 1.9 [4fefda5] Design note: write `design.md`. It gives the confirmed command line,
   environment, mounts, config, and credential flow. It gives the field lists
   of identity schema 2 and provenance schema 7. It gives the usage mapping and
   the helper supply method. Record the owner answers to O1–O6. Correct
