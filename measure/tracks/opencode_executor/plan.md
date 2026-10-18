@@ -295,7 +295,7 @@ model, no real credential (NFR-3).
     `Test Files  3 failed | 26 passed (29)`; `Tests  41 failed | 173 passed (214)`.
     Both JSON reports contain the same failing names. All 170 existing tests pass.
     Twenty credential tests fail for missing behavior. The scanner control passes.
-- [~] 2.4 Provenance and attestation: prove the schema 7 fields. Prove that
+- [x] 2.4 [4599177] Provenance and attestation: prove the schema 7 fields. Prove that
   attestation reads only the recorded executor. A fake upgrade at the
   recorded path keeps an earlier run attested and not stale. A changed skill
   or config snapshot makes the run invalid. Adversarial ambient values give
