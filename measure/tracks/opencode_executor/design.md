@@ -210,6 +210,23 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
   a `skill` part for one of the five ids and for no built-in
   id). The strategy role amends task 4.3
   (evidence/probe-agents-md-and-skill-activation.txt §3, §4).
+- Machine-readable arm records (test-strategy.md amendment 4,
+  review handoff H12). Green writes these records in tasks 4.2
+  and 4.3 from the raw probe output, and archives the records and
+  the raw output under `reports/`. Task 4.2 writes one line per
+  arm and skill id in the exact form
+  `skill-probe arm=<a|b> id=<id> status=<http status>` (16 lines:
+  the five Arm B ids, the unmounted control `pdf`, and the
+  built-ins `opencode` and `report` in both arms). Task 4.3
+  writes one line per enforcement probe in the exact form
+  `enforce arm=<a|b> probe=<name> attempt=<yes|no>
+  status=<completed|denied|error|none>` (10 lines: Arm A probes
+  `websearch`, `question`, `subagent`, `skill-opencode`,
+  `skill-report`, `skill-measure`; Arm B probes `websearch`,
+  `question`, `subagent`, plus the positive control
+  `skill-measure`, which must complete). The line forms are
+  copied from test-strategy.md section 7; the strategy check
+  commands read exactly these forms.
 - Removed operator interface (spec FR-3, FR-7, FR-10):
   `BENCH_PI_ROOT`, `BENCH_PROVIDER_ENV`, `OPENCODE_API_KEY`, the
   `.env.local` key, and `--models-json` are gone. The container
@@ -285,8 +302,17 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
   (evidence/probe-stdin-import-and-models-fetch.txt §7).
   This also proves the FR-2 preflight can check a scheduled
   `opencode-go/<id>` with `opencode models` without a prompt.
-  A transient rc=1 under slirp4netns is retryable and is not a
-  missing model (same section).
+  Retry rule (test-strategy.md row 2.7, review handoff H10): the
+  preflight retries a transient exit 1 of `opencode models` up to
+  2 times, with a 5 s delay between attempts (3 calls in total).
+  The R2 probe saw one transient failure in 4 frames per
+  configuration, and every failure passed on the next attempt, so
+  2 retries cover the observed flakiness
+  (evidence/probe-stdin-import-and-models-fetch.txt §7). A
+  successful list that lacks the scheduled model stops the batch
+  at once, with no retry: a missing model is not transient. After
+  the last failed attempt, the batch stops before any agent run
+  (fail closed, NFR-6).
 
 ### 2.2 Selected FR-3 run-window option (fail closed)
 
