@@ -1,0 +1,56 @@
+[
+  {
+    "id": {
+      "type": "string",
+      "length": 31
+    },
+    "integrationID": {
+      "type": "string",
+      "length": 8
+    },
+    "label": {
+      "type": "string",
+      "length": 10
+    },
+    "active": {
+      "type": "boolean",
+      "length": 4
+    },
+    "value": {
+      "type": "oauth",
+      "methodID": {
+        "type": "string",
+        "length": 6
+      },
+      "refresh": {
+        "type": "string",
+        "length": 39
+      },
+      "access": {
+        "type": "string",
+        "length": 39
+      },
+      "expires": 1794871752996,
+      "metadata": {
+        "server": "https://opencode.ai/console",
+        "accountID": {
+          "type": "string",
+          "length": 30
+        },
+        "email": {
+          "type": "string",
+          "length": 19
+        },
+        "orgID": {
+          "type": "string",
+          "length": 30,
+          "prefix": "wrk_"
+        },
+        "orgName": {
+          "type": "string",
+          "length": 10
+        }
+      }
+    }
+  }
+]
