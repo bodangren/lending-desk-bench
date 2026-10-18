@@ -104,7 +104,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   Save one redacted event stream from task 1.1 in the track directory (spec
   FR-7). [9a638b6](evidence/task-1.8-token-usage.txt) (evidence-fix turn: O3
   becomes deny subagent; final-step usage finding; offline usage-source probe)
-- [x] 1.9 [4fefda5] Design note: write `design.md`. It gives the confirmed command line,
+- [x] 1.9 [aee15f5] Design note: write `design.md`. It gives the confirmed command line,
   environment, mounts, config, and credential flow. It gives the field lists
   of identity schema 2 and provenance schema 7. It gives the usage mapping and
   the helper supply method. Record the owner answers to O1–O6. Correct
