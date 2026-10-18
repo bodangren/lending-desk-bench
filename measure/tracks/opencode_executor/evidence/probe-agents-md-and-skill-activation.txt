@@ -1,0 +1,180 @@
+# Probe: AGENTS.md loading under OPENCODE_DISABLE_PROJECT_CONFIG,
+# and per-arm skill resolution through the server API
+# (jr-green review-fix turn, 2026-10-18, findings A-R4 and A-R1)
+
+Date: 2026-10-18, about 14:35–14:50 (+08:00). No live prompt was
+sent. No credential was used; EXACT is a no-op (strategy 2, same
+rule as task 1.7). All probes ran in fresh containers: the pinned
+image
+`docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3`,
+rootless Podman, `--pull=never`, `--read-only`, `--cap-drop=ALL`,
+`no-new-privileges`, `--userns=keep-id`, the opencode binary
+bind-mounted read-only at `/usr/local/bin/opencode`, private tmpfs
+HOME and XDG folders, `--network none`. No host home folder, no
+host dotfile tree, and no host store was mounted. The Arm B skill
+folders were COPIES of the five host skill folders under
+`$XDG_RUNTIME_DIR`, bind-mounted read-only at `/opt/skills`. The
+host skill folders were never mounted. All outputs lived in the
+private frame and were removed by the EXIT trap.
+
+The four `opencode run` commands of section 1 are ledger rows 7
+to 10 in design.md section 8 (model `opencode-go/nonexistent-model`,
+prompt `hi`, 2 bytes, `--network none`, exit 1, live=no). The run
+fails with `provider.no-route` before any model call; the
+instruction watcher subscribes during startup, before the failure.
+
+Server API access: `opencode serve` prints a random per-server
+password at startup. The probes set `OPENCODE_SERVER_PASSWORD` to
+the synthetic value `probe-pw` and authenticated with HTTP Basic
+(`opencode:probe-pw`). The password line stayed in the container
+`/tmp` and was never recorded. `opencode serve` requires this
+authentication: without it every `/api/*` call returns 401
+`UnauthorizedError`.
+
+## 1. R4: instruction file discovery with and without the flag
+
+Probe: one fresh container per row. Each ran
+`opencode run --standalone --format json --auto --print-logs
+--log-level all --model opencode-go/nonexistent-model "hi"` with
+stdin from `/dev/null`, `--network none`. The startup log records
+one `watcher subscribe path=<p> type=file` line per instruction
+file the `opencode.config.instruction` plugin watches. The watch
+set is the discovery set.
+
+| Row | Flag | Fixture | Watched AGENTS.md paths |
+|---|---|---|---|
+| A | `OPENCODE_DISABLE_PROJECT_CONFIG=1` | project `/workspace/AGENTS.md` | `/tmp/config/opencode/AGENTS.md` only |
+| B | not set | project `/workspace/AGENTS.md` | `/tmp/config/opencode/AGENTS.md` and `/workspace/AGENTS.md` |
+| D | `OPENCODE_DISABLE_PROJECT_CONFIG=1` | config `instructions: ["/fixture-instr/AGENTS.md"]` | `/tmp/config/opencode/AGENTS.md` and `/fixture-instr/AGENTS.md` |
+
+Results:
+
+- With the flag, the project `/workspace/AGENTS.md` is NOT
+  discovered (row A). Without the flag it is discovered (row B).
+  This confirms the spec established fact (spec.md line 90) at
+  runtime: `OPENCODE_DISABLE_PROJECT_CONFIG=1` skips project
+  `AGENTS.md` discovery.
+- With the flag, an absolute-path config `instructions` entry IS
+  discovered (row D). The entry bypasses the project gate.
+- The global path `$XDG_CONFIG_HOME/opencode/AGENTS.md` is watched
+  in every row. The flag does not gate it.
+- An earlier run of the same probe with an unreadable (mode 000)
+  project `AGENTS.md` failed the session drain with
+  `Instructions.InitializationBlocked: Instruction initialization
+  blocked by unavailable sources: core/instructions`. An
+  unreadable instruction file blocks the run. The harness keeps
+  the fixture `AGENTS.md` readable.
+
+Static confirmation of the flag link (v2.0.32 binary, read-only
+string and code reads; review A left this link unconfirmed):
+
+- The environment mapping sets
+  `config.project = !D(OPENCODE_CONFIG_PROJECT_DISABLE ??
+  OPENCODE_DISABLE_PROJECT_CONFIG)`.
+- The `@opencode/Config` service schema holds
+  `{project, global, system, claude, file, content}`.
+- The `@opencode/InstructionDiscovery` service is constructed as
+  `{project: H?.project !== !1, global: H?.global !== !1, ...}`.
+- The `opencode.config.instruction` plugin computes
+  `V = a.project && contains(projectDir, cwd)` and discovers
+  project `AGENTS.md` files only when `V` is true. The global
+  source loads only under `a.global`. A configured `instructions`
+  entry with an absolute path loads under neither gate.
+
+## 2. R4 decision: the Arm B AGENTS.md mechanism
+
+The Arm B generated config adds one entry:
+
+```
+"instructions": ["/workspace/AGENTS.md"]
+```
+
+The fixture `AGENTS.md` stays in the candidate tree (spec line
+304), so the workspace mount already carries it. No new mount and
+no new environment variable is needed. Both arms keep
+`OPENCODE_DISABLE_PROJECT_CONFIG=1` and the same environment.
+The arm configs then differ in the skill rules, the Arm B
+`skills.paths` entry, and the Arm B `instructions` entry. This
+is a spec correction (design.md section 9): spec line 291 lists
+"no `instructions`" in the config content, and spec lines 312–314
+describe the arm difference without the `skills.paths` and
+`instructions` entries.
+
+## 3. R1: per-arm skill resolution through the server API
+
+Probe: one fresh container per arm. Arm A config: the six deny
+rules of design.md section 1.5, no skills entry, no skill mount.
+Arm B config: the same six deny rules, the five allow rules, and
+`skills.paths: ["/opt/skills"]`, with the five skill copies
+mounted at `/opt/skills`. Each container created one session with
+`POST /api/session` (no prompt) and then called
+`POST /api/experimental/session/{id}/skill` with
+`{"id": <skill>, "resume": null}`. With `resume: null` the call
+appends a skill message and does not resume execution, so it
+sends no prompt.
+
+Activation results (HTTP status and error tag):
+
+| Skill id | Arm A | Arm B |
+|---|---|---|
+| `measure` | 404 SkillNotFoundError | 204 |
+| `next-best-practices` | 404 SkillNotFoundError | 204 |
+| `vercel-react-best-practices` | 404 SkillNotFoundError | 204 |
+| `vercel-composition-patterns` | 404 SkillNotFoundError | 204 |
+| `build-graph` | 404 SkillNotFoundError | 204 |
+| `pdf` (never mounted) | 404 SkillNotFoundError | 404 SkillNotFoundError |
+| `opencode` (built-in) | 204 | 204 |
+
+Results:
+
+- The Arm B contract resolves exactly the five mounted skills:
+  the five ids return 204, and an id that is not mounted returns
+  404. The mount path `/opt/skills` plus the `skills.paths` config
+  entry is the working discovery mechanism.
+- Arm A resolves none of the five (404 each).
+- `GET /api/skill` does not show this resolution: with the
+  default location it returns `data: []` for both arms; with
+  `?location[directory]=/opt/skills` it returns only the two
+  built-ins (`opencode`, `report`), never the mounted skills. The
+  activation endpoint, not `GET /api/skill`, is the no-prompt
+  skill probe. This corrects the contrary signal of
+  evidence/probe-config-source-and-arm-configs.txt section 6.
+- Built-in skills: the activation endpoint returns 204 for
+  `opencode` in BOTH arms, and in Arm A the activation appended
+  the full 13 KB `opencode` skill message to the session. The
+  activation surface does not apply the `deny skill *` rule.
+
+## 4. R1: what the permission rules do (static) and what stays
+   unproven
+
+- The model-visible skill list is filtered by the permission
+  rules: the `@opencode/SkillInstructions` service computes
+  `b9(list, permissions)` with
+  `b9=(H,e)=>H.filter((A)=>UC("skill",A.id,e).effect!=="deny")`,
+  which removes every denied skill, built-ins included
+  (v2.0.32 binary, read-only code read). Under the Arm A rules
+  the model-visible list is empty. Under the Arm B rules it holds
+  exactly the five allowed ids. This layer is static evidence
+  only; no no-prompt API exposes it.
+- `GET /api/agent` returns the agent DEFAULT permissions, not the
+  merged config rules: the `build` agent shows
+  `question: allow` even with the config deny. The resolved
+  config rules are visible only through `opencode debug config`
+  and `GET /api/config` (the six deny rules and, for Arm B, the
+  five allow rules;
+  evidence/probe-config-source-and-arm-configs.txt §2).
+- Unproven without a prompt: the enforcement of the deny rules
+  (`question`, `websearch`, `subagent`, `read`/`edit` on
+  `/tmp/data/**`, `skill *`) at tool-call time, and the
+  model-visible absence of the built-in skills in Arm A. The
+  activation-API bypass of section 3 makes this check necessary.
+  Task 4.3 must check it on the live smoke runs (for example:
+  the Arm A export shows no `skill` part; the Arm B export shows
+  a `skill` part for one of the five ids and for no built-in id).
+  The strategy role amends task 4.3.
+
+## 5. Files
+
+All probe outputs lived in the private frame under
+`$XDG_RUNTIME_DIR` and were removed by the EXIT trap. This file
+is the repo evidence.
