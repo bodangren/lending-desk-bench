@@ -10,6 +10,11 @@ reviews A, B, and C. It changes the FR-7 usage source tests (sections 5.1 and
 (5.1), the task 4.3 usage proof (7), the audit scan variants (2), and the
 live-run frame rule (7.1).
 
+Amendment 2: 2026-10-18, strategy role, role base `418d0b9`. It adds the
+runnable gate variants TRIPWIRE_R, P3R, and P4R (sections 2, 6, and 7). It
+adds credential edge tests and an expiry warning test for task 2.3. It ties
+row 2.7 to the Node discovery rule of `design.md`.
+
 ## 1. Scope and risk summary
 
 This track replaces the Pi executor with OpenCode 2 and the host Console
@@ -59,6 +64,20 @@ ambient `PATH` creates `HIT`.
 ```
 tw="$(mktemp -d)" && printf '#!/bin/sh\ntouch "$(dirname "$0")/HIT"; exit 97\n' > "$tw/opencode" && cp "$tw/opencode" "$tw/pi" && chmod +x "$tw/opencode" "$tw/pi"
 ```
+
+**TRIPWIRE_R (runnable variant, amendment 2).** The original TRIPWIRE
+contains `>`, `cp `, and `chmod `. The orchestrator and the audit roles deny
+these texts. TRIPWIRE_R makes the same two shims with `node -e`,
+`fs.writeFileSync`, and `fs.chmodSync`. The script uses `function` syntax and
+contains no `>`.
+
+```
+tw="$(mktemp -d)" && node -e 'var fs=require("fs"),d=process.argv[1],s="#!/bin/sh\ntouch \"$(dirname \"$0\")/HIT\"; exit 97\n";["opencode","pi"].forEach(function(n){fs.writeFileSync(d+"/"+n,s);fs.chmodSync(d+"/"+n,0o755)})' "$tw"
+```
+
+The shim text is the same as in TRIPWIRE: it creates `HIT` beside itself and
+exits 97. TRIPWIRE_R leaves its `mktemp -d` folder in place, because the audit
+roles cannot delete it. The folder holds two small shims and no secret.
 
 **SECRET_SCAN (pattern scan, no secret needed).** It prints file names only,
 never the match. Zero output and exit 0 is a pass.
@@ -157,8 +176,8 @@ The repo has no lint script, no `tsconfig.json`, and no `shellcheck`.
 |---|---|---|---|
 | 1 Investigate and contract | `measure-jr-green` (investigation) | `jr-green` | P1 composite (section 4) |
 | 2 Test | `measure-mid-red` | `mid-red` (`RED_TEST_COMMAND` must fail) | not used |
-| 3 Implement (Green) | `measure-jr-green` | `jr-green` | P3 composite (section 6) |
-| 4 Verify and document | `measure-jr-green` | `jr-green` | P4 composite (section 7) |
+| 3 Implement (Green) | `measure-jr-green` | `jr-green` | P3R composite (section 6) |
+| 4 Verify and document | `measure-jr-green` | `jr-green` | P4R composite (section 7) |
 
 Phase 1 adds no failing test, so the `mid-red` gate cannot pass for it. The
 `jr-green` gate fits: HEAD advances, each task is `[x]` with a SHA, and the
@@ -308,7 +327,8 @@ drop their fake `pi` but are not gate evidence. The exclude list stays frozen.
 - Every R1 failure is a new test. Each failure message names the missing
   behavior, not a syntax or import error of the test itself.
 - The failing test names of R3 equal those of R1 (A11).
-- R1 with TRIPWIRE on `PATH` leaves no `HIT` file. Use the `opencode` shim
+- R1 with TRIPWIRE on `PATH` leaves no `HIT` file. Audit roles use
+  TRIPWIRE_R (section 2). Use the `opencode` shim
   only. Pi still exists in Phase 2.
 - No pre-existing assertion is weakened, deleted, or skipped.
 
@@ -330,6 +350,11 @@ Each test uses the fake `opencode` (section 8) and canary credentials.
 | 2.3 | Container stdin hash equals the hash of the expected access-only payload | A refresh field with a real value changes the hash |
 | 2.3 | No canary token in argv capture, env capture, artifacts (the session export included), logs, provenance, or `score.json` | One canary hit fails |
 | 2.3 | Staging under the test `XDG_RUNTIME_DIR` is empty after success, failure, and timeout | One remaining entry fails |
+| 2.3 (NFR-1) | Staging is empty after an interruption: SIGINT and SIGTERM to the run process while the fake agent runs | One remaining entry fails. Non-vacuous: the fake `podman` writes a start marker, and the test sends the signal only after the marker exists and staging holds 1 or more entries |
+| 2.3 (FR-3) | A missing, malformed, or non-finite `expires` stops the run before the agent. Cases: key absent, `null`, a string, a negative number, a fraction, and `1e999` (JSON parse gives `Infinity`) | One case with a fake `podman` call, a `run` argv, or exit 0 fails. Each case is a separate assertion |
+| 2.3 (FR-3) | An ambiguous active Console connection stops the run before the agent: two active `opencode` connections in the export | A fake `podman` call or a container stdin payload fails |
+| 2.3 (FR-3, NFR-1) | Other integrations never leave the host store: the export holds a second integration with its own canaries beside the Console connection | One canary of the other integration in the stdin capture, argv, env, artifacts, logs, or provenance fails. A stdin payload with an entry other than the selected Console connection fails |
+| 2.3 (FR-3) | Weekly expiry warning, by the rule of the `design.md` section that defines the weekly 7-day expiry warning (now in "Selected FR-3 run-window option (fail closed)") | Test one `expires` value on each side of the 7-day boundary, each 1 hour or more from it. A missing warning on the near side, a warning on the far side, or a stop of a batch that the run window covers fails |
 | 2.3 | Batch preflight: a short `expires` stops the batch before the first agent, with the FR-3 reason line | A fake `podman` call or a new run directory fails |
 | 2.3 (design 2.2) | Per-run check: in a serial batch, a token that covers the first run window but not a later run stops that later run before its agent, with the same reason line | A fake `podman` call for the later run, a missing reason line, or a stop of the first run fails |
 | 2.3 | A canary in `session.json` makes the run invalid and is redacted everywhere | A valid run or a remaining canary fails |
@@ -351,7 +376,7 @@ Each test uses the fake `opencode` (section 8) and canary credentials.
 | 2.6 | A Pi run with a higher score is not ranked; it shows in the labeled history block, also when STALE | A ranked Pi row or a missing history row fails |
 | 2.6 | Site rows show the executor name and version | A missing field fails |
 | O4 | Synthetic tree with Pi runs only: every batch model is `new` in each track and arm; the run count equals models × 2 × (3+1+1+1) | One `current` or `failing` row fails |
-| 2.7 | Under `env -i` with the crontab `PATH`, `toolchain.sh` resolves `node` to the operator Node version, not `/snap/bin/node` | Without the toolchain the test fails |
+| 2.7 | Under `env -i` with the crontab `PATH`, `toolchain.sh` resolves `node` by the Node discovery rule of the `design.md` section "Cron toolchain and REHEARSAL (FR-9)", not to `/snap/bin/node` | Without the toolchain the test fails. The test builds a synthetic toolchain tree that the rule selects, with a fake `node`. A resolved path outside that tree fails. The result must not depend on the host Node version |
 | 2.7 | `CRON START` logs the paths and versions of `node`, `npm`, and `opencode` | A missing item fails |
 | 2.7 | Preflight fails closed for: no binary, version 1.x, no Console login, model not listed | Exit 0, a new run directory, a `run` argv, or a `pi` hit fails |
 | 2.7 | `BENCH_DRY_RUN=1` runs the preflight and records no `run` argv | A `run` argv fails |
@@ -391,7 +416,7 @@ corrupts one snapshot in the tree; the output must then change.
 | Anti-pattern | Defense |
 |---|---|
 | A3 | Red evidence parses `Test Files` and `Tests` labeled counts |
-| A4 | Capture file must exist; the tree has each class; a planted canary proves that the leak check reads the files |
+| A4 | Capture file must exist; the tree has each class; a planted canary proves that the leak check reads the files; the interruption test signals only after the start marker exists and staging holds an entry |
 | A5 | Task 2.8 records the command output, not a claim |
 | A7 | `package.json` exclude list frozen; the `mid-red` gate flags a `package.json` change |
 | A11 | R3 failing set equals R1; matrix 5.2; tests use `envWithoutTrack()` or `applyEnv` |
@@ -413,6 +438,37 @@ Phase 2 tests fail.
 ```
 <TRIPWIRE> && (cd harness && PATH="$tw:$PATH" npm run test:meta:logic) && test ! -e "$tw/HIT" && (cd harness && BENCH_TRACK=change PATH="$tw:$PATH" npm run test:meta:logic) && test ! -e "$tw/HIT" && <REHEARSAL>
 ```
+
+**P3R composite (runnable variant, amendment 2).** It is the P3 composite with
+TRIPWIRE_R in place of TRIPWIRE. The full line contains no `>`, `cp `,
+`chmod `, `rm `, `mv `, `tee `, or `sed -i`.
+
+```
+tw="$(mktemp -d)" && node -e 'var fs=require("fs"),d=process.argv[1],s="#!/bin/sh\ntouch \"$(dirname \"$0\")/HIT\"; exit 97\n";["opencode","pi"].forEach(function(n){fs.writeFileSync(d+"/"+n,s);fs.chmodSync(d+"/"+n,0o755)})' "$tw" && (cd harness && PATH="$tw:$PATH" npm run test:meta:logic) && test ! -e "$tw/HIT" && (cd harness && BENCH_TRACK=change PATH="$tw:$PATH" npm run test:meta:logic) && test ! -e "$tw/HIT" && env -i HOME="$HOME" PATH=/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin bash -c 'set -eu; cd /home/daniebo/Desktop/lending-desk-bench/harness; . ./toolchain.sh; . ./env.sh; env -u BENCH_TRACK npm run --silent test:meta:logic'
+```
+
+**Gate variant per role.**
+
+| Role | P3 and P4 gate form |
+|---|---|
+| Orchestrator (`GREEN_TEST_COMMAND` export for the `jr-green` gate) | P3R and P4R only |
+| Review A, Review B, Review C, `phase-acceptance`, `final-acceptance` | P3R and P4R only |
+| `measure-jr-green`, `measure-adversarial-testing` | P3R and P4R; the original P3 and P4 composites stay valid |
+
+Test record (2026-10-18, strategy role, synthetic data only). TRIPWIRE_R made
+`opencode` and `pi` with mode 755. Each shim exited 97 and created `HIT`.
+In P3R, `harness` was replaced by a synthetic folder, and REHEARSAL by
+`echo rehearsal-ok`:
+
+| Synthetic suite | Result |
+|---|---|
+| Calls no executor | exit 0 |
+| Calls `opencode` through `PATH`, and the suite fails | exit 1 |
+| Calls `pi` through `PATH`, and the suite fails | exit 1 |
+| Calls `opencode`, ignores its error, and reports a pass | exit 1 (the `HIT` check fails) |
+
+The full P3R and P4R lines, with the real REHEARSAL, PROJECT_LINT, and
+SECRET_SCAN text, pass `bash -n` and contain no denied text.
 
 **Closeout gate (task 3.9).**
 
@@ -452,7 +508,9 @@ test first. Then a Green fix follows. Then task 4.3 runs again if the hashes
 changed.
 
 **Green gate (P4 composite).** The P3 composite, then `<PROJECT_LINT>`, then
-`<SECRET_SCAN>`.
+`<SECRET_SCAN>`. The runnable variant P4R is `<P3R> && <PROJECT_LINT> &&
+<SECRET_SCAN>`. Section 6 gives the gate variant per role. The test record
+of section 6 covers P4R.
 
 **Closeout gate.**
 
