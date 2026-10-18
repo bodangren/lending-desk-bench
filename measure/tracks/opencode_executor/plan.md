@@ -49,7 +49,7 @@ Read-only investigation of the host OpenCode 2. Phase 1 writes only files in
 `measure/tracks/opencode_executor/`: `design.md`, redacted evidence, and
 corrections to `spec.md`. Red starts only after task 1.9 is complete.
 
-- [x] 1.1 [9a638b6] Headless run contract: confirm the flags `run --standalone --format
+- [x] 1.1 [f40b1a1] Headless run contract: confirm the flags `run --standalone --format
   json --auto --model opencode-go/<id>`. Record the exit codes for a provider
   error and for a timeout (the timeout exit code stays unproven in Phase 1;
   the Phase 2 fake covers it). Record the stdin behavior and the JSON event types.
@@ -57,12 +57,12 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   a free Go model in a throwaway container (spec FR-1). [9a638b6](evidence/task-1.1-headless-run.txt)
   (evidence-fix turn: hash values removed, free-model claim corrected,
   addendum reworded)
-- [x] 1.2 [c643123] Cron self-check root cause: find the call that leaves the `tsx`
+- [x] 1.2 [f40b1a1] Cron self-check root cause: find the call that leaves the `tsx`
   output files (`score.json`, `candidate-contract.json`) empty under the
   crontab PATH. The 2026-10-18 reproduction failed 3 tests
   under the crontab PATH and passed 170 of 170 under the nvm PATH. Record the
   minimal fix (spec FR-9). [c643123](evidence/task-1.2-cron-self-check.txt)
-- [x] 1.3 [9a638b6] Credential export and import: record the redacted shape of `opencode
+- [x] 1.3 [f40b1a1] Credential export and import: record the redacted shape of `opencode
   auth export opencode`. Record how the active Console connection is
   selected. Import it into an empty isolated store, with temporary XDG
   dirs and no model call (v2.0.32 rejects `--standalone` for `auth`; the
@@ -73,12 +73,12 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   --standalone limitation: see evidence; evidence-fix turn: hash
   values removed, addendum reworded — a container refresh stays
   unproven)
-- [x] 1.4 [cef5b13] Refresh and rotation: record the access-token lifetime from
+- [x] 1.4 [f40b1a1] Refresh and rotation: record the access-token lifetime from
   `expires`. Find a host refresh trigger that sends no prompt, if one exists.
   Confirm the import result when the refresh field is absent or inert.
   Confirm that the container cannot refresh and that the host login survives
   (spec FR-3). [cef5b13](evidence/task-1.3-1.4-credential.txt)
-- [x] 1.5 [d3ffe0c] Isolation variables and config source: confirm how the generated
+- [x] 1.5 [f40b1a1] Isolation variables and config source: confirm how the generated
   config becomes the only config source (`OPENCODE_CONFIG`,
   `OPENCODE_CONFIG_CONTENT`, or the XDG config path). Confirm the effect of
   `OPENCODE_DISABLE_CLAUDE_CODE`, `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS`,
@@ -89,20 +89,20 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   or the XDG skills path. Confirm the `skill` deny and allow rules. Name the
   commands that list skills, instruction files, MCP servers, and plugins
   without a model call (spec FR-4). [8f25f19](evidence/task-1.6-skill-path-and-arm-proof.txt)
-- [x] 1.7 [15c1805] Container runtime needs: confirm that the binary starts in the
+- [x] 1.7 [f40b1a1] Container runtime needs: confirm that the binary starts in the
   pinned Node image. Record the helper downloads, such as ripgrep, language
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
   Select one helper supply method (spec FR-4). [15c1805](evidence/task-1.7-container-runtime.txt)
   (design turn: host rg fails in the image; the supply source becomes
   the static musl build, see evidence §9)
-- [x] 1.8 [9a638b6] Token usage format: record the event fields for input, output,
+- [x] 1.8 [f40b1a1] Token usage format: record the event fields for input, output,
   reasoning, cache read, and cache write. Record whether they are per step or
   cumulative. Confirm whether subagent usage reaches the parent event stream.
   Save one redacted event stream from task 1.1 in the track directory (spec
   FR-7). [9a638b6](evidence/task-1.8-token-usage.txt) (evidence-fix turn: O3
   becomes deny subagent; final-step usage finding; offline usage-source probe)
-- [x] 1.9 [c15b603] Design note: write `design.md`. It gives the confirmed command line,
+- [x] 1.9 [f40b1a1] Design note: write `design.md`. It gives the confirmed command line,
   environment, mounts, config, and credential flow. It gives the field lists
   of identity schema 2 and provenance schema 7. It gives the usage mapping and
   the helper supply method. Record the owner answers to O1–O6. Correct
