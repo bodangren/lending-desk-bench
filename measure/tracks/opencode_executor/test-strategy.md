@@ -4,6 +4,12 @@ Revision: 2026-10-18, strategy role. Role base: `8e79027`. The worktree is
 dirty with work of other tracks and an owner edit of `harness/go-pricing.json`.
 Every gate runs against the working tree. Stage files by explicit path only.
 
+Amendment 1: 2026-10-18, strategy role, role base `9f11dd4`, after the Phase 1
+reviews A, B, and C. It changes the FR-7 usage source tests (sections 5.1 and
+8), O3 (deny `subagent`), the ledger rule (4.2), the run-window check scope
+(5.1), the task 4.3 usage proof (7), the audit scan variants (2), and the
+live-run frame rule (7.1).
+
 ## 1. Scope and risk summary
 
 This track replaces the Pi executor with OpenCode 2 and the host Console
@@ -64,6 +70,75 @@ never the match. Zero output and exit 0 is a pass.
 A false positive fails closed. Redact the value in the evidence. Never add an
 exclusion to the pattern (A7).
 
+**Audit scan variants (amendment 1, Review B RB-3).** The permission files of
+the audit roles (Review A, B, C, `phase-acceptance`, `final-acceptance`) deny
+every shell command that contains the character `>`. That includes `=>`,
+`>=`, `2>&1`, and `> file`. They also deny `cp`, `mv`, `rm`, `tee`, `chmod`,
+and `sed -i`. The section 4.1 frame, `REDACT`, and `EXACT` therefore cannot
+run in an audit role. The tree SECRET_SCAN above contains no denied text, so
+audit roles run it unchanged. The two variants below contain no `>` and no
+denied command.
+
+**SECRET_SCAN_HISTORY.** It scans the patch text of a commit range, also the
+removed lines. Replace `RANGE` with the phase range, for
+example `d27d414..HEAD`. It prints `history-scan-ok` on a pass. It never
+prints a match.
+
+```
+R=RANGE; test "$(git rev-list --count "$R")" -ge 1 && test "$(git log -p --text --no-color --no-ext-diff "$R" | grep -cP 'eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._~+/=-]{16,}|\b(?:sk|wrk|org)[-_][A-Za-z0-9]{12,}|"(?:access|refresh|token|accessToken|refreshToken|apiKey|secret)"\s*:\s*"[^"<]{8,}"|(?<![A-Za-z0-9_-])(?=[A-Za-z0-9_-]*[0-9])(?=[A-Za-z0-9_-]*[a-z])(?=[A-Za-z0-9_-]*[A-Z])[A-Za-z0-9_-]{32,}(?![A-Za-z0-9_-])')" = 0 && echo history-scan-ok
+```
+
+The first `test` fails on an empty or unknown range (A4). The second `test`
+fails on one matching line. The pattern is the SECRET_SCAN pattern, unchanged.
+
+**EXACT_AUDIT.** It pipes `opencode auth export opencode` straight into
+`node -e`. No temporary file exists. The code uses `function` syntax and no
+`>` comparison. It collects each string leaf of 16 characters or more from
+the export, except `http` URLs. It scans the named folders, and it skips
+symbolic links. After `--range`, it reads the patch text of each commit range
+with `child_process.execFileSync('git', [...])`. It prints only
+`exact-scan values=N hits=M`. Every failure prints only
+`exact-scan failed stage=<args|export|tree|range>` and exits 3: no target, a
+missing folder, an export that is not JSON, and an empty or unknown range.
+
+```
+EXACT_AUDIT='var g="args";try{var fs=require("fs"),path=require("path"),ch=require("child_process");var a=process.argv.slice(1),i=a.indexOf("--range"),roots=i===-1?a:a.slice(0,i),ranges=i===-1?[]:a.slice(i+1),s=new Set(),hits=0;if(roots.length+ranges.length===0)throw 0;g="export";(function w(v){if(typeof v==="string"){if(16<=v.length&&!/^https?:/.test(v))s.add(v)}else if(v&&typeof v==="object")Object.values(v).forEach(w)})(JSON.parse(fs.readFileSync(0,"utf8")));function has(t){for(var x of s)if(t.includes(x))return true;return false}function scan(f){var st=fs.lstatSync(f);if(st.isSymbolicLink())return;if(st.isDirectory())fs.readdirSync(f).forEach(function(n){scan(path.join(f,n))});else if(st.isFile()&&has(fs.readFileSync(f,"latin1")))hits++}g="tree";roots.forEach(function(r){fs.statSync(r);scan(r)});g="range";ranges.forEach(function(r){var t=ch.execFileSync("git",["log","-p","--text","--no-color","--no-ext-diff",r],{stdio:["ignore","pipe","ignore"],maxBuffer:1024*1024*1024}).toString("latin1");if(t.length===0)throw 0;if(has(t))hits++});console.log("exact-scan values="+s.size+" hits="+hits)}catch(e){console.log("exact-scan failed stage="+g);process.exit(3)}'; opencode auth export opencode | node -e "$EXACT_AUDIT" -- FOLDER... --range RANGE...
+```
+
+Pass: `hits=0` and `values>=1`. Exit 3 fails the audit. The `--` separator
+is necessary: without it, `node` reads `--range` as its own option.
+
+Test record (2026-10-18, strategy role, synthetic data only). A fake
+`opencode` printed a planted export with 3 values of 16 characters or more,
+one 10-character label, and one `https` URL. A synthetic repository planted a
+value and a JWT-like string in one commit and removed them in the next.
+
+| Case | Result |
+|---|---|
+| SECRET_SCAN_HISTORY, range with the planted and removed lines | exit 1 (fail) |
+| SECRET_SCAN_HISTORY, clean non-empty range | `history-scan-ok`, exit 0 |
+| SECRET_SCAN_HISTORY, empty range; unknown range | exit 1; exit 2 |
+| EXACT_AUDIT, planted folder and planted range | `values=3 hits=2` |
+| EXACT_AUDIT, clean folders and clean range | `values=3 hits=0` |
+| EXACT_AUDIT, folder with a symbolic link to a planted file | `hits=0` (the link target alone gives `hits=1`) |
+| EXACT_AUDIT, missing folder; empty range; unknown range; no target | `failed stage=tree`; `stage=range`; `stage=range`; `stage=args`, exit 3 |
+| EXACT_AUDIT, export that is not JSON and holds a planted value | `failed stage=export`; the value is not printed |
+| Both command lines, check against the denied text of the audit roles | no denied text |
+
+**Scan use per role.**
+
+| Role | Tree SECRET_SCAN | SECRET_SCAN_HISTORY | Frame, `REDACT`, `EXACT` | EXACT_AUDIT |
+|---|---|---|---|---|
+| `measure-jr-green` (Phase 1, Phase 4) | yes | yes, before the gate | yes, only inside the section 4.1 frame | allowed |
+| Review B | yes | yes, phase range | no | yes: the track, the runs folder, and the phase range; Phase 4 adds the run folders, `reports/`, and `docs/assets/data/` |
+| Review A, Review C, `phase-acceptance`, `final-acceptance` | yes | yes, if the role audits the history | no | only on the orchestrator's request |
+| Orchestrator | through the P1 composite | yes | no | no |
+
+An audit role never runs `REDACT`. It reads the committed
+`evidence/auth-export.shape.json`. The stderr of `opencode auth export
+opencode` is not redirected in EXACT_AUDIT, because `2>` contains `>`.
+Phase 1 recorded an empty export stderr.
+
 **Final acceptance.** Each command exists in `harness/package.json` or is a
 standard tool on this host.
 
@@ -117,9 +192,12 @@ The last part proves that the suite stays green (170 of 170 under the nvm
 
 - Tasks 1.1–1.9 are `[x]` with a SHA.
 - `design.md` gives each item that task 1.9 names. It records O1–O6 as fixed.
-  It names the O3 branch (allow or deny `subagent`) with the evidence.
-- `design.md` has a prompt ledger (below) with at most 2 rows.
+  It records O3 as deny `subagent` with the evidence (design section 7).
+- `design.md` has a prompt ledger (section 4.2) with at most 2 live rows.
 - The exact-value scan (below) reports `hits=0` and `values>=1`.
+- Review B runs the tree SECRET_SCAN, SECRET_SCAN_HISTORY, and EXACT_AUDIT
+  (section 2) over the track, the runs folder, and the range
+  `d27d414..HEAD`. Each scan passes.
 - Review B passes.
 
 ### 4.1 Credential evidence protocol (tasks 1.3, 1.4, 1.7)
@@ -152,7 +230,8 @@ Rules:
 
 3. The `EXACT` scan collects each string leaf of 16 characters or more from
    the raw export, except `http` URLs. It searches the named trees for each
-   value. It prints only counts and file names.
+   value. It prints only counts and file names. This is the frame form for
+   Green. Audit roles use EXACT_AUDIT (section 2).
 
    ```
    EXACT='const fs=require("fs"),p=require("path");const s=new Set();(function w(v){if(typeof v==="string"){if(v.length>=16&&!/^https?:/.test(v))s.add(v)}else if(v&&typeof v==="object")Object.values(v).forEach(w)})(JSON.parse(fs.readFileSync(process.argv[1],"utf8")));const hits=[];const scan=f=>{if(!fs.existsSync(f))return;const st=fs.statSync(f);if(st.isDirectory())fs.readdirSync(f).forEach(n=>scan(p.join(f,n)));else{const t=fs.readFileSync(f,"latin1");for(const x of s)if(t.includes(x)){hits.push(f);break}}};process.argv.slice(2).forEach(scan);console.log("exact-scan values="+s.size+" hits="+hits.length+(hits.length?" files="+hits.join(","):""))'
@@ -172,14 +251,20 @@ Rules:
 
 ### 4.2 Prompt budget proof (NFR-4)
 
-- `design.md` keeps a ledger: number, time (+08:00), model, prompt text,
-  prompt bytes, exit code, evidence file.
-- Prompt 1 is task 1.1. Prompt 2 is reserved for the O3 subagent probe (task
-  1.8). If prompt 2 goes to a retry of task 1.1, O3 resolves to deny.
-- Falsification: the count of `opencode run` commands in the Phase 1 role log
-  must equal the ledger row count. A count above 2 fails the phase.
+- `design.md` keeps a ledger. Every `opencode run` command is one ledger
+  row, live or not. Columns: number, time (+08:00), model, network, live,
+  prompt text, prompt bytes, exit code, evidence file.
+- A run with `--network=none` is not live. Every other run is live.
+- The budget applies to live rows: at most 2 live rows before 2026-10-21
+  21:44 (+08:00).
+- Falsification: the count of `opencode run` commands in the role log and the
+  evidence must equal the ledger row count. Each row that is not live must
+  show `--network=none` in its evidence. A live row count above 2 fails the
+  phase.
 - Each prompt is 200 bytes or less. The ledger cites the source that shows
   the model is free.
+- Phase 1 result at `9f11dd4`: 6 rows, 2 of them live (rows 4 and 5). O3 is
+  deny `subagent` (design section 7).
 
 ### 4.3 Anti-pattern coverage
 
@@ -187,6 +272,7 @@ Rules:
 |---|---|---|
 | A3 | R0 and the gate cite the labeled Vitest summary | A digit grep is not evidence |
 | A4 | EXACT must report `values>=1` | `values=0` proves a vacuous scan; the gate fails |
+| A4 | SECRET_SCAN_HISTORY and EXACT_AUDIT fail on an empty or unknown range, a missing folder, or no target | The section 2 test record shows each failure case |
 | A5 | Each `design.md` fact cites a redacted evidence file | A fact with no evidence file fails Review A |
 | A7 | SECRET_SCAN has no word exclusions | A new exclusion in the pattern fails Review B |
 | A11 | R0 records the full environment of the cron reproduction | — |
@@ -240,18 +326,24 @@ Each test uses the fake `opencode` (section 8) and canary credentials.
 | 2.2 | No Pi: the `pi` tripwire in the test `PATH` stays unhit | A `HIT` file fails |
 | O1 | `--model opencode-go/<id>` has no `#`; `score.json` has `thinking_requested: "default"` | A `#variant` or another value fails |
 | O2 | Config denies `websearch` and `question`; it has no deny for `webfetch` | Remove the `websearch` deny, or add a `webfetch` deny: the test fails |
-| O3 | Allow branch: the parser total includes the subagent usage of the fixture. Deny branch: the config denies the subagent tool that `design.md` names | Flip the branch: the test fails. Review A checks the branch against `design.md` |
+| O3 | The generated config of each arm denies `subagent` (design section 7) | Remove the `subagent` deny, or add an allow for it: the test fails |
 | 2.3 | Container stdin hash equals the hash of the expected access-only payload | A refresh field with a real value changes the hash |
-| 2.3 | No canary token in argv capture, env capture, artifacts, logs, provenance, or `score.json` | One canary hit fails |
+| 2.3 | No canary token in argv capture, env capture, artifacts (the session export included), logs, provenance, or `score.json` | One canary hit fails |
 | 2.3 | Staging under the test `XDG_RUNTIME_DIR` is empty after success, failure, and timeout | One remaining entry fails |
-| 2.3 | Short `expires` stops the run before the agent with the FR-3 reason | A fake `podman` call fails |
+| 2.3 | Batch preflight: a short `expires` stops the batch before the first agent, with the FR-3 reason line | A fake `podman` call or a new run directory fails |
+| 2.3 (design 2.2) | Per-run check: in a serial batch, a token that covers the first run window but not a later run stops that later run before its agent, with the same reason line | A fake `podman` call for the later run, a missing reason line, or a stop of the first run fails |
 | 2.3 | A canary in `session.json` makes the run invalid and is redacted everywhere | A valid run or a remaining canary fails |
 | 2.4 | Schema 7 fields; `credential` equals `{integration:"opencode",method:"oauth",refresh_token_delivered:false}`; no `orgID` | A missing field or the canary `orgID` fails |
 | 2.4 | Fake upgrade at the recorded path keeps attestation and freshness | A changed verdict fails |
 | 2.4 | A changed skill or config snapshot makes the run invalid | A valid verdict fails |
 | 2.4 (FR-6) | `plan-work.ts --all` output is byte-identical, and freshness verdicts are equal, under each adversarial value (5.2) | One byte of difference fails |
 | O5 | Arm B snapshot holds exactly the five IDs. A change to the source folder after the run keeps attestation | A live-folder hash flips the verdict and fails |
-| 2.5 | Parser output for plain and `.gz` equals hand-computed values | The fixture has 2 or more steps, so a sum and a last value differ |
+| 2.5 | The parser reads the session export fixture, plain and `.gz`, and returns hand-computed values: `output` equals `info.tokens.output` plus `info.tokens.reasoning`; `input`, `cacheRead`, and `cacheWrite` equal their `info.tokens` fields; `costUsd` equals `info.cost` (design section 4.4) | Each field has a non-zero value that differs from the other fields. The stream fixture lacks the final `step_finish`. A parser that reads the stream, drops reasoning, or swaps two fields returns another record and fails |
+| 2.5 (design 4.3) | The entry script writes the export to the artifact path that design section 4.3 names | No file at that path fails |
+| 2.5 (design 4.3) | The export call gets the session ID by the design section 4.3 rule, as one argument | The fake records the `session export` argv. Another ID or a split argument fails. A fake ID with a space and a `;` arrives as one argument |
+| 2.5 (design 4.3) | A missing, empty, or unreadable export gives the run result that design section 4.3 names (run invalid, fail closed) | A valid run, or zero usage in a valid run, fails |
+| 2.5 (design 4.3) | Timeout order: after a `timeout` kill of the fake `run`, the export step runs in the order that design section 4.3 gives | No `session export` call after the kill fails. An export call before `run` returns fails |
+| 2.5 (RB-4) | The parser reads `info` only. Canaries in the export `messages` do not change the record. Row 2.3 finds and redacts them | A changed record or a remaining canary fails |
 | 2.5 | Recost equals the formula computed in the test | A changed formula fails |
 | 2.5 | Zero output tokens trip the existing gate | A valid run fails the test |
 | 2.6 | Rescore and regrade print SKIP for a Pi run; `score.json` SHA-256 stays equal | A changed hash fails |
@@ -266,6 +358,12 @@ Each test uses the fake `opencode` (section 8) and canary credentials.
 
 Meta tests resolve the path of the real `opencode` at most. They never
 execute it.
+
+The per-run check test (design 2.2) must not depend on a wall-clock race.
+Use one of two methods. Method 1: the fake `auth export` returns a smaller
+`expires` on a later call. Method 2: the test sets `expires` and the fake run
+duration with a margin of 5 s or more on each side of the boundary. The batch
+has 2 or more runs.
 
 ### 5.2 Adversarial environment matrix (FR-6, carried finding)
 
@@ -368,6 +466,20 @@ changed.
   `docs/assets/data/` with `hits=0` and `values>=1`. `opencode auth list` on
   the host still shows the Console login. Step 7 of section 4.1 shows that
   the refresh value changed only through a host refresh.
+- 4.3 usage proof (Review A N12). For each run, record as labeled values
+  (A3): each `info.tokens` field of the export, and the sum of the same
+  field over the `step_finish` events of the stream. Record the counts of
+  `step_start` and `step_finish` events. All three checks must pass:
+  1. Non-zero: export `input` and export `output` are greater than 0.
+  2. Final step: when the stream has fewer `step_finish` events than
+     `step_start` events, export `output` is greater than the stream sum.
+     When the counts are equal, each export field equals its stream sum.
+  3. Cross-check: each export field is greater than or equal to its stream
+     sum.
+  A failed check makes the export source unproven. Then task 4.3 fails, and
+  a new Phase 2 test comes first.
+- 4.3 ledger: each `opencode run` command of task 4.3 is one ledger row in
+  the 4.3 evidence. The count-equality check of section 4.2 applies.
 - 4.4: the dry run prints labeled `BATCH START (dry run)` counts per track.
   With 19 batch models the total is 228 (O4). `sha256sum` of each legacy Pi
   `score.json` is equal before and after `WEEK=all ./rescore-doctor.sh`.
@@ -378,11 +490,37 @@ changed.
 **Prompt budget proof.** Tasks 4.1, 4.2, and 4.4 send no prompt. The fake
 or the TRIPWIRE covers 4.1. Task 4.3 starts after the time check above.
 
+### 7.1 Live-run frame rule (amendment 1, Review B RB-2)
+
+Phase 1 had a protocol incident: a credential copy and raw container output
+went to fixed paths outside the private frame. This rule applies to every
+Phase 4 step that handles the credential or a live container output.
+
+1. Run the step inside the section 4.1 frame: `mktemp -d` under
+   `$XDG_RUNTIME_DIR`, `umask 077`, and the cleanup `trap`.
+2. Keep container stdout and stderr, the raw export, and every credential
+   copy in `$d`. This includes the access-only copy.
+3. Never use a fixed path under `/tmp` or `/run/user/<uid>/` for these
+   files.
+4. Copy a file out of `$d` only after SECRET_SCAN and EXACT report zero hits
+   on it. Record the scan line and its time before the copy.
+5. Record only `equal=true` or `equal=false` for a refresh comparison. Never
+   record a value or a hash of a value.
+
+The FR-3 harness staging of the graded runs has its own tests (rows 2.3).
+This rule covers the operator steps around the runs.
+
+Review B checks the rule from the evidence. Falsification: one evidence path
+for a credential copy or a raw output outside a `mktemp -d` frame fails.
+One copy-out without an earlier zero-hit scan line fails. One recorded
+refresh value or hash fails. Review B also runs EXACT_AUDIT and
+SECRET_SCAN_HISTORY (section 2) over the Phase 4 range.
+
 ### Anti-pattern coverage
 
 | Anti-pattern | Defense |
 |---|---|
-| A3 | Dry-run counts come from the labeled `BATCH START` line |
+| A3 | Dry-run counts come from the labeled `BATCH START` line; the 4.3 usage proof records labeled values |
 | A4 | EXACT `values>=1`; the probe shows each listed source |
 | A5 | Each `[x]` cites archived output or a commit |
 | A6 | `tracks.md` and `metadata.json` change only after the gates pass |
@@ -394,11 +532,20 @@ or the TRIPWIRE covers 4.1. Task 4.3 starts after the time check above.
   argument list, its environment as `name=value`, and a SHA-256 of its stdin
   to a capture file. `run` emits the fixed event stream. `auth export`
   emits canary values (`CANARY-ACCESS-<n>`, `CANARY-REFRESH-<n>`,
-  `org_CANARY<n>`). `models` lists the test model. It opens no network
-  connection.
-- **Event stream fixture.** Red copies the redacted stream of task 1.8 to
-  `harness/tests/meta/fixtures/`. It includes reasoning, cache, and (for the
-  allow branch of O3) subagent usage.
+  `org_CANARY<n>`). `models` lists the test model. `session export <id>`
+  prints the session export fixture. The fake also gives the subcommand
+  that the design section 4.3 session ID rule reads. It records the argv of
+  each call. It opens no network connection.
+- **Session export fixture (the usage source, FR-7).** Red builds a synthetic
+  export from the shape of `evidence/offline-session-export.redacted.json`.
+  Each `info.tokens` field and `info.cost` has a non-zero value that differs
+  from the other fields. The `messages` hold planted canaries. A `.gz` copy
+  exists.
+- **Event stream fixture (cross-check only).** Red copies a redacted live
+  stream of task 1.8 to `harness/tests/meta/fixtures/`. Redact the nested
+  subagent session ID of `live2` first (Review B RB-7). The stream lacks the
+  final `step_finish`, so its sums differ from the export totals. O3 denies
+  `subagent`, so no subagent usage mapping exists.
 - **Fake `podman`.** It records its argument list and stdin hash. It never
   starts a container in the gate suite.
 - **No real credential, model, or network** in any meta test (NFR-3).
@@ -454,8 +601,8 @@ does not pass a gate.
 
 | Review | Phase 1 | Phase 2 | Phase 3 | Phase 4 |
 |---|---|---|---|---|
-| A correctness | yes: facts against evidence; O3 branch | yes: falsification of each test | yes: FR-1 to FR-10; task order | yes: acceptance evidence |
-| B security | **yes, required**: protocol 4.1, SECRET_SCAN, EXACT, ledger | yes: canaries only; no real credential | yes: delivery, cleanup trap, redaction, argv and env | yes: live scans, host login, README risk text |
+| A correctness | yes: facts against evidence; O3 deny | yes: falsification of each test | yes: FR-1 to FR-10; task order | yes: acceptance evidence; 4.3 usage proof |
+| B security | **yes, required**: protocol 4.1, SECRET_SCAN, SECRET_SCAN_HISTORY, EXACT_AUDIT, ledger | yes: canaries only; no real credential | yes: delivery, cleanup trap, redaction, argv and env | yes: frame rule 7.1, EXACT_AUDIT, SECRET_SCAN_HISTORY, host login, README risk text |
 | C UX/API | yes: CLI flags, event stream, schema 7 list in `design.md` | yes: contracts frozen at Red | yes: schema 7, site data rows, removed variables | yes: docs and site rows match code |
 | Adversarial testing | no: no harness change | yes: R3 and matrix 5.2 | yes: P3 composite, canary leak, TRIPWIRE | yes: P4 composite, EXACT on live output |
 | UX browser | no (`UX_REQUIRED=never`) | no | no | no |
@@ -477,3 +624,9 @@ git status --porcelain | git hash-object --stdin   # status_hash
 Do not use `8e79027`. It predates this strategy commit. For Phase 2, 3, and
 4, capture the base at the start of the phase, after the acceptance of the
 phase before it. Export it as `PHASE_BASE_SHA` for the P1 composite.
+
+Amendment 1 keeps the Phase 1 base `d27d414`. Phase 1 is in retry, and the
+P1 composite allows commits in the track folder. Capture the Phase 2
+`phase_base_sha` after the amendment 1 commit and after Phase 1 acceptance.
+Never use a SHA that predates the amendment 1 commit as a Phase 2, 3, or 4
+base.
