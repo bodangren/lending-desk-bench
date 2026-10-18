@@ -62,7 +62,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   crontab PATH. The 2026-10-18 reproduction failed 3 tests
   under the crontab PATH and passed 170 of 170 under the nvm PATH. Record the
   minimal fix (spec FR-9). [c643123](evidence/task-1.2-cron-self-check.txt)
-- [x] 1.3 [21e8c09] Credential export and import: record the redacted shape of `opencode
+- [x] 1.3 [0a35187] Credential export and import: record the redacted shape of `opencode
   auth export opencode`. Record how the active Console connection is
   selected. Import it into an empty isolated store, with temporary XDG
   dirs and no model call (v2.0.32 rejects `--standalone` for `auth`; the
@@ -78,7 +78,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   Confirm the import result when the refresh field is absent or inert.
   Confirm that the container cannot refresh and that the host login survives
   (spec FR-3). [cef5b13](evidence/task-1.3-1.4-credential.txt)
-- [x] 1.5 [4fefda5] Isolation variables and config source: confirm how the
+- [x] 1.5 [0a35187] Isolation variables and config source: confirm how the
   generated config reaches the container (`OPENCODE_CONFIG`,
   `OPENCODE_CONFIG_CONTENT`, or the XDG config path), and that
   `OPENCODE_CONFIG` adds a document without suppressing the XDG source.
@@ -91,7 +91,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   or the XDG skills path. Confirm the `skill` deny and allow rules. Name the
   commands that list skills, instruction files, MCP servers, and plugins
   without a model call (spec FR-4). [8f25f19](evidence/task-1.6-skill-path-and-arm-proof.txt); the skill activation probe: (evidence/probe-agents-md-and-skill-activation.txt)
-- [x] 1.7 [4fefda5] Container runtime needs: confirm that the binary starts in the
+- [x] 1.7 [0a35187] Container runtime needs: confirm that the binary starts in the
   pinned Node image. Record the helper downloads, such as ripgrep, language
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
@@ -104,7 +104,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   Save one redacted event stream from task 1.1 in the track directory (spec
   FR-7). [9a638b6](evidence/task-1.8-token-usage.txt) (evidence-fix turn: O3
   becomes deny subagent; final-step usage finding; offline usage-source probe)
-- [x] 1.9 [aee15f5] Design note: write `design.md`. It gives the confirmed command line,
+- [x] 1.9 [0a35187] Design note: write `design.md`. It gives the confirmed command line,
   environment, mounts, config, and credential flow. It gives the field lists
   of identity schema 2 and provenance schema 7. It gives the usage mapping and
   the helper supply method. Record the owner answers to O1–O6. Correct
