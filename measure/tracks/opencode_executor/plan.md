@@ -70,7 +70,7 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   Confirm the import result when the refresh field is absent or inert.
   Confirm that the container cannot refresh and that the host login survives
   (spec FR-3).
-- [ ] 1.5 Isolation variables and config source: confirm how the generated
+- [~] 1.5 Isolation variables and config source: confirm how the generated
   config becomes the only config source (`OPENCODE_CONFIG`,
   `OPENCODE_CONFIG_CONTENT`, or the XDG config path). Confirm the effect of
   `OPENCODE_DISABLE_CLAUDE_CODE`, `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS`,

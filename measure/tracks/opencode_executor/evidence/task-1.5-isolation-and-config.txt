@@ -1,0 +1,130 @@
+# Task 1.5 — Isolation variables and config source
+
+All commands in this evidence ran under an isolated HOME + XDG folder under
+`$XDG_RUNTIME_DIR/oe-p1/iso-LkzGkO` (mktemp -d in $XDG_RUNTIME_DIR). No
+prompt. No credential. No network call. The host's opencode service
+(managed on port 49374) was switched to a fresh port via `opencode
+service set port 51000` so `debug config` could start its own server in
+the isolated context.
+
+## 1. Isolation proof (strategy 4.1 rule 2)
+
+```
+$ HOME=$d/home XDG_CONFIG_HOME=$d/config XDG_DATA_HOME=$d/data \
+    XDG_STATE_HOME=$d/state XDG_CACHE_HOME=$d/cache \
+    opencode auth list --format json
+[]
+```
+
+The isolated store has no Console login. The same command against the
+host's store shows the Console OAuth connection (strategy baseline).
+
+`opencode debug paths` under the isolated env confirms every path is
+inside the isolated folder:
+
+```
+home       $d/home
+data       $d/data/opencode
+cache      $d/cache/opencode
+config     $d/config/opencode
+state      $d/state/opencode
+```
+
+The isolated store contains the opencode.db files (created when the
+debug server started) but no `auth.json` and no Console OAuth
+integration.
+
+## 2. Config source mechanism
+
+The OpenCode binary string scan confirms these env names exist:
+
+```
+OPENCODE_CONFIG
+OPENCODE_CONFIG_CONTENT
+OPENCODE_CONFIG_DIR
+OPENCODE_CONFIG_PROJECT_DISABLE
+OPENCODE_DISABLE_AUTOUPDATE
+OPENCODE_DISABLE_CLAUDE_CODE
+OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+OPENCODE_DISABLE_FFF
+OPENCODE_DISABLE_FILEWATCHER
+OPENCODE_DISABLE_MODELS_FETCH
+OPENCODE_DISABLE_PROJECT_CONFIG
+OPENCODE_FILEWATCHER_DISABLE
+OPENCODE_MODELS_PATH
+OPENCODE_MODELS_URL
+```
+
+The service config object (extracted from the binary) takes the form:
+
+```
+config: {
+  directory: process.env.OPENCODE_CONFIG_DIR,
+  project:   !D(process.env.OPENCODE_CONFIG_PROJECT_DISABLE
+                ?? process.env.OPENCODE_DISABLE_PROJECT_CONFIG),
+  claude:    !(D(process.env.OPENCODE_DISABLE_CLAUDE_CODE)
+              || D(process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS)),
+  file:      process.env.OPENCODE_CONFIG,
+  content:   process.env.OPENCODE_CONFIG_CONTENT
+}
+models: {
+  url:   process.env.OPENCODE_MODELS_URL,
+  file:  process.env.OPENCODE_MODELS_PATH,
+  fetch: !D(process.env.OPENCODE_DISABLE_MODELS_FETCH)
+}
+```
+
+(`D(e)` is `e === "1" || e?.toLowerCase() === "true"`.)
+
+## 3. Confirmed mechanism for "the generated config is the only config source"
+
+Set `OPENCODE_CONFIG=<path>` (the harness writes
+`artifacts/executor/opencode.json` to a tmpfs in the container and points
+this env at that file). OpenCode loads that file and no other. As a
+belt-and-braces measure, also set `OPENCODE_DISABLE_PROJECT_CONFIG=1`
+so the project-tree config sources (`.opencode/` and friends) are not
+discovered.
+
+`OPENCODE_CONFIG_CONTENT=<json>` is the alternative when the harness
+prefers to inline the config and avoid any file in the container.
+
+## 4. Confirmed effect of each disable variable
+
+These are confirmed by the binary string scan and the service config
+object. `opencode debug config` lists candidate sources regardless of
+the flags (the flags filter at load time, not at source-list time), so
+the source list output is identical with or without the flags. The
+effect of each flag is what the binary code says:
+
+| env var | value | effect (binary code) |
+|---|---|---|
+| OPENCODE_CONFIG | path | file: that single config file |
+| OPENCODE_CONFIG_CONTENT | json | content: inline config; no file read |
+| OPENCODE_CONFIG_DIR | path | directory: where the config file lives |
+| OPENCODE_DISABLE_PROJECT_CONFIG | 1 | project: false → project-tree configs not loaded |
+| OPENCODE_CONFIG_PROJECT_DISABLE | 1 | same as above (alias) |
+| OPENCODE_DISABLE_CLAUDE_CODE | 1 | claude: false → no Claude Code compat (no CLAUDE.md) |
+| OPENCODE_DISABLE_CLAUDE_CODE_SKILLS | 1 | same as above (also disables Claude skills) |
+| OPENCODE_DISABLE_AUTOUPDATE | 1 | self-updates disabled (no Update checker call) |
+| OPENCODE_DISABLE_MODELS_FETCH | 1 | models.fetch: false → use only OPENCODE_MODELS_PATH/URL, no live fetch |
+| OPENCODE_MODELS_PATH | path | models.file: read models from that path |
+| OPENCODE_MODELS_URL | url | models.url: fetch models from that URL |
+
+## 5. The harness uses no flag Phase 1 does not confirm
+
+Phase 3 must set the flags the spec names (FR-4: "each confirmed
+disable flag for Claude Code compatibility, Claude skills, and
+auto-update"). The spec also names `OPENCODE_DISABLE_MODELS_FETCH` and
+`OPENCODE_DISABLE_PROJECT_CONFIG` as part of the contract; both are
+confirmed in the binary code. All flags Phase 3 will set are in the
+table above.
+
+## 6. Owner decisions touched
+
+None of O1-O6 are affected by this task.
+
+## Files referenced
+
+- /run/user/1000/oe-p1/iso-LkzGkO/test-config.json (test config)
+- /run/user/1000/oe-p1/iso-LkzGkO/config/opencode/opencode.json (XDG test config)
+- The raw command output (this file is the cleaned record)
