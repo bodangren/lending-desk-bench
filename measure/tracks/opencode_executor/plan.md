@@ -304,6 +304,24 @@ model, no real credential (NFR-3).
   `BENCH_EXECUTOR_RUNTIME_FLAGS`, `BENCH_EXECUTOR_CLI_FLAGS`,
   `BENCH_OPENCODE_BIN`, `BENCH_PI_ROOT`, `HOME`, and `PATH`. This carries the
   bench_incremental review A finding (spec FR-5, FR-6).
+  - `opencode-recorded.test.ts` covers the writer, the run identity, recorded snapshots, source drift, upgrades, and all 16 adversarial values.
+    The fixture uses schema-7 input records with real candidate bindings and local skill and config snapshots.
+    It obtains scores from the production scorer. It does not invent trusted verdicts.
+    Node and tsx use absolute paths. Each subprocess receives an explicit environment.
+  - The matrix requires `new`, `failing`, and `current` rows before it can pass.
+    At HEAD, schema-7 records stay stale and the current control remains failing.
+    The matrix tests report this missing prerequisite. They still execute the adversarial comparisons.
+    The sensitivity test also fails because snapshot corruption does not change classification.
+  - Targeted command: `cd harness && BENCH_META=1 npx vitest run tests/meta/opencode-recorded.test.ts --maxWorkers=1`.
+    Exit: 1. `Test Files  1 failed (1)`; `Tests  24 failed (24)`.
+  - R1, with the OpenCode tripwire: `cd harness && npm run test:meta:logic`.
+    Start: 2026-10-18T16:29:33+08:00. End: 2026-10-18T16:33:51+08:00. Exit: 1.
+    `Test Files  4 failed | 26 passed (30)`; `Tests  65 failed | 173 passed (238)`.
+  - R3, with the same tripwire: `cd harness && BENCH_TRACK=change npm run test:meta:logic`.
+    Start: 2026-10-18T16:33:51+08:00. End: 2026-10-18T16:38:07+08:00. Exit: 1.
+    `Test Files  4 failed | 26 passed (30)`; `Tests  65 failed | 173 passed (238)`.
+    Both JSON reports contain the same 65 failing names. Every failure is an expected assertion failure.
+    All 170 existing tests pass. The OpenCode tripwire stays unhit in both runs.
 - [ ] 2.5 Cost: `usage.ts` parses the fixed session export, plain and
   `.gz`, with the FR-7 mapping of `design.md` section 4 (reasoning counts
   as output; no subagent mapping — O3 denies `subagent`). The event
