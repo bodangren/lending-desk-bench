@@ -1,0 +1,294 @@
+# Task 1.7 — Container runtime needs
+
+All probes ran under rootless Podman with `--pull=never`. No
+prompt was sent. The harness image digest is the one the harness
+already pins. The opencode binary was bind-mounted read-only from
+the operator's nvm path. The temporary stdout/stderr artifacts
+live under `/run/user/1000/oe-p1/w2zuE1/cont/`; excerpts in this
+file are repo-relative copies after SECRET_SCAN passed (exit 0).
+EXACT has no input here: no raw credential was read or written
+during this task, so the EXACT step is a no-op (strategy 2).
+
+## 1. Image reference
+
+```
+docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3
+```
+
+The harness already pins this exact digest in `harness/run.sh` (lines
+334 and 416). It was pulled once into the local Podman store:
+
+```
+$ podman images --digests | grep 6c74791e
+docker.io/library/node  <none>  sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3  bd16adabad76  3 months ago  233 MB
+```
+
+Image contents:
+
+```
+node  v22.23.1   (/usr/local/bin/node)
+npm   10.9.8     (/usr/local/bin/npm)
+npx   10.9.8     (/usr/local/bin/npx)
+corepack, yarn, yarnpkg   (also in /usr/local/bin)
+sh, bash, grep, find, ls, cat  (busybox-style base)
+apk, file, strings, curl, wget, rg, tsc  (NOT present)
+```
+
+The image is a minimal node base. It does NOT include ripgrep,
+language servers, or formatters.
+
+## 2. Podman flags used (rootless)
+
+```
+--rm --pull=never
+--tmpfs /tmp:rw,nosuid,nodev,noexec,size=512m
+--cap-drop=ALL
+--security-opt=no-new-privileges
+--userns=keep-id
+--user "$(id -u):$(id -g)"
+--network slirp4netns:allow_host_loopback=false
+--mount type=bind,src=.../opencode.exe,dst=/usr/local/bin/opencode,ro
+--env HOME=/tmp/home
+--env XDG_CONFIG_HOME=/tmp/config
+--env XDG_DATA_HOME=/tmp/data
+--env XDG_STATE_HOME=/tmp/state
+--env XDG_CACHE_HOME=/tmp/cache
+--workdir /tmp
+```
+
+HOME and XDG dirs point into the noexec /tmp tmpfs; they are
+pre-created by the entry script so the service's chdir to HOME
+succeeds. The opencode binary is the only host path mounted.
+The image's standard root FS provides the exec surface; /tmp is
+the only noexec mount and contains no executables we run.
+
+## 3. Binary start-up
+
+```
+$ opencode --version
+opencode v2.0.32
+```
+
+Exit 0. 17 bytes stdout, 0 bytes stderr. Confirmed under both
+`--network=slirp4netns` (T1) and `--network=none` (T18, T27).
+The same `--version` call succeeds offline, which proves the
+binary does NOT phone home on start-up.
+
+`opencode debug paths` under the isolated env (T2):
+
+```
+home       /tmp/home
+data       /tmp/data/opencode
+cache      /tmp/cache/opencode
+config     /tmp/config/opencode
+state      /tmp/state/opencode
+tmp        /tmp/opencode
+bin        /tmp/cache/opencode/bin   <-- helper download dir
+log        /tmp/data/opencode/log
+repos      /tmp/data/opencode/repos
+db         /tmp/data/opencode/opencode.db
+```
+
+`opencode debug config` under the isolated env (T28) confirms the
+host's `~/.config/opencode` and `~/.opencode` paths are NOT
+present — only the isolated `/tmp/config/opencode`.
+
+`opencode mcp list` → "No MCP servers configured" (T12, 26 bytes).
+`opencode plugin list` → "No plugins found" (T13, 17 bytes).
+`opencode stats` → "no activity in this range" (T31, 91 bytes).
+`opencode --standalone --print-logs --log-level debug stats` ran
+without a network (T31). `opencode models` listed 12 built-in
+`opencode/*` model ids under `--network=none` (T32), proving the
+model catalog is shipped inside the binary and does not require a
+network call.
+
+## 4. Helper needs and the chosen supply method
+
+### 4.1 ripgrep (rg) — required by the built-in `grep` tool
+
+The opencode binary contains a built-in `grep` tool whose
+description is, verbatim from the binary:
+
+```
+Search file contents using ripgrep's regular expression syntax or
+literal text matching. Use it to locate specific code, symbols,
+or text patterns, and narrow searches with `path` or `include`.
+Returns matching file paths, line numbers, and line previews.
+```
+
+The binary's helper-resolution code (extracted from
+`$bunfs/root/chunk-...js`) is:
+
+```js
+let O = N("rg");                          // PATH lookup
+if (O && isFile(O)) return O;
+let V = `${T.bin}/rg`;                    // cache bin lookup
+if (isFile(V)) return V;
+let K = `https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-${D.platform}.${D.extension}`;
+fetch(K).then(... writeFile(Y, bytes) ...);
+spawnSync("tar", ["-xzf", Y, "-C", D], D);
+copyFile(`${D}/ripgrep-15.1.0-${D.platform}/rg`, V);
+chmod(V, 0o755);
+```
+
+URL: `https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/`
+Platform variant for this image: `x86_64-linux-musl`.
+
+If the helper is absent AND the download fails, the `grep` tool
+returns the error "ripgrep failed with code N" or
+"ripgrep execution failed". The agent's own code/text search
+breaks. Every model run that touches the workspace will trigger
+this.
+
+### 4.2 Formatters (prettier, eslint, biome) — run via `npx`
+
+The binary references `prettier`, `eslint`, and `@biomejs/biome`
+in 162 formatter-related matches. These are launched as
+`npx <formatter>` and run under the image's `node` (v22.23.1).
+No separate exec mount is required: the node binary in
+`/usr/local/bin/` is on a regular exec mount.
+
+### 4.3 Language servers — not used at container start-up
+
+The `language server` substring appears twice in the binary and
+references only the abstract concept in error/help text. No
+download URL exists for any language server. The harness does
+not need to supply one.
+
+### 4.4 Chosen supply method: bind-mount a pre-shipped `rg` as `/usr/local/bin/rg`
+
+**Method.** The harness copies a known-good `rg` binary
+(ripgrep 15.1.0, x86_64-linux-musl) into the per-run artifact
+tree, then Podman bind-mounts it read-only at
+`/usr/local/bin/rg` inside the container:
+
+```
+--mount type=bind,src=$OUT/rg,dst=/usr/local/bin/rg,ro
+```
+
+The container's `/usr/local/bin/` is on the image's regular root
+FS, which is exec. `/usr/local/bin/` is also on the opencode
+PATH lookup, so the binary's `N("rg")` PATH check returns the
+shipped `rg` on the very first call. The download-and-extract
+fallback is never reached, so opencode never needs to reach
+`github.com` at start-up, and the noexec `/tmp` constraint is
+satisfied without a per-bucket exec mount.
+
+**Why this and not the alternatives.**
+
+- *Let opencode download into `<bin>/rg`*: this lands at
+  `/tmp/cache/opencode/bin/rg`, which is inside the noexec
+  `/tmp` tmpfs. The downloaded `rg` would not be executable.
+  Mounting `/tmp/cache/opencode/bin` as a separate exec tmpfs
+  works, but adds a second mount for one file and re-uses
+  opencode's network path at every run.
+- *Build ripgrep into the image*: requires a custom image
+  fork; breaks `--pull=never` portability.
+- *Skip ripgrep*: the `grep` tool then errors on every
+  candidate's first workspace touch. The agent can still
+  finish a tiny run, but the harness loses the FR-4 contract
+  (the `grep` tool is part of the default `build` agent).
+
+**Exec surface under the chosen method.**
+
+- `/usr/local/bin/rg` — exec (image root FS).
+- `/usr/local/bin/opencode` — exec (image root FS, read-only bind).
+- `/tmp` — noexec. Contains only data files, sockets, and
+  the opencode sqlite DB. No executables are run from `/tmp`.
+
+## 5. Snapshot file list
+
+After `opencode service set port 51001 && opencode debug agents
+&& opencode debug config && opencode debug paths`, the container
+contains (T29):
+
+```
+/tmp/.bun-1000-89812e6e6a68aaeb.so
+/tmp/.bun-1000-71b650bef1b3e52c.node
+/tmp/.bun-1000-e83060072c005618.so
+/tmp/state/opencode/service.json
+/tmp/data/opencode/opencode.db-shm
+/tmp/data/opencode/opencode.db-wal
+/tmp/data/opencode/opencode.db
+/tmp/data/opencode/log/opencode.log
+/tmp/config/opencode/service.json
+```
+
+The three `.bun-*.so` / `.bun-*.node` files are the Bun runtime
+loader (the opencode binary is a Bun-compiled ELF). They live
+in `/tmp` (noexec) but are dlopen targets, not executables.
+The two `service.json` files record the per-port state. The
+`.db*` files are the opencode sqlite store. `opencode.log`
+captures the structured event log.
+
+`opencode.log` after one `service set port` call (T30, 181 bytes):
+
+```
+timestamp=2026-10-18T02:54:42.224Z level=INFO run=22137b74
+message="cli starting" version=2.0.32 channel=latest local=false
+args="[\"service\",\"set\",\"port\",\"51001\"]" role=cli
+```
+
+No network event is recorded. The CLI-startup event is the only
+event at this point.
+
+## 6. Network endpoints at start-up
+
+- `opencode --version`: 0 network. Succeeds under
+  `--network=none` (T18, T27).
+- `opencode debug paths`: 0 network. Succeeds under
+  `--network=none`.
+- `opencode mcp list` / `opencode plugin list`: 0 network. Run
+  after pre-creating HOME (T12, T13).
+- `opencode models`: 0 network. Lists 12 built-in
+  `opencode/*` ids under `--network=none` (T32). The full
+  `opencode-go/*` list is fetched from the live models endpoint
+  only when `OPENCODE_DISABLE_MODELS_FETCH` is not set and the
+  cache is empty; in the container the harness sets
+  `OPENCODE_DISABLE_MODELS_FETCH=1` (strategy 4.2) and the
+  binary's model catalog is enough for the executor
+  preflight.
+- `opencode stats`: 0 network. Reads the local sqlite store.
+- The only network the binary can make is the
+  `github.com/BurntSushi/ripgrep` fetch described in
+  section 4.1. With the chosen supply method (pre-shipped
+  `rg` on PATH) this code path is not taken.
+
+## 7. Mounts (final, for Phase 3)
+
+| mount | src | dst | ro? | exec? |
+|---|---|---|---|---|
+| bind | `<nvm>/.../opencode.exe` | `/usr/local/bin/opencode` | yes | yes |
+| bind | `$OUT/rg` | `/usr/local/bin/rg` | yes | yes |
+| tmpfs | — | `/tmp` (rw, nosuid, nodev, noexec, size=512m) | — | no |
+| tmpfs | — | `/run/opencode` (rw, nosuid, nodev, size=64m) | — | no |
+
+Private HOME and XDG dirs are created by the entry script under
+`/tmp/home`, `/tmp/config`, `/tmp/data`, `/tmp/state`,
+`/tmp/cache` before the agent starts.
+
+The image is `--pull=never` so the operator pre-pulls it once.
+The harness's exit trap and the per-run artifact cleanup (NFR-1,
+FR-8) already remove `$OUT`; the new `$OUT/rg` is removed at the
+same time.
+
+## 8. Owner decisions touched
+
+None of O1–O6 are affected. O5 is "keep a skill snapshot for
+each Arm B run. Pin the skill source in a later track" — this
+task is the *executor* helper, not a skill.
+
+## Files referenced
+
+- /run/user/1000/oe-p1/w2zuE1/cont/t1-stdout.log   (17 bytes, version)
+- /run/user/1000/oe-p1/w2zuE1/cont/t2-stdout.log   (317 bytes, debug paths)
+- /run/user/1000/oe-p1/w2zuE1/cont/t12-stdout.log  (26 bytes, mcp list)
+- /run/user/1001/oe-p1/w2zuE1/cont/t13-stdout.log  (17 bytes, plugin list)
+- /run/user/1000/oe-p1/w2zuE1/cont/t18-stdout.log  (22 bytes, version with --network=none)
+- /run/user/1000/oe-p1/w2zuE1/cont/t28-stdout.log  (77 bytes, debug config under isolated env)
+- /run/user/1000/oe-p1/w2zuE1/cont/t29-stdout.log  (715 bytes, snapshot file list)
+- /run/user/1000/oe-p1/w2zuE1/cont/t30-stdout.log  (181 bytes, opencode.log)
+- /run/user/1000/oe-p1/w2zuE1/cont/t31-stdout.log  (91 bytes, stats with --print-logs)
+- /run/user/1000/oe-p1/w2zuE1/cont/t32-stdout.log  (367 bytes, models under --network=none)
+- /home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe
+  (binary string scan: ripgrep URL and download/extract logic)
