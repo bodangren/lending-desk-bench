@@ -251,6 +251,19 @@ model, no real credential (NFR-3).
   five snapshot skills, the five allow rules, and the `skills.paths`
   entry). They prove
   that the arms differ only in that material (spec FR-1, FR-4).
+  - Gate assertions live in `harness/tests/meta/opencode-executor.test.ts`.
+    The frozen exclude list stays unchanged. Existing Pi assertions stay unchanged.
+    The fake Podman records the actual arguments and the candidate state.
+    It translates mounted paths when it runs the entry script. It starts no container.
+  - Targeted command: `cd harness && BENCH_META=1 npx vitest run tests/meta/opencode-executor.test.ts --maxWorkers=1`.
+    Exit: 1. `Test Files  1 failed (1)`; `Tests  20 failed | 1 passed (21)`.
+  - Red command: `cd harness && npm run test:meta:logic`.
+    Start: 2026-10-18T15:57:01+08:00. End: 2026-10-18T15:58:16+08:00. Exit: 1.
+    `Test Files  2 failed | 26 passed (28)`; `Tests  21 failed | 172 passed (193)`.
+    The 20 new executor failures prove the missing command, mounts, environment, config, variant, and skill snapshots.
+    The task 2.1 capture test also fails. All 170 existing tests pass.
+    Arm A already removes `AGENTS.md` and has no snapshot. That control passes without a false Red assertion.
+    The role log records each failing name and its missing behavior.
 - [ ] 2.3 Credential tests: only the Console connection reaches the
   container, without the refresh token. Delivery uses stdin. No token is in a
   process argument list, the environment, the artifacts, a log, or

@@ -45,7 +45,25 @@ fs.writeFileSync(${JSON.stringify(podmanCapture)}, JSON.stringify({argv,
   env: Object.entries(process.env).map(([k,v]) => k+"="+v).sort(),
   stdin_sha256: crypto.createHash("sha256").update(stdin).digest("hex"),
   agents_exists: fs.existsSync(${JSON.stringify(resolve(work, "candidate", "AGENTS.md"))})}));
-process.exitCode = 97;
+const mounts = argv.flatMap((arg,i) => arg === "--mount" ? [Object.fromEntries(argv[i+1].split(",").map(part => part.split("=")))] : []);
+const entry = mounts.find(mount => mount.dst === "/entry/opencode-entry.sh");
+if (!entry) process.exitCode = 97;
+else {
+  // Translate the container paths only. Run the actual mounted entry script.
+  const privateRoot = ${JSON.stringify(resolve(temp, "container"))};
+  fs.mkdirSync(privateRoot, {recursive:true});
+  const paths = mounts.map(mount => [mount.dst,mount.src]).concat([["/run/opencode",privateRoot+"/run/opencode"],["/tmp",privateRoot+"/tmp"]]).sort((a,b) => b[0].length-a[0].length);
+  const pathPattern = new RegExp(paths.map(([from]) => from.replaceAll(".","[.]")).join("|"),"g");
+  const translate = text => text.replace(pathPattern,match => paths.find(([from]) => from === match)[1]);
+  const env = {PATH:${JSON.stringify(`${resolve(temp, "bin")}:${dirname(process.execPath)}:/usr/bin:/bin`)}};
+  argv.forEach((arg,i) => { if(arg === "--env") { const value=argv[i+1],eq=value.indexOf("="); if(eq !== -1) env[value.slice(0,eq)]=translate(value.slice(eq+1)); } });
+  const script = privateRoot+"/entry.sh";
+  fs.writeFileSync(script,translate(fs.readFileSync(entry.src,"utf8")));
+  const child = require("node:child_process").spawnSync("/bin/bash",[script],{cwd:${JSON.stringify(resolve(work, "candidate"))},env,input:stdin,timeout:10000,maxBuffer:8*1024*1024});
+  if(child.stdout) process.stdout.write(child.stdout);
+  if(child.stderr) process.stderr.write(child.stderr);
+  process.exitCode = child.status === null ? 97 : child.status;
+}
 `);
   chmodSync(podman, 0o755);
   // Start from an explicit environment. Never read a host credential or .env file.

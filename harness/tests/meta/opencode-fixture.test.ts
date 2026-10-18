@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -9,7 +9,8 @@ import { captureOpencodeRun } from "./opencode-run-fixtures";
 
 describe("OpenCode fixture contract", () => {
   it("captures every fake call, environment, and stdin hash without network access", () => {
-    const temp = mkdtempSync("/tmp/opencode-fixture-");
+    mkdirSync("/tmp/opencode", { recursive: true });
+    const temp = mkdtempSync("/tmp/opencode/fixture-");
     try {
       const fake = createFakeOpencode(temp);
       const commands = [["--version"], ["models"], ["auth", "export", "opencode"], ["auth", "import"],
