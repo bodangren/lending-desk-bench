@@ -125,6 +125,7 @@ None of O1-O6 are affected by this task.
 
 ## Files referenced
 
-- /run/user/1000/oe-p1/iso-LkzGkO/test-config.json (test config)
-- /run/user/1000/oe-p1/iso-LkzGkO/config/opencode/opencode.json (XDG test config)
-- The raw command output (this file is the cleaned record)
+The earlier session cited
+`/run/user/1000/oe-p1/iso-LkzGkO/test-config.json` and the
+isolated XDG config. That folder is deleted (evidence-fix turn).
+This file is the cleaned record of the command outputs.

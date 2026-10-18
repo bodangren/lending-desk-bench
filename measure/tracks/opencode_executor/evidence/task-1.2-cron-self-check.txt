@@ -163,8 +163,12 @@ not in the executor contract.
 
 ## Files referenced
 
-- measure/tracks/opencode_executor/evidence/r0-cron.txt   (R0 full Vitest output, 9202 bytes)
-- measure/tracks/opencode_executor/evidence/r0-nvm.txt    (nvm full Vitest output, 6544 bytes)
-- measure/tracks/opencode_executor/evidence/probe7.txt    (snap dispatcher diagnosis, 6 cases)
-- measure/tracks/opencode_executor/evidence/probe12.txt   (full path vs symlink diagnosis)
-- measure/tracks/opencode_executor/evidence/probe14.txt   (nvm toolchain confirmation)
+- measure/tracks/opencode_executor/evidence/r0-cron.txt   (R0 full Vitest output)
+- measure/tracks/opencode_executor/evidence/r0-nvm.txt    (nvm full Vitest output)
+- measure/tracks/opencode_executor/evidence/probe7.json   (tty and stdin probe, 4 cases)
+- measure/tracks/opencode_executor/evidence/probe12.json  (snap dispatcher diagnosis, 5 cases)
+- measure/tracks/opencode_executor/evidence/probe14.json  (nvm toolchain confirmation, 3 cases)
+
+The earlier session named the probe files `probe7.txt` and
+similar. The repo files are the `.json` files above
+(evidence-fix turn).

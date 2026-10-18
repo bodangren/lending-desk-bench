@@ -1,0 +1,28 @@
+{
+  "info": {
+    "id": "<redacted-sessionID>",
+    "projectID": "<redacted-projectID>",
+    "model": { "id": "beam-free", "providerID": "opencode-go", "variant": "default" },
+    "cost": 0,
+    "tokens": { "input": 0, "output": 0, "reasoning": 0, "cache": { "read": 0, "write": 0 } },
+    "outcome": "failed",
+    "time": { "created": 1792295256131, "updated": 1792295256540, "idle": 1792295256590 },
+    "location": { "directory": "/tmp" }
+  },
+  "messages": [
+    {
+      "id": "<redacted-messageID>",
+      "time": { "created": 1792295256576 },
+      "text": "\"Reply with the word OK.\"",
+      "files": [],
+      "type": "user"
+    },
+    {
+      "id": "<redacted-messageID>",
+      "time": { "created": 1792295256590 },
+      "type": "idle",
+      "outcome": "failed",
+      "error": { "type": "provider.no-route", "message": "Model unavailable: opencode-go/beam-free" }
+    }
+  ]
+}

@@ -280,15 +280,16 @@ task is the *executor* helper, not a skill.
 
 ## Files referenced
 
-- /run/user/1000/oe-p1/w2zuE1/cont/t1-stdout.log   (17 bytes, version)
-- /run/user/1000/oe-p1/w2zuE1/cont/t2-stdout.log   (317 bytes, debug paths)
-- /run/user/1000/oe-p1/w2zuE1/cont/t12-stdout.log  (26 bytes, mcp list)
-- /run/user/1001/oe-p1/w2zuE1/cont/t13-stdout.log  (17 bytes, plugin list)
-- /run/user/1000/oe-p1/w2zuE1/cont/t18-stdout.log  (22 bytes, version with --network=none)
-- /run/user/1000/oe-p1/w2zuE1/cont/t28-stdout.log  (77 bytes, debug config under isolated env)
-- /run/user/1000/oe-p1/w2zuE1/cont/t29-stdout.log  (715 bytes, snapshot file list)
-- /run/user/1000/oe-p1/w2zuE1/cont/t30-stdout.log  (181 bytes, opencode.log)
-- /run/user/1000/oe-p1/w2zuE1/cont/t31-stdout.log  (91 bytes, stats with --print-logs)
-- /run/user/1000/oe-p1/w2zuE1/cont/t32-stdout.log  (367 bytes, models under --network=none)
-- /home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe
-  (binary string scan: ripgrep URL and download/extract logic)
+The earlier session cited its stdout/stderr excerpts under
+`/run/user/1000/oe-p1/w2zuE1/cont/`. Those files are deleted
+(evidence-fix turn). The repo evidence for this task is:
+
+- This file (the cleaned record of the probe outputs).
+- The opencode binary at
+  `/home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe`
+  (binary string scan: ripgrep URL and download/extract logic).
+- The pinned image
+  `docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3`
+  in the local Podman store.
+- `harness/run.sh` (the existing digest pin and the container
+  flags).

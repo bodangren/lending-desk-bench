@@ -1,11 +1,16 @@
 # Task 1.8 — Token usage format
 
-All evidence in this file is captured from the live prompts in
-task 1.1. The container setup is identical (rootless Podman,
-pinned image, read-only binary, private tmpfs, generated
-config). The redacted event streams are in
-`evidence/live1-event-stream.redacted.json` and
-`evidence/live2-event-stream.redacted.json`.
+All evidence in this file comes from the live prompts in task 1.1
+and from the offline probes of the evidence-fix turn (2026-10-18).
+The container setup is identical (rootless Podman, pinned image,
+read-only binary, private tmpfs, generated config). The redacted
+event streams are in `evidence/live1-event-stream.redacted.json`
+and `evidence/live2-event-stream.redacted.json`.
+
+Sections 1, 2, and 4 were corrected in the evidence-fix turn:
+the O3 conclusion (section 3), the parser statement (section 4),
+and the final-step usage finding (section 1). Sections 5 to 8 are
+new evidence from the offline usage-source probe.
 
 ## 1. Event types observed
 
@@ -13,12 +18,6 @@ config). The redacted event streams are in
 
 - `step_start` (beginning of agent step)
 - `text` (model output: "OK")
-
-No `step_finish` event for this prompt. The model returned the
-text "OK" so quickly that the harness may not have emitted a
-`step_finish` event for a 1-token response, or the run ended
-before the event was flushed. This is an observation about the
-binary's event emission, not about the token usage.
 
 ### 1.2 Live prompt 2 (O3 probe: "Use the task tool once to run a
 subagent that replies OK. Then reply DONE.", model opencode-go/beam-free)
@@ -33,6 +32,15 @@ subagent that replies OK. Then reply DONE.", model opencode-go/beam-free)
 
 All events are well-formed JSON with `type`, `timestamp`,
 `sessionID`, and `part` fields.
+
+### 1.3 Finding: the final step can lack usage (evidence-fix turn)
+
+Neither live stream has a `step_finish` event for its last step.
+Stream 1 has no `step_finish` at all. Stream 2 ends with the
+`text` event "DONE" and no `step_finish` for that second step.
+So the `--format json` event stream can lack token usage for the
+final step of a run. The event stream alone is not a complete
+usage source for FR-7. Section 6 gives the complete source.
 
 ## 2. Token usage fields (from `step_finish.tokens`, O3 probe)
 
@@ -66,95 +74,151 @@ Field summary:
 | `cache.write` | number (tokens) | per-step |
 | `cost` | number (USD) | per-step |
 
-The fields are **per-step**, not cumulative. The harness's
-`usage.ts` already reads `message_end` and `turn_end` events from
-the JSONL session log (see harness/usage.ts lines 38-54), and
-the JSON event stream confirms the field names and types. The
-harness's recost formula in `go-cost.ts` uses input, output,
-cacheRead, and cacheWrite; the JSON event stream maps directly:
+The fields are per-step, not cumulative. The recost formula in
+`go-cost.ts` uses input, output, cacheRead, and cacheWrite:
 
 ```
 JSON event field  →  go-cost.ts Usage field
 ─────────────────────────────────────────
 input             →  input
 output            →  output
-reasoning         →  (not in go-cost.ts; advisory only)
+reasoning         →  counted as output (spec FR-7)
 cache.read        →  cacheRead
 cache.write       →  cacheWrite
 ```
 
-The `reasoning` field is reported per-step but not used by the
-recost formula. The `cost` field in the JSON stream is
-advisory (the harness's economics use the go-pricing.json
-recost, not the provider-reported cost; see spec FR-7).
+The `reasoning` field is reported per-step. The recost counts it
+as output. The `cost` field in the JSON stream is advisory (the
+economics use the go-pricing.json recost, not the provider-reported
+cost; spec FR-7).
 
 ## 3. Subagent token usage in the parent event stream (O3 branch)
 
-The O3 probe used the `subagent` tool. The tool_use event
-includes the subagent's output in `state.output`:
+The O3 probe used the `subagent` tool. The tool_use event shows
+that the subagent ran its own session
+(`evidence/live2-event-stream.redacted.json`, `state.output`:
+`<subagent sessionID="ses_…" state="completed">`).
 
-```
-<state.output>
-<subagent sessionID="ses_eb2ed95e0ffeOfdAbX03oHFNhM" state="completed">
-OK
-</subagent>
-</state.output>
-```
+The subagent's token usage is **not** in the parent event stream:
 
-The subagent ran a separate session. Its token usage is **not**
-separately broken out in the parent event stream. The subagent's
-tokens are **aggregated** into the parent step's `step_finish.tokens`:
+- The only usage record in the parent stream is the first step's
+  `step_finish.tokens` with `input: 80`. A second agent prompt
+  cannot fit in 80 input tokens. The parent prompt alone is
+  larger than that.
+- No event in the parent stream carries the subagent session's
+  own token totals.
+- The second step (the "DONE" reply) has no `step_finish` at all
+  (section 1.3).
 
-- `input`: 80 (includes the subagent's prompt and tool calls)
-- `output`: 31 (includes the subagent's "OK" reply)
-- `reasoning`: 32
-- `cache.read`: 4096
-- `cache.write`: 0
+The earlier claim that the subagent tokens are "aggregated" into
+the parent step (`input: 80`, `cache.read: 4096`) was not
+supported by the evidence. The evidence-fix turn removed it.
 
-These are the **combined** tokens for the entire parent step
-(which includes the subagent call). The harness's recost can
-correctly cost the run because the subagent's usage is included
-in the parent step's totals.
+The owner rule: allow `subagent` only if its token usage is in
+the parent event stream. It is not.
 
-O3 branch: **allow `subagent`**.
+O3 branch: **deny `subagent`**.
 
-Justification: the spec says "allow subagents only if their token
-usage is in the parent event stream." The subagent's token usage
-IS in the parent event stream (aggregated in `step_finish.tokens`).
-The harness's recost can therefore correctly account for the
-subagent's cost. The subagent's individual token breakdown is
-not separately visible, but the aggregate is. This satisfies the
-spec's "in the parent event stream" requirement.
+## 4. What the harness must parse (corrected in the evidence-fix turn)
 
-## 4. What the harness must parse
+`harness/usage.ts` parses the **Pi transcript** (a Pi JSONL session
+log with `message_end` and `turn_end` events; `harness/usage.ts`
+lines 1–54). It does not parse an OpenCode stream or store.
 
-The harness's `usage.ts` currently parses the JSONL session log
-(`session.json` written by the opencode binary, not the JSON
-NDJSON from `--format json`). The JSON NDJSON from `--format
-json` is a different format. For the harness to use the JSON
-event stream directly, it would need a new parser. For Phase 3,
-the existing JSONL parser is sufficient.
+FR-7 needs a **new OpenCode parser**. The `--format json` event
+stream is a different format, and per section 1.3 it can lack the
+final step's usage. Section 6 names the complete source that the
+new parser reads. Phase 2 (task 2.5) writes the parser tests
+against the fixture.
 
-The fields and types in the JSON event stream match what the
-harness expects from the JSONL session log:
-- `input` / `output` / `cacheRead` / `cacheWrite` are the same.
-- `reasoning` is new (the JSONL log may have it under a different
-  name; Phase 2 tests must confirm).
-- `cost` is advisory.
+## 5. Offline probe: where OpenCode keeps token usage
 
-No changes to the harness's usage format are required for the
-fields already present.
+Probe of the evidence-fix turn, offline, no network, no live
+prompt. Setup identical to task 1.1 and task 1.7: rootless
+Podman, `--network=none`, pinned image
+`docker.io/library/node@sha256:6c74791e…`, the opencode binary
+bind-mounted read-only at `/usr/local/bin/opencode`, ripgrep
+bind-mounted read-only at `/usr/local/bin/rg`, private HOME and
+XDG dirs on the tmpfs, `OPENCODE_CONFIG` pointing at the
+generated config.
 
-## 5. Prompt count
+One offline `opencode run --standalone --format json --auto
+--model opencode-go/beam-free "Reply with the word OK."` created
+one session and exited 1 with `provider.no-route` (expected
+offline; ledger row 6, live=no). The store under `XDG_DATA_HOME`
+holds `opencode.db`, an SQLite database.
 
-This task consumed 1 live prompt (prompt 2, the O3 probe).
-Combined with task 1.1, the phase has used 2/2 live prompts.
-See `evidence/prompt-ledger.md` for the full ledger.
+### 5.1 Database schema (`XDG_DATA_HOME/opencode/opencode.db`)
+
+The `session_v2` table has one row per session with these token
+columns: `tokens_input`, `tokens_output`, `tokens_reasoning`,
+`tokens_cache_read`, `tokens_cache_write`, and `cost`. The
+offline session row holds zeros (no model call happened).
+
+A structure check of the host store (keys only, no message text
+read) shows an assistant row of `session_message` carries the
+keys `time`, `agent`, `model`, `content`, `snapshot` — no tokens
+field. The per-message rows do not hold the usage. The session
+row holds the totals.
+
+### 5.2 `opencode session list` (offline, rc=0)
+
+Lists the sessions of the isolated store, newest first.
+
+### 5.3 `opencode session export <sessionID>` (offline, rc=0)
+
+Prints JSON with the top keys `info` and `messages`. The `info`
+object holds the whole-session usage:
+
+- `info.tokens`: `{input, output, reasoning, cache: {read, write}}`
+- `info.cost`
+- `info.model.variant` (the offline run records `"default"`, which
+  also confirms the O1 default-variant behavior)
+- `info.outcome`
+
+The full redacted output is in
+`evidence/offline-session-export.redacted.json`.
+
+### 5.4 `opencode stats` (offline, rc=0)
+
+Prints a summary only ("1 session … 1 prompt · 0 steps · 0
+tokens"). It is an aggregate view. It is not a per-run usage
+source.
+
+## 6. FR-7 usage source (proposal for design.md)
+
+The entry script runs `opencode session export <sessionID>` inside
+the container after `opencode run` returns, and writes the JSON to
+the run artifacts. The sessionID comes from the event stream
+(every event carries `sessionID`). The new parser reads
+`info.tokens` (whole-session totals: input, output, reasoning,
+cache.read, cache.write) and `info.cost`.
+
+This source is complete: it does not depend on a final
+`step_finish` event (section 1.3). The `--format json` stream
+stays as a cross-check.
+
+Open item for task 4.3: the offline probe proves the field shape
+on a zero-token session. The first live smoke run (task 4.3)
+confirms the non-zero totals. Phase 2 tests each candidate source
+against the fixture (task 2.5).
+
+## 7. Prompt count
+
+Live prompts: this task consumed live prompt 2 (the O3 probe).
+The phase used 2 of 2 live prompts. The offline run of section 5
+is ledger row 6 with `live=no`. See the ledger in `design.md`.
 
 ## Files referenced
 
-- /tmp/oe-p1-live1-stdout.json (631 bytes, prompt 1, unredacted)
-- /tmp/oe-p1-live1-redacted.json (500 bytes, prompt 1, redacted)
-- /tmp/oe-p1-live2-stdout.json (2172 bytes, prompt 2, unredacted)
-- /tmp/oe-p1-live2-redacted.json (1909 bytes, prompt 2, redacted)
-- /run/user/1000/oe-p1/host-check2.log (host check after O3 probe)
+- evidence/live1-event-stream.redacted.json (repo)
+- evidence/live2-event-stream.redacted.json (repo)
+- evidence/offline-session-export.redacted.json (repo)
+- harness/usage.ts (repo; the Pi transcript parser)
+- The earlier session wrote the unredacted streams to
+  `/tmp/oe-p1-live*-stdout.json`. Those files are deleted. The
+  redacted copies above are the repo evidence.
+- The earlier session cited
+  `/run/user/1000/oe-p1/host-check2.log`. That file is deleted.
+  The host-check facts live in
+  `evidence/task-1.1-headless-run.txt` section 4.

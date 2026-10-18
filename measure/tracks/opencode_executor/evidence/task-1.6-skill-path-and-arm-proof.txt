@@ -132,8 +132,9 @@ task confirms the snapshot is mountable, not how it's pinned.
 
 ## Files referenced
 
-- /run/user/1000/oe-p1/iso-LkzGkO/config/opencode/skills/<id>/SKILL.md (5 fake)
-- /run/user/1000/oe-p1/iso-LkzGkO/config/opencode/opencode.json (test config)
-- /home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe
-  string scan: `/builtin/opencode.md`, `/builtin/report.md`, "opencode.skill",
-  "Use this skill for any question about OpenCode itself"
+The earlier session cited the five fake skill folders and the
+test config under `/run/user/1000/oe-p1/iso-LkzGkO/`. That folder
+is deleted (evidence-fix turn). The binary string scan used the
+opencode binary at
+`/home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe`.
+This file is the cleaned record of the command outputs.

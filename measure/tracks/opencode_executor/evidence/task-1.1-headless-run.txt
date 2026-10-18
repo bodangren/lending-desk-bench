@@ -135,10 +135,9 @@ not through stdin.
 For prompt 1 (`Reply with the word OK.`):
 - `step_start` (beginning of an agent step)
 - `text` (model output: "OK")
-- (no `step_finish` because the response was so short the
-  harness may have not recorded a finish event for this
-  minimal exchange; the O3 probe in task 1.8 shows the full
-  event sequence including `step_finish`)
+- no `step_finish` for this final step. See the finding in
+  `evidence/task-1.8-token-usage.txt` §1.3: the `--format json`
+  stream can lack usage for the final step.
 
 ### 3.4 Exit code
 
@@ -159,14 +158,13 @@ field was not exercised.
 
 ## 4. Host store untouched (before/after the prompts)
 
-Captured inside a `set -euo pipefail` frame. The hash is SHA-256
-of the refresh value, not the value itself. The strategy says to
-print only `equal=true` or `equal=false`.
+Captured inside a `set -euo pipefail` frame. The strategy says to
+print only `equal=true` or `equal=false`. The hash values are not
+recorded (evidence-fix turn).
 
 ```
-refresh-hash-before: 3d82602539a8549c9841745d91f03e8c8560bfd99381f2fd21064286d6207c64
-refresh-hash-after1:  3d82602539a8549c9841745d91f03e8c8560bfd99381f2fd21064286d6207c64
-equal=true
+before versus after prompt 1: equal=true
+before prompt 1 versus after prompt 2: equal=true
 ```
 
 After both prompts, the host's Console OAuth refresh token has not
@@ -189,41 +187,33 @@ size:  4400 bytes
 mtime: 2026-09-10 15:35:05 +08:00  (unchanged after all probes)
 ```
 
-## 5. Addendum to task 1.3 evidence
+## 5. Addendum to task 1.3 evidence (reworded in the evidence-fix turn)
 
 This run confirms the access-only copy works end-to-end:
 the container's `opencode auth import` accepted the
 `refresh="inert"` JSON, wrote it to the isolated store, and the
 subsequent `opencode run --standalone` used the stored access
 token to reach the model endpoint and receive a reply. The
-inert refresh was not exercised (the access token is still
-valid). The container could not refresh the token, which is
-the expected FR-3 behavior.
+inert refresh field was not exercised (the access token is valid
+for 29 days).
 
-This addendum supersedes the "container cannot refresh" claim in
-`evidence/task-1.3-1.4-credential.txt` step 4: the container
-now has a proven access path to the model endpoint with the
-access-only credential. The refresh path remains unproven
-without a prompt whose access token has expired (that is
-post-Quota-Window testing, not Phase 1 work).
+"the container cannot refresh" stays **unproven**. A container
+refresh did not happen in this run: the access token was valid,
+so no renewal was attempted. A renewal test needs a prompt after
+the access token expires. That is post-Quota-Window work, not
+Phase 1 work. This addendum refines, and does not supersede, the
+claim in `evidence/task-1.3-1.4-credential.txt` section 10.
 
-## 6. Free-model source
+## 6. Free-model source (corrected in the evidence-fix turn)
 
-Model: `opencode-go/beam-free`.
-Source for "free":
-- The model name includes the suffix `-free`.
-- `opencode models` (host, with the live fetch) lists it.
-- The OpenCode Go plan (source `https://opencode.ai/docs/go/`)
-  includes a free tier; the model name and listing confirm
-  this.
-- `harness/go-pricing.json` does not list `beam-free` (it lists
-  28 other opencode-go/* models with non-zero rates). The
-  pricing file documents paid models; the free model is
-  covered by the Go plan's free tier rather than by go-pricing.json.
-  The strategy says: "cite the source that shows the model is
-  free (for example a zero price in harness/go-pricing.json, or
-  `opencode models` output)". The citation is `opencode models`
-  output and the model name.
+Model: `opencode-go/beam-free`. The model is **not proven free**.
+The name suffix `-free` and the `opencode models` listing do not
+prove a zero price. `harness/go-pricing.json` does not list the
+model. The owner read the Go quota before and after the two live
+prompts: monthly 90.79623% before and 90.79700% after; 5-hour
+0.0000433% before and 0.00387% after. The cost was very small,
+but not proven zero. The quota numbers are in the ledger
+(`evidence/prompt-ledger.md`).
 
 ## 7. NFR-4 prompt count
 
@@ -258,9 +248,12 @@ Stays unproven (or proven elsewhere):
 
 ## Files referenced
 
-- /tmp/oe-p1-live1-stdout.json (631 bytes, 2 events, unredacted)
-- /tmp/oe-p1-live1-redacted.json (500 bytes, 2 events, redacted)
-- /tmp/oe-p1-access-only.json (580 bytes, refresh="inert")
-- /run/user/1000/oe-p1/before-prompt.log (host check, before prompt 1)
-- /run/user/1000/oe-p1/host-check.log (host check, after prompt 1)
-- /run/user/1000/oe-p1/host-check2.log (host check, after prompt 2)
+The earlier session cited `/tmp/oe-p1-live1-stdout.json`,
+`/tmp/oe-p1-live1-redacted.json`,
+`/tmp/oe-p1-access-only.json`, and
+`/run/user/1000/oe-p1/*.log`. Those files are deleted
+(evidence-fix turn). The repo evidence for this task is:
+
+- evidence/live1-event-stream.redacted.json (the redacted stream)
+- evidence/prompt-ledger.md (the ledger)
+- evidence/task-1.3-1.4-credential.txt (the credential shape)
