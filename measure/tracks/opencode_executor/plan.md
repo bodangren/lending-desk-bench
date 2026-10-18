@@ -226,7 +226,7 @@ its plan evidence `60f5762`.
 Failing meta tests for the contract in `design.md`. No network, no real
 model, no real credential (NFR-3).
 
-- [~] 2.1 Fake `opencode` fixture: replace the fake `pi` in
+- [x] 2.1 [dcca6ec] Fake `opencode` fixture: replace the fake `pi` in
   `tests/meta/schema4-fixtures.ts` with a fake `opencode`. It prints a 2.x
   version. It captures its arguments, its environment names, and a stdin
   hash. It emits the fixed event stream and writes the fixed session
@@ -238,7 +238,7 @@ model, no real credential (NFR-3).
     Failure: `the runner invokes the fake OpenCode and creates its capture file`.
     The runner still invokes Pi. The fake fixture test passes. All 170 existing tests pass.
     `legacy-pi-fixtures.ts` preserves the existing schema-6 assertions during Red.
-- [ ] 2.2 Executor and isolation contract: extend
+- [~] 2.2 Executor and isolation contract: extend
   `run-executor-provenance.test.ts`, `runtime-isolation.test.ts`,
   `runtime-isolation-completion.test.ts`, and `execution-identity.test.ts`.
   They prove the FR-1 command line, no Pi, and no `OPENCODE_API_KEY`. They
