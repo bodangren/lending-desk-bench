@@ -53,7 +53,9 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   json --auto --model opencode-go/<id>`. Record the exit codes for a provider
   error and for a timeout. Record the stdin behavior and the JSON event types.
   Confirm that `--auto` leaves no permission prompt. Use one tiny prompt with
-  a free Go model in a throwaway container (spec FR-1). [52beaa3](evidence/task-1.1-headless-run.txt)
+  a free Go model in a throwaway container (spec FR-1). [9a638b6](evidence/task-1.1-headless-run.txt)
+  (evidence-fix turn: hash values removed, free-model claim corrected,
+  addendum reworded)
 - [x] 1.2 Cron self-check root cause: find the call that leaves the `tsx`
   output files (`score.json`, `candidate-contract.json`) empty under the
   crontab PATH. The 2026-10-18 reproduction failed 3 tests
@@ -64,7 +66,10 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   selected. Import it with `opencode auth import --standalone` from stdin into
   an empty isolated store, with temporary XDG dirs and no model call. Record
   the store location. Confirm that the import leaves no other copy (spec
-  FR-3). [cef5b13](evidence/task-1.3-1.4-credential.txt) (v2.0.32 --standalone limitation: see evidence)
+  FR-3). [9a638b6](evidence/task-1.3-1.4-credential.txt) (v2.0.32
+  --standalone limitation: see evidence; evidence-fix turn: hash
+  values removed, addendum reworded — a container refresh stays
+  unproven)
 - [x] 1.4 Refresh and rotation: record the access-token lifetime from
   `expires`. Find a host refresh trigger that sends no prompt, if one exists.
   Confirm the import result when the refresh field is absent or inert.
@@ -90,7 +95,8 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   reasoning, cache read, and cache write. Record whether they are per step or
   cumulative. Confirm whether subagent usage reaches the parent event stream.
   Save one redacted event stream from task 1.1 in the track directory (spec
-  FR-7). [52beaa3](evidence/task-1.8-token-usage.txt)
+  FR-7). [9a638b6](evidence/task-1.8-token-usage.txt) (evidence-fix turn: O3
+  becomes deny subagent; final-step usage finding; offline usage-source probe)
 - [~] 1.9 Design note: write `design.md`. It gives the confirmed command line,
   environment, mounts, config, and credential flow. It gives the field lists
   of identity schema 2 and provenance schema 7. It gives the usage mapping and
