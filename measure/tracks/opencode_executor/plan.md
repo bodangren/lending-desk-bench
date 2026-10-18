@@ -90,7 +90,9 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   pinned Node image. Record the helper downloads, such as ripgrep, language
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
-  Select one helper supply method (spec FR-4). [ed98b8e](evidence/task-1.7-container-runtime.txt)
+  Select one helper supply method (spec FR-4). [15c1805](evidence/task-1.7-container-runtime.txt)
+  (design turn: host rg fails in the image; the supply source becomes
+  the static musl build, see evidence §9)
 - [x] 1.8 Token usage format: record the event fields for input, output,
   reasoning, cache read, and cache write. Record whether they are per step or
   cumulative. Confirm whether subagent usage reaches the parent event stream.
