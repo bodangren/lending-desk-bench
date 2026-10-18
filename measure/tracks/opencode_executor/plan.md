@@ -271,6 +271,18 @@ model, no real credential (NFR-3).
   that does not cover the run window stops the run before the agent. A
   secret-scan hit redacts the output and makes the run invalid (spec FR-3,
   NFR-1).
+  - Partial Red coverage: `harness/tests/meta/opencode-credential.test.ts` checks the stdin hash against the expected access-only payload.
+    The fake Podman currently receives empty stdin. The remaining credential cases still need tests.
+  - Red command: `cd harness && npm run test:meta:logic`, with an OpenCode tripwire first on `PATH`.
+    Start: 2026-10-18T15:59:59+08:00. End: 2026-10-18T16:01:20+08:00. Exit: 1.
+    `Test Files  3 failed | 26 passed (29)`; `Tests  22 failed | 172 passed (194)`.
+    New failure: `streams only the selected Console access payload to Podman stdin, with an inert refresh`.
+    The 21 failures from tasks 2.1 and 2.2 remain. All 170 existing tests pass.
+    The tripwire has no `HIT` file.
+  - Adversarial command: `cd harness && BENCH_TRACK=change npm run test:meta:logic`, with the same tripwire.
+    Start: 2026-10-18T16:01:20+08:00. End: 2026-10-18T16:02:42+08:00. Exit: 1.
+    `Test Files  3 failed | 26 passed (29)`; `Tests  22 failed | 172 passed (194)`.
+    The JSON reports contain the same 22 failing names. All 170 existing tests pass. The tripwire stays unhit.
 - [ ] 2.4 Provenance and attestation: prove the schema 7 fields. Prove that
   attestation reads only the recorded executor. A fake upgrade at the
   recorded path keeps an earlier run attested and not stale. A changed skill
