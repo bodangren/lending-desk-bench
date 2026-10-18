@@ -203,6 +203,24 @@ evidence `cb3c54e`, on top of the strategy amendment 4 commit
   `measure/runs/opencode_executor` (2026-10-18T15:13:15+08:00,
   after the gate): `exact-scan values=6 hits=0`.
 
+### Phase 1 gate evidence (jr-green, review-b-remediation turn, 2026-10-18)
+
+Run after the RB-13 and M1–M9 remediation commit `0a35187` and
+its plan evidence `60f5762`.
+
+- P1 composite, run with
+  `PHASE_BASE_SHA=d27d414cfeb8474ca89f8ef0722d16f1edb128e1` from
+  the repo root:
+  - start: 2026-10-18T15:29:42+08:00; end: 2026-10-18T15:30:40+08:00.
+  - exit code: 0 (the commit-range check, the SECRET_SCAN, and
+    the meta suite all passed).
+  - labeled Vitest lines: `Test Files  26 passed (26)`,
+    `Tests  170 passed (170)`.
+- EXACT scan, one credential frame over
+  `measure/tracks/opencode_executor` and
+  `measure/runs/opencode_executor` (2026-10-18T15:31:03+08:00,
+  after the gate): `exact-scan values=6 hits=0`.
+
 ## Phase 2: Test
 
 Failing meta tests for the contract in `design.md`. No network, no real
