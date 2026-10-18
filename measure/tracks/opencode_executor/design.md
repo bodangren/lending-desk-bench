@@ -134,7 +134,9 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
   the generated per-run config. The config key shape (one shape
   for both arms, probe-confirmed):
   `$schema`, `model` (the string `opencode-go/<id>`), `skills`
-  (Arm B only: `{paths: ["/opt/skills"]}`), and `permissions`
+  (Arm B only: `{paths: ["/opt/skills"]}`), `instructions`
+  (Arm B only: `["/workspace/AGENTS.md"]`, the R4 mechanism of
+  this note), and `permissions`
   (the rule list below). `debug config` normalizes the model
   string to `{providerID, model}` and `skills.paths` to a flat
   array; both forms load
@@ -149,8 +151,14 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
   preflight checks follow: the private config directory holds
   no config document, and the generated config parses as JSON
   (an invalid config loads silently, §5 of the same file).
-- Content: no secret, no MCP server, no plugin, no
-  `instructions`. Self-update is off through
+- Content: no secret, no MCP server, no plugin. Arm A has no
+  `instructions` entry. Arm B adds
+  `instructions: ["/workspace/AGENTS.md"]` so the fixture
+  `AGENTS.md` loads while
+  `OPENCODE_DISABLE_PROJECT_CONFIG=1` stays set in both arms
+  (review A R4;
+  evidence/probe-agents-md-and-skill-activation.txt §1, §2).
+  Self-update is off through
   `OPENCODE_DISABLE_AUTOUPDATE=1`. Permission rules, both arms:
   deny `question` (O2-side), deny `websearch` (O2), deny
   `subagent` (O3), deny `read` and `edit` on the isolated store
@@ -165,14 +173,43 @@ dotfile tree, `harness/`, or sibling runs (spec FR-4).
   Arm B with the six deny rules, the five allow rules, and the
   skills paths
   (evidence/probe-config-source-and-arm-configs.txt §2).
-- Static evidence that task 4.2 must prove (no no-prompt probe
-  exists): the runtime discovery of the five skill folders
-  (`GET /api/skill` lists nothing in any no-prompt form tried,
-  §6 of the same file) and the enforcement effect of every rule
-  (the resolved rules load; `debug agents` shows agent
-  defaults only). One fresh container per config is required:
+- Arm contract probe (no prompt, offline, fresh container per
+  arm; review A R1, R4): the server API proves the arm contract.
+  `opencode serve` needs authentication; the probe sets
+  `OPENCODE_SERVER_PASSWORD` to a synthetic value and uses HTTP
+  Basic. The working no-prompt skill probe is
+  `POST /api/experimental/session/{id}/skill` with
+  `resume: null`: Arm B returns 204 for exactly the five ids and
+  404 for an unmounted id; Arm A returns 404 for all five.
+  `GET /api/skill` never lists the mounted skills, so it is not
+  the probe. The R4 watcher probe shows the Arm B `instructions`
+  entry loads with the flag set
+  (evidence/probe-agents-md-and-skill-activation.txt §1–§3).
+  One fresh container per config is still required:
   a second invocation in one container reuses the first
-  config through the background service (§4 of the same file).
+  config through the background service
+  (evidence/probe-config-source-and-arm-configs.txt §4).
+- Resolved permission rules: `GET /api/agent` shows the agent
+  DEFAULT permissions only (the `build` agent shows
+  `question: allow` even with the config deny). The resolved
+  config rules are visible only through `opencode debug config`
+  and `GET /api/config`
+  (evidence/probe-agents-md-and-skill-activation.txt §4).
+- Open contract risk (review A R1, owner decision pending): the
+  activation endpoint returns 204 for the built-in skills
+  `opencode` and `report` in BOTH arms, even with
+  `deny skill *`, and in Arm A the activation appended the full
+  built-in skill content to the session. The permission filter
+  that removes built-ins from the model-visible skill list
+  (`SkillInstructions.load`, the `b9` filter) is static evidence
+  only. This puts the Arm A "no skills" contract at risk at
+  tool-call time. No workaround is chosen here: a workaround
+  would change the arm contract, and the owner decides that.
+  Task 4.3 must test the enforcement at tool-call time on the
+  live smoke runs (Arm A: no `skill` part in the export; Arm B:
+  a `skill` part for one of the five ids and for no built-in
+  id). The strategy role amends task 4.3
+  (evidence/probe-agents-md-and-skill-activation.txt §3, §4).
 - Removed operator interface (spec FR-3, FR-7, FR-10):
   `BENCH_PI_ROOT`, `BENCH_PROVIDER_ENV`, `OPENCODE_API_KEY`, the
   `.env.local` key, and `--models-json` are gone. The container
@@ -363,11 +400,18 @@ precedence:
    `opencode session export <sessionID>` inside the container
    after `opencode run` returns, and writes the JSON to
    `artifacts/executor/session-export.json` (plain; the parser
-   also accepts the `.gz` form). The sessionID rule: the entry
-   script reads the newest row of
-   `opencode session list` in the isolated store. A fresh
-   container holds exactly one session, so the newest row is the
-   run's session (evidence/task-1.8-token-usage.txt §5.2, §5.3).
+   also accepts the `.gz` form). The sessionID rule (review A
+   NR3): the entry script reads
+   `opencode session list` in the isolated store and selects the
+   session only when the list holds exactly one row. A fresh
+   container holds exactly one session
+   (evidence/task-1.8-token-usage.txt §5.2, §5.3). If the list
+   holds two or more rows (for example a subagent session, which
+   is possible only when the O3 `subagent` deny has no effect),
+   the newest row can be the subagent session and the export
+   would silently drop the parent totals, so the run is invalid
+   (fail closed, NFR-6). The rule never picks the newest row of
+   a multi-row list.
 2. **Cross-check only: the event stream.** `artifacts/session.json`
    can lack the final step's usage (§4.2 of this note), so it
    never feeds the `Usage` record. Task 4.3 cross-checks the
@@ -376,13 +420,19 @@ precedence:
 
 Order against the agent timeout: `timeout` wraps only the
 `opencode run` command. The export step runs after the wrapped
-command returns, also after a `timeout` kill, because the
-session row exists from the start (the offline probe exported a
-session whose run had failed with `provider.no-route`,
-evidence/task-1.8-token-usage.txt §5). Missing or empty export
-result: the run is invalid. The parser returns zero usage only
-for an empty `info.tokens`, and `run.sh` fails the run when the
-export artifact is missing or unreadable (fail closed, NFR-6).
+command returns. It is expected to run also after a `timeout`
+kill, because the session row exists from the start. This is an
+inference from a run that failed with `provider.no-route`, not
+from a kill (the offline probe exported a session whose run had
+failed, evidence/task-1.8-token-usage.txt §5); the kill case
+stays unproven until the Phase 2 fake covers it (review A NR6).
+"Missing or empty export" is defined as: the artifact file is
+absent, has 0 bytes, is not valid JSON (for the `.gz` form: not
+valid gzip, or the decompressed text is not valid JSON), or has
+no `info.tokens` object. Each case makes the run invalid (fail
+closed, NFR-6). The parser returns zero usage only when
+`info.tokens` exists and every field is 0 or absent; a
+zero-usage run is not invalid by this rule alone.
 
 The export artifact holds `messages` with assistant text and
 tool output. It stays inside the run directory, which is never
@@ -455,7 +505,7 @@ regrades. FR-7 adds the OpenCode export parser next to it.
   - Upstream check: the release publishes
     `ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz.sha256`;
     its value equals the computed tarball hash (verified,
-    2026-10-18).
+    2026-10-18; evidence/ripgrep-tarball-source.txt §2).
   - Extracted binary `rg` SHA-256:
     `ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2`
     (`ripgrep 15.1.0 (rev af60c2de9d)`, static-pie, verified to
@@ -482,14 +532,23 @@ regrades. FR-7 adds the OpenCode export parser next to it.
   `weekly.sh`. It makes `node`, `npm`, and `opencode` resolve to
   the operator nvm toolchain, not to the snap dispatcher
   (evidence/task-1.2-cron-self-check.txt §4, §5, §6).
-- Node discovery rule for `toolchain.sh`: the script resolves
-  Node from `NVM_DIR` (the nvm root) plus the nvm `default`
-  alias, and prepends that `bin` directory to `PATH`. It never
-  hard-codes a version path such as
+- Node discovery rule for `toolchain.sh` (review A NR2): when
+  `NVM_DIR` is unset (REHEARSAL runs under `env -i`, which
+  removes it), the script uses the default `${HOME}/.nvm`. The
+  script reads the nvm `default` alias at
+  `$NVM_DIR/alias/default`. A full-version alias value (for
+  example `v24.19.0`) selects `$NVM_DIR/versions/node/<value>`.
+  A partial alias value (for example `24`, the current host
+  value, with `v24.19.0` the only installed version) selects the
+  newest installed directory under `$NVM_DIR/versions/node` whose
+  name matches `v<value>.*`. No match stops the script (fail
+  closed). The script then prepends that `bin` directory to
+  `PATH`. It never hard-codes a version path such as
   `versions/node/v24.19.0/bin`, because a version path breaks
   after a Node upgrade. A test can point `NVM_DIR` at a synthetic
   tree (a `alias/default` file plus a `versions/node/<v>/bin`
-  directory) and check the resolved `node`. `npm` resolves from
+  directory) and check the resolved `node`, for both a
+  full-version and a partial alias value. `npm` resolves from
   the same `bin` directory. `opencode` resolves from the PATH
   that remains after the prepend (the operator nvm global bin).
 - REHEARSAL command (test-strategy.md section 2, unchanged; the
@@ -551,6 +610,10 @@ replaces `evidence/prompt-ledger.md`.
 | 4 | 2026-10-18 11:32 | opencode-go/beam-free | slirp4netns | **yes** | `Reply with the word OK.` | 23 | 0 | evidence/live1-event-stream.redacted.json; evidence/task-1.1-headless-run.txt §3 |
 | 5 | 2026-10-18 11:33 | opencode-go/beam-free | slirp4netns | **yes** | `Use the task tool once to run a subagent that replies OK. Then reply DONE.` | 74 | 0 | evidence/live2-event-stream.redacted.json; evidence/task-1.8-token-usage.txt §1.2, §3 |
 | 6 | 2026-10-18 11:47 | opencode-go/beam-free | none | no | `Reply with the word OK.` | 23 | 1 | evidence/task-1.8-token-usage.txt §5 (offline usage-source probe) |
+| 7 | 2026-10-18 14:42 | opencode-go/nonexistent-model | none | no | `hi` | 2 | 1 | evidence/probe-agents-md-and-skill-activation.txt §1 (R4 exploration; the unreadable-AGENTS.md run) |
+| 8 | 2026-10-18 14:47 | opencode-go/nonexistent-model | none | no | `hi` | 2 | 1 | evidence/probe-agents-md-and-skill-activation.txt §1 row A (flag set) |
+| 9 | 2026-10-18 14:48 | opencode-go/nonexistent-model | none | no | `hi` | 2 | 1 | evidence/probe-agents-md-and-skill-activation.txt §1 row B (no flag) |
+| 10 | 2026-10-18 14:49 | opencode-go/nonexistent-model | none | no | `hi` | 2 | 1 | evidence/probe-agents-md-and-skill-activation.txt §1 row D (flag + `instructions` entry) |
 
 Live row count: **2** (rows 4 and 5). Within the NFR-4 budget of 2.
 
@@ -613,10 +676,32 @@ Phase 1 confirmed these differences from `spec.md`:
     argument reads the container stdin and prints
     "Imported 1 credential"
     (evidence/probe-stdin-import-and-models-fetch.txt §2).
+12. FR-4 Arm B instruction loading: with
+    `OPENCODE_DISABLE_PROJECT_CONFIG=1` set in both arms, project
+    `AGENTS.md` discovery is off, so the Arm B generated config
+    adds `instructions: ["/workspace/AGENTS.md"]`. The fixture
+    `AGENTS.md` stays in the candidate tree; the workspace mount
+    carries it. Proven by the watcher probe
+    (evidence/probe-agents-md-and-skill-activation.txt §1, §2).
+    This corrects the FR-4 config-content line "no
+    `instructions`" and the arm-difference lines of the spec.
+13. FR-4 arm difference: the two configs differ in the skill
+    rules, the Arm B `skills.paths` entry, and the Arm B
+    `instructions` entry. The arms differ in the config, the
+    skill mounts, and the candidate `AGENTS.md` presence. This
+    corrects the spec sentence "The two configs differ only in
+    the skill rules" (review A NR5).
+14. FR-4 skill probe: `GET /api/skill` does not list the mounted
+    skills in any form tried. The no-prompt skill probe for task
+    4.2 is `POST /api/experimental/session/{id}/skill` with
+    `resume: null` (review A R1;
+    evidence/probe-agents-md-and-skill-activation.txt §3).
 
 The corrected `spec.md` carries these changes. Unproven items that
 stay open: the container refresh path (task 4.3 or later), the
 timeout-kill exit code (Phase 2 fake), the non-zero export
-totals (task 4.3), and the runtime skill discovery and rule
-enforcement effect (task 4.2; no no-prompt probe lists skills,
-evidence/probe-config-source-and-arm-configs.txt §6).
+totals (task 4.3), the tool-call-time enforcement of the deny
+rules and the model-visible absence of the built-in skills in
+Arm A (task 4.3; the open contract risk of section 1.5), and the
+`.measure-install` drift of the host `measure` skill folder
+(spec line 144; Phase 4 by agreement, review A NR7).

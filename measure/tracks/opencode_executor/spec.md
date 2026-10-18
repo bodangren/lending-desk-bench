@@ -288,7 +288,9 @@ Phase 1 must confirm every item that this list marks "to confirm".
   (Phase 1 probe, 2026-10-18).
 - Config content:
   - self-updates disabled;
-  - no MCP servers, no added plugins, no `instructions`, no `references`;
+  - no MCP servers, no added plugins, no `references`;
+    no `instructions` in Arm A — Arm B adds one `instructions`
+    entry for the fixture `AGENTS.md` (see Arm B);
   - the arm permission rules below and the `deny` rules from FR-1;
   - `deny` rules for `read` and `edit` on the isolated store path, as an
     extra barrier (the shell tool can still read it; see NFR-1).
@@ -301,7 +303,11 @@ Phase 1 must confirm every item that this list marks "to confirm".
   move-out behavior stays). The container mounts no skill. The config has a
   `skill` rule `deny *`, which also removes built-in skills. The run has no
   context files.
-- **Arm B (Skills):** the fixture `AGENTS.md` stays. The container mounts
+- **Arm B (Skills):** the fixture `AGENTS.md` stays. The Arm B
+  config adds `instructions: ["/workspace/AGENTS.md"]` so the
+  fixture `AGENTS.md` loads while
+  `OPENCODE_DISABLE_PROJECT_CONFIG=1` stays set in both arms
+  (Phase 1 probe, 2026-10-18). The container mounts
   exactly the five skills `measure`, `next-best-practices`,
   `vercel-react-best-practices`, `vercel-composition-patterns`, and
   `build-graph`, read-only, in a path that OpenCode discovers. The config has
@@ -309,9 +315,11 @@ Phase 1 must confirm every item that this list marks "to confirm".
 - Arm B mounts a per-run skill snapshot. The harness copies the five folders
   from `BENCH_SKILL_ROOT` to `artifacts/executor/skills/<id>/` before the
   agent starts. The host folders are never mounted.
-- Both arms use the same image, binary, environment, and entry script. The
-  two configs differ only in the skill rules. The arms differ only in the
-  skill rules, the skill mounts, and `AGENTS.md`.
+- Both arms use the same image, binary, environment, and entry
+  script. The two configs differ only in the skill rules, the Arm
+  B `skills.paths` entry, and the Arm B `instructions` entry. The
+  arms differ only in the config, the skill mounts, and the
+  presence of the candidate `AGENTS.md`.
 - The current hardening stays: `--read-only`, `--cap-drop=ALL`,
   `no-new-privileges`, `--userns=keep-id`, `slirp4netns` with
   `allow_host_loopback=false`, `--pull=never`, and the digest-pinned image.

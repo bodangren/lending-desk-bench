@@ -182,8 +182,11 @@ model, no real credential (NFR-3).
   prove private HOME and XDG dirs, no host mounts, and the config-source
   isolation of spec FR-4: `OPENCODE_CONFIG` adds the generated config as a
   document, and the isolation is the empty private XDG config directory plus
-  `OPENCODE_DISABLE_PROJECT_CONFIG=1`. They prove Arm A (no `AGENTS.md`, no skills,
-  `deny *`) and Arm B (fixture `AGENTS.md`, five snapshot skills). They prove
+  `OPENCODE_DISABLE_PROJECT_CONFIG=1`. They prove Arm A (no `AGENTS.md`, no
+  skills, the six deny rules of `design.md` section 1.5, `skill *` among
+  them) and Arm B (fixture `AGENTS.md` through the `instructions` entry,
+  five snapshot skills, the five allow rules, and the `skills.paths`
+  entry). They prove
   that the arms differ only in that material (spec FR-1, FR-4).
 - [ ] 2.3 Credential tests: only the Console connection reaches the
   container, without the refresh token. Delivery uses stdin. No token is in a

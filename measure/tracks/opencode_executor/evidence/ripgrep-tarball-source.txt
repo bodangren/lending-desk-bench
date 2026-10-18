@@ -1,0 +1,44 @@
+# Evidence: ripgrep 15.1.0 tarball source check (review A NR1)
+
+Date: 2026-10-18, 14:55 (+08:00). No prompt, no credential, one
+network read of the upstream release checksum file.
+
+Design section 5 names the download command, the tarball SHA-256,
+and the upstream `.sha256` check as "verified, 2026-10-18". This
+file holds that verification record.
+
+## 1. Download command (from design.md section 5)
+
+```
+curl -fsSL -o ripgrep.tar.gz \
+  https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz
+```
+
+## 2. Upstream checksum check
+
+Command run for this record:
+
+```
+curl -fsSL https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz.sha256
+```
+
+Output (verbatim, exit 0):
+
+```
+1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599  ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz
+```
+
+The upstream value equals the tarball SHA-256 that design.md
+section 5 records
+(`1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599`).
+The operator setup downloads the tarball, computes its SHA-256,
+and compares it against this upstream value before extraction.
+
+## 3. Extracted binary
+
+The extracted `rg` binary SHA-256 is
+`ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2`
+(`ripgrep 15.1.0 (rev af60c2de9d)`, static-pie; verified to exec
+in the pinned image, evidence/task-1.7-container-runtime.txt §9).
+The preflight verifies this binary hash before each batch
+(design.md section 5).
