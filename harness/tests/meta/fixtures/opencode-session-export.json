@@ -1,0 +1,18 @@
+{
+  "info": {
+    "id": "session CANARY; one",
+    "projectID": "project-canary",
+    "model": { "id": "beam-free", "providerID": "opencode-go", "variant": "default" },
+    "cost": 0.123457,
+    "tokens": { "input": 101, "output": 211, "reasoning": 37, "cache": { "read": 5003, "write": 73 } },
+    "outcome": "completed",
+    "time": { "created": 1792295256131, "updated": 1792295256540, "idle": 1792295256590 },
+    "location": { "directory": "/workspace" }
+  },
+  "messages": [
+    { "id": "user-canary", "type": "user", "text": "CANARY-ACCESS-1" },
+    { "id": "assistant-canary", "type": "assistant", "text": "CANARY-REFRESH-1 org_CANARY1", "parts": [
+      { "type": "tool", "tool": "bash", "state": { "status": "completed", "output": "CANARY-ACCESS-1" } }
+    ] }
+  ]
+}

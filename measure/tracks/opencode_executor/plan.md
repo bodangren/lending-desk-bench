@@ -226,12 +226,18 @@ its plan evidence `60f5762`.
 Failing meta tests for the contract in `design.md`. No network, no real
 model, no real credential (NFR-3).
 
-- [ ] 2.1 Fake `opencode` fixture: replace the fake `pi` in
+- [~] 2.1 Fake `opencode` fixture: replace the fake `pi` in
   `tests/meta/schema4-fixtures.ts` with a fake `opencode`. It prints a 2.x
   version. It captures its arguments, its environment names, and a stdin
   hash. It emits the fixed event stream and writes the fixed session
   export of `design.md` section 4, so the usage parser reads the export,
   not the stream (spec FR-1, FR-7).
+  - Red command: `cd harness && npm run test:meta:logic`.
+    Start: 2026-10-18T15:52:51+08:00. End: 2026-10-18T15:53:55+08:00. Exit: 1.
+    `Test Files  1 failed | 26 passed (27)`; `Tests  1 failed | 171 passed (172)`.
+    Failure: `the runner invokes the fake OpenCode and creates its capture file`.
+    The runner still invokes Pi. The fake fixture test passes. All 170 existing tests pass.
+    `legacy-pi-fixtures.ts` preserves the existing schema-6 assertions during Red.
 - [ ] 2.2 Executor and isolation contract: extend
   `run-executor-provenance.test.ts`, `runtime-isolation.test.ts`,
   `runtime-isolation-completion.test.ts`, and `execution-identity.test.ts`.

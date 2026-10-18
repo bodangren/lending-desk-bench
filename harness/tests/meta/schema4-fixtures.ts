@@ -1,133 +1,41 @@
 import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { assessCandidateContract, type BenchTrack } from "../../candidate-contract";
-import { ARM_B_SKILLS, executionIdentityFingerprint, resolveExecutionIdentity } from "../../execution-identity";
-import { currentHashes } from "../../provenance";
-import { FIXTURE_REVISION } from "../../revisions";
 
-type Arm = "a" | "b";
-type Mode = "agent" | "overlay";
-const IMAGE = "docker.io/library/node@sha256:" + "a".repeat(64);
-const COHORT_ID = "executor-cohort-schema4-test";
+// Existing assertions still verify legacy Pi records during Red.
+export { createCurrentAgentRuntime, currentSchema4Provenance, type CurrentAgentRuntime } from "./legacy-pi-fixtures";
 
-export type CurrentAgentRuntime = {
-  imageReference: string;
-  piPath: string;
-  skillRoots: Partial<Record<(typeof ARM_B_SKILLS)[number], string>>;
-  runtimeFlags: string[];
-  cliFlags: string[];
-  environment: NodeJS.ProcessEnv;
-};
+export const OPENCODE_FIXTURES = resolve(import.meta.dirname, "fixtures");
+export const TEST_MODEL = "beam-free";
+export const TEST_SESSION = "session CANARY; one";
 
-/** Creates the inspectable executor inputs used by a schema-4 agent fixture. */
-export function createCurrentAgentRuntime({ root, arm, model }: { root: string; arm: Arm; model: string }): CurrentAgentRuntime {
-  const executorRoot = resolve(root, "live-executor");
-  const piRoot = resolve(executorRoot, "pi");
-  const piPath = resolve(piRoot, "bin", "pi");
-  mkdirSync(resolve(piRoot, "bin"), { recursive: true });
-  writeFileSync(piPath, "#!/usr/bin/env sh\necho schema4-test-pi 1.0.0\n");
-  chmodSync(piPath, 0o755);
-
-  const skillRoot = resolve(executorRoot, "skills");
-  const skillRoots = Object.fromEntries((arm === "b" ? ARM_B_SKILLS : []).map((skill) => {
-    const skillPath = resolve(skillRoot, skill);
-    mkdirSync(skillPath, { recursive: true });
-    writeFileSync(resolve(skillPath, "SKILL.md"), "# " + skill + "\n");
-    return [skill, skillPath];
-  })) as CurrentAgentRuntime["skillRoots"];
-  const runtimeFlags = ["--read-only", "--network=slirp4netns:allow_host_loopback=false"];
-  const cliFlags = ["--provider", "local", "--model", model, "--thinking", "xhigh"];
-  return {
-    imageReference: IMAGE,
-    piPath,
-    skillRoots,
-    runtimeFlags,
-    cliFlags,
-    environment: {
-      BENCH_AGENT_IMAGE: IMAGE,
-      BENCH_PI_ROOT: piRoot,
-      BENCH_SKILL_ROOT: skillRoot,
-      BENCH_EXECUTOR_RUNTIME_FLAGS: JSON.stringify(runtimeFlags),
-      BENCH_EXECUTOR_CLI_FLAGS: JSON.stringify(cliFlags),
+/** Creates an offline OpenCode executable with an append-only call record. */
+export function createFakeOpencode(root: string) {
+  const bin = resolve(root, "bin");
+  mkdirSync(bin, { recursive: true });
+  const path = resolve(bin, "opencode");
+  const capture = resolve(root, "opencode-calls.jsonl");
+  const auth = [{
+    id: "console-canary-1", integrationID: "opencode", label: "Canary", active: true,
+    value: {
+      type: "oauth", methodID: "device", access: "CANARY-ACCESS-1", refresh: "CANARY-REFRESH-1",
+      expires: 4102444800000, metadata: { orgID: "org_CANARY1", server: "https://opencode.ai/console" },
     },
-  };
-}
-
-export function currentSchema4Provenance({
-  fixture,
-  candidate,
-  runId,
-  model,
-  arm,
-  mode = "agent",
-  live,
-  track = "build",
-}: {
-  fixture: string;
-  candidate: string;
-  runId: string;
-  model: string;
-  arm: Arm;
-  mode?: Mode;
-  live?: CurrentAgentRuntime;
-  track?: BenchTrack;
-}) {
-  const contract = assessCandidateContract(fixture, candidate, { track });
-  if (!contract.gradeable) throw new Error("fixture candidate contract failed: " + contract.reasons.join("; "));
-  const hashes = currentHashes();
-  const executor = mode === "overlay"
-    ? resolveExecutionIdentity({ runId, arm, mode })
-    : (() => {
-        if (!live) throw new Error("current schema-4 agent provenance requires live executor inputs");
-        return resolveExecutionIdentity({
-          runId,
-          arm,
-          imageReference: live.imageReference,
-          piPath: live.piPath,
-          skillRoots: live.skillRoots,
-          runtimeFlags: live.runtimeFlags,
-          cliFlags: live.cliFlags,
-        });
-      })();
-  const executorCohort = "kind" in executor
-    ? { schema: 1, id: COHORT_ID, kind: "not-invoked", arms: {} }
-    : {
-        schema: 1,
-        id: COHORT_ID,
-        image_reference: executor.image_reference,
-        image_identity: executor.image_identity,
-        pi: executor.pi,
-        runtime_flags: executor.runtime_flags,
-        cli_flags: executor.cli_flags,
-        arms: { [arm]: { skills: executor.skills, skill_tree_sha256: executor.skill_tree_sha256 } },
-      };
-  return {
-    schema: 6,
-    track: "build",
-    fixture_revision: FIXTURE_REVISION,
-    bug_set_id: null,
-    bug_set_sha256: null,
-    mutant_set_id: null,
-    mutant_set_sha256: null,
-    change_set_id: null,
-    change_set_sha256: null,
-    registry_sha256: null,
-    variant_sha256: null,
-    contract_violation_sha256: null,
-    graft: null,
-    run_id: runId,
-    arm,
-    model,
-    mode,
-    candidate_sha256: contract.candidate_sha256,
-    fixture_protected_sha256: contract.fixture_protected_sha256,
-    runner_sha256: hashes.runner_sha256,
-    suite_sha256: hashes.suite_sha256,
-    agent_isolated: mode === "agent",
-    candidate_contract_schema: 1,
-    cohort_id: executorCohort.id,
-    executor_cohort: executorCohort,
-    executor,
-    execution_identity_sha256: executionIdentityFingerprint(executor),
-  };
+  }];
+  writeFileSync(path, `#!${process.execPath}
+const fs = require("node:fs"), crypto = require("node:crypto");
+const argv = process.argv.slice(2);
+const stdin = fs.readFileSync(0);
+fs.appendFileSync(${JSON.stringify(capture)}, JSON.stringify({argv, env: Object.entries(process.env).map(([k,v]) => k+"="+v).sort(), stdin_sha256: crypto.createHash("sha256").update(stdin).digest("hex")})+"\\n");
+if (argv[0] === "--version") console.log("opencode v2.0.32");
+else if (argv[0] === "models") console.log("opencode-go/${TEST_MODEL}");
+else if (argv[0] === "auth" && argv[1] === "export") console.log(JSON.stringify(${JSON.stringify(auth)}));
+else if (argv[0] === "auth" && argv[1] === "list") console.log("opencode Console oauth active");
+else if (argv[0] === "auth" && argv[1] === "import") console.log("Imported 1 credential");
+else if (argv[0] === "run") process.stdout.write(fs.readFileSync(${JSON.stringify(resolve(OPENCODE_FIXTURES, "opencode-events.jsonl"))}));
+else if (argv[0] === "session" && argv[1] === "list") console.log(JSON.stringify([{id:${JSON.stringify(TEST_SESSION)}}]));
+else if (argv[0] === "session" && argv[1] === "export") process.stdout.write(fs.readFileSync(${JSON.stringify(resolve(OPENCODE_FIXTURES, "opencode-session-export.json"))}));
+else process.exitCode = 96;
+`);
+  chmodSync(path, 0o755);
+  return { path, capture, auth };
 }
