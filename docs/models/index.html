@@ -41,9 +41,14 @@
     const main = document.getElementById("main");
     try {
       const data = await loadData();
+      const rankedModels = data.models || [];
+      const historyModels = data.history?.models || [];
+      const bestArm = (model) => [model.no_skills, model.skills]
+        .filter(Boolean)
+        .reduce((best, row) => !best || (row.score?.total ?? -Infinity) > (best.score?.total ?? -Infinity) ? row : best, null);
       main.innerHTML = `
         <div class="stack">
-          ${data.models.map((m, i) => `
+          ${rankedModels.map((m, i) => `
             <a class="card" href="./${m.id}.html" style="display:block; color:inherit; text-decoration:none">
               <div style="display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; flex-wrap:wrap">
                 <div>
@@ -62,6 +67,35 @@
               </div>
             </a>
           `).join("")}
+          ${historyModels.length ? `
+            <section class="card">
+              <h2>${escapeHtml(data.history?.label || "History")}</h2>
+              <p class="section-lede">${escapeHtml(data.history?.note || "")}</p>
+              <div class="stack mt-1">
+                ${historyModels.map((m, i) => {
+                  const row = bestArm(m);
+                  return `
+                    <a class="card" href="./${m.id}.html" style="display:block; color:inherit; text-decoration:none">
+                      <div style="display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; flex-wrap:wrap">
+                        <div>
+                          <h2 style="margin:0; display:flex; align-items:center; gap:0.5rem">
+                            <span class="swatch" style="background:${modelColor(rankedModels.length + i)};width:12px;height:12px;border-radius:3px;display:inline-block"></span>
+                            ${escapeHtml(m.name)}
+                          </h2>
+                          <p class="subline" style="margin:0.35rem 0 0">${escapeHtml(m.provider_model)}</p>
+                        </div>
+                        <div style="text-align:right">
+                          <div style="font-size:2rem; font-weight:700; letter-spacing:-0.03em">${row?.score?.total == null ? "—" : Number(row.score.total).toFixed(1)}</div>
+                          <div class="muted" style="font-size:0.85rem">${row?.passes ? `${row.passes.passed}/${row.passes.total}` : "—"} passes</div>
+                        </div>
+                      </div>
+                    </a>
+                  `;
+                }).join("")}
+              </div>
+              <p class="muted" style="margin:0.9rem 0 0">Pi executor rows are not ranked.</p>
+            </section>
+          ` : ""}
         </div>
       `;
     } catch (e) {

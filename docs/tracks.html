@@ -102,9 +102,38 @@
         </section>`;
     }
 
+    function historySection(track, data) {
+      const block = data.history?.tracks?.[track.key];
+      const rows = block ? block.models : [];
+      if (!rows.length) return "";
+      const body = rows.map((row) => `
+        <tr>
+          <td>${escapeHtml(row.model || row.slug)}<div class="subline">${escapeHtml(row.arm_label)} · r${row.fixture_revision ?? 1}</div></td>
+          <td class="num score">${row.total.toFixed(1)}
+            <div class="subline">${escapeHtml(fmtRepeats(row.repeats))}</div></td>
+          ${track.axes.map((axis) => `<td class="num">${row.axes && row.axes[axis] != null ? pct(row.axes[axis]) : "—"}</td>`).join("")}
+          <td>${escapeHtml(track.evidence(row))}</td>
+        </tr>`).join("");
+      return `
+        <section class="card">
+          <h3>${escapeHtml(data.history?.label || "History")}</h3>
+          <p class="section-lede">${escapeHtml(data.history?.note || "")}</p>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr>
+                <th>Model</th><th class="num">Score</th>
+                ${track.axes.map((axis) => `<th class="num">${axis}</th>`).join("")}
+                <th>Detail</th>
+              </tr></thead>
+              <tbody>${body}</tbody>
+            </table>
+          </div>
+        </section>`;
+    }
+
     try {
       const data = await loadTracks();
-      main.innerHTML = TRACKS.map((track) => section(track, data)).join("");
+      main.innerHTML = TRACKS.map((track) => section(track, data) + historySection(track, data)).join("");
     } catch (err) {
       mountError(main, err);
     }

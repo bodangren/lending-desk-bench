@@ -53,7 +53,8 @@
 
     try {
       const data = await loadData();
-      const models = data.models;
+      const models = data.models || [];
+      const historyModels = data.history?.models || [];
       const { grid } = chartDefaults();
 
       const domainKeys = DOMAIN_ORDER.filter((d) =>
@@ -89,6 +90,8 @@
           </div>
         </section>
 
+        <section class="card" id="history-results" hidden></section>
+
         <section class="card">
           <h2>Domain heatmap</h2>
           <p class="section-lede">The value is the pass rate for each domain. A high value means more passed checks.</p>
@@ -100,6 +103,60 @@
 
         <section class="card" id="arm-b-note"></section>
       `;
+
+      const historySection = document.getElementById("history-results");
+      const betterArm = (model) => [model.no_skills, model.skills]
+        .filter(Boolean)
+        .reduce((best, row) => !best || (row.score?.total ?? -Infinity) > (best.score?.total ?? -Infinity) ? row : best, null);
+      if (historyModels.length) {
+        historySection.innerHTML = `
+          <h2>${escapeHtml(data.history?.label || "History")}</h2>
+          <p class="section-lede">${escapeHtml(data.history?.note || "")}</p>
+          <div class="table-wrap">
+            <table class="data" id="history-results-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th class="num">Score</th>
+                  <th class="num">Adherence</th>
+                  <th class="num">Passes</th>
+                  <th class="num">Run time</th>
+                  <th class="num">% monthly</th>
+                  <th class="num">Cache hit</th>
+                  <th class="num">Uncached input</th>
+                  <th class="num">Out</th>
+                  <th class="num">Reasoning</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${historyModels.map((m) => {
+                  const row = betterArm(m);
+                  const cache = cacheHitRate(row?.usage);
+                  return `
+                    <tr>
+                      <td>
+                        <a class="model-link" href="./models/${escapeHtml(m.id)}.html">${escapeHtml(m.name)}</a>
+                        <div class="subline">${escapeHtml(m.provider_model)}</div>
+                      </td>
+                      <td class="num score">${row?.score?.total == null ? "—" : Number(row.score.total).toFixed(1)}<div class="subline">${escapeHtml(row?.arm_label || row?.arm || "—")}</div></td>
+                      <td class="num">${row?.score?.adherence == null ? "—" : pct(row.score.adherence)}</td>
+                      <td class="num">${row?.passes ? `${row.passes.passed}/${row.passes.total}` : "—"}</td>
+                      <td class="num">${fmtSecs(row?.wall_seconds)}</td>
+                      <td class="num">${escapeHtml(fmtMonthlyPct(row?.go?.monthly_pct))}</td>
+                      <td class="num">${fmtPct1(cache)}</td>
+                      <td class="num">${fmtTokens(row?.usage?.input)}</td>
+                      <td class="num">${fmtTokens(row?.usage?.output)}</td>
+                      <td class="num">${escapeHtml(row?.thinking || "—")}</td>
+                    </tr>
+                  `;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+          <p class="muted" style="margin:0.9rem 0 0">Pi executor rows are not ranked.</p>
+        `;
+        historySection.hidden = false;
+      }
 
       // Table
       document.querySelector("#full-table tbody").innerHTML = models.map((m, i) => {

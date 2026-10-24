@@ -92,6 +92,8 @@
         </table>
       </div>
     </section>
+
+    <section class="card" id="history-section" hidden></section>
   </main>
 
   <footer class="site-footer wrap">
@@ -100,7 +102,7 @@
 
   <script type="module">
     import {
-      loadData, fmtTokens, fmtUsd, fmtMonthlyPct, modelColor, chartDefaults, mountError, setActiveNav,
+      loadData, fmtTokens, fmtUsd, fmtMonthlyPct, modelColor, chartDefaults, mountError, setActiveNav, escapeHtml,
     } from "./assets/js/site.js";
 
     setActiveNav();
@@ -109,7 +111,8 @@
     try {
       const data = await loadData();
       const b = data.benchmark;
-      const models = data.models;
+      const models = data.models || [];
+      const historyModels = data.history?.models || [];
 
       document.getElementById("hero-title").textContent = b.name;
       document.getElementById("hero-lede").textContent = b.tagline + " " + b.purpose;
@@ -117,7 +120,7 @@
       document.getElementById("hero-chips").innerHTML = `
         <span class="chip">Last updated <strong>${data.generated_at}</strong></span>
         <span class="chip">Scored checks <strong>${b.scoring.scored_checks}</strong></span>
-        <span class="chip">Models <strong>${models.length}</strong></span>
+        <span class="chip">Models <strong>${models.length + historyModels.length}</strong></span>
       `;
 
       const top = models[0];
@@ -143,6 +146,48 @@
           <td class="num">${m.passes.passed}/${m.passes.total}</td>
         </tr>
       `).join("");
+
+      const historySection = document.getElementById("history-section");
+      const formatScore = (row) => row?.score?.total == null ? "—" : Number(row.score.total).toFixed(1);
+      const formatPasses = (row) => row?.passes ? `${row.passes.passed}/${row.passes.total}` : "—";
+      if (historyModels.length) {
+        historySection.innerHTML = `
+          <h2>${escapeHtml(data.history?.label || "History")}</h2>
+          <p class="section-lede">${escapeHtml(data.history?.note || "")}</p>
+          <div class="table-wrap">
+            <table class="data" id="history-leaderboard">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th class="num">No Skills</th>
+                  <th class="num">Skills</th>
+                  <th class="num">Passes</th>
+                  <th class="num">% monthly</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${historyModels.map((m) => {
+                  const primary = m.no_skills || m.skills;
+                  return `
+                    <tr>
+                      <td>
+                        <a class="model-link" href="./models/${escapeHtml(m.id)}.html">${escapeHtml(m.name)}</a>
+                        <div class="subline">${escapeHtml(m.provider_model)}</div>
+                      </td>
+                      <td class="num score">${formatScore(m.no_skills)}</td>
+                      <td class="num">${formatScore(m.skills)}</td>
+                      <td class="num">${formatPasses(primary)}</td>
+                      <td class="num">${escapeHtml(fmtMonthlyPct(primary?.go?.monthly_pct))}</td>
+                    </tr>
+                  `;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+          <p class="muted" style="margin:0.9rem 0 0">Pi executor rows are not ranked.</p>
+        `;
+        historySection.hidden = false;
+      }
 
       if (models.length && typeof Chart !== "undefined") {
         const { grid } = chartDefaults();
