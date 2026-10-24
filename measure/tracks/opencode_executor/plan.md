@@ -49,21 +49,21 @@ Read-only investigation of the host OpenCode 2. Phase 1 writes only files in
 `measure/tracks/opencode_executor/`: `design.md`, redacted evidence, and
 corrections to `spec.md`. Red starts only after task 1.9 is complete.
 
-- [x] 1.1 [f40b1a1] Headless run contract: confirm the flags `run --standalone --format
-  json --auto --model opencode-go/<id>`. Record the exit codes for a provider
+- [x] 1.1 Headless run contract: confirm the flags `run --standalone --format` f40b1a1
+  `json --auto --model opencode-go/<id>`. Record the exit codes for a provider
   error and for a timeout (the timeout exit code stays unproven in Phase 1;
   the Phase 2 fake covers it). Record the stdin behavior and the JSON event types.
   Confirm that `--auto` leaves no permission prompt. Use one tiny prompt with
   a free Go model in a throwaway container (spec FR-1). [9a638b6](evidence/task-1.1-headless-run.txt)
   (evidence-fix turn: hash values removed, free-model claim corrected,
   addendum reworded)
-- [x] 1.2 [4fefda5] Cron self-check root cause: find the call that leaves the `tsx`
+- [x] 1.2 Cron self-check root cause: find the call that leaves the `tsx` 4fefda5
   output files (`score.json`, `candidate-contract.json`) empty under the
   crontab PATH. The 2026-10-18 reproduction failed 3 tests
   under the crontab PATH and passed 170 of 170 under the nvm PATH. Record the
   minimal fix (spec FR-9). [c643123](evidence/task-1.2-cron-self-check.txt)
-- [x] 1.3 [0a35187] Credential export and import: record the redacted shape of `opencode
-  auth export opencode`. Record how the active Console connection is
+- [x] 1.3 Credential export and import: record the redacted shape of `opencode` 0a35187
+  `auth export opencode`. Record how the active Console connection is
   selected. Import it into an empty isolated store, with temporary XDG
   dirs and no model call (v2.0.32 rejects `--standalone` for `auth`; the
   stdin import and the file import both work without the flag —
@@ -73,12 +73,12 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   --standalone limitation: see evidence; evidence-fix turn: hash
   values removed, addendum reworded — a container refresh stays
   unproven)
-- [x] 1.4 [f40b1a1] Refresh and rotation: record the access-token lifetime from
+- [x] 1.4 Refresh and rotation: record the access-token lifetime from f40b1a1
   `expires`. Find a host refresh trigger that sends no prompt, if one exists.
   Confirm the import result when the refresh field is absent or inert.
   Confirm that the container cannot refresh and that the host login survives
   (spec FR-3). [cef5b13](evidence/task-1.3-1.4-credential.txt)
-- [x] 1.5 [0a35187] Isolation variables and config source: confirm how the
+- [x] 1.5 Isolation variables and config source: confirm how the 0a35187
   generated config reaches the container (`OPENCODE_CONFIG`,
   `OPENCODE_CONFIG_CONTENT`, or the XDG config path), and that
   `OPENCODE_CONFIG` adds a document without suppressing the XDG source.
@@ -86,25 +86,25 @@ corrections to `spec.md`. Red starts only after task 1.9 is complete.
   `OPENCODE_DISABLE_CLAUDE_CODE`, `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS`,
   `OPENCODE_DISABLE_AUTOUPDATE`, `OPENCODE_DISABLE_PROJECT_CONFIG`, and
   `OPENCODE_DISABLE_MODELS_FETCH` (spec FR-4). [d3ffe0c](evidence/task-1.5-isolation-and-config.txt); the flag and arm probes: (evidence/probe-agents-md-and-skill-activation.txt), (evidence/probe-stdin-import-and-models-fetch.txt)
-- [x] 1.6 [1c767b8] Skill path and arm proof: list the built-in skill IDs. Confirm
+- [x] 1.6 Skill path and arm proof: list the built-in skill IDs. Confirm 1c767b8
   five-skill discovery from a read-only mount through a `skills` config entry
   or the XDG skills path. Confirm the `skill` deny and allow rules. Name the
   commands that list skills, instruction files, MCP servers, and plugins
   without a model call (spec FR-4). [8f25f19](evidence/task-1.6-skill-path-and-arm-proof.txt); the skill activation probe: (evidence/probe-agents-md-and-skill-activation.txt)
-- [x] 1.7 [0a35187] Container runtime needs: confirm that the binary starts in the
+- [x] 1.7 Container runtime needs: confirm that the binary starts in the 0a35187
   pinned Node image. Record the helper downloads, such as ripgrep, language
   servers, and formatters. Record their executable needs under a `noexec`
   `/tmp`. Record the snapshot behavior and the network endpoints at startup.
   Select one helper supply method (spec FR-4). [15c1805](evidence/task-1.7-container-runtime.txt); the ripgrep source check: (evidence/ripgrep-tarball-source.txt)
   (design turn: host rg fails in the image; the supply source becomes
   the static musl build, see evidence §9)
-- [x] 1.8 [4fefda5] Token usage format: record the event fields for input, output,
+- [x] 1.8 Token usage format: record the event fields for input, output, 4fefda5
   reasoning, cache read, and cache write. Record whether they are per step or
   cumulative. Confirm whether subagent usage reaches the parent event stream.
   Save one redacted event stream from task 1.1 in the track directory (spec
   FR-7). [9a638b6](evidence/task-1.8-token-usage.txt) (evidence-fix turn: O3
   becomes deny subagent; final-step usage finding; offline usage-source probe)
-- [x] 1.9 [0a35187] Design note: write `design.md`. It gives the confirmed command line,
+- [x] 1.9 Design note: write `design.md`. It gives the confirmed command line, 0a35187
   environment, mounts, config, and credential flow. It gives the field lists
   of identity schema 2 and provenance schema 7. It gives the usage mapping and
   the helper supply method. Record the owner answers to O1–O6. Correct
@@ -226,7 +226,7 @@ its plan evidence `60f5762`.
 Failing meta tests for the contract in `design.md`. No network, no real
 model, no real credential (NFR-3).
 
-- [x] 2.1 [dcca6ec] Fake `opencode` fixture: replace the fake `pi` in
+- [x] 2.1 Fake `opencode` fixture: replace the fake `pi` in dcca6ec
   `tests/meta/schema4-fixtures.ts` with a fake `opencode`. It prints a 2.x
   version. It captures its arguments, its environment names, and a stdin
   hash. It emits the fixed event stream and writes the fixed session
@@ -238,7 +238,7 @@ model, no real credential (NFR-3).
     Failure: `the runner invokes the fake OpenCode and creates its capture file`.
     The runner still invokes Pi. The fake fixture test passes. All 170 existing tests pass.
     `legacy-pi-fixtures.ts` preserves the existing schema-6 assertions during Red.
-- [x] 2.2 [d54639b] Executor and isolation contract: extend
+- [x] 2.2 Executor and isolation contract: extend d54639b
   `run-executor-provenance.test.ts`, `runtime-isolation.test.ts`,
   `runtime-isolation-completion.test.ts`, and `execution-identity.test.ts`.
   They prove the FR-1 command line, no Pi, and no `OPENCODE_API_KEY`. They
@@ -264,7 +264,7 @@ model, no real credential (NFR-3).
     The task 2.1 capture test also fails. All 170 existing tests pass.
     Arm A already removes `AGENTS.md` and has no snapshot. That control passes without a false Red assertion.
     The role log records each failing name and its missing behavior.
-- [x] 2.3 [765e478] Credential tests: only the Console connection reaches the
+- [x] 2.3 Credential tests: only the Console connection reaches the 765e478
   container, without the refresh token. Delivery uses stdin. No token is in a
   process argument list, the environment, the artifacts, a log, or
   provenance. Staging is gone after success, failure, and timeout. A token
@@ -295,7 +295,7 @@ model, no real credential (NFR-3).
     `Test Files  3 failed | 26 passed (29)`; `Tests  41 failed | 173 passed (214)`.
     Both JSON reports contain the same failing names. All 170 existing tests pass.
     Twenty credential tests fail for missing behavior. The scanner control passes.
-- [x] 2.4 [4599177] Provenance and attestation: prove the schema 7 fields. Prove that
+- [x] 2.4 Provenance and attestation: prove the schema 7 fields. Prove that 4599177
   attestation reads only the recorded executor. A fake upgrade at the
   recorded path keeps an earlier run attested and not stale. A changed skill
   or config snapshot makes the run invalid. Adversarial ambient values give
@@ -349,13 +349,13 @@ model, no real credential (NFR-3).
 
 ## Phase 3: Implement (Green) [checkpoint: f61a422]
 
-- [x] 3.1 Remove every Pi path: `env.sh`, `run.sh`, `go-cost.ts`
+- [x] 3.1 Remove every Pi path: `env.sh`, `run.sh`, `go-cost.ts` f61a422
   `--models-json`, and the `/opt/pi` mount of the container probe. Add the
   fail-closed executor preflight to `batch.sh` (spec FR-2, FR-10, NFR-6).
   - The runtime slice landed on 2026-10-24: `env.sh`, `run.sh`, the container
     probe, and the `batch.sh` preflight are done. The `go-cost.ts`
     `--models-json` removal landed with task 3.6.
-- [x] 3.2 OpenCode container run in `run.sh`: binary resolution, the entry
+- [x] 3.2 OpenCode container run in `run.sh`: binary resolution, the entry f61a422
   script `harness/opencode-entry.sh`, and the generated config. Add the
   per-run skill snapshot, the private HOME and XDG dirs, and the helper
   supply method (spec FR-1, FR-2, FR-4).
@@ -368,7 +368,7 @@ model, no real credential (NFR-3).
   - The export travels through the candidate mount. One pipe write cannot
     carry a 700 KB export. The runner moves the file into the run artifacts
     before the candidate contract settles.
-- [x] 3.3 Console credential helper `harness/opencode-credential.sh`:
+- [x] 3.3 Console credential helper `harness/opencode-credential.sh`: f61a422
   export, selection, run-window check (batch preflight and before each
   agent run), access-only copy, and the weekly 7-day expiry warning
   (the warning never stops the batch). Add the stdin delivery, the
@@ -378,14 +378,14 @@ model, no real credential (NFR-3).
     calls. The host `opencode auth export` printed a plugin notice and no
     JSON on 2026-10-25 at 01:14. The retry rule matches the one for
     `opencode models`.
-- [x] 3.4 Execution identity schema 2, provenance schema 7, the executor
+- [x] 3.4 Execution identity schema 2, provenance schema 7, the executor f61a422
   cohort, and the runner hash list (spec FR-5).
-- [x] 3.5 Recorded-executor attestation in `executor-attestation.ts` and
+- [x] 3.5 Recorded-executor attestation in `executor-attestation.ts` and f61a422
   `provenance-check.ts`. Remove `withRecordedExecutorEnvironment` from
   `plan-work.ts` (spec FR-6).
-- [x] 3.6 OpenCode parser in `usage.ts`. Connect it to the `run.sh` gates and
+- [x] 3.6 OpenCode parser in `usage.ts`. Connect it to the `run.sh` gates and f61a422
   to `score.ts` (spec FR-7).
-- [x] 3.7 History: add the Pi SKIP to `rescore-doctor.sh` and the regrade
+- [x] 3.7 History: add the Pi SKIP to `rescore-doctor.sh` and the regrade f61a422
   scripts. Add the Pi run guard to `run.sh` and the executor series filter to
   `plan-work.ts`. Add the executor display and the series filter to
   `export-site-data.py` and `generate-model-pages.py` (spec FR-8).
@@ -410,7 +410,7 @@ model, no real credential (NFR-3).
     2026-10-25. `run.sh` refuses to replace a run directory whose provenance
     records a legacy Pi executor. `plan-work.ts` keeps a legacy Pi run out of
     the work list.
-- [x] 3.8 Weekly toolchain in `cron-weekly.sh` with the task 1.2 fix, and the
+- [x] 3.8 Weekly toolchain in `cron-weekly.sh` with the task 1.2 fix, and the f61a422
   `CRON START` tool-path log (spec FR-9).
   - `cron-weekly.sh` sources `harness/toolchain.sh` before `harness/weekly.sh`.
     The script stops when the toolchain cannot resolve a Node directory.
@@ -420,7 +420,7 @@ model, no real credential (NFR-3).
     `node v24.19.0`, `npm 11.17.0`, and `opencode v2.1.4`. The rehearsal with
     `env -i` and the crontab PATH exited 0 with 30 test files and 238 tests
     passed.
-- [x] 3.9 Green evidence: both gate commands and the cron rehearsal exit 0.
+- [x] 3.9 Green evidence: both gate commands and the cron rehearsal exit 0. f61a422
   Record their summaries in this plan. Record the runner and suite hashes
   before and after the phase.
   - Gate command, 2026-10-25 02:47 to 02:53 (+08:00):
@@ -442,7 +442,7 @@ model, no real credential (NFR-3).
 
 ## Phase 4: Verify and document
 
-- [x] 4.1 Run both gate commands and the cron rehearsal on the final HEAD.
+- [x] 4.1 Run both gate commands and the cron rehearsal on the final HEAD. 31c6972
   Record the exit codes and the Vitest summaries.
   - On the final HEAD, 2026-10-25 04:06 to 04:19 (+08:00): the logic gate and
     the adversarial gate each printed `Test Files  30 passed (30)` and
@@ -471,7 +471,7 @@ model, no real credential (NFR-3).
   OpenCode work list. The executor preflight passes on the host. `WEEK=all
   ./rescore-doctor.sh` prints SKIP for legacy Pi runs, and their `score.json`
   checksums do not change.
-- [x] 4.5 Documentation: `README.md`, `SCORING.md`, `PLAN.md`, and
+- [x] 4.5 Documentation: `README.md`, `SCORING.md`, `PLAN.md`, and f61a422
   `measure/index.md` (spec FR-11).
   - The four files describe OpenCode 2, the Console login, the token risk,
     provenance schema 7, the recorded-executor attestation, the version
