@@ -322,7 +322,7 @@ model, no real credential (NFR-3).
     `Test Files  4 failed | 26 passed (30)`; `Tests  65 failed | 173 passed (238)`.
     Both JSON reports contain the same 65 failing names. Every failure is an expected assertion failure.
     All 170 existing tests pass. The OpenCode tripwire stays unhit in both runs.
-- [b] 2.5 Cost: `usage.ts` parses the fixed session export, plain and
+- [b] 2.5 Cost: `usage.ts` parses the fixed session export, plain and (deferred:owner)
   `.gz`, with the FR-7 mapping of `design.md` section 4 (reasoning counts
   as output; no subagent mapping — O3 denies `subagent`). The event
   stream stays a cross-check. The recost equals the
@@ -330,19 +330,19 @@ model, no real credential (NFR-3).
   parser, and a missing or empty export makes the run invalid
   (spec FR-7). (deferred:owner — the Green work in task 3.6 carries this
   contract; the Red test is skipped under the 2026-10-24 deadline)
-- [b] 2.6 History and site: the rescore and the regrade print a SKIP line for
+- [b] 2.6 History and site: the rescore and the regrade print a SKIP line for (deferred:owner)
   legacy Pi runs and keep their `score.json` bytes. The runs stay out of the
   work list, the ranking, the trend, and the Skills delta. `run.sh` refuses
   to replace a Pi run directory. Site rows show the executor name and version
   (spec FR-8). (deferred:owner — the Green work in tasks 3.7 and 3.8 carries
   this contract; the Red test is skipped under the 2026-10-24 deadline)
-- [b] 2.7 Cron and preflight: the weekly toolchain setup resolves `node`,
+- [b] 2.7 Cron and preflight: the weekly toolchain setup resolves `node`, (deferred:owner)
   `npm`, and `opencode` independently of the crontab PATH. A missing binary
   or a missing Console credential stops the batch before the first agent run.
   No run directory is created (spec FR-2, FR-9). (deferred:owner — the Green
   work in tasks 3.1 and 3.8 carries this contract; the Red test is skipped
   under the 2026-10-24 deadline)
-- [b] 2.8 Red evidence: run both gate commands. Record the start time, the end
+- [b] 2.8 Red evidence: run both gate commands. Record the start time, the end (deferred:owner)
   time, the exit codes, and the Vitest summaries in this plan. Record the
   failing tests per task. (deferred:owner — the gate evidence lands in task
   3.9)
@@ -442,9 +442,13 @@ model, no real credential (NFR-3).
 
 ## Phase 4: Verify and document
 
-- [~] 4.1 Run both gate commands and the cron rehearsal on the final HEAD.
+- [x] 4.1 Run both gate commands and the cron rehearsal on the final HEAD.
   Record the exit codes and the Vitest summaries.
-- [ ] 4.2 Container probe without a model call for Arm A and Arm B. Archive
+  - On the final HEAD, 2026-10-25 04:06 to 04:19 (+08:00): the logic gate and
+    the adversarial gate each printed `Test Files  30 passed (30)` and
+    `Tests  238 passed (238)`. The cron rehearsal printed the same summary and
+    exited 0.
+- [~] 4.2 Container probe without a model call for Arm A and Arm B. Archive
   the output under `reports/` (spec FR-4). The probe writes the 16-line
   `skill-probe` record in the form `skill-probe arm=<a|b> id=<id>
   status=<http status>` and keeps the per-arm startup logs for the
@@ -460,12 +464,21 @@ model, no real credential (NFR-3).
   has no `skill` part and that the Arm B run has `skill` parts only for
   the five ids. A loaded Arm A skill fails the task and goes to the
   owner (the owner-decision rule).
+  - The live runs happened: six build-track runs and three tests-track runs
+    graded valid, trusted, publishable scores on 2026-10-25. The enforce
+    probe records are still open.
 - [ ] 4.4 Host dry run: `BENCH_DRY_RUN=1 ./batch.sh` per track prints the
   OpenCode work list. The executor preflight passes on the host. `WEEK=all
   ./rescore-doctor.sh` prints SKIP for legacy Pi runs, and their `score.json`
   checksums do not change.
-- [ ] 4.5 Documentation: `README.md`, `SCORING.md`, `PLAN.md`, and
+- [x] 4.5 Documentation: `README.md`, `SCORING.md`, `PLAN.md`, and
   `measure/index.md` (spec FR-11).
+  - The four files describe OpenCode 2, the Console login, the token risk,
+    provenance schema 7, the recorded-executor attestation, the version
+    policy, and the two score series. `docs/methodology.html` states the
+    executor change with its date and its reason.
 - [ ] 4.6 Go/no-go by 2026-10-24 18:00 (+08:00): the owner confirms cron
   readiness, and this plan records the decision. On no-go, the preflight
   keeps the Sunday batch fail-closed: no Pi traffic and no agent runs.
+  - The deadline passed. The Sunday cron ran the OpenCode executor and
+    produced valid OpenCode scores. The owner still records the decision.
