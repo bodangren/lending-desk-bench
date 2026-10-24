@@ -347,7 +347,7 @@ model, no real credential (NFR-3).
   failing tests per task. (deferred:owner — the gate evidence lands in task
   3.9)
 
-## Phase 3: Implement (Green)
+## Phase 3: Implement (Green) [checkpoint: f61a422]
 
 - [x] 3.1 Remove every Pi path: `env.sh`, `run.sh`, `go-cost.ts`
   `--models-json`, and the `/opt/pi` mount of the container probe. Add the
@@ -442,7 +442,7 @@ model, no real credential (NFR-3).
 
 ## Phase 4: Verify and document
 
-- [ ] 4.1 Run both gate commands and the cron rehearsal on the final HEAD.
+- [~] 4.1 Run both gate commands and the cron rehearsal on the final HEAD.
   Record the exit codes and the Vitest summaries.
 - [ ] 4.2 Container probe without a model call for Arm A and Arm B. Archive
   the output under `reports/` (spec FR-4). The probe writes the 16-line

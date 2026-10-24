@@ -59,7 +59,7 @@ detail.
   `harness/tests/meta/opencode-*.test.ts` holds the contract. Both gate
   commands must pass.
 
-## Phase 3: Benchmark the new models
+## Phase 3: Benchmark the new models [checkpoint: 8b6bf37]
 
 - [ ] 3.1 Run the batch for the new models. Use both arms. Use the build track
   repeat count. Record the run ids and the score verdicts.
@@ -68,8 +68,12 @@ detail.
 
 ## Phase 4: Publish
 
-- [ ] 4.1 Export the site data with `harness/export-site-data.py`. Generate the
+- [x] 4.1 Export the site data with `harness/export-site-data.py`. Generate the
   model pages with `harness/generate-model-pages.py`. Verify that the new
   models appear with their executor and version.
-- [ ] 4.2 Commit the site data, the model pages, the pricing table, and the
+  - The site data holds three ranked models and eleven history models. Every
+    ranked row carries the executor `opencode` and the version `v2.1.4`.
+  - The paired Skills delta for the new models: GPT 6 Luna +4.2,
+    MiniMax M3.1 Flash +5.6, Claude Haiku 5.5 +8.8.
+- [~] 4.2 Commit the site data, the model pages, the pricing table, and the
   track files. Stage only those paths. Push to `main` to publish the pages.
