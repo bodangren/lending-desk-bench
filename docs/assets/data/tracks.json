@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-10-25T04:05:45",
+  "generated_at": "2026-10-25T06:59:40",
   "executor": {
     "series": "opencode",
     "name": "opencode",
@@ -25,6 +25,82 @@
         "quality": 0.1
       },
       "models": [
+        {
+          "run_id": "tt-b-muse-spark-1-3-contributor-2026w43-r1",
+          "model": "opencode-go/muse-spark-1.3-contributor",
+          "slug": "muse-spark-1-3-contributor",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w43",
+          "fixture_revision": 2,
+          "total": 98.8,
+          "repeats": {
+            "week": "2026w43",
+            "n": 1,
+            "median": 98.8,
+            "worst": 98.8,
+            "best": 98.8,
+            "totals": [
+              98.8
+            ],
+            "runs": [
+              "tt-b-muse-spark-1-3-contributor-2026w43-r1"
+            ]
+          },
+          "axes": {
+            "kill": 1,
+            "validity": 1,
+            "adherence": 1,
+            "quality": 0.8833333333333333,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 36,
+            "valid": 36
+          },
+          "churn_lines": 22,
+          "trend": {
+            "ema": 98.8,
+            "min": 98.8,
+            "max": 98.8,
+            "n": 1,
+            "weeks": [
+              "2026w43"
+            ],
+            "medians": [
+              98.8
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
         {
           "run_id": "tt-a-claude-haiku-5-5-2026w43-r1",
           "model": "opencode-go/claude-haiku-5-5",
@@ -85,6 +161,234 @@
             ],
             "medians": [
               98.7
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "tt-b-deepseek-v4-1-flash-2026w43-r1",
+          "model": "opencode-go/deepseek-v4.1-flash",
+          "slug": "deepseek-v4-1-flash",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w43",
+          "fixture_revision": 2,
+          "total": 98.0,
+          "repeats": {
+            "week": "2026w43",
+            "n": 1,
+            "median": 98.0,
+            "worst": 98.0,
+            "best": 98.0,
+            "totals": [
+              98.0
+            ],
+            "runs": [
+              "tt-b-deepseek-v4-1-flash-2026w43-r1"
+            ]
+          },
+          "axes": {
+            "kill": 1,
+            "validity": 1,
+            "adherence": 1,
+            "quality": 0.8,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 41,
+            "valid": 41
+          },
+          "churn_lines": 24,
+          "trend": {
+            "ema": 98.0,
+            "min": 98.0,
+            "max": 98.0,
+            "n": 1,
+            "weeks": [
+              "2026w43"
+            ],
+            "medians": [
+              98.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "tt-a-mimo-v2-6-pro-2026w43-r1",
+          "model": "opencode-go/mimo-v2.6-pro",
+          "slug": "mimo-v2-6-pro",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "week": "2026w43",
+          "fixture_revision": 2,
+          "total": 95.8,
+          "repeats": {
+            "week": "2026w43",
+            "n": 1,
+            "median": 95.8,
+            "worst": 95.8,
+            "best": 95.8,
+            "totals": [
+              95.8
+            ],
+            "runs": [
+              "tt-a-mimo-v2-6-pro-2026w43-r1"
+            ]
+          },
+          "axes": {
+            "kill": 1,
+            "validity": 1,
+            "adherence": 1,
+            "quality": 0.5833333333333333,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 66,
+            "valid": 66
+          },
+          "churn_lines": 20,
+          "trend": {
+            "ema": 95.8,
+            "min": 95.8,
+            "max": 95.8,
+            "n": 1,
+            "weeks": [
+              "2026w43"
+            ],
+            "medians": [
+              95.8
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "tt-b-muse-spark-1-2-contributor-2026w43-r1",
+          "model": "opencode-go/muse-spark-1.2-contributor",
+          "slug": "muse-spark-1-2-contributor",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w43",
+          "fixture_revision": 2,
+          "total": 93.9,
+          "repeats": {
+            "week": "2026w43",
+            "n": 1,
+            "median": 93.9,
+            "worst": 93.9,
+            "best": 93.9,
+            "totals": [
+              93.9
+            ],
+            "runs": [
+              "tt-b-muse-spark-1-2-contributor-2026w43-r1"
+            ]
+          },
+          "axes": {
+            "kill": 1,
+            "validity": 0.9428571428571428,
+            "adherence": 1,
+            "quality": 0.5,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 35,
+            "valid": 33
+          },
+          "churn_lines": 20,
+          "trend": {
+            "ema": 93.9,
+            "min": 93.9,
+            "max": 93.9,
+            "n": 1,
+            "weeks": [
+              "2026w43"
+            ],
+            "medians": [
+              93.9
             ]
           },
           "executor": {
@@ -251,6 +555,160 @@
             "publishable": true,
             "rankable": true,
             "under_load": false
+          }
+        },
+        {
+          "run_id": "tt-a-gpt-5-6-luna-2026w43-r1",
+          "model": "opencode-go/gpt-5.6-luna",
+          "slug": "gpt-5-6-luna",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "week": "2026w43",
+          "fixture_revision": 2,
+          "total": 79.4,
+          "repeats": {
+            "week": "2026w43",
+            "n": 1,
+            "median": 79.4,
+            "worst": 79.4,
+            "best": 79.4,
+            "totals": [
+              79.4
+            ],
+            "runs": [
+              "tt-a-gpt-5-6-luna-2026w43-r1"
+            ]
+          },
+          "axes": {
+            "kill": 0.7333333333333333,
+            "validity": 0.7777777777777778,
+            "adherence": 1,
+            "quality": 0.9833333333333333,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 0.7142857142857143,
+            "security": 0.6666666666666666,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 9,
+            "valid": 7
+          },
+          "churn_lines": 0,
+          "trend": {
+            "ema": 79.4,
+            "min": 79.4,
+            "max": 79.4,
+            "n": 1,
+            "weeks": [
+              "2026w43"
+            ],
+            "medians": [
+              79.4
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "tt-a-glm-5-3-flash-2026w43-r1",
+          "model": "opencode-go/glm-5.3-flash",
+          "slug": "glm-5-3-flash",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "week": "2026w43",
+          "fixture_revision": 2,
+          "total": 0.0,
+          "repeats": {
+            "week": "2026w43",
+            "n": 1,
+            "median": 0.0,
+            "worst": 0.0,
+            "best": 0.0,
+            "totals": [
+              0.0
+            ],
+            "runs": [
+              "tt-a-glm-5-3-flash-2026w43-r1"
+            ]
+          },
+          "axes": {
+            "kill": 0,
+            "validity": 0,
+            "adherence": 0,
+            "quality": 0,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 0.5,
+            "classes": [
+              "files_added"
+            ]
+          },
+          "class_rates": {
+            "functional": 0,
+            "security": 0,
+            "reliability": 0
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 0,
+            "valid": 0
+          },
+          "churn_lines": 20,
+          "trend": {
+            "ema": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "n": 1,
+            "weeks": [
+              "2026w43"
+            ],
+            "medians": [
+              0.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": false,
+            "publishable": false,
+            "rankable": false,
+            "under_load": true
           }
         }
       ]
