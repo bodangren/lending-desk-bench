@@ -74,6 +74,10 @@ detail.
   - The weekly cron runs the other tracks. Its tests-track runs for
     `tt-a-gpt-6-luna` 93.5, `tt-a-minimax-m3-1-flash` 93.2, and
     `tt-a-claude-haiku-5-5` 98.7 graded valid.
+  - The DeepSeek V4.1 Flash release changed under the same Go id. The build
+    track graded both arms against it on 2026-10-25:
+    `a-deepseek-v4-1-flash` 95.0, `b-deepseek-v4-1-flash` 97.7, delta +2.7.
+    The weekly cron graded `tt-b-deepseek-v4-1-flash` 98.0.
 - [x] 3.2 Rescore every run with `harness/rescore-doctor.sh`. Verify that each
   new run is valid, trusted, and publishable.
   - `WEEK=2026w43 ./rescore-doctor.sh` kept every total. The legacy Pi runs

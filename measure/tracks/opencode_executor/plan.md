@@ -410,6 +410,11 @@ model, no real credential (NFR-3).
     2026-10-25. `run.sh` refuses to replace a run directory whose provenance
     records a legacy Pi executor. `plan-work.ts` keeps a legacy Pi run out of
     the work list.
+  - The public pages show every model. The leaderboard, the trend, and the
+    Skills delta keep the OpenCode rows only. The legacy Pi rows appear in a
+    labeled history section on the overview, the results page, the tracks
+    page, and the model index. A Playwright check of the live site shows no
+    page errors and 4 ranked rows plus 11 history rows.
 - [x] 3.8 Weekly toolchain in `cron-weekly.sh` with the task 1.2 fix, and the f61a422
   `CRON START` tool-path log (spec FR-9).
   - `cron-weekly.sh` sources `harness/toolchain.sh` before `harness/weekly.sh`.
