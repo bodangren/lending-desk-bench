@@ -93,8 +93,8 @@ describe("OpenCode executor and isolation contract", () => {
       expect(names, "Console OAuth replaces the OPENCODE_API_KEY container path").not.toContain("OPENCODE_API_KEY");
     });
 
-    it(`Arm ${arm}: the runner never invokes Pi, including its version command`, () => {
-      expect(existsSync(current().piHit), "the Pi tripwire must stay unhit").toBe(false);
+    it(`Arm ${arm}: the runner resolves OpenCode from BENCH_OPENCODE_BIN, never from a PATH tripwire, including its version command`, () => {
+      expect(existsSync(current().opencodeHit), "the OpenCode tripwire must stay unhit").toBe(false);
     });
 
     it(`Arm ${arm}: the whole run argv uses standalone JSON auto mode and the default model variant`, () => {

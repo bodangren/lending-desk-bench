@@ -17,8 +17,80 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "assets" / "data" / "benchmark.json"
 GATE = 0.9
 
+# Executor kinds. The provenance record of a run decides its kind; the run ID
+# never does (spec FR-8). The ranking holds the OpenCode series only. The
+# legacy Pi series stays on disk and is published as history.
+EXECUTOR_OPENCODE = "opencode"
+EXECUTOR_PI = "pi"
+EXECUTOR_UNKNOWN = "unknown"
+RANKED_SERIES = EXECUTOR_OPENCODE
+
+_EXECUTOR_CACHE: dict[str, dict | None] = {}
+
+
 def slugify(model_id: str) -> str:
     return model_id.replace(".", "-")
+
+
+def _read_executor(artifacts: Path) -> dict | None:
+    try:
+        provenance = json.loads((artifacts / "provenance.json").read_text(encoding="utf8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    executor = provenance.get("executor")
+    if not isinstance(executor, dict):
+        return None
+    kind = executor.get("kind")
+    if kind == EXECUTOR_OPENCODE:
+        record = executor.get("opencode") or {}
+        return {"kind": EXECUTOR_OPENCODE, "name": EXECUTOR_OPENCODE, "version": record.get("version")}
+    if kind == "not-invoked":
+        return {"kind": "not-invoked", "name": "not-invoked", "version": None}
+    if isinstance(executor.get("pi"), dict):
+        record = executor["pi"]
+        return {"kind": EXECUTOR_PI, "name": EXECUTOR_PI, "version": record.get("version")}
+    if isinstance(kind, str) and kind:
+        return {"kind": kind, "name": kind, "version": None}
+    return None
+
+
+def read_executor(artifacts: Path) -> dict | None:
+    """The executor identity of one run, read from its provenance record."""
+    key = str(artifacts)
+    if key not in _EXECUTOR_CACHE:
+        _EXECUTOR_CACHE[key] = _read_executor(artifacts)
+    return _EXECUTOR_CACHE[key]
+
+
+def run_executor(run: Path) -> dict | None:
+    return read_executor(run / "artifacts")
+
+
+def run_series(run: Path) -> str:
+    """The score series of one run.
+
+    The executor kind comes from the provenance record of the run. A run with
+    no provenance record has no executor kind. Such a run is no legacy Pi run,
+    so it stays in the ranked series and its executor reads as unknown.
+    """
+    executor = run_executor(run)
+    return executor["kind"] if executor else EXECUTOR_UNKNOWN
+
+
+def is_ranked(executor: dict | None) -> bool:
+    """True when a row belongs to the ranked series."""
+    return (executor or {}).get("kind") in (RANKED_SERIES, EXECUTOR_UNKNOWN)
+
+
+def series_runs(runs: list[Path], kind: str) -> list[Path]:
+    """The runs of one score series.
+
+    The ranked series holds the OpenCode runs and the runs that carry no
+    executor record. The legacy Pi series is history and never ranks.
+    """
+    if kind == RANKED_SERIES:
+        return [run for run in runs if run_series(run) in (RANKED_SERIES, EXECUTOR_UNKNOWN)]
+    return [run for run in runs if run_series(run) == kind]
 
 
 def load_go_pricing() -> dict:
@@ -232,6 +304,12 @@ def load_entry(spec: dict) -> dict | None:
     if not regrade_rel:
         print(f"skip {spec.get('id')}: no regrade/agent path")
         return None
+    source_rel = spec.get("agent") or regrade_rel
+    executor = read_executor(ROOT / source_rel / "artifacts") or {
+        "kind": EXECUTOR_UNKNOWN,
+        "name": EXECUTOR_UNKNOWN,
+        "version": None,
+    }
     regrade = ROOT / regrade_rel / "artifacts"
     results_path = regrade / "results.json"
     if not results_path.exists():
@@ -345,6 +423,7 @@ def load_entry(spec: dict) -> dict | None:
         "trust": trust,
         "fixture_revision": fixture_revision,
         "adherence": adherence,
+        "executor": executor,
         "sources": {"regrade": spec["regrade"], "agent": spec.get("agent")},
     }
 
@@ -363,7 +442,11 @@ def spec_for(model_id: str, spec: dict, arm: str, run: Path) -> dict:
 
 
 def trend_for(runs: list[Path]) -> dict | None:
-    """EMA and 4-week range over weekly medians, oldest week first."""
+    """EMA and 4-week range over weekly medians, oldest week first.
+
+    The trend and the range hold the ranked series only (spec FR-8).
+    """
+    runs = series_runs(runs, RANKED_SERIES)
     by_week = weekly_repeats(runs)
     if not by_week:
         return None
@@ -396,15 +479,27 @@ def latest_week_entry(model_id: str, spec: dict, arm: str, runs: list[Path]) -> 
 
 
 def paired_skills_delta(models: list[dict]) -> dict | None:
-    """One paired Skills delta: mean over models of median(B) - median(A) in a shared week."""
+    """One paired Skills delta: mean over models of median(B) - median(A) in a shared week.
+
+    The pairs hold the ranked series only (spec FR-8).
+    """
     pairs = []
     for model in models:
         a, b = model.get("no_skills"), model.get("skills")
         if not a or not b:
             continue
+        if not is_ranked(a.get("executor")):
+            continue
+        if not is_ranked(b.get("executor")):
+            continue
         ra, rb = a.get("repeats") or {}, b.get("repeats") or {}
         if ra.get("week") and ra.get("week") == rb.get("week"):
-            pairs.append({"id": model["id"], "week": ra["week"], "delta": round(rb["median"] - ra["median"], 1)})
+            pairs.append({
+                "id": model["id"],
+                "week": ra["week"],
+                "delta": round(rb["median"] - ra["median"], 1),
+                "executor": (a.get("executor") or {}).get("kind"),
+            })
     if not pairs:
         return None
     deltas = [pair["delta"] for pair in pairs]
@@ -422,8 +517,12 @@ TRACK_PREFIXES = {"bugfix": "bf-", "tests": "tt-", "change": "ch-"}
 TRACK_EVIDENCE = {"bugfix": "repair", "tests": "mutation", "change": "change"}
 
 
-def load_track_rows(track: str) -> list[dict]:
-    """Rows for one variant track: the latest week per model and arm, repeats grouped."""
+def load_track_rows(track: str, series: str = RANKED_SERIES) -> list[dict]:
+    """Rows for one variant track: the latest week per model and arm, repeats grouped.
+
+    The default series is the ranked one. The legacy Pi series is loaded as
+    history and never ranks (spec FR-8).
+    """
     runs_dir = ROOT / "runs"
     if not runs_dir.exists():
         return []
@@ -435,7 +534,10 @@ def load_track_rows(track: str) -> list[dict]:
             grouped.setdefault((match.group(2), match.group(1)), []).append(path)
     rows = []
     for (slug, arm), paths in sorted(grouped.items()):
-        by_week = weekly_repeats(sorted(paths, key=lambda p: p.name))
+        paths = series_runs(sorted(paths, key=lambda p: p.name), series)
+        if not paths:
+            continue
+        by_week = weekly_repeats(paths)
         by_week = {week: [(run, score) for run, score in reps if score.get("track") == track] for week, reps in by_week.items()}
         by_week = {week: reps for week, reps in by_week.items() if reps}
         if not by_week:
@@ -463,7 +565,13 @@ def load_track_rows(track: str) -> list[dict]:
             "bugs": evidence.get("bugs"),
             "tests": evidence.get("tests"),
             "churn_lines": score.get("churn_lines"),
-            "trend": trend_for(paths),
+            "trend": trend_for(paths) if series == RANKED_SERIES else None,
+            "executor": run_executor(run) or {
+                "kind": EXECUTOR_UNKNOWN,
+                "name": EXECUTOR_UNKNOWN,
+                "version": None,
+            },
+            "ranked": series == RANKED_SERIES,
             "trust": {
                 "valid": bool(score.get("valid")),
                 "trusted": bool(score.get("trusted")),
@@ -479,26 +587,53 @@ def load_track_rows(track: str) -> list[dict]:
 def main() -> None:
     pricing = load_go_pricing()
     models = []
+    history_models = []
     for model_id, spec in batch_models(pricing):
         slug = slugify(model_id)
-        no_skills_runs = find_arm_runs("a", slug)
-        skills_runs = find_arm_runs("b", slug)
-        a_row = latest_week_entry(model_id, spec, "a", no_skills_runs)
-        b_row = latest_week_entry(model_id, spec, "b", skills_runs)
-        if not a_row and not b_row:
-            continue
-        primary = a_row or b_row
-        row = {
-            **primary,
-            "id": model_id,
-            "name": spec["name"],
-            "no_skills": a_row,
-            "skills": b_row,
-            "trend": trend_for(no_skills_runs),
-            "skills_trend": trend_for(skills_runs),
-            "rank_score": primary["score"]["total"],
+        arm_runs = {
+            "a": find_arm_runs("a", slug),
+            "b": find_arm_runs("b", slug),
         }
-        models.append(row)
+        # The ranking holds the OpenCode series only (spec FR-8).
+        ranked_runs = {arm: series_runs(runs, RANKED_SERIES) for arm, runs in arm_runs.items()}
+        a_row = latest_week_entry(model_id, spec, "a", ranked_runs["a"])
+        b_row = latest_week_entry(model_id, spec, "b", ranked_runs["b"])
+        if a_row or b_row:
+            primary = a_row or b_row
+            if a_row:
+                a_row["ranked"] = True
+            if b_row:
+                b_row["ranked"] = True
+            row = {
+                **primary,
+                "id": model_id,
+                "name": spec["name"],
+                "no_skills": a_row,
+                "skills": b_row,
+                "trend": trend_for(ranked_runs["a"]),
+                "skills_trend": trend_for(ranked_runs["b"]),
+                "rank_score": primary["score"]["total"],
+                "ranked": True,
+            }
+            models.append(row)
+        # History: the legacy Pi series. It is labeled and never ranked.
+        pi_runs = {arm: series_runs(runs, EXECUTOR_PI) for arm, runs in arm_runs.items()}
+        pi_a = latest_week_entry(model_id, spec, "a", pi_runs["a"])
+        pi_b = latest_week_entry(model_id, spec, "b", pi_runs["b"])
+        if pi_a or pi_b:
+            if pi_a:
+                pi_a["ranked"] = False
+            if pi_b:
+                pi_b["ranked"] = False
+            history_models.append({
+                "id": model_id,
+                "name": spec["name"],
+                "provider_model": f"opencode-go/{model_id}",
+                "executor": (pi_a or pi_b).get("executor"),
+                "ranked": False,
+                "no_skills": pi_a,
+                "skills": pi_b,
+            })
     models.sort(key=lambda m: m["rank_score"], reverse=True)
 
     # The newest build canary is the reference calibration: it must score 100.
@@ -519,8 +654,29 @@ def main() -> None:
                 "passed": sum(1 for i in SCORED if results.get(i)),
                 "total": len(SCORED),
             },
+            "executor": read_executor(canary / "artifacts"),
+            "ranked": False,
         }
         break
+
+    pi_versions = sorted({
+        version
+        for entry in history_models
+        for row in (entry.get("no_skills"), entry.get("skills"))
+        for version in [((row or {}).get("executor") or {}).get("version")]
+        if version
+    })
+    history = {
+        "executor": {"kind": EXECUTOR_PI, "name": EXECUTOR_PI},
+        "versions": pi_versions,
+        "label": "History: Pi executor (not ranked)",
+        "note": (
+            "These runs used the Pi executor. They stay on disk and are published as "
+            "history. The leaderboard, the EMA trend, the 4-week range, and the paired "
+            "Skills delta use OpenCode rows only."
+        ),
+        "models": history_models,
+    }
 
     payload = {
         "schema": 1,
@@ -558,6 +714,15 @@ def main() -> None:
                     "Unranked failed a trust flag in SCORING.md."
                 ),
             },
+            "executor": {
+                "series": RANKED_SERIES,
+                "name": RANKED_SERIES,
+                "note": (
+                    "The ranking holds OpenCode rows only. Every row shows the executor "
+                    "name and version it ran with. Legacy Pi rows are published as "
+                    "history and never rank."
+                ),
+            },
             "skills_delta": paired_skills_delta(models),
         },
         "domains": DOMAINS,
@@ -566,6 +731,7 @@ def main() -> None:
         "advisory_ids": ADVISORY,
         "reference": reference,
         "models": models,
+        "history": history,
         "experiments": {},
         "pricing": {
             "source": pricing.get("source"),
@@ -583,13 +749,34 @@ def main() -> None:
         "change": {"change": 0.45, "regression": 0.25, "robustness": 0.1, "adherence": 0.1, "quality": 0.1},
     }
     tracks = {track: load_track_rows(track) for track in TRACK_PREFIXES}
+    track_history = {track: load_track_rows(track, EXECUTOR_PI) for track in TRACK_PREFIXES}
     tracks_out = OUT.parent / "tracks.json"
     tracks_out.write_text(json.dumps({
         "schema": 1,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "executor": {
+            "series": RANKED_SERIES,
+            "name": RANKED_SERIES,
+            "note": (
+                "The track tables hold OpenCode rows only. Every row shows the executor "
+                "name and version it ran with."
+            ),
+        },
         "tracks": {
             track: {"weights": track_weights[track], "models": rows}
             for track, rows in tracks.items()
+        },
+        "history": {
+            "executor": {"kind": EXECUTOR_PI, "name": EXECUTOR_PI},
+            "label": "History: Pi executor (not ranked)",
+            "note": (
+                "These runs used the Pi executor. They stay on disk and are published as "
+                "history. The track tables rank OpenCode rows only."
+            ),
+            "tracks": {
+                track: {"weights": track_weights[track], "models": rows}
+                for track, rows in track_history.items()
+            },
         },
     }, indent=2) + "\n", encoding="utf8")
     print(f"wrote {tracks_out} ({', '.join(f'{t}={len(r)}' for t, r in tracks.items())})")
@@ -600,7 +787,16 @@ def main() -> None:
         "track": "bugfix",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "scoring": {"weights": track_weights["bugfix"]},
+        "executor": {
+            "series": RANKED_SERIES,
+            "name": RANKED_SERIES,
+        },
         "models": tracks["bugfix"],
+        "history": {
+            "executor": {"kind": EXECUTOR_PI, "name": EXECUTOR_PI},
+            "label": "History: Pi executor (not ranked)",
+            "models": track_history["bugfix"],
+        },
     }, indent=2) + "\n", encoding="utf8")
     for m in models:
         go = m.get("go") or {}
@@ -611,6 +807,10 @@ def main() -> None:
             f"pass={m['passes']['passed']}/{m['passes']['total']} "
             f"monthly={pct_s}"
         )
+    print(
+        f"history (Pi executor, not ranked): {len(history_models)} models, "
+        f"{', '.join(f'{t}={len(r)}' for t, r in track_history.items())}"
+    )
 
 
 if __name__ == "__main__":

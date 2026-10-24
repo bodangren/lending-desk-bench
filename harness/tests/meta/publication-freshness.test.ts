@@ -25,8 +25,8 @@ function copyCandidate(parent: string): string {
   return candidate;
 }
 
-function currentProvenance(candidate: string, mode: "agent" | "overlay" = "agent", runId = "meta-freshness", live?: CurrentAgentRuntime) {
-  return currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, mode, live });
+function currentProvenance(candidate: string, mode: "agent" | "overlay" = "agent", runId = "meta-freshness", live?: CurrentAgentRuntime, artifacts?: string) {
+  return currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, mode, live, artifacts });
 }
 
 async function score(candidate: string, artifacts: string, environment: NodeJS.ProcessEnv = {}, runId = "meta-freshness") {
@@ -73,7 +73,7 @@ describe("live publication freshness", () => {
     try {
       writeFileSync(resolve(artifacts, "gate.json"), '{"typecheck":false,"build":false}\n');
       writeFileSync(resolve(artifacts, "collection.json"), '{"valid":true,"status":"blocked_by_gate"}\n');
-      writeFileSync(resolve(artifacts, "provenance.json"), `${JSON.stringify(currentProvenance(candidate, "agent", "meta-freshness", live))}\n`);
+      writeFileSync(resolve(artifacts, "provenance.json"), `${JSON.stringify(currentProvenance(candidate, "agent", "meta-freshness", live, artifacts))}\n`);
 
       expect(await score(candidate, artifacts, live.environment)).toMatchObject({
         valid: true,
@@ -95,10 +95,10 @@ describe("live publication freshness", () => {
     const artifacts = resolve(work, "artifacts");
     const candidate = copyCandidate(work);
     const live = createCurrentAgentRuntime({ root: work, arm: ARM, model: MODEL });
-    const provenance = currentProvenance(candidate, "agent", runId, live);
+    const provenance = currentProvenance(candidate, "agent", runId, live, artifacts);
     provenance.suite_sha256 = "0".repeat(64);
     try {
-      mkdirSync(artifacts);
+      mkdirSync(artifacts, { recursive: true });
       writeFileSync(resolve(artifacts, "gate.json"), '{"typecheck":true,"build":true}\n');
       writeFileSync(resolve(artifacts, "collection.json"), '{"valid":true,"status":"collected"}\n');
       writeFileSync(resolve(artifacts, "results.json"), `${JSON.stringify(declaredResults())}\n`);

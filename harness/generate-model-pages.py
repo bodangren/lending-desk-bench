@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Generate docs/models/<id>.html pages from benchmark.json model ids."""
+"""Generate docs/models/<id>.html pages from benchmark.json model ids.
+
+A model page shows the ranked OpenCode row and, when the model has one, a
+labeled history block with the legacy Pi rows. The history block is never
+ranked (spec FR-8).
+"""
 from __future__ import annotations
 
 import json
@@ -36,7 +41,7 @@ TEMPLATE = """<!DOCTYPE html>
   </nav>
 
   <header class="hero hero-model wrap">
-    <p class="kicker">Model · No Skills</p>
+    <p class="kicker" id="kicker">Model · No Skills</p>
     <h1 id="name">…</h1>
     <p class="lede" id="summary"></p>
     <div class="chips" id="chips"></div>
@@ -64,164 +69,244 @@ TEMPLATE = """<!DOCTYPE html>
     try {{
       const data = await loadData();
       const idx = data.models.findIndex((m) => m.id === MODEL_ID);
-      const m = data.models[idx];
-      if (!m) throw new Error("Model not found: " + MODEL_ID);
+      const m = idx >= 0 ? data.models[idx] : null;
+      const historyEntry = (data.history?.models || []).find((h) => h.id === MODEL_ID) || null;
+      if (!m && !historyEntry) throw new Error("Model not found: " + MODEL_ID);
 
-      document.title = m.name + " · Lending Desk Bench";
-      document.getElementById("name").textContent = m.name;
-      document.getElementById("summary").textContent = m.summary;
-      document.getElementById("chips").innerHTML = `
-        <span class="chip">Score <strong>${{m.score.total.toFixed(1)}}</strong></span>
-        <span class="chip">Repeats <strong>${{escapeHtml(fmtRepeats(m.repeats) || "—")}}</strong></span>
-        <span class="chip">Adherence <strong>${{m.score.adherence == null ? "—" : pct(m.score.adherence)}}</strong></span>
-        <span class="chip">Passes <strong>${{m.passes.passed}}/${{m.passes.total}}</strong></span>
-        <span class="chip">Reasoning <strong>${{escapeHtml(m.thinking || "—")}}</strong></span>
-        <span class="chip">% monthly <strong>${{fmtMonthlyPct(m.go?.monthly_pct)}}</strong></span>
-        <span class="chip">Run time <strong>${{fmtSecs(m.wall_seconds)}}</strong></span>
-      `;
+      // The executor name and version of a row, from its provenance record.
+      const execLabel = (e) => {{
+        if (!e) return "—";
+        const version = String(e.version || "").trim();
+        if (!version) return e.name;
+        return version.toLowerCase().startsWith(String(e.name).toLowerCase())
+          ? version
+          : `${{e.name}} ${{version}}`;
+      }};
 
-      const domains = DOMAIN_ORDER.filter((d) => m.domains?.[d]);
-      const failed = domains.flatMap((d) => m.domains[d].failed || []);
-      const color = modelColor(idx);
-      const {{ grid }} = chartDefaults();
+      const historyRows = historyEntry
+        ? [historyEntry.no_skills, historyEntry.skills].filter(Boolean)
+        : [];
 
-      main.innerHTML = `
-        <section class="card">
-          <div class="stat-grid">
-            <div class="stat"><span>Score (week median)</span><strong>${{m.score.total.toFixed(1)}}</strong></div>
-            <div class="stat"><span>Worst repeat</span><strong>${{m.repeats ? m.repeats.worst.toFixed(1) : "—"}}</strong></div>
-            <div class="stat"><span>Skills median</span><strong>${{m.skills?.repeats ? m.skills.repeats.median.toFixed(1) : "—"}}</strong></div>
-            <div class="stat"><span>Passes</span><strong>${{m.passes.passed}}/${{m.passes.total}}</strong></div>
-            <div class="stat"><span>Advisory</span><strong>${{m.advisory.passed}}/${{m.advisory.total}}</strong></div>
-            <div class="stat"><span>Uncached input</span><strong>${{fmtTokens(m.usage.input)}}</strong></div>
-            <div class="stat"><span>Cache hit</span><strong>${{fmtPct1(cacheHitRate(m.usage))}}</strong></div>
-            <div class="stat"><span>Output tokens</span><strong>${{fmtTokens(m.usage.output)}}</strong></div>
-            <div class="stat"><span>Cache read</span><strong>${{fmtTokens(m.usage.cacheRead)}}</strong></div>
-            <div class="stat"><span>Cache write</span><strong>${{fmtTokens(m.usage.cacheWrite)}}</strong></div>
-            <div class="stat"><span>% monthly</span><strong>${{fmtMonthlyPct(m.go?.monthly_pct)}}</strong></div>
-            <div class="stat"><span>Assistant turns</span><strong>${{m.usage.assistantTurns ?? "—"}}</strong></div>
-          </div>
-        </section>
-
-        <section class="grid-2">
-          <article class="card">
-            <h2>Domain profile</h2>
-            <div class="chart-box sm"><canvas id="radar"></canvas></div>
-          </article>
-          <article class="card">
-            <h2>Domain pass rates</h2>
-            <div class="chart-box sm"><canvas id="bars"></canvas></div>
-          </article>
-        </section>
-
-        <section class="card">
-          <h2>By domain</h2>
-          <div class="domain-grid" id="domain-detail"></div>
-        </section>
-
-        <section class="card">
-          <h2>Failed checks (${{failed.length}})</h2>
-          <div class="fail-list" id="fails"></div>
-        </section>
-
-        <section class="card">
-          <h2>Compared to peers</h2>
-          <div class="chart-box"><canvas id="peer"></canvas></div>
-        </section>
-      `;
-
-      document.getElementById("fails").innerHTML = failed.length
-        ? failed.map((id) => `<code>${{escapeHtml(id)}}</code>`).join("")
-        : `<span class="muted">No failed scored checks.</span>`;
-
-      document.getElementById("domain-detail").innerHTML = domains.map((d) => {{
-        const b = m.domains[d];
-        const meta = data.domains[d] || {{ title: d, why: "" }};
+      // The legacy Pi rows. The block is labeled and never ranked.
+      const historyBlock = () => {{
+        if (!historyRows.length) return "";
+        const rows = historyRows.map((row) => `
+          <tr>
+            <td>${{escapeHtml(row.arm_label || row.arm || "")}}</td>
+            <td class="num">${{row.score.total.toFixed(1)}}</td>
+            <td class="num">${{row.passes.passed}}/${{row.passes.total}}</td>
+            <td>${{escapeHtml(execLabel(row.executor))}}</td>
+            <td>${{escapeHtml(fmtRepeats(row.repeats))}}</td>
+            <td class="num">${{escapeHtml(fmtMonthlyPct(row.go?.monthly_pct))}}</td>
+          </tr>`).join("");
         return `
-          <article class="domain-card">
-            <h3><span class="badge">${{d}}</span>${{escapeHtml(meta.title)}}
-              <span class="muted" style="margin-left:auto;font-weight:600">${{pct(b.rate)}}</span></h3>
-            <p>${{escapeHtml(meta.why || "")}}</p>
-            <p class="who">${{b.pass}} passed · ${{b.fail}} failed</p>
-            ${{b.failed?.length ? `<div class="fail-list mt-1">${{b.failed.map((x) => `<code>${{escapeHtml(x)}}</code>`).join("")}}</div>` : ""}}
-          </article>
+          <section class="card">
+            <h2>${{escapeHtml(data.history?.label || "History")}}</h2>
+            <p class="section-lede">${{escapeHtml(data.history?.note || "")}}</p>
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Arm</th>
+                    <th class="num">Score</th>
+                    <th class="num">Passes</th>
+                    <th>Executor</th>
+                    <th>Run</th>
+                    <th class="num">% monthly</th>
+                  </tr>
+                </thead>
+                <tbody>${{rows}}</tbody>
+              </table>
+            </div>
+          </section>
         `;
-      }}).join("");
+      }};
 
-      new Chart(document.getElementById("radar"), {{
-        type: "radar",
-        data: {{
-          labels: domains,
-          datasets: [{{
-            data: domains.map((d) => Math.round(100 * domainRate(m, d))),
-            borderColor: color,
-            backgroundColor: color + "44",
-            pointBackgroundColor: color,
-            borderWidth: 2,
-            fill: true,
-          }}],
-        }},
-        options: {{
-          responsive: true, maintainAspectRatio: false,
-          plugins: {{ legend: {{ display: false }} }},
-          scales: {{ r: {{
-            min: 0, max: 100,
-            ticks: {{ display: false }},
-            grid: {{ color: grid }},
-            angleLines: {{ color: grid }},
-            pointLabels: {{ color: "#c5d0e0", font: {{ size: 12 }} }},
-          }} }},
-        }},
-      }});
+      const title = m ? m.name : historyEntry.name;
+      document.title = title + " · Lending Desk Bench";
+      document.getElementById("name").textContent = title;
+      document.getElementById("kicker").textContent = m ? "Model · No Skills" : "Model · History (not ranked)";
+      document.getElementById("summary").textContent = m
+        ? m.summary
+        : "This model has no OpenCode run yet. The rows below are history from the Pi executor. They are not ranked.";
 
-      new Chart(document.getElementById("bars"), {{
-        type: "bar",
-        data: {{
-          labels: domains,
-          datasets: [{{
-            data: domains.map((d) => Math.round(100 * domainRate(m, d))),
-            backgroundColor: color,
-            borderRadius: 6,
-            maxBarThickness: 36,
-          }}],
-        }},
-        options: {{
-          indexAxis: "y",
-          responsive: true, maintainAspectRatio: false,
-          plugins: {{ legend: {{ display: false }} }},
-          scales: {{
-            x: {{ beginAtZero: true, max: 100, grid: {{ color: grid }} }},
-            y: {{ grid: {{ display: false }} }},
+      if (m) {{
+        document.getElementById("chips").innerHTML = `
+          <span class="chip">Score <strong>${{m.score.total.toFixed(1)}}</strong></span>
+          <span class="chip">Repeats <strong>${{escapeHtml(fmtRepeats(m.repeats) || "—")}}</strong></span>
+          <span class="chip">Adherence <strong>${{m.score.adherence == null ? "—" : pct(m.score.adherence)}}</strong></span>
+          <span class="chip">Passes <strong>${{m.passes.passed}}/${{m.passes.total}}</strong></span>
+          <span class="chip">Reasoning <strong>${{escapeHtml(m.thinking || "—")}}</strong></span>
+          <span class="chip">% monthly <strong>${{fmtMonthlyPct(m.go?.monthly_pct)}}</strong></span>
+          <span class="chip">Run time <strong>${{fmtSecs(m.wall_seconds)}}</strong></span>
+          <span class="chip">Executor <strong>${{escapeHtml(execLabel(m.executor))}}</strong></span>
+        `;
+      }} else {{
+        document.getElementById("chips").innerHTML = `
+          <span class="chip">Executor <strong>${{escapeHtml(execLabel(historyEntry.executor))}}</strong></span>
+          <span class="chip">Status <strong>History, not ranked</strong></span>
+        `;
+      }}
+
+      if (!m) {{
+        main.innerHTML = `
+          <section class="card">
+            <h2>No ranked OpenCode result</h2>
+            <p class="section-lede">
+              The OpenCode series has no run for this model yet. The leaderboard, the trend,
+              the 4-week range, and the paired Skills delta use OpenCode rows only.
+            </p>
+          </section>
+          ${{historyBlock()}}
+        `;
+      }} else {{
+        const domains = DOMAIN_ORDER.filter((d) => m.domains?.[d]);
+        const failed = domains.flatMap((d) => m.domains[d].failed || []);
+        const color = modelColor(idx);
+        const {{ grid }} = chartDefaults();
+
+        main.innerHTML = `
+          <section class="card">
+            <div class="stat-grid">
+              <div class="stat"><span>Score (week median)</span><strong>${{m.score.total.toFixed(1)}}</strong></div>
+              <div class="stat"><span>Worst repeat</span><strong>${{m.repeats ? m.repeats.worst.toFixed(1) : "—"}}</strong></div>
+              <div class="stat"><span>Skills median</span><strong>${{m.skills?.repeats ? m.skills.repeats.median.toFixed(1) : "—"}}</strong></div>
+              <div class="stat"><span>Passes</span><strong>${{m.passes.passed}}/${{m.passes.total}}</strong></div>
+              <div class="stat"><span>Advisory</span><strong>${{m.advisory.passed}}/${{m.advisory.total}}</strong></div>
+              <div class="stat"><span>Uncached input</span><strong>${{fmtTokens(m.usage.input)}}</strong></div>
+              <div class="stat"><span>Cache hit</span><strong>${{fmtPct1(cacheHitRate(m.usage))}}</strong></div>
+              <div class="stat"><span>Output tokens</span><strong>${{fmtTokens(m.usage.output)}}</strong></div>
+              <div class="stat"><span>Cache read</span><strong>${{fmtTokens(m.usage.cacheRead)}}</strong></div>
+              <div class="stat"><span>Cache write</span><strong>${{fmtTokens(m.usage.cacheWrite)}}</strong></div>
+              <div class="stat"><span>% monthly</span><strong>${{fmtMonthlyPct(m.go?.monthly_pct)}}</strong></div>
+              <div class="stat"><span>Assistant turns</span><strong>${{m.usage.assistantTurns ?? "—"}}</strong></div>
+            </div>
+          </section>
+
+          <section class="grid-2">
+            <article class="card">
+              <h2>Domain profile</h2>
+              <div class="chart-box sm"><canvas id="radar"></canvas></div>
+            </article>
+            <article class="card">
+              <h2>Domain pass rates</h2>
+              <div class="chart-box sm"><canvas id="bars"></canvas></div>
+            </article>
+          </section>
+
+          <section class="card">
+            <h2>By domain</h2>
+            <div class="domain-grid" id="domain-detail"></div>
+          </section>
+
+          <section class="card">
+            <h2>Failed checks (${{failed.length}})</h2>
+            <div class="fail-list" id="fails"></div>
+          </section>
+
+          <section class="card">
+            <h2>Compared to peers</h2>
+            <div class="chart-box"><canvas id="peer"></canvas></div>
+          </section>
+
+          ${{historyBlock()}}
+        `;
+
+        document.getElementById("fails").innerHTML = failed.length
+          ? failed.map((id) => `<code>${{escapeHtml(id)}}</code>`).join("")
+          : `<span class="muted">No failed scored checks.</span>`;
+
+        document.getElementById("domain-detail").innerHTML = domains.map((d) => {{
+          const b = m.domains[d];
+          const meta = data.domains[d] || {{ title: d, why: "" }};
+          return `
+            <article class="domain-card">
+              <h3><span class="badge">${{d}}</span>${{escapeHtml(meta.title)}}
+                <span class="muted" style="margin-left:auto;font-weight:600">${{pct(b.rate)}}</span></h3>
+              <p>${{escapeHtml(meta.why || "")}}</p>
+              <p class="who">${{b.pass}} passed · ${{b.fail}} failed</p>
+              ${{b.failed?.length ? `<div class="fail-list mt-1">${{b.failed.map((x) => `<code>${{escapeHtml(x)}}</code>`).join("")}}</div>` : ""}}
+            </article>
+          `;
+        }}).join("");
+
+        new Chart(document.getElementById("radar"), {{
+          type: "radar",
+          data: {{
+            labels: domains,
+            datasets: [{{
+              data: domains.map((d) => Math.round(100 * domainRate(m, d))),
+              borderColor: color,
+              backgroundColor: color + "44",
+              pointBackgroundColor: color,
+              borderWidth: 2,
+              fill: true,
+            }}],
           }},
-        }},
-      }});
+          options: {{
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{ legend: {{ display: false }} }},
+            scales: {{ r: {{
+              min: 0, max: 100,
+              ticks: {{ display: false }},
+              grid: {{ color: grid }},
+              angleLines: {{ color: grid }},
+              pointLabels: {{ color: "#c5d0e0", font: {{ size: 12 }} }},
+            }} }},
+          }},
+        }});
 
-      // Peer comparison radar
-      new Chart(document.getElementById("peer"), {{
-        type: "radar",
-        data: {{
-          labels: domains,
-          datasets: data.models.map((peer, i) => ({{
-            label: peer.name,
-            data: domains.map((d) => Math.round(100 * domainRate(peer, d))),
-            borderColor: modelColor(i),
-            backgroundColor: peer.id === m.id ? modelColor(i) + "33" : "transparent",
-            borderWidth: peer.id === m.id ? 3 : 1,
-            pointRadius: peer.id === m.id ? 3 : 0,
-            fill: peer.id === m.id,
-          }})),
-        }},
-        options: {{
-          responsive: true, maintainAspectRatio: false,
-          plugins: {{ legend: {{ position: "bottom", labels: {{ boxWidth: 10 }} }} }},
-          scales: {{ r: {{
-            min: 0, max: 100,
-            ticks: {{ stepSize: 25, backdropColor: "transparent" }},
-            grid: {{ color: grid }},
-            pointLabels: {{ color: "#e8eef6", font: {{ weight: "600" }} }},
-          }} }},
-        }},
-      }});
+        new Chart(document.getElementById("bars"), {{
+          type: "bar",
+          data: {{
+            labels: domains,
+            datasets: [{{
+              data: domains.map((d) => Math.round(100 * domainRate(m, d))),
+              backgroundColor: color,
+              borderRadius: 6,
+              maxBarThickness: 36,
+            }}],
+          }},
+          options: {{
+            indexAxis: "y",
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{ legend: {{ display: false }} }},
+            scales: {{
+              x: {{ beginAtZero: true, max: 100, grid: {{ color: grid }} }},
+              y: {{ grid: {{ display: false }} }},
+            }},
+          }},
+        }});
+
+        // Peer comparison radar
+        if (data.models.length) {{
+          new Chart(document.getElementById("peer"), {{
+            type: "radar",
+            data: {{
+              labels: domains,
+              datasets: data.models.map((peer, i) => ({{
+                label: peer.name,
+                data: domains.map((d) => Math.round(100 * domainRate(peer, d))),
+                borderColor: modelColor(i),
+                backgroundColor: peer.id === m.id ? modelColor(i) + "33" : "transparent",
+                borderWidth: peer.id === m.id ? 3 : 1,
+                pointRadius: peer.id === m.id ? 3 : 0,
+                fill: peer.id === m.id,
+              }})),
+            }},
+            options: {{
+              responsive: true, maintainAspectRatio: false,
+              plugins: {{ legend: {{ position: "bottom", labels: {{ boxWidth: 10 }} }} }},
+              scales: {{ r: {{
+                min: 0, max: 100,
+                ticks: {{ stepSize: 25, backdropColor: "transparent" }},
+                grid: {{ color: grid }},
+                pointLabels: {{ color: "#e8eef6", font: {{ weight: "600" }} }},
+              }} }},
+            }},
+          }});
+        }}
+      }}
     }} catch (err) {{
       mountError(main, err);
     }}
@@ -234,10 +319,15 @@ TEMPLATE = """<!DOCTYPE html>
 def main() -> None:
     data = json.loads(DATA.read_text(encoding="utf8"))
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    for m in data["models"]:
-        path = OUT_DIR / f"{m['id']}.html"
+    models = {m["id"]: m for m in data["models"]}
+    # A model with only history still gets a page: it shows the labeled history
+    # block and states that it is not ranked.
+    for entry in (data.get("history") or {}).get("models", []):
+        models.setdefault(entry["id"], entry)
+    for model_id, model in models.items():
+        path = OUT_DIR / f"{model_id}.html"
         path.write_text(
-            TEMPLATE.format(name=m["name"], id_js=json.dumps(m["id"])),
+            TEMPLATE.format(name=model["name"], id_js=json.dumps(model_id)),
             encoding="utf8",
         )
         print(f"wrote {path}")

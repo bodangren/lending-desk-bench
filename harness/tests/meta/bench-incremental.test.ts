@@ -161,6 +161,7 @@ async function makeTemplate(parent: string, track: BenchTrack, arm: Arm): Promis
     arm,
     live: runtime,
     track,
+    artifacts,
   }) as Json;
   const binding = installTrackBinding(track, artifacts, variant);
   const provenance = { ...initial, track, ...binding };
@@ -281,6 +282,9 @@ function planWork(workspace: Workspace, extra: NodeJS.ProcessEnv = {}): ReturnTy
     env: envWithoutTrack({
       BENCH_RUNS_ROOT: workspace.runs,
       BENCH_PRICING_PATH: workspace.pricing,
+      // The selector prefers the bare REPS value over the per-track values.
+      // An ambient REPS from the caller must not change the repeat count.
+      REPS: undefined,
       REPS_BUILD: "3",
       REPS_BUGFIX: "1",
       REPS_TESTS: "1",

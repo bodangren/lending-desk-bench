@@ -2,6 +2,13 @@
  * Evidence for the exact executor that produced a candidate. The fingerprint
  * intentionally covers the resolved, inspectable inputs rather than a runner
  * configuration template.
+ *
+ * Schema 2 (kind "opencode") records the OpenCode executor: the resolved
+ * binary, the pinned image, the generated config, the entry script, the
+ * shipped helpers, the per-run skill snapshot, the runtime and CLI flags,
+ * and the access-only credential descriptor. Schema 1 (Pi) records stay
+ * readable through validateExecutionIdentity so legacy provenance never
+ * crashes a freshness check.
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -19,22 +26,30 @@ export const ARM_B_SKILLS = [
 
 type Arm = "a" | "b";
 type JsonRecord = Record<string, unknown>;
+type BinaryEvidence = { path: string; sha256: string; version: string };
 type AgentIdentity = {
-  schema: 1;
+  schema: 2;
+  kind: "opencode";
   run_id: string;
   arm: Arm;
+  opencode: BinaryEvidence;
   image_reference: string;
   image_identity: string;
-  pi: { path: string; sha256: string; version: string };
+  model_ref: string;
+  variant: string | null;
+  config_sha256: string;
+  entry_sha256: string;
+  helpers: { rg: BinaryEvidence };
   skills: Record<string, string>;
   skill_tree_sha256: string;
   runtime_flags: string[];
   runtime_flags_sha256: string;
   cli_flags: string[];
   cli_flags_sha256: string;
+  credential: { integration: "opencode"; method: "oauth"; refresh_token_delivered: false };
 };
 type NotInvokedIdentity = {
-  schema: 1;
+  schema: 2;
   kind: "not-invoked";
   run_id: string;
   arm: Arm;
@@ -46,7 +61,11 @@ export type ResolveExecutionIdentityInput = {
   arm: Arm;
   mode?: "agent" | "overlay";
   imageReference?: string;
-  piPath?: string;
+  opencodePath?: string;
+  modelRef?: string;
+  configPath?: string;
+  entryPath?: string;
+  rgPath?: string;
   skillRoots?: Partial<Record<(typeof ARM_B_SKILLS)[number], string>>;
   runtimeFlags?: string[];
   cliFlags?: string[];
@@ -79,7 +98,7 @@ function stableJson(value: unknown): string {
   return JSON.stringify(null);
 }
 
-function hashTree(root: string): string {
+export function hashTree(root: string): string {
   const files: string[] = [];
   const visit = (dir: string): void => {
     for (const entry of readdirSync(dir, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
@@ -101,13 +120,13 @@ function requireDigestImage(reference: string): string {
   return match[1];
 }
 
-function resolvePi(path: string): AgentIdentity["pi"] {
+function resolveBinary(path: string, name: string): BinaryEvidence {
   const result = spawnSync(path, ["--version"], { encoding: "utf8" });
   if (result.error || result.status !== 0) {
-    throw new Error("could not resolve Pi version: " + (result.error?.message ?? result.stderr.trim() ?? "nonzero exit"));
+    throw new Error(`could not resolve ${name} version: ` + (result.error?.message ?? result.stderr.trim() ?? "nonzero exit"));
   }
   const version = result.stdout.trim() || result.stderr.trim();
-  if (!version) throw new Error("Pi did not report a version");
+  if (!version) throw new Error(name + " did not report a version");
   return { path, sha256: sha256(readFileSync(path)), version };
 }
 
@@ -117,10 +136,11 @@ export function resolveExecutionIdentity(input: ResolveExecutionIdentityInput): 
   }
   if (input.arm !== "a" && input.arm !== "b") throw new Error("invalid execution arm");
   if (input.mode === "overlay") {
-    return { schema: 1, kind: "not-invoked", run_id: input.runId, arm: input.arm, reason: "AGENT_SKIP=1" };
+    return { schema: 2, kind: "not-invoked", run_id: input.runId, arm: input.arm, reason: "AGENT_SKIP=1" };
   }
-  if (!input.imageReference || !input.piPath || !input.runtimeFlags || !input.cliFlags) {
-    throw new Error("agent execution identity requires image, Pi, runtime flags, and CLI flags");
+  if (!input.imageReference || !input.opencodePath || !input.modelRef || !input.configPath || !input.entryPath ||
+      !input.rgPath || !input.runtimeFlags || !input.cliFlags) {
+    throw new Error("agent execution identity requires image, OpenCode, config, entry, helper, model, runtime flags, and CLI flags");
   }
   const skills: Record<string, string> = {};
   if (input.arm === "b") {
@@ -131,18 +151,25 @@ export function resolveExecutionIdentity(input: ResolveExecutionIdentityInput): 
     }
   }
   return {
-    schema: 1,
+    schema: 2,
+    kind: "opencode",
     run_id: input.runId,
     arm: input.arm,
+    opencode: resolveBinary(input.opencodePath, "OpenCode"),
     image_reference: input.imageReference,
     image_identity: requireDigestImage(input.imageReference),
-    pi: resolvePi(input.piPath),
+    model_ref: input.modelRef,
+    variant: null,
+    config_sha256: sha256(readFileSync(input.configPath)),
+    entry_sha256: sha256(readFileSync(input.entryPath)),
+    helpers: { rg: resolveBinary(input.rgPath, "ripgrep") },
     skills,
     skill_tree_sha256: sha256(JSON.stringify(skills)),
     runtime_flags: [...input.runtimeFlags],
     runtime_flags_sha256: sha256(JSON.stringify(input.runtimeFlags)),
     cli_flags: [...input.cliFlags],
     cli_flags_sha256: sha256(JSON.stringify(input.cliFlags)),
+    credential: { integration: "opencode", method: "oauth", refresh_token_delivered: false },
   };
 }
 
@@ -150,19 +177,41 @@ export function executionIdentityFingerprint(identity: unknown): string {
   return sha256(stableJson(identity));
 }
 
-export function validateExecutionIdentity(identity: unknown, expected: { runId: string; arm: Arm; mode?: "agent" | "overlay" }): string[] {
+function validateNotInvoked(identity: JsonRecord, expected: { runId: string; arm: Arm; mode?: "agent" | "overlay" }): string[] {
   const errors: string[] = [];
-  if (!isRecord(identity)) return ["execution identity is not an object"];
-  if (identity.schema !== 1) errors.push("execution identity schema is invalid");
-  if (identity.run_id !== expected.runId) errors.push("execution identity run ID does not match");
-  if (identity.arm !== expected.arm) errors.push("execution identity arm does not match");
+  if (expected.mode === "agent") errors.push("agent execution cannot use a not-invoked identity");
+  if (identity.reason !== "AGENT_SKIP=1") errors.push("not-invoked identity reason is invalid");
+  return errors;
+}
 
-  if (identity.kind === "not-invoked") {
-    if (expected.mode === "agent") errors.push("agent execution cannot use a not-invoked identity");
-    if (identity.reason !== "AGENT_SKIP=1") errors.push("not-invoked identity reason is invalid");
-    return errors;
+function validateFlagEvidence(identity: JsonRecord): string[] {
+  const errors: string[] = [];
+  if (!stringArray(identity.runtime_flags) || identity.runtime_flags_sha256 !== sha256(JSON.stringify(identity.runtime_flags))) {
+    errors.push("execution runtime flags are incomplete or mismatched");
   }
-  if (expected.mode === "overlay") errors.push("overlay execution must use a not-invoked identity");
+  if (!stringArray(identity.cli_flags) || identity.cli_flags_sha256 !== sha256(JSON.stringify(identity.cli_flags))) {
+    errors.push("execution CLI flags are incomplete or mismatched");
+  }
+  return errors;
+}
+
+function validateSkills(identity: JsonRecord, arm: Arm): string[] {
+  const skills = isRecord(identity.skills) ? identity.skills : undefined;
+  if (!skills) return ["execution skills are missing"];
+  const errors: string[] = [];
+  const expectedSkills = arm === "b" ? [...ARM_B_SKILLS] : [];
+  const actualSkills = Object.keys(skills).sort();
+  if (actualSkills.join("\0") !== expectedSkills.sort().join("\0") || actualSkills.some((name) => !isSha256(skills[name]))) {
+    errors.push("execution skills do not match the arm contract");
+  }
+  if (identity.skill_tree_sha256 !== sha256(JSON.stringify(skills))) {
+    errors.push("execution skill-tree hash does not match skills");
+  }
+  return errors;
+}
+
+function validateImage(identity: JsonRecord): string[] {
+  const errors: string[] = [];
   if (typeof identity.image_reference !== "string") errors.push("execution image reference is missing");
   let imageIdentity = "";
   try {
@@ -171,31 +220,73 @@ export function validateExecutionIdentity(identity: unknown, expected: { runId: 
     errors.push(error instanceof Error ? error.message : String(error));
   }
   if (identity.image_identity !== imageIdentity) errors.push("execution image identity does not match image reference");
+  return errors;
+}
 
-  const pi = isRecord(identity.pi) ? identity.pi : undefined;
-  if (!pi || typeof pi.path !== "string" || !pi.path || !isSha256(pi.sha256) || typeof pi.version !== "string" || !pi.version) {
-    errors.push("execution Pi evidence is incomplete");
+function validateBinaryEvidence(value: unknown, label: string): string[] {
+  const evidence = isRecord(value) ? value : undefined;
+  if (!evidence || typeof evidence.path !== "string" || !evidence.path ||
+      !isSha256(evidence.sha256) || typeof evidence.version !== "string" || !evidence.version) {
+    return ["execution " + label + " evidence is incomplete"];
   }
-  const skills = isRecord(identity.skills) ? identity.skills : undefined;
-  if (!skills) {
-    errors.push("execution skills are missing");
+  return [];
+}
+
+function validateOpencodeIdentity(identity: JsonRecord, expected: { runId: string; arm: Arm; mode?: "agent" | "overlay" }): string[] {
+  const errors: string[] = [];
+  if (identity.kind !== "opencode") errors.push("execution identity kind is invalid");
+  errors.push(...validateImage(identity));
+  errors.push(...validateBinaryEvidence(identity.opencode, "OpenCode"));
+  if (typeof identity.model_ref !== "string" || !identity.model_ref) errors.push("execution model reference is missing");
+  if (identity.variant !== null && typeof identity.variant !== "string") errors.push("execution variant is invalid");
+  if (!isSha256(identity.config_sha256)) errors.push("execution config hash is missing");
+  if (!isSha256(identity.entry_sha256)) errors.push("execution entry hash is missing");
+  const helpers = isRecord(identity.helpers) ? identity.helpers : undefined;
+  if (!helpers) {
+    errors.push("execution helpers are missing");
   } else {
-    const expectedSkills = expected.arm === "b" ? [...ARM_B_SKILLS] : [];
-    const actualSkills = Object.keys(skills).sort();
-    if (actualSkills.join("\0") !== expectedSkills.sort().join("\0") || actualSkills.some((name) => !isSha256(skills[name]))) {
-      errors.push("execution skills do not match the arm contract");
-    }
-    if (identity.skill_tree_sha256 !== sha256(JSON.stringify(skills))) {
-      errors.push("execution skill-tree hash does not match skills");
-    }
+    errors.push(...validateBinaryEvidence(helpers.rg, "ripgrep helper"));
   }
-  if (!stringArray(identity.runtime_flags) || identity.runtime_flags_sha256 !== sha256(JSON.stringify(identity.runtime_flags))) {
-    errors.push("execution runtime flags are incomplete or mismatched");
-  }
-  if (!stringArray(identity.cli_flags) || identity.cli_flags_sha256 !== sha256(JSON.stringify(identity.cli_flags))) {
-    errors.push("execution CLI flags are incomplete or mismatched");
+  errors.push(...validateSkills(identity, expected.arm));
+  errors.push(...validateFlagEvidence(identity));
+  const credential = isRecord(identity.credential) ? identity.credential : undefined;
+  if (!credential || credential.integration !== "opencode" || credential.method !== "oauth" ||
+      credential.refresh_token_delivered !== false) {
+    errors.push("execution credential descriptor is invalid");
   }
   return errors;
+}
+
+function validatePiIdentity(identity: JsonRecord, expected: { runId: string; arm: Arm; mode?: "agent" | "overlay" }): string[] {
+  const errors: string[] = [];
+  errors.push(...validateImage(identity));
+  errors.push(...validateBinaryEvidence(identity.pi, "Pi"));
+  errors.push(...validateSkills(identity, expected.arm));
+  errors.push(...validateFlagEvidence(identity));
+  return errors;
+}
+
+export function validateExecutionIdentity(identity: unknown, expected: { runId: string; arm: Arm; mode?: "agent" | "overlay" }): string[] {
+  const errors: string[] = [];
+  if (!isRecord(identity)) return ["execution identity is not an object"];
+  if (identity.schema === 2) {
+    if (identity.run_id !== expected.runId) errors.push("execution identity run ID does not match");
+    if (identity.arm !== expected.arm) errors.push("execution identity arm does not match");
+    if (identity.kind === "not-invoked") return [...errors, ...validateNotInvoked(identity, expected)];
+    if (expected.mode === "overlay") errors.push("overlay execution must use a not-invoked identity");
+    return [...errors, ...validateOpencodeIdentity(identity, expected)];
+  }
+  if (identity.schema !== 1) {
+    errors.push("execution identity schema is invalid");
+    return errors;
+  }
+  // Schema 1 is the legacy Pi shape. It stays readable so schema-6 provenance
+  // records label Pi history without crashing the freshness check.
+  if (identity.run_id !== expected.runId) errors.push("execution identity run ID does not match");
+  if (identity.arm !== expected.arm) errors.push("execution identity arm does not match");
+  if (identity.kind === "not-invoked") return [...errors, ...validateNotInvoked(identity, expected)];
+  if (expected.mode === "overlay") errors.push("overlay execution must use a not-invoked identity");
+  return [...errors, ...validatePiIdentity(identity, expected)];
 }
 
 function fromEnvironment(): ExecutionIdentity {
@@ -218,7 +309,11 @@ function fromEnvironment(): ExecutionIdentity {
     arm,
     mode,
     imageReference: environment.EXECUTION_IMAGE_REFERENCE,
-    piPath: environment.EXECUTION_PI_PATH,
+    opencodePath: environment.EXECUTION_OPENCODE_PATH,
+    modelRef: environment.EXECUTION_MODEL_REF,
+    configPath: environment.EXECUTION_CONFIG_PATH,
+    entryPath: environment.EXECUTION_ENTRY_PATH,
+    rgPath: environment.EXECUTION_RG_PATH,
     skillRoots,
     runtimeFlags: parseArray("EXECUTION_RUNTIME_FLAGS"),
     cliFlags: parseArray("EXECUTION_CLI_FLAGS"),

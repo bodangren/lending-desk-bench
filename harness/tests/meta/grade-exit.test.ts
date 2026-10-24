@@ -24,8 +24,8 @@ function setupCandidate(runIdPrefix: string) {
   return { work, candidate, runId: basename(work), artifacts: resolve(work, "artifacts") };
 }
 
-function schema4Provenance(candidate: string, runId: string, live: CurrentAgentRuntime) {
-  return currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live });
+function schema4Provenance(candidate: string, runId: string, live: CurrentAgentRuntime, artifacts: string) {
+  return currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live, artifacts });
 }
 
 function grade(runId: string, environment: NodeJS.ProcessEnv = {}) {
@@ -55,7 +55,7 @@ describe("standalone grade exit semantics", () => {
     const live = createCurrentAgentRuntime({ root: work, arm: ARM, model: MODEL });
     try {
       mkdirSync(artifacts);
-      writeFileSync(resolve(artifacts, "provenance.json"), `${JSON.stringify(schema4Provenance(candidate, runId, live))}\n`);
+      writeFileSync(resolve(artifacts, "provenance.json"), `${JSON.stringify(schema4Provenance(candidate, runId, live, artifacts))}\n`);
       const result = grade(runId, live.environment);
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
       const score = JSON.parse(readFileSync(resolve(artifacts, "score.json"), "utf8"));

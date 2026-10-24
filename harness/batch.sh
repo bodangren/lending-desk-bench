@@ -31,6 +31,13 @@
 # as new models. The work list never writes run artifacts.
 set -u
 cd "$(dirname "${BASH_SOURCE[0]}")"
+# FR-9: under the crontab PATH, node resolves to the snap dispatcher, which
+# breaks tsx. Fall back to the operator nvm toolchain when node is missing or
+# is the snap dispatcher.
+if ! command -v node >/dev/null 2>&1 || [ "$(command -v node)" = "/snap/bin/node" ]; then
+  # shellcheck source=toolchain.sh
+  source "./toolchain.sh"
+fi
 # shellcheck source=env.sh
 source "./env.sh"
 
@@ -184,7 +191,9 @@ else
   echo "SELF-CHECK $(date -Is) — $meta_script"
   # The self-check is track-neutral: the meta suite grades build-track fixtures,
   # so a non-build BENCH_TRACK exported for the batch must not leak into it.
-  if ! env -u BENCH_TRACK npm run --silent "$meta_script" > "meta-selfcheck.log" 2>&1; then
+  # The repeat-count variables are scrubbed for the same reason: the suite
+  # asserts the default repeat counts.
+  if ! env -u BENCH_TRACK -u REPS -u REPS_BUILD -u REPS_BUGFIX -u REPS_TESTS -u REPS_CHANGE npm run --silent "$meta_script" > "meta-selfcheck.log" 2>&1; then
     echo "harness self-check failed: the meta suite did not pass" >&2
     echo "see harness/meta-selfcheck.log" >&2
     exit 3
@@ -202,6 +211,78 @@ else
   echo "SELF-CHECK PASS $(date -Is)"
   if [ -n "${BENCH_SELFCHECK_MARKER:-}" ]; then touch "$BENCH_SELFCHECK_MARKER"; fi
 fi
+
+# ---- Executor preflight -------------------------------------------------------
+# FR-2/FR-3, fail closed (NFR-6): check the executor before any agent run, with
+# no prompt and no run directory. One Console export drives both the weekly
+# expiry warning and the run-window check.
+echo "EXECUTOR PREFLIGHT $(date -Is)"
+if [ -n "${BENCH_OPENCODE_BIN:-}" ]; then
+  PREFLIGHT_OPENCODE_BIN="$BENCH_OPENCODE_BIN"
+else
+  PREFLIGHT_OPENCODE_BIN="$(command -v opencode || true)"
+fi
+if [ -z "$PREFLIGHT_OPENCODE_BIN" ] || [ ! -x "$PREFLIGHT_OPENCODE_BIN" ]; then
+  echo "executor preflight failed: no opencode binary on the toolchain PATH" >&2
+  exit 3
+fi
+PREFLIGHT_OPENCODE_VERSION="$("$PREFLIGHT_OPENCODE_BIN" --version 2>/dev/null | head -n 1 || true)"
+case "$PREFLIGHT_OPENCODE_VERSION" in
+  "opencode v2."*) ;;
+  *) echo "executor preflight failed: opencode 2.x is required, got: ${PREFLIGHT_OPENCODE_VERSION:-none}" >&2; exit 3 ;;
+esac
+
+if ! "$PWD/opencode-credential.sh" preflight; then
+  exit 3
+fi
+
+# FR-4 helper supply: verify the resolved ripgrep helper before the batch.
+RG_PINNED_SHA256="ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2"
+RG_RESOLVED="${BENCH_RG_BIN:-}"
+RG_RESOLVED_SOURCE="bench"
+if [ -z "$RG_RESOLVED" ] || [ ! -x "$RG_RESOLVED" ]; then
+  RG_RESOLVED="$HOME/.local/share/lending-desk-bench/rg"
+  RG_RESOLVED_SOURCE="install"
+fi
+if [ ! -x "$RG_RESOLVED" ]; then
+  RG_RESOLVED="$(command -v rg || true)"
+  RG_RESOLVED_SOURCE="path"
+fi
+if [ -z "$RG_RESOLVED" ]; then
+  echo "WARNING: no ripgrep helper resolved; install the pinned build with harness/fetch-rg.sh — the agent grep tool may fail" >&2
+else
+  RG_RESOLVED_SHA256="$(sha256sum "$RG_RESOLVED" | awk '{print $1}')"
+  if [ "$RG_RESOLVED_SHA256" != "$RG_PINNED_SHA256" ]; then
+    RG_RESOLVED_VERSION="$("$RG_RESOLVED" --version 2>/dev/null | awk 'NR == 1 {print $2}')"
+    if [ "$RG_RESOLVED_SOURCE" = "path" ] && [ "$RG_RESOLVED_VERSION" = "15.1.0" ]; then
+      echo "WARNING: rg at $RG_RESOLVED is not the pinned musl build; it may not run in the container image" >&2
+    else
+      echo "executor preflight failed: ripgrep helper at $RG_RESOLVED does not match the pinned build" >&2
+      exit 3
+    fi
+  fi
+fi
+
+# FR-2: the first scheduled model must be listed by `opencode models`. A
+# transient exit 1 retries up to 2 times with a 5 s delay; a successful list
+# without the model stops the batch at once (a missing model is not transient).
+IFS='|' read -r first_provider first_model _first_slug <<< "${MODELS[0]:-}"
+FIRST_MODEL_REF="${first_provider:-opencode-go}/${first_model:-}"
+models_listed=""
+for attempt in 1 2 3; do
+  if MODELS_OUT="$("$PREFLIGHT_OPENCODE_BIN" models 2>/dev/null)"; then
+    if printf '%s\n' "$MODELS_OUT" | grep -qF "$FIRST_MODEL_REF"; then
+      models_listed=1
+    fi
+    break
+  fi
+  [ "$attempt" -lt 3 ] && sleep 5
+done
+if [ "$models_listed" != "1" ]; then
+  echo "executor preflight failed: opencode models does not list $FIRST_MODEL_REF" >&2
+  exit 3
+fi
+echo "EXECUTOR PREFLIGHT PASS $(date -Is)"
 
 # ---- Canary --------------------------------------------------------------------
 # Grade the track's calibration candidate through the normal run.sh/grade.sh path

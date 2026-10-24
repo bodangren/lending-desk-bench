@@ -6,6 +6,7 @@ import { assessCandidateContract } from "../../candidate-contract";
 import { executionIdentityFingerprint, ARM_B_SKILLS, resolveExecutionIdentity } from "../../execution-identity";
 import { currentHashes } from "../../provenance";
 import { ADVISORY, CRITERIA, PROBES } from "../criteria";
+import { createCurrentAgentRuntime, currentSchema4Provenance } from "./schema4-fixtures";
 import { envWithoutTrack, freshnessInProcess, scoreInProcess } from "./score-helpers";
 
 const IMAGE = "docker.io/library/node@sha256:" + "a".repeat(64);
@@ -22,7 +23,11 @@ type LiveExecutor = {
   runId: string;
   arm: "b";
   imageReference: string;
-  piPath: string;
+  opencodePath: string;
+  rgPath: string;
+  configPath: string;
+  entryPath: string;
+  modelRef: string;
   skillRoots: Record<(typeof ARM_B_SKILLS)[number], string>;
   runtimeFlags: string[];
   cliFlags: string[];
@@ -30,18 +35,39 @@ type LiveExecutor = {
 
 type PreparedExecutor = {
   temp: string;
-  pi: string;
+  opencode: string;
   skills: Record<(typeof ARM_B_SKILLS)[number], string>;
+  artifacts: string;
+  capture: string;
   identity: Json;
   live: LiveExecutor;
   frozenCohort: Json;
 };
 
-function makeLiveExecutor(temp: string): { pi: string; skills: PreparedExecutor["skills"]; live: LiveExecutor } {
-  const pi = resolve(temp, "pi", "bin", "pi");
-  mkdirSync(resolve(temp, "pi", "bin"), { recursive: true });
-  writeFileSync(pi, "#!/usr/bin/env sh\necho pi 9.9.9\n");
-  chmodSync(pi, 0o755);
+function makeLiveExecutor(temp: string): { opencode: string; skills: PreparedExecutor["skills"]; artifacts: string; capture: string; live: LiveExecutor } {
+  const capture = resolve(temp, "opencode-calls.jsonl");
+  const opencode = resolve(temp, "opencode", "bin", "opencode");
+  mkdirSync(resolve(temp, "opencode", "bin"), { recursive: true });
+  writeFileSync(opencode, `#!${process.execPath}
+const fs = require("node:fs");
+fs.appendFileSync(${JSON.stringify(capture)}, JSON.stringify(process.argv.slice(2)) + "\\n");
+if (process.argv[2] === "--version") console.log("opencode v2.0.32");
+`);
+  chmodSync(opencode, 0o755);
+
+  const rg = resolve(temp, "rg");
+  writeFileSync(rg, "#!/bin/sh\necho ripgrep 15.1.0\n");
+  chmodSync(rg, 0o755);
+
+  const config = resolve(temp, "executor", "opencode.json");
+  mkdirSync(resolve(temp, "executor"), { recursive: true });
+  writeFileSync(config, JSON.stringify({
+    $schema: "https://opencode.ai/config.json",
+    model: "opencode-go/meta/live",
+    permissions: [],
+  }) + "\n");
+  const entry = resolve(temp, "opencode-entry.sh");
+  writeFileSync(entry, "#!/bin/sh\nexit 0\n");
 
   const skills = Object.fromEntries(ARM_B_SKILLS.map((skill) => {
     const root = resolve(temp, "skills", skill);
@@ -49,37 +75,59 @@ function makeLiveExecutor(temp: string): { pi: string; skills: PreparedExecutor[
     writeFileSync(resolve(root, "SKILL.md"), "# " + skill + "\n");
     return [skill, root];
   })) as PreparedExecutor["skills"];
+
+  // The run's own recorded snapshots: attestation re-hashes these, never the
+  // live executor tree (FR-6).
+  const artifacts = resolve(temp, "artifacts");
+  mkdirSync(resolve(artifacts, "executor"), { recursive: true });
+  writeFileSync(resolve(artifacts, "executor", "opencode.json"), readFileSync(config));
+  cpSync(resolve(temp, "skills"), resolve(artifacts, "executor", "skills"), { recursive: true });
+
   return {
-    pi,
+    opencode,
     skills,
+    artifacts,
+    capture,
     live: {
       runId: "meta-live-executor",
       arm: "b",
       imageReference: IMAGE,
-      piPath: pi,
+      opencodePath: opencode,
+      rgPath: rg,
+      configPath: config,
+      entryPath: entry,
+      modelRef: "opencode-go/meta/live",
       skillRoots: skills,
       runtimeFlags: ["run", "--pull=never", "--read-only"],
-      cliFlags: ["/opt/pi/bin/pi", "--provider", "local", "--model", "meta/live", "--thinking", "xhigh"],
+      cliFlags: ["run", "--standalone", "--format", "json", "--auto", "--model", "opencode-go/meta/live"],
     },
   };
 }
 
 function prepareExecutor(): PreparedExecutor {
   const temp = mkdtempSync(resolve(tmpdir(), "lending-desk-live-executor-"));
-  const { pi, skills, live } = makeLiveExecutor(temp);
+  const { opencode, skills, artifacts, capture, live } = makeLiveExecutor(temp);
   const identity = resolveExecutionIdentity(live) as Json;
   const frozenCohort = {
     schema: 1,
     id: COHORT,
     image_reference: identity.image_reference,
     image_identity: identity.image_identity,
-    pi: identity.pi,
+    opencode: identity.opencode,
+    model_ref: identity.model_ref,
+    variant: identity.variant,
+    config_sha256: identity.config_sha256,
+    entry_sha256: identity.entry_sha256,
+    helpers: identity.helpers,
+    credential: identity.credential,
+    runtime_flags: identity.runtime_flags,
+    cli_flags: identity.cli_flags,
     arms: {
       a: { skills: {}, skill_tree_sha256: undefined },
       b: { skills: identity.skills, skill_tree_sha256: identity.skill_tree_sha256 },
     },
   };
-  return { temp, pi, skills, identity, live, frozenCohort };
+  return { temp, opencode, skills, artifacts, capture, identity, live, frozenCohort };
 }
 
 async function attestCurrentExecutor(input: Json): Promise<Json> {
@@ -107,11 +155,12 @@ function attestationInput(prepared: PreparedExecutor, overrides: Partial<Json> =
       executor: prepared.identity,
     },
     frozen_cohort: prepared.frozenCohort,
+    artifacts: prepared.artifacts,
     live: {
       run_id: prepared.live.runId,
       arm: prepared.live.arm,
       image_reference: prepared.live.imageReference,
-      pi_path: prepared.live.piPath,
+      opencode_path: prepared.live.opencodePath,
       skill_roots: prepared.live.skillRoots,
       runtime_flags: prepared.live.runtimeFlags,
       cli_flags: prepared.live.cliFlags,
@@ -183,9 +232,31 @@ describe("current executor attestation", () => {
   it("rejects a live Pi binary and version drift after identity capture", async () => {
     const prepared = prepareExecutor();
     try {
-      writeFileSync(prepared.pi, "#!/usr/bin/env sh\necho pi 9.9.10\n");
-      chmodSync(prepared.pi, 0o755);
-      expectRejected(await attestCurrentExecutor(attestationInput(prepared)));
+      // FR-6: attestation never resolves a live binary. A live version drift
+      // at the recorded path and drifted live evidence never enter the check,
+      // so the recorded control stays eligible and no binary runs.
+      writeFileSync(prepared.opencode, `#!${process.execPath}\nconsole.log("opencode v2.99.0");\n`);
+      chmodSync(prepared.opencode, 0o755);
+      writeFileSync(prepared.capture, "");
+      const attestation = await attestCurrentExecutor(attestationInput(prepared, {
+        live: {
+          run_id: prepared.live.runId,
+          arm: prepared.live.arm,
+          image_reference: DRIFTED_IMAGE,
+          opencode_path: prepared.live.opencodePath,
+          skill_roots: prepared.live.skillRoots,
+          runtime_flags: [...prepared.live.runtimeFlags, "--privileged"],
+          cli_flags: [...prepared.live.cliFlags, "--thinking", "max"],
+        },
+      }));
+      expect(attestation).toMatchObject({
+        schema: 1,
+        current: true,
+        cohort_compatible: true,
+        eligible: true,
+        reasons: [],
+      });
+      expect(readFileSync(prepared.capture, "utf8"), "attestation must never execute a live binary").toBe("");
     } finally {
       rmSync(prepared.temp, { recursive: true, force: true });
     }
@@ -194,8 +265,19 @@ describe("current executor attestation", () => {
   it("rejects a live Arm-B skill-tree drift after identity capture", async () => {
     const prepared = prepareExecutor();
     try {
-      writeFileSync(resolve(prepared.skills.measure, "drift.md"), "this changes the mounted skill tree\n");
-      expectRejected(await attestCurrentExecutor(attestationInput(prepared)));
+      // Live source drift never enters the check (FR-6): the run reads its own
+      // recorded snapshot, so drift there is the rejection signal.
+      writeFileSync(resolve(prepared.skills.measure, "drift.md"), "this changes the live skill source\n");
+      await expect(attestCurrentExecutor(attestationInput(prepared))).resolves.toMatchObject({
+        current: true,
+        cohort_compatible: true,
+        eligible: true,
+        reasons: [],
+      });
+      writeFileSync(resolve(prepared.artifacts, "executor/skills/measure/SKILL.md"), "# changed snapshot\n");
+      const attestation = await attestCurrentExecutor(attestationInput(prepared));
+      expectRejected(attestation);
+      expect((attestation.reasons as string[]).join(" ")).toMatch(/skill|snapshot/i);
     } finally {
       rmSync(prepared.temp, { recursive: true, force: true });
     }
@@ -204,17 +286,24 @@ describe("current executor attestation", () => {
   it("rejects a live image digest and identity drift after identity capture", async () => {
     const prepared = prepareExecutor();
     try {
-      expectRejected(await attestCurrentExecutor(attestationInput(prepared, {
+      // A drifted live image digest is ignored (FR-6); recorded identity drift
+      // after capture still rejects.
+      await expect(attestCurrentExecutor(attestationInput(prepared, {
         live: {
           run_id: prepared.live.runId,
           arm: prepared.live.arm,
           image_reference: DRIFTED_IMAGE,
-          pi_path: prepared.live.piPath,
+          opencode_path: prepared.live.opencodePath,
           skill_roots: prepared.live.skillRoots,
           runtime_flags: prepared.live.runtimeFlags,
           cli_flags: prepared.live.cliFlags,
         },
-      })));
+      }))).resolves.toMatchObject({ current: true, cohort_compatible: true, eligible: true, reasons: [] });
+      const input = attestationInput(prepared);
+      (input.record as Json).executor = { ...prepared.identity, image_identity: "b".repeat(64) };
+      const attestation = await attestCurrentExecutor(input);
+      expectRejected(attestation);
+      expect((attestation.reasons as string[]).join(" ")).toMatch(/image/i);
     } finally {
       rmSync(prepared.temp, { recursive: true, force: true });
     }
@@ -243,27 +332,19 @@ describe("current executor attestation", () => {
     { missing: ["cohort_id"], label: "cohort_id only" },
     { missing: ["executor_cohort"], label: "executor_cohort only" },
   ])("fails closed for a fresh agent score missing $label", async ({ missing }) => {
-    const prepared = prepareExecutor();
+    const executorRoot = mkdtempSync(resolve(tmpdir(), "lending-desk-missing-cohort-env-"));
     const work = mkdtempSync(resolve(ROOT, "runs", "meta-executor-missing-cohort-"));
     const runId = basename(work);
     const artifacts = resolve(work, "artifacts");
     const candidate = copyCandidate(work);
-    const live = { ...prepared.live, runId };
-    const identity = resolveExecutionIdentity(live) as Json;
-    const frozenCohort = {
-      schema: 1,
-      id: COHORT,
-      image_reference: identity.image_reference,
-      image_identity: identity.image_identity,
-      pi: identity.pi,
-      arms: { b: { skills: identity.skills, skill_tree_sha256: identity.skill_tree_sha256 } },
-    };
-    const liveEnv: NodeJS.ProcessEnv = {
-      ...envWithoutTrack(),
-      BENCH_AGENT_IMAGE: live.imageReference,
-      BENCH_PI_ROOT: resolve(prepared.temp, "pi"),
-      BENCH_SKILL_ROOT: resolve(prepared.temp, "skills"),
-    };
+    const live = createCurrentAgentRuntime({ root: executorRoot, arm: "b", model: MODEL });
+    // Ambient executor environment is present and wrong; the fail-closed reason
+    // must come from the record, never from these values (FR-6).
+    const liveEnv: NodeJS.ProcessEnv = envWithoutTrack({
+      BENCH_AGENT_IMAGE: DRIFTED_IMAGE,
+      BENCH_OPENCODE_BIN: resolve(executorRoot, "missing-opencode"),
+      BENCH_SKILL_ROOT: resolve(executorRoot, "missing-skills"),
+    });
     try {
       mkdirSync(artifacts);
       writeJson(resolve(artifacts, "gate.json"), { typecheck: true, build: true });
@@ -271,36 +352,9 @@ describe("current executor attestation", () => {
       writeJson(resolve(artifacts, "results.json"), declaredResults());
       const contract = assessCandidateContract(FIXTURE, candidate);
       expect(contract.valid).toBe(true);
-      const hashes = currentHashes();
-      const provenance: Json = {
-        schema: 6,
-        track: "build",
-        fixture_revision: 2,
-        bug_set_id: null,
-        bug_set_sha256: null,
-        mutant_set_id: null,
-        mutant_set_sha256: null,
-        change_set_id: null,
-        change_set_sha256: null,
-        registry_sha256: null,
-        variant_sha256: null,
-        contract_violation_sha256: null,
-        graft: null,
-        run_id: runId,
-        arm: "b",
-        model: MODEL,
-        mode: "agent",
-        candidate_sha256: contract.candidate_sha256,
-        fixture_protected_sha256: contract.fixture_protected_sha256,
-        runner_sha256: hashes.runner_sha256,
-        suite_sha256: hashes.suite_sha256,
-        agent_isolated: true,
-        candidate_contract_schema: 1,
-        cohort_id: COHORT,
-        executor_cohort: frozenCohort,
-        executor: identity,
-        execution_identity_sha256: executionIdentityFingerprint(identity),
-      };
+      const provenance = currentSchema4Provenance({
+        fixture: FIXTURE, candidate, runId, model: MODEL, arm: "b", live, artifacts,
+      }) as Json;
       for (const field of missing) delete provenance[field];
       writeJson(resolve(artifacts, "provenance.json"), provenance);
       writeJson(resolve(artifacts, "score.json"), await scoreRecord(candidate, artifacts, runId, liveEnv));
@@ -308,35 +362,25 @@ describe("current executor attestation", () => {
       const freshness = scoreFreshness(artifacts, liveEnv);
       expect(["STALE-PROVENANCE", "INVALID"]).toContain(freshness.state);
       expect(freshness).toMatchObject({ rankable: false, provenance_current: false });
-      expect((freshness.reasons as string[]).join("\n")).toMatch(/executor.*cohort|cohort.*executor/i);
+      expect((freshness.reasons as string[]).join("\n")).toMatch(/executor|cohort/i);
     } finally {
       rmSync(work, { recursive: true, force: true });
-      rmSync(prepared.temp, { recursive: true, force: true });
+      rmSync(executorRoot, { recursive: true, force: true });
     }
   });
 
   it("makes a previously trusted score stale and non-rankable when its live executor cohort drifts", async () => {
-    const prepared = prepareExecutor();
+    const executorRoot = mkdtempSync(resolve(tmpdir(), "lending-desk-executor-freshness-env-"));
     const work = mkdtempSync(resolve(ROOT, "runs", "meta-executor-freshness-"));
     const runId = basename(work);
     const artifacts = resolve(work, "artifacts");
     const candidate = copyCandidate(work);
-    const live = { ...prepared.live, runId };
-    const identity = resolveExecutionIdentity(live) as Json;
-    const frozenCohort = {
-      schema: 1,
-      id: COHORT,
-      image_reference: identity.image_reference,
-      image_identity: identity.image_identity,
-      pi: identity.pi,
-      arms: { b: { skills: identity.skills, skill_tree_sha256: identity.skill_tree_sha256 } },
-    };
-    const liveEnv: NodeJS.ProcessEnv = {
-      ...envWithoutTrack(),
-      BENCH_AGENT_IMAGE: live.imageReference,
-      BENCH_PI_ROOT: resolve(prepared.temp, "pi"),
-      BENCH_SKILL_ROOT: resolve(prepared.temp, "skills"),
-    };
+    const live = createCurrentAgentRuntime({ root: executorRoot, arm: "b", model: MODEL });
+    const liveEnv: NodeJS.ProcessEnv = envWithoutTrack({
+      BENCH_AGENT_IMAGE: DRIFTED_IMAGE,
+      BENCH_OPENCODE_BIN: resolve(executorRoot, "missing-opencode"),
+      BENCH_SKILL_ROOT: resolve(executorRoot, "missing-skills"),
+    });
     try {
       mkdirSync(artifacts);
       writeJson(resolve(artifacts, "gate.json"), { typecheck: true, build: true });
@@ -344,36 +388,9 @@ describe("current executor attestation", () => {
       writeJson(resolve(artifacts, "results.json"), declaredResults());
       const contract = assessCandidateContract(FIXTURE, candidate);
       expect(contract.valid).toBe(true);
-      const hashes = currentHashes();
-      const provenance = {
-        schema: 6,
-        track: "build",
-        fixture_revision: 2,
-        bug_set_id: null,
-        bug_set_sha256: null,
-        mutant_set_id: null,
-        mutant_set_sha256: null,
-        change_set_id: null,
-        change_set_sha256: null,
-        registry_sha256: null,
-        variant_sha256: null,
-        contract_violation_sha256: null,
-        graft: null,
-        run_id: runId,
-        arm: "b",
-        model: MODEL,
-        mode: "agent",
-        candidate_sha256: contract.candidate_sha256,
-        fixture_protected_sha256: contract.fixture_protected_sha256,
-        runner_sha256: hashes.runner_sha256,
-        suite_sha256: hashes.suite_sha256,
-        agent_isolated: true,
-        candidate_contract_schema: 1,
-        cohort_id: COHORT,
-        executor_cohort: frozenCohort,
-        executor: identity,
-        execution_identity_sha256: executionIdentityFingerprint(identity),
-      };
+      const provenance = currentSchema4Provenance({
+        fixture: FIXTURE, candidate, runId, model: MODEL, arm: "b", live, artifacts,
+      });
       writeJson(resolve(artifacts, "provenance.json"), provenance);
       writeJson(resolve(artifacts, "score.json"), await scoreRecord(candidate, artifacts, runId, liveEnv));
 
@@ -383,15 +400,16 @@ describe("current executor attestation", () => {
         provenance_current: true,
       });
 
-      writeFileSync(prepared.pi, "#!/usr/bin/env sh\necho pi 9.9.10\n");
-      chmodSync(prepared.pi, 0o755);
+      // FR-6: no live executor is resolved, so live drift cannot stale the
+      // score. Drift of the run's own recorded snapshot is the stale signal.
+      writeFileSync(resolve(artifacts, "executor/skills/measure/SKILL.md"), "# drifted snapshot\n");
       const stale = scoreFreshness(artifacts, liveEnv);
       expect(["STALE-PROVENANCE", "INVALID"]).toContain(stale.state);
       expect(stale).toMatchObject({ rankable: false, provenance_current: false });
-      expect((stale.reasons as string[]).join("\n")).toMatch(/executor|cohort/i);
+      expect((stale.reasons as string[]).join("\n")).toMatch(/executor|skill|snapshot|cohort/i);
     } finally {
       rmSync(work, { recursive: true, force: true });
-      rmSync(prepared.temp, { recursive: true, force: true });
+      rmSync(executorRoot, { recursive: true, force: true });
     }
   });
 

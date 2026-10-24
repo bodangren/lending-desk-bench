@@ -1,5 +1,5 @@
 /**
- * Write a schema-6 provenance.json for one run.
+ * Write a schema-7 provenance.json for one run.
  *
  *   tsx provenance-record.ts <artifacts-dir>
  *
@@ -7,8 +7,9 @@
  *   RUN_ID, ARM, MODEL (provider/model), MODE (agent|overlay), BENCH_TRACK
  *   FIXTURE_REVISION   instructions the agent saw (default: current revision)
  *   GRAFT_JSON         optional path to {reason, from_candidate_sha256, from_fixture_revision}
- * Artifacts read: candidate-contract.json (must be gradeable), execution-identity.json,
- * executor-cohort.json, variant-manifest.json (variant tracks), and the optional
+ * Artifacts read: candidate-contract.json (must be gradeable), execution-identity.json
+ * (schema 2; a Pi identity is never written again), executor-cohort.json
+ * (variant-manifest.json for variant tracks), and the optional
  * contract-violation.json.
  *
  * run.sh, regrade-run.sh, and rescore-doctor.sh all call this, so the three can
@@ -19,7 +20,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveTrack, type BenchTrack } from "./candidate-contract.js";
-import { executionIdentityFingerprint } from "./execution-identity.js";
+import { executionIdentityFingerprint, validateExecutionIdentity } from "./execution-identity.js";
 import { currentHashes } from "./provenance.js";
 import { graftErrors, PROVENANCE_SCHEMA } from "./provenance-check.js";
 import { FIXTURE_REVISION } from "./revisions.js";
@@ -53,6 +54,14 @@ export function buildProvenance(input: {
     throw new Error("candidate contract is not gradeable");
   }
   const executor = readJson(join(artifacts, "execution-identity.json"));
+  const identityErrors = validateExecutionIdentity(executor, {
+    runId,
+    arm: arm as "a" | "b",
+    mode: mode === "overlay" ? "overlay" : "agent",
+  });
+  if ((executor as Json).schema !== 2 || identityErrors.length) {
+    throw new Error("execution identity is not a schema-2 OpenCode record: " + identityErrors.join("; "));
+  }
   const cohort = readJson(join(artifacts, "executor-cohort.json"));
   if (cohort.schema !== 1 || typeof cohort.id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(cohort.id)) {
     throw new Error("invalid executor cohort");

@@ -68,7 +68,7 @@ async function prepareRun(underLoad = false): Promise<PreparedRun> {
   writeJson(resolve(artifacts, "results.json"), allResults());
   writeJson(
     resolve(artifacts, "provenance.json"),
-    currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live }),
+    currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live, artifacts }),
   );
   const record = await score(candidate, artifacts, runId, live.environment, underLoad);
   writeJson(resolve(artifacts, "score.json"), record);
@@ -98,7 +98,7 @@ describe("live score-record attestation", () => {
         host: { under_load: false },
         candidate_contract: { schema: 1, valid: true },
       });
-      expect(run.score.provenance).toMatchObject({ schema: 6, fixture_revision: 2, run_id: run.runId, model: MODEL, arm: ARM });
+      expect(run.score.provenance).toMatchObject({ schema: 7, fixture_revision: 2, run_id: run.runId, model: MODEL, arm: ARM });
       expect(run.score.criteria).toEqual(Object.fromEntries(Object.keys(CRITERIA).map((id) => [id, false])));
       expect(run.score.probes).toEqual(Object.fromEntries(Object.keys(PROBES).map((id) => [id, false])));
       expect(run.score.advisory).toEqual(Object.fromEntries(ADVISORY.map((id) => [id, false])));
@@ -119,7 +119,7 @@ describe("live score-record attestation", () => {
       writeJson(resolve(artifacts, "collection.json"), { valid: true, status: "blocked_by_gate" });
       writeJson(
         resolve(artifacts, "provenance.json"),
-        currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live }),
+        currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live, artifacts }),
       );
 
       const record = await score(candidate, artifacts, runId, live.environment);

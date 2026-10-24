@@ -19,12 +19,6 @@ if [ -z "${_BENCH_ENV_LOADED:-}" ]; then
   }
   _bench_load_env_file "$_BENCH_ENV_ROOT/.env"
   _bench_load_env_file "$_BENCH_ENV_ROOT/.env.local"
-  if [ -z "${BENCH_PI_ROOT:-}" ] && command -v pi >/dev/null; then
-    _bench_pi="$(command -v pi)"
-    if [ -x "$_bench_pi" ]; then
-      export BENCH_PI_ROOT="$(cd "$(dirname "$_bench_pi")/.." && pwd)"
-    fi
-  fi
   if [ -z "${BENCH_SKILL_ROOT:-}" ] && [ -d "${HOME}/.agents/skills" ]; then
     export BENCH_SKILL_ROOT="${HOME}/.agents/skills"
   fi

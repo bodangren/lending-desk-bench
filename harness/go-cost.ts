@@ -1,10 +1,18 @@
 import { createHash } from "node:crypto";
+import { execFile } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PRICING_PATH = resolve(HERE, "go-pricing.json");
+/** The Console credential helper (FR-3). It holds the live catalog access. */
+const CREDENTIAL_HELPER_PATH = resolve(HERE, "opencode-credential.sh");
+/** The live Go catalog of the Console inference endpoint. */
+export const GO_CATALOG_URL = "https://opencode.ai/inference/go/v1/models";
+
+const execFileAsync = promisify(execFile);
 
 export type TokenUsage = {
   input?: number;
@@ -185,54 +193,6 @@ export function trend(points: TrendPoint[], halfLifeWeeks = 2): Trend | null {
   };
 }
 
-export function emitPiModelsJson(pricing: GoPricing = loadPricing().pricing): unknown {
-  const models = Object.entries(pricing.models).map(([id, spec]) => {
-    const apiBase = pricing.apis[spec.api];
-    const cost: Record<string, unknown> = {
-      input: spec.rates.input,
-      output: spec.rates.output,
-      cacheRead: spec.rates.cacheRead,
-      cacheWrite: spec.rates.cacheWrite,
-    };
-    if (spec.tiers?.length) {
-      cost.tiers = spec.tiers.map((tier) => ({
-        inputTokensAbove: tier.inputTokensAbove,
-        input: tier.input,
-        output: tier.output,
-        cacheRead: tier.cacheRead,
-        cacheWrite: tier.cacheWrite,
-      }));
-    }
-    const row: Record<string, unknown> = {
-      id,
-      name: spec.name,
-      api: spec.api,
-      reasoning: true,
-      cost,
-    };
-    if (apiBase?.baseUrl) row.baseUrl = apiBase.baseUrl;
-    // Pi defaults to 16384 max output tokens. hy3 spends its whole budget on
-    // thinking at --thinking max and dies with stopReason "length" before any
-    // write, which the runner then voids as "agent produced no changes".
-    // The Go endpoint accepts larger budgets, so pin hy3's real one here.
-    if (spec.max_tokens) row.maxTokens = spec.max_tokens;
-    if (spec.context_window) row.contextWindow = spec.context_window;
-    return row;
-  });
-  const defaultApi = pricing.apis["openai-completions"];
-  return {
-    providers: {
-      [pricing.provider]: {
-        baseUrl: defaultApi.baseUrl,
-        api: "openai-completions",
-        authHeader: true,
-        apiKey: "$OPENCODE_API_KEY",
-        models,
-      },
-    },
-  };
-}
-
 export function patchScoreGo(scorePath: string, loaded = loadPricing()): GoCost {
   const score = JSON.parse(readFileSync(scorePath, "utf8")) as Record<string, unknown>;
   const usage = isRecord(score.usage) ? (score.usage as TokenUsage) : {};
@@ -243,8 +203,37 @@ export function patchScoreGo(scorePath: string, loaded = loadPricing()): GoCost 
   return go;
 }
 
-async function catalogDiff(pricing: GoPricing): Promise<{ live: string[]; missing: string[]; extra: string[] }> {
-  const response = await fetch("https://opencode.ai/zen/go/v1/models");
+/**
+ * The Console access token of the host store. The helper prints the access-only
+ * payload on stdout; the token value never reaches an argument list or a log.
+ */
+export async function consoleAccessToken(): Promise<string> {
+  let stdout: string;
+  try {
+    ({ stdout } = await execFileAsync(CREDENTIAL_HELPER_PATH, ["export"], { maxBuffer: 1024 * 1024 }));
+  } catch (error) {
+    throw new Error(`the Console credential is unavailable: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  let payload: unknown;
+  try {
+    payload = JSON.parse(stdout);
+  } catch {
+    throw new Error("the Console credential export is not valid JSON");
+  }
+  if (!Array.isArray(payload)) throw new Error("the Console credential export is not a JSON array");
+  const connection = payload.find((entry) => isRecord(entry) && entry.integrationID === "opencode" && entry.active === true);
+  if (!connection) throw new Error("the Console credential export holds no active opencode connection");
+  const value = isRecord(connection) ? connection.value : undefined;
+  const access = isRecord(value) ? value.access : undefined;
+  if (typeof access !== "string" || access.length === 0) {
+    throw new Error("the Console credential export holds no access token");
+  }
+  return access;
+}
+
+export async function catalogDiff(pricing: GoPricing): Promise<{ live: string[]; missing: string[]; extra: string[] }> {
+  const token = await consoleAccessToken();
+  const response = await fetch(GO_CATALOG_URL, { headers: { authorization: `Bearer ${token}` } });
   if (!response.ok) throw new Error(`Go catalog HTTP ${response.status}`);
   const payload = (await response.json()) as { data?: Array<{ id?: string }> };
   const live = (payload.data ?? []).map((row) => row.id).filter((id): id is string => typeof id === "string");
@@ -262,10 +251,6 @@ async function main(argv: string[]): Promise<void> {
   const loaded = loadPricing();
   if (argv.includes("--hash")) {
     console.log(loaded.sha256);
-    return;
-  }
-  if (argv.includes("--models-json")) {
-    console.log(JSON.stringify(emitPiModelsJson(loaded.pricing), null, 2));
     return;
   }
   if (argv.includes("--batch-lines")) {

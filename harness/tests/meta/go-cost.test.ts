@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import {
   batchModels,
   ema,
-  emitPiModelsJson,
   goUsd,
   loadPricing,
   patchScoreGo,
@@ -33,9 +32,13 @@ describe("OpenCode Go recost", () => {
     expect(batch).toContain("mimo-v2.5");
     expect(batch).toContain("gpt-5.6-luna");
     expect(batch).toContain("muse-spark-1.2-contributor");
-    expect(batch).toContain("deepseek-v4-flash-vision-exp");
-    expect(batch).toContain("hy3");
     expect(batch).toContain("deepseek-v4.1-flash");
+    expect(batch).toContain("gpt-6-luna");
+    expect(batch).toContain("minimax-m3.1-flash");
+    expect(batch).toContain("claude-haiku-5-5");
+    // The id left the Go catalog. The entry stays so old scores still recost.
+    expect(batch).not.toContain("deepseek-v4-flash-vision-exp");
+    expect(pricing.models["deepseek-v4-flash-vision-exp"]).toBeDefined();
     expect(batch).not.toContain("deepseek-v4-flash");
     expect(batch).not.toContain("kimi-k2.7-code");
     for (const id of batch) {
@@ -91,22 +94,6 @@ describe("OpenCode Go recost", () => {
     expect(go.unmapped).toBe(true);
     expect(go.usd).toBeNull();
     expect(go.monthly_pct).toBeNull();
-  });
-
-  it("emits a Pi models.json with per-model API and Anthropic base URL", () => {
-    const { pricing } = loadPricing(PRICING_PATH);
-    const doc = emitPiModelsJson(pricing) as {
-      providers: { "opencode-go": { models: Array<{ id: string; api: string; baseUrl?: string }> } };
-    };
-    const models = doc.providers["opencode-go"].models;
-    const luna = models.find((m) => m.id === "gpt-5.6-luna");
-    const qwen = models.find((m) => m.id === "qwen3.8-flash");
-    const mimo = models.find((m) => m.id === "mimo-v2.5");
-    expect(luna?.api).toBe("openai-responses");
-    expect(qwen?.api).toBe("anthropic-messages");
-    expect(qwen?.baseUrl).toBe("https://opencode.ai/zen/go");
-    expect(mimo?.api).toBe("openai-completions");
-    expect(mimo?.baseUrl).toBe("https://opencode.ai/zen/go/v1");
   });
 
   it("slugifies dotted model ids for run ids", () => {

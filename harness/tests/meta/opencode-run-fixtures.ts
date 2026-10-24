@@ -23,7 +23,7 @@ export function prepareOpencodeRun(arm: "a" | "b") {
   const podmanCapture = resolve(temp, "podman.json");
   const podmanControl = resolve(temp, "podman-control.json");
   writeFileSync(podmanControl, JSON.stringify({ mode: "entry" }));
-  const piHit = resolve(temp, "PI-HIT");
+  const opencodeHit = resolve(temp, "OPENCODE-HIT");
   const runtime = resolve(temp, "runtime");
   const skillRoot = resolve(temp, "skills");
   mkdirSync(runtime);
@@ -32,13 +32,17 @@ export function prepareOpencodeRun(arm: "a" | "b") {
     mkdirSync(resolve(skillRoot, skill), { recursive: true });
     writeFileSync(resolve(skillRoot, skill, "SKILL.md"), `# ${skill}\n`);
   }
-  const pi = resolve(temp, "bin", "pi");
-  writeFileSync(pi, `#!${process.execPath}
-require("node:fs").writeFileSync(${JSON.stringify(piHit)}, "hit");
-if (process.argv[2] === "--version") console.log("pi tripwire 0.0.0");
+  // OpenCode tripwire: a PATH-resolved opencode proves the runner resolves the
+  // binary from BENCH_OPENCODE_BIN and never falls back to PATH.
+  const tripwireBin = resolve(temp, "tripwire-bin");
+  mkdirSync(tripwireBin, { recursive: true });
+  const tripwire = resolve(tripwireBin, "opencode");
+  writeFileSync(tripwire, `#!${process.execPath}
+require("node:fs").writeFileSync(${JSON.stringify(opencodeHit)}, "hit");
+if (process.argv[2] === "--version") console.log("opencode tripwire 0.0.0");
 else process.exitCode = 97;
 `);
-  chmodSync(pi, 0o755);
+  chmodSync(tripwire, 0o755);
   const podman = resolve(temp, "bin", "podman");
   writeFileSync(podman, `#!${process.execPath}
 const fs = require("node:fs"), crypto = require("node:crypto");
@@ -90,16 +94,16 @@ else {
   chmodSync(podman, 0o755);
   // Start from an explicit environment. Never read a host credential or .env file.
   const env = {
-    PATH: `${resolve(temp, "bin")}:${dirname(process.execPath)}:/usr/bin:/bin`,
+    PATH: `${tripwireBin}:${resolve(temp, "bin")}:${dirname(process.execPath)}:/usr/bin:/bin`,
     HOME: resolve(temp, "home"), LANG: "C.UTF-8", _BENCH_ENV_LOADED: "1",
     BENCH_TRACK: "build", BENCH_IGNORE_LOAD: "1", BENCH_WAIT_FOR_IDLE: "0",
-    BENCH_OPENCODE_BIN: fake.path, BENCH_PI_ROOT: temp, BENCH_SKILL_ROOT: skillRoot,
+    BENCH_OPENCODE_BIN: fake.path, BENCH_SKILL_ROOT: skillRoot,
     BENCH_AGENT_IMAGE: IMAGE, XDG_RUNTIME_DIR: runtime, AGENT_TIMEOUT: "2",
     // A canary exercises the old API-key forwarding path without a real credential.
     OPENCODE_API_KEY: "CANARY-ACCESS-99", THINKING: "xhigh",
   };
   return {
-    arm, temp, fake, id, work, out, runtime, skillRoot, piHit, podmanCapture, podmanControl, env,
+    arm, temp, fake, id, work, out, runtime, skillRoot, opencodeHit, podmanCapture, podmanControl, env,
     execute() { return spawnSync(resolve(HARNESS, "run.sh"), ["opencode-go", TEST_MODEL, arm, id], {
       cwd: HARNESS, env, encoding: "utf8", timeout: 25_000, maxBuffer: 8 * 1024 * 1024,
     }); },

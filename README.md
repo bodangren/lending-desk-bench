@@ -1,7 +1,7 @@
 # Lending Desk Bench
 
-A hermetic Next.js implementation benchmark for OpenCode Go High Usage models. Pi receives an
-intentionally incomplete `fixture/` and must complete the Measure track. The hidden harness
+A hermetic Next.js implementation benchmark for OpenCode Go High Usage models. OpenCode 2 receives
+an intentionally incomplete `fixture/` and must complete the Measure track. The hidden harness
 grades the result through typecheck, build, API, browser, stream, and mutation-safety checks.
 Three more tracks use the same app: bug fixing, test writing, and change requests.
 
@@ -107,11 +107,12 @@ cd fixture && npm ci
 cd ../harness && npm ci
 ./node_modules/.bin/playwright install chromium --only-shell
 cd ..
+./harness/fetch-rg.sh
 ```
 
-A Go run needs rootless Podman, the local `pi` executable, and `OPENCODE_API_KEY`. The runner
-passes only that credential into the container. It does not mount host home, harness, or
-reference.
+A benchmark run needs rootless Podman, OpenCode 2, an active host Console login, and ripgrep.
+The runner passes a reduced Console credential into the isolated container. It does not mount
+the host store, host home, harness, or reference.
 
 ## Run a model
 
@@ -120,6 +121,7 @@ reference.
 ./harness/run.sh opencode-go mimo-v2.5 b b-mimo-v2-5-2026w40-r1
 ```
 
+Each run uses OpenCode 2 with the Console login stored by the host OpenCode.
 Arm `a` is **No Skills**. Arm `b` is **Skills**. The build track repeats three times a
 week per arm (`REPS_BUILD`, default 3); the other tracks run once (`REPS_BUGFIX`,
 `REPS_TESTS`, `REPS_CHANGE`). `REPS` overrides every track.
@@ -145,17 +147,12 @@ Cost is percent of that model’s monthly Go Usage column. After a price change,
 
 ### Provider credentials
 
-Put `OPENCODE_API_KEY` in `.env.local` at the repo root (gitignored). `run.sh` loads `.env` then `.env.local`. A live environment variable still wins.
-
-OpenCode Go uses `OPENCODE_API_KEY`. Other built-in providers still select one of
-`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`,
-`DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `XAI_API_KEY`, `TOGETHER_API_KEY`,
-`CEREBRAS_API_KEY`, `FIREWORKS_API_KEY`, `XIAOMI_API_KEY`, or `ARK_API_KEY`. For another
-provider, set `BENCH_PROVIDER_ENV` to exactly one name from that allowlist. Missing or
-unallowlisted credentials stop the run before an agent starts.
-
-`BENCH_PI_ROOT` and `BENCH_AGENT_IMAGE` are explicit operator overrides. The default agent
-image is pinned and runs read-only with a writable candidate bind mount and temporary `/tmp`.
+Sign in with `opencode auth login` on the host before running a model. The harness exports the
+active Console connection from the host OpenCode credential store. It does not use `.env.local`,
+an API-key environment variable, or a provider credential allowlist. The old `.env.local` API-key
+path and provider credential allowlist no longer exist. Renew an expired login on the host. The
+default agent image is pinned and runs read-only with a writable candidate bind mount and
+temporary `/tmp`.
 
 ## Isolation and candidate contract
 
@@ -173,9 +170,11 @@ The model container has a private filesystem view:
   grafted onto a fresh tree, and the violation costs the adherence axis.
 
 The runner records protected-file checksums and hashes of the candidate, runner, and complete
-suite. Schema-6 provenance also binds the run ID to the resolved immutable image, Pi binary and
-version, exact Arm-B skill tree, inspectable runtime/CLI flags, the fixture revision, the
-contract-violation record, and any graft. Scoring rechecks these values, so a stale record
+suite. Schema-7 provenance also binds the run ID to the resolved immutable image, OpenCode binary
+and version, exact Arm-B skill tree, inspectable runtime and CLI flags, the fixture revision, the
+contract-violation record, and any graft. OpenCode 2 receives a reduced Console credential from
+the host store. The model can read that credential during a run and send it over the network.
+The host store remains outside the container. Scoring rechecks these values, so a stale record
 cannot become a current score.
 
 ## Calibration and controls

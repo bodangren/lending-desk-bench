@@ -1,67 +1,36 @@
-// Preserve the schema-6 Pi evidence until the provenance tests migrate.
-import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+// Legacy schema-6 Pi evidence for the history path (FR-8).
+//
+// The harness never writes this shape again: provenance-record.ts emits
+// schema 7 only, and execution-identity.ts no longer resolves a Pi binary.
+// These literals keep a legacy Pi run readable so the harness can label its
+// history without ranking it. No function here resolves a live binary,
+// image, or skill folder.
+import { createHash } from "node:crypto";
 import { assessCandidateContract, type BenchTrack } from "../../candidate-contract";
-import { ARM_B_SKILLS, executionIdentityFingerprint, resolveExecutionIdentity } from "../../execution-identity";
+import { ARM_B_SKILLS, executionIdentityFingerprint } from "../../execution-identity";
 import { currentHashes } from "../../provenance";
 import { FIXTURE_REVISION } from "../../revisions";
 
 type Arm = "a" | "b";
 type Mode = "agent" | "overlay";
+
 const IMAGE = "docker.io/library/node@sha256:" + "a".repeat(64);
 const COHORT_ID = "executor-cohort-schema4-test";
 
-export type CurrentAgentRuntime = {
-  imageReference: string;
-  piPath: string;
-  skillRoots: Partial<Record<(typeof ARM_B_SKILLS)[number], string>>;
-  runtimeFlags: string[];
-  cliFlags: string[];
-  environment: NodeJS.ProcessEnv;
-};
+const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 
-/** Creates the inspectable executor inputs used by a schema-4 agent fixture. */
-export function createCurrentAgentRuntime({ root, arm, model }: { root: string; arm: Arm; model: string }): CurrentAgentRuntime {
-  const executorRoot = resolve(root, "live-executor");
-  const piRoot = resolve(executorRoot, "pi");
-  const piPath = resolve(piRoot, "bin", "pi");
-  mkdirSync(resolve(piRoot, "bin"), { recursive: true });
-  writeFileSync(piPath, "#!/usr/bin/env sh\necho schema4-test-pi 1.0.0\n");
-  chmodSync(piPath, 0o755);
-
-  const skillRoot = resolve(executorRoot, "skills");
-  const skillRoots = Object.fromEntries((arm === "b" ? ARM_B_SKILLS : []).map((skill) => {
-    const skillPath = resolve(skillRoot, skill);
-    mkdirSync(skillPath, { recursive: true });
-    writeFileSync(resolve(skillPath, "SKILL.md"), "# " + skill + "\n");
-    return [skill, skillPath];
-  })) as CurrentAgentRuntime["skillRoots"];
-  const runtimeFlags = ["--read-only", "--network=slirp4netns:allow_host_loopback=false"];
-  const cliFlags = ["--provider", "local", "--model", model, "--thinking", "xhigh"];
-  return {
-    imageReference: IMAGE,
-    piPath,
-    skillRoots,
-    runtimeFlags,
-    cliFlags,
-    environment: {
-      BENCH_AGENT_IMAGE: IMAGE,
-      BENCH_PI_ROOT: piRoot,
-      BENCH_SKILL_ROOT: skillRoot,
-      BENCH_EXECUTOR_RUNTIME_FLAGS: JSON.stringify(runtimeFlags),
-      BENCH_EXECUTOR_CLI_FLAGS: JSON.stringify(cliFlags),
-    },
-  };
-}
-
-export function currentSchema4Provenance({
+/**
+ * A recorded legacy Pi run, verbatim readable. This is the history path: the
+ * record labels a Pi run and is never attested eligible or ranked as a Go
+ * result under the OpenCode contract.
+ */
+export function legacyPiProvenance({
   fixture,
   candidate,
   runId,
   model,
   arm,
   mode = "agent",
-  live,
   track = "build",
 }: {
   fixture: string;
@@ -70,41 +39,52 @@ export function currentSchema4Provenance({
   model: string;
   arm: Arm;
   mode?: Mode;
-  live?: CurrentAgentRuntime;
   track?: BenchTrack;
 }) {
   const contract = assessCandidateContract(fixture, candidate, { track });
   if (!contract.gradeable) throw new Error("fixture candidate contract failed: " + contract.reasons.join("; "));
   const hashes = currentHashes();
+  const pi = { path: "/opt/pi/bin/pi", sha256: sha256("legacy-pi-binary"), version: "pi 0.53.1" };
+  const skills: Record<string, string> = arm === "b"
+    ? Object.fromEntries(ARM_B_SKILLS.map((skill) => [skill, sha256("legacy-skill-" + skill)]))
+    : {};
+  const skillTreeSha256 = sha256(JSON.stringify(skills));
+  const runtimeFlags = ["--read-only", "--network=slirp4netns:allow_host_loopback=false"];
+  const runtimeFlagsSha256 = sha256(JSON.stringify(runtimeFlags));
+  const cliFlags = ["/opt/pi/bin/pi", "--print", "--mode", "json", "--no-session"];
+  const cliFlagsSha256 = sha256(JSON.stringify(cliFlags));
   const executor = mode === "overlay"
-    ? resolveExecutionIdentity({ runId, arm, mode })
-    : (() => {
-        if (!live) throw new Error("current schema-4 agent provenance requires live executor inputs");
-        return resolveExecutionIdentity({
-          runId,
-          arm,
-          imageReference: live.imageReference,
-          piPath: live.piPath,
-          skillRoots: live.skillRoots,
-          runtimeFlags: live.runtimeFlags,
-          cliFlags: live.cliFlags,
-        });
-      })();
-  const executorCohort = "kind" in executor
+    ? { schema: 1, kind: "not-invoked", run_id: runId, arm, reason: "AGENT_SKIP=1" }
+    : {
+        schema: 1,
+        kind: "pi",
+        run_id: runId,
+        arm,
+        pi,
+        image_reference: IMAGE,
+        image_identity: IMAGE.split("@sha256:")[1],
+        skills,
+        skill_tree_sha256: skillTreeSha256,
+        runtime_flags: runtimeFlags,
+        runtime_flags_sha256: runtimeFlagsSha256,
+        cli_flags: cliFlags,
+        cli_flags_sha256: cliFlagsSha256,
+      };
+  const executorCohort = executor.kind === "not-invoked"
     ? { schema: 1, id: COHORT_ID, kind: "not-invoked", arms: {} }
     : {
         schema: 1,
         id: COHORT_ID,
-        image_reference: executor.image_reference,
-        image_identity: executor.image_identity,
-        pi: executor.pi,
-        runtime_flags: executor.runtime_flags,
-        cli_flags: executor.cli_flags,
-        arms: { [arm]: { skills: executor.skills, skill_tree_sha256: executor.skill_tree_sha256 } },
+        image_reference: IMAGE,
+        image_identity: IMAGE.split("@sha256:")[1],
+        pi,
+        runtime_flags: runtimeFlags,
+        cli_flags: cliFlags,
+        arms: { [arm]: { skills, skill_tree_sha256: skillTreeSha256 } },
       };
   return {
     schema: 6,
-    track: "build",
+    track,
     fixture_revision: FIXTURE_REVISION,
     bug_set_id: null,
     bug_set_sha256: null,
@@ -126,7 +106,7 @@ export function currentSchema4Provenance({
     suite_sha256: hashes.suite_sha256,
     agent_isolated: mode === "agent",
     candidate_contract_schema: 1,
-    cohort_id: executorCohort.id,
+    cohort_id: COHORT_ID,
     executor_cohort: executorCohort,
     executor,
     execution_identity_sha256: executionIdentityFingerprint(executor),

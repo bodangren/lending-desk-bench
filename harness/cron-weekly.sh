@@ -8,8 +8,16 @@
 # runs/ and reports/ are gitignored; only docs/ (the Pages site) is published.
 # A failed batch aborts before publish. Re-running this script after a failed
 # night is safe: batch.sh skips runs that already have trusted scores.
+#
+# The weekly entry point defines its own toolchain (spec FR-9). The crontab
+# PATH resolves node to the snap dispatcher, which breaks tsx; toolchain.sh
+# prepends the operator nvm Node bin directory, so node, npm, and opencode
+# resolve to the same files as the operator shell. The script stops when it
+# cannot resolve a Node directory.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=toolchain.sh
+source "$ROOT/harness/toolchain.sh"
 mkdir -p "$ROOT/.tmp" "$ROOT/reports"
 exec 9>"$ROOT/.tmp/weekly-cron.lock"
 flock -n 9 || { echo "weekly cron already running; exiting" >&2; exit 0; }
@@ -31,6 +39,9 @@ export BENCH_SELFCHECK="${BENCH_SELFCHECK:-logic}"
 
 {
   echo "CRON START $(date -Is) week=$WEEK"
+  echo "CRON TOOLCHAIN node path=$(command -v node || echo 'not found') version=$(node --version 2>/dev/null || echo 'not found')"
+  echo "CRON TOOLCHAIN npm path=$(command -v npm || echo 'not found') version=$(npm --version 2>/dev/null || echo 'not found')"
+  echo "CRON TOOLCHAIN opencode path=$(command -v opencode || echo 'not found') version=$(opencode --version 2>/dev/null || echo 'not found')"
   "$ROOT/harness/weekly.sh"
 } 2>&1 | tee "$LOG"
 

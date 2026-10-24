@@ -14,7 +14,8 @@
 # execution identity, executor cohort, and diff are copied forward. If grading
 # fails for a harness reason (grade.sh exit 4), the previous artifacts come back.
 # Runs whose agent produced nothing, or whose tree has a hard violation, are
-# skipped and keep their record.
+# skipped and keep their record. A legacy Pi run keeps every artifact byte:
+# the regrade prints one SKIP line and leaves the run untouched (spec FR-8).
 set -uo pipefail
 RUN_ID="${1:?usage: regrade-run.sh <run-id>}"
 [[ "$RUN_ID" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$ ]] || { echo "unsafe run id: $RUN_ID" >&2; exit 2; }
@@ -24,6 +25,18 @@ source "$H/env.sh"
 TSX="$H/node_modules/.bin/tsx"
 WORK="$ROOT/runs/$RUN_ID"; OUT="$WORK/artifacts"
 [ -d "$OUT" ] || { echo "SKIP $RUN_ID (no artifacts)"; exit 0; }
+
+# The executor kind of the run, from its provenance record (spec FR-8).
+EXECUTOR="$(node -e '
+const fs=require("node:fs");
+let p; try { p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); } catch { process.stdout.write("unknown"); process.exit(0); }
+const ex=p.executor||{};
+if (typeof ex.kind==="string" && ex.kind) { process.stdout.write(ex.kind); process.exit(0); }
+if (ex.pi) { process.stdout.write("pi"); process.exit(0); }
+process.stdout.write("unknown");' "$OUT/provenance.json")"
+if [ "$EXECUTOR" = "pi" ]; then
+  echo "SKIP $RUN_ID (legacy Pi executor; artifacts left unchanged)"; exit 0
+fi
 
 case "$RUN_ID" in
   bf-*) TRACK=bugfix; SET_FILE=bug-set.json;    SET_DEFAULT="$H/bugfix/sets/v1.json";      GENERATOR="$H/bugfix/make-variant.ts" ;;

@@ -1,6 +1,6 @@
-# OpenCode Go bench plan
+# OpenCode 2 Go bench plan
 
-Keep Pi as the agent. Add OpenCode Go as a Pi provider. Keep the Lending Desk grader.
+Use OpenCode 2 as the agent with the host Console login. Keep the Lending Desk grader.
 
 ## Goal
 
@@ -13,8 +13,8 @@ Fixture, reference overlay, `grade.sh`, scoring formula, candidate contract, Pod
 ## Change
 
 1. Pin `harness/go-pricing.json` from https://opencode.ai/docs/go/ (prices, monthly Usage USD, request estimates, API type).
-2. Recost from transcript tokens. Ignore Pi `costUsd` for published economics.
-3. Generate Pi `models.json` from that table. Provider id is `opencode-go`. Auth is `OPENCODE_API_KEY`.
+2. Recost from OpenCode session usage. Ignore the executor's advisory cost for published economics.
+3. Use OpenCode 2 directly with provider id `opencode-go`. Authenticate through the host Console login.
 4. Run **No Skills** (`a`) once per model and **Skills** (`b`) once per model each week.
 5. Rank only Go High Usage models (>7000 requests/month). Skip Muse Spark (training) and Flash Vision Exp (vision SKU).
 6. Weekly timer: new run ids, catalog add/drop, EMA + 4-week range. Label the band as a range, not a confidence interval.
@@ -37,15 +37,15 @@ Spread runs across the week. Go limits are $12 / 5 hours and $30 / week.
 
 ## History
 
-Keep old Pi/flash runs on disk. Recost only aliased SKUs. Do not rank them as Go results.
+Keep old Pi/flash runs on disk as labeled history. Recost only aliased SKUs. Do not rank them in the OpenCode series.
 
 ## Files
 
 | Path | Role |
 |---|---|
 | `harness/go-pricing.json` | Pinned prices and catalog flags |
-| `harness/go-cost.ts` | Recost, Pi models.json, batch lines, trend |
+| `harness/go-cost.ts` | Recost, catalog, batch lines, trend |
 | `harness/recost.sh` | Rewrite `go` on existing score.json |
 | `harness/weekly.sh` | Catalog + batch + recost + site export |
-| `harness/run.sh` | `opencode-go` + `OPENCODE_API_KEY` |
+| `harness/run.sh` | OpenCode 2 + host Console login |
 | `harness/batch.sh` | High Usage matrix, ISO-week run ids |

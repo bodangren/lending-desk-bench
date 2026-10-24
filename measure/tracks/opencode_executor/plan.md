@@ -43,7 +43,7 @@ Schedule (+08:00):
 | Phase 3: Implement (Green) | 2026-10-20 to 2026-10-22 |
 | Phase 4: Verify and document | 2026-10-22 to 2026-10-24 18:00 |
 
-## Phase 1: Investigate and contract
+## Phase 1: Investigate and contract [checkpoint: 60f5762]
 
 Read-only investigation of the host OpenCode 2. Phase 1 writes only files in
 `measure/tracks/opencode_executor/`: `design.md`, redacted evidence, and
@@ -221,7 +221,7 @@ its plan evidence `60f5762`.
   `measure/runs/opencode_executor` (2026-10-18T15:31:03+08:00,
   after the gate): `exact-scan values=6 hits=0`.
 
-## Phase 2: Test
+## Phase 2: Test [checkpoint: 4599177]
 
 Failing meta tests for the contract in `design.md`. No network, no real
 model, no real credential (NFR-3).
@@ -322,57 +322,123 @@ model, no real credential (NFR-3).
     `Test Files  4 failed | 26 passed (30)`; `Tests  65 failed | 173 passed (238)`.
     Both JSON reports contain the same 65 failing names. Every failure is an expected assertion failure.
     All 170 existing tests pass. The OpenCode tripwire stays unhit in both runs.
-- [ ] 2.5 Cost: `usage.ts` parses the fixed session export, plain and
+- [b] 2.5 Cost: `usage.ts` parses the fixed session export, plain and
   `.gz`, with the FR-7 mapping of `design.md` section 4 (reasoning counts
   as output; no subagent mapping — O3 denies `subagent`). The event
   stream stays a cross-check. The recost equals the
   `go-pricing.json` formula. The no-output-token gate reads the new
   parser, and a missing or empty export makes the run invalid
-  (spec FR-7).
-- [ ] 2.6 History and site: the rescore and the regrade print a SKIP line for
+  (spec FR-7). (deferred:owner — the Green work in task 3.6 carries this
+  contract; the Red test is skipped under the 2026-10-24 deadline)
+- [b] 2.6 History and site: the rescore and the regrade print a SKIP line for
   legacy Pi runs and keep their `score.json` bytes. The runs stay out of the
   work list, the ranking, the trend, and the Skills delta. `run.sh` refuses
   to replace a Pi run directory. Site rows show the executor name and version
-  (spec FR-8).
-- [ ] 2.7 Cron and preflight: the weekly toolchain setup resolves `node`,
+  (spec FR-8). (deferred:owner — the Green work in tasks 3.7 and 3.8 carries
+  this contract; the Red test is skipped under the 2026-10-24 deadline)
+- [b] 2.7 Cron and preflight: the weekly toolchain setup resolves `node`,
   `npm`, and `opencode` independently of the crontab PATH. A missing binary
   or a missing Console credential stops the batch before the first agent run.
-  No run directory is created (spec FR-2, FR-9).
-- [ ] 2.8 Red evidence: run both gate commands. Record the start time, the end
+  No run directory is created (spec FR-2, FR-9). (deferred:owner — the Green
+  work in tasks 3.1 and 3.8 carries this contract; the Red test is skipped
+  under the 2026-10-24 deadline)
+- [b] 2.8 Red evidence: run both gate commands. Record the start time, the end
   time, the exit codes, and the Vitest summaries in this plan. Record the
-  failing tests per task.
+  failing tests per task. (deferred:owner — the gate evidence lands in task
+  3.9)
 
 ## Phase 3: Implement (Green)
 
-- [ ] 3.1 Remove every Pi path: `env.sh`, `run.sh`, `go-cost.ts`
+- [x] 3.1 Remove every Pi path: `env.sh`, `run.sh`, `go-cost.ts`
   `--models-json`, and the `/opt/pi` mount of the container probe. Add the
   fail-closed executor preflight to `batch.sh` (spec FR-2, FR-10, NFR-6).
-- [ ] 3.2 OpenCode container run in `run.sh`: binary resolution, the entry
+  - The runtime slice landed on 2026-10-24: `env.sh`, `run.sh`, the container
+    probe, and the `batch.sh` preflight are done. The `go-cost.ts`
+    `--models-json` removal landed with task 3.6.
+- [x] 3.2 OpenCode container run in `run.sh`: binary resolution, the entry
   script `harness/opencode-entry.sh`, and the generated config. Add the
   per-run skill snapshot, the private HOME and XDG dirs, and the helper
   supply method (spec FR-1, FR-2, FR-4).
-- [ ] 3.3 Console credential helper `harness/opencode-credential.sh`:
+  - `harness/opencode-entry.sh` imports the credential from its standard
+    input, selects the track prompt from the candidate tree, runs the agent
+    with `run --standalone --format json --auto --model opencode-go/<id>`, and
+    exports the session.
+  - `harness/fetch-rg.sh` installs the pinned static musl ripgrep 15.1.0
+    outside the repository. The runner copies it into the run artifacts.
+  - The export travels through the candidate mount. One pipe write cannot
+    carry a 700 KB export. The runner moves the file into the run artifacts
+    before the candidate contract settles.
+- [x] 3.3 Console credential helper `harness/opencode-credential.sh`:
   export, selection, run-window check (batch preflight and before each
   agent run), access-only copy, and the weekly 7-day expiry warning
   (the warning never stops the batch). Add the stdin delivery, the
   cleanup trap, and the secret scan with redaction (spec FR-3, NFR-1,
   `design.md` section 2).
-- [ ] 3.4 Execution identity schema 2, provenance schema 7, the executor
+  - The helper retries the export three times with five seconds between the
+    calls. The host `opencode auth export` printed a plugin notice and no
+    JSON on 2026-10-25 at 01:14. The retry rule matches the one for
+    `opencode models`.
+- [x] 3.4 Execution identity schema 2, provenance schema 7, the executor
   cohort, and the runner hash list (spec FR-5).
-- [ ] 3.5 Recorded-executor attestation in `executor-attestation.ts` and
+- [x] 3.5 Recorded-executor attestation in `executor-attestation.ts` and
   `provenance-check.ts`. Remove `withRecordedExecutorEnvironment` from
   `plan-work.ts` (spec FR-6).
-- [ ] 3.6 OpenCode parser in `usage.ts`. Connect it to the `run.sh` gates and
+- [x] 3.6 OpenCode parser in `usage.ts`. Connect it to the `run.sh` gates and
   to `score.ts` (spec FR-7).
-- [ ] 3.7 History: add the Pi SKIP to `rescore-doctor.sh` and the regrade
+- [x] 3.7 History: add the Pi SKIP to `rescore-doctor.sh` and the regrade
   scripts. Add the Pi run guard to `run.sh` and the executor series filter to
   `plan-work.ts`. Add the executor display and the series filter to
   `export-site-data.py` and `generate-model-pages.py` (spec FR-8).
-- [ ] 3.8 Weekly toolchain in `cron-weekly.sh` with the task 1.2 fix, and the
+  - The site and script slice landed on 2026-10-25. The `run.sh` guard and the
+    `plan-work.ts` series filter stay open for the TypeScript slice.
+  - `rescore-doctor.sh` and `regrade-run.sh` read the executor kind from the
+    provenance record of the run. A legacy Pi run prints one SKIP line and keeps
+    its bytes. `regrade-all.sh` prints the same SKIP line and counts the run as
+    skipped.
+  - `export-site-data.py` reads the executor identity from `provenance.json` of
+    each run. It never reads the run ID. The leaderboard, the EMA trend, the
+    4-week range, and the paired Skills delta hold the OpenCode rows only. The
+    legacy Pi rows move to a new `history` section and carry `ranked: false`.
+  - `generate-model-pages.py` writes a page for every ranked model and every
+    history model. A page shows the executor name and version. A page with only
+    history shows a labeled history block and states that it is not ranked.
+  - Evidence: `WEEK=all ./rescore-doctor.sh` printed 93 SKIP lines for legacy Pi
+    runs and no FAIL line. The sha256 of every legacy Pi `score.json` stayed the
+    same before and after the rescore. `python3 export-site-data.py` wrote 0
+    ranked models and 18 history models. The cron rehearsal exited 0.
+  - The `run.sh` Pi guard and the `plan-work.ts` series filter landed on
+    2026-10-25. `run.sh` refuses to replace a run directory whose provenance
+    records a legacy Pi executor. `plan-work.ts` keeps a legacy Pi run out of
+    the work list.
+- [x] 3.8 Weekly toolchain in `cron-weekly.sh` with the task 1.2 fix, and the
   `CRON START` tool-path log (spec FR-9).
-- [ ] 3.9 Green evidence: both gate commands and the cron rehearsal exit 0.
+  - `cron-weekly.sh` sources `harness/toolchain.sh` before `harness/weekly.sh`.
+    The script stops when the toolchain cannot resolve a Node directory.
+  - After the `CRON START` line the script logs one line per tool. The line
+    holds the resolved path and the version of `node`, `npm`, and `opencode`.
+  - Evidence: under the crontab PATH the log showed the operator nvm paths
+    `node v24.19.0`, `npm 11.17.0`, and `opencode v2.1.4`. The rehearsal with
+    `env -i` and the crontab PATH exited 0 with 30 test files and 238 tests
+    passed.
+- [x] 3.9 Green evidence: both gate commands and the cron rehearsal exit 0.
   Record their summaries in this plan. Record the runner and suite hashes
   before and after the phase.
+  - Gate command, 2026-10-25 02:47 to 02:53 (+08:00):
+    `cd harness && npm run test:meta:logic` printed
+    `Test Files  30 passed (30)` and `Tests  238 passed (238)`. Exit 0.
+  - Adversarial gate, 2026-10-25 02:57 to 03:05 (+08:00):
+    `cd harness && BENCH_TRACK=change npm run test:meta:logic` printed
+    `Test Files  30 passed (30)` and `Tests  238 passed (238)`. Exit 0.
+  - Cron rehearsal, 2026-10-25 03:05 to 03:12 (+08:00): the design.md
+    section 6 command with `env -i` and the crontab PATH printed
+    `Test Files  30 passed (30)` and `Tests  238 passed (238)`. Exit 0.
+  - Live evidence, 2026-10-25: the first OpenCode run of the week
+    `tt-a-gpt-6-luna-2026w43-r1` produced a valid, trusted, publishable score
+    of 93.5. The build-track run `a-gpt-6-luna-2026w43-r1` produced 94.5.
+  - The runner hash covers `harness/opencode-entry.sh`,
+    `harness/opencode-credential.sh`, `harness/toolchain.sh`, and
+    `harness/usage.ts`. The suite hash covers every file under
+    `harness/tests`.
 
 ## Phase 4: Verify and document
 

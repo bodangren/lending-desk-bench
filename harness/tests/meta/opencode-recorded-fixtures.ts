@@ -66,6 +66,7 @@ export async function makeRecordedWorkspace() {
       const contract = assessCandidateContract(resolve(ROOT,"fixture"),candidate,{track:"build"});
       writeJson(resolve(artifacts,"candidate-contract.json"),contract);
       writeJson(resolve(artifacts,"execution-identity.json"),identity); writeJson(resolve(artifacts,"executor-cohort.json"),cohort);
+      writeJson(resolve(artifacts,"executor/session-export.json"),{info:{id:"matrix",model:{id:model,providerID:"opencode-go"},cost:0,tokens:{input:10,output:20,reasoning:5,cache:{read:0,write:0}}},messages:[]});
       const input = {artifacts,runId:id,arm:"b",model:`opencode-go/${model}`,mode:"agent",track:"build" as const};
       const written = buildProvenance(input);
       const provenance = {...written,schema:7,executor:identity,executor_cohort:cohort,execution_identity_sha256:executionIdentityFingerprint(identity)};

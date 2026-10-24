@@ -6,9 +6,10 @@
 #   WEEK=2026w36 ./rescore-doctor.sh
 #
 # Each run keeps its own identity from its provenance.json: model, arm, mode,
-# fixture revision, and graft record. The executor is attested against the Pi
-# binary the run recorded, so a week graded before a Pi upgrade still rescores
-# (executor-attestation.ts). A score.json is replaced only by a valid record.
+# fixture revision, and graft record. The executor kind comes from that same
+# provenance record, never from the run ID. A legacy Pi run keeps its
+# score.json bytes: the rescore prints one SKIP line and leaves the run
+# untouched (spec FR-8). A score.json is replaced only by a valid record.
 # A suite edit that changes what the tests assert needs regrade-run.sh instead:
 # a rescore reuses the old results.
 set -uo pipefail
@@ -16,6 +17,18 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; H="$ROOT/harness"
 cd "$H" || exit 1
 TSX="$H/node_modules/.bin/tsx"
 WEEK="${WEEK:-$(date -u +%Gw%V)}"
+
+# The executor kind of one run, from its provenance record (spec FR-8).
+executor_kind() {
+  node -e '
+const fs=require("node:fs");
+let p; try { p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); } catch { process.stdout.write("unknown"); process.exit(0); }
+const ex=p.executor||{};
+if (typeof ex.kind==="string" && ex.kind) { process.stdout.write(ex.kind); process.exit(0); }
+if (ex.pi) { process.stdout.write("pi"); process.exit(0); }
+process.stdout.write("unknown");' "$1"
+}
+
 # WEEK=all (bench_incremental FR-3): cure provenance staleness for every run
 # with persisted results, across all weeks. Only the week glob and the run-id
 # pattern change; the per-run fail-closed contract is unchanged — score.json is
@@ -41,6 +54,11 @@ for ART in "${RUN_GLOBS[@]}"; do
     esac
   else
     echo "SKIP $RUN_ID (run id not [prefix]<arm>-<slug>-$WEEK_PATTERN[-rN])"; continue
+  fi
+  # A legacy Pi run stays on disk with its own score.json bytes (spec FR-8).
+  EXECUTOR="$(executor_kind "$ART/provenance.json")"
+  if [ "$EXECUTOR" = "pi" ]; then
+    echo "SKIP $RUN_ID (legacy Pi executor; score.json left unchanged)"; continue
   fi
   CAND="$ROOT/runs/$RUN_ID/candidate"
   [ -d "$CAND" ] || { echo "SKIP $RUN_ID (no candidate)"; continue; }

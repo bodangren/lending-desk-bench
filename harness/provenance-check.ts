@@ -1,17 +1,18 @@
 /**
  * Provenance validation shared by score.ts and score-freshness.ts.
  *
- * Schema 6 (bench_v2) adds fixture_revision, contract_violation_sha256, graft,
- * and the tests/change set bindings to schema 5. Every older schema is stale:
- * regrade-run.sh rewrites provenance for a historical run and grades it again.
+ * Schema 7 (bench_v2, OpenCode executor) records the schema-2 execution
+ * identity of design.md section 3.1 and its hash; schema 6 stays readable
+ * for the Pi history (FR-8). Every older schema is stale: regrade-run.sh
+ * rewrites provenance for a historical run and grades it again.
  */
 import type { BenchTrack, CandidateContract } from "./candidate-contract.js";
 import { executionIdentityFingerprint, validateExecutionIdentity } from "./execution-identity.js";
-import { attestExecutorFromEnvironment } from "./executor-attestation.js";
+import { attestCurrentExecutor } from "./executor-attestation.js";
 import { FIXTURE_REVISION } from "./revisions.js";
 import { verifyTrackBindings } from "./track-bindings.js";
 
-export const PROVENANCE_SCHEMA = 6;
+export const PROVENANCE_SCHEMA = 7;
 
 const hex64 = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -93,7 +94,15 @@ export function checkProvenance(input: {
     executionErrors.length === 0 &&
     executionFingerprintMatches &&
     modeBindingMatches;
-  const executorAttestation = attestExecutorFromEnvironment(provenance);
+  // FR-6: attestation reads only the executor this run recorded, its frozen
+  // cohort, and the run's own artifact snapshots. It never resolves a live
+  // binary, a live skill folder, or a live image, so a host OpenCode upgrade
+  // never makes an earlier run stale.
+  const executorAttestation = attestCurrentExecutor({
+    record: provenance,
+    frozen_cohort: provenance.executor_cohort,
+    artifacts,
+  });
   const executionCurrent = recordedExecutionCurrent && executorAttestation.eligible;
   if (!runnerAndSuiteCurrent) reasons.push("runner or suite provenance does not match this score implementation");
   else if (!identityMatches) reasons.push("provenance model or arm does not match this grading invocation");

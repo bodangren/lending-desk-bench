@@ -179,14 +179,23 @@ reference overlay (`reference/`, `reference-variant/`, `reference-change/`), mod
 track file, frozen set, and quality baseline. It also records the protected fixture hash and
 candidate tree hash. Changing any of these invalidates an old score; rescore or regrade.
 
-Provenance schema 6 (`harness/provenance-record.ts`, checked by `provenance-check.ts`) binds
-the run ID to its executor evidence (image digest, Pi path/hash/version, Arm-B skill-tree
-hashes, runtime and CLI argument arrays), plus `fixture_revision`,
-`contract_violation_sha256`, an optional `graft` block, and each variant track's set id, set
-hash, registry hash, and variant hash. The executor is attested against the Pi binary the run
-recorded, so a week graded before a Pi upgrade still rescores. Overlay calibration records an
-explicit non-invocation identity; it can validate controls, but it cannot become a ranked
-model result.
+Provenance schema 7 (`harness/provenance-record.ts`, checked by `provenance-check.ts`) binds
+the run ID to its executor evidence. This evidence includes image identity, OpenCode
+path/hash/version, model reference, configuration and entry hashes, ripgrep helper, Arm-B
+skill-tree hashes, runtime flags, and CLI flags. It also binds `fixture_revision`,
+`contract_violation_sha256`, an optional `graft` block, and each variant track's set id, set hash,
+registry hash, and variant hash.
+
+Recorded-executor attestation checks the recorded identity, frozen cohort, configuration snapshot,
+and skill snapshot. It never resolves a live executor, live image, or live skill folder. OpenCode
+version changes do not stale earlier runs or force reruns. Each run keeps the OpenCode version it
+used, and the site shows that version.
+
+OpenCode runs form a new score series. The two series are the OpenCode series and the legacy Pi
+series. Legacy Pi runs stay on disk as labeled history and never enter OpenCode rankings. Site
+rows show the executor and version. Leaderboards, trends, ranges, and Skills deltas use OpenCode
+rows only. Overlay calibration records an explicit non-invocation identity; it can validate
+controls, but it cannot become a ranked model result.
 
 The collector rejects missing raw reports. The scorer rejects malformed gates/collections,
 nonboolean results, missing IDs, orphan IDs, stale provenance, and launch errors in the

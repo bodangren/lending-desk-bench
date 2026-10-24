@@ -104,7 +104,7 @@ describe("self-check environment hermeticity", () => {
         writeJson(resolve(artifacts, "results.json"), allResults());
         writeJson(
           resolve(artifacts, "provenance.json"),
-          currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live }),
+          currentSchema4Provenance({ fixture: FIXTURE, candidate, runId, model: MODEL, arm: ARM, live, artifacts }),
         );
 
         const score = await scoreInProcess({

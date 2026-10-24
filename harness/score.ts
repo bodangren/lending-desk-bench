@@ -10,7 +10,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { extractUsage } from "./usage.js";
+import { extractUsage, extractOpenCodeUsage, emptyUsage } from "./usage.js";
 import { recostUsage } from "./go-cost.js";
 import { runDoctor, loadBaseline, penaltyOver, PENALTY_FULL, DOCTOR_VERSION, type DoctorReport } from "./doctor.js";
 import { currentHashes } from "./provenance.js";
@@ -190,6 +190,23 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
     invalidReasons.push(...check.reasons);
   }
 
+  // FR-7: the OpenCode usage source is the session export. The event stream is
+  // a cross-check only. A missing, empty, or malformed export makes the run
+  // invalid. Legacy Pi runs keep reading the pi transcript.
+  const exportPath = join(artifacts, "executor", "session-export.json");
+  const executor = provenance && isRecord(provenance.executor) ? provenance.executor : undefined;
+  const opencodeRun = executor?.kind === "opencode" || existsSync(exportPath);
+  let usage = emptyUsage();
+  if (opencodeRun) {
+    try {
+      usage = await extractOpenCodeUsage(exportPath);
+    } catch (error) {
+      invalidReasons.push(`session export is unusable: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  } else {
+    usage = await extractUsage(join(artifacts, "session.json"));
+  }
+
   const loaded = loadTrackContext(track, artifacts);
   invalidReasons.push(...loaded.reasons);
   const context: TrackContext = loaded.context ?? (
@@ -272,7 +289,6 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
   const rankable = valid && gatePassed && mode === "agent" && agentIsolated;
   const trusted = rankable;
   const total = valid ? (gatePassed ? Math.round(metrics.raw * 10) / 10 : 0) : null;
-  const usage = await extractUsage(join(artifacts, "session.json"));
 
   return {
     schema: 3,

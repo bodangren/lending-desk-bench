@@ -1,0 +1,66 @@
+# Implementation plan — go_catalog_w43
+
+Refresh the pricing table from the live OpenCode Go catalog, recost the stored
+scores, run the benchmark matrix for the new models, and publish the results.
+
+The benchmark run depends on the `opencode_executor` track. That track
+replaces the Pi executor with OpenCode 2 and the host Console login. The Pi
+executor cannot run now because its API key expired on 2026-10-18.
+
+Gate commands:
+
+- `cd harness && npm run test:meta:logic`
+- `cd harness && BENCH_TRACK=change npm run test:meta:logic`
+- `cd harness && WEEK=all ./rescore-doctor.sh`
+- `cd harness && ./recost.sh`
+
+## Phase 1: Refresh the catalog
+
+- [x] 1.1 Refresh `harness/go-pricing.json` from the live catalog and the Go
+  docs. Add the new models. Update the changed limits and rates. Keep the
+  retired entries that stored scores need. Update the `retrieved` date and the
+  alias map. Verify with `harness/go-cost.ts --catalog` and
+  `harness/go-cost.ts --batch-lines`.
+  - Added `claude-haiku-5-5`, `gpt-6-luna`, `minimax-m3.1-flash` as batch
+    models. Added `grok-4.7`, `kimi-k3.1-pro`, `step-5-preview`,
+    `qwen3.7-max`, and `beam-free` as catalog entries. Raised the DeepSeek
+    V4.1 Flash monthly limit to $80 and its request estimate to 173,330.
+  - The live catalog holds 40 ids. The table holds 37 entries and 21 batch
+    models. The catalog diff lists `deepseek-v4-flash-vision-exp` as missing
+    and `gemini-4-argon` as extra.
+  - `deepseek-v4-flash-vision-exp` left the Go catalog. Its entry stays for
+    the recost of the old scores. Its `batch` flag is now false, so the
+    weekly batch no longer schedules it.
+  - The Go route serves one id for DeepSeek V4.1 Flash. A probe on 2026-10-25
+    returned HTTP 200 for `deepseek-v4.1-flash`. The ids
+    `deepseek-v4.1-flash-10-17` and `deepseek-v4.1-flash-0917` returned
+    HTTP 400 "Model is unavailable". The 2026-10-17 release reached the Go
+    route under the same id. The alias map resolves a recorded versioned id to
+    the table entry.
+- [x] 1.2 Recost every stored score with `harness/recost.sh`. Verify that no
+  stored score lost its cost and that the retired ids resolve as unmapped.
+  - `recost.sh` rewrote 230 score files and exited 0.
+
+## Phase 2: Enable the OpenCode executor
+
+This phase continues the `opencode_executor` track. Its plan holds the task
+detail.
+
+- [ ] 2.1 Land the OpenCode executor in `harness/`. The Red suite in
+  `harness/tests/meta/opencode-*.test.ts` holds the contract. Both gate
+  commands must pass.
+
+## Phase 3: Benchmark the new models
+
+- [ ] 3.1 Run the batch for the new models. Use both arms. Use the build track
+  repeat count. Record the run ids and the score verdicts.
+- [ ] 3.2 Rescore every run with `harness/rescore-doctor.sh`. Verify that each
+  new run is valid, trusted, and publishable.
+
+## Phase 4: Publish
+
+- [ ] 4.1 Export the site data with `harness/export-site-data.py`. Generate the
+  model pages with `harness/generate-model-pages.py`. Verify that the new
+  models appear with their executor and version.
+- [ ] 4.2 Commit the site data, the model pages, the pricing table, and the
+  track files. Stage only those paths. Push to `main` to publish the pages.

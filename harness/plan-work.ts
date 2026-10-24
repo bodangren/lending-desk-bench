@@ -14,10 +14,10 @@
  *
  * A run counts as trusted only when score-freshness.ts assessScoreFreshness
  * returns TRUSTED and rankable under the current runner and suite hashes.
- * Freshness attests the run's recorded executor against a live executor
- * resolved from the environment; to keep the classification hermetic, each
- * assessment is staged with the executor inputs the run itself recorded (see
- * withRecordedExecutorEnvironment). Model identity comes only from each run's
+ * Freshness attests the run's recorded executor against the run's own
+ * artifact snapshots only (FR-6); no live executor environment is staged,
+ * so the classification cannot change with any ambient BENCH_* value, HOME,
+ * or PATH. Model identity comes only from each run's
  * provenance.json (model, arm, track) — never from the run-ID shape — so
  * canary, calibration, control, and adhoc runs never enter the work list.
  *
@@ -76,49 +76,6 @@ function readJson(path: string): { value?: Json; error?: string } {
   }
 }
 
-/**
- * Freshness attests a run's recorded executor against a live executor that
- * executor-attestation.ts resolves from the environment. The selector's
- * output must not depend on the caller's environment (NFR-1), so every
- * assessment runs against the executor the run itself recorded: image,
- * runtime flags, and CLI flags come from provenance.executor, and Arm-B
- * skills come from the run's own copied skill tree when it has one. Values
- * are restored afterwards, so ambient executor inputs never leak in — or out.
- */
-function withRecordedExecutorEnvironment<T>(provenance: Json, runRoot: string, assess: () => T): T {
-  const executor = isRecord(provenance.executor) && provenance.executor.kind !== "not-invoked"
-    ? provenance.executor
-    : undefined;
-  const staged = new Map<string, string | undefined>();
-  const stage = (key: string, value: string | undefined): void => {
-    staged.set(key, process.env[key]);
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  };
-  stage("BENCH_AGENT_IMAGE", typeof executor?.image_reference === "string" ? executor.image_reference : undefined);
-  stage(
-    "BENCH_EXECUTOR_RUNTIME_FLAGS",
-    Array.isArray(executor?.runtime_flags) ? JSON.stringify(executor.runtime_flags) : undefined,
-  );
-  stage(
-    "BENCH_EXECUTOR_CLI_FLAGS",
-    Array.isArray(executor?.cli_flags) ? JSON.stringify(executor.cli_flags) : undefined,
-  );
-  const skills = executor && isRecord(executor.skills) ? Object.keys(executor.skills) : [];
-  if (skills.length > 0) {
-    const localSkillRoot = join(runRoot, "live-executor", "skills");
-    if (existsSync(localSkillRoot)) stage("BENCH_SKILL_ROOT", localSkillRoot);
-  }
-  try {
-    return assess();
-  } finally {
-    for (const [key, value] of staged) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  }
-}
-
 /** Track repeat count: bare REPS overrides every track, then REPS_<TRACK>, then defaults. */
 function repsFor(track: BenchTrack): number {
   const raw = process.env.REPS ?? process.env[`REPS_${track.toUpperCase()}`];
@@ -158,6 +115,12 @@ function scanRuns(
       continue;
     }
     const provenance = read.value;
+    // FR-8: the score series comes from the executor kind in the provenance
+    // record. A legacy Pi run stays out of the work list and out of the
+    // ranking. The run ID never decides the series.
+    const executor = provenance.executor;
+    const kind = isRecord(executor) ? executor.kind : undefined;
+    if (kind !== "opencode") continue;
     const model = resolveGoModelId(
       typeof provenance.model === "string" ? provenance.model : undefined,
       pricing,
@@ -171,9 +134,7 @@ function scanRuns(
     stats.runs += 1;
     const scorePath = resolve(artifacts, "score.json");
     if (existsSync(scorePath)) {
-      const trusted = withRecordedExecutorEnvironment(provenance, resolve(runsRoot, entry.name), () =>
-        assessScoreFreshness(scorePath),
-      );
+      const trusted = assessScoreFreshness(scorePath);
       if (trusted.state === "TRUSTED" && trusted.rankable) stats.trusted += 1;
     }
     counts.set(key, stats);

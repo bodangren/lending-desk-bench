@@ -76,6 +76,13 @@
           <div class="hint">The task is the same. Do not mix these scores into the No Skills ranking.</div>
         </div>
       </div>
+      <div class="callout">
+        <strong>Executor change.</strong> The benchmark changed from Pi to OpenCode 2 on
+        2026-10-25. The reason was to align benchmark traffic with the OpenCode program users run
+        and remove Go traffic from the former Pi executor. OpenCode 2 uses the host Console login
+        through an isolated credential store.
+        The model can read the run credential and send it over the network.
+      </div>
     </section>
 
     <section class="card" id="grading">
@@ -181,7 +188,7 @@
     <section class="card" id="economics">
       <h2>Cost &amp; tokens</h2>
       <p class="section-lede">
-        The harness extracts usage from the agent transcript. The published cost is a percent of
+        The harness extracts usage from the OpenCode session export. The published cost is a percent of
         the monthly OpenCode Go Usage for that model. The harness recomputes the cost from tokens
         when prices change.
       </p>
