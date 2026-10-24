@@ -91,7 +91,7 @@ for ART in "${RUN_GLOBS[@]}"; do
   OLD_TOTAL="$(node -e 'try{console.log(JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8")).total)}catch{console.log("none")}' "$ART/score.json")"
   OLD_WALL="$(node -e 'try{const t=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8")).time_on_task_seconds;console.log(Number.isFinite(t)?t:0)}catch{console.log(0)}' "$ART/score.json")"
   CANDIDATE="$CAND" ARTIFACTS="$ART" VARIANT="$ROOT/runs/$RUN_ID/variant" BENCH_TRACK="$TRACK" AGENT_EXIT=0 \
-    WALL_SECONDS="$OLD_WALL" GRADING_SECONDS=0 MODEL="$MODEL" ARM="$ARM" RUN_ID="$RUN_ID" THINKING=max \
+    WALL_SECONDS="$OLD_WALL" GRADING_SECONDS=0 MODEL="$MODEL" ARM="$ARM" RUN_ID="$RUN_ID" THINKING=default \
     GATE_BLOCKED=0 "$TSX" score.ts > "$ART/score.json.new" 2>>"$ART/score-rescore.err" || {
       echo "FAIL $RUN_ID (score.ts)"; tail -2 "$ART/score-rescore.err"; rm -f "$ART/score.json.new"
       mv "$ART/provenance.json.prev" "$ART/provenance.json"; continue; }

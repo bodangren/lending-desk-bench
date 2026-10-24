@@ -37,6 +37,15 @@ Gate commands:
     HTTP 400 "Model is unavailable". The 2026-10-17 release reached the Go
     route under the same id. The alias map resolves a recorded versioned id to
     the table entry.
+  - The matrix now holds 15 models. Seven entries left the matrix on
+    2026-10-25. The OpenCode executor cannot run them today:
+    `minimax-m2.5` and `omen-alpha` and `qwen3.6-plus` are absent from the
+    OpenCode model catalog, `minimax-m2.7` is deprecated in that catalog,
+    `mimo-v2.5-pro` is rejected by the Go upstream, `minimax-m3` returns
+    HTTP 404 for the executor request, and `deepseek-v4-flash-vision-exp`
+    left the Go catalog. The entries stay for the recost of the stored
+    scores. Each flag can return when the catalog or the upstream serves the
+    id again.
 - [x] 1.2 Recost every stored score with `harness/recost.sh`. Verify that no
   stored score lost its cost and that the retired ids resolve as unmapped.
   - `recost.sh` rewrote 230 score files and exited 0.
