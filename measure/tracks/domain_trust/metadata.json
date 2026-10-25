@@ -1,0 +1,20 @@
+{
+  "id": "domain_trust",
+  "title": "Domain trust matrix: safe and risk domains for each model, with failure modes",
+  "type": "Feature",
+  "status": "pending",
+  "created": "2026-10-25",
+  "estimated_tasks": 15,
+  "actual_tasks": null,
+  "source": {
+    "method": "owner requirement 2026-10-25: \"if A-H will likely remain saturated, we need to determine if the goal of this benchmark (implementation of jr dev level TS / React 19 / Next 16) is actually met with perfect fidelity or not. Is it error free? To spec? Optimized? Probably not, but it might be for certain domains, and that's fine. Then we know which cheap models can be assigned to which domains with certainty and which are a risk. Remember this benchmark's goals and use first principles.\" The strategy role of rigor_a_h split the publication into this track.",
+    "evidence": "preview.json: the verdict rule applied to 34 stored runs of 14 catalog models on 2026-10-25, N_MIN 2",
+    "dependencies": [
+      "bench_v2",
+      "opencode_executor"
+    ],
+    "related_tracks": [
+      "rigor_a_h"
+    ]
+  }
+}

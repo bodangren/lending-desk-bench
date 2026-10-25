@@ -23,6 +23,11 @@
 | Implementation Plan (rigor_a_h) | measure/tracks/rigor_a_h/plan.md |
 | Test strategy (rigor_a_h) | measure/tracks/rigor_a_h/test-strategy.md |
 | Track metadata (rigor_a_h) | measure/tracks/rigor_a_h/metadata.json |
+| Corpus manifest (rigor_a_h) | measure/tracks/rigor_a_h/corpus.json |
+| Specification (domain_trust) | measure/tracks/domain_trust/spec.md |
+| Implementation Plan (domain_trust) | measure/tracks/domain_trust/plan.md |
+| Track metadata (domain_trust) | measure/tracks/domain_trust/metadata.json |
+| Golden preview matrix (domain_trust) | measure/tracks/domain_trust/preview.json |
 | Scoring contract | SCORING.md |
 | Model-visible spec (build) | fixture/measure/tracks/lending_desk/spec.md |
 | Model-visible spec (bugfix) | harness/bugfix/model-visible/track/spec.md |

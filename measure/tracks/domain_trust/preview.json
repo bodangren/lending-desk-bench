@@ -1,0 +1,1067 @@
+{
+ "schema": 1,
+ "created": "2026-10-25",
+ "n_min": 2,
+ "method": "Stored records only. Records: every run directory that matches the export run pattern for a catalog model (harness/go-pricing.json, high_usage and batch), with score.json valid === true and a results.json. Both arms and both executors. A criterion counts for a record only when its since value is at most the record revision (default 1). A probe counts for every revision. A missing result key is not graded. Verdict precedence: risk (a spec or robustness failure), unproven (a check with fewer than n_min graded results), unoptimized (a performance failure only), safe.",
+ "probe_map": {
+  "P.action-race": {
+   "domain": "F",
+   "kind": "robustness"
+  },
+  "P.auth-before-parse": {
+   "domain": "G",
+   "kind": "robustness"
+  },
+  "P.axe-clean": {
+   "domain": "B",
+   "kind": "robustness"
+  },
+  "P.concurrent-checkout": {
+   "domain": "G",
+   "kind": "robustness"
+  },
+  "P.concurrent-return": {
+   "domain": "G",
+   "kind": "robustness"
+  },
+  "P.dedup-item": {
+   "domain": "D",
+   "kind": "performance"
+  },
+  "P.filter-literal": {
+   "domain": "C",
+   "kind": "robustness"
+  },
+  "P.hydration-clean": {
+   "domain": "C",
+   "kind": "robustness"
+  },
+  "P.malformed-json": {
+   "domain": "G",
+   "kind": "robustness"
+  },
+  "P.n-plus-one": {
+   "domain": "C",
+   "kind": "performance"
+  },
+  "P.no-key-leak": {
+   "domain": "F",
+   "kind": "robustness"
+  },
+  "P.retry-after-error": {
+   "domain": "E",
+   "kind": "robustness"
+  },
+  "P.searchparams-async": {
+   "domain": "C",
+   "kind": "robustness"
+  },
+  "P.stale-after-mutate": {
+   "domain": "F",
+   "kind": "robustness"
+  },
+  "P.validate-before-io": {
+   "domain": "G",
+   "kind": "performance"
+  }
+ },
+ "models": {
+  "claude-haiku-5-5": {
+   "runs": [
+    "a-claude-haiku-5-5-2026w43-r1",
+    "b-claude-haiku-5-5-2026w43-r1"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "C": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "2/2"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "F": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "G": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "deepseek-v4.1-flash": {
+   "runs": [
+    "a-deepseek-v4-1-flash-2026w37",
+    "a-deepseek-v4-1-flash-2026w38",
+    "a-deepseek-v4-1-flash-2026w43-r1",
+    "b-deepseek-v4-1-flash-2026w43-r1"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "C": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "4/4"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "F": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "G": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "glm-5.3-flash": {
+   "runs": [
+    "a-glm-5-3-flash-2026w37",
+    "a-glm-5-3-flash-2026w38",
+    "b-glm-5-3-flash-2026w38"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "C": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.n-plus-one": "1/3"
+     },
+     "gaps": []
+    },
+    "D": {
+     "verdict": "risk",
+     "failures": {
+      "D.form-hidden": "1/3",
+      "D.return-visible": "1/3",
+      "P.dedup-item": "2/3"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "risk",
+     "failures": {
+      "E.error-shown": "1/3",
+      "E.member-options": "1/3",
+      "E.optimistic": "1/3",
+      "E.pending": "2/3",
+      "E.return-error": "1/3",
+      "E.return-optimistic": "1/3",
+      "E.return-pending": "2/3",
+      "E.return-submits": "2/3",
+      "E.submits": "1/3"
+     },
+     "gaps": []
+    },
+    "F": {
+     "verdict": "risk",
+     "failures": {
+      "F.auth-checkout": "1/3",
+      "F.auth-return": "1/3",
+      "F.checkout-conflict": "1/3",
+      "F.checkout-record": "1/3",
+      "F.future-due-date": "1/3",
+      "F.lifecycle": "1/3",
+      "F.post-mutation-state": "1/3",
+      "F.return-not-on-loan": "1/3",
+      "F.return-record": "1/3",
+      "P.stale-after-mutate": "1/3"
+     },
+     "gaps": []
+    },
+    "G": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "H": {
+     "verdict": "risk",
+     "failures": {
+      "H.error": "1/3",
+      "H.loading": "1/3"
+     },
+     "gaps": []
+    }
+   }
+  },
+  "gpt-5.6-luna": {
+   "runs": [
+    "a-gpt-5-6-luna-2026w37",
+    "b-gpt-5-6-luna-2026w38"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "P.axe-clean"
+     ]
+    },
+    "C": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "2/2"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "E.labels",
+      "E.error-announced",
+      "P.retry-after-error"
+     ]
+    },
+    "F": {
+     "verdict": "risk",
+     "failures": {
+      "F.checkout-record": "2/2",
+      "F.lifecycle": "2/2"
+     },
+     "gaps": []
+    },
+    "G": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "P.auth-before-parse",
+      "P.malformed-json"
+     ]
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "gpt-6-luna": {
+   "runs": [
+    "a-gpt-6-luna-2026w43-r1",
+    "b-gpt-6-luna-2026w43-r1"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "C": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "2/2"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "F": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "G": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "hy3": {
+   "runs": [
+    "a-hy3-2026w37"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "A.returned",
+      "A.overdue",
+      "A.due-soon",
+      "A.ok",
+      "A.boundary"
+     ]
+    },
+    "B": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "B.name-category",
+      "B.badge",
+      "B.link",
+      "B.image-alt",
+      "B.image-response",
+      "P.axe-clean"
+     ]
+    },
+    "C": {
+     "verdict": "unproven",
+     "failures": {
+      "P.n-plus-one": "1/1"
+     },
+     "gaps": [
+      "C.renders",
+      "C.renders-all",
+      "C.filter-q",
+      "C.filter-case",
+      "C.filter-category",
+      "C.filter-both",
+      "C.empty",
+      "C.parallel-reads",
+      "P.searchparams-async",
+      "P.hydration-clean",
+      "P.filter-literal",
+      "P.n-plus-one"
+     ]
+    },
+    "D": {
+     "verdict": "unproven",
+     "failures": {
+      "P.dedup-item": "1/1"
+     },
+     "gaps": [
+      "D.renders",
+      "D.history-order",
+      "D.history-status",
+      "D.notfound",
+      "D.form-hidden",
+      "D.return-visible",
+      "D.metadata",
+      "P.dedup-item"
+     ]
+    },
+    "E": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "E.submits",
+      "E.error-shown",
+      "E.member-options",
+      "E.return-submits",
+      "E.return-error",
+      "E.labels",
+      "E.pending",
+      "E.optimistic",
+      "E.return-pending",
+      "E.return-optimistic",
+      "E.error-announced",
+      "P.retry-after-error"
+     ]
+    },
+    "F": {
+     "verdict": "risk",
+     "failures": {
+      "F.checkout-record": "1/1",
+      "F.lifecycle": "1/1"
+     },
+     "gaps": []
+    },
+    "G": {
+     "verdict": "risk",
+     "failures": {
+      "P.concurrent-return": "1/1"
+     },
+     "gaps": []
+    },
+    "H": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "H.loading",
+      "H.error"
+     ]
+    }
+   }
+  },
+  "longcat-2.0": {
+   "runs": [
+    "a-longcat-2-0-2026w37",
+    "a-longcat-2-0-2026w38",
+    "b-longcat-2-0-2026w38"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "P.axe-clean"
+     ]
+    },
+    "C": {
+     "verdict": "risk",
+     "failures": {
+      "C.parallel-reads": "1/3"
+     },
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "3/3"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "risk",
+     "failures": {
+      "E.optimistic": "1/3",
+      "E.pending": "2/3",
+      "E.return-error": "1/3",
+      "E.return-optimistic": "1/3",
+      "E.return-pending": "1/3",
+      "E.submits": "1/3"
+     },
+     "gaps": []
+    },
+    "F": {
+     "verdict": "risk",
+     "failures": {
+      "F.auth-return": "1/3",
+      "F.checkout-record": "2/3",
+      "F.lifecycle": "2/3",
+      "F.return-not-on-loan": "1/3"
+     },
+     "gaps": []
+    },
+    "G": {
+     "verdict": "risk",
+     "failures": {
+      "G.401": "3/3",
+      "P.concurrent-checkout": "1/3",
+      "P.concurrent-return": "1/3",
+      "P.malformed-json": "1/1"
+     },
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "mimo-v2.5": {
+   "runs": [
+    "a-mimo-v2-5-2026w37",
+    "a-mimo-v2-5-2026w38",
+    "b-mimo-v2-5-2026w38"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "P.axe-clean"
+     ]
+    },
+    "C": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.n-plus-one": "1/3"
+     },
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "3/3"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "risk",
+     "failures": {
+      "E.optimistic": "3/3",
+      "E.pending": "2/3",
+      "E.return-optimistic": "3/3",
+      "E.return-pending": "2/3",
+      "E.return-submits": "2/3",
+      "E.submits": "3/3"
+     },
+     "gaps": []
+    },
+    "F": {
+     "verdict": "risk",
+     "failures": {
+      "F.checkout-record": "2/3",
+      "F.lifecycle": "2/3"
+     },
+     "gaps": []
+    },
+    "G": {
+     "verdict": "risk",
+     "failures": {
+      "P.concurrent-return": "1/3"
+     },
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "mimo-v2.6-flash": {
+   "runs": [
+    "a-mimo-v2-6-flash-2026w39",
+    "b-mimo-v2-6-flash-2026w39"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "risk",
+     "failures": {
+      "B.badge": "1/2",
+      "B.image-alt": "1/2",
+      "B.image-response": "1/2",
+      "B.link": "1/2",
+      "B.name-category": "1/2"
+     },
+     "gaps": []
+    },
+    "C": {
+     "verdict": "risk",
+     "failures": {
+      "C.empty": "1/2",
+      "C.filter-both": "1/2",
+      "C.filter-case": "1/2",
+      "C.filter-category": "1/2",
+      "C.filter-q": "1/2",
+      "C.parallel-reads": "1/2",
+      "C.renders": "1/2",
+      "C.renders-all": "1/2",
+      "P.filter-literal": "1/2",
+      "P.n-plus-one": "1/2",
+      "P.searchparams-async": "1/2"
+     },
+     "gaps": []
+    },
+    "D": {
+     "verdict": "risk",
+     "failures": {
+      "D.form-hidden": "1/2",
+      "D.history-order": "1/2",
+      "D.history-status": "1/2",
+      "D.metadata": "1/2",
+      "D.notfound": "1/2",
+      "D.renders": "1/2",
+      "D.return-visible": "1/2",
+      "P.dedup-item": "1/2"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "risk",
+     "failures": {
+      "E.error-shown": "1/2",
+      "E.member-options": "1/2",
+      "E.optimistic": "1/2",
+      "E.pending": "1/2",
+      "E.return-error": "1/2",
+      "E.return-optimistic": "1/2",
+      "E.return-pending": "1/2",
+      "E.return-submits": "1/2",
+      "E.submits": "1/2"
+     },
+     "gaps": []
+    },
+    "F": {
+     "verdict": "risk",
+     "failures": {
+      "F.auth-checkout": "1/2",
+      "F.auth-return": "1/2",
+      "F.checkout-conflict": "1/2",
+      "F.checkout-record": "1/2",
+      "F.future-due-date": "1/2",
+      "F.lifecycle": "1/2",
+      "F.post-mutation-state": "1/2",
+      "F.return-not-on-loan": "1/2",
+      "F.return-record": "1/2",
+      "P.no-key-leak": "1/2",
+      "P.stale-after-mutate": "1/2"
+     },
+     "gaps": []
+    },
+    "G": {
+     "verdict": "risk",
+     "failures": {
+      "G.400": "1/2",
+      "G.401": "1/2",
+      "G.409": "1/2",
+      "G.filter-both": "1/2",
+      "G.filter-item": "1/2",
+      "G.filter-overdue": "1/2",
+      "G.fresh": "1/2",
+      "G.get200": "1/2",
+      "G.patch200": "1/2",
+      "G.patch400": "1/2",
+      "G.patch409": "1/2",
+      "G.post-fields": "1/2",
+      "G.post201": "1/2",
+      "P.concurrent-checkout": "1/2",
+      "P.concurrent-return": "1/2",
+      "P.validate-before-io": "1/2"
+     },
+     "gaps": []
+    },
+    "H": {
+     "verdict": "risk",
+     "failures": {
+      "H.error": "1/2",
+      "H.loading": "1/2"
+     },
+     "gaps": []
+    }
+   }
+  },
+  "minimax-m3.1-flash": {
+   "runs": [
+    "a-minimax-m3-1-flash-2026w43-r1",
+    "b-minimax-m3-1-flash-2026w43-r1"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "C": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "2/2"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "F": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "G": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "muse-spark-1.2-contributor": {
+   "runs": [
+    "a-muse-spark-1-2-contributor-2026w37",
+    "a-muse-spark-1-2-contributor-2026w38"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "P.axe-clean"
+     ]
+    },
+    "C": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.n-plus-one": "1/2"
+     },
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "2/2"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "E.labels",
+      "E.error-announced",
+      "P.retry-after-error"
+     ]
+    },
+    "F": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "P.action-race"
+     ]
+    },
+    "G": {
+     "verdict": "risk",
+     "failures": {
+      "P.concurrent-return": "1/2"
+     },
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "muse-spark-1.3-contributor": {
+   "runs": [
+    "a-muse-spark-1-3-contributor-2026w37",
+    "a-muse-spark-1-3-contributor-2026w38",
+    "b-muse-spark-1-3-contributor-2026w38"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "P.axe-clean"
+     ]
+    },
+    "C": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "3/3"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "E.labels",
+      "E.error-announced",
+      "P.retry-after-error"
+     ]
+    },
+    "F": {
+     "verdict": "unproven",
+     "failures": {},
+     "gaps": [
+      "P.action-race"
+     ]
+    },
+    "G": {
+     "verdict": "risk",
+     "failures": {
+      "P.concurrent-return": "3/3"
+     },
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "qwen3.7-plus": {
+   "runs": [
+    "a-qwen3-7-plus-2026w37",
+    "b-qwen3-7-plus-2026w37"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "risk",
+     "failures": {
+      "P.axe-clean": "1/2"
+     },
+     "gaps": []
+    },
+    "C": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.n-plus-one": "1/2"
+     },
+     "gaps": []
+    },
+    "D": {
+     "verdict": "unoptimized",
+     "failures": {
+      "P.dedup-item": "2/2"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "risk",
+     "failures": {
+      "E.error-shown": "2/2",
+      "E.optimistic": "1/2",
+      "E.pending": "2/2",
+      "E.return-error": "2/2",
+      "E.return-optimistic": "1/2",
+      "E.return-pending": "2/2",
+      "E.submits": "1/2",
+      "P.retry-after-error": "2/2"
+     },
+     "gaps": []
+    },
+    "F": {
+     "verdict": "risk",
+     "failures": {
+      "F.auth-checkout": "2/2",
+      "F.auth-return": "2/2",
+      "F.checkout-conflict": "2/2",
+      "F.checkout-record": "2/2",
+      "F.future-due-date": "2/2",
+      "F.lifecycle": "2/2",
+      "F.return-not-on-loan": "2/2",
+      "P.action-race": "2/2"
+     },
+     "gaps": []
+    },
+    "G": {
+     "verdict": "risk",
+     "failures": {
+      "P.concurrent-return": "1/2"
+     },
+     "gaps": []
+    },
+    "H": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    }
+   }
+  },
+  "qwen3.8-flash": {
+   "runs": [
+    "a-qwen3-8-flash-2026w37",
+    "b-qwen3-8-flash-2026w37",
+    "b-qwen3-8-flash-2026w38"
+   ],
+   "cells": {
+    "A": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "B": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "C": {
+     "verdict": "safe",
+     "failures": {},
+     "gaps": []
+    },
+    "D": {
+     "verdict": "risk",
+     "failures": {
+      "D.form-hidden": "1/3",
+      "D.return-visible": "1/3",
+      "P.dedup-item": "3/3"
+     },
+     "gaps": []
+    },
+    "E": {
+     "verdict": "risk",
+     "failures": {
+      "E.error-shown": "1/3",
+      "E.member-options": "1/3",
+      "E.optimistic": "1/3",
+      "E.pending": "1/3",
+      "E.return-error": "1/3",
+      "E.return-optimistic": "1/3",
+      "E.return-pending": "1/3",
+      "E.return-submits": "1/3",
+      "E.submits": "1/3"
+     },
+     "gaps": []
+    },
+    "F": {
+     "verdict": "risk",
+     "failures": {
+      "F.auth-checkout": "1/3",
+      "F.auth-return": "1/3",
+      "F.checkout-conflict": "1/3",
+      "F.checkout-record": "1/3",
+      "F.future-due-date": "1/3",
+      "F.lifecycle": "1/3",
+      "F.post-mutation-state": "1/3",
+      "F.return-not-on-loan": "1/3",
+      "F.return-record": "1/3",
+      "P.stale-after-mutate": "1/3"
+     },
+     "gaps": []
+    },
+    "G": {
+     "verdict": "risk",
+     "failures": {
+      "G.400": "1/3",
+      "G.401": "1/3",
+      "G.409": "1/3",
+      "G.filter-both": "1/3",
+      "G.filter-item": "1/3",
+      "G.filter-overdue": "1/3",
+      "G.fresh": "1/3",
+      "G.get200": "1/3",
+      "G.patch200": "1/3",
+      "G.patch400": "1/3",
+      "G.patch409": "1/3",
+      "G.post-fields": "1/3",
+      "G.post201": "1/3",
+      "P.concurrent-checkout": "1/3",
+      "P.concurrent-return": "2/3",
+      "P.validate-before-io": "1/3"
+     },
+     "gaps": []
+    },
+    "H": {
+     "verdict": "risk",
+     "failures": {
+      "H.error": "1/3",
+      "H.loading": "1/3"
+     },
+     "gaps": []
+    }
+   }
+  }
+ }
+}

@@ -1,512 +1,504 @@
-# Rigorous A–H criteria with mutation-based admission
+# Harder A–H criteria from interleavings, state sequences, and robustness variants
+
+Spec format: classic FR list. Track type: feature. Base commit: `e449c63`.
 
 ## Summary
 
-The build track does not separate models on product quality. This track
-designs a stricter criterion set for spec sections A–H. A new criterion
-enters the set only when it kills a registered mutant that the current suite
-does not kill. A pilot must show that the new set separates at least three
-models. Until the pilot passes, no published score changes. A second
-saturated suite must not ship.
+The 8 most recent build runs (week 2026w43, 4 models, 2 arms) pass all 60
+A–H criteria. This track adds **scenario criteria** to the A–H set. A
+scenario criterion tests a spec checkbox in a condition that the current
+criteria skip. There are three such conditions: two actors at the same time,
+a sequence of state changes, and an input class of a stated rule.
 
-Spec format: classic FR list. Track type: feature. Base commit: `f4712c6`.
+A new criterion enters the set only when a planted defect fails it, and the
+same defect passes every current criterion and probe. Thus each new
+criterion detects a defect that the current suite misses. The stored candidate trees then show
+whether the new set separates models. This measurement sends no model call.
+
+The track adds up to 5 criteria. Admission can remove a candidate. The
+admitted criteria join the 60 current criteria inside the completion axis.
+The track changes no weight, no axis, and no formula.
+
+The evidence also sets a limit. The four w43 models write code that behaves
+the same on every stated checkbox. A static read predicts that they keep
+100% on the new set. Only a harder task can separate them, and a harder task
+needs new model runs. Owner decision D2 covers that choice.
+
+## Relation to the owner fidelity requirement
+
+The owner added this requirement on 2026-10-25:
+
+> if A-H will likely remain saturated, we need to determine if the goal of this benchmark (implementation of jr dev level TS / React 19 / Next 16) is actually met with perfect fidelity or not. Is it error free? To spec? Optimized? Probably not, but it might be for certain domains, and that's fine. Then we know which cheap models can be assigned to which domains with certainty and which are a risk. Remember this benchmark's goals and use first principles.
+
+The requirement has two parts:
+
+1. **Check strength.** A domain verdict of "no failure" is only as strong as
+   the checks of that domain. This track makes the checks of C, D, E, F, and
+   G harder.
+2. **Publication.** One verdict for each model and domain, with the failure
+   mode behind it. The separate track `domain_trust` owns this part.
+
+This track adds one item for the requirement. The sweep prints one
+`SWEEP.DOMAIN` line for each model and domain (FR-8). Owner decision D2 then
+sees, for each domain, where the harder checks find a defect. Pi records keep
+every byte (FR-7). Thus the sweep is the only source of scenario verdicts for
+models that have Pi runs only.
+
+The publication is a separate track for four reasons:
+
+1. It needs no suite change, no regrade, and no decision D1. The stored
+   records already show the domains where the cheap models fail.
+2. Its files are `harness/export-site-data.py`, a new module, and `docs/`.
+   They are outside the suite hash and the runner hash
+   (`harness/provenance.ts`). It can land in `main` with no stale record.
+3. Its gate is different: a data contract review and a browser review, not
+   controls and canaries.
+4. When the separation gate of this track fails, the matrix still ships.
 
 ## Evidence
 
-These measurements come from the 8 most recent build runs: 4 models, 2 arms
-each, week 2026w43, OpenCode executor. They were verified before this track
-started. This track does not derive them again.
+All facts come from the files on disk on 2026-10-25.
+[`corpus.json`](./corpus.json) lists every run that this section counts.
 
-- The build track scores 78 checks: 60 A–H criteria, 3 adherence criteria
-  (`M.*`), and 15 probes (`P.*`).
-- All 60 A–H criteria pass in all 8 runs. The completion axis is 1.0 for
-  every model.
-- Only one probe fires: `P.dedup-item`. It fires in all 8 runs, so it
-  discriminates nothing. The other 14 probes pass in all 8 runs.
-- Every published score difference comes from the 3 `M.*` criteria. These
-  criteria grade process files, not the product.
-- Completion carries 0.55 of the total (`AXIS_WEIGHTS` in
-  `harness/score-calculation.ts`). It gives the same 55 points to every model.
-  It follows that the adversarial axis gives about 18.7 points to every model.
+### E1. Saturation is a ceiling, not a broken suite
 
-Machine-readable surfaces that this design uses:
+- 49 build runs have a candidate tree and a valid, publishable record. 8
+  are OpenCode runs (2026w43). 41 are legacy Pi runs (2026w37 to 2026w39).
+- 22 of the 49 runs pass every A–H criterion that counts for their fixture
+  revision. They come from 10 models: claude-haiku-5-5, deepseek-v4.1-flash,
+  deepseek-v4-flash-vision-exp, glm-5.3-flash, gpt-6-luna,
+  minimax-m3.1-flash, mimo-v2.6-flash, muse-spark-1.2-contributor,
+  muse-spark-1.3-contributor, and qwen3.8-flash.
+- The other 27 runs fail at least one current criterion. Thus the current
+  criteria separate weak models from strong models. They do not separate
+  strong models from each other.
 
-| Surface | Use in this track |
-|---|---|
-| `harness/tests/criteria.ts` | Baseline ids, tiers, `since`, `SATURATED_WEIGHT = 0.25` |
-| `harness/tests/spec-matrix.ts` | The 54 checkbox ids `A.1`–`H.2` |
-| `harness/tests/negative-controls.ts` | `applyNegativeControl`, the anchored mutation engine |
-| `harness/bugfix/registry.ts` | Bug shape and `validateRegistry`; port target for set `v2` |
-| `harness/tests-track/sets/m1.json` | 12 tests-track mutants; port target for set `m2` |
-| `harness/tests/e2e/*.spec.ts`, `harness/tests/api/*.test.ts`, `harness/tests/unit/*.test.ts` | Baseline graders; survivor analysis |
-| `harness/score-calculation.ts` | `AXIS_WEIGHTS` and the axis formulas |
-| `fixture/measure/tracks/lending_desk/spec.md` | Sections A–H: the model-visible facts |
+### E2. The four w43 models write the same behavior
+
+The strategy role read the 9 task files of the 8 w43 candidates. It found no
+stated behavior on which the candidates differ.
+
+- **A.** All 8 compare `Date.parse(loan.dueAt)` with `now.getTime()` and use
+  the same two boundaries. Over all 80 stored build trees, the function has
+  67 different texts. All pass the current A criteria, except 4 stubs and 1
+  boundary defect that `A.boundary` already fails. A read of the texts finds
+  no other behavior difference.
+- **B, C, D, H.** All 8 derive the catalogue badges from one read of all
+  loans. They filter by name only and match the category exactly. They show
+  the status of each loan in its own row, render six placeholder tiles, and
+  call `reset()` on `Try again`.
+- **E.** The 8 forms use three state designs: `useOptimistic` in a
+  transition, `useState` in a transition, and `useState` with a `finally`
+  block, some with `router.refresh()`. Each design reverts on a rejection
+  and enables its control again.
+- **F, G.** Every action and route catches `ItemOnLoanError` and
+  `LoanAlreadyClosedError`, or catches every error of the close. Every route
+  guards a `null` JSON body. Every write uses `now()`.
+- The 8 candidates differ only where the spec does not decide. Two examples
+  are the conversion of a calendar date to an instant and whitespace in
+  `?q=`. Other examples are the order of two errors that apply together,
+  repeated query parameters, and unknown ids in `POST`.
+
+### E3. Defects that the current criteria miss
+
+The strategy role found two defect classes in saturated runs by a static
+read. The sweep (FR-4) must confirm or refute each one.
+
+1. **The return action does not catch `LoanAlreadyClosedError`.** Two desks
+   that return one item at the same moment get one success and one thrown
+   error. Checkbox F.6 requires `{ ok: false, error: "Item is not on loan" }`
+   for the losing call. The probe `P.concurrent-return` tests this race on
+   the API. The probe `P.action-race` tests the checkout action. No
+   criterion and no probe tests the return action. Saturated runs:
+   `a-muse-spark-1-2-contributor` (w37, w38) and
+   `a-muse-spark-1-3-contributor` (w37, w38). Over all 49 runs, a static
+   read finds 19 runs with no guard around `closeLoan` in `returnItem`.
+2. **The route reads fields from a parsed body with no `null` guard.** A JSON
+   body of `null` then gives status 500. Checkboxes G.7 and G.11 require 400
+   for a missing field. `G.400` and `G.patch400` send object bodies only.
+   `P.malformed-json` sends text that is not JSON. Saturated runs:
+   `a-muse-spark-1-2-contributor` (w37, w38).
+
+Three current criteria have a blind spot. No stored run shows a defect there
+yet.
+
+3. `D.history-status` passes when the words `returned`, `ok`, and `overdue`
+   appear anywhere on the page. It does not check that each row shows the
+   status of its own loan (D.2).
+4. No criterion changes the store outside an action and then visits
+   `/items`. Checkbox C.1 requires "its current open loan".
+5. `E.return-error` checks that the `Return` control is visible after a
+   rejection. It does not check that the control is enabled, reads `Return`,
+   and works on the next activation (E.6, E.7).
+
+### E4. The H.2 retry finding
+
+- The Next.js 16.2.11 documentation is in `fixture/node_modules`. Its page
+  `03-file-conventions/error.md` says this about `reset()`:
+
+  > However, if you have a specific reason to clear the error state and
+  > re-render the error boundary's children without re-fetching the contents,
+  > you can use the `reset()` function.
+
+  The same page names `unstable_retry()` as the function that re-fetches.
+- Checkbox H.2 requires a control "that retries without a full page
+  reload". The reference and all 426 stored `error.tsx` files (all tracks)
+  call `reset()` only. None calls `router.refresh()` or `unstable_retry()`.
+- The stub `fixture/app/items/error.tsx` gives `reset` and no other
+  function. The spec forbids signature changes.
+- A criterion for a true retry fails every stored run and the reference. It
+  separates no model, and the stub sends models toward the failure. This
+  track does not add it. D2 lists it as input for a harder task.
+
+## Design decisions
+
+1. **How the new criteria are built.** Each scenario criterion is one test
+   in the existing suites. `G.body-shape` goes into
+   `harness/tests/api/loans.test.ts`. The four browser criteria go into a
+   new file, `harness/tests/e2e/scenarios.spec.ts`. Each test reads the
+   store through the grader route `app/api/bench-state` before and after
+   each step. It calculates its expectation from the checkbox text and that
+   live state. It never assumes the seed state.
+2. **What proves that a criterion can fail.** Each criterion gets one
+   sensitivity control in the existing manifest,
+   `harness/tests/sensitivity-controls.ts`. The existing executor,
+   `harness/verify-controls.ts`, runs it. The control applies one anchored
+   mutation to `reference/`. It must fail its criterion. Its collateral list
+   names no current criterion and no probe. Thus the current suite does not
+   detect the defect, and the new criterion does.
+3. **Where the criteria come from.** The criteria have three sources. The
+   first is an interleaving of two actors. The second is a sequence of state
+   changes across checkboxes. The third is an input class of a stated rule.
+   Each criterion names the checkboxes that fix its oracle. A convention in
+   the exclusion list never decides a verdict.
+4. **Replace or join.** Join. The 60 current criteria still separate the 27
+   unsaturated runs. Their removal would lose that signal and would make
+   every stored score incomparable.
+5. **The runs on disk.** Right after activation, and before the next weekly
+   batch, `harness/regrade-all.sh` regrades every OpenCode record. It grafts
+   the stored agent files onto the current tree and sends no model call.
+   Legacy Pi records stay byte-identical, as `regrade-run.sh` already
+   ensures. The sweep grades Pi candidates only as diagnostic overlays, and
+   these results never publish.
+6. **Scoring.** No change. The 5 criteria are tier 1 with weight 1. On a
+   fixture revision 2 record, the completion weights sum to 47.25 today and
+   to 52.25 with the new criteria. One new failure then costs about 1.05
+   total points, the same as one current weight-1 criterion. A run that
+   passes all 5 keeps its total. The existing formula already gives a live
+   criterion four times the weight of a saturated one, so no weight change
+   is necessary.
 
 ## Definitions
 
-| Term | Meaning |
-|---|---|
-| Check | One scored test id: a criterion or a probe. |
-| Baseline suite | The 78 checks of `CRITERIA` and `PROBES` at the base commit. |
-| Rigor criterion | A new spec-stated criterion of this track. Its id has the form `R.<section>.<slug>`. |
-| Rigor suite | The graders of the rigor criteria. |
-| Oracle suite | The baseline suite plus the rigor suite. |
-| Clean app | `fixture/` with the `reference/` overlay. |
-| Variant app | `fixture/` with the `reference-variant/` overlay. |
-| Mutant | The clean app with one anchored source mutation in one file. Its id has the form `RM-<section>-<slug>`. |
-| Grade | One run of the gate and one suite against one app on a fresh server. |
-| Kill | Check `c` kills mutant `m` when `c` passes on the clean app in 2 of 2 grades and on the variant app in 1 of 1 grade, and `c` fails on `m` in 2 of 2 grades. |
-| Baseline survivor | A mutant that passes the gate and that no baseline check kills. |
-| Unique kill | A kill of a baseline survivor. |
-| Dev pool | The registered mutants that the Red and Green roles can read. |
-| Held-out pool | The registered mutants that the Red and Green roles do not see before task 3.6. |
-| Pilot | The two-stage measurement of FR-7. |
-| Monitor | The saturation monitor of FR-8. |
+- **Current criteria.** The 60 A–H criteria in `CRITERIA` at the base
+  commit. The `M.*` adherence criteria are not A–H criteria.
+- **Scenario criterion.** A new A–H criterion that this track adds under
+  FR-1.
+- **Control.** One entry in `SENSITIVITY_CONTROLS`: an anchored source
+  mutation of `reference/` with its expected failure and its collateral.
+- **Corpus.** The 49 runs in `corpus.json`.
+- **Saturated run.** A corpus run whose sweep result passes every current
+  criterion that counts for its fixture revision.
+- **Frontier runs.** The 8 OpenCode build runs of 2026w43.
+- **Sweep.** One diagnostic overlay grade of each corpus run on the track
+  branch (FR-4).
+- **Live-state oracle.** An expected value that a test calculates from the
+  checkbox text and the store, which it reads through `app/api/bench-state`.
+- **New completion.** The completion of a run over the current criteria and
+  the admitted scenario criteria, by the existing formula.
+- **Track branch.** The branch `rigor-a-h` in a separate worktree. All harness
+  edits of Phases 2 to 4 happen there (NFR-3).
 
 ## Functional requirements
 
-### FR-1 — Rigor criteria registry
+### FR-1 — Scenario criteria in the registry
 
-- Each rigor criterion records: id, tier, section, checkbox (a spec matrix
-  id such as `A.2`), the quoted spec words, `requires`, `items`, `since`, and
-  `ports`.
-- The quoted words are an exact substring of
-  `fixture/measure/tracks/lending_desk/spec.md`. Review A confirms that the
-  words entail the assertion.
-- `requires` lists baseline criteria. A rigor pass counts only when each
-  listed criterion also passes. This rule stops a vacuous pass: a route that
-  answers 400 to every request cannot earn `R.G.post400-each-field`.
-- `items` lists the seed items that the grader changes. The `items` lists of
-  two rigor criteria do not overlap.
-- A grader tests behavior. It does not read the candidate source text.
-- A grader uses only spec text of fixture revision r1 or r2. `since` is 2
-  only for criteria under checkboxes `E.10` and `E.11`.
-- The rigor suite runs in its own pass, on its own server boot with a fresh
-  seed. The browser graders prepare and read state through the protected
-  route `app/api/bench-state`, as the baseline E and F graders do.
-- An action layer imports `src/actions/loans.ts` under Vitest. It mocks
-  `next/headers` and `next/cache`. It grades F boundaries that the date input
-  cannot reach, for example a due date equal to now. Task 1.5 proves this
-  layer on the clean app and the variant app before Red depends on it.
+- Each scenario criterion is an entry in `CRITERIA` with its section letter,
+  `tier: 1`, no `weight` field, and no `since` field.
+- Its entry in `UNMAPPED_CRITERIA` starts with `scenario:`. It names its
+  source class (`interleaving`, `sequence`, or `robustness`) and at least
+  one `SPEC_MATRIX` row id.
+- Its test title equals its criterion id. `G.body-shape` is in
+  `tests/api/loans.test.ts`. The other admitted criteria are in
+  `tests/e2e/scenarios.spec.ts`.
+- `SCORING.md` permits scenario criteria. Today it permits only splits of a
+  compound checkbox and closeout checks.
+- **Check.** The meta test of plan task 2.1 fails when an entry, a
+  derivation, a test title, or a control is missing.
 
-### FR-2 — Coverage matrix
+### FR-2 — Sourcing and exclusion rule
 
-- The matrix has one row for each of the 54 checkboxes of the fixture spec.
-  The row ids equal the `SPEC_MATRIX` ids.
-- A row lists the rigor criteria, the dev mutants, and the held-out mutants.
-  A row with no rigor criterion records an exemption and its reason.
-- An exemption states why fixture r2 allows no stricter observable assertion.
-  Review A accepts or rejects each exemption.
-- Section targets are minimums:
+- A scenario criterion comes from one of the three sources in design
+  decision 3. A criterion that only repeats one checkbox at a new example
+  value does not qualify.
+- The oracle follows from checkbox text and the live store. No verdict
+  depends on a convention in the exclusion list below.
+- **Check.** Review A maps each assertion to checkbox text. The adversarial
+  role grades the alternate correct implementations of test strategy
+  section 7, and each one must pass every scenario criterion.
 
-| Section | Checkboxes | Baseline criteria | Candidate criteria (below) | Min dev mutants | Min held-out mutants | Min admitted criteria |
-|---|---|---|---|---|---|---|
-| A | 5 | 5 | 4 | 6 | 2 | 3 |
-| B | 4 | 5 | 2 | 2 | 1 | 1 |
-| C | 7 | 8 | 3 | 4 | 1 | 2 |
-| D | 6 | 7 | 4 | 4 | 1 | 2 |
-| E | 11 | 11 | 1 | 1 | 1 | 1 |
-| F | 7 | 9 | 5 | 6 | 2 | 3 |
-| G | 12 | 13 | 5 | 6 | 2 | 3 |
-| H | 2 | 2 | 2 | 2 | 1 | 1 |
-| Total | 54 | 60 | 26 | 31 | 11 | 16 |
+### FR-3 — Admission rule
 
-- A section that misses a minimum blocks admission. Only an owner waiver
-  with a stated reason removes the block. The matrix records each waiver.
-- The targets follow the observed gaps of the baseline. Section E has a low
-  target because the baseline already grades its pending, optimistic,
-  error, and label states at their observable limits.
+A scenario criterion is admitted only when all six conditions are true:
 
-### FR-3 — Mutant registry and pools
+1. Its control fails it in 2 of 2 grades. `verify-controls.ts` reports no
+   failure outside the declared collateral, and the collateral names no
+   current criterion and no probe.
+2. `reference/` and `reference-variant/` each pass it in 5 of 5 grades.
+3. The change canary (`reference-change/`) scores 100. Or the criterion is
+   in the `superseded` list of the change request that changes its
+   behavior, and Review A accepts the reason.
+4. The bugfix clean set scores 100, and `verify-bugs.ts --all` passes. A
+   bug that also fails the criterion declares it as collateral.
+5. It fails fewer than all corpus runs in the sweep.
+6. Review A finds no corpus failure that comes from a convention in the
+   exclusion list.
 
-- Each mutant records these fields:
-  - id, section, and class (`functional`, `security`, `performance`, or
-    `reliability`);
-  - one target file, and anchored replacements over the clean app;
-  - the violated checkbox, with its quoted words;
-  - `source`, a realism note, and the pool (`dev` or `held-out`).
-- `source` is `observed` with the run ids of stored candidates that show the
-  same deviation, or `operator` for a classic mutation operator.
-- The registry admits a mutant only when all of these are true:
-  1. The mutant passes `npm run typecheck` and `npm run build`.
-  2. The mutant violates the quoted spec words.
-  3. The violation is observable under fixture r2 through HTTP, the browser,
-     or a direct import.
-- An equivalent mutant is a mutant that no check can observe under the
-  fixture state. The registry rejects it and records the reason. Example: a
-  history sorted by loan id gives the `borrowedAt` order for every seed item
-  and for every loan that a grader can create.
-- The executor proves survival (FR-6). The registry never assumes it.
-- The adversarial-testing role writes the held-out pool before Red writes
-  any criterion (task 1.7). The file stays outside the repository until task
-  3.6. The plan records its sha256 at authoring time.
-- The kill-matrix report counts `observed` and `operator` mutants for each
-  section.
+A criterion that misses a condition leaves the set before activation. The
+plan records the condition and the evidence.
 
-### FR-4 — Admission rule
+- **Check.** The admission table of plan task 4.2 has one row for each
+  candidate and one column for each condition.
 
-The rule is falsifiable. A rigor criterion `c` is admitted only when all of
-these are true:
+### FR-4 — Corpus sweep
 
-1. **Canary.** `c` passes on the clean app in 2 of 2 grades and on the
-   variant app in 1 of 1 grade.
-2. **Unique kill.** `c` kills at least one dev mutant that no baseline check
-   kills. In set terms: `K(c) \ K(B) ≠ ∅`. `K(x)` is the set of mutants that
-   `x` kills. `K(B)` is the union of `K(b)` over the baseline checks `b`.
-3. **Spec trace.** The quoted words of `c` are a substring of the fixture
-   spec, and Review A confirms the entailment.
-4. **Non-redundancy.** No other admitted rigor criterion has the same
-   unique-kill set. When two sets are equal, the registry keeps the criterion
-   with the fewer `items`, then the lower id.
-5. **Live on arrival.** In pilot stage 1, `c` passes on at least one
-   candidate and fails on at least one candidate. An owner waiver can keep a
-   criterion that fails on every candidate. A criterion that passes on every
-   candidate is rejected: it is saturated on arrival.
+- `harness/corpus-sweep.ts` reads `corpus.json`. For each run, it calls the
+  existing overlay path:
+  `AGENT_SKIP=1 OVERLAY=<repo>/runs/<run id>/candidate ./run.sh local corpus-sweep a sweep-<run id>`.
+- It runs on the track branch, so its records go to the `runs/` directory of
+  the worktree. It never writes to a corpus run.
+- It counts only the criteria that count for the fixture revision of each
+  run (`since_rule` in `corpus.json`). Scenario criteria have no `since`
+  field, so they count for every run.
+- It writes `reports/rigor-sweep-<date>.json` and prints the labeled lines of
+  test strategy section 8: `SWEEP.RUN`, `SWEEP.REPRO`, `SWEEP.CRITERION`,
+  `SWEEP.GATE`, `SWEEP.FRONTIER`, and `SWEEP.DOMAIN`.
+- `SWEEP.REPRO` compares the sweep result of each current criterion with the
+  stored record. It lists each mismatch by run id and criterion id.
+- **Check.** `CORPUS_SHA` (plan header) prints the same value before and
+  after the sweep.
 
-The set is admitted only when all of these are true:
+### FR-5 — Separation gate
 
-6. Each section meets its minimum admitted count, or has an owner waiver.
-7. The admitted set kills at least 60% of the held-out baseline survivors.
-   With zero held-out survivors, the result is `insufficient`, not a pass.
-8. The pilot passes (FR-7).
+- `levels` is the number of different new-completion values among the
+  saturated runs.
+- `models_lowered` is the number of models with at least one saturated run
+  whose new completion is less than 1.
+- The gate passes when all three conditions are true:
+  1. `models_lowered ≥ 2`.
+  2. `levels ≥ 3`.
+  3. `SWEEP.REPRO` matches at least 90% of the corpus runs, and Review A
+     accepts the reason for each mismatch.
+- When the gate fails, the set does not activate. The plan records the
+  numbers, and the owner decides the next step (D2 options).
+- The static read predicts `models_lowered = 2` and `levels = 3`
+  (`predicted_new_failures` in `corpus.json`).
 
-The executor prints one labeled line for each candidate criterion:
+### FR-6 — Activation without a scoring change
 
-```text
-RIGOR.ADMIT id=<id> canary=<pass|fail> unique_kills=<n> redundant_with=<id|none> live=<yes|no|waived> verdict=<admit|reject>
-```
+- Owner decision D1 approves activation. Then the track branch merges into
+  `main`.
+- `AXIS_WEIGHTS` stays completion 0.55, adversarial 0.20, adherence 0.15,
+  quality 0.10. `SATURATED_WEIGHT` stays 0.25.
+  `harness/score-calculation.ts` stays byte-identical to the base commit.
+- An existing control whose mutation also fails a scenario criterion adds
+  that criterion to its collateral. No existing control loses a collateral
+  entry or an expected failure.
+- **Check.** `git diff e449c63 -- harness/score-calculation.ts` prints
+  nothing. The meta test of plan task 2.1 asserts the weight values.
+  `verify-controls.ts --all` passes.
 
-A line with `verdict=admit` and `canary=fail`, `unique_kills=0`, or
-`live=no` is a defect in the executor.
+### FR-7 — Records on disk
 
-### FR-5 — Canary
+- After the merge, and before the next weekly batch, `regrade-all.sh`
+  regrades every OpenCode record of every track.
+- A record is **current** when `harness/score-freshness.ts` reports
+  `TRUSTED` for it. Every OpenCode record that is `TRUSTED` before the merge
+  is `TRUSTED` after the regrade. On 2026-10-25, 17 of the 76 OpenCode
+  records are `TRUSTED`. 53 are `STALE-PROVENANCE`, 5 are `INVALID`, and 1
+  is `GATE-BLOCKED`.
+- Every legacy Pi record keeps every byte. On 2026-10-25, 95 run
+  directories hold a Pi provenance record (schema 1, with an `executor.pi`
+  object and no `executor.kind`).
+- `plan-work.ts --all` gives the same class for each track, arm, and model
+  before the merge and after the regrade. Thus the suite change schedules no
+  new model run.
+- The site export shows the regraded OpenCode rows and the unchanged Pi
+  history. Each ranked row is an OpenCode row and holds every admitted
+  criterion. No history row holds an admitted criterion. The history rows
+  keep their run ids and results (`HISTORY_SHA`).
+- **Check.** Plan task 5.2 records `PI_SHA`, `HISTORY_SHA`, the two
+  `TRUSTED` lists, and the two `plan-work.ts` outputs. `TRUSTED_CHECK` exits
+  0. Plan task 5.3 runs `EXPORT_CHECK`. Test strategy section 2 gives each
+  command, and each one exits non-zero on a violation.
 
-- The oracle suite passes on the clean app in 2 of 2 grades and on the
-  variant app in 1 of 1 grade. Under the new formula, both apps score 100.
-- The executor runs the canary first. A canary failure stops the executor
-  with exit code 3, as in `batch.sh`.
-- A rigor criterion that fails on the variant app grades an incidental choice
-  of the reference. The criterion is rejected. The variant stays unchanged.
-- After activation, the weekly build canary grades the clean app and the
-  variant app (owner decision D4). The bugfix clean set, the change reference,
-  and the tests-track oracle continue to score 100.
+### FR-8 — Frontier report
 
-### FR-6 — Mutation executor
+- The sweep prints `SWEEP.FRONTIER runs=<r> saturated_after=<f>` for the
+  frontier runs.
+- When `f` equals `r`, owner decision D2 opens.
+- The sweep prints one `SWEEP.DOMAIN` line for each corpus model and each
+  domain A–H (test strategy section 8). The line counts the runs that pass
+  every current criterion of the domain, and the runs that also pass its
+  scenario criteria. It names each scenario criterion that failed, with its
+  count. The line counts criteria only. Probes stay out of it.
+- Plan task 4.4 turns these lines into a domain table for D2: one row for
+  each model, one column for each domain.
+- **Check.** Plan task 4.4 quotes the `SWEEP.FRONTIER` line and the domain
+  table, and records whether D2 opened.
 
-- The executor is `harness/rigor/verify-rigor.ts` (task 1.3 confirms the
-  path). Its modes are `--canary`, `--baseline`, `--rigor`, and `--heldout`.
-- For each mutant, the executor copies the clean app to a fresh directory.
-  It applies one mutation with `applyNegativeControl`. Then it runs the gate
-  and 2 grades of the selected suite.
-- A check whose outcome differs between the 2 grades of one app is flaky on
-  that app. A flaky outcome never counts as a kill. A criterion that is flaky
-  on the clean app or the variant app is rejected.
-- The executor writes `reports/rigor/<stamp>/kill-matrix.json` (checks ×
-  mutants × grades) and `admission.json`. It prints the labeled lines
-  `RIGOR.CANARY`, `RIGOR.BASELINE`, `RIGOR.ADMIT`, `RIGOR.SECTION`,
-  `RIGOR.HELDOUT`, and one summary line for each mode.
-- The executor grades each app through `run.sh` with `AGENT_SKIP=1`, as
-  `harness/verify-controls.ts` does. It creates only new run directories
-  with the prefix `rigor-`. Their records carry the overlay calibration
-  identity, so they never become ranked results.
-- The executor never writes `reference/`, `reference-variant/`, or
-  `fixture/`, and never changes an existing run directory. It compares the
-  tree hashes before and after each mode, as `harness/protected-tree.ts`
-  does.
+## Initial inventory
 
-### FR-7 — Pilot
+Red and Green start from these 5 candidates. Admission (FR-3) decides each
+one. All are tier 1. Test strategy section 5 gives the steps.
 
-**Stage 1 — screen, no model call.**
-
-- The required population is the 8 stored OpenCode build candidates of
-  2026w43. The stored legacy Pi build candidates are an optional, unranked
-  second population.
-- For each candidate, the pilot grafts the writable files onto a temporary
-  clean tree, builds it, and runs the rigor suite twice. It reads the
-  baseline outcomes from the stored score record. It never writes `runs/**`.
-- Pass condition: 0 flips between the 2 grades and 0 harness errors. In at
-  least one arm, the 4 models also show at least 3 distinct rigor rates. Two
-  rates are distinct when they differ by at least `1/N`. `N` is the number
-  of criteria in the evaluated set.
-
-**Stage 2 — confirmation, model calls, owner decision D3.**
-
-- The population is at least 4 models, both arms, and at least 3 repeats for
-  each model and arm, from one week. Weekly cron repeats count when they meet
-  these numbers.
-- The rigor suite grades each new candidate in shadow. Published scores do
-  not change.
-- Separation statistic. For model `m` and arm `a`, `I(m, a)` is the range
-  `[min, max]` of the rigor rate over the repeats. Models `m1` and `m2` are
-  separated in arm `a` when `max I(m1, a) + 1/N ≤ min I(m2, a)`, or the
-  reverse. `S(a)` is the size of the largest set of models that are
-  separated pairwise in arm `a`.
-- Pass condition: all three of these are true.
-  1. `S(a) ≥ 3` for at least one arm.
-  2. Over the stage-2 runs, the variance of the rigor contribution
-     (D1 weight × rigor) is at least the variance of the adherence
-     contribution.
-  3. The monitor gives `verdict=ok` for the rigor criteria over the stage-2
-     runs.
-- When the pilot fails, the set does not ship. The plan records the result,
-  and the owner decides the next step. A failed pilot is a valid result. It
-  shows that stricter tests of A–H do not separate the current models, and
-  that the task itself must become harder. That work is out of scope.
-
-### FR-8 — Saturation monitor
-
-- The monitor is `harness/rigor/saturation.ts` until activation. Its input is
-  the valid, trusted, publishable records of one track in the OpenCode series,
-  in a window of the last 4 ISO weeks.
-- For each check, the monitor counts the runs `n` and the passes `k`, and
-  calculates `p = k / n`. The flag is `high` when `p ≥ 0.90`, `low` when
-  `p ≤ 0.10`, and `live` otherwise.
-- **Threshold.** A check is saturated when its flag is `high` or `low` over
-  at least 8 runs from at least 3 models. With fewer runs or fewer models, the
-  verdict is `insufficient`.
-- **Suite verdict.** A set of checks is `saturated` when at least 50% of its
-  checks are flagged. It is also `saturated` when `S < 3` over the window
-  (the FR-7 statistic). Otherwise the verdict is `ok`.
-- The monitor writes `reports/saturation-<week>-<track>.json` and prints:
-
-```text
-SATURATION check=<id> n=<n> pass=<k> rate=<p> flag=<high|low|live>
-SATURATION.SUITE set=<baseline|rigor|probes> verdict=<ok|saturated|insufficient> flagged=<f>/<t> separated_models=<s>
-```
-
-- The monitor changes no weight and no score. It reports only. Two
-  consecutive `saturated` verdicts for the rigor set print
-  `SATURATION.ALERT` in the cron log. The owner then decides to add mutants
-  and criteria, or to give flagged checks `SATURATED_WEIGHT` at the next
-  scoring revision.
-- **Measured-problem check.** On the 8 w43 build records,
-  the monitor flags 60 of 60 A–H criteria `high`, 14 probes `high`, and
-  `P.dedup-item` `low`.
-- **Threshold rationale.** On 2026-09-24, a check counted as saturated when
-  it passed on 28 or more of 29 runs (0.97). The value 0.90 finds the same
-  checks earlier and with fewer runs.
-
-### FR-9 — Scoring revision
-
-- Before activation (task 3.13), published scores do not change. The rigor
-  axis exists only in pilot reports.
-- After activation (scoring revision 2), the build total is:
-
-```text
-completion  = unchanged: tier-scaled weighted pass rate over the 60 A–H criteria
-rigor       = min(1, completion / 0.6) × Σ(pass_c ∧ requires_c) × w_c / Σ w_c
-              over the admitted rigor criteria stated under the record's revision
-adversarial = unchanged
-adherence   = unchanged
-quality     = unchanged
-total       = round1(100 × (0.25 × completion + 0.30 × rigor + 0.20 × adversarial
-                           + 0.15 × adherence + 0.10 × quality))
-```
-
-- `w_c = 1`. A rigor criterion that the monitor flags at the revision freeze
-  gets `SATURATED_WEIGHT` (0.25).
-- Tier rates stay counted over the 60 A–H criteria. Rigor criteria do not
-  change the tier gate.
-- Rationale. Today completion gives 55 equal points to every model. The
-  split keeps 0.25 as a gate for basic function. It moves 0.30 to the axis
-  that the pilot proves. Adversarial, adherence, and quality keep their
-  weights, so the change touches only the saturated axis. The weights are
-  owner decision D1.
-- Each record carries `scoring_revision` and the rigor set sha256.
-  Provenance binds the rigor set hash.
-- The OpenCode series is regraded once under revision 2, with no model call.
-  Legacy Pi rows stay as labeled history under revision 1
-  (`opencode_executor` FR-8).
-
-### FR-10 — Ports to the variant tracks
-
-The bugfix, change, and tests tracks restate A–H as facts in their own
-model-visible specs.
-
-- **Applicability.** A rigor criterion counts on a variant track only when
-  that track's model-visible spec states its fact. The registry records
-  `ports.<track>` as `stated` with a quote from that spec, or as `absent`.
-  A meta test checks that each `stated` quote is a substring of that spec
-  file. No model-visible file changes.
-- **Bugfix** (`lending_desk_bugfix`). Stated rigor criteria enter the
-  regression denominator, minus detectors and collateral. Rigor mutants
-  become candidates for a new bug set `v2`. Their detectors are rigor
-  criteria, and `verify-bugs.ts` admits them. Activation of `v2` starts a new
-  bugfix cohort (D5). Canary: the clean set scores 100.
-- **Change** (`lending_desk_change`). Stated rigor criteria enter regression.
-  A rigor criterion that a change request alters goes into the `superseded`
-  list of that request. Rigor graders use due dates within 60 days of the
-  fixed clock, so CR-3 does not conflict. Canary: `reference-change/` scores
-  100.
-- **Tests** (`lending_desk_tests`). A rigor mutant can join a new mutant set
-  `m2` (m1 plus these mutants) when two conditions are true. The mutant is
-  observable over HTTP or by an import of `src/lib/loans.ts`. The tests-track
-  spec states its fact. The tests-track oracle gains one test for each new
-  mutant and must kill all of them. Activation of `m2` starts a new
-  tests cohort (D5). Browser-only and action-only mutants stay out
-  (`tests_bench` FR-1).
-- Until activation, the port files stay under `harness/rigor/`, so no track
-  hash changes.
-
-## Candidate inventory
-
-Red starts from this inventory. Survival is expected, not proven. The
-executor proves it in task 3.3, and admission decides each criterion in task
-3.5. The fixed clock is `2026-03-15T12:00:00.000Z` ("now").
-
-### A. `computeLoanStatus(loan, now)`
-
-| Criterion | Box | Tier | Assertion | Expected survivor mutants | requires |
+| Criterion | Checkboxes | Source | Scenario and oracle | Control on `reference/` | Evidence |
 |---|---|---|---|---|---|
-| `R.A.returned-future` | A.1 | 0 | A returned loan with `dueAt` 24 h and 200 h after now is `"returned"`. | `RM-A-returned-late`: the returned check runs only inside the overdue branch. | `A.returned` |
-| `R.A.just-before-now` | A.2 | 0 | `dueAt` 1 ms before now is `"overdue"`. | `RM-A-grace`: overdue starts 60 s after the due time. | `A.overdue` |
-| `R.A.just-after-48h` | A.4 | 0 | `dueAt` 48 h + 1 ms and 48 h 30 min after now is `"ok"`. | `RM-A-hour-floor`, `RM-A-hour-round`, `RM-A-minute-slack` | `A.ok` |
-| `R.A.now-argument` | A.2 | 0 | The status follows the `now` argument. With now + 1000 h as the argument, a loan due at now + 500 h is `"overdue"`. | `RM-A-store-clock`: the function reads `now()` from `src/db` and ignores its argument. | `A.overdue`, `A.ok` |
+| `F.return-race` | F.2, F.6, E.6, E.9 | interleaving | Two desks open one item that has one open loan. Both activate `Return` at the same moment. The store then has exactly one close of that loan, with `returnedAt` equal to now. Exactly one desk renders `Item is not on loan`. Both desks still show the item name as the `<h1>`, so no error boundary replaced a page. | `returnItem` no longer catches `LoanAlreadyClosedError`. | Corpus: 4 saturated runs, 2 models |
+| `G.body-shape` | G.7, G.11 | robustness | `POST` and `PATCH` with the JSON bodies `null`, `[]`, `"text"`, and `7` each return 400 with a string `error`. | The `POST` handler reads fields from the parsed body with no `null` guard. | Corpus: 2 saturated runs, 1 model |
+| `D.history-rows` | D.2, A.1–A.4 | sequence | On three items with returned loans, the test opens one loan each, with an overdue, a due-soon, and an ok due time. It also reads two seeded items. On each detail page, each history row pairs the member of one loan with the status of that loan. The rows follow `borrowedAt`, newest first. Rows with equal `borrowedAt` form a group with free order. | The history takes the names from the sorted list and the statuses from the unsorted list. | Blind spot E3.3 |
+| `C.current-store` | C.1, B.2 | sequence | The test visits `/items` and both detail pages. Then it opens a loan on an available item and closes the loan of another item through the grader route. On the next `/items` visit, the two badges show the new state. | The catalogue reads the loans through `unstable_cache`, so only `revalidatePath` from an action clears it. | Blind spot E3.4 |
+| `E.return-retry` | E.6, E.7, E.9, F.2, F.3 | sequence | The desk opens an item on loan. The test removes the staff cookie, and the desk activates `Return`. After the error text appears, the control reads `Return` and is enabled, and the loan stays open. The test restores the cookie. One more activation closes the loan with `returnedAt` equal to now. | The `Return` control stays disabled while an error is shown. | Blind spot E3.5 |
 
-### B. `ItemCard`
+Sections A, B, and H get no candidate. E2 shows no behavior difference in A
+and B. The only H gap is the retry finding E4.
 
-| Criterion | Box | Tier | Assertion | Expected survivor mutants | requires |
-|---|---|---|---|---|---|
-| `R.B.alt-exact` | B.4 | 1 | The image of each of the 29 cards has alternative text equal to the item name. | `RM-B-alt-prefixed`: `` alt={`Photo of ${item.name}`} ``. The baseline match is a substring match. | `B.image-alt` |
-| `R.B.whole-card-link` | B.3 | 1 | For each card, the image, the name, the category, and the badge are inside one link to `/items/<item id>`. | `RM-B-image-outside-link`: the image renders before the link element. | `B.link` |
+## Exclusion list
 
-### C. Catalogue
+These conventions never decide a verdict of a scenario criterion:
 
-| Criterion | Box | Tier | Assertion | Expected survivor mutants | requires |
-|---|---|---|---|---|---|
-| `R.C.q-name-only` | C.2 | 1 | `?q=safety` lists only Safety Harness. `?q=batteries` gives the empty-result text. | `RM-C-q-all-fields`: the filter also searches the category and the description. | `C.filter-q` |
-| `R.C.category-exact` | C.3 | 1 | `?category=tool` and `?category=Safety` give the empty-result text. | `RM-C-category-includes`, `RM-C-category-casefold` | `C.filter-category` |
-| `R.C.current-open-loans` | C.1 | 0 | A loan opens on one item and closes on another through `/api/loans`. The next `/items` visit shows both badges as in the store. | `RM-C-cached-loans`: the page reads loans through `unstable_cache`. Only the actions invalidate it. Task 1.6 proves feasibility. | `C.renders-all`, `G.post201`, `G.patch200` |
-
-### D. Detail
-
-| Criterion | Box | Tier | Assertion | Expected survivor mutants | requires |
-|---|---|---|---|---|---|
-| `R.D.row-status` | D.2 | 1 | On `itm-017`, `itm-007`, and `itm-018`, each history row shows the status from A of its own loan, in row order. Case, a hyphen, or a space does not matter. | `RM-D-status-misaligned`: names come from the sorted list and statuses from the unsorted list. | `D.history-order` |
-| `R.D.history-current` | D.2 | 1 | After a visit to the detail page, a loan opens through `/api/loans`. On the next visit, the new loan is the first history row. | `RM-D-cached-history`: the history read goes through `unstable_cache`. | `D.history-order`, `G.post201` |
-| `R.D.form-current` | D.4 | 1 | After a visit to an available item, a loan opens through `/api/loans`. The next visit shows `Return` and no checkout form. After the loan closes the same way, the next visit shows the form. | `RM-D-cached-open-loan`: the open-loan read goes through `unstable_cache`. | `D.form-hidden`, `D.return-visible`, `G.post201`, `G.patch200` |
-| `R.D.h1-exact` | D.1 | 1 | The `<h1>` text equals the item name for `itm-002` and `itm-016`. | `RM-D-h1-suffixed`: the heading adds the category. | `D.renders` |
-
-### E. Forms
-
-| Criterion | Box | Tier | Assertion | Expected survivor mutants | requires |
-|---|---|---|---|---|---|
-| `R.E.checkout-settles` | E.4 | 1 | After an accepted checkout, with no navigation, the page still shows the item on loan 5 s after the store records the loan, and `Return` replaces the form. | `RM-E-no-revalidate`: `checkoutItem` does not call `revalidatePath`. | `E.submits` |
-
-### F. Actions (action layer)
-
-| Criterion | Box | Tier | Assertion | Expected survivor mutants | requires |
-|---|---|---|---|---|---|
-| `R.F.due-at-now` | F.5 | 1 | `checkoutItem` with `dueAt` equal to now returns `{ ok: false, error: "Due date must be in the future" }` and writes no loan. | `RM-F-due-inclusive`: `due < now` replaces `due <= now`. | `F.future-due-date`, `F.checkout-record` |
-| `R.F.due-after-now` | F.5 | 1 | `checkoutItem` with `dueAt` 1 s after now returns `{ ok: true }`. | `RM-F-due-by-day`: the guard compares calendar days. | `F.checkout-record` |
-| `R.F.auth-first` | F.3 | 0 | A non-staff caller gets `Not authorized` also with a past `dueAt`, also for an item on loan, and also from `returnItem` for an item with no open loan. | `RM-F-validate-before-auth`, `RM-F-lookup-before-auth` | `F.auth-checkout`, `F.auth-return` |
-| `R.F.return-with-history` | F.2 | 0 | `returnItem("itm-017")` returns `{ ok: true }`, sets `returnedAt` to now on `lon-010`, and keeps `lon-009` unchanged. | `RM-F-first-loan`: the action closes the first loan of the item. | `F.return-record` |
-| `R.F.due-stored-exact` | F.1 | 1 | `checkoutItem` with `dueAt` `2026-04-01T09:30:00.000Z` stores that exact instant. | `RM-F-due-midnight`: the action moves `dueAt` to the start of its day. | `F.checkout-record` |
-
-### G. Loans API
-
-| Criterion | Box | Tier | Assertion | Expected survivor mutants | requires |
-|---|---|---|---|---|---|
-| `R.G.post400-each-field` | G.7 | 1 | `POST` with a non-string `memberId` (number, null) or a non-string `dueAt` (number, boolean) returns 400 with an error string and creates no loan. | `RM-G-partial-validation`: only `itemId` gets a type check. | `G.post201`, `G.400` |
-| `R.G.patch-with-history` | G.9 | 1 | A `POST` opens a loan on `itm-001`, which has two returned loans. `PATCH { itemId: "itm-001" }` returns 200 with the new loan, with `returnedAt` set. The old loans stay unchanged. | `RM-G-patch-first-loan`: the route closes the first loan of the item. | `G.patch200` |
-| `R.G.patch-returned-at-now` | G.9 | 1 | `PATCH` sets `returnedAt` to the fixed clock. The Goal section of the spec gives the clock rule. | `RM-G-patch-host-clock`: `new Date().toISOString()`. | `G.patch200` |
-| `R.G.fresh-out-of-band` | G.12 | 1 | `GET ?itemId=<id>` runs. Another writer (the grader state route) opens a loan. The next `GET` lists the new loan. | `RM-G-cached-get`: `GET` reads through `unstable_cache`, and only `POST` and `PATCH` invalidate it. | `G.fresh` |
-| `R.G.unknown-item-empty` | G.2 | 1 | `GET ?itemId=itm-999` returns 200 and `{ loans: [] }`. | `RM-G-unknown-404`, `RM-G-unknown-400` | `G.filter-item` |
-
-### H. Loading and error boundaries
-
-| Criterion | Box | Tier | Assertion | Expected survivor mutants | requires |
-|---|---|---|---|---|---|
-| `R.H.six-tiles` | H.1 | 2 | The loading shell holds exactly six placeholder tiles. The count reads the largest group of sibling elements after the heading, so markup inside a tile does not count. | `RM-H-nine-tiles` | `H.loading` |
-| `R.H.retry-remounts` | H.2 | 2 | A click on `Try again` replaces the rendered error-message element, with no document navigation. | `RM-H-retry-inert`: the click handler does not call `reset`. | `H.error` |
-
-Rows with no candidate criterion start as exemption candidates. Red writes
-the reason, and Review A accepts or rejects it.
+1. The conversion of a calendar date from the form to an instant: the start,
+   the end, or any instant of that UTC day.
+2. Trimming or normalizing whitespace in `?q=`.
+3. The error that wins when two rejections apply at the same time.
+4. The order of history rows with equal `borrowedAt`. Under the fixed clock,
+   every new loan has `borrowedAt` equal to now.
+5. Empty, repeated, or unlisted query values, for example `?q=`,
+   `?q=a&q=b`, or `?overdue=1`.
+6. Whether `POST` accepts an unknown item id, an unknown member id, or a
+   `dueAt` string that is not a date.
+7. The HTTP status of the not-found page.
+8. Error text that the spec does not quote, for example the `error` string
+   of a 400 response.
+9. Markup: element types, nesting, and the order of the parts of a card or
+   of a history row.
+10. The page after a transport failure of a server action.
+11. The page after a rejection, other than the stated error text and the
+    revert of the optimistic display.
 
 ## Non-functional requirements
 
-- **NFR-1 No model-visible change.** No edit under `fixture/`. No change to a
-  model-visible track file. No new checkbox. No fixture revision.
-- **NFR-2 No model call before D3.** The executor, the canary, and pilot
-  stage 1 use overlays and stored candidates only.
-- **NFR-3 Read-only history.** The pilot never writes `runs/**`. The
-  executor never changes an existing run directory; it adds only `rigor-`
-  directories (FR-6). Reports go to `reports/`, which git ignores.
-- **NFR-4 Hermetic meta tests (anti-pattern A11).** Every new meta test
-  passes under `BENCH_TRACK=change`.
-- **NFR-5 Production isolation until activation.** Rigor files stay under
-  `harness/rigor/`, outside the suite hash (`harness/tests/**`) and the
-  runner hash list. No production command collects a rigor test. The Vitest
-  CLI filters match by substring (`harness/vitest.config.ts`), so no rigor
-  path contains `tests/unit`, `tests/api`, `tests/meta`, or `tests/e2e`. The
-  proposed layout is `harness/rigor/__tests__/{registry,meta,unit,action,api,e2e}/`.
-  A meta test proves the isolation (task 2.1).
-- **NFR-6 Determinism.** Every kill and every pilot outcome is seen in 2 of 2
-  grades.
-- **NFR-7 Grade time.** The rigor pass adds at most 25% to the median grade
-  time of stage 1. The pilot report states both times.
-- **NFR-8 The weekly cron stays green.** `npm run test:meta:logic` does not
-  collect the Red tests of this track, so the Sunday self-check stays green.
-- **NFR-9 Labeled evidence (anti-pattern A3).** Gates parse labeled lines and
-  Vitest summaries, never a bare digit.
-- **NFR-10 Harness conventions.** Validators are hand-written TypeScript, as
+- **NFR-1 No model call.** The sweep, the controls, and the canaries use
+  overlays and stored trees only.
+- **NFR-2 No model-visible change.** No edit under `fixture/` or under
+  `harness/*/model-visible/`. No new checkbox. No fixture revision.
+- **NFR-3 Hash isolation.** The suite hash covers `harness/tests/**`, the
+  fixture, and the three reference trees. A change there makes every stored
+  record stale, and `plan-work.ts` then schedules new model runs. Thus all
+  harness edits of Phases 2 to 4 happen on the track branch in a separate
+  worktree. `main` keeps the base suite hash until the merge of task 5.2.
+- **NFR-4 Read-only corpus.** The sweep opens corpus runs for reading only.
+- **NFR-5 Determinism.** A scenario criterion gives the same verdict in 5 of
+  5 grades of each reference tree and 2 of 2 grades of its control. A
+  criterion that misses this rule leaves the set.
+- **NFR-6 Grade time.** The scenario tests add at most 10% to the median
+  canary grade time. Task 3.5 records both times.
+- **NFR-7 Labeled evidence (anti-pattern A3).** Gates parse labeled lines,
+  never a bare number.
+- **NFR-8 Hermetic meta tests (anti-pattern A11).** The new meta tests pass
+  under `BENCH_TRACK=change`.
+- **NFR-9 Harness conventions.** Validators are hand-written TypeScript, as
   in `harness/tests-track/set-loader.ts`. The harness has no Zod dependency,
   and this track adds none.
+- **NFR-10 Schedule.** The weekly cron (`harness/cron-weekly.sh`, Sunday
+  01:00 local time) holds the lock
+  `/home/daniebo/Desktop/lending-desk-bench/.tmp/weekly-cron.lock` while it
+  runs. The three weeks with an end line ran 34 to 67 minutes. The window is
+  all of Sunday in local time, and any time that the lock is held. The sweep
+  (task 4.1) and the regrade (task 5.2) start and end outside the window.
+  Each job takes less than 24 hours, so it cannot span a Sunday.
+  `NFR10_CHECK` runs at the start and at the end of each job.
+  `NFR10_VERIFY` then reads the two lines (test strategy section 2). The rule
+  applies whether or not the cron entry is installed.
 
 ## Owner decisions
 
 | ID | Decision | Proposed default | Answer |
 |---|---|---|---|
-| D1 | Axis weights of scoring revision 2 | completion 0.25, rigor 0.30, adversarial 0.20, adherence 0.15, quality 0.10 | open |
-| D2 | Thresholds | monitor 0.90 and 0.10, `n ≥ 8`, 3 models, 4-week window; held-out kill rate 0.60; `S ≥ 3` | open |
-| D3 | Stage-2 model-call budget | one batch of 4 models × 2 arms × 3 repeats = 24 build runs, or the weekly cron when it meets the numbers | open |
-| D4 | The weekly build canary adds the variant app after activation | yes | open |
-| D5 | Activation of bugfix `v2` and tests `m2` as new cohorts | defer until 4 weeks of monitor data exist | open |
-| D6 | Branch policy | work on `main`; NFR-5 and NFR-8 keep production commands unchanged | open |
+| D1 | Activate the admitted criteria, regrade the OpenCode series, and publish it. | Activate when the gate passes. The owner first sees the before and after totals of the 8 frontier runs. | open |
+| D2 | Opens only when all 8 frontier runs stay saturated. (a) Fund a harder task. A new track designs fixture revision 3 with new A–H checkboxes. Every roster model then runs again, which is a spend. The H.2 retry finding (E4) is one input. (b) Accept that A–H separates the roster below the frontier, and that the frontier models differ on the other three axes. The `domain_trust` matrix then gives the fidelity answer for each domain. | No default. The owner chooses. | open |
 
 ## Acceptance criteria
 
-1. **AC-1** The registry, the matrix, and the ports validate. The matrix has
-   54 rows, and each section meets its targets or has a waiver.
-2. **AC-2** The executor proves each dev and held-out mutant a baseline
-   survivor in 2 of 2 grades. A frozen report and its sha256 record the proof.
-3. **AC-3** Each admitted criterion has a passing canary, at least one unique
-   kill, a spec quote, `requires`, and `live=yes` or a waiver.
-4. **AC-4** The admitted set kills at least 60% of the held-out survivors.
-5. **AC-5** Pilot stage 1 shows 0 flips, 0 harness errors, and at least 3
-   distinct rigor rates among the 4 OpenCode models in one arm.
-6. **AC-6** Pilot stage 2 shows `S(a) ≥ 3`, a rigor variance at least the
-   adherence variance, and monitor `verdict=ok` for the rigor set.
-7. **AC-7** On the 8 w43 records, the monitor flags 60 of 60 A–H criteria
-   `high` and `P.dedup-item` `low`.
-8. **AC-8** Meta tests verify the rigor arithmetic, the `requires` rule, the
-   unchanged tier gate, and the D1 weights. The clean app and the variant app
-   score 100 under revision 2.
-9. **AC-9** The bugfix clean set, the change reference, and the tests oracle
-   score 100 with the stated rigor criteria in their denominators.
-10. **AC-10** Before activation, the runner hash and the suite hash do not
-    change because of this track. No production command collects a rigor
-    file.
-11. **AC-11** `SCORING.md`, `README.md`, and `docs/methodology.html` state
-    the change, its date, and its reason.
+1. **AC-1** Each admitted criterion has a `CRITERIA` entry, a `scenario:`
+   derivation, a test with its id as the title, and a control (FR-1).
+2. **AC-2** `verify-controls.ts` passes for each admitted control in 2 of 2
+   runs, with no current criterion or probe as collateral.
+   `verify-controls.ts --all` passes (FR-3, FR-6).
+3. **AC-3** `reference/` and `reference-variant/` score 100 in 5 of 5
+   grades each. The change, bugfix, and tests canaries score 100.
+   `verify-bugs.ts --all` passes (FR-3).
+4. **AC-4** The alternate implementations of test strategy section 7 pass
+   every admitted criterion (FR-2).
+5. **AC-5** The sweep prints `SWEEP.GATE ... verdict=pass` and a
+   `SWEEP.REPRO` line with at least 90% matches (FR-4, FR-5).
+6. **AC-6** No admitted criterion fails every corpus run (FR-3).
+7. **AC-7** `AXIS_WEIGHTS`, `SATURATED_WEIGHT`, and
+   `harness/score-calculation.ts` are unchanged (FR-6).
+8. **AC-8** After D1, every OpenCode record that `score-freshness.ts`
+   reported as `TRUSTED` before the merge is `TRUSTED` after the regrade
+   (`TRUSTED_CHECK` exits 0). `PI_SHA`, `HISTORY_SHA`, and the
+   `plan-work.ts --all` classes are unchanged. `EXPORT_CHECK` exits 0
+   (FR-7).
+9. **AC-9** Plan task 4.4 quotes `SWEEP.FRONTIER`. When the line shows all
+   frontier runs saturated, the plan records D2 as open or answered (FR-8).
+10. **AC-10** `SCORING.md` states the scenario-criterion rule and the
+    admission rule (FR-1).
 
 ## Out of scope
 
-- A harder task or a new fixture revision.
-- New probes. The monitor reports probe saturation; a follow-up track owns it.
-- Changes to the `M.*` adherence criteria.
-- LLM-judged quality.
-- Rescoring of legacy Pi rows.
+- New checkboxes, a fixture revision, or a stub change. D2 option (a) sends
+  this work to a separate track.
+- A change to a weight, an axis, the formula, or `SATURATED_WEIGHT`. A new
+  tier for a current criterion.
+- Moving a current probe into the criterion set.
+- A saturation monitor service. The sweep script can run again later on a
+  new corpus.
+- A criterion for a true retry of H.2 (E4).
+- More repeats per week (`REPS_BUILD`).
+- The publication of a verdict for each model and domain. The track
+  `domain_trust` owns it.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| A rigor criterion fails a correct alternative implementation | Variant canary, spec quote, Review A, stage-1 check for criteria that fail on every candidate |
-| A second saturated suite ships | Unique-kill rule, live-on-arrival rule, pilot, monitor gate in stage 2 |
-| Criteria fit the dev pool only | Sealed held-out pool with a 0.60 kill-rate gate |
-| A rigor file reaches a production grade before activation | Path isolation (NFR-5) and the collection-guard test |
-| Timing-based graders flake | 2-of-2 rule; a flip rejects the criterion |
-| Candidate code runs inside the grader process in the action layer | Minimal environment, no credential path, Review B |
-| Cache mutants do not survive the baseline in this Next.js version | Task 1.6 proves feasibility; admission drops criteria with no unique kill |
-| The pilot fails | A valid result; the owner decides the next step |
+- **R1 Race timing.** The e2e server adds 300 ms to each store call, so the
+  race window of `F.return-race` is about 300 ms. Two clicks from
+  `Promise.all` arrive within a few milliseconds. `P.action-race` uses the
+  same design. NFR-5 rejects the criterion if the race is not deterministic.
+- **R2 Parser fairness.** The history-row parser can fail a correct markup.
+  Three reference trees and the alternate implementations of test strategy
+  section 7 must pass it.
+- **R3 Graft drift.** The sweep grafts revision 1 candidates onto the
+  revision 2 fixture. `SWEEP.REPRO` and the `since_rule` expose any change
+  of verdict.
+- **R4 Small margin.** The predicted gate result is exactly at the threshold.
+  One refuted prediction fails the gate. That result is valid evidence for
+  D2.
+- **R5 Regrade cost.** About 76 OpenCode records on all tracks need a
+  regrade after activation. This is compute time, not a model call.
+- **R6 Control survival.** A current test can visit `/items` after a change
+  through the grader route. Then the `unstable_cache` control of
+  `C.current-store` fails a current criterion and does not qualify. Green
+  then proposes another control with the same effect, or the criterion
+  leaves the set.
+- **R7 Untracked dependencies.** On 2026-10-25, 54 files in hashed trees are
+  untracked in `main`. Examples are `harness/bugfix/`, `harness/change/`,
+  `harness/tests-track/`, `reference-change/`, and
+  `harness/tests/api/change.test.ts`. A worktree from a commit lacks them, so
+  its suite hash differs from `main`. Task 1.2 waits until they are
+  committed, and then it compares the hashes of the two trees.
+- **R8 Pi records after activation.** Pi records keep every byte, so they
+  never hold a scenario criterion. In the `domain_trust` matrix, a model with
+  Pi runs only then reads `unproven` in C to G, unless it already has a
+  failure there. The sweep report of task 4.1 holds the scenario verdicts
+  for those models.

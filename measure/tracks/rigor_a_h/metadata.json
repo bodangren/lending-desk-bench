@@ -1,19 +1,26 @@
 {
   "id": "rigor_a_h",
-  "title": "Rigorous A–H criteria with mutation-based admission",
+  "title": "Harder A–H criteria from interleavings, state sequences, and robustness variants",
   "type": "Feature",
   "status": "pending",
   "created": "2026-10-25",
-  "estimated_tasks": 34,
+  "estimated_tasks": 22,
   "actual_tasks": null,
   "source": {
-    "method": "operator request 2026-10-25: all 60 A–H criteria pass in all 8 w43 build runs (4 models x 2 arms), only P.dedup-item fires (8/8), every published score difference comes from the 3 M.* adherence criteria; design a rigorous A–H set with mutation-based admission, a saturation monitor, a pilot that must separate at least 3 models, and ports to the bugfix, change, and tests tracks",
+    "method": "owner request 2026-10-25: \"Our tests on the benchmark show that A-H are saturated with 100% for every model. Only the last two tests differentiate anything. Make a measure spec and plan for more rigorous A-H tests.\" The first draft of this track (commit 638751a) was rejected as scoring reshuffling; this spec replaces it.",
+    "evidence": "corpus.json: 49 publishable build runs, 22 saturated runs from 10 models; static read of the candidate source on 2026-10-25",
     "dependencies": [
       "bench_v2",
       "bugfix_bench",
       "tests_bench",
       "change_bench",
       "opencode_executor"
+    ],
+    "requirements": [
+      "owner requirement 2026-10-25 (fidelity for each domain): this track supplies the check strength and the SWEEP.DOMAIN lines; the track domain_trust publishes the matrix"
+    ],
+    "related_tracks": [
+      "domain_trust"
     ]
   }
 }

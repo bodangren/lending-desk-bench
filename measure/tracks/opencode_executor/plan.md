@@ -453,6 +453,14 @@ model, no real credential (NFR-3).
     the adversarial gate each printed `Test Files  30 passed (30)` and
     `Tests  238 passed (238)`. The cron rehearsal printed the same summary and
     exited 0.
+  - A later re-run on the same HEAD, 2026-10-25 09:34 to 09:42 (+08:00), ran
+    only `tests/meta/opencode-credential.test.ts`. It printed
+    `Tests  19 passed | 2 failed (21)`. Both failures came from the host load
+    guard in `harness/preflight.sh`. The host reported load 6.58 to 12.43 on
+    4 CPU, 2146MB available, and 6240MB swap. The guard printed
+    `HOST NOT READY` and `host busy — proceeding under always-publish policy`.
+    The two tests then read the batch output instead of the FR-3 credential
+    reason. The other 19 tests of the file passed.
 - [~] 4.2 Container probe without a model call for Arm A and Arm B. Archive
   the output under `reports/` (spec FR-4). The probe writes the 16-line
   `skill-probe` record in the form `skill-probe arm=<a|b> id=<id>
