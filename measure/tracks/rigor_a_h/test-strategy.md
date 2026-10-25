@@ -35,6 +35,63 @@ Run every command from the worktree root
   `cd harness && AGENT_SKIP=1 OVERLAY="$PWD/../<tree>" ./run.sh local <tree> a canary-rigor-<tree>-<n>`,
   with `<tree>` set to `reference` or `reference-variant`. It passes when
   the record has `valid === true` and `total === 100`.
+- `TIMED_CANARY <n> <suite>` (spec NFR-6): one `CANARY build reference` run
+  with the run id `canary-rigor-reference-<n>`, timed by the wall clock. The
+  run grades an overlay with no agent, so its wall time is its grade time.
+  `<suite>` is `base` at task 1.2 and `new` at task 3.5. The command appends
+  one line to `measure/runs/rigor_a_h/grade-time.log`.
+  `mkdir -p measure/runs/rigor_a_h && s=$(date +%s.%N); (cd harness && AGENT_SKIP=1 OVERLAY="$PWD/../reference" ./run.sh local reference a canary-rigor-reference-<n>); rc=$?; e=$(date +%s.%N); echo "GRADE_TIME suite=<suite> tree=reference run=canary-rigor-reference-<n> seconds=$(awk -v s="$s" -v e="$e" 'BEGIN { printf "%.1f", e - s }') exit=$rc" | tee -a measure/runs/rigor_a_h/grade-time.log`
+  The line format is
+  `GRADE_TIME suite=<base|new> tree=reference run=<run id> seconds=<x.x> exit=<code>`.
+- `NFR6_CHECK` (spec NFR-6): reads the `GRADE_TIME` lines with `exit=0`. It
+  exits non-zero unless it finds exactly 5 `base` lines and 5 `new` lines.
+  It prints one `NFR6` line. It exits non-zero when the new median is more
+  than 1.10 times the base median.
+
+  ```bash
+  python3 - measure/runs/rigor_a_h/grade-time.log <<'PY'
+  import re, statistics, sys
+  rows = re.findall(r"^GRADE_TIME suite=(base|new) tree=reference run=\S+ seconds=([0-9]+\.[0-9]) exit=0$", open(sys.argv[1]).read(), re.M)
+  t = {k: [float(s) for g, s in rows if g == k] for k in ("base", "new")}
+  assert len(t["base"]) == 5 and len(t["new"]) == 5, f"NFR6.FAIL base={len(t['base'])} new={len(t['new'])}"
+  b, n = statistics.median(t["base"]), statistics.median(t["new"])
+  v = "pass" if n <= 1.10 * b else "fail"
+  print(f"NFR6 base_median_s={b:.1f} new_median_s={n:.1f} ratio={n / b:.4f} verdict={v}")
+  sys.exit(v != "pass")
+  PY
+  ```
+
+  The output format is
+  `NFR6 base_median_s=<x.x> new_median_s=<x.x> ratio=<x.xxxx> verdict=<pass|fail>`.
+- `SCORING_CHECK` (spec FR-1, AC-10): reads the `### Scenario criteria`
+  section of `SCORING.md` and its `#### Admission rule` subsection. The
+  section names the three sources, tier 1, the `scenario:` derivation, and
+  the exclusion list. The subsection is a numbered list of exactly six
+  items. Each item holds the key terms of its FR-3 condition, in FR-3 order.
+  The command exits non-zero on a missing section, term, or item.
+
+  ```bash
+  python3 - SCORING.md <<'PY'
+  import re, sys
+  t = open(sys.argv[1]).read()
+  m = re.search(r"^### Scenario criteria\n(.*?)(?=^#{1,3} |\Z)", t, re.M | re.S)
+  assert m, "SCORING_CHECK=fail no '### Scenario criteria' section"
+  rule, sep, adm = m.group(1).partition("#### Admission rule\n")
+  assert sep, "SCORING_CHECK=fail no '#### Admission rule' subsection"
+  adm = re.split(r"^#{1,4} ", adm, maxsplit=1, flags=re.M)[0]
+  for w in ("interleaving", "sequence", "robustness", "scenario:", "tier 1", "exclusion list"):
+      assert w in rule.lower(), f"SCORING_CHECK=fail rule lacks {w!r}"
+  nums = re.findall(r"^(\d+)\. ", adm, re.M)
+  assert nums == ["1", "2", "3", "4", "5", "6"], f"SCORING_CHECK=fail admission items {nums}"
+  items = re.split(r"^\d+\. ", adm, flags=re.M)[1:]
+  need = [("2 of 2", "collateral"), ("5 of 5", "reference-variant"), ("reference-change", "superseded"), ("verify-bugs",), ("corpus",), ("exclusion list",)]
+  for i, (item, words) in enumerate(zip(items, need), 1):
+      for w in words:
+          assert w in item.lower(), f"SCORING_CHECK=fail condition {i} lacks {w!r}"
+  print("SCORING_CHECK=pass sources=3 conditions=6")
+  PY
+  ```
+
 - Other canaries: the canary arm of `harness/batch.sh` for `change`,
   `bugfix`, and `tests`, as in `bench_v2` plan task 7.3.
 - `CORPUS_SHA` (run in `main`):
@@ -84,11 +141,32 @@ Run every command from the worktree root
 - Work-list comparison (run in `main`):
   `cd harness && npx tsx plan-work.ts --all`. Compare only the class of each
   track, arm, and model.
+- `STATUS_CHECK` (anti-pattern A12): run it from the root of the tree whose
+  plan changed. It exits non-zero when the plan has a `[b]` task and the
+  status command lists the track as a closeout candidate. It also exits
+  non-zero when the plan has a `[b]` task and not exactly one `[~]` task.
+  `p=measure/tracks/rigor_a_h/plan.md; b=$(grep -c '^- \[b\]' "$p"); w=$(grep -c '^- \[~\]' "$p"); s=$(python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py status --repo . --track '^rigor_a_h$') && { [ "$b" -eq 0 ] || { [ "$w" -eq 1 ] && printf '%s\n' "$s" | grep -qx 'closeout_candidates: 0'; }; } && echo "STATUS_CHECK=pass blocked=$b open=$w"`
 
 The strategy role ran `PI_SHA`, `HISTORY_SHA`, both `EXPORT_CHECK` filters,
 `NFR10_CHECK`, and `NFR10_VERIFY` on 2026-10-25. Each check passed on a good
 input and exited non-zero on a bad input. `NFR10_CHECK` exited 1 because
 2026-10-25 is a Sunday.
+
+The remediation of audit `4bc286a` ran these checks on 2026-10-25. The bad
+inputs were copies in a temporary directory.
+
+- `SCORING_CHECK` printed `SCORING_CHECK=pass sources=3 conditions=6` on a
+  synthetic good file. It exited 1 on the current `SCORING.md`, on five
+  conditions, on a wrong condition term, and on a missing subsection.
+- `NFR6_CHECK` printed `verdict=pass` at a ratio of 1.0000 and of 1.1000.
+  It exited 1 at a ratio of 1.1100, on 4 `base` lines, and on an empty log.
+- `TIMED_CANARY` wrote one `GRADE_TIME` line in the stated format for each
+  run, with a stub in place of `run.sh`. A stub exit code of 3 gave
+  `exit=3`, and `NFR6_CHECK` did not count that line.
+- `STATUS_CHECK` printed `STATUS_CHECK=pass blocked=20 open=1` on the plan.
+  It exited 1 on the plan of `4bc286a`, which has no `[~]` task. It also
+  exited 1 on two `[~]` tasks, and on a `[~]` task with `deferred` in its
+  first line.
 
 ## 3. Test layers and owners
 
@@ -388,8 +466,13 @@ Each control is one entry in `SENSITIVITY_CONTROLS`, anchored on the text of
 - **A5.** The plan claims a result only with the quoted labeled line and its
   file path.
 - **A11.** The new meta tests pass under `BENCH_TRACK=change`.
-- **A12.** `measure_interphase_checks.py status` ignores `[b]` tasks. The
-  orchestrator reads the plan markers before it reports progress.
+- **A12.** `measure_interphase_checks.py status` reads only `[ ]`, `[~]`,
+  and `[x]` tasks. It also skips a task whose first line holds the word
+  `deferred`. A plan with only `[x]` and `[b]` tasks thus shows as a
+  closeout candidate. The checker is a shared skill install, and this
+  project does not edit it. Thus the plan keeps exactly one `[~]` task while
+  a `[b]` task remains (plan section "Marker use"). The orchestrator runs
+  `STATUS_CHECK` after each marker change.
 
 ## 13. Evidence to record
 
@@ -397,4 +480,6 @@ For each task, the plan records the command, the labeled output line, and
 the report path. Task 4.2 records the admission table: one row for each
 candidate, one column for each FR-3 condition, and the evidence for each
 cell. Task 4.3 records each `predicted_new_failures` entry of
-`corpus.json` as confirmed or refuted.
+`corpus.json` as confirmed or refuted. Tasks 1.2 and 3.5 each record five
+`GRADE_TIME` lines. Task 3.5 also records the `NFR6` line. Task 3.3
+records the `SCORING_CHECK` line.

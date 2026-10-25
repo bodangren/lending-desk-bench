@@ -17,6 +17,8 @@ main risks are these:
 | A probe sits in the wrong domain or kind | One domain loses a defect, and another gains one | The golden probe map (section 5.1) and the Review A map review (section 7) |
 | The export changes the leaderboard | The ranking moves with no score change | `LEADERBOARD_SHA` and `SIDE_SHA` (section 2) |
 | The track changes a hashed file | `plan-work.ts` schedules paid model runs | `PATH_CHECK`, `BASE_HASH`, and the work-list classes (section 2) |
+| A legacy Pi record changes outside Git | The published history loses its byte identity, and `PATH_CHECK` does not see it | `PI_SHA` and `PI_CHECK` (section 2, anti-pattern A13) |
+| The methodology text lacks a part of the rule | A lead reads a verdict with no definition | `METHOD_CHECK` (section 2) |
 | The page shows a verdict by color only | A reader with low color vision misreads it | The word check of the browser review (section 8) |
 | The matrix publishes before O2 | The weekly cron deploys an unapproved page | All edits stay on the branch until task 4.2 (spec NFR-7) |
 
@@ -29,8 +31,42 @@ unless the line says `main`.
   `cd harness && npx vitest run site-tests/domain-trust.test.ts`.
   It is the `RED_TEST_COMMAND` of Phase 2 and the `GREEN_TEST_COMMAND` of
   Phase 3.
-- `PATH_CHECK`, `LEADERBOARD_SHA`, `SIDE_SHA`, `FR3_CHECK`, and `BASE_HASH`:
-  the exact commands of the plan.
+- `PATH_CHECK`, `LEADERBOARD_SHA`, `SIDE_SHA`, `FR3_CHECK`, `BASE_HASH`,
+  `PI_SHA`, `PI_CHECK`, and `STATUS_CHECK`: the exact commands of the plan.
+- `METHOD_CHECK` (run after task 3.3; spec FR-6, AC-6). It reads the
+  section `id="domain-trust"` of `docs/methodology.html` as static HTML.
+  The section must not hold a nested `<section>`. The command checks the
+  three kinds, `N_MIN`, the words "not graded", and an ordered list of the
+  four verdicts in precedence order. It checks one table row for each
+  probe of `preview.json`, with the id, the domain, and the kind as cells.
+  It also checks that one paragraph of `README.md` names "domain trust".
+
+  ```bash
+  python3 - docs/methodology.html README.md measure/tracks/domain_trust/preview.json <<'PY'
+  import html, json, re, sys
+  page, readme, preview = (open(p).read() for p in sys.argv[1:4])
+  m = re.search(r'<section\b[^>]*\bid="domain-trust"[^>]*>(.*?)</section>', page, re.S)
+  assert m, 'METHOD_CHECK=fail no section id="domain-trust"'
+  sec = m.group(1)
+  def text(s): return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", s))).strip()
+  words = text(sec)
+  for w in ("spec", "robustness", "performance"):
+      assert re.search(rf"\b{w}\b", words, re.I), f"METHOD_CHECK=fail kind {w}"
+  assert re.search(r"\bN_MIN\b|\bn_min\b", words), "METHOD_CHECK=fail N_MIN"
+  assert "not graded" in words.lower(), "METHOD_CHECK=fail missing-key rule"
+  order = [("risk",), ("unproven",), ("unoptimized", "not optimized"), ("safe",)]
+  lists = [[text(x).lower() for x in re.findall(r"<li\b[^>]*>(.*?)</li>", ol, re.S)] for ol in re.findall(r"<ol\b[^>]*>(.*?)</ol>", sec, re.S)]
+  assert any(len(li) == 4 and all(any(w in t for w in ws) for t, ws in zip(li, order)) for li in lists), "METHOD_CHECK=fail verdict rule"
+  rows = [[text(c) for c in re.findall(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", r, re.S)] for r in re.findall(r"<tr\b[^>]*>(.*?)</tr>", sec, re.S)]
+  probes = json.loads(preview)["probe_map"]
+  for pid, p in probes.items():
+      hit = [r for r in rows if pid in r and p["kind"] in [c.lower() for c in r] and any(re.fullmatch(p["domain"] + r"\b.*", c) for c in r)]
+      assert len(hit) == 1, f"METHOD_CHECK=fail probe row {pid}"
+  assert any("domain trust" in x.lower() for x in re.split(r"\n\s*\n", readme)), "METHOD_CHECK=fail README paragraph"
+  print(f"METHOD_CHECK=pass probes={len(probes)} verdicts=4 kinds=3")
+  PY
+  ```
+
 - `FR3_GUARD`: `FR3_CHECK` passes on an empty history, so this guard runs
   first. It exits non-zero when no revision 1 history entry exists.
   `jq -e '[.history.models[] | (.no_skills, .skills) | select(. != null) | select((.fixture_revision // 1) < 2)] | length > 0' docs/assets/data/benchmark.json`
@@ -100,6 +136,23 @@ All runs were read-only.
   These values are for information only. Task 1.3 records the values of the
   worktree export at the base.
 
+The remediation of audit `4bc286a` ran these checks on 2026-10-25 in
+`main`. The bad inputs were copies in a temporary directory.
+
+- `PI_SHA` printed `PI_RUNS=95` and
+  `PI_SHA=c41f6bae1aacc126e1a0c7f0a73be2758c82eeea97b20485fa0c695a88eab38b`.
+  This is the value that `rigor_a_h` recorded. On a tree with no Pi record,
+  it exited 1 and wrote no file.
+- `PI_CHECK` printed `PI_CHECK=pass` on two equal files. It exited 1 after
+  a change of one `score.json`, after the addition of one Pi record, and on
+  a missing file.
+- `METHOD_CHECK` printed `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3`
+  on a synthetic good page. It exited 1 on the current page and on four bad
+  inputs. The bad inputs had a wrong probe domain, a wrong verdict order,
+  no "not graded", and no README paragraph.
+- `STATUS_CHECK` printed `STATUS_CHECK=pass blocked=12 open=1` on the plan.
+  It exited 1 on the plan of `4bc286a`, which has no `[~]` task.
+
 `PREVIEW_CHECK` requires `n_min` 2. Thus it runs at task 3.2 only. After
 task 4.2 sets the O1 answer, the plan checks `rule.n_min` instead.
 
@@ -110,7 +163,8 @@ task 4.2 sets the O1 answer, the plan checks `rule.n_min` instead.
 | Module test | `harness/site-tests/domain-trust.test.ts`, block "probe map" | Red | FR-1 |
 | Verdict test | the same file, block "verdict" | Red | FR-2 on synthetic records |
 | Export test | the same file, block "export", on a temporary root | Red | FR-3 and FR-4 on synthetic runs |
-| Real-record checks | `PREVIEW_CHECK`, `FR3_GUARD`, `FR3_CHECK`, `LEADERBOARD_SHA`, `SIDE_SHA` | Green | AC-3, AC-4, and AC-7 on the stored records |
+| Real-record checks | `PREVIEW_CHECK`, `FR3_GUARD`, `FR3_CHECK`, `LEADERBOARD_SHA`, `SIDE_SHA`, `PI_SHA`, `PI_CHECK` | Green and orchestrator | AC-3, AC-4, and AC-7 on the stored records |
+| Text check | `METHOD_CHECK` on `docs/methodology.html` and `README.md` | Green | FR-6 and AC-6 |
 | Adversarial cases | the same test file, block "adversarial" | Adversarial role | The matrix cannot lie (section 9) |
 | Browser review | `docs/results.html` through `SITE_SERVE` | UX role | FR-5 and NFR-6 |
 
@@ -342,18 +396,29 @@ The role writes `measure/runs/domain_trust/adversarial-<short head>.json`.
   absent block, a preview that is not 14 models, or a count that is not 112
   cells. `FR3_GUARD` stops on an empty history. Case 5.2.12 forbids `safe`
   on zero records. `PATH_CHECK` passes on an empty diff. Thus the plan
-  pairs it with `TRUST_TEST` and `PREVIEW_CHECK`.
+  pairs it with `TRUST_TEST` and `PREVIEW_CHECK`. `PI_SHA` stops on an
+  empty Pi list, and `PI_CHECK` needs a `PI_RUNS` value above 0.
 - **A5.** The plan claims a result only with the quoted labeled line and its
   command.
 - **A11.** `TRUST_TEST` passes under `BENCH_TRACK=change`, because it reads
   no environment value.
-- **A12.** `measure_interphase_checks.py status` ignores `[b]` tasks. The
-  orchestrator reads the plan markers before it reports progress.
+- **A12.** `measure_interphase_checks.py status` reads only `[ ]`, `[~]`,
+  and `[x]` tasks. It also skips a task whose first line holds the word
+  `deferred`. A plan with only `[x]` and `[b]` tasks thus shows as a
+  closeout candidate. The checker is a shared skill install, and this
+  project does not edit it. Thus the plan keeps exactly one `[~]` task while
+  a `[b]` task remains (plan section "Marker use"). The orchestrator runs
+  `STATUS_CHECK` after each marker change.
+- **A13.** `PATH_CHECK` reads Git paths only, and `.gitignore` ignores
+  `runs/`. `PI_SHA` and `PI_CHECK` prove that each legacy Pi record keeps
+  every byte (spec FR-7).
 
 ## 12. Evidence to record
 
 For each task, the plan records the command, the labeled output line, and
-the report path. Task 1.3 records the four base values. Task 2.2 records the
-Red summary line. Task 3.2 records `FR3_GUARD`, `FR3_CHECK`,
-`PREVIEW_CHECK`, `LEADERBOARD_SHA`, and `SIDE_SHA`. Task 4.1 records O1 and
-O2 with their dates.
+the report path. Task 1.3 records the five base values, with the
+`PI_RUNS` and `PI_SHA` lines. Task 2.2 records the Red summary line. Task
+3.2 records `FR3_GUARD`, `FR3_CHECK`, `PREVIEW_CHECK`, `LEADERBOARD_SHA`,
+and `SIDE_SHA`. Task 3.3 records the `METHOD_CHECK` line. Tasks 3.4 and
+4.2 record the `PI_CHECK` line. Task 4.1 records O1 and O2 with their
+dates.

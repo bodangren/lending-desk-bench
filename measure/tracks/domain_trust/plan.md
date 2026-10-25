@@ -24,6 +24,12 @@ Marker use:
   earlier task or for an owner decision. The orchestrator changes it to `[~]`
   when its phase opens.
 - `[x]` needs a commit SHA in the task line.
+- While a `[b]` task remains, exactly one task is `[~]`. Its first line
+  does not hold the word `deferred`. When the `[~]` task closes, the same
+  edit marks the next task `[~]`. Reason: anti-pattern A12. The status
+  checker reads no `[b]` task, so a plan with only `[x]` and `[b]` tasks
+  shows as a closeout candidate. Run `STATUS_CHECK` after each marker
+  change.
 
 Gate commands:
 
@@ -43,6 +49,27 @@ Gate commands:
   list.
 - `FR3_GUARD`: stops `FR3_CHECK` from passing on an empty history.
   `jq -e '[.history.models[] | (.no_skills, .skills) | select(. != null) | select((.fixture_revision // 1) < 2)] | length > 0' docs/assets/data/benchmark.json`
+- `PI_SHA <name>` (run in `main`; anti-pattern A13): hashes each
+  `score.json`, `results.json`, and `provenance.json` of every legacy Pi
+  record. A Pi record has an `executor.pi` object in its provenance. The
+  command stops on an empty list. It prints `PI_RUNS=<n>` and
+  `PI_SHA=<hash>`, and it writes both lines to
+  `measure/runs/domain_trust/pi-<name>.txt`. `PATH_CHECK` cannot see these
+  files, because `.gitignore` ignores `runs/`.
+  `for p in runs/*/artifacts/provenance.json; do jq -e '.executor.pi | type == "object"' "$p" >/dev/null 2>&1 && echo "${p%/provenance.json}"; done | sort > .tmp/trust-pi-artifacts.txt; test -s .tmp/trust-pi-artifacts.txt && { echo "PI_RUNS=$(wc -l < .tmp/trust-pi-artifacts.txt)"; while read -r a; do for f in score.json results.json provenance.json; do if [ -f "$a/$f" ]; then sha256sum "$a/$f"; fi; done; done < .tmp/trust-pi-artifacts.txt | sha256sum | sed 's/ .*//; s/^/PI_SHA=/'; } | tee measure/runs/domain_trust/pi-<name>.txt`
+- `PI_CHECK <a> <b>` (run in `main`): file `<a>` must hold a `PI_RUNS`
+  value above 0 and a 64-digit `PI_SHA`. File `<b>` must be byte-identical
+  to file `<a>`. Otherwise the command exits non-zero.
+  `grep -qE '^PI_RUNS=[1-9][0-9]*$' measure/runs/domain_trust/pi-<a>.txt && grep -qE '^PI_SHA=[0-9a-f]{64}$' measure/runs/domain_trust/pi-<a>.txt && cmp -s measure/runs/domain_trust/pi-<a>.txt measure/runs/domain_trust/pi-<b>.txt && echo PI_CHECK=pass`
+- `METHOD_CHECK`: reads the section `id="domain-trust"` of
+  `docs/methodology.html` and the paragraphs of `README.md`. It checks the
+  contents of spec FR-6. The test strategy gives the exact command. It
+  prints `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3`.
+- `STATUS_CHECK` (anti-pattern A12): run it from the root of the tree whose
+  plan changed. It exits non-zero when the plan has a `[b]` task and the
+  status command lists the track as a closeout candidate. It also exits
+  non-zero when the plan has a `[b]` task and not exactly one `[~]` task.
+  `p=measure/tracks/domain_trust/plan.md; b=$(grep -c '^- \[b\]' "$p"); w=$(grep -c '^- \[~\]' "$p"); s=$(python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py status --repo . --track '^domain_trust$') && { [ "$b" -eq 0 ] || { [ "$w" -eq 1 ] && printf '%s\n' "$s" | grep -qx 'closeout_candidates: 0'; }; } && echo "STATUS_CHECK=pass blocked=$b open=$w"`
 
 ## Phase 1: Contract and setup
 
@@ -56,18 +83,23 @@ Gate commands:
 - [x] 1.2 Test strategy. Write `test-strategy.md`: the synthetic cases of
   FR-1 to FR-4, the exact `PREVIEW_CHECK` command, the probe map review, the
   browser review steps, and the review assignments. The strategy role wrote
-  `test-strategy.md` and `measure/runs/domain_trust/strategy.log` on
-  2026-10-25 and did not commit them. The orchestrator commits them and
-  records the SHA here. 22f1a0d
+  `test-strategy.md` and the log `measure/runs/domain_trust/strategy.log`
+  on 2026-10-25. Commit 22f1a0d holds `test-strategy.md` and the matching
+  edits of `plan.md` and `index.md`. It does not hold the log. The log
+  stays on disk only, in `main` at the path above, because `.gitignore`
+  ignores `runs/` (line 11). On 2026-10-25, its SHA-256 was
+  `246d2be6b7d5e16efad170bcc22f8401c0678053a78669dc00833b45607ab051`. 22f1a0d
+  - Verify: `git show --name-only --format= 22f1a0d` lists `measure/tracks/domain_trust/test-strategy.md`.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track domain_trust --log-file measure/runs/domain_trust/strategy.log` prints `PASS: strategy gate passed`.
-- [b] 1.3 Worktree. Create `../lending-desk-bench-trust` on the new branch
+- [~] 1.3 Worktree. Create `../lending-desk-bench-trust` on the new branch
   `domain-trust` from the commit of task 1.2. Link `runs` to the `runs/`
   of `main`. Install the harness dependencies from the lockfile. Run the
   export in the worktree at the base, and record `LEADERBOARD_SHA` and
   `SIDE_SHA`. Record `BASE_HASH` and the `plan-work.ts --all` classes in
-  `main`. — deferred:orchestrator
+  `main`. Run `PI_SHA base` in `main`, and record its two lines.
   - Verify: `git -C ../lending-desk-bench-trust rev-parse --abbrev-ref HEAD` prints `domain-trust`.
-  - Verify: this task holds the four base values.
+  - Verify: this task holds the five base values: `LEADERBOARD_SHA`, `SIDE_SHA`, `BASE_HASH`, the work-list classes, and the `PI_RUNS` and `PI_SHA` lines.
+  - Verify: `STATUS_CHECK` prints `STATUS_CHECK=pass blocked=<n> open=1`.
 
 ## Phase 2: Test (Red)
 
@@ -96,14 +128,20 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   - Verify: `TRUST_TEST` exits 0.
   - Verify: after `python3 harness/export-site-data.py` in the worktree, `FR3_GUARD` and `FR3_CHECK` print `true`, `PREVIEW_CHECK` prints `PREVIEW_CHECK=pass models=14 cells=112`, and `LEADERBOARD_SHA` and `SIDE_SHA` equal the values of task 1.3.
 - [b] 3.3 Page and text: the section of `docs/results.html`, and the text in
-  `docs/methodology.html` and `README.md` (spec FR-5, FR-6).
+  `docs/methodology.html` and `README.md` (spec FR-5, FR-6). The
+  methodology section has `id="domain-trust"` and holds the rule as static
+  HTML. It gives the verdict rule as an ordered list and the probe map as
+  a table. Record the `METHOD_CHECK` line in this task.
   — deferred:jr-green
-  - Verify: `rg -n -i 'domain trust' README.md docs/methodology.html docs/results.html` prints at least 3 lines.
+  - Verify: `METHOD_CHECK` exits 0 and prints `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3` (spec FR-6, AC-6).
+  - Verify: `rg -n 'Domain trust' docs/results.html` prints at least 1 line.
 - [b] 3.4 Green gate. Run `TRUST_TEST` and `PATH_CHECK` in the worktree.
   Run `BASE_HASH` and `cd harness && npx tsx plan-work.ts --all` in `main`.
+  Run `PI_SHA green` and `PI_CHECK base green` in `main`.
   — deferred:jr-green
   - Verify: `TRUST_TEST` exits 0, and `PATH_CHECK` prints `PATH_CHECK=pass`.
   - Verify: `BASE_HASH` in `main` prints the value of task 1.3, or the orchestrator names the other track that changed it. The work-list class of each track, arm, and model equals the class at task 1.3.
+  - Verify: `PI_CHECK base green` prints `PI_CHECK=pass` (spec FR-7).
 - [b] 3.5 Review A. Check the probe map against each probe test, and the
   verdict rule against the spec. Check `P.dedup-item` on two candidate trees
   (spec R2, R6). The role writes
@@ -128,10 +166,11 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   - Verify: `rg -n '^\| O2 \|.*\| (approved|declined) 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/domain_trust/spec.md` prints 1 line.
 - [b] 4.2 Merge and export. When O2 is approved, set `n_min` to the O1
   answer. In `main`, run the export at the old code and record
-  `LEADERBOARD_SHA`. Merge `domain-trust`. Run the export again.
-  — deferred:orchestrator
+  `LEADERBOARD_SHA`. Merge `domain-trust`. Run the export again. Run
+  `PI_SHA merged` and `PI_CHECK base merged`. — deferred:orchestrator
   - Verify: `LEADERBOARD_SHA` is equal before and after the merge. `jq -r '.domain_trust.rule.n_min' docs/assets/data/benchmark.json` prints the O1 answer.
   - Verify: `BASE_HASH` in `main` is equal before and after the merge.
+  - Verify: `PI_CHECK base merged` prints `PI_CHECK=pass` (spec FR-7).
 - [b] 4.3 Doctor. In `main`, run `TRUST_TEST` and
   `cd harness && npm run test:meta:logic`. — deferred:jr-green
   - Verify: both commands exit 0.

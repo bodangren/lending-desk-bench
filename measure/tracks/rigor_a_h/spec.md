@@ -142,8 +142,40 @@ yet.
 
   The same page names `unstable_retry()` as the function that re-fetches.
 - Checkbox H.2 requires a control "that retries without a full page
-  reload". The reference and all 426 stored `error.tsx` files (all tracks)
-  call `reset()` only. None calls `router.refresh()` or `unstable_retry()`.
+  reload". The three reference trees call `reset()` only.
+- On 2026-10-25, `runs/` holds 427 files that match
+  `runs/*/candidate/app/items/error.tsx`. The scope is every run directory,
+  with no exclusion: model runs of all tracks, canaries, controls,
+  calibration runs, and meta-test runs. 122 files are byte-identical to the
+  stub. Each of the other 305 files calls `reset()`. No file calls
+  `router.refresh()` or `unstable_retry()`. In the 49 corpus runs, 4 files
+  are the stub, and 45 files call `reset()`. This command, run in `main`,
+  prints both counts:
+
+  ```bash
+  python3 - <<'PY'
+  import json, pathlib, re, sys
+  stub = pathlib.Path("fixture/app/items/error.tsx").read_text()
+  corpus = {r["run_id"] for r in json.load(open("measure/tracks/rigor_a_h/corpus.json"))["runs"]}
+  files = sorted(pathlib.Path("runs").glob("*/candidate/app/items/error.tsx"))
+  for scope, fs in (("all", files), ("corpus", [f for f in files if f.parts[1] in corpus])):
+      t = [f.read_text(errors="ignore") for f in fs]
+      s = sum(x == stub for x in t)
+      r = sum(x != stub and bool(re.search(r"\breset\s*\(\s*\)|=\{\s*reset\s*\}", x)) for x in t)
+      q = sum(bool(re.search(r"router\.refresh|unstable_retry", x)) for x in t)
+      print(f"H2_SCAN scope={scope} files={len(t)} stub={s} reset={r} other={len(t) - s - r} refresh_or_retry={q}")
+  PY
+  ```
+
+  It printed these lines on 2026-10-25:
+
+  ```text
+  H2_SCAN scope=all files=427 stub=122 reset=305 other=0 refresh_or_retry=0
+  H2_SCAN scope=corpus files=49 stub=4 reset=45 other=0 refresh_or_retry=0
+  ```
+
+  A new run directory changes the `all` line. The corpus runs are
+  read-only (NFR-4), so the `corpus` line stays the same.
 - The stub `fixture/app/items/error.tsx` gives `reset` and no other
   function. The spec forbids signature changes.
 - A criterion for a true retry fails every stored run and the reference. It
@@ -223,8 +255,16 @@ yet.
   `tests/e2e/scenarios.spec.ts`.
 - `SCORING.md` permits scenario criteria. Today it permits only splits of a
   compound checkbox and closeout checks.
+- `SCORING.md` gets a section `### Scenario criteria` in the section
+  `## Functional completion (55%)`. The section states the
+  scenario-criterion rule: the three sources, tier 1, the `scenario:`
+  derivation, and the exclusion list. Its subsection `#### Admission rule`
+  states the six conditions of FR-3 as a numbered list, in FR-3 order.
 - **Check.** The meta test of plan task 2.1 fails when an entry, a
   derivation, a test title, or a control is missing.
+- **Check.** `SCORING_CHECK` (test strategy section 2) prints
+  `SCORING_CHECK=pass sources=3 conditions=6`. It exits non-zero when the
+  section, the subsection, a source, or a condition is missing.
 
 ### FR-2 — Sourcing and exclusion rule
 
@@ -402,7 +442,12 @@ These conventions never decide a verdict of a scenario criterion:
   5 grades of each reference tree and 2 of 2 grades of its control. A
   criterion that misses this rule leaves the set.
 - **NFR-6 Grade time.** The scenario tests add at most 10% to the median
-  canary grade time. Task 3.5 records both times.
+  grade time of the `reference` build canary. The grade time is the wall
+  time of one `TIMED_CANARY` run (test strategy section 2). Task 1.2 times 5
+  runs on the base suite. Task 3.5 times 5 runs on the new suite.
+  `NFR6_CHECK` compares the two medians. It prints
+  `NFR6 base_median_s=<x.x> new_median_s=<x.x> ratio=<x.xxxx> verdict=<pass|fail>`,
+  and it exits non-zero unless the verdict is `pass`.
 - **NFR-7 Labeled evidence (anti-pattern A3).** Gates parse labeled lines,
   never a bare number.
 - **NFR-8 Hermetic meta tests (anti-pattern A11).** The new meta tests pass
@@ -453,7 +498,8 @@ These conventions never decide a verdict of a scenario criterion:
 9. **AC-9** Plan task 4.4 quotes `SWEEP.FRONTIER`. When the line shows all
    frontier runs saturated, the plan records D2 as open or answered (FR-8).
 10. **AC-10** `SCORING.md` states the scenario-criterion rule and the
-    admission rule (FR-1).
+    admission rule (FR-1). `SCORING_CHECK` prints
+    `SCORING_CHECK=pass sources=3 conditions=6`.
 
 ## Out of scope
 

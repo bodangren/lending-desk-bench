@@ -26,11 +26,19 @@ Marker use:
   earlier task or for an owner decision. The orchestrator changes it to `[~]`
   when its phase opens.
 - `[x]` needs a commit SHA in the task line.
+- While a `[b]` task remains, exactly one task is `[~]`. Its first line
+  does not hold the word `deferred`. When the `[~]` task closes, the same
+  edit marks the next task `[~]`. Reason: anti-pattern A12. The status
+  checker reads no `[b]` task, so a plan with only `[x]` and `[b]` tasks
+  shows as a closeout candidate. Run `STATUS_CHECK` after each marker
+  change.
 
 Gate commands: test strategy section 2 (`RED_TEST_COMMAND`,
-`GREEN_TEST_COMMAND`, the control gate, `CANARY build <tree>`, `CORPUS_SHA`,
-`PI_SHA`, `HISTORY_SHA`, `TRUSTED_LIST`, `TRUSTED_CHECK`, `EXPORT_CHECK`,
-`NFR10_CHECK`, `NFR10_VERIFY`, `BASE_HASH`, and the work-list comparison).
+`GREEN_TEST_COMMAND`, the control gate, `CANARY build <tree>`,
+`TIMED_CANARY`, `NFR6_CHECK`, `SCORING_CHECK`, `CORPUS_SHA`, `PI_SHA`,
+`HISTORY_SHA`, `TRUSTED_LIST`, `TRUSTED_CHECK`, `EXPORT_CHECK`,
+`NFR10_CHECK`, `NFR10_VERIFY`, `BASE_HASH`, `STATUS_CHECK`, and the
+work-list comparison).
 
 ## Phase 1: Contract and setup
 
@@ -41,17 +49,20 @@ Gate commands: test strategy section 2 (`RED_TEST_COMMAND`,
   records the SHA here. 07b4df8
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track rigor_a_h --log-file measure/runs/rigor_a_h/strategy.log` prints `PASS: strategy gate passed`.
   - Verify: `jq -c '.counts' measure/tracks/rigor_a_h/corpus.json` prints `{"runs":49,"stored_saturated":22,"stored_saturated_models":10,"opencode_runs":8,"pi_runs":41}`.
-- [b] 1.2 Worktree and toolchain. The precondition is met. The orchestrator
+- [~] 1.2 Worktree and toolchain. The precondition is met. The orchestrator
   committed the untracked hashed sources in `main` at e9fb565, and
   `npm run test:meta:logic` passed 30 files and 238 tests on that commit.
   Now create `../lending-desk-bench-rigor` on the new branch `rigor-a-h`
   from that commit. Install the harness and fixture dependencies from their
-  lockfiles. Record `CORPUS_SHA` in `main`. — deferred:orchestrator
+  lockfiles. Record `CORPUS_SHA` in `main`. In the worktree, run
+  `TIMED_CANARY base<k> base` for each k from 1 to 5. Record the five
+  `GRADE_TIME` lines in this task.
   - Verify: `git status --short --untracked-files=all -- harness/bugfix harness/change harness/tests-track harness/tests harness/verify-bugs.ts reference-change` prints nothing in `main`.
   - Verify: `BASE_HASH` prints the same line in `main` and in the worktree.
   - Verify: `git -C ../lending-desk-bench-rigor rev-parse --abbrev-ref HEAD` prints `rigor-a-h`.
-  - Verify: `CANARY build reference` in the worktree gives a record with `valid === true` and `total === 100` on the base suite.
+  - Verify: in the worktree, the records `canary-rigor-reference-base1` to `canary-rigor-reference-base5` have `valid === true` and `total === 100` on the base suite. `measure/runs/rigor_a_h/grade-time.log` holds 5 `GRADE_TIME suite=base` lines with `exit=0`.
   - Verify: the plan line of this task holds the `CORPUS_SHA` value.
+  - Verify: `STATUS_CHECK` prints `STATUS_CHECK=pass blocked=<n> open=1`.
 
 ## Phase 2: Test (Red)
 
@@ -85,23 +96,24 @@ Run in the worktree. Green commits on the branch `rigor-a-h`.
   - Verify: `CANARY build reference` passes, and its `e2e-raw.json` holds `F.return-race`, `D.history-rows`, `C.current-store`, and `E.return-retry` as passed.
 - [b] 3.3 Registry. Add the 5 entries to `CRITERIA` (tier 1), the 5
   `scenario:` derivations to `UNMAPPED_CRITERIA`, and the 5 controls of
-  test strategy section 9 to `SENSITIVITY_CONTROLS`. Add the
-  scenario-criterion rule and the admission rule to `SCORING.md`.
+  test strategy section 9 to `SENSITIVITY_CONTROLS`. Add the section
+  `### Scenario criteria` and its subsection `#### Admission rule` to
+  `SCORING.md` (spec FR-1). Record the `SCORING_CHECK` line in this task.
   — deferred:jr-green
   - Verify: `cd harness && BENCH_META=1 npx vitest run tests/meta/scenario-criteria.test.ts tests/meta/spec-matrix.test.ts --maxWorkers=1` exits 0.
-  - Verify: `rg -n 'scenario criteri' SCORING.md` prints at least 2 lines.
+  - Verify: `SCORING_CHECK` exits 0 and prints `SCORING_CHECK=pass sources=3 conditions=6` (spec FR-1, AC-10).
 - [b] 3.4 Controls. Run the control gate two times. Then run
   `verify-controls.ts --all`. Add a scenario criterion to the collateral of
   an existing control only when that control also fails it.
   — deferred:jr-green
   - Verify: both control-gate runs exit 0 with `calibration_passed: true` for the 5 new controls. `cd harness && npx tsx verify-controls.ts --all` exits 0.
-- [b] 3.5 Canaries. Run `CANARY build reference` and
-  `CANARY build reference-variant` 5 times each. Run the change, bugfix,
-  and tests canaries. Run `cd harness && npx tsx verify-bugs.ts --all`.
-  Record the median grade time of the base canary (task 1.2) and of the new
-  canary. — deferred:jr-green
+- [b] 3.5 Canaries. Run `TIMED_CANARY <k> new` for each k from 1 to 5.
+  Run `CANARY build reference-variant` 5 times. Run the change, bugfix, and
+  tests canaries. Run `cd harness && npx tsx verify-bugs.ts --all`. Run
+  `NFR6_CHECK`. Record the five `GRADE_TIME` lines and the `NFR6` line in
+  this task. — deferred:jr-green
   - Verify: 10 of 10 build canary records have `valid === true` and `total === 100`. The change, bugfix, and tests canaries score 100. `verify-bugs.ts --all` exits 0.
-  - Verify: the new median grade time is at most 1.10 times the base median (spec NFR-6).
+  - Verify: `NFR6_CHECK` exits 0 and prints `NFR6 base_median_s=<x.x> new_median_s=<x.x> ratio=<x.xxxx> verdict=pass` (spec NFR-6).
 - [b] 3.6 Sweep script `harness/corpus-sweep.ts` (spec FR-4, test strategy
   section 8). It calls `deriveScoreMetrics` for new completion and never
   copies the formula. — deferred:jr-green

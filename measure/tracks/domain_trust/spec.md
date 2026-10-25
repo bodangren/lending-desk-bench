@@ -280,9 +280,16 @@ also lists each check below `N_MIN` with its coverage.
 
 - `docs/methodology.html` explains the three kinds, the verdict rule,
   `N_MIN`, the probe map, and the missing-key rule.
+- The explanation is static HTML in a section with `id="domain-trust"`.
+  The verdict rule is an ordered list of the four verdicts in precedence
+  order. The probe map is a table with one row for each probe. Each row has
+  one cell for the id, one cell for the domain, and one cell for the kind.
+  The missing-key rule uses the words "not graded".
 - `README.md` names the matrix in one paragraph.
-- **Check.** `rg -n -i 'domain trust' README.md docs/methodology.html docs/results.html`
-  prints at least 3 lines.
+- **Check.** `METHOD_CHECK` (test strategy section 2) prints
+  `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3`. It exits non-zero when
+  a kind, the verdict list, `N_MIN`, a probe row, the missing-key rule, or
+  the README paragraph is missing.
 
 ### FR-7 — No effect on scores, records, or hashes
 
@@ -299,6 +306,14 @@ also lists each check below `N_MIN` with its coverage.
 - **Check.** `LEADERBOARD_SHA` is equal for an export at the branch base and
   an export after the change, over the same `runs/`:
   `jq -S 'del(.generated_at, .domain_trust) | walk(if type == "object" then del(.domains) else . end)' docs/assets/data/benchmark.json | sha256sum`.
+- **Check.** Every legacy Pi record keeps every byte. `PATH_CHECK` reads Git
+  paths only, and `.gitignore` ignores `runs/` (anti-pattern A13). Thus
+  `PI_SHA` in `main` hashes the `score.json`, `results.json`, and
+  `provenance.json` of each Pi record. Task 1.3 records the base value.
+  `PI_CHECK` exits non-zero when the value or the `PI_RUNS` count differs at
+  task 3.4 or after the merge. On 2026-10-25, `PI_SHA` printed
+  `PI_RUNS=95` and
+  `PI_SHA=c41f6bae1aacc126e1a0c7f0a73be2758c82eeea97b20485fa0c695a88eab38b`.
 
 ## Non-functional requirements
 
@@ -339,10 +354,11 @@ also lists each check below `N_MIN` with its coverage.
    (FR-4).
 5. **AC-5** The results page shows the matrix and the failure modes, with
    words in each cell. The score table is unchanged (FR-5).
-6. **AC-6** Methodology and README name the rule (FR-6).
+6. **AC-6** Methodology and README name the rule (FR-6). `METHOD_CHECK`
+   prints `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3`.
 7. **AC-7** `PATH_CHECK` passes on the branch. `BASE_HASH` in `main`,
-   `LEADERBOARD_SHA`, and the `plan-work.ts --all` classes are unchanged
-   (FR-7).
+   `LEADERBOARD_SHA`, and the `plan-work.ts --all` classes are unchanged.
+   `PI_CHECK` passes at task 3.4 and after the merge (FR-7).
 8. **AC-8** O1 and O2 have a recorded answer and date before the merge.
 
 ## Out of scope
