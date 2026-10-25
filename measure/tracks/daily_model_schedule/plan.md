@@ -125,43 +125,78 @@ Run in the worktree. Red commits on the branch `daily-schedule`.
   - Verify: the recorded exit code is not 0, and the recorded failures are only those of task 2.1.
   - Verify: `role-gate --role mid-red --phase "Phase 2: Test (Red)"` with `RED_TEST_COMMAND` set to `SCHEDULE_TEST` prints `PASS: mid-red gate passed`.
 
-## Phase 3: Implement (Green)
+## Phase 3: Implement (Green) [checkpoint: a376d24]
 
 Run in the worktree. Green commits on the branch `daily-schedule`.
 
-- [~] 3.1 Selection rule: build `harness/daily-pick.ts` (spec selection
-  rules 1 to 6, FR-2 to FR-5; test strategy section 5.1). It reads only its
-  flags and files. It compares ids in byte order. It matches a served model
-  by an exact line.
+- [x] 3.1 Selection rule: `harness/daily-pick.ts` — commit `282e9da`.
+  Spec selection rules 1 to 6, FR-2 to FR-5; test strategy section 5.1. It
+  reads only its flags and files. It compares ids in byte order. It matches
+  a served model by an exact line.
   - Verify: the "selector" block of `SCHEDULE_TEST` passes.
   - Verify: `rg -n 'process\.env|localeCompare' harness/daily-pick.ts` prints no line.
-- [b] 3.2 Oracle cross-check. Run `SELECTOR_MATCH` in the worktree on the
-  real runs tree and on one saved fetch. The selector and `pick-oracle.py`
-  must print the same model, reason, date, and counts. Record the line in
-  this task. — deferred:jr-green
+  - Evidence: `SCHEDULE_TEST` selector block 6.1.1–6.1.22 all pass
+    (`Tests  42 passed (42)` at the full-suite run below). The guard command
+    prints nothing (exit 1). The first cut stored parsed flags under
+    hyphenated keys and read underscored ones, so `--runs-root` fell back to
+    the default; caught by a manual synthetic run before the first commit,
+    fixed in the same commit `282e9da`.
+- [x] 3.2 Oracle cross-check — commit `282e9da`. Run `SELECTOR_MATCH` in the
+  worktree on the real runs tree and on one saved fetch. The selector and
+  `pick-oracle.py` must print the same model, reason, date, and counts.
+  Record the line in this task.
   - Verify: `SELECTOR_MATCH` prints `SELECTOR_MATCH=pass date=<day> model=<id> ...`.
   - Verify: `SELECTOR_MATCH` with an empty served file exits non-zero on both sides.
-- [b] 3.3 Run one model: `batch.sh --model <id>`, and `weekly.sh` passes
-  `"$@"` to each `batch.sh` call (spec FR-7, D7; test strategy section 5.2).
+  - Evidence: `SELECTOR_MATCH=pass date=2026-10-25 model=hy4-preview reason=untested last_test=none candidates=28 eligible=11 untested=11`
+    (strategy section 7 records the same value for 2026-10-25). Empty served
+    file: the selector exits 2 with `daily-pick: the served list is empty`;
+    `pick-oracle.py` exits 1 with `PICK_ORACLE=fail empty served list`.
+    Both sides non-zero. The fetch inputs are `.tmp/daily-catalog.json` and
+    `.tmp/daily-served.txt` in the worktree.
+- [x] 3.3 Run one model: `batch.sh --model <id>`, `weekly.sh` `"$@"` — commit `82106a9`.
+  Spec FR-7, D7; test strategy section 5.2.
   Do not add an environment variable that `batch.sh` reads.
-  — deferred:jr-green
   - Verify: the "batch pin" block of `SCHEDULE_TEST` passes.
   - Verify: `BATCH_COMPAT` prints the value of task 1.2.
-- [b] 3.4 Daily entry point `harness/cron-daily.sh` (spec FR-1, FR-6,
-  FR-8; test strategy section 5.3). It takes the shared lock. It refreshes
+  - Evidence: `SCHEDULE_TEST` batch block 6.2.1–6.2.8 all pass.
+    `BATCH_COMPAT_RUNS=180`;
+    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`
+    (equals task 1.2), rerun at Green HEAD `a376d24` with the same value.
+- [x] 3.4 Daily entry point `harness/cron-daily.sh` — commit `a376d24`.
+  Spec FR-1, FR-6, FR-8; test strategy section 5.3. It takes the shared
+  lock. It refreshes
   the catalog and the served list through a temporary file and a rename. It
   writes the day record before the runner. It calls
   `weekly.sh --model <id>`, and it adds the run ids to the record. It
   commits only `docs/` and pushes. It reports each unpriced, gone, and
   unservable model in the day record and in the commit body, and it does not
-  edit `harness/go-pricing.json`. — deferred:jr-green
+  edit `harness/go-pricing.json`.
   - Verify: the "daily job" block of `SCHEDULE_TEST` passes.
   - Verify: `bash -n harness/cron-daily.sh` exits 0.
-- [b] 3.5 Green gate. Run `SCHEDULE_TEST`, `PATH_CHECK`, `BATCH_COMPAT`, and
+  - Evidence: `SCHEDULE_TEST` job block 6.3.1–6.3.10 all pass.
+    `bash -n harness/cron-daily.sh` exits 0.
+- [b] 3.5 Green gate — deferred:orchestrator. Run `SCHEDULE_TEST`, `PATH_CHECK`, `BATCH_COMPAT`, and
   `META_LOGIC` in the worktree. Record each labeled line in this task.
-  — deferred:jr-green
+  Three of four gates pass; `META_LOGIC` exits 1 with 34 failures that are
+  pre-existing at the phase base and belong to the in-flight
+  `opencode_executor` track; see the evidence below.
   - Verify: `SCHEDULE_TEST` exits 0, `PATH_CHECK` prints `PATH_CHECK=pass`, `BATCH_COMPAT` equals task 1.2, and `META_LOGIC` exits 0.
   - Verify: `role-gate --role jr-green --phase "Phase 3: Implement (Green)"` with `GREEN_TEST_COMMAND` set to `SCHEDULE_TEST` prints `PASS: jr-green gate passed`.
+  - Evidence: `SCHEDULE_TEST` at Green HEAD:
+    `Test Files  1 passed (1)`; `Tests  42 passed (42)` (exit 0).
+    `PATH_CHECK=pass` with `PHASE_BASE=3c21502`.
+    `BATCH_COMPAT_RUNS=180`;
+    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`.
+  - Evidence: `META_LOGIC` (`cd harness && npm run test:meta:logic`) exits 1:
+    `Test Files  6 failed | 24 passed (30)`; `Tests  34 failed | 204 passed (238)`.
+    The same command at `PHASE_BASE` 3c21502 (a read-only `git archive` copy
+    in `/tmp/opencode/base-tree`) fails identically: opencode-credential 13,
+    opencode-executor 17, opencode-fixture 1, opencode-recorded 1,
+    runner-safety 1, grade-exit 1 — the same 34, so no failure was introduced
+    or changed by Green. All six suites test the `opencode_executor`
+    migration, whose task 4.2 is in progress; none is reachable from the
+    Green path allow-list of `PATH_CHECK`. The batch-guarding suites
+    (`bench-incremental`, `selfcheck-env`) pass.
 - [b] 3.6 Review A (correctness): the selection rule, the run date rule, the
   identity rule against `plan-work.ts`, and `--day-runs`. The role writes
   `measure/runs/daily_model_schedule/review-a-<short head>.json`.
