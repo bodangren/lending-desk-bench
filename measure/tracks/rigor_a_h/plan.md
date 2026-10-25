@@ -34,11 +34,11 @@ Gate commands: test strategy section 2 (`RED_TEST_COMMAND`,
 
 ## Phase 1: Contract and setup
 
-- [~] 1.1 Strategy artifacts: `spec.md`, `plan.md`, `test-strategy.md`,
+- [x] 1.1 Strategy artifacts: `spec.md`, `plan.md`, `test-strategy.md`,
   `corpus.json`, `metadata.json`, `index.md`, and the registry rows in
   `measure/tracks.md` and `measure/index.md`. The strategy role wrote them
   on 2026-10-25 and did not commit them. The orchestrator commits them and
-  records the SHA here.
+  records the SHA here. 07b4df8
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track rigor_a_h --log-file measure/runs/rigor_a_h/strategy.log` prints `PASS: strategy gate passed`.
   - Verify: `jq -c '.counts' measure/tracks/rigor_a_h/corpus.json` prints `{"runs":49,"stored_saturated":22,"stored_saturated_models":10,"opencode_runs":8,"pi_runs":41}`.
 - [b] 1.2 Worktree and toolchain. The precondition is met. The orchestrator

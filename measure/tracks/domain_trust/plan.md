@@ -44,11 +44,11 @@ Gate commands:
 
 ## Phase 1: Contract and setup
 
-- [~] 1.1 Spec and plan: `spec.md`, `plan.md`, `preview.json`,
+- [x] 1.1 Spec and plan: `spec.md`, `plan.md`, `preview.json`,
   `metadata.json`, `index.md`, and the registry rows in `measure/tracks.md`
   and `measure/index.md`. The strategy role of `rigor_a_h` wrote them on
   2026-10-25 and did not commit them. The orchestrator commits them and
-  records the SHA here.
+  records the SHA here. 07b4df8
   - Verify: `jq -r '.models | length' measure/tracks/domain_trust/preview.json` prints `14`.
   - Verify: `jq '[.models[].runs | length] | add' measure/tracks/domain_trust/preview.json` prints `34`.
 - [b] 1.2 Test strategy. Write `test-strategy.md`: the synthetic cases of
