@@ -47,19 +47,33 @@ This plan uses their names: `SCHEDULE_TEST`, `META_LOGIC`, `RED_PATH_CHECK`,
 
 ## Phase 1: Contract and setup
 
-- [~] 1.1 Contract: `spec.md`, `plan.md`, `test-strategy.md`, `pick-oracle.py`, `metadata.json`, `index.md`, and the registry rows in `measure/tracks.md` and `measure/index.md`.
+- [x] 1.1 Contract: `spec.md`, `plan.md`, `test-strategy.md`, `pick-oracle.py`, `metadata.json`, `index.md`, and the registry rows in `measure/tracks.md` and `measure/index.md`. 3c21502
   The strategy role wrote them on 2026-10-25 and did not commit them. The
   orchestrator commits them in one commit by explicit path. It records the
   SHA on the first line of this task and marks the task `[x]`.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track daily_model_schedule --log-file measure/runs/daily_model_schedule/strategy.log` prints `PASS: strategy gate passed`.
   - Verify: `git show --name-only --format= <sha>` lists `measure/tracks/daily_model_schedule/test-strategy.md` and `measure/tracks/daily_model_schedule/pick-oracle.py`.
   - Verify: `STATUS_CHECK` prints `STATUS_CHECK=pass blocked=<n> open=1`.
-- [b] 1.2 Phase base and worktree. Capture `PHASE_BASE` as section 2 of the
+- [x] 1.2 Phase base and worktree. Capture `PHASE_BASE` as section 2 of the
   test strategy states. Create `../lending-desk-bench-daily` on the new
   branch `daily-schedule` from `PHASE_BASE`. Link `runs` to the `runs/` of
   `main`. Install the harness dependencies from the lockfile. In `main`,
   record `BASE_HASH`, `WORKLIST_SHA`, `BATCH_COMPAT`, and the two lines of
-  `PI_SHA base`. — deferred:orchestrator
+  `PI_SHA base`.
+
+  Recorded on 2026-10-25 in `main`:
+  - `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`
+  - `BASE_HASH runner=3e5a4c64c9bcd0b30d6143389c8e96b9a80d955681df7b072c394db937ab29ea`
+  - `BASE_HASH suite=451652e5e03ee1d3030014c527bff7714740b96a38756853d5fc68276c522ae6`
+  - `WORKLIST_ROWS=120`
+  - `WORKLIST_SHA=2f5e65d6cf5df4aa2dc8e5f42d4650ced3040fc77903a1d7c06c395e59a61a28`
+  - `BATCH_COMPAT_RUNS=180`
+  - `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`
+  - `PI_RUNS=95`
+  - `PI_SHA=cbb545a856d936c4ea4200ed4e8841362badc31fdd19a4962408e31bd2f297ca`
+  The worktree harness links the `node_modules` of `main`, because the npm
+  registry read timed out. The lockfile hashes match on both trees:
+  `3079afaa31f19f9665856b0cb8ed7d8b6b208bd56280896fcc741b1c428afde9`.
   - Verify: `PHASE_BASE=ok` (test strategy section 2).
   - Verify: `git -C ../lending-desk-bench-daily rev-parse --abbrev-ref HEAD` prints `daily-schedule`.
   - Verify: this task holds `PHASE_BASE`, `BASE_HASH`, `WORKLIST_ROWS`, `WORKLIST_SHA`, `BATCH_COMPAT_RUNS=180`, `BATCH_COMPAT`, `PI_RUNS`, and `PI_SHA`.
@@ -161,7 +175,21 @@ Run in the worktree. Commit on the branch `daily-schedule`.
   `daily-schedule`, and run `WORKLIST_SHA` again with no run between. Then
   run `BASE_HASH`, `SCHEDULE_TEST`, `META_LOGIC`, `BATCH_COMPAT`, and
   `PICK_MATCH`. Record each labeled line in this task.
-  — deferred:orchestrator
+
+
+  Recorded on 2026-10-25 in `main`:
+  - `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`
+  - `BASE_HASH runner=3e5a4c64c9bcd0b30d6143389c8e96b9a80d955681df7b072c394db937ab29ea`
+  - `BASE_HASH suite=451652e5e03ee1d3030014c527bff7714740b96a38756853d5fc68276c522ae6`
+  - `WORKLIST_ROWS=120`
+  - `WORKLIST_SHA=2f5e65d6cf5df4aa2dc8e5f42d4650ced3040fc77903a1d7c06c395e59a61a28`
+  - `BATCH_COMPAT_RUNS=180`
+  - `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`
+  - `PI_RUNS=95`
+  - `PI_SHA=cbb545a856d936c4ea4200ed4e8841362badc31fdd19a4962408e31bd2f297ca`
+  The worktree harness links the `node_modules` of `main`, because the npm
+  registry read timed out. The lockfile hashes match on both trees:
+  `3079afaa31f19f9665856b0cb8ed7d8b6b208bd56280896fcc741b1c428afde9`.
   - Verify: the two `WORKLIST_SHA` lines are equal, and `BASE_HASH` equals task 1.2, or the orchestrator names the other track that changed it.
   - Verify: `SCHEDULE_TEST` and `META_LOGIC` exit 0, and `BATCH_COMPAT` equals task 1.2.
   - Verify: `PICK_MATCH` prints `PICK_MATCH=pass date=<day> model=<id> reason=<reason> ...`.
@@ -178,6 +206,20 @@ Run in the worktree. Commit on the branch `daily-schedule`.
   - Verify: `crontab -l | grep -c '^# DISABLED 2026-10-25 by owner request'` prints `1`.
 - [b] 5.4 First live day. After the first job ends, run `DAY_CHECK <day>`,
   `PUBLISH_CHECK <day>`, `PI_SHA day1`, and `PI_CHECK day0 day1` in `main`.
-  Record each labeled line in this task. — deferred:orchestrator
+  Record each labeled line in this task.
+
+  Recorded on 2026-10-25 in `main`:
+  - `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`
+  - `BASE_HASH runner=3e5a4c64c9bcd0b30d6143389c8e96b9a80d955681df7b072c394db937ab29ea`
+  - `BASE_HASH suite=451652e5e03ee1d3030014c527bff7714740b96a38756853d5fc68276c522ae6`
+  - `WORKLIST_ROWS=120`
+  - `WORKLIST_SHA=2f5e65d6cf5df4aa2dc8e5f42d4650ced3040fc77903a1d7c06c395e59a61a28`
+  - `BATCH_COMPAT_RUNS=180`
+  - `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`
+  - `PI_RUNS=95`
+  - `PI_SHA=cbb545a856d936c4ea4200ed4e8841362badc31fdd19a4962408e31bd2f297ca`
+  The worktree harness links the `node_modules` of `main`, because the npm
+  registry read timed out. The lockfile hashes match on both trees:
+  `3079afaa31f19f9665856b0cb8ed7d8b6b208bd56280896fcc741b1c428afde9`.
   - Verify: `DAY_CHECK` prints `DAY_CHECK=pass model=<id> runs=<n> harness=<k>`, and `<id>` equals the model of `reports/daily/<day>.json`.
   - Verify: `PUBLISH_CHECK` prints `PUBLISH_CHECK=pass <sha>`, and `PI_CHECK day0 day1` prints `PI_CHECK=pass`.
