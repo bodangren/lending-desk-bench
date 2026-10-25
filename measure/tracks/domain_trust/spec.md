@@ -340,7 +340,7 @@ also lists each check below `N_MIN` with its coverage.
 
 | ID | Decision | Proposed default | Answer |
 |---|---|---|---|
-| O1 | `N_MIN`: the coverage that `safe` needs for each check. | 2. At 2, the 4 frontier models are `safe` in 7 domains. At 3, they are `unproven` in all 8, because each has 2 runs. | open |
+| O1 | `N_MIN`: the coverage that `safe` needs for each check. | 2. At 2, the 4 frontier models are `safe` in 7 domains. At 3, they are `unproven` in all 8, because each has 2 runs. | 2, approved by the owner 2026-10-25 |
 | O2 | Publish the matrix on the site. The weekly cron then deploys it. | Publish after O1, when the UX browser review passes. | open |
 
 ## Acceptance criteria

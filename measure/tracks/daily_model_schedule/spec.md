@@ -315,7 +315,7 @@ date 2026-10-25.
 
 | ID | Decision | Proposed default | Answer |
 |---|---|---|---|
-| O1 | Install the daily crontab line. This starts a paid run of 12 agent runs each day and a daily push of `docs/` to GitHub Pages. | Approve after the real-data dry run of task 4.1 passes and `opencode_executor` task 4.2 closes. Spend from EV11: 1.07 USD each day on average, 3.24 USD at the observed maximum. | open |
+| O1 | Install the daily crontab line. This starts a paid run of 12 agent runs each day and a daily push of `docs/` to GitHub Pages. | Approve after the real-data dry run of task 4.1 passes and `opencode_executor` task 4.2 closes. Spend from EV11: 1.07 USD each day on average, 3.24 USD at the observed maximum. | open — the owner 2026-10-25 chose to approve only after the two prerequisites close |
 
 ## Acceptance criteria
 
