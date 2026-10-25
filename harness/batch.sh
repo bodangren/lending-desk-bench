@@ -47,6 +47,29 @@ case " $* " in
 esac
 [ "${BENCH_DRY_RUN:-0}" = "1" ] && DRY_RUN=1
 
+# --model <id> pins one priced model (daily_model_schedule FR-7, D7): the batch
+# plans only that model and ignores FORCE and the work list. The flag keeps the
+# unpinned path byte-identical, and no environment variable selects a model
+# (the meta tests inherit the environment; anti-pattern A11).
+PIN_MODEL=""
+_pin_prev=""
+for _arg in "$@"; do
+  if [ "$_pin_prev" = "1" ]; then
+    PIN_MODEL="$_arg"
+    _pin_prev=""
+  elif [ "$_arg" = "--model" ]; then
+    _pin_prev="1"
+  fi
+done
+if [ -n "$_pin_prev" ]; then
+  echo "--model requires a value" >&2
+  exit 2
+fi
+if [ -n "$PIN_MODEL" ] && ! [[ "$PIN_MODEL" =~ ^[a-z0-9][a-z0-9.-]*$ ]]; then
+  echo "--model must match ^[a-z0-9][a-z0-9.-]*\$, got: $PIN_MODEL" >&2
+  exit 2
+fi
+
 # Work-list rows (plan-work.ts JSON) -> model ids, new or failing, in order.
 work_list_models() {
   node -e '
@@ -110,7 +133,21 @@ for entry in "${ALL_LINES[@]}"; do
   LINE_BY_MODEL["$_model"]="$entry"
 done
 
-if [ "${FORCE:-0}" = "1" ]; then
+if [ -n "$PIN_MODEL" ]; then
+  # Pinned model: it must be a key of the price table (batch status is not
+  # required, so the daily job can run any priced model).
+  provider="$(node -e '
+const p = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+if (!p.models || !p.models[process.argv[2]]) process.exit(1);
+process.stdout.write(String(p.provider || "opencode-go"));
+' "$PRICING_PATH" "$PIN_MODEL")" || {
+    echo "--model $PIN_MODEL is not a priced model in $PRICING_PATH" >&2
+    exit 2
+  }
+  slug="${PIN_MODEL//./-}"
+  MODELS=("$provider|$PIN_MODEL|$slug")
+  echo "PINNED MODEL $PIN_MODEL"
+elif [ "${FORCE:-0}" = "1" ]; then
   # Escape hatch: the pre-bench_incremental behavior, every batch model.
   MODELS=("${ALL_LINES[@]}")
   echo "FORCE=1 — full pricing matrix: ${#MODELS[@]} models"
@@ -324,7 +361,7 @@ for rep in $(seq 1 "$REPS"); do
       N=$((N+1))
 
       score="../runs/$run_id/artifacts/score.json"
-      if [ "${FORCE:-0}" != "1" ]; then
+      if [ "${FORCE:-0}" != "1" ] || [ -n "$PIN_MODEL" ]; then
         if is_current_trusted_score "$score"; then
           echo "[$N/$TOTAL] SKIP $run_id (current trusted, publishable score)"
           SKIP=$((SKIP+1)); continue

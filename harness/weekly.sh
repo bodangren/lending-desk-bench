@@ -67,7 +67,7 @@ mkdir -p "$ROOT/.tmp"
 export BENCH_SELFCHECK_MARKER="$ROOT/.tmp/selfcheck-pass-$WEEK-$$"
 rm -f "$BENCH_SELFCHECK_MARKER"
 for track in build bugfix tests change; do
-  if ! BENCH_TRACK="$track" ./batch.sh; then
+  if ! BENCH_TRACK="$track" ./batch.sh "$@"; then
     echo "WEEKLY: $track batch failed; its previous published rows stay unchanged" >&2
     FAILED_TRACKS="$FAILED_TRACKS $track"
   fi
