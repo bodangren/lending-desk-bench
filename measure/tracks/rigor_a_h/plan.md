@@ -38,10 +38,10 @@ Gate commands (detail in `test-strategy.md` section 2):
 
 ## Phase 1: Contract and schema definition
 
-- [~] 1.1 Strategy artifacts: `spec.md`, `plan.md`, `test-strategy.md`,
+- [x] 1.1 Strategy artifacts: `spec.md`, `plan.md`, `test-strategy.md`,
   `metadata.json`, `index.md`, and the registry rows. The strategy role wrote
   them on 2026-10-25 and did not commit them. The orchestrator commits them
-  and records the SHA here.
+  and records the SHA here. cb04333
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track rigor_a_h --log-file measure/runs/rigor_a_h/strategy.log` prints `PASS: strategy gate passed`.
 - [b] 1.2 Owner decisions D1–D6 (spec section "Owner decisions"). — deferred:owner
   - Record each answer and its date in the spec table.
