@@ -19,6 +19,10 @@
 | Specification (opencode_executor) | measure/tracks/opencode_executor/spec.md |
 | Implementation Plan (opencode_executor) | measure/tracks/opencode_executor/plan.md |
 | Design note (opencode_executor) | measure/tracks/opencode_executor/design.md |
+| Specification (rigor_a_h) | measure/tracks/rigor_a_h/spec.md |
+| Implementation Plan (rigor_a_h) | measure/tracks/rigor_a_h/plan.md |
+| Test strategy (rigor_a_h) | measure/tracks/rigor_a_h/test-strategy.md |
+| Track metadata (rigor_a_h) | measure/tracks/rigor_a_h/metadata.json |
 | Scoring contract | SCORING.md |
 | Model-visible spec (build) | fixture/measure/tracks/lending_desk/spec.md |
 | Model-visible spec (bugfix) | harness/bugfix/model-visible/track/spec.md |

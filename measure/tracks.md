@@ -8,6 +8,9 @@
 - [x] **Track: Refresh the OpenCode Go catalog and benchmark the new models**
   - *Link: [go_catalog_w43](tracks/go_catalog_w43/)*
 
+- [~] **Track: Rigorous A–H criteria with mutation-based admission**
+  - *Link: [rigor_a_h](tracks/rigor_a_h/)*
+
 ## All tracks
 
 | ID | Title | Type | Status | Created |
@@ -20,3 +23,4 @@
 | bench_incremental | Incremental benchmark runs — new models and failures only | Feature | paused — superseded in part by opencode_executor (Pi executor staging in plan-work.ts) | 2026-10-17 |
 | opencode_executor | Migrate the benchmark executor from Pi to OpenCode 2 with Console login | Feature | in-progress | 2026-10-18 |
 | go_catalog_w43 | Refresh the OpenCode Go catalog and benchmark the new models | Feature | complete | 2026-10-24 |
+| rigor_a_h | Rigorous A–H criteria with mutation-based admission | Feature | pending — owner decisions D1–D6 open | 2026-10-25 |
