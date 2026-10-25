@@ -58,7 +58,7 @@ Gate commands:
   browser review steps, and the review assignments. The strategy role wrote
   `test-strategy.md` and `measure/runs/domain_trust/strategy.log` on
   2026-10-25 and did not commit them. The orchestrator commits them and
-  records the SHA here.
+  records the SHA here. 22f1a0d
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track domain_trust --log-file measure/runs/domain_trust/strategy.log` prints `PASS: strategy gate passed`.
 - [b] 1.3 Worktree. Create `../lending-desk-bench-trust` on the new branch
   `domain-trust` from the commit of task 1.2. Link `runs` to the `runs/`
