@@ -78,19 +78,50 @@ This plan uses their names: `SCHEDULE_TEST`, `META_LOGIC`, `RED_PATH_CHECK`,
   - Verify: `git -C ../lending-desk-bench-daily rev-parse --abbrev-ref HEAD` prints `daily-schedule`.
   - Verify: this task holds `PHASE_BASE`, `BASE_HASH`, `WORKLIST_ROWS`, `WORKLIST_SHA`, `BATCH_COMPAT_RUNS=180`, `BATCH_COMPAT`, `PI_RUNS`, and `PI_SHA`.
 
-## Phase 2: Test (Red)
+## Phase 2: Test (Red) [checkpoint: 7cde12f]
 
 Run in the worktree. Red commits on the branch `daily-schedule`.
 
-- [b] 2.1 Test file `harness/schedule-tests/daily-schedule.test.ts` with the
+- [x] 2.1 Test file `harness/schedule-tests/daily-schedule.test.ts` with the 7cde12f
   cases of test strategy sections 6.1 to 6.4. Each spawn gets an explicit
   environment. No case may be `skip`, `todo`, or `fails`.
-  — deferred:mid-red
+  Commit 7cde12f adds all 42 cases. It changes only the test file.
+  `RED_PATH_CHECK` printed `RED_PATH_CHECK=pass` after this commit.
   - Verify: `SCHEDULE_TEST` exits non-zero, and each failure names a missing interface of test strategy section 5.
   - Verify: `RED_PATH_CHECK` prints `RED_PATH_CHECK=pass`.
-- [b] 2.2 Red evidence. Run `SCHEDULE_TEST`. Record the start time, the end
+- [x] 2.2 Red evidence. Run `SCHEDULE_TEST`. Record the start time, the end 7cde12f
   time, the exit code, and the Vitest `Tests` line in this task.
-  — deferred:mid-red
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --no-cache --configLoader native`.
+  - Safety: native config loading and disabled caching prevent writes to shared `harness/node_modules`.
+  - Environment: `TMPDIR=/tmp/opencode`, `npm_config_offline=true`, and `npm_config_update_notifier=false`.
+    `npm_config_cache` points to `measure/runs/daily_model_schedule/npm-cache`.
+    `RESULT_FILE` points to the JSON report for each run.
+  - Run 1: start `2026-10-25T10:52:56Z`; end `2026-10-25T10:53:48Z`; exit `1`.
+    `Test Files  1 failed (1)`; `Tests  39 failed | 3 passed (42)`.
+    Reports: `measure/runs/daily_model_schedule/red-3.log` and `red-3.json`.
+  - Run 2: start `2026-10-25T10:53:48Z`; end `2026-10-25T10:54:38Z`; exit `1`.
+    `Test Files  1 failed (1)`; `Tests  39 failed | 3 passed (42)`.
+    Reports: `measure/runs/daily_model_schedule/red-4.log` and `red-4.json`.
+  - `RED_DETERMINISM=pass cases=42 failed=39 passed=3` compares the complete case names and statuses from both JSON reports.
+  - `RED_INTERFACE_LABELS=pass failures=39` confirms that every failure names an interface from strategy section 5.
+  - Remaining failures: selector cases 6.1.1–6.1.22 need `harness/daily-pick.ts`.
+    Batch cases 6.2.1–6.2.6 need `harness/batch.sh --model`.
+    Job cases 6.3.1–6.3.10 need `harness/cron-daily.sh` and the day record fields.
+    Artifact case 6.4.1 needs `weekly.sh` to forward `"$@"` to `batch.sh`.
+    `measure/runs/daily_model_schedule/red-failures.txt` lists all 39 failed cases.
+  - Already satisfied at HEAD: cases 6.2.7, 6.2.8, and 6.4.2.
+    They prove the unpinned list, absence of an environment pin, and the existing self-check scrub list.
+    They remain passing guards, not claimed Red failures.
+  - Initial dirty paths: the relevant plan edits activated task 2.1.
+    The generated/ignorable links `harness/node_modules` and `runs` remained unstaged. No unrelated dirty paths existed.
+  - `phase_base_sha=3c2150271e435cfd8bac451e22f37264f8052aea`; `role_base_sha=5b21d197cce7885d1592dc0034de596b858be4e0`.
+    Both commits resolve. Commit 7cde12f adds new Red work after the role base.
+  - `measure/workflow.md` is absent. This phase follows the supplied strategy and task instructions.
+    An initial long `TMPDIR` caused a tsx socket error. The final runs use `/tmp/opencode` and contain no such error.
+  - `STATUS_CHECK=pass blocked=13 open=1` after task 3.1 became the next active task.
+  - `role-gate --repo . --role mid-red --track daily_model_schedule --phase "Phase 2: Test (Red)" --baseline 5b21d197cce7885d1592dc0034de596b858be4e0 --log-file measure/runs/daily_model_schedule/mid-red-7cde12f.log`
+    printed `PASS: mid-red gate passed` with `RED_TEST_COMMAND` set to the safe command above.
+    Report: `measure/runs/daily_model_schedule/red-role-gate.log`. The gate reran all 42 cases.
   - Verify: the recorded exit code is not 0, and the recorded failures are only those of task 2.1.
   - Verify: `role-gate --role mid-red --phase "Phase 2: Test (Red)"` with `RED_TEST_COMMAND` set to `SCHEDULE_TEST` prints `PASS: mid-red gate passed`.
 
@@ -98,10 +129,10 @@ Run in the worktree. Red commits on the branch `daily-schedule`.
 
 Run in the worktree. Green commits on the branch `daily-schedule`.
 
-- [b] 3.1 Selection rule: build `harness/daily-pick.ts` (spec selection
+- [~] 3.1 Selection rule: build `harness/daily-pick.ts` (spec selection
   rules 1 to 6, FR-2 to FR-5; test strategy section 5.1). It reads only its
   flags and files. It compares ids in byte order. It matches a served model
-  by an exact line. — deferred:jr-green
+  by an exact line.
   - Verify: the "selector" block of `SCHEDULE_TEST` passes.
   - Verify: `rg -n 'process\.env|localeCompare' harness/daily-pick.ts` prints no line.
 - [b] 3.2 Oracle cross-check. Run `SELECTOR_MATCH` in the worktree on the
