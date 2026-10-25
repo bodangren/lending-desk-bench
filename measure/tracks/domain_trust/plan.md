@@ -41,6 +41,8 @@ Gate commands:
   `measure/tracks/domain_trust/preview.json`. The test strategy gives the
   exact command. It compares each verdict, each failure count, and each run
   list.
+- `FR3_GUARD`: stops `FR3_CHECK` from passing on an empty history.
+  `jq -e '[.history.models[] | (.no_skills, .skills) | select(. != null) | select((.fixture_revision // 1) < 2)] | length > 0' docs/assets/data/benchmark.json`
 
 ## Phase 1: Contract and setup
 
@@ -51,9 +53,12 @@ Gate commands:
   records the SHA here. 07b4df8
   - Verify: `jq -r '.models | length' measure/tracks/domain_trust/preview.json` prints `14`.
   - Verify: `jq '[.models[].runs | length] | add' measure/tracks/domain_trust/preview.json` prints `34`.
-- [b] 1.2 Test strategy. Write `test-strategy.md`: the synthetic cases of
+- [x] 1.2 Test strategy. Write `test-strategy.md`: the synthetic cases of
   FR-1 to FR-4, the exact `PREVIEW_CHECK` command, the probe map review, the
-  browser review steps, and the review assignments. — deferred:strategy
+  browser review steps, and the review assignments. The strategy role wrote
+  `test-strategy.md` and `measure/runs/domain_trust/strategy.log` on
+  2026-10-25 and did not commit them. The orchestrator commits them and
+  records the SHA here.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track domain_trust --log-file measure/runs/domain_trust/strategy.log` prints `PASS: strategy gate passed`.
 - [b] 1.3 Worktree. Create `../lending-desk-bench-trust` on the new branch
   `domain-trust` from the commit of task 1.2. Link `runs` to the `runs/`
@@ -89,7 +94,7 @@ Run in the worktree. Green commits on the branch `domain-trust`.
 - [b] 3.2 Export: the `domain_trust` block and the `since` rule in
   `load_entry` (spec FR-3, FR-4). — deferred:jr-green
   - Verify: `TRUST_TEST` exits 0.
-  - Verify: after `python3 harness/export-site-data.py` in the worktree, `FR3_CHECK` prints `true`, `PREVIEW_CHECK` passes, and `LEADERBOARD_SHA` and `SIDE_SHA` equal the values of task 1.3.
+  - Verify: after `python3 harness/export-site-data.py` in the worktree, `FR3_GUARD` and `FR3_CHECK` print `true`, `PREVIEW_CHECK` prints `PREVIEW_CHECK=pass models=14 cells=112`, and `LEADERBOARD_SHA` and `SIDE_SHA` equal the values of task 1.3.
 - [b] 3.3 Page and text: the section of `docs/results.html`, and the text in
   `docs/methodology.html` and `README.md` (spec FR-5, FR-6).
   — deferred:jr-green

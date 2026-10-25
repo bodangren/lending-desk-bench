@@ -3,6 +3,5 @@
 - [Specification](./spec.md)
 - [Implementation Plan](./plan.md)
 - [Golden preview matrix](./preview.json)
+- [Test strategy](./test-strategy.md)
 - [Metadata](./metadata.json)
-
-The test strategy (`test-strategy.md`) follows in plan task 1.2.
