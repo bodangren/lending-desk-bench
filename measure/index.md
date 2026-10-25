@@ -29,6 +29,11 @@
 | Test strategy (domain_trust) | measure/tracks/domain_trust/test-strategy.md |
 | Track metadata (domain_trust) | measure/tracks/domain_trust/metadata.json |
 | Golden preview matrix (domain_trust) | measure/tracks/domain_trust/preview.json |
+| Specification (daily_model_schedule) | measure/tracks/daily_model_schedule/spec.md |
+| Implementation Plan (daily_model_schedule) | measure/tracks/daily_model_schedule/plan.md |
+| Test strategy (daily_model_schedule) | measure/tracks/daily_model_schedule/test-strategy.md |
+| Track metadata (daily_model_schedule) | measure/tracks/daily_model_schedule/metadata.json |
+| Selection oracle (daily_model_schedule) | measure/tracks/daily_model_schedule/pick-oracle.py |
 | Scoring contract | SCORING.md |
 | Model-visible spec (build) | fixture/measure/tracks/lending_desk/spec.md |
 | Model-visible spec (bugfix) | harness/bugfix/model-visible/track/spec.md |

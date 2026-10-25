@@ -14,6 +14,9 @@
 - [~] **Track: Domain trust matrix: safe and risk domains for each model, with failure modes**
   - *Link: [domain_trust](tracks/domain_trust/)*
 
+- [~] **Track: Daily model schedule: one model per day, untested first, then the stalest**
+  - *Link: [daily_model_schedule](tracks/daily_model_schedule/)*
+
 ## All tracks
 
 | ID | Title | Type | Status | Created |
@@ -28,3 +31,4 @@
 | go_catalog_w43 | Refresh the OpenCode Go catalog and benchmark the new models | Feature | complete | 2026-10-24 |
 | rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | pending — strategy done; Phase 1 setup next; owner decisions D1 and D2 open | 2026-10-25 |
 | domain_trust | Domain trust matrix: safe and risk domains for each model, with failure modes | Feature | pending — strategy done; Phase 1 worktree next; owner decisions O1 and O2 open | 2026-10-25 |
+| daily_model_schedule | Daily model schedule: one model per day, untested first, then the stalest | Feature | pending — strategy written; task 1.1 commit next; owner decision O1 open | 2026-10-25 |

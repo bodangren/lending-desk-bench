@@ -1,0 +1,22 @@
+{
+  "id": "daily_model_schedule",
+  "title": "Daily model schedule: one model per day, untested first, then the stalest",
+  "type": "Feature",
+  "status": "pending",
+  "created": "2026-10-25",
+  "estimated_tasks": 18,
+  "actual_tasks": null,
+  "source": {
+    "method": "owner requirement 2026-10-25: \"We need to set the testing schedule to one model per day. 1. Refresh the model list. 2. Test one untested model if any exists. 3. If no untested models exist, test the model which has the stalest last test date.\"",
+    "evidence": "spec.md EV1-EV12, measured read-only on 2026-10-25: 38 live models, 36 priced live, 28 served candidates, 11 untested candidates; pick-oracle.py gives hy4-preview (untested) for 2026-10-26",
+    "dependencies": [
+      "opencode_executor",
+      "bench_incremental"
+    ],
+    "related_tracks": [
+      "go_catalog_w43",
+      "domain_trust",
+      "rigor_a_h"
+    ]
+  }
+}
