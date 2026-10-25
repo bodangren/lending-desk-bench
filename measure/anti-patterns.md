@@ -246,3 +246,42 @@ tests.
 guard `harness/tests/meta/selfcheck-env.test.ts` (added at Red `d94235b`), plus the
 `BENCH_TRACK=bugfix` spot check. Caught occurrence root-caused 2026-10-11; full
 diagnosis in `measure/tracks/bench_v2/test-strategy.md` §1–2.
+
+---
+
+## A12 — Checker reports a deferred-blocked track as a closeout candidate
+
+**Class:** framework checker blind spot (marker visibility)
+**Caught:** 2026-10-25 audit of `rigor_a_h` at `638751a`
+
+**Description:** `measure_interphase_checks.py` reads plan tasks with the
+regex `^- \[([ ~x])\]`. The regex does not match `[b]`. A plan that holds only
+`[x]` and `[b]` tasks therefore counts zero incomplete tasks. The status
+command then reports no open phase for the track, and it lists the track as
+a closeout candidate. `rigor_a_h` at `638751a` holds 1 `[x]` task and 33
+`[b]` tasks. The status command lists it as closeout candidate `[C3]` and
+shows no open phase for it. The skill note in the orchestrator's SKILL.md
+warns about this for phase reports. No warning covers the closeout-candidate
+listing.
+
+**Detection:**
+```bash
+python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py status --repo .
+# For each closeout candidate, count blocked tasks:
+#   grep -c '^- \[b\]' "measure/tracks/<id>/plan.md"
+# A candidate with [b] > 0 is not ready for closeout.
+```
+
+**Symptoms:** An orchestrator reads "closeout_candidates: rigor_a_h" and
+starts a closeout run, or reads "no open phase" and drops the track from the
+schedule. The closeout gate fails closed on the `pending` metadata and the
+missing manifest (6 FAIL reasons on `rigor_a_h`), so a wrong archive cannot
+happen. The damage is the wrong status report and the wasted cycle.
+
+**Fix:** Treat a track with at least one `[b]` task as blocked, not as a
+closeout candidate. Until the framework fixes the regex, the orchestrator
+must count `[b]` tasks by hand before it trusts a closeout candidate or an
+"all phases complete" report.
+
+**Guard:** Static check in `measure-orchestrator-audit`. This repo: caught
+2026-10-25; no wrong closeout ran.
