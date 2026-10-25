@@ -45,7 +45,7 @@ This plan uses their names: `SCHEDULE_TEST`, `META_LOGIC`, `RED_PATH_CHECK`,
 `PICK_MATCH`, `DOCS_CHECK`, `PI_SHA`, `PI_CHECK`, `DAY_CHECK`,
 `PUBLISH_CHECK`, `CONSENT_CHECK`, `CRON_CHECK`, and `STATUS_CHECK`.
 
-## Phase 1: Contract and setup
+## Phase 1: Contract and setup [checkpoint: 1a48dea]
 
 - [x] 1.1 Contract: `spec.md`, `plan.md`, `test-strategy.md`, `pick-oracle.py`, `metadata.json`, `index.md`, and the registry rows in `measure/tracks.md` and `measure/index.md`. 3c21502
   The strategy role wrote them on 2026-10-25 and did not commit them. The
