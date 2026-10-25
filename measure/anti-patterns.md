@@ -285,3 +285,49 @@ must count `[b]` tasks by hand before it trusts a closeout candidate or an
 
 **Guard:** Static check in `measure-orchestrator-audit`. This repo: caught
 2026-10-25; no wrong closeout ran.
+
+## A13 — Ignored-artifact hash blind spot
+
+**Class:** scope guard omission / integrity gap
+**Caught:** 2026-10-25 audit of `domain_trust`
+
+**Description:** A scope check based only on `git diff` misses changes to ignored
+artifacts. This repository ignores `runs/`, which holds the legacy Pi records.
+
+**Detection:**
+```bash
+git check-ignore -v runs/<run-id>/artifacts/<file>
+git diff --name-only <base>..HEAD
+```
+Compare the protected artifact hashes before and after the track.
+
+**Symptoms:** `PATH_CHECK` passes while a protected record changes outside Git.
+The plan cannot prove that legacy records stayed byte-identical.
+
+**Fix:** Hash every protected artifact before and after the track. Fail the gate
+when any hash or protected-record count changes.
+
+**Guard:** A Pi-record hash check in every track that reads or writes `runs/`.
+
+## A14 — Stale registry phase note
+
+**Class:** registry progress drift
+**Caught:** 2026-10-25 follow-up audit of `domain_trust`
+
+**Description:** A registry row names an earlier next phase after the plan
+already completed that phase. The row then gives stale progress to the owner.
+
+**Detection:**
+```bash
+rg -n 'domain_trust|test strategy next' measure/tracks.md
+grep -n '^- \[[x~b]\]' measure/tracks/domain_trust/plan.md
+```
+Compare the registry phase note with the first non-complete plan task.
+
+**Symptoms:** The plan has a completed test-strategy task and an open worktree
+task, while the registry says that test strategy is next.
+
+**Fix:** Update the registry note when the active phase changes. Keep the note
+consistent with the first open plan task.
+
+**Guard:** A static registry-to-plan phase check in the audit role.

@@ -27,4 +27,4 @@
 | opencode_executor | Migrate the benchmark executor from Pi to OpenCode 2 with Console login | Feature | in-progress | 2026-10-18 |
 | go_catalog_w43 | Refresh the OpenCode Go catalog and benchmark the new models | Feature | complete | 2026-10-24 |
 | rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | pending — strategy done; Phase 1 setup next; owner decisions D1 and D2 open | 2026-10-25 |
-| domain_trust | Domain trust matrix: safe and risk domains for each model, with failure modes | Feature | pending — spec and plan done; test strategy next; owner decisions O1 and O2 open | 2026-10-25 |
+| domain_trust | Domain trust matrix: safe and risk domains for each model, with failure modes | Feature | pending — strategy done; Phase 1 worktree next; owner decisions O1 and O2 open | 2026-10-25 |

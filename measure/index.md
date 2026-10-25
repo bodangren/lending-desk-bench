@@ -26,6 +26,7 @@
 | Corpus manifest (rigor_a_h) | measure/tracks/rigor_a_h/corpus.json |
 | Specification (domain_trust) | measure/tracks/domain_trust/spec.md |
 | Implementation Plan (domain_trust) | measure/tracks/domain_trust/plan.md |
+| Test strategy (domain_trust) | measure/tracks/domain_trust/test-strategy.md |
 | Track metadata (domain_trust) | measure/tracks/domain_trust/metadata.json |
 | Golden preview matrix (domain_trust) | measure/tracks/domain_trust/preview.json |
 | Scoring contract | SCORING.md |
