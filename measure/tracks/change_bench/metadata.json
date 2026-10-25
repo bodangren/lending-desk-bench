@@ -1,0 +1,16 @@
+{
+  "id": "change_bench",
+  "title": "Change-request benchmark \u2014 lending_desk_change",
+  "type": "Feature",
+  "status": "complete",
+  "created": "2026-09-24",
+  "estimated_tasks": 13,
+  "actual_tasks": 13,
+  "source": {
+    "method": "design over the bugfix variant machinery with new change criteria",
+    "dependencies": [
+      "bench_v2 phase 2",
+      "bench_v2 phase 4"
+    ]
+  }
+}

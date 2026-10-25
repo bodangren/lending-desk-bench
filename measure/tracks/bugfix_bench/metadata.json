@@ -1,0 +1,25 @@
+{
+  "id": "bugfix_bench",
+  "title": "Bug-fixing benchmark — lending_desk_bugfix",
+  "type": "Feature",
+  "status": "complete",
+  "created": "2026-09-11",
+  "estimated_tasks": 33,
+  "actual_tasks": 33,
+  "source": {
+    "method": "design review over the harness extension points; reuses run.sh, grade.sh, candidate-contract.ts, sensitivity-control machinery, arms, and provenance",
+    "prior_discussion": "bug-fix benchmark design: fixed versioned task sets, registry-driven variant generation, repair/regression/robustness/quality axes",
+    "dependencies": [
+      "harness_audit task 1.5 (reference-variant gate)",
+      "harness_audit task 6.1 (private repository)",
+      "harness_audit task 1.1 (batch self-check)"
+    ],
+    "implementation_notes": [
+      "Score schema 3 with a track field; provenance schema 5 on both tracks (schema-4 records are stale by policy).",
+      "Registry holds 13 entries: 11 in set v1 plus 2 rotation-headroom bugs. Two original bugs were replaced after calibration: BUG-rel-revalidate (full page.goto navigation always re-renders dynamic pages, so a wrong revalidatePath target cannot fail any detector) and BUG-perf-suspense (Next 16 streams the detail page progressively even without the explicit boundary, measured gap 276ms without it).",
+      "BUG-fn-status-precedence is ordered before BUG-fn-boundary so the two loans.ts mutations compose.",
+      "Calibration on this host is diagnostic (BENCH_IGNORE_LOAD); the ranked cohort needs a quiet host. Clean tree scores 100, untouched variant scores 40, full-set v1 detects 11/11 with no unexpected failures.",
+      "P.streams-shell probe and its sensitivity control were retired with BUG-perf-suspense; the F.post-mutation-state and P.stale-after-mutate bite gap is recorded for the harness_audit owner."
+    ]
+  }
+}

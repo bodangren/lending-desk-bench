@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "id": "clean",
+  "bugs": [],
+  "notes": "Calibration set: the clean tree with no seeded bugs. Must grade 100.",
+  "calibration": true
+}

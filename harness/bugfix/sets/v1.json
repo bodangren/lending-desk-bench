@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "v1",
+  "bugs": [
+    "BUG-fn-status-precedence",
+    "BUG-fn-boundary",
+    "BUG-fn-history-order",
+    "BUG-fn-filter-case",
+    "BUG-fn-contract-400",
+    "BUG-sec-action-auth",
+    "BUG-sec-route-401",
+    "BUG-perf-waterfall",
+    "BUG-perf-dedup",
+    "BUG-rel-race",
+    "BUG-rel-return-unguarded"
+  ],
+  "notes": "Fixed cohort set: 5 functional, 2 security, 3 performance, 2 reliability. Frozen before the first bugfix cohort."
+}

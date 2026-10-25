@@ -1,0 +1,17 @@
+{
+  "id": "tests_bench",
+  "title": "Test-writing benchmark \u2014 lending_desk_tests",
+  "type": "Feature",
+  "status": "complete",
+  "created": "2026-09-24",
+  "estimated_tasks": 14,
+  "actual_tasks": 15,
+  "source": {
+    "method": "design over the bug registry, sensitivity controls, and reference-variant",
+    "dependencies": [
+      "bench_v2 phase 2",
+      "bench_v2 phase 4",
+      "bench_v2 phase 5"
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "role": "review-b-security",
+  "track": "bench_incremental",
+  "phase": "Whole track (phases 1-4)",
+  "phase_base_sha": "5fce9e8aa1e03c318cea532031a470f3a65815ea",
+  "role_base_sha": "5fce9e8aa1e03c318cea532031a470f3a65815ea",
+  "audited_head_sha": "0c6158c871f0be64f419f29397cc90c56a5fe34f",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Security review of the bench_incremental track diff (5fce9e8..0c6158c). Audited HEAD is current. No command-injection surface: plan-work.ts performs zero spawn/exec/shell work; batch.sh interpolates pricing-table model ids only in quoted word, array-lookup, and echo contexts. Provenance model strings never reach the work list: plan-work.ts resolves them to pricing-table keys via resolveGoModelId and drops unmatched values, and batch.sh exits 2 when a work-list model has no pricing line. Path handling is safe: plan-work.ts builds paths from real directory names returned by readdirSync, never from run-id strings. FR-6 holds: plan-work.ts has no filesystem-write calls; summarize.sh, weekly.sh, and the selector never write under runs/. rescore-doctor.sh WEEK=all keeps the fail-closed contract and only touches runs with persisted results. Meta tests spawn offline, dry-run-only paths (plan-work.ts --all, batch.sh --dry-run, export-site-data.py) with BENCH_TRACK scrubbed; no network, no real credentials. A2 and A6 are not applicable to this harness-orchestration surface: no draft-to-published or consent flow, and the registry lists bench_incremental as pending with no resolved overstatement. No blocking findings.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "Guard-test gap: test-strategy.md phase-3 guardrails promised a meta test asserting the selector runs read-only over a frozen synthetic tree. That test is absent. The read-only guarantee is instead verified by direct inspection (plan-work.ts has zero write calls), so FR-6 still holds; the missing test is a coverage note, not a defect.",
+    "Env-scope overrides: BENCH_RUNS_ROOT (plan-work.ts) and BENCH_RUNS_DIR (summarize.sh) are read-only scoping overrides that can read arbitrary paths if an operator sets them. Defaults stay repo-relative and neither override writes; exposure is limited to a single-user box where cron or the operator sets env.",
+    "Spawn env inheritance: the new meta tests spawn children with envWithoutTrack, which removes BENCH_TRACK but inherits ambient process.env. The spawned commands are offline and echo no environment, so no secret leaks; a full env scrub would be tighter hardening but is not required for the current dry-run paths."
+  ],
+  "evidence": [
+    "git rev-parse HEAD = 0c6158c871f0be64f419f29397cc90c56a5fe34f (audited_head_sha current); phase_base_sha = 5fce9e8aa1e03c318cea532031a470f3a65815ea",
+    "harness/plan-work.ts: grep for writeFile/mkdir/rm/spawn/exec/fetch/curl returned zero code-write or subprocess matches; the only filesystem calls are readFileSync, readdirSync, existsSync",
+    "harness/score-freshness.ts:125 docstring states it never writes a run artifact; harness/executor-attestation.ts has no spawn/exec/cmd/write calls",
+    "harness/go-cost.ts resolveGoModelId returns only a pricing-table key or null; scanRuns drops any run whose resolved model is absent from the batch table, so provenance model strings never enter the emitted work list",
+    "harness/batch.sh work-list path: unknown model produces a no-pricing-line message and exit 2 (fail-closed); provider/model/slug flow only through quoted assignments, here-strings, associative-array lookups, and quoted run.sh arguments",
+    "harness/batch.sh dry-run exits before self-check, canary, and agent runs; the meta test spawn never reaches network",
+    "harness/rescore-doctor.sh WEEK=all changes only the glob and pattern; the per-run fail-closed contract is intact (restore provenance.json.prev, SKIP with reason on missing artifact, no set -e)",
+    "harness/summarize.sh BENCH_RUNS_DIR is used only in existing_score_paths() for read/glob; no writes to the runs tree",
+    "harness/export-site-data.py has no urlopen/requests/http/socket network calls",
+    "measure/tracks.md and measure/tracks/bench_incremental/metadata.json both list bench_incremental status pending; no resolved registry claim",
+    "git log --oneline 5fce9e8..HEAD shows Red commits 8fcf50e/f647c16 then Green 708a16e/0ba543b/e2075ba/32b99e2/1a870ea/0c6158c"
+  ],
+  "commands": [
+    "git rev-parse HEAD && git rev-parse 5fce9e8",
+    "git diff 5fce9e8..HEAD --stat",
+    "git diff 5fce9e8..HEAD -- harness/plan-work.ts harness/batch.sh harness/rescore-doctor.sh harness/summarize.sh harness/weekly.sh",
+    "git diff 5fce9e8..HEAD -- harness/tests/meta/bench-incremental.test.ts harness/tests/meta/publication-freshness.test.ts measure/tracks/bench_incremental/plan.md",
+    "grep -n writeFile/mkdir/rm/spawn/exec/fetch/curl harness/plan-work.ts (no matches)",
+    "grep -n batchLines/resolveGoModelId/slugifyModelId harness/go-cost.ts",
+    "grep -n write harness/score-freshness.ts; grep -n spawn/exec/cmd harness/executor-attestation.ts",
+    "cat harness/batch.sh harness/rescore-doctor.sh harness/env.sh harness/summarize.sh harness/tests/meta/score-helpers.ts",
+    "grep -n urlopen/requests/http/socket harness/export-site-data.py"
+  ],
+  "changed_files": [
+    "harness/plan-work.ts",
+    "harness/batch.sh",
+    "harness/weekly.sh",
+    "harness/rescore-doctor.sh",
+    "harness/summarize.sh",
+    "harness/tests/meta/bench-incremental.test.ts",
+    "harness/tests/meta/publication-freshness.test.ts",
+    "measure/tracks/bench_incremental/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high"
+}

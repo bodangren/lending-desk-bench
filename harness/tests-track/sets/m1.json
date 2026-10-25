@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "m1",
+  "mutants": [
+    { "id": "BUG-fn-status-precedence" },
+    { "id": "BUG-fn-boundary" },
+    { "id": "BUG-fn-contract-400" },
+    { "id": "BUG-fn-filter-case" },
+    { "id": "BUG-fn-history-order" },
+    { "id": "BUG-fn-metadata-title" },
+    { "id": "sensitivity-G.filter-overdue", "class": "functional" },
+    { "id": "BUG-sec-route-401" },
+    { "id": "MUT-sec-post-unguarded" },
+    { "id": "sensitivity-P.no-key-leak", "class": "security" },
+    { "id": "BUG-rel-race" },
+    { "id": "sensitivity-P.concurrent-return", "class": "reliability" }
+  ],
+  "notes": "Frozen cohort set for the first tests-track cohort (2026w40): 7 functional, 3 security, 2 reliability. Every mutant is observable over HTTP or by importing src/lib/loans.ts."
+}

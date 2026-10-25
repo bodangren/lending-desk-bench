@@ -1,0 +1,9 @@
+{
+  "track_id": "lending_desk_tests",
+  "type": "chore",
+  "status": "pending",
+  "created": "generated",
+  "estimated_tasks": 10,
+  "actual_tasks": null,
+  "notes": "Model-visible test-writing track. Graded by mutation kills, not by closeout."
+}

@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "id": "c1",
+  "requests": ["CR-1", "CR-2", "CR-3", "CR-4"],
+  "notes": "Frozen cohort set for the first change-track cohort (2026w40)."
+}

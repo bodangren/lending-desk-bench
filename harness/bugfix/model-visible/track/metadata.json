@@ -1,0 +1,9 @@
+{
+  "track_id": "lending_desk_bugfix",
+  "type": "bug",
+  "status": "pending",
+  "created": "generated",
+  "estimated_tasks": 14,
+  "actual_tasks": null,
+  "notes": "Model-visible bug-fix track. Generated into each variant; graded behaviorally, not by closeout."
+}
