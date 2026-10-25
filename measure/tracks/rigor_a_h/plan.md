@@ -42,21 +42,22 @@ work-list comparison).
 
 ## Phase 1: Contract and setup
 
-- [x] 1.1 Strategy artifacts: `spec.md`, `plan.md`, `test-strategy.md`,
-  `corpus.json`, `metadata.json`, `index.md`, and the registry rows in
-  `measure/tracks.md` and `measure/index.md`. The strategy role wrote them
-  on 2026-10-25 and did not commit them. The orchestrator commits them and
-  records the SHA here. 07b4df8
+- [x] 1.1 Strategy artifacts: `spec.md`, `plan.md`, `test-strategy.md`, `corpus.json`, `metadata.json`, `index.md`, and the registry rows in `measure/tracks.md` and `measure/index.md`. 07b4df8
+  The strategy role wrote them on 2026-10-25 and did not commit them. The
+  orchestrator commits them and records the SHA here. The audit of 4bc286a
+  found seven findings, fixed at c73b6d6.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track rigor_a_h --log-file measure/runs/rigor_a_h/strategy.log` prints `PASS: strategy gate passed`.
   - Verify: `jq -c '.counts' measure/tracks/rigor_a_h/corpus.json` prints `{"runs":49,"stored_saturated":22,"stored_saturated_models":10,"opencode_runs":8,"pi_runs":41}`.
 - [~] 1.2 Worktree and toolchain. The precondition is met. The orchestrator
   committed the untracked hashed sources in `main` at e9fb565, and
   `npm run test:meta:logic` passed 30 files and 238 tests on that commit.
   Now create `../lending-desk-bench-rigor` on the new branch `rigor-a-h`
-  from that commit. Install the harness and fixture dependencies from their
-  lockfiles. Record `CORPUS_SHA` in `main`. In the worktree, run
-  `TIMED_CANARY base<k> base` for each k from 1 to 5. Record the five
-  `GRADE_TIME` lines in this task.
+  from the current `main` HEAD, and record that SHA as `BASE_COMMIT` in this
+  task. Do not branch from e9fb565: that commit still holds the first,
+  rejected draft of these track documents. Install the harness and fixture
+  dependencies from their lockfiles. Record `CORPUS_SHA` in `main`. In the
+  worktree, run `TIMED_CANARY base<k> base` for each k from 1 to 5. Record the
+  five `GRADE_TIME` lines in this task.
   - Verify: `git status --short --untracked-files=all -- harness/bugfix harness/change harness/tests-track harness/tests harness/verify-bugs.ts reference-change` prints nothing in `main`.
   - Verify: `BASE_HASH` prints the same line in `main` and in the worktree.
   - Verify: `git -C ../lending-desk-bench-rigor rev-parse --abbrev-ref HEAD` prints `rigor-a-h`.

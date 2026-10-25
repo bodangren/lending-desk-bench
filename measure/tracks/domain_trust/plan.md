@@ -73,26 +73,26 @@ Gate commands:
 
 ## Phase 1: Contract and setup
 
-- [x] 1.1 Spec and plan: `spec.md`, `plan.md`, `preview.json`,
-  `metadata.json`, `index.md`, and the registry rows in `measure/tracks.md`
-  and `measure/index.md`. The strategy role of `rigor_a_h` wrote them on
+- [x] 1.1 Spec and plan: `spec.md`, `plan.md`, `preview.json`, `metadata.json`, `index.md`, and the registry rows in `measure/tracks.md` and `measure/index.md`. 07b4df8
+  The strategy role of `rigor_a_h` wrote them on
   2026-10-25 and did not commit them. The orchestrator commits them and
-  records the SHA here. 07b4df8
+  records the SHA here. The audit of 4bc286a found seven findings, fixed at
+  c73b6d6.
   - Verify: `jq -r '.models | length' measure/tracks/domain_trust/preview.json` prints `14`.
   - Verify: `jq '[.models[].runs | length] | add' measure/tracks/domain_trust/preview.json` prints `34`.
-- [x] 1.2 Test strategy. Write `test-strategy.md`: the synthetic cases of
-  FR-1 to FR-4, the exact `PREVIEW_CHECK` command, the probe map review, the
-  browser review steps, and the review assignments. The strategy role wrote
+- [x] 1.2 Test strategy. Write `test-strategy.md`: the synthetic cases of FR-1 to FR-4, the exact `PREVIEW_CHECK` command, the probe map review, the browser review steps, and the review assignments. 22f1a0d
+  The strategy role wrote
   `test-strategy.md` and the log `measure/runs/domain_trust/strategy.log`
   on 2026-10-25. Commit 22f1a0d holds `test-strategy.md` and the matching
   edits of `plan.md` and `index.md`. It does not hold the log. The log
   stays on disk only, in `main` at the path above, because `.gitignore`
   ignores `runs/` (line 11). On 2026-10-25, its SHA-256 was
-  `246d2be6b7d5e16efad170bcc22f8401c0678053a78669dc00833b45607ab051`. 22f1a0d
+  `246d2be6b7d5e16efad170bcc22f8401c0678053a78669dc00833b45607ab051`.
   - Verify: `git show --name-only --format= 22f1a0d` lists `measure/tracks/domain_trust/test-strategy.md`.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track domain_trust --log-file measure/runs/domain_trust/strategy.log` prints `PASS: strategy gate passed`.
 - [~] 1.3 Worktree. Create `../lending-desk-bench-trust` on the new branch
-  `domain-trust` from the commit of task 1.2. Link `runs` to the `runs/`
+  `domain-trust` from the current `main` HEAD, and record that SHA as
+  `BASE_COMMIT` in this task. Link `runs` to the `runs/`
   of `main`. Install the harness dependencies from the lockfile. Run the
   export in the worktree at the base, and record `LEADERBOARD_SHA` and
   `SIDE_SHA`. Record `BASE_HASH` and the `plan-work.ts --all` classes in
