@@ -175,7 +175,7 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
   - Verify: `bash -n harness/cron-daily.sh` exits 0.
   - Evidence: `SCHEDULE_TEST` job block 6.3.1–6.3.10 all pass.
     `bash -n harness/cron-daily.sh` exits 0.
-- [b] 3.5 Green gate — deferred:orchestrator. Run `SCHEDULE_TEST`, `PATH_CHECK`, `BATCH_COMPAT`, and
+- [x] 3.5 Green gate — commit `f386b18`. Run `SCHEDULE_TEST`, `PATH_CHECK`, `BATCH_COMPAT`, and
   `META_LOGIC` in the worktree. Record each labeled line in this task.
   Three of four gates pass; `META_LOGIC` exits 1 with 34 failures that are
   pre-existing at the phase base and belong to the in-flight
@@ -197,10 +197,39 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
     migration, whose task 4.2 is in progress; none is reachable from the
     Green path allow-list of `PATH_CHECK`. The batch-guarding suites
     (`bench-incremental`, `selfcheck-env`) pass.
-- [b] 3.6 Review A (correctness): the selection rule, the run date rule, the
+  - Phase-gate exception (orchestrator decision, 2026-10-27, from the Green
+    handoff options): `META_LOGIC` exit 0 is waived for this gate in the
+    worktree. The failing suite is `opencode-credential`, which belongs to
+    the in-flight `opencode_executor` track. The owner needs decision O1
+    by 2026-10-29, so the phase does not wait for that track.
+  - Gate rerun at the amendment HEAD `33ce288` on 2026-10-27 (task closure):
+    `SCHEDULE_TEST` exit 0, `Test Files  1 passed (1)`, `Tests  42 passed
+    (42)`; `PATH_CHECK=pass`; `BATCH_COMPAT_RUNS=180`;
+    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
+    `META_LOGIC` exit 1, `Test Files  1 failed | 29 passed (30)`, `Tests  4
+    failed | 234 passed (238)`, all in `opencode-credential` (waived);
+    `role-gate --role jr-green ... --baseline 5b21d197cce...` printed
+    `PASS: jr-green gate passed`.
+  - Evidence for the waiver: the 4 failing names are a strict subset of the
+    13 `opencode-credential` failures at `PHASE_BASE` (read-only archive
+    copy, 2026-10-27, the 2026-10-25 proof method; the copy gave
+    `Test Files  6 failed | 24 passed (30)`, `Tests  34 failed | 204
+    passed (238)`). `main` at `5ebdcf6` holds harness code identical to
+    `PHASE_BASE` (`git diff 3c21502 5ebdcf6 -- harness/` is empty), and
+    the same command there gave `Test Files  30 passed (30)`, `Tests  238
+    passed (238)`. The trees differ in untracked state (`main` holds
+    `.opencode/`; the worktree does not). The branch changes no file of
+    the suite (`PATH_CHECK`; `git diff 3c21502 33ce288 -- harness/tests/`
+    is empty), and its unpinned batch output is byte-equal
+    (`BATCH_COMPAT`). No cause beyond these observations is claimed.
+  - Environment repair before the rerun: the worktree
+    `harness/node_modules` had become a partial directory without `.bin`
+    and without `vitest` (157 of 237 entries, no live writer). The role
+    removed it and re-linked it to the `node_modules` of `main`, the state
+    that task 1.2 records. No tracked file changed.
+- [~] 3.6 Review A (correctness): the selection rule, the run date rule, the
   identity rule against `plan-work.ts`, and `--day-runs`. The role writes
   `measure/runs/daily_model_schedule/review-a-<short head>.json`.
-  — deferred:review-a
   - Verify: `measure_interphase_checks.py audit-result --role review-a --file <path>` prints `PASS: audit result is valid`, and the file shows `status: pass`.
 - [b] 3.7 Review B (security): endpoint data in the shell, the id check, the
   temporary files, the lock, the credential, and the push scope (spec R4,
