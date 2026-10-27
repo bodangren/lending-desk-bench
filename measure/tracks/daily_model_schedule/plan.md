@@ -231,6 +231,16 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
   identity rule against `plan-work.ts`, and `--day-runs`. The role writes
   `measure/runs/daily_model_schedule/review-a-<short head>.json`.
   - Verify: `measure_interphase_checks.py audit-result --role review-a --file <path>` prints `PASS: audit result is valid`, and the file shows `status: pass`.
+  - Remediation of the Review A finding (`review-a-f9c907c.json` at `f9c907c`,
+    status fail): this commit splits selection rules 4 and 5 in
+    `harness/daily-pick.ts` to match `pick-oracle.py`, and it adds the
+    regression case (an untested candidate beside a no-week-token run) to the
+    selector block. SCHEDULE_TEST `Test Files  1 passed (1)`; `Tests  43 passed
+    (43)` (exit 0); PATH_CHECK=pass; SELECTOR_MATCH `SELECTOR_MATCH=pass
+    date=2026-10-27 model=hy4-preview reason=untested last_test=none
+    candidates=28 eligible=28 untested=11`; BATCH_COMPAT `BATCH_COMPAT_RUNS=180`
+    and `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
+    the fixture sides now agree (`model=y-fresh reason=untested`).
 - [b] 3.7 Review B (security): endpoint data in the shell, the id check, the
   temporary files, the lock, the credential, and the push scope (spec R4,
   R5). The role writes

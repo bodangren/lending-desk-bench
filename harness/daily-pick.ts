@@ -275,27 +275,38 @@ function selection(args: Args): never {
     const value = models[id]?.requests_per_month;
     return typeof value === "number" && Number.isFinite(value) ? value : 0;
   };
-  // Rules 4 and 5 in one total order: untested first (the zero date sorts
-  // lowest), then last test date oldest first, requests highest first, and
-  // the id in byte order.
-  eligible.sort((a, b) => {
-    const la = last.get(a) ?? "0000-00-00";
-    const lb = last.get(b) ?? "0000-00-00";
-    if (la !== lb) return la < lb ? -1 : 1;
+  // Rule 4 and rule 5 stay apart. An untested candidate has no run at all, so
+  // it has no last test date. A tested candidate whose run id has no week
+  // token has the zero date. That candidate competes in the stalest set only.
+  const untested = eligible.filter((id) => !last.has(id));
+  const tested = eligible.filter((id) => last.has(id));
+  // Rule 4 order: requests highest first, then the id in byte order.
+  const byRequests = (a: string, b: string): number => {
     const ra = requests(a);
     const rb = requests(b);
     if (ra !== rb) return rb - ra;
     return byteOrder(a, b);
-  });
-  const untested = eligible.filter((id) => !last.has(id));
+  };
+  // Rule 5 order: last test date oldest first, then requests highest first,
+  // then the id in byte order.
+  const byStalest = (a: string, b: string): number => {
+    const la = last.get(a) ?? "0000-00-00";
+    const lb = last.get(b) ?? "0000-00-00";
+    if (la !== lb) return la < lb ? -1 : 1;
+    return byRequests(a, b);
+  };
+  untested.sort(byRequests);
+  tested.sort(byStalest);
+  // The order holds every eligible candidate. The pick is the first one.
+  const ranked = untested.length > 0 ? [...untested, ...tested] : tested;
 
-  const order = eligible.map((id) => ({
+  const order = ranked.map((id) => ({
     model: id,
     last_test: last.get(id) ?? null,
     requests_per_month: requests(id),
   }));
 
-  const pick = eligible[0] ?? null;
+  const pick = ranked[0] ?? null;
   const reason = pick === null ? "none" : last.has(pick) ? "stalest" : "untested";
   const output = {
     schema: 1,

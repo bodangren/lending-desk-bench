@@ -270,6 +270,13 @@ describe("selector", () => {
     const e = first(w); const r = pick(w); assertPick(r, e);
     expect(r.stderr, SELECTOR).toBe("DAILY_PICK date=2026-10-26 model=c reason=untested last_test=none candidates=3 eligible=3 untested=2\n");
   });
+  caseOf("6.1.23 untested before a no-week run: daily-pick.ts rule 4", w => {
+    // A tested model with no week token has the zero date. It must not win
+    // over an untested candidate with fewer requests.
+    inputs(w, { "x-legacy": 999, "y-fresh": 100 });
+    run(w, "a-x-legacy", "x-legacy");
+    assertPick(pick(w), expected("y-fresh", "untested", [row("y-fresh", 100), row("x-legacy", 999, "0000-00-00")], [2, 2, 2, 1]));
+  });
 });
 
 function assertFault(r: Result, fault: string) {
