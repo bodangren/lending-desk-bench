@@ -247,11 +247,38 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
   `measure/runs/daily_model_schedule/review-b-<short head>.json`.
   — deferred:review-b
   - Verify: `measure_interphase_checks.py audit-result --role review-b --file <path>` prints `PASS: audit result is valid`, and the file shows `status: pass`.
+  - Remediation of the Review B findings (`review-b-756dc7e.json` at `756dc7e`,
+    status fail, three blockers): this commit path-limits the publish commit to
+    `docs/`, so a path staged outside `docs/` stays out of the commit and out of
+    the push. This commit takes the job lock exclusively and non-blocking, so a
+    second daily job skips. The "shared lock" wording of task 3.4 described the
+    old implementation; the exclusive mode keeps the D9 guarantee and adds
+    daily-vs-daily exclusion. This commit fails the job when the runner exits 0
+    and produces no run (spec D3): the job prints
+    `DAILY FAIL runs: the runner produced no runs`, exits non-zero, prints
+    `DAILY PUBLISH none`, and makes no commit. The day record stays truthful.
+    The new cases are 6.3.11 (a shared lock holder skips the job), 6.3.12 (a
+    runner with zero runs fails the day), 6.4.3 (the commit is path-limited to
+    `docs/`), and 6.4.4 (a temporary Git repository proves the commit scope).
+    The gate lines are `Test Files  1 passed (1)`; `Tests  48 passed (48)`
+    (exit 0); `PATH_CHECK=pass`; `BATCH_COMPAT_RUNS=180`;
+    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
+    `STATUS_CHECK=pass blocked=8 open=1`.
 - [b] 3.8 Review C (API contract): the `batch.sh` flag, the `weekly.sh`
   arguments, the selector JSON, the day record, and the labeled lines. The
   role writes `measure/runs/daily_model_schedule/review-c-<short head>.json`.
   — deferred:review-c
   - Verify: `measure_interphase_checks.py audit-result --role review-c --file <path>` prints `PASS: audit result is valid`, and the file shows `status: pass`.
+  - Remediation of the Review C finding (`review-c-756dc7e.json` at `756dc7e`,
+    status fail, one blocker): this commit validates the `--model` value when
+    the flag is present, so an empty value exits 2 and plans no run. The new
+    case is 6.2.9 (an empty value exits 2 and plans no run), next to case
+    6.2.4. The gate lines are `Test Files  1 passed (1)`;
+    `Tests  48 passed (48)` (exit 0); `PATH_CHECK=pass`;
+    `BATCH_COMPAT_RUNS=180`;
+    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
+    `STATUS_CHECK=pass blocked=8 open=1`. The case lists of section 6 of the
+    test strategy now hold 6.1.23, 6.2.9, 6.3.11, 6.3.12, 6.4.3, and 6.4.4.
 - [b] 3.9 Adversarial tests of test strategy section 12. The role adds the
   cases to the test file. It writes
   `measure/runs/daily_model_schedule/adversarial-<short head>.json`.

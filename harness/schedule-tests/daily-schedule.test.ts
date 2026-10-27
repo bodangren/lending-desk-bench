@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -334,6 +334,13 @@ describe("batch pin", () => {
     expect(r.status, `${PIN}: missing required flag value`).toBe(2);
     expect(planned(r), PIN).toEqual([]); expect(readdirSync(w.runs), PIN).toEqual([]);
   });
+  caseOf("6.2.9 empty value: batch.sh --model exits 2", w => {
+    batchSetup(w); const r = batch(w, ["--model", ""]);
+    expect(r.status, `${PIN}: an empty --model value must exit 2`).toBe(2);
+    expect(lines(r, "WORK LIST "), PIN).toEqual([]);
+    expect(lines(r, "PINNED MODEL "), PIN).toEqual([]);
+    expect(planned(r), PIN).toEqual([]); expect(readdirSync(w.runs), PIN).toEqual([]);
+  });
   caseOf("6.2.5 unsafe IDs: batch.sh --model exits 2", w => {
     batchSetup(w);
     each(["../x", "A", "x$(id)"], id => {
@@ -367,13 +374,34 @@ const record = fs.existsSync(recPath) ? JSON.parse(fs.readFileSync(recPath, 'utf
 fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({args, week: process.env.WEEK, record_present: record !== null, record}) + '\\n');
 const model = args[1];
 if (args.length !== 2 || args[0] !== '--model' || !/^[a-z0-9][a-z0-9.-]*$/.test(model)) process.exit(98);
+if (!process.env.STUB_NO_RUNS) {
+  for (const arm of ['a', 'b']) {
+    const id = arm + '-' + model.replaceAll('.', '-') + '-' + process.env.WEEK + '-r1';
+    const artifacts = path.join(process.env.BENCH_RUNS_ROOT, id, 'artifacts');
+    fs.mkdirSync(artifacts, {recursive:true});
+    fs.writeFileSync(path.join(artifacts, 'provenance.json'), JSON.stringify({executor:{kind:'opencode'}, model:'opencode-go/' + model, arm, track:'build'}));
+  }
+}
+process.exit(Number(process.env.STUB_EXIT || '0'));
+`;
+// The runner of the publish case. It writes the site data of the day, so the
+// job has something to commit under docs/.
+const PUBLISH_RUNNER_SOURCE = `#!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({args}) + '\\n');
+const model = args[1];
 for (const arm of ['a', 'b']) {
   const id = arm + '-' + model.replaceAll('.', '-') + '-' + process.env.WEEK + '-r1';
   const artifacts = path.join(process.env.BENCH_RUNS_ROOT, id, 'artifacts');
   fs.mkdirSync(artifacts, {recursive:true});
   fs.writeFileSync(path.join(artifacts, 'provenance.json'), JSON.stringify({executor:{kind:'opencode'}, model:'opencode-go/' + model, arm, track:'build'}));
 }
-process.exit(Number(process.env.STUB_EXIT || '0'));
+const docs = process.env.STUB_DOCS_DIR;
+fs.mkdirSync(path.join(docs, 'assets', 'data'), {recursive:true});
+fs.writeFileSync(path.join(docs, 'assets', 'data', 'benchmark.json'), JSON.stringify({generated_at: '2026-10-27'}) + '\\n');
+process.exit(0);
 `;
 function jobSetup(w: Work) {
   inputs(w, { "glm-5.2": 100, "batch-a": 80 }, undefined, undefined, ["batch-a"]);
@@ -526,6 +554,39 @@ describe("daily job", () => {
     expect(lines(r, "DAILY RUNNER "), JOB).toEqual(["DAILY RUNNER exit=4"]);
     expect(lines(r, "DAILY PUBLISH "), JOB).toEqual(["DAILY PUBLISH none"]);
   });
+  caseOf("6.3.11 shared lock: cron-daily.sh selects nothing", async w => {
+    jobSetup(w);
+    // The holder keeps a shared lock. The job takes the lock exclusively, so
+    // a second daily job must skip.
+    const holder = spawn("flock", ["-s", join(w.root, "weekly-cron.lock"), "bash", "-c", "printf 'READY\\n'; read -r release"], {
+      cwd: w.root, env: env(w), stdio: ["pipe", "pipe", "pipe"],
+    });
+    try {
+      await new Promise<void>((ok, reject) => {
+        holder.once("error", reject);
+        holder.once("exit", code => reject(new Error(`lock holder exited ${code}`)));
+        holder.stdout.once("data", data => String(data) === "READY\n" ? ok() : reject(new Error("lock readiness mismatch")));
+      });
+      const r = job(w);
+      expect(r.status, `${JOB}: a shared lock must skip the job; ${r.stderr}`).toBe(0);
+      expect(lines(r, "DAILY SKIP "), JOB).toEqual(["DAILY SKIP lock held"]);
+      expect(lines(r, "DAILY_PICK "), JOB).toEqual([]); expect(calls(w), JOB).toEqual([]); expect(readdirSync(w.days), JOB).toEqual([]);
+    } finally {
+      const exited = new Promise<void>(ok => holder.once("exit", () => ok()));
+      holder.stdin.end("release\n"); await exited;
+    }
+  });
+  caseOf("6.3.12 zero runs: cron-daily.sh fails the day", w => {
+    jobSetup(w); const r = job(w, [], { STUB_NO_RUNS: "1" });
+    expect(r.status, `${JOB}: a runner with no run must fail the day`).not.toBe(0);
+    assertJobPick(r, jobSelection()); assertStartRecord(w, jobSelection());
+    expect(lines(r, "DAILY RUNNER "), JOB).toEqual(["DAILY RUNNER exit=0"]);
+    expect(lines(r, "DAILY RUNS "), JOB).toEqual(["DAILY RUNS 0"]);
+    expect(lines(r, "DAILY FAIL runs:"), JOB).toEqual(["DAILY FAIL runs: the runner produced no runs"]);
+    expect(lines(r, "DAILY PUBLISH "), JOB).toEqual(["DAILY PUBLISH none"]);
+    expect(record(w), JOB).toEqual({ ...jobSelection(), run_ids: [], runner_exit: 0 });
+    expect(readdirSync(w.runs), JOB).toEqual([]);
+  });
 });
 
 describe("artifacts", () => {
@@ -540,5 +601,68 @@ describe("artifacts", () => {
     expect(invocations, `${PIN}: self-check must retain BENCH_TRACK and repeat scrubbing`).toEqual([
       '  if ! env -u BENCH_TRACK -u REPS -u REPS_BUILD -u REPS_BUGFIX -u REPS_TESTS -u REPS_CHANGE npm run --silent "$meta_script" > "meta-selfcheck.log" 2>&1; then',
     ]);
+  });
+  caseOf("6.4.3 publish scope: cron-daily.sh commits only docs/", () => {
+    const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");
+    const adds = cron.split(/\r?\n/).filter(line => line.includes("git add"));
+    expect(adds, `${JOB}: the job must stage only docs/`).toEqual(["git add docs/"]);
+    const checks = cron.split(/\r?\n/).filter(line => line.includes("git diff --cached --quiet"));
+    expect(checks, `${JOB}: the empty check must be limited to docs/`).toEqual(["if git diff --cached --quiet -- docs/; then"]);
+    const commits = cron.split(/\r?\n/).filter(line => line.includes("git commit"));
+    expect(commits, `${JOB}: the publish commit must be path-limited to docs/`).toEqual(['if ! git commit -F "$MSG_FILE" -- docs/; then']);
+  });
+  caseOf("6.4.4 publish scope: the publish commit holds only docs/", w => {
+    // A temporary git repository. The script runs from a copy inside it, so
+    // its git commands act on the temporary root only.
+    jobSetup(w);
+    const repo = join(w.root, "pub");
+    const origin = join(w.root, "origin.git");
+    const gitEnv = { PATH: "/usr/bin:/bin", HOME: w.home, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_SYSTEM: "/dev/null" };
+    const git = (args: string[], cwd = repo) => {
+      const r = spawnSync("git", args, { cwd, env: gitEnv, encoding: "utf8" });
+      if (r.status !== 0) throw new Error(`git ${args.join(" ")}: ${r.stderr}`);
+      return r.stdout.trim();
+    };
+    git(["init", "-q", "-b", "main", repo], w.root);
+    git(["init", "-q", "--bare", "-b", "main", origin], w.root);
+    git(["config", "user.email", "schedule@example.invalid"]);
+    git(["config", "user.name", "Schedule Test"]);
+    git(["remote", "add", "origin", origin]);
+    mkdirSync(join(repo, "harness"), { recursive: true });
+    mkdirSync(join(repo, "docs/assets/data"), { recursive: true });
+    copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
+    for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
+      symlinkSync(join(HARNESS, name), join(repo, "harness", name));
+    symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"));
+    writeFileSync(join(repo, "docs/index.html"), "<html></html>\n");
+    git(["add", "docs/"]);
+    git(["commit", "-q", "-m", "initial"]);
+    // A path outside docs/, staged before the job runs.
+    writeFileSync(join(repo, "secret.txt"), "not for the publish\n");
+    git(["add", "secret.txt"]);
+    // The runner writes the site data and the two run directories.
+    writeFileSync(join(w.root, "publish-runner.cjs"), PUBLISH_RUNNER_SOURCE, { mode: 0o755 });
+    const r = spawnSync("bash", [join(repo, "harness/cron-daily.sh")], {
+      cwd: repo, encoding: "utf8", timeout: 30_000,
+      env: { PATH: `${dirname(process.execPath)}:/usr/bin:/bin`, HOME: w.home, TMPDIR: w.root,
+        TSX_DISABLE_CACHE: "1", _BENCH_ENV_LOADED: "1", GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_SYSTEM: "/dev/null",
+        BENCH_RUNS_ROOT: w.runs, BENCH_PRICING_PATH: w.pricing, BENCH_DAILY_DIR: w.days,
+        BENCH_DAILY_DATE: DATE, BENCH_DAILY_CATALOG: w.catalog, BENCH_DAILY_SERVED: w.served,
+        BENCH_DAILY_RUNNER: join(w.root, "publish-runner.cjs"), BENCH_DAILY_PUBLISH: "1",
+        BENCH_DAILY_LOCK: join(w.root, "publish.lock"), STUB_LOG: join(w.root, "publish-stub.jsonl"),
+        STUB_DOCS_DIR: join(repo, "docs") },
+    });
+    const result: Result = { status: r.status, stdout: r.stdout, stderr: r.stderr };
+    expect(result.status, `${JOB}: the publish job must succeed; ${result.stderr}`).toBe(0);
+    const published = lines(result, "DAILY PUBLISH ");
+    expect(published.length, JOB).toBe(1);
+    expect(published[0], JOB).toMatch(/^DAILY PUBLISH [0-9a-f]{7,}$/);
+    expect(lines(result, "DAILY FAIL "), JOB).toEqual([]);
+    const committed = git(["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean).sort();
+    expect(committed, `${JOB}: the publish commit must hold only docs/`).toEqual(["docs/assets/data/benchmark.json"]);
+    const pushed = git(["ls-tree", "-r", "--name-only", "main"], origin).split("\n").filter(Boolean).sort();
+    expect(pushed, `${JOB}: the push must hold only docs/`).toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
+    expect(git(["ls-files", "--cached"]).split("\n"), JOB).toContain("secret.txt");
+    expect(git(["log", "-1", "--format=%s"]), JOB).toBe("Publish daily 2026-10-26 OpenCode Go results: glm-5.2 (untested).");
   });
 });

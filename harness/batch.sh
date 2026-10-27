@@ -52,10 +52,12 @@ esac
 # unpinned path byte-identical, and no environment variable selects a model
 # (the meta tests inherit the environment; anti-pattern A11).
 PIN_MODEL=""
+PIN_MODEL_SET=0
 _pin_prev=""
 for _arg in "$@"; do
   if [ "$_pin_prev" = "1" ]; then
     PIN_MODEL="$_arg"
+    PIN_MODEL_SET=1
     _pin_prev=""
   elif [ "$_arg" = "--model" ]; then
     _pin_prev="1"
@@ -65,7 +67,9 @@ if [ -n "$_pin_prev" ]; then
   echo "--model requires a value" >&2
   exit 2
 fi
-if [ -n "$PIN_MODEL" ] && ! [[ "$PIN_MODEL" =~ ^[a-z0-9][a-z0-9.-]*$ ]]; then
+# The flag decides, not the value: an empty value is a fault, not "no pin".
+# Otherwise --model "" plans the whole work list (spec FR-7, fail closed).
+if [ "$PIN_MODEL_SET" = "1" ] && ! [[ "$PIN_MODEL" =~ ^[a-z0-9][a-z0-9.-]*$ ]]; then
   echo "--model must match ^[a-z0-9][a-z0-9.-]*\$, got: $PIN_MODEL" >&2
   exit 2
 fi

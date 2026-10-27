@@ -396,6 +396,9 @@ the case. It never spreads `process.env` (A11).
     of other weeks, other models, Pi runs, and canary runs.
 22. **The labeled line.** For case 1, stderr is exactly
     `DAILY_PICK date=<day> model=C reason=untested last_test=none candidates=3 eligible=3 untested=2`.
+23. **Untested beside a legacy no-week-token run.** A tested model whose only
+    OpenCode run has no week token has the zero date. It must not win over an
+    untested candidate with fewer requests.
 
 ### 6.2 Batch pin
 
@@ -418,6 +421,7 @@ and `ARMS="a b"`. The synthetic table holds `glm-5.2` with `batch: false`.
    batch model of the synthetic table.
 8. **No variable pin.** `BENCH_MODEL=glm-5.2` in the environment and no
    flag. Expect the output of case 6.2.7.
+9. **Empty value.** `--model ""` exits 2 and plans no run.
 
 ### 6.3 Daily job
 
@@ -450,14 +454,22 @@ token of `WEEK`. `BENCH_DAILY_PUBLISH` is `0`.
    `DAILY_PICK ... model=none`, no record, and no stub call.
 10. **Runner failure.** The stub exits 4. Expect `runner_exit` 4 in the
     record, a non-zero exit, and `DAILY PUBLISH none`.
+11. **Shared lock.** The test holds the lock file with `flock -s`. Expect exit
+    0, `DAILY SKIP lock held`, no day record, and no stub call.
+12. **Zero runs.** The stub exits 0 and creates no run directory. Expect a
+    non-zero exit, a `DAILY FAIL runs` line, `DAILY PUBLISH none`, and a
+    record with `run_ids: []` and `runner_exit: 0`.
 
 ### 6.4 Artifacts
 
-These cases read file text. They do not prove behavior.
+These cases read file text. They do not prove behavior. Case 4 also runs the
+job in a temporary Git repository, so it proves the publish scope.
 
 1. `harness/weekly.sh` holds `./batch.sh "$@"`.
 2. The self-check line of `batch.sh` still unsets `BENCH_TRACK` and the
    repeat variables (the guard of `selfcheck-env.test.ts`).
+3. The publish commit of `cron-daily.sh` is path-limited to `docs/`.
+4. The publish commit of a temporary Git repository holds only `docs/`.
 
 ## 7. Real-data proof without a model call
 

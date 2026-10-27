@@ -14,7 +14,7 @@
 # Test seams (spec NFR-6): BENCH_RUNS_ROOT, BENCH_PRICING_PATH,
 # BENCH_DAILY_DIR, BENCH_DAILY_DATE, BENCH_DAILY_CATALOG, BENCH_DAILY_SERVED,
 # BENCH_DAILY_RUNNER (default harness/weekly.sh), BENCH_DAILY_PUBLISH (0
-# skips the commit and the push), BENCH_DAILY_LOCK (default the shared
+# skips the commit and the push), BENCH_DAILY_LOCK (default the
 # .tmp/weekly-cron.lock of the weekly cron). Without them the job uses the
 # real paths. A dry run writes no day record and calls no runner.
 set -u
@@ -70,11 +70,12 @@ RECORD_TMP="$DAYS_DIR/.daily-record-$$"
 trap 'rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" 2>/dev/null' EXIT
 
 # ---- Lock ----------------------------------------------------------------------
-# The shared lock of the weekly cron (D9): the daily job and a weekly run
-# never run at the same time. A held lock is a clean skip, not a failure.
+# The lock file of the weekly cron (D9): the daily job and a weekly run
+# never run at the same time. The mode is exclusive, so a second daily job
+# also skips. A held lock is a clean skip, not a failure.
 mkdir -p "$(dirname "$LOCK")"
 exec 9>"$LOCK"
-if ! flock -n -s 9; then
+if ! flock -n 9; then
   echo "DAILY SKIP lock held"
   echo "DAILY END $(date -Is)"
   exit 0
@@ -229,6 +230,15 @@ if [ "$RUNNER_EXIT" -ne 0 ]; then
   echo "DAILY END $(date -Is)"
   exit "$RUNNER_EXIT"
 fi
+# The runner exited 0 but left no run. The weekly runner records a failed
+# batch and still exits 0, so a host fault must fail the day (spec D3). The
+# day record above stays truthful.
+if [ "$N_RUNS" -eq 0 ]; then
+  echo "DAILY FAIL runs: the runner produced no runs" >&2
+  echo "DAILY PUBLISH none"
+  echo "DAILY END $(date -Is)"
+  exit 1
+fi
 if [ "$PUBLISH" = "0" ]; then
   echo "DAILY PUBLISH skipped"
   echo "DAILY END $(date -Is)"
@@ -236,8 +246,10 @@ if [ "$PUBLISH" = "0" ]; then
 fi
 
 cd "$ROOT"
+# The publish commit holds only docs/ (spec D10). A path that another session
+# staged stays in the index and never enters the commit.
 git add docs/
-if git diff --cached --quiet; then
+if git diff --cached --quiet -- docs/; then
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
   exit 0
@@ -255,7 +267,12 @@ for (const key of ["unpriced", "gone", "unservable"]) {
 }
 fs.writeFileSync(process.argv[2], lines.join("\n") + "\n");
 ' "$PICK_OUT" "$MSG_FILE"
-git commit -F "$MSG_FILE"
+if ! git commit -F "$MSG_FILE" -- docs/; then
+  echo "DAILY FAIL publish: the commit of docs/ failed" >&2
+  echo "DAILY PUBLISH none"
+  echo "DAILY END $(date -Is)"
+  exit 1
+fi
 PUSHED=""
 for _ in 1 2 3; do
   if git push origin main; then PUSHED=1; break; fi
