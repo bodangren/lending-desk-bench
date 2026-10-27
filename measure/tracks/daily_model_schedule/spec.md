@@ -5,13 +5,13 @@ Spec format: classic FR list. Track type: feature. Base commit: `aa94185`.
 ## Summary
 
 The weekly matrix tests every batch model on one night each week. The owner
-disabled it on 2026-10-25. This track adds a daily job that tests one model
-on each day.
+disabled it on 2026-10-25. This track adds a job that tests one model
+on each run day. The run days are Wednesday and Sunday, at 01:00 local time.
 
-Each day, the job refreshes the model list. It then selects one model: a model
-with no test, or else the model with the stalest last test date. It runs that
-model through the existing batch path, and it publishes the site data. The job
-sends no model call for any other model.
+On each run day, the job refreshes the model list. It then selects one
+model: a model with no test, or else the model with the stalest last test
+date. It runs that model through the existing batch path, and it publishes
+the site data. The job sends no model call for any other model.
 
 The track changes no scoring rule, no hashed file, and no price. It does not
 re-enable the weekly cron.
@@ -21,6 +21,13 @@ re-enable the weekly cron.
 The owner gave this requirement on 2026-10-25:
 
 > We need to set the testing schedule to one model per day. 1. Refresh the model list. 2. Test one untested model if any exists. 3. If no untested models exist, test the model which has the stalest last test date.
+
+The owner gave two more requirements on 2026-10-27. The source is the owner.
+The PM orchestrator relayed the words (assignment A-23).
+
+> Lending desk should be running only one models benchmark per day either the new ones that don't have benchmarks or the ones that have the stalest benchmarks.
+
+> Let's only run this twice a week -- on Wednesday and Sunday.
 
 ## Evidence
 
@@ -90,6 +97,8 @@ All facts come from the files on disk and from read-only commands on
 
 ## Definitions
 
+- **Run day.** A Wednesday or a Sunday on which the job runs. The job runs
+  at 01:00 local time on each run day (D9).
 - **Day.** One UTC date, `YYYY-MM-DD`. The week of a day is its ISO week
   token, `<YYYY>w<WW>`.
 - **Live list.** The `live` array of the catalog file that the job fetches on
@@ -148,11 +157,12 @@ date 2026-10-25.
 
 1. **D1. Test profile.** The day's model runs all four tracks, both arms, and
    the default repeats of `batch.sh`: build 3, and 1 for bugfix, tests, and
-   change. This gives 12 agent runs each day. The weekly matrix used the
+   change. This gives 12 agent runs each run day. The weekly matrix used the
    same profile, so a daily result and a weekly result are comparable. From
-   EV11, a day costs 1.07 USD on average and 3.24 USD at the observed
-   maximum. The existing variables `ARMS`, `REPS`, and `REPS_<TRACK>` still
-   change the profile.
+   EV11, a run day costs 1.07 USD on average and 3.24 USD at the observed
+   maximum. At 2 run days per week, the spend is about 2.14 USD on average
+   and 6.48 USD at the maximum. The existing variables `ARMS`, `REPS`, and
+   `REPS_<TRACK>` still change the profile.
 2. **D2. Unpriced and gone models.** A live model with no price is not a
    candidate. The job does not edit the price table. The day record and the
    commit body list the model. When the operator adds a price, the model
@@ -164,9 +174,9 @@ date 2026-10-25.
    runs with `valid: false`. These runs count as a test, so the model moves
    to the end of the order. Thus one model cannot stop the schedule on two
    days. A host fault before the first run directory (self-check, preflight,
-   or canary) creates no OpenCode run. The next day then selects the same
-   model again. Each day's job exits non-zero until the operator removes the
-   fault. A host fault is not a result of the model, so it must not move the
+   or canary) creates no OpenCode run. The next run day then selects the same
+   model again. Each run day's job exits non-zero until the operator removes
+   the fault. A host fault is not a result of the model, so it must not move the
    model in the order.
 4. **D4. The record of each test date.** The job writes one day record for
    each day. The record holds the run ids of the day. A run that no day
@@ -178,7 +188,9 @@ date 2026-10-25.
    order then makes the order total. The untested rule uses the same order.
 6. **D6. One model in each week.** Rule 3 prevents a second test of a model
    in the same week. A second test would use the same run ids. `batch.sh`
-   then skips each trusted run, and the day gives no new result.
+   then skips each trusted run, and the day gives no new result. Wednesday
+   and Sunday of the same ISO week are two run days in one week. Rule 3
+   keeps those two run days on two different models.
 7. **D7. The entry point.** A new script `harness/cron-daily.sh` holds the
    daily job. A new script `harness/daily-pick.ts` holds the selection rule.
    `batch.sh` gets a flag `--model <id>` that runs one priced model.
@@ -193,8 +205,8 @@ date 2026-10-25.
 9. **D9. Lock and time.** The job takes the lock of the weekly cron,
    `.tmp/weekly-cron.lock`. Thus the daily job and a weekly run never run at
    the same time. When the lock is held, the job exits 0 and selects
-   nothing. The crontab line is `0 1 * * *`, at 01:00 local time. Each day
-   is a UTC date.
+   nothing. The crontab line is `0 1 * * 0,3`. The job runs on Wednesday
+   and Sunday at 01:00 local time. Each day is a UTC date.
 10. **D10. What the job publishes.** The job commits only `docs/`, and it
     pushes `origin main`, as `cron-weekly.sh` does. The first line of the
     commit message names the day, the model, and the reason. The body lists
@@ -315,7 +327,7 @@ date 2026-10-25.
 
 | ID | Decision | Proposed default | Answer |
 |---|---|---|---|
-| O1 | Install the daily crontab line. This starts a paid run of 12 agent runs each day and a daily push of `docs/` to GitHub Pages. | Approve after the real-data dry run of task 4.1 passes and `opencode_executor` task 4.2 closes. Spend from EV11: 1.07 USD each day on average, 3.24 USD at the observed maximum. | open |
+| O1 | Install the crontab line `0 1 * * 0,3`. This starts a paid run of 12 agent runs on each run day. The run days are Wednesday and Sunday. The job pushes `docs/` on each run day. Spend is 1.07 USD per run day on average and 3.24 USD at the observed maximum. The week has about 2 run days. | Approve after the real-data dry run of task 4.1 passes and `opencode_executor` task 4.2 closes. Spend from EV11: 1.07 USD each run day on average, 3.24 USD at the observed maximum. | open — the owner 2026-10-25 chose to approve only after the two prerequisites close |
 
 ## Acceptance criteria
 
@@ -353,13 +365,15 @@ date 2026-10-25.
 - **R2 Loss of the day records.** `reports/` is not in Git. A loss changes
   each run date to the Sunday of its week (D4). The order then changes inside
   a week only.
-- **R3 Spend.** Each day spends up to 12 agent runs (D1). O1 approves it.
+- **R3 Spend.** Each run day spends up to 12 agent runs (D1). O1 approves it.
 - **R4 The push publishes other commits.** `git push origin main` sends every
-  local commit of `main`, as `cron-weekly.sh` does. A daily job does this
-  each day. Review B checks this path, and O1 states it.
+  local commit of `main`, as `cron-weekly.sh` does. The job does this on
+  each run day. Review B checks this path, and O1 states it.
 - **R5 Staged site edits of other tracks.** `git add docs/` stages each edit
   under `docs/` in `main`. Track `domain_trust` keeps its page edits on a
   branch until its decision O2 (its NFR-7).
-- **R6 A long day.** The worst case is 12 runs at the agent timeout of
-  3600 s, plus the grade time. A day that runs past the next 01:00 holds the
-  lock. The next job then exits 0, and that day gets no model.
+- **R6 A long run day.** The worst case is 12 runs at the agent timeout of
+  3600 s, plus the grade time. The next run day follows after at least two
+  days (Wednesday to Sunday, Sunday to Wednesday). A run day that still
+  holds the lock at the next run day makes that job exit 0. That next run
+  day then gets no model.

@@ -1,9 +1,9 @@
 # Implementation plan — daily_model_schedule
 
-This plan adds a daily job that tests one model on each day. The job
-refreshes the model list. It selects one untested model, or else the model
-with the stalest last test date. It runs that model, and it publishes the
-site data. Spec:
+This plan adds a job that tests one model on each run day (Wednesday and
+Sunday). The job refreshes the model list. It selects one untested model,
+or else the model with the stalest last test date. It runs that model, and
+it publishes the site data. Spec:
 `spec.md`. Test strategy: `test-strategy.md`. Independent oracle:
 `pick-oracle.py`. Base commit: `aa94185`.
 
@@ -15,8 +15,8 @@ Constraints for every role:
 - `harness/cron-weekly.sh` stays disabled. Do not edit it, and do not edit
   its commented crontab line (spec EV12).
 - The daily entry point is a separate script, `harness/cron-daily.sh`.
-- The crontab change is an owner action. Only the owner installs the daily
-  line, after decision O1 (task 5.3).
+- The crontab change is an owner action. Only the owner installs the
+  crontab line, after decision O1 (task 5.3).
 - Send no model call before task 5.4. The tests, the dry runs, the catalog
   fetch, and `opencode models` send no prompt (spec NFR-1).
 - Do not edit a file of the runner hash or the suite hash, `plan-work.ts`,
@@ -226,10 +226,12 @@ Run in the worktree. Commit on the branch `daily-schedule`.
 - [b] 4.1 Operator docs. Add the section `## Daily model schedule` to
   `README.md`. It names the three owner steps, `harness/cron-daily.sh`,
   `harness/daily-pick.ts`, `batch.sh --model`, and the day records under
-  `reports/daily/`. It states that `cron-weekly.sh` stays disabled, and
-  that the crontab change is an owner action. It gives the price table
-  update: when a day record lists an unpriced model, the operator adds the
-  price to `harness/go-pricing.json` from `https://opencode.ai/docs/go/`.
+  `reports/daily/`. It states the run days: Wednesday and Sunday at 01:00.
+  It states the schedule line `0 1 * * 0,3`. It states that
+  `cron-weekly.sh` stays disabled, and that the crontab change is an owner
+  action. It gives the price table update: when a day record lists an
+  unpriced model, the operator adds the price to `harness/go-pricing.json`
+  from `https://opencode.ai/docs/go/`.
   The model then becomes an untested candidate. Update the header comments
   of the changed scripts to match. — deferred:jr-green
   - Verify: `DOCS_CHECK` prints `DOCS_CHECK=pass`.
@@ -266,7 +268,7 @@ Run in the worktree. Commit on the branch `daily-schedule`.
 - [b] 5.3 Crontab change, an owner action, only when O1 is approved. Before
   it, run `PI_SHA day0` and `ls runs > .tmp/daily-runs-before.txt` in
   `main`. The owner installs the line
-  `0 1 * * * /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh >> /home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log 2>&1`.
+  `0 1 * * 0,3 /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh >> /home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log 2>&1`.
   — deferred:owner
   - Verify: `CRON_CHECK` prints `CRON_CHECK=pass`.
   - Verify: `crontab -l | grep -c '^# DISABLED 2026-10-25 by owner request'` prints `1`.

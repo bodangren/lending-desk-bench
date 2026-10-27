@@ -1,20 +1,21 @@
 # Test strategy — daily_model_schedule
 
 This strategy tells Red, Green, the reviewers, the adversarial role, and the
-orchestrator how the daily schedule is proved. Spec: `spec.md`. Plan:
+orchestrator how the run-day schedule is proved. Spec: `spec.md`. Plan:
 `plan.md`. Independent oracle: `pick-oracle.py`.
 
 ## 1. Scope and risk
 
 The product of this track is an unattended job that spends money and
-publishes a site each day. A wrong job runs the wrong model, runs too many
+publishes a site on each run day. A run day is Wednesday or Sunday, at
+01:00 local time. A wrong job runs the wrong model, runs too many
 models, stops on one model for ever, or publishes the wrong files.
 
 | Risk | Effect | Defense |
 |---|---|---|
 | The job selects two models on one day | Double spend, and the owner rule breaks | Rule 1 (resume) and the day record before the first batch; cases 6.3.4 and 6.3.5; `DAY_CHECK` |
 | The job runs a model other than the day's model | Spend on a model that nobody selected | `batch.sh --model`; cases 6.2.1 and 6.2.6; `DAY_CHECK` |
-| The job selects an unservable model | The job fails on each day on the same model (spec EV3) | The served filter; case 6.1.11; adversarial case 12.4 |
+| The job selects an unservable model | The job fails on each run day on the same model (spec EV3) | The served filter; case 6.1.11; adversarial case 12.4 |
 | A directory time decides the stalest model | A regrade makes an old model look fresh (spec EV6) | The run date rule; case 6.1.5 |
 | An empty or failed fetch feeds the selection | A model run from a stale or empty list (spec EV2) | Cases 6.1.18 and 6.3.2–6.3.3; `DAILY FAIL` line |
 | The track changes a hashed file | `plan-work.ts` schedules paid runs for every model | `PATH_CHECK`, `BASE_HASH`, `WORKLIST_SHA` |
@@ -130,7 +131,7 @@ is `../lending-desk-bench-daily` on the branch `daily-schedule`.
   m = re.search(r"^## Daily model schedule\n(.*?)(?=^## |\Z)", text, re.S | re.M)
   assert m, "DOCS_CHECK=fail no section"
   sec = m.group(1)
-  for w in ("harness/cron-daily.sh", "harness/daily-pick.ts", "--model", "reports/daily/", "harness/go-pricing.json", "https://opencode.ai/docs/go/", "cron-weekly.sh", "owner"):
+  for w in ("harness/cron-daily.sh", "harness/daily-pick.ts", "--model", "reports/daily/", "harness/go-pricing.json", "https://opencode.ai/docs/go/", "cron-weekly.sh", "owner", "Wednesday", "Sunday", "0,3"):
       assert w in sec, f"DOCS_CHECK=fail missing {w}"
   assert not re.search(r"\b(is|now) (active|enabled|live)\b", sec, re.I), "DOCS_CHECK=fail activation claim"
   print("DOCS_CHECK=pass")
@@ -192,11 +193,11 @@ is `../lending-desk-bench-daily` on the branch `daily-schedule`.
 - `CONSENT_CHECK` (A2): the O1 row of `spec.md` holds `approved` and a date.
   `rg -n '^\| O1 \|.*\| approved 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/daily_model_schedule/spec.md`
   prints 1 line.
-- `CRON_CHECK`: the daily line exists one time, and no active line runs
+- `CRON_CHECK`: the run-day line exists one time, and no active line runs
   `cron-weekly.sh`.
 
   ```bash
-  test "$(crontab -l | grep -cxF '0 1 * * * /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh >> /home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log 2>&1')" -eq 1 && ! crontab -l | grep -qE '^[[:space:]]*[^#[:space:]].*cron-weekly\.sh' && echo CRON_CHECK=pass
+  test "$(crontab -l | grep -cxF '0 1 * * 0,3 /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh >> /home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log 2>&1')" -eq 1 && ! crontab -l | grep -qE '^[[:space:]]*[^#[:space:]].*cron-weekly\.sh' && echo CRON_CHECK=pass
   ```
 
 - `STATUS_CHECK` (A12): run it from the root of the tree whose plan changed.
@@ -292,6 +293,8 @@ them.
 
 ### 5.3 `harness/cron-daily.sh [--dry-run]`
 
+- The owner crontab line is `0 1 * * 0,3`. It starts the job on Wednesday
+  and Sunday at 01:00 local time. The script does not install the line.
 - Order: toolchain, lock, day record check, catalog fetch, served list,
   selection, day record write, runner, run list, publish.
 - The seams of spec NFR-6. `BENCH_DAILY_RUNNER` defaults to
