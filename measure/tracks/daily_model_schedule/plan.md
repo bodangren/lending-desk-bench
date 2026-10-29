@@ -280,16 +280,25 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
     `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
     `STATUS_CHECK=pass blocked=8 open=1`. The case lists of section 6 of the
     test strategy now hold 6.1.23, 6.2.9, 6.3.11, 6.3.12, 6.4.3, and 6.4.4.
-- [~] 3.9 Adversarial tests of test strategy section 12. The role adds the
+- [x] 3.9 Adversarial tests of test strategy section 12. The role adds the 8b7f721
   cases to the test file. It writes
   `measure/runs/daily_model_schedule/adversarial-<short head>.json`.
   - Verify: `SCHEDULE_TEST` exits 0 with the added cases, and the role file shows `status: pass`.
+  - Evidence: `SCHEDULE_TEST` at `8b7f721`: `Test Files  1 passed (1)`; `Tests  55 passed (55)` (exit 0).
+    `PATH_CHECK=pass` with `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`.
+    The cases 12.1 to 12.7 of test strategy section 12 sit in the `adversarial` block.
+    The result file is `measure/runs/daily_model_schedule/adversarial-4c111d9.json`.
+    It shows `status: pass`, 0 blocking findings and 2 nonblocking findings.
+    The first nonblocking finding is a contract gap in the test strategy.
+    A resumed run of the same day publishes the reason `resume` in the commit subject.
+    `PUBLISH_CHECK` accepts only the reasons `untested` and `stalest`.
+    The orchestrator must route that gap before task 5.4.
 
 ## Phase 4: Docs
 
 Run in the worktree. Commit on the branch `daily-schedule`.
 
-- [b] 4.1 Operator docs. Add the section `## Daily model schedule` to
+- [~] 4.1 Operator docs. Add the section `## Daily model schedule` to
   `README.md`. It names the three owner steps, `harness/cron-daily.sh`,
   `harness/daily-pick.ts`, `batch.sh --model`, and the day records under
   `reports/daily/`. It states the run days: Wednesday and Sunday at 01:00.
@@ -298,8 +307,12 @@ Run in the worktree. Commit on the branch `daily-schedule`.
   action. It gives the price table update: when a day record lists an
   unpriced model, the operator adds the price to `harness/go-pricing.json`
   from `https://opencode.ai/docs/go/`.
-  The model then becomes an untested candidate. Update the header comments
-  of the changed scripts to match. — deferred:jr-green
+  The model then becomes an untested candidate. It gives the operator action
+  for a deleted day record: when an operator deletes a day record under
+  `reports/daily/`, the next job run on that day selects a new model and
+  tests it. The operator restores the deleted record before the next run day.
+  Update the header comments
+  of the changed scripts to match.
   - Verify: `DOCS_CHECK` prints `DOCS_CHECK=pass`.
   - Verify: `PATH_CHECK` prints `PATH_CHECK=pass`, and `SCHEDULE_TEST` exits 0.
 
