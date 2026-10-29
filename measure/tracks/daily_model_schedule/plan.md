@@ -227,10 +227,11 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
     and without `vitest` (157 of 237 entries, no live writer). The role
     removed it and re-linked it to the `node_modules` of `main`, the state
     that task 1.2 records. No tracked file changed.
-- [~] 3.6 Review A (correctness): the selection rule, the run date rule, the
+- [x] 3.6 Review A (correctness): the selection rule, the run date rule, the 4c111d9
   identity rule against `plan-work.ts`, and `--day-runs`. The role writes
   `measure/runs/daily_model_schedule/review-a-<short head>.json`.
   - Verify: `measure_interphase_checks.py audit-result --role review-a --file <path>` prints `PASS: audit result is valid`, and the file shows `status: pass`.
+  - Evidence: `review-a-4c111d9.json` shows `status: pass`, 0 blocking and 4 nonblocking findings; `audit-result --role review-a` printed `PASS: audit result is valid` (orchestrator, 2026-10-28).
   - Remediation of the Review A finding (`review-a-f9c907c.json` at `f9c907c`,
     status fail): this commit splits selection rules 4 and 5 in
     `harness/daily-pick.ts` to match `pick-oracle.py`, and it adds the
@@ -241,12 +242,12 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
     candidates=28 eligible=28 untested=11`; BATCH_COMPAT `BATCH_COMPAT_RUNS=180`
     and `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
     the fixture sides now agree (`model=y-fresh reason=untested`).
-- [b] 3.7 Review B (security): endpoint data in the shell, the id check, the
+- [x] 3.7 Review B (security): endpoint data in the shell, the id check, the 4c111d9
   temporary files, the lock, the credential, and the push scope (spec R4,
   R5). The role writes
   `measure/runs/daily_model_schedule/review-b-<short head>.json`.
-  — deferred:review-b
   - Verify: `measure_interphase_checks.py audit-result --role review-b --file <path>` prints `PASS: audit result is valid`, and the file shows `status: pass`.
+  - Evidence: `review-b-4c111d9.json` shows `status: pass`, 0 blocking and 9 nonblocking findings; `audit-result --role review-b` printed `PASS: audit result is valid` (orchestrator, 2026-10-28).
   - Remediation of the Review B findings (`review-b-756dc7e.json` at `756dc7e`,
     status fail, three blockers): this commit path-limits the publish commit to
     `docs/`, so a path staged outside `docs/` stays out of the commit and out of
@@ -264,11 +265,11 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
     (exit 0); `PATH_CHECK=pass`; `BATCH_COMPAT_RUNS=180`;
     `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
     `STATUS_CHECK=pass blocked=8 open=1`.
-- [b] 3.8 Review C (API contract): the `batch.sh` flag, the `weekly.sh`
+- [x] 3.8 Review C (API contract): the `batch.sh` flag, the `weekly.sh` 4c111d9
   arguments, the selector JSON, the day record, and the labeled lines. The
   role writes `measure/runs/daily_model_schedule/review-c-<short head>.json`.
-  — deferred:review-c
   - Verify: `measure_interphase_checks.py audit-result --role review-c --file <path>` prints `PASS: audit result is valid`, and the file shows `status: pass`.
+  - Evidence: `review-c-4c111d9.json` shows `status: pass`, 0 blocking and 7 nonblocking findings; `audit-result --role review-c` printed `PASS: audit result is valid` (orchestrator, 2026-10-28).
   - Remediation of the Review C finding (`review-c-756dc7e.json` at `756dc7e`,
     status fail, one blocker): this commit validates the `--model` value when
     the flag is present, so an empty value exits 2 and plans no run. The new
@@ -279,10 +280,9 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
     `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
     `STATUS_CHECK=pass blocked=8 open=1`. The case lists of section 6 of the
     test strategy now hold 6.1.23, 6.2.9, 6.3.11, 6.3.12, 6.4.3, and 6.4.4.
-- [b] 3.9 Adversarial tests of test strategy section 12. The role adds the
+- [~] 3.9 Adversarial tests of test strategy section 12. The role adds the
   cases to the test file. It writes
   `measure/runs/daily_model_schedule/adversarial-<short head>.json`.
-  — deferred:adversarial-testing
   - Verify: `SCHEDULE_TEST` exits 0 with the added cases, and the role file shows `status: pass`.
 
 ## Phase 4: Docs
