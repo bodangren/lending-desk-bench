@@ -288,7 +288,7 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
     `PATH_CHECK=pass` with `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`.
     The cases 12.1 to 12.7 of test strategy section 12 sit in the `adversarial` block.
     The result file is `measure/runs/daily_model_schedule/adversarial-4c111d9.json`.
-    It shows `status: pass`, 0 blocking findings and 2 nonblocking findings.
+    It shows `status: pass`, 0 blocking findings and 3 nonblocking findings.
     The first nonblocking finding is a contract gap in the test strategy.
     A resumed run of the same day publishes the reason `resume` in the commit subject.
     `PUBLISH_CHECK` accepts only the reasons `untested` and `stalest`.
