@@ -25,6 +25,11 @@ R1 to R4. It adds contract rows for the Podman `-i` flag, the Arm B
 and the empty-export definition. It adds the task 4.2 arm records and the
 task 4.3 enforcement probes.
 
+Amendment 5: 2026-10-29, strategy role, role base `dfc0b5e`. It replaces the
+task 4.2 watcher check command in section 7. The new command accepts the
+OpenCode v2.0.32 and v2.2.0 log formats. It strengthens the Arm A zero
+clause and adds a non-vacuous clause for both logs.
+
 ## 1. Scope and risk summary
 
 This track replaces the Pi executor with OpenCode 2 and the host Console
@@ -570,9 +575,10 @@ of section 6 covers P4R.
     `pdf` gives 404 in both arms. The built-in lines are records only (the
     open risk of design section "Config source and content").
   - AGENTS.md probe: keep the startup log of each arm. The Arm B log has a
-    `watcher subscribe path=/workspace/AGENTS.md type=file` line. The Arm A
-    log has no `/workspace/AGENTS.md` watcher line, and it has 1 or more
-    other watcher lines (a non-vacuous log).
+    `watcher subscribe` line for `path=/workspace/AGENTS.md type=file`. The
+    closing quote after `subscribe` is optional. The Arm A log has no line
+    with `path=/workspace/AGENTS.md`, and it has 1 or more `watcher subscribe`
+    lines for another path (a non-vacuous log).
   - Each `opencode run` command of the probe is a ledger row. It runs with
     `--network=none`, so it is not live.
   - Check commands (no denied text; any role can run them on the archived
@@ -581,7 +587,7 @@ of section 6 covers P4R.
 
     ```
     P=SKILL_RECORD; test "$(grep -cE '^skill-probe arm=b id=(measure|next-best-practices|vercel-react-best-practices|vercel-composition-patterns|build-graph) status=204$' "$P")" = 5 && test "$(grep -cE '^skill-probe arm=a id=(measure|next-best-practices|vercel-react-best-practices|vercel-composition-patterns|build-graph) status=404$' "$P")" = 5 && test "$(grep -cE '^skill-probe arm=[ab] id=pdf status=404$' "$P")" = 2 && test "$(grep -cE '^skill-probe arm=[ab] id=(opencode|report) status=[0-9]+$' "$P")" = 4 && test "$(grep -c '^skill-probe ' "$P")" = 16 && test "$(grep -oE '^skill-probe arm=[ab] id=[a-z-]+' "$P" | sort -u | wc -l)" = 16 && echo skill-probe-ok
-    A=ARM_A_LOG; B=ARM_B_LOG; test "$(grep -c 'watcher subscribe path=/workspace/AGENTS.md type=file' "$B")" -ge 1 && test "$(grep -c 'watcher subscribe path=/workspace/AGENTS.md' "$A")" = 0 && test "$(grep -c 'watcher subscribe path=' "$A")" -ge 1 && echo watcher-ok
+    A=ARM_A_LOG; B=ARM_B_LOG; test "$(grep -cE 'watcher subscribe"?[[:space:]]+path=/workspace/AGENTS\.md[[:space:]]+type=file([^0-9A-Za-z_]|$)' "$B")" -ge 1 && test "$(grep -c 'watcher subscribe' "$B")" -ge 1 && test "$(grep -c 'path=/workspace/AGENTS\.md' "$A")" = 0 && test "$(grep 'watcher subscribe' "$A" | grep -cv 'path=/workspace/AGENTS\.md')" -ge 1 && echo watcher-ok
     ```
 - 4.3: run only after `test "$(date +%s)" -ge 1792590240` passes
   (2026-10-21 21:44 +08:00). Exactly one run per arm. Record
@@ -692,10 +698,93 @@ SECRET_SCAN_HISTORY (section 2) over the Phase 4 range.
 | Anti-pattern | Defense |
 |---|---|
 | A3 | Dry-run counts come from the labeled `BATCH START` line; the 4.3 usage proof records labeled values |
-| A4 | EXACT `values>=1`; the probe shows each listed source |
+| A4 | EXACT `values>=1`; the probe shows each listed source; the watcher check requires 1 or more `watcher subscribe` records in the Arm A log, so an empty Arm A log fails |
 | A5 | Each `[x]` cites archived output or a commit |
 | A6 | `tracks.md` and `metadata.json` change only after the gates pass |
+| A7 | The watcher check has no exclusion and no word filter; the Arm A zero clause counts every record that names the path |
 | A11 | ADV in the composite; REHEARSAL on the final HEAD |
+
+### Amendment 5 (2026-10-29): the watcher check accepts the v2.2.0 log format
+
+**Reason.** The task 4.2 probe of 2026-10-29 ran OpenCode v2.2.0. That
+version puts a quote around the message of a log record. The record is:
+
+```
+timestamp=2026-10-29T07:15:42.245Z level=INFO run=84bda9d6 message="watcher subscribe" path=/workspace/AGENTS.md type=file ignores=0
+```
+
+The old check looked for the text `watcher subscribe path=/workspace/AGENTS.md
+type=file`. The quote stops that match. The Arm B clause gave 0 and the check
+failed. The arm contract holds. The old check did not match the log.
+
+**Old command.**
+
+```
+A=ARM_A_LOG; B=ARM_B_LOG; test "$(grep -c 'watcher subscribe path=/workspace/AGENTS.md type=file' "$B")" -ge 1 && test "$(grep -c 'watcher subscribe path=/workspace/AGENTS.md' "$A")" = 0 && test "$(grep -c 'watcher subscribe path=' "$A")" -ge 1 && echo watcher-ok
+```
+
+**The old Arm A zero clause was vacuous.** Its pattern matched nothing in
+either format. The count was 0 on the Arm A log, on the Arm B log, on an empty
+log, and on a v2.0.32-format log. The clause passed on any log. It could not
+fail. Anti-pattern A4 and A7 apply here.
+
+**New command.** The contract stays the same. The command accepts both log
+formats.
+
+```
+A=ARM_A_LOG; B=ARM_B_LOG; test "$(grep -cE 'watcher subscribe"?[[:space:]]+path=/workspace/AGENTS\.md[[:space:]]+type=file([^0-9A-Za-z_]|$)' "$B")" -ge 1 && test "$(grep -c 'watcher subscribe' "$B")" -ge 1 && test "$(grep -c 'path=/workspace/AGENTS\.md' "$A")" = 0 && test "$(grep 'watcher subscribe' "$A" | grep -cv 'path=/workspace/AGENTS\.md')" -ge 1 && echo watcher-ok
+```
+
+| Clause | Rule |
+|---|---|
+| 1 | The Arm B log holds 1 or more `watcher subscribe` records for `path=/workspace/AGENTS.md type=file`. The closing quote after `subscribe` is optional. |
+| 2 | The Arm B log holds 1 or more `watcher subscribe` records. |
+| 3 | The Arm A log holds 0 records of any kind with `path=/workspace/AGENTS.md`. |
+| 4 | The Arm A log holds 1 or more `watcher subscribe` records with another path. |
+
+Clause 3 is stronger than the old clause. The old clause matched only
+`watcher subscribe` records. The new clause matches every record that names
+the path. Clause 4 keeps the Arm A log non-vacuous. A future format change
+cannot make clause 3 pass on its own.
+
+**Proof runs (2026-10-29, strategy role).** Each run reads a file. Runs 1 and
+2 read the archived logs under `reports/opencode-executor-4.2/`. Runs 3 and 4
+read a file under `/tmp/opencode/`. No run writes a file in the repository.
+
+| Run | Input | Output | Exit |
+|---|---|---|---|
+| 1, positive | `arm-a-startup.log` as A, `arm-b-startup.log` as B | `watcher-ok` | 0 |
+| 2, negative control 1 | the two logs swapped | none | 1 |
+| 3, negative control 2 | an empty file as A | none | 1 |
+| 4, negative control 3 | an Arm A copy with one added `path=/workspace/AGENTS.md` record | none | 1 |
+
+The two archived logs have these hashes:
+
+```
+b74e802730de172af8608b52cfa6668a8c89d2f10bd866ab63c3a21cdf2b5628  arm-a-startup.log
+aec8ed59d09784f4baeb1e47b833b28ec18e601c13836c2c6c5d9f57dbf397ac  arm-b-startup.log
+```
+
+The new command also accepts the old format. A copy of each archived log with
+the quote removed from the message gives `watcher-ok` and exit 0. The old
+command gives exit 1 on the archived logs and exit 0 on those copies. The
+format was the only defect.
+
+**Artifact test.** The watcher check reads an archived log file. It proves the
+log content only. The live container behavior is proved by the probe of task
+4.2, not by this check.
+
+**Anti-pattern defense.** Clause 4 defends against A4. The check fails on an
+empty Arm A log. Clause 3 defends against A7. It counts every record that
+names the path. It has no exclusion and no word filter. Clause 1 defends
+against a vacuous Arm B clause. The check fails on a log without the record.
+
+**Review applicability.** Review A checks the four proof runs and the clause
+table. Review B checks that the temporary files stay outside the repository.
+The security review, the UX/API review, and the adversarial review use the
+new command unchanged. The browser review does not apply.
+
+**`phase_base_sha`.** Section 13 gives the capture point.
 
 ## 8. Fixtures, mocks, and live-behavior proof
 
@@ -801,3 +890,9 @@ P1 composite allows commits in the track folder. Capture the Phase 2
 `phase_base_sha` after the amendment 1 commit and after Phase 1 acceptance.
 Never use a SHA that predates the amendment 1 commit as a Phase 2, 3, or 4
 base.
+
+Amendment 5 changes a check command of the task 4.2 closeout gate. The
+orchestrator captures the Phase 4 `phase_base_sha` immediately after the
+amendment 5 commit and before the next Phase 4 gate run. It exports that value
+as `PHASE_BASE_SHA`. Never use `dfc0b5e` as a Phase 4 base. That SHA predates
+the committed strategy.
