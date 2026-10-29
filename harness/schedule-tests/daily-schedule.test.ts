@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -664,5 +664,168 @@ describe("artifacts", () => {
     expect(pushed, `${JOB}: the push must hold only docs/`).toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
     expect(git(["ls-files", "--cached"]).split("\n"), JOB).toContain("secret.txt");
     expect(git(["log", "-1", "--format=%s"]), JOB).toBe("Publish daily 2026-10-26 OpenCode Go results: glm-5.2 (untested).");
+  });
+});
+
+// ---- Section 12: the adversarial cases ------------------------------------------
+
+// The runner of case 12.4. Its runs are not valid, so the model counts as
+// tested (spec D3) and the next day selects another model.
+const INVALID_RUNNER_SOURCE = `#!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({args, week: process.env.WEEK}) + '\\n');
+const model = args[1];
+for (const arm of ['a', 'b']) {
+  const id = arm + '-' + model.replaceAll('.', '-') + '-' + process.env.WEEK + '-r1';
+  const artifacts = path.join(process.env.BENCH_RUNS_ROOT, id, 'artifacts');
+  fs.mkdirSync(artifacts, {recursive:true});
+  fs.writeFileSync(path.join(artifacts, 'provenance.json'), JSON.stringify({executor:{kind:'opencode'}, model:'opencode-go/' + model, arm, track:'build'}));
+  fs.writeFileSync(path.join(artifacts, 'score.json'), JSON.stringify({valid:false}));
+}
+process.exit(0);
+`;
+
+// A listing of a directory tree. The scratch directory holds the caches of the
+// runtime, so it is one entry and the tree under it is not read.
+function listing(root: string, skip: string): string[] {
+  const out: string[] = [];
+  const walk = (dir: string, prefix: string) => {
+    for (const name of readdirSync(dir).sort()) {
+      const full = join(dir, name);
+      const rel = prefix ? `${prefix}/${name}` : name;
+      if (full === skip) { out.push(`${rel}/`); continue; }
+      const st = statSync(full);
+      if (st.isDirectory()) { out.push(`${rel}/`); walk(full, rel); }
+      else out.push(`${rel}:${st.size}`);
+    }
+  };
+  walk(root, "");
+  return out;
+}
+
+describe("adversarial", () => {
+  caseOf("12.1 two models on one day: cron-daily.sh keeps the recorded model until the operator deletes the record", w => {
+    jobSetup(w);
+    const first = job(w);
+    expect(first.status, `${JOB}: the first job run must succeed; ${first.stderr}`).toBe(0);
+    assertJobPick(first, jobSelection());
+    // A new live list. A new selection would now give another model, but the
+    // record of the day holds the model of the day (spec rule 1).
+    json(w.catalog, { live: ["batch-a"] });
+    const second = job(w);
+    expect(second.status, `${JOB}: the second job run must succeed; ${second.stderr}`).toBe(0);
+    assertJobPick(second, { schema: 1, date: DATE, week: WEEK, model: "glm-5.2", reason: "resume" });
+    // The operator deleted the day record. The job has no record to resume, so
+    // it makes a new pick. The plan names this deletion as an operator action.
+    rmSync(join(w.days, `${DATE}.json`));
+    const third = job(w);
+    expect(third.status, `${JOB}: the third job run must succeed; ${third.stderr}`).toBe(0);
+    const e = expected("batch-a", "untested", [row("batch-a", 80)], [1, 1, 1, 1], { gone: ["glm-5.2"] });
+    assertJobPick(third, e);
+    expect(record(w), `${JOB}: the new pick must reach the day record`).toEqual({
+      ...e, run_ids: ["a-batch-a-2026w44-r1", "b-batch-a-2026w44-r1"], runner_exit: 0,
+    });
+    expect(calls(w).map(c => c.args), `${JOB}: the runner must see the recorded model, then the new pick`).toEqual([
+      ["--model", "glm-5.2"], ["--model", "glm-5.2"], ["--model", "batch-a"],
+    ]);
+  });
+  caseOf("12.2 unpriced id: cron-daily.sh never selects a model that the price table names in aliases only", w => {
+    jobSetup(w);
+    // The live list holds an id that the price table names in aliases only.
+    // The alias points at a model with more requests, so a selector that
+    // resolves the live list through aliases would pick that model.
+    inputs(w, { a: 50, b: 100 }, ["x-alias", "a"], ["x-alias", "a", "b"], [], { "x-alias": "b" });
+    const r = job(w);
+    expect(r.status, `${JOB}: the job must run with an alias-only id; ${r.stderr}`).toBe(0);
+    const e = expected("a", "untested", [row("a", 50)], [2, 1, 1, 1], { unpriced: ["x-alias"], gone: ["b"] });
+    assertJobPick(r, e);
+    expect(record(w), `${JOB}: the excluded lists must reach the day record`).toEqual({
+      ...e, run_ids: ["a-a-2026w44-r1", "b-a-2026w44-r1"], runner_exit: 0,
+    });
+    expect(calls(w).map(c => c.args), `${JOB}: the runner must see the priced model`).toEqual([["--model", "a"]]);
+  });
+  caseOf("12.3 stale model: daily-pick.ts ignores a directory time and an unrelated day record", w => {
+    // The expected result: the pick stays a, with the last test date
+    // 2026-10-04. A directory time and a record of another run must not move
+    // that date (spec EV6 and D4).
+    inputs(w, { a: 50, b: 100 });
+    run(w, "a-a-2026w40-r1", "a"); run(w, "a-b-2026w42-r1", "b");
+    assertPick(pick(w), expected("a", "stalest", [row("a", 50, "2026-10-04"), row("b", 100, "2026-10-18")], [2, 2, 2, 0]));
+    utimesSync(join(w.runs, "a-a-2026w40-r1"), new Date(), new Date());
+    // The record names the run of b only. Its date belongs to that run alone.
+    day(w, "2026-12-31", "b", ["a-b-2026w42-r1"]);
+    assertPick(pick(w), expected("a", "stalest", [row("a", 50, "2026-10-04"), row("b", 100, "2026-12-31")], [2, 2, 2, 0]));
+  });
+  caseOf("12.4 invalid runs: cron-daily.sh selects another model on the next day", w => {
+    jobSetup(w);
+    writeFileSync(join(w.root, "invalid-runner.cjs"), INVALID_RUNNER_SOURCE, { mode: 0o755 });
+    const runner = { BENCH_DAILY_RUNNER: join(w.root, "invalid-runner.cjs") };
+    const first = job(w, [], runner);
+    expect(first.status, `${JOB}: the first day must succeed; ${first.stderr}`).toBe(0);
+    assertJobPick(first, jobSelection());
+    // The runs of the first day are not valid. They still count as a test, so
+    // the model moves to the end of the order and the next day gives another
+    // model (spec D3).
+    const second = job(w, [], runner, "2026-11-02");
+    expect(second.status, `${JOB}: the second day must succeed; ${second.stderr}`).toBe(0);
+    const e = expected("batch-a", "untested", [row("batch-a", 80), row("glm-5.2", 100, DATE)], [2, 2, 2, 1], {}, "2026-11-02", "2026w45");
+    assertJobPick(second, e);
+    expect(record(w, "2026-11-02"), `${JOB}: the new model must reach the day record`).toEqual({
+      ...e, run_ids: ["a-batch-a-2026w45-r1", "b-batch-a-2026w45-r1"], runner_exit: 0,
+    });
+    expect(calls(w).map(c => c.args), `${JOB}: the runner must see another model on the next day`).toEqual([
+      ["--model", "glm-5.2"], ["--model", "batch-a"],
+    ]);
+  });
+  caseOf("12.5 hostile id: cron-daily.sh never runs an id that came from the endpoint", w => {
+    jobSetup(w);
+    const pwned = join(w.root, "pwned");
+    const hostile = [`x; touch ${pwned}`, "$(id)", "../../etc"];
+    // The served list holds the hostile ids too, so the price table is the
+    // only thing that keeps them out of the candidate list.
+    inputs(w, { "safe-model": 100 }, ["safe-model", ...hostile], ["safe-model", ...hostile], []);
+    // A stub for the id command. A shell that evaluates $(id) writes a marker.
+    writeFileSync(join(w.bin, "id"), `#!/usr/bin/env bash\ntouch "${join(w.root, "id-ran")}"\nexit 0\n`, { mode: 0o755 });
+    const r = job(w);
+    expect(r.status, `${JOB}: the job must run; ${r.stderr}`).toBe(0);
+    const e = expected("safe-model", "untested", [row("safe-model", 100)], [4, 1, 1, 1],
+      { unpriced: ["$(id)", "../../etc", `x; touch ${pwned}`] });
+    assertJobPick(r, e);
+    expect(record(w), `${JOB}: the excluded lists must reach the day record`).toEqual({
+      ...e, run_ids: ["a-safe-model-2026w44-r1", "b-safe-model-2026w44-r1"], runner_exit: 0,
+    });
+    expect(calls(w).map(c => c.args), `${JOB}: the runner must see the priced model`).toEqual([["--model", "safe-model"]]);
+    expect(existsSync(pwned), `${JOB}: the job must not run a hostile id`).toBe(false);
+    expect(existsSync("/tmp/pwned"), `${JOB}: no file named pwned may exist`).toBe(false);
+    expect(existsSync(join(w.root, "id-ran")), `${JOB}: no shell may evaluate the hostile id`).toBe(false);
+  });
+  caseOf("12.6 dry run writes nothing: cron-daily.sh leaves the temporary root unchanged", w => {
+    jobSetup(w);
+    // The job opens the lock file. It exists before the run, so the listing
+    // shows every file of the root.
+    writeFileSync(join(w.root, "weekly-cron.lock"), "");
+    // The scratch directory holds the caches of the runtime. It is inside the
+    // temporary root, so the job still writes nothing outside it.
+    const scratch = join(w.root, "scratch");
+    mkdirSync(scratch, { recursive: true });
+    const before = listing(w.root, scratch);
+    const r = job(w, ["--dry-run"], { TMPDIR: scratch });
+    expect(r.status, `${JOB}: the dry run must succeed; ${r.stderr}`).toBe(0);
+    expect(listing(w.root, scratch), `${JOB}: the dry run must write no file under the temporary root`).toEqual(before);
+    expect(readdirSync(w.days), `${JOB}: the dry run must write no day record`).toEqual([]);
+    expect(readdirSync(w.runs), `${JOB}: the dry run must write no run directory`).toEqual([]);
+    expect(calls(w), `${JOB}: the dry run must call no runner`).toEqual([]);
+  });
+  caseOf("12.7 forged date: daily-pick.ts dates only the run that the day record lists", w => {
+    // The expected result: the pick is a, with the last test date
+    // 2026-10-11. The record of 2026-10-20 names the run of b, so that date
+    // belongs to b alone (spec D4). A record that moves every run would give
+    // b, and a record that moves no run would also give b.
+    inputs(w, { a: 50, b: 100 });
+    run(w, "a-a-2026w41-r1", "a"); run(w, "a-b-2026w40-r1", "b");
+    day(w, "2026-10-20", "b", ["a-b-2026w40-r1"]);
+    assertPick(pick(w), expected("a", "stalest", [row("a", 50, "2026-10-11"), row("b", 100, "2026-10-20")], [2, 2, 2, 0]));
   });
 });
