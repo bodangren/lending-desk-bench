@@ -1,0 +1,147 @@
+# Task 4.2 container probe without a model call
+
+Date: 2026-10-29.
+Start: 2026-10-29T15:09:34+08:00.
+End: 2026-10-29T15:15:44+08:00.
+OpenCode: v2.2.0.
+Image: docker.io/library/node@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3
+
+The probe sent no prompt. The probe made no model call. Each arm ran in
+one fresh container. The container had no network. The private XDG
+directories were empty. The container mounted no host credential, no host
+home, and no host dotfile tree. The server password was a synthetic value.
+
+## Method
+
+The helper scripts are in `evidence/task-4.2/`. The script
+`evidence/task-4.2/run-arm.sh` builds the Arm A and Arm B configs with the
+same code as `harness/run.sh`. It starts one container per arm with
+`--network=none` on the pinned image. The script
+`evidence/task-4.2/probe.cjs` starts `opencode serve` in the container. It
+creates one session with `POST /api/session`. Then it calls
+`POST /api/experimental/session/{id}/skill` with `resume: null` for the
+eight ids. The script writes the record lines and the API status lines.
+
+## The 16 record lines
+
+```
+skill-probe arm=a id=measure status=404
+skill-probe arm=a id=next-best-practices status=404
+skill-probe arm=a id=vercel-react-best-practices status=404
+skill-probe arm=a id=vercel-composition-patterns status=404
+skill-probe arm=a id=build-graph status=404
+skill-probe arm=a id=pdf status=404
+skill-probe arm=a id=opencode status=204
+skill-probe arm=a id=report status=204
+skill-probe arm=b id=measure status=204
+skill-probe arm=b id=next-best-practices status=204
+skill-probe arm=b id=vercel-react-best-practices status=204
+skill-probe arm=b id=vercel-composition-patterns status=204
+skill-probe arm=b id=build-graph status=204
+skill-probe arm=b id=pdf status=404
+skill-probe arm=b id=opencode status=204
+skill-probe arm=b id=report status=204
+```
+
+## Archive
+
+The archive is under `reports/opencode-executor-4.2/`. That folder is not
+in the repository. The plan holds the durable record.
+
+| Path | sha256 |
+|---|---|
+| `reports/opencode-executor-4.2/skill-probe.txt` | `33d240e940309225c9f0f74d0ec6b1b0af18a65bdc141c8703a05986f9b62953` |
+| `reports/opencode-executor-4.2/arm-a-startup.log` | `b74e802730de172af8608b52cfa6668a8c89d2f10bd866ab63c3a21cdf2b5628` |
+| `reports/opencode-executor-4.2/arm-b-startup.log` | `aec8ed59d09784f4baeb1e47b833b28ec18e601c13836c2c6c5d9f57dbf397ac` |
+| `reports/opencode-executor-4.2/probe.md` | `f34f61ee4eb2aa0abd57397e7e6087254b313b7ea64e87ea7dd7205f40d379c1` |
+| `reports/opencode-executor-4.2/raw/skill-probe-arm-a.txt` | `09babe50fb3db12b65a795f80dcbf57d9998902ee6b3cca52e4dfb5d578fe7d8` |
+| `reports/opencode-executor-4.2/raw/skill-probe-arm-b.txt` | `35d348a4ad1346bce396997b2698617aa0d3886c6cde2ec695a063243b771ae1` |
+| `reports/opencode-executor-4.2/raw/api-arm-a.txt` | `d8d52f06964668d340cda4bd33e71feb993320a5ab3ccedc920308356217172b` |
+| `reports/opencode-executor-4.2/raw/api-arm-b.txt` | `6fac0dbd6f23474ea93646a19a4e38aa4ddac75c00108fba044819bf66cc06b4` |
+| `reports/opencode-executor-4.2/raw/probe-arm-a.txt` | `a8554b74f7ba36ef9ce7be05bec5c8333bd5500608a89e6cc0fe5b33bd0592db` |
+| `reports/opencode-executor-4.2/raw/probe-arm-b.txt` | `a783f1998958a80ff9f6a20ee8d23eb0cc9b7795d0288091d6df36c8fad55259` |
+| `reports/opencode-executor-4.2/raw/arm-a-config.json` | `9fe5c863df61d963d5379d51b3e5d6051dca051475c2e855c6d2c65dfbf92905` |
+| `reports/opencode-executor-4.2/raw/arm-b-config.json` | `47cf185b0eab2a55d8a9ae0d5535ef957255e554f4f3f13e4e6329bc254d85b4` |
+| `measure/tracks/opencode_executor/evidence/task-4.2/probe.cjs` | `009d6c2a952df9936128ac57528325dab19a5b17e61e85069dd94dc6a057654d` |
+| `measure/tracks/opencode_executor/evidence/task-4.2/run-arm.sh` | `9e74bf88657e595b7822c7659e2237705c14d3cabf9e07ce0e6fb486fe8ec3aa` |
+
+## Redaction and secret scan
+
+The redaction command:
+
+```
+sed -E 's/(ses|evt)_[A-Za-z0-9]{28,}/<redacted-id>/g'
+```
+
+No id token matched the SECRET_SCAN pattern in the final run. The command
+changed no line. The count of `watcher subscribe` lines and the count of
+`/workspace/AGENTS.md` lines are equal before and after the command.
+
+| Log | `watcher subscribe` before | `watcher subscribe` after | `/workspace/AGENTS.md` before | `/workspace/AGENTS.md` after |
+|---|---|---|---|---|
+| Arm A | 8 | 8 | 0 | 0 |
+| Arm B | 10 | 10 | 3 | 3 |
+
+The SECRET_SCAN pattern of test-strategy.md section 2 over
+`reports/opencode-executor-4.2/` gave zero matching lines at
+2026-10-29T15:17:00+08:00. The scan over the raw frame files gave zero
+matching lines at the same time.
+
+## The two check commands of test-strategy.md section 7
+
+Check 1, the skill record. Command:
+
+```
+P=reports/opencode-executor-4.2/skill-probe.txt; test "$(grep -cE '^skill-probe arm=b id=(measure|next-best-practices|vercel-react-best-practices|vercel-composition-patterns|build-graph) status=204$' "$P")" = 5 && test "$(grep -cE '^skill-probe arm=a id=(measure|next-best-practices|vercel-react-best-practices|vercel-composition-patterns|build-graph) status=404$' "$P")" = 5 && test "$(grep -cE '^skill-probe arm=[ab] id=pdf status=404$' "$P")" = 2 && test "$(grep -cE '^skill-probe arm=[ab] id=(opencode|report) status=[0-9]+$' "$P")" = 4 && test "$(grep -c '^skill-probe ' "$P")" = 16 && test "$(grep -oE '^skill-probe arm=[ab] id=[a-z-]+' "$P" | sort -u | wc -l)" = 16 && echo skill-probe-ok
+```
+
+Output: `skill-probe-ok`. Exit code: 0.
+
+Check 2, the watcher log. Command:
+
+```
+A=reports/opencode-executor-4.2/arm-a-startup.log; B=reports/opencode-executor-4.2/arm-b-startup.log; test "$(grep -c 'watcher subscribe path=/workspace/AGENTS.md type=file' "$B")" -ge 1 && test "$(grep -c 'watcher subscribe path=/workspace/AGENTS.md' "$A")" = 0 && test "$(grep -c 'watcher subscribe path=' "$A")" -ge 1 && echo watcher-ok
+```
+
+Output: none. Exit code: 1.
+
+The clause values of check 2:
+
+| Clause | Value | Result |
+|---|---|---|
+| Arm B `watcher subscribe path=/workspace/AGENTS.md type=file` | 0 | fails `-ge 1` |
+| Arm A `watcher subscribe path=/workspace/AGENTS.md` | 0 | passes `= 0` |
+| Arm A `watcher subscribe path=` | 0 | fails `-ge 1` |
+
+## Finding: the v2.2.0 log format
+
+OpenCode v2.2.0 quotes the message of a log record. The record is:
+
+```
+timestamp=2026-10-29T07:15:42.245Z level=INFO run=84bda9d6 message="watcher subscribe" path=/workspace/AGENTS.md type=file ignores=0
+```
+
+The check of test-strategy.md section 7 was written for v2.0.32. It looks
+for the text `watcher subscribe path=/workspace/AGENTS.md type=file`. The
+v2.2.0 record places a quote between the message and the path. The check
+cannot match the record in any format. Its Arm A clause with `= 0` matches
+nothing in either format, because the same quote stands in the way.
+
+The arm contract itself holds. The diagnostics below are not the gate.
+
+| Diagnostic | Value |
+|---|---|
+| Arm A `path=/workspace/AGENTS.md` lines | 0 |
+| Arm B `watcher subscribe" path=/workspace/AGENTS.md type=file` lines | 1 |
+| Arm A `watcher subscribe` lines | 8 |
+| Arm B `watcher subscribe` lines | 10 |
+
+The Arm B log holds one watcher subscribe record for
+`/workspace/AGENTS.md` of type `file`. The Arm A log holds no
+`/workspace/AGENTS.md` record. The Arm A log is not empty. The five Arm B
+skill ids return 204. The Arm A skill ids return 404. The unmounted id
+`pdf` returns 404 in both arms.
+
+Task 4.2 waits for a test-strategy section 7 amendment of the watcher
+check for the v2.2.0 log format. The orchestrator routes that amendment
+to the strategy role.

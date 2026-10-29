@@ -466,6 +466,22 @@ model, no real credential (NFR-3).
   `skill-probe` record in the form `skill-probe arm=<a|b> id=<id>
   status=<http status>` and keeps the per-arm startup logs for the
   watcher check (test-strategy.md section 7).
+  - The probe ran on 2026-10-29, 15:09 to 15:16 (+08:00). It used
+    OpenCode v2.2.0 and sent no prompt. The evidence is in
+    (evidence/task-4.2-container-probe.txt). The archive is under
+    `reports/opencode-executor-4.2/`.
+  - The check 1 output of test-strategy.md section 7 is `skill-probe-ok`
+    with exit code 0. The 16 record lines hold the five Arm B ids at 204,
+    the five Arm A ids at 404, and the unmounted id `pdf` at 404 in both
+    arms.
+  - The check 2 output is none with exit code 1. OpenCode v2.2.0 quotes the
+    message of a log line: `message="watcher subscribe" path=...`. The
+    check was written for v2.0.32 and cannot match that log line. The Arm
+    B log holds one `watcher subscribe` line for `/workspace/AGENTS.md` of
+    type `file`. The Arm A log holds none. The Arm A log holds 8 other
+    `watcher subscribe` lines.
+  - Waits for a test-strategy section 7 amendment of the watcher check for
+    the v2.2.0 log format (orchestrator routes it to the strategy role).
 - [ ] 4.3 Live smoke after 2026-10-21 21:44 (+08:00): one build-track run per
   arm with one low-cost batch model. Check the valid score, the schema 7
   provenance, and the recost. Check that the secret scan is clean and that
