@@ -461,7 +461,7 @@ model, no real credential (NFR-3).
     `HOST NOT READY` and `host busy — proceeding under always-publish policy`.
     The two tests then read the batch output instead of the FR-3 credential
     reason. The other 19 tests of the file passed.
-- [x] 4.2 Container probe without a model call for Arm A and Arm B. Archive
+- [x] 4.2 Container probe without a model call for Arm A and Arm B. Archive d288c61
   the output under `reports/` (spec FR-4). The probe writes the 16-line
   `skill-probe` record in the form `skill-probe arm=<a|b> id=<id>
   status=<http status>` and keeps the per-arm startup logs for the
