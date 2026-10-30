@@ -145,3 +145,68 @@ skill ids return 204. The Arm A skill ids return 404. The unmounted id
 Task 4.2 waits for a test-strategy section 7 amendment of the watcher
 check for the v2.2.0 log format. The orchestrator routes that amendment
 to the strategy role.
+
+## Closeout 2026-10-31: the amended watcher check
+
+Date: 2026-10-31.
+Role: Jr Green, session `Green · P4 T4.2 · opencode_executor · r2`.
+Source of the command: commit `7a42eab`, test-strategy.md Amendment 5
+(section 7). The old check 2 above stays here as a quoted record. No
+container, no OpenCode command, and no model call ran in this closeout. Each
+run below is a `grep` or `sha256sum` command over an archived file.
+
+### Run 1: the archived files are unchanged
+
+Command: `sha256sum` over the three archived files. Output:
+
+```
+33d240e940309225c9f0f74d0ec6b1b0af18a65bdc141c8703a05986f9b62953  reports/opencode-executor-4.2/skill-probe.txt
+b74e802730de172af8608b52cfa6668a8c89d2f10bd866ab63c3a21cdf2b5628  reports/opencode-executor-4.2/arm-a-startup.log
+aec8ed59d09784f4baeb1e47b833b28ec18e601c13836c2c6c5d9f57dbf397ac  reports/opencode-executor-4.2/arm-b-startup.log
+```
+
+All three hashes equal the table in the Archive section. Exit code: 0.
+
+### Run 2: check 1, the skill record
+
+Input: `reports/opencode-executor-4.2/skill-probe.txt`. The command is the
+check 1 command of the section above, unchanged.
+
+Output: `skill-probe-ok`. Exit code: 0.
+
+### Run 3: the amended check 2
+
+Inputs: `A=reports/opencode-executor-4.2/arm-a-startup.log` and
+`B=reports/opencode-executor-4.2/arm-b-startup.log`. Command (exact text of
+test-strategy.md Amendment 5, with the two paths in place of `ARM_A_LOG` and
+`ARM_B_LOG`):
+
+```
+A=reports/opencode-executor-4.2/arm-a-startup.log; B=reports/opencode-executor-4.2/arm-b-startup.log; test "$(grep -cE 'watcher subscribe"?[[:space:]]+path=/workspace/AGENTS\.md[[:space:]]+type=file([^0-9A-Za-z_]|$)' "$B")" -ge 1 && test "$(grep -c 'watcher subscribe' "$B")" -ge 1 && test "$(grep -c 'path=/workspace/AGENTS\.md' "$A")" = 0 && test "$(grep 'watcher subscribe' "$A" | grep -cv 'path=/workspace/AGENTS\.md')" -ge 1 && echo watcher-ok
+```
+
+Output: `watcher-ok`. Exit code: 0.
+
+### Runs 4 to 6: the negative controls
+
+The same command ran with other inputs. The temporary files were under
+`/tmp/opencode/`. No temporary file was in the repository.
+
+| Run | Input | Output | Exit |
+|---|---|---|---|
+| 4, negative control 1 | `arm-b-startup.log` as A and `arm-a-startup.log` as B (swapped) | none | 1 |
+| 5, negative control 2 | an empty file as A, `arm-b-startup.log` as B | none | 1 |
+| 6, negative control 3 | a copy of `arm-a-startup.log` with one added `path=/workspace/AGENTS.md` record as A, `arm-b-startup.log` as B | none | 1 |
+
+The added record of run 6 was:
+
+```
+timestamp=2026-10-29T07:15:42.245Z level=INFO run=84bda9d6 message="watcher subscribe" path=/workspace/AGENTS.md type=file ignores=0
+```
+
+### Result
+
+Check 1 gives `skill-probe-ok` with exit 0. The amended check 2 gives
+`watcher-ok` with exit 0. The 3 negative controls give no output and exit 1.
+These results equal the proof runs of Amendment 5. The archived files
+are unchanged. Task 4.2 is complete.

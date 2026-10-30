@@ -461,7 +461,7 @@ model, no real credential (NFR-3).
     `HOST NOT READY` and `host busy — proceeding under always-publish policy`.
     The two tests then read the batch output instead of the FR-3 credential
     reason. The other 19 tests of the file passed.
-- [~] 4.2 Container probe without a model call for Arm A and Arm B. Archive
+- [x] 4.2 Container probe without a model call for Arm A and Arm B. Archive
   the output under `reports/` (spec FR-4). The probe writes the 16-line
   `skill-probe` record in the form `skill-probe arm=<a|b> id=<id>
   status=<http status>` and keeps the per-arm startup logs for the
@@ -480,8 +480,12 @@ model, no real credential (NFR-3).
     B log holds one `watcher subscribe` line for `/workspace/AGENTS.md` of
     type `file`. The Arm A log holds none. The Arm A log holds 8 other
     `watcher subscribe` lines.
-  - Waits for a test-strategy section 7 amendment of the watcher check for
-    the v2.2.0 log format (orchestrator routes it to the strategy role).
+  - The amended check 2 of test-strategy.md Amendment 5 (`7a42eab`) gives
+    `watcher-ok` with exit code 0 on the archived logs. The 3 negative
+    controls (logs swapped, an empty Arm A file, and an Arm A copy with one
+    added `/workspace/AGENTS.md` record) give no output and exit code 1.
+    The 3 archived files have the hashes of the evidence file. The closeout
+    runs are in the 2026-10-31 section of the evidence file.
 - [ ] 4.3 Live smoke after 2026-10-21 21:44 (+08:00): one build-track run per
   arm with one low-cost batch model. Check the valid score, the schema 7
   provenance, and the recost. Check that the secret scan is clean and that
