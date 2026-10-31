@@ -1,31 +1,25 @@
 #!/usr/bin/env bash
 # Daily model schedule (track daily_model_schedule): refresh the model list,
-# pick one model — untested first, then the stalest — run it through the
-# weekly path, and publish the site data. The selection rule lives in
-# harness/daily-pick.ts; this script owns every write and every publish.
+# pick one model, guard each batch, and publish the site data.
+# The selector lives in harness/daily-pick.ts. The job owns writes and publishes.
 #
-#   0 1 * * 0,3 /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh \
-#     >> /home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log 2>&1
+# The schedule uses harness/systemd/lending-desk-daily.timer with Persistent=false.
+# The matching service is harness/systemd/lending-desk-daily.service.
+# Do not install these units in this track.
+# The timer runs Wednesday and Sunday at 01:00 local time. Each day is a UTC date.
+# The job publishes only docs/ and pushes only its own docs commit at its parent.
 #
-# The line runs on Wednesday and Sunday at 01:00 local time.
-# The crontab line waits for the owner decision O1 (spec.md); this track does
-# not install it. Each day is a UTC date. runs/ and reports/ are gitignored;
-# only docs/ (the Pages site) is published, and only when the runner passed.
-#
-# Test seams (spec NFR-6): BENCH_RUNS_ROOT, BENCH_PRICING_PATH,
-# BENCH_DAILY_DIR, BENCH_DAILY_DATE, BENCH_DAILY_CATALOG, BENCH_DAILY_SERVED,
-# BENCH_DAILY_RUNNER (default harness/weekly.sh), BENCH_DAILY_PUBLISH (0
-# skips the commit and the push), BENCH_DAILY_LOCK (default the
-# .tmp/weekly-cron.lock of the weekly cron). Without them the job uses the
-# real paths. A dry run writes no day record and calls no runner.
+# Test seams: BENCH_RUNS_ROOT, BENCH_PRICING_PATH, BENCH_DAILY_DIR,
+# BENCH_DAILY_DATE, BENCH_DAILY_CATALOG, BENCH_DAILY_SERVED,
+# BENCH_DAILY_PUBLISH, BENCH_DAILY_LOCK, BENCH_DAILY_QUOTA_CMD,
+# BENCH_DAILY_BATCH, BENCH_DAILY_POST, and BENCH_DAILY_SELECT.
+# BENCH_DAILY_RUNNER is retired and is never started. Dry runs write no day
+# record and make no model call.
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 H="$ROOT/harness"
 
 # ---- Toolchain -----------------------------------------------------------------
-# FR-9: under the crontab PATH, node resolves to the snap dispatcher, which
-# breaks tsx. Fall back to the operator nvm toolchain when node is missing or
-# is the snap dispatcher.
 if ! command -v node >/dev/null 2>&1 || [ "$(command -v node)" = "/snap/bin/node" ]; then
   # shellcheck source=toolchain.sh
   source "$H/toolchain.sh"
@@ -38,14 +32,15 @@ DAYS_DIR="${BENCH_DAILY_DIR:-$ROOT/reports/daily}"
 RUNS_ROOT="${BENCH_RUNS_ROOT:-$ROOT/runs}"
 PRICING="${BENCH_PRICING_PATH:-$H/go-pricing.json}"
 LOCK="${BENCH_DAILY_LOCK:-$ROOT/.tmp/weekly-cron.lock}"
-RUNNER="${BENCH_DAILY_RUNNER:-$H/weekly.sh}"
+BATCH="${BENCH_DAILY_BATCH:-$H/batch.sh}"
 PUBLISH="${BENCH_DAILY_PUBLISH:-1}"
+POST="${BENCH_DAILY_POST:-1}"
 DRY_RUN=0
 case " $* " in
   *" --dry-run "*) DRY_RUN=1 ;;
 esac
 
-# The ISO week token of the day; the runner and the batch runs carry it.
+# The ISO week token of the day. Run ids and the selection carry this token.
 WEEK="$(node -e '
 const d = new Date(process.argv[1] + "T00:00:00Z");
 if (Number.isNaN(d.getTime())) process.exit(1);
@@ -68,12 +63,11 @@ CATALOG_TMP="$TMP_DIR/daily-catalog-$$"
 SERVED_TMP="$TMP_DIR/daily-served-$$"
 MSG_FILE="$TMP_DIR/daily-commit-msg-$$"
 RECORD_TMP="$DAYS_DIR/.daily-record-$$"
-trap 'rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" 2>/dev/null' EXIT
+QUOTA_TMP="$TMP_DIR/daily-quota-$$"
+trap 'rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$QUOTA_TMP" 2>/dev/null' EXIT
 
 # ---- Lock ----------------------------------------------------------------------
-# The lock file of the weekly cron (D9): the daily job and a weekly run
-# never run at the same time. The mode is exclusive, so a second daily job
-# also skips. A held lock is a clean skip, not a failure.
+# The exclusive lock prevents overlap with weekly and daily jobs.
 mkdir -p "$(dirname "$LOCK")"
 exec 9>"$LOCK"
 if ! flock -n 9; then
@@ -83,7 +77,6 @@ if ! flock -n 9; then
 fi
 
 # ---- Day record check ----------------------------------------------------------
-# A broken record must stop the job before any new selection or run (FR-6).
 RECORD="$DAYS_DIR/$DAY.json"
 if [ -f "$RECORD" ]; then
   if ! node -e '
@@ -96,8 +89,6 @@ if (typeof r.date !== "string" || !Array.isArray(r.run_ids)) process.exit(1);
 fi
 
 # ---- Catalog fetch (FR-1, D8) --------------------------------------------------
-# Each fetch goes to a temporary file and moves into place only on success, so
-# a failed fetch never leaves an empty or partial list behind (EV2).
 CATALOG="${BENCH_DAILY_CATALOG:-}"
 if [ -z "$CATALOG" ]; then
   CATALOG_PATH="$ROOT/reports/go-catalog-$WEEK.json"
@@ -114,17 +105,15 @@ if (!Array.isArray(c.live) || c.live.length === 0 || !c.live.every(x => typeof x
   fi
   mv "$CATALOG_TMP" "$CATALOG_PATH"
   CATALOG="$CATALOG_PATH"
-else
-  if [ ! -s "$CATALOG" ] || ! node -e '
+elif [ ! -s "$CATALOG" ] || ! node -e '
 const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
 if (!Array.isArray(c.live) || c.live.length === 0 || !c.live.every(x => typeof x === "string")) process.exit(1);
 ' "$CATALOG"; then
-    echo "DAILY FAIL catalog: $CATALOG is empty, not JSON, or has no live models" >&2
-    exit 1
-  fi
+  echo "DAILY FAIL catalog: $CATALOG is empty, not JSON, or has no live models" >&2
+  exit 1
 fi
 
-# ---- Served list ----------------------------------------------------------------
+# ---- Served list ---------------------------------------------------------------
 SERVED="${BENCH_DAILY_SERVED:-}"
 if [ -z "$SERVED" ]; then
   SERVED_PATH="$ROOT/reports/go-served-$WEEK.txt"
@@ -134,44 +123,124 @@ if [ -z "$SERVED" ]; then
   fi
   mv "$SERVED_TMP" "$SERVED_PATH"
   SERVED="$SERVED_PATH"
-else
-  if [ ! -s "$SERVED" ]; then
-    echo "DAILY FAIL served: $SERVED is empty" >&2
-    exit 1
-  fi
+elif [ ! -s "$SERVED" ]; then
+  echo "DAILY FAIL served: $SERVED is empty" >&2
+  exit 1
 fi
 
-# ---- Selection -------------------------------------------------------------------
-# The selector prints the DAILY_PICK line on stderr exactly once and the full
-# JSON object on stdout. Exit 2 is an input fault, exit 3 is no eligible model.
+# ---- Selection -----------------------------------------------------------------
+# A selector seam supports exit-code tests. Production uses daily-pick.ts.
 SELECT_RC=0
-"$H/node_modules/.bin/tsx" "$H/daily-pick.ts" \
-  --catalog "$CATALOG" --served "$SERVED" --date "$DAY" \
-  --runs-root "$RUNS_ROOT" --pricing "$PRICING" --day-dir "$DAYS_DIR" \
-  > "$PICK_OUT" || SELECT_RC=$?
-if [ "$SELECT_RC" -eq 2 ] || [ "$SELECT_RC" -gt 3 ]; then
+if [ -n "${BENCH_DAILY_SELECT:-}" ]; then
+  "$BENCH_DAILY_SELECT" \
+    --catalog "$CATALOG" --served "$SERVED" --date "$DAY" \
+    --runs-root "$RUNS_ROOT" --pricing "$PRICING" --day-dir "$DAYS_DIR" \
+    > "$PICK_OUT" || SELECT_RC=$?
+else
+  "$H/node_modules/.bin/tsx" "$H/daily-pick.ts" \
+    --catalog "$CATALOG" --served "$SERVED" --date "$DAY" \
+    --runs-root "$RUNS_ROOT" --pricing "$PRICING" --day-dir "$DAYS_DIR" \
+    > "$PICK_OUT" || SELECT_RC=$?
+fi
+if [ "$SELECT_RC" -ne 0 ] && [ "$SELECT_RC" -ne 3 ]; then
   echo "DAILY FAIL pick: the selector exited $SELECT_RC" >&2
   exit "$SELECT_RC"
 fi
 
-MODEL="$(node -e '
-process.stdout.write(String(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).model ?? ""));
-' "$PICK_OUT")"
-
-if [ "$SELECT_RC" -eq 3 ] || [ -z "$MODEL" ]; then
-  # Rule 6: no candidate is eligible. Run no model, publish nothing.
+if [ "$SELECT_RC" -eq 3 ]; then
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
   exit 0
 fi
+MODEL="$(node -e '
+process.stdout.write(String(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).model ?? ""));
+' "$PICK_OUT")"
+if [ -z "$MODEL" ]; then
+  echo "DAILY FAIL pick: the selector returned no model with exit 0" >&2
+  exit 2
+fi
 
-# ---- Dry run ---------------------------------------------------------------------
-# The planned run ids of the day's model on the four tracks, then the count.
-# No day record, nothing under reports/, no runner call.
+# ---- Go quota guard (D12) -------------------------------------------------------
+# Read from the seam or from the OpenChamber local endpoint. A live read uses
+# only the first instance port and only GET /api/quota/opencode-go.
+guard_read() {
+  local raw="" rc=0 port="" parse="" value=""
+  if [ -n "${BENCH_DAILY_QUOTA_CMD:-}" ]; then
+    raw="$("$BENCH_DAILY_QUOTA_CMD")" || rc=$?
+  else
+    local status=""
+    status="$(openchamber status --json)" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      port="$(printf '%s' "$status" | node -e '
+let s = ""; process.stdin.on("data", c => s += c); process.stdin.on("end", () => {
+  try {
+    const x = JSON.parse(s);
+    const p = x.instances?.[0]?.port;
+    if ((typeof p === "number" && Number.isInteger(p) && p > 0 && p < 65536)
+      || (typeof p === "string" && /^[0-9]+$/.test(p) && Number(p) > 0 && Number(p) < 65536)) process.stdout.write(String(p));
+  } catch {}
+});
+')"
+      if [ -z "$port" ]; then rc=1; else
+        raw="$(curl -fsS "http://127.0.0.1:$port/api/quota/opencode-go")" || rc=$?
+      fi
+    fi
+  fi
+  if [ "$rc" -ne 0 ] || [ -z "${raw//[[:space:]]/}" ]; then
+    echo "DAILY SKIP go-guard: read failed"
+    GUARD_STOP="read failed"
+    return 1
+  fi
+  parse="$(printf '%s' "$raw" | node -e '
+let s = ""; process.stdin.on("data", c => s += c); process.stdin.on("end", () => {
+  try {
+    const x = JSON.parse(s);
+    const w = x?.usage?.windows?.weekly;
+    if (!w || !Object.prototype.hasOwnProperty.call(w, "usedPercent") || w.usedPercent === null) process.stdout.write("missing");
+    else if (typeof w.usedPercent !== "number" || !Number.isFinite(w.usedPercent)) process.stdout.write("invalid");
+    else process.stdout.write(JSON.stringify(w.usedPercent));
+  } catch { process.stdout.write("read-failed"); }
+});
+')" || parse="read-failed"
+  case "$parse" in
+    missing)
+      echo "DAILY SKIP go-guard: missing field"
+      GUARD_STOP="missing field"
+      return 1
+      ;;
+    invalid)
+      echo "DAILY SKIP go-guard: not a number"
+      GUARD_STOP="not a number"
+      return 1
+      ;;
+    read-failed)
+      echo "DAILY SKIP go-guard: read failed"
+      GUARD_STOP="read failed"
+      return 1
+      ;;
+  esac
+  value="$parse"
+  if node -e 'process.exit(Number(process.argv[1]) > 80 ? 0 : 1)' "$value"; then
+    echo "DAILY SKIP go-guard: weekly used $value percent"
+    GUARD_STOP="weekly used $value percent"
+    return 1
+  fi
+  echo "DAILY GO-GUARD weekly=$value"
+  return 0
+}
+
+# ---- Dry run -------------------------------------------------------------------
+# One guard read precedes the four planned batch dry runs. It never calls a model.
 if [ "$DRY_RUN" = "1" ]; then
+  GUARD_STOP=""
+  if ! guard_read; then
+    echo "DAILY DRY-RUN planned=0"
+    echo "DAILY END $(date -Is)"
+    exit 0
+  fi
   PLANNED=0
   for track in build bugfix tests change; do
-    track_out="$(BENCH_TRACK="$track" bash "$H/batch.sh" --dry-run --model "$MODEL" 2>&1)" || {
+    track_out="$(BENCH_TRACK="$track" "$BATCH" --dry-run --model "$MODEL" 2>&1)" || {
       echo "DAILY FAIL dry-run: the $track batch dry run failed" >&2
       exit 1
     }
@@ -184,25 +253,79 @@ if [ "$DRY_RUN" = "1" ]; then
   exit 0
 fi
 
-# ---- Day record before the runner (FR-6) -----------------------------------------
-# Written before the first batch call, so a second run of the job on the same
-# day resumes this model instead of selecting a second one.
+# ---- Day record before the first batch (FR-6, D12) ------------------------------
+# A resume keeps the original selection facts. Only run_ids and runner_exit
+# change during the run; go_guard_stop records the current day's stop reason.
 mkdir -p "$DAYS_DIR"
-node -e '
+if [ -f "$RECORD" ]; then
+  node -e '
+const fs = require("node:fs");
+const rec = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+rec.run_ids = [];
+rec.runner_exit = null;
+rec.go_guard_stop = null;
+fs.writeFileSync(process.argv[2], JSON.stringify(rec, null, 2) + "\n");
+' "$RECORD" "$RECORD_TMP" && mv "$RECORD_TMP" "$RECORD"
+else
+  node -e '
 const fs = require("node:fs");
 const pick = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
 pick.run_ids = [];
 pick.runner_exit = null;
+pick.go_guard_stop = null;
 fs.writeFileSync(process.argv[2], JSON.stringify(pick, null, 2) + "\n");
 ' "$PICK_OUT" "$RECORD_TMP" && mv "$RECORD_TMP" "$RECORD"
+fi
 
-# ---- Runner -----------------------------------------------------------------------
+# ---- Pre-batch post steps (D12 steps 1 to 3) ------------------------------------
+if [ "$POST" != "0" ]; then
+  cd "$H"
+  PW_CHROME="$HOME/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell"
+  if [ ! -x "$PW_CHROME" ] && ! ls "$HOME"/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell >/dev/null 2>&1; then
+    echo "DAILY FAIL playwright: Chromium is missing" >&2
+    exit 2
+  fi
+  PRICE_SHA="$(sha256sum "$H/go-pricing.json" | cut -d' ' -f1)"
+  PRICE_MARKER="$ROOT/reports/go-pricing.sha"
+  if [ ! -f "$PRICE_MARKER" ] || [ "$(cat "$PRICE_MARKER")" != "$PRICE_SHA" ]; then
+    ./recost.sh
+  fi
+  mkdir -p "$ROOT/reports"
+  printf '%s\n' "$PRICE_SHA" > "$PRICE_MARKER"
+  HASHES="$("$H/node_modules/.bin/tsx" "$H/provenance.ts" --shell)"
+  HASH_MARKER="$ROOT/reports/harness-hashes.sha"
+  if [ ! -f "$HASH_MARKER" ] || [ "$(cat "$HASH_MARKER")" != "$HASHES" ]; then
+    WEEK=all ./rescore-doctor.sh
+  fi
+  printf '%s\n' "$HASHES" > "$HASH_MARKER"
+fi
+
+# ---- Four guarded track batches (D12 step 4) ------------------------------------
 RUNNER_EXIT=0
-WEEK="$WEEK" "$RUNNER" --model "$MODEL"
-RUNNER_EXIT=$?
+GUARD_STOP=""
+for track in build bugfix tests change; do
+  if ! guard_read; then
+    break
+  fi
+  BENCH_TRACK="$track" "$BATCH" --model "$MODEL"
+  BATCH_RC=$?
+  if [ "$BATCH_RC" -ne 0 ] && [ "$RUNNER_EXIT" -eq 0 ]; then
+    RUNNER_EXIT="$BATCH_RC"
+  fi
+done
 echo "DAILY RUNNER exit=$RUNNER_EXIT"
 
-# ---- Run list ----------------------------------------------------------------------
+# ---- Post-batch steps (D12 steps 5 to 9) ----------------------------------------
+if [ "$POST" != "0" ]; then
+  cd "$H"
+  WEEK="$WEEK" ./rescore-doctor.sh
+  ./recost.sh
+  python3 "$H/export-site-data.py"
+  python3 "$H/generate-model-pages.py"
+  ./cleanup.sh
+fi
+
+# ---- Run list ------------------------------------------------------------------
 RL_RC=0
 "$H/node_modules/.bin/tsx" "$H/daily-pick.ts" \
   --day-runs "$MODEL" --week "$WEEK" --runs-root "$RUNS_ROOT" --pricing "$PRICING" \
@@ -211,30 +334,31 @@ if [ "$RL_RC" -ne 0 ]; then
   echo "DAILY FAIL run-list: the run list exited $RL_RC" >&2
   exit 1
 fi
-N_RUNS="$(node -e '
-process.stdout.write(String(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).length));
-' "$RUNLIST_OUT")"
+N_RUNS="$(node -e 'process.stdout.write(String(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).length));' "$RUNLIST_OUT")"
 echo "DAILY RUNS $N_RUNS"
 
-# ---- Day record after the runner ----------------------------------------------------
+# ---- Day record after the batches -----------------------------------------------
 node -e '
 const fs = require("node:fs");
-const pick = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-pick.run_ids = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
-pick.runner_exit = Number(process.argv[3]);
-fs.writeFileSync(process.argv[4], JSON.stringify(pick, null, 2) + "\n");
-' "$PICK_OUT" "$RUNLIST_OUT" "$RUNNER_EXIT" "$RECORD_TMP" && mv "$RECORD_TMP" "$RECORD"
+const rec = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+rec.run_ids = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+rec.runner_exit = Number(process.argv[3]);
+rec.go_guard_stop = process.argv[4] || null;
+fs.writeFileSync(process.argv[5], JSON.stringify(rec, null, 2) + "\n");
+' "$RECORD" "$RUNLIST_OUT" "$RUNNER_EXIT" "$GUARD_STOP" "$RECORD_TMP" && mv "$RECORD_TMP" "$RECORD"
 
-# ---- Publish (FR-8, D10) ------------------------------------------------------------
+# A guard stop is a clean skip, even when it stops before the first batch.
 if [ "$RUNNER_EXIT" -ne 0 ]; then
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
   exit "$RUNNER_EXIT"
 fi
-# The runner exited 0 but left no run. The weekly runner records a failed
-# batch and still exits 0, so a host fault must fail the day (spec D3). The
-# day record above stays truthful.
 if [ "$N_RUNS" -eq 0 ]; then
+  if [ -n "$GUARD_STOP" ]; then
+    echo "DAILY PUBLISH none"
+    echo "DAILY END $(date -Is)"
+    exit 0
+  fi
   echo "DAILY FAIL runs: the runner produced no runs" >&2
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
@@ -246,9 +370,8 @@ if [ "$PUBLISH" = "0" ]; then
   exit 0
 fi
 
+# ---- Publish (FR-8, D10, D13) ---------------------------------------------------
 cd "$ROOT"
-# The publish commit holds only docs/ (spec D10). A path that another session
-# staged stays in the index and never enters the commit.
 git add docs/
 if git diff --cached --quiet -- docs/; then
   echo "DAILY PUBLISH none"
@@ -256,32 +379,54 @@ if git diff --cached --quiet -- docs/; then
   exit 0
 fi
 
-# The commit body reports each unpriced, gone, and unservable model, so the
-# operator sees which models need a price refresh or an executor fix.
+# The body reports excluded models from the full day record, including on resume.
 node -e '
 const fs = require("node:fs");
-const p = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-const lines = ["Publish daily " + p.date + " OpenCode Go results: " + p.model + " (" + p.reason + ").", ""];
-const ex = p.excluded ?? {};
+const record = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const pick = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const reason = pick.reason === "resume" ? "resume" : record.reason;
+const lines = ["Publish daily " + record.date + " OpenCode Go results: " + record.model + " (" + reason + ").", ""];
+const ex = record.excluded ?? {};
 for (const key of ["unpriced", "gone", "unservable"]) {
   if ((ex[key] ?? []).length) lines.push(key.charAt(0).toUpperCase() + key.slice(1) + ": " + ex[key].join(", "));
 }
-fs.writeFileSync(process.argv[2], lines.join("\n") + "\n");
-' "$PICK_OUT" "$MSG_FILE"
+fs.writeFileSync(process.argv[3], lines.join("\n") + "\n");
+' "$RECORD" "$PICK_OUT" "$MSG_FILE"
 if ! git commit -F "$MSG_FILE" -- docs/; then
   echo "DAILY FAIL publish: the commit of docs/ failed" >&2
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
   exit 1
 fi
+
+DOCS_SHA="$(git rev-parse HEAD)"
+PARENT_SHA="$(git rev-parse HEAD^ )"
+if ! git fetch origin; then
+  echo "DAILY PUSH skipped: fetch failed"
+  echo "DAILY PUBLISH skipped"
+  echo "DAILY END $(date -Is)"
+  exit 0
+fi
+REMOTE_SHA="$(git rev-parse --verify origin/main 2>/dev/null || true)"
+if [ -z "$REMOTE_SHA" ] || [ "$REMOTE_SHA" != "$PARENT_SHA" ]; then
+  OTHER_LOCAL="$(git rev-list --count origin/main..HEAD~1 2>/dev/null || echo 0)"
+  if [ "$OTHER_LOCAL" -ge 1 ]; then
+    echo "DAILY PUSH skipped: $OTHER_LOCAL other local commits"
+  else
+    echo "DAILY PUSH skipped: origin/main moved"
+  fi
+  echo "DAILY PUBLISH skipped"
+  echo "DAILY END $(date -Is)"
+  exit 0
+fi
 PUSHED=""
 for _ in 1 2 3; do
-  if git push origin main; then PUSHED=1; break; fi
+  if git push origin "${DOCS_SHA}:main"; then PUSHED=1; break; fi
   sleep 60
 done
 if [ -z "$PUSHED" ]; then
   echo "DAILY FAIL publish: git push failed after 3 attempts; the commit is local" >&2
   exit 1
 fi
-echo "DAILY PUBLISH $(git rev-parse --short HEAD)"
+echo "DAILY PUBLISH $(git rev-parse --short "$DOCS_SHA")"
 echo "DAILY END $(date -Is)"

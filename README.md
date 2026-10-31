@@ -256,7 +256,7 @@ from current comparisons.
 
 ## Daily model schedule
 
-The run days are Wednesday and Sunday at 01:00 local time. The schedule line is `0 1 * * 0,3`. The owner has not installed that line. Decision O1 is open.
+The systemd user timer runs on Wednesday and Sunday at 01:00 local time. The timer uses `OnCalendar=Wed,Sun 01:00:00` and `Persistent=false`. A missed run does not start at boot. The timer and service files are `harness/systemd/lending-desk-daily.timer` and `harness/systemd/lending-desk-daily.service`. The owner has not installed them. The schedule is not active.
 
 The owner named three steps:
 
@@ -264,21 +264,20 @@ The owner named three steps:
 2. Test one untested model when one exists.
 3. Test the model with the stalest last test date when no untested model exists.
 
-`harness/cron-daily.sh` runs the job. `harness/daily-pick.ts` selects the model. The job runs that model with `batch.sh --model`. The job writes one day record under `reports/daily/`.
+`harness/cron-daily.sh` runs the job. `harness/daily-pick.ts` selects the model. The job runs that model with `batch.sh --model` on the build, bugfix, tests, and change tracks. The job writes one day record under `reports/daily/`.
 
-`cron-weekly.sh` stays disabled. The crontab change is an owner action. Decision O1 must close before that change.
+Before each track batch, the job reads the OpenCode Go weekly window from the local OpenChamber quota endpoint. A reading above 80 percent or an unreadable window stops the remaining batches. The job does not use the paid Go credit balance. A stop still updates the day record and refreshes the site data.
 
-Each run day uses up to 12 agent runs. The average cost is 1.07 USD. The observed maximum is 3.24 USD. The job pushes `docs/` to `origin main`. The push also sends every local commit on `main`.
+After the job commits site data under `docs/`, it fetches `origin`. It pushes its own docs commit only when `origin/main` equals that commit's parent. Otherwise, it keeps the commit local and logs the skip reason. A selector exit other than 0 or 3 fails the job and starts no batch.
+
+Each run day uses up to 12 agent runs. The average cost is 1.07 USD. The observed maximum is 3.24 USD. The weekly usage guard can stop a run before or between track batches. One batch can pass the 80 percent limit before the next reading. `harness/cron-weekly.sh` stays disabled. The systemd units are not installed.
 
 When a day record lists an unpriced model, add its price to `harness/go-pricing.json`. Copy the price from `https://opencode.ai/docs/go/`. The model then becomes an untested candidate.
 
 When an operator deletes a day record under `reports/daily/`, the next job run on that day selects a new model and tests it. The operator restores the deleted record before the next run day.
 
-These limits are known. This section does not change the code.
+Other known limits:
 
-- A dry run without the test seams writes `reports/go-catalog-$WEEK.json`.
-- The same dry run writes `reports/go-served-$WEEK.txt`.
-- A selector exit 1 takes the no-pick path in `harness/cron-daily.sh`.
-- A resumed run can publish the reason `resume` in the commit subject.
-- A short resume record omits fields of a full record.
-- A failure path can omit the `DAILY END` line.
+- A run can wait when the daily or weekly lock is held.
+- The job skips a push when `origin/main` has moved or the fetch fails.
+- A host fault inside a track batch can stop that batch after the quota check.

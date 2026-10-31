@@ -1,0 +1,9 @@
+[Unit]
+Description=Lending Desk daily OpenCode Go benchmark
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/daniebo/Desktop/lending-desk-bench
+ExecStart=/home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh
+StandardOutput=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log
+StandardError=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log

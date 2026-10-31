@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the Lending Desk daily OpenCode Go benchmark on Wednesday and Sunday
+
+[Timer]
+OnCalendar=Wed,Sun 01:00:00
+Persistent=false
+Unit=lending-desk-daily.service
+
+[Install]
+WantedBy=timers.target

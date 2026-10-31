@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Serial OpenCode Go batch. One model at a time so the machine isn't saturated.
+# Serial OpenCode Go batch. Daily runs pin one model with --model.
+# The daily job checks the Go weekly window before each track batch.
 #
 #   ARMS="a b" ./batch.sh
 #   WEEK=2026w35 ARMS="a b" REPS=1 ./batch.sh
