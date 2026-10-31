@@ -567,21 +567,23 @@ it is not an acceptance claim.
     `/tmp/opencode/daily-schedule-4b8-select.log`, and
     `/tmp/opencode/daily-schedule-4b8-batch-compat.log`.
     The Green regression file is the only new file.
-- [~] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
+- [x] 4b.4 9059895 — Reviews A, B, and C of the Phase 4b changes. A: the guard logic
   and the per-batch order against D12. B: the push rule of D13, the quota
   read over the local port, the credential, and the unattended timer. C:
   the new seams, the new labeled lines, the `go_guard_stop` field, and the
   unit-file text. Each role writes
   `measure/runs/daily_model_schedule/review-<a|b|c>-4b-<short head>.json`.
   - Verify: each `audit-result` prints `PASS: audit result is valid`, and each file shows `status: pass`.
-  - The reviews on `1b17ae2` passed (`review-a-1b17ae2.json`, `review-b-1b17ae2.json`, and `review-c-1b17ae2.json`, all `status: pass`, with the Phase 4 README gate in Review C). The monthly amendment supersedes them, and the reviews run again on the 4b.8 HEAD.
-- [ ] 4b.5 Adversarial tests of the Phase 4b rules. The role adds the cases
+  - Evidence: Reviews A, B, and C ran on `905989541f9473ddf1b1d34e81214ff4c400290d`. All show `status: pass`, and each `audit-result` printed `PASS: audit result is valid`. Review C passed the Phase 4 README gate. Files: `measure/runs/daily_model_schedule/review-a-4b-9059895.json` (claude-code/claude-sonnet-5-5#high), `review-b-4b-9059895.json` (kimi-code-plan-cn/kimi-for-coding), and `review-c-4b-9059895.json` (claude-code/claude-sonnet-5-5#high).
+  - Accepted nonblocking items: Review A F3, F4, and F5 (plan text and duplicate code); Review C F1 (`README.md:273` says “weekly usage guard”); Review C F2 (`harness/batch.sh:3` says the guard checks the weekly window). README line 268 states both windows.
+- [x] 4b.5 0174973 — Adversarial tests of the Phase 4b rules. The role adds the cases
   of the amended strategy section 12 (a quota JSON with a string number, a
   port that serves the wrong JSON, a push race between the check and the
   push) and writes
   `measure/runs/daily_model_schedule/adversarial-4b-<short head>.json`.
   Then the Phase 4b acceptance runs.
   - Verify: `SCHEDULE_TEST` exits 0 with the added cases, and the role file shows `status: pass`.
+  - Evidence: the adversarial role ran on claude-code/claude-sonnet-5-5#high and added cases 12.8 to 12.20. Case 12.18 closes Review A F1; the monthly compare-fault mutation probe fails the case. `SCHEDULE_TEST` gave `Tests  107 passed (107)`, and `GREEN_REGRESSION` gave `Tests  4 passed (4)`. Result: `measure/runs/daily_model_schedule/adversarial-4b-9059895.json`, with `status: pass` and `audited_head_sha` `017497378eab8509d72da4283046ac80f5879400`. The orchestrator ran `role-gate --role measure-adversarial-testing`, which printed `PASS: adversarial-testing gate passed`.
 
 ## Phase 5: Doctor and owner gate
 
