@@ -497,14 +497,44 @@ it is not an acceptance claim.
     the amended `DOCS_CHECK` (it exits 1 with `DOCS_CHECK=fail missing
     monthly window` before task 4b.8); adversarial cases 14 to 17; and the
     review dispositions of `1b17ae2` in section 13.
-- [ ] 4b.7 Red: failing tests for the monthly window. The cases cover each new
+- [~] 4b.7 Red: failing tests for the monthly window. The cases cover each new
   monthly reason, the weekly below-0 reason, the new clean-read line, 80 and
   80.0001 for the monthly window, a monthly stop before batch 2 that keeps
   the build run ids, and a dry-run monthly stop. The role updates existing
   fixtures and assertions to the new clean-read line where the amended
   strategy says so.
   - Verify: `SCHEDULE_TEST` exits non-zero, each new failure names the monthly
-    rule of D12, `RED_PATH_CHECK=pass`, and the mid-red gate passes.
+    rule of D12, `RED_PATH_CHECK_4B7=pass`, and the mid-red gate passes.
+  - Evidence: commit `e38f94d` adds the Red work. It changes only the two
+    test files. `Test Files  1 failed (1)`; `Tests  18 failed | 76 passed
+    (94)`; exit 1. Log:
+    `measure/runs/daily_model_schedule/red-4b7-schedule.log`.
+  - Fixture-only step (strategy section 6.5, rule 7): the fixtures carry
+    monthly 10, and no new case exists yet. `Test Files  1 failed (1)`;
+    `Tests  6 failed | 76 passed (82)`; exit 1. The six failures are exactly
+    cases 6.3.1, 6.5.8, 6.5.9, 6.5.10, 6.5.11, and 6.5.13, as rule 7
+    allows. No other old case changed its meaning. Log:
+    `measure/runs/daily_model_schedule/red-4b7-fixture.log`.
+  - The 12 new failures are cases 6.5.25 to 6.5.36. Each names D12
+    `BENCH_DAILY_QUOTA_CMD` and its monthly reason or clean-read line.
+    Case 6.5.25 and sub-case 6.5.36(a) name the weekly below-0 rule.
+    The current code reports `read failed` for a negative weekly value,
+    because it passes the value as a bare Node argument.
+  - `GUARD_CHECK` exits 1: `Tests  17 failed | 9 passed | 68 skipped (94)`.
+    The filter matches 26 cases, so no filter skip hides a case (A4).
+    Log: `measure/runs/daily_model_schedule/red-4b7-guard.log`.
+  - `STRATEGY_4B6=ok`; `RED_PATH_CHECK_4B7=pass` at test HEAD `e38f94d`.
+    The diff from `2a69a58` holds the two test files and `plan.md`. Log:
+    `measure/runs/daily_model_schedule/red-4b7-path.log`.
+  - `DOCS_CHECK` exits 1 with `DOCS_CHECK=fail missing monthly window`.
+    Log: `measure/runs/daily_model_schedule/red-4b7-docs.log`.
+  - No failure was a timeout or a fixture fault. `harness/cron-daily.sh`,
+    `README.md`, `spec.md`, and `test-strategy.md` are unchanged.
+  - `phase_base_sha=e47c2c5faf1156ba7e64d4687346bd6795d00ae3` (the Phase 4b
+    baseline of plan task 4b.2 and strategy section 9);
+    `role_base_sha=adbc59d4c9ba5cdc3b9f1e1dd0b94ffe9535af68`;
+    `STRATEGY_4B6=2a69a5869cf976f869c29a02cad6c7189768c5c2`. The three
+    values resolve. Commit `e38f94d` is new Red work after the role base.
 - [ ] 4b.8 Green: the monthly window. Implement the D12 amendment in
   `harness/cron-daily.sh`. Update the README for the monthly window. Fix the
   README lock sentence (Review C F1: `README.md:281` says a run can wait when
