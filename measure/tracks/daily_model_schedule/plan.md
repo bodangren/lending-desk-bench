@@ -477,7 +477,7 @@ it is not an acceptance claim.
     `WEEKLY_SAME=pass`; `DOCS_CHECK=pass`;
     `BATCH_COMPAT_RUNS=180`; `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`.
     The gate logs are under `/tmp/opencode/`.
-- [ ] 4b.6 Strategy amendment for the monthly window. The strategy role amends
+- [~] 4b.6 Strategy amendment for the monthly window. The strategy role amends
   `test-strategy.md`: section 5 interfaces (the new reasons and the new
   clean-read line), the section 6 case list, `GUARD_CHECK`, and `DOCS_CHECK`
   (the README names the monthly window). It also records the review
