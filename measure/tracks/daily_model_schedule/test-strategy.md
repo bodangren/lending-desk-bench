@@ -307,9 +307,18 @@ for line in need_tmr:
 assert "Persistent=true" not in tmr, "UNIT_CHECK=fail Persistent=true"
 assert "0 1 * * 0,3" not in svc, "UNIT_CHECK=fail crontab line in service"
 if shutil.which("systemd-analyze"):
-    r = subprocess.run(["systemd-analyze", "verify",
-        "harness/systemd/lending-desk-daily.service",
-        "harness/systemd/lending-desk-daily.timer"])
+    import tempfile
+    top = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()
+    main = "/home/daniebo/Desktop/lending-desk-bench"
+    tmp = Path(tempfile.mkdtemp(prefix="unit-check-"))
+    try:
+        (tmp / "lending-desk-daily.service").write_text(svc.replace(main, top))
+        (tmp / "lending-desk-daily.timer").write_text(tmr.replace(main, top))
+        r = subprocess.run(["systemd-analyze", "verify",
+            str(tmp / "lending-desk-daily.service"),
+            str(tmp / "lending-desk-daily.timer")])
+    finally:
+        shutil.rmtree(tmp)
     if r.returncode != 0:
         sys.exit("UNIT_CHECK=fail verify")
     print("UNIT_CHECK_VERIFY=pass")
@@ -319,10 +328,18 @@ print("UNIT_CHECK=pass")
 PY
   ```
 
-  Use `systemd-analyze verify` only when that command exists on the host.
+  The text assertions read the repository files. Those files keep the
+  main-checkout paths. `systemd-analyze verify` checks that `ExecStart`
+  exists. The worktree does not hold that main path until the merge.
+  The verify branch copies the two files to a temporary folder.
+  It replaces the main root with `git rev-parse --show-toplevel` in the
+  copies only. It runs verify on the copies. It then removes the folder.
+  After the merge, the two roots are equal. Verify then reads the real
+  paths. Use `systemd-analyze verify` only when that command exists.
   The fallback is the text assertions alone. Then the command prints
-  `UNIT_CHECK_VERIFY=skipped` and `UNIT_CHECK=pass`. When the command
-  exists and verify exits non-zero, `UNIT_CHECK` fails.
+  `UNIT_CHECK_VERIFY=skipped` and `UNIT_CHECK=pass`. When verify exits
+  non-zero, `UNIT_CHECK` fails. Task 5.1 runs `UNIT_CHECK` in `main`
+  after the merge, and before the install.
 
 - `TIMER_ABSENT` (worktree, Phase 4b closeout). The track installs nothing.
   This check is not the task 5.3 gate. After the owner install, this check
@@ -941,7 +958,7 @@ It is a paid run, so it waits for O1 (A2).
 | 3 Implement (Green) | high | `SCHEDULE_TEST` of Phase 2 | `SCHEDULE_TEST` exits 0; `SELECTOR_MATCH=pass`; `PATH_CHECK=pass`; `BATCH_COMPAT` equals task 1.2; `META_LOGIC` exits 0 in the worktree | role gate `jr-green` passes; Reviews A, B, and C and the adversarial file show `status: pass` |
 | 4 Docs | low | `DOCS_CHECK` exits non-zero before task 4.1 | `DOCS_CHECK=pass` at task 4.1 used the previous command; `PATH_CHECK=pass`; `SCHEDULE_TEST` exits 0 | Review C finds no flag or path in the README that the code lacks. Recorded deviation: this closeout runs with the Phase 4b reviews, on the final Phase 4b HEAD |
 | 4b O1 conditions | high | `SCHEDULE_TEST` exits non-zero; each new failure names a missing interface of D11 to D14; `RED_PATH_CHECK=pass`; `UNIT_CHECK` and the amended `DOCS_CHECK` exit non-zero | `SCHEDULE_TEST` exits 0; `GUARD_CHECK`, `PUSH_RULE_CHECK`, and `SELECT_EXIT_CHECK` exit 0; `UNIT_CHECK=pass`; `DOCS_CHECK=pass`; `PATH_CHECK=pass`; `WEEKLY_SAME=pass`; `BATCH_COMPAT` equals task 1.2; `bash -n harness/cron-daily.sh` exits 0 | role gate `jr-green` passes; Reviews A, B, and C and the adversarial file show `status: pass`; `TIMER_ABSENT=pass`; Phase 4 Review C runs on this HEAD and finds no flag or path in the README that the code lacks |
-| 5 Doctor and owner gate | critical | none: no new code | after the merge: `BASE_HASH` and the `WORKLIST_SHA` pair are equal; `BATCH_COMPAT` equals task 1.2; `PICK_MATCH=pass`; `SCHEDULE_TEST` and `META_LOGIC` exit 0 | O1 recorded; when approved, `CONSENT_CHECK`, `TIMER_CHECK`, `DAY_CHECK`, `PUBLISH_CHECK`, and `PI_CHECK day0 day1` pass |
+| 5 Doctor and owner gate | critical | none: no new code | after the merge: `BASE_HASH` and the `WORKLIST_SHA` pair are equal; `BATCH_COMPAT` equals task 1.2; `PICK_MATCH=pass`; `SCHEDULE_TEST` and `META_LOGIC` exit 0; `UNIT_CHECK=pass` in `main` | O1 recorded; when approved, `CONSENT_CHECK`, `TIMER_CHECK`, `DAY_CHECK`, `PUBLISH_CHECK`, and `PI_CHECK day0 day1` pass |
 
 ### Anti-pattern coverage
 
@@ -1185,7 +1202,8 @@ report path.
   `RED_PATH_CHECK=pass`.
 - Task 4b.3: `SCHEDULE_TEST` exit 0, `UNIT_CHECK=pass`, `DOCS_CHECK=pass`,
   `PATH_CHECK=pass`, `WEEKLY_SAME=pass`, and `BATCH_COMPAT`.
-- Task 5.1: `BASE_HASH`, the `WORKLIST_SHA` pair, and the `PICK_MATCH` line.
+- Task 5.1: `BASE_HASH`, the `WORKLIST_SHA` pair, the `PICK_MATCH` line,
+  and `UNIT_CHECK=pass` in `main` after the merge, before the install.
 - Task 5.2: the O1 answer and its date.
 - Task 5.3: `TIMER_CHECK` and the `PI_SHA day0` lines.
 - Task 5.4: `DAY_CHECK`, `PUBLISH_CHECK`, the guard lines, the push result

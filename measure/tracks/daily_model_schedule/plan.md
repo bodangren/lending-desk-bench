@@ -397,6 +397,7 @@ it is not an acceptance claim.
   - Verify: the section 12 text resolves the resume-reason gap of task 3.9.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track daily_model_schedule --log-file measure/runs/daily_model_schedule/strategy-1dddcaa.log` prints `PASS: strategy gate passed`.
   - Evidence: commit `78f73c0` amends `test-strategy.md`. `STATUS_CHECK` printed `STATUS_CHECK=pass blocked=3 open=1`.
+  - r2: `UNIT_CHECK` verify uses a temporary copy, so the worktree `ExecStart` path exists. Task 5.1 runs `UNIT_CHECK` in `main`. F3=FIX.
 - [x] 4b.2 Red: failing tests for the new rules. 459fc7f The role adds the cases of
   the amended strategy to `harness/schedule-tests/daily-schedule.test.ts`:
   the guard stops (before the first batch, mid-day, a failed read, a
