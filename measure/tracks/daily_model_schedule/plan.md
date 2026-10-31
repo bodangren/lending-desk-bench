@@ -426,7 +426,8 @@ it is not an acceptance claim.
     The snapshot run of `b970769` exited non-zero. `Test Files  1 failed (1)`. `Tests  39 failed | 43 passed (82)`.
     The log is `measure/runs/daily_model_schedule/red-4b-r2.log`. `EXIT=1`.
     Cases 6.5.8, 6.5.9, and 6.5.10 still fail on missing D12 `BENCH_DAILY_QUOTA_CMD`. Case 6.4.4 still fails on missing D12 `BENCH_DAILY_BATCH` and D13.
-- [x] 4b.3 Green — commit `1e7c26e`. Implement the guard, per-batch order,
+- [x] 4b.3 Green — implementation commits `1e7c26e` and `60a5ec7`.
+  Implement the guard, per-batch order,
   push rule, selector exit, unit files, README update, and header comments.
   The guard reads `usage.windows.weekly.usedPercent` through the
   port of `openchamber status --json` (seam `BENCH_DAILY_QUOTA_CMD`), once
@@ -456,10 +457,25 @@ it is not an acceptance claim.
     `WEEKLY_SAME=pass` with
     `PHASE_4B_STRATEGY=e47c2c5faf1156ba7e64d4687346bd6795d00ae3`;
     `DIFF_CHECK=pass`; `TIMER_ABSENT=pass`.
-  - Evidence: `BATCH_COMPAT_RUNS=180` and
-    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
+  - Evidence: the worktree `BATCH_COMPAT` run on commit `60a5ec7` printed
+    `BATCH_COMPAT_RUNS=180` and
+    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`.
+    The log is `/tmp/opencode/daily-schedule-r7-batch-compat.log`.
     `bash -n harness/cron-daily.sh` exited 0. `measure/doctor.sh` is not
     present. The strategy's Green gates passed.
+  - Remediation at commit `60a5ec7` fixes F1, F2, F3, F4, F5, F6, and F9.
+    F7 is contested because its comment and dead seam are in committed Red
+    tests. F8 is declined because the finding concerns the unowned strategy.
+    The implementation adds the Green regression test file.
+  - Remediation gates: `GUARD_CHECK` exited 0 with 14 passed;
+    `PUSH_RULE_CHECK` exited 0 with 4 passed;
+    `SELECT_EXIT_CHECK` exited 0 with 4 passed;
+    `GREEN_REGRESSION` exited 0 with 4 passed;
+    `SCHEDULE_TEST` exited 0 with 82 passed. `BASH_N=pass`;
+    `UNIT_CHECK_VERIFY=pass`; `UNIT_CHECK=pass`; `PATH_CHECK=pass`;
+    `WEEKLY_SAME=pass`; `DOCS_CHECK=pass`;
+    `BATCH_COMPAT_RUNS=180`; `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`.
+    The gate logs are under `/tmp/opencode/`.
 - [~] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
   and the per-batch order against D12. B: the push rule of D13, the quota
   read over the local port, the credential, and the unattended timer. C:
