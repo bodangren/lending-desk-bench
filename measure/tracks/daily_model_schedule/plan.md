@@ -470,10 +470,20 @@ it is not an acceptance claim.
   - Verify: `SCHEDULE_TEST` and `META_LOGIC` exit 0, and `BATCH_COMPAT` equals task 1.2.
   - Verify: `PICK_MATCH` prints `PICK_MATCH=pass date=<day> model=<id> reason=<reason> ...`.
   - Verify: the commit range `origin/main..main` was reported to the PM orchestrator, and after the one manual push, `git rev-parse origin/main` equals `git rev-parse main`.
-- [b] 5.2 Owner decision O1. Show the owner the `PICK_MATCH` line, the spend
-  of spec D1, and the push scope of spec R4. Record the answer and its date
-  in the spec table. — deferred:owner
-  - Verify: `CONSENT_CHECK` prints 1 line, or `rg -n '^\| O1 \|.*\| declined 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/daily_model_schedule/spec.md` prints 1 line.
+- [x] 5.2 Owner decision O1. The answer is recorded in the spec table: 48ccc11
+  approved 2026-10-31 with 3 conditions (spec O1 row; rules D11 to D14).
+  The PM orchestrator relayed Daniel's answer "Approve with conditions"
+  (Tasks, 2026-10-31 12:01 ICT). The decision request showed the
+  `PICK_MATCH` line of task 4.1, the spend of spec D1, and the push scope;
+  condition 3 replaces the old push scope with the rule of D13. The three
+  conditions are exact in quotation in the spec row.
+  - Verify: `CONSENT_CHECK` prints exactly 1 line: `rg -n '^\| O1 \|.*\| approved 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/daily_model_schedule/spec.md`.
+  - Evidence: commit `48ccc11` records the answer. At `48ccc11`,
+    `CONSENT_CHECK` printed exactly 1 line (spec.md line 484):
+
+    ```
+    484:| O1 | Install the systemd user timer of D11 (unit files `harness/systemd/lending-desk-daily.service` and `harness/systemd/lending-desk-daily.timer`, `OnCalendar` Wednesday and Sunday 01:00 local time, `Persistent=false`). This starts a paid run of 12 agent runs on each run day. The run days are Wednesday and Sunday. The job pushes its own `docs/` commit under the push rule of D13. Spend is 1.07 USD per run day on average and 3.24 USD at the observed maximum. The week has about 2 run days. | Approve after the real-data dry run of task 4.1 passes and `opencode_executor` task 4.2 closes. Spend from EV11: 1.07 USD each run day on average, 3.24 USD at the observed maximum. | approved 2026-10-31 — Daniel answered "Approve with conditions" (Tasks, 2026-10-31 12:01 ICT, relayed by the PM orchestrator), with 3 conditions, exact in quotation: (1) "A systemd user timer, not a crontab line (house rule: every scheduled job is a systemd user unit + timer). Same schedule: Wednesday and Sunday 01:00. Use Persistent=false, so a missed run never starts at boot and spends Go use at an unplanned time. Put the .service and .timer files in your repo; do not install them yet." (2) "Go guard: the job skips a run day (exit 0, one clear log line, no model call) when the OpenCode Go weekly window is above 80 %, or when it cannot read the window. Read it from OpenChamber: port from `openchamber status --json`, GET /api/quota/opencode-go, usage.windows.weekly.usedPercent. The job must never draw on the paid Go credit balance." (3) "Push: no push by the job until one manual push. After your merge (task 5.1), tell me the commit range; I scan it for secrets, then Daniel says \"push\" once. After that, the job pushes only its own docs commit." Within condition 2 the PM also accepted (2026-10-31): "read the Go guard again before each of the 4 track batches, and stop the day at the first reading above 80 % or at an unreadable window. Log one line for each stop." Rules: D11, D12, D13, D14. Timing (PM): the owner installs after task 5.1, after the secret scan and the one manual push, after the selector exit fix (D14), and after 2026-11-02 07:00 (the Go week reset). First run day: Wednesday 2026-11-04 01:00. |
+    ```
 - [b] 5.3 Systemd user timer install, an owner action, only after O1 is
   approved, after the one manual push of task 5.1, and after 2026-11-02
   07:00 (the Go week reset). Before it, run `PI_SHA day0` and
