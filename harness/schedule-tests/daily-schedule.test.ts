@@ -675,6 +675,8 @@ describe("artifacts", () => {
     writeFileSync(join(repo, "docs/index.html"), "<html></html>\n");
     git(["add", "docs/"]);
     git(["commit", "-q", "-m", "initial"]);
+    // origin/main must equal the parent of the later docs commit (D13).
+    git(["push", "-q", "origin", "main"]);
     // A path outside docs/, staged before the job runs.
     writeFileSync(join(repo, "secret.txt"), "not for the publish\n");
     git(["add", "secret.txt"]);
@@ -983,6 +985,14 @@ function assertSkip(w: Work, r: Result, reason: string, label: string) {
   expect(lines(r, "DAILY FAIL runs:"), `${label}: a guard stop is not DAILY FAIL runs`).toEqual([]);
   expect(orderLog(w).filter(row => row.kind === "batch"), `${label}: a stop must not call ${D12B}`).toEqual([]);
 }
+function assertMidStop(w: Work, r: Result, done: number, label: string) {
+  const tracks = ["build", "bugfix", "tests"].slice(0, done);
+  expect(lines(r, "DAILY GO-GUARD "), `${label}: missing ${D12Q} clean reads`).toEqual(Array(done).fill("DAILY GO-GUARD weekly=10"));
+  expect(lines(r, "DAILY SKIP go-guard:"), `${label}: missing ${D12Q}`).toEqual(["DAILY SKIP go-guard: weekly used 81 percent"]);
+  expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `${label}: missing ${D12B}`).toEqual(tracks);
+  expect(r.status, `${label}: missing ${D12Q} exit 0`).toBe(0);
+  expect(lines(r, "DAILY FAIL runs:"), `${label}: a guard stop is not DAILY FAIL runs`).toEqual([]);
+}
 
 function gitWrap(w: Work) {
   const bin = join(w.root, "git-bin");
@@ -1100,7 +1110,7 @@ describe("O1 conditions", () => {
   caseOf("6.5.8 stop before batch 2: the record keeps the build run ids", w => {
     jobSetup(w);
     const r = guardJob(w, [{ value: 10 }, { value: 81 }], "quota-b2.cjs");
-    assertSkip(w, r, "weekly used 81 percent", "6.5.8");
+    assertMidStop(w, r, 1, "6.5.8");
     const ids = trackIds("build");
     expect(record(w).run_ids.slice().sort(), `6.5.8: missing ${D12B} build run ids`).toEqual(ids.slice().sort());
     expect(record(w).go_guard_stop, `6.5.8: missing ${D12Q} go_guard_stop`).toBe("weekly used 81 percent");
@@ -1109,7 +1119,7 @@ describe("O1 conditions", () => {
   caseOf("6.5.9 stop before batch 3: the record keeps build and bugfix run ids", w => {
     jobSetup(w);
     const r = guardJob(w, [{ value: 10 }, { value: 10 }, { value: 81 }], "quota-b3.cjs");
-    assertSkip(w, r, "weekly used 81 percent", "6.5.9");
+    assertMidStop(w, r, 2, "6.5.9");
     const ids = [...trackIds("build"), ...trackIds("bugfix")].sort();
     expect(record(w).run_ids.slice().sort(), `6.5.9: missing ${D12B} earlier run ids`).toEqual(ids);
     expect(readdirSync(w.runs).some(name => name.includes("-tests-") || name.includes("-change-")), `6.5.9: tests and change must not run`).toBe(false);
@@ -1117,7 +1127,7 @@ describe("O1 conditions", () => {
   caseOf("6.5.10 stop before batch 4: the record keeps build, bugfix, and tests run ids", w => {
     jobSetup(w);
     const r = guardJob(w, [{ value: 10 }, { value: 10 }, { value: 10 }, { value: 81 }], "quota-b4.cjs");
-    assertSkip(w, r, "weekly used 81 percent", "6.5.10");
+    assertMidStop(w, r, 3, "6.5.10");
     const ids = [...trackIds("build"), ...trackIds("bugfix"), ...trackIds("tests")].sort();
     expect(record(w).run_ids.slice().sort(), `6.5.10: missing ${D12B} earlier run ids`).toEqual(ids);
     expect(readdirSync(w.runs).some(name => name.includes("-change-")), `6.5.10: change must not run`).toBe(false);
