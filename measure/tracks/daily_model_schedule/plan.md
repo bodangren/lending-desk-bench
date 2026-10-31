@@ -371,7 +371,7 @@ orchestrator runs them and orders them with this phase. The checkpoint of
 Phase 4 names the docs commit `a450b88` by the convention of Phases 1 to 3:
 it is not an acceptance claim.
 
-- [~] 4b.1 Strategy amendment of `test-strategy.md`. The strategy role adds
+- [x] 4b.1 Strategy amendment of `test-strategy.md`. 78f73c0 The strategy role adds
   the exact gate commands for the 4 new rules: the Go guard (FR-10), the
   push rule (FR-11), the selector exit (FR-12), and the unit files
   (FR-13). It amends the existing gates:
@@ -395,8 +395,9 @@ it is not an acceptance claim.
   - Verify: the amended strategy names one gate command for each rule of FR-10 to FR-13 (the strategy role names the exact commands).
   - Verify: `TIMER_CHECK` replaces `CRON_CHECK` in the strategy, `DOCS_CHECK` requires the timer names, and `PUBLISH_CHECK` accepts a skipped push before the manual push.
   - Verify: the section 12 text resolves the resume-reason gap of task 3.9.
-  - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track daily_model_schedule --log-file measure/runs/daily_model_schedule/strategy-4b.log` prints `PASS: strategy gate passed`.
-- [ ] 4b.2 Red: failing tests for the new rules. The role adds the cases of
+  - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track daily_model_schedule --log-file measure/runs/daily_model_schedule/strategy-1dddcaa.log` prints `PASS: strategy gate passed`.
+  - Evidence: commit `78f73c0` amends `test-strategy.md`. `STATUS_CHECK` printed `STATUS_CHECK=pass blocked=3 open=1`.
+- [~] 4b.2 Red: failing tests for the new rules. The role adds the cases of
   the amended strategy to `harness/schedule-tests/daily-schedule.test.ts`:
   the guard stops (before the first batch, mid-day, a failed read, a
   missing field, a non-number), the dry-run guard line, the push rule (a
