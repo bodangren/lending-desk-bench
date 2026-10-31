@@ -421,6 +421,10 @@ it is not an acceptance claim.
     D11 unit files: 6.4.5, 6.5.22.
     Case 6.5.23 names the section 5.4 resume-record keep. No failure was a timeout or a fixture fault.
     `STATUS_CHECK=pass blocked=3 open=1`.
+    r2 `b970769` fixes two test defects. A mid-day stop keeps the earlier guard lines and batch calls. Case 6.4.4 pushes the initial commit, so `origin/main` is the docs parent.
+    The snapshot run of `b970769` exited non-zero. `Test Files  1 failed (1)`. `Tests  39 failed | 43 passed (82)`.
+    The log is `measure/runs/daily_model_schedule/red-4b-r2.log`. `EXIT=1`.
+    Cases 6.5.8, 6.5.9, and 6.5.10 still fail on missing D12 `BENCH_DAILY_QUOTA_CMD`. Case 6.4.4 still fails on missing D12 `BENCH_DAILY_BATCH` and D13.
 - [~] 4b.3 Green: the guard, the per-batch order, the push rule, the
   selector exit, the two unit files, the README update, and the header
   comments. The guard reads `usage.windows.weekly.usedPercent` through the
