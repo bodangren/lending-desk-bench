@@ -420,6 +420,7 @@ it is not an acceptance claim.
     D14 `BENCH_DAILY_SELECT`: 6.5.18, 6.5.19, 6.5.20, 6.5.21.
     D11 unit files: 6.4.5, 6.5.22.
     Case 6.5.23 names the section 5.4 resume-record keep. No failure was a timeout or a fixture fault.
+    `STATUS_CHECK=pass blocked=3 open=1`.
 - [~] 4b.3 Green: the guard, the per-batch order, the push rule, the
   selector exit, the two unit files, the README update, and the header
   comments. The guard reads `usage.windows.weekly.usedPercent` through the
