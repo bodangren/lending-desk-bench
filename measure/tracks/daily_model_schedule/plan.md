@@ -426,9 +426,9 @@ it is not an acceptance claim.
     The snapshot run of `b970769` exited non-zero. `Test Files  1 failed (1)`. `Tests  39 failed | 43 passed (82)`.
     The log is `measure/runs/daily_model_schedule/red-4b-r2.log`. `EXIT=1`.
     Cases 6.5.8, 6.5.9, and 6.5.10 still fail on missing D12 `BENCH_DAILY_QUOTA_CMD`. Case 6.4.4 still fails on missing D12 `BENCH_DAILY_BATCH` and D13.
-- [~] 4b.3 Green: the guard, the per-batch order, the push rule, the
-  selector exit, the two unit files, the README update, and the header
-  comments. The guard reads `usage.windows.weekly.usedPercent` through the
+- [x] 4b.3 Green — commit `1e7c26e`. Implement the guard, per-batch order,
+  push rule, selector exit, unit files, README update, and header comments.
+  The guard reads `usage.windows.weekly.usedPercent` through the
   port of `openchamber status --json` (seam `BENCH_DAILY_QUOTA_CMD`), once
   before each of the 4 track batches. The job runs the 4 batches itself in
   the exact order of D12, then the recost and the site refresh. The push
@@ -442,7 +442,25 @@ it is not an acceptance claim.
   - Verify: `PATH_CHECK` prints `PATH_CHECK=pass` (the allow-list of task 4b.1 holds `harness/systemd/`).
   - Verify: `BATCH_COMPAT` equals task 1.2, and `bash -n harness/cron-daily.sh` exits 0.
   - Verify: the jr-green role gate prints `PASS: jr-green gate passed`.
-- [ ] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
+  - Evidence: `SCHEDULE_TEST` at implementation commit `1e7c26e` exited 0:
+    `Test Files  1 passed (1)`; `Tests  82 passed (82)`. Vitest started
+    17:22:12 and ran for 241.37 seconds. The log is
+    `measure/runs/daily_model_schedule/green-4b.log`.
+  - Evidence: `GUARD_CHECK` exited 0 with 14 passed and 68 skipped.
+    `PUSH_RULE_CHECK` exited 0 with 4 passed and 78 skipped.
+    `SELECT_EXIT_CHECK` exited 0 with 4 passed and 78 skipped.
+    Their logs are under `/tmp/opencode/`.
+  - Evidence: `UNIT_CHECK_VERIFY=pass`; `UNIT_CHECK=pass`;
+    `DOCS_CHECK=pass`; `BASH_N=pass`; `PATH_CHECK=pass` with
+    `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`;
+    `WEEKLY_SAME=pass` with
+    `PHASE_4B_STRATEGY=e47c2c5faf1156ba7e64d4687346bd6795d00ae3`;
+    `DIFF_CHECK=pass`; `TIMER_ABSENT=pass`.
+  - Evidence: `BATCH_COMPAT_RUNS=180` and
+    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`;
+    `bash -n harness/cron-daily.sh` exited 0. `measure/doctor.sh` is not
+    present. The strategy's Green gates passed.
+- [~] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
   and the per-batch order against D12. B: the push rule of D13, the quota
   read over the local port, the credential, and the unattended timer. C:
   the new seams, the new labeled lines, the `go_guard_stop` field, and the
