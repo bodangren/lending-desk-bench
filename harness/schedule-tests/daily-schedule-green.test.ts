@@ -86,7 +86,7 @@ fs.writeFileSync(${JSON.stringify(counter)}, String(n + 1));
 const values = ${JSON.stringify(quota)};
 const value = values[Math.min(n, values.length - 1)];
 fs.appendFileSync(process.env.STEP_LOG, value > 80 ? 'guard-81\\n' : 'guard-10\\n');
-process.stdout.write(JSON.stringify({usage:{windows:{weekly:{usedPercent:value}}}}));
+process.stdout.write(JSON.stringify({usage:{windows:{weekly:{usedPercent:value},monthly:{usedPercent:10}}}}));
 `);
   script(join(f.root, "batch.cjs"), `#!/usr/bin/env node
 const fs = require('node:fs');

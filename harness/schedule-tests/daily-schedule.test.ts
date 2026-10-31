@@ -387,7 +387,7 @@ if (!process.env.STUB_NO_RUNS) {
 process.exit(Number(process.env.STUB_EXIT || '0'));
 `;
 const QUOTA_TEN_SOURCE = `#!/usr/bin/env node
-process.stdout.write('{"usage":{"windows":{"weekly":{"usedPercent":10}}}}');
+process.stdout.write('{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":10}}}}');
 `;
 // Stops the retired default weekly.sh from touching the real reports tree.
 // A D12 job must not start this process.
@@ -485,8 +485,7 @@ describe("daily job", () => {
   caseOf("6.3.1 dry run: cron-daily.sh exact pick and 12 planned IDs", w => {
     jobSetup(w); const r = job(w, ["--dry-run"]);
     const guard = lines(r, "DAILY GO-GUARD ");
-    expect(guard, `${JOB}: missing D12 DAILY GO-GUARD weekly=10`).toHaveLength(1);
-    expect(["DAILY GO-GUARD weekly=10", "DAILY GO-GUARD weekly=10.0"], `${JOB}: missing D12 DAILY GO-GUARD weekly=10`).toContain(guard[0]);
+    expect(guard, `${JOB}: missing D12 DAILY GO-GUARD weekly=10 monthly=10`).toEqual(["DAILY GO-GUARD weekly=10 monthly=10"]);
     expect(r.status, `${JOB}: missing --dry-run; ${r.stderr}`).toBe(0);
     assertJobPick(r, jobSelection());
     expect(planned(r), JOB).toEqual([
@@ -899,7 +898,7 @@ const D12Q = "D12 BENCH_DAILY_QUOTA_CMD";
 const D12B = "D12 BENCH_DAILY_BATCH";
 const D13 = "D13 git push origin <sha>:main";
 const D14 = "D14 BENCH_DAILY_SELECT";
-type QuotaStep = { value?: number | string | null; raw?: string; exit?: number; omit?: boolean };
+type QuotaStep = { value?: number | string | null; monthly?: number | string | null; omitMonthly?: boolean; raw?: string; exit?: number; omit?: boolean };
 
 function writeQuota(w: Work, name: string, steps: QuotaStep[]): string {
   const script = join(w.root, name);
@@ -922,8 +921,10 @@ if (Object.prototype.hasOwnProperty.call(step, 'raw')) {
   process.stdout.write(step.raw);
   process.exit(0);
 }
-const body = {usage:{windows:{weekly:{}}}};
+const body = {usage:{windows:{weekly:{}, monthly:{}}}};
 if (!step.omit) body.usage.windows.weekly.usedPercent = step.value;
+if (step.omitMonthly) delete body.usage.windows.monthly;
+else body.usage.windows.monthly.usedPercent = Object.prototype.hasOwnProperty.call(step, 'monthly') ? step.monthly : 10;
 process.stdout.write(JSON.stringify(body));
 `, { mode: 0o755 });
   return script;
@@ -987,7 +988,7 @@ function assertSkip(w: Work, r: Result, reason: string, label: string) {
 }
 function assertMidStop(w: Work, r: Result, done: number, label: string) {
   const tracks = ["build", "bugfix", "tests"].slice(0, done);
-  expect(lines(r, "DAILY GO-GUARD "), `${label}: missing ${D12Q} clean reads`).toEqual(Array(done).fill("DAILY GO-GUARD weekly=10"));
+  expect(lines(r, "DAILY GO-GUARD "), `${label}: missing ${D12Q} clean reads`).toEqual(Array(done).fill("DAILY GO-GUARD weekly=10 monthly=10"));
   expect(lines(r, "DAILY SKIP go-guard:"), `${label}: missing ${D12Q}`).toEqual(["DAILY SKIP go-guard: weekly used 81 percent"]);
   expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `${label}: missing ${D12B}`).toEqual(tracks);
   expect(r.status, `${label}: missing ${D12Q} exit 0`).toBe(0);
@@ -1068,7 +1069,7 @@ describe("O1 conditions", () => {
   });
   caseOf("6.5.3 80.0 continues: a string compare must not stop the day", w => {
     jobSetup(w);
-    const raw = '{"usage":{"windows":{"weekly":{"usedPercent":80.0}}}}';
+    const raw = '{"usage":{"windows":{"weekly":{"usedPercent":80.0},"monthly":{"usedPercent":10}}}}';
     const r = guardJob(w, [{ raw }, { raw }, { raw }, { raw }], "quota-80-0.cjs");
     expect(lines(r, "DAILY SKIP go-guard:"), `6.5.3: missing ${D12Q}; 80.0 must continue`).toEqual([]);
     expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.3: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
@@ -1076,7 +1077,7 @@ describe("O1 conditions", () => {
   });
   caseOf("6.5.4 failed read: a non-zero quota command stops even with JSON", w => {
     jobSetup(w);
-    const r = guardJob(w, [{ exit: 1, raw: '{"usage":{"windows":{"weekly":{"usedPercent":10}}}}' }], "quota-fail.cjs");
+    const r = guardJob(w, [{ exit: 1, raw: '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":10}}}}' }], "quota-fail.cjs");
     assertSkip(w, r, "read failed", "6.5.4");
   });
   caseOf("6.5.5 missing field: absent or null usedPercent stops the day", w => {
@@ -1136,7 +1137,7 @@ describe("O1 conditions", () => {
     jobSetup(w);
     const quota = writeQuota(w, "quota-dry.cjs", [{ value: 10 }]);
     const r = job(w, ["--dry-run"], { BENCH_DAILY_QUOTA_CMD: quota });
-    expect(lines(r, "DAILY GO-GUARD "), `6.5.11: missing ${D12Q} DAILY GO-GUARD weekly=10`).toEqual(["DAILY GO-GUARD weekly=10"]);
+    expect(lines(r, "DAILY GO-GUARD "), `6.5.11: missing ${D12Q} DAILY GO-GUARD weekly=10 monthly=10`).toEqual(["DAILY GO-GUARD weekly=10 monthly=10"]);
     expect(lines(r, "DAILY DRY-RUN "), `6.5.11: missing ${D12Q} planned count`).toEqual(["DAILY DRY-RUN planned=12"]);
     expect(readdirSync(w.days), `6.5.11: a dry run writes no day record`).toEqual([]);
     expect(readdirSync(w.runs), `6.5.11: a dry run makes no model call`).toEqual([]);
@@ -1165,7 +1166,7 @@ describe("O1 conditions", () => {
     ]);
     expect(existsSync(sentinel), `6.5.13: retired BENCH_DAILY_RUNNER must not start (${D12B})`).toBe(false);
     expect(lines(r, "DAILY GO-GUARD "), `6.5.13: missing ${D12Q} four clean lines`).toEqual([
-      "DAILY GO-GUARD weekly=10", "DAILY GO-GUARD weekly=10", "DAILY GO-GUARD weekly=10", "DAILY GO-GUARD weekly=10",
+      "DAILY GO-GUARD weekly=10 monthly=10", "DAILY GO-GUARD weekly=10 monthly=10", "DAILY GO-GUARD weekly=10 monthly=10", "DAILY GO-GUARD weekly=10 monthly=10",
     ]);
   });
   caseOf("6.5.14 push at the parent: git push origin <sha>:main", w => {
@@ -1296,9 +1297,153 @@ describe("O1 conditions", () => {
   });
   caseOf("6.5.24 value 80.0001: the skip line keeps the full number", w => {
     jobSetup(w);
-    const r = guardJob(w, [{ raw: '{"usage":{"windows":{"weekly":{"usedPercent":80.0001}}}}' }], "quota-800001.cjs");
+    const r = guardJob(w, [{ raw: '{"usage":{"windows":{"weekly":{"usedPercent":80.0001},"monthly":{"usedPercent":10}}}}' }], "quota-800001.cjs");
     expect(lines(r, "DAILY SKIP go-guard:"), `6.5.24: missing ${D12Q} exact 80.0001`).toEqual(["DAILY SKIP go-guard: weekly used 80.0001 percent"]);
     expect(r.status, `6.5.24: missing ${D12Q} exit 0`).toBe(0);
     expect(orderLog(w).filter(row => row.kind === "batch"), `6.5.24: a stop must not call ${D12B}`).toEqual([]);
+  });
+  caseOf("6.5.25 weekly below 0: the skip line keeps the sign", w => {
+    jobSetup(w);
+    each<{ value: number; reason: string }>([
+      { value: -1, reason: "weekly value -1 is below 0" },
+      { value: -0.5, reason: "weekly value -0.5 is below 0" },
+    ], item => {
+      rmSync(join(w.days, `${DATE}.json`), { force: true });
+      rmSync(join(w.root, "order.jsonl"), { force: true });
+      const r = guardJob(w, [{ value: item.value }], `quota-below-${item.value}.cjs`);
+      assertSkip(w, r, item.reason, `6.5.25 ${item.value}`);
+      expect(record(w).run_ids, `6.5.25: missing ${D12Q} empty run_ids`).toEqual([]);
+      expect(record(w).go_guard_stop, `6.5.25: missing ${D12Q} go_guard_stop`).toBe(item.reason);
+    });
+  });
+  caseOf("6.5.26 monthly missing field: absent, empty, or null stops the day", w => {
+    jobSetup(w);
+    each<{ raw: string; label: string }>([
+      { raw: '{"usage":{"windows":{"weekly":{"usedPercent":10}}}}', label: "absent" },
+      { raw: '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{}}}}', label: "empty" },
+      { raw: '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":null}}}}', label: "null" },
+    ], item => {
+      rmSync(join(w.days, `${DATE}.json`), { force: true });
+      rmSync(join(w.root, "order.jsonl"), { force: true });
+      const r = guardJob(w, [{ raw: item.raw }], `quota-monthly-missing-${item.label}.cjs`);
+      assertSkip(w, r, "monthly missing field", `6.5.26 ${item.label}`);
+      expect(record(w).go_guard_stop, `6.5.26: missing ${D12Q} go_guard_stop`).toBe("monthly missing field");
+    });
+  });
+  caseOf("6.5.27 monthly not a number: a string, a boolean, or an array stops the day", w => {
+    jobSetup(w);
+    each<{ raw: string; label: string }>([
+      { raw: '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":"high"}}}}', label: "string" },
+      { raw: '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":true}}}}', label: "boolean" },
+      { raw: '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":[]}}}}', label: "array" },
+    ], item => {
+      rmSync(join(w.days, `${DATE}.json`), { force: true });
+      rmSync(join(w.root, "order.jsonl"), { force: true });
+      const r = guardJob(w, [{ raw: item.raw }], `quota-monthly-nan-${item.label}.cjs`);
+      assertSkip(w, r, "monthly not a number", `6.5.27 ${item.label}`);
+    });
+  });
+  caseOf("6.5.28 monthly below 0: the record keeps the monthly reason", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 10, monthly: -1 }], "quota-monthly-below.cjs");
+    assertSkip(w, r, "monthly value -1 is below 0", "6.5.28");
+    expect(record(w).go_guard_stop, `6.5.28: missing ${D12Q} go_guard_stop`).toBe("monthly value -1 is below 0");
+  });
+  caseOf("6.5.29 monthly above 80: the skip line names the monthly window", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 10, monthly: 81 }], "quota-monthly-81.cjs");
+    assertSkip(w, r, "monthly used 81 percent", "6.5.29");
+    expect(record(w).run_ids, `6.5.29: missing ${D12Q} empty run_ids`).toEqual([]);
+    expect(record(w).go_guard_stop, `6.5.29: missing ${D12Q} go_guard_stop`).toBe("monthly used 81 percent");
+  });
+  caseOf("6.5.30 clean-read line: the weekly value comes first and the monthly value second", w => {
+    jobSetup(w);
+    const r = guardJob(w, [
+      { value: 10, monthly: 20 }, { value: 10, monthly: 20 }, { value: 10, monthly: 20 }, { value: 10, monthly: 20 },
+    ], "quota-clean.cjs");
+    expect(lines(r, "DAILY GO-GUARD "), `6.5.30: missing ${D12Q} exact weekly=<n> monthly=<m> line`).toEqual([
+      "DAILY GO-GUARD weekly=10 monthly=20", "DAILY GO-GUARD weekly=10 monthly=20",
+      "DAILY GO-GUARD weekly=10 monthly=20", "DAILY GO-GUARD weekly=10 monthly=20",
+    ]);
+    expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.30: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
+    expect(record(w).go_guard_stop, `6.5.30: missing ${D12Q} go_guard_stop null`).toBe(null);
+    rmSync(join(w.days, `${DATE}.json`), { force: true });
+    rmSync(join(w.root, "order.jsonl"), { force: true });
+    const runsBefore = readdirSync(w.runs).length;
+    const quota = writeQuota(w, "quota-clean-dry.cjs", [{ value: 30, monthly: 40 }]);
+    const dry = job(w, ["--dry-run"], { BENCH_DAILY_QUOTA_CMD: quota });
+    expect(lines(dry, "DAILY GO-GUARD "), `6.5.30: missing ${D12Q} exact dry-run clean line`).toEqual(["DAILY GO-GUARD weekly=30 monthly=40"]);
+    expect(lines(dry, "DAILY DRY-RUN "), `6.5.30: missing ${D12Q} planned count`).toEqual(["DAILY DRY-RUN planned=12"]);
+    expect(planned(dry).length, `6.5.30: missing ${D12Q} planned ids`).toBe(12);
+    expect(readdirSync(w.days), `6.5.30: a dry run writes no day record`).toEqual([]);
+    expect(readdirSync(w.runs).length, `6.5.30: a dry run makes no model call`).toBe(runsBefore);
+  });
+  caseOf("6.5.31 monthly exactly 80 and 80.0 continue: four batches and no skip line", w => {
+    jobSetup(w);
+    const raw = '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":80.0}}}}';
+    each<{ label: string; steps: QuotaStep[] }>([
+      { label: "80", steps: [{ value: 10, monthly: 80 }, { value: 10, monthly: 80 }, { value: 10, monthly: 80 }, { value: 10, monthly: 80 }] },
+      { label: "80.0", steps: [{ raw }, { raw }, { raw }, { raw }] },
+    ], item => {
+      rmSync(join(w.days, `${DATE}.json`), { force: true });
+      rmSync(join(w.root, "order.jsonl"), { force: true });
+      const r = guardJob(w, item.steps, `quota-monthly-${item.label}.cjs`);
+      expect(lines(r, "DAILY SKIP go-guard:"), `6.5.31 ${item.label}: ${D12Q} must not stop at monthly ${item.label}`).toEqual([]);
+      expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.31 ${item.label}: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
+      expect(record(w).go_guard_stop, `6.5.31 ${item.label}: missing ${D12Q} go_guard_stop null`).toBe(null);
+      expect(lines(r, "DAILY GO-GUARD "), `6.5.31 ${item.label}: missing ${D12Q} monthly=80`).toEqual(Array(4).fill("DAILY GO-GUARD weekly=10 monthly=80"));
+    });
+  });
+  caseOf("6.5.32 monthly 80.0001: the skip line keeps the full number", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 10, monthly: 80.0001 }], "quota-monthly-800001.cjs");
+    assertSkip(w, r, "monthly used 80.0001 percent", "6.5.32");
+  });
+  caseOf("6.5.33 zero for both windows continues: four batches and four guard lines", w => {
+    jobSetup(w);
+    const r = guardJob(w, [
+      { value: 0, monthly: 0 }, { value: 0, monthly: 0 }, { value: 0, monthly: 0 }, { value: 0, monthly: 0 },
+    ], "quota-zero.cjs");
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.33: ${D12Q} must not treat 0 as missing`).toEqual([]);
+    expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.33: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
+    expect(record(w).go_guard_stop, `6.5.33: missing ${D12Q} go_guard_stop null`).toBe(null);
+    expect(lines(r, "DAILY GO-GUARD "), `6.5.33: missing ${D12Q} weekly=0 monthly=0`).toEqual(Array(4).fill("DAILY GO-GUARD weekly=0 monthly=0"));
+  });
+  caseOf("6.5.34 monthly stop before batch 2: the record keeps the build run ids", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 10, monthly: 10 }, { value: 10, monthly: 81 }], "quota-monthly-b2.cjs");
+    expect(lines(r, "DAILY GO-GUARD "), `6.5.34: missing ${D12Q} clean read`).toEqual(["DAILY GO-GUARD weekly=10 monthly=10"]);
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.34: missing ${D12Q} monthly stop`).toEqual(["DAILY SKIP go-guard: monthly used 81 percent"]);
+    expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.34: missing ${D12B} build batch only`).toEqual(["build"]);
+    expect(r.status, `6.5.34: missing ${D12Q} exit 0`).toBe(0);
+    expect(record(w).go_guard_stop, `6.5.34: missing ${D12Q} go_guard_stop`).toBe("monthly used 81 percent");
+    expect(record(w).run_ids.slice().sort(), `6.5.34: missing ${D12B} build run ids`).toEqual(trackIds("build").slice().sort());
+    expect(readdirSync(w.runs).some(name => name.includes("-bugfix-") || name.includes("-tests-") || name.includes("-change-")), `6.5.34: a later ${D12B} call must not run`).toBe(false);
+  });
+  caseOf("6.5.35 dry-run monthly stop: planned=0 and no batch dry run", w => {
+    jobSetup(w);
+    const quota = writeQuota(w, "quota-monthly-dry-stop.cjs", [{ value: 10, monthly: 81 }]);
+    const r = job(w, ["--dry-run"], { BENCH_DAILY_QUOTA_CMD: quota });
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.35: missing ${D12Q} monthly stop`).toEqual(["DAILY SKIP go-guard: monthly used 81 percent"]);
+    expect(lines(r, "DAILY GO-GUARD "), `6.5.35: a stop must not print DAILY GO-GUARD`).toEqual([]);
+    expect(lines(r, "DAILY DRY-RUN "), `6.5.35: missing ${D12Q} planned=0`).toEqual(["DAILY DRY-RUN planned=0"]);
+    expect(r.status, `6.5.35: missing ${D12Q} exit 0`).toBe(0);
+    expect(readdirSync(w.days), `6.5.35: a dry run writes no day record`).toEqual([]);
+    expect(readdirSync(w.runs), `6.5.35: a stop makes no model call`).toEqual([]);
+    expect(planned(r), `6.5.35: a batch dry run must not start`).toEqual([]);
+  });
+  caseOf("6.5.36 weekly first: the weekly check decides the reason", w => {
+    jobSetup(w);
+    each<{ label: string; step: QuotaStep; reason: string }>([
+      { label: "below 0", step: { raw: '{"usage":{"windows":{"weekly":{"usedPercent":-1},"monthly":{"usedPercent":"high"}}}}' }, reason: "weekly value -1 is below 0" },
+      { label: "81 and 81", step: { value: 81, monthly: 81 }, reason: "weekly used 81 percent" },
+      { label: "weekly text", step: { raw: '{"usage":{"windows":{"weekly":{"usedPercent":"high"}}}}' }, reason: "not a number" },
+    ], item => {
+      rmSync(join(w.days, `${DATE}.json`), { force: true });
+      rmSync(join(w.root, "order.jsonl"), { force: true });
+      const r = guardJob(w, [item.step], `quota-weekly-first-${item.label.replace(/\W+/g, "-")}.cjs`);
+      assertSkip(w, r, item.reason, `6.5.36 ${item.label}`);
+      expect(record(w).go_guard_stop, `6.5.36 ${item.label}: missing ${D12Q} weekly reason`).toBe(item.reason);
+    });
   });
 });
