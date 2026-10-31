@@ -4,9 +4,10 @@
 # weekly path, and publish the site data. The selection rule lives in
 # harness/daily-pick.ts; this script owns every write and every publish.
 #
-#   0 1 * * * /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh \
+#   0 1 * * 0,3 /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh \
 #     >> /home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log 2>&1
 #
+# The line runs on Wednesday and Sunday at 01:00 local time.
 # The crontab line waits for the owner decision O1 (spec.md); this track does
 # not install it. Each day is a UTC date. runs/ and reports/ are gitignored;
 # only docs/ (the Pages site) is published, and only when the runner passed.

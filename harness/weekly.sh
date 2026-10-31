@@ -4,6 +4,8 @@
 # per High Usage model on all four tracks (plan-work.ts work list per track),
 # recost, then refresh the public site. Repeats per track come from batch.sh
 # (build 3, others 1); set REPS to override every track.
+# This script forwards its arguments to each batch.sh call.
+# weekly.sh --model <id> runs that one priced model.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 H="$ROOT/harness"

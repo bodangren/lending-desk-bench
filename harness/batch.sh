@@ -29,6 +29,7 @@
 #   BENCH_DRY_RUN=1  or agent runs
 # A scheduled model runs its full track reps; failing models get the same reps
 # as new models. The work list never writes run artifacts.
+# --model <id> pins one priced model and ignores the work list.
 set -u
 cd "$(dirname "${BASH_SOURCE[0]}")"
 # FR-9: under the crontab PATH, node resolves to the snap dispatcher, which
