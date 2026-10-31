@@ -164,7 +164,7 @@ fi
 # Read from the seam or from the OpenChamber local endpoint. A live read uses
 # only the first instance port and only GET /api/quota/opencode-go.
 guard_read() {
-  local raw="" rc=0 port="" parse="" value=""
+  local raw="" rc=0 port="" parse="" weekly_state="" weekly_value="" monthly_state="" monthly_value="" comparison="" comparison_rc=0
   if [ -n "${BENCH_DAILY_QUOTA_CMD:-}" ]; then
     raw="$("$BENCH_DAILY_QUOTA_CMD")" || rc=$?
   else
@@ -196,13 +196,27 @@ let s = ""; process.stdin.on("data", c => s += c); process.stdin.on("end", () =>
   try {
     const x = JSON.parse(s);
     const w = x?.usage?.windows?.weekly;
-    if (!w || !Object.prototype.hasOwnProperty.call(w, "usedPercent") || w.usedPercent === null) process.stdout.write("missing");
-    else if (typeof w.usedPercent !== "number" || !Number.isFinite(w.usedPercent)) process.stdout.write("invalid");
-    else process.stdout.write(JSON.stringify(w.usedPercent));
+    const m = x?.usage?.windows?.monthly;
+    const state = value => {
+      if (!value || !Object.prototype.hasOwnProperty.call(value, "usedPercent") || value.usedPercent === null) return ["missing", ""];
+      if (typeof value.usedPercent !== "number" || !Number.isFinite(value.usedPercent)) return ["invalid", ""];
+      return ["valid", JSON.stringify(value.usedPercent)];
+    };
+    const [ws, wv] = state(w);
+    const [ms, mv] = state(m);
+    process.stdout.write([ws, wv, ms, mv].join("\t"));
   } catch { process.stdout.write("read-failed"); }
 });
 ')" || parse="read-failed"
   case "$parse" in
+    read-failed)
+      echo "DAILY SKIP go-guard: read failed"
+      GUARD_STOP="read failed"
+      return 1
+      ;;
+  esac
+  IFS=$'\t' read -r weekly_state weekly_value monthly_state monthly_value <<< "$parse"
+  case "$weekly_state" in
     missing)
       echo "DAILY SKIP go-guard: missing field"
       GUARD_STOP="missing field"
@@ -213,23 +227,29 @@ let s = ""; process.stdin.on("data", c => s += c); process.stdin.on("end", () =>
       GUARD_STOP="not a number"
       return 1
       ;;
-    read-failed)
+    valid) ;;
+    *)
       echo "DAILY SKIP go-guard: read failed"
       GUARD_STOP="read failed"
       return 1
       ;;
   esac
-  value="$parse"
-  local comparison="" comparison_rc=0
-  comparison="$(node -e '
-const n = Number(process.argv[1]);
-if (!Number.isFinite(n)) process.exit(2);
-if (n > 80) { process.stdout.write("above"); process.exit(1); }
+  comparison_rc=0
+  comparison="$(DAILY_GUARD_VALUE="$weekly_value" node -e '
+const n = Number(process.env.DAILY_GUARD_VALUE);
+if (!Number.isFinite(n)) process.exit(88);
+if (n < 0) { process.stdout.write("below-zero"); process.exit(1); }
+if (n > 80) { process.stdout.write("above-80"); process.exit(2); }
 process.stdout.write("within");
-' "$value")" || comparison_rc=$?
-  if [ "$comparison_rc" -eq 1 ] && [ "$comparison" = "above" ]; then
-    echo "DAILY SKIP go-guard: weekly used $value percent"
-    GUARD_STOP="weekly used $value percent"
+' )" || comparison_rc=$?
+  if [ "$comparison_rc" -eq 1 ] && [ "$comparison" = "below-zero" ]; then
+    echo "DAILY SKIP go-guard: weekly value $weekly_value is below 0"
+    GUARD_STOP="weekly value $weekly_value is below 0"
+    return 1
+  fi
+  if [ "$comparison_rc" -eq 2 ] && [ "$comparison" = "above-80" ]; then
+    echo "DAILY SKIP go-guard: weekly used $weekly_value percent"
+    GUARD_STOP="weekly used $weekly_value percent"
     return 1
   fi
   if [ "$comparison_rc" -ne 0 ] || [ "$comparison" != "within" ]; then
@@ -237,7 +257,48 @@ process.stdout.write("within");
     GUARD_STOP="read failed"
     return 1
   fi
-  echo "DAILY GO-GUARD weekly=$value"
+  case "$monthly_state" in
+    missing)
+      echo "DAILY SKIP go-guard: monthly missing field"
+      GUARD_STOP="monthly missing field"
+      return 1
+      ;;
+    invalid)
+      echo "DAILY SKIP go-guard: monthly not a number"
+      GUARD_STOP="monthly not a number"
+      return 1
+      ;;
+    valid) ;;
+    *)
+      echo "DAILY SKIP go-guard: read failed"
+      GUARD_STOP="read failed"
+      return 1
+      ;;
+  esac
+  comparison_rc=0
+  comparison="$(DAILY_GUARD_VALUE="$monthly_value" node -e '
+const n = Number(process.env.DAILY_GUARD_VALUE);
+if (!Number.isFinite(n)) process.exit(88);
+if (n < 0) { process.stdout.write("below-zero"); process.exit(1); }
+if (n > 80) { process.stdout.write("above-80"); process.exit(2); }
+process.stdout.write("within");
+' )" || comparison_rc=$?
+  if [ "$comparison_rc" -eq 1 ] && [ "$comparison" = "below-zero" ]; then
+    echo "DAILY SKIP go-guard: monthly value $monthly_value is below 0"
+    GUARD_STOP="monthly value $monthly_value is below 0"
+    return 1
+  fi
+  if [ "$comparison_rc" -eq 2 ] && [ "$comparison" = "above-80" ]; then
+    echo "DAILY SKIP go-guard: monthly used $monthly_value percent"
+    GUARD_STOP="monthly used $monthly_value percent"
+    return 1
+  fi
+  if [ "$comparison_rc" -ne 0 ] || [ "$comparison" != "within" ]; then
+    echo "DAILY SKIP go-guard: read failed"
+    GUARD_STOP="read failed"
+    return 1
+  fi
+  echo "DAILY GO-GUARD weekly=$weekly_value monthly=$monthly_value"
   return 0
 }
 

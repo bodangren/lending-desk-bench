@@ -10,6 +10,7 @@ import { afterAll, describe, expect, it } from "vitest";
 const ROOT = resolve(import.meta.dirname, "../..");
 const HARNESS = join(ROOT, "harness");
 const REAL_NODE = process.execPath;
+const DAILY_SCRIPT = process.env.BENCH_GREEN_CRON_DAILY ?? join(HARNESS, "cron-daily.sh");
 const DAY = "2026-10-26";
 const STEPS = ["recost-1", "rescore-all", "guard-10", "batch-build", "guard-81", "rescore-week", "recost-2", "python-export-site-data.py", "python-generate-model-pages.py", "cleanup"];
 
@@ -37,7 +38,7 @@ function fixture(failCompare = false): Fixture {
   mkdirSync(home, { recursive: true });
   mkdirSync(runs, { recursive: true });
   mkdirSync(days, { recursive: true });
-  writeFileSync(join(harness, "cron-daily.sh"), readFileSync(join(HARNESS, "cron-daily.sh")));
+  writeFileSync(join(harness, "cron-daily.sh"), readFileSync(DAILY_SCRIPT));
   for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts"])
     symlinkSync(join(HARNESS, name), join(harness, name));
   symlinkSync(join(HARNESS, "node_modules"), join(harness, "node_modules"), "dir");
@@ -57,7 +58,7 @@ function fixture(failCompare = false): Fixture {
   writeFileSync(log, "");
 
   script(join(bin, "node"), `#!/usr/bin/env bash
-if [ "${failCompare ? "1" : "0"}" = 1 ] && [ "\${1:-}" = -e ] && [[ "\${2:-}" == *Number.isFinite* ]]; then exit 88; fi
+if [ "${failCompare ? "1" : "0"}" = 1 ] && [ "\${1:-}" = -e ] && [[ "\${2:-}" == *DAILY_GUARD_VALUE* ]]; then exit 88; fi
 exec ${JSON.stringify(REAL_NODE)} "$@"
 `);
   script(join(bin, "python3"), `#!/usr/bin/env bash

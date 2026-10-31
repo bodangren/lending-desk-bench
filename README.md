@@ -266,7 +266,7 @@ The owner named three steps:
 
 `harness/cron-daily.sh` runs the job. `harness/daily-pick.ts` selects the model. The job runs that model with `batch.sh --model` on the build, bugfix, tests, and change tracks. The job writes one day record under `reports/daily/`.
 
-Before each track batch, the job reads the OpenCode Go weekly window from the local OpenChamber quota endpoint. A reading above 80 percent or an unreadable window stops the remaining batches. The job does not use the paid Go credit balance. A stop still updates the day record and refreshes the site data.
+Before each track batch, the job reads the OpenCode Go weekly and monthly windows from the local OpenChamber quota endpoint. It checks `usage.windows.weekly.usedPercent` first, then `usage.windows.monthly.usedPercent` from the same response. A reading above 80 percent, a value below zero, or an unreadable window stops the remaining batches. The job does not use the paid Go credit balance. A stop still updates the day record and refreshes the site data.
 
 After the job commits site data under `docs/`, it fetches `origin`. It pushes its own docs commit only when `origin/main` equals that commit's parent. Otherwise, it keeps the commit local and logs the skip reason. A selector exit other than 0 or 3 fails the job and starts no batch.
 
@@ -278,6 +278,6 @@ When an operator deletes a day record under `reports/daily/`, the next job run o
 
 Other known limits:
 
-- A run can wait when the daily or weekly lock is held.
+- A run day is skipped with `DAILY SKIP lock held` when the daily or weekly lock is held.
 - The job skips a push when `origin/main` has moved or the fetch fails.
 - A host fault inside a track batch can stop that batch after the quota check.
