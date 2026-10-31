@@ -397,7 +397,7 @@ it is not an acceptance claim.
   - Verify: the section 12 text resolves the resume-reason gap of task 3.9.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track daily_model_schedule --log-file measure/runs/daily_model_schedule/strategy-1dddcaa.log` prints `PASS: strategy gate passed`.
   - Evidence: commit `78f73c0` amends `test-strategy.md`. `STATUS_CHECK` printed `STATUS_CHECK=pass blocked=3 open=1`.
-- [~] 4b.2 Red: failing tests for the new rules. The role adds the cases of
+- [x] 4b.2 Red: failing tests for the new rules. 459fc7f The role adds the cases of
   the amended strategy to `harness/schedule-tests/daily-schedule.test.ts`:
   the guard stops (before the first batch, mid-day, a failed read, a
   missing field, a non-number), the dry-run guard line, the push rule (a
@@ -407,7 +407,20 @@ it is not an acceptance claim.
   - Verify: `SCHEDULE_TEST` exits non-zero, and each new failure names a missing interface of spec D11 to D14.
   - Verify: `RED_PATH_CHECK` prints `RED_PATH_CHECK=pass`.
   - Verify: the mid-red role gate prints `PASS: mid-red gate passed`.
-- [ ] 4b.3 Green: the guard, the per-batch order, the push rule, the
+  - Evidence: `SCHEDULE_TEST` at `459fc7f` used `heavy-run.sh` and exited non-zero.
+    `Test Files  1 failed (1)`. `Tests  39 failed | 43 passed (82)`.
+    The log is `measure/runs/daily_model_schedule/red-4b.log`.
+    `RED_PATH_CHECK=pass` with `PHASE_BASE=e47c2c5faf1156ba7e64d4687346bd6795d00ae3`.
+    The track `PHASE_BASE` `3c215027` cannot pass here. Phase 3 changed `harness/` after it.
+    `UNIT_CHECK=fail absent harness/systemd/lending-desk-daily.service harness/systemd/lending-desk-daily.timer`.
+    `DOCS_CHECK=fail missing harness/systemd/lending-desk-daily.service`.
+    D12 `BENCH_DAILY_QUOTA_CMD`: 6.3.1, 6.5.1, 6.5.4, 6.5.5, 6.5.6, 6.5.7, 6.5.8, 6.5.9, 6.5.10, 6.5.11, 6.5.12, 6.5.13, 6.5.24.
+    D12 `BENCH_DAILY_BATCH`: 6.3.4, 6.3.5, 6.3.6, 6.3.10, 6.3.12, 6.4.4, 6.4.7, 6.5.2, 6.5.3, 6.5.13, 12.1, 12.2, 12.4, 12.5.
+    D12 live quota text: 6.4.6. D13 `git push origin <sha>:main`: 6.4.3, 6.4.4, 6.5.14, 6.5.15, 6.5.16, 6.5.17.
+    D14 `BENCH_DAILY_SELECT`: 6.5.18, 6.5.19, 6.5.20, 6.5.21.
+    D11 unit files: 6.4.5, 6.5.22.
+    Case 6.5.23 names the section 5.4 resume-record keep. No failure was a timeout or a fixture fault.
+- [~] 4b.3 Green: the guard, the per-batch order, the push rule, the
   selector exit, the two unit files, the README update, and the header
   comments. The guard reads `usage.windows.weekly.usedPercent` through the
   port of `openchamber status --json` (seam `BENCH_DAILY_QUOTA_CMD`), once
