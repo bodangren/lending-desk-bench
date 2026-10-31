@@ -497,7 +497,7 @@ it is not an acceptance claim.
     the amended `DOCS_CHECK` (it exits 1 with `DOCS_CHECK=fail missing
     monthly window` before task 4b.8); adversarial cases 14 to 17; and the
     review dispositions of `1b17ae2` in section 13.
-- [~] 4b.7 Red: failing tests for the monthly window. The cases cover each new
+- [x] 4b.7 Red — commit `e38f94d`. The cases cover each new
   monthly reason, the weekly below-0 reason, the new clean-read line, 80 and
   80.0001 for the monthly window, a monthly stop before batch 2 that keeps
   the build run ids, and a dry-run monthly stop. The role updates existing
@@ -530,20 +530,44 @@ it is not an acceptance claim.
     Log: `measure/runs/daily_model_schedule/red-4b7-docs.log`.
   - No failure was a timeout or a fixture fault. `harness/cron-daily.sh`,
     `README.md`, `spec.md`, and `test-strategy.md` are unchanged.
+  - The orchestrator mid-red gate passed. `RED_PATH_CHECK_4B7=pass` at
+    test HEAD `10a2859`.
   - `phase_base_sha=e47c2c5faf1156ba7e64d4687346bd6795d00ae3` (the Phase 4b
     baseline of plan task 4b.2 and strategy section 9);
     `role_base_sha=adbc59d4c9ba5cdc3b9f1e1dd0b94ffe9535af68`;
     `STRATEGY_4B6=2a69a5869cf976f869c29a02cad6c7189768c5c2`. The three
     values resolve. Commit `e38f94d` is new Red work after the role base.
-- [ ] 4b.8 Green: the monthly window. Implement the D12 amendment in
+- [x] 4b.8 Green — implementation commit `b3e9130`. Implement the D12 amendment in
   `harness/cron-daily.sh`. Update the README for the monthly window. Fix the
   README lock sentence (Review C F1: `README.md:281` says a run can wait when
   a lock is held; the code skips the day with `DAILY SKIP lock held`). Make
   the Green compare-fault test able to fail (Review A N1).
-  - Verify: `SCHEDULE_TEST` and the Green test file exit 0, `GUARD_CHECK`,
-    `UNIT_CHECK`, `DOCS_CHECK`, `PATH_CHECK`, and `WEEKLY_SAME` pass,
-    `BATCH_COMPAT` equals task 1.2, and the jr-green gate passes.
-- [ ] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
+  - The guard checks weekly first, then monthly, using one quota response.
+    It uses the exact D12 stop reasons and clean-read line. The README names
+    the monthly field and says the job skips when the lock is held.
+  - Verify: `SCHEDULE_TEST` exited 0 with `Tests  94 passed (94)`.
+    `GUARD_CHECK` exited 0 with `Tests  26 passed | 68 skipped (94)`.
+    `GREEN_REGRESSION` exited 0 with `Tests  4 passed (4)`.
+    `GREEN_MUTATION=fail-as-expected`; its command exited 0.
+    `PUSH_RULE_CHECK` and `SELECT_EXIT_CHECK` each exited 0 with 4 passed
+    and 90 skipped. `BATCH_COMPAT_RUNS=180` and
+    `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`.
+  - Static gates: `BASH_N=pass`; `UNIT_CHECK_VERIFY=pass`;
+    `UNIT_CHECK=pass`; `DOCS_CHECK=pass`; `PATH_CHECK=pass`;
+    `WEEKLY_SAME=pass`; `STATUS_CHECK=pass blocked=3 open=1`;
+    `DIFF_CHECK=pass`.
+  - The Red baseline command exited 1 before implementation with
+    `Tests  18 failed | 76 passed (94)`. Its log is
+    `/tmp/opencode/daily-schedule-4b8-red-baseline.log`.
+  - Gate logs: `/tmp/opencode/daily-schedule-4b8-schedule.log`,
+    `/tmp/opencode/daily-schedule-4b8-guard.log`,
+    `/tmp/opencode/daily-schedule-4b8-green.log`,
+    `/tmp/opencode/daily-schedule-4b8-mutation.log`,
+    `/tmp/opencode/daily-schedule-4b8-push.log`,
+    `/tmp/opencode/daily-schedule-4b8-select.log`, and
+    `/tmp/opencode/daily-schedule-4b8-batch-compat.log`.
+    The Green regression file is the only new file.
+- [~] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
   and the per-batch order against D12. B: the push rule of D13, the quota
   read over the local port, the credential, and the unattended timer. C:
   the new seams, the new labeled lines, the `go_guard_stop` field, and the
