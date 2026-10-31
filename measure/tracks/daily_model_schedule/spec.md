@@ -194,10 +194,12 @@ date 2026-10-25.
 7. **D7. The entry point.** A new script `harness/cron-daily.sh` holds the
    daily job. A new script `harness/daily-pick.ts` holds the selection rule.
    `batch.sh` gets a flag `--model <id>` that runs one priced model.
-   `weekly.sh` passes its arguments to each `batch.sh` call. The job calls
-   `weekly.sh --model <id>`, so it reuses the full weekly sequence for one
-   model. A flag does not leak into a test environment, and a variable does
-   (EV10).
+   `weekly.sh` passes its arguments to each `batch.sh` call. The first cut
+   of the job called `weekly.sh --model <id>` to reuse the full weekly
+   sequence for one model. D12 supersedes this: the job now runs the four
+   track batches itself, with one Go-guard read before each batch, and it
+   runs the other `weekly.sh` steps in the order of D12. A flag does not
+   leak into a test environment, and a variable does (EV10).
 8. **D8. A failed fetch.** The job stops before the selection when the
    catalog fetch or `opencode models` fails, or when the live list is empty.
    It runs no model and exits non-zero. It writes each fetch to a temporary
@@ -205,13 +207,108 @@ date 2026-10-25.
 9. **D9. Lock and time.** The job takes the lock of the weekly cron,
    `.tmp/weekly-cron.lock`. Thus the daily job and a weekly run never run at
    the same time. When the lock is held, the job exits 0 and selects
-   nothing. The crontab line is `0 1 * * 0,3`. The job runs on Wednesday
-   and Sunday at 01:00 local time. Each day is a UTC date.
-10. **D10. What the job publishes.** The job commits only `docs/`, and it
-    pushes `origin main`, as `cron-weekly.sh` does. The first line of the
+   nothing. The schedule comes from the systemd user timer of D11. The job
+   runs on Wednesday and Sunday at 01:00 local time. Each day is a UTC date.
+10. **D10. What the job publishes.** The job commits only `docs/`. It pushes
+    that commit only under the push rule of D13. The first line of the
     commit message names the day, the model, and the reason. The body lists
     each unpriced, gone, and unservable model. The job makes no commit when
     `docs/` has no change.
+11. **D11. Timer units.** The repository holds two unit files:
+    `harness/systemd/lending-desk-daily.service` and
+    `harness/systemd/lending-desk-daily.timer`. This path is the one name
+    for the unit files in every file of this track. The timer holds
+    `OnCalendar=Wed,Sun 01:00:00` (local time) and `Persistent=false`, so a
+    missed run never starts at boot and spends Go use at an unplanned time.
+    The service is `Type=oneshot`. Its `ExecStart` runs
+    `harness/cron-daily.sh` in `/home/daniebo/Desktop/lending-desk-bench`,
+    and it appends stdout and stderr to
+    `/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log`. The
+    track commits the two files. It does not install them. The owner
+    installs them after task 5.1, after the one manual push of D13, and
+    after 2026-11-02 07:00 (the Go week reset). The first run day is
+    Wednesday 2026-11-04 at 01:00. `cron-weekly.sh` stays disabled (EV12),
+    and no crontab line exists for the daily job.
+12. **D12. Go guard.** The job reads the OpenCode Go weekly window before
+    each track batch, and it makes no model call after a stop. The live
+    source: the port from `openchamber status
+    --json` (the `port` field of the first entry of `instances`), then `GET
+    http://127.0.0.1:<port>/api/quota/opencode-go`, then the field
+    `usage.windows.weekly.usedPercent`. A stop condition is: a reading above
+    80, a failed read (the status command, the port, or the GET), a missing
+    field, or a value that is not a number. On a stop condition the job
+    stops the day: it makes no further model call, it prints one labeled
+    line `DAILY SKIP go-guard: <reason>` (one line per stop), and it exits
+    0. The `<reason>` is `weekly used <n> percent` for a reading above 80,
+    and `read failed`, `missing field`, or `not a number` for the other
+    cases. The job never draws on the paid Go credit balance.
+    - Test seam: `BENCH_DAILY_QUOTA_CMD`. It names a command that prints the
+      quota JSON in place of the live source. The tests set it. Without it,
+      the job uses the live source. The guard logic is one shell function in
+      `cron-daily.sh`, so the seam replaces only the read.
+    - Reads: the job reads the guard before each of the 4 track batches
+      (`build`, `bugfix`, `tests`, `change`), in that order. The PM accepted
+      this within condition 2 on 2026-10-31. A clean read in the live mode
+      prints one line `DAILY GO-GUARD weekly=<n>`, so a run day shows 4
+      such lines when no stop happens.
+    - Place of the check: `weekly.sh` runs the 4 tracks in one loop, so the
+      per-batch check cannot live there without a change of `weekly.sh`. The
+      default place is `cron-daily.sh`: it runs each of the 4 track batches
+      itself, as `BENCH_TRACK=<track> harness/batch.sh --model <id>`. It no
+      longer calls `weekly.sh`. It runs the full `weekly.sh` sequence, split
+      for the guard, in this exact order: (1) the Playwright Chromium check
+      of `weekly.sh`, fail closed; (2) the price-marker block, with
+      `recost.sh` on a changed table; (3) the hash-marker block, with
+      `rescore-doctor.sh WEEK=all` on changed hashes; (4) for each track in
+      `build bugfix tests change`: one guard read, then the batch on a clean
+      read; (5) `rescore-doctor.sh` with the week of the day; (6)
+      `recost.sh`; (7) `export-site-data.py`; (8) `generate-model-pages.py`;
+      (9) `cleanup.sh`. `weekly.sh` itself stays unchanged for manual use.
+    - A stop mid-day: the job skips the remaining batches. It still runs
+      steps (5) to (9), the run list, and the record update, so the site
+      matches the runs that ran. It then publishes under D10 and D13, and it
+      exits 0. A guard stop is a clean skip, not a failure: the `DAILY FAIL
+      runs` rule of D3 does not apply to a stop with zero runs.
+    - The day record after a stop holds the run ids of the batches that ran
+      before the stop, and the new field `go_guard_stop` with the exact
+      `<reason>` text of the stop line. A day with no stop holds
+      `go_guard_stop: null`.
+    - Dry run: the dry run reads the guard one time, before the batch dry
+      runs. On a clean read it prints `DAILY GO-GUARD weekly=<n>` and then
+      the planned run ids and `DAILY DRY-RUN planned=<n>`. On a stop
+      condition it prints the `DAILY SKIP go-guard: <reason>` line and
+      `DAILY DRY-RUN planned=0`, and it exits 0. The dry run makes no model
+      call in any case.
+    - Seams for the new order: `BENCH_DAILY_BATCH` replaces
+      `harness/batch.sh`; the job calls it as `BENCH_TRACK=<track>
+      <batch> --model <id>` (the four batches, and the dry runs in a dry
+      run). `BENCH_DAILY_POST=0` skips steps (1) to (3) and (5) to (9); the
+      tests use it with a stub batch. `BENCH_DAILY_RUNNER` is retired: the
+      job runs the batches itself.
+13. **D13. Push rule.** After its own docs commit, the job runs `git fetch
+    origin`. It pushes only when `origin/main` equals the parent of its own
+    docs commit. The push form is `git push origin <sha>:main`, where
+    `<sha>` is the docs commit. The explicit sha keeps the push on the one
+    commit that the check passed, even when another commit lands between
+    the check and the push. In any other case (another local commit between
+    `origin/main` and the docs commit, a moved or unreadable `origin/main`,
+    or a failed fetch) the job keeps the commit local, prints one labeled
+    line, and exits 0. The line is `DAILY PUSH skipped: <n> other local
+    commits`, where `<n>` is `git rev-list --count origin/main..HEAD~1`,
+    when `<n>` is at least 1. When `<n>` is 0, the line is
+    `DAILY PUSH skipped: origin/main moved`. When the fetch failed, the
+    line is `DAILY PUSH skipped: fetch failed`. A failed push after a
+    passed check retries 3 times, as today;
+    after the third failure the job prints `DAILY FAIL publish: git push
+    failed after 3 attempts; the commit is local` and exits 1. Until
+    Daniel's one manual push (task 5.1), `origin/main` trails the merged
+    branch, so this rule skips every job push. After that push, the rule
+    sends only the job's own docs commit.
+14. **D14. Selector exit.** The selector exits 0 for a pick or a resume, 3
+    for no eligible model, and 2 for an input fault (5.1 of the test
+    strategy). Any other exit is a failure: the job prints `DAILY FAIL pick:
+    the selector exited <n>` on stderr and exits with the same non-zero
+    code. It runs no model (Review C finding 2, `cron-daily.sh:151`).
 
 ## Functional requirements
 
@@ -287,7 +384,8 @@ date 2026-10-25.
 
 ### FR-8 — Publish
 
-- The job commits only `docs/`, with the message of D10, and pushes it.
+- The job commits only `docs/`, with the message of D10. It pushes only
+  under the push rule of D13 (FR-11).
 - The job publishes nothing when it selects no model.
 - **Check.** After the first live day, `PUBLISH_CHECK` passes (test
   strategy). On a day with the reason `none`, `git log` shows no new commit.
@@ -302,6 +400,55 @@ date 2026-10-25.
 - **Check.** `PATH_CHECK`, `BASE_HASH`, `WORKLIST_SHA`, `DAY_CHECK`, and
   `PI_CHECK` of the test strategy.
 
+### FR-10 — Go guard
+
+- The job reads the Go weekly window before each of the 4 track batches
+  (D12). A reading above 80, a failed read, a missing field, or a value
+  that is not a number stops the day: no further model call, one
+  `DAILY SKIP go-guard: <reason>` line, exit 0.
+- A stop mid-day keeps the runs that ran. The day record holds their run
+  ids and `go_guard_stop` with the reason. The job never draws on the paid
+  Go credit balance.
+- **Check.** With a stub `BENCH_DAILY_QUOTA_CMD`: a reading of 81 before the
+  first batch gives exit 0, the skip line, and no batch call; a reading of
+  81 before the third batch gives the runs of the first two batches in the
+  record and `go_guard_stop` set; a read failure, a missing field, and a
+  non-number each give the skip line and exit 0. A dry run prints the guard
+  line and makes no model call.
+
+### FR-11 — Push rule
+
+- After its docs commit, the job fetches `origin` and pushes only when
+  `origin/main` equals the parent of that commit, as `git push origin
+  <sha>:main` (D13). Any other case keeps the commit local, prints one
+  `DAILY PUSH skipped: <reason>` line, and exits 0.
+- **Check.** In a temporary Git repository: with `origin/main` at the
+  parent, the push runs and `origin/main` moves to the docs commit only;
+  with one other local commit between, the job prints
+  `DAILY PUSH skipped: 1 other local commits`, pushes nothing, and exits 0;
+  with a failed fetch, the job prints `DAILY PUSH skipped: fetch failed`
+  and exits 0.
+
+### FR-12 — Selector exit
+
+- Any selector exit other than 0 and 3 is a failure: `DAILY FAIL pick: the
+  selector exited <n>` on stderr, and a non-zero exit (D14). The job runs
+  no model.
+- **Check.** A selector stub that exits 1 gives the fail line, exit 1, no
+  batch call, and no day record change. Exit 2 keeps its current behavior.
+  Exit 3 keeps the `none` path.
+
+### FR-13 — Timer unit files
+
+- The repository holds `harness/systemd/lending-desk-daily.service` and
+  `harness/systemd/lending-desk-daily.timer` (D11). The timer holds
+  `OnCalendar=Wed,Sun 01:00:00` and `Persistent=false`. The service runs
+  `harness/cron-daily.sh` and appends to `reports/cron-daily.log`. The
+  track installs nothing.
+- **Check.** `TIMER_CHECK` (test strategy) reads the two files and asserts
+  each named value. No systemd unit is installed and no crontab line exists
+  before the owner action of task 5.3.
+
 ## Non-functional requirements
 
 - **NFR-1 No other model call.** The job sends a model call for the day's
@@ -314,20 +461,27 @@ date 2026-10-25.
 - **NFR-3 Determinism.** The same inputs give the same output, in the same
   byte order.
 - **NFR-4 Fail closed.** Each input fault stops the job before a model run,
-  with a non-zero exit and a labeled line.
+  with a non-zero exit and a labeled line. The Go guard of D12 is a clean
+  skip, not an input fault: it exits 0 with its own labeled line, as the
+  owner condition 2 states.
 - **NFR-5 No new dependency.** The selector uses Node built-ins and the
   existing harness modules. The tests use the existing Vitest.
 - **NFR-6 Test seams.** `cron-daily.sh` reads `BENCH_RUNS_ROOT`,
   `BENCH_PRICING_PATH`, `BENCH_DAILY_DIR`, `BENCH_DAILY_DATE`,
-  `BENCH_DAILY_CATALOG`, `BENCH_DAILY_SERVED`, `BENCH_DAILY_RUNNER`,
-  `BENCH_DAILY_PUBLISH`, and `BENCH_DAILY_LOCK`. The tests use them. Without
-  them, the job uses the real paths.
+  `BENCH_DAILY_CATALOG`, `BENCH_DAILY_SERVED`, `BENCH_DAILY_PUBLISH`,
+  `BENCH_DAILY_LOCK`, and the three seams of D12: `BENCH_DAILY_QUOTA_CMD`
+  (the guard source), `BENCH_DAILY_BATCH` (the batch command, default
+  `harness/batch.sh`), and `BENCH_DAILY_POST` (`0` skips the Playwright
+  check, the two marker blocks, and the five post-batch steps).
+  `BENCH_DAILY_RUNNER` is retired: the job runs the batches itself (D12).
+  The tests use the seams. Without them, the job uses the real paths and
+  commands.
 
 ## Owner decisions
 
 | ID | Decision | Proposed default | Answer |
 |---|---|---|---|
-| O1 | Install the crontab line `0 1 * * 0,3`. This starts a paid run of 12 agent runs on each run day. The run days are Wednesday and Sunday. The job pushes `docs/` on each run day. Spend is 1.07 USD per run day on average and 3.24 USD at the observed maximum. The week has about 2 run days. | Approve after the real-data dry run of task 4.1 passes and `opencode_executor` task 4.2 closes. Spend from EV11: 1.07 USD each run day on average, 3.24 USD at the observed maximum. | open — the owner 2026-10-25 chose to approve only after the two prerequisites close |
+| O1 | Install the systemd user timer of D11 (unit files `harness/systemd/lending-desk-daily.service` and `harness/systemd/lending-desk-daily.timer`, `OnCalendar` Wednesday and Sunday 01:00 local time, `Persistent=false`). This starts a paid run of 12 agent runs on each run day. The run days are Wednesday and Sunday. The job pushes its own `docs/` commit under the push rule of D13. Spend is 1.07 USD per run day on average and 3.24 USD at the observed maximum. The week has about 2 run days. | Approve after the real-data dry run of task 4.1 passes and `opencode_executor` task 4.2 closes. Spend from EV11: 1.07 USD each run day on average, 3.24 USD at the observed maximum. | approved 2026-10-31 — Daniel answered "Approve with conditions" (Tasks, 2026-10-31 12:01 ICT, relayed by the PM orchestrator), with 3 conditions, exact in quotation: (1) "A systemd user timer, not a crontab line (house rule: every scheduled job is a systemd user unit + timer). Same schedule: Wednesday and Sunday 01:00. Use Persistent=false, so a missed run never starts at boot and spends Go use at an unplanned time. Put the .service and .timer files in your repo; do not install them yet." (2) "Go guard: the job skips a run day (exit 0, one clear log line, no model call) when the OpenCode Go weekly window is above 80 %, or when it cannot read the window. Read it from OpenChamber: port from `openchamber status --json`, GET /api/quota/opencode-go, usage.windows.weekly.usedPercent. The job must never draw on the paid Go credit balance." (3) "Push: no push by the job until one manual push. After your merge (task 5.1), tell me the commit range; I scan it for secrets, then Daniel says \"push\" once. After that, the job pushes only its own docs commit." Within condition 2 the PM also accepted (2026-10-31): "read the Go guard again before each of the 4 track batches, and stop the day at the first reading above 80 % or at an unreadable window. Log one line for each stop." Rules: D11, D12, D13, D14. Timing (PM): the owner installs after task 5.1, after the secret scan and the one manual push, after the selector exit fix (D14), and after 2026-11-02 07:00 (the Go week reset). First run day: Wednesday 2026-11-04 01:00. |
 
 ## Acceptance criteria
 
@@ -342,9 +496,22 @@ date 2026-10-25.
    independent `PICK_ORACLE` prints the same model, reason, and counts.
 6. **AC-6** `PATH_CHECK` passes. `BASE_HASH` and `WORKLIST_SHA` are
    unchanged (FR-9).
-7. **AC-7** O1 has a recorded answer and date before the crontab line exists.
+7. **AC-7** O1 has a recorded answer and date before the systemd timer
+   units are installed (FR-13, D11). The units stay uninstalled until the
+   owner action of task 5.3.
 8. **AC-8** After the first live day, `DAY_CHECK`, `PUBLISH_CHECK`, and
    `PI_CHECK` pass (FR-8, FR-9).
+9. **AC-9** The Go guard stops the day on a reading above 80, on a failed
+   read, on a missing field, and on a non-number: exit 0, one
+   `DAILY SKIP go-guard` line per stop, and no model call after the stop
+   (FR-10).
+10. **AC-10** The job pushes only its own docs commit, and only when
+    `origin/main` equals its parent. Every other case prints one
+    `DAILY PUSH skipped` line and exits 0 (FR-11).
+11. **AC-11** A selector exit other than 0 and 3 prints `DAILY FAIL pick`
+    and exits non-zero (FR-12).
+12. **AC-12** The two unit files exist in the repository with the values of
+    D11, and `TIMER_CHECK` passes (FR-13).
 
 ## Out of scope
 
@@ -365,10 +532,15 @@ date 2026-10-25.
 - **R2 Loss of the day records.** `reports/` is not in Git. A loss changes
   each run date to the Sunday of its week (D4). The order then changes inside
   a week only.
-- **R3 Spend.** Each run day spends up to 12 agent runs (D1). O1 approves it.
-- **R4 The push publishes other commits.** `git push origin main` sends every
-  local commit of `main`, as `cron-weekly.sh` does. The job does this on
-  each run day. Review B checks this path, and O1 states it.
+- **R3 Spend.** Each run day spends up to 12 agent runs (D1). O1 approved
+  it on 2026-10-31 with 3 conditions. The Go guard of D12 stops a run day
+  at a weekly window above 80 percent, so the job never draws on the paid
+  Go credit balance.
+- **R4 The push publishes other commits.** The old `git push origin main`
+  sent every local commit of `main`. D13 removes this path: the job pushes
+  only when `origin/main` equals the parent of its own docs commit, and it
+  pushes that commit by sha. Until the one manual push of task 5.1, every
+  job push skips. Review B checks this path.
 - **R5 Staged site edits of other tracks.** `git add docs/` stages each edit
   under `docs/` in `main`. Track `domain_trust` keeps its page edits on a
   branch until its decision O2 (its NFR-7).
@@ -377,3 +549,10 @@ date 2026-10-25.
   days (Wednesday to Sunday, Sunday to Wednesday). A run day that still
   holds the lock at the next run day makes that job exit 0. That next run
   day then gets no model.
+- **R7 Overrun inside one track batch.** The guard reads only between
+  batches (D12). One batch can pass the 80 percent line: the build batch
+  holds up to 6 agent runs, so up to 0.53 USD on average and 1.62 USD at
+  the observed maximum (EV11) can land above the line before the next read
+  stops the day. The margin is one batch. It stays an open risk: the owner
+  condition names the read points between the 4 batches, and a read inside
+  a batch would need a change of `batch.sh`, which this track does not do.

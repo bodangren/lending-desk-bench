@@ -31,4 +31,4 @@
 | go_catalog_w43 | Refresh the OpenCode Go catalog and benchmark the new models | Feature | complete | 2026-10-24 |
 | rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | pending — strategy done; Phase 1 setup next; owner decisions D1 and D2 open | 2026-10-25 |
 | domain_trust | Domain trust matrix: safe and risk domains for each model, with failure modes | Feature | pending — strategy done; Phase 1 worktree next; owner decisions O1 and O2 open | 2026-10-25 |
-| daily_model_schedule | Daily model schedule: one model per day, untested first, then the stalest | Feature | pending — Phase 4 docs committed at a450b88; task 5.1 (merge) next; owner decision O1 open | 2026-10-25 |
+| daily_model_schedule | Daily model schedule: one model per day, untested first, then the stalest | Feature | pending — O1 approved with 3 conditions 2026-10-31 (spec D11–D14); task 4b.1 (strategy amendment) next; Phase 4 Review C and acceptance still open | 2026-10-25 |

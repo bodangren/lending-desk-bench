@@ -8,20 +8,25 @@ it publishes the site data. Spec:
 `pick-oracle.py`. Base commit: `aa94185`.
 
 Order: contract, then tests (Red), then implementation (Green) and reviews,
-then docs, then the doctor and the owner gate.
+then docs, then the O1 conditions (Phase 4b), then the doctor and the owner
+gate.
 
 Constraints for every role:
 
 - `harness/cron-weekly.sh` stays disabled. Do not edit it, and do not edit
   its commented crontab line (spec EV12).
 - The daily entry point is a separate script, `harness/cron-daily.sh`.
-- The crontab change is an owner action. Only the owner installs the
-  crontab line, after decision O1 (task 5.3).
+- The schedule is a systemd user timer (spec D11, O1 condition 1). The
+  track commits the two unit files in task 4b.3. The install is an owner
+  action, only after decision O1, after the manual push of task 5.1, and
+  after 2026-11-02 07:00 (task 5.3). No crontab line is installed.
+- The job pushes nothing until the one manual push of task 5.1 (spec D13,
+  O1 condition 3). No role pushes the branch.
 - Send no model call before task 5.4. The tests, the dry runs, the catalog
   fetch, and `opencode models` send no prompt (spec NFR-1).
 - Do not edit a file of the runner hash or the suite hash, `plan-work.ts`,
   `go-cost.ts`, or `go-pricing.json` (spec EV8, FR-9).
-- Phases 2 to 4 happen only in the worktree `../lending-desk-bench-daily`
+- Phases 2 to 4b happen only in the worktree `../lending-desk-bench-daily`
   on the branch `daily-schedule`. The worktree links `runs` to the `runs/`
   of `main` for reading only. Stage files by explicit path, so the link never
   enters a commit.
@@ -43,7 +48,10 @@ Gate commands: the exact commands are in section 3 of the test strategy.
 This plan uses their names: `SCHEDULE_TEST`, `META_LOGIC`, `RED_PATH_CHECK`,
 `PATH_CHECK`, `BASE_HASH`, `WORKLIST_SHA`, `BATCH_COMPAT`, `SELECTOR_MATCH`,
 `PICK_MATCH`, `DOCS_CHECK`, `PI_SHA`, `PI_CHECK`, `DAY_CHECK`,
-`PUBLISH_CHECK`, `CONSENT_CHECK`, `CRON_CHECK`, and `STATUS_CHECK`.
+`PUBLISH_CHECK`, `CONSENT_CHECK`, `TIMER_CHECK`, and `STATUS_CHECK`. Task
+4b.1 adds the exact commands for the O1 conditions: the Go guard, the push
+rule, the selector exit, the unit files, and `TIMER_CHECK` in place of the
+old `CRON_CHECK`. Until task 4b.1 closes, those names have no command yet.
 
 ## Phase 1: Contract and setup [checkpoint: 1a48dea]
 
@@ -294,7 +302,7 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
     `PUBLISH_CHECK` accepts only the reasons `untested` and `stalest`.
     The orchestrator must route that gap before task 5.4.
 
-## Phase 4: Docs
+## Phase 4: Docs [checkpoint: a450b88]
 
 Run in the worktree. Commit on the branch `daily-schedule`.
 
@@ -353,12 +361,96 @@ Run in the worktree. Commit on the branch `daily-schedule`.
     orchestrator counts the four `[b]` tasks by hand (anti-pattern A12)
     and opens task 5.1 when its turn comes.
 
+## Phase 4b: O1 conditions (Red and Green)
+
+Run in the worktree. Commit on the branch `daily-schedule`. The owner
+approved O1 on 2026-10-31 with 3 conditions (spec O1 row). This phase turns
+the conditions into rules and code: spec D11 to D14, FR-10 to FR-13, and
+NFR-6. Phase 4 Review C and the Phase 4 acceptance have not run yet; the
+orchestrator runs them and orders them with this phase. The checkpoint of
+Phase 4 names the docs commit `a450b88` by the convention of Phases 1 to 3:
+it is not an acceptance claim.
+
+- [~] 4b.1 Strategy amendment of `test-strategy.md`. The strategy role adds
+  the exact gate commands for the 4 new rules: the Go guard (FR-10), the
+  push rule (FR-11), the selector exit (FR-12), and the unit files
+  (FR-13). It amends the existing gates:
+  - `DOCS_CHECK`: the README names the systemd timer units of D11, not the
+    crontab line.
+  - `TIMER_CHECK` in place of `CRON_CHECK`: it reads the two unit files and
+    asserts each value of D11, and it asserts that no unit is installed and
+    no crontab line runs `cron-daily.sh`.
+  - `PUBLISH_CHECK`: it accepts a skipped push before the manual push of
+    task 5.1 (a local docs commit with a `DAILY PUSH skipped` line passes).
+  - The section 12 contradiction on the resume reason and the short resume
+    record (the adversarial findings 1 and 2 of task 3.9): a resumed day
+    publishes the reason `resume`, and `PUBLISH_CHECK` accepts only
+    `untested` and `stalest`. The role resolves the gap in the strategy
+    text before task 5.4.
+  The role also updates the section 5 interfaces (the new seams of NFR-6,
+  the `go_guard_stop` field, the new labeled lines `DAILY SKIP go-guard`,
+  `DAILY GO-GUARD`, and `DAILY PUSH skipped`), the section 6 case lists,
+  the `PATH_CHECK` allow-list (`harness/systemd/`), and the section 9 phase
+  table (Phase 4b).
+  - Verify: the amended strategy names one gate command for each rule of FR-10 to FR-13 (the strategy role names the exact commands).
+  - Verify: `TIMER_CHECK` replaces `CRON_CHECK` in the strategy, `DOCS_CHECK` requires the timer names, and `PUBLISH_CHECK` accepts a skipped push before the manual push.
+  - Verify: the section 12 text resolves the resume-reason gap of task 3.9.
+  - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track daily_model_schedule --log-file measure/runs/daily_model_schedule/strategy-4b.log` prints `PASS: strategy gate passed`.
+- [ ] 4b.2 Red: failing tests for the new rules. The role adds the cases of
+  the amended strategy to `harness/schedule-tests/daily-schedule.test.ts`:
+  the guard stops (before the first batch, mid-day, a failed read, a
+  missing field, a non-number), the dry-run guard line, the push rule (a
+  push at the parent, a skip with other local commits, a failed fetch), the
+  selector exit 1, the per-batch order of D12, and the unit-file artifact
+  cases. No case may be `skip`, `todo`, or `fails`.
+  - Verify: `SCHEDULE_TEST` exits non-zero, and each new failure names a missing interface of spec D11 to D14.
+  - Verify: `RED_PATH_CHECK` prints `RED_PATH_CHECK=pass`.
+  - Verify: the mid-red role gate prints `PASS: mid-red gate passed`.
+- [ ] 4b.3 Green: the guard, the per-batch order, the push rule, the
+  selector exit, the two unit files, the README update, and the header
+  comments. The guard reads `usage.windows.weekly.usedPercent` through the
+  port of `openchamber status --json` (seam `BENCH_DAILY_QUOTA_CMD`), once
+  before each of the 4 track batches. The job runs the 4 batches itself in
+  the exact order of D12, then the recost and the site refresh. The push
+  rule follows D13 (`git push origin <sha>:main`, only at the parent
+  match). A selector exit other than 0 and 3 fails the job (D14). The unit
+  files are `harness/systemd/lending-desk-daily.service` and
+  `harness/systemd/lending-desk-daily.timer` (D11). The README names the
+  timer, the guard, and the push rule. The header comments of
+  `cron-daily.sh` match.
+  - Verify: `SCHEDULE_TEST` exits 0.
+  - Verify: `PATH_CHECK` prints `PATH_CHECK=pass` (the allow-list of task 4b.1 holds `harness/systemd/`).
+  - Verify: `BATCH_COMPAT` equals task 1.2, and `bash -n harness/cron-daily.sh` exits 0.
+  - Verify: the jr-green role gate prints `PASS: jr-green gate passed`.
+- [ ] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
+  and the per-batch order against D12. B: the push rule of D13, the quota
+  read over the local port, the credential, and the unattended timer. C:
+  the new seams, the new labeled lines, the `go_guard_stop` field, and the
+  unit-file text. Each role writes
+  `measure/runs/daily_model_schedule/review-<a|b|c>-4b-<short head>.json`.
+  - Verify: each `audit-result` prints `PASS: audit result is valid`, and each file shows `status: pass`.
+- [ ] 4b.5 Adversarial tests of the Phase 4b rules. The role adds the cases
+  of the amended strategy section 12 (a quota JSON with a string number, a
+  port that serves the wrong JSON, a push race between the check and the
+  push) and writes
+  `measure/runs/daily_model_schedule/adversarial-4b-<short head>.json`.
+  Then the Phase 4b acceptance runs.
+  - Verify: `SCHEDULE_TEST` exits 0 with the added cases, and the role file shows `status: pass`.
+
 ## Phase 5: Doctor and owner gate
 
 - [b] 5.1 Merge and doctor. In `main`, run `WORKLIST_SHA`, merge
   `daily-schedule`, and run `WORKLIST_SHA` again with no run between. Then
   run `BASE_HASH`, `SCHEDULE_TEST`, `META_LOGIC`, `BATCH_COMPAT`, and
-  `PICK_MATCH`. Record each labeled line in this task.
+  `PICK_MATCH`. Record each labeled line in this task. Then report the
+  commit range `origin/main..main` to the PM orchestrator for the secret
+  scan (O1 condition 3).
+
+  The manual push is an owner action after the scan and before the install
+  of task 5.3 — deferred:owner. The PM scans the range for secrets, then
+  Daniel says "push" one time, and that one manual push sends `main` to
+  `origin`. Until it happens, the job pushes nothing: the rule of spec D13
+  skips every job push, because `origin/main` trails the merged branch.
 
 
   Recorded on 2026-10-25 in `main`:
@@ -377,20 +469,30 @@ Run in the worktree. Commit on the branch `daily-schedule`.
   - Verify: the two `WORKLIST_SHA` lines are equal, and `BASE_HASH` equals task 1.2, or the orchestrator names the other track that changed it.
   - Verify: `SCHEDULE_TEST` and `META_LOGIC` exit 0, and `BATCH_COMPAT` equals task 1.2.
   - Verify: `PICK_MATCH` prints `PICK_MATCH=pass date=<day> model=<id> reason=<reason> ...`.
+  - Verify: the commit range `origin/main..main` was reported to the PM orchestrator, and after the one manual push, `git rev-parse origin/main` equals `git rev-parse main`.
 - [b] 5.2 Owner decision O1. Show the owner the `PICK_MATCH` line, the spend
   of spec D1, and the push scope of spec R4. Record the answer and its date
   in the spec table. — deferred:owner
   - Verify: `CONSENT_CHECK` prints 1 line, or `rg -n '^\| O1 \|.*\| declined 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/daily_model_schedule/spec.md` prints 1 line.
-- [b] 5.3 Crontab change, an owner action, only when O1 is approved. Before
-  it, run `PI_SHA day0` and `ls runs > .tmp/daily-runs-before.txt` in
-  `main`. The owner installs the line
-  `0 1 * * 0,3 /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh >> /home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log 2>&1`.
-  — deferred:owner
-  - Verify: `CRON_CHECK` prints `CRON_CHECK=pass`.
+- [b] 5.3 Systemd user timer install, an owner action, only after O1 is
+  approved, after the one manual push of task 5.1, and after 2026-11-02
+  07:00 (the Go week reset). Before it, run `PI_SHA day0` and
+  `ls runs > .tmp/daily-runs-before.txt` in `main`. The owner installs the
+  two unit files of spec D11 (`harness/systemd/lending-desk-daily.service`
+  and `harness/systemd/lending-desk-daily.timer`) as systemd user units,
+  and enables the timer. The first run day is Wednesday 2026-11-04 at
+  01:00. No crontab line is installed. — deferred:owner
+  - Verify: `TIMER_CHECK` prints `TIMER_CHECK=pass` (the strategy role writes the command in task 4b.1).
   - Verify: `crontab -l | grep -c '^# DISABLED 2026-10-25 by owner request'` prints `1`.
+  - Verify: `crontab -l | grep -c 'cron-daily'` prints `0`.
 - [b] 5.4 First live day. After the first job ends, run `DAY_CHECK <day>`,
   `PUBLISH_CHECK <day>`, `PI_SHA day1`, and `PI_CHECK day0 day1` in `main`.
-  Record each labeled line in this task.
+  Record each labeled line in this task. Check the guard and the push rule
+  in `reports/cron-daily.log`: the day holds one `DAILY GO-GUARD
+  weekly=<n>` line before each of the 4 batches, or one
+  `DAILY SKIP go-guard: <reason>` line on a stopped day; and the publish
+  ends with `DAILY PUBLISH <sha>` after a pushed commit, or with one
+  `DAILY PUSH skipped: <reason>` line. Record each line in this task.
 
   Recorded on 2026-10-25 in `main`:
   - `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`
@@ -407,3 +509,4 @@ Run in the worktree. Commit on the branch `daily-schedule`.
   `3079afaa31f19f9665856b0cb8ed7d8b6b208bd56280896fcc741b1c428afde9`.
   - Verify: `DAY_CHECK` prints `DAY_CHECK=pass model=<id> runs=<n> harness=<k>`, and `<id>` equals the model of `reports/daily/<day>.json`.
   - Verify: `PUBLISH_CHECK` prints `PUBLISH_CHECK=pass <sha>`, and `PI_CHECK day0 day1` prints `PI_CHECK=pass`.
+  - Verify: `reports/cron-daily.log` holds the guard lines of the day (four `DAILY GO-GUARD weekly=<n>` lines, or one `DAILY SKIP go-guard: <reason>` line) and the push result (`DAILY PUBLISH <sha>` or one `DAILY PUSH skipped: <reason>` line).

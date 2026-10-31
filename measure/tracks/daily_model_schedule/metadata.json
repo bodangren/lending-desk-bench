@@ -4,7 +4,7 @@
   "type": "Feature",
   "status": "pending",
   "created": "2026-10-25",
-  "estimated_tasks": 18,
+  "estimated_tasks": 23,
   "actual_tasks": null,
   "source": {
     "method": "owner requirement 2026-10-25: \"We need to set the testing schedule to one model per day. 1. Refresh the model list. 2. Test one untested model if any exists. 3. If no untested models exist, test the model which has the stalest last test date.\"",
