@@ -477,7 +477,7 @@ it is not an acceptance claim.
     `WEEKLY_SAME=pass`; `DOCS_CHECK=pass`;
     `BATCH_COMPAT_RUNS=180`; `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`.
     The gate logs are under `/tmp/opencode/`.
-- [~] 4b.6 Strategy amendment for the monthly window. The strategy role amends
+- [x] 4b.6 Strategy amendment for the monthly window. The strategy role amends
   `test-strategy.md`: section 5 interfaces (the new reasons and the new
   clean-read line), the section 6 case list, `GUARD_CHECK`, and `DOCS_CHECK`
   (the README names the monthly window). It also records the review
@@ -485,6 +485,18 @@ it is not an acceptance claim.
   Green; Review C F2 (`batch.sh:130-134`) is declined, because the price table
   holds batch models today.
   - Verify: the strategy role gate prints `PASS: strategy gate passed`.
+  - Evidence: the amendment commit is `2a69a5869cf976f869c29a02cad6c7189768c5c2`.
+    Record it as `STRATEGY_4B6=2a69a5869cf976f869c29a02cad6c7189768c5c2`.
+    Task 4b.7 uses it as the base of `RED_PATH_CHECK_4B7`, after the command
+    of strategy section 2 prints `STRATEGY_4B6=ok`. `PHASE_4B_STRATEGY` is
+    unchanged. The strategy role gate printed `PASS: strategy gate passed`
+    (log `measure/runs/daily_model_schedule/strategy-0810d78.log`). The
+    amendment adds the five monthly reasons and the clean-read line to
+    section 5; cases 6.5.25 to 6.5.36 and the fixture rule to section 6.5;
+    `GUARD_CHECK` with 26 case ids; `GREEN_REGRESSION`; `RED_PATH_CHECK_4B7`;
+    the amended `DOCS_CHECK` (it exits 1 with `DOCS_CHECK=fail missing
+    monthly window` before task 4b.8); adversarial cases 14 to 17; and the
+    review dispositions of `1b17ae2` in section 13.
 - [ ] 4b.7 Red: failing tests for the monthly window. The cases cover each new
   monthly reason, the weekly below-0 reason, the new clean-read line, 80 and
   80.0001 for the monthly window, a monthly stop before batch 2 that keeps
