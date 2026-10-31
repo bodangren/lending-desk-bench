@@ -1,34 +1,43 @@
 # Test strategy — daily_model_schedule
 
 This strategy tells Red, Green, the reviewers, the adversarial role, and the
-orchestrator how the daily schedule is proved. Spec: `spec.md`. Plan:
+orchestrator how the run-day schedule is proved. Spec: `spec.md`. Plan:
 `plan.md`. Independent oracle: `pick-oracle.py`.
 
 ## 1. Scope and risk
 
 The product of this track is an unattended job that spends money and
-publishes a site each day. A wrong job runs the wrong model, runs too many
+publishes a site on each run day. A run day is Wednesday or Sunday, at
+01:00 local time. A wrong job runs the wrong model, runs too many
 models, stops on one model for ever, or publishes the wrong files.
 
 | Risk | Effect | Defense |
 |---|---|---|
 | The job selects two models on one day | Double spend, and the owner rule breaks | Rule 1 (resume) and the day record before the first batch; cases 6.3.4 and 6.3.5; `DAY_CHECK` |
 | The job runs a model other than the day's model | Spend on a model that nobody selected | `batch.sh --model`; cases 6.2.1 and 6.2.6; `DAY_CHECK` |
-| The job selects an unservable model | The job fails on each day on the same model (spec EV3) | The served filter; case 6.1.11; adversarial case 12.4 |
+| The job selects an unservable model | The job fails on each run day on the same model (spec EV3) | The served filter; case 6.1.11; adversarial case 12.4 |
 | A directory time decides the stalest model | A regrade makes an old model look fresh (spec EV6) | The run date rule; case 6.1.5 |
 | An empty or failed fetch feeds the selection | A model run from a stale or empty list (spec EV2) | Cases 6.1.18 and 6.3.2–6.3.3; `DAILY FAIL` line |
 | The track changes a hashed file | `plan-work.ts` schedules paid runs for every model | `PATH_CHECK`, `BASE_HASH`, `WORKLIST_SHA` |
 | The unpinned batch changes | The weekly path and its meta tests break | `BATCH_COMPAT`; `npm run test:meta:logic` |
 | A new variable leaks into the meta tests | A false test result (spec EV10, A11) | A flag instead of a variable; cases 6.1.19 and 6.2.8 |
 | The publish commit holds files outside `docs/` | A deploy of private or unrelated files | `PUBLISH_CHECK`; Review B |
-| The job starts without owner consent | Paid runs and deploys with no approval | O1 with a date before `CRON_CHECK` (A2) |
+| The job starts without owner consent | Paid runs and deploys with no approval | O1 with a date before `TIMER_CHECK` (A2) |
 | A recost changes a legacy Pi record | The history loses its byte identity, and Git does not see it (A13) | `PI_SHA` and `PI_CHECK` |
+| The Go guard reads a value above 80 and continues | The job draws on the paid Go credit balance (spec R3) | Cases 6.5.1 to 6.5.7 and 6.5.24; one skip line; exit 0; no later batch |
+| The guard uses a string compare | `80.0` stops, or `80.0001` continues | Cases 6.5.2, 6.5.3, 6.5.24, and 6.5.31 to 6.5.33 |
+| The guard ignores the monthly window | The day continues with the monthly window above 80, below 0, absent, or not a number (spec D12, R3) | Cases 6.5.26 to 6.5.36; section 12 cases 14 to 17 |
+| The guard accepts a negative value | A faulty window reading continues the day (Review B N5) | Cases 6.5.25 and 6.5.28 |
+| A weekly stop hides a bad monthly value, or the reverse | The wrong reason reaches the log and the day record | Case 6.5.36; section 12 case 17 |
+| The job pushes every local commit | A secret or another track reaches `origin` (spec R4) | Cases 6.5.14 to 6.5.17; `git push origin <sha>:main` |
+| A selector exit 1 takes the no-pick path | A crashed selector exits 0 and spends nothing, with no fail line (spec D14) | Cases 6.5.18 and 6.5.19 |
+| `Persistent=true` starts a missed run at boot | An unplanned paid run (spec D11) | `UNIT_CHECK`; `Persistent=false` |
 
 ## 2. The phase base
 
-The strategy role does not commit. The orchestrator commits `spec.md`,
-`plan.md`, `test-strategy.md`, `pick-oracle.py`, `metadata.json`,
-`index.md`, and the registry rows in one commit (plan task 1.1).
+Task 1.1: the strategy role did not commit. The orchestrator commits
+`spec.md`, `plan.md`, `test-strategy.md`, `pick-oracle.py`,
+`metadata.json`, `index.md`, and the registry rows in one commit.
 
 The orchestrator captures `PHASE_BASE` at this exact point:
 
@@ -45,10 +54,57 @@ The orchestrator captures `PHASE_BASE` at this exact point:
 git merge-base --is-ancestor "$(git log -1 --format=%H -- measure/tracks/daily_model_schedule/test-strategy.md)" "$PHASE_BASE" && git diff --quiet "$PHASE_BASE" -- measure/tracks/daily_model_schedule/test-strategy.md && echo PHASE_BASE=ok
 ```
 
-The strategy embeds no SHA, because no commit holds it yet. The base commit
-`aa94185` of the spec is the state before the strategy, and it is not
-`PHASE_BASE`. For a role gate, `--baseline` is the HEAD of the branch before
-the role starts.
+The strategy embeds no SHA for a baseline that the commit does not hold yet.
+The base commit `aa94185` of the spec is the state before the first strategy,
+and it is not `PHASE_BASE`. For a role gate, `--baseline` is the HEAD of the
+branch before the role starts.
+
+### Phase 4b baseline
+
+`PHASE_BASE` stays the value in plan task 1.2. Do not recapture it.
+
+The orchestrator captures the baseline for Phase 4b at this point:
+
+1. Wait until the last commit of task 4b.1 is on `daily-schedule`.
+2. Do not edit a file for task 4b.2 before step 3.
+3. Run `git rev-parse HEAD` in the worktree. That SHA is the immutable
+   `phase_base_sha` for Phase 4b. Store it as `PHASE_4B_STRATEGY`.
+4. Record the SHA in the orchestrator notes. Do not write it into this file
+   before the commit exists.
+5. Use that SHA as `--baseline` for later Phase 4b role gates.
+6. Use that SHA in `WEEKLY_SAME`.
+
+`phase_base_sha` for Phase 4b is not the track `PHASE_BASE`. This file
+embeds no value for it. Do not use a SHA from before this strategy commit.
+
+### Task 4b.7 baseline (monthly window)
+
+`PHASE_4B_STRATEGY` stays the value that the orchestrator captured for
+Phase 4b. `WEEKLY_SAME` keeps using it. Do not recapture it for the monthly
+window.
+
+Task 4b.7 uses a second base, `STRATEGY_4B6`. The base is the commit of the
+monthly strategy amendment (task 4b.6). It is not `PHASE_4B_STRATEGY` and it
+is not `PHASE_BASE`. The orchestrator captures it at this point:
+
+1. The strategy role makes the amendment commit. The commit holds
+   `test-strategy.md` and `plan.md` (task 4b.6 marked `[~]`). Its SHA is
+   `STRATEGY_4B6`.
+2. The strategy role makes a second commit. It marks task 4b.6 `[x]` and
+   writes `STRATEGY_4B6` in the evidence of task 4b.6. The second commit
+   changes `plan.md` only.
+3. After the second commit and before Red starts, the orchestrator reads
+   `STRATEGY_4B6` from the evidence of task 4b.6.
+4. The orchestrator runs this command. It must print `STRATEGY_4B6=ok`:
+
+   ```bash
+   test -n "$STRATEGY_4B6" && git merge-base --is-ancestor "$STRATEGY_4B6" HEAD && test "$(git log -1 --format=%H -- measure/tracks/daily_model_schedule/test-strategy.md)" = "$STRATEGY_4B6" && git diff --quiet "$STRATEGY_4B6" HEAD -- measure/tracks/daily_model_schedule/test-strategy.md && echo STRATEGY_4B6=ok
+   ```
+
+5. `RED_PATH_CHECK_4B7` below uses `STRATEGY_4B6`. The role gate
+   `--baseline` for task 4b.7 is the HEAD before the Red role starts.
+6. This file embeds no value for `STRATEGY_4B6`. The command fails when a
+   later commit changes `test-strategy.md`.
 
 ## 3. Gate commands
 
@@ -70,11 +126,42 @@ is `../lending-desk-bench-daily` on the branch `daily-schedule`.
   test -n "$(git diff --name-only "$PHASE_BASE" HEAD -- harness/schedule-tests/)" && test -z "$(git diff --name-only "$PHASE_BASE" HEAD | grep -vE '^(harness/schedule-tests/[^/]+\.test\.ts|measure/.+)$')" && echo RED_PATH_CHECK=pass
   ```
 
+- `RED_PATH_CHECK_4B7` (worktree, task 4b.7). It is the `RED_PATH_CHECK`
+  of the monthly window. The base is `STRATEGY_4B6` (section 2), not
+  `PHASE_BASE`. The old `PHASE_BASE` diff would include the Green files of
+  Phase 4b, so it cannot prove that task 4b.7 touched tests only.
+
+  ```bash
+  test -n "$STRATEGY_4B6" && test -n "$(git diff --name-only "$STRATEGY_4B6" HEAD -- harness/schedule-tests/daily-schedule.test.ts)" && test -z "$(git diff --name-only "$STRATEGY_4B6" HEAD | grep -vE '^(harness/schedule-tests/[^/]+\.test\.ts|measure/.+)$')" && echo RED_PATH_CHECK_4B7=pass
+  ```
+
+  It fails when the diff holds no change of `daily-schedule.test.ts`. It
+  fails when the diff holds a path other than a test file under
+  `harness/schedule-tests/` or a file under `measure/`. Thus a change of
+  `harness/cron-daily.sh`, `README.md`, or `harness/node_modules` fails it.
+
 - `PATH_CHECK` (worktree, Phase 3 and later):
 
   ```bash
-  test -n "$(git diff --name-only "$PHASE_BASE" HEAD -- harness/daily-pick.ts)" && test -z "$(git diff --name-only "$PHASE_BASE" HEAD | grep -vE '^(harness/(daily-pick\.ts|cron-daily\.sh|batch\.sh|weekly\.sh|schedule-tests/[^/]+\.test\.ts)|README\.md|measure/.+)$')" && echo PATH_CHECK=pass
+  test -n "$(git diff --name-only "$PHASE_BASE" HEAD -- harness/daily-pick.ts)" && test -z "$(git diff --name-only "$PHASE_BASE" HEAD | grep -vE '^(harness/(daily-pick\.ts|cron-daily\.sh|batch\.sh|weekly\.sh|schedule-tests/[^/]+\.test\.ts|systemd/lending-desk-daily\.(service|timer))|README\.md|measure/.+)$')" && echo PATH_CHECK=pass
   ```
+
+  The allow-list adds only
+  `harness/systemd/lending-desk-daily.service` and
+  `harness/systemd/lending-desk-daily.timer`. It does not allow every file
+  under `harness/systemd/`. It fails when Green adds another path.
+  `BATCH_COMPAT`, `WORKLIST_SHA`, `BASE_HASH`, and `PI_SHA` stay unchanged.
+
+- `WEEKLY_SAME` (worktree, Phase 4b Green). `weekly.sh` stays unchanged
+  after the Phase 4b baseline. The orchestrator sets `PHASE_4B_STRATEGY`
+  from section 2. This file embeds no SHA.
+
+  ```bash
+  test -n "$PHASE_4B_STRATEGY" && test -z "$(git diff --name-only "$PHASE_4B_STRATEGY" HEAD -- harness/weekly.sh)" && echo WEEKLY_SAME=pass
+  ```
+
+  It fails when the diff of `harness/weekly.sh` is not empty. Case 6.4.1
+  stays valid.
 
 - `BASE_HASH` (`main` only): `cd harness && npx tsx provenance.ts --shell`.
   It prints the runner hash and the suite hash. On 2026-10-25 at `aa94185`,
@@ -120,22 +207,55 @@ is `../lending-desk-bench-daily` on the branch `daily-schedule`.
   mkdir -p .tmp && day=$(date -u +%F) && (cd harness && npx tsx go-cost.ts --catalog) > .tmp/daily-catalog.tmp && mv .tmp/daily-catalog.tmp .tmp/daily-catalog.json && opencode models > .tmp/daily-served.tmp && mv .tmp/daily-served.tmp .tmp/daily-served.txt && a=$(cd harness && npx tsx daily-pick.ts --catalog ../.tmp/daily-catalog.json --served ../.tmp/daily-served.txt --date "$day" --runs-root ../runs --day-dir ../reports/daily 2>&1 >/dev/null | sed -n 's/^DAILY_PICK //p') && b=$(python3 -I measure/tracks/daily_model_schedule/pick-oracle.py .tmp/daily-catalog.json .tmp/daily-served.txt harness/go-pricing.json runs reports/daily "$day" | sed -n 's/^PICK_ORACLE //p') && test -n "$a" && test "$a" = "$b" && echo "SELECTOR_MATCH=pass $a"
   ```
 
-- `DOCS_CHECK` (worktree, plan task 4.1; A5, A6). It reads the README
-  section, and it rejects a claim that the schedule is active.
+- `DOCS_CHECK` (worktree, Phase 4b Green; A5, A6). It reads the README
+  section. Task 4.1 passed the previous command. Do not reopen task 4.1.
+  Task 4b.6 amends the command a second time: it adds the monthly window,
+  the monthly field, and the lock sentence of Review C F1. The amended
+  command is red until task 4b.8 updates the README.
+
+  The section names the systemd timer and `Persistent=false`. It keeps
+  `0,3` or the `OnCalendar` text. It does not present a crontab line as
+  the install method. The activation-claim check stays.
 
   ```bash
   python3 -I - README.md <<'PY'
   import re, sys
-  text = open(sys.argv[1]).read()
+  text = open(sys.argv[1], encoding="utf-8").read()
   m = re.search(r"^## Daily model schedule\n(.*?)(?=^## |\Z)", text, re.S | re.M)
   assert m, "DOCS_CHECK=fail no section"
   sec = m.group(1)
-  for w in ("harness/cron-daily.sh", "harness/daily-pick.ts", "--model", "reports/daily/", "harness/go-pricing.json", "https://opencode.ai/docs/go/", "cron-weekly.sh", "owner"):
+  need = (
+      "harness/cron-daily.sh", "harness/daily-pick.ts", "--model",
+      "reports/daily/", "harness/go-pricing.json", "https://opencode.ai/docs/go/",
+      "cron-weekly.sh", "owner", "Wednesday", "Sunday",
+      "harness/systemd/lending-desk-daily.service",
+      "harness/systemd/lending-desk-daily.timer",
+      "Persistent=false", "above 80", "own docs commit",
+      "monthly window", "usage.windows.monthly.usedPercent",
+      "DAILY SKIP lock held",
+  )
+  for w in need:
       assert w in sec, f"DOCS_CHECK=fail missing {w}"
+  assert ("0,3" in sec) or ("OnCalendar" in sec), "DOCS_CHECK=fail missing schedule"
   assert not re.search(r"\b(is|now) (active|enabled|live)\b", sec, re.I), "DOCS_CHECK=fail activation claim"
+  assert "Decision O1 is open" not in sec, "DOCS_CHECK=fail O1 still open"
+  assert not re.search(r"\b(can|will|may|might) wait\b", sec, re.I), "DOCS_CHECK=fail lock wait claim"
+  assert "sends every local commit" not in sec, "DOCS_CHECK=fail old push scope"
+  assert "selector exit 1 takes the no-pick path" not in sec, "DOCS_CHECK=fail exit 1 claim"
+  assert "short resume record omits" not in sec, "DOCS_CHECK=fail short record claim"
+  assert not re.search(r"(?m)^[^#\n]*0 1 \* \* 0,3\s+\S*cron-daily\.sh", sec), "DOCS_CHECK=fail crontab install line"
   print("DOCS_CHECK=pass")
   PY
   ```
+
+  It fails when a required token is absent. The tokens `monthly window`
+  and `usage.windows.monthly.usedPercent` make it red until the README names
+  the monthly window and its field. The token `DAILY SKIP lock held` and the
+  `can wait` check make it red until the README lock sentence (Review C F1,
+  `README.md:281`) says that the job skips the day. It fails when the section
+  has no `0,3` and no `OnCalendar`. It fails on an activation claim. It fails
+  when a crontab line is the install method. A sentence that says no
+  crontab line is installed can stay.
 
 - `PI_SHA <name>` (`main`; A13). It stops on an empty Pi list. It writes
   `measure/runs/daily_model_schedule/pi-<name>.txt`.
@@ -183,21 +303,173 @@ is `../lending-desk-bench-daily` on the branch `daily-schedule`.
   PY
   ```
 
-- `PUBLISH_CHECK <day>` (`main`, after the first live day):
+- `PUBLISH_CHECK <day> [pushed|skipped]` (`main`, after a job that
+  committed docs). The default mode is `pushed`. A resumed day uses the
+  reason `resume` in the subject. The regex accepts `untested`, `stalest`,
+  and `resume`. Green changes no file for this choice. The subject in
+  `harness/cron-daily.sh` already writes the record reason.
+
+  Mode `skipped` is the check before the one manual push. It accepts a
+  local docs commit plus one `DAILY PUSH skipped:` line. It does not
+  require the commit on `origin/main`.
+
+  Mode `pushed` is the check after the manual push when the job pushed.
+  It requires the commit on `origin/main`. It fails when the commit is
+  only local.
 
   ```bash
-  c=$(git log -1 --format=%H --grep="^Publish daily <day> ") && test -n "$c" && test -z "$(git show --name-only --format= "$c" | grep -v '^docs/')" && git log -1 --format=%s "$c" | grep -qE '^Publish daily [0-9]{4}-[0-9]{2}-[0-9]{2} OpenCode Go results: [a-z0-9][a-z0-9.-]* \((untested|stalest)\)\.$' && git branch -r --contains "$c" | grep -q 'origin/main' && echo "PUBLISH_CHECK=pass $c"
+  day="$1"; mode="${2:-pushed}"; c=$(git log -1 --format=%H --grep="^Publish daily ${day} ") && test -n "$c" && files=$(git show --name-only --format= "$c") && test -n "$files" && test -z "$(printf '%s\n' "$files" | grep -v '^docs/')" && git log -1 --format=%s "$c" | grep -qE '^Publish daily [0-9]{4}-[0-9]{2}-[0-9]{2} OpenCode Go results: [a-z0-9][a-z0-9.-]* \((untested|stalest|resume)\)\.$' && if [ "$mode" = skipped ]; then grep -qE '^DAILY PUSH skipped: ' reports/cron-daily.log; elif [ "$mode" = pushed ]; then git branch -r --contains "$c" | grep -q 'origin/main' && grep -qE '^DAILY PUBLISH [0-9a-f]' reports/cron-daily.log; else echo "PUBLISH_CHECK=fail mode" >&2; exit 1; fi && echo "PUBLISH_CHECK=pass $c"
   ```
+
+  It fails when the subject reason is not one of the three words. It fails
+  when the commit has no file, or a file outside `docs/`. It fails in
+  `skipped` mode when the log has no `DAILY PUSH skipped:` line. It fails
+  in `pushed` mode when `origin/main` does not contain the commit.
 
 - `CONSENT_CHECK` (A2): the O1 row of `spec.md` holds `approved` and a date.
   `rg -n '^\| O1 \|.*\| approved 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/daily_model_schedule/spec.md`
   prints 1 line.
-- `CRON_CHECK`: the daily line exists one time, and no active line runs
-  `cron-weekly.sh`.
+- `CRON_CHECK` is retired. Do not install a crontab line. `TIMER_CHECK`
+  replaces it for task 5.3.
+
+- `UNIT_CHECK` (worktree, Phase 4b; FR-13, D11). It is an artifact check.
+  It reads the two unit files. It does not install them. It fails when a
+  file is absent, or when a required line is absent or different.
 
   ```bash
-  test "$(crontab -l | grep -cxF '0 1 * * * /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh >> /home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log 2>&1')" -eq 1 && ! crontab -l | grep -qE '^[[:space:]]*[^#[:space:]].*cron-weekly\.sh' && echo CRON_CHECK=pass
+  python3 -I - <<'PY'
+from pathlib import Path
+import shutil, subprocess, sys
+svc = Path("harness/systemd/lending-desk-daily.service").read_text()
+tmr = Path("harness/systemd/lending-desk-daily.timer").read_text()
+need_svc = [
+    "Type=oneshot",
+    "WorkingDirectory=/home/daniebo/Desktop/lending-desk-bench",
+    "ExecStart=/home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh",
+    "StandardOutput=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log",
+    "StandardError=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log",
+]
+need_tmr = [
+    "OnCalendar=Wed,Sun 01:00:00",
+    "Persistent=false",
+    "Unit=lending-desk-daily.service",
+    "WantedBy=timers.target",
+]
+for line in need_svc:
+    assert line in svc.splitlines(), f"UNIT_CHECK=fail service missing {line}"
+for line in need_tmr:
+    assert line in tmr.splitlines(), f"UNIT_CHECK=fail timer missing {line}"
+assert "Persistent=true" not in tmr, "UNIT_CHECK=fail Persistent=true"
+assert "0 1 * * 0,3" not in svc, "UNIT_CHECK=fail crontab line in service"
+if shutil.which("systemd-analyze"):
+    import tempfile
+    top = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()
+    main = "/home/daniebo/Desktop/lending-desk-bench"
+    tmp = Path(tempfile.mkdtemp(prefix="unit-check-"))
+    try:
+        (tmp / "lending-desk-daily.service").write_text(svc.replace(main, top))
+        (tmp / "lending-desk-daily.timer").write_text(tmr.replace(main, top))
+        r = subprocess.run(["systemd-analyze", "verify",
+            str(tmp / "lending-desk-daily.service"),
+            str(tmp / "lending-desk-daily.timer")])
+    finally:
+        shutil.rmtree(tmp)
+    if r.returncode != 0:
+        sys.exit("UNIT_CHECK=fail verify")
+    print("UNIT_CHECK_VERIFY=pass")
+else:
+    print("UNIT_CHECK_VERIFY=skipped")
+print("UNIT_CHECK=pass")
+PY
   ```
+
+  The text assertions read the repository files. Those files keep the
+  main-checkout paths. `systemd-analyze verify` checks that `ExecStart`
+  exists. The worktree does not hold that main path until the merge.
+  The verify branch copies the two files to a temporary folder.
+  It replaces the main root with `git rev-parse --show-toplevel` in the
+  copies only. It runs verify on the copies. It then removes the folder.
+  After the merge, the two roots are equal. Verify then reads the real
+  paths. Use `systemd-analyze verify` only when that command exists.
+  The fallback is the text assertions alone. Then the command prints
+  `UNIT_CHECK_VERIFY=skipped` and `UNIT_CHECK=pass`. When verify exits
+  non-zero, `UNIT_CHECK` fails. Task 5.1 runs `UNIT_CHECK` in `main`
+  after the merge, and before the install.
+
+- `TIMER_ABSENT` (worktree, Phase 4b closeout). The track installs nothing.
+  This check is not the task 5.3 gate. After the owner install, this check
+  fails, and that failure is expected.
+
+  ```bash
+  if command -v systemctl >/dev/null 2>&1; then test "$(systemctl --user is-enabled lending-desk-daily.timer 2>/dev/null || true)" != enabled && test "$(systemctl --user is-active lending-desk-daily.timer 2>/dev/null || true)" != active; fi && test ! -e "$HOME/.config/systemd/user/lending-desk-daily.timer" && test ! -e "$HOME/.config/systemd/user/lending-desk-daily.service" && ! crontab -l | grep -qE '^[[:space:]]*[^#[:space:]].*cron-daily\.sh' && ! crontab -l | grep -qE '^[[:space:]]*[^#[:space:]].*cron-weekly\.sh' && echo TIMER_ABSENT=pass
+  ```
+
+  It fails when the user timer is enabled or active. It fails when a unit
+  file is copied into the user systemd directory. It fails when an active
+  crontab line runs `cron-daily.sh` or `cron-weekly.sh`. When `systemctl`
+  is absent, the file checks and the crontab checks are the whole gate.
+
+- `TIMER_CHECK` (task 5.3, an owner action, after the install). The user
+  timer is enabled and active. No active crontab line runs `cron-weekly.sh`
+  or `cron-daily.sh`.
+
+  ```bash
+  test "$(systemctl --user is-enabled lending-desk-daily.timer)" = enabled && test "$(systemctl --user is-active lending-desk-daily.timer)" = active && test "$(crontab -l | grep -c '^# DISABLED 2026-10-25 by owner request')" -eq 1 && test "$(crontab -l | grep -c 'cron-daily')" -eq 0 && ! crontab -l | grep -qE '^[[:space:]]*[^#[:space:]].*cron-weekly\.sh' && echo TIMER_CHECK=pass
+  ```
+
+  It fails when the timer is not enabled. It fails when the timer is not
+  active. It fails when an active line runs `cron-weekly.sh`. It fails
+  when any crontab line contains `cron-daily`. The plan task 5.3 count of
+  the disabled weekly comment stays in this command.
+
+- `GUARD_CHECK` (worktree; FR-10, D12). It runs the guard cases, the
+  order case, the `80.0001` case, and the monthly cases 6.5.25 to 6.5.36.
+  Red expects a non-zero exit. Green expects exit 0. Read the Vitest `Tests`
+  line, not a bare digit (A3).
+
+  ```bash
+  cd harness && npx vitest run schedule-tests/daily-schedule.test.ts -t '6\.5\.(1|2|3|4|5|6|7|8|9|10|11|12|13|24|25|26|27|28|29|30|31|32|33|34|35|36)\b'
+  ```
+
+  The pattern matches 26 cases: the 14 earlier cases and the 12 new cases.
+  Green expects the labeled line `Tests  26 passed` with no failed count.
+  A pattern that matches fewer cases fails the gate, because Vitest exits 0
+  when a filter skips every case (A4). The case ids of the pattern are a
+  list: a new guard case must join the list in the same commit.
+
+- `GREEN_REGRESSION` (worktree; Phase 4b Green; Review A N1, Review C F1
+  support). It runs the Green test file. It is the `SCHEDULE_TEST` command
+  with the Green file.
+
+  ```bash
+  cd harness && npx vitest run schedule-tests/daily-schedule-green.test.ts
+  ```
+
+  Green expects exit 0 and a `Tests  N passed (N)` line with `N` of 4 or
+  more and no failed count. Green records the exact line. The Green file
+  keeps its 4 cases. Green may add a case, but never removes one. The
+  compare-fault case must pass a mutation probe (section 13, disposition
+  Review A N1): in a temporary copy of `harness/cron-daily.sh`, replace the
+  `if` of the compare-fault branch with `if false; then`. The case must
+  fail on that copy. Green records the probe result as
+  `GREEN_MUTATION=fail-as-expected`. The probe never changes the worktree.
+
+- `PUSH_RULE_CHECK` (worktree; FR-11, D13). It runs the four push cases
+  on a temporary bare remote. It does not push the real `origin`.
+
+  ```bash
+  cd harness && npx vitest run schedule-tests/daily-schedule.test.ts -t '6\.5\.(14|15|16|17)\b'
+  ```
+
+- `SELECT_EXIT_CHECK` (worktree; FR-12, D14). It runs the selector exit
+  cases 1, 2, 3, and 4.
+
+  ```bash
+  cd harness && npx vitest run schedule-tests/daily-schedule.test.ts -t '6\.5\.(18|19|20|21)\b'
+  ```
+
+  `UNIT_CHECK` is the gate command for FR-13. `TIMER_CHECK` is the owner
+  install gate. It is not a substitute for `UNIT_CHECK`.
 
 - `STATUS_CHECK` (A12): run it from the root of the tree whose plan changed.
 
@@ -216,9 +488,13 @@ is `../lending-desk-bench-daily` on the branch `daily-schedule`.
 | Compatibility | `BATCH_COMPAT`, `META_LOGIC` | Green, orchestrator | The unpinned path is unchanged | live behavior |
 | Hash and path guards | `PATH_CHECK`, `BASE_HASH`, `WORKLIST_SHA` | Green, orchestrator | FR-9 | artifact |
 | Oracle cross-check | `SELECTOR_MATCH` | Green | The selector equals `pick-oracle.py` on the real runs tree | live behavior, no model call |
-| Operator docs | `DOCS_CHECK` | Green | The README section of plan task 4.1 | artifact |
+| Operator docs | `DOCS_CHECK` | Green | The README section names the timer, the guard, and the push rule | artifact |
+| Unit files | `UNIT_CHECK`, case 6.5.22 | Red, Green | FR-13, D11 text | artifact |
+| Go guard and order | `SCHEDULE_TEST` block "go guard" | Red, Green | FR-10, D12 | live behavior, no model call |
+| Push rule | `SCHEDULE_TEST` block "push rule" | Red, Green | FR-11, D13, temporary bare remote | live git behavior, no real push |
+| Selector exit | `SCHEDULE_TEST` block "selector exit" | Red, Green | FR-12, D14 | live behavior |
 | Real-data pick | `PICK_MATCH` | Orchestrator | AC-5 on the real runs tree, through the job | live behavior, no model call |
-| Live day | `DAY_CHECK`, `PUBLISH_CHECK`, `PI_CHECK`, `CRON_CHECK` | Orchestrator | FR-6 to FR-9 on a real day | live behavior, paid |
+| Live day | `DAY_CHECK`, `PUBLISH_CHECK`, `PI_CHECK`, `TIMER_CHECK` | Orchestrator | FR-6 to FR-13 on a real day | live behavior, paid |
 | Adversarial cases | the same test file, block "adversarial" | Adversarial role | Section 12 | live behavior |
 
 The test file sits outside `harness/tests/`, so it changes no suite hash
@@ -266,7 +542,9 @@ them.
     the served list does not hold. `this_week` holds the candidates with a
     run in the week of the day. Each list sorts in byte order.
   - `order` holds each eligible candidate in the order of rules 4 and 5.
-  - For a resume, the object is `{schema, date, week, model, reason: "resume"}`.
+  - For a resume, the selector stdout is the short object
+    `{schema, date, week, model, reason: "resume"}`. Case 6.1.16 stays valid.
+    The day record is not this short object. Section 5.4 states the record rule.
   - For no pick, `model` and `last_test` are `null`, and `reason` is `none`.
 - Stderr of the selection mode: one labeled line.
   `DAILY_PICK date=<day> model=<id|none> reason=<untested|stalest|none> last_test=<day|none> candidates=<n> eligible=<n> untested=<n>`.
@@ -292,30 +570,140 @@ them.
 
 ### 5.3 `harness/cron-daily.sh [--dry-run]`
 
+- The schedule is the systemd user timer of spec D11. The script does
+  not install the timer. The header comment names the two unit files and
+  `Persistent=false`. It does not present a crontab line as the install
+  method. Case 6.4.5 proves the header.
 - Order: toolchain, lock, day record check, catalog fetch, served list,
-  selection, day record write, runner, run list, publish.
-- The seams of spec NFR-6. `BENCH_DAILY_RUNNER` defaults to
-  `harness/weekly.sh`. `BENCH_DAILY_PUBLISH=0` skips the commit and the push.
+  selection, then the D12 sequence. The job does not call `weekly.sh`.
+- The D12 order is fixed. Step 1 is the Playwright Chromium check.
+  It fails closed. Step 2 is the price-marker block. A changed table runs
+  `recost.sh`. Step 3 is the hash-marker block. Changed hashes run
+  `rescore-doctor.sh` with `WEEK=all`. Step 4 reads the guard, then runs
+  one batch, for each track in order: `build`, `bugfix`, `tests`, `change`.
+  The batch call is `BENCH_TRACK=<track> <batch> --model <id>`.
+  A clean read starts the batch. A stop does not start it.
+  Step 5 runs `rescore-doctor.sh` with the week of the day.
+  Step 6 runs `recost.sh`. Step 7 runs `export-site-data.py`.
+  Step 8 runs `generate-model-pages.py`. Step 9 runs `cleanup.sh`.
+  The run list, the record update, and the publish follow step 9.
+- The seams of spec NFR-6, plus one test seam for D14.
+  `BENCH_DAILY_PUBLISH=0` skips the commit and the push.
   `BENCH_DAILY_LOCK` defaults to `.tmp/weekly-cron.lock`.
-- The job calls the runner as `<runner> --model <id>`, with `WEEK` set to
-  the ISO week of the day.
-- Labeled lines: `DAILY START`, `DAILY SKIP lock held`,
-  `DAILY FAIL <step>: <reason>`, `DAILY_PICK ...`, `DAILY RUNNER exit=<n>`,
-  `DAILY RUNS <n>`, `DAILY PUBLISH <sha|skipped|none>`, `DAILY END`.
-  The job prints the `DAILY_PICK` line of the selector one time, and it
-  prints no other line with that label.
-- The dry run prints `DAILY_PICK` and each planned run id of
-  `batch.sh --model <id> --dry-run` for the four tracks. It then prints
-  `DAILY DRY-RUN planned=<n>`. It writes no day record and no file under
-  `reports/`, and it calls no runner.
+  `BENCH_DAILY_QUOTA_CMD` names a command that prints the quota JSON.
+  Without it, the job uses the live source below.
+  `BENCH_DAILY_BATCH` replaces `harness/batch.sh`. The default is
+  `harness/batch.sh`.
+  `BENCH_DAILY_POST=0` skips steps (1) to (3) and (5) to (9).
+  `BENCH_DAILY_SELECT`, when set, replaces `tsx daily-pick.ts`. The job
+  passes the same selector arguments. It uses the command exit code.
+  When unset, the job runs the real selector. Spec NFR-6 lists this seam
+  since commit `0810d78`. Production leaves it unset.
+  Seam rule (spec NFR-6, Review C F3). Each of the seams
+  `BENCH_DAILY_QUOTA_CMD`, `BENCH_DAILY_BATCH`, and `BENCH_DAILY_SELECT` is
+  the path of one executable, with no arguments. The job runs the value
+  as one quoted word. A value with arguments is not a supported input, so
+  no case uses one. A test that needs arguments writes a script file and
+  sets the seam to the path of that file.
+  `BENCH_DAILY_RUNNER` is retired. A set value must not start a process.
+- The live quota source runs only when `BENCH_DAILY_QUOTA_CMD` is unset.
+  Run `openchamber status --json`. Read `port` from the first entry of
+  `instances` only. A later entry does not count. GET
+  `http://127.0.0.1:<port>/api/quota/opencode-go`. The host is
+  `127.0.0.1` only. Read `usage.windows.weekly.usedPercent` first and
+  `usage.windows.monthly.usedPercent` second, both from the same response
+  body. The seam output is read in the same way.
+  A failed status command stops the day. A missing port stops the day.
+  A failed GET stops the day. An empty body stops the day.
+  A body that is not JSON stops the day.
+  The line is `DAILY SKIP go-guard: read failed`.
+  Tests do not call `openchamber`. Case 6.4.6 reads the script text.
+  The seam cases prove the stop.
+- A guard stop prints one line and exits 0. Use one of these exact lines.
+  `DAILY SKIP go-guard: read failed`.
+  `DAILY SKIP go-guard: missing field`.
+  `DAILY SKIP go-guard: not a number`.
+  `DAILY SKIP go-guard: weekly value <n> is below 0`.
+  `DAILY SKIP go-guard: weekly used <n> percent`.
+  `DAILY SKIP go-guard: monthly missing field`.
+  `DAILY SKIP go-guard: monthly not a number`.
+  `DAILY SKIP go-guard: monthly value <m> is below 0`.
+  `DAILY SKIP go-guard: monthly used <m> percent`.
+  A clean read prints `DAILY GO-GUARD weekly=<n> monthly=<m>`.
+  A stop does not also print `DAILY GO-GUARD` for that read.
+  `<n>` and `<m>` are the shortest decimal that round-trips to the JSON
+  number. `81` prints `81`. `80.0001` prints `80.0001`. `-1` prints `-1`.
+  A truncated or rounded value fails the case. The line holds the weekly
+  value first and the monthly value second.
+- The check order is fixed (spec D12). The weekly checks run first, in
+  this order: failed read, missing field, not a number, below 0, above 80.
+  The monthly checks run only after the weekly value passes, in this
+  order: missing field, not a number, below 0, above 80. The job reports
+  the first failed check only, so one read gives one skip line. A bad
+  monthly value never changes the reason of a weekly stop.
+- Compare each quota value as a number. A value above 80 stops. A value
+  of 80 or 80.0 continues. A value of 0 continues. A finite value below 0
+  stops. Do not compare the text. Do not coerce a JSON string with
+  `Number`. A string, a boolean, an object, or an array is `not a number`
+  (`monthly not a number` for the monthly window). A number that JSON
+  parses to a non-finite value, such as `1e400`, is also `not a number`. A
+  missing key or a null value is `missing field` (`monthly missing field`
+  for the monthly window). Empty output, whitespace-only output, a non-zero
+  command exit, or text that is not JSON is `read failed`. A non-zero exit
+  stops even when stdout holds JSON.
+- A stop makes no further batch call and no model call. A stop before
+  batch 1 writes the day record with `run_ids: []` and `go_guard_stop`
+  set to the reason text. It does not print `DAILY FAIL runs`. A stop
+  before batch 2, 3, or 4 keeps the run ids of the earlier batches and
+  sets `go_guard_stop` to the exact reason text (for example
+  `monthly used 81 percent`). The job still runs steps (5) to (9) unless
+  `BENCH_DAILY_POST=0`. The stop does not `exit` before those steps.
+- The dry run reads the guard one time, before the batch dry runs. A
+  clean read prints `DAILY GO-GUARD weekly=<n> monthly=<m>`, the planned
+  run ids, and `DAILY DRY-RUN planned=<n>`. A stop prints the skip line and
+  `DAILY DRY-RUN planned=0`, and it exits 0. The dry run writes no day
+  record and makes no model call.
+- These labeled lines stay: `DAILY START` and `DAILY SKIP lock held`.
+  `DAILY FAIL <step>: <reason>` stays. `DAILY_PICK ...` stays.
+  `DAILY RUNNER exit=<n>` stays. `DAILY RUNS <n>` stays.
+  `DAILY PUBLISH <sha|skipped|none>` stays. `DAILY END` stays.
+  `DAILY RUNNER exit=<n>` is the summary of the four batches.
+  It is the first non-zero batch exit, or 0 when every batch exits 0.
+  The job prints the `DAILY_PICK` line of the selector one time.
+- Push lines, after the docs commit: `DAILY PUSH skipped: <n> other local commits`,
+  `DAILY PUSH skipped: origin/main moved`,
+  `DAILY PUSH skipped: fetch failed`.
+  A passed check pushes with `git push origin <sha>:main`. `<sha>` is the
+  docs commit. The script must not run `git push origin main`.
+  A failed push retries 3 times. After the third failure the job prints
+  `DAILY FAIL publish: git push failed after 3 attempts; the commit is local`
+  and exits 1. The commit stays local.
+- Selector exit: exit 0 is a pick or a resume. Exit 3 is the no-pick path.
+  Exit 2 keeps the current fail path. Any other exit, including 1 and 4
+  or more, prints `DAILY FAIL pick: the selector exited <n>` and exits
+  with the same code. The job calls no batch and writes no day record.
 
 ### 5.4 Day record `reports/daily/<day>.json`
 
-- The selector object, plus `run_ids` (an array) and `runner_exit` (an
-  integer or `null`).
-- The job writes it to a temporary file, and it renames the file into place.
-  It writes it before the runner with `run_ids: []`. It writes it again after
-  the runner with the output of the run-list mode.
+- The selector object, plus `run_ids` (an array), `runner_exit` (an
+  integer or `null`), and `go_guard_stop` (a string or `null`).
+- A day with no guard stop holds `go_guard_stop: null`. A stopped day
+  holds the exact reason text, for example `weekly used 81 percent`,
+  `monthly used 81 percent`, or `read failed`. The value is not the full
+  labeled line.
+- The job writes the record to a temporary file, and it renames the file
+  into place. It writes it before the first batch with `run_ids: []`.
+  It writes it again after the batches with the run-list output.
+- Resume record rule (adversarial finding 2, spec D10). On a resume, the
+  job keeps `counts`, `excluded`, `order`, and `last_test` from the first
+  record of that day. It updates `run_ids` and `runner_exit` only. It
+  does not replace the record with the short selector object. The publish
+  body reads `excluded` from the day record. A resumed publish lists the
+  same unpriced, gone, and unservable models as the first record.
+  Green changes `harness/cron-daily.sh` only for this rule.
+  `harness/daily-pick.ts` stays unchanged. Case 6.5.23 proves the rule.
+  It fails when any of those four fields changes, or when the publish
+  body omits an unpriced model that the first record lists.
 - A day record that is not valid JSON, or that has no `date` string or no
   `run_ids` array, is an input fault (exit 2).
 
@@ -393,6 +781,9 @@ the case. It never spreads `process.env` (A11).
     of other weeks, other models, Pi runs, and canary runs.
 22. **The labeled line.** For case 1, stderr is exactly
     `DAILY_PICK date=<day> model=C reason=untested last_test=none candidates=3 eligible=3 untested=2`.
+23. **Untested beside a legacy no-week-token run.** A tested model whose only
+    OpenCode run has no week token has the zero date. It must not win over an
+    untested candidate with fewer requests.
 
 ### 6.2 Batch pin
 
@@ -415,18 +806,30 @@ and `ARMS="a b"`. The synthetic table holds `glm-5.2` with `batch: false`.
    batch model of the synthetic table.
 8. **No variable pin.** `BENCH_MODEL=glm-5.2` in the environment and no
    flag. Expect the output of case 6.2.7.
+9. **Empty value.** `--model ""` exits 2 and plans no run.
 
 ### 6.3 Daily job
 
-Each case spawns `bash harness/cron-daily.sh` with the seams of spec NFR-6.
-`BENCH_DAILY_RUNNER` is a stub script in the temporary root. The stub writes
-its arguments and a flag "record present" to a file. It then creates one
-OpenCode run directory of the `--model` value for each arm, with the week
-token of `WEEK`. `BENCH_DAILY_PUBLISH` is `0`.
+Each case spawns `bash harness/cron-daily.sh` with an explicit environment.
+The environment holds `PATH`, `HOME`, and the values of the case. It never
+spreads `process.env` (A11).
 
-1. **Dry run.** Expect the `DAILY_PICK` line of the selector, 12 planned run
-   ids, and `DAILY DRY-RUN planned=12`. The day directory stays empty. The
-   runs root stays unchanged. The stub is not called.
+Task 4b.2 retargets the daily-job fixture. `BENCH_DAILY_RUNNER` is retired.
+The fixture sets `BENCH_DAILY_BATCH` to the stub and `BENCH_DAILY_POST=0`.
+It sets `BENCH_DAILY_QUOTA_CMD` to a command that prints a clean reading of
+10. The assertions of cases 6.3.2 to 6.3.12 stay. Green does not edit a
+case to pass. A case that still sets only `BENCH_DAILY_RUNNER` is incomplete.
+
+The stub logs each call. It creates one OpenCode run directory of the
+`--model` value for each arm, with the week token of `WEEK`.
+`BENCH_DAILY_PUBLISH` is `0` except in the publish cases.
+
+1. **Dry run.** The quota seam prints 10. Expect one
+   `DAILY GO-GUARD weekly=10` line, or `weekly=10.0` when the number parses
+   as 10. Expect the `DAILY_PICK` line, 12 planned run ids, and
+   `DAILY DRY-RUN planned=12`. The day directory stays empty. The runs root
+   stays unchanged. The live batch stub is not called. It fails when the
+   guard line is absent, or when a run directory appears.
 2. **Empty catalog.** An empty catalog file. Expect a non-zero exit, a
    `DAILY FAIL catalog` line, no `DAILY_PICK` line, and no day record.
 3. **Other bad inputs.** The same result for a catalog that is not JSON, for
@@ -447,14 +850,290 @@ token of `WEEK`. `BENCH_DAILY_PUBLISH` is `0`.
    `DAILY_PICK ... model=none`, no record, and no stub call.
 10. **Runner failure.** The stub exits 4. Expect `runner_exit` 4 in the
     record, a non-zero exit, and `DAILY PUBLISH none`.
+11. **Shared lock.** The test holds the lock file with `flock -s`. Expect exit
+    0, `DAILY SKIP lock held`, no day record, and no stub call.
+12. **Zero runs.** The stub exits 0 and creates no run directory. Expect a
+    non-zero exit, a `DAILY FAIL runs` line, `DAILY PUBLISH none`, and a
+    record with `run_ids: []` and `runner_exit: 0`.
 
 ### 6.4 Artifacts
 
-These cases read file text. They do not prove behavior.
+These cases read file text. They do not prove behavior. Case 4 also runs the
+job in a temporary Git repository, so it proves the publish scope.
+Task 4b.2 retargets case 4 to `BENCH_DAILY_BATCH`. The remote tip must
+still equal the docs commit. Case 1 stays valid. Green does not edit
+`weekly.sh`.
 
-1. `harness/weekly.sh` holds `./batch.sh "$@"`.
+1. `harness/weekly.sh` holds `./batch.sh "$@"`. It fails when that call is
+   absent, or when the track loop is gone.
 2. The self-check line of `batch.sh` still unsets `BENCH_TRACK` and the
    repeat variables (the guard of `selfcheck-env.test.ts`).
+3. The publish commit of `cron-daily.sh` is path-limited to `docs/`.
+   The push form is `git push origin <sha>:main`. The script does not
+   contain `git push origin main`. It fails when that old push line remains.
+4. The publish commit of a temporary Git repository holds only `docs/`.
+   `origin/main` starts at the parent of the docs commit. The remote tip
+   equals that docs commit. It fails when the remote holds another file.
+5. The header comment of `harness/cron-daily.sh` names
+   `harness/systemd/lending-desk-daily.timer` and `Persistent=false`.
+   It does not contain the install line `0 1 * * 0,3`. It fails when the
+   crontab line is the install method, or when the timer name is absent.
+6. The live quota source text is in `harness/cron-daily.sh`. The script
+   contains `openchamber status --json`, `127.0.0.1`,
+   `/api/quota/opencode-go`, and `usedPercent`. The GET host is
+   `127.0.0.1` only. The port comes from the first `instances` entry.
+   It fails when any token is absent. It fails when the guard URL uses
+   another host. This case does not call `openchamber`.
+7. After the four-track loop, the script still names `rescore-doctor.sh`,
+   `recost.sh`, `export-site-data.py`, `generate-model-pages.py`, and
+   `cleanup.sh`. A guard stop does not `exit` the script before those
+   names. It fails when a stop branch exits before the post steps.
+   This case reads text. It does not run the post steps.
+
+### 6.5 O1 conditions
+
+These cases are the Phase 4b Red cases. No case is `skip`, `todo`, or
+`fails`. Each spawn uses an explicit environment (A11). No case calls a
+model, `openchamber`, the real `origin`, crontab, or systemd.
+
+The quota stub prints one JSON object with both windows:
+`{"usage":{"windows":{"weekly":{"usedPercent":<n>},"monthly":{"usedPercent":<m>}}}}`.
+Since task 4b.6, a payload with no monthly field is a stop condition
+(`monthly missing field`), so every stub that expects a continue or a weekly
+stop must hold a valid monthly value.
+The batch stub logs `BENCH_TRACK` and its arguments. It creates run ids
+that contain the track token, so a later batch has different ids.
+`BENCH_DAILY_POST=0` unless the case says otherwise.
+
+A case fails when the labeled line differs, when the exit code differs,
+or when a forbidden batch call exists.
+
+#### Rule for the existing fixtures (task 4b.7)
+
+The current quota fixtures hold the weekly field only. Under D12 a missing
+monthly field stops the day, so each such fixture would stop at the first
+read and would change the meaning of its case. Red applies exactly this
+rule. It keeps the meaning of every existing case. All paths are in
+`harness/schedule-tests/daily-schedule.test.ts` unless a line says
+otherwise.
+
+1. `QUOTA_TEN_SOURCE` prints
+   `{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":10}}}}`.
+   The value is 10, below the limit, so jobs that ran clean keep running
+   clean. The helpers `jobSetup`, `job`, and the push helper `runCopied`
+   (cases 6.4.x, 6.5.14 to 6.5.17) read this source and need no other change.
+2. `QuotaStep` gets two optional fields: `monthly?: number | string | null`
+   and `omitMonthly?: boolean`. `writeQuota` builds the body with a
+   `monthly` object. A step with `value` and with neither `monthly` nor
+   `omitMonthly` gets monthly 10. Thus cases 6.5.1 to 6.5.10 and 6.5.12 keep
+   their weekly value and their reason. In cases 6.5.5 and 6.5.6 the weekly
+   fault is checked first, so the weekly reasons `missing field` and
+   `not a number` stay.
+3. Each raw payload gets `"monthly":{"usedPercent":10}` beside `weekly`.
+   The raw payloads are in case 6.5.3 (weekly 80.0), case 6.5.4 (the exit 1
+   stub with JSON on stdout), and case 6.5.24 (weekly 80.0001). The payload
+   of case 6.5.4 stays a payload that would pass, so the case still proves
+   that the exit code decides.
+4. These assertions change from `weekly=10` to
+   `weekly=10 monthly=10`: case 6.3.1 (the list of two accepted lines
+   becomes the single string `DAILY GO-GUARD weekly=10 monthly=10`), the
+   `assertMidStop` helper (used by cases 6.5.8 to 6.5.10), case 6.5.11, and
+   case 6.5.13 (four lines). No other assertion changes. No case changes its
+   weekly value, its skip reason, or its exit code.
+5. Case 6.5.7 (empty output) does not change: it uses empty raw output.
+   Case 6.5.1 changes by rule 2 only.
+6. The Green file `daily-schedule-green.test.ts`: the quota script in
+   `job()` prints `monthly:{usedPercent:10}` beside the weekly value. Its
+   assertions stay. Red makes this fixture-only edit, because the file must
+   stay green before and after Green (`GREEN_REGRESSION`). `RED_PATH_CHECK_4B7`
+   allows it. Green edits only the compare-fault case in this file (Review A
+   N1).
+7. Proof that the rule keeps the old meaning. The current code ignores the
+   monthly field. After the fixture edits of rules 1 to 6 and before Red
+   adds the new cases, Red runs `SCHEDULE_TEST` against the unchanged
+   `harness/cron-daily.sh`. Only the cases that assert the new clean-read
+   line may fail: 6.3.1, 6.5.8, 6.5.9, 6.5.10, 6.5.11, and 6.5.13. Every
+   other old case stays green. A failure in another old case means that a
+   fixture changed the meaning of the case, and Red must correct it. Red
+   records this first run as the line `Tests` of the fixture-only step. The
+   new cases then add the monthly red signal.
+
+1. **Stop before batch 1.** The quota command prints 81. Expect exit 0,
+   exactly one line `DAILY SKIP go-guard: weekly used 81 percent`, no
+   batch call, and no model call. The day record has `run_ids: []` and
+   `go_guard_stop` `weekly used 81 percent`. Expect no `DAILY FAIL runs`
+   line. It fails when a batch runs, or when the exit is not 0.
+2. **Exactly 80 continues.** The quota command prints 80 on each read.
+   Expect four batch calls, no skip line, and `go_guard_stop` null.
+   It fails when the job stops.
+3. **80.0 continues.** The quota command prints 80.0. Expect the same
+   result as case 2. It fails when a string compare stops the day.
+4. **Failed read.** The quota command exits 1. Stdout may hold valid JSON.
+   Expect `DAILY SKIP go-guard: read failed`, exit 0, and no batch call.
+   It fails when the job uses the stdout and continues.
+5. **Missing field.** The quota command prints `{"ok":true}`. Expect
+   `DAILY SKIP go-guard: missing field`, exit 0, and no batch call.
+   A null `usedPercent` is the same result. It fails when the job continues.
+6. **Not a number.** `usedPercent` is the string `high`. Expect
+   `DAILY SKIP go-guard: not a number`, exit 0, and no batch call.
+   It fails when the job coerces the string and continues.
+7. **Empty output.** The quota command exits 0 and prints no bytes.
+   Expect `DAILY SKIP go-guard: read failed`, exit 0, and no batch call.
+   Whitespace-only output is the same result. It fails when the job
+   continues, or when the reason is `not a number`.
+8. **Stop before batch 2.** The first read is 10. The second read is 81.
+   Expect one build batch only. The record holds the build run ids and
+   `go_guard_stop` `weekly used 81 percent`. Bugfix, tests, and change
+   do not run. It fails when a later batch runs, or when a build id is
+   absent.
+9. **Stop before batch 3.** The first two reads are 10. The third read
+   is 81. The record holds the build and bugfix run ids and the stop
+   reason. Tests and change do not run. It fails when a tests id is
+   present, or when a build or bugfix id is absent.
+10. **Stop before batch 4.** The first three reads are 10. The fourth
+    read is 81. The record holds the build, bugfix, and tests run ids
+    and the stop reason. Change does not run. It fails when a change id
+    is present, or when an earlier id is absent.
+11. **Dry-run clean read.** The quota command prints weekly 10 and monthly
+    10 (rule 2). Expect one `DAILY GO-GUARD weekly=10 monthly=10` line,
+    the planned ids, and
+    `DAILY DRY-RUN planned=<n>`. Expect no day record and no model call.
+    It fails when the guard line is absent, or when a run directory appears.
+12. **Dry-run stop.** The quota command prints 81. Expect the skip line,
+    `DAILY DRY-RUN planned=0`, exit 0, no day record, and no model call.
+    It fails when a batch dry run starts.
+13. **Per-batch order.** Four clean reads of 10. The call log order is
+    quota, build, quota, bugfix, quota, tests, quota, change. Each batch
+    call is `--model <id>` with `BENCH_TRACK` set to that track. Expect
+    four `DAILY GO-GUARD weekly=10 monthly=10` lines. `BENCH_DAILY_POST=0`. Set
+    `BENCH_DAILY_RUNNER` to a script that creates a sentinel file. The
+    sentinel must not exist after the job. It fails when the order differs,
+    or when the retired runner starts.
+14. **Push at the parent.** Use a temporary repository and a bare remote.
+    Set `user.email` and `user.name`. Do not use the real `origin`.
+    `origin/main` equals the parent of the docs commit. Expect
+    `git push origin <sha>:main`. The remote tip equals that docs commit
+    and no other new commit. Expect exit 0 and `DAILY PUBLISH <sha>`.
+    It fails when the remote tip differs, or when the script pushes
+    `origin main`.
+15. **Other local commits.** One local commit sits between `origin/main`
+    and the docs commit. Expect
+    `DAILY PUSH skipped: 1 other local commits`, exit 0, no push, and the
+    docs commit still local. It fails when the remote moves, or when the
+    count is wrong.
+16. **origin/main moved.** Start from the parent commit.
+    Move `origin/main` to a later commit that is not the parent.
+    `git rev-list --count origin/main..HEAD~1` must equal 0.
+    Expect `DAILY PUSH skipped: origin/main moved`.
+    Expect exit 0 and no push. The docs commit stays local.
+    It fails when the job pushes.
+    It fails when the line says `other local commits`.
+17. **Failed fetch.** Point `origin` at a missing path after the parent
+    exists. Expect `DAILY PUSH skipped: fetch failed`, exit 0, the docs
+    commit local, and the remote unchanged. It fails when the exit is not 0,
+    or when the reason is another skip reason.
+18. **Selector exit 1.** `BENCH_DAILY_SELECT` exits 1. Expect
+    `DAILY FAIL pick: the selector exited 1`, exit 1, no batch call, and
+    no day record. It fails when the job takes the no-pick path.
+19. **Selector exit 4.** The stub exits 4. Expect
+    `DAILY FAIL pick: the selector exited 4`, exit 4, no batch call, and
+    no day record. It fails when the exit is 0, or when the line omits 4.
+20. **Selector exit 2.** The stub exits 2. Expect
+    `DAILY FAIL pick: the selector exited 2`, exit 2, no batch call, and
+    no day record. It fails when the job selects a model.
+21. **Selector exit 3.** The stub exits 3. Expect the no-pick path, exit 0,
+    `DAILY PUBLISH none`, and no batch call. It fails when the job prints
+    `DAILY FAIL pick`.
+22. **Unit files.** Read the two files of D11. Expect each line that
+    `UNIT_CHECK` requires. It fails when a file is absent. This case is
+    an artifact check. It does not install a unit.
+23. **Resume record.** The first run writes `counts`, `excluded` with one
+    unpriced model, `order`, and `last_test`. The second run of the same
+    day resumes. Those four fields stay byte-equal. The publish body names
+    the unpriced model. The selector stdout stays the short object of
+    case 6.1.16. It fails when a field is dropped, or when the body lists
+    no unpriced model. Green changes `harness/cron-daily.sh` only.
+24. **Value 80.0001.** The first read prints 80.0001. Expect
+    `DAILY SKIP go-guard: weekly used 80.0001 percent`, exit 0, and no
+    batch call. It fails when the line prints `80` or `80.0`. It fails
+    when an integer compare continues or aborts the job.
+
+25. **Weekly below 0.** The first read has weekly -1 and monthly 10.
+    Expect exactly one line `DAILY SKIP go-guard: weekly value -1 is below 0`,
+    exit 0, no `DAILY GO-GUARD` line, and no batch call. The day record has
+    `run_ids: []` and `go_guard_stop` `weekly value -1 is below 0`. A second
+    sub-case uses weekly -0.5 and expects `weekly value -0.5 is below 0`. It
+    fails when the job continues (the Review B N5 fault), when the line
+    omits the sign, or when the reason is `weekly used -1 percent`.
+26. **Monthly missing field.** Weekly 10. The payload holds no `monthly`
+    key in the first sub-case, `"monthly":{}` in the second, and
+    `"monthly":{"usedPercent":null}` in the third. Expect
+    `DAILY SKIP go-guard: monthly missing field`, exit 0, no
+    `DAILY GO-GUARD` line, and no batch call. The record has
+    `go_guard_stop` `monthly missing field`. It fails when the job
+    continues, when the reason lacks the word `monthly`, or when a clean
+    weekly line prints first.
+27. **Monthly not a number.** Weekly 10. The monthly `usedPercent` is the
+    string `high` in the first sub-case, the boolean `true` in the second,
+    and the array `[]` in the third. Expect
+    `DAILY SKIP go-guard: monthly not a number`, exit 0, and no batch call.
+    It fails when the job coerces a value and continues, or when the reason
+    is the weekly `not a number`.
+28. **Monthly below 0.** Weekly 10 and monthly -1. Expect
+    `DAILY SKIP go-guard: monthly value -1 is below 0`, exit 0, and no
+    batch call. The record has `go_guard_stop`
+    `monthly value -1 is below 0`. It fails when the job continues, or when
+    the reason names the weekly window.
+29. **Monthly above 80.** Weekly 10 and monthly 81. Expect
+    `DAILY SKIP go-guard: monthly used 81 percent`, exit 0, no batch call,
+    and `run_ids: []` in the record with `go_guard_stop`
+    `monthly used 81 percent`. Expect no `DAILY FAIL runs` line. It fails
+    when the job continues, or when the reason says `weekly used`.
+30. **Clean-read line.** The first sub-case runs the job with weekly 10 and
+    monthly 20 on every read. Expect four lines
+    `DAILY GO-GUARD weekly=10 monthly=20` and four batch calls. The second
+    sub-case is a dry run with weekly 30 and monthly 40. Expect one line
+    `DAILY GO-GUARD weekly=30 monthly=40`, the planned ids, and
+    `DAILY DRY-RUN planned=12`. The two windows have different values, so
+    the case fails when the job swaps them, repeats one value, or prints the
+    old line `DAILY GO-GUARD weekly=10`.
+31. **Monthly exactly 80 and 80.0.** Weekly 10. The first sub-case uses
+    monthly 80 on each read. The second uses the raw JSON number `80.0`.
+    Expect four batch calls, no skip line, `go_guard_stop` null, and the
+    line `DAILY GO-GUARD weekly=10 monthly=80` four times. It fails when
+    the job stops at 80 or at 80.0, or when a string compare decides.
+32. **Monthly 80.0001.** Weekly 10 and monthly 80.0001. Expect
+    `DAILY SKIP go-guard: monthly used 80.0001 percent`, exit 0, and no
+    batch call. It fails when the line prints `80` or `80.0`, or when an
+    integer compare continues.
+33. **Zero for both windows.** Weekly 0 and monthly 0 on each read. Expect
+    four batch calls, no skip line, `go_guard_stop` null, and four lines
+    `DAILY GO-GUARD weekly=0 monthly=0`. It fails when the job treats 0 as a
+    missing value (a truthy test), or stops at 0.
+34. **Monthly stop before batch 2.** The first read is weekly 10, monthly
+    10. The second read is weekly 10, monthly 81. Expect one build batch
+    only. Expect one line `DAILY GO-GUARD weekly=10 monthly=10`, then
+    `DAILY SKIP go-guard: monthly used 81 percent`, exit 0. The record
+    holds the exact build run ids and `go_guard_stop`
+    `monthly used 81 percent`. Bugfix, tests, and change do not run (no
+    run directory with those track tokens). It fails when a later batch
+    runs, when a build id is absent, or when `go_guard_stop` is null.
+35. **Dry-run monthly stop.** Weekly 10 and monthly 81 in a dry run. Expect
+    `DAILY SKIP go-guard: monthly used 81 percent`, the line
+    `DAILY DRY-RUN planned=0`, exit 0, no `DAILY GO-GUARD` line, no day
+    record, no run directory, and no planned id. It fails when a batch
+    dry run starts, or when `planned` is not 0.
+36. **Weekly first.** Three sub-cases, each with one skip line and no batch
+    call. (a) Weekly -1 and monthly the string `high`: expect
+    `weekly value -1 is below 0`. (b) Weekly 81 and monthly 81: expect
+    `weekly used 81 percent`. (c) Weekly the string `high` and monthly
+    absent: expect `not a number`. Each record `go_guard_stop` equals the
+    weekly reason text. It fails when the line names the monthly window,
+    when two skip lines print, or when the monthly check runs before the
+    weekly check.
+
+Case 6.4.6 is the port-rule artifact. The seam cases above prove the
+stop behavior. A test that calls the live port fails this strategy.
 
 ## 7. Real-data proof without a model call
 
@@ -489,13 +1168,17 @@ It is a paid run, so it waits for O1 (A2).
 
 1. Run `CONSENT_CHECK`. Stop when it prints no line.
 2. Run `PI_SHA day0` and `ls runs > .tmp/daily-runs-before.txt`.
-3. The owner installs the crontab line (plan task 5.3). Then run
-   `CRON_CHECK`.
+3. The owner installs the two unit files (plan task 5.3). Then run
+   `TIMER_CHECK`. Do not install a crontab line.
 4. After the first job ends, run `DAY_CHECK <day>`, `PUBLISH_CHECK <day>`,
-   `PI_SHA day1`, and `PI_CHECK day0 day1`.
-5. Confirm that `reports/cron-daily.log` holds one `DAILY_PICK` line for
-   the day, and that it equals the line of `PICK_ORACLE` for the inputs of
-   the day record.
+   `PI_SHA day1`, and `PI_CHECK day0 day1`. Use `PUBLISH_CHECK <day> pushed`
+   when the log shows `DAILY PUBLISH`. Use `PUBLISH_CHECK <day> skipped`
+   when the log shows `DAILY PUSH skipped:`.
+5. Confirm one `DAILY_PICK` line for the day in `reports/cron-daily.log`.
+   That line must equal the `PICK_ORACLE` line for the day-record inputs.
+6. Confirm the guard lines. A full day holds four
+   `DAILY GO-GUARD weekly=<n> monthly=<m>` lines. A stopped day holds one
+   `DAILY SKIP go-guard: <reason>` line. Confirm the push result line.
 
 ## 9. Phases
 
@@ -504,8 +1187,22 @@ It is a paid run, so it waits for O1 (A2).
 | 1 Contract and setup | low | none: this phase adds no code | role gate `strategy` prints `PASS: strategy gate passed`; the task 1.1 commit holds the strategy and the oracle | `PHASE_BASE=ok`; task 1.2 holds `PHASE_BASE`, `BASE_HASH`, `WORKLIST_SHA`, `BATCH_COMPAT`, and the `PI_SHA base` lines; `STATUS_CHECK` passes |
 | 2 Test (Red) | medium | `SCHEDULE_TEST` exits non-zero | each failure names a missing interface of section 5; `RED_PATH_CHECK=pass` | role gate `mid-red` with `RED_TEST_COMMAND=SCHEDULE_TEST` passes; task 2.2 records the `Tests` line |
 | 3 Implement (Green) | high | `SCHEDULE_TEST` of Phase 2 | `SCHEDULE_TEST` exits 0; `SELECTOR_MATCH=pass`; `PATH_CHECK=pass`; `BATCH_COMPAT` equals task 1.2; `META_LOGIC` exits 0 in the worktree | role gate `jr-green` passes; Reviews A, B, and C and the adversarial file show `status: pass` |
-| 4 Docs | low | `DOCS_CHECK` exits non-zero before task 4.1 | `DOCS_CHECK=pass`; `PATH_CHECK=pass`; `SCHEDULE_TEST` exits 0 | Review C finds no flag or path in the README that the code lacks |
-| 5 Doctor and owner gate | critical | none: no new code | after the merge: `BASE_HASH` and the `WORKLIST_SHA` pair are equal; `BATCH_COMPAT` equals task 1.2; `PICK_MATCH=pass`; `SCHEDULE_TEST` and `META_LOGIC` exit 0 | O1 recorded; when approved, `CONSENT_CHECK`, `CRON_CHECK`, `DAY_CHECK`, `PUBLISH_CHECK`, and `PI_CHECK day0 day1` pass |
+| 4 Docs | low | `DOCS_CHECK` exits non-zero before task 4.1 | `DOCS_CHECK=pass` at task 4.1 used the previous command; `PATH_CHECK=pass`; `SCHEDULE_TEST` exits 0 | Review C finds no flag or path in the README that the code lacks. Recorded deviation: this closeout runs with the Phase 4b reviews, on the final Phase 4b HEAD |
+| 4b O1 conditions | high | `SCHEDULE_TEST` exits non-zero; each new failure names a missing interface of D11 to D14; `RED_PATH_CHECK=pass`; `UNIT_CHECK` and the amended `DOCS_CHECK` exit non-zero. Monthly window (task 4b.7): `SCHEDULE_TEST` exits non-zero; each new failure names a missing monthly rule of D12 (cases 6.5.25 to 6.5.36); `GUARD_CHECK` exits non-zero; `RED_PATH_CHECK_4B7=pass`; `DOCS_CHECK` exits non-zero on `monthly window`; the fixture-only step fails only in the six cases of rule 4 | `SCHEDULE_TEST` exits 0; `GUARD_CHECK`, `PUSH_RULE_CHECK`, and `SELECT_EXIT_CHECK` exit 0; `UNIT_CHECK=pass`; `DOCS_CHECK=pass`; `PATH_CHECK=pass`; `WEEKLY_SAME=pass`; `BATCH_COMPAT` equals task 1.2; `bash -n harness/cron-daily.sh` exits 0. Monthly window (task 4b.8): `GUARD_CHECK` shows `Tests  26 passed`; `GREEN_REGRESSION` exits 0; `GREEN_MUTATION=fail-as-expected`; the README names the monthly window and `usage.windows.monthly.usedPercent` (`DOCS_CHECK=pass`) | role gate `jr-green` passes; Reviews A, B, and C and the adversarial file show `status: pass`; `TIMER_ABSENT=pass`; Phase 4 Review C runs on this HEAD and finds no flag or path in the README that the code lacks |
+| 5 Doctor and owner gate | critical | none: no new code | after the merge: `BASE_HASH` and the `WORKLIST_SHA` pair are equal; `BATCH_COMPAT` equals task 1.2; `PICK_MATCH=pass`; `SCHEDULE_TEST` and `META_LOGIC` exit 0; `UNIT_CHECK=pass` in `main` | O1 recorded; when approved, `CONSENT_CHECK`, `TIMER_CHECK`, `DAY_CHECK`, `PUBLISH_CHECK`, and `PI_CHECK day0 day1` pass |
+
+### Phase 4b risk and review applicability (monthly window)
+
+The monthly window (tasks 4b.6 to 4b.8) keeps the risk class `high` of
+Phase 4b. A wrong guard spends money on an unattended run day (spec R3).
+
+| Review kind | Applies | Reason |
+|---|---|---|
+| Security review (Review B) | yes | The guard is a fail-closed spend control. It parses an HTTP body and a seam output. The new rules add a lower bound of 0 and a second window. |
+| UX and API review (Review C) | yes | The new reasons, the new clean-read line, the `go_guard_stop` text, and the README are operator contracts. |
+| Adversarial testing | yes | Section 12 cases 14 to 17. |
+| Browser review | no | The change touches no browser page. |
+| Correctness review (Review A) | yes | The check order of D12 and the per-batch order. |
 
 ### Anti-pattern coverage
 
@@ -524,8 +1221,24 @@ It is a paid run, so it waits for O1 (A2).
 | 3 | A13 | No test writes under the real `runs/`; the job creates only run directories of the day's model | `DAY_CHECK` finds another model |
 | 3 | A3, A4 | `SELECTOR_MATCH` compares two full labeled lines, and it needs a non-empty line | the line is empty, or one field differs |
 | 4 | A5 | `DOCS_CHECK` reads the README section; Review C compares each named flag with the code | the README names a flag or a path that the code lacks |
-| 4 | A6 | `DOCS_CHECK` rejects an activation claim | the README says that the schedule is active before O1 |
-| 5 | A2 | `CONSENT_CHECK` before `CRON_CHECK` | the crontab line exists with no dated approval |
+| 4 | A6 | `DOCS_CHECK` rejects an activation claim | the README says that the schedule is active before the owner install |
+| 4b | A2 | `TIMER_ABSENT` before the owner install; `CONSENT_CHECK` already passed | a unit is enabled, or an active crontab line runs the job |
+| 4b | A3 | Cases parse exact labeled lines and JSON fields; `80`, `80.0`, and `80.0001` are numbers, not digit searches | a case matches a bare digit, or accepts a truncated percent |
+| 4b | A4 | A guard stop must show zero batch calls; a push skip must show a local commit; `UNIT_CHECK` fails when a file is absent | a case passes on empty output, or on no commit |
+| 4b | A5 | Each new gate prints its labeled line; the plan claims a pass only with that line | a task claims `UNIT_CHECK=pass` with no command output |
+| 4b | A6 | `DOCS_CHECK` rejects `Decision O1 is open` and the old push sentence | the README says the schedule is active, or that the job sends every local commit |
+| 4b | A7 | `PATH_CHECK` names the two unit files, not `harness/systemd/`; `DOCS_CHECK` rejects the install line, not the word crontab | an extra unit file passes, or a real install line is dropped by a broad filter |
+| 4b | A11 | Each spawn has an explicit environment; the quota seam replaces the live port | a test calls `openchamber`, or ambient `BENCH_TRACK` changes the guard |
+| 4b | A12, A14 | One `[~]` task while a `[b]` task remains; `STATUS_CHECK`; the registry note says Phase 4b Red next | the status command lists the track as a closeout candidate |
+| 4b monthly | A3 | Cases 6.5.25 to 6.5.36 compare the exact skip line and the exact clean-read line (two labeled values with different numbers in case 6.5.30); `GUARD_CHECK` reads the labeled `Tests  26 passed` line | a case matches a bare digit, a case accepts the old `weekly=<n>` line, or the filter matches fewer than 26 cases |
+| 4b monthly | A4 | A guard stop shows zero batch calls, an empty or exact `run_ids` list, and `go_guard_stop`; case 6.5.33 uses 0 so a truthy test fails; the fixture-only step of rule 7 shows that old cases stay green on the old code | a case passes on a payload with no monthly field, a zero value counts as missing, or a stop leaves `go_guard_stop` null |
+| 4b monthly | A5 | Plan task 4b.8 claims a pass only with the labeled `GUARD_CHECK`, `GREEN_REGRESSION`, `GREEN_MUTATION`, and `DOCS_CHECK` lines | a task claims a result with no command line |
+| 4b monthly | A6 | `DOCS_CHECK` needs `monthly window`, the field text, and `DAILY SKIP lock held`, and it rejects `can wait` | the README names no monthly window, or still says that a run can wait |
+| 4b monthly | A7 | `RED_PATH_CHECK_4B7` uses the exact allow-list and the base `STRATEGY_4B6`, and `STRATEGY_4B6=ok` binds the base to the strategy commit | a broad pattern admits `harness/cron-daily.sh` in Red, or the base predates the strategy |
+| 4b monthly | A11 | Each spawn has an explicit environment; the quota seam is one script path with no arguments; no case reads `process.env` | ambient `BENCH_TRACK` or `BENCH_DAILY_QUOTA_CMD` changes a case |
+| 4b monthly | A12, A14 | Task 4b.6 is `[~]` while it edits the strategy; one `[~]` task at a time; `STATUS_CHECK` | the status command lists the track as a closeout candidate before 4b.8 closes |
+| 4b | A13 | No test writes under the real `runs/`; push cases use a temporary remote | a case pushes the real `origin`, or edits a Pi record |
+| 5 | A2 | `CONSENT_CHECK` before `TIMER_CHECK` | the timer is enabled with no dated approval |
 | 5 | A4 | `DAY_CHECK` needs at least one new run; `PUBLISH_CHECK` needs one commit | the day made no run, or no commit names the day |
 | 5 | A5, A6 | The plan claims the live day only with the four labeled lines; the registry row stays `pending` until task 5.4 | a claim has no labeled line |
 | 5 | A13 | `PI_CHECK day0 day1` | `recost.sh` or a rescore changed one Pi byte |
@@ -548,19 +1261,43 @@ under `measure/tracks/`.
   a requirement.
 - At the Phase 3 gate, the red file must be fully green. A case that stays
   red sends the work back to Green. Nobody edits a case to pass.
+- Phase 4b Red makes `SCHEDULE_TEST` red again. The orchestrator does not
+  count that failure as a regression. `META_LOGIC` stays green. At the
+  Phase 4b Green gate, the file must be fully green. Nobody edits a case
+  to pass.
+- Task 4b.7 makes `SCHEDULE_TEST` and `GUARD_CHECK` red a second time. The
+  orchestrator does not count that failure as a regression. The Green file
+  `daily-schedule-green.test.ts` stays green in task 4b.7 (the fixture-only
+  edit of section 6.5). `META_LOGIC` stays green.
 
 ## 11. Artifact tests and live tests
 
-- An artifact test reads file text, a Git diff, or a hash. Examples: the
-  cases of section 6.4, `PATH_CHECK`, `RED_PATH_CHECK`, `BASE_HASH`,
-  `DOCS_CHECK`, `CONSENT_CHECK`, `STATUS_CHECK`, and the role gates.
-- A live behavior test runs the real code. Examples: the cases of sections
-  6.1 to 6.3, `BATCH_COMPAT`, `META_LOGIC`, `SELECTOR_MATCH`, `PICK_MATCH`,
-  `DAY_CHECK`,
-  `PUBLISH_CHECK`, and `PI_CHECK`.
+- An artifact test reads file text, a Git diff, or a hash.
+  The artifact examples are section 6.4 and case 6.5.22.
+  They also include `PATH_CHECK`, `RED_PATH_CHECK`, and `BASE_HASH`.
+  They also include `DOCS_CHECK`, `UNIT_CHECK`, and `CONSENT_CHECK`.
+  `STATUS_CHECK` and the role gates are artifact checks.
+  `UNIT_CHECK` does not prove that the guard stops a day.
+  The cases of section 6.5 prove that.
+  The monthly part of `DOCS_CHECK` is an artifact check. It proves that the
+  README names the monthly window and its field. It does not prove that the
+  guard reads the field. Cases 6.5.26 to 6.5.36 prove that.
+  The Green test file `daily-schedule-green.test.ts` holds mixed tests. The
+  case "bounds the service and live quota commands" is an artifact test: it
+  reads text, because the live source has no seam (Review A N2). The
+  compare-fault case is a live behavior test and must pass the mutation probe
+  of `GREEN_REGRESSION`.
+- A live behavior test runs the real code.
+  The live examples are sections 6.1 to 6.3.
+  Section 6.5 is live except case 6.5.22.
+  `BATCH_COMPAT`, `META_LOGIC`, and `SELECTOR_MATCH` are live.
+  `PICK_MATCH`, `DAY_CHECK`, `PUBLISH_CHECK`, and `PI_CHECK` are live.
+  The push cases use a temporary Git repository.
+  They are live git behavior. They are not a push to the real `origin`.
 - An artifact test never closes a behavior requirement alone. For example,
   case 6.4.1 shows the argument pass in `weekly.sh`. Only `DAY_CHECK` shows
-  that the live job ran one model.
+  that the live job ran one model. Case 6.4.6 shows the port text. The
+  seam cases show the stop.
 
 | Requirement | Live proof |
 |---|---|
@@ -571,8 +1308,12 @@ under `measure/tracks/`.
 | FR-5 | 6.1.4 |
 | FR-6 | 6.1.12, 6.1.16, 6.3.4 to 6.3.8, `DAY_CHECK` |
 | FR-7 | 6.2.1 to 6.2.8, `BATCH_COMPAT`, `DAY_CHECK` |
-| FR-8 | `PUBLISH_CHECK` |
+| FR-8 | `PUBLISH_CHECK`, cases 6.5.14 to 6.5.17 |
 | FR-9 | `WORKLIST_SHA` pair, `DAY_CHECK`, `PI_CHECK` |
+| FR-10 | 6.5.1 to 6.5.13, 6.5.24 to 6.5.36, `GUARD_CHECK`, `GREEN_REGRESSION` |
+| FR-11 | 6.5.14 to 6.5.17, `PUSH_RULE_CHECK` |
+| FR-12 | 6.5.18 to 6.5.21, `SELECT_EXIT_CHECK` |
+| FR-13 | 6.5.22, `UNIT_CHECK`; live install proof is `TIMER_CHECK` only |
 
 ## 12. Adversarial cases
 
@@ -599,17 +1340,127 @@ to Green.
    another model. The date applies only to the listed run. The case states
    the expected result.
 
-The role writes `measure/runs/daily_model_schedule/adversarial-<short head>.json`.
+### Resolutions of task 3.9
+
+These two findings are resolved here. They are not open contradictions.
+
+1. **Resume reason.** A resumed day publishes the reason `resume`.
+   `PUBLISH_CHECK` accepts `untested`, `stalest`, and `resume`. Green
+   changes no file for this finding. The subject in `harness/cron-daily.sh`
+   already writes the record reason. It fails when the regex rejects
+   `(resume)`, or when Green changes the subject to another reason.
+2. **Resume record.** The day record on a resume keeps `counts`,
+   `excluded`, `order`, and `last_test`. Case 6.5.23 proves it. Green
+   changes `harness/cron-daily.sh` only. The selector stdout stays short.
+   It fails when the second record drops one of those fields.
+
+### Phase 4b cases (task 4b.5)
+
+The adversarial role adds these cases. A case that section 6.5 already
+holds is not copied. The role extends it. Each case fails when the job
+accepts the hostile input.
+
+8. **Hostile quota output.** The quota command prints a JSON string
+   `81; touch <temp>/pwned`, and a second run prints raw text
+   `$(touch <temp>/pwned)`. `<temp>` is the temporary root, not a shared
+   directory. Expect `not a number` for the JSON string, and `read failed`
+   for the raw text. Expect exit 0, no batch call, and no file `pwned`.
+   It fails when the shell evaluates the text, or when the string `81`
+   becomes a numeric stop.
+9. **String number.** `usedPercent` is the JSON string `"81"`. Expect
+   `DAILY SKIP go-guard: not a number`. Do not expect
+   `weekly used 81 percent`. It fails when the job coerces the string.
+   This is the plan 4b.5 string-number case.
+10. **Wrong JSON from the port seam.** The command prints
+    `{"usage":{"windows":{"daily":{"usedPercent":10}}}}`. Expect
+    `DAILY SKIP go-guard: missing field`, exit 0, and no batch call.
+    It fails when a daily window satisfies the weekly field. This is the
+    plan 4b.5 wrong-JSON case. The case does not open a port.
+11. **Value 80.0001 after two clean reads.** The first two reads are 80.
+    The third read is 80.0001. Expect a stop before batch 3.
+    Expect the exact line `DAILY SKIP go-guard: weekly used 80.0001 percent`.
+    Tests and change do not run. Case 6.5.24 stops on the first read.
+    This case fails when an integer compare continues after 80.0001.
+    It fails when the line truncates the number.
+12. **Remote rejects the push.** The parent matches. A wrapper rejects
+    `git push` three times. Put a no-op `sleep` on `PATH`, so the case
+    does not wait 180 seconds. Expect three push attempts and exit 1.
+    Expect the fail line `DAILY FAIL publish: git push failed after 3 attempts; the commit is local`.
+    The docs commit stays local. The remote stays unchanged.
+    It fails when the attempt count is not 3.
+    It fails when the remote moves.
+13. **Push race.** A `git` wrapper on `PATH` runs the real git. On `fetch`,
+    it also creates one extra local commit with a subject that is not
+    `Publish daily`. The remote tip must be the docs commit, identified by
+    the publish subject. It must not be the extra commit. It fails when
+    the remote tip is the extra commit. That result falsifies
+    `git push origin main` and `git push origin HEAD:main`.
+
+The monthly window adds these cases. The quota stub is a script file (the
+seam rule of section 5.3). Each case spawns with an explicit environment.
+Each case expects exit 0, one skip line, and no batch call, unless the case
+says otherwise.
+
+14. **Monthly as a JSON string.** Weekly 10. The monthly `usedPercent` is
+    the JSON string `"81"`, and a second payload holds `"high"`. Expect
+    `DAILY SKIP go-guard: monthly not a number`. Do not expect
+    `monthly used 81 percent`. It fails when the job coerces the string.
+15. **Monthly `1e400`.** Weekly 10. The raw payload text holds
+    `"monthly":{"usedPercent":1e400}`. JSON parsing gives a non-finite
+    value. Expect `DAILY SKIP go-guard: monthly not a number`. A second
+    sub-case puts `1e400` in the weekly field and expects
+    `DAILY SKIP go-guard: not a number`. A third sub-case uses `-1e400` for
+    the monthly field and expects `monthly not a number`. It fails when the
+    line says `monthly used Infinity percent` or `monthly value -Infinity
+    is below 0`, or when the job continues.
+16. **Monthly absent, weekly valid.** The payload is
+    `{"usage":{"windows":{"weekly":{"usedPercent":10}}}}`. Expect
+    `DAILY SKIP go-guard: monthly missing field`. Two more sub-cases use a
+    window named `month` (not `monthly`) with value 10, and a top-level
+    `monthly` key outside `usage.windows`. Both expect the same reason. It
+    fails when the job continues because the weekly value passed, or when a
+    neighboring key satisfies the monthly field.
+17. **A weekly stop hides a bad monthly value.** The first read is clean
+    (weekly 10, monthly 10). The second read holds weekly 81 and monthly
+    absent. Expect one build batch, one clean line, and
+    `DAILY SKIP go-guard: weekly used 81 percent`. The record has
+    `go_guard_stop` `weekly used 81 percent` and the build run ids. Two more
+    sub-cases give a weekly missing field with monthly 81, and a weekly
+    string with monthly -1. The skip line holds the weekly reason in each
+    case. It fails when the line names the monthly window, when two skip
+    lines print, or when `go_guard_stop` holds the monthly reason.
+
+The Phase 4b role writes
+`measure/runs/daily_model_schedule/adversarial-4b-<short head>.json`.
+The Phase 3 file name stays
+`measure/runs/daily_model_schedule/adversarial-<short head>.json`.
 
 ## 13. Review assignments
 
 | Role | Applies | Focus |
 |---|---|---|
-| Review A (correctness) | yes | The selection rule against spec rules 1 to 6; the run date rule; the identity rule against `plan-work.ts`; the byte order; `--day-runs` |
-| Review B (security) | yes | Endpoint data in the shell; the id check of `--model`; temporary files and the rename; the lock; the credential stays out of each log; `git add docs/` and the push scope (spec R4, R5); the unattended cron |
-| Review C (UX and API) | yes, API only | The contracts of section 5: the `batch.sh` flag, the `weekly.sh` arguments, the selector JSON, the day record, and the labeled lines. Backward compatibility of the unpinned batch. No user interface changes. |
-| UX browser review | no | The track changes no file under `docs/`. The daily export uses the existing site code. |
-| Adversarial testing | yes | Section 12 |
+| Review A (correctness) | yes, Phase 4b | The guard compare against D12; the check order (weekly first, monthly after the weekly value passes); both values from one response; the 0 and the 80 edges for both windows; the batch order `build`, `bugfix`, `tests`, `change`; a stop keeps earlier run ids; the resume record rule of case 6.5.23 |
+| Review B (security) | yes, Phase 4b | The push rule of D13; `git push origin <sha>:main`; the quota GET to `127.0.0.1` only; no credential in the log; the unattended timer; `Persistent=false`; the guard stays fail-closed for a monthly string, a monthly `1e400`, a monthly field that is absent, and a weekly stop that could hide a bad monthly value; no hostile monthly text reaches shell evaluation |
+| Review C (UX and API) | yes, API and operator text | The new seams and the seam rule of NFR-6 (one executable path, no arguments), the new labeled lines (the five new reasons and the clean-read line `DAILY GO-GUARD weekly=<n> monthly=<m>`), the `go_guard_stop` field, the README lock sentence, the README monthly text, and the unit-file text. On the final README, Review C finds no flag or path that the code lacks. That sentence is also the Phase 4 closeout gate. |
+| UX browser review | no | The track changes no browser page. The README is operator text. Review C covers that text. No browser review is required. |
+| Adversarial testing | yes, Phase 4b | Section 12 cases 8 to 17, plus the resolutions of task 3.9 |
+| Security review | yes | Review B above. It applies to Phase 4b. |
+| Phase 4 Review C and Phase 4 acceptance | yes, with Phase 4b | Recorded deviation. Both run on the final Phase 4b HEAD, together with the Phase 4b reviews and acceptance. They do not run on the Phase 4 docs commit alone. |
+
+### Review dispositions on `1b17ae2` (task 4b.6)
+
+The three reviews on `1b17ae2` passed. The monthly amendment (`0810d78`)
+supersedes them, and the reviews run again on the task 4b.8 HEAD. These are
+the dispositions of their findings:
+
+| Finding | Disposition | Route or reason |
+|---|---|---|
+| Review A N1: the Green compare-fault test cannot fail (the fake `node` matches text that the parse script also holds, so the parse step fails first) | Route: Green, task 4b.8 | Green changes the pattern of the fake `node` so that it matches the compare script only (for example `Number.isFinite(n)` or `process.argv[1]`), and checks the pattern against the new scripts of the monthly change. The proof is `GREEN_MUTATION=fail-as-expected` (section 3, `GREEN_REGRESSION`). |
+| Review A N2: the time-limit test checks token presence only | Accepted as nonblocking | The live source has no seam, so a text check is the best check for this phase. The Phase 5 live run covers the behavior. |
+| Review B N5: a finite negative value passes | Resolved by the below-0 rule of D12 | Cases 6.5.25 and 6.5.28 prove the weekly and the monthly rule. |
+| Review C F1: `README.md:281` says a run can wait when a lock is held | Route: Green, task 4b.8 | The code skips the day with `DAILY SKIP lock held`. `DOCS_CHECK` requires that label and rejects `can wait`. |
+| Review C F2: `harness/batch.sh:130-134` exits 2 on a price table with no batch model before the pin check | Declined | The price table holds batch models today (37 models with batch entries), so the precondition holds. Phase 4b does not change `batch.sh`. |
+| Review C F3: the seam form (a command or a path) | Resolved by the NFR-6 text | Spec NFR-6 says each seam is the path of one executable with no arguments. Section 5.3 repeats the rule, and no case uses a seam with arguments. |
 
 ## 14. Architecture guardrails and changed contracts
 
@@ -617,8 +1468,10 @@ The role writes `measure/runs/daily_model_schedule/adversarial-<short head>.json
   selector imports `resolveGoModelId` and `loadPricing` from
   `harness/go-cost.ts`, and `BENCH_TRACKS` from
   `harness/candidate-contract.ts`. It does not edit them.
-- Do not edit `plan-work.ts`, `cron-weekly.sh`, `go-pricing.json`, or the
-  crontab line of the weekly cron.
+- Do not edit `plan-work.ts`, `cron-weekly.sh`, `go-pricing.json`,
+  `go-cost.ts`, or the crontab line of the weekly cron.
+- Do not edit `harness/weekly.sh` in Phase 4b. `WEEKLY_SAME` fails when
+  that file changes after `PHASE_4B_STRATEGY`. Case 6.4.1 stays valid.
 - Do not add an npm script, a dependency, or a Vitest setting. Each is a
   suite-hash file.
 - Keep the selector pure: no network, no write, and no environment read.
@@ -627,10 +1480,23 @@ The role writes `measure/runs/daily_model_schedule/adversarial-<short head>.json
   - `batch.sh` gets `--model <id>`. The old call without arguments keeps its
     behavior.
   - `weekly.sh` passes its arguments to `batch.sh`. The old call without
-    arguments keeps its behavior.
+    arguments keeps its behavior. Phase 4b does not change `weekly.sh`.
   - The job adds `reports/daily/` and `reports/cron-daily.log`. Both are
     under the ignored `reports/`.
   - The job adds a daily commit `Publish daily <day> ...` on `main`.
+  - Phase 4b retires `BENCH_DAILY_RUNNER`. The job runs the four batches
+    itself. A set runner value must not start a process.
+  - Phase 4b adds `BENCH_DAILY_QUOTA_CMD`, `BENCH_DAILY_BATCH`,
+    `BENCH_DAILY_POST`, and the test seam `BENCH_DAILY_SELECT`.
+  - The day record adds `go_guard_stop`.
+  - The guard reads two windows from one response (weekly first, monthly
+    second). It adds five reasons, and the clean-read line becomes
+    `DAILY GO-GUARD weekly=<n> monthly=<m>`. A payload with no monthly field
+    is a stop condition, so every quota fixture must hold a monthly value.
+  - The push form changes from `git push origin main` to
+    `git push origin <sha>:main`.
+  - The repository adds the two unit files under `harness/systemd/`.
+    The track does not install them.
 - Dependency: the activation in Phase 5 waits for `opencode_executor` task
   4.2, the container probe. The runs of 2026w43 failed with "image not
   known" (spec EV5), and the canary does not start the agent image.
@@ -646,8 +1512,25 @@ report path.
   line.
 - Task 3.2: the `SELECTOR_MATCH` line.
 - Task 3.5: `PATH_CHECK`, `BATCH_COMPAT`, and the `META_LOGIC` summary.
-- Task 4.1: the `DOCS_CHECK` line.
-- Task 5.1: `BASE_HASH`, the `WORKLIST_SHA` pair, and the `PICK_MATCH` line.
+- Task 4.1: the `DOCS_CHECK` line of the previous command. Do not reopen
+  the task when the amended command is red.
+- Task 4b.2: the `Tests` line of the red `SCHEDULE_TEST`, and
+  `RED_PATH_CHECK=pass`.
+- Task 4b.3: `SCHEDULE_TEST` exit 0, `UNIT_CHECK=pass`, `DOCS_CHECK=pass`,
+  `PATH_CHECK=pass`, `WEEKLY_SAME=pass`, and `BATCH_COMPAT`.
+- Task 4b.6: the commit SHA of the strategy amendment (`STRATEGY_4B6`) and
+  the strategy role gate line `PASS: strategy gate passed`.
+- Task 4b.7: the `Tests` line of the fixture-only step (rule 7 of section
+  6.5), the `Tests` line of the red `SCHEDULE_TEST`, the failing case ids,
+  `GUARD_CHECK` non-zero, `DOCS_CHECK` non-zero, `STRATEGY_4B6=ok`, and
+  `RED_PATH_CHECK_4B7=pass`.
+- Task 4b.8: `SCHEDULE_TEST` exit 0, the `GUARD_CHECK` line
+  `Tests  26 passed`, the `GREEN_REGRESSION` `Tests` line,
+  `GREEN_MUTATION=fail-as-expected`, `UNIT_CHECK=pass`, `DOCS_CHECK=pass`,
+  `PATH_CHECK=pass`, `WEEKLY_SAME=pass`, and `BATCH_COMPAT`.
+- Task 5.1: `BASE_HASH`, the `WORKLIST_SHA` pair, the `PICK_MATCH` line,
+  and `UNIT_CHECK=pass` in `main` after the merge, before the install.
 - Task 5.2: the O1 answer and its date.
-- Task 5.3: `CRON_CHECK` and the `PI_SHA day0` lines.
-- Task 5.4: `DAY_CHECK`, `PUBLISH_CHECK`, and `PI_CHECK`.
+- Task 5.3: `TIMER_CHECK` and the `PI_SHA day0` lines.
+- Task 5.4: `DAY_CHECK`, `PUBLISH_CHECK`, the guard lines, the push result
+  line, and `PI_CHECK`.
