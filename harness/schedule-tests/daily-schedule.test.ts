@@ -365,13 +365,14 @@ describe("batch pin", () => {
   });
 });
 
-const RUNNER_SOURCE = `#!/usr/bin/env node
+const BATCH_SOURCE = `#!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
 const args = process.argv.slice(2);
 const recPath = path.join(process.env.BENCH_DAILY_DIR, process.env.BENCH_DAILY_DATE + '.json');
 const record = fs.existsSync(recPath) ? JSON.parse(fs.readFileSync(recPath, 'utf8')) : null;
-fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({args, week: process.env.WEEK, record_present: record !== null, record}) + '\\n');
+const track = process.env.BENCH_TRACK || '';
+fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({args, week: process.env.WEEK, track, record_present: record !== null, record}) + '\\n');
 const model = args[1];
 if (args.length !== 2 || args[0] !== '--model' || !/^[a-z0-9][a-z0-9.-]*$/.test(model)) process.exit(98);
 if (!process.env.STUB_NO_RUNS) {
@@ -379,10 +380,21 @@ if (!process.env.STUB_NO_RUNS) {
     const id = arm + '-' + model.replaceAll('.', '-') + '-' + process.env.WEEK + '-r1';
     const artifacts = path.join(process.env.BENCH_RUNS_ROOT, id, 'artifacts');
     fs.mkdirSync(artifacts, {recursive:true});
-    fs.writeFileSync(path.join(artifacts, 'provenance.json'), JSON.stringify({executor:{kind:'opencode'}, model:'opencode-go/' + model, arm, track:'build'}));
+    fs.writeFileSync(path.join(artifacts, 'provenance.json'), JSON.stringify({executor:{kind:'opencode'}, model:'opencode-go/' + model, arm, track: track || 'build'}));
+    if (process.env.STUB_INVALID) fs.writeFileSync(path.join(artifacts, 'score.json'), JSON.stringify({valid:false}));
   }
 }
 process.exit(Number(process.env.STUB_EXIT || '0'));
+`;
+const QUOTA_TEN_SOURCE = `#!/usr/bin/env node
+process.stdout.write('{"usage":{"windows":{"weekly":{"usedPercent":10}}}}');
+`;
+// Stops the retired default weekly.sh from touching the real reports tree.
+// A D12 job must not start this process.
+const RETIRED_RUNNER_SOURCE = `#!/usr/bin/env node
+const fs = require('node:fs');
+if (process.env.STUB_LOG) fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({retired_runner:true, args:process.argv.slice(2)}) + '\\n');
+process.exit(97);
 `;
 // The runner of the publish case. It writes the site data of the day, so the
 // job has something to commit under docs/.
@@ -406,15 +418,28 @@ process.exit(0);
 function jobSetup(w: Work) {
   inputs(w, { "glm-5.2": 100, "batch-a": 80 }, undefined, undefined, ["batch-a"]);
   // A .cjs file also works when a parent package declares type=module.
-  writeFileSync(join(w.root, "runner.cjs"), RUNNER_SOURCE, { mode: 0o755 });
+  writeFileSync(join(w.root, "batch.cjs"), BATCH_SOURCE, { mode: 0o755 });
+  writeFileSync(join(w.root, "quota.cjs"), QUOTA_TEN_SOURCE, { mode: 0o755 });
+  writeFileSync(join(w.root, "retired-runner.cjs"), RETIRED_RUNNER_SOURCE, { mode: 0o755 });
 }
 function job(w: Work, args: string[] = [], values: Record<string, string> = {}, date = DATE) {
+  // A dry run keeps the real batch.sh, so case 6.3.1 can still see 12 planned ids.
+  // A live run points at the batch stub. The retired runner must not start.
+  const dry = args.includes("--dry-run");
+  const seams: Record<string, string> = {
+    BENCH_DAILY_POST: "0",
+    BENCH_DAILY_QUOTA_CMD: join(w.root, "quota.cjs"),
+  };
+  if (!dry) {
+    seams.BENCH_DAILY_BATCH = join(w.root, "batch.cjs");
+    seams.BENCH_DAILY_RUNNER = join(w.root, "retired-runner.cjs");
+  }
   return exec(w, "bash", [join(HARNESS, "cron-daily.sh"), ...args], {
     BENCH_RUNS_ROOT: w.runs, BENCH_PRICING_PATH: w.pricing,
     BENCH_DAILY_DIR: w.days, BENCH_DAILY_DATE: date, BENCH_DAILY_CATALOG: w.catalog,
-    BENCH_DAILY_SERVED: w.served, BENCH_DAILY_RUNNER: join(w.root, "runner.cjs"),
+    BENCH_DAILY_SERVED: w.served,
     BENCH_DAILY_PUBLISH: "0", BENCH_DAILY_LOCK: join(w.root, "weekly-cron.lock"),
-    STUB_LOG: join(w.root, "stub.jsonl"), ARMS: "a b", ...values,
+    STUB_LOG: join(w.root, "stub.jsonl"), ARMS: "a b", ...seams, ...values,
   });
 }
 function lines(r: Result, prefix: string) {
@@ -422,7 +447,10 @@ function lines(r: Result, prefix: string) {
 }
 function calls(w: Work): Json[] {
   const log = join(w.root, "stub.jsonl");
-  return existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").map(line => JSON.parse(line)) : [];
+  return existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];
+}
+function batchCalls(w: Work): Json[] {
+  return calls(w).filter(call => Array.isArray(call.args) && !call.retired_runner);
 }
 function record(w: Work, date = DATE): Json { return JSON.parse(readFileSync(join(w.days, `${date}.json`), "utf8")); }
 function jobSelection(date = DATE, week = WEEK) {
@@ -430,12 +458,18 @@ function jobSelection(date = DATE, week = WEEK) {
 }
 const STUB_IDS = ["a-glm-5-2-2026w44-r1", "b-glm-5-2-2026w44-r1"];
 function assertJobPick(r: Result, e: Json) { expect(lines(r, "DAILY_PICK "), `${JOB}: missing exact DAILY_PICK line`).toEqual([pickLine(e)]); }
-function assertStartRecord(w: Work, e: Json, index = 0) {
-  const c = calls(w);
-  expect(c.length, `${JOB}: missing --model runner call`).toBe(index + 1);
-  expect(c[index], `${JOB}: day record must precede the runner`).toEqual({
+function assertStartRecord(w: Work, e: Json, jobIndex = 0) {
+  const c = batchCalls(w);
+  const start = jobIndex * 4;
+  const tracks = ["build", "bugfix", "tests", "change"];
+  expect(c.length, `${JOB}: missing D12 BENCH_DAILY_BATCH calls`).toBe(start + 4);
+  tracks.forEach((track, i) => {
+    expect(c[start + i]?.args, `${JOB}: D12 batch ${track} must receive --model`).toEqual(["--model", e.model]);
+    expect(c[start + i]?.track, `${JOB}: missing D12 BENCH_TRACK=${track}`).toBe(track);
+  });
+  expect(c[start], `${JOB}: day record must precede the first D12 batch`).toMatchObject({
     args: ["--model", e.model], week: e.week, record_present: true,
-    record: { ...e, run_ids: [], runner_exit: null },
+    record: { ...e, run_ids: [], runner_exit: null, go_guard_stop: null },
   });
 }
 function assertStopped(w: Work, r: Result, step: string) {
@@ -450,6 +484,9 @@ function assertStopped(w: Work, r: Result, step: string) {
 describe("daily job", () => {
   caseOf("6.3.1 dry run: cron-daily.sh exact pick and 12 planned IDs", w => {
     jobSetup(w); const r = job(w, ["--dry-run"]);
+    const guard = lines(r, "DAILY GO-GUARD ");
+    expect(guard, `${JOB}: missing D12 DAILY GO-GUARD weekly=10`).toHaveLength(1);
+    expect(["DAILY GO-GUARD weekly=10", "DAILY GO-GUARD weekly=10.0"], `${JOB}: missing D12 DAILY GO-GUARD weekly=10`).toContain(guard[0]);
     expect(r.status, `${JOB}: missing --dry-run; ${r.stderr}`).toBe(0);
     assertJobPick(r, jobSelection());
     expect(planned(r), JOB).toEqual([
@@ -478,9 +515,9 @@ describe("daily job", () => {
   });
   caseOf("6.3.4 live mode: cron-daily.sh writes day record before runner", w => {
     jobSetup(w); const r = job(w); const e = jobSelection();
-    expect(r.status, `${JOB}: missing live entry point; ${r.stderr}`).toBe(0);
+    expect(r.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; ${r.stderr}`).toBe(0);
     assertJobPick(r, e); assertStartRecord(w, e);
-    expect(record(w), `${JOB}: missing run_ids and runner_exit update`).toEqual({ ...e, run_ids: STUB_IDS, runner_exit: 0 });
+    expect(record(w), `${JOB}: missing run_ids and runner_exit update`).toEqual({ ...e, run_ids: STUB_IDS, runner_exit: 0, go_guard_stop: null });
     expect(readdirSync(w.runs).sort(), JOB).toEqual(STUB_IDS);
     expect(lines(r, "DAILY RUNNER "), JOB).toEqual(["DAILY RUNNER exit=0"]);
     expect(lines(r, "DAILY RUNS "), JOB).toEqual(["DAILY RUNS 2"]);
@@ -488,26 +525,24 @@ describe("daily job", () => {
   });
   caseOf("6.3.5 same day: cron-daily.sh resumes the recorded model", w => {
     jobSetup(w); const a = job(w);
-    expect(a.status, `${JOB}: missing first-day execution; ${a.stderr}`).toBe(0);
+    expect(a.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; ${a.stderr}`).toBe(0);
     assertJobPick(a, jobSelection()); assertStartRecord(w, jobSelection());
     writeFileSync(w.served, "opencode-go/batch-a\n"); const b = job(w);
     expect(b.status, JOB).toBe(0);
     assertJobPick(b, { schema: 1, date: DATE, week: WEEK, model: "glm-5.2", reason: "resume" });
-    expect(calls(w).map(c => ({ args: c.args, week: c.week, record_present: c.record_present })), JOB).toEqual([
-      { args: ["--model", "glm-5.2"], week: WEEK, record_present: true },
-      { args: ["--model", "glm-5.2"], week: WEEK, record_present: true },
-    ]);
+    const four = ["build", "bugfix", "tests", "change"].map(track => ({ args: ["--model", "glm-5.2"], week: WEEK, track, record_present: true }));
+    expect(batchCalls(w).map(c => ({ args: c.args, week: c.week, track: c.track, record_present: c.record_present })), `${JOB}: missing D12 BENCH_DAILY_BATCH order`).toEqual([...four, ...four]);
     expect(record(w).model, JOB).toBe("glm-5.2"); expect(record(w).run_ids, JOB).toEqual(STUB_IDS);
     expect(record(w).runner_exit, JOB).toBe(0); expect(readdirSync(w.runs).sort(), JOB).toEqual(STUB_IDS);
   });
   caseOf("6.3.6 next week: cron-daily.sh selects a new model with the recorded date", w => {
     jobSetup(w); const a = job(w);
-    expect(a.status, `${JOB}: missing first-day execution; ${a.stderr}`).toBe(0);
+    expect(a.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; ${a.stderr}`).toBe(0);
     const e = expected("batch-a", "untested", [row("batch-a", 80), row("glm-5.2", 100, DATE)], [2, 2, 2, 1], {}, "2026-11-02", "2026w45");
     const b = job(w, [], {}, "2026-11-02"); expect(b.status, JOB).toBe(0); assertJobPick(b, e); assertStartRecord(w, e, 1);
     const ids = ["a-batch-a-2026w45-r1", "b-batch-a-2026w45-r1"];
-    expect(record(w, "2026-11-02"), JOB).toEqual({ ...e, run_ids: ids, runner_exit: 0 });
-    expect(record(w), JOB).toEqual({ ...jobSelection(), run_ids: STUB_IDS, runner_exit: 0 });
+    expect(record(w, "2026-11-02"), JOB).toEqual({ ...e, run_ids: ids, runner_exit: 0, go_guard_stop: null });
+    expect(record(w), JOB).toEqual({ ...jobSelection(), run_ids: STUB_IDS, runner_exit: 0, go_guard_stop: null });
     expect(readdirSync(w.runs).sort(), JOB).toEqual([...ids, ...STUB_IDS].sort());
   });
   caseOf("6.3.7 lock held: cron-daily.sh selects nothing", async w => {
@@ -550,7 +585,7 @@ describe("daily job", () => {
     jobSetup(w); const r = job(w, [], { STUB_EXIT: "4" });
     expect(r.status, `${JOB}: runner failure must stop publishing`).not.toBe(0);
     assertJobPick(r, jobSelection()); assertStartRecord(w, jobSelection());
-    expect(record(w), JOB).toEqual({ ...jobSelection(), run_ids: STUB_IDS, runner_exit: 4 });
+    expect(record(w), JOB).toEqual({ ...jobSelection(), run_ids: STUB_IDS, runner_exit: 4, go_guard_stop: null });
     expect(lines(r, "DAILY RUNNER "), JOB).toEqual(["DAILY RUNNER exit=4"]);
     expect(lines(r, "DAILY PUBLISH "), JOB).toEqual(["DAILY PUBLISH none"]);
   });
@@ -584,7 +619,7 @@ describe("daily job", () => {
     expect(lines(r, "DAILY RUNS "), JOB).toEqual(["DAILY RUNS 0"]);
     expect(lines(r, "DAILY FAIL runs:"), JOB).toEqual(["DAILY FAIL runs: the runner produced no runs"]);
     expect(lines(r, "DAILY PUBLISH "), JOB).toEqual(["DAILY PUBLISH none"]);
-    expect(record(w), JOB).toEqual({ ...jobSelection(), run_ids: [], runner_exit: 0 });
+    expect(record(w), JOB).toEqual({ ...jobSelection(), run_ids: [], runner_exit: 0, go_guard_stop: null });
     expect(readdirSync(w.runs), JOB).toEqual([]);
   });
 });
@@ -610,6 +645,9 @@ describe("artifacts", () => {
     expect(checks, `${JOB}: the empty check must be limited to docs/`).toEqual(["if git diff --cached --quiet -- docs/; then"]);
     const commits = cron.split(/\r?\n/).filter(line => line.includes("git commit"));
     expect(commits, `${JOB}: the publish commit must be path-limited to docs/`).toEqual(['if ! git commit -F "$MSG_FILE" -- docs/; then']);
+    const pushes = cron.split(/\r?\n/).filter(line => line.includes("git push"));
+    expect(pushes.some(line => /git push origin ["']?\$\{?[A-Za-z_][A-Za-z0-9_]*\}?:main/.test(line)), `${JOB}: missing D13 git push origin <sha>:main`).toBe(true);
+    expect(cron.includes("git push origin main"), `${JOB}: D13 forbids git push origin main`).toBe(false);
   });
   caseOf("6.4.4 publish scope: the publish commit holds only docs/", w => {
     // A temporary git repository. The script runs from a copy inside it, so
@@ -648,12 +686,13 @@ describe("artifacts", () => {
         TSX_DISABLE_CACHE: "1", _BENCH_ENV_LOADED: "1", GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_SYSTEM: "/dev/null",
         BENCH_RUNS_ROOT: w.runs, BENCH_PRICING_PATH: w.pricing, BENCH_DAILY_DIR: w.days,
         BENCH_DAILY_DATE: DATE, BENCH_DAILY_CATALOG: w.catalog, BENCH_DAILY_SERVED: w.served,
-        BENCH_DAILY_RUNNER: join(w.root, "publish-runner.cjs"), BENCH_DAILY_PUBLISH: "1",
+        BENCH_DAILY_BATCH: join(w.root, "publish-runner.cjs"), BENCH_DAILY_POST: "0",
+        BENCH_DAILY_QUOTA_CMD: join(w.root, "quota.cjs"), BENCH_DAILY_PUBLISH: "1",
         BENCH_DAILY_LOCK: join(w.root, "publish.lock"), STUB_LOG: join(w.root, "publish-stub.jsonl"),
         STUB_DOCS_DIR: join(repo, "docs") },
     });
     const result: Result = { status: r.status, stdout: r.stdout, stderr: r.stderr };
-    expect(result.status, `${JOB}: the publish job must succeed; ${result.stderr}`).toBe(0);
+    expect(result.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; D13 git push origin <sha>:main; ${result.stderr}`).toBe(0);
     const published = lines(result, "DAILY PUBLISH ");
     expect(published.length, JOB).toBe(1);
     expect(published[0], JOB).toMatch(/^DAILY PUBLISH [0-9a-f]{7,}$/);
@@ -664,6 +703,26 @@ describe("artifacts", () => {
     expect(pushed, `${JOB}: the push must hold only docs/`).toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
     expect(git(["ls-files", "--cached"]).split("\n"), JOB).toContain("secret.txt");
     expect(git(["log", "-1", "--format=%s"]), JOB).toBe("Publish daily 2026-10-26 OpenCode Go results: glm-5.2 (untested).");
+  });
+  caseOf("6.4.5 header: cron-daily.sh names the timer and Persistent=false", () => {
+    const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");
+    const header = cron.split(/^set -u$/m)[0];
+    expect(header, `${JOB}: missing D11 harness/systemd/lending-desk-daily.timer`).toContain("harness/systemd/lending-desk-daily.timer");
+    expect(header, `${JOB}: missing D11 Persistent=false`).toContain("Persistent=false");
+    expect(header.includes("0 1 * * 0,3"), `${JOB}: D11 forbids the crontab install line`).toBe(false);
+  });
+  caseOf("6.4.6 live quota source: cron-daily.sh names the local port read", () => {
+    const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");
+    for (const token of ["openchamber status --json", "127.0.0.1", "/api/quota/opencode-go", "usedPercent"]) {
+      expect(cron, `${JOB}: missing D12 live quota token ${token}`).toContain(token);
+    }
+    expect(cron.includes("http://127.0.0.1:"), `${JOB}: D12 GET host must be 127.0.0.1`).toBe(true);
+  });
+  caseOf("6.4.7 post steps: cron-daily.sh names the steps after the four batches", () => {
+    const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");
+    for (const name of ["rescore-doctor.sh", "recost.sh", "export-site-data.py", "generate-model-pages.py", "cleanup.sh"]) {
+      expect(cron, `${JOB}: missing D12 post step ${name}`).toContain(name);
+    }
   });
 });
 
@@ -709,7 +768,7 @@ describe("adversarial", () => {
   caseOf("12.1 two models on one day: cron-daily.sh keeps the recorded model until the operator deletes the record", w => {
     jobSetup(w);
     const first = job(w);
-    expect(first.status, `${JOB}: the first job run must succeed; ${first.stderr}`).toBe(0);
+    expect(first.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; ${first.stderr}`).toBe(0);
     assertJobPick(first, jobSelection());
     // A new live list. A new selection would now give another model, but the
     // record of the day holds the model of the day (spec rule 1).
@@ -725,10 +784,10 @@ describe("adversarial", () => {
     const e = expected("batch-a", "untested", [row("batch-a", 80)], [1, 1, 1, 1], { gone: ["glm-5.2"] });
     assertJobPick(third, e);
     expect(record(w), `${JOB}: the new pick must reach the day record`).toEqual({
-      ...e, run_ids: ["a-batch-a-2026w44-r1", "b-batch-a-2026w44-r1"], runner_exit: 0,
+      ...e, run_ids: ["a-batch-a-2026w44-r1", "b-batch-a-2026w44-r1"], runner_exit: 0, go_guard_stop: null,
     });
-    expect(calls(w).map(c => c.args), `${JOB}: the runner must see the recorded model, then the new pick`).toEqual([
-      ["--model", "glm-5.2"], ["--model", "glm-5.2"], ["--model", "batch-a"],
+    expect(batchCalls(w).map(c => c.args), `${JOB}: missing D12 BENCH_DAILY_BATCH calls`).toEqual([
+      ...Array(8).fill(["--model", "glm-5.2"]), ["--model", "batch-a"], ["--model", "batch-a"], ["--model", "batch-a"], ["--model", "batch-a"],
     ]);
   });
   caseOf("12.2 unpriced id: cron-daily.sh never selects a model that the price table names in aliases only", w => {
@@ -738,13 +797,13 @@ describe("adversarial", () => {
     // resolves the live list through aliases would pick that model.
     inputs(w, { a: 50, b: 100 }, ["x-alias", "a"], ["x-alias", "a", "b"], [], { "x-alias": "b" });
     const r = job(w);
-    expect(r.status, `${JOB}: the job must run with an alias-only id; ${r.stderr}`).toBe(0);
+    expect(r.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; ${r.stderr}`).toBe(0);
     const e = expected("a", "untested", [row("a", 50)], [2, 1, 1, 1], { unpriced: ["x-alias"], gone: ["b"] });
     assertJobPick(r, e);
     expect(record(w), `${JOB}: the excluded lists must reach the day record`).toEqual({
-      ...e, run_ids: ["a-a-2026w44-r1", "b-a-2026w44-r1"], runner_exit: 0,
+      ...e, run_ids: ["a-a-2026w44-r1", "b-a-2026w44-r1"], runner_exit: 0, go_guard_stop: null,
     });
-    expect(calls(w).map(c => c.args), `${JOB}: the runner must see the priced model`).toEqual([["--model", "a"]]);
+    expect(batchCalls(w).map(c => c.args), `${JOB}: missing D12 BENCH_DAILY_BATCH calls`).toEqual(Array(4).fill(["--model", "a"]));
   });
   caseOf("12.3 stale model: daily-pick.ts ignores a directory time and an unrelated day record", w => {
     // The expected result: the pick stays a, with the last test date
@@ -760,23 +819,22 @@ describe("adversarial", () => {
   });
   caseOf("12.4 invalid runs: cron-daily.sh selects another model on the next day", w => {
     jobSetup(w);
-    writeFileSync(join(w.root, "invalid-runner.cjs"), INVALID_RUNNER_SOURCE, { mode: 0o755 });
-    const runner = { BENCH_DAILY_RUNNER: join(w.root, "invalid-runner.cjs") };
-    const first = job(w, [], runner);
-    expect(first.status, `${JOB}: the first day must succeed; ${first.stderr}`).toBe(0);
+    const invalid = { STUB_INVALID: "1" };
+    const first = job(w, [], invalid);
+    expect(first.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; ${first.stderr}`).toBe(0);
     assertJobPick(first, jobSelection());
     // The runs of the first day are not valid. They still count as a test, so
     // the model moves to the end of the order and the next day gives another
     // model (spec D3).
-    const second = job(w, [], runner, "2026-11-02");
-    expect(second.status, `${JOB}: the second day must succeed; ${second.stderr}`).toBe(0);
+    const second = job(w, [], invalid, "2026-11-02");
+    expect(second.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; ${second.stderr}`).toBe(0);
     const e = expected("batch-a", "untested", [row("batch-a", 80), row("glm-5.2", 100, DATE)], [2, 2, 2, 1], {}, "2026-11-02", "2026w45");
     assertJobPick(second, e);
     expect(record(w, "2026-11-02"), `${JOB}: the new model must reach the day record`).toEqual({
-      ...e, run_ids: ["a-batch-a-2026w45-r1", "b-batch-a-2026w45-r1"], runner_exit: 0,
+      ...e, run_ids: ["a-batch-a-2026w45-r1", "b-batch-a-2026w45-r1"], runner_exit: 0, go_guard_stop: null,
     });
-    expect(calls(w).map(c => c.args), `${JOB}: the runner must see another model on the next day`).toEqual([
-      ["--model", "glm-5.2"], ["--model", "batch-a"],
+    expect(batchCalls(w).map(c => c.args), `${JOB}: missing D12 BENCH_DAILY_BATCH calls`).toEqual([
+      ...Array(4).fill(["--model", "glm-5.2"]), ...Array(4).fill(["--model", "batch-a"]),
     ]);
   });
   caseOf("12.5 hostile id: cron-daily.sh never runs an id that came from the endpoint", w => {
@@ -789,14 +847,14 @@ describe("adversarial", () => {
     // A stub for the id command. A shell that evaluates $(id) writes a marker.
     writeFileSync(join(w.bin, "id"), `#!/usr/bin/env bash\ntouch "${join(w.root, "id-ran")}"\nexit 0\n`, { mode: 0o755 });
     const r = job(w);
-    expect(r.status, `${JOB}: the job must run; ${r.stderr}`).toBe(0);
+    expect(r.status, `${JOB}: missing D12 BENCH_DAILY_BATCH; ${r.stderr}`).toBe(0);
     const e = expected("safe-model", "untested", [row("safe-model", 100)], [4, 1, 1, 1],
       { unpriced: ["$(id)", "../../etc", `x; touch ${pwned}`] });
     assertJobPick(r, e);
     expect(record(w), `${JOB}: the excluded lists must reach the day record`).toEqual({
-      ...e, run_ids: ["a-safe-model-2026w44-r1", "b-safe-model-2026w44-r1"], runner_exit: 0,
+      ...e, run_ids: ["a-safe-model-2026w44-r1", "b-safe-model-2026w44-r1"], runner_exit: 0, go_guard_stop: null,
     });
-    expect(calls(w).map(c => c.args), `${JOB}: the runner must see the priced model`).toEqual([["--model", "safe-model"]]);
+    expect(batchCalls(w).map(c => c.args), `${JOB}: missing D12 BENCH_DAILY_BATCH calls`).toEqual(Array(4).fill(["--model", "safe-model"]));
     expect(existsSync(pwned), `${JOB}: the job must not run a hostile id`).toBe(false);
     expect(existsSync("/tmp/pwned"), `${JOB}: no file named pwned may exist`).toBe(false);
     expect(existsSync(join(w.root, "id-ran")), `${JOB}: no shell may evaluate the hostile id`).toBe(false);
@@ -827,5 +885,410 @@ describe("adversarial", () => {
     run(w, "a-a-2026w41-r1", "a"); run(w, "a-b-2026w40-r1", "b");
     day(w, "2026-10-20", "b", ["a-b-2026w40-r1"]);
     assertPick(pick(w), expected("a", "stalest", [row("a", 50, "2026-10-11"), row("b", 100, "2026-10-20")], [2, 2, 2, 0]));
+  });
+});
+
+// ---- Section 6.5: O1 conditions -------------------------------------------------
+// Each spawn below uses an explicit environment. No case writes under the real
+// runs/, reports/, or systemd folders. No case calls a model or openchamber.
+
+const D11 = "D11 harness/systemd/lending-desk-daily.service and lending-desk-daily.timer";
+const D12Q = "D12 BENCH_DAILY_QUOTA_CMD";
+const D12B = "D12 BENCH_DAILY_BATCH";
+const D13 = "D13 git push origin <sha>:main";
+const D14 = "D14 BENCH_DAILY_SELECT";
+type QuotaStep = { value?: number | string | null; raw?: string; exit?: number; omit?: boolean };
+
+function writeQuota(w: Work, name: string, steps: QuotaStep[]): string {
+  const script = join(w.root, name);
+  const counter = join(w.root, `${name}.n`);
+  const log = join(w.root, "order.jsonl");
+  writeFileSync(script, `#!/usr/bin/env node
+const fs = require('node:fs');
+const steps = ${JSON.stringify(steps)};
+const counter = ${JSON.stringify(counter)};
+const log = ${JSON.stringify(log)};
+const n = fs.existsSync(counter) ? Number(fs.readFileSync(counter, 'utf8')) : 0;
+fs.writeFileSync(counter, String(n + 1));
+fs.appendFileSync(log, JSON.stringify({kind:'quota', n}) + '\\n');
+const step = steps[Math.min(n, steps.length - 1)];
+if (step.exit) {
+  if (step.raw != null) process.stdout.write(step.raw);
+  process.exit(step.exit);
+}
+if (Object.prototype.hasOwnProperty.call(step, 'raw')) {
+  process.stdout.write(step.raw);
+  process.exit(0);
+}
+const body = {usage:{windows:{weekly:{}}}};
+if (!step.omit) body.usage.windows.weekly.usedPercent = step.value;
+process.stdout.write(JSON.stringify(body));
+`, { mode: 0o755 });
+  return script;
+}
+function writeTrackBatch(w: Work): string {
+  const script = join(w.root, "track-batch.cjs");
+  const log = join(w.root, "order.jsonl");
+  const counter = join(w.root, "docs-n");
+  writeFileSync(script, `#!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+const args = process.argv.slice(2);
+const track = process.env.BENCH_TRACK || 'build';
+const log = ${JSON.stringify(log)};
+fs.appendFileSync(log, JSON.stringify({kind:'batch', track, args}) + '\\n');
+if (process.env.STUB_LOG) fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({args, track, week: process.env.WEEK}) + '\\n');
+const model = args[1] || 'glm-5.2';
+for (const arm of ['a', 'b']) {
+  const id = arm + '-' + model.replaceAll('.', '-') + '-' + track + '-' + process.env.WEEK + '-r1';
+  const artifacts = path.join(process.env.BENCH_RUNS_ROOT, id, 'artifacts');
+  fs.mkdirSync(artifacts, {recursive:true});
+  fs.writeFileSync(path.join(artifacts, 'provenance.json'), JSON.stringify({executor:{kind:'opencode'}, model:'opencode-go/' + model, arm, track}));
+}
+if (process.env.STUB_DOCS_DIR) {
+  const nPath = ${JSON.stringify(counter)};
+  const n = fs.existsSync(nPath) ? Number(fs.readFileSync(nPath, 'utf8')) + 1 : 1;
+  fs.writeFileSync(nPath, String(n));
+  fs.mkdirSync(path.join(process.env.STUB_DOCS_DIR, 'assets', 'data'), {recursive:true});
+  fs.writeFileSync(path.join(process.env.STUB_DOCS_DIR, 'assets', 'data', 'benchmark.json'), JSON.stringify({n}) + '\\n');
+}
+process.exit(0);
+`, { mode: 0o755 });
+  return script;
+}
+function writeSelect(w: Work, code: number): string {
+  const script = join(w.root, `select-${code}.cjs`);
+  writeFileSync(script, `#!/usr/bin/env node\nprocess.exit(${code});\n`, { mode: 0o755 });
+  return script;
+}
+function orderLog(w: Work): Json[] {
+  const log = join(w.root, "order.jsonl");
+  return existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean).map(line => JSON.parse(line)) : [];
+}
+function trackIds(track: string, week = WEEK, slug = "glm-5-2"): string[] {
+  return ["a", "b"].map(arm => `${arm}-${slug}-${track}-${week}-r1`);
+}
+function guardJob(w: Work, steps: QuotaStep[], name: string, extra: Record<string, string> = {}, args: string[] = []) {
+  writeTrackBatch(w);
+  return job(w, args, {
+    BENCH_DAILY_QUOTA_CMD: writeQuota(w, name, steps),
+    BENCH_DAILY_BATCH: join(w.root, "track-batch.cjs"),
+    ...extra,
+  });
+}
+function assertSkip(w: Work, r: Result, reason: string, label: string) {
+  expect(lines(r, "DAILY SKIP go-guard:"), `${label}: missing ${D12Q}`).toEqual([`DAILY SKIP go-guard: ${reason}`]);
+  expect(lines(r, "DAILY GO-GUARD "), `${label}: a stop must not also print DAILY GO-GUARD`).toEqual([]);
+  expect(r.status, `${label}: missing ${D12Q} exit 0`).toBe(0);
+  expect(lines(r, "DAILY FAIL runs:"), `${label}: a guard stop is not DAILY FAIL runs`).toEqual([]);
+  expect(orderLog(w).filter(row => row.kind === "batch"), `${label}: a stop must not call ${D12B}`).toEqual([]);
+}
+
+function gitWrap(w: Work) {
+  const bin = join(w.root, "git-bin");
+  const log = join(w.root, "git-argv.log");
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(log, "");
+  writeFileSync(join(bin, "git"), `#!/usr/bin/env bash\nprintf '%s\\n' "$*" >> ${JSON.stringify(log)}\nexec /usr/bin/git "$@"\n`, { mode: 0o755 });
+  writeFileSync(join(bin, "sleep"), "#!/usr/bin/env bash\nexit 0\n", { mode: 0o755 });
+  return { bin, log };
+}
+function pushRepo(w: Work) {
+  const repo = join(w.root, "pub");
+  const origin = join(w.root, "origin.git");
+  const gitEnv = { PATH: "/usr/bin:/bin", HOME: w.home, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_SYSTEM: "/dev/null" };
+  const git = (args: string[], cwd = repo) => {
+    const r = spawnSync("git", args, { cwd, env: gitEnv, encoding: "utf8" });
+    if (r.status !== 0) throw new Error(`git ${args.join(" ")}: ${r.stderr}`);
+    return r.stdout.trim();
+  };
+  git(["init", "-q", "-b", "main", repo], w.root);
+  git(["init", "-q", "--bare", "-b", "main", origin], w.root);
+  git(["config", "user.email", "schedule@example.invalid"]);
+  git(["config", "user.name", "Schedule Test"]);
+  git(["remote", "add", "origin", origin]);
+  mkdirSync(join(repo, "harness"), { recursive: true });
+  mkdirSync(join(repo, "docs"), { recursive: true });
+  copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
+  for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
+    symlinkSync(join(HARNESS, name), join(repo, "harness", name));
+  symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"));
+  writeFileSync(join(repo, "docs/index.html"), "<html></html>\n");
+  git(["add", "docs/"]);
+  git(["commit", "-q", "-m", "initial"]);
+  git(["push", "-q", "origin", "main"]);
+  return { repo, origin, git };
+}
+function runCopied(w: Work, repo: string, reachPush: boolean, extra: Record<string, string> = {}) {
+  const { bin, log } = gitWrap(w);
+  const stub = writeTrackBatch(w);
+  const env: Record<string, string> = {
+    PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+    HOME: w.home, TMPDIR: w.root, TSX_DISABLE_CACHE: "1", _BENCH_ENV_LOADED: "1",
+    GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_SYSTEM: "/dev/null",
+    BENCH_RUNS_ROOT: w.runs, BENCH_PRICING_PATH: w.pricing, BENCH_DAILY_DIR: w.days,
+    BENCH_DAILY_DATE: DATE, BENCH_DAILY_CATALOG: w.catalog, BENCH_DAILY_SERVED: w.served,
+    BENCH_DAILY_BATCH: stub, BENCH_DAILY_POST: "0", BENCH_DAILY_QUOTA_CMD: join(w.root, "quota.cjs"),
+    BENCH_DAILY_PUBLISH: "1", BENCH_DAILY_LOCK: join(w.root, "publish.lock"),
+    STUB_LOG: join(w.root, "stub.jsonl"), STUB_DOCS_DIR: join(repo, "docs"), ...extra,
+  };
+  // HEAD still runs BENCH_DAILY_RUNNER. Set it only when the case must reach the push.
+  if (reachPush) env.BENCH_DAILY_RUNNER = stub;
+  const r = spawnSync("bash", [join(repo, "harness/cron-daily.sh")], {
+    cwd: repo, encoding: "utf8", timeout: 45_000, env,
+  });
+  if (r.error) throw new Error(`cron-daily.sh: ${r.error.message}`);
+  return { result: { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "" }, log };
+}
+
+describe("O1 conditions", () => {
+  caseOf("6.5.1 stop before batch 1: quota 81 writes an empty record", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 81 }], "quota-81.cjs");
+    assertSkip(w, r, "weekly used 81 percent", "6.5.1");
+    expect(record(w).run_ids, `6.5.1: missing ${D12Q} empty run_ids`).toEqual([]);
+    expect(record(w).go_guard_stop, `6.5.1: missing ${D12Q} go_guard_stop`).toBe("weekly used 81 percent");
+  });
+  caseOf("6.5.2 exactly 80 continues: four batches and go_guard_stop null", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 80 }, { value: 80 }, { value: 80 }, { value: 80 }], "quota-80.cjs");
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.2: ${D12Q} must not stop at 80`).toEqual([]);
+    expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.2: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
+    expect(record(w).go_guard_stop, `6.5.2: missing ${D12Q} go_guard_stop null`).toBe(null);
+  });
+  caseOf("6.5.3 80.0 continues: a string compare must not stop the day", w => {
+    jobSetup(w);
+    const raw = '{"usage":{"windows":{"weekly":{"usedPercent":80.0}}}}';
+    const r = guardJob(w, [{ raw }, { raw }, { raw }, { raw }], "quota-80-0.cjs");
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.3: missing ${D12Q}; 80.0 must continue`).toEqual([]);
+    expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.3: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
+    expect(record(w).go_guard_stop, `6.5.3: missing ${D12Q} go_guard_stop null`).toBe(null);
+  });
+  caseOf("6.5.4 failed read: a non-zero quota command stops even with JSON", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ exit: 1, raw: '{"usage":{"windows":{"weekly":{"usedPercent":10}}}}' }], "quota-fail.cjs");
+    assertSkip(w, r, "read failed", "6.5.4");
+  });
+  caseOf("6.5.5 missing field: absent or null usedPercent stops the day", w => {
+    jobSetup(w);
+    each(["ok", "null"], kind => {
+      rmSync(join(w.days, `${DATE}.json`), { force: true });
+      rmSync(join(w.root, "order.jsonl"), { force: true });
+      const step = kind === "ok" ? { raw: '{"ok":true}' } : { value: null };
+      const r = guardJob(w, [step], `quota-miss-${kind}.cjs`);
+      assertSkip(w, r, "missing field", `6.5.5 ${kind}`);
+    });
+  });
+  caseOf("6.5.6 not a number: a JSON string must not be coerced", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: "high" }], "quota-nan.cjs");
+    assertSkip(w, r, "not a number", "6.5.6");
+  });
+  caseOf("6.5.7 empty output: empty or whitespace is a failed read", w => {
+    jobSetup(w);
+    let emptyN = 0;
+    each(["", " \n\t"], raw => {
+      const name = `quota-empty-${emptyN}.cjs`;
+      emptyN += 1;
+      rmSync(join(w.days, `${DATE}.json`), { force: true });
+      rmSync(join(w.root, "order.jsonl"), { force: true });
+      const r = guardJob(w, [{ raw }], name);
+      assertSkip(w, r, "read failed", `6.5.7 ${name}`);
+      expect(lines(r, "DAILY SKIP go-guard:"), `6.5.7: ${D12Q} must not say not a number`).not.toContain("DAILY SKIP go-guard: not a number");
+    });
+  });
+  caseOf("6.5.8 stop before batch 2: the record keeps the build run ids", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 10 }, { value: 81 }], "quota-b2.cjs");
+    assertSkip(w, r, "weekly used 81 percent", "6.5.8");
+    const ids = trackIds("build");
+    expect(record(w).run_ids.slice().sort(), `6.5.8: missing ${D12B} build run ids`).toEqual(ids.slice().sort());
+    expect(record(w).go_guard_stop, `6.5.8: missing ${D12Q} go_guard_stop`).toBe("weekly used 81 percent");
+    expect(readdirSync(w.runs).some(name => name.includes("-bugfix-") || name.includes("-tests-") || name.includes("-change-")), `6.5.8: a later ${D12B} call must not run`).toBe(false);
+  });
+  caseOf("6.5.9 stop before batch 3: the record keeps build and bugfix run ids", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 10 }, { value: 10 }, { value: 81 }], "quota-b3.cjs");
+    assertSkip(w, r, "weekly used 81 percent", "6.5.9");
+    const ids = [...trackIds("build"), ...trackIds("bugfix")].sort();
+    expect(record(w).run_ids.slice().sort(), `6.5.9: missing ${D12B} earlier run ids`).toEqual(ids);
+    expect(readdirSync(w.runs).some(name => name.includes("-tests-") || name.includes("-change-")), `6.5.9: tests and change must not run`).toBe(false);
+  });
+  caseOf("6.5.10 stop before batch 4: the record keeps build, bugfix, and tests run ids", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 10 }, { value: 10 }, { value: 10 }, { value: 81 }], "quota-b4.cjs");
+    assertSkip(w, r, "weekly used 81 percent", "6.5.10");
+    const ids = [...trackIds("build"), ...trackIds("bugfix"), ...trackIds("tests")].sort();
+    expect(record(w).run_ids.slice().sort(), `6.5.10: missing ${D12B} earlier run ids`).toEqual(ids);
+    expect(readdirSync(w.runs).some(name => name.includes("-change-")), `6.5.10: change must not run`).toBe(false);
+  });
+  caseOf("6.5.11 dry-run clean read: one guard line and no model call", w => {
+    jobSetup(w);
+    const quota = writeQuota(w, "quota-dry.cjs", [{ value: 10 }]);
+    const r = job(w, ["--dry-run"], { BENCH_DAILY_QUOTA_CMD: quota });
+    expect(lines(r, "DAILY GO-GUARD "), `6.5.11: missing ${D12Q} DAILY GO-GUARD weekly=10`).toEqual(["DAILY GO-GUARD weekly=10"]);
+    expect(lines(r, "DAILY DRY-RUN "), `6.5.11: missing ${D12Q} planned count`).toEqual(["DAILY DRY-RUN planned=12"]);
+    expect(readdirSync(w.days), `6.5.11: a dry run writes no day record`).toEqual([]);
+    expect(readdirSync(w.runs), `6.5.11: a dry run makes no model call`).toEqual([]);
+    expect(r.status, `6.5.11: missing ${D12Q} exit 0`).toBe(0);
+  });
+  caseOf("6.5.12 dry-run stop: planned=0 and no batch dry run", w => {
+    jobSetup(w);
+    const quota = writeQuota(w, "quota-dry-stop.cjs", [{ value: 81 }]);
+    const r = job(w, ["--dry-run"], { BENCH_DAILY_QUOTA_CMD: quota });
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.12: missing ${D12Q}`).toEqual(["DAILY SKIP go-guard: weekly used 81 percent"]);
+    expect(lines(r, "DAILY DRY-RUN "), `6.5.12: missing ${D12Q} planned=0`).toEqual(["DAILY DRY-RUN planned=0"]);
+    expect(r.status, `6.5.12: missing ${D12Q} exit 0`).toBe(0);
+    expect(readdirSync(w.days), `6.5.12: a dry run writes no day record`).toEqual([]);
+    expect(readdirSync(w.runs), `6.5.12: a stop makes no model call`).toEqual([]);
+    expect(planned(r), `6.5.12: a batch dry run must not start`).toEqual([]);
+  });
+  caseOf("6.5.13 per-batch order: quota, build, quota, bugfix, quota, tests, quota, change", w => {
+    jobSetup(w);
+    const sentinel = join(w.root, "retired-sentinel");
+    writeFileSync(join(w.root, "sentinel-runner.cjs"), `#!/usr/bin/env node\nrequire('node:fs').writeFileSync(${JSON.stringify(sentinel)}, 'ran\\n');\nprocess.exit(0);\n`, { mode: 0o755 });
+    const r = guardJob(w, [{ value: 10 }, { value: 10 }, { value: 10 }, { value: 10 }], "quota-order.cjs", {
+      BENCH_DAILY_RUNNER: join(w.root, "sentinel-runner.cjs"),
+    });
+    expect(orderLog(w).map(row => row.kind === "quota" ? "quota" : row.track), `6.5.13: missing ${D12Q} and ${D12B} order`).toEqual([
+      "quota", "build", "quota", "bugfix", "quota", "tests", "quota", "change",
+    ]);
+    expect(existsSync(sentinel), `6.5.13: retired BENCH_DAILY_RUNNER must not start (${D12B})`).toBe(false);
+    expect(lines(r, "DAILY GO-GUARD "), `6.5.13: missing ${D12Q} four clean lines`).toEqual([
+      "DAILY GO-GUARD weekly=10", "DAILY GO-GUARD weekly=10", "DAILY GO-GUARD weekly=10", "DAILY GO-GUARD weekly=10",
+    ]);
+  });
+  caseOf("6.5.14 push at the parent: git push origin <sha>:main", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    const parent = git(["rev-parse", "HEAD"]);
+    const { result, log } = runCopied(w, repo, true);
+    const head = git(["rev-parse", "HEAD"]);
+    const pushes = readFileSync(log, "utf8").split("\n").filter(line => line.startsWith("push "));
+    expect(pushes, `6.5.14: missing ${D13}`).toContain(`push origin ${head}:main`);
+    expect(pushes, `6.5.14: ${D13} forbids git push origin main`).not.toContain("push origin main");
+    expect(git(["rev-parse", "main"], origin), `6.5.14: the remote tip must equal the docs commit`).toBe(head);
+    expect(head, `6.5.14: the docs commit parent must be origin/main before the push`).not.toBe(parent);
+    expect(result.status, `6.5.14: missing ${D13} exit 0`).toBe(0);
+    expect(lines(result, "DAILY PUBLISH ")[0], `6.5.14: missing ${D13} DAILY PUBLISH`).toMatch(/^DAILY PUBLISH [0-9a-f]{7,}$/);
+  });
+  caseOf("6.5.15 other local commits: the job skips the push and keeps the commit local", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    writeFileSync(join(repo, "note.txt"), "other local commit\n");
+    git(["add", "note.txt"]);
+    git(["commit", "-q", "-m", "other local"]);
+    const parent = git(["rev-parse", "HEAD"]);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    const { result } = runCopied(w, repo, true);
+    expect(lines(result, "DAILY PUSH skipped:"), `6.5.15: missing ${D13}`).toEqual(["DAILY PUSH skipped: 1 other local commits"]);
+    expect(result.status, `6.5.15: missing ${D13} exit 0`).toBe(0);
+    expect(git(["rev-parse", "main"], origin), `6.5.15: ${D13} must not move the remote`).toBe(remoteBefore);
+    expect(git(["rev-parse", "HEAD^"]), `6.5.15: the other local commit must sit before the docs commit`).toBe(parent);
+    expect(git(["log", "-1", "--format=%s"]), `6.5.15: the docs commit must stay local`).toMatch(/^Publish daily /);
+  });
+  caseOf("6.5.16 origin/main moved: the skip line is not other local commits", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    git(["checkout", "-q", "-b", "side"]);
+    writeFileSync(join(repo, "side.txt"), "moved\n");
+    git(["add", "side.txt"]);
+    git(["commit", "-q", "-m", "origin moved"]);
+    git(["push", "-q", "origin", "side:main"]);
+    git(["checkout", "-q", "main"]);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    const { result } = runCopied(w, repo, true);
+    expect(git(["rev-list", "--count", "origin/main..HEAD~1"]), `6.5.16: the count before the docs commit must be 0`).toBe("0");
+    expect(lines(result, "DAILY PUSH skipped:"), `6.5.16: missing ${D13}`).toEqual(["DAILY PUSH skipped: origin/main moved"]);
+    expect(result.status, `6.5.16: missing ${D13} exit 0`).toBe(0);
+    expect(lines(result, "DAILY PUSH skipped:").join("\n"), `6.5.16: ${D13} must not say other local commits`).not.toContain("other local commits");
+    expect(git(["rev-parse", "main"], origin), `6.5.16: ${D13} must not push`).toBe(remoteBefore);
+  });
+  caseOf("6.5.17 failed fetch: the commit stays local and the remote stays unchanged", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    git(["remote", "set-url", "origin", join(w.root, "missing.git")]);
+    const { result } = runCopied(w, repo, true);
+    expect(lines(result, "DAILY PUSH skipped:"), `6.5.17: missing ${D13}`).toEqual(["DAILY PUSH skipped: fetch failed"]);
+    expect(result.status, `6.5.17: missing ${D13} exit 0`).toBe(0);
+    expect(git(["rev-parse", "main"], origin), `6.5.17: ${D13} must not change the remote`).toBe(remoteBefore);
+    expect(git(["log", "-1", "--format=%s"]), `6.5.17: the docs commit must stay local`).toMatch(/^Publish daily /);
+  });
+  caseOf("6.5.18 selector exit 1: the job must not take the no-pick path", w => {
+    jobSetup(w);
+    const r = job(w, [], { BENCH_DAILY_SELECT: writeSelect(w, 1) });
+    expect(lines(r, "DAILY FAIL pick:"), `6.5.18: missing ${D14}`).toEqual(["DAILY FAIL pick: the selector exited 1"]);
+    expect(r.status, `6.5.18: missing ${D14} exit 1`).toBe(1);
+    expect(batchCalls(w), `6.5.18: ${D14} must call no batch`).toEqual([]);
+    expect(readdirSync(w.days), `6.5.18: ${D14} must write no day record`).toEqual([]);
+  });
+  caseOf("6.5.19 selector exit 4: the job exits 4 and writes no day record", w => {
+    jobSetup(w);
+    const r = job(w, [], { BENCH_DAILY_SELECT: writeSelect(w, 4) });
+    expect(lines(r, "DAILY FAIL pick:"), `6.5.19: missing ${D14}`).toEqual(["DAILY FAIL pick: the selector exited 4"]);
+    expect(r.status, `6.5.19: missing ${D14} exit 4`).toBe(4);
+    expect(batchCalls(w), `6.5.19: ${D14} must call no batch`).toEqual([]);
+    expect(readdirSync(w.days), `6.5.19: ${D14} must write no day record`).toEqual([]);
+  });
+  caseOf("6.5.20 selector exit 2: the fail path stays and the job selects no model", w => {
+    jobSetup(w);
+    const r = job(w, [], { BENCH_DAILY_SELECT: writeSelect(w, 2) });
+    expect(lines(r, "DAILY FAIL pick:"), `6.5.20: missing ${D14}`).toEqual(["DAILY FAIL pick: the selector exited 2"]);
+    expect(r.status, `6.5.20: missing ${D14} exit 2`).toBe(2);
+    expect(batchCalls(w), `6.5.20: ${D14} must call no batch`).toEqual([]);
+    expect(readdirSync(w.days), `6.5.20: ${D14} must write no day record`).toEqual([]);
+  });
+  caseOf("6.5.21 selector exit 3: the no-pick path stays", w => {
+    jobSetup(w);
+    const r = job(w, [], { BENCH_DAILY_SELECT: writeSelect(w, 3) });
+    expect(readdirSync(w.days), `6.5.21: missing ${D14}; exit 3 must write no day record`).toEqual([]);
+    expect(lines(r, "DAILY FAIL pick:"), `6.5.21: ${D14} must not print DAILY FAIL pick`).toEqual([]);
+    expect(r.status, `6.5.21: missing ${D14} exit 0`).toBe(0);
+    expect(lines(r, "DAILY PUBLISH "), `6.5.21: missing ${D14} DAILY PUBLISH none`).toEqual(["DAILY PUBLISH none"]);
+    expect(batchCalls(w), `6.5.21: ${D14} must call no batch`).toEqual([]);
+  });
+  caseOf("6.5.22 unit files: the service and the timer hold the D11 lines", () => {
+    const svc = join(HARNESS, "systemd/lending-desk-daily.service");
+    const tmr = join(HARNESS, "systemd/lending-desk-daily.timer");
+    expect(existsSync(svc), `6.5.22: missing ${D11}`).toBe(true);
+    expect(existsSync(tmr), `6.5.22: missing ${D11}`).toBe(true);
+    const service = readFileSync(svc, "utf8").split(/\r?\n/);
+    const timer = readFileSync(tmr, "utf8").split(/\r?\n/);
+    for (const line of ["Type=oneshot", "WorkingDirectory=/home/daniebo/Desktop/lending-desk-bench", "ExecStart=/home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh", "StandardOutput=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log", "StandardError=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log"]) {
+      expect(service, `6.5.22: missing ${D11} service line ${line}`).toContain(line);
+    }
+    for (const line of ["OnCalendar=Wed,Sun 01:00:00", "Persistent=false", "Unit=lending-desk-daily.service", "WantedBy=timers.target"]) {
+      expect(timer, `6.5.22: missing ${D11} timer line ${line}`).toContain(line);
+    }
+    expect(timer.join("\n").includes("Persistent=true"), `6.5.22: ${D11} forbids Persistent=true`).toBe(false);
+  });
+  caseOf("6.5.23 resume record: counts, excluded, order, and last_test stay", w => {
+    jobSetup(w);
+    inputs(w, { "glm-5.2": 100 }, ["z-unpriced", "glm-5.2"], ["z-unpriced", "glm-5.2"]);
+    json(w.catalog, { live: ["z-unpriced", "glm-5.2"], requests_per_month: { "z-unpriced": 99999 } });
+    const { repo, git } = pushRepo(w);
+    runCopied(w, repo, false);
+    expect(existsSync(join(w.days, `${DATE}.json`)), "6.5.23 fixture: the first run must write a day record").toBe(true);
+    const first = record(w);
+    expect(first.excluded?.unpriced, "6.5.23 fixture: the first record must list the unpriced model").toEqual(["z-unpriced"]);
+    const kept = { counts: first.counts, excluded: first.excluded, order: first.order, last_test: first.last_test };
+    const second = runCopied(w, repo, false);
+    const again = record(w);
+    expect(
+      { counts: again.counts, excluded: again.excluded, order: again.order, last_test: again.last_test },
+      "6.5.23: missing section 5.4 resume record keep of counts, excluded, order, and last_test",
+    ).toEqual(kept);
+    expect(lines(second.result, "DAILY_PICK "), "6.5.23: the selector line stays the short resume object").toEqual([
+      `DAILY_PICK date=${DATE} model=glm-5.2 reason=resume`,
+    ]);
+    expect(git(["log", "-1", "--format=%B"]), "6.5.23: the publish body must name the unpriced model").toContain("z-unpriced");
+  });
+  caseOf("6.5.24 value 80.0001: the skip line keeps the full number", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ raw: '{"usage":{"windows":{"weekly":{"usedPercent":80.0001}}}}' }], "quota-800001.cjs");
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.24: missing ${D12Q} exact 80.0001`).toEqual(["DAILY SKIP go-guard: weekly used 80.0001 percent"]);
+    expect(r.status, `6.5.24: missing ${D12Q} exit 0`).toBe(0);
+    expect(orderLog(w).filter(row => row.kind === "batch"), `6.5.24: a stop must not call ${D12B}`).toEqual([]);
   });
 });
