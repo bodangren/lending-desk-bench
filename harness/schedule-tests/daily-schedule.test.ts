@@ -28,14 +28,14 @@ function fail(label: string, error: unknown) {
 }
 
 // Vitest provides the exit code. This wrapper preserves the project's check summary.
-function caseOf(label: string, body: (w: Work) => void | Promise<void>) {
+function caseOf(label: string, body: (w: Work) => void | Promise<void>, timeout?: number) {
   it(label, async () => {
     console.log(`=== ${label} ===`);
     const w = workspace();
     try { await body(w); pass(label); }
     catch (error) { fail(label, error); throw error; }
     finally { rmSync(w.root, { recursive: true, force: true }); }
-  });
+  }, timeout);
 }
 function each<T>(values: readonly T[], body: (value: T) => void) {
   const failures: string[] = [];
@@ -1446,4 +1446,319 @@ describe("O1 conditions", () => {
       expect(record(w).go_guard_stop, `6.5.36 ${item.label}: missing ${D12Q} weekly reason`).toBe(item.reason);
     });
   });
+});
+
+// ---- Section 12: Phase 4b adversarial cases 8 to 17, plus monthly extensions -----
+// Every spawn uses an explicit environment. No case calls a model, openchamber, or
+// a network address. Hostile text names a file under the temporary root only.
+
+function resetJob(w: Work) {
+  rmSync(join(w.days, `${DATE}.json`), { force: true });
+  rmSync(join(w.root, "order.jsonl"), { force: true });
+  rmSync(join(w.root, "stub.jsonl"), { force: true });
+  rmSync(w.runs, { recursive: true, force: true });
+  mkdirSync(w.runs, { recursive: true });
+}
+// The text is the raw JSON of a quota payload. A null window is left out.
+function usage(weekly: string | null, monthly: string | null): string {
+  const windows: string[] = [];
+  if (weekly !== null) windows.push(`"weekly":{"usedPercent":${weekly}}`);
+  if (monthly !== null) windows.push(`"monthly":{"usedPercent":${monthly}}`);
+  return `{"usage":{"windows":{${windows.join(",")}}}}`;
+}
+function batchTracks(w: Work): string[] { return orderLog(w).filter(row => row.kind === "batch").map(row => row.track); }
+function quotaReads(w: Work): number { return orderLog(w).filter(row => row.kind === "quota").length; }
+// A stop after `done` clean reads. The reason is the only skip line. The record
+// keeps the run ids of the batches that ran.
+function assertHiddenStop(w: Work, r: Result, reason: string, tracks: string[], label: string) {
+  expect(lines(r, "DAILY GO-GUARD "), `${label}: missing ${D12Q} clean reads`).toEqual(Array(tracks.length).fill("DAILY GO-GUARD weekly=10 monthly=10"));
+  expect(lines(r, "DAILY SKIP go-guard:"), `${label}: exactly one skip line with the weekly reason`).toEqual([`DAILY SKIP go-guard: ${reason}`]);
+  expect(batchTracks(w), `${label}: missing ${D12B}`).toEqual(tracks);
+  expect(r.status, `${label}: missing ${D12Q} exit 0`).toBe(0);
+  expect(lines(r, "DAILY FAIL runs:"), `${label}: a guard stop is not DAILY FAIL runs`).toEqual([]);
+  expect(record(w).go_guard_stop, `${label}: go_guard_stop must hold the weekly reason`).toBe(reason);
+  expect(record(w).run_ids.slice().sort(), `${label}: the record must keep the earlier run ids`).toEqual(tracks.flatMap(track => trackIds(track)).sort());
+}
+// A git wrapper that logs each call. Mode reject fails every push. Mode race adds
+// one local commit after each fetch. The sleep stub keeps the case fast.
+function advGit(w: Work, mode: "reject" | "race") {
+  const bin = join(w.root, "adv-bin");
+  const log = join(w.root, "adv-git.log");
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(log, "");
+  const pushStep = mode === "reject" ? "exit 1" : ":";
+  const fetchStep = mode === "race"
+    ? `if [ "\${1:-}" = fetch ] && [ "$rc" -eq 0 ]; then /usr/bin/git commit -q --allow-empty -m "race extra" >/dev/null 2>&1; fi`
+    : ":";
+  writeFileSync(join(bin, "git"), `#!/usr/bin/env bash
+printf '%s\\n' "$*" >> ${JSON.stringify(log)}
+if [ "\${1:-}" = push ]; then ${pushStep}; fi
+/usr/bin/git "$@"
+rc=$?
+${fetchStep}
+exit $rc
+`, { mode: 0o755 });
+  writeFileSync(join(bin, "sleep"), "#!/usr/bin/env bash\nexit 0\n", { mode: 0o755 });
+  return { path: `${bin}:${join(w.root, "git-bin")}:${dirname(process.execPath)}:/usr/bin:/bin`, log };
+}
+// Runs a copy of cron-daily.sh from a temporary tree with a fake node. The fake
+// node fails (exit 88) only for the compare call whose DAILY_GUARD_VALUE equals
+// failOn. It logs each compare call. BENCH_ADV_CRON_DAILY names a mutated copy
+// of the script for a mutation probe. The worktree script stays unchanged.
+function copiedCompareJob(w: Work, failOn: string, steps: QuotaStep[], name: string) {
+  const repo = join(w.root, "copy");
+  const harness = join(repo, "harness");
+  const compareLog = join(w.root, "compare.log");
+  const fake = join(w.root, "fake-node");
+  rmSync(repo, { recursive: true, force: true });
+  mkdirSync(harness, { recursive: true });
+  mkdirSync(fake, { recursive: true });
+  writeFileSync(compareLog, "");
+  writeFileSync(join(harness, "cron-daily.sh"), readFileSync(process.env.BENCH_ADV_CRON_DAILY ?? join(HARNESS, "cron-daily.sh")), { mode: 0o755 });
+  for (const file of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
+    symlinkSync(join(HARNESS, file), join(harness, file));
+  symlinkSync(join(HARNESS, "node_modules"), join(harness, "node_modules"));
+  writeFileSync(join(fake, "node"), `#!/usr/bin/env bash
+if [ "\${1:-}" = -e ] && [[ "\${2:-}" == *DAILY_GUARD_VALUE* ]]; then
+  if [ "\${DAILY_GUARD_VALUE:-}" = ${JSON.stringify(failOn)} ]; then printf '%s fail\\n' "$DAILY_GUARD_VALUE" >> ${JSON.stringify(compareLog)}; exit 88; fi
+  printf '%s ok\\n' "$DAILY_GUARD_VALUE" >> ${JSON.stringify(compareLog)}
+fi
+exec ${JSON.stringify(process.execPath)} "$@"
+`, { mode: 0o755 });
+  writeTrackBatch(w);
+  const r = exec(w, "bash", [join(harness, "cron-daily.sh")], {
+    PATH: `${fake}:${w.bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+    BENCH_RUNS_ROOT: w.runs, BENCH_PRICING_PATH: w.pricing, BENCH_DAILY_DIR: w.days,
+    BENCH_DAILY_DATE: DATE, BENCH_DAILY_CATALOG: w.catalog, BENCH_DAILY_SERVED: w.served,
+    BENCH_DAILY_PUBLISH: "0", BENCH_DAILY_POST: "0", BENCH_DAILY_LOCK: join(w.root, "weekly-cron.lock"),
+    BENCH_DAILY_QUOTA_CMD: writeQuota(w, name, steps), BENCH_DAILY_BATCH: join(w.root, "track-batch.cjs"),
+    STUB_LOG: join(w.root, "stub.jsonl"), ARMS: "a b",
+  });
+  const compares = readFileSync(compareLog, "utf8").split("\n").filter(Boolean);
+  return { r, compares };
+}
+
+describe("adversarial 4b", () => {
+  caseOf("12.8 hostile quota output: quota text never reaches shell evaluation", w => {
+    jobSetup(w);
+    const pwned = join(w.root, "pwned");
+    let n = 0;
+    each<{ label: string; raw: string; reason: string }>([
+      { label: "weekly JSON string", raw: usage(JSON.stringify(`81; touch ${pwned}`), "10"), reason: "not a number" },
+      { label: "monthly JSON string", raw: usage("10", JSON.stringify(`81; touch ${pwned}`)), reason: "monthly not a number" },
+      { label: "raw command substitution", raw: `$(touch ${pwned})`, reason: "read failed" },
+      { label: "raw backticks", raw: `\`touch ${pwned}\``, reason: "read failed" },
+      { label: "number then command", raw: `10; touch ${pwned}`, reason: "read failed" },
+    ], item => {
+      resetJob(w);
+      const r = guardJob(w, [{ raw: item.raw }], `quota-hostile-${n++}.cjs`);
+      assertSkip(w, r, item.reason, `12.8 ${item.label}`);
+      expect(existsSync(pwned), `12.8 ${item.label}: the shell evaluated quota text`).toBe(false);
+    });
+  }, 120_000);
+  caseOf("12.9 string number: a quoted number is not coerced", w => {
+    jobSetup(w);
+    let n = 0;
+    each(['"81"', '"80"', '"10"', '"0"'], text => {
+      resetJob(w);
+      const r = guardJob(w, [{ raw: usage(text, "10") }], `quota-string-${n++}.cjs`);
+      assertSkip(w, r, "not a number", `12.9 ${text}`);
+      expect(record(w).go_guard_stop, `12.9 ${text}: ${D12Q} go_guard_stop`).toBe("not a number");
+    });
+  }, 120_000);
+  caseOf("12.10 wrong JSON: another window never satisfies the weekly field", w => {
+    jobSetup(w);
+    let n = 0;
+    each<{ label: string; raw: string }>([
+      { label: "daily only", raw: '{"usage":{"windows":{"daily":{"usedPercent":10}}}}' },
+      { label: "daily with a valid monthly", raw: '{"usage":{"windows":{"daily":{"usedPercent":10},"monthly":{"usedPercent":10}}}}' },
+      { label: "Weekly capitalised", raw: '{"usage":{"windows":{"Weekly":{"usedPercent":10},"monthly":{"usedPercent":10}}}}' },
+      { label: "week", raw: '{"usage":{"windows":{"week":{"usedPercent":10},"monthly":{"usedPercent":10}}}}' },
+    ], item => {
+      resetJob(w);
+      const r = guardJob(w, [{ raw: item.raw }], `quota-wrong-${n++}.cjs`);
+      assertSkip(w, r, "missing field", `12.10 ${item.label}`);
+    });
+  }, 120_000);
+  caseOf("12.11 value 80.0001 after two clean reads: the third read stops before batch 3", w => {
+    jobSetup(w);
+    const r = guardJob(w, [{ value: 80 }, { value: 80 }, { raw: usage("80.0001", "10") }], "quota-third-800001.cjs");
+    expect(lines(r, "DAILY GO-GUARD "), `12.11: missing ${D12Q} two clean reads`).toEqual(Array(2).fill("DAILY GO-GUARD weekly=80 monthly=10"));
+    expect(lines(r, "DAILY SKIP go-guard:"), `12.11: missing ${D12Q} exact 80.0001`).toEqual(["DAILY SKIP go-guard: weekly used 80.0001 percent"]);
+    expect(batchTracks(w), `12.11: tests and change must not run (${D12B})`).toEqual(["build", "bugfix"]);
+    expect(quotaReads(w), `12.11: three reads`).toBe(3);
+    expect(r.status, `12.11: missing ${D12Q} exit 0`).toBe(0);
+    expect(record(w).go_guard_stop, `12.11: missing ${D12Q} go_guard_stop`).toBe("weekly used 80.0001 percent");
+    expect(record(w).run_ids.slice().sort(), `12.11: the record keeps build and bugfix run ids`).toEqual([...trackIds("build"), ...trackIds("bugfix")].sort());
+    expect(readdirSync(w.runs).some(name => name.includes("-tests-") || name.includes("-change-")), `12.11: tests and change must not run`).toBe(false);
+  });
+  caseOf("12.12 remote rejects the push: three attempts, exit 1, the commit stays local", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    const wrap = advGit(w, "reject");
+    const { result } = runCopied(w, repo, true, { PATH: wrap.path });
+    const head = git(["rev-parse", "HEAD"]);
+    const pushes = readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push "));
+    expect(pushes, `12.12: ${D13} must try the push three times`).toEqual(Array(3).fill(`push origin ${head}:main`));
+    expect(result.status, `12.12: ${D13} exit 1`).toBe(1);
+    expect(lines(result, "DAILY FAIL publish:"), `12.12: missing ${D13} fail line`).toEqual(["DAILY FAIL publish: git push failed after 3 attempts; the commit is local"]);
+    expect(lines(result, "DAILY PUBLISH "), `12.12: a failed push must not print DAILY PUBLISH`).toEqual([]);
+    expect(git(["rev-parse", "main"], origin), `12.12: the remote must stay unchanged`).toBe(remoteBefore);
+    expect(git(["log", "-1", "--format=%s"]), `12.12: the docs commit must stay local`).toMatch(/^Publish daily /);
+  });
+  caseOf("12.13 push race: the remote tip is the docs commit, not a later local commit", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    const wrap = advGit(w, "race");
+    const { result } = runCopied(w, repo, true, { PATH: wrap.path });
+    expect(git(["log", "-1", "--format=%s"]), `12.13 fixture: the wrapper must add the extra commit after the fetch`).toBe("race extra");
+    const docs = git(["rev-parse", "HEAD^"]);
+    expect(git(["log", "-1", "--format=%s", docs]), `12.13 fixture: HEAD^ is the docs commit`).toMatch(/^Publish daily /);
+    const tip = git(["rev-parse", "main"], origin);
+    expect(tip, `12.13: ${D13} must push the docs commit, not the extra commit`).toBe(docs);
+    expect(git(["log", "--format=%s", "main"], origin), `12.13: the extra commit must not reach the remote`).not.toContain("race extra");
+    const pushes = readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push "));
+    expect(pushes, `12.13: missing ${D13}`).toEqual([`push origin ${docs}:main`]);
+    expect(result.status, `12.13: missing ${D13} exit 0`).toBe(0);
+    expect(lines(result, "DAILY PUBLISH ")[0], `12.13: missing ${D13} DAILY PUBLISH`).toBe(`DAILY PUBLISH ${git(["rev-parse", "--short", docs])}`);
+  });
+  caseOf("12.14 monthly as a JSON string: the job never coerces it", w => {
+    jobSetup(w);
+    let n = 0;
+    each(['"81"', '"high"', '"10"', '"0"'], text => {
+      resetJob(w);
+      const r = guardJob(w, [{ raw: usage("10", text) }], `quota-monthly-string-${n++}.cjs`);
+      assertSkip(w, r, "monthly not a number", `12.14 ${text}`);
+      expect(record(w).go_guard_stop, `12.14 ${text}: ${D12Q} go_guard_stop`).toBe("monthly not a number");
+    });
+  }, 120_000);
+  caseOf("12.15 1e400: a non-finite value stops the day for each window and sign", w => {
+    jobSetup(w);
+    let n = 0;
+    each<{ label: string; raw: string; reason: string }>([
+      { label: "monthly 1e400", raw: usage("10", "1e400"), reason: "monthly not a number" },
+      { label: "monthly -1e400", raw: usage("10", "-1e400"), reason: "monthly not a number" },
+      { label: "weekly 1e400", raw: usage("1e400", "10"), reason: "not a number" },
+      { label: "weekly -1e400", raw: usage("-1e400", "10"), reason: "not a number" },
+    ], item => {
+      expect(item.raw, `12.15 fixture: ${item.label} must hold the literal`).toContain("e400");
+      resetJob(w);
+      const r = guardJob(w, [{ raw: item.raw }], `quota-e400-${n++}.cjs`);
+      assertSkip(w, r, item.reason, `12.15 ${item.label}`);
+      expect(r.stdout + r.stderr, `12.15 ${item.label}: the job must not print Infinity`).not.toContain("Infinity");
+    });
+  }, 120_000);
+  caseOf("12.16 monthly absent with a valid weekly value: a neighbor key never satisfies monthly", w => {
+    jobSetup(w);
+    let n = 0;
+    each<{ label: string; raw: string }>([
+      { label: "absent", raw: '{"usage":{"windows":{"weekly":{"usedPercent":10}}}}' },
+      { label: "month window", raw: '{"usage":{"windows":{"weekly":{"usedPercent":10},"month":{"usedPercent":10}}}}' },
+      { label: "top-level monthly", raw: '{"monthly":{"usedPercent":10},"usage":{"windows":{"weekly":{"usedPercent":10}}}}' },
+      { label: "usage.monthly", raw: '{"usage":{"monthly":{"usedPercent":10},"windows":{"weekly":{"usedPercent":10}}}}' },
+      { label: "Monthly capitalised", raw: '{"usage":{"windows":{"weekly":{"usedPercent":10},"Monthly":{"usedPercent":10}}}}' },
+    ], item => {
+      resetJob(w);
+      const r = guardJob(w, [{ raw: item.raw }], `quota-monthly-neighbor-${n++}.cjs`);
+      assertSkip(w, r, "monthly missing field", `12.16 ${item.label}`);
+      expect(record(w).go_guard_stop, `12.16 ${item.label}: ${D12Q} go_guard_stop`).toBe("monthly missing field");
+    });
+  }, 120_000);
+  caseOf("12.17 a weekly stop hides a bad monthly value: the weekly reason stays alone", w => {
+    jobSetup(w);
+    let n = 0;
+    each<{ label: string; raw: string; reason: string }>([
+      { label: "weekly 81 and monthly absent", raw: usage("81", null), reason: "weekly used 81 percent" },
+      { label: "weekly missing and monthly 81", raw: usage(null, "81"), reason: "missing field" },
+      { label: "weekly string and monthly -1", raw: usage('"high"', "-1"), reason: "not a number" },
+    ], item => {
+      resetJob(w);
+      const r = guardJob(w, [{ value: 10 }, { raw: item.raw }], `quota-hidden-${n++}.cjs`);
+      assertHiddenStop(w, r, item.reason, ["build"], `12.17 ${item.label}`);
+    });
+  }, 120_000);
+  caseOf("12.18 monthly compare fault: only the monthly compare process fails (Review A F1)", w => {
+    jobSetup(w);
+    // A: the weekly compare passes and the monthly compare fails. The monthly
+    // branch of guard_read alone must stop the day with read failed.
+    const a = copiedCompareJob(w, "20", [{ value: 10, monthly: 20 }], "quota-cmp-monthly.cjs");
+    assertSkip(w, a.r, "read failed", "12.18 monthly only");
+    expect(a.compares, "12.18 monthly only: the weekly compare passes first, then the monthly compare fails").toEqual(["10 ok", "20 fail"]);
+    expect(record(w).go_guard_stop, `12.18 monthly only: ${D12Q} go_guard_stop`).toBe("read failed");
+    // B: the weekly compare fails. The job must stop before any monthly compare.
+    resetJob(w);
+    const b = copiedCompareJob(w, "10", [{ value: 10, monthly: 20 }], "quota-cmp-weekly.cjs");
+    assertSkip(w, b.r, "read failed", "12.18 weekly only");
+    expect(b.compares, "12.18 weekly only: no monthly compare after a weekly compare fault").toEqual(["10 fail"]);
+    // C: a clean first read, then a monthly compare fault on the second read.
+    resetJob(w);
+    const c = copiedCompareJob(w, "20", [{ value: 10, monthly: 10 }, { value: 10, monthly: 20 }], "quota-cmp-monthly-b2.cjs");
+    expect(lines(c.r, "DAILY GO-GUARD "), "12.18 second read: one clean line").toEqual(["DAILY GO-GUARD weekly=10 monthly=10"]);
+    expect(lines(c.r, "DAILY SKIP go-guard:"), "12.18 second read: the monthly compare fault stops the day").toEqual(["DAILY SKIP go-guard: read failed"]);
+    expect(batchTracks(w), "12.18 second read: one build batch").toEqual(["build"]);
+    expect(c.r.status, "12.18 second read: exit 0").toBe(0);
+    expect(c.compares, "12.18 second read: compare order").toEqual(["10 ok", "10 ok", "10 ok", "20 fail"]);
+    expect(record(w).go_guard_stop, "12.18 second read: go_guard_stop").toBe("read failed");
+    expect(record(w).run_ids.slice().sort(), "12.18 second read: the record keeps the build run ids").toEqual(trackIds("build").slice().sort());
+  }, 120_000);
+  caseOf("12.19 boundary numbers: exponent forms, zero, and the next double above 80", w => {
+    jobSetup(w);
+    let n = 0;
+    type Edge = { label: string; weekly: string; monthly: string; stop: string | null; line?: RegExp };
+    each<Edge>([
+      { label: "monthly 0", weekly: "10", monthly: "0", stop: null, line: /^DAILY GO-GUARD weekly=10 monthly=0$/ },
+      { label: "monthly -0", weekly: "10", monthly: "-0", stop: null, line: /^DAILY GO-GUARD weekly=10 monthly=-?0$/ },
+      { label: "monthly 8e1", weekly: "10", monthly: "8e1", stop: null, line: /^DAILY GO-GUARD weekly=10 monthly=80$/ },
+      { label: "monthly 80.00000000000001", weekly: "10", monthly: "80.00000000000001", stop: "monthly used 80.00000000000001 percent" },
+      { label: "monthly 80.00001", weekly: "10", monthly: "80.00001", stop: "monthly used 80.00001 percent" },
+      { label: "monthly 8.1e1", weekly: "10", monthly: "8.1e1", stop: "monthly used 81 percent" },
+      { label: "monthly -0.00001", weekly: "10", monthly: "-0.00001", stop: "monthly value -0.00001 is below 0" },
+      { label: "monthly -1e-7", weekly: "10", monthly: "-1e-7", stop: "monthly value -1e-7 is below 0" },
+      { label: "monthly 1e21", weekly: "10", monthly: "1e21", stop: "monthly used 1e+21 percent" },
+      { label: "weekly 80.00001", weekly: "80.00001", monthly: "10", stop: "weekly used 80.00001 percent" },
+    ], item => {
+      resetJob(w);
+      const r = guardJob(w, [{ raw: usage(item.weekly, item.monthly) }], `quota-edge-${n++}.cjs`);
+      if (item.stop !== null) {
+        assertSkip(w, r, item.stop, `12.19 ${item.label}`);
+        expect(record(w).go_guard_stop, `12.19 ${item.label}: ${D12Q} go_guard_stop`).toBe(item.stop);
+        return;
+      }
+      expect(lines(r, "DAILY SKIP go-guard:"), `12.19 ${item.label}: ${D12Q} must continue`).toEqual([]);
+      expect(batchTracks(w), `12.19 ${item.label}: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
+      expect(record(w).go_guard_stop, `12.19 ${item.label}: go_guard_stop null`).toBe(null);
+      const guard = lines(r, "DAILY GO-GUARD ");
+      expect(guard, `12.19 ${item.label}: four clean lines`).toHaveLength(4);
+      for (const line of guard) expect(line, `12.19 ${item.label}: clean line`).toMatch(item.line!);
+    });
+  }, 180_000);
+  caseOf("12.20 payload shapes: arrays, inherited keys, and bad syntax stop the day", w => {
+    jobSetup(w);
+    let n = 0;
+    const ok = '{"usedPercent":10}';
+    each<{ label: string; raw: string; reason: string }>([
+      { label: "top-level array", raw: `[${usage("10", "10")}]`, reason: "missing field" },
+      { label: "top-level null", raw: "null", reason: "missing field" },
+      { label: "windows as array", raw: `{"usage":{"windows":[{"weekly":${ok},"monthly":${ok}}]}}`, reason: "missing field" },
+      { label: "weekly as array", raw: `{"usage":{"windows":{"weekly":[${ok}],"monthly":${ok}}}}`, reason: "missing field" },
+      { label: "monthly as array", raw: `{"usage":{"windows":{"weekly":${ok},"monthly":[${ok}]}}}`, reason: "monthly missing field" },
+      { label: "monthly inherited key", raw: `{"usage":{"windows":{"weekly":${ok},"monthly":{"__proto__":${ok}}}}}`, reason: "monthly missing field" },
+      { label: "weekly inherited key", raw: `{"usage":{"windows":{"weekly":{"__proto__":${ok}},"monthly":${ok}}}}`, reason: "missing field" },
+      { label: "trailing text", raw: `${usage("10", "10")}x`, reason: "read failed" },
+      { label: "NaN token", raw: usage("NaN", "10"), reason: "read failed" },
+      { label: "byte order mark", raw: `﻿${usage("10", "10")}`, reason: "read failed" },
+    ], item => {
+      resetJob(w);
+      const r = guardJob(w, [{ raw: item.raw }], `quota-shape-${n++}.cjs`);
+      assertSkip(w, r, item.reason, `12.20 ${item.label}`);
+    });
+    // Control: padding and line breaks around a valid payload do not stop the day.
+    resetJob(w);
+    const padded = `\r\n  {\n "usage" : { "windows" : {\n\t"weekly" : { "usedPercent" : 10 },\n\t"monthly" : { "usedPercent" : 20 } } } }\n\n`;
+    const r = guardJob(w, [{ raw: padded }], "quota-shape-padded.cjs");
+    expect(lines(r, "DAILY SKIP go-guard:"), "12.20 control: padded JSON must continue").toEqual([]);
+    expect(batchTracks(w), "12.20 control: four batches").toEqual(["build", "bugfix", "tests", "change"]);
+    expect(lines(r, "DAILY GO-GUARD "), "12.20 control: four clean lines").toEqual(Array(4).fill("DAILY GO-GUARD weekly=10 monthly=20"));
+  }, 180_000);
 });
