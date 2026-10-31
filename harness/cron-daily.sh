@@ -63,8 +63,8 @@ CATALOG_TMP="$TMP_DIR/daily-catalog-$$"
 SERVED_TMP="$TMP_DIR/daily-served-$$"
 MSG_FILE="$TMP_DIR/daily-commit-msg-$$"
 RECORD_TMP="$DAYS_DIR/.daily-record-$$"
-QUOTA_TMP="$TMP_DIR/daily-quota-$$"
-trap 'rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$QUOTA_TMP" 2>/dev/null' EXIT
+SELFCHECK_MARKER="$TMP_DIR/selfcheck-pass-$WEEK-$$"
+trap 'rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" 2>/dev/null' EXIT
 
 # ---- Lock ----------------------------------------------------------------------
 # The exclusive lock prevents overlap with weekly and daily jobs.
@@ -169,7 +169,7 @@ guard_read() {
     raw="$("$BENCH_DAILY_QUOTA_CMD")" || rc=$?
   else
     local status=""
-    status="$(openchamber status --json)" || rc=$?
+    status="$(timeout 10s openchamber status --json)" || rc=$?
     if [ "$rc" -eq 0 ]; then
       port="$(printf '%s' "$status" | node -e '
 let s = ""; process.stdin.on("data", c => s += c); process.stdin.on("end", () => {
@@ -182,7 +182,7 @@ let s = ""; process.stdin.on("data", c => s += c); process.stdin.on("end", () =>
 });
 ')"
       if [ -z "$port" ]; then rc=1; else
-        raw="$(curl -fsS "http://127.0.0.1:$port/api/quota/opencode-go")" || rc=$?
+        raw="$(curl --max-time 10 --noproxy '*' -fsS "http://127.0.0.1:$port/api/quota/opencode-go")" || rc=$?
       fi
     fi
   fi
@@ -220,9 +220,21 @@ let s = ""; process.stdin.on("data", c => s += c); process.stdin.on("end", () =>
       ;;
   esac
   value="$parse"
-  if node -e 'process.exit(Number(process.argv[1]) > 80 ? 0 : 1)' "$value"; then
+  local comparison="" comparison_rc=0
+  comparison="$(node -e '
+const n = Number(process.argv[1]);
+if (!Number.isFinite(n)) process.exit(2);
+if (n > 80) { process.stdout.write("above"); process.exit(1); }
+process.stdout.write("within");
+' "$value")" || comparison_rc=$?
+  if [ "$comparison_rc" -eq 1 ] && [ "$comparison" = "above" ]; then
     echo "DAILY SKIP go-guard: weekly used $value percent"
     GUARD_STOP="weekly used $value percent"
+    return 1
+  fi
+  if [ "$comparison_rc" -ne 0 ] || [ "$comparison" != "within" ]; then
+    echo "DAILY SKIP go-guard: read failed"
+    GUARD_STOP="read failed"
     return 1
   fi
   echo "DAILY GO-GUARD weekly=$value"
@@ -303,6 +315,8 @@ fi
 # ---- Four guarded track batches (D12 step 4) ------------------------------------
 RUNNER_EXIT=0
 GUARD_STOP=""
+export BENCH_SELFCHECK_MARKER="$SELFCHECK_MARKER"
+rm -f "$BENCH_SELFCHECK_MARKER"
 for track in build bugfix tests change; do
   if ! guard_read; then
     break
