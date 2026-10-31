@@ -600,6 +600,31 @@ it is not an acceptance claim.
   `origin`. Until it happens, the job pushes nothing: the rule of spec D13
   skips every job push, because `origin/main` trails the merged branch.
 
+  Recorded on 2026-10-31 in main after the merge:
+  - `MERGE_COMMIT=3277d2ac54d81f1f19d772280a7391a21905498c`
+  - `WORKLIST_BEFORE_ROWS=120`
+  - `WORKLIST_BEFORE_SHA=2f5e65d6cf5df4aa2dc8e5f42d4650ced3040fc77903a1d7c06c395e59a61a28`
+  - `WORKLIST_AFTER_ROWS=120`
+  - `WORKLIST_AFTER_SHA=2f5e65d6cf5df4aa2dc8e5f42d4650ced3040fc77903a1d7c06c395e59a61a28`
+  - `BASE_HASH runner=3e5a4c64c9bcd0b30d6143389c8e96b9a80d955681df7b072c394db937ab29ea`
+  - `BASE_HASH suite=451652e5e03ee1d3030014c527bff7714740b96a38756853d5fc68276c522ae6`
+  - `SCHEDULE_TEST Tests  107 passed (107)`; exit 0.
+  - `GREEN_REGRESSION Tests  4 passed (4)`; exit 0.
+  - `META_LOGIC=pass exit=0`; `Test Files  30 passed (30)`; `Tests  238 passed (238)`.
+  - `BATCH_COMPAT_RUNS=180`
+  - `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`
+  - `PICK_MATCH=pass date=2026-10-31 model=hy4-preview reason=untested last_test=none candidates=26 eligible=26 untested=11`
+  - `UNIT_CHECK_VERIFY=pass`; `UNIT_CHECK=pass`.
+  - `CONSENT_CHECK=pass lines=1` (the matching O1 row is line 506 of `spec.md`).
+  - `DOCS_CHECK=pass`.
+  - `TIMER_ABSENT_FILES=pass`. The shell denied `systemctl` and `crontab`, so their checks did not run.
+  - Heavy-run logs: `/tmp/opencode/daily-model-schedule-5.1-base-hash.log`,
+    `/tmp/opencode/daily-model-schedule-5.1-schedule-test.log`,
+    `/tmp/opencode/daily-model-schedule-5.1-green-regression.log`,
+    `/tmp/opencode/daily-model-schedule-5.1-meta-logic.log`,
+    `/tmp/opencode/daily-model-schedule-5.1-batch-compat.log`, and
+    `/tmp/opencode/daily-model-schedule-5.1-pick-match.log`.
+
 
   Recorded on 2026-10-25 in `main`:
   - `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`
@@ -647,7 +672,7 @@ it is not an acceptance claim.
   `PUBLISH_CHECK <day>`, `PI_SHA day1`, and `PI_CHECK day0 day1` in `main`.
   Record each labeled line in this task. Check the guard and the push rule
   in `reports/cron-daily.log`: the day holds one `DAILY GO-GUARD
-  weekly=<n>` line before each of the 4 batches, or one
+  weekly=<n> monthly=<m>` line before each of the 4 batches, or one
   `DAILY SKIP go-guard: <reason>` line on a stopped day; and the publish
   ends with `DAILY PUBLISH <sha>` after a pushed commit, or with one
   `DAILY PUSH skipped: <reason>` line. Record each line in this task.
