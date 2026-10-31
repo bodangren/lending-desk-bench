@@ -298,7 +298,7 @@ Run in the worktree. Green commits on the branch `daily-schedule`.
 
 Run in the worktree. Commit on the branch `daily-schedule`.
 
-- [~] 4.1 Operator docs. Add the section `## Daily model schedule` to
+- [x] 4.1 Operator docs — commit `a450b88`. Add the section `## Daily model schedule` to
   `README.md`. It names the three owner steps, `harness/cron-daily.sh`,
   `harness/daily-pick.ts`, `batch.sh --model`, and the day records under
   `reports/daily/`. It states the run days: Wednesday and Sunday at 01:00.
@@ -315,6 +315,43 @@ Run in the worktree. Commit on the branch `daily-schedule`.
   of the changed scripts to match.
   - Verify: `DOCS_CHECK` prints `DOCS_CHECK=pass`.
   - Verify: `PATH_CHECK` prints `PATH_CHECK=pass`, and `SCHEDULE_TEST` exits 0.
+  - Evidence: at the role start (`21def39`), `README.md` held no
+    `## Daily model schedule` section, so `DOCS_CHECK` failed with
+    `no section`. Commit `a450b88` adds the README section, the
+    comment-only script updates (finding F1), and the registry row of
+    finding F2. No code line changed. On HEAD `a450b88`:
+    `DOCS_CHECK=pass` (exit 0); `PATH_CHECK=pass` (exit 0) with
+    `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`;
+    `bash -n` exits 0 on `harness/cron-daily.sh`, `harness/batch.sh`,
+    and `harness/weekly.sh`; `SCHEDULE_TEST` through heavy-run.sh:
+    `Test Files  1 passed (1)`; `Tests  55 passed (55)` (exit 0;
+    Vitest start 09:15:43, duration 133.72 s, 2026-10-31 local time;
+    one run, no `ETIMEDOUT` and no host-load failure).
+    The real-data dry run (the owner-approved route) started
+    2026-10-31T07:32:50+07:00 on the code state `21def39` plus the
+    comment-only changes that commit `a450b88` holds. It ran no model,
+    wrote no day record (`reports/` did not exist after the run), and
+    pushed nothing (`BENCH_DAILY_PUBLISH=0`). The same dry run printed:
+    `PICK_MATCH=pass date=2026-10-31 model=hy4-preview reason=untested
+    last_test=none candidates=26 eligible=26 untested=11` and
+    `DAILY DRY-RUN planned=12`. The command was the exact `PICK_MATCH`
+    command of test-strategy section 3 inside one heavy-run.sh wrapper.
+    The wrapper added only a `tee` of the dry-run output, two `echo`
+    lines for the two sides, and one `sed` line for the dry-run label.
+    It changed no gate step:
+
+    ```bash
+    /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'mkdir -p .tmp && day=$(date -u +%F) && (cd harness && npx tsx go-cost.ts --catalog) > .tmp/daily-catalog.tmp && mv .tmp/daily-catalog.tmp .tmp/daily-catalog.json && opencode models > .tmp/daily-served.tmp && mv .tmp/daily-served.tmp .tmp/daily-served.txt && a=$(BENCH_DAILY_CATALOG=$PWD/.tmp/daily-catalog.json BENCH_DAILY_SERVED=$PWD/.tmp/daily-served.txt BENCH_DAILY_DATE=$day BENCH_DAILY_PUBLISH=0 bash harness/cron-daily.sh --dry-run 2>&1 | tee .tmp/daily-dry-run.txt | sed -n "s/^DAILY_PICK //p") && b=$(python3 -I measure/tracks/daily_model_schedule/pick-oracle.py .tmp/daily-catalog.json .tmp/daily-served.txt harness/go-pricing.json runs reports/daily "$day" | tee .tmp/daily-oracle.txt | sed -n "s/^PICK_ORACLE //p") && echo "DAILY_PICK=$a" && echo "PICK_ORACLE=$b" && sed -n "/^DAILY DRY-RUN /p" .tmp/daily-dry-run.txt && test -n "$a" && test "$a" = "$b" && echo "PICK_MATCH=pass $a"'
+    ```
+
+    The full logs are `measure/runs/daily_model_schedule/pick-match-4.1.log`
+    and `measure/runs/daily_model_schedule/schedule-test-4.1.log`.
+    Task 5.1 runs `PICK_MATCH` again in `main` after the merge.
+    `STATUS_CHECK` after this plan commit gives `blocked=4 open=0` and
+    prints no pass line: Phase 5 stays `[b]` by the orchestrator
+    instruction of this run, so no `[~]` task follows 4.1. The
+    orchestrator counts the four `[b]` tasks by hand (anti-pattern A12)
+    and opens task 5.1 when its turn comes.
 
 ## Phase 5: Doctor and owner gate
 
