@@ -366,7 +366,8 @@ Run in the worktree. Commit on the branch `daily-schedule`.
 Run in the worktree. Commit on the branch `daily-schedule`. The owner
 approved O1 on 2026-10-31 with 3 conditions (spec O1 row). This phase turns
 the conditions into rules and code: spec D11 to D14, FR-10 to FR-13, and
-NFR-6. Phase 4 Review C and the Phase 4 acceptance have not run yet; the
+NFR-6. The monthly window rule joins this phase (spec D12 and the O1 row).
+Phase 4 Review C and the Phase 4 acceptance have not run yet; the
 orchestrator runs them and orders them with this phase. The checkpoint of
 Phase 4 names the docs commit `a450b88` by the convention of Phases 1 to 3:
 it is not an acceptance claim.
@@ -476,13 +477,38 @@ it is not an acceptance claim.
     `WEEKLY_SAME=pass`; `DOCS_CHECK=pass`;
     `BATCH_COMPAT_RUNS=180`; `BATCH_COMPAT=b492c77c29fe854f1edae945ed5842974acd5bcc83331ec10aa6e4cb13cfeed7`.
     The gate logs are under `/tmp/opencode/`.
-- [~] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
+- [ ] 4b.6 Strategy amendment for the monthly window. The strategy role amends
+  `test-strategy.md`: section 5 interfaces (the new reasons and the new
+  clean-read line), the section 6 case list, `GUARD_CHECK`, and `DOCS_CHECK`
+  (the README names the monthly window). It also records the review
+  dispositions: Review A N1 (a compare-fault test that cannot fail) goes to
+  Green; Review C F2 (`batch.sh:130-134`) is declined, because the price table
+  holds batch models today.
+  - Verify: the strategy role gate prints `PASS: strategy gate passed`.
+- [ ] 4b.7 Red: failing tests for the monthly window. The cases cover each new
+  monthly reason, the weekly below-0 reason, the new clean-read line, 80 and
+  80.0001 for the monthly window, a monthly stop before batch 2 that keeps
+  the build run ids, and a dry-run monthly stop. The role updates existing
+  fixtures and assertions to the new clean-read line where the amended
+  strategy says so.
+  - Verify: `SCHEDULE_TEST` exits non-zero, each new failure names the monthly
+    rule of D12, `RED_PATH_CHECK=pass`, and the mid-red gate passes.
+- [ ] 4b.8 Green: the monthly window. Implement the D12 amendment in
+  `harness/cron-daily.sh`. Update the README for the monthly window. Fix the
+  README lock sentence (Review C F1: `README.md:281` says a run can wait when
+  a lock is held; the code skips the day with `DAILY SKIP lock held`). Make
+  the Green compare-fault test able to fail (Review A N1).
+  - Verify: `SCHEDULE_TEST` and the Green test file exit 0, `GUARD_CHECK`,
+    `UNIT_CHECK`, `DOCS_CHECK`, `PATH_CHECK`, and `WEEKLY_SAME` pass,
+    `BATCH_COMPAT` equals task 1.2, and the jr-green gate passes.
+- [ ] 4b.4 Reviews A, B, and C of the Phase 4b changes. A: the guard logic
   and the per-batch order against D12. B: the push rule of D13, the quota
   read over the local port, the credential, and the unattended timer. C:
   the new seams, the new labeled lines, the `go_guard_stop` field, and the
   unit-file text. Each role writes
   `measure/runs/daily_model_schedule/review-<a|b|c>-4b-<short head>.json`.
   - Verify: each `audit-result` prints `PASS: audit result is valid`, and each file shows `status: pass`.
+  - The reviews on `1b17ae2` passed (`review-a-1b17ae2.json`, `review-b-1b17ae2.json`, and `review-c-1b17ae2.json`, all `status: pass`, with the Phase 4 README gate in Review C). The monthly amendment supersedes them, and the reviews run again on the 4b.8 HEAD.
 - [ ] 4b.5 Adversarial tests of the Phase 4b rules. The role adds the cases
   of the amended strategy section 12 (a quota JSON with a string number, a
   port that serves the wrong JSON, a push race between the check and the
