@@ -587,7 +587,7 @@ it is not an acceptance claim.
 
 ## Phase 5: Doctor and owner gate
 
-- [b] 5.1 Merge and doctor. In `main`, run `WORKLIST_SHA`, merge
+- [x] 5.1 Merge and doctor — commit `3277d2a`. In `main`, run `WORKLIST_SHA`, merge
   `daily-schedule`, and run `WORKLIST_SHA` again with no run between. Then
   run `BASE_HASH`, `SCHEDULE_TEST`, `META_LOGIC`, `BATCH_COMPAT`, and
   `PICK_MATCH`. Record each labeled line in this task. Then report the
@@ -595,7 +595,7 @@ it is not an acceptance claim.
   scan (O1 condition 3).
 
   The manual push is an owner action after the scan and before the install
-  of task 5.3 — deferred:owner. The PM scans the range for secrets, then
+  of task 5.3 — done 2026-11-01. The PM scans the range for secrets, then
   Daniel says "push" one time, and that one manual push sends `main` to
   `origin`. Until it happens, the job pushes nothing: the rule of spec D13
   skips every job push, because `origin/main` trails the merged branch.
@@ -625,6 +625,11 @@ it is not an acceptance claim.
     `/tmp/opencode/daily-model-schedule-5.1-batch-compat.log`, and
     `/tmp/opencode/daily-model-schedule-5.1-pick-match.log`.
 
+  Recorded on 2026-11-01 and 2026-11-02 (secret scan and manual push):
+  - The PM orchestrator scanned `f4712c6..c613bc8` (61 commits, 101 files) for secrets. The scan was clean.
+  - Owner answer: "2. Push" (Daniel, 16:52 ICT 2026-11-01, relayed by the PM orchestrator).
+  - A build session on `deepseek/deepseek-flash#high` pushed `main` to `origin` one time: fast-forward `f4712c6..c613bc8`, no force. The branch `daily-schedule` was not pushed.
+  - `PUSH_CHECK=pass`. On 2026-11-02 at 12:43 ICT, `git rev-parse main` and `git rev-parse origin/main` both printed `c613bc88586efc8b090c673a2c758e02e6fe475e`.
 
   Recorded on 2026-10-25 in `main`:
   - `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`
@@ -657,17 +662,31 @@ it is not an acceptance claim.
     ```
     484:| O1 | Install the systemd user timer of D11 (unit files `harness/systemd/lending-desk-daily.service` and `harness/systemd/lending-desk-daily.timer`, `OnCalendar` Wednesday and Sunday 01:00 local time, `Persistent=false`). This starts a paid run of 12 agent runs on each run day. The run days are Wednesday and Sunday. The job pushes its own `docs/` commit under the push rule of D13. Spend is 1.07 USD per run day on average and 3.24 USD at the observed maximum. The week has about 2 run days. | Approve after the real-data dry run of task 4.1 passes and `opencode_executor` task 4.2 closes. Spend from EV11: 1.07 USD each run day on average, 3.24 USD at the observed maximum. | approved 2026-10-31 — Daniel answered "Approve with conditions" (Tasks, 2026-10-31 12:01 ICT, relayed by the PM orchestrator), with 3 conditions, exact in quotation: (1) "A systemd user timer, not a crontab line (house rule: every scheduled job is a systemd user unit + timer). Same schedule: Wednesday and Sunday 01:00. Use Persistent=false, so a missed run never starts at boot and spends Go use at an unplanned time. Put the .service and .timer files in your repo; do not install them yet." (2) "Go guard: the job skips a run day (exit 0, one clear log line, no model call) when the OpenCode Go weekly window is above 80 %, or when it cannot read the window. Read it from OpenChamber: port from `openchamber status --json`, GET /api/quota/opencode-go, usage.windows.weekly.usedPercent. The job must never draw on the paid Go credit balance." (3) "Push: no push by the job until one manual push. After your merge (task 5.1), tell me the commit range; I scan it for secrets, then Daniel says \"push\" once. After that, the job pushes only its own docs commit." Within condition 2 the PM also accepted (2026-10-31): "read the Go guard again before each of the 4 track batches, and stop the day at the first reading above 80 % or at an unreadable window. Log one line for each stop." Rules: D11, D12, D13, D14. Timing (PM): the owner installs after task 5.1, after the secret scan and the one manual push, after the selector exit fix (D14), and after 2026-11-02 07:00 (the Go week reset). First run day: Wednesday 2026-11-04 01:00. |
     ```
-- [b] 5.3 Systemd user timer install, an owner action, only after O1 is
+- [x] 5.3 Systemd user timer install (unit files at `c613bc8`), an owner action, only after O1 is
   approved, after the one manual push of task 5.1, and after 2026-11-02
   07:00 (the Go week reset). Before it, run `PI_SHA day0` and
   `ls runs > .tmp/daily-runs-before.txt` in `main`. The owner installs the
   two unit files of spec D11 (`harness/systemd/lending-desk-daily.service`
   and `harness/systemd/lending-desk-daily.timer`) as systemd user units,
   and enables the timer. The first run day is Wednesday 2026-11-04 at
-  01:00. No crontab line is installed. — deferred:owner
+  01:00. No crontab line is installed. — done 2026-11-02
   - Verify: `TIMER_CHECK` prints `TIMER_CHECK=pass` (the strategy role writes the command in task 4b.1).
   - Verify: `crontab -l | grep -c '^# DISABLED 2026-10-25 by owner request'` prints `1`.
   - Verify: `crontab -l | grep -c 'cron-daily'` prints `0`.
+  - Evidence, recorded on 2026-11-02 in `main`:
+    - Owner authorization, exact words: "I am not at the computer. You need to run these." (Daniel, Google Tasks `MUZDR0tIVkI1dW9kU3NLUA`, 10:18 ICT 2026-11-02, reply to the install note `YUhGSDNCME1NaW05WmM4Xw`, relayed by the PM orchestrator). On this authorization, a build session ran the install for the owner.
+    - Order: O1 approved 2026-10-31 (task 5.2); the manual push on 2026-11-01 (task 5.1); the Go week reset on 2026-11-02 at 07:00; the day-0 snapshot at 07:28 ICT; the install at 12:41 ICT.
+    - Day-0 snapshot (session `Build · P5 5.3 · daily_model_schedule`, `SNAPSHOT=pass`; the timer was `not-found` at 07:28:58 ICT): `PI_RUNS=95`; `PI_SHA=cbb545a856d936c4ea4200ed4e8841362badc31fdd19a4962408e31bd2f297ca`; `PI_BASE_MATCH=yes` (equal to task 1.2); file `measure/runs/daily_model_schedule/pi-day0.txt`. The file `.tmp/daily-runs-before.txt` holds 547 lines, sha256 `91c3768582946df84a4be215f49310914ea0fb5f54059e577ab5594f1ab7dbf1`.
+    - Install (session `ses_e653995dfffeR2agIbn5Db3NHw`, `INSTALL=pass`). Each command ran in its own shell call, and each exited 0:
+      1. `cp /home/daniebo/Desktop/lending-desk-bench/harness/systemd/lending-desk-daily.service /home/daniebo/Desktop/lending-desk-bench/harness/systemd/lending-desk-daily.timer /home/daniebo/.config/systemd/user/`: no output.
+      2. `systemctl --user daemon-reload`: no output.
+      3. `systemctl --user enable --now lending-desk-daily.timer`: `Created symlink '/home/daniebo/.config/systemd/user/timers.target.wants/lending-desk-daily.timer' → '/home/daniebo/.config/systemd/user/lending-desk-daily.timer'.`
+      4. `systemctl --user list-timers`: the timer row is `Wed 2026-11-04 01:00:00 +07 1 day 12h -                                      - lending-desk-daily.timer                      lending-desk-daily.service`.
+    - The service did not start: `systemctl --user is-active lending-desk-daily.service` printed `inactive`, `ExecMainStartTimestamp` was empty, and `reports/cron-daily.log` was absent.
+    - The installed unit files equal the repository files (`cmp`, `UNITS_IDENTICAL=yes`). `UnitFileState=enabled`; `ActiveEnterTimestamp=Mon 2026-11-02 12:41:57 +07`; `NextElapseUSecRealtime=Wed 2026-11-04 01:00:00 +07`.
+    - `TIMER_CHECK=pass` (exit 0, 12:43 ICT; the orchestrator ran it read-only).
+    - `crontab -l | grep -c '^# DISABLED 2026-10-25 by owner request'` printed `1`. `crontab -l | grep -c 'cron-daily'` printed `0`.
+    - Route deviation: `ra-quota pick record` gave `openai/gpt-6-luna#high`. `session.create` opened the session with the read-only orchestrator agent. That agent passed the brief to a build session on `minimax-cn-coding-plan/MiniMax-M3.1-Flash`. The PM orchestrator accepted the route (12:53 ICT 2026-11-02; an allowed route), so the install did not run again.
 - [b] 5.4 First live day. After the first job ends, run `DAY_CHECK <day>`,
   `PUBLISH_CHECK <day>`, `PI_SHA day1`, and `PI_CHECK day0 day1` in `main`.
   Record each labeled line in this task. Check the guard and the push rule
