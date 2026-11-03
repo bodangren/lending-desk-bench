@@ -18,10 +18,11 @@ Constraints for every role:
 - The track makes no model call and spends no Go quota (spec NFR-1, NFR-2).
 - The track runs no `playwright install`, no `apt`, and no `sudo` (spec
   NFR-4).
-- The track runs no regrade before the page text gate of D5 and the Chrome
-  update of D9.
-- The daily job and the regrade never run at the same time. The regrade
-  checks the daily lock before each run.
+- The pilot of task 2.3 waits only for task 1.4. Tasks 4.1 and 4.2 wait for
+  task 3.1 (the Chrome update). No regrade waits for the page text of task
+  3.2.
+- A regrade never holds the daily lock. Task 4.3 names the lock check and
+  the timer check of each regrade call.
 - The owner gates stay with Daniel: the Chrome update with `sudo`, each
   push, the page text, and any deletion.
 - Stage files by explicit path. Never stage `.opencode/` or `tech-debt.md`.
@@ -41,10 +42,15 @@ Marker use:
     and return the version of the launched browser.
   - `harness/grade.sh`: write `artifacts/grader-browser.json` with
     `{"schema":1,"channel":"chrome","version":"<version>"}` for each grade
-    that launches a browser.
+    that launches a browser. A tests-track grade launches no browser, so it
+    writes no record.
   - `harness/rescore-doctor.sh`: add the guard of D3 before any write of a
-    run. The guard prints one `SKIP <run> (graded before the system Chrome
-    move; regrade needed)` line and changes nothing.
+    run. The guard reads the track of the run first. A tests-track run
+    (the provenance `track` is `tests`, or the run id starts with `tt-`)
+    passes the guard. A build, bugfix, or change run passes only with a
+    record whose `channel` is `chrome`. Any other run prints one
+    `SKIP <run> (graded before the system Chrome move; regrade needed)` line
+    and changes nothing.
   - `harness/cron-daily.sh`: check the system Chrome instead of the headless
     shell path. Keep the prefix `DAILY FAIL playwright:` and the exit 2.
   - `harness/weekly.sh`: check the system Chrome. Remove the line that tells
@@ -52,7 +58,10 @@ Marker use:
   - `harness/schedule-tests/daily-schedule-green.test.ts`: change the fake
     path of line 76 to the system Chrome path.
   - `harness/export-site-data.py`: add the data field `grader_browser` to each
-    result. It holds `chrome` or `legacy-headless-shell-151`.
+    result. It holds `chrome` for a run with a record whose `channel` is
+    `chrome`, `none` for a tests-track run, and `legacy-headless-shell` for a
+    build, bugfix, or change run with no record. The value holds no revision
+    number.
   Add the tests of the guard of D3 and of the record of D2 under
   `harness/schedule-tests/`. That directory sits outside the suite hash
   (spec EV5), so the tests move no hash.
@@ -80,7 +89,7 @@ Marker use:
 - [ ] 1.3 The full suite once through `heavy-run.sh`. Run the full suite once
   at the end of the code phase. The command runs inside the heavy-run
   wrapper, so that one heavy job holds the machine.
-  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run --configLoader native && npm run test:meta:logic'`.
+  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
   - Verify: the run exits 0, and the log holds a `Tests` line with no failed
     test for each of the two suites.
   - Verify: the log of the run sits at
@@ -101,38 +110,44 @@ Marker use:
 ## Phase 2: The proof on the system Chrome
 
 - [ ] 2.1 The browser check. Run the browser check on the current harness.
-  It launches the system Chrome and prints `browser ready`.
-  - Command: `cd harness && npx tsx browser-check.ts`.
+  It launches the system Chrome and prints `browser ready`. The command runs
+  through `heavy-run.sh`, because it launches a browser.
+  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx tsx browser-check.ts'`.
   - Verify: the command exits 0 and prints `browser ready`.
-  - Lane: light. One browser launch. Run it through `heavy-run.sh`.
+  - Lane: light. One browser launch.
 - [ ] 2.2 The first live day. The live day grades with the system Chrome.
   The self-check and the canary of the batch run inside the batch
   (`harness/batch.sh:204-346`). The day record names the model and the run
-  ids.
+  ids. Right after this live day, the orchestrator runs the gates of
+  `daily_model_schedule` task 5.4 and closes it there.
   - Verify: `reports/cron-daily.log` holds one `DAILY GO-GUARD weekly=<n>
     monthly=<m>` line before each of the 4 batches.
   - Verify: `reports/cron-daily.log` holds no `DAILY FAIL playwright` line.
-  - Verify: `DAY_CHECK <day>` prints `DAY_CHECK=pass model=<id>
-    runs=<n> harness=<sha>` and exits 0.
-  - Verify: `PI_CHECK <a> <b>` prints `PI_CHECK=pass`.
+  - Verify: `DAY_CHECK <day>` prints `DAY_CHECK=pass model=<id> runs=<n>
+    harness=<n>` and exits 0.
+  - Verify: `PI_SHA day2` prints `PI_RUNS=95` and a `PI_SHA=` line with 64
+    hex characters. `PI_CHECK day0 day2` prints `PI_CHECK=pass`.
   - Lane: light. The live day runs on its own timer. This task records it.
-- [ ] 2.3 The pilot regrade. Run the step 1 of D7. The persisted flags of
-  spec EV15 hold no trusted bugfix run, no trusted change run, and no trusted
-  canary run. The pilot therefore regrades 1 trusted build run and the 1
-  trusted tests run. Record the old total and the new total of each run.
-  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh <run-id>'` for each of the 2 runs.
-  - Verify: the log holds one `REGRADED total=<n> valid=true` line for each
-    run.
-  - Verify: this task holds the old total and the new total of each run.
+- [ ] 2.3 The pilot regrade. Run the step 1 of D7. Regrade 1
+  persisted-rankable build run of week 2026w43. No trusted bugfix or change
+  run exists, and the tests track needs no browser proof. Record the old
+  total and the new total of the run.
+  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh <run-id>'`.
+  - Verify: the log holds one `[<run-id>] REGRADED total=<n> valid=true` line.
+  - Verify: this task holds the old total and the new total of the run. The
+    old total comes from the `score.json` of `artifacts.prev-<stamp>/`.
   - Verify: this task holds the wall time of one regrade. The day count of
     task 4.2 uses that value and the measured run count of spec EV16.
   - Lane: light. One heavy run.
 - [ ] 2.4 The rescore SKIP lines on that live day. The live day runs
-  `rescore-doctor.sh` twice (spec EV8). The guard holds each old score.
+  `rescore-doctor.sh` twice (spec EV8). The guard holds each old build,
+  bugfix, or change score.
   - Verify: `grep -c "graded before the system Chrome move; regrade needed"
     reports/cron-daily.log` prints a count above 0.
-  - Verify: an old non-Pi run keeps the bytes of its `score.json` after the
-    live day.
+  - Verify: an old non-Pi BUILD run keeps the bytes of its `score.json` after
+    the live day.
+  - Verify: the legacy tests-track runs get a new `score.json` from the
+    rescore. That is expected, because their grade used no browser.
   - Lane: light. A read-only check.
 
 ## Phase 3: The human gates
@@ -154,43 +169,58 @@ Marker use:
 
 ## Phase 4: The regrade (D7, D8)
 
-- [ ] 4.1 The step 2 of D7. Regrade the newest persisted-rankable run of
-  each model and track. Spec EV15 holds 13 model and track pairs over 9
-  models. Each pair takes its newest run of week 2026w43. A pair with 2 arms
-  takes the newer run of the pair. This task records the chosen run id of
-  each pair.
+- [ ] 4.1 The step 2 of D7. Regrade week 2026w43 and all its reachable runs.
+  Spec EV16 gives build 8 and tests 10. Those runs hold all 17
+  persisted-rankable runs of EV15. The task waits for the Chrome update of
+  task 3.1. The pilot run of task 2.3 is one of these runs, so it is graded
+  again.
   - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEKS=2026w43 ./regrade-all.sh'`.
-  - Verify: the log holds a `REGRADED` line for each of the 13 model and
-    track pairs.
+  - Verify: the log holds a `[<run-id>] REGRADED total=<n> valid=true` line
+    for each regraded run.
   - Verify: the log holds a line
     `REGRADE-ALL END <time> ok=<n> not-ok=<n> skipped=<n>`.
   - Verify: `PI_CHECK <a> <b>` prints `PI_CHECK=pass`.
   - Verify: this task holds the OK, FAIL, and SKIP counts of the week.
-  - Lane: light. One heavy run.
-- [ ] 4.2 The step 3 of D7. Regrade all other curable weeks, newest first.
-  The reachable runs of spec EV16 leave these weeks: 2026w43 with the second
-  arm of the 4 build pairs, then 2026w39 build 2, then 2026w38 build 10.
+  - Verify: the pilot wall time of task 2.3 times the run count of the week
+    is more than 80 minutes. Then the week runs as 3 calls: `ONLY=a-`,
+    `ONLY=b-`, and `ONLY=tt-`, one heavy-run call each.
+  - Lane: light. One heavy run, or 3 when the week splits.
+- [ ] 4.2 The step 3 of D7. Regrade all other curable weeks, newest first:
+  week 2026w39, then week 2026w38. Spec EV16 gives 2026w39 build 2 and
+  2026w38 build 10. The task waits for the Chrome update of task 3.1.
   - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEKS=<week> ./regrade-all.sh'` for each week.
   - Verify: the log of each week holds a line
     `REGRADE-ALL END <time> ok=<n> not-ok=<n> skipped=<n>`.
   - Verify: `PI_CHECK <a> <b>` prints `PI_CHECK=pass` after each week.
+  - Verify: the pilot wall time of task 2.3 times the run count of the week
+    is more than 80 minutes. Then the week runs as 2 calls: `ONLY=a-` and
+    `ONLY=b-`, one heavy-run call each.
   - Verify: this task holds the OK, FAIL, and SKIP counts of each week and
     the day count of the whole regrade. The day count = the reachable run
     count of spec EV16 (30) divided by the runs per day. The runs per day =
     the hours of one heavy-run slot divided by the wall time of one regrade
     from task 2.3.
-  - Lane: light. One heavy run per week.
-- [ ] 4.3 The daily lock check. Before each regrade run, check that the daily
-  job holds no lock. The lock path is `BENCH_DAILY_LOCK`, which defaults to
-  `$ROOT/.tmp/weekly-cron.lock` (`harness/cron-daily.sh:34`). A regrade never
-  starts between 00:45 and the end of the daily job on Wed and Sun.
-  - Verify: the plan records the lock check of each regrade run.
-  - Verify: no regrade ran while the daily job ran.
+  - Lane: light. One heavy run per week, or 2 when the week splits.
+- [ ] 4.3 The daily lock and the timer. A regrade must not hold the daily
+  lock, because a held lock would stop the live day. Before each regrade
+  call, run `flock -n <lock> true`. The lock path is `BENCH_DAILY_LOCK`,
+  which defaults to `$ROOT/.tmp/weekly-cron.lock`
+  (`harness/cron-daily.sh:34`). The command must exit 0. Then read
+  `systemctl --user list-timers lending-desk-daily.timer`, and start the
+  regrade only when the next start is more than 4 hours away. One
+  `heavy-run.sh` call stops at `HEAVY_RUN_TIMEOUT_S` (default 5400 s,
+  `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh:38-43`).
+  - Verify: the plan records the lock check and the timer read of each
+    regrade call.
+  - Verify: no regrade held the daily lock, and no regrade started within 4
+    hours of a live day.
   - Lane: light. A read-only check.
 - [ ] 4.4 The score change report of D8. For each regraded run, record the old
-  total and the new total from the `regrade-all.sh` log. Per track, record
-  the mean change and the max absolute change. List each run with a change of
-  more than 5 points.
+  total and the new total. The new total comes from the
+  `[<run-id>] REGRADED total=<n> valid=<bool>` line of the log. The old
+  total comes from the `score.json` of `artifacts.prev-<stamp>/`. Per track,
+  record the mean change and the max absolute change. List each run with a
+  change of more than 5 points.
   - Verify: the report holds one old total and one new total for each
     regraded run.
   - Verify: the list of runs with a change of more than 5 points matches the
@@ -207,9 +237,8 @@ Marker use:
   - Verify: the four counts match the logs of task 4.1 and task 4.2.
   - Verify: the reason of each stale run names one of the four reasons.
   - Lane: light. A read-only count.
-- [ ] 5.2 The report to the PM. Send the report of D8 to the PM. Then close
-  `daily_model_schedule` task 5.4 with the live day of task 2.2.
-  - Verify: the plan records the date of the send and the date of the close.
+- [ ] 5.2 The report to the PM. Send the report of D8 to the PM.
+  - Verify: the plan records the date of the send.
   - Lane: light. A text report.
 - [ ] 5.3 The hand-off of the open tasks. The open tasks of spec EV13 are
   `opencode_executor` task 4.4 part 2 and task 4.3. Both wait for a grader
@@ -252,9 +281,9 @@ Marker use:
   provenance with the current hashes and runs no test. The guard of D3 lands
   in the same commit as D1, so no live day can see the new hashes without
   the guard.
-- **The tests track launches no browser.** Its grade writes no
-  `grader-browser.json`. The guard of D3 skips that run, and the regrade of
-  D7 cures it. The stale mark of a tests-track run stays until that regrade.
+- **The tests track labels itself current.** On the first live day, the
+  rescore labels the legacy tests-track runs as current. This is correct,
+  because their grade used no browser.
 - **The site shows the old numbers.** The export copies the persisted flags.
   The site keeps the old scores as rankable until a run writes a new
   `score.json`. The gate of D5 holds the page text.

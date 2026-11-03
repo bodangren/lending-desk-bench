@@ -90,8 +90,10 @@ All facts come from the files on disk and from read-only commands on
   hashes and rebuilds `score.json` from the persisted `results.json`. The
   script runs no test. Its header states that a suite edit needs
   `regrade-run.sh`. The first live day after the harness commit would label
-  every old non-Pi result as current under the new hashes. The stale mark
-  would disappear without a regrade. `opencode_executor` task 4.4 part 2
+  every old non-Pi result of the build, bugfix, or change track as current
+  under the new hashes. The stale mark of those results would disappear
+  without a regrade. A tests-track result stays correct, because its grade
+  used no browser. `opencode_executor` task 4.4 part 2
   (`WEEK=all ./rescore-doctor.sh`) has the same effect.
 - **EV9. The regrade.** `harness/regrade-run.sh:1-18` (bench_v2 FR-10)
   regrades one run on the current harness. It grafts the agent files onto a
@@ -185,12 +187,11 @@ All facts come from the files on disk and from read-only commands on
   10. The 4 runs of week 2026w41 are canary runs. Their names fall outside
   the pattern, so the script leaves them alone.
 
-  The measured mean grading time of the 17 runs of (e) is 0.0717 h. That mean
-  comes from one run with a value above 0. A regrade also copies the agent
-  tree and installs its dependencies, so its wall time is longer than its
-  grading time. The pilot of D7 step 1 measures that wall time. A first
-  estimate with the measured mean grading time gives 30 × 0.0717 h = 2.2 h of
-  grading for the whole reachable set.
+  The wider read of EV15 gives a mean grading time of 110.4 s. The 30
+  reachable runs at that mean give about 0.9 h of grading. A regrade also
+  copies the agent tree and installs its dependencies, so its wall time is
+  longer than its grading time. The pilot of D7 step 1 measures that wall
+  time.
 
 ## Definitions
 
@@ -228,16 +229,20 @@ change it.
    version of the launched browser (`browser.version()`).
    `harness/grade.sh` writes a new artifact `artifacts/grader-browser.json`
    with `{"schema":1,"channel":"chrome","version":"<version>"}` for each
-   grade. The version is a record, not a freshness input. A Chrome update
-   does not make a score stale. The tests track launches no browser
-   (`harness/grade.sh:146-151`), so its grade writes no record. The rescore
-   guard of D3 then skips that run, and the regrade of D7 cures it.
-3. **D3. The rescore guard.** `harness/rescore-doctor.sh` prints one
+   grade that launches a browser. The version is a record, not a freshness
+   input. A Chrome update does not make a score stale. The tests track
+   launches no browser (`harness/grade.sh:146-147`), so its grade writes no
+   record. The guard of D3 reads the track of the run first, so a tests-track
+   run needs no record.
+3. **D3. The rescore guard.** `harness/rescore-doctor.sh` reads the track of
+   the run first. A tests-track run (the provenance `track` is `tests`, or the
+   run id starts with `tt-`) passes the guard, because its grade launches no
+   browser and its results do not depend on the browser. A run of the build,
+   bugfix, or change track passes the guard only with a record whose `channel`
+   is `chrome`. Any other run prints one
    `SKIP <run> (graded before the system Chrome move; regrade needed)` line
-   and changes nothing when `artifacts/grader-browser.json` is missing or its
-   `channel` is not `chrome`. The check runs before any write. The guard
-   lands in the same commit as D1, so no live day can see the new hashes
-   without it.
+   and changes nothing. The check runs before any write. The guard lands in
+   the same commit as D1, so no live day can see the new hashes without it.
 4. **D4. The pre-batch checks.** `harness/cron-daily.sh:356-360` and
    `harness/weekly.sh:23-29` check the system Chrome instead of the
    headless shell path. The check tests that the system Chrome binary exists
@@ -251,8 +256,11 @@ change it.
 5. **D5. The stale mark.** After the harness commit, the live check marks
    every old non-Pi score `STALE-PROVENANCE` (EV6, no change). The guard of
    D3 keeps that mark until a regrade. `harness/export-site-data.py` adds a
-   data field `grader_browser` to each result. The field holds `chrome` or
-   `legacy-headless-shell-151`. A run with no record holds no field. The
+   data field `grader_browser` to each result. The field holds `chrome` for a
+   run with a record whose `channel` is `chrome`, `none` for a tests-track
+   run, and `legacy-headless-shell` for a build, bugfix, or change run with
+   no record. The Pi runs sit in the last group. The value holds no revision
+   number, because older runs used other headless shell revisions. The
    visible page text for the mark goes to the PM first, then to Daniel for a
    look check, because `docs/` is the public site. Until the PM gives the
    text, the pages change nothing.
@@ -264,25 +272,38 @@ change it.
    inside the existing budget of EV10 and the 80 % guard. This track adds no
    run day.
 7. **D7. The regrade order.** The order has 3 steps. (1) A pilot: regrade 1
-   trusted build run and 1 trusted run of each other track. Record the old
-   and the new totals. (2) The newest persisted-rankable run of each model
-   and track (the runs that the site ranks now), newest week first.
-   (3) All other curable weeks, newest first. One ISO week takes one
-   heavy-run slot (`WEEKS=<week> ./regrade-all.sh` through `heavy-run.sh`).
-   Storytime roles take the slots first (PM rule 1). A regrade never runs at
-   the same time as the daily job, from Wed and Sun 00:45 until the job ends.
-   The plan names the mechanism: the daily lock `BENCH_DAILY_LOCK`
-   (`harness/cron-daily.sh:34`). After each week, record the OK, FAIL, and
-   SKIP counts, and run `PI_CHECK`. It must print `PI_CHECK=pass`. The day
-   count comes from the measured run count of EV16 and the measured grading
-   time of EV15. The pilot of step 1 gives the wall time of one regrade. The
-   runs per day = the hours of one heavy-run slot divided by that wall time.
-   The day count = the reachable run count divided by the runs per day.
+   persisted-rankable build run of week 2026w43. Record the old and the new
+   totals. (2) Regrade week 2026w43 and all its reachable runs (EV16: build
+   8 and tests 10). Those runs hold all 17 persisted-rankable runs of EV15.
+   The pilot run of step 1 is one of them, so it is graded again. Its second
+   old total comes from the first `artifacts.prev-<stamp>/`.
+   (3) Regrade all other curable weeks, newest first: 2026w39, then 2026w38.
+   One ISO week takes one heavy-run slot (`WEEKS=<week> ./regrade-all.sh`
+   through `heavy-run.sh`). Storytime roles take the slots first (PM rule 1).
+   A regrade never holds the daily lock, because a held lock would stop the
+   live day. A regrade starts only when `flock -n <lock> true` exits 0 on the
+   daily lock (`BENCH_DAILY_LOCK`, default `$ROOT/.tmp/weekly-cron.lock`,
+   `harness/cron-daily.sh:34`) and `systemctl --user list-timers
+   lending-desk-daily.timer` shows the next start more than 4 hours away.
+   One `heavy-run.sh` call stops at `HEAVY_RUN_TIMEOUT_S` (default 5400 s,
+   `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh:38-43`).
+   When the pilot wall time times the run count of a week is more than 80
+   minutes, the week runs as separate calls by prefix (`ONLY=a-`, `ONLY=b-`,
+   `ONLY=tt-`), one heavy-run call each. After each week, record the OK,
+   FAIL, and SKIP counts, and run `PI_CHECK`. It must print `PI_CHECK=pass`.
+   The day count comes from the measured run count of EV16 and the measured
+   grading time of EV15. The pilot of step 1 gives the wall time of one
+   regrade. The runs per day = the hours of one heavy-run slot divided by
+   that wall time. The day count = the reachable run count divided by the
+   runs per day.
 8. **D8. The score change report.** For each regraded run, record the old and
-   the new total (the `regrade-all.sh` log). Per track, record the mean and
-   the max absolute change. List each run with a change of more than 5 points.
-   The orchestrator sends this report to the PM before the next live day
-   publishes the regraded scores, because the public numbers change.
+   the new total. The new total comes from the
+   `[<run-id>] REGRADED total=<n> valid=<bool>` line of the log. The old
+   total comes from the `score.json` of `artifacts.prev-<stamp>/`. Per track,
+   record the mean and the max absolute change. List each run with a change of
+   more than 5 points. The orchestrator sends this report to the PM before the
+   next live day publishes the regraded scores, because the public numbers
+   change.
 9. **D9. The Chrome version.** Ask Daniel, through the PM, to update the
    system Chrome to 156.0.8078.79 or newer with `sudo` before the regrade of
    D7 step 2. The harness change and the live day do not wait for it. The
@@ -301,8 +322,8 @@ change it.
     lands before Sun 2026-11-08 01:00 +07, so that the live day can grade
     and close `daily_model_schedule` task 5.4. Else the next live day is Wed
     2026-11-11. `opencode_executor` task 4.4 part 2 runs only after the
-    step 3 of D7 ends. With D3, an earlier rescore relabels nothing, but the
-    task waits so its record stays clear.
+    step 3 of D7 ends. With D3, an earlier rescore relabels no build, bugfix,
+    or change result, but the task waits so its record stays clear.
 
 ## Functional requirements
 
@@ -314,30 +335,37 @@ change it.
   `playwright install`.
 - **Check.** `rg -n "channel" harness/playwright.config.ts` prints one line
   that holds `channel: "chrome"`. `rg -n "executablePath" harness/` prints
-  no line. `cd harness && npx tsx browser-check.ts` prints `browser ready`
-  and exits 0.
+  no line. The browser-check command runs through `heavy-run.sh`, because it
+  launches a browser. `cd harness && npx tsx browser-check.ts` prints
+  `browser ready` and exits 0.
 
 ### FR-2 — The browser record
 
 - `harness/browser-check.ts` returns the version of the launched browser.
   `harness/grade.sh` writes `artifacts/grader-browser.json` with
   `{"schema":1,"channel":"chrome","version":"<version>"}` for each grade that
-  launches a browser. The record is not a freshness input. A Chrome update
-  does not make a score stale.
-- **Check.** A graded run holds `runs/<run-id>/artifacts/grader-browser.json`
-  with `schema` 1 and `channel` `chrome`. The freshness check on that run
-  reads no field of that file.
+  launches a browser. A tests-track grade launches no browser, so it writes
+  no record. The record is not a freshness input. A Chrome update does not
+  make a score stale.
+- **Check.** A graded build, bugfix, or change run holds
+  `runs/<run-id>/artifacts/grader-browser.json` with `schema` 1 and `channel`
+  `chrome`. A tests-track run holds no such file. The freshness check on
+  that run reads no field of that file.
 
 ### FR-3 — The rescore guard
 
-- `harness/rescore-doctor.sh` prints one
+- `harness/rescore-doctor.sh` reads the track of the run first. A
+  tests-track run (the provenance `track` is `tests`, or the run id starts
+  with `tt-`) passes the guard. A run of the build, bugfix, or change track
+  passes the guard only with a record whose `channel` is `chrome`. Any other
+  run prints one
   `SKIP <run> (graded before the system Chrome move; regrade needed)` line
-  and changes nothing when `artifacts/grader-browser.json` is missing or its
-  `channel` is not `chrome`. The check runs before any write of the run.
+  and changes nothing. The check runs before any write of the run.
 - The guard lands in the same commit as FR-1.
-- **Check.** A run without the record keeps the bytes of its `score.json`
-  after `WEEK=all ./rescore-doctor.sh`. The log holds one `SKIP <run> (graded
-  before the system Chrome move; regrade needed)` line for that run.
+- **Check.** A build, bugfix, or change run without the record keeps the
+  bytes of its `score.json` after `WEEK=all ./rescore-doctor.sh`. The log
+  holds one `SKIP <run> (graded before the system Chrome move; regrade
+  needed)` line for that run. A tests-track run passes the guard.
 
 ### FR-4 — The pre-batch checks
 
@@ -357,8 +385,10 @@ change it.
 - The live check marks every old non-Pi score `STALE-PROVENANCE` after the
   harness commit (EV6). The guard of FR-3 holds that mark until a regrade.
   `harness/export-site-data.py` adds a data field `grader_browser` to each
-  result. The field holds `chrome` or `legacy-headless-shell-151`. The
-  visible page text waits for the PM and then for Daniel.
+  result. The field holds `chrome` for a run with a record whose `channel` is
+  `chrome`, `none` for a tests-track run, and `legacy-headless-shell` for a
+  build, bugfix, or change run with no record. The visible page text waits
+  for the PM and then for Daniel.
 - **Check.** `cd harness && npx tsx score-freshness.ts <run>/artifacts/score.json`
   prints a JSON line that holds `"state":"STALE-PROVENANCE"` and
   `"rankable":false`.
@@ -368,17 +398,20 @@ change it.
 - The regrade (`regrade-run.sh`, `regrade-all.sh`) is the only cure. The
   track runs no agent and makes no model call. It adds 0 USD and 0 % Go quota
   per day. A run that the regrade cannot cure keeps its stale mark.
-- **Check.** The Go quota read before the regrade and the read after it give
-  the same weekly and monthly values. The regrade log holds no model call.
+- **Check.** `harness/regrade-run.sh` starts no agent, and the regrade log
+  holds no `opencode` start line. For each regraded run, `cmp` shows that the
+  copied-forward files (`execution-identity.json`, `executor-cohort.json`,
+  and the transcript) in `artifacts/` equal the copies in
+  `artifacts.prev-<stamp>/`.
 
 ### FR-7 — The regrade order
 
-- The order has 3 steps (D7). Step 1 regrades 1 trusted build run and 1
-  trusted run of each other track. Step 2 regrades the newest
-  persisted-rankable run of each model and track, newest week first. Step 3
-  regrades all other curable weeks, newest first. One ISO week takes one
-  heavy-run slot. Storytime roles take the slots first. A regrade never runs
-  at the same time as the daily job.
+- The order has 3 steps (D7). Step 1 regrades 1 persisted-rankable build run
+  of week 2026w43. Step 2 regrades week 2026w43 and all its reachable runs.
+  Step 3 regrades all other curable weeks, newest first: 2026w39, then
+  2026w38. One ISO week takes one heavy-run slot. Storytime roles take the
+  slots first. A regrade never holds the daily lock, and it starts only when
+  the next live day starts more than 4 hours away.
 - After each week, the plan records the OK, FAIL, and SKIP counts, and runs
   `PI_CHECK`. It must print `PI_CHECK=pass`.
 - **Check.** The regrade log of each week holds a line
@@ -388,10 +421,12 @@ change it.
 ### FR-8 — The score change report
 
 - For each regraded run, the report holds the old total and the new total.
-  Per track, the report holds the mean change and the max absolute change.
-  The report lists each run with a change of more than 5 points. The
-  orchestrator sends the report to the PM before the next live day publishes
-  the regraded scores.
+  The old total comes from the `score.json` of `artifacts.prev-<stamp>/`. The
+  new total comes from the `[<run-id>] REGRADED total=<n> valid=<bool>` line
+  of the log. Per track, the report holds the mean change and the max
+  absolute change. The report lists each run with a change of more than 5
+  points. The orchestrator sends the report to the PM before the next live
+  day publishes the regraded scores.
 - **Check.** The report holds one old total and one new total for each
   regraded run. The list of runs with a change of more than 5 points matches
   the report.
@@ -408,9 +443,10 @@ change it.
 ### FR-10 — The order with the other tracks
 
 - The harness commit lands before Sun 2026-11-08 01:00 +07, so that the live
-  day can grade and close `daily_model_schedule` task 5.4. Else the next live
-  day is Wed 2026-11-11. `opencode_executor` task 4.4 part 2 runs only after
-  the step 3 of D7 ends.
+  day can grade and close `daily_model_schedule` task 5.4. That close happens
+  on that live day, not after the regrade. Else the next live day is Wed
+  2026-11-11. `opencode_executor` task 4.4 part 2 runs only after the
+  step 3 of D7 ends.
 - **Check.** The plan records the commit SHA of the harness commit and the
   date of the next live day. The plan records the day that closed
   `daily_model_schedule` task 5.4.
@@ -446,9 +482,8 @@ change it.
   `apt`. The owner runs the Chrome update of D9 with `sudo`.
 - **NFR-5 The public site waits.** No push of `docs/` happens before the
   page text gate of D5.
-- **NFR-6 The hash lists stay small.** The change touches no file of the
-  fixture, of `reference/`, or of `harness/tests/`. The suite hash then moves
-  only through `harness/playwright.config.ts`.
+- **NFR-6 The change stays out of the fixture.** The change touches no file
+  of `fixture/` or `reference*/`.
 
 ## Owner decisions
 
@@ -462,15 +497,18 @@ change it.
 1. **AC-1** The grader browser is the system Chrome, and no file sets
    `executablePath` (FR-1).
 2. **AC-2** Each grade that launches a browser writes
-   `artifacts/grader-browser.json`, and no freshness check reads that file
-   (FR-2).
-3. **AC-3** `rescore-doctor.sh` skips each run without the record and changes
-   nothing (FR-3).
+   `artifacts/grader-browser.json`, no freshness check reads that file, and
+   a tests-track grade writes no record (FR-2).
+3. **AC-3** `rescore-doctor.sh` skips each build, bugfix, or change run
+   without the record, passes each tests-track run, and changes nothing
+   (FR-3).
 4. **AC-4** The pre-batch checks name the system Chrome, and `weekly.sh` names
    no `playwright install` command (FR-4).
 5. **AC-5** The live check marks each old non-Pi score `STALE-PROVENANCE`,
-   and the site export adds the field `grader_browser` (FR-5).
-6. **AC-6** The regrade makes no model call and spends no Go quota (FR-6).
+   and the site export adds the field `grader_browser` with `chrome`,
+   `none`, or `legacy-headless-shell` (FR-5).
+6. **AC-6** The regrade starts no agent, and the copied-forward files of each
+   regraded run equal their copies in `artifacts.prev-<stamp>/` (FR-6).
 7. **AC-7** The regrade order of D7 runs week by week, and `PI_CHECK` prints
    `PI_CHECK=pass` after each week (FR-7).
 8. **AC-8** The score change report holds the old and the new total of each
@@ -513,9 +551,9 @@ change it.
   provenance with the current hashes and runs no test. Without the guard of
   D3, the first live day would cure the stale mark without a regrade. The
   guard lands in the same commit as D1.
-- **R6 The tests track launches no browser.** Its grade writes no
-  `grader-browser.json`. The guard of D3 skips that run, and the regrade of
-  D7 cures it. The stale mark of a tests-track run stays until that regrade.
+- **R6 The tests track labels itself current.** On the first live day, the
+  rescore labels the legacy tests-track runs as current. This is correct,
+  because their grade used no browser.
 - **R7 The site shows the old numbers.** The export copies the persisted
   flags. The site keeps the old scores as rankable until a run writes a new
   `score.json`. The gate of D5 holds the page text.
