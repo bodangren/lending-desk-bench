@@ -693,8 +693,26 @@ it is not an acceptance claim.
   in `reports/cron-daily.log`: the day holds one `DAILY GO-GUARD
   weekly=<n> monthly=<m>` line before each of the 4 batches, or one
   `DAILY SKIP go-guard: <reason>` line on a stopped day; and the publish
-  ends with `DAILY PUBLISH <sha>` after a pushed commit, or with one
-  `DAILY PUSH skipped: <reason>` line. Record each line in this task.
+   ends with `DAILY PUBLISH <sha>` after a pushed commit, or with one
+   `DAILY PUSH skipped: <reason>` line. Record each line in this task.
+
+   - First live day, 2026-11-04 (record date 2026-11-03):
+     - `systemctl --user status lending-desk-daily.service`: started `Wed 2026-11-04 01:00:06 +07`; main process exited with `status=2/INVALIDARGUMENT` at 01:01:05; the service failed with result `exit-code` at 01:01:11.
+     - `reports/cron-daily.log` has exactly three lines: `DAILY START 2026-11-04T01:00:06+07:00`, `DAILY_PICK date=2026-11-03 model=hy4-preview reason=untested last_test=none candidates=26 eligible=26 untested=11`, and `DAILY FAIL playwright: Chromium is missing`. The log has no `GO-GUARD`, `DAILY PUSH`, or `DAILY PUBLISH` lines.
+     - `reports/daily/2026-11-03.json`: `model=hy4-preview`, `reason=untested`, `run_ids=[]`, `runner_exit=null`, `go_guard_stop=null`.
+     - `ls runs | wc -l` printed `547`; `.tmp/daily-runs-before.txt` has `547` lines. The day made no run, batch, model call, publish commit, or push.
+     - Cause: `harness/cron-daily.sh:356-360` stops with exit 2 when no `~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell` exists. The cache now holds only `.links` and `ffmpeg-1011`. The PM log records Daniel's 2026-11-03 21:21 ICT order to delete Chromium builds older than `156.0.8078.73`; the PM deleted `chromium_headless_shell-1234` (`151.0.7922.34`), `-1243`, and `-1228`.
+     - `DAY_CHECK` fix: exclude dot entries from the `runs` difference. The check skips dot entries such as `runs/.port-locks`, because `ls runs` does not list them.
+     - `DAY_CHECK 2026-11-03`: `AssertionError: DAY_CHECK=fail no new run directory`; exit 1.
+     - `PI_SHA day1`: `PI_RUNS=95` and `PI_SHA=cbb545a856d936c4ea4200ed4e8841362badc31fdd19a4962408e31bd2f297ca`; exit 0.
+     - `PI_CHECK day0 day1`: `PI_CHECK=pass`; exit 0.
+     - `PUBLISH_CHECK 2026-11-03 skipped`: printed no pass line; exit 1. Its first step found no matching publish commit.
+     - Gate defect: `DAY_CHECK <day>` in `test-strategy.md` used `os.listdir("runs")`, while the day-0 list used `ls runs`. The always-new `runs/.port-locks` entry caused `FileNotFoundError: [Errno 2] No such file or directory: 'runs/.port-locks/artifacts/provenance.json'`, exit 1.
+     - `PUBLISH_CHECK 2026-11-03 skipped` fails at its first step because `git log -1 --format=%H --grep="^Publish daily 2026-11-03 "` prints nothing.
+     - Go quota at 02:38 ICT: monthly use was `75.3 %` and reset was `Sat 2026-11-21 20:44`; weekly use was `8.3 %`; balance was `$17.02`. This day spent no Go quota.
+     - PM 2026-11-03: light lane
+     - Blocker: the next live day needs a grader browser. Daniel decides through the PM: (a) restore the pinned build `chromium_headless_shell-1234`, which keeps all scores comparable; or (b) move to system Chrome (`channel: "chrome"`), which changes `runner_sha256` (`harness/browser-check.ts`) and `suite_sha256` (`harness/playwright.config.ts`) and makes every trusted score stale.
+     - The timer stays enabled. Until Daniel decides, each day stops at this check with exit 2, before any batch, model call, or push.
 
   Recorded on 2026-10-25 in `main`:
   - `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`

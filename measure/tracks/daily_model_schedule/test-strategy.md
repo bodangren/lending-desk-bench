@@ -283,7 +283,7 @@ is `../lending-desk-bench-daily` on the branch `daily-schedule`.
   day = sys.argv[1]
   rec = json.load(open(f"reports/daily/{day}.json"))
   before = set(open(".tmp/daily-runs-before.txt").read().split())
-  new = sorted(set(os.listdir("runs")) - before)
+  new = sorted(n for n in set(os.listdir("runs")) - before if not n.startswith("."))
   assert new, "DAY_CHECK=fail no new run directory"
   models, harness, agent = set(), 0, []
   for n in new:
@@ -302,6 +302,8 @@ is `../lending-desk-bench-daily` on the branch `daily-schedule`.
   print(f"DAY_CHECK=pass model={rec['model']} runs={len(agent)} harness={harness}")
   PY
   ```
+
+  The check skips dot entries such as `runs/.port-locks`, because `ls runs` does not list them.
 
 - `PUBLISH_CHECK <day> [pushed|skipped]` (`main`, after a job that
   committed docs). The default mode is `pushed`. A resumed day uses the
