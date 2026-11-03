@@ -504,6 +504,42 @@ model, no real credential (NFR-3).
   OpenCode work list. The executor preflight passes on the host. `WEEK=all
   ./rescore-doctor.sh` prints SKIP for legacy Pi runs, and their `score.json`
   checksums do not change.
+  - Lane: PM 2026-11-03: light lane. Part 1 ran on 2026-11-04. The evidence
+    file is `measure/tracks/opencode_executor/evidence/task-4.4-part1-dry-run-and-preflight.txt`.
+    Part 2 did not run in this lane.
+  - The dry run per track. Every run exited 0, and every run exited in the
+    dry-run block at `harness/batch.sh:184` to `harness/batch.sh:201`, before
+    the self-check, the preflight, and the canary. The work list and the full
+    matrix gave the same count for every track. The counts are: build 15
+    models and 90 runs, bugfix 15 models and 30 runs, tests 15 models and 30
+    runs, change 15 models and 30 runs.
+  - The full matrix total is 180 runs (90 + 30 + 30 + 30). The O4 figure of
+    228 in `measure/tracks/opencode_executor/test-strategy.md:660-661`
+    assumed 19 batch models. The pricing table `harness/go-pricing.json`
+    holds 15 models with both `high_usage` and `batch` true today, so the
+    dry run reports 180. The count of 19 matches no commit of the pricing
+    table on this branch. The table held 17 batch models when this track
+    was created in commit 8e79027. The count of 19 in the spec, the
+    design, and the strategy is stale.
+  - The executor preflight on the host. The version check passed: the line
+    is `opencode v2.2.4`, and it starts with `opencode v2.`. The ripgrep
+    helper resolved at `/home/daniebo/.local/share/lending-desk-bench/rg`
+    from the source `install`, and its sha256 equals the pinned hash
+    `ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2`.
+  - The credential preflight and the model list passed. Both ran in one
+    shell invocation inside the private frame of `test-strategy.md` section
+    4.1 and section 7.1. The export returned 0. The helper returned 0 and
+    printed no expiry warning line, so the credential covers the run window.
+    The model list returned 0 and holds 539 lines. The `EXACT` scan of the
+    raw export printed `exact-scan values=6 hits=0`, and the pattern scan of
+    the four output files printed no file name. The tree SECRET_SCAN of
+    `test-strategy.md:101` over `measure/tracks/opencode_executor` and
+    `measure/runs/opencode_executor` printed no file name and exited 0.
+  - The count of `runs/` was 547 before this work and 547 after it.
+  - Part 2 (`WEEK=all ./rescore-doctor.sh`) waits for the track
+    `grader_system_chrome`. That track waits for its spec decision D12.
+    D12 waits for the step 3 of its decision D7, and the step 3 of D7 is
+    the regrade of the curable weeks.
 - [x] 4.5 Documentation: `README.md`, `SCORING.md`, `PLAN.md`, and f61a422
   `measure/index.md` (spec FR-11).
   - The four files describe OpenCode 2, the Console login, the token risk,

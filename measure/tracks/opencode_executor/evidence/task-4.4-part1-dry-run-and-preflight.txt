@@ -1,0 +1,444 @@
+# Task 4.4 part 1 — Host dry run and executor preflight
+
+Date: 2026-11-04.
+Lane: PM 2026-11-03: light lane.
+Start: 2026-11-04T06:00:00+07:00 (ICT).
+End: 2026-11-04T06:11:38+07:00 (ICT).
+HEAD: ebd271ea4e0622deafce951567c5f9b8231399fa.
+Branch: main.
+Working directory: /home/daniebo/Desktop/lending-desk-bench.
+
+Part 1 covers the dry run and the executor preflight. Part 2 of task 4.4
+does not run in this lane. Part 2 is the command `WEEK=all
+./rescore-doctor.sh`. Part 2 waits for the track `grader_system_chrome`.
+That track waits for its spec decision D12. D12 waits for the step 3 of its
+decision D7. The step 3 of D7 is the regrade of the curable weeks.
+
+This lane ran no real batch. Every batch call below carried
+`BENCH_DRY_RUN=1`. This lane sent no prompt to any model. This lane wrote
+no file under `runs/`. The count of `runs/` stayed 547 across the whole
+lane.
+
+## 1. Baseline (step 0)
+
+Command:
+
+```
+ls runs | wc -l
+```
+
+Output:
+
+```
+547
+```
+
+Exit status: 0.
+
+Command:
+
+```
+git status --short
+```
+
+Output:
+
+```
+?? .opencode/
+?? tech-debt.md
+```
+
+Exit status: 0.
+
+The baseline matched the brief. The only untracked paths were `.opencode/`
+and `tech-debt.md`. The lane did not stage either path.
+
+## 2. Dry runs (step 1)
+
+Each run came from `harness/`. Each command block below names the brief
+form `cd harness && ...`. Each run was executed with the working
+directory set to `harness/` and the command part alone. The two forms
+call the same script. Each run exited at `harness/batch.sh:184` to
+`harness/batch.sh:201`. The dry run exits before the harness self-check,
+before the executor preflight, and before the canary. No agent ran. No
+run directory was written.
+
+### 2.1 build, work list
+
+Command:
+
+```
+cd harness && BENCH_TRACK=build BENCH_DRY_RUN=1 ./batch.sh; echo EXIT=$?
+```
+
+Recorded lines:
+
+```
+WORK LIST build — 15 of 15 batch models to schedule
+BATCH START (dry run) 2026-11-04T06:00:00+07:00 — 15 models x arms[a b] x 3 reps = 90 runs
+BATCH COMPLETE (dry run) 2026-11-04T06:00:00+07:00 — 90 planned runs; nothing executed
+```
+
+Exit status: 0.
+
+### 2.2 build, full matrix
+
+Command:
+
+```
+cd harness && FORCE=1 BENCH_TRACK=build BENCH_DRY_RUN=1 ./batch.sh; echo EXIT=$?
+```
+
+Recorded lines:
+
+```
+FORCE=1 — full pricing matrix: 15 models
+BATCH START (dry run) 2026-11-04T06:00:10+07:00 — 15 models x arms[a b] x 3 reps = 90 runs
+BATCH COMPLETE (dry run) 2026-11-04T06:00:11+07:00 — 90 planned runs; nothing executed
+```
+
+Exit status: 0.
+
+The first `DRY-RUN START` line of this run names the first scheduled
+model. That model is `MODELS[0]`.
+
+```
+[1/90] DRY-RUN START 2026-11-04T06:00:10+07:00  opencode-go/muse-spark-1.2-contributor  arm=a rep=1 -> a-muse-spark-1-2-contributor-2026w45-r1
+```
+
+The model reference of this line is `opencode-go/muse-spark-1.2-contributor`.
+
+### 2.3 bugfix, work list
+
+Command:
+
+```
+cd harness && BENCH_TRACK=bugfix BENCH_DRY_RUN=1 ./batch.sh; echo EXIT=$?
+```
+
+Recorded lines:
+
+```
+WORK LIST bugfix — 15 of 15 batch models to schedule
+BATCH START (dry run) 2026-11-04T06:01:17+07:00 — 15 models x arms[a b] x 1 reps = 30 runs
+BATCH COMPLETE (dry run) 2026-11-04T06:01:17+07:00 — 30 planned runs; nothing executed
+```
+
+Exit status: 0.
+
+### 2.4 bugfix, full matrix
+
+Command:
+
+```
+cd harness && FORCE=1 BENCH_TRACK=bugfix BENCH_DRY_RUN=1 ./batch.sh; echo EXIT=$?
+```
+
+Recorded lines:
+
+```
+FORCE=1 — full pricing matrix: 15 models
+BATCH START (dry run) 2026-11-04T06:01:24+07:00 — 15 models x arms[a b] x 1 reps = 30 runs
+BATCH COMPLETE (dry run) 2026-11-04T06:01:24+07:00 — 30 planned runs; nothing executed
+```
+
+Exit status: 0.
+
+### 2.5 tests, work list
+
+Command:
+
+```
+cd harness && BENCH_TRACK=tests BENCH_DRY_RUN=1 ./batch.sh; echo EXIT=$?
+```
+
+Recorded lines:
+
+```
+WORK LIST tests — 15 of 15 batch models to schedule
+BATCH START (dry run) 2026-11-04T06:02:36+07:00 — 15 models x arms[a b] x 1 reps = 30 runs
+BATCH COMPLETE (dry run) 2026-11-04T06:02:36+07:00 — 30 planned runs; nothing executed
+```
+
+Exit status: 0.
+
+### 2.6 tests, full matrix
+
+Command:
+
+```
+cd harness && FORCE=1 BENCH_TRACK=tests BENCH_DRY_RUN=1 ./batch.sh; echo EXIT=$?
+```
+
+Recorded lines:
+
+```
+FORCE=1 — full pricing matrix: 15 models
+BATCH START (dry run) 2026-11-04T06:02:45+07:00 — 15 models x arms[a b] x 1 reps = 30 runs
+BATCH COMPLETE (dry run) 2026-11-04T06:02:45+07:00 — 30 planned runs; nothing executed
+```
+
+Exit status: 0.
+
+### 2.7 change, work list
+
+Command:
+
+```
+cd harness && BENCH_TRACK=change BENCH_DRY_RUN=1 ./batch.sh; echo EXIT=$?
+```
+
+Recorded lines:
+
+```
+WORK LIST change — 15 of 15 batch models to schedule
+BATCH START (dry run) 2026-11-04T06:03:54+07:00 — 15 models x arms[a b] x 1 reps = 30 runs
+BATCH COMPLETE (dry run) 2026-11-04T06:03:54+07:00 — 30 planned runs; nothing executed
+```
+
+Exit status: 0.
+
+### 2.8 change, full matrix
+
+Command:
+
+```
+cd harness && FORCE=1 BENCH_TRACK=change BENCH_DRY_RUN=1 ./batch.sh; echo EXIT=$?
+```
+
+Recorded lines:
+
+```
+FORCE=1 — full pricing matrix: 15 models
+BATCH START (dry run) 2026-11-04T06:04:01+07:00 — 15 models x arms[a b] x 1 reps = 30 runs
+BATCH COMPLETE (dry run) 2026-11-04T06:04:01+07:00 — 30 planned runs; nothing executed
+```
+
+Exit status: 0.
+
+### 2.9 The per-track counts
+
+The work list and the full matrix gave the same count for every track.
+Each work list scheduled every batch model.
+
+| Track | Work list models | Work list runs | Full matrix models | Full matrix runs |
+|---|---|---|---|---|
+| build | 15 of 15 | 90 | 15 | 90 |
+| bugfix | 15 of 15 | 30 | 15 | 30 |
+| tests | 15 of 15 | 30 | 15 | 30 |
+| change | 15 of 15 | 30 | 15 | 30 |
+
+The full matrix total is 180 runs.
+
+```
+90 + 30 + 30 + 30 = 180
+```
+
+The real full matrix total is 180. The O4 figure 228 is not the real
+total. The O4 figure sits in `measure/tracks/opencode_executor/test-strategy.md`
+at lines 660 and 661. That figure assumed 19 batch models. The pricing
+table `harness/go-pricing.json` holds 15 batch models today. The count of
+15 comes from the models that carry both `high_usage` and `batch` in that
+table. The total follows from 15 models, 2 arms, and 6 repeats over the
+four tracks. So 15 x 2 x 6 gives 180. The figure 228 follows from 19
+models on the same shape. The count of 19 does not match the pricing
+table at any commit of this branch. The table held 17 batch models when
+this track was created in commit 8e79027, and it holds 15 now. The count
+of 19 in the spec, the design, and the strategy is stale. The dry run
+therefore reports 180, not 228.
+
+### 2.10 The count of `runs/` after the dry runs
+
+Command:
+
+```
+ls runs | wc -l
+```
+
+Output:
+
+```
+547
+```
+
+Exit status: 0.
+
+The count stayed 547. The dry runs wrote nothing under `runs/`.
+
+## 3. Executor preflight (step 2)
+
+The code of `harness/batch.sh` at lines 258 to 328 defines the preflight.
+Each check below ran on its own. The toolchain file was sourced in the
+same shell as each check, so `node` and `opencode` resolved as they
+resolve inside the batch.
+
+### 3.1 The executor version
+
+Command:
+
+```
+source harness/toolchain.sh; opencode --version | head -n 1
+```
+
+Recorded line:
+
+```
+opencode v2.2.4
+```
+
+Exit status: 0.
+
+Result: pass. The line starts with `opencode v2.`.
+
+### 3.2 The ripgrep helper
+
+The helper resolves in the order of `harness/batch.sh` at lines 284 to
+293. The order is the variable `BENCH_RG_BIN`, then the install path
+`$HOME/.local/share/lending-desk-bench/rg`, then `command -v rg`. The
+command ran that same order.
+
+Recorded lines:
+
+```
+rg_path=/home/daniebo/.local/share/lending-desk-bench/rg
+rg_source=install
+ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2  /home/daniebo/.local/share/lending-desk-bench/rg
+```
+
+Exit status: 0.
+
+Result: pass. The variable `BENCH_RG_BIN` was empty. The install path
+won. The source is `install`. The hash equals the pinned hash
+`ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2`.
+
+### 3.3 The credential preflight and the model list
+
+This check ran in one shell invocation. The invocation used the private
+frame of `measure/tracks/opencode_executor/test-strategy.md` section 4.1
+at line 266, and the live run frame rule of section 7.1 at line 670. The
+`EXACT` filter is the exact string of `test-strategy.md` line 300. The
+`SECRET_SCAN` pattern is the exact pattern of `test-strategy.md` line 101.
+
+The frame created its private folder under `$XDG_RUNTIME_DIR` with
+`mktemp -d`. The frame set `umask 077`. The trap removed the folder at
+the end of the invocation. The raw export stayed inside the folder. No
+raw export reached stdout, a log, the repository, or this file. The
+`EXACT` filter read the raw export only inside the folder.
+
+The command, with the two long strings taken from the strategy file
+without change:
+
+```
+set -uo pipefail; set +x; umask 077
+test -n "${XDG_RUNTIME_DIR:-}" || { echo "no XDG_RUNTIME_DIR"; exit 9; }
+d="$(mktemp -d "$XDG_RUNTIME_DIR/oe-p44.XXXXXX")"
+trap 'rm -rf -- "$d"' EXIT INT TERM HUP
+cd /home/daniebo/Desktop/lending-desk-bench/harness && source ./toolchain.sh
+opencode auth export opencode > "$d/raw.json" 2> "$d/export.err"; echo "export_rc=$?"
+rc=0; ./opencode-credential.sh preflight > "$d/preflight.out" 2> "$d/preflight.err" || rc=$?; echo "preflight_rc=$rc"
+rc=0; opencode models > "$d/models.out" 2> "$d/models.err" || rc=$?; echo "models_rc=$rc"
+EXACT='<the exact EXACT string of test-strategy.md line 300>'
+node -e "$EXACT" "$d/raw.json" "$d/preflight.out" "$d/preflight.err" "$d/models.out" "$d/models.err"
+date -Is
+grep -lP --binary-files=text '<the SECRET_SCAN pattern of test-strategy.md line 101, unchanged>' "$d/preflight.out" "$d/preflight.err" "$d/models.out" "$d/models.err"; echo "secret_scan_rc=$?"
+```
+
+The frame was invoked three times. The first invocation was cut off by a
+restart of the tool server and printed nothing. It left no private folder
+under `$XDG_RUNTIME_DIR`. The second invocation printed the recorded
+values below. The third invocation repeated the second one and printed
+the same values. The recorded values are the values of the second and
+the third invocation.
+
+Recorded lines of the run:
+
+```
+export_rc=0
+preflight_rc=0
+models_rc=0
+exact-scan values=6 hits=0
+2026-11-04T06:06:09+07:00
+secret_scan_rc=1
+--- preflight.out ---
+--- preflight.err ---
+models_lines=539
+first_model_ref_count=1
+```
+
+Exit status of the invocation: 0.
+
+The `EXACT` line is:
+
+```
+exact-scan values=6 hits=0
+```
+
+The `EXACT` scan found 6 credential values of 16 characters or more in
+the raw export. The scan found 0 of those values in the four output
+files. The scan named no file.
+
+The time of the `EXACT` line and the scan lines is
+`2026-11-04T06:06:09+07:00`.
+
+The `secret_scan_rc=1` line means the pattern scan of the four output
+files found no file. The scan printed no name.
+
+The file `preflight.out` is empty. The file `preflight.err` is empty. The
+helper prints at most one warning line when the expiry falls within 7
+days. This host printed no warning line. The credential covers the run
+window, so the helper did not exit 3.
+
+The model list holds 539 lines. The count of the model reference
+`opencode-go/muse-spark-1.2-contributor` in that list is 1. The first
+scheduled model of the build full matrix is listed. The list itself was
+not printed.
+
+Result: pass. The export returned 0. The credential preflight returned 0.
+The model list returned 0. The model count is 539, which is 1 or more.
+
+### 3.4 The tree SECRET_SCAN
+
+The pattern is the exact pattern of `test-strategy.md` line 101, without
+change. The scan covers the two trees `measure/tracks/opencode_executor`
+and `measure/runs/opencode_executor`. The scan ran after this evidence
+file was written.
+
+Command:
+
+```
+! grep -rlP --binary-files=text 'eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._~+/=-]{16,}|\b(?:sk|wrk|org)[-_][A-Za-z0-9]{12,}|"(?:access|refresh|token|accessToken|refreshToken|apiKey|secret)"\s*:\s*"[^"<]{8,}"|(?<![A-Za-z0-9_-])(?=[A-Za-z0-9_-]*[0-9])(?=[A-Za-z0-9_-]*[a-z])(?=[A-Za-z0-9_-]*[A-Z])[A-Za-z0-9_-]{32,}(?![A-Za-z0-9_-])' measure/tracks/opencode_executor measure/runs/opencode_executor
+```
+
+Recorded output: none.
+
+Exit status: 0.
+
+The time of the scan is `2026-11-04T06:11:38+07:00`. A confirming run at
+`2026-11-04T06:11:52+07:00` covered this file and the plan change. A final
+run at `2026-11-04T06:12:44+07:00` covered both files after the last
+edit. Every run printed no file name and exited 0.
+
+Result: pass. The scan printed no file name. The scan exited 0.
+
+## 4. The summary of the lane
+
+| Check | Result |
+|---|---|
+| `ls runs \| wc -l` before the lane | 547 |
+| `ls runs \| wc -l` after the lane | 547 |
+| Dry runs | 8 runs, 8 exit statuses of 0 |
+| Work list runs per track | build 90, bugfix 30, tests 30, change 30 |
+| Full matrix runs per track | build 90, bugfix 30, tests 30, change 30 |
+| Full matrix total | 180 |
+| The O4 figure | 228, from 19 batch models |
+| The real batch model count | 15 |
+| Executor version | `opencode v2.2.4` |
+| Ripgrep helper | `/home/daniebo/.local/share/lending-desk-bench/rg`, source `install`, pinned hash |
+| Credential export | exit 0 |
+| Credential preflight | exit 0, no warning line |
+| Model list | exit 0, 539 lines |
+| `EXACT` scan of the raw export | `exact-scan values=6 hits=0` |
+| Pattern scan of the four output files | no name, exit 1 of grep |
+| Tree SECRET_SCAN | no name, exit 0 |
+
+No deviation changed the outcome of any check.
