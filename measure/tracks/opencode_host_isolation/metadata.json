@@ -1,0 +1,28 @@
+{
+  "id": "opencode_host_isolation",
+  "title": "OpenCode host isolation: no benchmark opencode uses the shared store",
+  "type": "Bug",
+  "status": "pending",
+  "created": "2026-11-06",
+  "estimated_tasks": 12,
+  "actual_tasks": null,
+  "author_model": "claude-code/claude-opus-5-5[1m]#high",
+  "lane": {
+    "name": "light",
+    "maker": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
+    "code_checker": "claude-code/claude-sonnet-5-5#high",
+    "spec_checker": "volcengine-agent-plan/glm-latest#high"
+  },
+  "deadline": "2026-11-07T23:00:00+07:00",
+  "source": {
+    "method": "owner request relayed by the PM orchestrator, 2026-11-06: \"FAULT, act now.\" Every opencode that the benchmark starts uses its own data folder, never ~/.local/share/opencode; a trap stops the server at the end of the job; a test fails when the harness opencode would use the shared data folder. Done when no benchmark opencode uses the shared database, and the 11-08 01:00 run uses the new setting.",
+    "evidence": "spec.md EV1-EV14, measured on 2026-11-06: stray `opencode.exe serve --service` from harness/cron-daily.sh:120 at about 04:54:08; ~/.local/state/opencode/service.json mtime 2026-11-06 04:54:08.552313003 +0700; OpenCode v2.2.4 reads HOME, XDG_CONFIG_HOME, XDG_DATA_HOME, XDG_STATE_HOME, XDG_CACHE_HOME, and TMPDIR (`opencode debug paths`); a plain `opencode models` in an isolated folder left a detached `serve --service`, and `opencode models --standalone` left none; test:meta exit 1 with 6 of 250 failed; reports/harness-hashes.sha holds the values of 2026-10-25",
+    "dependencies": [
+      "opencode_executor",
+      "daily_model_schedule"
+    ],
+    "related_tracks": [
+      "grader_system_chrome"
+    ]
+  }
+}
