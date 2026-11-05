@@ -35,8 +35,8 @@ Marker use:
 
 ## Phase 1: The harness change (D1 to D5, D11)
 
-- [ ] 1.1 The code change. Implement D1 to D5 in one commit. Touch these files
-  and no others:
+- [x] 1.1 The code change. Implement D1 to D5 in one commit. Touch these files
+  and no others: Implemented by Green commit `c50b836`.
   - `harness/playwright.config.ts`: add `channel: "chrome"` to the `use` block.
   - `harness/browser-check.ts`: call `chromium.launch({ channel: "chrome" })`
     and return the version of the launched browser.
@@ -77,6 +77,26 @@ Marker use:
   - Verify: `cd harness && npx vitest run schedule-tests/ --configLoader native`
     exits 0 and prints a `Tests` line with no failed test.
   - Lane: light. The maker runs only the tests of the touched files.
+  - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
+  - Verify output: `rg -n "channel" harness/playwright.config.ts` printed
+    `28:    channel: "chrome",` and exited 0.
+  - Verify output: `rg -n "executablePath" harness/` printed no line and
+    exited 1.
+  - Verify output: `rg -n "chromium_headless_shell" harness/cron-daily.sh
+    harness/weekly.sh` printed no line and exited 1.
+  - Verify output: `rg -n "playwright install chromium" harness/weekly.sh`
+    printed no line and exited 1.
+  - Verify output: `bash -n harness/cron-daily.sh harness/weekly.sh
+    harness/rescore-doctor.sh harness/grade.sh` printed nothing and exited 0.
+  - Verify output: `cd harness && npx vitest run schedule-tests/ --configLoader
+    native` printed `Test Files 4 passed (4)` and `Tests 118 passed (118)` and
+    exited 0. That run was outside the heavy-run wrapper. The maker changed
+    `harness/playwright.config.ts` after it, so the maker ran each touched test
+    file alone. `schedule-tests/grader-browser-record.test.ts` printed
+    `Tests 4 passed (4)` and exited 0. `schedule-tests/rescore-guard.test.ts`
+    printed `Tests 3 passed (3)` and exited 0.
+    `schedule-tests/daily-schedule-green.test.ts` printed `Tests 4 passed (4)`
+    and exited 0. No test ran inside the heavy-run wrapper.
 - [ ] 1.2 The checker review. The checker sits in a different model family
   from the maker. It reads the commit of task 1.1 against spec D1 to D5 and
   spec FR-1 to FR-4. It writes
@@ -89,7 +109,7 @@ Marker use:
 - [ ] 1.3 The full suite once through `heavy-run.sh`. Run the full suite once
   at the end of the code phase. The command runs inside the heavy-run
   wrapper, so that one heavy job holds the machine.
-  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
   - Verify: the run exits 0, and the log holds a `Tests` line with no failed
     test for each of the two suites.
   - Verify: the log of the run sits at
@@ -112,7 +132,7 @@ Marker use:
 - [ ] 2.1 The browser check. Run the browser check on the current harness.
   It launches the system Chrome and prints `browser ready`. The command runs
   through `heavy-run.sh`, because it launches a browser.
-  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx tsx browser-check.ts'`.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx tsx browser-check.ts'`.
   - Verify: the command exits 0 and prints `browser ready`.
   - Lane: light. One browser launch.
 - [ ] 2.2 The first live day. The live day grades with the system Chrome.
@@ -132,7 +152,7 @@ Marker use:
   persisted-rankable build run of week 2026w43. No trusted bugfix or change
   run exists, and the tests track needs no browser proof. Record the old
   total and the new total of the run.
-  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh <run-id>'`.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh <run-id>'`.
   - Verify: the log holds one `[<run-id>] REGRADED total=<n> valid=true` line.
   - Verify: this task holds the old total and the new total of the run. The
     old total comes from the `score.json` of `artifacts.prev-<stamp>/`.
@@ -174,7 +194,7 @@ Marker use:
   persisted-rankable runs of EV15. The task waits for the Chrome update of
   task 3.1. The pilot run of task 2.3 is one of these runs, so it is graded
   again.
-  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEKS=2026w43 ./regrade-all.sh'`.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEKS=2026w43 ./regrade-all.sh'`.
   - Verify: the log holds a `[<run-id>] REGRADED total=<n> valid=true` line
     for each regraded run.
   - Verify: the log holds a line
@@ -188,7 +208,7 @@ Marker use:
 - [ ] 4.2 The step 3 of D7. Regrade all other curable weeks, newest first:
   week 2026w39, then week 2026w38. Spec EV16 gives 2026w39 build 2 and
   2026w38 build 10. The task waits for the Chrome update of task 3.1.
-  - Command: `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEKS=<week> ./regrade-all.sh'` for each week.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEKS=<week> ./regrade-all.sh'` for each week.
   - Verify: the log of each week holds a line
     `REGRADE-ALL END <time> ok=<n> not-ok=<n> skipped=<n>`.
   - Verify: `PI_CHECK <a> <b>` prints `PI_CHECK=pass` after each week.
