@@ -121,7 +121,7 @@ Marker use:
     - F4 no test for the `grader_browser` field or the missing-Chrome path.
     - F5 stale `ms-playwright` advice at `harness/weekly.sh:28`.
     - F6 the `BENCH_SYSTEM_CHROME` override is not in the spec.
-- [ ] 1.3 The full suite once through `heavy-run.sh`. Run the full suite once
+- [x] 1.3 `13b4526` The full suite once through `heavy-run.sh`. Run the full suite once
   at the end of the code phase. The command runs inside the heavy-run
   wrapper, so that one heavy job holds the machine.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
@@ -130,6 +130,14 @@ Marker use:
   - Verify: the log of the run sits at
     `measure/runs/grader_system_chrome/full-suite-1.3.log`.
   - Lane: light. One heavy run.
+  - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
+  - The run went inside the heavy-run wrapper with
+    `HEAVY_MIN_AVAIL_MB=1500`. The exit code was 0.
+  - The schedule-tests suite printed `Test Files  4 passed (4)` and
+    `Tests  118 passed (118)`. The wall time was 590.17 s.
+  - The test:meta:logic suite printed `Test Files  30 passed (30)` and
+    `Tests  238 passed (238)`. The wall time was 346.54 s.
+  - Log: `measure/runs/grader_system_chrome/full-suite-1.3.log`.
 - [x] 1.4 `c50b836` The AFTER hashes. Run the hash command right after the harness
   commit. Record both values in this task. They differ from the BEFORE values
   of spec EV14.
