@@ -56,7 +56,7 @@ Marker use:
     fix in `spec.md` or `plan.md` in a later commit.
   - Lane: light. The spec checker changes no code.
   - Spec checker: `volcengine-agent-plan/glm-latest#high`.
-- [~] 1.1 The Red tests (spec FR-7, FR-8, FR-9). Write the three test files.
+- [x] 1.1 The Red tests (spec FR-7, FR-8, FR-9). edb87cd. Write the three test files.
   Touch these files and no others:
   - `harness/schedule-tests/opencode-host-isolation.test.ts` (spec FR-7).
   - `harness/schedule-tests/opencode-host-trap.test.ts` (spec FR-8).
@@ -73,9 +73,31 @@ Marker use:
     its decoy at its end, also on a failure. After each run,
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line. The fake
     child must carry the text `fake-opencode` in its command line.
+  - Evidence of the Red run on 2026-11-06:
+    - `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`
+      gave `Test Files  1 failed (1)` and `Tests  9 failed (9)`. The failed
+      tests: `keeps every daily job call out of the shared home`;
+      `keeps every batch call out of the shared home`;
+      `keeps every seed call out of the shared home`;
+      `keeps every export call out of the shared home`;
+      `keeps every check-window call out of the shared home`;
+      `keeps every warn call out of the shared home`;
+      `keeps every preflight call out of the shared home`;
+      `keeps every scan-values call out of the shared home`;
+      `keeps every run call out of the shared home`.
+    - `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native`
+      gave `Test Files  1 failed (1)` and `Tests  3 failed (3)`. The failed
+      tests: `stops the marked child on a normal exit`;
+      `stops the marked child on a SIGTERM`;
+      `stops the marked child of a dead owner in the sweep`.
+    - `cd harness && npx vitest run schedule-tests/daily-selfcheck-default.test.ts --configLoader native`
+      gave `Test Files  1 failed (1)` and `Tests  1 failed | 1 passed (2)`. The
+      failed test: `gives each batch the logic self-check when the caller sets
+      no value`. The test `keeps the self-check of an explicit caller value`
+      passed on the base code.
   - Lane: light. The maker runs only these three files.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
-- [ ] 1.2 The Green code (spec D1 to D10). Implement the spec in one commit.
+- [~] 1.2 The Green code (spec D1 to D10). Implement the spec in one commit.
   Touch these files and no others:
   - `harness/opencode-host.sh` (new): the functions of spec D1, D2, D6, and
     D7. The names are `opencode_host_begin <job>`, `opencode_host_run`,
