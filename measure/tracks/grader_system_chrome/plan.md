@@ -33,7 +33,7 @@ Marker use:
   and `[b]` to a task that waits for an owner or for an earlier task.
 - `[x]` needs a commit SHA on the first line of the task.
 
-## Phase 1: The harness change (D1 to D5, D11)
+## Phase 1: The harness change (D1 to D5, D11) [checkpoint: 96e4a48]
 
 - [x] 1.1 `c50b836` The code change. Implement D1 to D5 in one commit. Touch these files
   and no others:
@@ -159,12 +159,31 @@ Marker use:
 
 ## Phase 2: The proof on the system Chrome
 
-- [ ] 2.1 The browser check. Run the browser check on the current harness.
+- [x] 2.1 `96e4a48` The browser check. Run the browser check on the current harness.
   It launches the system Chrome and prints `browser ready`. The command runs
   through `heavy-run.sh`, because it launches a browser.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx tsx browser-check.ts'`.
   - Verify: the command exits 0 and prints `browser ready`.
   - Lane: light. One browser launch.
+  - The check ran on 2026-11-06. The start time was 01:51:45 ICT. The end
+    time was 01:52:32 ICT.
+  - The exit status was 0.
+  - The log holds the line `browser ready`.
+  - The record JSON line reads
+    `{"schema":1,"channel":"chrome","version":"153.0.8010.52"}`.
+  - The channel is `chrome`. The version is `153.0.8010.52`.
+  - The version matches the value of spec EV12. The Chrome update of task 3.1
+    stays open. The check of D4 tests no version.
+  - Log: `measure/runs/grader_system_chrome/browser-check-2.1.log`.
+  - The baseline table of task 2.4 sits at
+    `measure/runs/grader_system_chrome/score-baseline-2.1.tsv`.
+  - The SHA-256 of that table is
+    `6a09bad4950f3c3a2ed25f65fbf29b1f43d2695b62d50250d3d3f438004edb6b`.
+  - The table holds 311 runs and 1 header line. The counts per track: build
+    209, bugfix 77, tests 25, change 0.
+  - The counts per executor kind: non-pi 218, pi 93.
+  - The harness commit `96e4a48` holds the code of the check. The task made no
+    code change.
 - [ ] 2.2 The first live day. The live day grades with the system Chrome.
   The self-check and the canary of the batch run inside the batch
   (`harness/batch.sh:204-346`). The day record names the model and the run
