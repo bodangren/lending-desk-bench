@@ -23,6 +23,9 @@ export default defineConfig({
   reporter: [["json", { outputFile: process.env.E2E_RESULT_FILE ?? "e2e-results.json" }]],
   use: {
     baseURL: BASE_URL,
+    // The grader browser is the system Chrome (spec D1). The track runs no
+    // playwright install, and no file sets a browser path.
+    channel: "chrome",
     trace: "retain-on-failure",
     // Browsers authenticate as staff via cookie. The auth probe clears it.
     storageState: {

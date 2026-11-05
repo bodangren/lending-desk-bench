@@ -143,11 +143,33 @@ GRADE_START=$(date +%s)
 # A browser that cannot launch fails every browser-graded criterion inside a
 # record that would otherwise stay valid (w36-w38: ~20 build, ~49 bugfix). That
 # is a harness failure, so it must produce an invalid record, never a score.
-# The tests track runs no browser suite.
-if [ "$BENCH_TRACK" != "tests" ] && ! "$TSX" "$H/browser-check.ts" > "$OUT/browser-check.log" 2>&1; then
-  echo "[$RUN_ID] $(tail -1 "$OUT/browser-check.log")" >&2
-  write_invalid "browser unavailable: Playwright Chromium did not launch"
-  exit 4
+# The tests track runs no browser suite, so its grade writes no browser record.
+if [ "$BENCH_TRACK" != "tests" ]; then
+  if ! "$TSX" "$H/browser-check.ts" > "$OUT/browser-check.log" 2>&1; then
+    echo "[$RUN_ID] $(tail -1 "$OUT/browser-check.log")" >&2
+    write_invalid "browser unavailable: the system Chrome did not launch"
+    exit 4
+  fi
+  # The browser record of this grade (spec D2). The version is a record, not a
+  # freshness input. A Chrome update does not make a score stale.
+  BROWSER_VERSION="$(node -e '
+const fs=require("node:fs");
+let version="";
+for (const line of fs.readFileSync(process.argv[1],"utf8").split(/\r?\n/)) {
+  if (!line.startsWith("{")) continue;
+  let record; try { record=JSON.parse(line); } catch { continue; }
+  if (record && typeof record.version==="string" && record.version) { version=record.version; break; }
+}
+process.stdout.write(version);' "$OUT/browser-check.log")"
+  if [ -z "$BROWSER_VERSION" ]; then
+    echo "[$RUN_ID] the browser check returned no browser version" >&2
+    write_invalid "browser unavailable: the browser check returned no version"
+    exit 4
+  fi
+  node -e '
+const fs=require("node:fs");
+fs.writeFileSync(process.argv[1], JSON.stringify({schema:1,channel:"chrome",version:process.argv[2]})+"\n");' \
+    "$OUT/grader-browser.json" "$BROWSER_VERSION"
 fi
 
 # Host readiness. Advisory only under the always-publish policy: a busy host is

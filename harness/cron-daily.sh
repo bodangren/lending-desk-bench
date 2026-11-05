@@ -353,9 +353,13 @@ fi
 # ---- Pre-batch post steps (D12 steps 1 to 3) ------------------------------------
 if [ "$POST" != "0" ]; then
   cd "$H"
-  PW_CHROME="$HOME/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell"
-  if [ ! -x "$PW_CHROME" ] && ! ls "$HOME"/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell >/dev/null 2>&1; then
-    echo "DAILY FAIL playwright: Chromium is missing" >&2
+  # The grader browser is the system Chrome (spec D4). The Playwright chrome
+  # channel uses /opt/google/chrome/chrome on Linux. The check tests that the
+  # binary exists and runs. It tests no version, so the live day does not wait
+  # for the Chrome update.
+  PW_CHROME="${BENCH_SYSTEM_CHROME:-/opt/google/chrome/chrome}"
+  if [ ! -x "$PW_CHROME" ] || ! "$PW_CHROME" --version >/dev/null 2>&1; then
+    echo "DAILY FAIL playwright: the system Chrome is missing or does not run at $PW_CHROME" >&2
     exit 2
   fi
   PRICE_SHA="$(sha256sum "$H/go-pricing.json" | cut -d' ' -f1)"

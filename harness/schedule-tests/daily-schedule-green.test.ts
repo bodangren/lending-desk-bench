@@ -14,7 +14,7 @@ const DAILY_SCRIPT = process.env.BENCH_GREEN_CRON_DAILY ?? join(HARNESS, "cron-d
 const DAY = "2026-10-26";
 const STEPS = ["recost-1", "rescore-all", "guard-10", "batch-build", "guard-81", "rescore-week", "recost-2", "python-export-site-data.py", "python-generate-model-pages.py", "cleanup"];
 
-type Fixture = { root: string; repo: string; log: string; home: string; bin: string; runs: string; days: string; pricing: string; catalog: string; served: string };
+type Fixture = { root: string; repo: string; log: string; home: string; bin: string; runs: string; days: string; pricing: string; catalog: string; served: string; chrome: string };
 
 function script(path: string, body: string) {
   mkdirSync(dirname(path), { recursive: true });
@@ -73,9 +73,12 @@ n=0; [ ! -f "$RECOST_COUNT" ] || n=$(cat "$RECOST_COUNT"); n=$((n + 1)); printf 
 if [ "\${WEEK:-}" = all ]; then printf 'rescore-all\\n' >> "$STEP_LOG"; else printf 'rescore-week\\n' >> "$STEP_LOG"; fi
 `);
   script(join(harness, "cleanup.sh"), "#!/usr/bin/env bash\nprintf 'cleanup\\n' >> \"$STEP_LOG\"\n");
-  const chrome = join(home, ".cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell");
+  // The grader browser is the system Chrome (spec D4). The fake binary sits on
+  // the system Chrome path inside the temp tree. The check reads it through
+  // BENCH_SYSTEM_CHROME, so the test never touches the real browser.
+  const chrome = join(root, "opt/google/chrome/chrome");
   script(chrome, "#!/usr/bin/env bash\nexit 0\n");
-  return { root, repo, log, home, bin, runs, days, pricing, catalog, served };
+  return { root, repo, log, home, bin, runs, days, pricing, catalog, served, chrome };
 }
 
 function job(f: Fixture, quota: number[], post: boolean) {
@@ -115,6 +118,7 @@ if (track === 'build') {
     BENCH_DAILY_DATE: DAY, BENCH_DAILY_CATALOG: f.catalog, BENCH_DAILY_SERVED: f.served,
     BENCH_DAILY_QUOTA_CMD: join(f.root, "quota.cjs"), BENCH_DAILY_BATCH: join(f.root, "batch.cjs"),
     BENCH_DAILY_PUBLISH: "0", BENCH_DAILY_POST: post ? "1" : "0", BENCH_DAILY_LOCK: join(f.root, "lock"),
+    BENCH_SYSTEM_CHROME: f.chrome,
   };
   return spawnSync("bash", [join(f.repo, "harness/cron-daily.sh")], { cwd: f.repo, env, encoding: "utf8", timeout: 30_000 });
 }

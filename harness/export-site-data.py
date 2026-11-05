@@ -125,6 +125,37 @@ def find_arm_runs(arm: str, slug: str) -> list[Path]:
 
 WEEK_TOKEN = re.compile(r"-(\d{4}w\d{2})(?:-r\d+)?$")
 
+# The browser that graded one run (spec D5). A run with a record whose channel
+# is chrome was graded with the system Chrome. A tests-track run launches no
+# browser, so it holds no record. Every other run was graded with the old
+# headless shell. The value holds no revision number.
+GRADER_BROWSER_CHROME = "chrome"
+GRADER_BROWSER_NONE = "none"
+GRADER_BROWSER_LEGACY = "legacy-headless-shell"
+
+
+def run_track(run: Path) -> str | None:
+    """The track of one run, from its provenance record."""
+    try:
+        provenance = json.loads((run / "artifacts" / "provenance.json").read_text(encoding="utf8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    track = provenance.get("track")
+    return track if isinstance(track, str) and track else None
+
+
+def grader_browser(run: Path) -> str:
+    """The browser that graded one run."""
+    try:
+        record = json.loads((run / "artifacts" / "grader-browser.json").read_text(encoding="utf8"))
+    except (OSError, json.JSONDecodeError):
+        record = None
+    if isinstance(record, dict) and record.get("channel") == GRADER_BROWSER_CHROME:
+        return GRADER_BROWSER_CHROME
+    if run_track(run) == "tests" or run.name.startswith("tt-"):
+        return GRADER_BROWSER_NONE
+    return GRADER_BROWSER_LEGACY
+
 
 def run_week(path: Path) -> str | None:
     match = WEEK_TOKEN.search(path.name)
@@ -423,6 +454,7 @@ def load_entry(spec: dict) -> dict | None:
         "trust": trust,
         "fixture_revision": fixture_revision,
         "adherence": adherence,
+        "grader_browser": grader_browser(ROOT / source_rel),
         "executor": executor,
         "sources": {"regrade": spec["regrade"], "agent": spec.get("agent")},
     }
@@ -565,6 +597,7 @@ def load_track_rows(track: str, series: str = RANKED_SERIES) -> list[dict]:
             "bugs": evidence.get("bugs"),
             "tests": evidence.get("tests"),
             "churn_lines": score.get("churn_lines"),
+            "grader_browser": grader_browser(run),
             "trend": trend_for(paths) if series == RANKED_SERIES else None,
             "executor": run_executor(run) or {
                 "kind": EXECUTOR_UNKNOWN,

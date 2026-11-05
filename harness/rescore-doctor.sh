@@ -29,6 +29,24 @@ if (ex.pi) { process.stdout.write("pi"); process.exit(0); }
 process.stdout.write("unknown");' "$1"
 }
 
+# The browser that graded one run (spec D3). The check reads the track of the
+# run first. A tests-track run launches no browser, so it holds no record and
+# needs none. A run of the build, bugfix, or change track passes only with a
+# record whose channel is chrome. Any other run keeps its score.json bytes and
+# waits for a regrade.
+run_browser_state() {
+  node -e '
+const fs=require("node:fs");
+const dir=process.argv[1]; const id=process.argv[2];
+const read=(path)=>{ try { return JSON.parse(fs.readFileSync(path,"utf8")); } catch { return null; } };
+const record=read(dir+"/artifacts/grader-browser.json");
+if (record && record.channel==="chrome") { process.stdout.write("chrome"); process.exit(0); }
+const provenance=read(dir+"/artifacts/provenance.json");
+const track=provenance ? provenance.track : null;
+if (track==="tests" || id.startsWith("tt-")) { process.stdout.write("none"); process.exit(0); }
+process.stdout.write("legacy");' "$1" "$2"
+}
+
 # WEEK=all (bench_incremental FR-3): cure provenance staleness for every run
 # with persisted results, across all weeks. Only the week glob and the run-id
 # pattern change; the per-run fail-closed contract is unchanged — score.json is
@@ -59,6 +77,13 @@ for ART in "${RUN_GLOBS[@]}"; do
   EXECUTOR="$(executor_kind "$ART/provenance.json")"
   if [ "$EXECUTOR" = "pi" ]; then
     echo "SKIP $RUN_ID (legacy Pi executor; score.json left unchanged)"; continue
+  fi
+  # The rescore guard of D3. The check runs before any write of the run, so a
+  # skipped run keeps every byte of its score.json.
+  BROWSER_STATE="$(run_browser_state "$ROOT/runs/$RUN_ID" "$RUN_ID")"
+  if [ "$BROWSER_STATE" != "chrome" ] && [ "$BROWSER_STATE" != "none" ]; then
+    echo "SKIP $RUN_ID (graded before the system Chrome move; regrade needed)"
+    continue
   fi
   CAND="$ROOT/runs/$RUN_ID/candidate"
   [ -d "$CAND" ] || { echo "SKIP $RUN_ID (no candidate)"; continue; }

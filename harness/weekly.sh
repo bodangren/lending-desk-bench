@@ -18,17 +18,15 @@ export ARMS="${ARMS:-a b}"
 export BENCH_WAIT_FOR_IDLE="${BENCH_WAIT_FOR_IDLE:-1800}"
 mkdir -p "$ROOT/reports"
 echo "WEEKLY START $(date -Is) week=$WEEK"
-# Fail closed if Playwright Chromium is missing — otherwise every B/C/D/E/F
+# Fail closed if the system Chrome is missing — otherwise every B/C/D/E/F
 # criterion fails and scores cluster ~20% (w36, w38; caused by cache_cleanup).
-PW_CHROME="$HOME/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell"
-if [ ! -x "$PW_CHROME" ]; then
-  # version dir may drift; accept any installed headless shell
-  if ! ls "$HOME"/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell >/dev/null 2>&1; then
-    echo "FATAL: Playwright Chromium missing at ~/.cache/ms-playwright — refuse to batch (would publish ~20% fake scores)." >&2
-    echo "Fix: cd harness && npx playwright install chromium" >&2
-    echo "Also ensure cache_cleanup.sh does NOT wipe ms-playwright." >&2
-    exit 2
-  fi
+# The check tests that the binary exists and runs. It tests no version.
+PW_CHROME="${BENCH_SYSTEM_CHROME:-/opt/google/chrome/chrome}"
+if [ ! -x "$PW_CHROME" ] || ! "$PW_CHROME" --version >/dev/null 2>&1; then
+  echo "FATAL: the system Chrome is missing or does not run at $PW_CHROME — refuse to batch (would publish ~20% fake scores)." >&2
+  echo "Fix: install the system Chrome (Google Chrome stable)." >&2
+  echo "Also ensure cache_cleanup.sh does NOT wipe ms-playwright." >&2
+  exit 2
 fi
 
 if "$H/node_modules/.bin/tsx" "$H/go-cost.ts" --catalog > "$ROOT/reports/go-catalog-$WEEK.json"; then
