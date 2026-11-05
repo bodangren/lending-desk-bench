@@ -35,8 +35,8 @@ Marker use:
 
 ## Phase 1: The harness change (D1 to D5, D11)
 
-- [x] 1.1 The code change. Implement D1 to D5 in one commit. Touch these files
-  and no others: Implemented by Green commit `c50b836`.
+- [x] 1.1 `c50b836` The code change. Implement D1 to D5 in one commit. Touch these files
+  and no others:
   - `harness/playwright.config.ts`: add `channel: "chrome"` to the `use` block.
   - `harness/browser-check.ts`: call `chromium.launch({ channel: "chrome" })`
     and return the version of the launched browser.
@@ -97,7 +97,7 @@ Marker use:
     printed `Tests 3 passed (3)` and exited 0.
     `schedule-tests/daily-schedule-green.test.ts` printed `Tests 4 passed (4)`
     and exited 0. No test ran inside the heavy-run wrapper.
-- [ ] 1.2 The checker review. The checker sits in a different model family
+- [x] 1.2 `77ddbf5` The checker review. The checker sits in a different model family
   from the maker. It reads the commit of task 1.1 against spec D1 to D5 and
   spec FR-1 to FR-4. It writes
   `measure/runs/grader_system_chrome/check-1.2.json` with `status: pass` and
@@ -106,6 +106,21 @@ Marker use:
   - Verify: the plan records the maker model and the checker model, and the
     two sit in different families.
   - Lane: light. The checker changes no code.
+  - Checker model: `claude-code/claude-sonnet-5-5#high` (Anthropic family).
+  - Maker model: `minimax-cn-coding-plan/MiniMax-M3.1-Flash` (MiniMax family).
+  - The two models sit in different families.
+  - Result: `measure/runs/grader_system_chrome/check-1.2.json` shows
+    `status: pass`, `retry_recommendation: none`, 0 blocking findings, and 6
+    non-blocking findings (F1 to F6).
+  - F1 is fixed in this commit. The SHA now sits on the first line of task 1.1.
+  - F2 to F6 go to a later follow-up:
+    - F2 the guard reads the record before the track. The outcome does not
+      change. The comment at `harness/rescore-doctor.sh:32-36` does not match
+      the code.
+    - F3 the guard tests cover only `WEEK=all` and the `a-` and `tt-` prefixes.
+    - F4 no test for the `grader_browser` field or the missing-Chrome path.
+    - F5 stale `ms-playwright` advice at `harness/weekly.sh:28`.
+    - F6 the `BENCH_SYSTEM_CHROME` override is not in the spec.
 - [ ] 1.3 The full suite once through `heavy-run.sh`. Run the full suite once
   at the end of the code phase. The command runs inside the heavy-run
   wrapper, so that one heavy job holds the machine.
@@ -115,7 +130,7 @@ Marker use:
   - Verify: the log of the run sits at
     `measure/runs/grader_system_chrome/full-suite-1.3.log`.
   - Lane: light. One heavy run.
-- [ ] 1.4 The AFTER hashes. Run the hash command right after the harness
+- [x] 1.4 `c50b836` The AFTER hashes. Run the hash command right after the harness
   commit. Record both values in this task. They differ from the BEFORE values
   of spec EV14.
   - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
@@ -126,6 +141,13 @@ Marker use:
   - Verify: this task holds the two AFTER values and the commit SHA of the
     harness commit.
   - Lane: light. A read-only command.
+  - AFTER `runner_sha256`:
+    `f199cfb475061a01225ced93e01167b405e0202f9dc45282f8d4a0d044da0365`.
+  - AFTER `suite_sha256`:
+    `08d6ae6d7515e506b841111e2ffe7b3bc5d3f69c8da676f65c7b46bc8b2af20b`.
+  - The command printed both values on one line, separated by a tab, and
+    exited 0.
+  - The two AFTER values differ from the two BEFORE values of spec EV14.
 
 ## Phase 2: The proof on the system Chrome
 
