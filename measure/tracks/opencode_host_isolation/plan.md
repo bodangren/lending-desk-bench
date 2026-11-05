@@ -44,15 +44,19 @@ Marker use:
 
 ## Phase 1: The harness change (spec D1 to D12)
 
-- [ ] 1.0 The spec check. The spec checker reads `spec.md` and this plan. It
+- [x] 1.0 The spec check. 479095f
+  The spec checker reads `spec.md` and this plan. It
   checks that every choice of the maker has one decided answer in the spec.
   It writes `measure/runs/opencode_host_isolation/spec-check-1.0.json` with
   `status`, a short paraphrase of the spec, and one entry for each finding.
+  - Evidence: `spec-check-1.0.json` status pass, 0 blocking, 5 non-blocking
+    (F1 Major; F2-F5 Nit), gate `role-gate --role spec-review` PASS; reviewer
+    `volcengine-agent-plan/glm-latest#high`.
   - Verify: the file shows `status: pass`, or each blocking finding has a
     fix in `spec.md` or `plan.md` in a later commit.
   - Lane: light. The spec checker changes no code.
   - Spec checker: `volcengine-agent-plan/glm-latest#high`.
-- [ ] 1.1 The Red tests (spec FR-7, FR-8, FR-9). Write the three test files.
+- [~] 1.1 The Red tests (spec FR-7, FR-8, FR-9). Write the three test files.
   Touch these files and no others:
   - `harness/schedule-tests/opencode-host-isolation.test.ts` (spec FR-7).
   - `harness/schedule-tests/opencode-host-trap.test.ts` (spec FR-8).
