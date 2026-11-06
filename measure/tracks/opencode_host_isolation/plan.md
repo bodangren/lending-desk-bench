@@ -113,7 +113,47 @@ Marker use:
     `ps -eo pid,args | grep '[f]ake-opencode'` printed no line.
   - Lane: light. The maker runs only these three files.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
-- [~] 1.2 The Green code (spec D1 to D10). Implement the spec in one commit.
+- [x] 1.2 The Green code (spec D1 to D10). f87de82
+  - Evidence of the Green run on 2026-11-06 (each file alone, shell timeout 600 s):
+    - `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`
+      gave `Test Files  1 passed (1)` and `Tests  9 passed (9)`.
+    - `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native`
+      gave `Test Files  1 passed (1)` and `Tests  3 passed (3)`. After each run,
+      `ps -eo pid,args | grep '[f]ake-opencode'` printed no line.
+    - `cd harness && npx vitest run schedule-tests/daily-selfcheck-default.test.ts --configLoader native`
+      gave `Test Files  1 passed (1)` and `Tests  2 passed (2)`.
+  - Verify: `bash -n` on the seven scripts exits 0 (OK).
+  - Verify: the two `rg` commands of spec FR-1 print the expected output: the
+    first prints no line; the second prints exactly one line,
+    `harness/opencode-credential.sh:166` (the seed shared read).
+  - Verify: `rg -n 'XDG_DATA_HOME|XDG_STATE_HOME' harness/cron-daily.sh
+    harness/batch.sh harness/weekly.sh harness/cron-weekly.sh` prints no line.
+  - Verify: `git diff --stat f55d2aa -- harness/opencode-entry.sh
+    harness/go-cost.ts harness/execution-identity.ts harness/provenance.ts`
+    prints no line.
+  - Maker substitution: the spec names `minimax-cn-coding-plan/MiniMax-M3.1-Flash`
+    for this task; the MiniMax plan reached its 5-hour limit at 07:16 (error
+    2056), so the PM moved Green to `kimi-code-plan-cn/kimi-for-coding#high`.
+  - Defaults of the Green maker (round 2, Kimi):
+    1. A helper process that performed the seed selects the seed payload in
+       place of a second job-store read. This keeps one opencode call per
+       helper process, so the meta credential tests keep their export-call
+       sequence against the counting fake (spec FR-9; assertions unchanged).
+    2. The meta fakes need no change: `createFakeOpencode` dispatches on
+       argv[0]/argv[1] only and already accepts the D3 argument lists and the
+       D4 `auth import` call.
+    3. `opencode_host_begin` sets no traps; each owner script sets its own, so
+       `run.sh` keeps its present TERM and INT traps (spec D6).
+    4. The cleanup treats a zombie process as stopped (it reads
+       `/proc/<pid>/stat`), and the process scans use shell builtins and one
+       `find` pass instead of a helper fork per pid or fd. Round 1 forked per
+       pid/fd and the trap test's SIGTERM case needed ~20 s; round 2 runs it
+       in ~2 s.
+  - Note: the Red file `opencode-host-isolation.test.ts` needed one fix before
+    Green could pass. The round-2 Green found its job-folder check unpassable
+    (`under()` appends `/` to a parent that ends with the literal dash
+    `opencode-host-`) and returned blocked. Red commit `ffc6cb0` changed the
+    check to `startsWith`; nothing else in the tests changed.
   Touch these files and no others:
   - `harness/opencode-host.sh` (new): the functions of spec D1, D2, D6, and
     D7. The names are `opencode_host_begin <job>`, `opencode_host_run`,
@@ -159,7 +199,7 @@ Marker use:
     prints no line (spec NFR-3, D11).
   - Lane: light. The maker runs only the three new test files.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
-- [ ] 1.3 The checker review. The checker reads the commits of tasks 1.1 and
+- [~] 1.3 The checker review. The checker reads the commits of tasks 1.1 and
   1.2 against spec D1 to D12 and FR-1 to FR-9. The checker reads each new
   test and confirms that it fails for the right cause on `f55d2aa`. It
   writes `measure/runs/opencode_host_isolation/check-1.3.json` with
