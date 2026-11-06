@@ -553,7 +553,7 @@ Marker use:
   - Verify: this task holds the two AFTER values and the SHA of the harness
     commit.
   - Lane: light. A read-only command.
-- [ ] 1.7 The Red test of the served-list retry (spec FR-11, D15). Write the
+- [~] 1.7 The Red test of the served-list retry (spec FR-11, D15). Write the
   new file `harness/schedule-tests/daily-served-retry.test.ts`. The file
   puts a fake `opencode` on `PATH` and in `BENCH_OPENCODE_BIN`, the same
   rule as spec FR-7. The fake appends one JSON line per call to a record
