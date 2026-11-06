@@ -664,6 +664,22 @@ Marker use:
   - check-1.3-r5 F13: the summary names the exception — 2 shared-home lines
     in run 2, because the seed retried once after
     `Location plugins did not finish activating` (spec D4 retry rule).
+  - Diagnosis 2 (2026-11-06, cwd A/B; PM correction applied): the
+    orchestrator's hypothesis was that `opencode_host_run` keeps cwd = the
+    repository root, so a host call sees the untracked project folder
+    `.opencode/` and a `--standalone` server fails on slow project
+    ("location") plugin activation. Arm A ran before the PM correction
+    arrived (5 calls, cwd = the repository root, isolated store under
+    `.tmp/oc-diag2-RRhotZ`, `models --standalone`): all 5 EXIT=0, stderr 0
+    bytes. Per the correction, Arm B did not run and the A/B test is not
+    repeated. `ps` after the arm held only the OpenChamber server (pid
+    2558); no process of the temp folder remained; the folder was removed.
+    The read-only check of `.opencode/` listed one newer file,
+    `.opencode/goals/state.json.lock` (a transient lock file). Read: cwd =
+    the repository root does not reproduce the plugin failure with an
+    isolated store, so the hypothesis is not supported; the flakiness is
+    host-level and timing-bound (run 2 at 14:56 exited 0 through the same
+    path; runs at 15:07 and 15:10 failed).
   - Recorded deviation (check-1.3-r4 F12): the dry run cannot reach a
     job-store read, because the catalog fetch of the real `go-cost.ts`
     needs the credential first. Job-store proof: in one heavy-run call with
