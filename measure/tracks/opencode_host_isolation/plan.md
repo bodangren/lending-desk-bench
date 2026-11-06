@@ -508,6 +508,27 @@ Marker use:
     not apply the fallback; the orchestrator routes it.
   - Verify: the log sits at
     `measure/runs/opencode_host_isolation/preflight-2.1.log` — PASS.
+  - Seed diagnosis (2026-11-06, no code change; calls in the round brief only,
+    stdout to /dev/null, stderr files `diag-2.1-a.err` / `diag-2.1-b.err`):
+    - Help of `opencode auth export` in an isolated store: USAGE
+      `opencode auth export [flags] [<target>]`, and `--standalone` is a
+      GLOBAL FLAG. EXIT=0. No process of the isolated store appeared; `ps`
+      held only the OpenChamber server (pid 2558).
+    - The seed form `auth export --standalone opencode` against the shared
+      store, caller's own environment: EXIT=1. Stderr first line:
+      `Location plugins did not finish activating` (43 bytes; no token-like
+      value). `ps` held only the OpenChamber server. This is the known
+      transient plugin notice of the retry rule, not a usage error.
+    - The D3 fallback form `auth export opencode --standalone`, same rules:
+      EXIT=0, empty stderr. `ps` held only the OpenChamber server. No
+      detached server started.
+    - Read: the seed failure is not a parse or usage error; the fallback form
+      matches the documented order and works against the shared store now.
+      The spec D3 procedure applies: the fallback form goes into
+      `opencode-credential.sh` in a new commit, then tasks 1.4 and 1.5
+      repeat, then this task repeats. Whether the fallback also cures the
+      plugin flakiness inside the job environment is proven by the repeated
+      preflight only.
   - Before the run: record `sha256sum ~/.local/state/opencode/service.json`
     (only the hash) and `ps -eo pid,args | grep '[o]pencode'`.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd /home/daniebo/Desktop/lending-desk-bench && env PATH=/home/daniebo/.local/share/pnpm/bin:/home/daniebo/.local/bin:/home/daniebo/.nvm/versions/node/v24.19.0/bin:/usr/local/bin:/usr/bin:/bin BENCH_OPENCODE_BIN=/home/daniebo/Desktop/lending-desk-bench/measure/runs/opencode_host_isolation/opencode-env-shim.sh harness/cron-daily.sh --dry-run'`.
