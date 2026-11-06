@@ -557,14 +557,15 @@ checkpoint goes on after task 1.11.
   - Verify: this task holds the two AFTER values and the SHA of the harness
     commit.
   - Lane: light. A read-only command.
-- [~] 1.7 The Red test of the served-list retry (spec FR-11, D15). f4ed298. Write the
-  new file `harness/schedule-tests/daily-served-retry.test.ts`. The file
-  puts a fake `opencode` on `PATH` and in `BENCH_OPENCODE_BIN`, the same
-  rule as spec FR-7. The fake appends one JSON line per call to a record
-  file. The test copies the scripts that it runs into a temp repo, the same
-  as `harness/schedule-tests/rescore-guard.test.ts`. No test writes under
-  the real `.tmp/`, `runs/`, or `reports/`. No test starts the real
-  `opencode` binary, Podman, a browser, or a model.
+- [x] 1.7 The Red test of the served-list retry (spec FR-11, D15). f4ed298
+  c83cd92. Write the new file
+  `harness/schedule-tests/daily-served-retry.test.ts`. The file puts a fake
+  `opencode` on `PATH` and in `BENCH_OPENCODE_BIN`, the same rule as spec
+  FR-7. The fake appends one JSON line per call to a record file. The test
+  copies the scripts that it runs into a temp repo, the same as
+  `harness/schedule-tests/rescore-guard.test.ts`. No test writes under the
+  real `.tmp/`, `runs/`, or `reports/`. No test starts the real `opencode`
+  binary, Podman, a browser, or a model.
   - Case 1, the transient path: the fake fails the first
     `models --standalone` call (exit 1, stderr
     `ServiceUnavailableError: Location plugins did not finish activating`)
@@ -672,6 +673,19 @@ checkpoint goes on after task 1.11.
   - Verify: the file shows `status: pass` and 0 blocking findings.
   - Verify: this task records the maker models and the checker model, and
     the checker family differs from every maker family.
+  - Round 1 (2026-11-06, checker `claude-code/claude-sonnet-5-5#high`, audited
+    head `948b7d6`): `measure/runs/opencode_host_isolation/check-1.9.json` holds
+    the status fail, the recommendation `retry_tests`, 1 blocking finding, and
+    7 non-blocking findings. The blocking finding is F16: no case covered the
+    empty-list clause of D15, so a retry that tests only the exit status
+    passed both old cases.
+  - The Red round 2 of task 1.7 (`c83cd92`) adds that case. The run of the
+    round (one file, one worker, one foreground call):
+    `daily-served-retry.test.ts` `Tests  3 passed (3)`, EXIT=0. The finding
+    F19 (the word `or` in the reach step of case 1) is fixed in the same
+    round. The finding F16 asks also for a new Check text of FR-11 in
+    `spec.md`; the spec is not a file of this role, so the orchestrator owns
+    that change.
   - Lane: light. The checker changes no code.
   - Checker model: `claude-code/claude-sonnet-5-5#high`.
 - [ ] 1.10 The full suites through `heavy-run.sh` again, on the commit of
