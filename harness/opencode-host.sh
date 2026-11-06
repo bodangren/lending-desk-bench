@@ -118,9 +118,12 @@ opencode_host_cleanup() {
 }
 
 # The sweep of D7. A folder of a dead owner is cleaned. A folder of a live
-# owner stays.
+# owner stays. A folder with no owner.pid whose mtime is less than 60 s old
+# stays too: a new owner writes its owner.pid last (spec D1), so the folder may
+# still be in the making. A folder with no owner.pid that is 60 s old or older
+# is the folder of a dead owner.
 opencode_host_sweep() {
-  local folder owner_pid stopped
+  local folder owner_pid stopped now mtime
   for folder in "$OPENCODE_HOST_ROOT"/.tmp/opencode-host-*/; do
     folder="${folder%/}"
     if [ ! -d "$folder" ]; then continue; fi
@@ -129,7 +132,13 @@ opencode_host_sweep() {
     if [ -f "$folder/owner.pid" ]; then
       owner_pid="$(tr -dc '0-9' < "$folder/owner.pid" 2>/dev/null || true)"
     fi
-    if [ -n "$owner_pid" ] && kill -0 "$owner_pid" 2>/dev/null && opencode_host_alive "$owner_pid"; then continue; fi
+    if [ -n "$owner_pid" ]; then
+      if kill -0 "$owner_pid" 2>/dev/null && opencode_host_alive "$owner_pid"; then continue; fi
+    else
+      now="$(date +%s)"
+      mtime="$(stat -c %Y "$folder" 2>/dev/null || printf '0')"
+      if [ $((now - mtime)) -lt 60 ]; then continue; fi
+    fi
     stopped="$(opencode_host_stop "$folder")"
     opencode_host_remove "$folder" || true
     echo "OPENCODE_HOME SWEEP stopped=$stopped path=$folder"

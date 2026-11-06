@@ -61,12 +61,15 @@ if ! [[ "$EXPORT_ATTEMPTS" =~ ^[1-9]$ ]]; then
   exit 2
 fi
 # The helper is an owner when no job folder exists. A job that owns the folder
-# cleans it up when it ends. The owner sets the traps of spec D6.
-opencode_host_begin credential || {
+# cleans it up when it ends. The owner sets the traps of spec D6. The cleanup
+# and sweep lines of the helper go to stderr (check-1.3 F4): the export mode
+# must hold only the JSON payload on stdout, because a direct
+# `tsx go-cost.ts --catalog` parses the whole stdout with JSON.parse.
+opencode_host_begin credential >&2 || {
   echo "opencode-credential: the OpenCode job folder could not be made" >&2
   exit 2
 }
-trap 'opencode_host_cleanup' EXIT
+trap 'opencode_host_cleanup >&2' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
@@ -164,7 +167,7 @@ seed_credential() {
       rc=0
       output="$(timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 \
         BENCH_OPENCODE_JOB="$folder" "$OPENCODE_BIN" auth export --standalone opencode 2>/dev/null \
-        | SELECT_MODE=export read_selection 2>&1)" || rc=$?
+        | SELECT_MODE=export read_selection 2>/dev/null)" || rc=$?
       if [ "$rc" -eq 0 ] && [ -n "$output" ]; then break; fi
       if [ "$rc" -ne 2 ] || [ "$attempt" -ge "$EXPORT_ATTEMPTS" ]; then
         if [ -n "$output" ]; then printf '%s\n' "$output" >&2; else
@@ -195,7 +198,14 @@ fi
 # Every other mode reads the job store. The seed runs first when the job folder
 # holds no seeded marker. A payload of this process's own seed is selected in
 # place of a second job-store read.
-seed_payload="$(seed_credential)" || exit 2
+if [ "$MODE" = "warn" ]; then
+  # The warning path never stops the weekly report (check-1.3 F6): a seed
+  # failure changes nothing. The mode below then reads the job store, and a
+  # read failure still exits 0.
+  seed_payload="$(seed_credential)" || seed_payload=""
+else
+  seed_payload="$(seed_credential)" || exit 2
+fi
 
 # One export, one selection pass. A retryable export failure (exit 2) runs
 # again. A window failure (exit 3) stops at once.
