@@ -17,7 +17,8 @@ runs with a private server (`--standalone`) and with all OpenCode paths in
 that folder. One read of the shared store per job copies the Console
 credential into the job store. A trap stops every OpenCode process of the job
 and removes the folder. The daily job also uses the `logic` self-check, so
-the 2026-11-08 live day can start.
+the 2026-11-08 live day can start. The served-list `models` call of the daily
+job retries a transient failure, the same rule as `batch.sh` (D15).
 
 ## Owner requirement
 
@@ -142,6 +143,23 @@ orchestrator measured EV1 and EV9. The author measured the other items.
   `PATH=%h/.local/share/pnpm/bin:%h/.local/bin:%h/.nvm/versions/node/v24.19.0/bin:/usr/local/bin:/usr/bin:/bin`.
   Its output goes to `reports/cron-daily.log`. The timer starts it on Wed and
   Sun at 01:00. The next start is Sun 2026-11-08 01:00 +07.
+- **EV15. The served list can fail on a transient host fault.** Run 2
+  (14:56) of `harness/cron-daily.sh --dry-run` on code `18a942d` passed
+  every isolation check. The job-store proof passed (CW1=0, CW2=0). Run 3
+  (15:07 and 15:10, two attempts) failed at the served list:
+  `DAILY FAIL served: opencode models failed`. The error was
+  `ServiceUnavailableError: Location plugins did not finish activating`
+  from `opencode models --standalone` in the job store
+  (`harness/cron-daily.sh:140`). The seed export showed the same notice
+  once in run 2. Its retry rule (3 calls, 5 s apart,
+  `harness/opencode-credential.sh`) passed on the second call. Diagnosis 2
+  (`77f66b1`): 5 of 5 `models --standalone` calls from the repository root
+  in an isolated store exited 0. The fault depends on time and host load,
+  not on the working directory. `harness/batch.sh:322-336` already retries
+  `opencode models`: a transient exit 1 retries up to 2 times with a 5 s
+  delay. The served-list call runs before the Go guard. So a fault there
+  turns a clean guard skip into `DAILY FAIL served` (exit 1) on the live
+  day.
 
 ## Definitions
 
@@ -298,6 +316,10 @@ Each decision below is a default by the orchestrator or the author,
     - F6: the shared `opencode.db` holds 7.1 GB. Its clean-up is a human gate.
     - F7: `execution-identity.ts:124` stays unchanged, because no production
       path reaches it (EV8).
+    - F8: the host calls run with the repository root as the working
+      directory, and the user's project folder `.opencode/` (with
+      `@opencode-ai/plugin`) may load. No fault is proven (EV15, diagnosis
+      2). A later track may run host calls from the job folder.
 13. **D13. The lanes.** The lane is light. One maker and one checker of a
     different model family. The checker is not a Kimi model.
     - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
@@ -307,6 +329,13 @@ Each decision below is a default by the orchestrator or the author,
     before Sat 2026-11-07 23:00 +07. When they do not, the orchestrator tells
     the PM at that time. The PM and Daniel then decide about the 2026-11-08
     timer. No role stops the timer.
+15. **D15. The served-list retry.** The served-list call of `cron-daily.sh`
+    (`opencode_host_run models --standalone`, line 140) uses the same retry
+    rule as `batch.sh:322-336` (EV15): up to 3 calls in total, 5 s apart,
+    while the call exits non-zero or writes an empty list. A non-empty list
+    stops the retry at once. After the third failure the job prints the
+    existing line `DAILY FAIL served: opencode models failed` and exits 1,
+    as now. Each retry keeps `--standalone` and the job store (D2, D3).
 
 ## Functional requirements
 
@@ -460,6 +489,22 @@ Each decision below is a default by the orchestrator or the author,
   `~/.local/state/opencode/service.json` equals the value that task 3.1
   records before the live day.
 
+### FR-11 — The served-list retry of the daily job
+
+- The served-list `models` call of `cron-daily.sh` follows the retry rule
+  of D15: up to 3 calls in total, 5 s apart, while the call exits non-zero
+  or writes an empty list. A non-empty list stops the retry at once. After
+  the third failure the job prints `DAILY FAIL served: opencode models
+  failed` and exits 1. Each retry keeps `--standalone` and the job store
+  (D2, D3).
+- **Check.** The file `harness/schedule-tests/daily-served-retry.test.ts`
+  passes. One case proves the transient path: a fake `opencode` fails the
+  first `models --standalone` call and passes the second, the job reaches
+  the dry-run plan, and the fake records exactly 2 `models` calls, both
+  with `--standalone` and the job-store data folder. The other case proves
+  the fail path: three failures give `DAILY FAIL served: opencode models
+  failed`, exit 1, after exactly 3 calls.
+
 ## Non-functional requirements
 
 - **NFR-1 No model call.** The tests and the preflight send no prompt. The
@@ -504,10 +549,13 @@ Each decision below is a default by the orchestrator or the author,
 9. **AC-9** The 2026-11-08 live day uses the new setting (FR-10).
 10. **AC-10** The maker and the checker sit in different model families, and
     the checker is not a Kimi model (D13).
+11. **AC-11** The served-list call of `cron-daily.sh` retries up to 3 calls,
+    5 s apart, keeps `--standalone` and the job store on each retry, and
+    prints the existing failure line after the third failure (FR-11, D15).
 
 ## Out of scope
 
-- The items F1 to F7 of D12.
+- The items F1 to F8 of D12.
 - A change of the container, of `opencode-entry.sh`, or of the Podman
   argument list.
 - A clean-up of the shared `opencode.db` or of the stale `service.json`.

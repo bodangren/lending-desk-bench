@@ -16,7 +16,7 @@ Constraints for every role:
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
   - Code checker: `claude-code/claude-sonnet-5-5#high`.
   - Spec checker: `volcengine-agent-plan/glm-latest#high`.
-- The deadline: tasks 1.1 to 1.6 finish before Sat 2026-11-07 23:00 +07
+- The deadline: tasks 1.1 to 1.11 finish before Sat 2026-11-07 23:00 +07
   (spec D14). When they do not, the orchestrator tells the PM at that time.
   No role stops the timer.
 - Only the new test files of `harness/schedule-tests/` run outside the
@@ -42,7 +42,7 @@ Marker use:
   and `[b]` to a task that waits for an owner or for an earlier task.
 - `[x]` needs a commit SHA on the first line of the task.
 
-## Phase 1: The harness change (spec D1 to D12) [checkpoint: b64376e]
+## Phase 1: The harness change (spec D1 to D15) [checkpoint: b64376e]
 
 - [x] 1.0 The spec check. 479095f
   The spec checker reads `spec.md` and this plan. It
@@ -553,6 +553,77 @@ Marker use:
   - Verify: this task holds the two AFTER values and the SHA of the harness
     commit.
   - Lane: light. A read-only command.
+- [ ] 1.7 The Red test of the served-list retry (spec FR-11, D15). Write the
+  new file `harness/schedule-tests/daily-served-retry.test.ts`. The file
+  puts a fake `opencode` on `PATH` and in `BENCH_OPENCODE_BIN`, the same
+  rule as spec FR-7. The fake appends one JSON line per call to a record
+  file. The test copies the scripts that it runs into a temp repo, the same
+  as `harness/schedule-tests/rescore-guard.test.ts`. No test writes under
+  the real `.tmp/`, `runs/`, or `reports/`. No test starts the real
+  `opencode` binary, Podman, a browser, or a model.
+  - Case 1, the transient path: the fake fails the first
+    `models --standalone` call (exit 1, stderr
+    `ServiceUnavailableError: Location plugins did not finish activating`)
+    and passes the second call. The job reaches the selection, or the
+    dry-run plan with the seams `BENCH_DAILY_QUOTA_CMD` and
+    `BENCH_DAILY_CATALOG`. The fake records exactly 2 `models` calls. Both
+    carry `--standalone` and resolve the data folder under the job store.
+  - Case 2, the fail path: the fake fails every `models` call. The job
+    prints `DAILY FAIL served: opencode models failed` and exits 1 after
+    exactly 3 calls.
+  - Each test sets a timeout of 120_000 ms.
+  - The tests fail on the current code (harness commit `18a942d`): the
+    served-list call makes 1 attempt only, so case 1 sees 1 `models` call
+    and case 2 sees the failure after 1 call.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-served-retry.test.ts --configLoader native`.
+  - Verify: the run fails on the current code. The task records the
+    `Tests` line and the names of the failed tests. After the run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+  - Lane: light. Only this file runs outside the heavy-run wrapper.
+  - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
+- [ ] 1.8 The Green code of the served-list retry (spec D15, FR-11). The
+  retry goes into `harness/cron-daily.sh` only: up to 3 calls of
+  `opencode_host_run models --standalone` into the served temp file, 5 s
+  apart, while the call exits non-zero or writes an empty list. A
+  non-empty list stops the retry at once. After the third failure the job
+  prints the existing line `DAILY FAIL served: opencode models failed` and
+  exits 1. Each retry keeps `--standalone` and the job store (spec D2,
+  D3).
+  - The maker also appends the finding F8 of spec D12 to
+    `measure/runs/opencode_host_isolation/findings.md`, one line with the
+    source. This is a Measure evidence file, not harness code.
+  - Verify: the new file of task 1.7 and the three track files of tasks
+    1.1 to 1.4 pass alone, each with its command of task 1.4. The task
+    records each `Tests` line.
+  - Verify: `bash -n harness/cron-daily.sh` exits 0.
+  - Verify: the two `rg` commands of spec FR-1 print the expected output.
+  - Lane: light. The maker runs only the four schedule-test files.
+  - Maker: `kimi-code-plan-cn/kimi-for-coding#high`.
+- [ ] 1.9 The checker review of the amendment. The checker reads the
+  amendment of `spec.md` and `plan.md` (D15, FR-11, AC-11, F8, EV15) and
+  the code of tasks 1.7 and 1.8 against them. It writes
+  `measure/runs/opencode_host_isolation/check-1.9.json` with `status`,
+  `retry_recommendation`, and each finding with its severity.
+  - Verify: the file shows `status: pass` and 0 blocking findings.
+  - Verify: this task records the maker models and the checker model, and
+    the checker family differs from every maker family.
+  - Lane: light. The checker changes no code.
+  - Checker model: `claude-code/claude-sonnet-5-5#high`.
+- [ ] 1.10 The full suites through `heavy-run.sh` again, on the commit of
+  task 1.8.
+  - Command: the command of task 1.5.
+  - Verify: the run exits 0. The log holds a `Tests` line with no failed
+    test for each of the two suites. The log sits at
+    `measure/runs/opencode_host_isolation/full-suite-1.10.log`.
+  - PM rule A-23 (2026-11-06): the full suite runs only after 22:00, or
+    when no p1 job waits for the lock (`pgrep -af '[f]lock -w 600'` shows
+    none).
+  - Lane: light. One heavy run.
+- [ ] 1.11 The AFTER hashes again (spec D11), on the commit of task 1.8.
+  - Command: the command of task 1.6.
+  - Verify: the command exits 0 and prints two hashes. The task records
+    the two AFTER values and the SHA of the harness commit.
+  - Lane: light. A read-only command.
 
 ## Phase 2: The live-day preflight
 
@@ -680,6 +751,16 @@ Marker use:
     isolated store, so the hypothesis is not supported; the flakiness is
     host-level and timing-bound (run 2 at 14:56 exited 0 through the same
     path; runs at 15:07 and 15:10 failed).
+  - Run 4, after task 1.10: the dry run with the seam
+    `BENCH_DAILY_QUOTA_CMD` (the script
+    `measure/runs/opencode_host_isolation/quota-in-range.sh`, weekly 20,
+    monthly 50), the shim, and the service PATH, through heavy-run p2, on
+    the harness commit of task 1.8.
+  - Verify (run 4): the run exits 0. The log holds `DAILY DRY-RUN
+    planned=<n>` with `<n>` above 0. Every isolation Verify of run 2 holds:
+    the `DAILY OPENCODE_HOME` and cleanup lines, the shim-log folder and
+    `--standalone` checks, the `ps` check, and the unchanged
+    `service.json` hash.
   - Recorded deviation (check-1.3-r4 F12): the dry run cannot reach a
     job-store read, because the catalog fetch of the real `go-cost.ts`
     needs the credential first. Job-store proof: in one heavy-run call with
