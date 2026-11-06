@@ -723,9 +723,9 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     changed since `46edf4c` (the task-1.7/-1.8 test file lives under
     `harness/schedule-tests/`, which is not in the suite list either).
 
-## Phase 2: The live-day preflight
+## Phase 2: The live-day preflight [checkpoint: 14e88a4]
 
-- [~] 2.1 The dry run of the daily job with the service PATH. The run uses a
+- [x] 2.1 The dry run of the daily job with the service PATH. 14e88a4. The run uses a
   recording shim. The shim appends one JSON line per call to
   `measure/runs/opencode_host_isolation/preflight-2.1-calls.jsonl` with the
   arguments, `HOME`, the four XDG variables, and `TMPDIR`. Then it runs
@@ -771,6 +771,33 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     `auth export opencode --standalone` of spec D3 applies in a new commit,
     then tasks 1.4 and 1.5 repeat, then this task repeats. This round does
     not apply the fallback; the orchestrator routes it.
+  - Evidence of run 4 on 2026-11-06 (HEAD `00ef15d`, harness commit
+    `14e88a4`, exit 0; run log `preflight-2.1-r4.log`, shim log
+    `preflight-2.1-r4-calls.jsonl`): the run with the seam
+    `BENCH_DAILY_QUOTA_CMD=quota-in-range.sh` (weekly 20, monthly 50) holds
+    `DAILY GO-GUARD weekly=20 monthly=50` and `DAILY DRY-RUN planned=12`;
+    one `DAILY OPENCODE_HOME .tmp/opencode-host-daily-2842610` line and one
+    `OPENCODE_HOME CLEANUP stopped=0 path=<same>` line, no `CLEANUP FAIL`.
+    The shim log holds 4 lines: two shared-home seed exports (the seed
+    retried once after `Location plugins did not finish activating`, spec D4
+    retry rule), one job-store `auth import --standalone`, and one job-store
+    `models --standalone` (the D15 retry was not needed; the models call
+    succeeded at the first attempt). Every `models`/`auth` line carries
+    `--standalone`. The `service.json` hash equaled the before-run hash
+    `047e87b91d...`, only the OpenChamber server remained, and no job folder
+    was left. Every Verify of this task passes in run 4.
+  - Summary of runs 2-4: run 2 proved the isolation end to end (exit 0, one
+    successful shared read, job-store import and models, cleanup, hash
+    equal) and the F12 job-store proof (CW1=0, CW2=0; one shared line, one
+    job-store `auth export opencode --standalone` line); its only open
+    Verify was "planned above 0", blocked by the live monthly quota of 80.8
+    percent. Run 3 (before the D15 retry existed) failed twice at the served
+    list with `ServiceUnavailableError: Location plugins did not finish
+    activating` — the fault that D15 answers. Run 4 passes every Verify on
+    the D15 code. Recorded deviation: the seam replaces only the quota read;
+    the live day uses the real guard, which reads 80.8 % on 2026-11-06 and
+    will skip the day until it drops below 80 or the owner changes the
+    guard.
   - Verify: the log sits at
     `measure/runs/opencode_host_isolation/preflight-2.1.log` — PASS.
   - Evidence of run 2 on 2026-11-06 (HEAD `7ba32ed`, harness commit
