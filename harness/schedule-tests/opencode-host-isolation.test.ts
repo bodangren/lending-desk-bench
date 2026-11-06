@@ -197,7 +197,13 @@ function fixture(): Fixture {
   return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl") };
 }
 
-/** The environment of one case. It holds no XDG variable and no OPENCODE_DB. */
+/**
+ * The environment of one case. It holds no XDG variable.
+ *
+ * It sets OPENCODE_DB to a path under the temp shared home. Every call that
+ * keeps the variable then fails the check of spec D2. The seed call removes it
+ * too, so the seed is checked as well.
+ */
 function testEnv(f: Fixture, extra: Record<string, string>): Record<string, string> {
   return {
     PATH: `${f.bin}:${dirname(process.execPath)}:/usr/local/bin:/usr/bin:/bin`,
@@ -208,6 +214,7 @@ function testEnv(f: Fixture, extra: Record<string, string>): Record<string, stri
     LOGNAME: process.env.LOGNAME ?? "tester",
     BENCH_OPENCODE_BIN: join(f.bin, "opencode"),
     FAKE_OPENCODE_RECORD: f.record,
+    OPENCODE_DB: join(f.sharedHome, ".local", "share", "opencode", "opencode.db"),
     ...extra,
   };
 }
@@ -259,20 +266,36 @@ function under(path: string, parent: string): boolean {
   return path === parent || path.startsWith(parent + "/");
 }
 
-/** The seed call of D4. The spec D3 gives a second order for the flag. */
-function isSeed(call: Call): boolean {
+/** The argument list of the seed call of D4. The spec D3 gives a second order. */
+function isSeedArgv(call: Call): boolean {
   return call.argv[0] === "auth" && call.argv.includes("export")
     && call.argv.includes("--standalone") && call.argv.includes("opencode");
+}
+
+/** The seed read of D4. It is the one call that reads the shared store. */
+function isSeed(call: Call, sharedHome: string): boolean {
+  return isSeedArgv(call) && under(dataFolder(call), sharedHome);
 }
 
 function sharedCalls(calls: Call[], sharedHome: string): Call[] {
   return calls.filter((call) => under(dataFolder(call), sharedHome) || under(stateFolder(call), sharedHome));
 }
 
-/** Every call but the seed read stays out of the shared home. */
+/**
+ * Every call but the seed read stays out of the shared home.
+ *
+ * The seed read is the one shared read of the job folder. The test finds it by
+ * its count, so a job store read that resolves under the shared home is not
+ * exempt and fails the count.
+ */
 function expectIsolated(calls: Call[], f: Fixture, label: string): void {
+  const shared = sharedCalls(calls, f.sharedHome);
+  const seedCalls = shared.filter(isSeedArgv);
+  expect(seedCalls.length, `${label}: the job folder made ${seedCalls.length} seed reads of the shared store`)
+    .toBe(1);
+  const seed = seedCalls[0];
   for (const call of calls) {
-    if (isSeed(call)) continue;
+    if (call === seed) continue;
     const name = call.argv.join(" ");
     expect(under(dataFolder(call), f.sharedHome),
       `${label}: the ${name} call resolves its data folder under the shared home`).toBe(false);
@@ -280,12 +303,12 @@ function expectIsolated(calls: Call[], f: Fixture, label: string): void {
       `${label}: the ${name} call resolves its state folder under the shared home`).toBe(false);
   }
   for (const call of calls) {
-    if (isSeed(call)) continue;
+    if (call === seed) continue;
     expect(dataFolder(call).startsWith(join(f.repo, ".tmp", "opencode-host-")),
       `${label}: the ${call.argv.join(" ")} call does not use a job folder of the temp repo`).toBe(true);
   }
+  // Every call removes OPENCODE_DB. The seed call does it too (spec D2).
   for (const call of calls) {
-    if (isSeed(call)) continue;
     expect(call.opencode_db,
       `${label}: the ${call.argv.join(" ")} call sets OPENCODE_DB`).toBe(false);
   }
@@ -338,7 +361,7 @@ describe("the OpenCode host isolation of FR-7", () => {
       expectStandalone(calls, "the batch");
       expect(calls.some((call) => call.argv.length === 1 && call.argv[0] === "--version"),
         "the batch made no --version call").toBe(true);
-      expect(calls.filter(isSeed).length, "the batch made no seed call").toBe(1);
+      expect(calls.filter((call) => isSeed(call, f.sharedHome)).length, "the batch made no seed call").toBe(1);
       expect(calls.some((call) => call.argv.includes("models")),
         "the batch made no models call").toBe(true);
     } finally { rmSync(f.root, { recursive: true, force: true }); }
@@ -359,7 +382,7 @@ describe("the OpenCode host isolation of FR-7", () => {
         expectStandalone(calls, `the ${mode} mode`);
         expect(sharedCalls(calls, f.sharedHome).length,
           `the ${mode} mode read the shared store more than once`).toBe(1);
-        expect(calls.filter(isSeed).length, `the ${mode} mode made no seed call`).toBe(1);
+        expect(calls.filter((call) => isSeed(call, f.sharedHome)).length, `the ${mode} mode made no seed call`).toBe(1);
         if (mode === "scan-values") {
           const lines = result.stdout.split(/\r?\n/).filter(Boolean);
           expect(lines, "the scan values do not hold the access value").toContain(FAKE_ACCESS);
@@ -394,6 +417,52 @@ describe("the OpenCode host isolation of FR-7", () => {
         "the run made no check-window read before the version call").toBe(true);
       expect(calls.slice(version + 1).some(exportCall),
         "the run made no export read after the version call").toBe(true);
+      // The job folder holds one shared read. The two helper reads use the job store.
+      expect(sharedCalls(calls, f.sharedHome).length,
+        "the run read the shared store more than once").toBe(1);
+      expect(calls.filter(exportCall).length,
+        "the run made fewer than two auth export calls").toBeGreaterThanOrEqual(2);
+    } finally { rmSync(f.root, { recursive: true, force: true }); }
+  }, TIMEOUT);
+
+  it("reads the shared store once for two helper runs in one job folder", () => {
+    const f = fixture();
+    try {
+      // A nested job uses the folder of its owner (spec D1).
+      const folder = join(f.repo, ".tmp", "opencode-host-credential-4194306");
+      mkdirSync(folder, { recursive: true });
+      const env = testEnv(f, { BENCH_OPENCODE_HOME: folder });
+      const first = runScript(join(f.harness, "opencode-credential.sh"), ["export"], env, f.repo);
+      expect(first.status, `the first export exited ${first.status}\n${first.stdout}\n${first.stderr}`).toBe(0);
+      const second = runScript(join(f.harness, "opencode-credential.sh"), ["export"], env, f.repo);
+      expect(second.status, `the second export exited ${second.status}\n${second.stdout}\n${second.stderr}`).toBe(0);
+      const calls = readCalls(f.record);
+      expect(calls.length, `the two helper runs made no OpenCode call\n${first.stdout}\n${first.stderr}`)
+        .toBeGreaterThan(1);
+      // The seed of the first run reads the shared store. The second run reads the job store.
+      expect(sharedCalls(calls, f.sharedHome).length,
+        "the two helper runs read the shared store more than once").toBe(1);
+      const exportCall = (call: Call) => call.argv[0] === "auth" && call.argv.includes("export");
+      expect(calls.filter(exportCall).length,
+        "the two helper runs made fewer than two auth export calls").toBeGreaterThanOrEqual(2);
+      const jobStoreReads = calls.filter((call) =>
+        dataFolder(call).startsWith(join(f.repo, ".tmp", "opencode-host-")));
+      expect(jobStoreReads.length, "the two helper runs made no job store read").toBeGreaterThanOrEqual(1);
+    } finally { rmSync(f.root, { recursive: true, force: true }); }
+  }, TIMEOUT);
+
+  it("prints the cleanup line of the owner on stderr", () => {
+    const f = fixture();
+    try {
+      // The helper owns the job folder when no job folder exists (spec D1).
+      const env = testEnv(f, {});
+      const result = runScript(join(f.harness, "opencode-credential.sh"), ["export"], env, f.repo);
+      expect(result.status, `the export exited ${result.status}\n${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = result.stdout.split(/\r?\n/).filter(Boolean);
+      expect(lines.length, `the export stdout holds ${lines.length} lines\n${result.stdout}`).toBe(1);
+      expect(() => JSON.parse(lines[0] ?? ""), "the export stdout holds no JSON payload").not.toThrow();
+      expect(result.stderr, "the export stderr holds no cleanup line")
+        .toMatch(/^OPENCODE_HOME CLEANUP stopped=\d+ path=/m);
     } finally { rmSync(f.root, { recursive: true, force: true }); }
   }, TIMEOUT);
 });

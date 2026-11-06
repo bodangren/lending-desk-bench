@@ -56,7 +56,12 @@ Marker use:
     fix in `spec.md` or `plan.md` in a later commit.
   - Lane: light. The spec checker changes no code.
   - Spec checker: `volcengine-agent-plan/glm-latest#high`.
-- [x] 1.1 The Red tests (spec FR-7, FR-8, FR-9). edb87cd. Write the three test files.
+- [~] 1.1 The Red tests (spec FR-7, FR-8, FR-9). edb87cd. Write the three test files.
+  - Round 4 (2026-11-06): the checker of task 1.3 wrote
+    `measure/runs/opencode_host_isolation/check-1.3.json` with the status
+    fail and the recommendation retry_tests. Round 4 reopens this task for the
+    test fixes of the findings F1 to F4 of that file. The model of this round
+    is `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
   Touch these files and no others:
   - `harness/schedule-tests/opencode-host-isolation.test.ts` (spec FR-7).
   - `harness/schedule-tests/opencode-host-trap.test.ts` (spec FR-8).

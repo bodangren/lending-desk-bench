@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -350,6 +350,33 @@ describe("the trap of the OpenCode job of FR-8", () => {
       expect(stopped, `the fake child ${pid} is still alive after the sweep`).toBe(true);
       expect(processAlive(decoy), "the decoy process died").toBe(true);
       expect(existsSync(oldFolder), `the old job folder ${oldFolder} is still there`).toBe(false);
+    } finally { /* the afterEach hook stops the processes */ }
+  }, TIMEOUT);
+
+  it("keeps a new job folder that has no owner pid", async () => {
+    const f = fixture();
+    current = { root: f.root, pids: [], pidFiles: [f.childPid] };
+    try {
+      const decoy = startDecoy(f);
+      current.pids.push(decoy);
+      mkdirSync(join(f.repo, ".tmp"), { recursive: true });
+      // A new owner makes the folder and writes its owner pid last (spec D1).
+      // The sweep must not take such a folder away from the new owner.
+      const fresh = join(f.repo, ".tmp", "opencode-host-daily-4194304");
+      const old = join(f.repo, ".tmp", "opencode-host-daily-4194305");
+      mkdirSync(fresh, { recursive: true });
+      mkdirSync(old, { recursive: true });
+      // The old folder has no owner pid and no file. Its time is 120 s old.
+      const past = new Date(Date.now() - 120_000);
+      utimesSync(old, past, past);
+      const result = spawnSync("bash", [join(f.harness, "cron-daily.sh"), "--dry-run"], {
+        cwd: f.repo, env: testEnv(f), encoding: "utf8", timeout: 100_000, maxBuffer: 16 * 1024 * 1024,
+      });
+      expect(result.status, `the daily dry run exited ${result.status}\n${result.stdout}\n${result.stderr}`)
+        .toBe(0);
+      expect(existsSync(fresh), `the sweep removed the new job folder ${fresh}`).toBe(true);
+      expect(existsSync(old), `the sweep kept the old job folder ${old}`).toBe(false);
+      expect(processAlive(decoy), "the decoy process died").toBe(true);
     } finally { /* the afterEach hook stops the processes */ }
   }, TIMEOUT);
 });
