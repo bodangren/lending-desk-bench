@@ -396,6 +396,14 @@ Marker use:
     `FAIL: current phase still has 4 non-deferred incomplete tasks` (the gate
     counts the whole phase); the gate text is not a finding against the
     checker result. F3-F6 went to Green round 2 (`46edf4c`, `9f48d0b`).
+  - Rounds 3-5 of the checker (2026-11-06): `check-1.3-r3.json`,
+    `check-1.3-r4.json`, and `check-1.3-r5.json`, all status pass with 0
+    blocking findings. Open Nits: F7 (carried, no change by decision), F8
+    (seed failure reason hidden by the `/dev/null` redirect), F12 (added the
+    task-2.1 job-store proof step, done in run 2), F13 (run-2 seed retry,
+    named under task 2.1), F14 (the `Permission denied` noise at
+    `opencode-host.sh:34` from the `/proc` scan of another session's
+    process, deferred), F15 (task 1.6 header now names `18a942d`).
 - [x] 1.4 The touched test files alone. 9f48d0b. After the fixes of task 1.3, run
   each new file of `harness/schedule-tests/` alone, outside the wrapper.
   - Command: `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`.
@@ -523,8 +531,8 @@ Marker use:
     `ps -eo pid,args | grep '[f]ake-opencode'` printed no line, and
     `ps -eo pid,args | grep -E '[o]pencode(\.exe)? serve'` printed only the
     OpenChamber server `opencode serve --hostname 127.0.0.1 --port 43003`.
-- [x] 1.6 The AFTER hashes (spec D11). 46edf4c. Run the hash command on the harness
-  commit. Record both values.
+- [x] 1.6 The AFTER hashes (spec D11). 18a942d. The final values hold on
+  this commit; the values recorded for `46edf4c` stay as history below.
   - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
   - Verify: the command exits 0 and prints two hashes. EXIT=0 on
     2026-11-06.
@@ -634,6 +642,28 @@ Marker use:
   - Read of run 2: every Verify of this task passed except "planned above
     0", which the live monthly quota (80.8 percent) blocks. The task stays
     `[~]`; the PM sees the quota fact in the task 2.2 report.
+  - Evidence of run 3 on 2026-11-06 (seam run, harness commit `18a942d`; two
+    attempts, logs `preflight-2.1-r3a.log` / `-r3b.log` with shim logs
+    `preflight-2.1-r3a-calls.jsonl` / `-r3b-calls.jsonl`): the seam
+    `quota-in-range.sh` prints one fixed reading, weekly 20 and monthly 50
+    percent, and makes no network call. Both attempts exited 1 at the served
+    list: `DAILY FAIL served: opencode models failed`, with the real error
+    `ServiceUnavailableError: Location plugins did not finish activating`
+    from `opencode models --standalone` in the job store. The isolation
+    itself was correct in both attempts (seed + import + models, all with the
+    right folders and `--standalone`; service.json hash unchanged at
+    `047e87b91d...`; only the OpenChamber server after; no job folder left).
+    Run 2 at 14:56 proves the same path end to end (exit 0), so the blocker
+    is the host-level plugin flakiness, not the harness. The `models` call of
+    the served list has no retry (the old code had none either); a retry
+    rule there is a routed decision for the orchestrator, with the live day
+    in mind. The task stays `[~]`; the seam and its deviation line are ready
+    for the next attempt: "the seam replaces only the quota read; the live
+    day uses the real guard, which reads 80.8 % on 2026-11-06 and will skip
+    the day until it drops below 80 or the owner changes the guard".
+  - check-1.3-r5 F13: the summary names the exception — 2 shared-home lines
+    in run 2, because the seed retried once after
+    `Location plugins did not finish activating` (spec D4 retry rule).
   - Recorded deviation (check-1.3-r4 F12): the dry run cannot reach a
     job-store read, because the catalog fetch of the real `go-cost.ts`
     needs the credential first. Job-store proof: in one heavy-run call with
@@ -696,10 +726,16 @@ Marker use:
   - Verify: the log sits at
     `measure/runs/opencode_host_isolation/preflight-2.1.log`.
   - Lane: light. One heavy run.
-- [ ] 2.2 The report to the PM. Send the result of Phase 1 and task 2.1, the
-  AFTER hashes of task 1.6, the open owner question O1, and the findings F1
-  to F7. Tell the `grader_system_chrome` orchestrator that its AFTER hashes
-  moved (its risk R4).
+- [x] 2.2 The report to the PM. 6de9a50. The orchestrator sent the report
+  on 2026-11-06 at about 14:58 +07. It held the result of Phase 1 and task
+  2.1, the AFTER hashes of task 1.6, the open owner question O1, and the
+  findings F1 to F7. The "facts changed" list named: the new local commits
+  of this track; `runner_sha256` now `56c9d61d…66cd6944`; the daily
+  self-check now `logic`; the 2026-11-08 run will skip on the Go guard at
+  the current monthly quota; the next possible good run Sun 2026-11-22
+  01:00. The open owner questions: O1 (the credential source) and the guard
+  limit. The `grader_system_chrome` orchestrator (the same session) knows
+  that its AFTER hashes moved (its risk R4).
   - Verify: the plan records the date of the send.
   - Verify: the report closes with a "facts changed" list. The list names
     the moved hashes and the new self-check of the daily job.
