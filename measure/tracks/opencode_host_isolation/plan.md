@@ -42,7 +42,7 @@ Marker use:
   and `[b]` to a task that waits for an owner or for an earlier task.
 - `[x]` needs a commit SHA on the first line of the task.
 
-## Phase 1: The harness change (spec D1 to D15)
+## Phase 1: The harness change (spec D1 to D15) [checkpoint: 14e88a4]
 
 The checkpoint `b64376e` was removed from this heading on 2026-11-06: task
 1.7/1.8 reopened the phase (spec D15), so the phase is open again. A new
@@ -688,9 +688,19 @@ checkpoint goes on after task 1.11.
     that change.
   - Lane: light. The checker changes no code.
   - Checker model: `claude-code/claude-sonnet-5-5#high`.
-- [~] 1.10 The full suites through `heavy-run.sh` again, on the commit of
-  task 1.8. It waits for the PM A-23 window (after 22:00, or no p1 waiter);
-  the orchestrator sends it.
+- [x] 1.10 The full suites through `heavy-run.sh` again, on the commit of
+  task 1.8. 14e88a4. It ran inside the PM A-23 window (no p1 waiter at
+  15:57:49).
+  - Evidence of the run on 2026-11-06 (one foreground call, exit 0): wall
+    time about 17 min (15:59:29 to 16:16:05 +07). The `schedule-tests/`
+    suite (now 8 files, with `daily-served-retry.test.ts`) gave
+    `Test Files  8 passed (8)` and `Tests  138 passed (138)`; the
+    `test:meta:logic` suite gave `Test Files  30 passed (30)` and
+    `Tests  238 passed (238)`. The log sits at
+    `measure/runs/opencode_host_isolation/full-suite-1.10.log`. After the
+    run, `ps -eo pid,args | grep '[f]ake-opencode'` printed no line, and
+    `ps -eo pid,args | grep -E '[o]pencode(\.exe)? serve'` printed only the
+    OpenChamber server `opencode serve --hostname 127.0.0.1 --port 43003`.
   - Command: the command of task 1.5.
   - Verify: the run exits 0. The log holds a `Tests` line with no failed
     test for each of the two suites. The log sits at
