@@ -689,8 +689,8 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     that change.
   - Lane: light. The checker changes no code.
   - Checker model: `claude-code/claude-sonnet-5-5#high`.
-- [x] 1.10 The full suites through `heavy-run.sh` again, on the commit of
-  task 1.8. 14e88a4. It ran inside the PM A-23 window (no p1 waiter at
+- [x] 1.10 The full suites through `heavy-run.sh` again. 14e88a4. On the commit of
+  task 1.8. It ran inside the PM A-23 window (no p1 waiter at
   15:57:49).
   - Evidence of the run on 2026-11-06 (one foreground call, exit 0): wall
     time about 17 min (15:59:29 to 16:16:05 +07). The `schedule-tests/`
