@@ -423,9 +423,9 @@ Marker use:
     prints no line.
   - Lane: light. The touched files of `harness/tests/meta/` run in task 1.5,
     because `grade-exit.test.ts` runs `grade.sh`.
-- [x] 1.5 The full suites through `heavy-run.sh`. 3bc5a79. It ran on the
-  D3-fallback commit; the heavy run waited for the queue. It waits for the heavy-run queue; the orchestrator sends it
-  after this round.
+- [~] 1.5 The full suites through `heavy-run.sh`. It passed on `3bc5a79`
+  (round 3 below) and runs again on the F11 commit `18a942d`; the heavy run
+  waits for the queue.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
   - Verify: the run exits 0. The log holds a `Tests` line with no failed
     test for each of the two suites.
