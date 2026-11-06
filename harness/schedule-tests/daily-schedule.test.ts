@@ -668,6 +668,8 @@ describe("artifacts", () => {
     mkdirSync(join(repo, "harness"), { recursive: true });
     mkdirSync(join(repo, "docs/assets/data"), { recursive: true });
     copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
+    // cron-daily.sh sources opencode-host.sh (track opencode_host_isolation).
+    copyFileSync(join(HARNESS, "opencode-host.sh"), join(repo, "harness/opencode-host.sh"));
     for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
       symlinkSync(join(HARNESS, name), join(repo, "harness", name));
     symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"));
@@ -1021,6 +1023,8 @@ function pushRepo(w: Work) {
   mkdirSync(join(repo, "harness"), { recursive: true });
   mkdirSync(join(repo, "docs"), { recursive: true });
   copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
+  // cron-daily.sh sources opencode-host.sh (track opencode_host_isolation).
+  copyFileSync(join(HARNESS, "opencode-host.sh"), join(repo, "harness/opencode-host.sh"));
   for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
     symlinkSync(join(HARNESS, name), join(repo, "harness", name));
   symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"));
@@ -1515,6 +1519,8 @@ function copiedCompareJob(w: Work, failOn: string, steps: QuotaStep[], name: str
   mkdirSync(fake, { recursive: true });
   writeFileSync(compareLog, "");
   writeFileSync(join(harness, "cron-daily.sh"), readFileSync(process.env.BENCH_ADV_CRON_DAILY ?? join(HARNESS, "cron-daily.sh")), { mode: 0o755 });
+  // cron-daily.sh sources opencode-host.sh (track opencode_host_isolation).
+  writeFileSync(join(harness, "opencode-host.sh"), readFileSync(join(HARNESS, "opencode-host.sh")), { mode: 0o755 });
   for (const file of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
     symlinkSync(join(HARNESS, file), join(harness, file));
   symlinkSync(join(HARNESS, "node_modules"), join(harness, "node_modules"));

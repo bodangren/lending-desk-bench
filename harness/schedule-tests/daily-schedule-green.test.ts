@@ -39,6 +39,8 @@ function fixture(failCompare = false): Fixture {
   mkdirSync(runs, { recursive: true });
   mkdirSync(days, { recursive: true });
   writeFileSync(join(harness, "cron-daily.sh"), readFileSync(DAILY_SCRIPT));
+  // cron-daily.sh sources opencode-host.sh (track opencode_host_isolation).
+  writeFileSync(join(harness, "opencode-host.sh"), readFileSync(join(HARNESS, "opencode-host.sh")));
   for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts"])
     symlinkSync(join(HARNESS, name), join(harness, name));
   symlinkSync(join(HARNESS, "node_modules"), join(harness, "node_modules"), "dir");
