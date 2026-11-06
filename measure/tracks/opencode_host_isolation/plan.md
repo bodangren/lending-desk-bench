@@ -42,7 +42,7 @@ Marker use:
   and `[b]` to a task that waits for an owner or for an earlier task.
 - `[x]` needs a commit SHA on the first line of the task.
 
-## Phase 1: The harness change (spec D1 to D12)
+## Phase 1: The harness change (spec D1 to D12) [checkpoint: b64376e]
 
 - [x] 1.0 The spec check. 479095f
   The spec checker reads `spec.md` and this plan. It
@@ -460,7 +460,7 @@ Marker use:
 
 ## Phase 2: The live-day preflight
 
-- [ ] 2.1 The dry run of the daily job with the service PATH. The run uses a
+- [~] 2.1 The dry run of the daily job with the service PATH. The run uses a
   recording shim. The shim appends one JSON line per call to
   `measure/runs/opencode_host_isolation/preflight-2.1-calls.jsonl` with the
   arguments, `HOME`, the four XDG variables, and `TMPDIR`. Then it runs
@@ -468,6 +468,46 @@ Marker use:
   The shim sits at
   `measure/runs/opencode_host_isolation/opencode-env-shim.sh`. It records no
   output of OpenCode.
+  - Evidence of the round on 2026-11-06 (HEAD `b64376e`, harness commit
+    `46edf4c`): the run exited 1. Two runs were made; the first run's shim had
+    an argv defect (it recorded the record path, not the arguments) and its
+    log stays as evidence at `preflight-2.1-r1.log` / `preflight-2.1-calls-r1.jsonl`.
+    The shim was fixed (it passes `"$@"` to node and records
+    `process.argv.slice(2)`), and the second run recorded the arguments. Both
+    runs failed the same way, and the second run is the record:
+  - Verify: the run exits 0 — FAIL. The log holds `DAILY FAIL catalog: the
+    catalog fetch failed` (exit 1); the run stopped at the catalog fetch,
+    before the served list and before the dry-run batches.
+  - Verify: `DAILY DRY-RUN planned=<n>` with `<n>` above 0 — FAIL (the line is
+    absent; the run stopped earlier).
+  - Verify: one `DAILY OPENCODE_HOME <path>` line and one
+    `OPENCODE_HOME CLEANUP stopped=0 path=<same path>` line, no
+    `OPENCODE_HOME CLEANUP FAIL` line — PASS. The path was
+    `.tmp/opencode-host-daily-2388944`; the cleanup removed the folder.
+  - Verify (shim log, FR-3 isolation of the calls): PARTIAL. The run made
+    three calls only, all the seed retries of the form
+    `["auth","export","--standalone","opencode"]` with `HOME=/home/daniebo`
+    and no XDG variable — exactly the D4 seed form. No `models` call ran, so
+    the job-folder check has no non-seed line to test.
+  - Verify (FR-2): each `auth` line carries `--standalone` — PASS (the three
+    lines are `auth export --standalone opencode`).
+  - Verify: after the run, `ps -eo pid,args | grep '[o]pencode'` prints only
+    the OpenChamber server, and no `.tmp/opencode-host-daily-*` folder exists
+    — PASS.
+  - Verify: the hash of `~/.local/state/opencode/service.json` equals the
+    hash before the run — PASS. Both are
+    `047e87b91d193b68bf0a9dc61111a4e6c7b79e44a5eae0cd475cc0acadc39b67`.
+  - Verify: the D3 fallback trigger — TRIGGERED. The seed's
+    `auth export --standalone opencode` failed three times against the real
+    opencode v2.2.4, with the caller's own HOME and no XDG (spec D4), while
+    the old production form `auth export opencode` worked on this store (the
+    catalog fetch worked daily before 2026-11-06). The `--standalone` flag
+    after `export` is the only changed variable (spec R2). The fallback form
+    `auth export opencode --standalone` of spec D3 applies in a new commit,
+    then tasks 1.4 and 1.5 repeat, then this task repeats. This round does
+    not apply the fallback; the orchestrator routes it.
+  - Verify: the log sits at
+    `measure/runs/opencode_host_isolation/preflight-2.1.log` — PASS.
   - Before the run: record `sha256sum ~/.local/state/opencode/service.json`
     (only the hash) and `ps -eo pid,args | grep '[o]pencode'`.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd /home/daniebo/Desktop/lending-desk-bench && env PATH=/home/daniebo/.local/share/pnpm/bin:/home/daniebo/.local/bin:/home/daniebo/.nvm/versions/node/v24.19.0/bin:/usr/local/bin:/usr/bin:/bin BENCH_OPENCODE_BIN=/home/daniebo/Desktop/lending-desk-bench/measure/runs/opencode_host_isolation/opencode-env-shim.sh harness/cron-daily.sh --dry-run'`.
