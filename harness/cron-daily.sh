@@ -137,7 +137,18 @@ if [ -z "$SERVED" ]; then
     echo "DAILY FAIL served: the Console credential seed failed" >&2
     exit 1
   fi
-  if ! opencode_host_run models --standalone > "$SERVED_TMP" || [ ! -s "$SERVED_TMP" ]; then
+  # D15/FR-11: retry the served list, the same rule as batch.sh — up to 3
+  # calls in total, 5 s apart, while a call exits non-zero or writes an empty
+  # list. A non-empty list stops the retry at once.
+  served_ok=""
+  for attempt in 1 2 3; do
+    if opencode_host_run models --standalone > "$SERVED_TMP" && [ -s "$SERVED_TMP" ]; then
+      served_ok=1
+      break
+    fi
+    [ "$attempt" -lt 3 ] && sleep 5
+  done
+  if [ "$served_ok" != "1" ]; then
     echo "DAILY FAIL served: opencode models failed" >&2
     exit 1
   fi

@@ -16,3 +16,7 @@
   clean-up is a human gate (Daniel).
 - F7: `harness/execution-identity.ts:124` runs `<path> --version` for an agent
   identity; it stays unchanged because no production path reaches it (spec EV8).
+- F8: the host calls run with the repository root as the working directory,
+  and the user's project folder `.opencode/` (with `@opencode-ai/plugin`) may
+  load. No fault is proven (spec EV15, diagnosis 2 on 2026-11-06). A later
+  track may run host calls from the job folder.
