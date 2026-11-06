@@ -596,6 +596,44 @@ Marker use:
     not apply the fallback; the orchestrator routes it.
   - Verify: the log sits at
     `measure/runs/opencode_host_isolation/preflight-2.1.log` — PASS.
+  - Evidence of run 2 on 2026-11-06 (HEAD `7ba32ed`, harness commit
+    `18a942d`; run log `preflight-2.1-r2.log`, shim log
+    `preflight-2.1-r2-calls.jsonl`; run 1 stays as evidence): the run exited
+    0. It holds `DAILY OPENCODE_HOME
+    /home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-2655857`
+    and `OPENCODE_HOME CLEANUP stopped=0 path=<same>`, and no
+    `OPENCODE_HOME CLEANUP FAIL` line. It holds `DAILY DRY-RUN planned=0`
+    with `DAILY SKIP go-guard: monthly used 80.79950906666666 percent` — the
+    live monthly quota is above 80, so the guard stopped the day by design
+    and the "planned above 0" Verify did not pass for an environmental
+    reason, not a harness fault. The shim log holds 4 lines: two
+    `auth export opencode --standalone` lines with `HOME=/home/daniebo` and
+    no XDG (the seed; the first attempt failed with the known transient
+    plugin notice and the retry rule succeeded on the second attempt, spec
+    D4), one `auth import --standalone` line, and one
+    `models --standalone` line, both under
+    `.tmp/opencode-host-daily-2655857`. Every `models` and `auth` line
+    carries `--standalone`. After the run, `ps -eo pid,args | grep
+    '[o]pencode'` printed only the OpenChamber server, no
+    `.tmp/opencode-host-daily-*` folder existed, and the hash of
+    `~/.local/state/opencode/service.json` equaled the before-run hash
+    `047e87b91d193b68bf0a9dc61111a4e6c7b79e44a5eae0cd475cc0acadc39b67`.
+  - Evidence of the F12 job-store proof on 2026-11-06 (proof log
+    `jobstore-proof-2.1.log`, shim log `jobstore-proof-2.1-calls.jsonl`,
+    job name `diag`): CW1=0 and CW2=0. The shim log holds exactly one
+    shared-home line (the seed, `auth export opencode --standalone` with
+    `HOME=/home/daniebo`) and exactly one job-store
+    `auth export opencode --standalone` line under
+    `.tmp/opencode-host-diag-2656614` (the second check-window read; the
+    first reused the seed payload), plus one job-store `auth import
+    --standalone` line. `opencode_host_cleanup` printed
+    `OPENCODE_HOME CLEANUP stopped=0 path=<the diag folder>`; after it, no
+    opencode process except the OpenChamber server existed, no
+    `.tmp/opencode-host-diag-*` folder existed, and the `service.json` hash
+    was unchanged.
+  - Read of run 2: every Verify of this task passed except "planned above
+    0", which the live monthly quota (80.8 percent) blocks. The task stays
+    `[~]`; the PM sees the quota fact in the task 2.2 report.
   - Recorded deviation (check-1.3-r4 F12): the dry run cannot reach a
     job-store read, because the catalog fetch of the real `go-cost.ts`
     needs the credential first. Job-store proof: in one heavy-run call with
