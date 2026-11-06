@@ -76,8 +76,9 @@ function fakeExport(): string {
  * command line.
  *
  * The fake fails the first `FAKE_OPENCODE_MODELS_FAIL` `models` calls with the
- * transient notice of spec EV15. The call count lives in its own file, so the
- * fake holds no state between calls.
+ * transient notice of spec EV15. The next `FAKE_OPENCODE_MODELS_EMPTY` calls
+ * exit 0 and write no list. The call count lives in its own file, so the fake
+ * holds no state between calls.
  */
 function fakeOpencode(bin: string): string {
   const path = join(bin, "fake-opencode");
@@ -108,10 +109,13 @@ if (has("models")) {
     fs.writeFileSync(countFile, String(count));
   }
   const failCount = Number(process.env.FAKE_OPENCODE_MODELS_FAIL || "0");
+  const emptyCount = Number(process.env.FAKE_OPENCODE_MODELS_EMPTY || "0");
   if (count <= failCount) {
     process.stderr.write("ServiceUnavailableError: Location plugins did not finish activating\\n");
     process.exit(1);
   }
+  // The empty-list clause of D15: the call exits 0 and writes no list.
+  if (count <= failCount + emptyCount) process.exit(0);
   console.log("${MODEL_REF}");
   process.exit(0);
 }
@@ -285,6 +289,29 @@ describe("the served-list retry of the daily job of FR-11", () => {
       expect(result.stderr, "the daily job printed no served failure line")
         .toContain("DAILY FAIL served: opencode models failed");
       expect(result.status, `the daily job exited ${result.status}\n${result.stdout}\n${result.stderr}`).toBe(1);
+    } finally { rmSync(f.root, { recursive: true, force: true }); }
+  }, TIMEOUT);
+
+  it("retries the served list after an empty list and reaches the dry-run plan", () => {
+    const f = fixture();
+    try {
+      // The first call exits 0 and writes no list. The second call writes the
+      // model line (spec D15, the empty-list clause).
+      const result = runDaily(f, { FAKE_OPENCODE_MODELS_EMPTY: "1" });
+      const calls = readCalls(f.record);
+      const models = modelsCalls(calls);
+      expect(models.length,
+        `the served list made ${models.length} models calls instead of 2\n${result.stdout}\n${result.stderr}`)
+        .toBe(2);
+      for (const call of models) {
+        expect(call.argv.includes("--standalone"),
+          `the models call ${call.argv.join(" ")} has no --standalone flag`).toBe(true);
+        expect(dataFolder(call).startsWith(join(f.repo, ".tmp", "opencode-host-")),
+          `the models call ${call.argv.join(" ")} does not use the job store of the temp repo`)
+          .toBe(true);
+      }
+      expect(result.status, `the daily job exited ${result.status}\n${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(result.stdout, "the daily job printed no dry-run plan").toMatch(/^DAILY DRY-RUN planned=[1-9][0-9]*$/m);
     } finally { rmSync(f.root, { recursive: true, force: true }); }
   }, TIMEOUT);
 });

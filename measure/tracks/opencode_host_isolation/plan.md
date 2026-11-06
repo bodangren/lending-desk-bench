@@ -557,7 +557,7 @@ checkpoint goes on after task 1.11.
   - Verify: this task holds the two AFTER values and the SHA of the harness
     commit.
   - Lane: light. A read-only command.
-- [x] 1.7 The Red test of the served-list retry (spec FR-11, D15). f4ed298. Write the
+- [~] 1.7 The Red test of the served-list retry (spec FR-11, D15). f4ed298. Write the
   new file `harness/schedule-tests/daily-served-retry.test.ts`. The file
   puts a fake `opencode` on `PATH` and in `BENCH_OPENCODE_BIN`, the same
   rule as spec FR-7. The fake appends one JSON line per call to a record
@@ -568,13 +568,18 @@ checkpoint goes on after task 1.11.
   - Case 1, the transient path: the fake fails the first
     `models --standalone` call (exit 1, stderr
     `ServiceUnavailableError: Location plugins did not finish activating`)
-    and passes the second call. The job reaches the selection, or the
-    dry-run plan with the seams `BENCH_DAILY_QUOTA_CMD` and
-    `BENCH_DAILY_CATALOG`. The fake records exactly 2 `models` calls. Both
-    carry `--standalone` and resolve the data folder under the job store.
+    and passes the second call. The job reaches the dry-run plan with the
+    seams `BENCH_DAILY_QUOTA_CMD` and `BENCH_DAILY_CATALOG`. The fake records
+    exactly 2 `models` calls. Both carry `--standalone` and resolve the data
+    folder under the job store.
   - Case 2, the fail path: the fake fails every `models` call. The job
     prints `DAILY FAIL served: opencode models failed` and exits 1 after
     exactly 3 calls.
+  - Case 3, the empty-list path: the fake exits 0 and prints nothing on the
+    first `models --standalone` call, and prints a model line on the second
+    call. The job reaches the dry-run plan. The fake records exactly 2
+    `models` calls. Both carry `--standalone` and resolve the data folder
+    under the job store.
   - Each test sets a timeout of 120_000 ms.
   - The Red run on 2026-11-06 (one foreground call, shell timeout 600 s):
     `cd harness && npx vitest run schedule-tests/daily-served-retry.test.ts --configLoader native`
@@ -602,6 +607,30 @@ checkpoint goes on after task 1.11.
   - Verify: the run fails on the current code. The task records the
     `Tests` line and the names of the failed tests. After the run,
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+  - Round 2 (2026-11-06, the finding F16 of `check-1.9.json`, status fail,
+    1 blocking). The checker found that no case covered the empty-list clause
+    of D15, so a retry that tests only the exit status passed both old cases.
+    Round 2 adds case 3 to `harness/schedule-tests/daily-served-retry.test.ts`
+    and changes the fake only. No production code changed.
+  - The run of round 2 on 2026-11-06 (one file, one worker, one foreground
+    call, shell timeout 600 s):
+    `cd harness && npx vitest run schedule-tests/daily-served-retry.test.ts --configLoader native --maxWorkers=1`
+    gave `Test Files  1 passed (1)` and `Tests  3 passed (3)`, EXIT=0.
+  - The three test names of the file: `retries the served list once and
+    reaches the dry-run plan`; `fails the daily job after three served-list
+    calls`; `retries the served list after an empty list and reaches the
+    dry-run plan`.
+  - The wrong code change that case 3 catches: a retry that tests only the
+    exit status, as `harness/batch.sh:322-336` does. That retry makes 1
+    `models` call and stops at `DAILY FAIL served: opencode models failed`,
+    because the test `[ ! -s "$SERVED_TMP" ]` never triggers a retry. Case 3
+    then fails with `the served list made 1 models calls instead of 2` and
+    with the exit status 1. This round ran no mutation. The sentence is the
+    read of the code.
+  - The fix of the finding F19: the reach step of case 1 now names only the
+    dry-run plan. The word `or` is gone.
+  - The process check after the run of round 2: `ps -eo pid,args | grep
+    '[f]ake-opencode'` printed no line.
   - Lane: light. Only this file runs outside the heavy-run wrapper.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
 - [x] 1.8 The Green code of the served-list retry (spec D15, FR-11). 14e88a4.
