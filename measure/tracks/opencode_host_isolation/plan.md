@@ -305,6 +305,19 @@ Marker use:
     `ps -eo pid,args | grep '[f]ake-opencode'` printed no line. The FR-1 rg
     checks, the XDG export check, the NFR-3 diff check, and `bash -n` on the
     seven scripts all hold on the new commit.
+  - Round 5 of Green (2026-11-06, code commit `18a942d`): checker round 4
+    (`check-1.3-r4.json`, status pass, 0 blocking) routed F11-F12. F11: the
+    job-store read of the helper is now `auth export opencode --standalone`,
+    the same D3 fallback order as the seed, because the live day makes this
+    read in each later helper process (batch preflight, run export,
+    check-window) and the dry run never reaches it. After the change the
+    three track files re-ran alone: `opencode-host-isolation.test.ts`
+    `Tests  11 passed (11)`; `opencode-host-trap.test.ts`
+    `Tests  4 passed (4)`; `daily-selfcheck-default.test.ts`
+    `Tests  2 passed (2)`; each EXIT=0; `ps -eo pid,args |
+    grep '[f]ake-opencode'` printed no line. The FR-1 rg checks, the XDG
+    export check, the NFR-3 diff check, and `bash -n` hold on the new
+    commit.
   - Note: the Red file `opencode-host-isolation.test.ts` needed one fix before
     Green could pass. The round-2 Green found its job-folder check unpassable
     (`under()` appends `/` to a parent that ends with the literal dash
@@ -400,6 +413,10 @@ Marker use:
     after the Red fix `7c71f6c`): `opencode-host-isolation.test.ts` gave
     `Tests  11 passed (11)`; `opencode-host-trap.test.ts` gave
     `Tests  4 passed (4)`; `daily-selfcheck-default.test.ts` gave
+    `Tests  2 passed (2)`; each exit code was 0, and `ps -eo pid,args |
+    grep '[f]ake-opencode'` printed no line.
+  - Evidence of the F11 re-run on 2026-11-06 (code commit `18a942d`): the
+    three files gave `Tests  11 passed (11)`, `Tests  4 passed (4)`, and
     `Tests  2 passed (2)`; each exit code was 0, and `ps -eo pid,args |
     grep '[f]ake-opencode'` printed no line.
   - Verify: after the three runs, `ps -eo pid,args | grep '[f]ake-opencode'`
@@ -508,6 +525,12 @@ Marker use:
     `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`; it
     differs from
     `08d6ae6d7515e506b841111e2ffe7b3bc5d3f69c8da676f65c7b46bc8b2af20b`.
+  - Update (2026-11-06, harness commit `18a942d`, check-1.3-r4 F10): the
+    values of commit `46edf4c` were stale since `3bc5a79` changed
+    `opencode-credential.sh`. New values: `runner_sha256` is
+    `56c9d61d1f1fb9e75f11602b44b656827451eb07b90cc42c5b5c7e2b66cd6944`
+    (command exit 0); `suite_sha256` stays
+    `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`.
   - Verify: this task holds the two AFTER values and the SHA of the harness
     commit.
   - Lane: light. A read-only command.
@@ -562,6 +585,18 @@ Marker use:
     not apply the fallback; the orchestrator routes it.
   - Verify: the log sits at
     `measure/runs/opencode_host_isolation/preflight-2.1.log` — PASS.
+  - Recorded deviation (check-1.3-r4 F12): the dry run cannot reach a
+    job-store read, because the catalog fetch of the real `go-cost.ts`
+    needs the credential first. Job-store proof: in one heavy-run call with
+    the service PATH and the shim, run
+    `bash -c 'source harness/opencode-host.sh && opencode_host_begin diag && harness/opencode-credential.sh check-window; echo CW1=$?; harness/opencode-credential.sh check-window; echo CW2=$?; opencode_host_cleanup'`.
+    `opencode_host_begin` accepts the job name `diag` (it accepts any
+    non-empty name). Verify: CW1=0 and CW2=0; the shim log holds exactly
+    one shared-home line (the seed) and one job-store
+    `auth export opencode --standalone` line under
+    `.tmp/opencode-host-diag-`; after it, no opencode process except the
+    OpenChamber server, no `.tmp/opencode-host-diag-*` folder, and the
+    `service.json` hash is unchanged.
   - Seed diagnosis (2026-11-06, no code change; calls in the round brief only,
     stdout to /dev/null, stderr files `diag-2.1-a.err` / `diag-2.1-b.err`):
     - Help of `opencode auth export` in an isolated store: USAGE
@@ -594,8 +629,9 @@ Marker use:
   - Verify: in the shim log, each line except one has `XDG_DATA_HOME` and
     `XDG_STATE_HOME` under
     `/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-`.
-    The one other line is `auth export --standalone opencode`, with no
-    `XDG_DATA_HOME` and `HOME=/home/daniebo` (spec FR-3).
+    The one other line is the seed read in the spec D3 fallback order
+    `auth export opencode --standalone`, with no `XDG_DATA_HOME` and
+    `HOME=/home/daniebo` (spec FR-3, D3).
   - Verify: in the shim log, each `models` and `auth` line carries
     `--standalone` (spec FR-2).
   - Verify: after the run, `ps -eo pid,args | grep '[o]pencode'` prints only
