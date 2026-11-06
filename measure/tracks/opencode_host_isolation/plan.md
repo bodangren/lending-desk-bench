@@ -965,13 +965,39 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
 
 ## Phase 3: The live day of 2026-11-08
 
-- [ ] 3.1 The record before the live day. On Sat 2026-11-07, after task 2.1,
+- [x] 3.1 The record before the live day. cfc0afb. On Sat 2026-11-07, after task 2.1,
   record the hash of `~/.local/state/opencode/service.json`, the output of
   `ps -eo pid,args | grep '[o]pencode'`, and the list of
   `.tmp/opencode-host-*` folders. Record `git rev-parse HEAD` and
   `systemctl --user list-timers lending-desk-daily.timer`.
-  - Verify: `HEAD` holds the harness commit of task 1.2.
-  - Verify: the timer shows the next start Sun 2026-11-08 01:00 +07.
+  - Evidence of the record on 2026-11-07 03:23 +07 (HEAD `cfc0afb`; log
+    `measure/runs/opencode_host_isolation/record-3.1.log`): the hash of
+    `service.json` is
+    `833140b40b299e5ecdc4d28c2b66bbea6429cda1f91a47ba6aeca70fe7a35e89`;
+    its mtime is 2026-11-06 19:04:04 +07 and its size is 165 bytes. The glob
+    `.tmp/opencode-host-*` matched no folder. `git rev-parse HEAD` gave
+    `cfc0afb9a098d1e0df2d640f8f1d45f57b6fd8ac`. The ps list holds the
+    OpenChamber server pid 2558 and the detached service pid 3179063. It also
+    holds three shell wrappers of another project (pids 52178, 52179, 52180),
+    whose command line holds the path `/tmp/opencode/tsc-run-p3b.sh`. A later
+    read of those three pids printed no line, so the wrappers had ended.
+  - Verify: `HEAD` holds the harness commit of task 1.2 — PASS. The title
+    line of task 1.2 holds `f87de82` (the Green code) and `46edf4c` (its
+    round-2 fix). `git merge-base --is-ancestor f87de82 HEAD` exited 0, and
+    `git merge-base --is-ancestor 46edf4c HEAD` exited 0.
+  - Verify: the timer shows the next start Sun 2026-11-08 01:00 +07 — PASS.
+    `systemctl --user list-timers lending-desk-daily.timer` printed
+    `Sun 2026-11-08 01:00:00 +07` as the NEXT value.
+  - Deviation: the hash differs from the run-4 value of task 2.1
+    (`047e87b91d193b68bf0a9dc61111a4e6c7b79e44a5eae0cd475cc0acadc39b67`).
+    The cause is the detached service pid 3179063. It started Fri 2026-11-06
+    19:04:02 +07 with ppid 1571 and it rewrote `service.json` at
+    2026-11-06 19:04:04 +07. Its environ holds
+    `PWD=/home/daniebo/Desktop/advantage-pr` and no `BENCH_OPENCODE_JOB`
+    line. A session of the advantage-pr project started that process, and the
+    bench did not start it. Task 3.2 compares the hash with this 3.1 value.
+    A later change by a process without the `BENCH_OPENCODE_JOB` marker is
+    outside the bench.
   - Lane: light. A read-only check.
 - [ ] 3.2 The live day uses the new setting (spec FR-10). Read the part of
   `reports/cron-daily.log` from the line `DAILY START 2026-11-08T01:00` to
