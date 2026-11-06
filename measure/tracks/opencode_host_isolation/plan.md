@@ -56,7 +56,7 @@ Marker use:
     fix in `spec.md` or `plan.md` in a later commit.
   - Lane: light. The spec checker changes no code.
   - Spec checker: `volcengine-agent-plan/glm-latest#high`.
-- [~] 1.1 The Red tests (spec FR-7, FR-8, FR-9). edb87cd. Write the three test files.
+- [x] 1.1 The Red tests (spec FR-7, FR-8, FR-9). 6f44bda. Write the three test files.
   - Round 4 (2026-11-06): the checker of task 1.3 wrote
     `measure/runs/opencode_host_isolation/check-1.3.json` with the status
     fail and the recommendation retry_tests. Round 4 reopens this task for the
@@ -116,9 +116,70 @@ Marker use:
     task 1.2 in the tree gave `Test Files  1 passed (1)` and
     `Tests  9 passed (9)`, `EXIT=0`. After the run,
     `ps -eo pid,args | grep '[f]ake-opencode'` printed no line.
+  - Evidence of the round-4 Red fix on 2026-11-06. The checker of task 1.3
+    found the findings F1 to F4 in
+    `measure/runs/opencode_host_isolation/check-1.3.json` (status fail,
+    retry_tests). The round changes two test files and no production code.
+    The earlier Red commits of this task are `edb87cd`, `ffc6cb0`, and the
+    Green commit of task 1.2 is `f87de82`.
+    - F1: `testEnv` of `opencode-host-isolation.test.ts` sets `OPENCODE_DB` to
+      `<shared home>/.local/share/opencode/opencode.db`. The check of
+      `opencode_db` holds for every recorded call now. The seed call is no
+      longer exempt.
+    - F2: `expectIsolated` finds the seed read by its count. The test asserts
+      one seed read of the shared store. A job store read that resolves under
+      the shared home fails the count. The run case asserts one shared read
+      and two `auth export` calls. A new case runs the helper twice in one job
+      folder and asserts one shared read in total.
+    - F3: a new test in `opencode-host-trap.test.ts` keeps a job folder
+      without an `owner.pid` whose time is less than 60 s old. A second
+      folder without an `owner.pid` and with the time 120 s back must be
+      removed.
+    - F4: a new test in `opencode-host-isolation.test.ts` runs the export mode
+      of the helper as the owner. The stdout holds one JSON payload line, and
+      the stderr holds the `OPENCODE_HOME CLEANUP` line.
+    - The Red run of round 4 on 2026-11-06 (each file alone, shell timeout
+      600 s):
+      - `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`
+        gave `Test Files  1 failed (1)` and `Tests  1 failed | 10 passed (11)`.
+        The failed test: `prints the cleanup line of the owner on stderr`. The
+        failure says `the export stdout holds 2 lines`. The nine old tests
+        and the two new tests of F1 and F2 pass.
+      - `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native`
+        gave `Test Files  1 failed (1)` and `Tests  1 failed | 3 passed (4)`.
+        The failed test: `keeps a new job folder that has no owner pid`. The
+        failure says `the sweep removed the new job folder`. The three old
+        tests pass.
+      - After both runs, `ps -eo pid,args | grep '[f]ake-opencode'` printed no
+        line.
+    - The mutation proof of F1 and F2. The new checks pass on the code of
+      `cf74ee3`, because the code keeps the rules. Each new check fails on a
+      mutation of one line:
+      - F1: `harness/opencode-host.sh:187` holds `env -u OPENCODE_DB` in
+        `opencode_host_run`. Without that line, every call of the job store
+        keeps `OPENCODE_DB` of the test environment, the fake records
+        `opencode_db` as true, and the check of every call fails.
+        `harness/opencode-credential.sh:165` holds `env -u OPENCODE_DB` in the
+        shared read of the seed. Without that line, the seed call records
+        `opencode_db` as true and the check fails. The old test exempted the
+        seed call, so that mutation passed the old test.
+      - F2: `harness/opencode-credential.sh:157` returns early when the job
+        folder holds the marker `seeded`. Without that line, the second
+        helper run of the new case reads the shared store again. The shared
+        read count of the new case is 2 and the new check fails. The run case
+        fails the same way when a job store read resolves under the shared
+        home: `harness/opencode-host.sh:191` sets
+        `XDG_DATA_HOME="$folder/data"`, and without that line the job store
+        read resolves under the shared home. The shared read count of the run
+        case is 2 and the new check fails.
   - Lane: light. The maker runs only these three files.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
-- [x] 1.2 The Green code (spec D1 to D10). f87de82
+- [~] 1.2 The Green code (spec D1 to D10). f87de82
+  - Round 2 of Green (2026-11-06): the checker of task 1.3 found the findings
+    F3 to F6 in `measure/runs/opencode_host_isolation/check-1.3.json` (status
+    fail, retry_tests). Round 2 of Green reopens this task for the fixes of
+    F3 to F6. The maker model of round 2 stays
+    `kimi-code-plan-cn/kimi-for-coding#high`.
   - Evidence of the Green run on 2026-11-06 (each file alone, shell timeout 600 s):
     - `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`
       gave `Test Files  1 passed (1)` and `Tests  9 passed (9)`.
