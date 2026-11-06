@@ -423,9 +423,8 @@ Marker use:
     prints no line.
   - Lane: light. The touched files of `harness/tests/meta/` run in task 1.5,
     because `grade-exit.test.ts` runs `grade.sh`.
-- [~] 1.5 The full suites through `heavy-run.sh`. It passed on `3bc5a79`
-  (round 3 below) and runs again on the F11 commit `18a942d`; the heavy run
-  waits for the queue.
+- [x] 1.5 The full suites through `heavy-run.sh`. 18a942d. It passed on the
+  F11 commit; the heavy run waited for the queue.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
   - Verify: the run exits 0. The log holds a `Tests` line with no failed
     test for each of the two suites.
@@ -497,6 +496,18 @@ Marker use:
     at `measure/runs/opencode_host_isolation/full-suite-1.5-r2.log`; the
     failed first run stays as evidence at
     `measure/runs/opencode_host_isolation/full-suite-1.5.log`. After the run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` printed no line, and
+    `ps -eo pid,args | grep -E '[o]pencode(\.exe)? serve'` printed only the
+    OpenChamber server `opencode serve --hostname 127.0.0.1 --port 43003`.
+  - Evidence of round 4 on 2026-11-06 (HEAD `ab5a9d1`, harness commit
+    `18a942d`, one foreground call, exit 0): the run passed on the F11
+    commit. Wall time about 16 min (14:03:42 to 14:20:02 +07). The
+    `schedule-tests/` suite gave `Test Files  7 passed (7)` and
+    `Tests  135 passed (135)`; the `test:meta:logic` suite gave
+    `Test Files  30 passed (30)` and `Tests  238 passed (238)`. The run logs:
+    `full-suite-1.5.log` (failed first run), `full-suite-1.5-r2.log` (pass
+    on `f62230d`), `full-suite-1.5-r3.log` (pass on `3bc5a79`), and
+    `full-suite-1.5-r4.log` (this pass). After the run,
     `ps -eo pid,args | grep '[f]ake-opencode'` printed no line, and
     `ps -eo pid,args | grep -E '[o]pencode(\.exe)? serve'` printed only the
     OpenChamber server `opencode serve --hostname 127.0.0.1 --port 43003`.
