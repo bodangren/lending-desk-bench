@@ -177,6 +177,24 @@ Marker use:
         `XDG_DATA_HOME="$folder/data"`, and without that line the job store
         read resolves under the shared home. The shared read count of the run
         case is 2 and the new check fails.
+  - Evidence of the round-5 Red fix on 2026-11-06. The cause: the seed
+    diagnosis of task 2.1 (commit `d91ede6`) showed that the seed form
+    `auth export --standalone opencode` exits 1 on this host with the line
+    `Location plugins did not finish activating`. The spec D3 fallback form
+    `auth export opencode --standalone` exits 0 on the same host. Green
+    changed `harness/opencode-credential.sh` for that fallback. The Red test
+    of the daily job held one exact-order seed assertion, so it rejected the
+    fallback form.
+  - The rule of round 5: the shared read of the daily job must equal one of
+    the two forms of spec D3. The test uses `toContainEqual` with both forms.
+    A grep of the three files of this track found no other exact-order seed
+    assertion. Only `harness/schedule-tests/opencode-host-isolation.test.ts`
+    changed. No production code changed.
+  - The run of round 5 on 2026-11-06, with the Green change of
+    `harness/opencode-credential.sh` in the tree, one foreground call:
+    `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`
+    gave `Test Files  1 passed (1)` and `Tests  11 passed (11)`, `EXIT=0`.
+    After the run, `ps -eo pid,args | grep '[f]ake-opencode'` printed no line.
   - Lane: light. The maker runs only these three files.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
 - [x] 1.2 The Green code (spec D1 to D10). f87de82 46edf4c

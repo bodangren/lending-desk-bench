@@ -338,8 +338,8 @@ describe("the OpenCode host isolation of FR-7", () => {
       expectStandalone(calls, "the daily dry run");
       const shared = sharedCalls(calls, f.sharedHome);
       expect(shared.length, "the daily job read the shared store more than once").toBe(1);
-      expect(shared[0].argv, "the shared read of the daily job is not the seed call")
-        .toEqual(["auth", "export", "--standalone", "opencode"]);
+      expect([["auth", "export", "--standalone", "opencode"], ["auth", "export", "opencode", "--standalone"]],
+        "the shared read of the daily job is not a seed call of spec D3").toContainEqual(shared[0].argv);
       expect(calls.filter((call) => call.argv.includes("models")).length,
         "the daily job made no models call").toBeGreaterThan(0);
     } finally { rmSync(f.root, { recursive: true, force: true }); }
