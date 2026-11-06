@@ -165,8 +165,14 @@ seed_credential() {
     attempt=1
     while :; do
       rc=0
+      # Spec D3 fallback order (diagnosis d91ede6): the first order
+      # `auth export --standalone opencode` failed in the task-2.1 preflight
+      # with the runtime line "Location plugins did not finish activating" on
+      # each of the 3 retries, while `auth export opencode --standalone`
+      # exited 0 against the shared store. The retry rule stays (3 calls, 5 s
+      # apart) for the known transient plugin notice.
       output="$(timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 \
-        BENCH_OPENCODE_JOB="$folder" "$OPENCODE_BIN" auth export --standalone opencode 2>/dev/null \
+        BENCH_OPENCODE_JOB="$folder" "$OPENCODE_BIN" auth export opencode --standalone 2>/dev/null \
         | SELECT_MODE=export read_selection 2>/dev/null)" || rc=$?
       if [ "$rc" -eq 0 ] && [ -n "$output" ]; then break; fi
       if [ "$rc" -ne 2 ] || [ "$attempt" -ge "$EXPORT_ATTEMPTS" ]; then
