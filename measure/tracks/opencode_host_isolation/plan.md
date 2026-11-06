@@ -42,7 +42,11 @@ Marker use:
   and `[b]` to a task that waits for an owner or for an earlier task.
 - `[x]` needs a commit SHA on the first line of the task.
 
-## Phase 1: The harness change (spec D1 to D15) [checkpoint: b64376e]
+## Phase 1: The harness change (spec D1 to D15)
+
+The checkpoint `b64376e` was removed from this heading on 2026-11-06: task
+1.7/1.8 reopened the phase (spec D15), so the phase is open again. A new
+checkpoint goes on after task 1.11.
 
 - [x] 1.0 The spec check. 479095f
   The spec checker reads `spec.md` and this plan. It
@@ -600,7 +604,8 @@ Marker use:
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
   - Lane: light. Only this file runs outside the heavy-run wrapper.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
-- [~] 1.8 The Green code of the served-list retry (spec D15, FR-11). The
+- [x] 1.8 The Green code of the served-list retry (spec D15, FR-11). 14e88a4.
+  The
   retry goes into `harness/cron-daily.sh` only: up to 3 calls of
   `opencode_host_run models --standalone` into the served temp file, 5 s
   apart, while the call exits non-zero or writes an empty list. A
@@ -618,7 +623,19 @@ Marker use:
   - Verify: the two `rg` commands of spec FR-1 print the expected output.
   - Lane: light. The maker runs only the four schedule-test files.
   - Maker: `kimi-code-plan-cn/kimi-for-coding#high`.
-- [ ] 1.9 The checker review of the amendment. The checker reads the
+  - Evidence of the Green run on 2026-11-06 (each file alone, shell timeout
+    600 s): `daily-served-retry.test.ts` `Tests  2 passed (2)`;
+    `opencode-host-isolation.test.ts` `Tests  11 passed (11)`;
+    `opencode-host-trap.test.ts` `Tests  4 passed (4)`;
+    `daily-selfcheck-default.test.ts` `Tests  2 passed (2)`; each EXIT=0;
+    `ps -eo pid,args | grep '[f]ake-opencode'` printed no line. `bash -n` on
+    the seven scripts exits 0 (OK). The two `rg` commands of spec FR-1 print
+    the expected output (the first no line; the second exactly one line,
+    `harness/opencode-credential.sh:175`, the seed shared read). The retry
+    keeps the stderr of the `models` call in the job log (no `2>/dev/null`),
+    so the live-day log keeps the diagnostic text of a failed call; spec D15
+    names no redirect.
+- [~] 1.9 The checker review of the amendment. The checker reads the
   amendment of `spec.md` and `plan.md` (D15, FR-11, AC-11, F8, EV15) and
   the code of tasks 1.7 and 1.8 against them. It writes
   `measure/runs/opencode_host_isolation/check-1.9.json` with `status`,
