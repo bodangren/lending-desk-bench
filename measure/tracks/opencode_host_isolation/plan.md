@@ -665,7 +665,7 @@ checkpoint goes on after task 1.11.
     keeps the stderr of the `models` call in the job log (no `2>/dev/null`),
     so the live-day log keeps the diagnostic text of a failed call; spec D15
     names no redirect.
-- [~] 1.9 The checker review of the amendment. The checker reads the
+- [x] 1.9 The checker review of the amendment. 32f2b84. The checker reads the
   amendment of `spec.md` and `plan.md` (D15, FR-11, AC-11, F8, EV15) and
   the code of tasks 1.7 and 1.8 against them. It writes
   `measure/runs/opencode_host_isolation/check-1.9.json` with `status`,
@@ -688,8 +688,9 @@ checkpoint goes on after task 1.11.
     that change.
   - Lane: light. The checker changes no code.
   - Checker model: `claude-code/claude-sonnet-5-5#high`.
-- [ ] 1.10 The full suites through `heavy-run.sh` again, on the commit of
-  task 1.8.
+- [~] 1.10 The full suites through `heavy-run.sh` again, on the commit of
+  task 1.8. It waits for the PM A-23 window (after 22:00, or no p1 waiter);
+  the orchestrator sends it.
   - Command: the command of task 1.5.
   - Verify: the run exits 0. The log holds a `Tests` line with no failed
     test for each of the two suites. The log sits at
