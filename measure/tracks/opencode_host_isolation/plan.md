@@ -95,6 +95,22 @@ Marker use:
       failed test: `gives each batch the logic self-check when the caller sets
       no value`. The test `keeps the self-check of an explicit caller value`
       passed on the base code.
+  - Evidence of the round-3 Red fix on 2026-11-06. Green found a test
+    defect: line 284 called `under(dataFolder(call), .../.tmp/opencode-host-)`.
+    The `under()` helper appends `/` to the parent, so it tested the prefix
+    `.tmp/opencode-host-/`. Every correct job folder is
+    `.tmp/opencode-host-<job>-<pid>/...`, so the assertion was false for
+    every correct implementation. The fix replaces only that call with a
+    plain prefix test:
+    `dataFolder(call).startsWith(join(f.repo, ".tmp", "opencode-host-"))`.
+    The model of this round is `volcengine-agent-plan/glm-5.3-flash#high`,
+    because MiniMax was at its 5-hour limit until 09:00. Node proof with
+    the new condition, `node -e 'const {join}=require("node:path");
+    const p=join("/r",".tmp","opencode-host-"); console.log(join("/r/.tmp/opencode-host-daily-1","data").startsWith(p), join("/home/u",".local","share").startsWith(p))'`,
+    printed `true false`. After the fix, the file with the Green code of
+    task 1.2 in the tree gave `Test Files  1 passed (1)` and
+    `Tests  9 passed (9)`, `EXIT=0`. After the run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` printed no line.
   - Lane: light. The maker runs only these three files.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
 - [~] 1.2 The Green code (spec D1 to D10). Implement the spec in one commit.

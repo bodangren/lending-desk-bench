@@ -281,7 +281,7 @@ function expectIsolated(calls: Call[], f: Fixture, label: string): void {
   }
   for (const call of calls) {
     if (isSeed(call)) continue;
-    expect(under(dataFolder(call), join(f.repo, ".tmp", "opencode-host-")),
+    expect(dataFolder(call).startsWith(join(f.repo, ".tmp", "opencode-host-")),
       `${label}: the ${call.argv.join(" ")} call does not use a job folder of the temp repo`).toBe(true);
   }
   for (const call of calls) {
