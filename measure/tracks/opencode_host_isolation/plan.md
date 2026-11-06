@@ -406,9 +406,8 @@ Marker use:
     prints no line.
   - Lane: light. The touched files of `harness/tests/meta/` run in task 1.5,
     because `grade-exit.test.ts` runs `grade.sh`.
-- [~] 1.5 The full suites through `heavy-run.sh`. f62230d; it runs again on
-  the D3-fallback commit `3bc5a79`. The heavy run waits for the queue; the
-  orchestrator sends it after this round. It waits for the heavy-run queue; the orchestrator sends it
+- [x] 1.5 The full suites through `heavy-run.sh`. 3bc5a79. It ran on the
+  D3-fallback commit; the heavy run waited for the queue. It waits for the heavy-run queue; the orchestrator sends it
   after this round.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
   - Verify: the run exits 0. The log holds a `Tests` line with no failed
@@ -481,6 +480,18 @@ Marker use:
     at `measure/runs/opencode_host_isolation/full-suite-1.5-r2.log`; the
     failed first run stays as evidence at
     `measure/runs/opencode_host_isolation/full-suite-1.5.log`. After the run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` printed no line, and
+    `ps -eo pid,args | grep -E '[o]pencode(\.exe)? serve'` printed only the
+    OpenChamber server `opencode serve --hostname 127.0.0.1 --port 43003`.
+  - Evidence of round 3 on 2026-11-06 (HEAD `f550e49`, harness commit
+    `3bc5a79`, one foreground call, exit 0): the run passed on the
+    D3-fallback commit. Wall time about 16 min (13:19:29 to about 13:35:35
+    +07). The `schedule-tests/` suite gave `Test Files  7 passed (7)` and
+    `Tests  135 passed (135)`; the `test:meta:logic` suite gave
+    `Test Files  30 passed (30)` and `Tests  238 passed (238)`. The log sits
+    at `measure/runs/opencode_host_isolation/full-suite-1.5-r3.log`; the two
+    earlier runs stay as evidence at `full-suite-1.5.log` (failed first run)
+    and `full-suite-1.5-r2.log` (pass on `f62230d`). After the run,
     `ps -eo pid,args | grep '[f]ake-opencode'` printed no line, and
     `ps -eo pid,args | grep -E '[o]pencode(\.exe)? serve'` printed only the
     OpenChamber server `opencode serve --hostname 127.0.0.1 --port 43003`.
