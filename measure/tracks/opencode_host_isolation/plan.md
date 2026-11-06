@@ -249,11 +249,26 @@ Marker use:
        `find` pass instead of a helper fork per pid or fd. Round 1 forked per
        pid/fd and the trap test's SIGTERM case needed ~20 s; round 2 runs it
        in ~2 s.
-  - Note: the Red file `opencode-host-isolation.test.ts` needed one fix before
-    Green could pass. The round-2 Green found its job-folder check unpassable
-    (`under()` appends `/` to a parent that ends with the literal dash
-    `opencode-host-`) and returned blocked. Red commit `ffc6cb0` changed the
-    check to `startsWith`; nothing else in the tests changed.
+  - Round 3 of Green (2026-11-06, commit `f62230d`): the task-1.5 heavy run
+    found a fixture regression. Cause: `harness/cron-daily.sh:22` sources
+    `harness/opencode-host.sh`, and the temp-tree fixtures of the older
+    schedule tests copy a fixed file list into a temp `harness/` without
+    `opencode-host.sh`; the job then died at line 22 with
+    `opencode-host.sh: No such file or directory` and
+    `DAILY FAIL opencode-home: ...`. Fix: `opencode-host.sh` was added to the
+    copy list of `harness/schedule-tests/daily-schedule.test.ts` (three
+    fixture sites) and `harness/schedule-tests/daily-schedule-green.test.ts`
+    (one site). No assertion, expected line, or test name changed. Recorded
+    deviation: plan task 1.2 named only the meta fakes; this extends the same
+    rule to the schedule-tests fixtures.
+  - Evidence of round 3 (2026-11-06, each file alone):
+    - `daily-schedule.test.ts`: `Tests  107 passed (107)`, EXIT=0.
+    - `daily-schedule-green.test.ts`: `Tests  4 passed (4)`, EXIT=0.
+    - The three files of this track re-ran alone: `opencode-host-isolation.test.ts`
+      `Tests  11 passed (11)`; `opencode-host-trap.test.ts` `Tests  4 passed (4)`;
+      `daily-selfcheck-default.test.ts` `Tests  2 passed (2)`; each EXIT=0.
+    - After the runs, `ps -eo pid,args | grep '[f]ake-opencode'` printed no
+      line.
   Touch these files and no others:
   - `harness/opencode-host.sh` (new): the functions of spec D1, D2, D6, and
     D7. The names are `opencode_host_begin <job>`, `opencode_host_run`,
