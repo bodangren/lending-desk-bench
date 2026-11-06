@@ -353,6 +353,61 @@ Marker use:
   - Verify: the log sits at
     `measure/runs/opencode_host_isolation/full-suite-1.5.log`.
   - Lane: light. One heavy run.
+  - Evidence of the run on 2026-11-06 (HEAD `b8d3ee6`, harness commit
+    `46edf4c`, one foreground call, exit 1): the `schedule-tests/` suite ran
+    and gave `Test Files  2 failed | 5 passed (7)` and
+    `Tests  12 failed | 123 passed (135)`. The `test:meta:logic` suite did not
+    run, because the `&&` chain stopped. The log sits at
+    `measure/runs/opencode_host_isolation/full-suite-1.5.log`. After the run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` printed no line, and
+    `ps -eo pid,args | grep -E '[o]pencode(\.exe)? serve'` printed only the
+    OpenChamber server `opencode serve --hostname 127.0.0.1 --port 43003`.
+    The three files of this track passed inside the run; the 12 failures sit
+    in the daily-schedule files of the `daily_model_schedule` track.
+  - Failed tests of the run, each with its first error line:
+    - `daily-schedule-green.test.ts` > `stops with read failed when the quota
+      compare process fails`: `AssertionError: expected 1 to be +0`.
+    - `daily-schedule-green.test.ts` > `runs D12 steps 5 to 9 after a stop
+      before batch 2`: `AssertionError: expected 1 to be +0`.
+    - `daily-schedule-green.test.ts` > `passes one self-check marker to all
+      four batches`: `AssertionError: expected 1 to be +0`.
+    - `daily-schedule.test.ts` > `6.4.4 publish scope: the publish commit
+      holds only docs/`: `/tmp/daily-schedule-JgEiQj/pub/harness/cron-daily.sh:
+      line 22: /tmp/daily-schedule-JgEiQj/pub/harness/opencode-host.sh: No such
+      file or directory` (then `DAILY FAIL opencode-home: the OpenCode job
+      folder could not be made`).
+    - `daily-schedule.test.ts` > `6.5.14 push at the parent: git push origin
+      <sha>:main`: `expected [] to include 'push origin 06f00a0eabc…'`.
+    - `daily-schedule.test.ts` > `6.5.15 other local commits: the job skips
+      the push and keeps the commit local`: `expected [] to deeply equal
+      [ Array(1) ]`.
+    - `daily-schedule.test.ts` > `6.5.16 origin/main moved: the skip line is
+      not other local commits`: `fatal: ambiguous argument
+      'origin/main..HEAD~1'`.
+    - `daily-schedule.test.ts` > `6.5.17 failed fetch: the commit stays local
+      and the remote stays unchanged`: `expected [] to deeply equal
+      [ 'DAILY PUSH skipped: fetch failed' ]`.
+    - `daily-schedule.test.ts` > `6.5.23 resume record: counts, excluded,
+      order, and last_test stay`: `the first run must write a day record:
+      expected false to be true`.
+    - `daily-schedule.test.ts` > `12.12 remote rejects the push: three
+      attempts, exit 1, the commit stays local`: `must try the push three
+      times: expected [] to deeply equal [ …(3) ]`.
+    - `daily-schedule.test.ts` > `12.13 push race: the remote tip is the docs
+      commit, not a later local commit`: `the wrapper must add the extra
+      commit after the fetch: expected 'initial' to be 'race extra'`.
+    - `daily-schedule.test.ts` > `12.18 monthly compare fault: only the
+      monthly compare process fails (Review A F1)`: `missing D12
+      BENCH_DAILY_QUOTA_CMD: expected [] to deeply equal [ 'DAILY SKIP
+      go-guard: read failed' ]`.
+  - Suspected root cause (no fix in this round): the daily-schedule fixtures
+    copy `harness/cron-daily.sh` into a temp publish tree without
+    `harness/opencode-host.sh`. The `source "$H/opencode-host.sh"` at
+    `cron-daily.sh:22` then fails, `opencode_host_begin` is an unknown
+    command, and the job exits 1 with `DAILY FAIL opencode-home` before the
+    scenario steps. In a real deploy the two files sit next to each other, so
+    the fail-fast path is right; the fixtures need `opencode-host.sh` in
+    their copy list. A later round fixes this.
 - [x] 1.6 The AFTER hashes (spec D11). 46edf4c. Run the hash command on the harness
   commit. Record both values.
   - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
