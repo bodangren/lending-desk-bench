@@ -62,6 +62,11 @@ Marker use:
     fail and the recommendation retry_tests. Round 4 reopens this task for the
     test fixes of the findings F1 to F4 of that file. The model of this round
     is `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
+  - Correction (check-1.3-r2 finding F9, 2026-11-06): the checker's mutation
+    claims about the early return at `opencode-credential.sh:157` are not
+    exact; line 161 repeats the check. Also, removing `XDG_DATA_HOME` alone
+    keeps isolation through `HOME`. The F2 checks still fail for real
+    mutations, such as removing the `seeded` write.
   Touch these files and no others:
   - `harness/schedule-tests/opencode-host-isolation.test.ts` (spec FR-7).
   - `harness/schedule-tests/opencode-host-trap.test.ts` (spec FR-8).
@@ -294,7 +299,7 @@ Marker use:
     prints no line (spec NFR-3, D11).
   - Lane: light. The maker runs only the three new test files.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
-- [~] 1.3 The checker review. The checker reads the commits of tasks 1.1 and
+- [x] 1.3 The checker review. 9f48d0b. The checker reads the commits of tasks 1.1 and
   1.2 against spec D1 to D12 and FR-1 to FR-9. The checker reads each new
   test and confirms that it fails for the right cause on `f55d2aa`. It
   writes `measure/runs/opencode_host_isolation/check-1.3.json` with
@@ -304,36 +309,63 @@ Marker use:
     the two sit in different families.
   - Lane: light. The checker changes no code.
   - Checker model: `claude-code/claude-sonnet-5-5#high` (Anthropic family).
-  - Maker model: `minimax-cn-coding-plan/MiniMax-M3.1-Flash` (MiniMax
-    family).
-- [ ] 1.4 The touched test files alone. After the fixes of task 1.3, run
+  - Maker models: `minimax-cn-coding-plan/MiniMax-M3.1-Flash` (MiniMax
+    family; `edb87cd`, `6f44bda`), `volcengine-agent-plan/glm-5.3-flash#high`
+    (GLM family; `ffc6cb0`), and `kimi-code-plan-cn/kimi-for-coding#high`
+    (Kimi family; `f87de82`, `46edf4c`). The checker family differs from
+    every maker family.
+  - Evidence of round 1 (2026-11-06): `measure/runs/opencode_host_isolation/check-1.3.json`,
+    audited head `cf74ee3`. Status fail, recommendation retry_tests, 2
+    blocking findings (F1, F2) and 5 non-blocking findings (F3-F7). F1-F4
+    went to Red round 4 (`6f44bda`, `6f857df`).
+  - Evidence of round 2 (2026-11-06): `measure/runs/opencode_host_isolation/check-1.3-r2.json`,
+    audited head `9f48d0b`. Status pass, 0 blocking findings, 3 non-blocking
+    findings: F7 carried with no change by decision; F8 (Nit: the `/dev/null`
+    redirect of the seed hides the seed failure reason) with no change; F9
+    (Nit: two inexact mutation claims in task 1.1, corrected under task 1.1
+    in this plan). The `review-a` role gate on round 2 printed only
+    `FAIL: current phase still has 4 non-deferred incomplete tasks` (the gate
+    counts the whole phase); the gate text is not a finding against the
+    checker result. F3-F6 went to Green round 2 (`46edf4c`, `9f48d0b`).
+- [x] 1.4 The touched test files alone. 9f48d0b. After the fixes of task 1.3, run
   each new file of `harness/schedule-tests/` alone, outside the wrapper.
   - Command: `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`.
   - Command: `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native`.
   - Command: `cd harness && npx vitest run schedule-tests/daily-selfcheck-default.test.ts --configLoader native`.
   - Verify: each command exits 0 and prints a `Tests` line with no failed
     test. The task records the three `Tests` lines.
+  - Evidence (2026-11-06, on `9f48d0b`, recorded in the checker round 2):
+    `opencode-host-isolation.test.ts` gave `Tests  11 passed (11)`;
+    `opencode-host-trap.test.ts` gave `Tests  4 passed (4)`;
+    `daily-selfcheck-default.test.ts` gave `Tests  2 passed (2)`; each exit
+    code was 0, and `ps -eo pid,args | grep '[f]ake-opencode'` printed no
+    line after the runs.
   - Verify: after the three runs, `ps -eo pid,args | grep '[f]ake-opencode'`
     prints no line.
   - Lane: light. The touched files of `harness/tests/meta/` run in task 1.5,
     because `grade-exit.test.ts` runs `grade.sh`.
-- [ ] 1.5 The full suites through `heavy-run.sh`. Run once at the end of the
-  code phase.
+- [~] 1.5 The full suites through `heavy-run.sh`. Run once at the end of the
+  code phase. It waits for the heavy-run queue; the orchestrator sends it
+  after this round.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
   - Verify: the run exits 0. The log holds a `Tests` line with no failed
     test for each of the two suites.
   - Verify: the log sits at
     `measure/runs/opencode_host_isolation/full-suite-1.5.log`.
   - Lane: light. One heavy run.
-- [ ] 1.6 The AFTER hashes (spec D11). Run the hash command on the harness
+- [x] 1.6 The AFTER hashes (spec D11). 46edf4c. Run the hash command on the harness
   commit. Record both values.
   - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
-  - Verify: the command exits 0 and prints two hashes.
-  - Verify: `runner_sha256` differs from
-    `f199cfb475061a01225ced93e01167b405e0202f9dc45282f8d4a0d044da0365`, and
-    `suite_sha256` differs from
-    `08d6ae6d7515e506b841111e2ffe7b3bc5d3f69c8da676f65c7b46bc8b2af20b`
-    (`grader_system_chrome` task 1.4).
+  - Verify: the command exits 0 and prints two hashes. EXIT=0 on
+    2026-11-06.
+  - Evidence (2026-11-06, harness commit `46edf4c`): `runner_sha256` AFTER is
+    `82866758c8124de96b7ff8a1a9e9b58e907d9437525040639f81fef64f040cf4`; it
+    differs from
+    `f199cfb475061a01225ced93e01167b405e0202f9dc45282f8d4a0d044da0365`
+    (`grader_system_chrome` task 1.4). `suite_sha256` AFTER is
+    `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`; it
+    differs from
+    `08d6ae6d7515e506b841111e2ffe7b3bc5d3f69c8da676f65c7b46bc8b2af20b`.
   - Verify: this task holds the two AFTER values and the SHA of the harness
     commit.
   - Lane: light. A read-only command.
