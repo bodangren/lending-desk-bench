@@ -699,11 +699,18 @@ checkpoint goes on after task 1.11.
     when no p1 job waits for the lock (`pgrep -af '[f]lock -w 600'` shows
     none).
   - Lane: light. One heavy run.
-- [ ] 1.11 The AFTER hashes again (spec D11), on the commit of task 1.8.
+- [x] 1.11 The AFTER hashes again (spec D11), on the commit of task 1.8. 14e88a4.
   - Command: the command of task 1.6.
-  - Verify: the command exits 0 and prints two hashes. The task records
-    the two AFTER values and the SHA of the harness commit.
-  - Lane: light. A read-only command.
+  - Evidence (2026-11-06, harness commit `14e88a4`, command exit 0):
+    `runner_sha256` is
+    `56c9d61d1f1fb9e75f11602b44b656827451eb07b90cc42c5b5c7e2b66cd6944` —
+    it stays equal to the value of `18a942d`, because `harness/cron-daily.sh`
+    is not in the `runner_sha256` list of `harness/provenance.ts` (spec
+    EV11: it sits in neither hash list). `suite_sha256` is
+    `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d` —
+    it equals the expected value, because no file under `harness/tests/`
+    changed since `46edf4c` (the task-1.7/-1.8 test file lives under
+    `harness/schedule-tests/`, which is not in the suite list either).
 
 ## Phase 2: The live-day preflight
 
