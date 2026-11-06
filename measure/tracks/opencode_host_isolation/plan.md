@@ -174,13 +174,42 @@ Marker use:
         case is 2 and the new check fails.
   - Lane: light. The maker runs only these three files.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
-- [~] 1.2 The Green code (spec D1 to D10). f87de82
+- [x] 1.2 The Green code (spec D1 to D10). f87de82 46edf4c
   - Round 2 of Green (2026-11-06): the checker of task 1.3 found the findings
     F3 to F6 in `measure/runs/opencode_host_isolation/check-1.3.json` (status
-    fail, retry_tests). Round 2 of Green reopens this task for the fixes of
-    F3 to F6. The maker model of round 2 stays
+    fail, retry_tests). Round 2 of Green fixed F3 to F6 in production code.
+    The maker model of round 2 stays
     `kimi-code-plan-cn/kimi-for-coding#high`.
-  - Evidence of the Green run on 2026-11-06 (each file alone, shell timeout 600 s):
+  - Evidence of the round-2 Green run on 2026-11-06 (each file alone, shell
+    timeout 600 s):
+    - `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`
+      gave `Test Files  1 passed (1)` and `Tests  11 passed (11)`.
+    - `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native`
+      gave `Test Files  1 passed (1)` and `Tests  4 passed (4)`. After each run,
+      `ps -eo pid,args | grep '[f]ake-opencode'` printed no line.
+    - `cd harness && npx vitest run schedule-tests/daily-selfcheck-default.test.ts --configLoader native`
+      gave `Test Files  1 passed (1)` and `Tests  2 passed (2)`.
+  - Fixes of round 2 (commit 46edf4c, files `harness/opencode-host.sh` and
+    `harness/opencode-credential.sh` only):
+    - F3: `opencode_host_sweep` skips a folder with no `owner.pid` whose mtime
+      is less than 60 s old; a folder with no `owner.pid` that is 60 s old or
+      older stays a dead-owner folder and is cleaned.
+    - F4: the helper prints the `OPENCODE_HOME CLEANUP ...` and
+      `OPENCODE_HOME SWEEP ...` lines on stderr, so the stdout of `export`
+      holds only the JSON payload. The owner scripts keep their lines on
+      stdout.
+    - F5: the seed call drops `2>&1`; the stderr of the selection goes to
+      `/dev/null`, so a node stderr warning cannot enter the payload.
+    - F6: in the `warn` mode a seed failure does not change the exit status;
+      `warn` exits 0 always.
+  - Verify (round 2): `bash -n` on the seven scripts exits 0 (OK); the two `rg`
+    commands of spec FR-1 print the expected output (the first no line, the
+    second exactly one line, `harness/opencode-credential.sh:169`, the seed
+    shared read); `rg -n 'XDG_DATA_HOME|XDG_STATE_HOME'` on the four job
+    scripts prints no line; `git diff --stat f55d2aa -- harness/opencode-entry.sh
+    harness/go-cost.ts harness/execution-identity.ts harness/provenance.ts`
+    prints no line.
+  - Evidence of the round-1 Green run on 2026-11-06 (each file alone, shell timeout 600 s):
     - `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native`
       gave `Test Files  1 passed (1)` and `Tests  9 passed (9)`.
     - `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native`
@@ -200,7 +229,7 @@ Marker use:
   - Maker substitution: the spec names `minimax-cn-coding-plan/MiniMax-M3.1-Flash`
     for this task; the MiniMax plan reached its 5-hour limit at 07:16 (error
     2056), so the PM moved Green to `kimi-code-plan-cn/kimi-for-coding#high`.
-  - Defaults of the Green maker (round 2, Kimi):
+  - Defaults of the Green maker (Kimi Green, commit f87de82):
     1. A helper process that performed the seed selects the seed payload in
        place of a second job-store read. This keeps one opencode call per
        helper process, so the meta credential tests keep their export-call
