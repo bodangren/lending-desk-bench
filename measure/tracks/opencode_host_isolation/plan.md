@@ -287,6 +287,24 @@ Marker use:
       `daily-selfcheck-default.test.ts` `Tests  2 passed (2)`; each EXIT=0.
     - After the runs, `ps -eo pid,args | grep '[f]ake-opencode'` printed no
       line.
+  - Round 4 of Green (2026-11-06, code commit `3bc5a79`): the spec D3
+    fallback of the seed export form. Diagnosis `d91ede6` showed the first
+    order `auth export --standalone opencode` fails in the job environment
+    ("Location plugins did not finish activating" on each retry) while
+    `auth export opencode --standalone` exits 0 against the shared store.
+    The seed call in `harness/opencode-credential.sh` now uses the fallback
+    order; the retry rule stays (3 calls, 5 s apart); `auth import
+    --standalone` is unchanged (spec D3 names only the export form). One
+    committed assertion in `opencode-host-isolation.test.ts:342` still
+    demanded the first order; Green returned blocked, and Red round 5
+    (`7c71f6c`) made the check accept both spec D3 forms with
+    `toContainEqual`. After the Red fix the three track files re-ran alone:
+    `opencode-host-isolation.test.ts` `Tests  11 passed (11)`;
+    `opencode-host-trap.test.ts` `Tests  4 passed (4)`;
+    `daily-selfcheck-default.test.ts` `Tests  2 passed (2)`; each EXIT=0;
+    `ps -eo pid,args | grep '[f]ake-opencode'` printed no line. The FR-1 rg
+    checks, the XDG export check, the NFR-3 diff check, and `bash -n` on the
+    seven scripts all hold on the new commit.
   - Note: the Red file `opencode-host-isolation.test.ts` needed one fix before
     Green could pass. The round-2 Green found its job-folder check unpassable
     (`under()` appends `/` to a parent that ends with the literal dash
@@ -378,12 +396,19 @@ Marker use:
     `daily-selfcheck-default.test.ts` gave `Tests  2 passed (2)`; each exit
     code was 0, and `ps -eo pid,args | grep '[f]ake-opencode'` printed no
     line after the runs.
+  - Evidence of the D3-fallback re-run on 2026-11-06 (code commit `3bc5a79`,
+    after the Red fix `7c71f6c`): `opencode-host-isolation.test.ts` gave
+    `Tests  11 passed (11)`; `opencode-host-trap.test.ts` gave
+    `Tests  4 passed (4)`; `daily-selfcheck-default.test.ts` gave
+    `Tests  2 passed (2)`; each exit code was 0, and `ps -eo pid,args |
+    grep '[f]ake-opencode'` printed no line.
   - Verify: after the three runs, `ps -eo pid,args | grep '[f]ake-opencode'`
     prints no line.
   - Lane: light. The touched files of `harness/tests/meta/` run in task 1.5,
     because `grade-exit.test.ts` runs `grade.sh`.
-- [x] 1.5 The full suites through `heavy-run.sh`. f62230d. Run once at the end of the
-  code phase. It waits for the heavy-run queue; the orchestrator sends it
+- [~] 1.5 The full suites through `heavy-run.sh`. f62230d; it runs again on
+  the D3-fallback commit `3bc5a79`. The heavy run waits for the queue; the
+  orchestrator sends it after this round. It waits for the heavy-run queue; the orchestrator sends it
   after this round.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
   - Verify: the run exits 0. The log holds a `Tests` line with no failed
