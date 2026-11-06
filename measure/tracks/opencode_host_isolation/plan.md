@@ -553,7 +553,7 @@ Marker use:
   - Verify: this task holds the two AFTER values and the SHA of the harness
     commit.
   - Lane: light. A read-only command.
-- [~] 1.7 The Red test of the served-list retry (spec FR-11, D15). Write the
+- [x] 1.7 The Red test of the served-list retry (spec FR-11, D15). f4ed298. Write the
   new file `harness/schedule-tests/daily-served-retry.test.ts`. The file
   puts a fake `opencode` on `PATH` and in `BENCH_OPENCODE_BIN`, the same
   rule as spec FR-7. The fake appends one JSON line per call to a record
@@ -572,6 +572,25 @@ Marker use:
     prints `DAILY FAIL served: opencode models failed` and exits 1 after
     exactly 3 calls.
   - Each test sets a timeout of 120_000 ms.
+  - The Red run on 2026-11-06 (one foreground call, shell timeout 600 s):
+    `cd harness && npx vitest run schedule-tests/daily-served-retry.test.ts --configLoader native`
+    gave `Test Files  1 failed (1)` and `Tests  2 failed (2)`, EXIT=1.
+  - The failed tests, each with its first error line:
+    - `retries the served list once and reaches the dry-run plan`:
+      `AssertionError: the served list made 1 models calls instead of 2`.
+    - `fails the daily job after three served-list calls`:
+      `AssertionError: the served list made 1 models calls instead of 3`.
+  - The cause: the served-list call of `harness/cron-daily.sh:140` makes one
+    attempt only. The job stops at `DAILY FAIL served: opencode models failed`
+    and exits 1. The stderr of the fake holds
+    `ServiceUnavailableError: Location plugins did not finish activating`.
+  - The rules of the test file: the fake file name holds `fake-opencode`, and
+    the PATH name calls the same fake, so every child holds `fake-opencode` in
+    its command line. The fake counts its `models` calls in its own count
+    file. The job folder of each case sits under the temp repo, so no test
+    writes under the real `.tmp/`, `runs/`, or `reports/`.
+  - The process check after the run: `ps -eo pid,args | grep '[f]ake-opencode'`
+    printed no line.
   - The tests fail on the current code (harness commit `18a942d`): the
     served-list call makes 1 attempt only, so case 1 sees 1 `models` call
     and case 2 sees the failure after 1 call.
@@ -581,7 +600,7 @@ Marker use:
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
   - Lane: light. Only this file runs outside the heavy-run wrapper.
   - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
-- [ ] 1.8 The Green code of the served-list retry (spec D15, FR-11). The
+- [~] 1.8 The Green code of the served-list retry (spec D15, FR-11). The
   retry goes into `harness/cron-daily.sh` only: up to 3 calls of
   `opencode_host_run models --standalone` into the served temp file, 5 s
   apart, while the call exits non-zero or writes an empty list. A
