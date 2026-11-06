@@ -221,7 +221,7 @@ while :; do
   if [ -n "$seed_payload" ]; then
     printf '%s\n' "$seed_payload" | read_selection
   else
-    opencode_host_run auth export --standalone opencode | read_selection
+    opencode_host_run auth export opencode --standalone | read_selection
   fi || export_rc=$?
   if [ "$export_rc" -eq 0 ]; then
     exit 0
