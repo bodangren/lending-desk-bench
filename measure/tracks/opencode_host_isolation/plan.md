@@ -46,7 +46,8 @@ Marker use:
 
 The checkpoint `b64376e` was removed from this heading on 2026-11-06: task
 1.7/1.8 reopened the phase (spec D15), so the phase is open again. A new
-checkpoint goes on after task 1.11.
+checkpoint went on after task 1.11 as `[checkpoint: 14e88a4]` (the harness
+code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
 
 - [x] 1.0 The spec check. 479095f
   The spec checker reads `spec.md` and this plan. It
