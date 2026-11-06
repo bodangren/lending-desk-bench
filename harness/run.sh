@@ -81,6 +81,8 @@ if ! command -v node >/dev/null 2>&1 || [ "$(command -v node)" = "/snap/bin/node
 fi
 # shellcheck source=env.sh
 source "$H/env.sh"
+# shellcheck source=opencode-host.sh
+source "$H/opencode-host.sh"
 WORK="$ROOT/runs/$RUN_ID"
 OUT="$WORK/artifacts"
 CAND="$WORK/candidate"
@@ -161,7 +163,9 @@ signal_agent_cleanup() {
   release_port_locks
   exit $((128 + sig))
 }
-trap release_port_locks EXIT INT TERM
+trap 'release_port_locks; opencode_host_cleanup' EXIT
+trap 'release_port_locks' INT
+trap 'release_port_locks' TERM
 
 valid_port_number() {
   local port="$1"
@@ -603,7 +607,7 @@ run_agent_container() {
     return 2
   fi
   opencode_real="$(realpath "$opencode_bin")"
-  opencode_version="$("$opencode_bin" --version 2>/dev/null | head -n 1)"
+  opencode_version="$(opencode_host_run --version 2>/dev/null | head -n 1)"
   [ -n "$opencode_version" ] || { echo "OpenCode did not report a version" >&2; return 2; }
   opencode_sha256="$(sha256sum "$opencode_real" | awk '{print $1}')"
 
@@ -745,7 +749,7 @@ fs.writeFileSync(process.env.CONFIG_PATH, JSON.stringify(config, null, 2) + "\n"
   # the run and still remove the credential staging.
   trap 'signal_agent_cleanup 15' TERM
   trap 'signal_agent_cleanup 2' INT
-  trap 'release_port_locks; cleanup_credential_staging' EXIT
+  trap 'release_port_locks; cleanup_credential_staging; opencode_host_cleanup' EXIT
   podman "${podman_args[@]}" < "$payload" > "$OUT/session.json" 2> "$OUT/session.err" &
   AGENT_PID=$!
   if wait "$AGENT_PID"; then
@@ -898,6 +902,9 @@ if [ "${AGENT_SKIP:-0}" = "1" ]; then
   echo "[$RUN_ID] AGENT_SKIP=1 - seed prepared (track=$BENCH_TRACK${OVERLAY:+, overlay applied})"
 else
   RUN_MODE="agent"; AGENT_ISOLATED=true
+  # OpenCode host isolation (spec D1): the agent branch owns one OpenCode job
+  # folder, before the first Console credential read at the check-window below.
+  opencode_host_begin run
   # FR-3 run-window check, fail closed, before the agent starts. The batch
   # checks once before its first run; a serial batch can outlive a token that
   # covered the first window.

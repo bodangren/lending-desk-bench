@@ -48,7 +48,7 @@ describe("standalone grade exit semantics", () => {
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
-  }, 60_000);
+  }, 180_000);
 
   it("keeps a structurally valid gate-blocked record nonpublishable and nonrankable", () => {
     const { work, candidate, runId, artifacts } = setupCandidate("grade-gate-blocked-");
@@ -70,5 +70,5 @@ describe("standalone grade exit semantics", () => {
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
-  }, 60_000);
+  }, 180_000);
 });

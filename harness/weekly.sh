@@ -11,7 +11,16 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 H="$ROOT/harness"
 # shellcheck source=env.sh
 source "$H/env.sh"
+# shellcheck source=opencode-host.sh
+source "$H/opencode-host.sh"
 cd "$H"
+
+# OpenCode host isolation (spec D1, D6): this job owns one OpenCode job folder
+# unless a daily or cron-weekly job already gave one.
+opencode_host_begin weekly
+trap 'opencode_host_cleanup' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 WEEK="${WEEK:-$(date -u +%Gw%V)}"
 export WEEK
 export ARMS="${ARMS:-a b}"

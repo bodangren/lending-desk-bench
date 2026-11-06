@@ -18,6 +18,8 @@
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 H="$ROOT/harness"
+# shellcheck source=opencode-host.sh
+source "$H/opencode-host.sh"
 
 # ---- Toolchain -----------------------------------------------------------------
 if ! command -v node >/dev/null 2>&1 || [ "$(command -v node)" = "/snap/bin/node" ]; then
@@ -35,6 +37,9 @@ LOCK="${BENCH_DAILY_LOCK:-$ROOT/.tmp/weekly-cron.lock}"
 BATCH="${BENCH_DAILY_BATCH:-$H/batch.sh}"
 PUBLISH="${BENCH_DAILY_PUBLISH:-1}"
 POST="${BENCH_DAILY_POST:-1}"
+# The daily self-check is the logic meta suite by default (spec D9), the same
+# as cron-weekly.sh. An explicit caller value stays.
+export BENCH_SELFCHECK="${BENCH_SELFCHECK:-logic}"
 DRY_RUN=0
 case " $* " in
   *" --dry-run "*) DRY_RUN=1 ;;
@@ -64,7 +69,7 @@ SERVED_TMP="$TMP_DIR/daily-served-$$"
 MSG_FILE="$TMP_DIR/daily-commit-msg-$$"
 RECORD_TMP="$DAYS_DIR/.daily-record-$$"
 SELFCHECK_MARKER="$TMP_DIR/selfcheck-pass-$WEEK-$$"
-trap 'rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" 2>/dev/null' EXIT
+trap 'rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" 2>/dev/null; opencode_host_cleanup' EXIT
 
 # ---- Lock ----------------------------------------------------------------------
 # The exclusive lock prevents overlap with weekly and daily jobs.
@@ -75,6 +80,17 @@ if ! flock -n 9; then
   echo "DAILY END $(date -Is)"
   exit 0
 fi
+
+# ---- OpenCode host isolation (spec D1, D6, D8) ---------------------------------
+# This job owns one OpenCode job folder. The line below is the spec D8 line; a
+# dry run prints it too. The traps of spec D6 make the EXIT trap run on signals.
+if ! opencode_host_begin daily; then
+  echo "DAILY FAIL opencode-home: the OpenCode job folder could not be made" >&2
+  exit 1
+fi
+echo "DAILY OPENCODE_HOME $BENCH_OPENCODE_HOME"
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # ---- Day record check ----------------------------------------------------------
 RECORD="$DAYS_DIR/$DAY.json"
@@ -117,7 +133,11 @@ fi
 SERVED="${BENCH_DAILY_SERVED:-}"
 if [ -z "$SERVED" ]; then
   SERVED_PATH="$ROOT/reports/go-served-$WEEK.txt"
-  if ! opencode models > "$SERVED_TMP" || [ ! -s "$SERVED_TMP" ]; then
+  if ! "$H/opencode-credential.sh" seed; then
+    echo "DAILY FAIL served: the Console credential seed failed" >&2
+    exit 1
+  fi
+  if ! opencode_host_run models --standalone > "$SERVED_TMP" || [ ! -s "$SERVED_TMP" ]; then
     echo "DAILY FAIL served: opencode models failed" >&2
     exit 1
   fi

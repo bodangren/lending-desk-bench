@@ -18,9 +18,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=toolchain.sh
 source "$ROOT/harness/toolchain.sh"
+# shellcheck source=opencode-host.sh
+source "$ROOT/harness/opencode-host.sh"
 mkdir -p "$ROOT/.tmp" "$ROOT/reports"
 exec 9>"$ROOT/.tmp/weekly-cron.lock"
 flock -n 9 || { echo "weekly cron already running; exiting" >&2; exit 0; }
+
+# OpenCode host isolation (spec D1, D6): this job owns one OpenCode job folder.
+opencode_host_begin weekly-cron
+trap 'opencode_host_cleanup' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 WEEK="$(date -u +%Gw%V)"
 LOG="$ROOT/reports/weekly-cron-$WEEK.log"
@@ -41,7 +49,7 @@ export BENCH_SELFCHECK="${BENCH_SELFCHECK:-logic}"
   echo "CRON START $(date -Is) week=$WEEK"
   echo "CRON TOOLCHAIN node path=$(command -v node || echo 'not found') version=$(node --version 2>/dev/null || echo 'not found')"
   echo "CRON TOOLCHAIN npm path=$(command -v npm || echo 'not found') version=$(npm --version 2>/dev/null || echo 'not found')"
-  echo "CRON TOOLCHAIN opencode path=$(command -v opencode || echo 'not found') version=$(opencode --version 2>/dev/null || echo 'not found')"
+  echo "CRON TOOLCHAIN opencode path=$(command -v opencode || echo 'not found') version=$(opencode_host_run --version 2>/dev/null || echo 'not found')"
   "$ROOT/harness/weekly.sh"
 } 2>&1 | tee "$LOG"
 

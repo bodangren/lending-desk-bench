@@ -42,6 +42,19 @@ if ! command -v node >/dev/null 2>&1 || [ "$(command -v node)" = "/snap/bin/node
 fi
 # shellcheck source=env.sh
 source "./env.sh"
+# shellcheck source=opencode-host.sh
+source "./opencode-host.sh"
+
+# ---- OpenCode host isolation (spec D1, D6) -------------------------------------
+# This batch owns one OpenCode job folder. A batch of a daily or weekly job
+# uses the folder of that job and does not clean it up.
+if ! opencode_host_begin batch; then
+  echo "batch: the OpenCode job folder could not be made" >&2
+  exit 2
+fi
+trap 'opencode_host_cleanup' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 DRY_RUN=0
 case " $* " in
@@ -269,7 +282,7 @@ if [ -z "$PREFLIGHT_OPENCODE_BIN" ] || [ ! -x "$PREFLIGHT_OPENCODE_BIN" ]; then
   echo "executor preflight failed: no opencode binary on the toolchain PATH" >&2
   exit 3
 fi
-PREFLIGHT_OPENCODE_VERSION="$("$PREFLIGHT_OPENCODE_BIN" --version 2>/dev/null | head -n 1 || true)"
+PREFLIGHT_OPENCODE_VERSION="$(opencode_host_run --version 2>/dev/null | head -n 1 || true)"
 case "$PREFLIGHT_OPENCODE_VERSION" in
   "opencode v2."*) ;;
   *) echo "executor preflight failed: opencode 2.x is required, got: ${PREFLIGHT_OPENCODE_VERSION:-none}" >&2; exit 3 ;;
@@ -312,8 +325,12 @@ fi
 IFS='|' read -r first_provider first_model _first_slug <<< "${MODELS[0]:-}"
 FIRST_MODEL_REF="${first_provider:-opencode-go}/${first_model:-}"
 models_listed=""
+if ! "$PWD/opencode-credential.sh" seed; then
+  echo "executor preflight failed: the Console credential seed failed" >&2
+  exit 3
+fi
 for attempt in 1 2 3; do
-  if MODELS_OUT="$("$PREFLIGHT_OPENCODE_BIN" models 2>/dev/null)"; then
+  if MODELS_OUT="$(opencode_host_run models --standalone 2>/dev/null)"; then
     if printf '%s\n' "$MODELS_OUT" | grep -qF "$FIRST_MODEL_REF"; then
       models_listed=1
     fi

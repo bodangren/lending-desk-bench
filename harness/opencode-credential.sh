@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Console credential helper for the OpenCode executor (FR-3).
 #
-# Source: `opencode auth export opencode` on the host. The helper never reads
+# Source: `opencode auth export` on the host. The helper never reads
 # a credential file and never prints a token value except the access-only
 # container payload that `export` writes on stdout.
 #
+#   seed          Internal: copy the Console credential of the shared store
+#                 into the job store of the job folder. One read of the shared
+#                 store per job folder. Nothing on stdout. Exit 0, or 2 on a
+#                 failure.
 #   export        Access-only Console payload on stdout, one JSON array, one
 #                 line (JSON.stringify(payload) + "\n"). Exit 0, or 2 on any
 #                 selection or expiry failure.
@@ -18,18 +22,25 @@
 #                 `auth export` call in the normal case. Exit 3 with the reason
 #                 line on failure.
 #   scan-values   Internal: the credential values the runner scans run output
-#                 for (access, refresh, orgID), one per line. Exit 0/2.
+#                 for (access, orgID), one per line. Exit 0/2.
+#
+# The helper uses the job store of the job folder (spec D4). Only the seed
+# reads the shared store. The seed runs once per job folder. Every other mode
+# runs the seed first when the job folder holds no seeded marker.
 #
 # The export call retries. On this host `opencode auth export` sometimes
 # prints a plugin notice and no JSON. The retry rule matches the one for
 # `opencode models`: three calls in total, five seconds apart. A missing
 # credential never retries: it fails closed at once.
 set -euo pipefail
-MODE="${1:?usage: opencode-credential.sh <export|check-window|warn|preflight|scan-values>}"
+MODE="${1:?usage: opencode-credential.sh <seed|export|check-window|warn|preflight|scan-values>}"
 case "$MODE" in
-  export|check-window|warn|preflight|scan-values) ;;
+  seed|export|check-window|warn|preflight|scan-values) ;;
   *) echo "unknown subcommand: $MODE" >&2; exit 2 ;;
 esac
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=opencode-host.sh
+source "$ROOT/harness/opencode-host.sh"
 if [ -n "${BENCH_OPENCODE_BIN:-}" ]; then
   OPENCODE_BIN="$BENCH_OPENCODE_BIN"
 else
@@ -49,15 +60,27 @@ if ! [[ "$EXPORT_ATTEMPTS" =~ ^[1-9]$ ]]; then
   echo "BENCH_CREDENTIAL_EXPORT_ATTEMPTS must be a positive integer" >&2
   exit 2
 fi
+# The helper is an owner when no job folder exists. A job that owns the folder
+# cleans it up when it ends. The owner sets the traps of spec D6.
+opencode_host_begin credential || {
+  echo "opencode-credential: the OpenCode job folder could not be made" >&2
+  exit 2
+}
+trap 'opencode_host_cleanup' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # The export is selected and validated in one Node pass so the payload keeps
 # the field order of `opencode auth export` exactly. A leading notice line
 # before the JSON array is tolerated.
+#
+# SELECT_MODE names the mode of the selection. It is "export" for the seed
+# payload and the mode of the call for every job store read.
 read_selection() {
-  MODE="$MODE" AGENT_TIMEOUT="$AGENT_TIMEOUT" \
+  SELECT_MODE="${SELECT_MODE:-$MODE}" AGENT_TIMEOUT="$AGENT_TIMEOUT" \
     REASON="Console credential does not cover the run window" node -e '
 const fs = require("node:fs");
-const mode = process.env.MODE;
+const mode = process.env.SELECT_MODE;
 const reason = process.env.REASON;
 const fail = (message) => { console.error("opencode-credential: " + message); process.exit(2); };
 let raw = "";
@@ -92,8 +115,10 @@ process.stdin.on("end", () => {
     return;
   }
   if (mode === "scan-values") {
+    // The job store holds "inert" as the refresh value. The word "inert" in a
+    // transcript is no leak (spec D5).
     const values = [value.access, value.refresh, value.metadata && value.metadata.orgID]
-      .filter((entry) => typeof entry === "string" && entry.length > 0);
+      .filter((entry) => typeof entry === "string" && entry.length > 0 && entry !== "inert");
     for (const entry of values) process.stdout.write(entry + "\n");
     return;
   }
@@ -118,12 +143,70 @@ process.stdin.on("end", () => {
 '
 }
 
+# The seed of D4. It reads the shared store once and imports the access-only
+# payload into the job store. The payload never touches a disk. The job folder
+# holds the seeded marker after a successful run.
+#
+# The function prints the seed payload on stdout when this process performed
+# the seed, and nothing when the job folder was already seeded. The calling
+# mode then selects that payload instead of a second job-store read, so one
+# helper process makes at most one `auth export` call. A process of an already
+# seeded folder reads the job store with opencode_host_run.
+seed_credential() {
+  local folder="$BENCH_OPENCODE_HOME"
+  if [ -f "$folder/seeded" ]; then return 0; fi
+  (
+    exec 8>"$folder/seed.lock" || exit 2
+    flock 8 || exit 2
+    if [ -f "$folder/seeded" ]; then exit 0; fi
+    attempt=1
+    while :; do
+      rc=0
+      output="$(timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 \
+        BENCH_OPENCODE_JOB="$folder" "$OPENCODE_BIN" auth export --standalone opencode 2>/dev/null \
+        | SELECT_MODE=export read_selection 2>&1)" || rc=$?
+      if [ "$rc" -eq 0 ] && [ -n "$output" ]; then break; fi
+      if [ "$rc" -ne 2 ] || [ "$attempt" -ge "$EXPORT_ATTEMPTS" ]; then
+        if [ -n "$output" ]; then printf '%s\n' "$output" >&2; else
+          echo "opencode-credential: the Console credential seed failed" >&2
+        fi
+        exit 2
+      fi
+      attempt=$((attempt + 1))
+      sleep 5
+    done
+    if ! printf '%s\n' "$output" | opencode_host_run auth import --standalone > /dev/null; then
+      echo "opencode-credential: the Console credential seed failed" >&2
+      exit 2
+    fi
+    printf 'seeded\n' > "$folder/seeded"
+    # The access-only payload: the refresh value is "inert" (spec D4, D5).
+    printf '%s\n' "$output"
+    exit 0
+  )
+}
+
+if [ "$MODE" = "seed" ]; then
+  # The mode `seed` prints nothing and exits 0 on success (spec D4).
+  seed_credential > /dev/null || exit 2
+  exit 0
+fi
+
+# Every other mode reads the job store. The seed runs first when the job folder
+# holds no seeded marker. A payload of this process's own seed is selected in
+# place of a second job-store read.
+seed_payload="$(seed_credential)" || exit 2
+
 # One export, one selection pass. A retryable export failure (exit 2) runs
 # again. A window failure (exit 3) stops at once.
 attempt=1
 while :; do
   export_rc=0
-  "$OPENCODE_BIN" auth export opencode 2>/dev/null | read_selection || export_rc=$?
+  if [ -n "$seed_payload" ]; then
+    printf '%s\n' "$seed_payload" | read_selection
+  else
+    opencode_host_run auth export --standalone opencode | read_selection
+  fi || export_rc=$?
   if [ "$export_rc" -eq 0 ]; then
     exit 0
   fi
