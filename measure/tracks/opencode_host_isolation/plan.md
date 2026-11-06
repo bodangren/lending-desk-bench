@@ -269,6 +269,11 @@ Marker use:
       `daily-selfcheck-default.test.ts` `Tests  2 passed (2)`; each EXIT=0.
     - After the runs, `ps -eo pid,args | grep '[f]ake-opencode'` printed no
       line.
+  - Note: the Red file `opencode-host-isolation.test.ts` needed one fix before
+    Green could pass. The round-2 Green found its job-folder check unpassable
+    (`under()` appends `/` to a parent that ends with the literal dash
+    `opencode-host-`) and returned blocked. Red commit `ffc6cb0` changed the
+    check to `startsWith`; nothing else in the tests changed.
   Touch these files and no others:
   - `harness/opencode-host.sh` (new): the functions of spec D1, D2, D6, and
     D7. The names are `opencode_host_begin <job>`, `opencode_host_run`,
@@ -359,7 +364,7 @@ Marker use:
     prints no line.
   - Lane: light. The touched files of `harness/tests/meta/` run in task 1.5,
     because `grade-exit.test.ts` runs `grade.sh`.
-- [~] 1.5 The full suites through `heavy-run.sh`. Run once at the end of the
+- [x] 1.5 The full suites through `heavy-run.sh`. f62230d. Run once at the end of the
   code phase. It waits for the heavy-run queue; the orchestrator sends it
   after this round.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native && npm run test:meta:logic'`.
@@ -423,6 +428,19 @@ Marker use:
     scenario steps. In a real deploy the two files sit next to each other, so
     the fail-fast path is right; the fixtures need `opencode-host.sh` in
     their copy list. A later round fixes this.
+  - Evidence of round 2 on 2026-11-06 (HEAD `65924ea`, harness commit
+    `f62230d`, one foreground call, exit 0): the run passed after the
+    round-3 fixture fix (`f62230d`, `opencode-host.sh` copied into the
+    schedule-test fixtures). Wall time about 17 min (11:46:28 to 12:03:35
+    +07). The `schedule-tests/` suite gave `Test Files  7 passed (7)` and
+    `Tests  135 passed (135)`; the `test:meta:logic` suite gave
+    `Test Files  30 passed (30)` and `Tests  238 passed (238)`. The log sits
+    at `measure/runs/opencode_host_isolation/full-suite-1.5-r2.log`; the
+    failed first run stays as evidence at
+    `measure/runs/opencode_host_isolation/full-suite-1.5.log`. After the run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` printed no line, and
+    `ps -eo pid,args | grep -E '[o]pencode(\.exe)? serve'` printed only the
+    OpenChamber server `opencode serve --hostname 127.0.0.1 --port 43003`.
 - [x] 1.6 The AFTER hashes (spec D11). 46edf4c. Run the hash command on the harness
   commit. Record both values.
   - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
