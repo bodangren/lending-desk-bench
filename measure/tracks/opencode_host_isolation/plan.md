@@ -1022,7 +1022,7 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
 
 ## Phase 4: The seed back-off and the quiet environ read (spec D16 to D18)
 
-- [ ] 4.1 The Red tests (spec FR-12 to FR-14). Write three new files:
+- [x] 4.1 The Red tests (spec FR-12 to FR-14). 2a2a6b3. Write three new files:
   - `harness/schedule-tests/credential-seed-backoff.test.ts` (FR-12): a
     fake `opencode` drives the seed of a copied helper with
     `BENCH_CREDENTIAL_SEED_DELAYS="0 0 0 0"`. The cases prove the attempt
