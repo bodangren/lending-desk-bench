@@ -160,6 +160,30 @@ orchestrator measured EV1 and EV9. The author measured the other items.
   delay. The served-list call runs before the Go guard. So a fault there
   turns a clean guard skip into `DAILY FAIL served` (exit 1) on the live
   day.
+- **EV16. The live day of 2026-11-08 failed at the seed.** The service run
+  of Sun 2026-11-08 01:00 failed. `reports/cron-daily.log` lines 4 to 21
+  hold: `DAILY START 2026-11-08T01:00:11+07:00`; `DAILY OPENCODE_HOME
+  /home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-3699275`;
+  `Error: the Console credential is unavailable: Command failed:
+  .../harness/opencode-credential.sh export`;
+  `opencode-credential: the Console credential seed failed` at
+  `consoleAccessToken (go-cost.ts:215:11)` and `async catalogDiff
+  (go-cost.ts:235:17)`; `DAILY FAIL catalog: the catalog fetch failed`;
+  `/home/daniebo/Desktop/lending-desk-bench/harness/opencode-host.sh: line
+  34: /proc/1571/environ: Permission denied`; `OPENCODE_HOME CLEANUP
+  stopped=0 path=.../opencode-host-daily-3699275`. The service journal
+  shows 38.7 s of wall time. The seed (`harness/opencode-credential.sh`
+  `seed_credential`, lines 158 to 196) made 3 calls 5 s apart, and each
+  failed. The seed sends the stderr of `opencode` to `/dev/null`, so the
+  log holds no reason for any failed call. Preflight run 1 (2026-11-06
+  12:40, `measure/runs/opencode_host_isolation/preflight-2.1-r1.log`)
+  stopped at the same line. In run 4 the seed needed a second call after
+  `Location plugins did not finish activating`. The `Permission denied`
+  line for pid 1571 (`systemd --user`) is in all 7 preflight logs: `[ -r
+  ]` passes for that file, but the open fails. A latent leak exists too:
+  line 179 prints `$output` to stderr on a failure; when `opencode` prints
+  a valid JSON array and then exits non-zero, `pipefail` gives rc=1 and
+  `$output` holds the access payload.
 
 ## Definitions
 
@@ -325,6 +349,11 @@ Each decision below is a default by the orchestrator or the author,
     - Maker: `minimax-cn-coding-plan/MiniMax-M3.1-Flash`.
     - Code checker: `claude-code/claude-sonnet-5-5#high`.
     - Spec checker: `volcengine-agent-plan/glm-latest#high`.
+    - Phase 4: Red `bailian-token-plan/qwen3.8-flash#high`, Green
+      `volcengine-agent-plan/glm-5.3-flash#high`, checker
+      `claude-code/claude-sonnet-5-5#high`. Go routes and MiniMax are
+      excluded: Go monthly use is 84.1 percent and MiniMax weekly use is
+      96 percent.
 14. **D14. The deadline.** The harness commit and the Phase 1 gates finish
     before Sat 2026-11-07 23:00 +07. When they do not, the orchestrator tells
     the PM at that time. The PM and Daniel then decide about the 2026-11-08
@@ -336,6 +365,50 @@ Each decision below is a default by the orchestrator or the author,
     stops the retry at once. After the third failure the job prints the
     existing line `DAILY FAIL served: opencode models failed` and exits 1,
     as now. Each retry keeps `--standalone` and the job store (D2, D3).
+
+16. **D16. The seed back-off.** `seed_credential` makes up to N calls of
+    `auth export opencode --standalone` (the D3 order stays). The waits
+    between calls come from `BENCH_CREDENTIAL_SEED_DELAYS`, a list of whole
+    seconds separated by spaces, default `5 15 30 60`. N is the number of
+    waits plus 1 (default 5). An invalid list stops the helper with exit 2
+    and the line `BENCH_CREDENTIAL_SEED_DELAYS must be a list of whole
+    seconds`. Every failed call retries until N calls: a failed call is a
+    non-zero `opencode` exit, a selection failure, or an empty output.
+    After each failed call the helper writes one stderr line
+    `opencode-credential: seed attempt <n>/<N> failed: <reason>`. The
+    reason is the first match of this ordered list: (1) `timeout` when the
+    `opencode` call exits 124; (2) `plugins did not finish activating`
+    when the `opencode` stderr holds `did not finish activating`; (3)
+    `service unavailable` when it holds `ServiceUnavailableError`; (4)
+    `exit <n>` when `opencode` exits non-zero with status n; (5) `no
+    active Console connection` when the selection reports no active
+    connection; (6) `no JSON array` in all other cases. The helper writes
+    the `opencode` stderr to a file in the `tmp/` subfolder of the job
+    folder with mode 600, tests it only for the fixed texts, and removes
+    it after each call. The helper never prints the stdout or the stderr
+    text of `opencode`, and never prints `$output` on a failure (the
+    line-179 branch goes away). After the last failed call it prints the
+    existing line `opencode-credential: the Console credential seed
+    failed` and exits 2. The job-store read loop (`EXPORT_ATTEMPTS`) does
+    not change. Worst case: 110 s of waits plus 5 calls of at most 60 s.
+17. **D17. The catalog fetch retry.** `harness/go-cost.ts` exports
+    `fetchCatalogIds(token: string, fetchImpl: typeof fetch = fetch,
+    delaysSeconds: number[] = [5, 15]): Promise<string[]>`. It makes up to
+    `delaysSeconds.length + 1` calls of `GO_CATALOG_URL` with the header
+    `authorization: Bearer <token>`. It retries when `fetchImpl` throws,
+    or the status is 429 or 500-599. Any other status that is not ok
+    throws `Go catalog HTTP <status>` at once. After each failed call it
+    writes one line with `console.error`: `go-cost: catalog attempt <n>/<N>
+    failed: HTTP <status>` or `go-cost: catalog attempt <n>/<N> failed:
+    network error`. After the last failed call it throws `Go catalog HTTP
+    <status>` or `Go catalog network error`. It never prints the token.
+    `catalogDiff` calls `consoleAccessToken` once and then
+    `fetchCatalogIds(token)`. The rest of `catalogDiff` does not change.
+18. **D18. The quiet environ read.** `opencode_host_marked_pids` of
+    `harness/opencode-host.sh` reads the process table from
+    `${BENCH_OPENCODE_PROC:-/proc}`. A read fault of one `environ` file
+    writes nothing to stderr and skips that pid. The marker rule and the
+    `$$`/`$BASHPID` skip do not change.
 
 ## Functional requirements
 
@@ -505,6 +578,40 @@ Each decision below is a default by the orchestrator or the author,
   the fail path: three failures give `DAILY FAIL served: opencode models
   failed`, exit 1, after exactly 3 calls.
 
+### FR-12 — The seed back-off of the credential helper
+
+- The seed of D4 follows the back-off rule of D16: up to N calls with the
+  waits of `BENCH_CREDENTIAL_SEED_DELAYS` (default `5 15 30 60`, N=5), one
+  stderr line `opencode-credential: seed attempt <n>/<N> failed: <reason>`
+  after each failed call, the ordered reason list of D16, and exit 2 with
+  the existing seed-failed line after the last failed call. An invalid
+  delays list stops the helper with exit 2. The helper never prints the
+  stdout or the stderr text of `opencode`, and never prints `$output` on a
+  failure (EV16, the line-179 leak).
+- **Check.** The file `harness/schedule-tests/credential-seed-backoff.test.ts`
+  passes.
+
+### FR-13 — The catalog fetch retry of go-cost
+
+- `harness/go-cost.ts` exports `fetchCatalogIds` with the rule of D17: up
+  to `delaysSeconds.length + 1` calls, a retry on a throw or a status of
+  429 or 500-599, one `console.error` line per failed call, `Go catalog
+  HTTP <status>` at once for any other non-ok status, and a final throw of
+  `Go catalog HTTP <status>` or `Go catalog network error`. It never
+  prints the token. `catalogDiff` calls `consoleAccessToken` once and then
+  `fetchCatalogIds(token)`.
+- **Check.** The file `harness/schedule-tests/catalog-fetch-retry.test.ts`
+  passes.
+
+### FR-14 — The quiet environ read
+
+- `opencode_host_marked_pids` of `harness/opencode-host.sh` reads the
+  process table from `${BENCH_OPENCODE_PROC:-/proc}`. A read fault of one
+  `environ` file writes nothing to stderr and skips that pid (D18). The
+  marker rule and the `$$`/`$BASHPID` skip do not change.
+- **Check.** The file `harness/schedule-tests/opencode-host-quiet-environ.test.ts`
+  passes.
+
 ## Non-functional requirements
 
 - **NFR-1 No model call.** The tests and the preflight send no prompt. The
@@ -552,10 +659,22 @@ Each decision below is a default by the orchestrator or the author,
 11. **AC-11** The served-list call of `cron-daily.sh` retries up to 3 calls,
     5 s apart, keeps `--standalone` and the job store on each retry, and
     prints the existing failure line after the third failure (FR-11, D15).
+12. **AC-12** After the Green code of Phase 4, the file
+    `harness/schedule-tests/credential-seed-backoff.test.ts` passes alone
+    with one worker (FR-12, D16).
+13. **AC-13** After the Green code of Phase 4, the file
+    `harness/schedule-tests/catalog-fetch-retry.test.ts` passes alone with
+    one worker (FR-13, D17).
+14. **AC-14** After the Green code of Phase 4, the file
+    `harness/schedule-tests/opencode-host-quiet-environ.test.ts` passes
+    alone with one worker (FR-14, D18).
 
 ## Out of scope
 
 - The items F1 to F8 of D12.
+- The Go guard limit. It is a human gate for Daniel and the PM.
+- F8: the host calls from the job folder.
+- A retry of the job-store read loop (`EXPORT_ATTEMPTS`).
 - A change of the container, of `opencode-entry.sh`, or of the Podman
   argument list.
 - A clean-up of the shared `opencode.db` or of the stale `service.json`.

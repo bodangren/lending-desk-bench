@@ -1002,6 +1002,7 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
 - [ ] 3.2 The live day uses the new setting (spec FR-10). Read the part of
   `reports/cron-daily.log` from the line `DAILY START 2026-11-08T01:00` to
   the next `DAILY END` line.
+  Note (2026-11-08): the run of 2026-11-08 01:00 stopped at the seed (spec EV16). This task reads the first live day after Phase 4, Wed 2026-11-11 01:00 or later.
   - Verify: that part holds one `DAILY OPENCODE_HOME
     /home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-<pid>`
     line and one `OPENCODE_HOME CLEANUP stopped=<n> path=<same path>` line.
@@ -1017,6 +1018,97 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
 - [ ] 3.3 The close. Mark the track complete in `measure/tracks.md` and
   `metadata.json`. Send the result to the PM with a "facts changed" list.
   - Verify: the plan records the date of the send.
+  - Lane: light. A text report.
+
+## Phase 4: The seed back-off and the quiet environ read (spec D16 to D18)
+
+- [ ] 4.1 The Red tests (spec FR-12 to FR-14). Write three new files:
+  - `harness/schedule-tests/credential-seed-backoff.test.ts` (FR-12): a
+    fake `opencode` drives the seed of a copied helper with
+    `BENCH_CREDENTIAL_SEED_DELAYS="0 0 0 0"`. The cases prove the attempt
+    lines, the reasons, the counts, the exit codes, and the absence of the
+    credential payload on stderr (EV16, the line-179 leak).
+  - `harness/schedule-tests/catalog-fetch-retry.test.ts` (FR-13): a fake
+    `fetchImpl` drives `fetchCatalogIds`. The cases prove the retry rule,
+    the lines, the throws, and that no line holds the token.
+  - `harness/schedule-tests/opencode-host-quiet-environ.test.ts` (FR-14):
+    a fake proc root proves the read fault of one `environ` file is quiet
+    and skips that pid; the real `/proc` case proves no `environ` text on
+    stderr.
+  Each test copies what it runs into a temp repo, the same as
+  `harness/schedule-tests/daily-served-retry.test.ts`. Each test sets a
+  timeout of 120_000 ms. No test writes under the real `.tmp/`, `runs/`,
+  or `reports/`. No test starts the real `opencode`, Podman, a browser, or
+  a model. The fake file name holds `fake-opencode`.
+  - Command for each file, from `harness/`, one worker:
+    `npx vitest run schedule-tests/<file> --configLoader native --maxWorkers=1`.
+  - Verify: each of the three files fails on the current code for the
+    expected reason. The task records the three commands, each `Tests`
+    line, each failed test name with its first error line, and the process
+    check.
+  - Verify: after the runs, `ps -eo pid,args | grep '[f]ake-opencode'`
+    prints no line.
+  - Marker note (2026-11-08): measure-guard denies `[~]` on this task,
+    because the heading of "Phase 3: The live day of 2026-11-08" has no
+    `[checkpoint: <sha>]`. The Red work ran per the phase brief. The
+    orchestrator owns the Phase 3 checkpoint and the marker flip.
+  - Lane: light. Red `bailian-token-plan/qwen3.8-flash#high` (spec D13,
+    Phase 4).
+- [ ] 4.2 The Green code (spec D16 to D18). The changes go into
+  `harness/opencode-credential.sh`, `harness/go-cost.ts`, and
+  `harness/opencode-host.sh` only.
+  - Verify: each of the 3 new files passes alone; the 4 older
+    schedule-test files of this track pass alone;
+    `harness/tests/meta/opencode-credential.test.ts` and
+    `harness/tests/meta/go-cost.test.ts` pass alone; each run uses
+    `--maxWorkers=1`; `bash -n` exits 0 on the two scripts; the two `rg`
+    commands of FR-1 print the expected output. The task records each
+    `Tests` line.
+  - Lane: light. Maker: `volcengine-agent-plan/glm-5.3-flash#high` (spec
+    D13, Phase 4).
+- [ ] 4.3 The checker review of the amendment and of tasks 4.1 and 4.2. The
+  checker reads the amendment of `spec.md` and `plan.md` (EV16, D16 to
+  D18, FR-12 to FR-14, AC-12 to AC-14) and the files of tasks 4.1 and 4.2
+  against them. It writes
+  `measure/runs/opencode_host_isolation/check-4.3.json` with `status`,
+  `retry_recommendation`, and each finding with its severity.
+  - Verify: `measure/runs/opencode_host_isolation/check-4.3.json` shows
+    status pass and 0 blocking findings.
+  - Verify: the checker family differs from every maker family.
+  - Lane: light. The checker changes no code. Checker:
+    `claude-code/claude-sonnet-5-5#high` (spec D13, Phase 4).
+- [ ] 4.4 The AFTER hashes again (spec D11), on the commit of task 4.2.
+  - Command: the command of task 1.6.
+  - Verify: `runner_sha256` changes, because `harness/opencode-credential.sh`
+    and `harness/go-cost.ts` are in its list; the task records the new
+    value.
+  - Verify: `suite_sha256` stays
+    `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`,
+    because no file under `harness/tests/` changes.
+  - Verify: the orchestrator names the new value to `grader_system_chrome`
+    (its risk R4).
+  - Lane: light. A read-only command.
+- [ ] 4.5 The full suites through `heavy-run.sh` (the command of task 1.5),
+  only between 22:00 and 07:00 and only with no p1 waiter.
+  - Verify: the run exits 0. The log holds a `Tests` line with no failed
+    test for each of the two suites.
+  - Verify: the log sits at `measure/runs/opencode_host_isolation/`.
+  - Lane: light. One heavy run.
+- [ ] 4.6 The rerun. One `harness/cron-daily.sh --dry-run` with the service
+  PATH, the real guard, the real catalog, and no seams, through
+  `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 heavy-run.sh`.
+  - Verify: EXIT=0; no `Permission denied` line; no `DAILY FAIL` line; one
+    `DAILY OPENCODE_HOME` line and one matching `OPENCODE_HOME CLEANUP`
+    line; either `DAILY GO-GUARD ...` with `DAILY DRY-RUN planned=<n>`, or
+    `DAILY SKIP go-guard: monthly used <n> percent` with `DAILY DRY-RUN
+    planned=0`; `DAILY END`; no `.tmp/opencode-host-*` folder after; only
+    the OpenChamber server after.
+  - Verify: the task records each `seed attempt` line.
+  - Lane: light. One heavy run.
+- [ ] 4.7 The report to the PM: status, facts changed, defaults taken, and
+  the new `runner_sha256`.
+  - Verify: the plan records the date of the send.
+  - Verify: the report closes with a "facts changed" list.
   - Lane: light. A text report.
 
 ## Human gates
