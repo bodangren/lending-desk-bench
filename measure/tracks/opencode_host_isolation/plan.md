@@ -1048,10 +1048,60 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     check.
   - Verify: after the runs, `ps -eo pid,args | grep '[f]ake-opencode'`
     prints no line.
-  - Marker note (2026-11-08): measure-guard denies `[~]` on this task,
-    because the heading of "Phase 3: The live day of 2026-11-08" has no
-    `[checkpoint: <sha>]`. The Red work ran per the phase brief. The
-    orchestrator owns the Phase 3 checkpoint and the marker flip.
+  - Evidence of the Red run on 2026-11-08 on `dd81e58` (each file alone,
+    one worker, one foreground call, shell timeout 600 s, workdir
+    `harness/`):
+    - `npx vitest run schedule-tests/credential-seed-backoff.test.ts --configLoader native --maxWorkers=1`
+      gave `Test Files  1 failed (1)` and `Tests  4 failed (4)`, EXIT=1.
+      The failed tests, each with its first error line:
+      - `retries three failed exports and seeds on the fourth call`:
+        `AssertionError: the seed exited 2`. The helper made 3 export calls
+        and printed no `seed attempt` line.
+      - `fails after five calls when every export exits 1 with no stderr`:
+        `AssertionError: the seed did not make 5 export calls: expected 3
+        to be 5`.
+      - `reports timeout for a 124 exit and seeds on the next call`:
+        `AssertionError: the seed wrote 0 attempt lines instead of 1`.
+      - `reports exit 1 for a good print with a non-zero exit and does not
+        leak`: `AssertionError: the seed exited 2`. The stderr held the
+        payload line `[{"integrationID":"opencode","active":true,"value":
+        {"access":"fake-access-T0KEN-41","refresh":"inert",...` (the
+        line-179 leak of EV16; the values are fake strings).
+    - `npx vitest run schedule-tests/catalog-fetch-retry.test.ts --configLoader native --maxWorkers=1`
+      gave `Test Files  1 failed (1)` and `Tests  5 failed (5)`, EXIT=1.
+      The failed tests: `retries a network throw once and returns the ids`;
+      `retries two 5xx statuses and returns the ids on the third call`;
+      `throws Go catalog HTTP 503 after three failed calls`; `throws Go
+      catalog HTTP 401 at once on a non-retryable status`; `carries the
+      authorization header on every call and never prints the token`. Each
+      first error line: `TypeError: fetchCatalogIds is not a function`.
+    - `npx vitest run schedule-tests/opencode-host-quiet-environ.test.ts --configLoader native --maxWorkers=1`
+      gave `Test Files  1 failed (1)` and `Tests  2 failed (2)`, EXIT=1.
+      The failed tests, each with its first error line:
+      - `skips an unreadable environ in the fake proc root and prints the
+        marker match alone`: `AssertionError: the marked pids printed the
+        wrong pids (stderr: .../opencode-host.sh: line 34:
+        /proc/1571/environ: Permission denied`. The stdout was empty, not
+        `4243`: the current code ignores `BENCH_OPENCODE_PROC`.
+      - `reads the real proc table with no environ text on stderr`:
+        `AssertionError: the real proc scan wrote environ text to stderr:
+        expected '...' not to match /environ/` (the pid-1571 line). On a
+        host without such a pid the case passes trivially.
+    - S2 tightening: the test asserts the last `opencode-credential:`
+      line, not the last stderr line, because the helper EXIT trap prints
+      the `OPENCODE_HOME CLEANUP` line on stderr after the seed-failed
+      line.
+    - After the runs, `ps -eo pid,args | grep '[f]ake-opencode'` printed
+      no line.
+    - The raw run logs sit at `/tmp/opencode/red-4.1/seed-red.log`,
+      `/tmp/opencode/red-4.1/catalog-red.log`, and
+      `/tmp/opencode/red-4.1/qenviron-red.log`.
+  - Deviation: measure-guard denied `[~]` in Phase 4 while Phase 3 holds
+    no checkpoint, so the task went from `[ ]` to `[x]`. The orchestrator
+    records the phase-order block. The heading of "Phase 3: The live day
+    of 2026-11-08" stays without `[checkpoint: <sha>]`, and tasks 3.2 and
+    3.3 keep their markers.
+  - Maker: `bailian-token-plan/qwen3.8-flash#high`.
   - Lane: light. Red `bailian-token-plan/qwen3.8-flash#high` (spec D13,
     Phase 4).
 - [ ] 4.2 The Green code (spec D16 to D18). The changes go into
