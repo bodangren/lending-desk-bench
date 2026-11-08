@@ -1196,19 +1196,73 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     no checkpoint, so the task went from `[ ]` to `[x]`.
   - Lane: light. Maker: `volcengine-agent-plan/glm-5.3-flash#high` (spec
     D13, Phase 4).
-- [ ] 4.3 The checker review of the amendment and of tasks 4.1 and 4.2. The
+- [x] 3edb2a4 4.3 The checker review of the amendment and of tasks 4.1 and 4.2. The
   checker reads the amendment of `spec.md` and `plan.md` (EV16, D16 to
   D18, FR-12 to FR-14, AC-12 to AC-14) and the files of tasks 4.1 and 4.2
   against them. It writes
   `measure/runs/opencode_host_isolation/check-4.3.json` with `status`,
   `retry_recommendation`, and each finding with its severity.
+  - Evidence: `measure/runs/opencode_host_isolation/check-4.3.json`
+    exists at HEAD. Its `status` is `pass`, its `retry_recommendation` is
+    `none`, and its `audited_head` is
+    `3edb2a4cae67695b53f117cf57b4eab665085ad5`. It holds 0 blocking
+    findings and 6 nonblocking findings.
+  - Checker model: `claude-code/claude-sonnet-5-5#high` (Anthropic). It
+    differs from the Red maker family (Qwen) and the Green maker family
+    (GLM), so the second Verify line passes.
+  - Findings, each open, nonblocking:
+    - N1 (Minor,
+      `harness/schedule-tests/credential-seed-backoff.test.ts:40`): no
+      test proves four D16 clauses of the seed; the code is correct by
+      reading.
+    - N2 (Minor,
+      `harness/schedule-tests/opencode-host-quiet-environ.test.ts:55`):
+      the fake-proc environ case tests a read error, not the open failure
+      of EV16; the code puts `2>/dev/null` before the `<` redirect.
+    - N3 (Minor, `measure/tracks/opencode_host_isolation/spec.md:592`
+      and `:673`): FR-12 and AC-12 are less precise than D16; the
+      Green-owned `credential-seed-classes.test.ts` ties to no FR or AC.
+    - N4 (Minor, `harness/schedule-tests/catalog-fetch-retry.test.ts:86`):
+      untested D17 clauses of the catalog retry; the code is correct by
+      reading.
+    - N5 (Nit, `harness/opencode-credential.sh:182`): a SIGTERM or
+      SIGKILL of the seed subshell can leave the two mode 600 stderr
+      files until the owner job ends.
+    - N6 (Nit, `harness/opencode-credential.sh:169`): no caller timeout
+      breaks; the warn mode can wait up to 410 s before exit 0.
+  - The checker scratch file
+    `measure/runs/opencode_host_isolation/check-4.3-scratch/fake-opencode`
+    stays; closeout must not commit it.
+  - Deviation: measure-guard denies `[~]` in Phase 4 while Phase 3 holds
+    no checkpoint, so the task went from `[ ]` to `[x]`.
   - Verify: `measure/runs/opencode_host_isolation/check-4.3.json` shows
     status pass and 0 blocking findings.
   - Verify: the checker family differs from every maker family.
   - Lane: light. The checker changes no code. Checker:
     `claude-code/claude-sonnet-5-5#high` (spec D13, Phase 4).
-- [ ] 4.4 The AFTER hashes again (spec D11), on the commit of task 4.2.
+- [x] 3edb2a4 4.4 The AFTER hashes again (spec D11), on the commit of task 4.2.
   - Command: the command of task 1.6.
+  - Evidence: `./node_modules/.bin/tsx provenance.ts --shell` (workdir
+    `harness/`) printed on 2026-11-08:
+    `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef	8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`,
+    exit status 0. The first field is `runner_sha256`, the second is
+    `suite_sha256`.
+  - `runner_sha256` =
+    `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef`.
+    It differs from the task-1.6 value
+    `56c9d61d1f1fb9e75f11602b44b656827451eb07b90cc42c5b5c7e2b66cd6944`,
+    as expected, because the seed back-off changed
+    `harness/opencode-credential.sh` and the catalog retry changed
+    `harness/go-cost.ts`.
+  - `suite_sha256` =
+    `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`.
+    It equals the expected value, because no file under
+    `harness/tests/` changes.
+  - Note for the orchestrator: name
+    `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef`
+    to `grader_system_chrome` (its risk R4) in task 4.7.
+  - Deviation: measure-guard denies `[~]` in Phase 4 while Phase 3 holds
+    no checkpoint, so the task went from `[ ]` to `[x]`.
   - Verify: `runner_sha256` changes, because `harness/opencode-credential.sh`
     and `harness/go-cost.ts` are in its list; the task records the new
     value.
