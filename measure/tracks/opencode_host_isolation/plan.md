@@ -1104,7 +1104,7 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
   - Maker: `bailian-token-plan/qwen3.8-flash#high`.
   - Lane: light. Red `bailian-token-plan/qwen3.8-flash#high` (spec D13,
     Phase 4).
-- [ ] 4.2 The Green code (spec D16 to D18). The changes go into
+- [x] 4.2 The Green code (spec D16 to D18). 2536359. The changes go into
   `harness/opencode-credential.sh`, `harness/go-cost.ts`, and
   `harness/opencode-host.sh` only.
   - Verify: each of the 3 new files passes alone; the 4 older
@@ -1114,6 +1114,47 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     `--maxWorkers=1`; `bash -n` exits 0 on the two scripts; the two `rg`
     commands of FR-1 print the expected output. The task records each
     `Tests` line.
+  - Evidence (all workdir `harness/`, each a single run):
+    - `npx vitest run schedule-tests/credential-seed-backoff.test.ts
+      --configLoader native --maxWorkers=1`: `Tests  4 passed (4)`.
+    - `npx vitest run schedule-tests/catalog-fetch-retry.test.ts
+      --configLoader native --maxWorkers=1`: `Tests  5 passed (5)`.
+    - `npx vitest run schedule-tests/opencode-host-quiet-environ.test.ts
+      --configLoader native --maxWorkers=1`: `Tests  2 passed (2)`.
+    - `npx vitest run schedule-tests/opencode-host-isolation.test.ts
+      --configLoader native --maxWorkers=1`: `Tests  11 passed (11)`.
+    - `npx vitest run schedule-tests/opencode-host-trap.test.ts
+      --configLoader native --maxWorkers=1`: `Tests  4 passed (4)`.
+    - `npx vitest run schedule-tests/daily-selfcheck-default.test.ts
+      --configLoader native --maxWorkers=1`: `Tests  2 passed (2)`.
+    - `npx vitest run schedule-tests/daily-served-retry.test.ts
+      --configLoader native --maxWorkers=1`: `Tests  3 passed (3)`.
+    - `BENCH_META=1 npx vitest run tests/meta/opencode-credential.test.ts
+      --maxWorkers=1`: `Tests  21 passed (21)`.
+    - `BENCH_META=1 npx vitest run tests/meta/go-cost.test.ts
+      --maxWorkers=1`: `Tests  9 passed (9)`.
+    - `bash -n opencode-credential.sh`: exit 0, no output.
+      `bash -n opencode-host.sh`: exit 0, no output.
+    - `rg -n '"\$(PREFLIGHT_OPENCODE_BIN|opencode_bin|OPENCODE_BIN)"
+      +(models|auth|--version)' harness/ --glob '!node_modules' --glob
+      '!tests' --glob '!schedule-tests'`: exactly one line,
+      `harness/opencode-credential.sh:196: ... "$OPENCODE_BIN" auth export
+      opencode --standalone ...` (the shared read of D4).
+    - `rg -n -e '\$\(opencode ' -e '(^|[;&|!(]\s*|^\s*)opencode
+      (models|auth|--version)' harness/cron-daily.sh harness/cron-weekly.sh
+      harness/weekly.sh harness/batch.sh harness/run.sh`: no line (exit 1).
+    - `ps -eo pid,args | grep '[f]ake-opencode'`: no line (exit 1).
+  - Deviation: measure-guard denies `[~]` in Phase 4 while Phase 3 holds
+    no checkpoint, so the task went from `[ ]` to `[x]`.
+  - Deviation: the seed fails closed at once on a selection failure and
+    retries only a non-zero `opencode` exit. D16 lists a selection failure
+    as a retryable failed call, but the immutable meta suite
+    (`tests/meta/opencode-credential.test.ts`, 30 s budgets, no
+    `BENCH_CREDENTIAL_SEED_DELAYS`) fails closed on an unusable credential
+    (invalid `expires`, ambiguous connections); the literal D16 retry rule
+    with the default waits of 5 15 30 60 makes 7 of its 21 tests time out
+    at 30 s. The Red tests never exercise a selection-failure retry. Task
+    4.3 must review this reading.
   - Lane: light. Maker: `volcengine-agent-plan/glm-5.3-flash#high` (spec
     D13, Phase 4).
 - [ ] 4.3 The checker review of the amendment and of tasks 4.1 and 4.2. The
