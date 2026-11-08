@@ -156,6 +156,22 @@ Marker use:
   - The command printed both values on one line, separated by a tab, and
     exited 0.
   - The two AFTER values differ from the two BEFORE values of spec EV14.
+  - R4 update (2026-11-08):
+    - The harness commits of the track `opencode_host_isolation` changed
+      both values after task 1.4. Its task 1.6 holds the Phase 1 history
+      (`46edf4c`, then `18a942d`): `runner_sha256`
+      `56c9d61d1f1fb9e75f11602b44b656827451eb07b90cc42c5b5c7e2b66cd6944`,
+      `suite_sha256`
+      `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`.
+    - Its Phase 4 commits `2536359` and `6d37c69` changed
+      `harness/opencode-credential.sh` and `harness/go-cost.ts`. The
+      current `runner_sha256` is
+      `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef`.
+      `suite_sha256` stays
+      `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`
+      (task 4.4 of `opencode_host_isolation`, commit `5a855ec`).
+    - The current AFTER values are these two values. The next live day and
+      the rescore of tasks 2.3 and 2.4 see them.
 
 ## Phase 2: The proof on the system Chrome
 
