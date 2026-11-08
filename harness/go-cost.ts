@@ -231,12 +231,47 @@ export async function consoleAccessToken(): Promise<string> {
   return access;
 }
 
+/**
+ * The live catalog model ids. The call retries a network throw or a status of
+ * 429 or 500-599 with the waits of `delaysSeconds`; any other non-ok status
+ * throws at once. Each failed call writes one `console.error` line, and the
+ * token never reaches a log (spec D17).
+ */
+export async function fetchCatalogIds(
+  token: string,
+  fetchImpl: typeof fetch = fetch,
+  delaysSeconds: number[] = [5, 15],
+): Promise<string[]> {
+  const wait = (seconds: number) => new Promise<void>((waitDone) => setTimeout(waitDone, seconds * 1000));
+  const calls = delaysSeconds.length + 1;
+  for (let attempt = 1; attempt <= calls; attempt++) {
+    let response: Response;
+    try {
+      response = await fetchImpl(GO_CATALOG_URL, { headers: { authorization: `Bearer ${token}` } });
+    } catch {
+      console.error(`go-cost: catalog attempt ${attempt}/${calls} failed: network error`);
+      if (attempt === calls) throw new Error("Go catalog network error");
+      await wait(delaysSeconds[attempt - 1] ?? 0);
+      continue;
+    }
+    if (!response.ok && response.status !== 429 && !(response.status >= 500 && response.status <= 599)) {
+      console.error(`go-cost: catalog attempt ${attempt}/${calls} failed: HTTP ${response.status}`);
+      throw new Error(`Go catalog HTTP ${response.status}`);
+    }
+    if (response.ok) {
+      const payload = (await response.json()) as { data?: Array<{ id?: string }> };
+      return (payload.data ?? []).map((row) => row.id).filter((id): id is string => typeof id === "string");
+    }
+    console.error(`go-cost: catalog attempt ${attempt}/${calls} failed: HTTP ${response.status}`);
+    if (attempt === calls) throw new Error(`Go catalog HTTP ${response.status}`);
+    await wait(delaysSeconds[attempt - 1] ?? 0);
+  }
+  throw new Error("Go catalog network error");
+}
+
 export async function catalogDiff(pricing: GoPricing): Promise<{ live: string[]; missing: string[]; extra: string[] }> {
   const token = await consoleAccessToken();
-  const response = await fetch(GO_CATALOG_URL, { headers: { authorization: `Bearer ${token}` } });
-  if (!response.ok) throw new Error(`Go catalog HTTP ${response.status}`);
-  const payload = (await response.json()) as { data?: Array<{ id?: string }> };
-  const live = (payload.data ?? []).map((row) => row.id).filter((id): id is string => typeof id === "string");
+  const live = await fetchCatalogIds(token);
   const known = Object.keys(pricing.models);
   const liveSet = new Set(live);
   const knownSet = new Set(known);

@@ -28,17 +28,21 @@ BENCH_OPENCODE_HOST_DONE=0
 
 # The pids of the user whose environment holds the marker of the folder. The
 # shell of the owner and its subshell never appear in the list. The loop reads
-# each /proc/<pid>/environ with a shell builtin, so it forks no helper per pid.
+# each <proc root>/<pid>/environ with a shell builtin, so it forks no helper
+# per pid. BENCH_OPENCODE_PROC may point the loop at a fake process table
+# (spec D18). A read fault of one environ file writes nothing to stderr and
+# skips that pid, so a `[ -r ]` pass that still fails at the open stays quiet.
 opencode_host_marked_pids() {
-  local folder="$1" pid entry line
-  for pid in /proc/[0-9]*; do
-    pid="${pid#/proc/}"
+  local folder="$1" proc pid entry line
+  proc="${BENCH_OPENCODE_PROC:-/proc}"
+  for pid in "$proc"/[0-9]*; do
+    pid="${pid##*/}"
     if [ "$pid" = "$$" ] || [ "$pid" = "$BASHPID" ]; then continue; fi
-    if [ ! -r "/proc/$pid/environ" ]; then continue; fi
+    if [ ! -r "$proc/$pid/environ" ]; then continue; fi
     entry=""
     while IFS= read -r -d '' line; do
       if [ "$line" = "BENCH_OPENCODE_JOB=$folder" ]; then entry=1; break; fi
-    done < "/proc/$pid/environ"
+    done 2>/dev/null < "$proc/$pid/environ"
     if [ -n "$entry" ]; then printf '%s\n' "$pid"; fi
   done
 }

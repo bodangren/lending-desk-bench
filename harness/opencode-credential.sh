@@ -29,9 +29,10 @@
 # runs the seed first when the job folder holds no seeded marker.
 #
 # The export call retries. On this host `opencode auth export` sometimes
-# prints a plugin notice and no JSON. The retry rule matches the one for
-# `opencode models`: three calls in total, five seconds apart. A missing
-# credential never retries: it fails closed at once.
+# prints a plugin notice and no JSON. The seed retry rule is spec D16: up to
+# N = waits + 1 calls, with the waits of BENCH_CREDENTIAL_SEED_DELAYS between
+# calls (default 5 15 30 60 seconds). The job-store read loop keeps its own
+# rule of three calls in total, five seconds apart.
 set -euo pipefail
 MODE="${1:?usage: opencode-credential.sh <seed|export|check-window|warn|preflight|scan-values>}"
 case "$MODE" in
@@ -146,9 +147,17 @@ process.stdin.on("end", () => {
 '
 }
 
-# The seed of D4. It reads the shared store once and imports the access-only
-# payload into the job store. The payload never touches a disk. The job folder
-# holds the seeded marker after a successful run.
+# The seed of D4 and the back-off of D16. It reads the shared store and
+# imports the access-only payload into the job store. The payload never
+# touches a disk. The job folder holds the seeded marker after a successful
+# run.
+#
+# The seed makes up to N = waits + 1 calls of the D3 export order, with the
+# waits of BENCH_CREDENTIAL_SEED_DELAYS between calls. The stderr of each
+# `opencode` call goes to a mode-600 file in the tmp/ subfolder of the job
+# folder; the helper tests it only for the fixed reason texts and removes it
+# after each call. The stdout and the stderr text of `opencode` never reach
+# a terminal.
 #
 # The function prints the seed payload on stdout when this process performed
 # the seed, and nothing when the job folder was already seeded. The calling
@@ -156,43 +165,80 @@ process.stdin.on("end", () => {
 # helper process makes at most one `auth export` call. A process of an already
 # seeded folder reads the job store with opencode_host_run.
 seed_credential() {
-  local folder="$BENCH_OPENCODE_HOME"
+  local folder="$BENCH_OPENCODE_HOME" delays
+  delays="${BENCH_CREDENTIAL_SEED_DELAYS:-5 15 30 60}"
+  if ! [[ "$delays" =~ ^[0-9]+( [0-9]+)*$ ]]; then
+    echo "BENCH_CREDENTIAL_SEED_DELAYS must be a list of whole seconds" >&2
+    return 2
+  fi
+  local -a seed_waits
+  read -r -a seed_waits <<< "$delays"
+  local seed_total=$(( ${#seed_waits[@]} + 1 ))
   if [ -f "$folder/seeded" ]; then return 0; fi
   (
     exec 8>"$folder/seed.lock" || exit 2
     flock 8 || exit 2
     if [ -f "$folder/seeded" ]; then exit 0; fi
+    seed_err_file="$folder/tmp/seed-export.$$.err"
+    seed_sel_file="$folder/tmp/seed-select.$$.err"
+    mkdir -p "$folder/tmp"
     attempt=1
     while :; do
-      rc=0
+      ( umask 077; : > "$seed_err_file"; : > "$seed_sel_file" )
+      op_rc=0
       # Spec D3 fallback order (diagnosis d91ede6): the first order
       # `auth export --standalone opencode` failed in the task-2.1 preflight
       # with the runtime line "Location plugins did not finish activating" on
       # each of the 3 retries, while `auth export opencode --standalone`
-      # exited 0 against the shared store. The retry rule stays (3 calls, 5 s
-      # apart) for the known transient plugin notice.
-      output="$(timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 \
-        BENCH_OPENCODE_JOB="$folder" "$OPENCODE_BIN" auth export opencode --standalone 2>/dev/null \
-        | SELECT_MODE=export read_selection 2>/dev/null)" || rc=$?
-      if [ "$rc" -eq 0 ] && [ -n "$output" ]; then break; fi
-      if [ "$rc" -ne 2 ] || [ "$attempt" -ge "$EXPORT_ATTEMPTS" ]; then
-        if [ -n "$output" ]; then printf '%s\n' "$output" >&2; else
-          echo "opencode-credential: the Console credential seed failed" >&2
-        fi
-        exit 2
+      # exited 0 against the shared store. The stderr goes to the file, never
+      # to a terminal (spec D16).
+      seed_stdout="$(timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 \
+        BENCH_OPENCODE_JOB="$folder" "$OPENCODE_BIN" auth export opencode --standalone 2>"$seed_err_file")" || op_rc=$?
+      sel_rc=0
+      seed_output=""
+      if [ "$op_rc" -eq 0 ]; then
+        seed_output="$(printf '%s\n' "$seed_stdout" | SELECT_MODE=export read_selection 2>"$seed_sel_file")" || sel_rc=$?
       fi
-      attempt=$((attempt + 1))
-      sleep 5
+      if [ "$op_rc" -eq 0 ] && [ "$sel_rc" -eq 0 ] && [ -n "$seed_output" ]; then
+        rm -f "$seed_err_file" "$seed_sel_file"
+        break
+      fi
+      echo "opencode-credential: seed attempt $attempt/$seed_total failed: $(seed_reason "$op_rc")" >&2
+      rm -f "$seed_err_file" "$seed_sel_file"
+      # A failed `opencode` call retries until N calls (spec D16). A selection
+      # failure means the shared store holds no usable credential, so it fails
+      # closed at once (the fail-closed rule for a missing credential, D4).
+      if [ "$op_rc" -ne 0 ] && [ "$attempt" -lt "$seed_total" ]; then
+        sleep "${seed_waits[$((attempt - 1))]}"
+        attempt=$((attempt + 1))
+        continue
+      fi
+      echo "opencode-credential: the Console credential seed failed" >&2
+      exit 2
     done
-    if ! printf '%s\n' "$output" | opencode_host_run auth import --standalone > /dev/null; then
+    if ! printf '%s\n' "$seed_output" | opencode_host_run auth import --standalone > /dev/null; then
       echo "opencode-credential: the Console credential seed failed" >&2
       exit 2
     fi
     printf 'seeded\n' > "$folder/seeded"
     # The access-only payload: the refresh value is "inert" (spec D4, D5).
-    printf '%s\n' "$output"
+    printf '%s\n' "$seed_output"
     exit 0
   )
+}
+
+# The reason of one failed seed call (spec D16, the ordered list). op_rc is the
+# `opencode` exit status; the two err files hold the stderr of the `opencode`
+# call and of the selection pass. The files are read, never printed.
+seed_reason() {
+  local op_rc="$1"
+  if [ "$op_rc" -eq 124 ]; then printf 'timeout'
+  elif grep -q "did not finish activating" "$seed_err_file" 2>/dev/null; then printf 'plugins did not finish activating'
+  elif grep -q "ServiceUnavailableError" "$seed_err_file" 2>/dev/null; then printf 'service unavailable'
+  elif [ "$op_rc" -ne 0 ]; then printf 'exit %s' "$op_rc"
+  elif grep -q "no active Console" "$seed_sel_file" 2>/dev/null; then printf 'no active Console connection'
+  else printf 'no JSON array'
+  fi
 }
 
 if [ "$MODE" = "seed" ]; then
