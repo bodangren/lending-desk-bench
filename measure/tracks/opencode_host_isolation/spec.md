@@ -372,8 +372,17 @@ Each decision below is a default by the orchestrator or the author,
     seconds separated by spaces, default `5 15 30 60`. N is the number of
     waits plus 1 (default 5). An invalid list stops the helper with exit 2
     and the line `BENCH_CREDENTIAL_SEED_DELAYS must be a list of whole
-    seconds`. Every failed call retries until N calls: a failed call is a
-    non-zero `opencode` exit, a selection failure, or an empty output.
+    seconds`. A retryable failure retries until N calls. A retryable
+    failure is a non-zero `opencode` exit, an empty output, or a
+    selection pass that reports no JSON array or no valid JSON (the
+    selection stderr holds `did not print`). Every other selection
+    failure (no active Console connection, two or more active
+    connections, a missing or invalid `expires` value) writes its reason
+    line, then the line `opencode-credential: the Console credential
+    seed failed`, and exits 2 at once. These states are fixed in the
+    shared store. The meta tests of
+    `harness/tests/meta/opencode-credential.test.ts` expect a stop
+    inside 30 s.
     After each failed call the helper writes one stderr line
     `opencode-credential: seed attempt <n>/<N> failed: <reason>`. The
     reason is the first match of this ordered list: (1) `timeout` when the
@@ -382,7 +391,9 @@ Each decision below is a default by the orchestrator or the author,
     `service unavailable` when it holds `ServiceUnavailableError`; (4)
     `exit <n>` when `opencode` exits non-zero with status n; (5) `no
     active Console connection` when the selection reports no active
-    connection; (6) `no JSON array` in all other cases. The helper writes
+    connection; (6) `no JSON array` when the selection reports no JSON
+    array or no valid JSON; (7) `selection failed` in all other cases.
+    The helper writes
     the `opencode` stderr to a file in the `tmp/` subfolder of the job
     folder with mode 600, tests it only for the fixed texts, and removes
     it after each call. The helper never prints the stdout or the stderr
