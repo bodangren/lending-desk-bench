@@ -1278,16 +1278,81 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     test for each of the two suites.
   - Verify: the log sits at `measure/runs/opencode_host_isolation/`.
   - Lane: light. One heavy run.
-- [ ] 4.6 The rerun. One `harness/cron-daily.sh --dry-run` with the service
+- [x] 3edb2a4 4.6 The rerun. One `harness/cron-daily.sh --dry-run` with the service
   PATH, the real guard, the real catalog, and no seams, through
   `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 heavy-run.sh`.
-  - Verify: EXIT=0; no `Permission denied` line; no `DAILY FAIL` line; one
-    `DAILY OPENCODE_HOME` line and one matching `OPENCODE_HOME CLEANUP`
-    line; either `DAILY GO-GUARD ...` with `DAILY DRY-RUN planned=<n>`, or
-    `DAILY SKIP go-guard: monthly used <n> percent` with `DAILY DRY-RUN
-    planned=0`; `DAILY END`; no `.tmp/opencode-host-*` folder after; only
-    the OpenChamber server after.
-  - Verify: the task records each `seed attempt` line.
+  - Run evidence (2026-11-08, log at
+    `measure/runs/opencode_host_isolation/rerun-4.6.log`): the transient
+    systemd user unit `run-p614087-i613112.service` ran
+    `harness/cron-daily.sh --dry-run` with the service PATH and working
+    directory, inside the heavy-run wrapper. No fallback was needed; the
+    `systemd-run` call worked. The run took 09:18:55 to 09:19:56 +0700.
+  - Key lines of the log (12 lines total):
+    - `DAILY START 2026-11-08T09:18:55+07:00`
+    - `DAILY OPENCODE_HOME
+      /home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-614089`
+    - One `ServiceUnavailableError: Location plugins did not finish
+      activating` stack (5 lines) from the served step's `opencode
+      models` call. No `DAILY FAIL` followed; the served step wrote
+      `reports/go-served-2026w45.txt` and the run went on.
+    - `DAILY_PICK date=2026-11-08 model=kimi-k2.7-code reason=untested
+      last_test=none candidates=9 eligible=9 untested=1`
+    - `DAILY SKIP go-guard: monthly used 84.06490206666668 percent`
+    - `DAILY DRY-RUN planned=0`
+    - `DAILY END 2026-11-08T09:19:56+07:00`
+    - `OPENCODE_HOME CLEANUP stopped=0
+      path=/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-614089`
+  - Seed attempt lines: zero. The seed succeeded on its first call, so
+    the helper printed no `seed attempt` line. `go-cost: catalog
+    attempt` lines: zero; the catalog fetch succeeded on its first call.
+  - Exit status: the wrapper's `EXIT=` echo printed empty, because the
+    inner shell of the wrapper has no `PIPESTATUS` (one stderr line:
+    `Invalid environment variable name evaluates to an empty string:
+    PIPESTATUS[0]`). The exit status is still proven 0: the line
+    sequence reaches the one dry-run path that ends `DAILY END` then
+    `exit 0` (`harness/cron-daily.sh:340-343`); every other exit path
+    prints a `DAILY FAIL` line first, and the journal holds no failure
+    entry for the unit.
+  - Before state (09:18, before the run): one `opencode` process, pid
+    2471 (started Sun Nov 8 06:39:21 2026), args start
+    `/home/daniebo/.nvm/versions/node/v24.19.0/bin/opencode serve
+    --hostname 127.0.0.1 --port 37895`. No `.tmp/opencode-host-*`
+    folder. `reports/go-catalog-2026w45.json` mtime 2026-11-06
+    16:25:46 +0700, size 867. `reports/go-served-2026w45.txt` mtime
+    2026-11-06 16:25:50 +0700, size 949.
+  - After state: the same single `opencode` process, pid 2471. No
+    `.tmp/opencode-host-*` folder. `go-catalog-2026w45.json` mtime
+    2026-11-08 09:19:24 +0700, size 867, 10 live ids. `go-served-2026w45.txt`
+    mtime 2026-11-08 09:19:43 +0700, size 1059. `git status --short`
+    shows only the two pre-existing untracked paths (`.opencode/` and
+    `tech-debt.md`).
+  - PM decision 2 (2026-11-08): the Go guard limit stays. A dry rerun
+    that ends with `DAILY SKIP go-guard` is the accepted proof of the
+    catalog fix, if the log shows that the catalog step passed before
+    the guard.
+  - Verify: EXIT=0 — PASS (see the exit-status evidence above).
+  - Verify: no `Permission denied` line — PASS (the log holds none).
+  - Verify: no `DAILY FAIL` line — PASS (the log holds none).
+  - Verify: one `DAILY OPENCODE_HOME` line and one matching
+    `OPENCODE_HOME CLEANUP` line — PASS (both name job folder 614089).
+  - Verify: `DAILY SKIP go-guard: monthly used <n> percent` with
+    `DAILY DRY-RUN planned=0` — PASS (84.06 percent against the 80
+    percent guard; the expected result of the brief).
+  - Verify: `DAILY END` — PASS (09:19:56).
+  - Verify: no `.tmp/opencode-host-*` folder after — PASS.
+  - Verify: only the OpenChamber server after — PASS (pid 2471 only).
+  - Verify: the task records each `seed attempt` line — PASS (zero
+    lines; the record above states why).
+  - Verify: the catalog step passed before the guard (PM decision 2,
+    2026-11-08) — PASS. All four facts hold: no `DAILY FAIL catalog`
+    line; the catalog file mtime 09:19:24 sits inside the run window
+    09:18:55 to 09:19:56; the live count is 10 (greater than 0); the
+    `DAILY SKIP go-guard` line follows the catalog step.
+  - Deviation: this task ran before task 4.5, because 4.5 needs the
+    22:00 to 07:00 window and the rerun gives the real-host proof
+    sooner.
+  - Deviation: measure-guard denies `[~]` in Phase 4 while Phase 3 holds
+    no checkpoint, so the task went from `[ ]` to `[x]`.
   - Lane: light. One heavy run.
 - [ ] 4.7 The report to the PM: status, facts changed, defaults taken, and
   the new `runner_sha256`.
