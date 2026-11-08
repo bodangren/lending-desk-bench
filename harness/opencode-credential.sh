@@ -203,12 +203,23 @@ seed_credential() {
         rm -f "$seed_err_file" "$seed_sel_file"
         break
       fi
+      # The retryable classes of D16: a non-zero `opencode` exit, an empty
+      # output, and a selection pass that reports no JSON array or no valid
+      # JSON (its stderr holds `did not print`). The no-JSON report is the
+      # known transient fault: the export exits 0, prints a plugin notice,
+      # and prints no JSON. Every other selection failure names a fixed
+      # state of the shared store: it fails closed after that one call.
+      seed_retry=0
+      if [ "$op_rc" -ne 0 ]; then
+        seed_retry=1
+      elif [ "$sel_rc" -ne 0 ] && grep -q "did not print" "$seed_sel_file" 2>/dev/null; then
+        seed_retry=1
+      elif [ "$sel_rc" -eq 0 ] && [ -z "$seed_output" ]; then
+        seed_retry=1
+      fi
       echo "opencode-credential: seed attempt $attempt/$seed_total failed: $(seed_reason "$op_rc")" >&2
       rm -f "$seed_err_file" "$seed_sel_file"
-      # A failed `opencode` call retries until N calls (spec D16). A selection
-      # failure means the shared store holds no usable credential, so it fails
-      # closed at once (the fail-closed rule for a missing credential, D4).
-      if [ "$op_rc" -ne 0 ] && [ "$attempt" -lt "$seed_total" ]; then
+      if [ "$seed_retry" -eq 1 ] && [ "$attempt" -lt "$seed_total" ]; then
         sleep "${seed_waits[$((attempt - 1))]}"
         attempt=$((attempt + 1))
         continue
@@ -237,7 +248,8 @@ seed_reason() {
   elif grep -q "ServiceUnavailableError" "$seed_err_file" 2>/dev/null; then printf 'service unavailable'
   elif [ "$op_rc" -ne 0 ]; then printf 'exit %s' "$op_rc"
   elif grep -q "no active Console" "$seed_sel_file" 2>/dev/null; then printf 'no active Console connection'
-  else printf 'no JSON array'
+  elif grep -q "did not print" "$seed_sel_file" 2>/dev/null; then printf 'no JSON array'
+  else printf 'selection failed'
   fi
 }
 
