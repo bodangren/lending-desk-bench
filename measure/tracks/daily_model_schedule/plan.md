@@ -742,6 +742,11 @@ measure-guard denies `[~]` while an earlier phase holds no checkpoint, so the
 tasks of this phase go from `[ ]` to `[x]`. Do not try `[~]`. Do not add a
 checkpoint to an earlier phase.
 
+Finding F4 (2026-11-13 22:13, PM): the real notice path was guarded by
+`VITEST` only. A hand live run sent a real line that looked like a timer run
+(spec EV25). D20 gates the real transport on the systemd timer unit or an
+explicit live flag.
+
 - [x] 2369824 6.1 Red: the amendment of the spec and the Red tests. The role adds
   D15, D16, and D17 to `spec.md`, with FR-14, FR-15, and FR-16, with AC-13,
   AC-14, and AC-15, and with the new text of R4. The role adds the test file
@@ -831,6 +836,15 @@ checkpoint to an earlier phase.
     unchanged.
     - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose -t "N4"` exits non-zero. The case N4 still fails, because the code of task 6.2 is not written yet.
     - Evidence: `Test Files  1 failed (1)`; `Tests  1 failed | 13 skipped (14)`; exit 1. The failure names the missing D16 fail line.
+- [ ] 6.1c Red: the notice gate (D20), from finding F4. The role adds D20
+  and EV25 to `spec.md`, with the amended FR-16 and AC-15. The role adds
+  the test file `harness/schedule-tests/notice-seam-guard.test.ts` with the
+  cases G1 to G5. Every helper that starts `cron-daily.sh` in
+  `harness/schedule-tests/` sets `BENCH_DAILY_NOTIFY_CMD` to a sink, the dry
+  run helpers too.
+  - Verify: `cd harness && npx vitest run schedule-tests/notice-seam-guard.test.ts --configLoader native --maxWorkers=1` exits non-zero, and each failure names a missing rule of D20.
+  - Verify: the static case G1 passes, so no test file starts the job without the seam.
+  - Lane: light lane. Maker: minimax-cn-coding-plan/MiniMax-M3.1-Flash (Red). Checker: volcengine-agent-plan/glm-5.3-flash#high (task 6.3b). The checker family differs from every maker family.
 - [x] 0a57c28 6.2 Green: the code in `harness/cron-daily.sh` only. The role
   implements D15, D16, D17, D18, and D19 in that file. No other file
   changes. Green: `claude-code/claude-sonnet-5-5#high` (PM 2026-11-13).
@@ -877,6 +891,17 @@ checkpoint to an earlier phase.
   role writes `measure/runs/daily_model_schedule/check-6.3.json`.
   - Verify: the file shows `status: pass` and 0 blocking findings.
   - Lane: light lane. Checker: a third family. The family differs from every maker family.
+- [ ] 6.2b Green: the notice gate of D20 in `harness/cron-daily.sh` only. The
+  role reads the cgroup file, and it sends the real line only under the
+  timer unit or under `BENCH_DAILY_NOTIFY_LIVE=1`. A hand run sends a HAND
+  line. No other file changes.
+  - Verify: each test file of the phase alone with `--configLoader native --maxWorkers=1` exits 0.
+  - Verify: `bash -n harness/cron-daily.sh` exits 0.
+  - Lane: light lane. Maker: claude-code/claude-sonnet-5-5#high (Anthropic). Checker: volcengine-agent-plan/glm-5.3-flash#high (task 6.3b). The checker family differs from every maker family.
+- [ ] 6.3b Checker re-check of D20, of task 6.1c, and of task 6.2b. The role
+  writes `measure/runs/daily_model_schedule/check-6.3b.json`.
+  - Verify: the file shows `status: pass` and 0 blocking findings.
+  - Lane: light lane. Checker: volcengine-agent-plan/glm-5.3-flash#high (GLM). The family differs from every maker family.
   - Evidence: `measure/runs/daily_model_schedule/check-6.3.json`.
     `status: pass`; `retry_recommendation: none`; `audited_head` `729780f`;
     0 blocking findings; 3 nonblocking findings.
@@ -909,11 +934,12 @@ checkpoint to an earlier phase.
     checkpoint, so the task went from `[ ]` to `[x]`.
 - [ ] 6.5 Full suites through `heavy-run.sh` (the command of
   `opencode_host_isolation` task 1.5), only between 22:00 and 07:00 and only
-  with no p1 waiter.
+  with no p1 waiter. The night suites run after task 6.2b.
   - Verify: the run exits 0, and the log holds a `Tests` line with no failed test for each suite.
   - Verify: the log sits under `measure/runs/daily_model_schedule/`.
   - Lane: light lane. One heavy run.
-- [x] 0ff9ef3 6.6 Live checks before 2026-11-14 18:00.
+- [x] 0ff9ef3 6.6 Live checks before 2026-11-14 18:00. A later hand channel
+  test needs `BENCH_DAILY_NOTIFY_LIVE=1`, and it gives a HAND line.
   - (a) One dry rerun in a transient `systemd-run --user` unit with the
     service PATH and the working folder, as `opencode_host_isolation` task
     4.6. It prints the line `DAILY GO-GUARD weekly=<n> monthly=<m>` and

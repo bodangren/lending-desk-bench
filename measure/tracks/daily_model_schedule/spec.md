@@ -152,6 +152,20 @@ All facts come from the files on disk and from read-only commands on
 - **EV24. The Go use of the next run day.** The monthly Go use is 84.06
   percent (EV15). A monthly limit of 95 lets the timer run of Sun 2026-11-15
   01:00 run all four track batches. The day then exits 0 and publishes.
+- **EV25. A hand run reached the PM channel (2026-11-13).** The channel test
+  of task 6.6b sent its planned FAIL line to the PM at 22:13:02 from the
+  transient unit `run-p1366296-i1372737.service`. The PM took it for a test
+  that reached the real notice command. The gap is real: the real transport
+  had only the `VITEST` guard, so a live hand run of `cron-daily.sh` from any
+  agent shell sent a real line that looked like a timer run. `INVOCATION_ID`
+  is no test of systemd here: every agent shell inherits it from
+  `openchamber.service`. An agent shell prints an `INVOCATION_ID`, and its
+  `/proc/self/cgroup` holds
+  `0::/user.slice/user-1000.slice/user@1000.service/app.slice/openchamber.service`.
+  The PM order of 2026-11-13, exact in quotation: "the real notice command
+  is used only when the job runs under systemd (or an explicit live flag);
+  every test sets a fake notice seam; add one test that fails if the suite
+  calls the real notice command. Log this as a finding of the round."
 
 ## Definitions
 
@@ -490,6 +504,21 @@ date 2026-10-25.
       `publish=none`.
     - systemd shows a skip day as failed. This is correct (PM 2026-11-13,
       EV23).
+20. **D20. The notice gate.** It amends D17.
+    - `BENCH_DAILY_NOTIFY_CMD`, when set, replaces the transport in every
+      case (tests). Then the `VITEST` rule of D17: with `VITEST` set and no
+      seam, `DAILY NOTIFY skipped: test`.
+    - Else the real transport runs only when (a) the cgroup file
+      (`/proc/self/cgroup`; seam `BENCH_DAILY_CGROUP_FILE`) holds the text
+      `/lending-desk-daily.service`, or (b) `BENCH_DAILY_NOTIFY_LIVE=1`. In
+      every other case the job prints `DAILY NOTIFY skipped: not the timer
+      unit` and sends nothing.
+    - A line sent under (b) without (a) starts with `lending-desk-daily HAND `
+      in place of `lending-desk-daily ` (for example `lending-desk-daily HAND
+      FAIL <date> exit=1: ...`), so a hand check never looks like a timer
+      run. The `DAILY NOTIFY <line>` log line shows the same text.
+    - A test never reads the real PM config. The child environment of a test
+      holds no real `HOME`.
 
 ## Functional requirements
 
@@ -726,6 +755,19 @@ The amended rule (D19):
   SKIP line with the reason `lock held`. The case N13 gives one SKIP line
   with the reason `no eligible model`. The case N8 gives one FAIL line.
 
+The amended rule (D20):
+
+- The real transport runs only under the systemd timer unit, or under the
+  explicit live flag. In every other case the job sends nothing and prints
+  `DAILY NOTIFY skipped: not the timer unit`.
+- A hand live run sends a line that starts with `lending-desk-daily HAND `.
+- **Check.** The file `harness/schedule-tests/notice-seam-guard.test.ts`:
+  the static case G1 fails when a test file starts the job without naming
+  `BENCH_DAILY_NOTIFY_CMD`. The case G2 proves that an agent shell sends
+  nothing. The case G3 proves that the timer unit sends the real line. The
+  case G4 proves that the live flag sends a HAND line. The case G5 proves
+  that a test sends nothing under `VITEST`.
+
 ## Non-functional requirements
 
 - **NFR-1 No other model call.** The job sends a model call for the day's
@@ -818,6 +860,9 @@ The amended rule (D19):
     sends a PUBLISH line, the exit code 3 sends a SKIP line, and the exit
     codes 1, 2, 130, and 143 send a FAIL line. A dry run sends nothing
     (FR-16, D19).
+    The amended rule of D20: the real transport runs only under the timer
+    unit or under the live flag. A hand run sends a HAND line. A test sends
+    nothing (FR-16, D20).
 
 ## Out of scope
 
