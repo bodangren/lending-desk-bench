@@ -819,6 +819,18 @@ checkpoint to an earlier phase.
   - Command: `ps -eo pid,args | grep '[f]ake-openc'`. It prints no line.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
+  - Red retry (2026-11-13, from Green 6.2): commit `94c2c08` fixes two Red
+    faults. First, the case N4 and the case 6.5.16 expected the fail line
+    `DAILY FAIL publish: origin/main is not an ancestor of the docs commit;
+    the commit is local`. Spec D16 gives the text with the prefix
+    `DAILY FAIL push:`. Both cases now expect the D16 text. No other
+    assertion changed. Second, the spec amendment of the same day changes
+    the notice seam of D17: `BENCH_DAILY_NOTIFY_CMD` names an executable, and
+    the job runs `"$BENCH_DAILY_NOTIFY_CMD" "<line>"`, with the line as its
+    only argument. The old sentence stays for the record. The fixtures stay
+    unchanged.
+    - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose -t "N4"` exits non-zero. The case N4 still fails, because the code of task 6.2 is not written yet.
+    - Evidence: `Test Files  1 failed (1)`; `Tests  1 failed | 13 skipped (14)`; exit 1. The failure names the missing D16 fail line.
 - [ ] 6.2 Green: the code in `harness/cron-daily.sh` only. The role
   implements D15, D16, D17, D18, and D19 in that file. No other file
   changes. Green: `claude-code/claude-sonnet-5-5#high` (PM 2026-11-13).

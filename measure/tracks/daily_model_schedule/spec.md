@@ -415,7 +415,8 @@ date 2026-10-25.
       commits=<n>`, where `<n>` is `git rev-list --count <old>..<docs sha>`,
       and then `DAILY PUBLISH <short sha>` as today.
     - The `DAILY PUSH skipped:` lines are retired.
-17. **D17. Notice to the PM.**
+17. **D17. Notice to the PM.** Amended on 2026-11-13 (the Red retry of task
+    6.1b): the transport sentence. The old text stays for the record.
     - A live run that exits with a non-zero status sends exactly one line:
       `lending-desk-daily FAIL <date> exit=<n>: <reason>
       log=reports/cron-daily.log`. `<reason>` is the text after `DAILY FAIL `
@@ -429,14 +430,20 @@ date 2026-10-25.
       nothing.
     - The job prints `DAILY NOTIFY <line>` before the send. One line is at
       most 300 characters. It never holds a credential or command output.
-    - Transport: `BENCH_DAILY_NOTIFY_CMD` when set: the job runs
-      `bash -c "$BENCH_DAILY_NOTIFY_CMD" _ "<line>"`. Without it, the job runs
+    - Transport: `BENCH_DAILY_NOTIFY_CMD` when set: it names an executable,
+      and the job runs `"$BENCH_DAILY_NOTIFY_CMD" "<line>"`, with the line as
+      its only argument. Without it, the job runs
       `timeout 30 openchamber session send --session <pm> --dir
       /home/daniebo/Desktop/advantage-pr --prompt "<line>"`, the form of the
       hang line of `advantage-pr/scripts/jobs/heavy-run.sh`. `<pm>` is the
       `pmSession` key of `~/.config/ra-slots/config.json`
       (`BENCH_DAILY_PM_CONFIG` overrides the path). `openchamber` is in
       `~/.local/share/pnpm/bin`, on the service PATH.
+      - Amended on 2026-11-13 (the Red retry of task 6.1b). The old text
+        stays for the record: `BENCH_DAILY_NOTIFY_CMD` when set: the job runs
+        `bash -c "$BENCH_DAILY_NOTIFY_CMD" _ "<line>"`. Under that form the
+        script got no argument. The seam names an executable now, as
+        `BENCH_DAILY_QUOTA_CMD` does.
     - Test safety: when the environment holds `VITEST` and
       `BENCH_DAILY_NOTIFY_CMD` is unset, the job sends nothing and prints
       `DAILY NOTIFY skipped: test`. A test never reaches the PM session.
