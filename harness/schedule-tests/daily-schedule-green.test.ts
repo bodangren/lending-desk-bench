@@ -146,7 +146,7 @@ describe("daily schedule Green regressions", () => {
     try {
       const r = job(f, [10], false);
       const output = `${r.stdout}\n${r.stderr}`;
-      expect(r.status).toBe(0);
+      expect(r.status).toBe(3);
       expect(output).toContain("DAILY SKIP go-guard: read failed");
       expect(output).not.toContain("DAILY GO-GUARD");
       expect(events(f)).not.toContain("batch-build");
@@ -159,7 +159,7 @@ describe("daily schedule Green regressions", () => {
     try {
       const r = job(f, [10, 81], true);
       const output = `${r.stdout}\n${r.stderr}`;
-      expect(r.status).toBe(0);
+      expect(r.status).toBe(3);
       expect(output).toContain("DAILY SKIP go-guard: weekly used 81 percent");
       expect(events(f).filter(line => !line.startsWith("marker-"))).toEqual(STEPS);
       const record = JSON.parse(readFileSync(join(f.days, `${DAY}.json`), "utf8"));

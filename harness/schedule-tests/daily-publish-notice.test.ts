@@ -7,7 +7,7 @@
 // `opencode`, or the real `openchamber`. The notice transport is the seam
 // `BENCH_DAILY_NOTIFY_CMD`, which writes to a sink file under the temporary
 // root.
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync,
 } from "node:fs";
@@ -23,6 +23,8 @@ const STOP = "weekly used 81 percent";
 const D15 = "D15 publish after a zero-run guard stop";
 const D16 = "D16 fast-forward push";
 const D17 = "D17 notice to the PM";
+const D18 = "D18 monthly guard 95";
+const D19 = "D19 exit codes";
 
 let FAILED = 0;
 let PASS_COUNT = 0;
@@ -34,11 +36,11 @@ function fail(label: string, error: unknown) {
   RESULTS.push(`FAIL: ${label}: ${error instanceof Error ? error.message : String(error)}`);
 }
 
-function caseOf(label: string, body: (f: Fixture) => void, timeout = 60_000) {
-  it(label, () => {
+function caseOf(label: string, body: (f: Fixture) => void | Promise<void>, timeout = 60_000) {
+  it(label, async () => {
     console.log(`=== ${label} ===`);
     const f = fixture();
-    try { body(f); pass(label); }
+    try { await body(f); pass(label); }
     catch (error) { fail(label, error); throw error; }
     finally { rmSync(f.root, { recursive: true, force: true }); }
   }, timeout);
@@ -159,9 +161,9 @@ function fixture(): Fixture {
 }
 
 /** The quota seam. A weekly value above 80 stops the day before the first batch. */
-function writeQuota(f: Fixture, weekly: number): void {
+function writeQuota(f: Fixture, weekly: number, monthly = 10): void {
   script(f.quota, `#!/usr/bin/env node
-process.stdout.write(JSON.stringify({usage:{windows:{weekly:{usedPercent:${weekly}},monthly:{usedPercent:10}}}}));
+process.stdout.write(JSON.stringify({usage:{windows:{weekly:{usedPercent:${weekly}},monthly:{usedPercent:${monthly}}}}}));
 `);
 }
 
@@ -208,40 +210,57 @@ function otherCommit(f: Fixture): string {
 function short(sha: string, f: Fixture): string {
   return git(["rev-parse", "--short", sha], f.repo, f.home);
 }
+/** A run of the model in the week of the day. The model is then tested. */
+function plantRun(f: Fixture): void {
+  const artifacts = join(f.runs, "a-glm-5-2-2026w44-r1", "artifacts");
+  mkdirSync(artifacts, { recursive: true });
+  writeFileSync(join(artifacts, "provenance.json"), JSON.stringify({
+    executor: { kind: "opencode" }, model: "opencode-go/glm-5.2", arm: "a", track: "build",
+  }));
+}
 
 describe("publish and notice", () => {
   caseOf("N1 zero-run guard stop: the job commits docs/ and pushes it", f => {
     writeQuota(f, 81);
     plantDocs(f);
     const r = runJob(f);
-    expect(r.status, `${D15}: the guard stop must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(r.status, `${D19}: the guard stop must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
     expect(lines(r, "DAILY SKIP go-guard:"), `${D15}: the job must print the stop line`).toEqual([`DAILY SKIP go-guard: ${STOP}`]);
     expect(lines(r, "DAILY RUNS "), `${D15}: the guard stop made no run`).toEqual(["DAILY RUNS 0"]);
     const published = lines(r, "DAILY PUBLISH ");
     expect(published.length, `${D15}: the job must publish the site data\n${r.stdout}\n${r.stderr}`).toBe(1);
     expect(published[0], `${D15}: the publish line must name the commit`).toMatch(/^DAILY PUBLISH [0-9a-f]{7,}$/);
     const docs = git(["rev-parse", "HEAD"], f.repo, f.home);
+    const docsShort = short(docs, f);
     expect(git(["log", "-1", "--format=%s"], f.repo, f.home), `${D15}: the commit message must name the day and the guard reason`)
       .toBe(`Publish daily ${DATE} site data: no new runs (go-guard: ${STOP}).`);
     expect(git(["show", "--name-only", "--format=", "HEAD"], f.repo, f.home).split("\n").filter(Boolean),
       `${D15}: the commit must hold only docs/`).toEqual(["docs/assets/data/benchmark.json"]);
     expect(git(["rev-parse", "main"], f.origin, f.home), `${D15}: origin/main must equal the docs commit`).toBe(docs);
+    expect(sinkLines(f), `${D19}: the guard stop must send one SKIP line`).toEqual([
+      `lending-desk-daily SKIP ${DATE} exit=3: go-guard ${STOP}; publish=${docsShort} range=${short(f.initial, f)}..${docsShort} commits=1 rows=0`,
+    ]);
   });
 
   caseOf("N2 zero-run guard stop without a docs change: the job publishes nothing", f => {
     writeQuota(f, 81);
     const r = runJob(f);
-    expect(r.status, `${D15}: the guard stop must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(r.status, `${D19}: the guard stop must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
     expect(lines(r, "DAILY PUBLISH "), `${D15}: a day with no change publishes nothing`).toEqual(["DAILY PUBLISH none"]);
     expect(git(["rev-parse", "HEAD"], f.repo, f.home), `${D15}: the job must make no commit`).toBe(f.initial);
-    expect(sinkLines(f), `${D17}: a day with no push sends nothing`).toEqual([]);
+    expect(sinkLines(f), `${D19}: the guard stop must send one SKIP line`).toEqual([
+      `lending-desk-daily SKIP ${DATE} exit=3: go-guard ${STOP}; publish=none rows=0`,
+    ]);
   });
 
-  caseOf("N3 other local commits: the push carries both commits", f => {
+  caseOf("N3 a full day: the push carries the other local commit", f => {
     writeQuota(f, 10);
+    plantDocs(f);
     const other = otherCommit(f);
     const r = runJob(f);
-    expect(r.status, `${D16}: the push must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(r.status, `${D19}: a full day must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(lines(r, "DAILY SKIP go-guard:"), `${D18}: a clean guard read must not stop the day`).toEqual([]);
+    expect(lines(r, "DAILY GO-GUARD ").length, `${D18}: the day needs four clean guard reads`).toBe(4);
     const docs = git(["rev-parse", "HEAD"], f.repo, f.home);
     expect(git(["rev-parse", "HEAD^"], f.repo, f.home), `${D16}: the other local commit must sit before the docs commit`).toBe(other);
     expect(lines(r, "DAILY PUSH "), `${D16}: the job must print the pushed range`)
@@ -250,6 +269,9 @@ describe("publish and notice", () => {
     expect(lines(r, "DAILY PUSH skipped:"), `${D16}: the skip lines are retired`).toEqual([]);
     expect(git(["rev-parse", "main"], f.origin, f.home), `${D16}: origin/main must equal the docs commit`).toBe(docs);
     expect(git(["log", "--format=%s", "main"], f.origin, f.home), `${D16}: the push must carry the other local commit`).toContain("other local");
+    expect(sinkLines(f), `${D19}: a full day must send one PUBLISH line`).toEqual([
+      `lending-desk-daily PUBLISH ${DATE} ${short(docs, f)} range=${short(f.initial, f)}..${short(docs, f)} commits=2 rows=8`,
+    ]);
   });
 
   caseOf("N4 origin/main moved: the push fails and the remote stays unchanged", f => {
@@ -288,26 +310,27 @@ describe("publish and notice", () => {
     expect(git(["rev-parse", "HEAD"], f.repo, f.home), `${D16}: the job must make no commit`).toBe(f.initial);
   });
 
-  caseOf("N7 publish notice: the sink holds one PUBLISH line", f => {
+  caseOf("N7 publish and skip notice: the sink holds one line per run", f => {
     const g = fixture();
     try {
-      // The guard-stop publish of case N1.
-      writeQuota(f, 81);
+      // The full day of case N3.
+      writeQuota(f, 10);
       plantDocs(f);
-      const r1 = runJob(f);
-      const docs1 = git(["rev-parse", "HEAD"], f.repo, f.home);
-      const line1 = `lending-desk-daily PUBLISH ${DATE} ${short(docs1, f)} range=${short(f.initial, f)}..${short(docs1, f)} commits=1 rows=0`;
-      expect(sinkLines(f), `${D17}: the guard-stop publish must send one line`).toEqual([line1]);
-      expect(lines(r1, "DAILY NOTIFY "), `${D17}: the job must print DAILY NOTIFY before the send`).toEqual([`DAILY NOTIFY ${line1}`]);
+      otherCommit(f);
+      const r3 = runJob(f);
+      const docs3 = git(["rev-parse", "HEAD"], f.repo, f.home);
+      const publishLine = `lending-desk-daily PUBLISH ${DATE} ${short(docs3, f)} range=${short(f.initial, f)}..${short(docs3, f)} commits=2 rows=8`;
+      expect(sinkLines(f), `${D17}: the full day must send one PUBLISH line`).toEqual([publishLine]);
+      expect(lines(r3, "DAILY NOTIFY "), `${D17}: the job must print DAILY NOTIFY before the send`).toEqual([`DAILY NOTIFY ${publishLine}`]);
 
-      // The two-commit push of case N3.
-      writeQuota(g, 10);
-      otherCommit(g);
-      const r3 = runJob(g);
-      const docs3 = git(["rev-parse", "HEAD"], g.repo, g.home);
-      const line3 = `lending-desk-daily PUBLISH ${DATE} ${short(docs3, g)} range=${short(g.initial, g)}..${short(docs3, g)} commits=2 rows=8`;
-      expect(sinkLines(g), `${D17}: the two-commit push must send one line`).toEqual([line3]);
-      expect(lines(r3, "DAILY NOTIFY "), `${D17}: the job must print DAILY NOTIFY before the send`).toEqual([`DAILY NOTIFY ${line3}`]);
+      // The guard stop of case N1.
+      writeQuota(g, 81);
+      plantDocs(g);
+      const r1 = runJob(g);
+      const docs1 = git(["rev-parse", "HEAD"], g.repo, g.home);
+      const skipLine = `lending-desk-daily SKIP ${DATE} exit=3: go-guard ${STOP}; publish=${short(docs1, g)} range=${short(g.initial, g)}..${short(docs1, g)} commits=1 rows=0`;
+      expect(sinkLines(g), `${D17}: the guard stop must send one SKIP line`).toEqual([skipLine]);
+      expect(lines(r1, "DAILY NOTIFY "), `${D17}: the job must print DAILY NOTIFY before the send`).toEqual([`DAILY NOTIFY ${skipLine}`]);
     } finally { rmSync(g.root, { recursive: true, force: true }); }
   });
 
@@ -326,25 +349,19 @@ describe("publish and notice", () => {
     writeQuota(f, 81);
     plantDocs(f);
     const r = runJob(f, { notify: f.notifyFail });
-    expect(r.status, `${D17}: a failed send must not change the exit status`).toBe(0);
+    expect(r.status, `${D17}: a failed send must not change the exit status`).toBe(3);
     expect(lines(r, "DAILY NOTIFY failed:"), `${D17}: the job must print the failed send`).toHaveLength(1);
     expect(lines(r, "DAILY PUBLISH "), `${D17}: the publish must still happen`).toHaveLength(1);
     expect(sinkLines(f), `${D17}: a failed send writes no line`).toEqual([]);
   });
 
-  caseOf("N10 dry run and a day with no change: the job sends nothing", f => {
+  caseOf("N10 dry run: the job sends nothing", f => {
     writeQuota(f, 81);
     const dry = runJob(f, { args: ["--dry-run"] });
-    expect(dry.status, `${D17}: a dry run must exit 0`).toBe(0);
-    expect(lines(dry, "DAILY SKIP go-guard:"), `${D17}: the dry run must stop at the guard`).toEqual([`DAILY SKIP go-guard: ${STOP}`]);
+    expect(dry.status, `${D19}: a dry run must exit 0`).toBe(0);
+    expect(lines(dry, "DAILY SKIP go-guard:"), `${D19}: the dry run must stop at the guard`).toEqual([`DAILY SKIP go-guard: ${STOP}`]);
     expect(lines(dry, "DAILY NOTIFY "), `${D17}: a dry run sends nothing`).toEqual([]);
     expect(sinkLines(f), `${D17}: a dry run sends nothing`).toEqual([]);
-    // The same day without a change under docs/ sends nothing.
-    const live = runJob(f);
-    expect(live.status, `${D15}: the guard stop must exit 0`).toBe(0);
-    expect(lines(live, "DAILY PUBLISH "), `${D15}: a day with no change publishes nothing`).toEqual(["DAILY PUBLISH none"]);
-    expect(lines(live, "DAILY NOTIFY "), `${D17}: a day with no push sends nothing`).toEqual([]);
-    expect(sinkLines(f), `${D17}: a day with no push sends nothing`).toEqual([]);
   });
 
   caseOf("N11 test safety: the job never starts openchamber under a test", f => {
@@ -357,5 +374,50 @@ describe("publish and notice", () => {
       .toEqual(["DAILY NOTIFY skipped: test"]);
     expect(existsSync(f.marker), `${D17}: the job must never start openchamber under a test`).toBe(false);
     expect(sinkLines(f), `${D17}: a test sends nothing`).toEqual([]);
+  });
+
+  caseOf("N12 lock held: the job sends one SKIP line and exits 3", async f => {
+    // The holder keeps the lock until the case ends. READY proves that it owns it.
+    const holder = spawn("flock", ["-x", join(f.root, "publish.lock"), "bash", "-c", "printf 'READY\\n'; read -r release"], {
+      cwd: f.root, env: { PATH: "/usr/bin:/bin" }, stdio: ["pipe", "pipe", "pipe"],
+    });
+    try {
+      await new Promise<void>((ok, reject) => {
+        holder.once("error", reject);
+        holder.once("exit", code => reject(new Error(`lock holder exited ${code}`)));
+        holder.stdout.once("data", data => String(data) === "READY\n" ? ok() : reject(new Error("lock readiness mismatch")));
+      });
+      const r = runJob(f);
+      expect(r.status, `${D19}: a held lock must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
+      expect(lines(r, "DAILY SKIP "), `${D19}: the job must print the lock line`).toEqual(["DAILY SKIP lock held"]);
+      expect(git(["rev-parse", "HEAD"], f.repo, f.home), `${D19}: the held lock must make no commit`).toBe(f.initial);
+      expect(sinkLines(f), `${D19}: the held lock must send one SKIP line`).toEqual([
+        `lending-desk-daily SKIP ${DATE} exit=3: lock held; publish=none rows=0`,
+      ]);
+    } finally {
+      const exited = new Promise<void>(ok => holder.once("exit", () => ok()));
+      holder.stdin.end("release\n");
+      await exited;
+    }
+  });
+
+  caseOf("N13 no eligible model: the job sends one SKIP line and exits 3", f => {
+    writeQuota(f, 10);
+    plantRun(f);
+    const r = runJob(f);
+    expect(r.status, `${D19}: the reason none must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
+    expect(lines(r, "DAILY PUBLISH "), `${D19}: the reason none publishes nothing`).toEqual(["DAILY PUBLISH none"]);
+    expect(sinkLines(f), `${D19}: the reason none must send one SKIP line`).toEqual([
+      `lending-desk-daily SKIP ${DATE} exit=3: no eligible model; publish=none rows=0`,
+    ]);
+  });
+
+  caseOf("N14 monthly 84.06: the day runs and exits 0", f => {
+    writeQuota(f, 0, 84.06);
+    const r = runJob(f);
+    expect(r.status, `${D18}: a monthly value below 95 must not stop the day\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(lines(r, "DAILY SKIP go-guard:"), `${D18}: the monthly value must not stop the day`).toEqual([]);
+    expect(lines(r, "DAILY GO-GUARD ").length, `${D18}: the day needs four clean guard reads`).toBe(4);
+    expect(lines(r, "DAILY RUNS "), `${D18}: the four batches must run`).toEqual(["DAILY RUNS 8"]);
   });
 });
