@@ -730,3 +730,67 @@ it is not an acceptance claim.
   - Verify: `DAY_CHECK` prints `DAY_CHECK=pass model=<id> runs=<n> harness=<k>`, and `<id>` equals the model of `reports/daily/<day>.json`.
   - Verify: `PUBLISH_CHECK` prints `PUBLISH_CHECK=pass <sha>`, and `PI_CHECK day0 day1` prints `PI_CHECK=pass`.
   - Verify: `reports/cron-daily.log` holds the guard lines of the day (four `DAILY GO-GUARD weekly=<n>` lines, or one `DAILY SKIP go-guard: <reason>` line) and the push result (`DAILY PUBLISH <sha>` or one `DAILY PUSH skipped: <reason>` line).
+
+## Phase 6: Publish on every good run and a visible failure (PM 2026-11-13)
+
+The PM order of 2026-11-13 changes three rules (spec EV13 to EV20). The job
+publishes after a zero-run guard stop (D15). The push is a fast-forward that
+carries the waiting local commits (D16). A failed run and a published run
+each send one line to the PM (D17).
+
+measure-guard denies `[~]` while an earlier phase holds no checkpoint, so the
+tasks of this phase go from `[ ]` to `[x]`. Do not try `[~]`. Do not add a
+checkpoint to an earlier phase.
+
+- [ ] 6.1 Red: the amendment of the spec and the Red tests. The role adds
+  D15, D16, and D17 to `spec.md`, with FR-14, FR-15, and FR-16, with AC-13,
+  AC-14, and AC-15, and with the new text of R4. The role adds the test file
+  `harness/schedule-tests/daily-publish-notice.test.ts` with the cases N1 to
+  N11. The role moves the D13 cases of
+  `harness/schedule-tests/daily-schedule.test.ts` (6.5.15, 6.5.16, 6.5.17,
+  12.12, and 12.13) to D16. Every schedule-test file that starts
+  `cron-daily.sh` sets `BENCH_DAILY_NOTIFY_CMD` to a sink, so no test can
+  reach the PM session.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1` exits non-zero, and each failure names a missing rule of D15, D16, or D17.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --configLoader native --maxWorkers=1` fails only in the cases 6.5.15, 6.5.16, and 6.5.17.
+  - Lane: light lane. Maker: minimax-cn-coding-plan/MiniMax-M3.1-Flash (Red). Checker: claude-code/claude-sonnet-5-5#high (task 6.3). The checker family differs from every maker family.
+- [ ] 6.2 Green: the code in `harness/cron-daily.sh` only. The role
+  implements D15, D16, and D17 in that file. No other file changes.
+  - Verify: each test file of the phase alone with `--configLoader native --maxWorkers=1` exits 0.
+  - Verify: `bash -n harness/cron-daily.sh` exits 0.
+  - Lane: light lane. Maker: a family other than Anthropic (GLM or Kimi). Checker: claude-code/claude-sonnet-5-5#high (task 6.3). The checker family differs from every maker family.
+- [ ] 6.3 Checker review of the amendment, of task 6.1, and of task 6.2. The
+  role writes `measure/runs/daily_model_schedule/check-6.3.json`.
+  - Verify: the file shows `status: pass` and 0 blocking findings.
+  - Lane: light lane. Checker: claude-code/claude-sonnet-5-5#high. The family differs from every maker family.
+- [ ] 6.4 Hashes. The role runs the hash command and records both values.
+  - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
+  - Verify: the output holds `runner_sha256` `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef` and `suite_sha256` `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d` (FR-9). A change of either value is a finding.
+  - Lane: light lane. One maker, one checker in a different family.
+- [ ] 6.5 Full suites through `heavy-run.sh` (the command of
+  `opencode_host_isolation` task 1.5), only between 22:00 and 07:00 and only
+  with no p1 waiter.
+  - Verify: the run exits 0, and the log holds a `Tests` line with no failed test for each suite.
+  - Verify: the log sits under `measure/runs/daily_model_schedule/`.
+  - Lane: light lane. One heavy run.
+- [ ] 6.6 Live checks before 2026-11-14 18:00.
+  - (a) One dry rerun in a transient `systemd-run --user` unit with the
+    service PATH and the working folder, as `opencode_host_isolation` task
+    4.6. It prints no `DAILY NOTIFY` send line.
+  - (b) One live channel test from a transient `systemd-run --user` unit:
+    `BENCH_DAILY_CATALOG=/nonexistent harness/cron-daily.sh`. It must stop at
+    `DAILY FAIL catalog` before any pick, model call, day record, or commit,
+    exit 1, and send one real FAIL line to the PM session. The PM knows of
+    this test line in advance.
+  - Verify: the dry rerun sends nothing, and the live channel test sends one FAIL line and exits 1.
+  - Lane: light lane. One maker, one checker in a different family.
+- [ ] 6.7 Report to the PM: status, facts changed, and defaults taken.
+  - Verify: the report names the commit SHA, the pushed range, and the rows of the last run.
+  - Lane: light lane. One maker, one checker in a different family.
+- [ ] 6.8 The timer run of Sun 2026-11-15 01:00. The role records the
+  `DAILY PUSH`, `DAILY PUBLISH`, and `DAILY NOTIFY` lines and the public
+  `generated_at` value.
+  - Verify: the log holds a `DAILY PUSH` line, a `DAILY PUBLISH` line, and one `DAILY NOTIFY` line.
+  - Verify: the public page shows a `generated_at` of 2026-11-14 or later, and no hand step ran.
+  - Lane: light lane. One maker, one checker in a different family.
+

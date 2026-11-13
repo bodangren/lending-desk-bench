@@ -94,6 +94,50 @@ All facts come from the files on disk and from read-only commands on
   task is 800 s.
 - **EV12. The weekly cron is off.** The crontab line of `cron-weekly.sh` is
   a comment: "DISABLED 2026-10-25 by owner request: A-H tests are saturated."
+- **EV13. The public page was stale for 19 days.** The site data file
+  `docs/assets/data/benchmark.json` held `generated_at` `2026-10-25` from
+  2026-10-25 to 2026-11-13. The timer ran on 2026-11-04, 2026-11-08, and
+  2026-11-11. No run published.
+- **EV14. Two live failures reached nobody.** The run of 2026-11-04 exited 2
+  with the line `DAILY FAIL playwright: Chromium is missing`. The run of
+  2026-11-08 exited 1 with the line
+  `DAILY FAIL catalog: the catalog fetch failed`, after a failed Console
+  credential seed. Both lines sit in `reports/cron-daily.log` (lines 3 and
+  19). No notice reached the PM on either day.
+- **EV15. The run of 2026-11-11 stopped at the guard and published nothing.**
+  The log holds `DAILY SKIP go-guard: monthly used 84.06490206666668 percent`
+  (line 477), then `DAILY RUNS 0` (line 605) and `DAILY PUBLISH none` (line
+  606). The page step of the day rewrote 3 files under `docs/assets/data/`.
+  The job made no commit, because `harness/cron-daily.sh:466-471` leaves the
+  publish path on a zero-run guard stop.
+- **EV16. The push rule of D13 skipped every push.** The line
+  `DAILY PUSH skipped: <n> other local commits` ends the run with exit 0
+  whenever another local commit waits. On 2026-11-11 `main` was 64 commits
+  ahead of `origin/main`.
+- **EV17. A hand publish fixed the data of 2026-11-10.** The orchestrator
+  published the site data of the day by hand in commit `3b2ea80` and pushed
+  `main` over the range `c613bc8..3b2ea80`. The commit holds 3 files under
+  `docs/assets/data/`. Its subject is
+  `Publish daily 2026-11-10 site data: no new runs (go-guard: monthly used
+  84.06 percent).`
+- **EV18. The Go window keeps the next run a zero-run day.** The monthly Go
+  use is 84.1 percent, and the window ends on Sat 2026-11-21 20:44. The
+  guard limit of 80 percent stays. The timer run of Sun 2026-11-15 01:00 is
+  therefore a zero-run guard stop.
+- **EV19. The owner changed the push order.** On 2026-11-06 the owner gave
+  the standing order: "Lending fast-forward pushes its own site after each
+  good run". The job commits `docs/` only and pushes `main` as a
+  fast-forward. The first push carries the waiting local commits. The push
+  never forces. After each push the PM gets one line with the commit SHA,
+  the pushed range, and the new rows. This order supersedes the third
+  condition of O1 of 2026-10-31.
+- **EV20. The PM has a session for the notice.** The file
+  `~/.config/ra-slots/config.json` holds the key `pmSession`. The script
+  `advantage-pr/scripts/jobs/heavy-run.sh` sends its hang line with
+  `timeout 30 openchamber session send --session <pm> --dir
+  /home/daniebo/Desktop/advantage-pr --prompt "<line>"`. The binary
+  `openchamber` sits in `~/.local/share/pnpm/bin`, on the PATH of the
+  systemd service.
 
 ## Definitions
 
@@ -301,7 +345,8 @@ date 2026-10-25.
       run). `BENCH_DAILY_POST=0` skips steps (1) to (3) and (5) to (9); the
       tests use it with a stub batch. `BENCH_DAILY_RUNNER` is retired: the
       job runs the batches itself.
-13. **D13. Push rule.** After its own docs commit, the job runs `git fetch
+13. **D13. Push rule.** Replaced by D16. The old text stays for the record.
+    After its own docs commit, the job runs `git fetch
     origin`. It pushes only when `origin/main` equals the parent of its own
     docs commit. The push form is `git push origin <sha>:main`, where
     `<sha>` is the docs commit. The explicit sha keeps the push on the one
@@ -325,6 +370,69 @@ date 2026-10-25.
     strategy). Any other exit is a failure: the job prints `DAILY FAIL pick:
     the selector exited <n>` on stderr and exits with the same non-zero
     code. It runs no model (Review C finding 2, `cron-daily.sh:151`).
+15. **D15. Publish after a zero-run guard stop.** When the guard stops the
+    day and no batch ran (zero runs, runner exit 0, `go_guard_stop` set), the
+    job still publishes. Steps (5) to (9) of D12 already ran. When `docs/`
+    changed, the job commits `docs/` only, with the first line
+    `Publish daily <date> site data: no new runs (go-guard: <reason>).`, and
+    pushes under D16. `<date>` is the day record date. `<reason>` is the
+    exact `go_guard_stop` text. When `docs/` has no change: `DAILY PUBLISH
+    none`, exit 0. A guard stop after one or more runs keeps the D10
+    message. A zero-run day with no guard stop keeps `DAILY FAIL runs`. A day
+    with the reason `none` publishes nothing (FR-8 does not change).
+    `BENCH_DAILY_PUBLISH=0` keeps `DAILY PUBLISH skipped`.
+16. **D16. Push rule.** It replaces D13.
+    - Before the docs commit, the job reads the branch with
+      `git symbolic-ref --short HEAD`. When the branch is not `main` (a
+      detached HEAD counts as `detached`), the job prints
+      `DAILY FAIL publish: the branch is <name>, not main`, makes no commit,
+      and exits 1.
+    - After the docs commit, the job runs `git fetch origin`. A failed fetch:
+      `DAILY FAIL push: fetch failed; the commit is local`, exit 1.
+    - The push is a fast-forward only. `origin/main` must exist and be an
+      ancestor of the docs commit. Otherwise: `DAILY FAIL push: origin/main
+      is not an ancestor of the docs commit; the commit is local`, exit 1.
+    - The push form stays `git push origin <docs sha>:main`, never with a
+      force option. It sends every local commit between `origin/main` and the
+      docs commit. The 3 attempts of D13 stay. After the third failure:
+      `DAILY FAIL publish: git push failed after 3 attempts; the commit is
+      local`, exit 1, as today.
+    - On success the job prints `DAILY PUSH <old short sha>..<new short sha>
+      commits=<n>`, where `<n>` is `git rev-list --count <old>..<docs sha>`,
+      and then `DAILY PUBLISH <short sha>` as today.
+    - The `DAILY PUSH skipped:` lines are retired.
+17. **D17. Notice to the PM.**
+    - A live run that exits with a non-zero status sends exactly one line:
+      `lending-desk-daily FAIL <date> exit=<n>: <reason>
+      log=reports/cron-daily.log`. `<reason>` is the text after `DAILY FAIL `
+      of the last `DAILY FAIL` line of the run, or `no DAILY FAIL line` when
+      the run printed none (for example a signal stop with exit 130 or 143).
+    - A live run that pushed sends exactly one line:
+      `lending-desk-daily PUBLISH <date> <short sha> range=<old short>..<new
+      short> commits=<n> rows=<runs>`. `<runs>` is the `DAILY RUNS` value.
+    - Every other exit sends nothing (exit 0 with no push, the lock-held
+      exit, `DAILY PUBLISH none`, `DAILY PUBLISH skipped`). A dry run sends
+      nothing.
+    - The job prints `DAILY NOTIFY <line>` before the send. One line is at
+      most 300 characters. It never holds a credential or command output.
+    - Transport: `BENCH_DAILY_NOTIFY_CMD` when set: the job runs
+      `bash -c "$BENCH_DAILY_NOTIFY_CMD" _ "<line>"`. Without it, the job runs
+      `timeout 30 openchamber session send --session <pm> --dir
+      /home/daniebo/Desktop/advantage-pr --prompt "<line>"`, the form of the
+      hang line of `advantage-pr/scripts/jobs/heavy-run.sh`. `<pm>` is the
+      `pmSession` key of `~/.config/ra-slots/config.json`
+      (`BENCH_DAILY_PM_CONFIG` overrides the path). `openchamber` is in
+      `~/.local/share/pnpm/bin`, on the service PATH.
+    - Test safety: when the environment holds `VITEST` and
+      `BENCH_DAILY_NOTIFY_CMD` is unset, the job sends nothing and prints
+      `DAILY NOTIFY skipped: test`. A test never reaches the PM session.
+    - A failed send (non-zero exit, timeout, no config file, no `pmSession`)
+      prints `DAILY NOTIFY failed: <short reason>`. It never changes the exit
+      status of the job.
+    - The send runs at the end of the EXIT path, after the OPENCODE_HOME
+      cleanup, so a signal stop also sends its line.
+    - Known gap (out of scope): a SIGKILL or an out-of-memory kill runs no
+      trap and sends no line; the systemd journal still shows the failure.
 
 ## Functional requirements
 
@@ -438,6 +546,8 @@ date 2026-10-25.
 
 ### FR-11 — Push rule
 
+Replaced by FR-15 (D16). The old text stays for the record.
+
 - After its docs commit, the job fetches `origin` and pushes only when
   `origin/main` equals the parent of that commit, as `git push origin
   <sha>:main` (D13). Any other case keeps the commit local, prints one
@@ -468,6 +578,58 @@ date 2026-10-25.
 - **Check.** `TIMER_CHECK` (test strategy) reads the two files and asserts
   each named value. No systemd unit is installed and no crontab line exists
   before the owner action of task 5.3.
+
+### FR-14 — Publish after a zero-run guard stop
+
+- A day that the Go guard stops before the first batch still publishes the
+  site data (D15). The commit holds `docs/` only, with the first line
+  `Publish daily <date> site data: no new runs (go-guard: <reason>).`.
+- A day with no change under `docs/` prints `DAILY PUBLISH none` and exits
+  0. A day with one or more runs keeps the D10 message.
+- **Check.** In a temporary Git repository: a guard stop before the first
+  batch with a planted change under `docs/` gives one commit of `docs/` only,
+  the first line of D15, `DAILY PUBLISH <sha>`, a remote at the docs commit,
+  and exit 0 (case N1 of
+  `harness/schedule-tests/daily-publish-notice.test.ts`). The same stop with
+  no change under `docs/` gives `DAILY PUBLISH none`, no commit, exit 0, and
+  an empty notice sink (case N2).
+
+### FR-15 — Push rule
+
+- The job reads the branch before the docs commit. A branch other than `main`
+  fails the run with `DAILY FAIL publish: the branch is <name>, not main` and
+  exit 1 (D16).
+- The push is a fast-forward. `origin/main` must exist and be an ancestor of
+  the docs commit. The push sends every local commit between `origin/main`
+  and the docs commit, and it never forces. A failed fetch and a moved
+  `origin/main` fail the run with the labeled lines of D16 and exit 1.
+- **Check.** In a temporary Git repository: one other local commit before the
+  docs commit gives `DAILY PUSH <old>..<new> commits=2`, a remote that holds
+  both commits, and exit 0 (case N3). A moved `origin/main` gives the fail
+  line of D16, exit 1, and an unchanged remote (case N4). A failed fetch
+  gives the fail line of D16 and exit 1 (case N5). A branch other than
+  `main` gives the fail line of D16, exit 1, and no new commit (case N6).
+  The cases of `harness/schedule-tests/daily-schedule.test.ts` 6.5.15, 6.5.16,
+  6.5.17, 12.12, and 12.13 carry the same rule.
+
+### FR-16 — Notice to the PM
+
+- A live run with a non-zero exit sends one FAIL line to the PM, and a live
+  run that pushed sends one PUBLISH line (D17). Every other exit sends
+  nothing, and a dry run sends nothing.
+- The job prints `DAILY NOTIFY <line>` before the send. A failed send prints
+  `DAILY NOTIFY failed: <short reason>` and keeps the exit status of the
+  job.
+- **Check.** With `BENCH_DAILY_NOTIFY_CMD` set to a sink: the guard-stop
+  publish of case N1 and the two-commit push of case N3 give one PUBLISH
+  line each, in the D17 form, and the log holds `DAILY NOTIFY <line>` (case
+  N7). An early failure gives one FAIL line whose reason is the text of the
+  last `DAILY FAIL` line of the run (case N8). A notice command that exits
+  1 gives `DAILY NOTIFY failed:` and keeps the exit status (case N9). A dry
+  run and the no-change day of case N2 send nothing (case N10). With `VITEST`
+  set and no notice command, the job prints `DAILY NOTIFY skipped: test` and
+  never starts `openchamber` (case N11). The cases live in
+  `harness/schedule-tests/daily-publish-notice.test.ts`.
 
 ## Non-functional requirements
 
@@ -528,13 +690,26 @@ date 2026-10-25.
    monthly checks run only after weekly passes. Read failure, missing field,
    or non-finite value stops the day with its specified reason: exit 0, one
    `DAILY SKIP go-guard` line, and no model call after the stop (FR-10).
-10. **AC-10** The job pushes only its own docs commit, and only when
+10. **AC-10** Replaced by AC-14. The old text stays for the record.
+    The job pushes only its own docs commit, and only when
     `origin/main` equals its parent. Every other case prints one
     `DAILY PUSH skipped` line and exits 0 (FR-11).
 11. **AC-11** A selector exit other than 0 and 3 prints `DAILY FAIL pick`
     and exits non-zero (FR-12).
 12. **AC-12** The two unit files exist in the repository with the values of
     D11, and `TIMER_CHECK` passes (FR-13).
+13. **AC-13** A zero-run guard stop still publishes the site data: one
+    commit of `docs/` only with the first line of D15, or `DAILY PUBLISH
+    none` when `docs/` has no change. The run exits 0 (FR-14).
+14. **AC-14** The job pushes `main` as a fast-forward after each good run.
+    The push carries every local commit between `origin/main` and the docs
+    commit, and it never forces. A branch other than `main`, a failed fetch,
+    and a moved `origin/main` each fail the run with the labeled line of D16
+    and exit 1 (FR-15).
+15. **AC-15** A live run with a non-zero exit sends one FAIL line to the PM,
+    and a live run that pushed sends one PUBLISH line with the commit SHA,
+    the pushed range, and the row count. Every other exit sends nothing. A
+    failed send keeps the exit status of the job (FR-16).
 
 ## Out of scope
 
@@ -545,6 +720,10 @@ date 2026-10-25.
 - A selection by score or by failure count.
 - A rule that tells a host fault from a model fault in a run that is not
   valid.
+- A systemd `OnFailure=` unit.
+- A Tasks notice to Daniel.
+- Any change of the Go guard limit.
+- Publishing on a day with the reason `none`.
 
 ## Risks
 
@@ -559,11 +738,12 @@ date 2026-10-25.
   it on 2026-10-31 with 3 conditions. The Go guard of D12 stops a run day
   when either window is above 80 percent or below 0, so the job never draws on the paid
   Go credit balance.
-- **R4 The push publishes other commits.** The old `git push origin main`
-  sent every local commit of `main`. D13 removes this path: the job pushes
-  only when `origin/main` equals the parent of its own docs commit, and it
-  pushes that commit by sha. Until the one manual push of task 5.1, every
-  job push skips. Review B checks this path.
+- **R4 The push carries other local commits.** The job now carries the
+  waiting local commits, by the owner order of 2026-11-06 (EV19). The push
+  of D16 is a fast-forward of `main` and sends every local commit between
+  `origin/main` and the docs commit. The push never forces. The PUBLISH line
+  to the PM names the pushed range, so the PM sees the carried commits.
+  Review B checks this path.
 - **R5 Staged site edits of other tracks.** `git add docs/` stages each edit
   under `docs/` in `main`. Track `domain_trust` keeps its page edits on a
   branch until its decision O2 (its NFR-7).
