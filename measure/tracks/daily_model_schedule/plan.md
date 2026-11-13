@@ -872,15 +872,41 @@ checkpoint to an earlier phase.
     and exits 3, with a SKIP line `publish=none`.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
-- [ ] 6.3 Checker review of the amendment, of task 6.1, of task 6.1b, and of
+- [x] 729780f 6.3 Checker review of the amendment, of task 6.1, of task 6.1b, and of
   task 6.2. The role reviews D18 and D19 with the rest. The
   role writes `measure/runs/daily_model_schedule/check-6.3.json`.
   - Verify: the file shows `status: pass` and 0 blocking findings.
   - Lane: light lane. Checker: a third family. The family differs from every maker family.
-- [ ] 6.4 Hashes. The role runs the hash command and records both values.
+  - Evidence: `measure/runs/daily_model_schedule/check-6.3.json`.
+    `status: pass`; `retry_recommendation: none`; `audited_head` `729780f`;
+    0 blocking findings; 3 nonblocking findings.
+  - Checker model: `volcengine-agent-plan/glm-5.3-flash#high` (GLM). The
+    family differs from MiniMax (Red) and from Anthropic (Green).
+  - Substitution: two checkers stopped at their start with "Free usage
+    limit reached": `opencode/deepseek-v4.1-flash-free#high` and
+    `opencode/glm-5.3-flash-free#high`. `ra-quota` had no other GO route
+    outside the maker families and Kimi, except Codex. The Ark Agent plan
+    was WAIT by about 2 points of month pace. The orchestrator used it for
+    the deadline of 2026-11-14 18:00.
+  - F1 (Major): the out-of-scope item "Any change of the Go guard limit"
+    contradicted D18. Fixed by Red in commit `0ff9ef3` (spec text only).
+  - F2 (Minor): risk R3 held the old limit of 80. Fixed by Red in commit
+    `0ff9ef3` (spec text only).
+  - F3 (Minor): a batch that exits 3 leaves the job exit 3, and the FAIL
+    line names it. Open, nonblocking.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
+- [x] 0ff9ef3 6.4 Hashes. The role runs the hash command and records both values.
   - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
   - Verify: the output holds `runner_sha256` `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef` and `suite_sha256` `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d` (FR-9). A change of either value is a finding.
   - Lane: light lane. One maker, one checker in a different family.
+  - Result: exit 0. `runner_sha256`
+    `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef` and
+    `suite_sha256`
+    `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`.
+    Both equal the expected values. No change.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [ ] 6.5 Full suites through `heavy-run.sh` (the command of
   `opencode_host_isolation` task 1.5), only between 22:00 and 07:00 and only
   with no p1 waiter.
