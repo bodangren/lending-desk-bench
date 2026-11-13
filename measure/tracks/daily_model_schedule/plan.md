@@ -913,7 +913,7 @@ checkpoint to an earlier phase.
   - Verify: the run exits 0, and the log holds a `Tests` line with no failed test for each suite.
   - Verify: the log sits under `measure/runs/daily_model_schedule/`.
   - Lane: light lane. One heavy run.
-- [ ] 6.6 Live checks before 2026-11-14 18:00.
+- [x] 0ff9ef3 6.6 Live checks before 2026-11-14 18:00.
   - (a) One dry rerun in a transient `systemd-run --user` unit with the
     service PATH and the working folder, as `opencode_host_isolation` task
     4.6. It prints the line `DAILY GO-GUARD weekly=<n> monthly=<m>` and
@@ -925,6 +925,42 @@ checkpoint to an earlier phase.
     this test line in advance.
   - Verify: the dry rerun sends nothing, and the live channel test sends one FAIL line and exits 1.
   - Lane: light lane. One maker, one checker in a different family.
+  - Queue before each run: `ps -eo args | grep -c '[f]lock -w .*heavy.lock'`
+    gave 0, and `pgrep -fc '[f]lock -w 600'` gave 0. The dry rerun still
+    waited over 600 s in the `heavy-run.sh` queue (holder PID 1322600, a
+    `phase3-browser-gate.sh` run of another project). Then it ran.
+  - (a) Command: `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'systemd-run --user --wait --pipe --collect --quiet -p Environment=PATH=<service PATH> -p WorkingDirectory=/home/daniebo/Desktop/lending-desk-bench /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh --dry-run > measure/runs/daily_model_schedule/rerun-6.6a.log 2>&1; echo "EXIT=$?"'`.
+    The service PATH is `/home/daniebo/.local/share/pnpm/bin:/home/daniebo/.local/bin:/home/daniebo/.nvm/versions/node/v24.19.0/bin:/usr/local/bin:/usr/bin:/bin`.
+    Log: `measure/runs/daily_model_schedule/rerun-6.6a.log`.
+    - PASS: `EXIT=0`.
+    - PASS: one `DAILY GO-GUARD weekly=0 monthly=84.06490206666668` line. The monthly value is below 95.
+    - PASS: no `DAILY SKIP` line.
+    - PASS: `DAILY DRY-RUN planned=12`.
+    - PASS: no `DAILY NOTIFY` line.
+    - PASS: no `DAILY FAIL` line.
+    - PASS: `OPENCODE_HOME CLEANUP stopped=0 path=/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-1365313`.
+    - PASS: no `.tmp/opencode-host-*` folder after the run.
+    - `DAILY_PICK date=2026-11-13 model=kimi-k2.7-code reason=untested last_test=none candidates=9 eligible=9 untested=1`.
+  - (b) Before: `ls reports/daily/` gave `2026-11-03.json` and `2026-11-10.json`.
+    `git rev-parse HEAD` gave `bf56a544d0046b151373e4e5abc667a3c418a80d`.
+  - (b) Command: `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'systemd-run --user --wait --pipe --collect --quiet -p Environment=PATH=<service PATH> -p Environment=BENCH_DAILY_CATALOG=/nonexistent -p WorkingDirectory=/home/daniebo/Desktop/lending-desk-bench /home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh > measure/runs/daily_model_schedule/channel-6.6b.log 2>&1; echo "EXIT=$?"'`.
+    Log: `measure/runs/daily_model_schedule/channel-6.6b.log`.
+    - PASS: `EXIT=1`.
+    - PASS: one line `DAILY FAIL catalog: /nonexistent is empty, not JSON, or has no live models`.
+    - PASS: no `DAILY_PICK` line.
+    - PASS: one line `DAILY NOTIFY lending-desk-daily FAIL 2026-11-13 exit=1: catalog: /nonexistent is empty, not JSON, or has no live models log=reports/cron-daily.log`.
+    - PASS: no `DAILY NOTIFY failed` line.
+    - PASS: no new day record.
+    - PASS: HEAD unchanged, no new commit.
+    - PASS: `OPENCODE_HOME CLEANUP stopped=0 path=/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-1366297`.
+  - (b) After: `ls reports/daily/` gave `2026-11-03.json` and `2026-11-10.json`.
+    `git rev-parse HEAD` gave `bf56a544d0046b151373e4e5abc667a3c418a80d`.
+    `git status --short` held only `?? .opencode/` and `?? tech-debt.md`.
+  - The send went through the real route (`timeout 30 openchamber session send`).
+    The log holds no `DAILY NOTIFY failed` line. The recorder did not read the
+    PM session, so the receipt by the PM stays for the report of task 6.7.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [ ] 6.7 Report to the PM: status, facts changed, and defaults taken.
   - Verify: the report names the commit SHA, the pushed range, and the rows of the last run.
   - Lane: light lane. One maker, one checker in a different family.
