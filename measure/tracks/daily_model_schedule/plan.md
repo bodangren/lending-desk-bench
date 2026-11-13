@@ -779,15 +779,29 @@ checkpoint to an earlier phase.
     `Tests  3 failed | 104 passed (107)`. No failure came from a test fault.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
+- [ ] 6.1b Red: the second amendment, from the PM decisions of 2026-11-13.
+  The role adds D18 and D19 to `spec.md`, with the amended FR-10, FR-14,
+  FR-16, AC-9, AC-13, and AC-15. The role adds the Red tests of the
+  monthly limit of 95 and of the exit codes 0, 3, 1, 2, 130, and 143. The
+  cases of `harness/schedule-tests/daily-schedule.test.ts` that assert exit
+  0 on a live guard stop, a held lock, or the reason `none` now assert exit
+  3. The cases N1, N2, N3, N7, and N10 of
+  `harness/schedule-tests/daily-publish-notice.test.ts` change with the new
+  exit codes. The role adds the cases N12, N13, and N14.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1` exits non-zero, and each failure names a missing rule of D15 to D19.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --configLoader native --maxWorkers=1` fails only in the cases that the role changed or added, and in the cases 6.5.15, 6.5.16, and 6.5.17.
+  - Lane: light lane. Maker: minimax-cn-coding-plan/MiniMax-M3.1-Flash (Red). Checker: a third family. The checker family differs from every maker family.
 - [ ] 6.2 Green: the code in `harness/cron-daily.sh` only. The role
-  implements D15, D16, and D17 in that file. No other file changes.
+  implements D15, D16, D17, D18, and D19 in that file. No other file
+  changes. Green: `claude-code/claude-sonnet-5-5#high` (PM 2026-11-13).
   - Verify: each test file of the phase alone with `--configLoader native --maxWorkers=1` exits 0.
   - Verify: `bash -n harness/cron-daily.sh` exits 0.
-  - Lane: light lane. Maker: a family other than Anthropic (GLM or Kimi). Checker: claude-code/claude-sonnet-5-5#high (task 6.3). The checker family differs from every maker family.
-- [ ] 6.3 Checker review of the amendment, of task 6.1, and of task 6.2. The
+  - Lane: light lane. Maker: claude-code/claude-sonnet-5-5#high (Anthropic). Checker: a third family. The checker family differs from every maker family.
+- [ ] 6.3 Checker review of the amendment, of task 6.1, of task 6.1b, and of
+  task 6.2. The role reviews D18 and D19 with the rest. The
   role writes `measure/runs/daily_model_schedule/check-6.3.json`.
   - Verify: the file shows `status: pass` and 0 blocking findings.
-  - Lane: light lane. Checker: claude-code/claude-sonnet-5-5#high. The family differs from every maker family.
+  - Lane: light lane. Checker: a third family. The family differs from every maker family.
 - [ ] 6.4 Hashes. The role runs the hash command and records both values.
   - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
   - Verify: the output holds `runner_sha256` `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef` and `suite_sha256` `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d` (FR-9). A change of either value is a finding.
@@ -801,7 +815,8 @@ checkpoint to an earlier phase.
 - [ ] 6.6 Live checks before 2026-11-14 18:00.
   - (a) One dry rerun in a transient `systemd-run --user` unit with the
     service PATH and the working folder, as `opencode_host_isolation` task
-    4.6. It prints no `DAILY NOTIFY` send line.
+    4.6. It prints the line `DAILY GO-GUARD weekly=<n> monthly=<m>` and
+    plans 12 runs. It prints no skip line and no `DAILY NOTIFY` send line.
   - (b) One live channel test from a transient `systemd-run --user` unit:
     `BENCH_DAILY_CATALOG=/nonexistent harness/cron-daily.sh`. It must stop at
     `DAILY FAIL catalog` before any pick, model call, day record, or commit,
@@ -814,8 +829,11 @@ checkpoint to an earlier phase.
   - Lane: light lane. One maker, one checker in a different family.
 - [ ] 6.8 The timer run of Sun 2026-11-15 01:00. The role records the
   `DAILY PUSH`, `DAILY PUBLISH`, and `DAILY NOTIFY` lines and the public
-  `generated_at` value.
+  `generated_at` value. The monthly Go use is 84.06 percent, so the monthly
+  limit of 95 lets all four track batches run. The run exits 0, prints one
+  PUBLISH line, and adds new rows to the page.
   - Verify: the log holds a `DAILY PUSH` line, a `DAILY PUBLISH` line, and one `DAILY NOTIFY` line.
+  - Verify: the run exits 0, and the log holds no `DAILY SKIP go-guard` line.
   - Verify: the public page shows a `generated_at` of 2026-11-14 or later, and no hand step ran.
   - Lane: light lane. One maker, one checker in a different family.
 

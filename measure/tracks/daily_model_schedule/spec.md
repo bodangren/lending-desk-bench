@@ -138,6 +138,20 @@ All facts come from the files on disk and from read-only commands on
   /home/daniebo/Desktop/advantage-pr --prompt "<line>"`. The binary
   `openchamber` sits in `~/.local/share/pnpm/bin`, on the PATH of the
   systemd service.
+- **EV21. The PM decision on the Go guard (2026-11-13).** Decision 2 of the
+  PM, exact in quotation: "Change the go-guard: the MONTHLY stop becomes 95 %;
+  the WEEKLY stop stays 80 %. Add the test."
+- **EV22. The PM decision on the exit codes (2026-11-13).** Decision 3 of the
+  PM, exact in quotation: "Every run that writes site data commits and pushes
+  it (Daniel's 11-06 rule), and every skip or failure exits non-zero and
+  sends me one line."
+- **EV23. The PM receipt on the exit codes (2026-11-13).** Exact in
+  quotation: "Exit codes accepted: 0 publish, 3 skip (site data still
+  committed and pushed first), 1/2/130/143 fail, each with one line to me; a
+  skip day shown as failed in systemd is right."
+- **EV24. The Go use of the next run day.** The monthly Go use is 84.06
+  percent (EV15). A monthly limit of 95 lets the timer run of Sun 2026-11-15
+  01:00 run all four track batches. The day then exits 0 and publishes.
 
 ## Definitions
 
@@ -433,6 +447,42 @@ date 2026-10-25.
       cleanup, so a signal stop also sends its line.
     - Known gap (out of scope): a SIGKILL or an out-of-memory kill runs no
       trap and sends no line; the systemd journal still shows the failure.
+18. **D18. The monthly Go guard.** It amends D12.
+    - The weekly stop stays "above 80". A weekly value of 80 continues, and
+      80.0001 stops with the reason `weekly used 80.0001 percent`.
+    - The monthly stop becomes "above 95". A monthly value of 95 continues,
+      and 95.0001 stops with the reason `monthly used 95.0001 percent`.
+    - The other monthly reasons do not change. A missing field, a non-finite
+      value, and a value below 0 stop the day as before. A monthly value of
+      84.06 continues.
+    - The Go window ends on Sat 2026-11-21 20:44 (EV18). The limit of 95
+      gives the run days until that date.
+19. **D19. The exit codes of a live run.** It amends the exit 0 of a stop in
+    D12, the lock exit of D9, the `none` exit, D15, and D17. It replaces the
+    "exit 0" of the second condition of Daniel of 2026-10-31.
+    - **0.** Every batch of the day ran with no guard stop, and the push
+      passed. The job sends one PUBLISH line (D17).
+    - **3.** A skip. A skip is a guard stop (before or after a run), the
+      lock held (D9), no eligible model (the reason `none`), or a day with
+      runs whose page step changed no file under `docs/`. A guard stop still
+      runs steps (5) to (9) of D12, commits `docs/` when it changed (D15),
+      and pushes under D16. It then exits 3. The job sends one SKIP line:
+      `lending-desk-daily SKIP <date> exit=3: <reason>; publish=<short sha>
+      range=<old short>..<new short> commits=<n> rows=<runs>`, or
+      `lending-desk-daily SKIP <date> exit=3: <reason>; publish=none
+      rows=<runs>` when no push happened. `<reason>` is one of `go-guard
+      <go_guard_stop text>`, `lock held`, `no eligible model`, or
+      `no docs change`.
+    - **1, 2, 130, 143.** A failure. Each D16 push failure is a failure, also
+      on a skip day. The job sends one FAIL line (D17).
+    - A dry run does not change. A guard stop in a dry run exits 0 and sends
+      nothing.
+    - `BENCH_DAILY_PUBLISH=0` (the tests and the hand runs) turns off only
+      the commit and the push. A full day then exits 0 with `DAILY PUBLISH
+      skipped` and sends no line. A skip day exits 3 with a SKIP line and
+      `publish=none`.
+    - systemd shows a skip day as failed. This is correct (PM 2026-11-13,
+      EV23).
 
 ## Functional requirements
 
@@ -526,6 +576,8 @@ date 2026-10-25.
 
 ### FR-10 — Go guard
 
+Amended by D18 and D19. The old text stays for the record.
+
 - The job reads Go weekly and monthly values from one response before each
   of the 4 track batches (D12). A value above 80 or a finite value below 0
   stops the day for either window. Weekly checks run first; monthly checks
@@ -543,6 +595,19 @@ date 2026-10-25.
   windows. A clean read prints the weekly and monthly guard line. A dry-run
   monthly stop prints the skip line, plans zero runs, exits 0, and makes no
   model call.
+
+The amended rule (D18, D19):
+
+- The weekly window stops above 80. The monthly window stops above 95. A
+  monthly value of 95 continues, and 95.0001 stops with the reason
+  `monthly used 95.0001 percent`. The other monthly reasons do not change.
+- A live stop exits 3 and sends one SKIP line (D19). A dry-run stop exits 0
+  and sends nothing.
+- **Check.** With a stub `BENCH_DAILY_QUOTA_CMD`: 80 and 0 continue and
+  80.0001 stops for the weekly window; 95 and 0 continue and 95.0001 stops
+  for the monthly window; a monthly 84.06 continues. A live stop gives exit
+  3, the skip line, and no further batch call. A dry-run stop prints the
+  skip line, plans zero runs, exits 0, and makes no model call.
 
 ### FR-11 — Push rule
 
@@ -581,6 +646,8 @@ Replaced by FR-15 (D16). The old text stays for the record.
 
 ### FR-14 — Publish after a zero-run guard stop
 
+Amended by D19. The old text stays for the record.
+
 - A day that the Go guard stops before the first batch still publishes the
   site data (D15). The commit holds `docs/` only, with the first line
   `Publish daily <date> site data: no new runs (go-guard: <reason>).`.
@@ -593,6 +660,15 @@ Replaced by FR-15 (D16). The old text stays for the record.
   `harness/schedule-tests/daily-publish-notice.test.ts`). The same stop with
   no change under `docs/` gives `DAILY PUBLISH none`, no commit, exit 0, and
   an empty notice sink (case N2).
+
+The amended rule (D19):
+
+- A live guard stop exits 3, not 0. It commits `docs/` when it changed and
+  pushes under D16, and then it sends one SKIP line with the reason
+  `go-guard <go_guard_stop text>` and the published range.
+- **Check.** The case N1 gives exit 3 and one SKIP line with
+  `publish=<short sha>` and the pushed range. The case N2 gives exit 3 and
+  one SKIP line with `publish=none`.
 
 ### FR-15 — Push rule
 
@@ -614,6 +690,8 @@ Replaced by FR-15 (D16). The old text stays for the record.
 
 ### FR-16 — Notice to the PM
 
+Amended by D19. The old text stays for the record.
+
 - A live run with a non-zero exit sends one FAIL line to the PM, and a live
   run that pushed sends one PUBLISH line (D17). Every other exit sends
   nothing, and a dry run sends nothing.
@@ -630,6 +708,16 @@ Replaced by FR-15 (D16). The old text stays for the record.
   set and no notice command, the job prints `DAILY NOTIFY skipped: test` and
   never starts `openchamber` (case N11). The cases live in
   `harness/schedule-tests/daily-publish-notice.test.ts`.
+
+The amended rule (D19):
+
+- A live run sends exactly one line: a FAIL line for the exit codes 1, 2,
+  130, and 143, a SKIP line for the exit code 3, and a PUBLISH line for the
+  exit code 0. A dry run sends nothing.
+- **Check.** The case N7 gives one PUBLISH line for the full day of case N3
+  and one SKIP line for the guard stop of case N1. The case N12 gives one
+  SKIP line with the reason `lock held`. The case N13 gives one SKIP line
+  with the reason `no eligible model`. The case N8 gives one FAIL line.
 
 ## Non-functional requirements
 
@@ -685,11 +773,15 @@ Replaced by FR-15 (D16). The old text stays for the record.
    owner action of task 5.3.
 8. **AC-8** After the first live day, `DAY_CHECK`, `PUBLISH_CHECK`, and
    `PI_CHECK` pass (FR-8, FR-9).
-9. **AC-9** The Go guard reads weekly and monthly values from one response.
+9. **AC-9** Amended by D18 and D19. The old text stays for the record.
+   The Go guard reads weekly and monthly values from one response.
    Either window stops the day above 80 or below 0. Weekly checks run first;
    monthly checks run only after weekly passes. Read failure, missing field,
    or non-finite value stops the day with its specified reason: exit 0, one
    `DAILY SKIP go-guard` line, and no model call after the stop (FR-10).
+   The amended rule: the weekly window stops above 80 and the monthly
+   window stops above 95. A live stop exits 3 and sends one SKIP line. A
+   dry-run stop exits 0 and sends nothing (FR-10, D18, D19).
 10. **AC-10** Replaced by AC-14. The old text stays for the record.
     The job pushes only its own docs commit, and only when
     `origin/main` equals its parent. Every other case prints one
@@ -698,18 +790,27 @@ Replaced by FR-15 (D16). The old text stays for the record.
     and exits non-zero (FR-12).
 12. **AC-12** The two unit files exist in the repository with the values of
     D11, and `TIMER_CHECK` passes (FR-13).
-13. **AC-13** A zero-run guard stop still publishes the site data: one
+13. **AC-13** Amended by D19. The old text stays for the record.
+    A zero-run guard stop still publishes the site data: one
     commit of `docs/` only with the first line of D15, or `DAILY PUBLISH
     none` when `docs/` has no change. The run exits 0 (FR-14).
+    The amended rule: the run exits 3 and sends one SKIP line with the
+    reason `go-guard <go_guard_stop text>` and the published range (FR-14,
+    D19).
 14. **AC-14** The job pushes `main` as a fast-forward after each good run.
     The push carries every local commit between `origin/main` and the docs
     commit, and it never forces. A branch other than `main`, a failed fetch,
     and a moved `origin/main` each fail the run with the labeled line of D16
     and exit 1 (FR-15).
-15. **AC-15** A live run with a non-zero exit sends one FAIL line to the PM,
+15. **AC-15** Amended by D19. The old text stays for the record.
+    A live run with a non-zero exit sends one FAIL line to the PM,
     and a live run that pushed sends one PUBLISH line with the commit SHA,
     the pushed range, and the row count. Every other exit sends nothing. A
     failed send keeps the exit status of the job (FR-16).
+    The amended rule: a live run sends exactly one line. The exit code 0
+    sends a PUBLISH line, the exit code 3 sends a SKIP line, and the exit
+    codes 1, 2, 130, and 143 send a FAIL line. A dry run sends nothing
+    (FR-16, D19).
 
 ## Out of scope
 
