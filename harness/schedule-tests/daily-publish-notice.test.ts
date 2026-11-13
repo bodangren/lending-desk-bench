@@ -285,7 +285,7 @@ describe("publish and notice", () => {
     const remoteBefore = git(["rev-parse", "main"], f.origin, f.home);
     const r = runJob(f);
     expect(lines(r, "DAILY FAIL push:"), `${D16}: a moved remote must fail the run\n${r.stdout}\n${r.stderr}`)
-      .toEqual(["DAILY FAIL publish: origin/main is not an ancestor of the docs commit; the commit is local"]);
+      .toEqual(["DAILY FAIL push: origin/main is not an ancestor of the docs commit; the commit is local"]);
     expect(r.status, `${D16}: a moved remote must exit 1`).toBe(1);
     expect(git(["rev-parse", "main"], f.origin, f.home), `${D16}: the remote must stay unchanged`).toBe(remoteBefore);
   });

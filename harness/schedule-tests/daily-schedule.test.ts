@@ -1230,7 +1230,7 @@ describe("O1 conditions", () => {
     const remoteBefore = git(["rev-parse", "main"], origin);
     const { result } = runCopied(w, repo, true);
     expect(lines(result, "DAILY FAIL push:"), `6.5.16: missing ${D16}`).toEqual([
-      "DAILY FAIL publish: origin/main is not an ancestor of the docs commit; the commit is local",
+      "DAILY FAIL push: origin/main is not an ancestor of the docs commit; the commit is local",
     ]);
     expect(result.status, `6.5.16: missing ${D16} exit 1`).toBe(1);
     expect(lines(result, "DAILY PUSH skipped:"), `6.5.16: ${D16} retires the skip lines`).toEqual([]);
