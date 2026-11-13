@@ -914,13 +914,51 @@ explicit live flag.
   role writes `measure/runs/daily_model_schedule/check-6.3.json`.
   - Verify: the file shows `status: pass` and 0 blocking findings.
   - Lane: light lane. Checker: a third family. The family differs from every maker family.
-- [ ] 6.2b Green: the notice gate of D20 in `harness/cron-daily.sh` only. The
+- [x] 17b8e25 6.2b Green: the notice gate of D20 in `harness/cron-daily.sh` only. The
   role reads the cgroup file, and it sends the real line only under the
   timer unit or under `BENCH_DAILY_NOTIFY_LIVE=1`. A hand run sends a HAND
   line. No other file changes.
   - Verify: each test file of the phase alone with `--configLoader native --maxWorkers=1` exits 0.
   - Verify: `bash -n harness/cron-daily.sh` exits 0.
   - Lane: light lane. Maker: claude-code/claude-sonnet-5-5#high (Anthropic). Checker: volcengine-agent-plan/glm-5.3-flash#high (task 6.3b). The checker family differs from every maker family.
+  - Evidence: commit `17b8e25` changes `harness/cron-daily.sh` only. The gate
+    order in `daily_notify`: the seam `BENCH_DAILY_NOTIFY_CMD`, then the
+    `VITEST` rule, then the timer unit (the cgroup file holds
+    `/lending-desk-daily.service`) or `BENCH_DAILY_NOTIFY_LIVE=1`. Otherwise
+    the job prints `DAILY NOTIFY skipped: not the timer unit`. A line sent
+    under the live flag outside the unit starts `lending-desk-daily HAND `.
+    The header seam list holds `BENCH_DAILY_CGROUP_FILE` and
+    `BENCH_DAILY_NOTIFY_LIVE`.
+  - Command: `cd harness && npx vitest run schedule-tests/notice-seam-guard.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  5 passed (5)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  14 passed (14)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule-green.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  4 passed (4)`.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-selfcheck-default.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  2 passed (2)`.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  109 passed (109)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-served-retry.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  3 passed (3)`.
+  - Command: `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  11 passed (11)`.
+  - Command: `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  4 passed (4)`.
+  - Command: `cd harness && bash -n cron-daily.sh`. Exit 0.
+  - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
+    Exit 0. `runner_sha256`
+    `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef` and
+    `suite_sha256`
+    `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`.
+    Both are unchanged.
+  - Command: `ps -eo pid,args | grep -E '[f]ake-openc|[c]ron-daily'`. It prints no line.
+  - Note for the checker and for task 6.6: a transient `systemd-run --user`
+    unit has no `lending-desk-daily.service` cgroup. A hand check from such a
+    unit needs `BENCH_DAILY_NOTIFY_LIVE=1`, and then its line starts with
+    `lending-desk-daily HAND `.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [ ] 6.3b Checker re-check of D20, of task 6.1c, and of task 6.2b. The role
   writes `measure/runs/daily_model_schedule/check-6.3b.json`.
   - Verify: the file shows `status: pass` and 0 blocking findings.
