@@ -836,7 +836,7 @@ explicit live flag.
     unchanged.
     - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose -t "N4"` exits non-zero. The case N4 still fails, because the code of task 6.2 is not written yet.
     - Evidence: `Test Files  1 failed (1)`; `Tests  1 failed | 13 skipped (14)`; exit 1. The failure names the missing D16 fail line.
-- [ ] 6.1c Red: the notice gate (D20), from finding F4. The role adds D20
+- [x] 2f57a2d 6.1c Red: the notice gate (D20), from finding F4. The role adds D20
   and EV25 to `spec.md`, with the amended FR-16 and AC-15. The role adds
   the test file `harness/schedule-tests/notice-seam-guard.test.ts` with the
   cases G1 to G5. Every helper that starts `cron-daily.sh` in
@@ -845,6 +845,29 @@ explicit live flag.
   - Verify: `cd harness && npx vitest run schedule-tests/notice-seam-guard.test.ts --configLoader native --maxWorkers=1` exits non-zero, and each failure names a missing rule of D20.
   - Verify: the static case G1 passes, so no test file starts the job without the seam.
   - Lane: light lane. Maker: minimax-cn-coding-plan/MiniMax-M3.1-Flash (Red). Checker: volcengine-agent-plan/glm-5.3-flash#high (task 6.3b). The checker family differs from every maker family.
+  - Evidence: commit `ced89e5` holds the spec amendment (D20, EV25, the
+    amended FR-16 and AC-15) and this plan task. Commit `2f57a2d` holds the
+    Red work: the new test file and the three changed test files. No
+    production file changed.
+  - Command: `cd harness && npx vitest run schedule-tests/notice-seam-guard.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 failed (1)`; `Tests  2 failed | 3 passed (5)`; exit 1.
+    The failing cases are G2 and G4. The case G2 fails because the job
+    prints no `DAILY NOTIFY skipped: not the timer unit` line. The case G4
+    fails because the hand line starts with `lending-desk-daily FAIL `
+    instead of `lending-desk-daily HAND FAIL `. The cases G1, G3, and G5
+    pass at HEAD: the seam is in every test file that starts the job, the
+    timer path of D17 already sends the real line, and the `VITEST` rule of
+    D17 already skips the send. The cases G3 and G5 guard that the gate of
+    D20 keeps both paths.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-served-retry.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  3 passed (3)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  11 passed (11)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  4 passed (4)`; exit 0.
+  - Command: `ps -eo pid,args | grep '[f]ake-openc'`. It prints no line.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [x] 0a57c28 6.2 Green: the code in `harness/cron-daily.sh` only. The role
   implements D15, D16, D17, D18, and D19 in that file. No other file
   changes. Green: `claude-code/claude-sonnet-5-5#high` (PM 2026-11-13).
