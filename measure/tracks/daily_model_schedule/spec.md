@@ -830,7 +830,10 @@ The amended rule (D19):
   valid.
 - A systemd `OnFailure=` unit.
 - A Tasks notice to Daniel.
-- Any change of the Go guard limit.
+- Any change of the weekly Go guard limit (80). D18 changes only the monthly
+  limit, by PM decision 2 of 2026-11-13.
+  - Amended on 2026-11-13 (the checker of task 6.3, finding F1). The old
+    text stays for the record: Any change of the Go guard limit.
 - Publishing on a day with the reason `none`.
 
 ## Risks
@@ -844,8 +847,13 @@ The amended rule (D19):
   a week only.
 - **R3 Spend.** Each run day spends up to 12 agent runs (D1). O1 approved
   it on 2026-10-31 with 3 conditions. The Go guard of D12 stops a run day
-  when either window is above 80 percent or below 0, so the job never draws on the paid
-  Go credit balance.
+  when the weekly window is above 80 percent, when the monthly window is
+  above 95 percent (D18), or when either window is below 0, so the job never
+  draws on the paid Go credit balance.
+  - Amended on 2026-11-13 (the checker of task 6.3, finding F2). The old
+    text stays for the record: The Go guard of D12 stops a run day when
+    either window is above 80 percent or below 0, so the job never draws on
+    the paid Go credit balance.
 - **R4 The push carries other local commits.** The job now carries the
   waiting local commits, by the owner order of 2026-11-06 (EV19). The push
   of D16 is a fast-forward of `main` and sends every local commit between
