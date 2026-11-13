@@ -993,12 +993,29 @@ explicit live flag.
     Both equal the expected values. No change.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
-- [ ] 6.5 Full suites through `heavy-run.sh` (the command of
+- [x] ec10e5a 6.5 Full suites through `heavy-run.sh` (the command of
   `opencode_host_isolation` task 1.5), only between 22:00 and 07:00 and only
   with no p1 waiter. The night suites run after task 6.2b.
   - Verify: the run exits 0, and the log holds a `Tests` line with no failed test for each suite.
   - Verify: the log sits under `measure/runs/daily_model_schedule/`.
   - Lane: light lane. One heavy run.
+  - Queue before the run (2026-11-13 22:45 +0700, inside the window):
+    `ps -eo args | grep -c '[f]lock -w .*heavy.lock'` gave 0, and
+    `pgrep -fc '[f]lock -w 600'` gave 0. No p1 waiter. HEAD was `ec10e5a`.
+    The wrapper printed `heavy-run: load hold — load 6.20 over 6`, then ran.
+    The run ended at 23:05 +0700.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native > ../measure/runs/daily_model_schedule/full-suite-6.5-schedule.log 2>&1; echo "SCHEDULE_EXIT=$?"; npm run test:meta:logic > ../measure/runs/daily_model_schedule/full-suite-6.5-meta-logic.log 2>&1; echo "META_EXIT=$?"'`.
+  - Result: `SCHEDULE_EXIT=0` and `META_EXIT=0`.
+  - Schedule suite: `Test Files  14 passed (14)`; `Tests  173 passed (173)`;
+    `Duration  895.07s`. Log:
+    `measure/runs/daily_model_schedule/full-suite-6.5-schedule.log`.
+  - Meta logic suite: `Test Files  30 passed (30)`; `Tests  238 passed (238)`;
+    `Duration  258.71s`. Log:
+    `measure/runs/daily_model_schedule/full-suite-6.5-meta-logic.log`.
+  - No case failed, so no case ran again alone. The process check
+    `ps -eo pid,args | grep -E '[f]ake-openc|[c]ron-daily'` printed no line.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [x] 0ff9ef3 6.6 Live checks before 2026-11-14 18:00. A later hand channel
   test needs `BENCH_DAILY_NOTIFY_LIVE=1`, and it gives a HAND line.
   - (a) One dry rerun in a transient `systemd-run --user` unit with the
