@@ -831,12 +831,47 @@ checkpoint to an earlier phase.
     unchanged.
     - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose -t "N4"` exits non-zero. The case N4 still fails, because the code of task 6.2 is not written yet.
     - Evidence: `Test Files  1 failed (1)`; `Tests  1 failed | 13 skipped (14)`; exit 1. The failure names the missing D16 fail line.
-- [ ] 6.2 Green: the code in `harness/cron-daily.sh` only. The role
+- [x] 0a57c28 6.2 Green: the code in `harness/cron-daily.sh` only. The role
   implements D15, D16, D17, D18, and D19 in that file. No other file
   changes. Green: `claude-code/claude-sonnet-5-5#high` (PM 2026-11-13).
   - Verify: each test file of the phase alone with `--configLoader native --maxWorkers=1` exits 0.
   - Verify: `bash -n harness/cron-daily.sh` exits 0.
   - Lane: light lane. Maker: claude-code/claude-sonnet-5-5#high (Anthropic). Checker: a third family. The checker family differs from every maker family.
+  - Evidence: commit `0a57c28` changes `harness/cron-daily.sh` only. Round 1
+    of the role was blocked by two Red faults (the D16 fail line of N4 and
+    6.5.16, and the D17 notice transport). The Red retry fixed both
+    (commits `94c2c08` and `643cf77`). Round 2 made this commit.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  14 passed (14)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule-green.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  4 passed (4)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-selfcheck-default.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  2 passed (2)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  109 passed (109)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/opencode-host-isolation.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  11 passed (11)`.
+  - Command: `cd harness && npx vitest run schedule-tests/opencode-host-trap.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  4 passed (4)`.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-served-retry.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  3 passed (3)`.
+  - Command: `cd harness && npx vitest run schedule-tests/credential-seed-backoff.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Tests  4 passed (4)`.
+  - Command: `cd harness && bash -n cron-daily.sh`. Exit 0.
+  - Command: `cd harness && ./node_modules/.bin/tsx provenance.ts --shell`.
+    `runner_sha256` `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef`
+    and `suite_sha256` `8a24205b405a9aae22cf2412d3fc9a40b4b3ffdb30e2a0c0cfa26c4405ee734d`.
+    Both are unchanged.
+  - Command: `ps -eo pid,args | grep -E '[f]ake-openc|[c]ron-daily'`. It prints no line.
+  - Choices that the spec does not state: a failed batch prints
+    `DAILY FAIL runner: the <track> batch exited <n>` (the first failed batch)
+    and keeps its exit code. An invalid `BENCH_DAILY_DATE` exits 2 before the
+    EXIT trap and sends no notice (a test seam). With `VITEST` set and no
+    notice command the job prints only `DAILY NOTIFY skipped: test`.
+    `BENCH_DAILY_PUBLISH=0` on a guard stop prints `DAILY PUBLISH skipped`
+    and exits 3, with a SKIP line `publish=none`.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [ ] 6.3 Checker review of the amendment, of task 6.1, of task 6.1b, and of
   task 6.2. The role reviews D18 and D19 with the rest. The
   role writes `measure/runs/daily_model_schedule/check-6.3.json`.
