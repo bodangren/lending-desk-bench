@@ -75,6 +75,8 @@ n=0; [ ! -f "$RECOST_COUNT" ] || n=$(cat "$RECOST_COUNT"); n=$((n + 1)); printf 
 if [ "\${WEEK:-}" = all ]; then printf 'rescore-all\\n' >> "$STEP_LOG"; else printf 'rescore-week\\n' >> "$STEP_LOG"; fi
 `);
   script(join(harness, "cleanup.sh"), "#!/usr/bin/env bash\nprintf 'cleanup\\n' >> \"$STEP_LOG\"\n");
+  // The notice sink of D17. It keeps the test away from the PM session.
+  script(join(root, "notify.sh"), `#!/usr/bin/env bash\nprintf '%s\\n' "$1" >> ${JSON.stringify(join(root, "notify-sink.txt"))}\n`);
   // The grader browser is the system Chrome (spec D4). The fake binary sits on
   // the system Chrome path inside the temp tree. The check reads it through
   // BENCH_SYSTEM_CHROME, so the test never touches the real browser.
@@ -120,6 +122,7 @@ if (track === 'build') {
     BENCH_DAILY_DATE: DAY, BENCH_DAILY_CATALOG: f.catalog, BENCH_DAILY_SERVED: f.served,
     BENCH_DAILY_QUOTA_CMD: join(f.root, "quota.cjs"), BENCH_DAILY_BATCH: join(f.root, "batch.cjs"),
     BENCH_DAILY_PUBLISH: "0", BENCH_DAILY_POST: post ? "1" : "0", BENCH_DAILY_LOCK: join(f.root, "lock"),
+    BENCH_DAILY_NOTIFY_CMD: join(f.root, "notify.sh"),
     BENCH_SYSTEM_CHROME: f.chrome,
   };
   return spawnSync("bash", [join(f.repo, "harness/cron-daily.sh")], { cwd: f.repo, env, encoding: "utf8", timeout: 30_000 });

@@ -138,6 +138,8 @@ function fixture(): Fixture {
   writeFileSync(join(root, "served.txt"), `${MODEL_REF}\n`);
   shellStub(bin, "quota", `printf '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":20}}}}\\n'`);
   shellStub(bin, "select", `printf '{"model":"${MODEL_REF}","run_ids":[],"reason":"new"}\\n'`);
+  // The notice sink of D17. It keeps the test away from the PM session.
+  shellStub(bin, "notify", `printf '%s\\n' "$1" >> ${JSON.stringify(join(root, "notify-sink.txt"))}`);
   return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl"), selfcheck: join(root, "selfcheck.txt") };
 }
 
@@ -163,6 +165,7 @@ function testEnv(f: Fixture, extra: Record<string, string>): Record<string, stri
     BENCH_RUNS_ROOT: join(f.root, "runs"),
     BENCH_DAILY_POST: "0",
     BENCH_DAILY_PUBLISH: "0",
+    BENCH_DAILY_NOTIFY_CMD: join(f.bin, "notify"),
     BENCH_PRICING_PATH: join(f.root, "pricing.json"),
     ...extra,
   };
