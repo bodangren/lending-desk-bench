@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "track": "bugfix",
-  "generated_at": "2026-10-25T06:59:40",
+  "generated_at": "2026-11-11T01:05:55",
   "scoring": {
     "weights": {
       "repair": 0.45,
@@ -173,6 +173,7 @@
         ],
         "tests": null,
         "churn_lines": 86,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -338,6 +339,7 @@
         ],
         "tests": null,
         "churn_lines": 87,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -503,6 +505,7 @@
         ],
         "tests": null,
         "churn_lines": 54,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -668,6 +671,7 @@
         ],
         "tests": null,
         "churn_lines": 69,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -833,6 +837,7 @@
         ],
         "tests": null,
         "churn_lines": 65,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -998,6 +1003,7 @@
         ],
         "tests": null,
         "churn_lines": 47,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -1163,6 +1169,7 @@
         ],
         "tests": null,
         "churn_lines": 89,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -1330,6 +1337,7 @@
         ],
         "tests": null,
         "churn_lines": 87,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -1497,6 +1505,7 @@
         ],
         "tests": null,
         "churn_lines": 41,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -1664,6 +1673,7 @@
         ],
         "tests": null,
         "churn_lines": 82,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -1833,6 +1843,7 @@
         ],
         "tests": null,
         "churn_lines": 25,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -2002,6 +2013,7 @@
         ],
         "tests": null,
         "churn_lines": 39,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -2173,6 +2185,7 @@
         ],
         "tests": null,
         "churn_lines": 39,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -2346,6 +2359,7 @@
         ],
         "tests": null,
         "churn_lines": 15,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -2519,6 +2533,7 @@
         ],
         "tests": null,
         "churn_lines": 23,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",
@@ -2698,6 +2713,7 @@
         ],
         "tests": null,
         "churn_lines": 8,
+        "grader_browser": "legacy-headless-shell",
         "trend": null,
         "executor": {
           "kind": "pi",

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-10-25T06:59:40",
+  "generated_at": "2026-11-11T01:05:55",
   "executor": {
     "series": "opencode",
     "name": "opencode",
@@ -75,6 +75,7 @@
             "valid": 36
           },
           "churn_lines": 22,
+          "grader_browser": "none",
           "trend": {
             "ema": 98.8,
             "min": 98.8,
@@ -151,6 +152,7 @@
             "valid": 59
           },
           "churn_lines": 16,
+          "grader_browser": "none",
           "trend": {
             "ema": 98.7,
             "min": 98.7,
@@ -227,6 +229,7 @@
             "valid": 41
           },
           "churn_lines": 24,
+          "grader_browser": "none",
           "trend": {
             "ema": 98.0,
             "min": 98.0,
@@ -303,6 +306,7 @@
             "valid": 66
           },
           "churn_lines": 20,
+          "grader_browser": "none",
           "trend": {
             "ema": 95.8,
             "min": 95.8,
@@ -379,6 +383,7 @@
             "valid": 33
           },
           "churn_lines": 20,
+          "grader_browser": "none",
           "trend": {
             "ema": 93.9,
             "min": 93.9,
@@ -455,6 +460,7 @@
             "valid": 16
           },
           "churn_lines": 20,
+          "grader_browser": "none",
           "trend": {
             "ema": 93.5,
             "min": 93.5,
@@ -531,6 +537,7 @@
             "valid": 34
           },
           "churn_lines": 21,
+          "grader_browser": "none",
           "trend": {
             "ema": 93.2,
             "min": 93.2,
@@ -541,6 +548,83 @@
             ],
             "medians": [
               93.2
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "tt-b-mimo-v2-5-2026w43-r1",
+          "model": "opencode-go/mimo-v2.5",
+          "slug": "mimo-v2-5",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w43",
+          "fixture_revision": 2,
+          "total": 91.6,
+          "repeats": {
+            "week": "2026w43",
+            "n": 1,
+            "median": 91.6,
+            "worst": 91.6,
+            "best": 91.6,
+            "totals": [
+              91.6
+            ],
+            "runs": [
+              "tt-b-mimo-v2-5-2026w43-r1"
+            ]
+          },
+          "axes": {
+            "kill": 1,
+            "validity": 0.9696969696969697,
+            "adherence": 1,
+            "quality": 0.21666666666666667,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 66,
+            "valid": 64
+          },
+          "churn_lines": 24,
+          "grader_browser": "none",
+          "trend": {
+            "ema": 91.6,
+            "min": 91.6,
+            "max": 91.6,
+            "n": 1,
+            "weeks": [
+              "2026w43"
+            ],
+            "medians": [
+              91.6
             ]
           },
           "executor": {
@@ -607,6 +691,7 @@
             "valid": 7
           },
           "churn_lines": 0,
+          "grader_browser": "none",
           "trend": {
             "ema": 79.4,
             "min": 79.4,
@@ -685,6 +770,7 @@
             "valid": 0
           },
           "churn_lines": 20,
+          "grader_browser": "none",
           "trend": {
             "ema": 0.0,
             "min": 0.0,
@@ -891,6 +977,7 @@
             ],
             "tests": null,
             "churn_lines": 86,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -1056,6 +1143,7 @@
             ],
             "tests": null,
             "churn_lines": 87,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -1221,6 +1309,7 @@
             ],
             "tests": null,
             "churn_lines": 54,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -1386,6 +1475,7 @@
             ],
             "tests": null,
             "churn_lines": 69,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -1551,6 +1641,7 @@
             ],
             "tests": null,
             "churn_lines": 65,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -1716,6 +1807,7 @@
             ],
             "tests": null,
             "churn_lines": 47,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -1881,6 +1973,7 @@
             ],
             "tests": null,
             "churn_lines": 89,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -2048,6 +2141,7 @@
             ],
             "tests": null,
             "churn_lines": 87,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -2215,6 +2309,7 @@
             ],
             "tests": null,
             "churn_lines": 41,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -2382,6 +2477,7 @@
             ],
             "tests": null,
             "churn_lines": 82,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -2551,6 +2647,7 @@
             ],
             "tests": null,
             "churn_lines": 25,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -2720,6 +2817,7 @@
             ],
             "tests": null,
             "churn_lines": 39,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -2891,6 +2989,7 @@
             ],
             "tests": null,
             "churn_lines": 39,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -3064,6 +3163,7 @@
             ],
             "tests": null,
             "churn_lines": 15,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -3237,6 +3337,7 @@
             ],
             "tests": null,
             "churn_lines": 23,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
@@ -3416,6 +3517,7 @@
             ],
             "tests": null,
             "churn_lines": 8,
+            "grader_browser": "legacy-headless-shell",
             "trend": null,
             "executor": {
               "kind": "pi",
