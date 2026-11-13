@@ -1375,11 +1375,24 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
   - Deviation: measure-guard denies `[~]` in Phase 4 while Phase 3 holds
     no checkpoint, so the task went from `[ ]` to `[x]`.
   - Lane: light. One heavy run.
-- [ ] 4.7 The report to the PM: status, facts changed, defaults taken, and
+- [x] 7acc97d 4.7 The report to the PM: status, facts changed, defaults taken, and
   the new `runner_sha256`.
   - Verify: the plan records the date of the send.
   - Verify: the report closes with a "facts changed" list.
   - Lane: light. A text report.
+  - Dates of the send: the orchestrator sent status reports to the PM on
+    2026-11-08 and on 2026-11-13. The recorder did not send them.
+  - New `runner_sha256`:
+    `9d26e6c875288d4b8d1c25850673bc464e6aa58610676073a3030e36eb3395ef`. It was
+    given to `grader_system_chrome` (its risk R4) in commit `bc14df0`.
+  - Cause of the failure of 2026-11-08: the exact error is unknown, because
+    the old seed discarded the opencode stderr. A short plugin-start fault is
+    the likely cause. The new seed back-off and the catalog retry fix it. The
+    timer run of 2026-11-11 passed the seed and the catalog step.
+  - Open follow-up: the served retry of D15 still prints the full opencode
+    stack into the log on a failed `opencode models` call.
+  - Deviation: measure-guard denies `[~]` in Phase 4 while Phase 3 holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 
 ## Human gates
 
