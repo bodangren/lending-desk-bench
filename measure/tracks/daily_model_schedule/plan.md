@@ -742,7 +742,7 @@ measure-guard denies `[~]` while an earlier phase holds no checkpoint, so the
 tasks of this phase go from `[ ]` to `[x]`. Do not try `[~]`. Do not add a
 checkpoint to an earlier phase.
 
-- [ ] 6.1 Red: the amendment of the spec and the Red tests. The role adds
+- [x] 2369824 6.1 Red: the amendment of the spec and the Red tests. The role adds
   D15, D16, and D17 to `spec.md`, with FR-14, FR-15, and FR-16, with AC-13,
   AC-14, and AC-15, and with the new text of R4. The role adds the test file
   `harness/schedule-tests/daily-publish-notice.test.ts` with the cases N1 to
@@ -754,6 +754,31 @@ checkpoint to an earlier phase.
   - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1` exits non-zero, and each failure names a missing rule of D15, D16, or D17.
   - Verify: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --configLoader native --maxWorkers=1` fails only in the cases 6.5.15, 6.5.16, and 6.5.17.
   - Lane: light lane. Maker: minimax-cn-coding-plan/MiniMax-M3.1-Flash (Red). Checker: claude-code/claude-sonnet-5-5#high (task 6.3). The checker family differs from every maker family.
+  - Evidence: commit `b731efb` holds the spec amendment and this phase of the
+    plan. Commit `2369824` holds the Red work: the new test file and the
+    three changed test files. No production file changed.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1`.
+    `Test Files  1 failed (1)`; `Tests  9 failed | 2 passed (11)`; exit 1.
+    The failing cases are N1 (D15), N3, N4, N5, and N6 (D16), and N7, N8,
+    N9, and N11 (D17). Each failure names the missing rule. The cases N2 and
+    N10 pass at HEAD: they hold the rule that a day with no push sends
+    nothing.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --configLoader native --maxWorkers=1`.
+    `Test Files  1 failed (1)`; `Tests  3 failed | 104 passed (107)`; exit 1.
+    The failing cases are 6.5.15, 6.5.16, and 6.5.17. The cases 12.12 and
+    12.13 keep the D16 label and pass.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule-green.test.ts --configLoader native --maxWorkers=1`.
+    `Test Files  1 passed (1)`; `Tests  4 passed (4)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-selfcheck-default.test.ts --configLoader native --maxWorkers=1`.
+    `Test Files  1 passed (1)`; `Tests  2 passed (2)`; exit 0.
+  - Command: `ps -eo pid,args | grep '[f]ake-openc'`. It prints no line.
+  - Host load: another project ran a heavy suite on this machine (load
+    average 5.7). One full run of the file hit the 30 s case timeout in the
+    case 12.1 and gave `Tests  4 failed | 103 passed (107)`. The case 12.1
+    alone gave `Tests  1 passed | 106 skipped (107)`. The last full run gave
+    `Tests  3 failed | 104 passed (107)`. No failure came from a test fault.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [ ] 6.2 Green: the code in `harness/cron-daily.sh` only. The role
   implements D15, D16, and D17 in that file. No other file changes.
   - Verify: each test file of the phase alone with `--configLoader native --maxWorkers=1` exits 0.
