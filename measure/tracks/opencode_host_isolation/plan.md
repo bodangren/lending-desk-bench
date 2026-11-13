@@ -1272,12 +1272,33 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
   - Verify: the orchestrator names the new value to `grader_system_chrome`
     (its risk R4).
   - Lane: light. A read-only command.
-- [ ] 4.5 The full suites through `heavy-run.sh` (the command of task 1.5),
+- [x] ec10e5a 4.5 The full suites through `heavy-run.sh` (the command of task 1.5),
   only between 22:00 and 07:00 and only with no p1 waiter.
   - Verify: the run exits 0. The log holds a `Tests` line with no failed
     test for each of the two suites.
   - Verify: the log sits at `measure/runs/opencode_host_isolation/`.
   - Lane: light. One heavy run.
+  - Note: This run at ec10e5a covers the Phase 4 code (6d37c69) and the later
+    `daily_model_schedule` Phase 6 code; the night loop of 11-08 was lost to a
+    server restart.
+  - Queue before the run (2026-11-13 22:45 +0700, inside the window):
+    `ps -eo args | grep -c '[f]lock -w .*heavy.lock'` gave 0, and
+    `pgrep -fc '[f]lock -w 600'` gave 0. No p1 waiter. HEAD was `ec10e5a`.
+    The wrapper printed `heavy-run: load hold — load 6.20 over 6`, then ran.
+    The run ended at 23:05 +0700.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run schedule-tests/ --configLoader native > ../measure/runs/daily_model_schedule/full-suite-6.5-schedule.log 2>&1; echo "SCHEDULE_EXIT=$?"; npm run test:meta:logic > ../measure/runs/daily_model_schedule/full-suite-6.5-meta-logic.log 2>&1; echo "META_EXIT=$?"'`.
+    The `daily_model_schedule` task 6.5 ran this one call.
+  - Result: `SCHEDULE_EXIT=0` and `META_EXIT=0`.
+  - Schedule suite: `Test Files  14 passed (14)`; `Tests  173 passed (173)`;
+    `Duration  895.07s`. Log:
+    `measure/runs/opencode_host_isolation/full-suite-4.5-schedule.log`.
+  - Meta logic suite: `Test Files  30 passed (30)`; `Tests  238 passed (238)`;
+    `Duration  258.71s`. Log:
+    `measure/runs/opencode_host_isolation/full-suite-4.5-meta-logic.log`.
+  - The two logs are copies of the logs under
+    `measure/runs/daily_model_schedule/`. No case failed.
+  - Deviation: measure-guard denies `[~]` in Phase 4 while Phase 3 holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [x] 3edb2a4 4.6 The rerun. One `harness/cron-daily.sh --dry-run` with the service
   PATH, the real guard, the real catalog, and no seams, through
   `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 heavy-run.sh`.
