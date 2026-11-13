@@ -779,7 +779,7 @@ checkpoint to an earlier phase.
     `Tests  3 failed | 104 passed (107)`. No failure came from a test fault.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
-- [ ] 6.1b Red: the second amendment, from the PM decisions of 2026-11-13.
+- [x] 57fc537 6.1b Red: the second amendment, from the PM decisions of 2026-11-13.
   The role adds D18 and D19 to `spec.md`, with the amended FR-10, FR-14,
   FR-16, AC-9, AC-13, and AC-15. The role adds the Red tests of the
   monthly limit of 95 and of the exit codes 0, 3, 1, 2, 130, and 143. The
@@ -791,6 +791,34 @@ checkpoint to an earlier phase.
   - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1` exits non-zero, and each failure names a missing rule of D15 to D19.
   - Verify: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --configLoader native --maxWorkers=1` fails only in the cases that the role changed or added, and in the cases 6.5.15, 6.5.16, and 6.5.17.
   - Lane: light lane. Maker: minimax-cn-coding-plan/MiniMax-M3.1-Flash (Red). Checker: a third family. The checker family differs from every maker family.
+  - Evidence: commit `57432dd` holds the spec amendment and this plan task.
+    Commit `57fc537` holds the Red work: the three test files. No production
+    file changed.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 failed (1)`; `Tests  13 failed | 1 passed (14)`; exit 1.
+    The failing cases are N1, N2, N3, N4, N5, N6, N7, N8, N9, N11, N12,
+    N13, and N14. The case N10 passes: a dry run sends nothing.
+    The missing rules are D19 (N1, N2, N9, N12, N13), D16 (N3, N4, N5, N6),
+    D17 (N7, N8, N11), and D18 (N14).
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule-green.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 failed (1)`; `Tests  2 failed | 2 passed (4)`; exit 1.
+    The failing cases are the two live guard-stop cases: "stops with read
+    failed when the quota compare process fails" and "runs D12 steps 5 to 9
+    after a stop before batch 2". Both expect exit 3 (D19).
+  - Command: `cd harness && npx vitest run schedule-tests/daily-schedule.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 failed (1)`; `Tests  37 failed | 72 passed (109)`; exit 1.
+    The failing cases are 6.3.7, 6.3.9, 6.3.11, 6.5.1, 6.5.4, 6.5.5, 6.5.6,
+    6.5.7, 6.5.8, 6.5.9, 6.5.10, 6.5.15, 6.5.16, 6.5.17, 6.5.21, 6.5.24,
+    6.5.25, 6.5.26, 6.5.27, 6.5.28, 6.5.29, 6.5.32, 6.5.34, 6.5.36, 6.5.37,
+    6.5.38, 12.8, 12.9, 12.10, 12.11, 12.14, 12.15, 12.16, 12.17, 12.18,
+    12.19, and 12.20. Every one of them is a case the role changed or
+    added, or one of the cases 6.5.15 to 6.5.17. The shared helpers
+    `assertSkip`, `assertMidStop`, and `assertHiddenStop` now expect exit 3,
+    so every case that uses one of them fails at HEAD. The dry-run cases
+    keep exit 0 and pass. No case failed from a timeout.
+  - Command: `ps -eo pid,args | grep '[f]ake-openc'`. It prints no line.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [ ] 6.2 Green: the code in `harness/cron-daily.sh` only. The role
   implements D15, D16, D17, D18, and D19 in that file. No other file
   changes. Green: `claude-code/claude-sonnet-5-5#high` (PM 2026-11-13).
