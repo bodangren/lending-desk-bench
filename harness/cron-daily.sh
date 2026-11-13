@@ -7,12 +7,18 @@
 # The matching service is harness/systemd/lending-desk-daily.service.
 # Do not install these units in this track.
 # The timer runs Wednesday and Sunday at 01:00 local time. Each day is a UTC date.
-# The job publishes only docs/ and pushes only its own docs commit at its parent.
+# The job commits only docs/ and pushes main as a fast-forward (D16). A guard
+# stop with zero runs still publishes the site data (D15).
+# Exit codes of a live run (D19): 0 for a full day with a passed push, 3 for a
+# skip, and 1, 2, 130, or 143 for a failure. A live run sends one line to the
+# PM at the end of the EXIT path (D17). A dry run sends nothing.
 #
 # Test seams: BENCH_RUNS_ROOT, BENCH_PRICING_PATH, BENCH_DAILY_DIR,
 # BENCH_DAILY_DATE, BENCH_DAILY_CATALOG, BENCH_DAILY_SERVED,
 # BENCH_DAILY_PUBLISH, BENCH_DAILY_LOCK, BENCH_DAILY_QUOTA_CMD,
-# BENCH_DAILY_BATCH, BENCH_DAILY_POST, and BENCH_DAILY_SELECT.
+# BENCH_DAILY_BATCH, BENCH_DAILY_POST, BENCH_DAILY_SELECT,
+# BENCH_DAILY_NOTIFY_CMD, and BENCH_DAILY_PM_CONFIG. BENCH_DAILY_NOTIFY_CMD
+# names an executable. The job runs it with the notice line as its only argument.
 # BENCH_DAILY_RUNNER is retired and is never started. Dry runs write no day
 # record and make no model call.
 set -u
@@ -45,6 +51,25 @@ case " $* " in
   *" --dry-run "*) DRY_RUN=1 ;;
 esac
 
+# ---- Notice state (D17, D19) -----------------------------------------------------
+# The EXIT path reads these values and sends one line for a live run. A dry run
+# keeps exit 0 on a skip. A live skip exits 3.
+LAST_FAIL=""
+SKIP_REASON=""
+PUSH_DONE=0
+PUSH_OLD=""
+PUSH_NEW=""
+PUSH_COMMITS=0
+N_RUNS=0
+SKIP_RC=3
+if [ "$DRY_RUN" = "1" ]; then SKIP_RC=0; fi
+
+# A failure line. The notice of a failed run quotes the last one.
+daily_fail() {
+  LAST_FAIL="$1"
+  echo "DAILY FAIL $1" >&2
+}
+
 # The ISO week token of the day. Run ids and the selection carry this token.
 WEEK="$(node -e '
 const d = new Date(process.argv[1] + "T00:00:00Z");
@@ -55,7 +80,7 @@ const start = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
 const week = Math.ceil(((d.getTime() - start.getTime()) / 86400000 + 1) / 7);
 process.stdout.write(d.getUTCFullYear() + "w" + String(week).padStart(2, "0"));
 ' "$DAY")" || {
-  echo "DAILY FAIL toolchain: invalid date $DAY" >&2
+  daily_fail "toolchain: invalid date $DAY"
   exit 2
 }
 export WEEK
@@ -69,7 +94,73 @@ SERVED_TMP="$TMP_DIR/daily-served-$$"
 MSG_FILE="$TMP_DIR/daily-commit-msg-$$"
 RECORD_TMP="$DAYS_DIR/.daily-record-$$"
 SELFCHECK_MARKER="$TMP_DIR/selfcheck-pass-$WEEK-$$"
-trap 'rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" 2>/dev/null; opencode_host_cleanup' EXIT
+
+# The notice of D17. A live run sends one line: PUBLISH for exit 0 after a
+# push, SKIP for exit 3, and FAIL for every other non-zero exit. The line holds
+# only the labels of this job, never a credential or command output. A failed
+# send prints a short reason and never changes the exit status.
+daily_notify() {
+  local rc="$1" line="" reason="" rows="$N_RUNS" pm="" pm_config="" send_rc=0
+  if [ "$DRY_RUN" = "1" ]; then return 0; fi
+  if [ "$rc" -eq 0 ] && [ "$PUSH_DONE" = "1" ]; then
+    line="lending-desk-daily PUBLISH $DAY $PUSH_NEW range=$PUSH_OLD..$PUSH_NEW commits=$PUSH_COMMITS rows=$rows"
+  elif [ "$rc" -eq 3 ] && [ -n "$SKIP_REASON" ]; then
+    if [ "$PUSH_DONE" = "1" ]; then
+      line="lending-desk-daily SKIP $DAY exit=3: $SKIP_REASON; publish=$PUSH_NEW range=$PUSH_OLD..$PUSH_NEW commits=$PUSH_COMMITS rows=$rows"
+    else
+      line="lending-desk-daily SKIP $DAY exit=3: $SKIP_REASON; publish=none rows=$rows"
+    fi
+  elif [ "$rc" -ne 0 ]; then
+    reason="${LAST_FAIL:-no DAILY FAIL line}"
+    line="lending-desk-daily FAIL $DAY exit=$rc: ${reason:0:150} log=reports/cron-daily.log"
+  else
+    return 0
+  fi
+  line="${line:0:300}"
+  if [ -n "${BENCH_DAILY_NOTIFY_CMD:-}" ]; then
+    echo "DAILY NOTIFY $line"
+    "$BENCH_DAILY_NOTIFY_CMD" "$line" >/dev/null 2>&1 || send_rc=$?
+    if [ "$send_rc" -ne 0 ]; then echo "DAILY NOTIFY failed: the notice command exited $send_rc"; fi
+    return 0
+  fi
+  if [ -n "${VITEST:-}" ]; then
+    echo "DAILY NOTIFY skipped: test"
+    return 0
+  fi
+  echo "DAILY NOTIFY $line"
+  pm_config="${BENCH_DAILY_PM_CONFIG:-$HOME/.config/ra-slots/config.json}"
+  if [ ! -f "$pm_config" ]; then
+    echo "DAILY NOTIFY failed: no PM config file"
+    return 0
+  fi
+  pm="$(node -e '
+try {
+  const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+  if (typeof c.pmSession === "string") process.stdout.write(c.pmSession);
+} catch {}
+' "$pm_config" 2>/dev/null)"
+  if [ -z "$pm" ]; then
+    echo "DAILY NOTIFY failed: no pmSession in the PM config"
+    return 0
+  fi
+  timeout 30 openchamber session send --session "$pm" --dir /home/daniebo/Desktop/advantage-pr --prompt "$line" >/dev/null 2>&1 || send_rc=$?
+  if [ "$send_rc" -eq 124 ]; then
+    echo "DAILY NOTIFY failed: the send timed out"
+  elif [ "$send_rc" -ne 0 ]; then
+    echo "DAILY NOTIFY failed: openchamber exited $send_rc"
+  fi
+  return 0
+}
+
+# The EXIT path. The notice goes last, after the OpenCode job folder cleanup,
+# so a signal stop sends its line too.
+daily_exit() {
+  local rc=$?
+  rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" 2>/dev/null
+  opencode_host_cleanup
+  daily_notify "$rc"
+}
+trap daily_exit EXIT
 
 # ---- Lock ----------------------------------------------------------------------
 # The exclusive lock prevents overlap with weekly and daily jobs.
@@ -78,14 +169,15 @@ exec 9>"$LOCK"
 if ! flock -n 9; then
   echo "DAILY SKIP lock held"
   echo "DAILY END $(date -Is)"
-  exit 0
+  SKIP_REASON="lock held"
+  exit "$SKIP_RC"
 fi
 
 # ---- OpenCode host isolation (spec D1, D6, D8) ---------------------------------
 # This job owns one OpenCode job folder. The line below is the spec D8 line; a
 # dry run prints it too. The traps of spec D6 make the EXIT trap run on signals.
 if ! opencode_host_begin daily; then
-  echo "DAILY FAIL opencode-home: the OpenCode job folder could not be made" >&2
+  daily_fail "opencode-home: the OpenCode job folder could not be made"
   exit 1
 fi
 echo "DAILY OPENCODE_HOME $BENCH_OPENCODE_HOME"
@@ -99,7 +191,7 @@ if [ -f "$RECORD" ]; then
 const r = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
 if (typeof r.date !== "string" || !Array.isArray(r.run_ids)) process.exit(1);
 ' "$RECORD"; then
-    echo "DAILY FAIL record: $RECORD is not a valid day record" >&2
+    daily_fail "record: $RECORD is not a valid day record"
     exit 2
   fi
 fi
@@ -109,14 +201,14 @@ CATALOG="${BENCH_DAILY_CATALOG:-}"
 if [ -z "$CATALOG" ]; then
   CATALOG_PATH="$ROOT/reports/go-catalog-$WEEK.json"
   if ! "$H/node_modules/.bin/tsx" "$H/go-cost.ts" --catalog > "$CATALOG_TMP" || [ ! -s "$CATALOG_TMP" ]; then
-    echo "DAILY FAIL catalog: the catalog fetch failed" >&2
+    daily_fail "catalog: the catalog fetch failed"
     exit 1
   fi
   if ! node -e '
 const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
 if (!Array.isArray(c.live) || c.live.length === 0 || !c.live.every(x => typeof x === "string")) process.exit(1);
 ' "$CATALOG_TMP"; then
-    echo "DAILY FAIL catalog: the fetched catalog is empty, not JSON, or has no live models" >&2
+    daily_fail "catalog: the fetched catalog is empty, not JSON, or has no live models"
     exit 1
   fi
   mv "$CATALOG_TMP" "$CATALOG_PATH"
@@ -125,7 +217,7 @@ elif [ ! -s "$CATALOG" ] || ! node -e '
 const c = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
 if (!Array.isArray(c.live) || c.live.length === 0 || !c.live.every(x => typeof x === "string")) process.exit(1);
 ' "$CATALOG"; then
-  echo "DAILY FAIL catalog: $CATALOG is empty, not JSON, or has no live models" >&2
+  daily_fail "catalog: $CATALOG is empty, not JSON, or has no live models"
   exit 1
 fi
 
@@ -134,7 +226,7 @@ SERVED="${BENCH_DAILY_SERVED:-}"
 if [ -z "$SERVED" ]; then
   SERVED_PATH="$ROOT/reports/go-served-$WEEK.txt"
   if ! "$H/opencode-credential.sh" seed; then
-    echo "DAILY FAIL served: the Console credential seed failed" >&2
+    daily_fail "served: the Console credential seed failed"
     exit 1
   fi
   # D15/FR-11: retry the served list, the same rule as batch.sh — up to 3
@@ -149,13 +241,13 @@ if [ -z "$SERVED" ]; then
     [ "$attempt" -lt 3 ] && sleep 5
   done
   if [ "$served_ok" != "1" ]; then
-    echo "DAILY FAIL served: opencode models failed" >&2
+    daily_fail "served: opencode models failed"
     exit 1
   fi
   mv "$SERVED_TMP" "$SERVED_PATH"
   SERVED="$SERVED_PATH"
 elif [ ! -s "$SERVED" ]; then
-  echo "DAILY FAIL served: $SERVED is empty" >&2
+  daily_fail "served: $SERVED is empty"
   exit 1
 fi
 
@@ -174,20 +266,21 @@ else
     > "$PICK_OUT" || SELECT_RC=$?
 fi
 if [ "$SELECT_RC" -ne 0 ] && [ "$SELECT_RC" -ne 3 ]; then
-  echo "DAILY FAIL pick: the selector exited $SELECT_RC" >&2
+  daily_fail "pick: the selector exited $SELECT_RC"
   exit "$SELECT_RC"
 fi
 
 if [ "$SELECT_RC" -eq 3 ]; then
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
-  exit 0
+  SKIP_REASON="no eligible model"
+  exit "$SKIP_RC"
 fi
 MODEL="$(node -e '
 process.stdout.write(String(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).model ?? ""));
 ' "$PICK_OUT")"
 if [ -z "$MODEL" ]; then
-  echo "DAILY FAIL pick: the selector returned no model with exit 0" >&2
+  daily_fail "pick: the selector returned no model with exit 0"
   exit 2
 fi
 
@@ -311,7 +404,7 @@ process.stdout.write("within");
 const n = Number(process.env.DAILY_GUARD_VALUE);
 if (!Number.isFinite(n)) process.exit(88);
 if (n < 0) { process.stdout.write("below-zero"); process.exit(1); }
-if (n > 80) { process.stdout.write("above-80"); process.exit(2); }
+if (n > 95) { process.stdout.write("above-95"); process.exit(2); }
 process.stdout.write("within");
 ' )" || comparison_rc=$?
   if [ "$comparison_rc" -eq 1 ] && [ "$comparison" = "below-zero" ]; then
@@ -319,7 +412,7 @@ process.stdout.write("within");
     GUARD_STOP="monthly value $monthly_value is below 0"
     return 1
   fi
-  if [ "$comparison_rc" -eq 2 ] && [ "$comparison" = "above-80" ]; then
+  if [ "$comparison_rc" -eq 2 ] && [ "$comparison" = "above-95" ]; then
     echo "DAILY SKIP go-guard: monthly used $monthly_value percent"
     GUARD_STOP="monthly used $monthly_value percent"
     return 1
@@ -345,7 +438,7 @@ if [ "$DRY_RUN" = "1" ]; then
   PLANNED=0
   for track in build bugfix tests change; do
     track_out="$(BENCH_TRACK="$track" "$BATCH" --dry-run --model "$MODEL" 2>&1)" || {
-      echo "DAILY FAIL dry-run: the $track batch dry run failed" >&2
+      daily_fail "dry-run: the $track batch dry run failed"
       exit 1
     }
     printf '%s\n' "$track_out"
@@ -390,7 +483,7 @@ if [ "$POST" != "0" ]; then
   # for the Chrome update.
   PW_CHROME="${BENCH_SYSTEM_CHROME:-/opt/google/chrome/chrome}"
   if [ ! -x "$PW_CHROME" ] || ! "$PW_CHROME" --version >/dev/null 2>&1; then
-    echo "DAILY FAIL playwright: the system Chrome is missing or does not run at $PW_CHROME" >&2
+    daily_fail "playwright: the system Chrome is missing or does not run at $PW_CHROME"
     exit 2
   fi
   PRICE_SHA="$(sha256sum "$H/go-pricing.json" | cut -d' ' -f1)"
@@ -421,6 +514,8 @@ for track in build bugfix tests change; do
   BATCH_RC=$?
   if [ "$BATCH_RC" -ne 0 ] && [ "$RUNNER_EXIT" -eq 0 ]; then
     RUNNER_EXIT="$BATCH_RC"
+    # The first failed batch gives the reason of the FAIL notice (D17).
+    daily_fail "runner: the $track batch exited $BATCH_RC"
   fi
 done
 echo "DAILY RUNNER exit=$RUNNER_EXIT"
@@ -441,7 +536,7 @@ RL_RC=0
   --day-runs "$MODEL" --week "$WEEK" --runs-root "$RUNS_ROOT" --pricing "$PRICING" \
   > "$RUNLIST_OUT" || RL_RC=$?
 if [ "$RL_RC" -ne 0 ]; then
-  echo "DAILY FAIL run-list: the run list exited $RL_RC" >&2
+  daily_fail "run-list: the run list exited $RL_RC"
   exit 1
 fi
 N_RUNS="$(node -e 'process.stdout.write(String(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).length));' "$RUNLIST_OUT")"
@@ -457,43 +552,59 @@ rec.go_guard_stop = process.argv[4] || null;
 fs.writeFileSync(process.argv[5], JSON.stringify(rec, null, 2) + "\n");
 ' "$RECORD" "$RUNLIST_OUT" "$RUNNER_EXIT" "$GUARD_STOP" "$RECORD_TMP" && mv "$RECORD_TMP" "$RECORD"
 
-# A guard stop is a clean skip, even when it stops before the first batch.
+# A runner failure keeps its exit code and publishes nothing.
 if [ "$RUNNER_EXIT" -ne 0 ]; then
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
   exit "$RUNNER_EXIT"
 fi
-if [ "$N_RUNS" -eq 0 ]; then
-  if [ -n "$GUARD_STOP" ]; then
-    echo "DAILY PUBLISH none"
-    echo "DAILY END $(date -Is)"
-    exit 0
-  fi
-  echo "DAILY FAIL runs: the runner produced no runs" >&2
+if [ "$N_RUNS" -eq 0 ] && [ -z "$GUARD_STOP" ]; then
+  daily_fail "runs: the runner produced no runs"
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
   exit 1
 fi
+# A guard stop is a skip (D19). It still runs the publish below (D15), also
+# when it stops before the first batch.
+if [ -n "$GUARD_STOP" ]; then
+  SKIP_REASON="go-guard $GUARD_STOP"
+fi
 if [ "$PUBLISH" = "0" ]; then
   echo "DAILY PUBLISH skipped"
   echo "DAILY END $(date -Is)"
+  if [ -n "$SKIP_REASON" ]; then exit 3; fi
   exit 0
 fi
 
-# ---- Publish (FR-8, D10, D13) ---------------------------------------------------
+# ---- Publish (FR-8, D10, D15, D16) ----------------------------------------------
 cd "$ROOT"
 git add docs/
 if git diff --cached --quiet -- docs/; then
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
-  exit 0
+  if [ -z "$SKIP_REASON" ]; then SKIP_REASON="no docs change"; fi
+  exit 3
+fi
+
+# The publish runs on main only. A detached HEAD counts as the branch `detached`.
+BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || true)"
+if [ -z "$BRANCH" ]; then BRANCH="detached"; fi
+if [ "$BRANCH" != "main" ]; then
+  daily_fail "publish: the branch is $BRANCH, not main"
+  echo "DAILY END $(date -Is)"
+  exit 1
 fi
 
 # The body reports excluded models from the full day record, including on resume.
+# A guard stop with zero runs gets the one-line message of D15.
 node -e '
 const fs = require("node:fs");
 const record = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
 const pick = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+if (Number(process.argv[4]) === 0 && process.argv[5]) {
+  fs.writeFileSync(process.argv[3], "Publish daily " + record.date + " site data: no new runs (go-guard: " + process.argv[5] + ").\n");
+  process.exit(0);
+}
 const reason = pick.reason === "resume" ? "resume" : record.reason;
 const lines = ["Publish daily " + record.date + " OpenCode Go results: " + record.model + " (" + reason + ").", ""];
 const ex = record.excluded ?? {};
@@ -501,33 +612,27 @@ for (const key of ["unpriced", "gone", "unservable"]) {
   if ((ex[key] ?? []).length) lines.push(key.charAt(0).toUpperCase() + key.slice(1) + ": " + ex[key].join(", "));
 }
 fs.writeFileSync(process.argv[3], lines.join("\n") + "\n");
-' "$RECORD" "$PICK_OUT" "$MSG_FILE"
+' "$RECORD" "$PICK_OUT" "$MSG_FILE" "$N_RUNS" "$GUARD_STOP"
 if ! git commit -F "$MSG_FILE" -- docs/; then
-  echo "DAILY FAIL publish: the commit of docs/ failed" >&2
+  daily_fail "publish: the commit of docs/ failed"
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
   exit 1
 fi
 
+# The push is a fast-forward (D16). It carries every local commit between
+# origin/main and the docs commit, and it never forces.
 DOCS_SHA="$(git rev-parse HEAD)"
-PARENT_SHA="$(git rev-parse HEAD^ )"
 if ! git fetch origin; then
-  echo "DAILY PUSH skipped: fetch failed"
-  echo "DAILY PUBLISH skipped"
+  daily_fail "push: fetch failed; the commit is local"
   echo "DAILY END $(date -Is)"
-  exit 0
+  exit 1
 fi
 REMOTE_SHA="$(git rev-parse --verify origin/main 2>/dev/null || true)"
-if [ -z "$REMOTE_SHA" ] || [ "$REMOTE_SHA" != "$PARENT_SHA" ]; then
-  OTHER_LOCAL="$(git rev-list --count origin/main..HEAD~1 2>/dev/null || echo 0)"
-  if [ "$OTHER_LOCAL" -ge 1 ]; then
-    echo "DAILY PUSH skipped: $OTHER_LOCAL other local commits"
-  else
-    echo "DAILY PUSH skipped: origin/main moved"
-  fi
-  echo "DAILY PUBLISH skipped"
+if [ -z "$REMOTE_SHA" ] || ! git merge-base --is-ancestor "$REMOTE_SHA" "$DOCS_SHA"; then
+  daily_fail "push: origin/main is not an ancestor of the docs commit; the commit is local"
   echo "DAILY END $(date -Is)"
-  exit 0
+  exit 1
 fi
 PUSHED=""
 for _ in 1 2 3; do
@@ -535,8 +640,16 @@ for _ in 1 2 3; do
   sleep 60
 done
 if [ -z "$PUSHED" ]; then
-  echo "DAILY FAIL publish: git push failed after 3 attempts; the commit is local" >&2
+  daily_fail "publish: git push failed after 3 attempts; the commit is local"
+  echo "DAILY END $(date -Is)"
   exit 1
 fi
-echo "DAILY PUBLISH $(git rev-parse --short "$DOCS_SHA")"
+PUSH_OLD="$(git rev-parse --short "$REMOTE_SHA")"
+PUSH_NEW="$(git rev-parse --short "$DOCS_SHA")"
+PUSH_COMMITS="$(git rev-list --count "$REMOTE_SHA..$DOCS_SHA")"
+PUSH_DONE=1
+echo "DAILY PUSH $PUSH_OLD..$PUSH_NEW commits=$PUSH_COMMITS"
+echo "DAILY PUBLISH $PUSH_NEW"
 echo "DAILY END $(date -Is)"
+if [ -n "$SKIP_REASON" ]; then exit 3; fi
+exit 0
