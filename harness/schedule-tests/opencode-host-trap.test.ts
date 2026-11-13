@@ -185,6 +185,8 @@ function fixture(): Fixture {
   shellStub(bin, "quota-wait", `printf 'ready\\n' > "$FAKE_READY_FILE"\nsleep 30`);
   shellStub(bin, "select", `printf '{"model":"${MODEL_REF}","run_ids":[],"reason":"new"}\\n'`);
   shellStub(bin, "batch", `printf '[1/1] DRY-RUN START ${MODEL}\\n'`);
+  // The notice sink of D20. It keeps the test away from the PM session.
+  shellStub(bin, "notify", `printf '%s\\n' "$1" >> "$FAKE_NOTIFY_RECORD"`);
   return {
     root, repo, harness, bin, sharedHome,
     childPid: join(root, "child.pid"), sweepPid: join(root, "sweep.pid"),
@@ -213,6 +215,8 @@ function testEnv(f: Fixture, extra: Record<string, string> = {}): Record<string,
     BENCH_DAILY_DIR: join(f.root, "daily"),
     BENCH_RUNS_ROOT: join(f.root, "runs"),
     BENCH_DAILY_PUBLISH: "0",
+    BENCH_DAILY_NOTIFY_CMD: join(f.bin, "notify"),
+    FAKE_NOTIFY_RECORD: join(f.root, "notify-sink.txt"),
     BENCH_PRICING_PATH: join(f.root, "pricing.json"),
     ...extra,
   };
