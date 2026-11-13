@@ -914,6 +914,25 @@ explicit live flag.
   role writes `measure/runs/daily_model_schedule/check-6.3.json`.
   - Verify: the file shows `status: pass` and 0 blocking findings.
   - Lane: light lane. Checker: a third family. The family differs from every maker family.
+  - Evidence: `measure/runs/daily_model_schedule/check-6.3.json`.
+    `status: pass`; `retry_recommendation: none`; `audited_head` `729780f`;
+    0 blocking findings; 3 nonblocking findings.
+  - Checker model: `volcengine-agent-plan/glm-5.3-flash#high` (GLM). The
+    family differs from MiniMax (Red) and from Anthropic (Green).
+  - Substitution: two checkers stopped at their start with "Free usage
+    limit reached": `opencode/deepseek-v4.1-flash-free#high` and
+    `opencode/glm-5.3-flash-free#high`. `ra-quota` had no other GO route
+    outside the maker families and Kimi, except Codex. The Ark Agent plan
+    was WAIT by about 2 points of month pace. The orchestrator used it for
+    the deadline of 2026-11-14 18:00.
+  - F1 (Major): the out-of-scope item "Any change of the Go guard limit"
+    contradicted D18. Fixed by Red in commit `0ff9ef3` (spec text only).
+  - F2 (Minor): risk R3 held the old limit of 80. Fixed by Red in commit
+    `0ff9ef3` (spec text only).
+  - F3 (Minor): a batch that exits 3 leaves the job exit 3, and the FAIL
+    line names it. Open, nonblocking.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [x] 17b8e25 6.2b Green: the notice gate of D20 in `harness/cron-daily.sh` only. The
   role reads the cgroup file, and it sends the real line only under the
   timer unit or under `BENCH_DAILY_NOTIFY_LIVE=1`. A hand run sends a HAND
@@ -959,27 +978,20 @@ explicit live flag.
     `lending-desk-daily HAND `.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
-- [ ] 6.3b Checker re-check of D20, of task 6.1c, and of task 6.2b. The role
+- [x] ec10e5a 6.3b Checker re-check of D20, of task 6.1c, and of task 6.2b. The role
   writes `measure/runs/daily_model_schedule/check-6.3b.json`.
   - Verify: the file shows `status: pass` and 0 blocking findings.
   - Lane: light lane. Checker: volcengine-agent-plan/glm-5.3-flash#high (GLM). The family differs from every maker family.
-  - Evidence: `measure/runs/daily_model_schedule/check-6.3.json`.
-    `status: pass`; `retry_recommendation: none`; `audited_head` `729780f`;
-    0 blocking findings; 3 nonblocking findings.
+  - Evidence: `measure/runs/daily_model_schedule/check-6.3b.json`.
+    `status: pass`; `retry_recommendation: none`; `audited_head` `ec10e5a`;
+    0 blocking findings; 2 nonblocking findings.
   - Checker model: `volcengine-agent-plan/glm-5.3-flash#high` (GLM). The
-    family differs from MiniMax (Red) and from Anthropic (Green).
-  - Substitution: two checkers stopped at their start with "Free usage
-    limit reached": `opencode/deepseek-v4.1-flash-free#high` and
-    `opencode/glm-5.3-flash-free#high`. `ra-quota` had no other GO route
-    outside the maker families and Kimi, except Codex. The Ark Agent plan
-    was WAIT by about 2 points of month pace. The orchestrator used it for
-    the deadline of 2026-11-14 18:00.
-  - F1 (Major): the out-of-scope item "Any change of the Go guard limit"
-    contradicted D18. Fixed by Red in commit `0ff9ef3` (spec text only).
-  - F2 (Minor): risk R3 held the old limit of 80. Fixed by Red in commit
-    `0ff9ef3` (spec text only).
-  - F3 (Minor): a batch that exits 3 leaves the job exit 3, and the FAIL
-    line names it. Open, nonblocking.
+    family differs from MiniMax (Red) and from Anthropic (Green). This is the
+    same substitution as in task 6.3.
+  - N1 (Nit): the case G1 is a text check, and its scan covers the top level
+    of `harness/schedule-tests/` and `harness/tests/` only. Open, nonblocking.
+  - F3 (Minor, from check-6.3): a batch that exits 3 leaves the job exit 3,
+    and the FAIL line names it. Open, nonblocking.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
 - [x] 0ff9ef3 6.4 Hashes. The role runs the hash command and records both values.
@@ -1065,9 +1077,34 @@ explicit live flag.
     PM session, so the receipt by the PM stays for the report of task 6.7.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
-- [ ] 6.7 Report to the PM: status, facts changed, and defaults taken.
+- [x] ec10e5a 6.7 Report to the PM: status, facts changed, and defaults taken.
   - Verify: the report names the commit SHA, the pushed range, and the rows of the last run.
   - Lane: light lane. One maker, one checker in a different family.
+  - The orchestrator sent the reports to the PM in this session on
+    2026-11-13. The recorder did not send them.
+  - PM receipts: D18 accepted (the monthly stop is above 95, the weekly stop
+    stays above 80). The exit codes accepted: 0 for a publish, 3 for a skip
+    (the site data is still committed and pushed first), and 1, 2, 130, 143
+    for a failure, with one line each. A skip day that systemd shows as
+    failed is right. The real send limited to the timer unit accepted. The
+    night suites after the D20 code accepted.
+  - Finding F4: the PM took the planned channel line of task 6.6b (22:13:02,
+    transient unit `run-p1366296-i1372737.service`) for a test leak. D20
+    closed the gap.
+  - Causes reported: on 11-04 exit 2 with `DAILY FAIL playwright: Chromium is
+    missing` (the pinned Playwright headless shell was deleted on 11-03; fixed
+    by `grader_system_chrome` Phase 1). On 11-08 exit 1 with `DAILY FAIL
+    catalog` after the credential seed failed 3 calls in about 10 s under
+    systemd (fixed by `opencode_host_isolation` Phase 4). On 11-11 exit 0 with
+    no publish: the zero-run guard stop exited before the publish (fixed by
+    D15 and D19).
+  - Go month estimate per run (pricing data of week 2026w43): mean 0.105
+    percent, highest single run 1.343 percent, about 1 to 8 percent for a
+    12-run day.
+  - The pushed range and the rows of the last run come with the timer run of
+    task 6.8.
+  - Deviation: measure-guard denies `[~]` while an earlier phase holds no
+    checkpoint, so the task went from `[ ]` to `[x]`.
 - [ ] 6.8 The timer run of Sun 2026-11-15 01:00. The role records the
   `DAILY PUSH`, `DAILY PUBLISH`, and `DAILY NOTIFY` lines and the public
   `generated_at` value. The monthly Go use is 84.06 percent, so the monthly
