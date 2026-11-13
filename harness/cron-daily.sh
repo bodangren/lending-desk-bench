@@ -17,8 +17,11 @@
 # BENCH_DAILY_DATE, BENCH_DAILY_CATALOG, BENCH_DAILY_SERVED,
 # BENCH_DAILY_PUBLISH, BENCH_DAILY_LOCK, BENCH_DAILY_QUOTA_CMD,
 # BENCH_DAILY_BATCH, BENCH_DAILY_POST, BENCH_DAILY_SELECT,
-# BENCH_DAILY_NOTIFY_CMD, and BENCH_DAILY_PM_CONFIG. BENCH_DAILY_NOTIFY_CMD
-# names an executable. The job runs it with the notice line as its only argument.
+# BENCH_DAILY_NOTIFY_CMD, BENCH_DAILY_PM_CONFIG, BENCH_DAILY_CGROUP_FILE, and
+# BENCH_DAILY_NOTIFY_LIVE. BENCH_DAILY_NOTIFY_CMD names an executable. The job
+# runs it with the notice line as its only argument. Without it, the real send
+# runs only in the timer unit (the cgroup file holds lending-desk-daily.service)
+# or with BENCH_DAILY_NOTIFY_LIVE=1, which marks the line HAND (D20).
 # BENCH_DAILY_RUNNER is retired and is never started. Dry runs write no day
 # record and make no model call.
 set -u
@@ -98,9 +101,11 @@ SELFCHECK_MARKER="$TMP_DIR/selfcheck-pass-$WEEK-$$"
 # The notice of D17. A live run sends one line: PUBLISH for exit 0 after a
 # push, SKIP for exit 3, and FAIL for every other non-zero exit. The line holds
 # only the labels of this job, never a credential or command output. A failed
-# send prints a short reason and never changes the exit status.
+# send prints a short reason and never changes the exit status. The gate of D20
+# comes before the real send: the seam first, then the VITEST rule, then the
+# timer unit or the live flag.
 daily_notify() {
-  local rc="$1" line="" reason="" rows="$N_RUNS" pm="" pm_config="" send_rc=0
+  local rc="$1" line="" reason="" rows="$N_RUNS" pm="" pm_config="" cgroup_file="" send_rc=0
   if [ "$DRY_RUN" = "1" ]; then return 0; fi
   if [ "$rc" -eq 0 ] && [ "$PUSH_DONE" = "1" ]; then
     line="lending-desk-daily PUBLISH $DAY $PUSH_NEW range=$PUSH_OLD..$PUSH_NEW commits=$PUSH_COMMITS rows=$rows"
@@ -125,6 +130,19 @@ daily_notify() {
   fi
   if [ -n "${VITEST:-}" ]; then
     echo "DAILY NOTIFY skipped: test"
+    return 0
+  fi
+  # The real send needs the timer unit or the live flag (D20). An agent shell
+  # inherits INVOCATION_ID, so only the cgroup shows the timer unit. A line
+  # that the live flag sends from outside the unit says HAND.
+  cgroup_file="${BENCH_DAILY_CGROUP_FILE:-/proc/self/cgroup}"
+  if [ -f "$cgroup_file" ] && grep -qF "/lending-desk-daily.service" "$cgroup_file" 2>/dev/null; then
+    :
+  elif [ "${BENCH_DAILY_NOTIFY_LIVE:-}" = "1" ]; then
+    line="lending-desk-daily HAND ${line#lending-desk-daily }"
+    line="${line:0:300}"
+  else
+    echo "DAILY NOTIFY skipped: not the timer unit"
     return 0
   fi
   echo "DAILY NOTIFY $line"
