@@ -1123,11 +1123,29 @@ The PM order is exact in quotation:
 
 This phase adds the nightly timer, catch-up rule, board-aware pick order, heavy-run gate, and notice fields of spec D21 to D25.
 
-- [ ] 7.1 Red: the spec amendment and the targeted Red tests. The role adds D21 to D25 to `spec.md`, with the matching evidence, functional requirements, acceptance criteria, and the D19 REST exit row. The role adds `harness/schedule-tests/daily-catchup.test.ts` and `harness/schedule-tests/daily-pick-board.test.ts`. The tests cover the timer text, night rule, REST path, due dates, pick groups, heavy-run gate, and notice fields. Every test that starts `cron-daily.sh` uses the notice sink, board seam, and safe heavy-run seam. No test reaches a real model, catalog fetch, heavy-run, OpenCode command, OpenChamber command, docs tree, or real home.
+- [x] c030b36 7.1 Red: the spec amendment and the targeted Red tests. The role adds D21 to D25 to `spec.md`, with the matching evidence, functional requirements, acceptance criteria, and the D19 REST exit row. The role adds `harness/schedule-tests/daily-catchup.test.ts` and `harness/schedule-tests/daily-pick-board.test.ts`. The tests cover the timer text, night rule, REST path, due dates, pick groups, heavy-run gate, and notice fields. Every test that starts `cron-daily.sh` uses the notice sink, board seam, and safe heavy-run seam. No test reaches a real model, catalog fetch, heavy-run, OpenCode command, OpenChamber command, docs tree, or real home.
   - Verify: `cd harness && npx vitest run schedule-tests/daily-catchup.test.ts schedule-tests/daily-pick-board.test.ts --configLoader native --maxWorkers=1` exits non-zero. Each failure names a missing rule of D21 to D25.
   - Verify: `cd harness && npx vitest run schedule-tests/notice-seam-guard.test.ts --configLoader native --maxWorkers=1 --reporter=verbose` exits 0.
   - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose` exits 0.
   - Lane: light lane. Maker: `nvidia/minimaxai/minimax-m3.1-flash#thinking` (MiniMax). Checker: task 7.3 uses a different family.
+  - Evidence: commit `89d0b33` holds the spec amendment and this plan task.
+    Commit `c030b36` holds the Red work: the two new test files. No production
+    file changed.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-catchup.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 failed (1)`; `Tests  12 failed (12)`; exit 1. The failing
+    cases are C1 (D21), C2, C3, C4, C5, C6, C7, and C8 (D22), C9, C10, and
+    C11 (D24), and C12 (D25). Each failure names the missing rule.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-pick-board.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 failed (1)`; `Tests  6 failed | 1 passed (7)`; exit 1. The
+    failing cases are P2, P3, P4, P5, P6, and P7 (D23). The case P1 passes at
+    HEAD: the picker output without `--board` stays unchanged.
+  - Command: `cd harness && npx vitest run schedule-tests/notice-seam-guard.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  5 passed (5)`; exit 0.
+  - Command: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
+    `Test Files  1 passed (1)`; `Tests  14 passed (14)`; exit 0.
+  - Note: `harness/pick-oracle.py` does not exist at HEAD. The case P3 fails on
+    the missing file. The Green role adds the oracle at that path.
+  - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds an open task, so the task went from `[ ]` to `[x]`.
 - [ ] 7.2 Green: the implementation of D21 to D25. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector and oracle, the heavy-run gate, and the notice fields. The job always passes `--board` to both pickers. A REST night ends before the catalog fetch. A live track batch runs through heavy-run.
   - Verify: the Red command of task 7.1 exits 0.
   - Verify: the notice seam and publish notice commands of task 7.1 exit 0.
