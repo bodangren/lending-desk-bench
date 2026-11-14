@@ -31,6 +31,17 @@ const CHECKER_ROLES = new Set([
   "final-acceptance",
 ]);
 
+/** Every coverage key that the preview page reads. A missing key is a
+ * schema refusal. The check runs before any write (spec D16, FR-1). */
+const REQUIRED_COVERAGE_KEYS = [
+  "runs",
+  "first_run_date",
+  "last_run_date",
+  "share_known_route",
+  "share_with_result",
+  "paired_duplicates_left_out",
+];
+
 function refuse(check: string): never {
   process.stdout.write(`input-check: ${check}\n`);
   process.exit(2);
@@ -166,6 +177,10 @@ function main(): void {
 
   const doc = JSON.parse(bytes.toString("utf8"));
   if (doc.schema !== "real-work-outcomes/1") refuse("schema");
+  const coverage = doc.coverage ?? {};
+  for (const key of REQUIRED_COVERAGE_KEYS) {
+    if (!Object.hasOwn(coverage, key)) refuse("schema");
+  }
   const leftOut = doc.coverage?.paired_duplicates_left_out;
   if (typeof leftOut !== "number" || !Number.isInteger(leftOut)) refuse("schema");
   const weekly = Array.isArray(doc.weekly) ? doc.weekly : [];

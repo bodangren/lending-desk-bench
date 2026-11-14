@@ -2,48 +2,94 @@
 # Build the model-guide preview folder from docs/ and the new pages (FR-7).
 # Usage: preview.sh --export <file> [--preview <folder>]
 # The default preview folder is <repo>/.tmp/model-guide-preview.
+# It resolves relative --export and --preview values against the caller
+# folder before it changes folders. It refuses an unsafe preview path with
+# `preview: refused path <value>` on stdout, exit 2, before any write.
 # It copies docs/ into the preview folder, records the SHA-256 of each copied
 # file in preview-base.json, adds the Real work and Review nav links to the
 # preview index.html, and renders real-work.html from the page template and
-# the tool output. It writes no file under docs/. Exit 0 on success. Exit 2
-# when the input check of real-work.ts fails.
+# the tool output. The fresh real-work.json and real-work.html win over any
+# stale copies from docs/. It writes no file under docs/. Exit 0 on success.
+# Exit 2 when the input check of real-work.ts fails; it leaves no new
+# preview folder in that case.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 EXPORT=""
-PREVIEW="$ROOT/.tmp/model-guide-preview"
+PREVIEW_SET=""
+PREVIEW=""
+
+usage() {
+  echo "usage: preview.sh --export <file> [--preview <folder>]" >&2
+  exit 2
+}
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --export) EXPORT="${2:-}"; shift 2;;
-    --preview) PREVIEW="${2:-}"; shift 2;;
-    *) echo "usage: preview.sh --export <file> [--preview <folder>]" >&2; exit 2;;
+    --export)
+      [ $# -ge 2 ] || usage
+      EXPORT="$2"; shift 2;;
+    --preview)
+      [ $# -ge 2 ] || usage
+      PREVIEW_SET=1; PREVIEW="$2"; shift 2;;
+    *) usage;;
   esac
 done
-[ -n "$EXPORT" ] || { echo "usage: preview.sh --export <file> [--preview <folder>]" >&2; exit 2; }
+[ -n "$EXPORT" ] || usage
+if [ -z "$PREVIEW_SET" ]; then
+  PREVIEW="$ROOT/.tmp/model-guide-preview"
+elif [ -z "$PREVIEW" ]; then
+  usage
+fi
+
+# Resolve against the caller folder before any cd; use only absolute paths
+# after this point.
+EXPORT_ABS="$(realpath -m -- "$EXPORT")"
+PREVIEW_ABS="$(realpath -m -- "$PREVIEW")"
 
 DOCS_REAL="$(realpath "$ROOT/docs")"
-PREVIEW_REAL="$(realpath -m -- "$PREVIEW")"
-if [ "$PREVIEW_REAL" = "$DOCS_REAL" ] \
-  || [ "${PREVIEW_REAL#"$DOCS_REAL"/}" != "$PREVIEW_REAL" ] \
-  || [ "${DOCS_REAL#"$PREVIEW_REAL"/}" != "$DOCS_REAL" ]; then
+# Everything sits under the root path, so docs is under it.
+if [ "$PREVIEW_ABS" = "/" ]; then
   echo "preview: refused path $PREVIEW"
   exit 2
 fi
+case "$DOCS_REAL" in
+  "$PREVIEW_ABS"|"$PREVIEW_ABS"/*)
+    echo "preview: refused path $PREVIEW"
+    exit 2;;
+esac
+case "$PREVIEW_ABS" in
+  "$DOCS_REAL"|"$DOCS_REAL"/*)
+    echo "preview: refused path $PREVIEW"
+    exit 2;;
+esac
 
-mkdir -p "$PREVIEW"
+PREVIEW_EXISTED=0
+if [ -e "$PREVIEW_ABS" ]; then
+  PREVIEW_EXISTED=1
+fi
+
+# Copy docs/ first so the fresh real-work.json and real-work.html win over
+# stale copies that docs/ may hold.
+mkdir -p "$PREVIEW_ABS"
+cp -a "$ROOT/docs/." "$PREVIEW_ABS/"
+
 cd "$ROOT/harness"
 set +e
-npx tsx model-guide/real-work.ts --input "$EXPORT" --out "$PREVIEW"
+npx tsx model-guide/real-work.ts --input "$EXPORT_ABS" --out "$PREVIEW_ABS"
 STATUS=$?
 set -e
-[ "$STATUS" -eq 0 ] || exit "$STATUS"
-
-cp -a "$ROOT/docs/." "$PREVIEW/"
+if [ "$STATUS" -ne 0 ]; then
+  # A refused input check leaves no new preview folder.
+  if [ "$PREVIEW_EXISTED" -eq 0 ]; then
+    rm -rf "$PREVIEW_ABS"
+  fi
+  exit "$STATUS"
+fi
 
 export MODEL_GUIDE_ROOT="$ROOT"
-export MODEL_GUIDE_PREVIEW="$PREVIEW"
+export MODEL_GUIDE_PREVIEW="$PREVIEW_ABS"
 export MODEL_GUIDE_TEMPLATE="$SCRIPT_DIR/pages/real-work.html"
 python3 - <<'PY'
 import hashlib

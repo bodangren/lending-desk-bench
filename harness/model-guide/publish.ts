@@ -12,14 +12,19 @@
  * The checks run in this order:
  *   1. no approval record        -> exit 2, `publish: no approval record`
  *   2. no files section or rows  -> exit 2, `publish: no files`
- *   3. an unsafe approval path   -> exit 2, `publish: bad path <path>`
- *   4. an approved SHA-256 differs from the preview file
+ *   3. a malformed record row    -> exit 2, `publish: bad line <text>`
+ *   4. an unsafe approval path, or a path that names a folder
+ *                                -> exit 2, `publish: bad path <path>`
+ *   5. an approved SHA-256 differs from the preview file
  *                                -> exit 2, `publish: sha256 <path>`
- *   5. no preview base file      -> exit 2, `publish: no preview base`
- *   6. a docs/ file differs from preview-base.json
+ *   6. no preview base file, or invalid JSON in it
+ *                                -> exit 2, `publish: no preview base` or
+ *                                   `publish: bad preview base`
+ *   7. a docs/ file differs from preview-base.json
  *                                -> exit 2, `publish: drift <path>`
- *   7. else copy each approved preview file to `<repo>/docs/<path>`, exit 0.
+ *   8. else copy each approved preview file to `<repo>/docs/<path>`, exit 0.
  * Each refusal prints one line on stdout and writes no file.
+ * The drift check uses own-property checks on the preview base map.
  * A usage error prints `usage: publish.ts --preview <folder>` on stderr,
  * keeps stdout empty, and exits 2.
  */
@@ -68,8 +73,10 @@ function readApproval(): ApprovalRow[] {
   if (start === -1) refuse("publish: no files");
   const rows: ApprovalRow[] = [];
   for (const line of lines.slice(start + 1)) {
+    if (line.trim() === "") continue;
     const match = line.match(/^([0-9a-f]{64})\s+(.*)$/);
-    if (match) rows.push({ sha: match[1], path: match[2].trim() });
+    if (!match) refuse(`publish: bad line ${line}`);
+    rows.push({ sha: match[1], path: match[2].trim() });
   }
   if (rows.length === 0) refuse("publish: no files");
   return rows;
@@ -100,6 +107,9 @@ function main(): void {
   }
   for (const row of approved) {
     const file = join(preview, row.path);
+    if (existsSync(file) && statSync(file).isDirectory()) {
+      refuse(`publish: bad path ${row.path}`);
+    }
     if (!existsSync(file) || sha256File(file) !== row.sha) {
       refuse(`publish: sha256 ${row.path}`);
     }
@@ -107,12 +117,19 @@ function main(): void {
 
   const basePath = join(preview, "preview-base.json");
   if (!existsSync(basePath)) refuse("publish: no preview base");
-  const base = JSON.parse(readFileSync(basePath, "utf8"));
+  let base: { docs?: Record<string, string> };
+  try {
+    base = JSON.parse(readFileSync(basePath, "utf8"));
+  } catch {
+    refuse("publish: bad preview base");
+  }
   const baseDocs: Record<string, string> = base.docs ?? {};
+  const hasOwn = (obj: object, key: string): boolean =>
+    Object.prototype.hasOwnProperty.call(obj, key);
 
   const drifted: string[] = [];
   for (const rel of docsFiles()) {
-    if (!(rel in baseDocs)) drifted.push(rel);
+    if (!hasOwn(baseDocs, rel)) drifted.push(rel);
   }
   for (const rel of Object.keys(baseDocs).sort()) {
     const file = join(ROOT, "docs", rel);
