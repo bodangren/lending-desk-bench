@@ -22,10 +22,12 @@ const HARNESS = join(ROOT, "harness");
 const TMP_ROOT = "/tmp/opencode";
 const FRESH = "fresh-model";
 const RANKED = "ranked-0";
+const LOW = "low-model";
 const D21 = "D21 nightly timer";
 const D22 = "D22 night rule";
 const D24 = "D24 heavy-run";
 const D25 = "D25 notice fields";
+const D26 = "D26 high-use rule";
 
 let FAILED = 0;
 let PASS_COUNT = 0;
@@ -112,6 +114,16 @@ const group = Number(process.env.PICK_GROUP || '1');
 const isNew = process.env.PICK_NEW !== 'false';
 const model = process.env.PICK_MODEL || 'fresh-model';
 const reason = process.env.PICK_REASON || (isNew ? 'untested' : 'stalest');
+if (process.env.PICK_EXIT === '3') {
+  console.log(JSON.stringify({
+    schema: 1, date: process.env.BENCH_DAILY_DATE, week: process.env.WEEK || '2026w47', model: null,
+    reason: 'none', last_test: null, counts: {live: 0, candidates: 0, eligible: 0, untested: 0},
+    excluded: {unpriced: [], gone: [], unservable: [], this_week: []}, order: [], group: 0, new: false,
+  }));
+  console.error('DAILY_PICK date=' + process.env.BENCH_DAILY_DATE + ' model=none reason=none'
+    + ' last_test=none candidates=0 eligible=0 untested=0');
+  process.exit(3);
+}
 const output = {
   schema: 1, date: process.env.BENCH_DAILY_DATE, week: process.env.WEEK || '2026w47', model,
   reason, last_test: null, counts: {live: 2, candidates: 2, eligible: 2, untested: 1},
@@ -164,10 +176,13 @@ function fixture(): Fixture {
       [RANKED]: { name: RANKED, api: "openai-completions", high_usage: true, batch: true,
         requests_per_month: 90, monthly_usage_usd: 15,
         rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
+      [LOW]: { name: LOW, api: "openai-completions", high_usage: false, batch: true,
+        requests_per_month: 900, monthly_usage_usd: 15,
+        rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
     },
   }));
-  writeFileSync(catalog, JSON.stringify({ live: [FRESH, RANKED] }));
-  writeFileSync(served, `opencode-go/${FRESH}\nopencode-go/${RANKED}\n`);
+  writeFileSync(catalog, JSON.stringify({ live: [FRESH, RANKED, LOW] }));
+  writeFileSync(served, `opencode-go/${FRESH}\nopencode-go/${RANKED}\nopencode-go/${LOW}\n`);
 
   const cronSource = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8")
     .replaceAll("/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh", join(root, "missing-real-heavy.sh"));
@@ -429,5 +444,31 @@ describe("nightly catch-up", () => {
     expect(sent, `${D25}: the publish must send one notice`).toHaveLength(1);
     expect(sent[0], `${D25}: the publish notice must end with the board fields`)
       .toMatch(/ model=fresh-model new=yes board=10 due=10$/);
+  });
+
+  caseOf("C13 the job refuses a picked model outside the high-use list", f => {
+    setBoard(f, 9);
+    const r = runJob(f, { env: { PICK_MODEL: LOW } });
+    expect(r.status, `${D26}: a model outside the high-use list must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
+    expect(lines(r, "DAILY SKIP "), `${D26}: the job must print the pinned skip line`)
+      .toEqual([`DAILY SKIP not high-use: ${LOW}`]);
+    expect(batchCalls(f), `${D26}: the skip must stop before the first batch`).toEqual([]);
+    const sent = sinkLines(f);
+    expect(sent, `${D26}: the skip must send one notice`).toHaveLength(1);
+    expect(sent[0], `${D26}: the notice must name the model and the reason`)
+      .toContain(`exit=3: not high-use: ${LOW}`);
+  });
+
+  caseOf("C14 a night with no new high-use model skips with exit 3", f => {
+    setBoard(f, 9);
+    const r = runJob(f, { env: { PICK_EXIT: "3" } });
+    expect(r.status, `${D26}: a night without a high-use model must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
+    expect(lines(r, "DAILY SKIP "), `${D26}: the job must print the pinned skip line`)
+      .toEqual(["DAILY SKIP no high-use model"]);
+    expect(batchCalls(f), `${D26}: the skip must stop before the first batch`).toEqual([]);
+    const sent = sinkLines(f);
+    expect(sent, `${D26}: the skip must send one notice`).toHaveLength(1);
+    expect(sent[0], `${D26}: the notice must name the reason`)
+      .toContain("exit=3: no high-use model");
   });
 });

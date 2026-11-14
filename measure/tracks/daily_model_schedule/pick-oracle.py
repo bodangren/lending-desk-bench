@@ -101,7 +101,19 @@ for name in sorted(os.listdir(runs)):
     if t:
         weeks.setdefault(m, set()).add(f"{t.group(1)}w{t.group(2)}")
 
-cands = [m for m in dict.fromkeys(live) if m in models and f"{prov}/{m}" in served]
+# The high-use set of spec D26. The price table holds the field
+# `high_usage`. Rule 5 of PLAN.md skips the Muse Spark training models and
+# the Flash Vision Exp model.
+def is_high_use(model_id):
+    spec = models.get(model_id)
+    if not isinstance(spec, dict) or spec.get("high_usage") is not True:
+        return False
+    if model_id.startswith("muse-spark"):
+        return False
+    return model_id != "deepseek-v4-flash-vision-exp"
+
+
+cands = [m for m in dict.fromkeys(live) if m in models and f"{prov}/{m}" in served and is_high_use(m)]
 elig = [m for m in cands if week not in weeks.get(m, set())]
 unt = [m for m in elig if m not in last]
 

@@ -256,6 +256,25 @@ All facts come from the files on disk and from read-only commands on
   PY
   ```
 
+- **EV30. The high-use rule of Daniel (2026-11-15).** The order is exact in
+  quotation:
+
+  > kimi-k2.7-code is not on the OpenCode Go high-use list, so tonight's run was a waste. ... New rule for each run day: the new model comes ONLY from the OpenCode Go high-use list; a fallback outside that list is no fallback: skip the run and say so. On the tower, before the next run: add a check that the chosen model is on that list (Red test first), and name the next on-list model that is not yet on the board.
+
+  The facts of the list:
+  - The list is the file `harness/go-pricing.json`. The field
+    `high_usage: true` marks a high-use model. The file holds
+    `high_usage_min_requests_per_month: 7000`.
+  - `PLAN.md` rule 5 reads: "Rank only Go High Usage models (>7000 requests/month). Skip Muse Spark (training) and Flash Vision Exp (vision SKU)."
+  - The live page `https://opencode.ai/docs/go/` (read 2026-11-15) gives Kimi
+    K2.7 Code 6,750 requests a month. That is not high use. The page also
+    lists Hy4 with 13,500 requests. The pinned table holds no Hy4 entry with
+    that value. A later data task updates the table.
+  - The pinned table holds `kimi-k2.7-code` with `high_usage: false`. It holds
+    `muse-spark-1.2-contributor`, `muse-spark-1.3-contributor`, and
+    `deepseek-v4-flash-vision-exp` with `high_usage: true`. Rule 5 excludes
+    the last three.
+
 ## Definitions
 
 - **Run day.** A Wednesday or a Sunday on which the job runs. The job runs
@@ -583,17 +602,18 @@ date 2026-10-25.
       passed. The job sends one PUBLISH line (D17). A REST night also exits
       0. It sends no notice (D22).
     - **3.** A skip. A skip is a guard stop (before or after a run), the
-      lock held (D9), no eligible model (the reason `none`), no new model
-      (D22), or a day with runs whose page step changed no file under
-      `docs/`. A guard stop still
+      lock held (D9), no high-use model (D26), a model outside the high-use
+      set (D26), no new model (D22), or a day with runs whose page step
+      changed no file under `docs/`. A guard stop still
       runs steps (5) to (9) of D12, commits `docs/` when it changed (D15),
       and pushes under D16. It then exits 3. The job sends one SKIP line:
       `lending-desk-daily SKIP <date> exit=3: <reason>; publish=<short sha>
       range=<old short>..<new short> commits=<n> rows=<runs>`, or
       `lending-desk-daily SKIP <date> exit=3: <reason>; publish=none
       rows=<runs>` when no push happened. `<reason>` is one of `go-guard
-      <go_guard_stop text>`, `lock held`, `no eligible model`, `no new model`,
-      or `no docs change`.
+      <go_guard_stop text>`, `lock held`, `no high-use model`, `not high-use:
+      <model>`, `no new model`, or `no docs change`. The reason `no eligible
+      model` of the earlier text is now `no high-use model` (D26).
     - **1, 2, 130, 143.** A failure. Each D16 push failure is a failure, also
       on a skip day. The job sends one FAIL line (D17).
     - A dry run does not change. A guard stop in a dry run exits 0 and sends
@@ -731,6 +751,29 @@ date 2026-10-25.
     new=<yes|no> board=<n2> due=<m>`. Here `n2` is the board length read again
     after the export. The FAIL line ends with ` model=<id|none>`. The
     300-character cut stays.
+26. **D26. The high-use rule.** Added on 2026-11-15 by task 7.1c.
+    - **The high-use set.** A model is in the high-use set when the price
+      table holds it with `high_usage: true` and rule 5 of `PLAN.md` does not
+      exclude it. Rule 5 excludes the Muse Spark training models and the Flash
+      Vision Exp model. Their ids are `muse-spark-1.2-contributor`,
+      `muse-spark-1.3-contributor`, and `deepseek-v4-flash-vision-exp`. A
+      later Muse Spark or Flash Vision Exp model is excluded too.
+    - **Selector filter.** `harness/daily-pick.ts` and
+      `measure/tracks/daily_model_schedule/pick-oracle.py` consider only the
+      high-use set. The groups and the order of D23 apply inside that set.
+      The filter adds no field to the output. The lines stay as they are.
+    - **Cron check before the first batch.** The job reads the price table
+      and checks the chosen model. A model that is not in the high-use set
+      gives one line `DAILY SKIP not high-use: <model>`. The job runs no
+      batch. The skip reason is `not high-use: <model>`. The job exits 3 and
+      sends the D17 notice.
+    - **No high-use model.** When the selector finds no new model on a night
+      that needs a new model, the job prints one line
+      `DAILY SKIP no high-use model`. It runs no batch. The skip reason is
+      `no high-use model`. The job exits 3 and sends the D17 notice. The job
+      never falls back to a model outside the high-use set.
+    - **Line texts.** The two lines are exact: `DAILY SKIP not high-use:
+      <model>` and `DAILY SKIP no high-use model`.
 
 ## Functional requirements
 
@@ -748,6 +791,7 @@ date 2026-10-25.
 
 - The candidate list is the live list, less each unpriced model and each
   unservable model (D2, D3).
+- The selector and the oracle keep only the high-use set of D26.
 - The selector output lists `unpriced`, `gone`, `unservable`, and
   `this_week` models by name.
 - **Check.** On synthetic inputs, an unpriced live model, a priced model that
@@ -1042,6 +1086,22 @@ The amended rule (D20):
 - **Check.** A publish notice, a skip notice, and a fail notice end with the
   D25 fields. The skip notice names `new=no` when no new model exists.
 
+### FR-22 — The high-use rule
+
+- The selector and the oracle consider only the high-use set of D26. The
+  groups and the order of D23 apply inside that set.
+- The job checks the chosen model against the price table before the first
+  batch. A model outside the high-use set gives one line
+  `DAILY SKIP not high-use: <model>`, exit 3, the D17 notice, and no batch.
+- A night with no new high-use model gives one line
+  `DAILY SKIP no high-use model`, exit 3, and the D17 notice. The job never
+  falls back to a model outside the high-use set.
+- **Check.** A model with the highest requests that is not high use is never
+  picked. A high-use group 1 model comes first. `kimi-k2.7-code` is never
+  picked. The order list holds only high-use models. A picked model outside
+  the set gives the pinned line and the notice. A night with no new high-use
+  model gives the pinned line and the notice.
+
 ## Non-functional requirements
 
 - **NFR-1 No other model call.** The job sends a model call for the day's
@@ -1159,6 +1219,13 @@ The amended rule (D20):
 20. **AC-20** PUBLISH, SKIP, and FAIL notices carry the D25 fields. The
     board length comes from the second board read. The notice stays within
     300 characters (FR-21, D25).
+21. **AC-21** The selector and the oracle consider only the high-use set of
+    D26. A model outside that set is never picked and never appears in the
+    order list. The job checks the chosen model before the first batch. A
+    model outside the set gives `DAILY SKIP not high-use: <model>`, exit 3,
+    the D17 notice, and no batch. A night with no new high-use model gives
+    `DAILY SKIP no high-use model`, exit 3, and the D17 notice. The job never
+    falls back to a model outside the high-use set (FR-22, D26).
 
 ## Out of scope
 
