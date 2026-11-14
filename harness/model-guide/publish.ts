@@ -11,73 +11,112 @@
  *
  * The checks run in this order:
  *   1. no approval record        -> exit 2, `publish: no approval record`
- *   2. an approved SHA-256 differs from the preview file
+ *   2. no files section or rows  -> exit 2, `publish: no files`
+ *   3. an unsafe approval path   -> exit 2, `publish: bad path <path>`
+ *   4. an approved SHA-256 differs from the preview file
  *                                -> exit 2, `publish: sha256 <path>`
- *   3. a docs/ file differs from preview-base.json
+ *   5. no preview base file      -> exit 2, `publish: no preview base`
+ *   6. a docs/ file differs from preview-base.json
  *                                -> exit 2, `publish: drift <path>`
- *   4. else copy each approved preview file to `<repo>/docs/<path>`, exit 0.
- * Each refusal prints its line on stdout and writes no file.
+ *   7. else copy each approved preview file to `<repo>/docs/<path>`, exit 0.
+ * Each refusal prints one line on stdout and writes no file.
+ * A usage error prints `usage: publish.ts --preview <folder>` on stderr,
+ * keeps stdout empty, and exits 2.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
 const APPROVAL = join(ROOT, "measure", "tracks", "model_guide", "publish-approval.md");
+const USAGE = "usage: publish.ts --preview <folder>\n";
+
+function refuse(line: string): never {
+  process.stdout.write(`${line}\n`);
+  process.exit(2);
+}
 
 function sha256File(path: string): string {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 
 function parseArgs(argv: string[]): string {
-  let preview = "";
-  for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === "--preview") preview = argv[i + 1] ?? "";
-  }
-  if (!preview) {
-    process.stdout.write("publish: no approval record\n");
+  if (argv.length !== 2 || argv[0] !== "--preview" || !argv[1]) {
+    process.stderr.write(USAGE);
     process.exit(2);
   }
-  return preview;
+  return argv[1];
 }
 
-function readApproval(): Array<[string, string]> {
-  if (!existsSync(APPROVAL)) {
-    process.stdout.write("publish: no approval record\n");
-    process.exit(2);
-  }
+/** The record path must stay a plain relative path inside docs/. */
+function isSafeRelPath(path: string): boolean {
+  if (path === "") return false;
+  if (path.includes("\\")) return false;
+  if (path.startsWith("/")) return false;
+  return path.split("/").every((seg) => seg !== "" && seg !== "." && seg !== "..");
+}
+
+interface ApprovalRow {
+  sha: string;
+  path: string;
+}
+
+function readApproval(): ApprovalRow[] {
+  if (!existsSync(APPROVAL)) refuse("publish: no approval record");
   const lines = readFileSync(APPROVAL, "utf8").split("\n");
   const start = lines.findIndex((line) => line.trim() === "files:");
-  const rows: Array<[string, string]> = [];
-  if (start === -1) return rows;
+  if (start === -1) refuse("publish: no files");
+  const rows: ApprovalRow[] = [];
   for (const line of lines.slice(start + 1)) {
-    const match = line.match(/^([0-9a-f]{64})\s+(.+)$/);
-    if (match) rows.push([match[1], match[2].trim()]);
+    const match = line.match(/^([0-9a-f]{64})\s+(.*)$/);
+    if (match) rows.push({ sha: match[1], path: match[2].trim() });
   }
+  if (rows.length === 0) refuse("publish: no files");
   return rows;
+}
+
+/** Every current file of docs/, with `/` separators, sorted per folder. */
+function docsFiles(): string[] {
+  const out: string[] = [];
+  const walk = (dir: string, prefix: string): void => {
+    for (const name of readdirSync(dir).sort()) {
+      const full = join(dir, name);
+      const rel = prefix ? `${prefix}/${name}` : name;
+      const info = statSync(full);
+      if (info.isDirectory()) walk(full, rel);
+      else if (info.isFile()) out.push(rel);
+    }
+  };
+  walk(join(ROOT, "docs"), "");
+  return out;
 }
 
 function main(): void {
   const preview = parseArgs(process.argv.slice(2));
   const approved = readApproval();
 
-  let failed = false;
-  for (const [sha, rel] of approved) {
-    const file = join(preview, rel);
-    if (!existsSync(file) || sha256File(file) !== sha) {
-      process.stdout.write(`publish: sha256 ${rel}\n`);
-      failed = true;
+  for (const row of approved) {
+    if (!isSafeRelPath(row.path)) refuse(`publish: bad path ${row.path}`);
+  }
+  for (const row of approved) {
+    const file = join(preview, row.path);
+    if (!existsSync(file) || sha256File(file) !== row.sha) {
+      refuse(`publish: sha256 ${row.path}`);
     }
   }
-  if (failed) process.exit(2);
 
   const basePath = join(preview, "preview-base.json");
+  if (!existsSync(basePath)) refuse("publish: no preview base");
   const base = JSON.parse(readFileSync(basePath, "utf8"));
-  const docs: Record<string, string> = base.docs ?? {};
+  const baseDocs: Record<string, string> = base.docs ?? {};
+
   const drifted: string[] = [];
-  for (const rel of Object.keys(docs).sort()) {
+  for (const rel of docsFiles()) {
+    if (!(rel in baseDocs)) drifted.push(rel);
+  }
+  for (const rel of Object.keys(baseDocs).sort()) {
     const file = join(ROOT, "docs", rel);
-    if (!existsSync(file) || sha256File(file) !== docs[rel]) {
+    if (!existsSync(file) || sha256File(file) !== baseDocs[rel]) {
       drifted.push(rel);
     }
   }
@@ -86,10 +125,10 @@ function main(): void {
   }
   if (drifted.length > 0) process.exit(2);
 
-  for (const [, rel] of approved) {
-    const dest = join(ROOT, "docs", rel);
+  for (const row of approved) {
+    const dest = join(ROOT, "docs", row.path);
     mkdirSync(dirname(dest), { recursive: true });
-    writeFileSync(dest, readFileSync(join(preview, rel)));
+    writeFileSync(dest, readFileSync(join(preview, row.path)));
   }
 }
 

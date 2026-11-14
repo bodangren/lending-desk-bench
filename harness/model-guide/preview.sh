@@ -23,6 +23,15 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$EXPORT" ] || { echo "usage: preview.sh --export <file> [--preview <folder>]" >&2; exit 2; }
 
+DOCS_REAL="$(realpath "$ROOT/docs")"
+PREVIEW_REAL="$(realpath -m -- "$PREVIEW")"
+if [ "$PREVIEW_REAL" = "$DOCS_REAL" ] \
+  || [ "${PREVIEW_REAL#"$DOCS_REAL"/}" != "$PREVIEW_REAL" ] \
+  || [ "${DOCS_REAL#"$PREVIEW_REAL"/}" != "$DOCS_REAL" ]; then
+  echo "preview: refused path $PREVIEW"
+  exit 2
+fi
+
 mkdir -p "$PREVIEW"
 cd "$ROOT/harness"
 set +e

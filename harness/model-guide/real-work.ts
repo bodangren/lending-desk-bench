@@ -57,9 +57,18 @@ function num(row: any, key: string): number {
 function parseArgs(argv: string[]): { input: string; out: string } {
   let input = "";
   let out = "";
-  for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === "--input") input = argv[i + 1] ?? "";
-    if (argv[i] === "--out") out = argv[i + 1] ?? "";
+  let i = 0;
+  while (i < argv.length) {
+    if (argv[i] === "--input") {
+      input = argv[i + 1] ?? "";
+      i += 2;
+    } else if (argv[i] === "--out") {
+      out = argv[i + 1] ?? "";
+      i += 2;
+    } else {
+      process.stderr.write("usage: real-work.ts --input <file> --out <folder>\n");
+      process.exit(2);
+    }
   }
   if (!input || !out) {
     process.stderr.write("usage: real-work.ts --input <file> --out <folder>\n");
@@ -75,10 +84,13 @@ function readManifestLine(text: string, key: string): string | null {
 
 /** Fallback for the PM export manifest (spec EV1): one `sha256sum` style
  * line `<sha256>  <size>  <file>`. The Red fixture uses `sha256:` and
- * `size:` lines instead. Both formats carry the same two values. */
-function readManifestSumLine(text: string): { sha256: string; size: string } | null {
-  const match = text.match(/^([0-9a-f]{64})\s+(\d+)\s+\S+.*$/m);
-  return match ? { sha256: match[1], size: match[2] } : null;
+ * `size:` lines instead. Both formats carry the same two values. The file
+ * name of a sum line must equal the base name of the input file. */
+function readManifestSumLine(
+  text: string,
+): { sha256: string; size: string; file: string } | null {
+  const match = text.match(/^([0-9a-f]{64})\s+(\d+)\s+(\S+).*$/m);
+  return match ? { sha256: match[1], size: match[2], file: match[3] } : null;
 }
 
 interface Accum {
@@ -150,9 +162,12 @@ function main(): void {
   if (sizeExpected !== String(bytes.length)) {
     refuse("size");
   }
+  if (sumLine && sumLine.file !== basename(input)) refuse("manifest");
 
   const doc = JSON.parse(bytes.toString("utf8"));
   if (doc.schema !== "real-work-outcomes/1") refuse("schema");
+  const leftOut = doc.coverage?.paired_duplicates_left_out;
+  if (typeof leftOut !== "number" || !Number.isInteger(leftOut)) refuse("schema");
   const weekly = Array.isArray(doc.weekly) ? doc.weekly : [];
   const allTime = Array.isArray(doc.all_time) ? doc.all_time : [];
   const weeklyRuns = weekly.reduce((sum: number, r: any) => sum + num(r, "runs"), 0);
