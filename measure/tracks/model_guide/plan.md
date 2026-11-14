@@ -96,7 +96,7 @@ The overview block goes into `index.html` between the lines
 `Results`. The preview applies both edits in the preview folder; the publish
 applies them in `docs/`.
 
-## Phase 0: Registry and spec review
+## Phase 0: Registry and spec review [checkpoint: 0a44cc9]
 
 - [x] bbde00d 0.1 The registry (spec D2, FR-13). Commit of this plan.
   - `measure/tracks.md` gets `model_guide`, `rigor_a_h` as paused with the
@@ -201,20 +201,28 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
   - Evidence: commit b42a234. `red-1.3.txt` holds the failed test names and
     exit 1. Each test fails with "production file is missing". Case 7 is an
     added success case for the publish copy.
-- [~] 1.4 Green. Write `harness/model-guide/real-work.ts`. Touch no test file
+- [x] f48787c 1.4 Green. Write `harness/model-guide/real-work.ts`. Touch no test file
   and no other file.
+  - Evidence: commit f48787c. `real-work.test.ts` 19 passed, `input-check.test.ts`
+    6 passed, each run alone with exit 0.
   - Verify: `cd harness && npx vitest run model-guide-tests/real-work.test.ts model-guide-tests/input-check.test.ts --configLoader native`
     passes.
-- [ ] 1.5 Green. Write `harness/model-guide/pages/real-work.html`. Touch no
+- [x] b38d577 1.5 Green. Write `harness/model-guide/pages/real-work.html`. Touch no
   test file and no other file.
+  - Evidence: commit b38d577. `real-work.test.ts` 19 passed with exit 0; the page
+    holds the producer table, the checker table, and the work-type tables of spec D16.
   - Verify: `cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native`
     passes, and the page holds the tables of spec D16.
-- [ ] 1.6 Green. Write `harness/model-guide/preview.sh`. Touch no test file
+- [x] f36ebb1 1.6 Green. Write `harness/model-guide/preview.sh`. Touch no test file
   and no other file.
+  - Evidence: commit f36ebb1 (plus the template one-line note fix it carries).
+    `preview-gate.test.ts` 7 passed with exit 0; `git status --short docs/` prints nothing.
   - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
-- [ ] 1.7 Green. Write `harness/model-guide/publish.ts`. Touch no test file
+- [x] 520e1b7 1.7 Green. Write `harness/model-guide/publish.ts`. Touch no test file
   and no other file.
+  - Evidence: commit 520e1b7. `preview-gate.test.ts` 7 passed with exit 0;
+    `git status --short docs/` prints nothing.
   - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
 - [ ] 1.8 Checks. One code checker reads the diff against spec D16 and D21.
@@ -223,7 +231,10 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     tables use only the data of the export.
   - Verify: `measure/runs/model_guide/check-1.8.json` has status pass, or
     each blocking finding has a fix commit.
-- [ ] 1.9 The preview with the real export.
+- [x] 54836d0 1.9 The preview with the real export.
+  - Evidence: commit ef2d16f (PM manifest fallback) plus this plan-record commit.
+    `measure/runs/model_guide/preview-1.9.txt` holds the command, exit 0, and the
+    checked values.
   - Command:
     `harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json`.
   - Verify: `.tmp/model-guide-preview/real-work.html` shows the SHA-256
