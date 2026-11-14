@@ -242,6 +242,15 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `generated_on` 2026-11-14, 1,798 runs, 2026-06-06 to 2026-11-13,
     50.6 %, and 71.7 % (spec acceptance 2). `git status --short docs/`
     prints nothing.
+- [x] 25276eb 1.10 Red. Review fixes, round 1 (A1, A2, A3, B1, B2, B3, C2, C4).
+  - Files: `harness/model-guide-tests/preview-gate.test.ts`,
+    `harness/model-guide-tests/input-check.test.ts`, and
+    `harness/model-guide-tests/leak-guard.test.ts`.
+  - Evidence: `red-1.10.txt` holds the failed test names and exit 1.
+- [~] 1.11 Green. Review fixes, round 1. Fix A1, A2, A3, B1, B2, C2, C4 in
+  `harness/model-guide/` and the task 1.9 record (A4). Touch no test file.
+  - Verify: run `preview-gate.test.ts`, `input-check.test.ts`, and
+    `leak-guard.test.ts` with one worker.
 
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
