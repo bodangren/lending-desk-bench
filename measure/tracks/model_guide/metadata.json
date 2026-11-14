@@ -4,7 +4,7 @@
   "type": "Feature",
   "status": "pending",
   "created": "2026-11-14",
-  "estimated_tasks": 28,
+  "estimated_tasks": 54,
   "actual_tasks": null,
   "author_model": "claude-code/claude-opus-5-5[1m]#high",
   "deadline": "2026-11-22T23:59:00+07:00",

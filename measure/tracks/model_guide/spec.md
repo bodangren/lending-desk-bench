@@ -2,6 +2,7 @@
 
 Spec format: classic FR list. Track type: feature. Base commit: `ea36fae`.
 Author model: `claude-code/claude-opus-5-5[1m]#high`. Date: 2026-11-14.
+Revision 2, 2026-11-14: the findings F1 to F12 of the spec review round 1.
 
 ## Summary
 
@@ -50,6 +51,41 @@ The PM sent the page B hand-off on 2026-11-14. The words are exact.
 > Coverage (show it on the page): 1,798 runs from 2026-06-06 to 2026-11-13; 50.6 % have a known model, 71.7 % have a result. Ratings sit at 4.0 to 4.8 of 5, so do not rank by ratings alone. Rank by pass rate and blocking findings, with the run count beside each number, and mark routes with fewer than 10 runs.
 > Route names stay as written, so #high and [1m] variants are separate rows. Merge them on the page by model, and say so in the method note.
 > A fresh export comes each week.
+
+## Owner decisions
+
+The PM decided these points on 2026-11-14. Each decision binds the track.
+
+- **OD1. Q2, the secrecy of the keys.** The answer keys and the seeded diffs
+  stay outside the public repository. The repository holds only the SHA-256
+  values and the counts. The raw model outputs and the adjudication notes
+  also stay outside. This is the default of D9.
+- **OD2. Q3, the DeepSeek Flash route.** DeepSeek Flash runs through
+  `opencode-go/deepseek-v4.1-flash`. The routes `deepseek/*` are metered and
+  are not plan routes. This track never runs a metered route.
+- **OD3. Q4, the rank of the checker roles.** The checker roles rank by pass
+  rate only. The page shows the blocking rate beside the rate.
+- **OD4. Q5, the merge on page B.** The merge joins only the `#<variant>`
+  rows and the `[1m]` rows of one route. The same model on another provider
+  stays a separate row.
+- **OD5. F5, the second judge.** A second judge comes from a family that is
+  not Anthropic. Only the verdicts that both judges agree on count. A
+  disagreement counts as unclear and never counts against the model.
+- **OD6. Q7, the print-audit error types.** The file
+  `~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json`
+  holds the error types. Its SHA-256 is
+  `f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87`.
+  `MANIFEST.txt` sits next to it. The file holds 52 rows. Each row holds an
+  id, a severity, the checklist item code and text, and the result of each
+  run. 43 rows hold a checklist item and 9 rows hold none. The file holds a
+  summary and a bias note. It holds types only and no page content. The
+  orchestrator checked the SHA-256 on 2026-11-14.
+- **OD7. F6, the pilot gate.** A defect set whose scores do not spread does
+  not go to ranking. The PM wrote that this answers the point of Daniel that
+  the scores sit at the top.
+- **OD8. The route fact of 2026-11-14.** The new OpenCode Go account rejects
+  the models that are hosted outside Europe and the United States until
+  Daniel turns on Global regions. D22 and R9 hold this rule.
 
 ## Evidence
 
@@ -170,8 +206,9 @@ The author measured each item on 2026-11-14 with read-only commands.
 ## Design decisions
 
 Each decision is a default of the author on 2026-11-14 unless it quotes the
-PM. The PM or the owner can change it. Each open owner choice also appears
-under "Owner questions".
+PM. The PM or the owner can change it. The decisions of the PM of 2026-11-14
+are in "Owner decisions". Each open owner choice also appears under "Owner
+questions".
 
 1. **D1. Track id and title.** The id is `model_guide`. The title is "Model
    guide: seeded-defect review, real-work outcomes, and the use-this-model
@@ -211,8 +248,11 @@ under "Owner questions".
      or `.sql` files.
    - It changes no lock file, no binary file, no file under `dist/`,
      `build/`, or `generated/`, and no file over 2 000 lines.
-   The candidate tool lists the qualified commits, newest first, and the
-   fixture author picks from that list. A rejected candidate gets a reason
+   The candidate tool lists the qualified commits, newest first. The choice
+   of a diff is rule-based and is not a model choice. The tool takes the
+   first qualified commits of the list in that order. It skips each diff
+   that a set already holds. It stops at the number of diffs of D8. The
+   fixture author never chooses a diff. A rejected candidate gets a reason
    line in the private folder.
 
 5. **D5. The seeding method.** The fixture author is the route
@@ -227,21 +267,76 @@ under "Owner questions".
    - Plants in one diff are at least 8 lines apart.
    - The author writes no plant into a line that the source diff removes.
 
-6. **D6. The defect classes and the severity scale.** Each plant has one
-   class, one to three accepted classes for the match (D10), and one
-   severity.
+6. **D6. The defect classes, the operator catalog, and the severity scale.**
+   Each plant has one class, one to three accepted classes for the match
+   (D10), one operator of the catalog, and one severity.
 
-   | Class | Name | Example operators |
-   |---|---|---|
-   | C1 | Access control | remove or weaken an auth or role check; check the wrong owner |
-   | C2 | Data integrity | write the wrong field; lose an update; drop a transaction or a uniqueness rule |
-   | C3 | Logic | invert a condition; off by one; wrong comparison; wrong default |
-   | C4 | Error handling | swallow an error; drop an `await`; ignore a failed result |
-   | C5 | Input validation | remove a bound or a type check; build a query from raw input |
-   | C6 | Data exposure | log or return a secret or personal data |
-   | C7 | Contract | change a return shape or a field name that a caller uses |
-   | C8 | Test defect | an assertion that cannot fail; a removed assertion; a skipped test |
-   | C9 | Performance | a query in a loop; an unbounded read |
+   | Class | Name |
+   |---|---|
+   | C1 | Access control |
+   | C2 | Data integrity |
+   | C3 | Logic |
+   | C4 | Error handling |
+   | C5 | Input validation |
+   | C6 | Data exposure |
+   | C7 | Contract |
+   | C8 | Test defect |
+   | C9 | Performance |
+
+   The catalog below holds every valid operator. The set of names is closed.
+   The lint of FR-8 fails when the operator of a plant is not in the catalog
+   of its class. Each operator names one change to the `+` lines of a diff.
+
+   - **C1, access control.** `C1-1 remove-role-check`: delete a role or a
+     permission check before an action. `C1-2 weaken-role-check`: change the
+     required role to a wider set. `C1-3 wrong-owner-check`: compare the
+     record owner with the wrong id. `C1-4 missing-owner-check`: skip the
+     owner test when the record has no owner. `C1-5 open-route`: expose a
+     protected route without a check.
+   - **C2, data integrity.** `C2-1 wrong-field-write`: write a value into
+     the wrong field. `C2-2 lost-update`: read a value and write back a
+     stale value. `C2-3 drop-transaction`: remove the transaction around the
+     writes. `C2-4 drop-unique`: remove a uniqueness rule or its index.
+     `C2-5 partial-write`: skip the write of one field of a batch.
+   - **C3, logic.** `C3-1 invert-condition`: invert a condition. `C3-2
+     off-by-one`: move a boundary by one. `C3-3 wrong-comparison`: compare
+     with the wrong operator or the wrong value. `C3-4 wrong-default`:
+     change the default value of a branch. `C3-5 swap-arguments`: swap two
+     arguments of the same type. `C3-6 drop-branch`: remove one branch of a
+     conditional.
+   - **C4, error handling.** `C4-1 swallow-error`: catch an error and do
+     nothing. `C4-2 drop-await`: remove an `await` or a promise return.
+     `C4-3 ignore-result`: ignore a failed result of a call. `C4-4
+     catch-wrong`: catch a wider or a narrower error type. `C4-5
+     success-on-error`: return a success value when a call failed.
+   - **C5, input validation.** `C5-1 drop-bound`: remove a range or a length
+     check. `C5-2 drop-type-check`: remove a type check. `C5-3 raw-query`:
+     build a query from raw input. `C5-4 weak-pattern`: loosen a pattern so
+     that it accepts an invalid input. `C5-5 trust-client-flag`: trust a flag
+     that the client sends.
+   - **C6, data exposure.** `C6-1 log-secret`: write a secret or a token
+     into a log. `C6-2 return-secret`: return a secret field in a response.
+     `C6-3 over-select`: select more fields than the caller needs. `C6-4
+     log-personal-data`: write personal data into a log. `C6-5 expose-in-error`:
+     put the input value into an error message.
+   - **C7, contract.** `C7-1 rename-field`: rename a field that a caller
+     reads. `C7-2 change-return-shape`: change the shape of a return value.
+     `C7-3 change-type`: change the type of a returned or a stored value.
+     `C7-4 drop-field`: remove a field of a return value. `C7-5 add-required-field`:
+     add a required field to a return value.
+   - **C8, test defect.** `C8-1 always-true-assert`: change an assertion so
+     that it cannot fail. `C8-2 remove-assert`: remove an assertion. `C8-3
+     skip-test`: skip a test. `C8-4 weaken-assert`: compare with a wider
+     value. `C8-5 wrong-fixture`: use a fixture that does not hold the tested
+     state.
+   - **C9, performance.** `C9-1 query-in-loop`: run a query inside a loop.
+     `C9-2 unbounded-read`: read a whole table without a limit. `C9-3
+     missing-order`: remove an order or an index hint. `C9-4 extra-call-per-row`:
+     add one extra call for each row. `C9-5 no-pagination`: remove the limit
+     of a list query.
+
+   The operator name of a plant is the operator id of the catalog, for
+   example `C3-1 invert-condition`.
 
    The severity scale has three levels, blocker first:
    - **blocker** (weight 5): a review must stop the merge. A security hole,
@@ -306,7 +401,7 @@ under "Owner questions".
      (D13).
    The leak check (FR-10) runs before each commit of track A data. Each
    model provider sees the seeded diffs in the prompts; risk R2 covers that.
-   Owner question Q2.
+   Owner decision OD1.
 
 ### Track A: the review task
 
@@ -331,29 +426,48 @@ under "Owner questions".
       plant. When a finding fits two plants, it matches the nearer one. A
       plant is found when one finding or more match it. A second finding on
       a found plant is a duplicate. A duplicate is neutral.
+    - **A wrong line or a wrong class.** A finding outside the line window,
+      or with a class that is not in `accepted_classes`, does not count as
+      found. The adjudication of D11 cannot make it found. It goes to
+      adjudication, and it can only become `real-defect` or `false-claim`.
     - **Unmatched finding.** A finding that matches no plant goes to
       adjudication (D11). It is not a false claim before that check.
 
-11. **D11. Adjudication of unmatched findings.** The adjudicator is the
-    route `claude-code/claude-opus-5-5[1m]#high`, in a fresh session. It sees
-    the seeded diff, the key, and the unmatched findings. It does not see
-    the route name of a finding. The tool groups the unmatched findings of
-    one diff by file and a line window of 3, so one call covers one diff and
-    every route. The adjudicator gives one verdict to each group:
-    - `plant:<id>`: the finding describes that plant at a wrong line or with
-      a wrong class. The plant counts as found.
-    - `real-defect`: the defect was in the source diff. It goes to
-      `real_defects` of the key. It is neutral in the score. The page shows
-      the count of real defects found for each route.
-    - `false-claim`: the finding names no defect. It counts as a false claim.
-    - `unclear`: no decision. It is neutral, and the run is marked
-      `provisional`.
-    The orchestrator reads each `real-defect` verdict and sends it to the PM
-    orchestrator as a hand-off, because the defect is in another project.
-    This track never writes in a source repo. A plant that no route finds in
-    any run of a complete set goes to the adjudicator once more. When the
-    adjudicator finds that it is not a defect, the set gets a new id without
-    that plant.
+11. **D11. The adjudication of unmatched findings.**
+    - **The unit.** One finding is the unit of adjudication. Each finding
+      gets its own verdict. The tool groups findings that make the same claim
+      only to remove duplicates. A group never gets one verdict for all of
+      its members.
+    - **The judges.** Two judges read each finding. The first judge is the
+      route `claude-code/claude-opus-5-5[1m]#high`. The second judge is the
+      route `opencode/minimax-m3.1-flash-free#high`, which is of a family
+      that is not Anthropic (OD5). The second judge never reads the verdicts
+      of the first judge. Neither judge sees the route name of a finding.
+    - **The verdicts.** Each judge gives one verdict to each finding:
+      - `real-defect`: the defect was in the source diff before the seeding.
+        It goes to `real_defects` of the key. It is neutral in the score. The
+        page shows the count of real defects found for each route.
+      - `false-claim`: the finding names no defect. It counts as a false
+        claim.
+      - `unclear`: no decision. It is neutral, and the pass is marked
+        `provisional`.
+    - **The rule of two.** Only a verdict that both judges agree on counts. A
+      disagreement counts as `unclear`. An `unclear` verdict never counts
+      against the model. It marks the pass `provisional`, and the route has
+      no rank for that set.
+    - **No rescue.** A finding that names a plant at a wrong line or with a
+      wrong class never counts as found. There is no `plant:<id>` verdict.
+    - **The blind queue.** The tool writes the unmatched findings of each
+      diff into the private folder. It groups them by file and a line window
+      of 3, so one call covers one diff and every route. A group holds the id
+      of each finding and the claim text. It holds no route name.
+    - **The hand-off.** The orchestrator reads each `real-defect` verdict and
+      sends it to the PM orchestrator as a hand-off, because the defect is in
+      another project. This track never writes in a source repo.
+    - **The lost plant.** A plant that no route finds in the pilot and in
+      every run of a complete set goes to the two judges once more. When both
+      judges find that it is not a defect, the set gets a new id without that
+      plant.
 
 12. **D12. The routes.** The PM names the families (order item 6). Default
     route list for the first set, in this order:
@@ -370,10 +484,12 @@ under "Owner questions".
     | Go | `opencode-go/muse-spark-1.3-contributor#high` | plan (Go) |
 
     The file `harness/model-guide/routes.json` holds this list with the
-    fields `family`, `route`, `kind`, and `quota_provider`. The runner refuses
-    a route whose `kind` is not `plan` or `free`. The route
-    `deepseek/deepseek-flash#high` of the real-work record is not in the list,
-    because the author cannot show that it is a plan route. Owner question Q3.
+    fields `family`, `route`, `kind`, `quota_provider`, and `quota_source`.
+    The runner refuses a route whose `kind` is not `plan` or `free`. The
+    route `deepseek/deepseek-flash#high` of the real-work record is not in
+    the list, because it is metered and is not a plan route (OD2). The quota
+    source of each route is in D15. The second judge of D11 is not in the ranked
+    list. The file holds it with the field `ranked` set to `false`.
 
 13. **D13. The score and the rank.**
     - **Pass score.** `W` = the sum of the weights of all plants of the set.
@@ -384,6 +500,23 @@ under "Owner questions".
       by blockers), the found, missed, and false-claim counts, the invalid
       reviews, and the real defects found.
     - **N.** N = 3 passes for each route and each set.
+    - **The pilot gate.** A set goes to ranking only after a pilot. The
+      pilot set has 6 seeded diffs, 3 from each source repo, and at least 12
+      plants. The pilot runs 2 routes with 2 passes each, so each route has
+      a worst-of-2 score. The pilot routes are
+      `minimax-cn-coding-plan/MiniMax-M3.1-Flash` and
+      `kimi-code-plan-cn/kimi-for-coding#high`. A pilot route that is
+      unreachable or region-blocked is replaced by the next route of D12.
+      The set goes to ranking only when both rules hold:
+      - The best worst-of-2 score minus the lowest worst-of-2 score is 20
+        points or more.
+      - The best worst-of-2 score is below 90.
+      A set that fails a rule does not go to ranking. The fixture author
+      seeds a harder set. The harder set has plants of 2 to 6 lines, and at
+      least half of its plants have the classes C1, C2, C5, or C7. The pilot
+      runs again. After 2 reseeds the orchestrator sends the set to the PM.
+      This gate answers the point of Daniel that the scores sit at the top
+      (OD7).
     - **Rank.** The rank uses the worst pass score of the N passes. A tie
       goes to the higher worst blocker recall, and then to the higher median
       score. A route with fewer than 3 complete passes, or with a
@@ -425,21 +558,40 @@ under "Owner questions".
       provider (`provider-credential.sh scan-values <provider>`) before it stores the
       output. A hit deletes the output and stops the pass.
     - The first task of Phase 4 is a probe: one call per route with a
-      control diff. A route that fails the probe is `unreachable`. The
+      control diff. A route that fails the probe is `unreachable`. A Go route
+      that fails with the region error of D22 is `region-blocked`. The
       orchestrator sends the error line to the PM. Owner question Q8 covers
       the Claude route, which can need the shared `HOME`.
 
 15. **D15. The quota budget.** The runner reads the quota of the route
-    provider before each pass and before each diff. It uses the endpoint of
-    EV10 with the `quota_provider` of the route.
-    - It starts a pass only when each window of that provider is below 70 %.
-    - It stops the pass when a window reaches 80 %, and it marks the pass
-      open.
-    - A failed read, a missing field, or a value that is not a number stops
-      the route for that night.
-    - The track A window is 02:00 to 06:00 +07. One night runs at most one
-      pass for each route. The routes run one at a time, in the order of
-      D12.
+    provider before each pass and before each diff.
+    - **The live source of each provider.** The source is the OpenChamber
+      endpoint `GET http://127.0.0.1:<port>/api/quota/<id>`, with the port
+      from `openchamber status --json`. The read gives
+      `usage.windows.<window>.usedPercent`, as in EV10.
+
+      | Provider of the route | `<id>` | Quota source |
+      |---|---|---|
+      | `claude-code` | `claude` | OpenChamber `GET /api/quota/claude` |
+      | `kimi-code-plan-cn` | `kimi-for-coding` | OpenChamber `GET /api/quota/kimi-for-coding` |
+      | `minimax-cn-coding-plan` | `minimax-cn-coding-plan` | OpenChamber `GET /api/quota/minimax-cn-coding-plan` |
+      | `opencode-go` | `opencode-go` | OpenChamber `GET /api/quota/opencode-go` |
+      | `nvidia`, `bailian-token-plan`, `volcengine-agent-plan`, `opencode` free routes | none | none |
+
+    - **The state of each route.** The quota read gives one state for each
+      route. The states are `ready`, `wait`, and `stopped`.
+      - `ready`: every window is below 70 %.
+      - `wait`: a window is 70 % or more, or the source gives no value. No
+        pass starts. The route waits for the next night.
+      - `stopped`: the source gives a quota error, a limit error, or a read
+        failure. The route stops for the night.
+    - **The rules.** A pass starts only when the state is `ready`. The pass
+      stops when a window reaches 80 %, and it marks the pass open. A route
+      with no quota source runs at most 1 pass per night. It stops at the
+      first quota or limit error.
+    - **The window.** The track A window is 02:00 to 06:00 +07. One night
+      runs at most one pass for each route. The routes run one at a time, in
+      the order of D12.
     - Each pass runs through
       `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh`. The
       orchestrator starts it. This track adds no timer.
@@ -460,21 +612,35 @@ under "Owner questions".
     - **Coverage block.** The page shows the runs, the date range, the share
       with a known model, the share with a result, and the left-out paired
       duplicates. It also shows the runs of `unknown` and `other`.
-    - **Merge.** Rows with the same model key merge by sums. The page lists
+    - **Merge.** Rows with the same model key merge by sums. The merge joins
+      only the `#<variant>` rows and the `[1m]` rows of one route. The same
+      model on another provider stays a separate row (OD4). The page lists
       the routes of each merged row. The method note says: "Route names
       stay as written in the record, so #high and [1m] variants are
       separate routes. This page merges them by model." `unknown` and
       `other` do not merge and get no rank.
     - **Role groups.** The page has one table for producer roles and one
-      table for checker roles, and one table for each work type of
-      `work_types`.
+      table for checker roles.
+    - **Work-type tables.** The page has one table for each work type of
+      `work_types`. The `all_time` block gives one row for each route and
+      work type. Each `work_types` value holds `runs`, `pass`, and `fail`
+      only. These tables use that data and no other data.
+      - **The pass rate of a work type.** `pass / (pass + fail)`. A row with
+        `pass + fail` of 0 has no rate.
+      - **The run count.** The page shows `pass + fail` beside each rate.
+      - **The minimum.** A row with fewer than 10 runs gets the mark
+        `few runs`. It goes below the other rows, and it cannot pick.
+      - **The rank.** The higher pass rate first, then the higher run count.
+      - **No blocking rate.** The export has no blocking findings for a work
+        type. These tables show no blocking rate and no error count.
+      - **No data.** A work type with no row says "no pick yet".
     - **Pass rate.** `pass / (pass + fail + error)`. `no_result` stays out
       of the rate. The page shows it in its own column.
     - **Blocking rate.** Blocking findings for each run with a result.
     - **Rank.** Producer table: the higher pass rate first, then the lower
       blocking rate. Checker table: the higher pass rate first. The checker
       table shows the blocking rate, but the rank does not use it, because a
-      checker that finds more blockers is not worse. Owner question Q4. Each
+      checker that finds more blockers is not worse (OD3). Each
       rate has its run count beside it, for example `0.82 (n=114)`.
     - **Small samples.** A merged row with fewer than 10 runs with a result
       gets the mark `few runs` and goes below the rows without the mark. A
@@ -486,14 +652,26 @@ under "Owner questions".
       the `weekly` block, with its run count.
 
 17. **D17. The print-audit data point.** The file
-    `harness/model-guide/data/print-audit-2026-11.json` holds: the key size
-    (52 errors), the blocker count (13), and two results: "k3.1-pro" 11 of
-    13 blockers and "Sonnet 5.5" 13 of 13 blockers. It also holds the error
-    types of the key with the count of each type. The PM must still send the
-    error types. Until they come, the block shows the two blocker scores and
-    the line "Error types: not yet received." The file holds no book text,
-    no page, and no file name. The block says that the data point is one
-    calibration run, not a rank.
+    `harness/model-guide/data/print-audit-2026-11.json` holds the
+    print-audit calibration of the hand-off file of OD6.
+    - **The input.** The source is
+      `~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json`
+      with the SHA-256
+      `f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87`
+      and `MANIFEST.txt` next to it. The input check reads the SHA-256, the
+      size, and the schema. A mismatch gives exit 2 and no output file. The
+      input file never enters the repository.
+    - **The content.** The file holds the key size of 52 errors, the blocker
+      count of 13, the error types with the count of each type, the checklist
+      item code and text of each error, the result of each run, the summary,
+      and the bias note. The two results are "k3.1-pro" 11 of 13 blockers and
+      "Sonnet 5.5" 13 of 13 blockers.
+    - **The page.** The block on page B shows the two results, the error
+      types with their counts, and the bias note. The block holds no book
+      text, no page, and no file name. The block says that the data point is
+      one calibration run, not a rank.
+    - **No placeholder.** The block always shows the error types. The line
+      "Error types: not yet received." does not exist in this track.
 
 ### The overview table
 
@@ -509,15 +687,15 @@ under "Owner questions".
       | Row | First source | Second source |
       |---|---|---|
       | Code review | track A rank (worst of N) | page B checker table |
-      | App code | page B producer table, work type `app code` | build base line |
+      | App code | page B work-type table, work type `app code` | build base line |
       | Test writing | page B producer table, role `red` | tests track base line |
-      | Docs and ops | page B, work type `docs and ops` | none |
-      | Print-book audit | page B, work type `print books` | print-audit data point |
-      | Tooling | page B, work type `tooling` | none |
+      | Docs and ops | page B work-type table, work type `docs and ops` | none |
+      | Print-book audit | page B work-type table, work type `print books` | print-audit data point |
+      | Tooling | page B work-type table, work type `tooling` | none |
 
     - **Pick rule.** The first source picks the first and the second choice
-      from its rank. A model qualifies only with 10 runs with a result or
-      more (page B), or with a complete rank (track A). When the first source
+      from its rank. A model qualifies only with 10 runs or more in the page
+      B row, or with a complete rank (track A). When the first source
       has no qualified model, the second source picks. When neither has one,
       the cell says "no pick yet: not enough evidence".
     - **Evidence cell.** The source, the number, and the run count, for
@@ -550,13 +728,31 @@ under "Owner questions".
     this track writes a file under `docs/`, because the daily job commits
     and pushes `docs/` (EV8). The preview tool copies `docs/` into the
     preview folder and adds the new pages and the overview table there. The
-    first publish holds page B, the overview table, and the track A results
-    together, so Daniel looks once. The orchestrator sends the preview to
-    Daniel through the PM. When Daniel gives his word, the orchestrator
-    writes the approval record. The publish tool checks that the SHA-256 of
-    each file in the preview equals the value in the record. Then it copies
-    the files into `docs/`. After that first publish, the standing push rule
-    applies.
+    preview records the SHA-256 of each copied file of `docs/` in the file
+    `preview-base.json` of the preview folder. The first publish holds page
+    B, the overview table, and the track A results together, so Daniel looks
+    once. The orchestrator sends the preview to Daniel through the PM. When
+    Daniel gives his word, the orchestrator writes the approval record. The
+    publish tool checks that the SHA-256 of each file in the preview equals
+    the value in the record. Then it copies the files into `docs/`. After that
+    first publish, the standing push rule applies.
+    - **The drift check.** Before the publish, the tool compares the current
+      files of `docs/` with the base of the preview. It reads the SHA-256 of
+      each current file and compares it with `preview-base.json`. When a
+      current file differs from its recorded value, the tool refuses with
+      exit 2, names each drifted file, and writes nothing. The orchestrator
+      builds the preview again. Daniel gives his word again when a drifted
+      file is in the approved set.
+
+22. **D22. The region rule of the Go routes.** The new OpenCode Go account
+    rejects a model that is hosted outside Europe and the United States until
+    Daniel turns on Global regions (OD8). A Go route that returns this error
+    has no rank for that night. The runner marks the route state
+    `region-blocked` and stops the route for the night. The probe of D14
+    records the same state. The orchestrator sends the state to the PM. The
+    Go routes of D12 that are affected by this rule are
+    `opencode-go/deepseek-v4.1-flash`, `opencode-go/mimo-v2.6-flash`, and
+    `opencode-go/muse-spark-1.3-contributor#high`.
 
 ## Functional requirements
 
@@ -572,14 +768,17 @@ is written in that case.
 The tool merges the rows by model key and computes the pass rate, the
 blocking rate, the `no_result` count, the ratings with `n`, the rater
 agreement with `n`, and the 4-week pass rate (D16). `unknown` and `other`
-stay out of every rank.
+stay out of every rank. The merge joins only the `#<variant>` rows and the
+`[1m]` rows of one route.
 
 ### FR-3 — The rank and the small-sample mark
 
 The producer table ranks by pass rate and then by blocking rate. The checker
 table ranks by pass rate only. A row with fewer than 10 runs with a result
 gets the mark `few runs` and goes below the other rows. Each rate has its
-run count beside it.
+run count beside it. The work-type tables rank by the pass rate of
+`pass / (pass + fail)` and then by the run count. A work-type row with
+fewer than 10 runs gets the mark `few runs` and cannot pick.
 
 ### FR-4 — The page and the method note
 
@@ -591,8 +790,9 @@ nav of the other pages.
 ### FR-5 — The print-audit block
 
 The block reads `harness/model-guide/data/print-audit-2026-11.json` and shows
-D17. With no error types in the file, it shows "Error types: not yet
-received."
+D17. The block always shows the error types with their counts. The block
+shows no placeholder line. The tool that writes the file runs the input check
+of D17 on the hand-off file first.
 
 ### FR-6 — The overview table
 
@@ -605,17 +805,21 @@ evidence". A table with evidence older than 14 days shows `stale`.
 ### FR-7 — The preview and the publish gate
 
 `harness/model-guide/preview.sh` builds the preview folder from `docs/` and
-the new files. It writes nothing under `docs/`.
+the new files. It writes nothing under `docs/`. It records the SHA-256 of
+each copied file of `docs/` in `preview-base.json` of the preview folder.
 `harness/model-guide/publish.ts` copies the preview files into `docs/` only
-when the approval record exists and each SHA-256 in it matches. Otherwise it
-gives exit 2 and writes nothing.
+when the approval record exists and each SHA-256 in it matches. Before the
+copy it compares the current files of `docs/` with `preview-base.json`. On a
+drift it gives exit 2, names each drifted file, and writes nothing.
 
 ### FR-8 — The candidate diffs and the set lint
 
 `harness/model-guide/pick-diffs.ts` lists the qualified commits of D4 with
-`gh api` GET calls only. `harness/model-guide/review-set.ts lint <set_id>`
+`gh api` GET calls only. It selects the diffs by the rules of D4 and skips
+the diffs that a set holds. `harness/model-guide/review-set.ts lint <set_id>`
 checks a set in the private folder: the key schema of D7, the plant rules of
-D5, the counts of D8, the hunk headers, and the SHA-256 values of the public
+D5, the operator of each plant against the catalog of D6, the counts of D8,
+the hunk headers, and the SHA-256 values of the public
 manifest. It writes the public manifest of D9.
 
 ### FR-9 — The scorer
@@ -643,9 +847,11 @@ trap of `harness/opencode-host.sh`.
 
 ### FR-12 — The adjudication queue
 
-`harness/model-guide/adjudicate.ts queue <set_id>` writes the grouped
-unmatched findings of each diff into the private folder (D11), with no route
-name. `adjudicate.ts apply <set_id>` reads the verdicts, updates the key
+`harness/model-guide/adjudicate.ts queue <set_id>` writes the unmatched
+findings of each diff into the private folder (D11), with no route name.
+Each finding has its own item. The items of one group hold the id of the
+finding. `adjudicate.ts apply <set_id>` reads the verdicts of the two
+judges, keeps only the verdicts that both judges agree on, updates the key
 `real_defects`, and writes the list of real defects for the PM hand-off into
 the private folder.
 
@@ -657,7 +863,18 @@ the private folder.
 
 The preview tool writes `review.html` and `review.json` from the score file
 (D13). A route with fewer than 3 complete passes or a `provisional` pass
-shows `incomplete` and has no rank.
+shows `incomplete` and has no rank. A set that fails the pilot gate of D13
+has no rank on the page.
+
+### FR-15 — The quota sources
+
+`harness/model-guide/quota.ts` reads the quota source of the provider of a
+route, as D15 holds. It gives one state for each route: `ready`, `wait`, or
+`stopped`. It reads the OpenChamber endpoint for the providers that have
+one. It gives the state `stopped` for a quota error, a limit error, or a
+read failure. It gives the state `wait` for a window of 70 % or more and for
+a source with no value. A route with no quota source gets the fixed cap of
+1 pass per night of D15.
 
 ## Non-functional requirements
 
@@ -695,47 +912,61 @@ shows `incomplete` and has no rank.
 4. Merged rows list their routes. The method note states the merge. Each
    rate has its run count. Rows with fewer than 10 runs with a result carry
    `few runs`. No rank uses a rating.
-5. The print-audit block shows 11 of 13 and 13 of 13, and the error types
-   or "Error types: not yet received."
-6. The overview table in the preview has the six rows of D18, each with a
+5. Each work-type table shows the pass rate of `pass / (pass + fail)` with
+   its run count. A row with fewer than 10 runs carries `few runs` and
+   cannot pick. A work type with no row says "no pick yet".
+6. The print-audit block shows 11 of 13 and 13 of 13, the 52 errors, and the
+   error types with their counts. The block shows no placeholder line. The
+   input check of the print-audit file stops with exit 2 on a wrong SHA-256,
+   a wrong size, or a wrong schema.
+7. The overview table in the preview has the six rows of D18, each with a
    pick or "no pick yet: not enough evidence", the evidence, and a date.
-7. Until the approval record exists, `git status` shows no change under
-   `docs/` from this track, and the publish tool gives exit 2.
-8. The set `mg-2026-11a` passes the lint. The public manifest and the score
-   file hold no key field and no seeded line. The leak check passes.
-9. By 2026-11-22, each reachable route of D12 has 3 complete passes or a
-   recorded reason (unreachable, quota stop, or provisional). The preview
-   shows the track A rank by the worst pass.
-10. No run used a metered route, and no pass started at 70 % or more of a
+8. Until the approval record exists, `git status` shows no change under
+   `docs/` from this track, and the publish tool gives exit 2. The publish
+   tool also gives exit 2 when a file of `docs/` changed after the preview.
+9. The set `mg-2026-11a` passes the lint. The lint fails when a plant names
+   an operator that is not in the catalog of its class. The public manifest
+   and the score file hold no key field and no seeded line. The leak check
+   passes.
+10. The pilot gate holds before the rank of a set. The best worst-of-2 score
+    minus the lowest worst-of-2 score is 20 points or more, and the best
+    worst-of-2 score is below 90. A set that fails a rule has no rank.
+11. By 2026-11-22, each reachable route of D12 has 3 complete passes or a
+    recorded reason (unreachable, quota stop, region block, or provisional).
+    The preview shows the track A rank by the worst pass.
+12. No run used a metered route, and no pass started at 70 % or more of a
     window.
 
 ## Owner questions
 
-Each question has a default. The track continues with the default.
+Each question has a default. The track continues with the default. The
+questions Q2, Q3, Q4, Q5, and Q7 were answered by the PM on 2026-11-14.
+The answers are in "Owner decisions".
 
 - **Q1 (D3).** How does the overview table relate to `domain_trust`?
   Default: `domain_trust` stays as it is. The "app code" row links its
   matrix as a second source when the matrix is on the site.
-- **Q2 (D9).** Where do the keys live? Default: the private folder outside
-  the repository. The repository holds only the SHA-256 values and the
-  counts. The seeded diffs and the raw outputs also stay private.
-- **Q3 (D12).** Is `deepseek/deepseek-flash#high` a plan route? Default: no.
-  DeepSeek Flash runs through `opencode-go/deepseek-v4.1-flash`.
-- **Q4 (D16).** What do `pass` and `blocking_findings` mean for a checker
-  role? Default: the checker rank uses the pass rate only. The page shows
-  the blocking rate, but the rank does not use it.
-- **Q5 (D16).** Do routes of the same model on two providers merge? Default:
-  no. The merge removes only `#<variant>` and `[1m]`.
+- **Q2 (D9).** Answered on 2026-11-14 (OD1). The keys live in the private
+  folder outside the repository. The repository holds only the SHA-256
+  values and the counts.
+- **Q3 (D12).** Answered on 2026-11-14 (OD2). DeepSeek Flash runs through
+  `opencode-go/deepseek-v4.1-flash`. The routes `deepseek/*` are metered.
+- **Q4 (D16).** Answered on 2026-11-14 (OD3). The checker rank uses the
+  pass rate only. The page shows the blocking rate.
+- **Q5 (D16).** Answered on 2026-11-14 (OD4). The merge removes only
+  `#<variant>` and `[1m]` of one route. The same model on another provider
+  stays separate.
 - **Q6 (D17).** Which route is "k3.1-pro" in the print audit? Default: the
   page shows the PM label "k3.1-pro" and names no route.
-- **Q7 (D17).** The error types of the 52-error key. Input that Phase 2
-  waits for. Default until it comes: "Error types: not yet received."
+- **Q7 (D17).** Answered on 2026-11-14 (OD6). The error types come from the
+  hand-off file of OD6. The page always shows them.
 - **Q8 (D14).** Can the Claude route run in an isolated job store? Default:
   the probe decides. An unreachable route waits for a PM rule and has no
   rank.
-- **Q9 (D5, D11).** Is Opus the fixture author and the adjudicator?
+- **Q9 (D5, D11).** Is Opus the fixture author and the first judge?
   Default: yes. Opus is not in the ranked list. The adjudication is blind to
-  the route name.
+  the route name. A second judge of another family reads each finding
+  (OD5).
 - **Q10 (D13).** Are the weights 5, 2, and 1, the false-claim cost of 2, and
   N = 3 correct? Default: yes, for the first set.
 
@@ -753,27 +984,36 @@ Each question has a default. The track continues with the default.
 
 ## Risks
 
-- **R1. Small samples.** One set has 40 to 60 plants. A difference of a few
-  points between routes can be noise. The page shows the counts, and N = 3
-  shows the spread.
+- **R1. Small samples and a flat score.** One set has 40 to 60 plants. A
+  difference of a few points between routes can be noise. The page shows the
+  counts, and N = 3 shows the spread. The pilot gate of D13 keeps a set with
+  a flat score out of the rank.
 - **R2. The providers see the seeded diffs.** A provider can keep a prompt.
   The keys stay private, but a later model can know a seeded diff. A new set
   id each quarter limits this.
-- **R3. Same-family bias.** The Opus author and adjudicator is in the same
-  family as the Sonnet route. The blind adjudication and the fixed operator
-  catalog limit this. Q9 covers it.
+- **R3. Same-family bias.** The Opus author and the first judge are in the
+  same family as the Sonnet route. The second judge comes from a family that
+  is not Anthropic. Only the verdicts that both judges agree on count. The
+  blind adjudication and the fixed operator catalog limit the bias. Q9 covers
+  it.
 - **R4. Unmatched true findings.** A good model can find real defects. D11
   makes them neutral, not false claims. An `unclear` verdict blocks the rank
-  of a route until it gets a decision.
+  of a route until both judges decide. A wrong line or a wrong class never
+  counts as found.
 - **R5. Line counts.** A model can give a wrong line. The line prefixes of
-  D10 and the window of 3 lines limit this. The `plant:<id>` verdict of D11
-  covers the rest.
+  D10 and the window of 3 lines limit this. A claim outside that window
+  does not count as found.
 - **R6. The real-work record.** Only 50.6 % of the runs have a known model,
   and 71.7 % have a result. The meaning of a pass differs by role. The page
-  shows the coverage and splits the roles.
+  shows the coverage and splits the roles. The work types have no blocking
+  findings, so their tables have no blocking rate.
 - **R7. The schedule.** Track A needs the set by 2026-11-19 to run 3 nights
   before 2026-11-22. A late set gives fewer passes, and the page shows
   `incomplete`.
 - **R8. The private folder.** A loss of the folder loses the keys. The
   public SHA-256 values show a changed or a lost key. A new set replaces a
   lost one.
+- **R9. The Go region rule.** The new OpenCode Go account rejects a model
+  that is hosted outside Europe and the United States until Daniel turns on
+  Global regions. A Go route with that error has no rank for that night. The
+  track A rank then holds fewer routes. The probe of D14 finds it early.

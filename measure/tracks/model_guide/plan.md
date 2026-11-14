@@ -6,13 +6,17 @@ This plan builds page B and the overview table first, then the track A
 review set and the scorer, then the first track A runs, and then the publish
 gate and the weekly update. Spec: `spec.md`. Base commit: `ea36fae`.
 
+Revision 2, 2026-11-14: the findings F1 to F12 of the spec review round 1.
+Each Green task writes one tool or one page. Each task has its own verify
+line.
+
 Order by date:
 
 | Date (+07) | Gate |
 |---|---|
 | Mon 2026-11-16 18:00 | spec and plan done; the spec review runs before task 1.1 |
 | Wed 2026-11-18 | page B and the overview table in the preview folder (Phases 1 and 2) |
-| Thu 2026-11-19 | set `mg-2026-11a` and the runner ready (Phases 3 and 4.1 to 4.3) |
+| Thu 2026-11-19 | set `mg-2026-11a` and the runner ready (Phases 3 and 4.1 to 4.9) |
 | Sun 2026-11-22 | track A first results in the preview folder (Phase 4) |
 | after Daniel's word | the first publish (Phase 5) |
 
@@ -21,12 +25,17 @@ Constraints for every role:
 - The orchestrator assigns the roles. The spec reviewer and each code
   checker use a model family other than the family of the maker. The spec
   reviewer is not a Claude model (the author family).
+- The spec reviewer writes only under `measure/runs/model_guide/`. The author
+  or a Build session updates `measure/tracks/model_guide/spec-review.md`
+  after a review.
+- Each Green task writes one tool or one page. It has its own verify line.
 - Stage files by explicit path: `git commit -m ... -- <paths>`. Never stage
   `.opencode/`, `tech-debt.md`, or `measure/runs/`. On an `index.lock`
   error, run the commit once more.
 - No role writes a file under `docs/` before Phase 5 (spec D21). The daily
   job commits and pushes `docs/` (spec EV8).
-- No role copies the hand-off file into the repository.
+- No role copies the hand-off file into the repository. The same rule holds
+  for the print-audit hand-off file of spec OD6.
 - No role reads a local checkout of another project. The source repos are
   read with `gh api` GET calls only.
 - No role writes a key, a seeded diff, a raw output, or an adjudication
@@ -68,7 +77,7 @@ File map (every new file of this track):
 | `harness/model-guide/review-score.ts` | scorer (FR-9) |
 | `harness/model-guide/adjudicate.ts` | adjudication queue (FR-12) |
 | `harness/model-guide/leak-check.ts` | leak check (FR-10) |
-| `harness/model-guide/quota.ts` | quota read and rule (spec D15) |
+| `harness/model-guide/quota.ts` | quota read and rule (spec D15, FR-15) |
 | `harness/model-guide/review-run.sh` | review runner (FR-11) |
 | `harness/model-guide/provider-credential.sh` | provider seed and value scan (spec D14) |
 | `harness/model-guide/routes.json` | route list (spec D12) |
@@ -86,68 +95,113 @@ applies them in `docs/`.
 
 ## Phase 0: Registry and spec review
 
-- [x] 0.1 The registry (spec D2, FR-13). Commit of this plan.
+- [x] bbde00d 0.1 The registry (spec D2, FR-13). Commit of this plan.
   - `measure/tracks.md` gets `model_guide`, `rigor_a_h` as paused with the
     reason "PM 2026-11-14: no new difficulty work on the build track", and a
     "Backlog" section with the replay track and no date.
   - Verify: `rg -n "model_guide|paused — PM 2026-11-14|Replay" measure/tracks.md`
     shows the three lines.
 - [ ] 0.2 The spec review (spec D20). Before task 1.1.
-  - The reviewer follows the Measure spec-review standard and writes its
-    round into `measure/tracks/model_guide/spec-review.md`.
+  - The reviewer follows the Measure spec-review standard.
+  - The reviewer writes only under `measure/runs/model_guide/`.
+  - The author or a Build session updates `measure/tracks/model_guide/spec-review.md`
+    after the review.
   - The reviewer is of a family other than Claude.
-  - Verify: `spec-review.md` has Round 1 and an Author Response line for each
+  - Verify: the result file under `measure/runs/model_guide/` holds round 1
+    with the id and the severity of each finding. `spec-review.md` has a
+    round 1 section with a disposition and an author response for each
     finding. Each Blocker has FIX, CONTEST, or ESCALATE.
+- [ ] 0.3 The re-review of round 1 (spec D20). The reviewer of round 1 reads
+  the revised spec and plan.
+  - The reviewer writes only under `measure/runs/model_guide/`.
+  - The author or a Build session updates `spec-review.md` after the review.
+  - Verify: the result file of round 2 names each finding of round 1 as
+    withdrawn or kept. `spec-review.md` has a round 2 section.
 
 ## Phase 1: Page B in the preview folder (by Wed 2026-11-18)
 
 Spec D16, D21, FR-1 to FR-4, FR-7.
 
-- [ ] 1.1 Red. Write the tests. Touch these files and no others:
+- [ ] 1.1 Red. The merge and the rates. Write these files and no others:
   - `harness/model-guide-tests/real-work.test.ts`
-  - `harness/model-guide-tests/preview-gate.test.ts`
-  - `harness/model-guide-tests/fixtures/real-work-mini.json` and
-    `harness/model-guide-tests/fixtures/MANIFEST.txt` (synthetic, in the
+  - `harness/model-guide-tests/fixtures/real-work-mini.json`
+  - `harness/model-guide-tests/fixtures/MANIFEST.txt` (synthetic, in the
     `real-work-outcomes/1` shape of spec EV2)
   Normal cases:
-  - The input check passes on the fixture, and the output keeps the file
-    name, the SHA-256, and `generated_on`.
   - `x/m#high`, `x/m[1m]#high`, and `x/m` merge into the model key `x/m` by
     sums, and the row lists the three routes.
+  - The same model on two providers stays two rows.
   - Pass rate = `pass / (pass + fail + error)`; `no_result` stays out and is
     in its own field.
   - Producer rank: pass rate, then the lower blocking rate. Checker rank:
     pass rate only.
   - Each rate carries its run count.
+  - The work-type pass rate = `pass / (pass + fail)`, with the run count
+    `pass + fail` beside it.
+  - The work-type rank: the higher pass rate, then the higher run count.
   - The coverage block holds the runs, the dates, the two shares, the
     left-out duplicates, and the `unknown` and `other` runs.
   - The 4-week pass rate uses the last 4 ISO weeks of `weekly`.
-  - `preview.sh` writes `real-work.html` and `real-work.json` into a temp
-    preview folder, and the nav and the method note text of spec D16 are in
-    the page.
+  Edge cases:
+  - A row with 9 runs with a result gets `few runs` and goes below a row
+    with 10. A row with 10 has no mark.
+  - A work type with fewer than 10 runs gets `few runs` and cannot pick.
+  - A work type with `pass + fail` of 0 has no rate.
+  - `unknown` and `other` are in no rank and do not merge.
+  - A rank that a rating alone would change does not change.
+  - `rater_checks.n` = 0 shows no agreement value.
+  - Verify: the file fails on `ea36fae`. Record the failed test names in
+    `measure/runs/model_guide/red-1.1.txt`.
+- [ ] 1.2 Red. The input check. Write
+  `harness/model-guide-tests/input-check.test.ts` and no other file.
+  Normal cases:
+  - The input check passes on the fixture, and the output keeps the file
+    name, the SHA-256, and `generated_on`.
   Edge cases:
   - A changed byte, a wrong size, a wrong schema, or a run sum that differs
     from `coverage.runs` gives exit 2 and no output file.
   - A missing `MANIFEST.txt` gives exit 2.
-  - A row with 9 runs with a result gets `few runs` and goes below a row
-    with 10. A row with 10 has no mark.
-  - `unknown` and `other` are in no rank and do not merge.
-  - A rank that a rating alone would change does not change.
-  - `rater_checks.n` = 0 shows no agreement value.
+  - Verify: the file fails on `ea36fae`. Record the failed test names in
+    `measure/runs/model_guide/red-1.2.txt`.
+- [ ] 1.3 Red. The preview and the publish gate. Write
+  `harness/model-guide-tests/preview-gate.test.ts` and no other file.
+  Normal cases:
+  - `preview.sh` writes `real-work.html` and `real-work.json` into a temp
+    preview folder, and the nav and the method note text of spec D16 are in
+    the page.
+  - `preview.sh` records the SHA-256 of each copied file of `docs/` in
+    `preview-base.json`.
+  Edge cases:
   - `preview.sh` leaves the temp `docs/` copy without a change.
   - `publish.ts` without an approval record, or with one wrong SHA-256,
     gives exit 2 and writes no file.
-  - Verify: each file fails on `ea36fae`. Record the failed test names in
-    `measure/runs/model_guide/red-1.1.txt`.
-- [ ] 1.2 Green. Write `real-work.ts`, `pages/real-work.html`, `preview.sh`,
-  and `publish.ts` until the Red tests pass. Touch no test file.
-  - Verify: both test files pass. `git status --short docs/` prints nothing.
-- [ ] 1.3 Checks. One code checker reads the diff against spec D16 and D21.
+  - `publish.ts` refuses with exit 2 and names the file when a file of
+    `docs/` changed after the preview.
+  - Verify: the file fails on `ea36fae`. Record the failed test names in
+    `measure/runs/model_guide/red-1.3.txt`.
+- [ ] 1.4 Green. Write `harness/model-guide/real-work.ts`. Touch no test file
+  and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/real-work.test.ts model-guide-tests/input-check.test.ts --configLoader native`
+    passes.
+- [ ] 1.5 Green. Write `harness/model-guide/pages/real-work.html`. Touch no
+  test file and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native`
+    passes, and the page holds the tables of spec D16.
+- [ ] 1.6 Green. Write `harness/model-guide/preview.sh`. Touch no test file
+  and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
+    passes, and `git status --short docs/` prints nothing.
+- [ ] 1.7 Green. Write `harness/model-guide/publish.ts`. Touch no test file
+  and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
+    passes, and `git status --short docs/` prints nothing.
+- [ ] 1.8 Checks. One code checker reads the diff against spec D16 and D21.
   - The checker confirms that no path writes under `docs/` without the
-    approval record, and that the rank uses no rating.
-  - Verify: `measure/runs/model_guide/check-1.3.json` has status pass, or
+    approval record, that the rank uses no rating, and that the work-type
+    tables use only the data of the export.
+  - Verify: `measure/runs/model_guide/check-1.8.json` has status pass, or
     each blocking finding has a fix commit.
-- [ ] 1.4 The preview with the real export.
+- [ ] 1.9 The preview with the real export.
   - Command:
     `harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json`.
   - Verify: `.tmp/model-guide-preview/real-work.html` shows the SHA-256
@@ -156,57 +210,82 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     50.6 %, and 71.7 % (spec acceptance 2). `git status --short docs/`
     prints nothing.
 
-Verify (Phase 1): spec acceptance 2, 3, 4, and 7 hold in the preview folder.
+Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
+folder.
 
 ## Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
 
 Spec D17, D18, D19, FR-5, FR-6.
 
-- [ ] 2.1 Red. Write the tests. Touch these files and no others:
-  - `harness/model-guide-tests/print-audit.test.ts`
-  - `harness/model-guide-tests/guide.test.ts`
-  - `harness/model-guide-tests/update.test.ts`
-  - synthetic fixtures under `harness/model-guide-tests/fixtures/`
+- [ ] 2.1 Red. The print-audit block. Write
+  `harness/model-guide-tests/print-audit.test.ts` and no other file.
   Normal cases:
-  - The block shows 11 of 13 and 13 of 13, the key size 52, and the error
-    types with their counts when the file has them.
+  - The block shows 11 of 13 and 13 of 13, the key size 52, the error types
+    with their counts, the checklist items of the mapped rows, the result of
+    each run, and the bias note.
+  - The input check of the hand-off file of spec OD6 passes on the file.
+  Edge cases:
+  - A changed byte, a wrong size, or a wrong schema of the hand-off file
+    gives exit 2 and no output file.
+  - The file holds no key `pages`, `text`, or `file`; a test fails on any
+    such key.
+  - The page shows no line "Error types: not yet received.".
+  - Verify: the file fails on the Phase 1 code. Record the failed test names
+    in `measure/runs/model_guide/red-2.1.txt`.
+- [ ] 2.2 Red. The overview table. Write `harness/model-guide-tests/guide.test.ts`
+  and no other file.
+  Normal cases:
   - The table has the six rows of spec D18 in that order.
   - The first source picks the first and the second choice. The evidence
     cell holds the source, the number, and the run count. Each row has its
     evidence date.
   - The base line shows beside the pick and never changes it.
-  - `update.sh` before the approval writes into the preview folder only.
-  - `update.sh` after the approval writes the two data files into a temp
-    `docs/assets/data/` and runs `git commit` with explicit paths only.
+  - The rows of app code, docs and ops, print books, and tooling use the
+    work-type table.
   Edge cases:
-  - A file with no error types shows "Error types: not yet received."
-  - The file holds no key `pages`, `text`, or `file`; a test fails on any
-    such key.
   - No qualified model in the first source: the second source picks.
   - No qualified model in either source: "no pick yet: not enough evidence".
   - Evidence older than 14 days gives the mark `stale`; 14 days gives none.
   - A track A route with `incomplete` does not qualify.
+  - Verify: the file fails on the Phase 1 code. Record the failed test names
+    in `measure/runs/model_guide/red-2.2.txt`.
+- [ ] 2.3 Red. The weekly update. Write `harness/model-guide-tests/update.test.ts`
+  and no other file.
+  Normal cases:
+  - `update.sh` before the approval writes into the preview folder only.
+  - `update.sh` after the approval writes the two data files into a temp
+    `docs/assets/data/` and runs `git commit` with explicit paths only.
+  Edge cases:
   - `update.sh` with a failed input check gives exit 2 and changes no file.
-  - Verify: each file fails on the Phase 1 code. Record the failed test
-    names in `measure/runs/model_guide/red-2.1.txt`.
-- [ ] 2.2 Green. Write `data/print-audit-2026-11.json`, `guide.ts`,
-  `pages/guide-section.html`, `update.sh`, and the overview edit of
-  `preview.sh`. Touch no test file.
-  - Verify: the Phase 1 and Phase 2 test files pass. `git status --short
-    docs/` prints nothing.
-- [ ] 2.3 Checks. One code checker reads the diff against spec D17 to D19.
-  - Verify: `measure/runs/model_guide/check-2.3.json` has status pass, or
+  - Verify: the file fails on the Phase 1 code. Record the failed test names
+    in `measure/runs/model_guide/red-2.3.txt`.
+- [ ] 2.4 Green. Write `harness/model-guide/data/print-audit-2026-11.json` and
+  the print-audit block of `harness/model-guide/pages/real-work.html`. Touch
+  no test file.
+  - The data file comes from the hand-off file of spec OD6. The input check
+    of spec D17 passes first. The file holds no book text and no page.
+  - Verify: `cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native`
+    passes, and `git status --short docs/` prints nothing.
+- [ ] 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test file
+  and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
+    passes.
+- [ ] 2.6 Green. Write `harness/model-guide/pages/guide-section.html` and the
+  overview edit of `harness/model-guide/preview.sh`. Touch no test file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
+    passes, and `git status --short docs/` prints nothing.
+- [ ] 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
+  and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native`
+    passes, and `git status --short docs/` prints nothing.
+- [ ] 2.8 Checks. One code checker reads the diff against spec D17 to D19.
+  - Verify: `measure/runs/model_guide/check-2.8.json` has status pass, or
     each blocking finding has a fix commit.
-- [ ] 2.4 [b] The error types of the 52-error key (spec D17, owner question
-  Q7). Waits for the PM.
-  - When they come, add the types and the counts to
-    `data/print-audit-2026-11.json`. Add no book text.
-  - Verify: the print-audit test passes, and the block shows the types.
-- [ ] 2.5 The preview with the table.
+- [ ] 2.9 The preview with the table.
   - Command: `harness/model-guide/preview.sh --export <the 2026-11-14 file>`.
   - Verify: `.tmp/model-guide-preview/index.html` shows the table first,
     with six rows, picks or "no pick yet", evidence, and dates (spec
-    acceptance 5 and 6). The orchestrator tells the PM that the preview is
+    acceptance 7). The orchestrator tells the PM that the preview is
     ready.
 
 Verify (Phase 2): page B and the overview table are in the preview folder by
@@ -216,19 +295,38 @@ Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
 
 Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
 
-- [ ] 3.1 Red. Write the tests. Touch these files and no others:
-  - `harness/model-guide-tests/pick-diffs.test.ts` (a fake `gh` on PATH)
-  - `harness/model-guide-tests/review-set.test.ts`
-  - `harness/model-guide-tests/review-score.test.ts`
-  - `harness/model-guide-tests/adjudicate.test.ts`
-  - `harness/model-guide-tests/leak-check.test.ts`
-  - synthetic diffs, keys, and outputs under
-    `harness/model-guide-tests/fixtures/review/`
+- [ ] 3.1 Red. The candidate diffs. Write
+  `harness/model-guide-tests/pick-diffs.test.ts` and the fake `gh` under
+  `harness/model-guide-tests/fixtures/fakes/`. Touch no other file.
   Normal cases:
   - `pick-diffs.ts` calls only `gh api` GET and lists the commits that meet
     each rule of spec D4, newest first.
+  - The tool selects the diffs by the rules of D4 and skips each diff that a
+    set already holds.
+  Edge cases:
+  - A merge commit, a date outside the range, a file count outside 1 to 8,
+    a line count outside 40 to 400, a share of code lines below 60 %, a lock
+    file, a binary file, a file under `dist/`, `build/`, or `generated/`, and
+    a file over 2 000 lines each get a reason line and no selection.
+  - Verify: the file fails on the Phase 2 code. Record the failed test names
+    in `measure/runs/model_guide/red-3.1.txt`.
+- [ ] 3.2 Red. The set lint. Write `harness/model-guide-tests/review-set.test.ts`
+  and the synthetic diffs and keys under
+  `harness/model-guide-tests/fixtures/review/`. Touch no other file.
+  Normal cases:
   - The lint passes a set that meets spec D5 to D8 and writes the public
     manifest with only the fields of spec D9.
+  - The lint accepts the operator of each class of the catalog of spec D6.
+  Edge cases:
+  - A plant in a removed line, plants fewer than 8 lines apart, a plant over
+    6 lines, a wrong hunk header, a wrong SHA-256, and a class or severity
+    count below spec D8 each fail the lint.
+  - An operator that is not in the catalog of its class fails the lint.
+  - Verify: the file fails on the Phase 2 code. Record the failed test names
+    in `measure/runs/model_guide/red-3.2.txt`.
+- [ ] 3.3 Red. The scorer. Write `harness/model-guide-tests/review-score.test.ts`
+  and no other file.
+  Normal cases:
   - A finding in the window with an accepted class matches. The plant
     weight counts once.
   - The pass score follows spec D13: `max(0, 100 × F / W − 2 × X)`.
@@ -236,14 +334,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     counts by class and severity are in the pass record.
   - The rank uses the worst pass; a tie goes to the worst blocker recall,
     then to the median.
-  - The queue groups the unmatched findings by file and a 3-line window and
-    holds no route name.
-  - `apply` maps `plant:<id>` to found, `real-defect` to neutral and to the
-    key, and `false-claim` to a false claim.
   Edge cases:
   - A line at `new_lines[0] - 3` and `new_lines[1] + 3` matches; one line
     further does not.
-  - A wrong class at the right line does not match.
+  - A wrong class at the right line does not match. No verdict makes it
+    found.
+  - A wrong line outside the window does not match. No verdict makes it
+    found.
   - A finding between two plants matches the nearer one.
   - A second finding on a found plant is a duplicate and costs nothing.
   - Finding 31 and later are ignored.
@@ -252,53 +349,93 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - A score below 0 becomes 0.
   - An `unclear` verdict marks the pass `provisional`, and the route has no
     rank. Fewer than 3 complete passes gives `incomplete`.
-  - The lint fails on a plant in a removed line, plants fewer than 8 lines
-    apart, a plant over 6 lines, a wrong hunk header, a wrong SHA-256, and a
-    class or severity count below spec D8.
-  - The score file and the manifest hold no `new_lines`, `witness`,
-    `operator`, `file`, or finding text.
+  - The score file holds no `new_lines`, `witness`, `operator`, `file`, or
+    finding text.
+  - Verify: the file fails on the Phase 2 code. Record the failed test names
+    in `measure/runs/model_guide/red-3.3.txt`.
+- [ ] 3.4 Red. The adjudication queue. Write
+  `harness/model-guide-tests/adjudicate.test.ts` and no other file.
+  Normal cases:
+  - The queue writes one item per finding, with the id of the finding, and
+    no route name.
+  - The queue groups by file and a 3-line window.
+  - `apply` maps `real-defect` to neutral and to the key, `false-claim` to
+    a false claim, and `unclear` to `provisional`.
+  - A verdict that the two judges do not share counts as `unclear`.
+  Edge cases:
+  - A group with two different claims holds two items and no shared verdict.
+  - A finding with a wrong line or a wrong class never becomes found.
+  - A disagreement never counts against the model.
+  - Verify: the file fails on the Phase 2 code. Record the failed test names
+    in `measure/runs/model_guide/red-3.4.txt`.
+- [ ] 3.5 Red. The leak check. Write `harness/model-guide-tests/leak-check.test.ts`
+  and no other file.
+  Normal cases:
+  - The leak check passes on a clean tree.
+  Edge cases:
   - The leak check fails on a staged file with a key field, with the
     private folder path, or with a seeded line of 20 characters or more
-    that is not in the source diff. It passes on a clean tree.
-  - Verify: each file fails on the Phase 2 code. Record the failed test
-    names in `measure/runs/model_guide/red-3.1.txt`.
-- [ ] 3.2 Green. Write `pick-diffs.ts`, `review-set.ts`, `review-score.ts`,
-  `adjudicate.ts`, `leak-check.ts`, and `review-prompt.md`. Touch no test
-  file.
+    that is not in the source diff.
+  - Verify: the file fails on the Phase 2 code. Record the failed test names
+    in `measure/runs/model_guide/red-3.5.txt`.
+- [ ] 3.6 Green. Write `harness/model-guide/pick-diffs.ts`. Touch no test
+  file and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native`
+    passes.
+- [ ] 3.7 Green. Write `harness/model-guide/review-set.ts`. Touch no test
+  file and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native`
+    passes.
+- [ ] 3.8 Green. Write `harness/model-guide/review-score.ts`. Touch no test
+  file and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native`
+    passes.
+- [ ] 3.9 Green. Write `harness/model-guide/adjudicate.ts`. Touch no test
+  file and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native`
+    passes.
+- [ ] 3.10 Green. Write `harness/model-guide/leak-check.ts`. Touch no test
+  file and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native`
+    passes.
+- [ ] 3.11 Green. Write `harness/model-guide/review-prompt.md`. Touch no test
+  file and no other file.
   - Verify: the test files of Phases 1 to 3 pass.
-- [ ] 3.3 Checks. One code checker reads the diff against spec D4 to D13.
-  - The checker confirms that no public output can hold a key field.
-  - Verify: `measure/runs/model_guide/check-3.3.json` has status pass, or
+- [ ] 3.12 Checks. One code checker reads the diff against spec D4 to D13
+  and D22.
+  - The checker confirms that no public output can hold a key field, that
+    the lint checks the operator catalog, and that the rule of two judges
+    holds.
+  - Verify: `measure/runs/model_guide/check-3.12.json` has status pass, or
     each blocking finding has a fix commit.
-- [ ] 3.4 The candidates. Run `pick-diffs.ts` for each source repo.
+- [ ] 3.13 The candidates. Run `pick-diffs.ts` for each source repo.
   - Store the lists in the private folder. Store nothing in the repository.
   - Verify: each list has 7 or more qualified commits. When a list has
     fewer, the orchestrator tells the PM and widens nothing without an
     answer.
-- [ ] 3.5 The seeding (spec D5 to D8). The fixture author
+- [ ] 3.14 The seeding (spec D5 to D8). The fixture author
   `claude-code/claude-opus-5-5[1m]#high` writes set `mg-2026-11a` in a fresh
   session, in the private folder only.
   - The session runs through `heavy-run.sh`. It gets the operator catalog of
     spec D6 and the candidate lists.
+  - The choice of each diff is rule-based (spec D4). The author chooses no
+    diff.
   - Verify: `review-set.ts lint mg-2026-11a` passes.
-- [ ] 3.6 The public manifest. Commit
+- [ ] 3.15 The public manifest. Commit
   `harness/model-guide/data/sets/mg-2026-11a.json` with an explicit path.
   - Run `leak-check.ts` before the commit.
   - Verify: the leak check passes, and the manifest SHA-256 values match the
     private files.
 
-Verify (Phase 3): spec acceptance 8 holds.
+Verify (Phase 3): spec acceptance 9 holds.
 
 ## Phase 4: The runner and the first track A results (by Sun 2026-11-22)
 
-Spec D12 to D15, FR-11, FR-14.
+Spec D12 to D15, D22, FR-11, FR-14, FR-15.
 
-- [ ] 4.1 Red. Write the tests. Touch these files and no others:
-  - `harness/model-guide-tests/review-run.test.ts`
-  - `harness/model-guide-tests/quota.test.ts`
-  - `harness/model-guide-tests/credential-provider.test.ts`
-  - fake `opencode` and fake quota scripts under
-    `harness/model-guide-tests/fixtures/fakes/`
+- [ ] 4.1 Red. The review runner. Write
+  `harness/model-guide-tests/review-run.test.ts` and the fake `opencode`
+  under `harness/model-guide-tests/fixtures/fakes/`. Touch no other file.
   Each test copies the scripts that it runs into a temp repo, the same as
   `harness/schedule-tests/rescore-guard.test.ts`. The fake child carries the
   text `fake-opencode` in its command line.
@@ -309,61 +446,115 @@ Spec D12 to D15, FR-11, FR-14.
   - Each call uses `opencode run --standalone --format json --model <route>`
     with the job store, and the job config denies `read`, `edit`, `bash`,
     `webfetch`, `websearch`, `question`, `subagent`, and `skill`.
-  - `provider-credential.sh seed <p>` imports only the entry of provider
-    `<p>` and prints no value.
   - The trap stops the fake processes and removes the job folder.
   Edge cases:
   - A route that is not in `routes.json`, or whose `kind` is `metered`,
     gives exit 2 before any call.
   - A window at 70 % at the start gives no call. A window at 80 % during
     the pass stops it and leaves it open.
-  - A failed read, a missing field, or a value that is not a number stops
-    the route.
   - A transport error retries up to 2 times. Three failures leave the pass
     open and not complete.
   - A raw output with a credential value is deleted, and the pass stops.
+  - A Go route with the region error of spec D22 is marked `region-blocked`,
+    and the route gets no rank for that night.
   - No file is written in the repository or under `docs/`.
   - After each run, `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
-  - Verify: each file fails on the Phase 3 code. Record the failed test
-    names in `measure/runs/model_guide/red-4.1.txt`.
-- [ ] 4.2 Green. Write `review-run.sh`, `quota.ts`, `routes.json`, and
-  `provider-credential.sh`. Add the review page edit of `preview.sh` and
-  `pages/review.html`. Touch no test file. Do not change
-  `harness/opencode-credential.sh` or `harness/opencode-host.sh`.
-  - Verify: the test files of Phases 1 to 4 pass.
+  - Verify: the file fails on the Phase 3 code. Record the failed test names
+    in `measure/runs/model_guide/red-4.1.txt`.
+- [ ] 4.2 Red. The quota sources. Write
+  `harness/model-guide-tests/quota.test.ts` and the fake quota scripts under
+  `harness/model-guide-tests/fixtures/fakes/`. Touch no other file.
+  Normal cases:
+  - The read of each quota source of spec D15 gives the state of the route.
+  - A source with every window below 70 % gives `ready`.
+  - A window at 70 % gives `wait`, and no pass starts.
+  Edge cases:
+  - A quota error, a limit error, and a read failure give `stopped`.
+  - A missing field and a value that is not a number give `stopped`.
+  - A route with no quota source runs at most 1 pass per night, and it stops
+    at the first quota or limit error.
+  - Verify: the file fails on the Phase 3 code. Record the failed test names
+    in `measure/runs/model_guide/red-4.2.txt`.
+- [ ] 4.3 Red. The provider credential. Write
+  `harness/model-guide-tests/credential-provider.test.ts` and no other file.
+  Normal cases:
+  - `provider-credential.sh seed <p>` imports only the entry of provider
+    `<p>` and prints no value.
+  - `provider-credential.sh scan-values <p>` finds a value in a raw output.
+  Edge cases:
+  - A provider with no entry gives exit 2 and no value.
+  - Verify: the file fails on the Phase 3 code. Record the failed test names
+    in `measure/runs/model_guide/red-4.3.txt`.
+- [ ] 4.4 Green. Write `harness/model-guide/quota.ts`. Touch no test file
+  and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native`
+    passes.
+- [ ] 4.5 Green. Write `harness/model-guide/routes.json`. Touch no test file
+  and no other file.
+  - The file holds the routes of spec D12 with the quota source of spec D15,
+    and the second judge of spec D11.
+  - Verify: the test files of Phase 4 pass.
+- [ ] 4.6 Green. Write `harness/model-guide/provider-credential.sh`. Touch no
+  test file and no other file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native`
+    passes.
+- [ ] 4.7 Green. Write `harness/model-guide/review-run.sh`. Touch no test
+  file and no other file. Do not change `harness/opencode-credential.sh` or
+  `harness/opencode-host.sh`.
+  - Verify: `cd harness && npx vitest run model-guide-tests/review-run.test.ts --configLoader native`
+    passes.
   - Verify: `git diff --stat ea36fae -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests`
     prints nothing.
-- [ ] 4.3 Checks. One code checker reads the diff against spec D12 to D15.
-  - The checker confirms the metered refusal, the 70 % and 80 % rules, and
-    the credential scan.
-  - Verify: `measure/runs/model_guide/check-4.3.json` has status pass, or
+- [ ] 4.8 Green. Write `harness/model-guide/pages/review.html` and the
+  review page edit of `harness/model-guide/preview.sh`. Touch no test file.
+  - Verify: the test files of Phases 1 to 4 pass, and
+    `git status --short docs/` prints nothing.
+- [ ] 4.9 Checks. One code checker reads the diff against spec D12 to D15
+  and D22.
+  - The checker confirms the metered refusal, the 70 % and 80 % rules, the
+    state of each route, the region rule, and the credential scan.
+  - Verify: `measure/runs/model_guide/check-4.9.json` has status pass, or
     each blocking finding has a fix commit.
-- [ ] 4.4 The route probe (spec D14). One call per route with a control
+- [ ] 4.10 The route probe (spec D14). One call per route with a control
   diff, through `heavy-run.sh`, in the window of spec D15.
-  - Record `reachable` or `unreachable` with the error line in
-    `measure/runs/model_guide/probe-4.4.txt`.
+  - Record `reachable`, `unreachable`, or `region-blocked` with the error
+    line in `measure/runs/model_guide/probe-4.10.txt`.
   - The orchestrator sends each `unreachable` route to the PM (owner
     question Q8).
   - Verify: each route of `routes.json` has one line in the file.
-- [ ] 4.5 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
+- [ ] 4.11 The pilot gate (spec D13, OD7). The pilot set of 6 diffs with at
+  least 12 plants runs on the two pilot routes with 2 passes each.
+  - The pilot routes are `minimax-cn-coding-plan/MiniMax-M3.1-Flash` and
+    `kimi-code-plan-cn/kimi-for-coding#high`.
+  - The pilot runs through `heavy-run.sh`, in the window of spec D15.
+  - The worst-of-2 score of each pilot route goes into the score file.
+  - Verify: the best worst-of-2 score minus the lowest worst-of-2 score is 20
+    points or more, and the best worst-of-2 score is below 90. When a rule
+    fails, the orchestrator seeds a harder set (task 3.14) and runs the
+    pilot again. After 2 reseeds the orchestrator sends the set to the PM.
+- [ ] 4.12 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
   (02:00 to 06:00 +07). One pass per reachable route per night.
   - Command for each route:
     `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route <route>`.
   - Verify: each reachable route has 3 complete passes, or the file
-    `measure/runs/model_guide/passes-4.5.txt` names the reason (quota stop or
-    open pass).
-- [ ] 4.6 The adjudication (spec D11). Run `adjudicate.ts queue`, one Opus
-  call per diff through `heavy-run.sh`, and then `adjudicate.ts apply`.
+    `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
+    stop, region block, or open pass).
+- [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
+  call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
+  apply`.
+  - The first judge is `claude-code/claude-opus-5-5[1m]#high`. The second
+    judge is the route of spec D11 from a family that is not Anthropic. The
+    second judge never reads the verdicts of the first judge.
   - The orchestrator sends the real-defect list to the PM as a hand-off.
-  - Verify: no group stays without a verdict, or the routes with an
-    `unclear` verdict show `incomplete`.
-- [ ] 4.7 The score file and the review page.
+  - Verify: no finding stays without a verdict of both judges, or the routes
+    with an `unclear` verdict show `incomplete`.
+- [ ] 4.14 The score file and the review page.
   - Write `harness/model-guide/data/review-scores/mg-2026-11a.json`. Run
     `leak-check.ts`. Commit the file with an explicit path.
   - Run `preview.sh` again.
   - Verify: `.tmp/model-guide-preview/review.html` shows the rank by the
     worst pass, and the code review row of the table has a pick or "no pick
-    yet" (spec acceptance 9 and 10).
+    yet" (spec acceptance 10 and 11).
 
 Verify (Phase 4): the track A first results are in the preview folder by Sun
 2026-11-22.
@@ -381,6 +572,9 @@ Spec D19, D21.
     with his words, the date, and the SHA-256 values. Commit it with an
     explicit path.
 - [ ] 5.3 The first publish. Run `harness/model-guide/publish.ts`.
+  - The tool compares the current files of `docs/` with `preview-base.json`.
+    On a drift it gives exit 2 and names each drifted file. The orchestrator
+    builds the preview again and asks Daniel again.
   - Run `leak-check.ts`. Commit the files under `docs/` with explicit paths.
   - The standing push rule applies from this task on.
   - Verify: `docs/real-work.html`, `docs/review.html`, the three data files,
