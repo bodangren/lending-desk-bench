@@ -135,7 +135,7 @@ applies them in `docs/`.
 
 Spec D16, D21, FR-1 to FR-4, FR-7.
 
-- [ ] 1.1 Red. The merge and the rates. Write these files and no others:
+- [x] 563d33a 1.1 Red. The merge and the rates. Write these files and no others:
   - `harness/model-guide-tests/real-work.test.ts`
   - `harness/model-guide-tests/fixtures/real-work-mini.json`
   - `harness/model-guide-tests/fixtures/MANIFEST.txt` (synthetic, in the
@@ -167,7 +167,9 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
   - `rater_checks.n` = 0 shows no agreement value.
   - Verify: the file fails on `ea36fae`. Record the failed test names in
     `measure/runs/model_guide/red-1.1.txt`.
-- [ ] 1.2 Red. The input check. Write
+  - Evidence: commit 563d33a. `red-1.1.txt` holds the failed test names and
+    exit 1. Each test fails with "production file is missing".
+- [x] 0f0b2df 1.2 Red. The input check. Write
   `harness/model-guide-tests/input-check.test.ts` and no other file.
   Normal cases:
   - The input check passes on the fixture, and the output keeps the file
@@ -178,7 +180,9 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
   - A missing `MANIFEST.txt` gives exit 2.
   - Verify: the file fails on `ea36fae`. Record the failed test names in
     `measure/runs/model_guide/red-1.2.txt`.
-- [ ] 1.3 Red. The preview and the publish gate. Write
+  - Evidence: commit 0f0b2df. `red-1.2.txt` holds the failed test names and
+    exit 1. Each test fails with "production file is missing".
+- [x] b42a234 1.3 Red. The preview and the publish gate. Write
   `harness/model-guide-tests/preview-gate.test.ts` and no other file.
   Normal cases:
   - `preview.sh` writes `real-work.html` and `real-work.json` into a temp
@@ -194,7 +198,10 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `docs/` changed after the preview.
   - Verify: the file fails on `ea36fae`. Record the failed test names in
     `measure/runs/model_guide/red-1.3.txt`.
-- [ ] 1.4 Green. Write `harness/model-guide/real-work.ts`. Touch no test file
+  - Evidence: commit b42a234. `red-1.3.txt` holds the failed test names and
+    exit 1. Each test fails with "production file is missing". Case 7 is an
+    added success case for the publish copy.
+- [~] 1.4 Green. Write `harness/model-guide/real-work.ts`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/real-work.test.ts model-guide-tests/input-check.test.ts --configLoader native`
     passes.
