@@ -569,9 +569,9 @@ date 2026-10-25.
     A run day always runs, as now. Rule 6 follows from the same check. A
     failed run day leaves `n < m`, so the next night runs. A dry run prints
     the CATCHUP and REST lines and exits 0.
-23. **D23. Pick order.** `harness/daily-pick.ts` and
-    `harness/pick-oracle.py` take a new optional flag `--board
-    <benchmark.json>`. The job always passes it.
+23. **D23. Pick order.** `harness/daily-pick.ts` takes a new optional flag
+    `--board <benchmark.json>`. The job always passes the board file to both
+    pickers.
     - Group 1 holds a model whose id is in neither `models[].id` nor
       `history.models[].id`.
     - Group 2 holds a model whose id is in `history.models[].id` only.
@@ -580,10 +580,22 @@ date 2026-10-25.
     Groups go in order 1, 2, 3. Inside each group, the existing rules 4 and
     5 apply. They order by untested requests first, then by stalest. A new
     model is group 1 or 2. With the flag, the JSON output adds `group` and
-    `new` as a true or false value. The `DAILY_PICK` line and the
-    `PICK_ORACLE` line both end with ` group=<g> new=<yes|no>`. Without the
-    flag, output stays byte-for-byte as now. The two lines stay equal for the
-    same inputs.
+    `new` as a true or false value. The `DAILY_PICK` line of a pick ends with
+    ` group=<g> new=<yes|no>`. The `order` array lists the eligible candidates
+    in the group order. The resume line and the `model=none` line stay as now.
+    Without the flag, output stays byte-for-byte as now. The two lines stay
+    equal for the same inputs.
+    - `measure/tracks/daily_model_schedule/pick-oracle.py` takes an optional
+      7th positional argument `<benchmark.json>`. With it, the `PICK_ORACLE`
+      line of a pick ends with ` group=<g> new=<yes|no>`. The resume line and
+      the `model=none` line stay as now. Without it, the oracle output stays
+      byte-for-byte as now.
+    - The r3 brief named `harness/pick-oracle.py`, but the oracle of task 1.1
+      lives at `measure/tracks/daily_model_schedule/pick-oracle.py`, so D23
+      names that path and gives it the 7th positional argument.
+    - The oracle is an independent copy of the selection rule. The Red role
+      owns it in this phase. The Green role does not write it.
+    - A model in both `models[].id` and `history.models[].id` is group 3.
 24. **D24. heavy-run.** In a live run, each track batch runs as
     `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 "$HEAVY" "$BATCH" --model
     "$MODEL"` with `BENCH_TRACK` exported. `HEAVY` is
