@@ -179,6 +179,82 @@ All facts come from the files on disk and from read-only commands on
   `harness/cron-daily.sh` calls each track batch directly. It does not call
   `heavy-run.sh`. Its lock path is `.tmp/weekly-cron.lock`. D24 adds the
   heavy-run gate.
+- **EV28. The PM heavy-run split (2026-11-15).** The PM orders are exact in
+  quotation:
+
+  > 2026-11-15 01:0x: "the nightly job (lending-desk-daily.service, cron-daily.sh → batch.sh) runs `vitest run tests/meta --maxWorkers=1` outside heavy-run.sh. Do NOT stop tonight's run. Memory is fine (2.8 GB). Order for after the run line (by 03:00): change harness/cron-daily.sh (or batch.sh) so the meta test suite and each candidate run go through `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh` with HEAVY_PRIORITY=p2 and HEAVY_MIN_AVAIL_MB=1500. The time limit must fit the nightly window. One Red test (the script calls heavy-run.sh), then the change. Light lane, leftover slot."
+
+  > 2026-11-15 01:2x: "PM decision on the p2 cap question: neither option. The cap protects Storytime until 11-20 and stays."
+
+  > before each candidate run, check MemAvailable; "under 1500 MB, wait (poll each 60 s, up to 20 min), then skip that candidate with a clear log line."
+
+  > 2026-11-15 01:3x (the final split): "New split for D24: - Through heavy-run p2 (1800 s each): the meta suite, the reference canary, and EACH candidate's grading step (build, next start, Playwright). - Outside heavy-run (light): the candidate's agent step only, with the 1,500 MB MemAvailable check before it starts. If one grading step needs more than 1800 s, tell me its measured time, and I decide the limit."
+
+  The file `~/.config/ra-slots/config.json` sets `maxLockSecondsP2` to `1800`
+  and `maxLockUntil` to `2026-11-20`. The `heavy-run.sh` header says that it
+  exits `124` at its time limit. A nested `heavy-run.sh` call skips its lock
+  and timer.
+- **EV29. Measured grading time.** The command below read every
+  `runs/*/artifacts/score.json`. It counted only numeric `grading_seconds`
+  values. The build group uses every run id without the `bf-`, `tt-`, `ch-`,
+  or `canary-` prefix.
+
+  | Runs | Track | Count | Median (s) | Largest (s) | Largest run id | Over 1800 s |
+  |---|---|---:|---:|---:|---|---:|
+  | All | build | 193 | 131 | 318 | `cal-ch-untouched-2059` | 0 |
+  | All | bugfix | 35 | 159 | 374 | `bf-b-hy3-2026w37` | 0 |
+  | All | tests | 12 | 0 | 214 | `tt-b-kimi-k2-7-code-2026w46-r1` | 0 |
+  | All | change | 2 | 157.5 | 160 | `ch-a-kimi-k2-7-code-2026w46-r1` | 0 |
+  | All | canaries | 12 | 150.5 | 287 | `canary-build-preflight-1793915716` | 0 |
+  | `*-2026w46-*` | build | 5 | 200 | 244 | `b-kimi-k2-7-code-2026w46-r2` | 0 |
+  | `*-2026w46-*` | bugfix | 2 | 207.5 | 225 | `bf-a-kimi-k2-7-code-2026w46-r1` | 0 |
+  | `*-2026w46-*` | tests | 2 | 119.5 | 214 | `tt-b-kimi-k2-7-code-2026w46-r1` | 0 |
+  | `*-2026w46-*` | change | 2 | 157.5 | 160 | `ch-a-kimi-k2-7-code-2026w46-r1` | 0 |
+  | `*-2026w46-*` | canaries | 4 | 187 | 211 | `canary-tests-2026w46-1794687098` | 0 |
+
+  The pass found 254 numeric values in 333 score files. It found 78 absent
+  fields and one invalid score file. No grading step was over 1800 s. The
+  largest value of every group stays under 400 s, so the 1800 s limit of D24
+  holds with a wide margin.
+
+  Command used:
+
+  ```bash
+  python3 -I - <<'PY'
+  import glob, json, statistics
+  rows = []
+  for path in glob.glob('runs/*/artifacts/score.json'):
+      run_id = path.split('/')[1]
+      try:
+          score = json.load(open(path, encoding='utf-8'))
+      except (OSError, json.JSONDecodeError):
+          continue
+      seconds = score.get('grading_seconds')
+      if isinstance(seconds, bool) or not isinstance(seconds, (int, float)):
+          continue
+      if run_id.startswith('canary-'):
+          track = 'canaries'
+      elif run_id.startswith('bf-'):
+          track = 'bugfix'
+      elif run_id.startswith('tt-'):
+          track = 'tests'
+      elif run_id.startswith('ch-'):
+          track = 'change'
+      else:
+          track = 'build'
+      rows.append((run_id, track, seconds))
+  for label, test in [('all', lambda run_id: True), ('2026w46', lambda run_id: '-2026w46-' in run_id)]:
+      print(label)
+      for track in ['build', 'bugfix', 'tests', 'change', 'canaries']:
+          values = [(run_id, seconds) for run_id, row_track, seconds in rows if row_track == track and test(run_id)]
+          if not values:
+              print(f'{track}\tcount=0\tmedian=-\tlargest=-\trun_id=-\tover1800=0')
+              continue
+          seconds = [value for _, value in values]
+          largest_id, largest = max(values, key=lambda item: item[1])
+          print(f'{track}\tcount={len(values)}\tmedian={statistics.median(seconds):g}\tlargest={largest:g}\trun_id={largest_id}\tover1800={sum(value > 1800 for value in seconds)}')
+  PY
+  ```
 
 ## Definitions
 
@@ -596,17 +672,61 @@ date 2026-10-25.
     - The oracle is an independent copy of the selection rule. The Red role
       owns it in this phase. The Green role does not write it.
     - A model in both `models[].id` and `history.models[].id` is group 3.
-24. **D24. heavy-run.** In a live run, each track batch runs as
-    `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 "$HEAVY" "$BATCH" --model
-    "$MODEL"` with `BENCH_TRACK` exported. `HEAVY` is
-    `${BENCH_DAILY_HEAVY:-/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh}`.
-    The gate order is like D20. The seam comes first. Else under `VITEST`,
-    the batch runs directly and the job prints `DAILY HEAVY skipped: test`.
-    Else the real script runs. The job prints `DAILY HEAVY <path>` once
-    before the first batch. A real script that is missing or not executable
-    gives `DAILY FAIL heavy: heavy-run.sh is missing` and exit 2 before the
-    first batch. A non-zero heavy-run exit is the batch exit. It uses the
-    existing runner-failure path. A dry run never calls heavy-run.
+24. **D24. Heavy-run steps.** Amended on 2026-11-15 by task 7.1b. The former
+    batch-wide heavy-run rule no longer applies.
+    - **Cron gate.** `BENCH_DAILY_HEAVY` comes first. Its value is the
+      selected heavy path. Without that seam, `VITEST` selects an empty path.
+      Without either value, the selected path is
+      `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh`.
+      Under `VITEST` without the seam, the job prints
+      `DAILY HEAVY skipped: test`. Otherwise, the job prints
+      `DAILY HEAVY <path>` once. A missing or non-executable
+      selected path gives `DAILY FAIL heavy: heavy-run.sh is missing` and exit
+      2 before the first batch. A dry run never calls the selected path.
+    - **Cron batch calls.** The job runs each track batch directly. It does
+      not wrap a batch in heavy-run. It exports `BENCH_HEAVY=<selected path>`
+      and `BENCH_MEM_FLOOR_MB=1500` to every batch. Under `VITEST` without
+      the seam, `BENCH_HEAVY` is the empty string.
+    - **Batch self-check.** When `BENCH_HEAVY` is not empty, the meta
+      self-check runs as `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2
+      HEAVY_RUN_TIMEOUT_S=1800 "$BENCH_HEAVY" <existing self-check command>`.
+      A non-zero heavy-run exit gives the line
+      `harness self-check failed: heavy-run exited <n>` and exit 3. That line
+      replaces the line `harness self-check failed: the meta suite did not
+      pass` when the heavy path is set. The line
+      `see harness/meta-selfcheck.log` stays.
+    - **Batch canary.** When `BENCH_HEAVY` is not empty, the reference canary
+      runs as `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2
+      HEAVY_RUN_TIMEOUT_S=1800 "$BENCH_HEAVY" <existing canary command>`. A
+      non-zero heavy-run exit gives the line
+      `canary failed: heavy-run exited <n> for <canary_id>` and exit 3. That
+      line replaces the line `canary failed: <canary_id> did not score a valid
+      100; see harness/canary.log and <score path>` when the heavy path is
+      set.
+    - **Batch memory gate.** When `BENCH_MEM_FLOOR_MB` is not empty, the batch
+      checks memory before each candidate `run.sh` call. The seam
+      `BENCH_MEMINFO` names the memory file. Its default is `/proc/meminfo`.
+      The batch reads `MemAvailable` in kB. It converts the value to MB with
+      `floor(kB / 1024)`. A value at or above the floor starts the candidate.
+      A lower value prints `[<n>/<total>] WAIT <run_id> (memory: MemAvailable
+      <m> MB under <floor> MB)`. Here `<m>` is the value of the first read and
+      `<floor>` is the value of `BENCH_MEM_FLOOR_MB`. The batch then polls the
+      file every `BENCH_MEM_POLL_S` seconds. The default is 60. It waits at
+      most `BENCH_MEM_WAIT_S` seconds. The default is 1200. A value that
+      remains below the floor prints `[<n>/<total>] SKIP <run_id> (memory:
+      MemAvailable <m> MB under <floor> MB after <wait> s)`. Here `<m>` is the
+      value of the last read and `<wait>` is the value of `BENCH_MEM_WAIT_S`.
+      It counts the candidate as skipped and starts the next candidate.
+    - **Run grading step.** When `BENCH_HEAVY` is not empty, the grading step
+      runs as `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2
+      HEAVY_RUN_TIMEOUT_S=1800 "$BENCH_HEAVY" "$H/grade.sh" "$RUN_ID"
+      "$PROVIDER/$MODEL" "$ARM" "$((END-START))"`. The values `AGENT_EXIT`,
+      `THINKING`, `API_PORT`, and `E2E_PORT` remain the same. The agent step
+      stays outside heavy-run. A non-zero heavy-run exit is the grade exit.
+      It uses the existing grade failure path.
+    - **Light paths.** Without `BENCH_HEAVY` and `BENCH_MEM_FLOOR_MB`,
+      `batch.sh` and `run.sh` keep their present behavior. The weekly job and
+      hand runs use this path.
 25. **D25. Notice fields.** The PUBLISH and SKIP lines end with ` model=<id|none>
     new=<yes|no> board=<n2> due=<m>`. Here `n2` is the board length read again
     after the export. The FAIL line ends with ` model=<id|none>`. The
@@ -893,17 +1013,25 @@ The amended rule (D20):
   labeled lines match after the prefix. The group 1, 2, and 3 cases cover
   the new-model flag.
 
-### FR-20 — Heavy-run batches
+### FR-20 — Heavy-run steps
 
-- A live batch runs through heavy-run with the D24 command and environment.
-  The seam comes before the `VITEST` rule (D24).
-- Under `VITEST`, the batch runs directly and the job prints
-  `DAILY HEAVY skipped: test`. A missing real script fails before the first
-  batch. A dry run never calls heavy-run.
-- **Check.** The heavy seam receives each track batch. It sees
-  `HEAVY_MIN_AVAIL_MB=1500` and `HEAVY_PRIORITY=p2`. The exported
-  `BENCH_TRACK` names the track. The missing script gives exit 2 and the D24
-  fail line.
+- The cron job selects the heavy path with the D24 gate. It runs each track
+  batch directly. It exports `BENCH_HEAVY` and `BENCH_MEM_FLOOR_MB=1500` to
+  every batch. Under `VITEST`, `BENCH_HEAVY` is empty.
+- The meta self-check and reference canary run through heavy-run. Each
+  candidate grading step runs through heavy-run. Each heavy call sets
+  `HEAVY_MIN_AVAIL_MB=1500`, `HEAVY_PRIORITY=p2`, and
+  `HEAVY_RUN_TIMEOUT_S=1800`. The candidate agent step stays outside
+  heavy-run.
+- The batch checks MemAvailable before each candidate. A low value waits and
+  then skips the candidate. The wait and skip lines follow D24.
+- A missing selected heavy path fails before the first batch. A dry run never
+  calls heavy-run.
+- **Check.** The cron cases prove the heavy path line and batch exports. The
+  step cases prove the self-check, canary, and grading calls. They also
+  prove that the agent call stays outside heavy-run. The memory case proves
+  the wait and skip lines. The light-path case proves that no call uses
+  heavy-run without `BENCH_HEAVY`.
 
 ### FR-21 — Notice fields
 
@@ -1021,10 +1149,13 @@ The amended rule (D20):
     groups are 1, 2, and 3. The group order comes first. The labeled lines
     match. Output without the flag stays byte-for-byte unchanged
     (FR-19, D23).
-19. **AC-19** Every live track batch runs through heavy-run with the D24
-    environment. Under `VITEST`, the job skips heavy-run. A missing script
-    fails before the first batch. A dry run never calls heavy-run
-    (FR-20, D24).
+19. **AC-19** The cron job runs track batches directly. It exports the D24
+    heavy path and memory floor to each batch. The meta self-check, reference
+    canary, and each candidate grading step run through heavy-run p2 with a
+    1800 s limit. The candidate agent step stays outside heavy-run. A low
+    MemAvailable value waits and then skips the candidate. Under `VITEST`,
+    the exported heavy path is empty. A missing selected path fails before the
+    first batch. A dry run never calls heavy-run (FR-20, D24).
 20. **AC-20** PUBLISH, SKIP, and FAIL notices carry the D25 fields. The
     board length comes from the second board read. The notice stays within
     300 characters (FR-21, D25).

@@ -1121,9 +1121,9 @@ The PM order is exact in quotation:
 
 > Rule from now: each run day (Wed, Sun) adds one NEW model to the leaderboard. A run day with no new model is a failure. ... 3. Catch-up: add one extra model each night while the Go month stays under your 95 % guard. 4. After the Go reset (11-21 20:44): one new model each night until the leaderboard holds 4 plus one model per run day since 10-25. Then go back to Wed and Sun. 5. Order of models: untested Go models first, then the history models again on the OpenCode runner. 6. A failed run day gets a rerun the next night. Do not wait for the next run day. 7. Each night run goes through heavy-run, as now.
 
-This phase adds the nightly timer, catch-up rule, board-aware pick order, heavy-run gate, and notice fields of spec D21 to D25.
+This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 heavy-step split, and notice fields of spec D21 to D25.
 
-- [x] 63a366f 7.1 Red: the spec amendment and the targeted Red tests. The role adds D21 to D25 to `spec.md`, with the matching evidence, functional requirements, acceptance criteria, and the D19 REST exit row. The role adds `harness/schedule-tests/daily-catchup.test.ts` and `harness/schedule-tests/daily-pick-board.test.ts`. The tests cover the timer text, night rule, REST path, due dates, pick groups, heavy-run gate, and notice fields. Every test that starts `cron-daily.sh` uses the notice sink, board seam, and safe heavy-run seam. No test reaches a real model, catalog fetch, heavy-run, OpenCode command, OpenChamber command, docs tree, or real home.
+- [x] 63a366f 7.1 Red: the spec amendment and the targeted Red tests. The role adds D21 to D25 to `spec.md`, with the matching evidence, functional requirements, acceptance criteria, and the D19 REST exit row. The role adds `harness/schedule-tests/daily-catchup.test.ts` and `harness/schedule-tests/daily-pick-board.test.ts`. The tests cover the timer text, night rule, REST path, due dates, pick groups, the first D24 heavy-run gate, and notice fields. Every test that starts `cron-daily.sh` uses the notice sink, board seam, and safe heavy-run seam. No test reaches a real model, catalog fetch, heavy-run, OpenCode command, OpenChamber command, docs tree, or real home.
   - Verify: `cd harness && npx vitest run schedule-tests/daily-catchup.test.ts schedule-tests/daily-pick-board.test.ts --configLoader native --maxWorkers=1` exits non-zero. Each failure names a missing rule of D21 to D25.
   - Verify: `cd harness && npx vitest run schedule-tests/notice-seam-guard.test.ts --configLoader native --maxWorkers=1 --reporter=verbose` exits 0.
   - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose` exits 0.
@@ -1136,7 +1136,7 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, heavy-
   - Command: `cd harness && npx vitest run schedule-tests/daily-catchup.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
     `Test Files  1 failed (1)`; `Tests  12 failed (12)`; exit 1. The failing
     cases are C1 (D21), C2, C3, C4, C5, C6, C7, and C8 (D22), C9, C10, and
-    C11 (D24), and C12 (D25). Each failure names the missing rule.
+    C11 (the first D24 gate), and C12 (D25). Each failure names the missing rule.
   - Command: `cd harness && npx vitest run schedule-tests/daily-pick-board.test.ts --configLoader native --maxWorkers=1 --reporter=verbose`.
     `Test Files  1 failed (1)`; `Tests  5 failed | 2 passed (7)`; exit 1. The
     failing cases are P2, P4, P5, P6, and P7 (D23). Each failure names the
@@ -1152,7 +1152,8 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, heavy-
     oracle in this phase. The Green role does not write it.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds an open task, so the task went from `[ ]` to `[x]`.
   - Deviation: r3: the brief named a wrong oracle path; Red fixed the spec, the oracle, and P3/P4.
-- [ ] 7.2 Green: the implementation of D21 to D25. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector, the heavy-run gate, and the notice fields. The job always passes the board file to both pickers. A REST night ends before the catalog fetch. A live track batch runs through heavy-run.
+- [x] 7.1b Red: the D24 amendment for heavy steps (PM 2026-11-15).
+- [ ] 7.2 Green: the implementation of D21 to D25. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector, the heavy-run gate, and the notice fields. The job always passes the board file to both pickers. A REST night ends before the catalog fetch. The heavy-run split follows the amended D24 of task 7.1b.
   - Verify: the Red command of task 7.1 exits 0.
   - Verify: the notice seam and publish notice commands of task 7.1 exit 0.
   - Verify: `bash -n harness/cron-daily.sh` exits 0.

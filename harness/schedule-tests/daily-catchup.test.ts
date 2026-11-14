@@ -1,5 +1,10 @@
 // The nightly catch-up rules of Phase 7 (spec D21, D22, D24, and D25).
 //
+// D24 interface: `BENCH_DAILY_HEAVY`, `BENCH_HEAVY`, and
+// `BENCH_MEM_FLOOR_MB=1500`. The cron lines are `DAILY HEAVY <path>`,
+// `DAILY HEAVY skipped: test`, and
+// `DAILY FAIL heavy: heavy-run.sh is missing`.
+//
 // Every job case runs a copy of `cron-daily.sh` in a temporary repository.
 // The child environment has a temporary HOME, a notice sink, a board file,
 // and explicit selector, batch, quota, and lock paths. The copied script has
@@ -80,7 +85,11 @@ const args = process.argv.slice(2);
 const track = process.env.BENCH_TRACK || 'build';
 const modelIndex = args.indexOf('--model');
 const model = modelIndex >= 0 ? args[modelIndex + 1] : 'fresh-model';
-fs.appendFileSync(process.env.BATCH_LOG, JSON.stringify({track, args}) + '\\n');
+fs.appendFileSync(process.env.BATCH_LOG, JSON.stringify({
+  track, args,
+  heavyPath: process.env.BENCH_HEAVY ?? '',
+  memoryFloorMb: process.env.BENCH_MEM_FLOOR_MB ?? '',
+}) + '\\n');
 if (!args.includes('--dry-run')) {
   const artifacts = path.join(process.env.BENCH_RUNS_ROOT, 'a-' + model.replaceAll('.', '-') + '-' + track + '-' + process.env.WEEK + '-r1', 'artifacts');
   fs.mkdirSync(artifacts, {recursive:true});
@@ -250,8 +259,12 @@ function logLines(path: string): string[] {
 function selectorArgs(f: Fixture): string[][] {
   return logLines(f.selectorLog).map(line => JSON.parse(line) as string[]);
 }
-function batchCalls(f: Fixture): Array<{ track: string; args: string[] }> {
-  return logLines(f.batchLog).map(line => JSON.parse(line) as { track: string; args: string[] });
+function batchCalls(f: Fixture): Array<{
+  track: string; args: string[]; heavyPath: string; memoryFloorMb: string;
+}> {
+  return logLines(f.batchLog).map(line => JSON.parse(line) as {
+    track: string; args: string[]; heavyPath: string; memoryFloorMb: string;
+  });
 }
 
 describe("nightly catch-up", () => {
@@ -360,32 +373,39 @@ describe("nightly catch-up", () => {
     expect(sinkLines(f), `${D22}: a dry run must send no notice`).toEqual([]);
   });
 
-  caseOf("C9 the heavy seam receives every track batch with the required environment", f => {
+  caseOf("C9 the cron job exports the heavy path and memory floor to every batch", f => {
     setBoard(f, 9);
     const r = runJob(f, { env: { BENCH_DAILY_HEAVY: f.heavy } });
     expect(r.status, `${D24}: the heavy night must run\n${r.stdout}\n${r.stderr}`).toBe(0);
     expect(lines(r, "DAILY HEAVY "), `${D24}: the job must print the heavy path once`)
       .toEqual([`DAILY HEAVY ${f.heavy}`]);
-    const calls = logLines(f.heavyLog).map(line => line.split("\t"));
-    expect(calls.map(call => call[0]), `${D24}: heavy-run must receive every track in order`)
+    expect(logLines(f.heavyLog), `${D24}: cron-daily.sh must not wrap a batch in heavy-run`)
+      .toEqual([]);
+    const calls = batchCalls(f);
+    expect(calls.map(call => call.track), `${D24}: every track batch must run directly`)
       .toEqual(["build", "bugfix", "tests", "change"]);
     for (const call of calls) {
-      expect(call[1], `${D24}: heavy-run must receive HEAVY_MIN_AVAIL_MB=1500`).toBe("1500");
-      expect(call[2], `${D24}: heavy-run must receive HEAVY_PRIORITY=p2`).toBe("p2");
-      expect(call[3], `${D24}: heavy-run must receive the batch command`)
-        .toBe(`${f.batch} --model ${FRESH}`);
+      expect(call.heavyPath, `${D24}: every batch must receive BENCH_HEAVY`).toBe(f.heavy);
+      expect(call.memoryFloorMb, `${D24}: every batch must receive BENCH_MEM_FLOOR_MB=1500`)
+        .toBe("1500");
     }
   });
 
-  caseOf("C10 VITEST runs the batch directly and skips heavy-run", f => {
+  caseOf("C10 VITEST exports an empty heavy path and skips heavy-run", f => {
     setBoard(f, 9);
     const r = runJob(f);
     expect(r.status, `${D24}: the test night must run\n${r.stdout}\n${r.stderr}`).toBe(0);
     expect(lines(r, "DAILY HEAVY skipped: test"), `${D24}: VITEST must skip heavy-run`)
       .toEqual(["DAILY HEAVY skipped: test"]);
     expect(logLines(f.heavyLog), `${D24}: VITEST must not start heavy-run`).toEqual([]);
-    expect(batchCalls(f).map(call => call.track), `${D24}: VITEST must run every batch directly`)
+    const calls = batchCalls(f);
+    expect(calls.map(call => call.track), `${D24}: VITEST must run every batch directly`)
       .toEqual(["build", "bugfix", "tests", "change"]);
+    for (const call of calls) {
+      expect(call.heavyPath, `${D24}: VITEST must export an empty BENCH_HEAVY`).toBe("");
+      expect(call.memoryFloorMb, `${D24}: every batch must receive BENCH_MEM_FLOOR_MB=1500`)
+        .toBe("1500");
+    }
   });
 
   caseOf("C11 a missing heavy-run script fails before the first batch", f => {
