@@ -104,7 +104,7 @@ applies them in `docs/`.
     "Backlog" section with the replay track and no date.
   - Verify: `rg -n "model_guide|paused — PM 2026-11-14|Replay" measure/tracks.md`
     shows the three lines.
-- [ ] 0.2 The spec review (spec D20). Before task 1.1.
+- [x] 2fae48c 0.2 The spec review (spec D20). Before task 1.1.
   - The reviewer follows the Measure spec-review standard.
   - The reviewer writes only under `measure/runs/model_guide/`.
   - The author or a Build session updates `measure/tracks/model_guide/spec-review.md`
@@ -114,13 +114,22 @@ applies them in `docs/`.
     with the id and the severity of each finding. `spec-review.md` has a
     round 1 section with a disposition and an author response for each
     finding. Each Blocker has FIX, CONTEST, or ESCALATE.
-- [ ] 0.3 The re-review of round 1 (spec D20). The reviewer of round 1 reads
+  - Evidence: `measure/runs/model_guide/spec-review-bbde00d.json` holds
+    round 1 with 4 Blocker, 7 Major, and 1 Nit findings, each with its id
+    and its severity. The round 1 section of `spec-review.md` gives each
+    finding a disposition and an author response. F1 to F4 are Blocker, and
+    each says FIX.
+- [x] fab7458 0.3 The re-review of round 1 (spec D20). The reviewer of round 1 reads
   the revised spec and plan.
   - The reviewer writes only under `measure/runs/model_guide/`.
   - The author or a Build session updates `spec-review.md` after the review.
   - Verify: the result file of round 2 names each finding of round 1 as
     fixed, partly fixed, or not fixed. `spec-review.md` has a round 2
     section.
+  - Evidence: `measure/runs/model_guide/spec-review-2fae48c.json` holds
+    `round1_dispositions` with F1 to F12, each marked fixed or partly
+    fixed. The round 2 section of `spec-review.md` records the PM decision
+    of 2026-11-14 and the F13 to F23 fixes.
 
 ## Phase 1: Page B in the preview folder (by Wed 2026-11-18)
 
