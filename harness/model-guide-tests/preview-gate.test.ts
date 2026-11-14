@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync,
+  chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync,
   readdirSync, rmSync, symlinkSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -43,6 +43,14 @@ import { afterAll, describe, expect, it } from "vitest";
  *   The refusal gives exit 2 and this exact line on stdout:
  *     preview: refused path <value>
  *   The value is the exact `--preview` argument. Standard error stays empty.
+ *   The tool also refuses the root path `/`.
+ *
+ *   The tool resolves relative `--export` and `--preview` values against the
+ *   caller folder. It then uses the absolute paths after it changes folders.
+ *
+ *   A usage error gives exit 2 and this exact line on stderr:
+ *     usage: preview.sh --export <file> [--preview <folder>]
+ *   Standard output stays empty for a usage error. The tool writes no file.
  *
  * publish.ts
  *   cd <repo>/harness && npx tsx model-guide/publish.ts --preview <folder>
@@ -66,6 +74,14 @@ import { afterAll, describe, expect, it } from "vitest";
  *   `publish: bad path ` with one trailing space.
  *   Each drift path is relative to docs and uses `/` separators.
  *
+ *   A malformed record row gives exit 2 and this exact line on stdout:
+ *     publish: bad line <text>
+ *   The text is the complete record line. Standard error stays empty.
+ *
+ *   A preview base with invalid JSON gives exit 2 and this exact line:
+ *     publish: bad preview base
+ *   Standard error stays empty. The tool writes no file.
+ *
  *   A usage error gives exit 2 and this exact line on stderr:
  *     usage: publish.ts --preview <folder>
  *   A missing `--preview` and an unknown flag give this usage line.
@@ -86,6 +102,15 @@ const PAGE = join(SOURCE, "pages", "real-work.html");
 const FIXTURE = join(import.meta.dirname, "fixtures", "real-work-mini.json");
 const MANIFEST = join(import.meta.dirname, "fixtures", "MANIFEST.txt");
 const PUBLISH_USAGE = "usage: publish.ts --preview <folder>\n";
+const PREVIEW_USAGE = "usage: preview.sh --export <file> [--preview <folder>]\n";
+const REQUIRED_COVERAGE_KEYS = [
+  "runs",
+  "first_run_date",
+  "last_run_date",
+  "share_known_route",
+  "share_with_result",
+  "paired_duplicates_left_out",
+];
 
 const METHOD_NOTE =
   "Route names stay as written in the record, so #high and [1m] variants are " +
@@ -155,10 +180,8 @@ function snapshot(dir: string, includeDirs = false): string[] {
   return out;
 }
 
-function repoFixture(tag: string) {
-  requireProduction();
-  const root = mkdtempSync(join(tmpdir(), `model-guide-preview-${tag}-`));
-  roots.push(root);
+function populateRepo(root: string): void {
+  mkdirSync(join(root, "harness"), { recursive: true });
   cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
   mkdirSync(join(root, "docs", "assets", "css"), { recursive: true });
   mkdirSync(join(root, "docs", "assets", "data"), { recursive: true });
@@ -170,13 +193,38 @@ function repoFixture(tag: string) {
   writeFileSync(join(root, "fixture", "real-work-mini.json"), readFileSync(FIXTURE));
   writeFileSync(join(root, "fixture", "MANIFEST.txt"), readFileSync(MANIFEST));
   symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
+}
+
+function repoFixture(tag: string) {
+  requireProduction();
+  const root = mkdtempSync(join(tmpdir(), `model-guide-preview-${tag}-`));
+  roots.push(root);
+  populateRepo(root);
   return root;
+}
+
+function nestedRepoFixture(tag: string) {
+  requireProduction();
+  const parent = mkdtempSync(join(tmpdir(), `model-guide-preview-parent-${tag}-`));
+  roots.push(parent);
+  const root = join(parent, "repo");
+  populateRepo(root);
+  return { parent, root };
 }
 
 function tempDir(tag: string): string {
   const dir = mkdtempSync(join(tmpdir(), `model-guide-preview-${tag}-`));
   roots.push(dir);
   return dir;
+}
+
+function fakeNpxBin(root: string): string {
+  const bin = join(root, "fake-bin");
+  mkdirSync(bin, { recursive: true });
+  const npx = join(bin, "npx");
+  writeFileSync(npx, "#!/usr/bin/env bash\nexit 97\n");
+  chmodSync(npx, 0o755);
+  return bin;
 }
 
 function stageFixture(root: string, mutate: (doc: any) => void): void {
@@ -197,18 +245,26 @@ function previewFolder(root: string): string {
   return join(root, ".tmp", "model-guide-preview");
 }
 
-function runPreview(root: string, preview?: string, cwd = root) {
-  const args = [
-    join(root, "harness", "model-guide", "preview.sh"),
-    "--export", join(root, "fixture", "real-work-mini.json"),
-  ];
-  if (preview !== undefined) args.push("--preview", preview);
-  return spawnSync("bash", args, {
+function runPreviewArgs(
+  root: string,
+  args: string[],
+  cwd = root,
+  extraEnv: NodeJS.ProcessEnv = {},
+) {
+  return spawnSync("bash", [join(root, "harness", "model-guide", "preview.sh"), ...args], {
     cwd,
-    env: env(),
+    env: { ...env(), ...extraEnv },
     encoding: "utf8",
     timeout: 120_000,
   });
+}
+
+function runPreview(root: string, preview?: string, cwd = root) {
+  const args = [
+    "--export", join(root, "fixture", "real-work-mini.json"),
+  ];
+  if (preview !== undefined) args.push("--preview", preview);
+  return runPreviewArgs(root, args, cwd);
 }
 
 function runPublishArgs(root: string, args: string[]) {
@@ -296,6 +352,19 @@ function expectBadApprovalPath(path: string): void {
     return;
   }
   expectPublishRefusal(root, [`publish: bad path ${path}\n`]);
+}
+
+function expectBadApprovalLine(line: string): void {
+  const root = repoFixture("bad-line");
+  expect(runPreview(root).status).toBe(0);
+  writeApprovalText(root, [
+    "approved_by: Daniel",
+    "date: 2026-11-20",
+    "files:",
+    line,
+    "",
+  ].join("\n"));
+  expectPublishRefusal(root, [`publish: bad line ${line}\n`]);
 }
 
 describe("the preview and the publish gate", () => {
@@ -635,5 +704,248 @@ describe("the preview and the publish gate", () => {
     expect(result.stderr).toBe(PUBLISH_USAGE);
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
     expect(snapshot(previewFolder(root))).toEqual(previewBefore);
+  });
+
+  it("F12 resolves a relative preview path from the repo root before it changes folders", () => {
+    const { parent, root } = nestedRepoFixture("f12-row1");
+    const docs = join(root, "docs");
+    const target = join(parent, "docs");
+    const docsBefore = snapshot(docs);
+    expect(existsSync(target)).toBe(false);
+    const result = runPreview(root, "../docs", root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(existsSync(join(target, "real-work.json"))).toBe(true);
+    expect(existsSync(join(target, "real-work.html"))).toBe(true);
+    expect(snapshot(docs)).toEqual(docsBefore);
+  });
+
+  it("F12 resolves a relative preview path from the harness folder", () => {
+    const root = repoFixture("f12-row2");
+    const docs = join(root, "docs");
+    const target = join(root, "harness", "docs");
+    const docsBefore = snapshot(docs);
+    const result = runPreview(root, "docs", join(root, "harness"));
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(existsSync(join(target, "real-work.json"))).toBe(true);
+    expect(existsSync(join(target, "real-work.html"))).toBe(true);
+    expect(snapshot(docs)).toEqual(docsBefore);
+  });
+
+  it("F12 keeps a relative preview path under the caller repo folder", () => {
+    const root = repoFixture("f12-row3");
+    const docs = join(root, "docs");
+    const target = join(root, ".tmp", "rel-preview");
+    const wrongTarget = join(root, "harness", ".tmp", "rel-preview");
+    const docsBefore = snapshot(docs);
+    const result = runPreview(root, ".tmp/rel-preview", root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(existsSync(join(target, "real-work.json"))).toBe(true);
+    expect(existsSync(join(target, "real-work.html"))).toBe(true);
+    expect(existsSync(wrongTarget)).toBe(false);
+    expect(snapshot(docs)).toEqual(docsBefore);
+  });
+
+  it("F12 refuses a parent-relative preview path from the model-guide folder", () => {
+    const root = repoFixture("f12-row4");
+    expectPreviewRefusal(root, "../../docs", join(root, "harness", "model-guide"));
+  });
+
+  it("F20 refuses the root preview path before it starts a tool", () => {
+    const root = repoFixture("f20-root");
+    const fakeBin = fakeNpxBin(root);
+    const docsBefore = snapshot(join(root, "docs"));
+    const rootBefore = snapshot(root, true);
+    const result = runPreviewArgs(
+      root,
+      ["--export", join(root, "fixture", "real-work-mini.json"), "--preview", "/"],
+      root,
+      { PATH: `${fakeBin}:${process.env.PATH ?? ""}` },
+    );
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toBe("preview: refused path /\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(snapshot(root, true)).toEqual(rootBefore);
+  });
+
+  it("F14 resolves a relative export path from the repo root", () => {
+    const root = repoFixture("f14-row6");
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPreviewArgs(root, ["--export", "fixture/real-work-mini.json"], root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(true);
+    expect(existsSync(join(previewFolder(root), "real-work.html"))).toBe(true);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
+
+  it("F14 resolves a relative export path from a folder outside the repo", () => {
+    const root = repoFixture("f14-row7");
+    const outside = tempDir("f14-outside");
+    writeFileSync(join(outside, "real-work-mini.json"), readFileSync(FIXTURE));
+    writeFileSync(join(outside, "MANIFEST.txt"), readFileSync(MANIFEST));
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPreviewArgs(root, ["--export", "real-work-mini.json"], outside);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(true);
+    expect(existsSync(join(previewFolder(root), "real-work.html"))).toBe(true);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
+
+  it("F13 keeps fresh real-work data when docs holds stale published files", () => {
+    const root = repoFixture("f13-stale");
+    expect(runPreview(root).status).toBe(0);
+    const preview = previewFolder(root);
+    const freshData = JSON.parse(readFileSync(join(preview, "real-work.json"), "utf8"));
+    const freshSha = freshData.source.sha256 as string;
+    const freshDate = freshData.source.generated_on as string;
+    const oldSha = "f".repeat(64);
+    expect(oldSha).not.toBe(freshSha);
+    const staleData = JSON.parse(JSON.stringify(freshData));
+    staleData.source.sha256 = oldSha;
+    staleData.source.generated_on = "2000-01-01";
+    writeFileSync(join(root, "docs", "real-work.json"), `${JSON.stringify(staleData, null, 2)}\n`);
+    const freshPage = readFileSync(join(preview, "real-work.html"), "utf8");
+    const stalePage = freshPage.replaceAll(freshSha, oldSha).replaceAll(freshDate, "2000-01-01");
+    writeFileSync(join(root, "docs", "real-work.html"), stalePage);
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPreview(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const previewData = JSON.parse(readFileSync(join(preview, "real-work.json"), "utf8"));
+    expect(previewData.source.sha256).toBe(freshSha);
+    expect(previewData.source.generated_on).toBe(freshDate);
+    const page = readFileSync(join(preview, "real-work.html"), "utf8");
+    expect(page).toContain(freshSha);
+    expect(page).not.toContain(oldSha);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
+
+  it("F15 refuses preview.sh with --export as the last argument", () => {
+    const root = repoFixture("f15-export-last");
+    const docsBefore = snapshot(join(root, "docs"));
+    const rootBefore = snapshot(root, true);
+    const result = runPreviewArgs(root, ["--export"], root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(PREVIEW_USAGE);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(snapshot(root, true)).toEqual(rootBefore);
+  });
+
+  it("F15 refuses preview.sh with --preview as the last argument", () => {
+    const root = repoFixture("f15-preview-last");
+    const docsBefore = snapshot(join(root, "docs"));
+    const rootBefore = snapshot(root, true);
+    const result = runPreviewArgs(root, ["--preview"], root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(PREVIEW_USAGE);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(snapshot(root, true)).toEqual(rootBefore);
+  });
+
+  it("F15 refuses preview.sh with an empty export value", () => {
+    const root = repoFixture("f15-export-empty");
+    const docsBefore = snapshot(join(root, "docs"));
+    const rootBefore = snapshot(root, true);
+    const result = runPreviewArgs(root, ["--export", ""], root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(PREVIEW_USAGE);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(snapshot(root, true)).toEqual(rootBefore);
+  });
+
+  it("F15 refuses preview.sh with an empty preview value", () => {
+    const root = repoFixture("f15-preview-empty");
+    const docsBefore = snapshot(join(root, "docs"));
+    const rootBefore = snapshot(root, true);
+    const result = runPreviewArgs(
+      root,
+      ["--export", join(root, "fixture", "real-work-mini.json"), "--preview", ""],
+      root,
+    );
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(PREVIEW_USAGE);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(snapshot(root, true)).toEqual(rootBefore);
+  });
+
+  it("F19 leaves no preview folder after an input check refusal", () => {
+    const root = repoFixture("f19-empty-folder");
+    stageFixture(root, (doc) => {
+      doc.schema = "real-work-outcomes/invalid";
+    });
+    const docsBefore = snapshot(join(root, "docs"));
+    const target = previewFolder(root);
+    expect(existsSync(target)).toBe(false);
+    const result = runPreview(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toBe("input-check: schema\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(existsSync(target)).toBe(false);
+  });
+
+  it("F16 refuses an approval row with one field", () => {
+    expectBadApprovalLine("only-one-field");
+  });
+
+  it("F16 refuses an approval row with a 63 character SHA-256", () => {
+    const shortSha = "a".repeat(63);
+    expectBadApprovalLine(`${shortSha}  real-work.html`);
+  });
+
+  it("F16 refuses an approval row with a non-hex SHA-256", () => {
+    const badSha = "z".repeat(64);
+    expectBadApprovalLine(`${badSha}  real-work.html`);
+  });
+
+  it("F18 refuses an approval row that names a folder", () => {
+    const root = repoFixture("f18-folder");
+    expect(runPreview(root).status).toBe(0);
+    writeApproval(root, [["0".repeat(64), "assets"]]);
+    expectPublishRefusal(root, ["publish: bad path assets\n"]);
+  });
+
+  it.each(REQUIRED_COVERAGE_KEYS)(
+    "F17 refuses a missing coverage %s key with the schema line",
+    (key) => {
+      const root = repoFixture(`f17-${key}`);
+      stageFixture(root, (doc) => {
+        delete doc.coverage[key];
+      });
+      const docsBefore = snapshot(join(root, "docs"));
+      const result = runPreview(root);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(result.stdout).toBe("input-check: schema\n");
+      expect(result.stderr).toBe("");
+      expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+      expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(false);
+    },
+  );
+
+  it("F23 refuses a docs file named constructor after the preview", () => {
+    const root = repoFixture("f23-constructor");
+    expect(runPreview(root).status).toBe(0);
+    writeApproval(root, approvedHashes(root, ["real-work.html", "real-work.json"]));
+    writeFileSync(join(root, "docs", "constructor"), "new\n");
+    expectPublishRefusal(root, ["publish: drift constructor\n"]);
+  });
+
+  it("F23 refuses a docs file named toString after the preview", () => {
+    const root = repoFixture("f23-tostring");
+    expect(runPreview(root).status).toBe(0);
+    writeApproval(root, approvedHashes(root, ["real-work.html", "real-work.json"]));
+    writeFileSync(join(root, "docs", "toString"), "new\n");
+    expectPublishRefusal(root, ["publish: drift toString\n"]);
+  });
+
+  it("F23 refuses an invalid preview base without a stack trace", () => {
+    const root = repoFixture("f23-bad-base");
+    expect(runPreview(root).status).toBe(0);
+    writeApproval(root, approvedHashes(root, ["real-work.html", "real-work.json"]));
+    writeFileSync(join(previewFolder(root), "preview-base.json"), "{not-json\n");
+    expectPublishRefusal(root, ["publish: bad preview base\n"]);
   });
 });
