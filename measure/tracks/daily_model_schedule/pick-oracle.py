@@ -2,12 +2,17 @@
 # It reads the same inputs as harness/daily-pick.ts and prints one labeled line.
 # The orchestrator compares this line with the DAILY_PICK line (PICK_MATCH).
 #
-#   python3 -I pick-oracle.py <catalog.json> <served.txt> <go-pricing.json> <runs> <day-dir> <YYYY-MM-DD>
+#   python3 -I pick-oracle.py <catalog.json> <served.txt> <go-pricing.json> <runs> <day-dir> <YYYY-MM-DD> [<benchmark.json>]
+#
+# The 7th argument is the board file of spec D23. With it, the pick follows
+# the groups 1, 2, and 3, and the line ends with the group fields. Without it,
+# the output stays byte-for-byte as now.
 #
 # Exit 0 with a pick, exit 3 with no eligible model, exit 1 on a bad input.
 import datetime as dt, glob, json, os, re, sys
 
 cat_p, served_p, pricing_p, runs, days, date = sys.argv[1:7]
+board_p = sys.argv[7] if len(sys.argv) > 7 else None
 cat = json.load(open(cat_p))
 live = cat.get("live")
 assert isinstance(live, list) and live and all(isinstance(x, str) for x in live), "PICK_ORACLE=fail empty or malformed live list"
@@ -18,6 +23,26 @@ assert served, "PICK_ORACLE=fail empty served list"
 day = dt.date.fromisoformat(date)
 iso = day.isocalendar()
 week = f"{iso[0]}w{iso[1]:02d}"
+
+# The board file of spec D23: the ranked ids and the history ids.
+ranked_ids, history_ids = set(), set()
+if board_p is not None:
+    board = json.load(open(board_p))
+    for entry in board.get("models") or []:
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str):
+            ranked_ids.add(entry["id"])
+    for entry in (board.get("history") or {}).get("models") or []:
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str):
+            history_ids.add(entry["id"])
+
+
+def group_of(model_id):
+    # A model in both lists is group 3. A model in neither list is group 1.
+    if model_id in ranked_ids:
+        return 3
+    if model_id in history_ids:
+        return 2
+    return 1
 
 
 def resolve(m):
@@ -85,11 +110,36 @@ def rpm(m):
     return -models[m]["requests_per_month"]
 
 
-if unt:
-    m, reason = min(unt, key=lambda m: (rpm(m), m)), "untested"
-elif elig:
-    m, reason = min(elig, key=lambda m: (last[m], rpm(m), m)), "stalest"
-else:
+def pick_within(pool):
+    # Rule 4 first, then rule 5, inside one group.
+    pool_unt = [x for x in pool if x not in last]
+    if pool_unt:
+        return min(pool_unt, key=lambda x: (rpm(x), x)), "untested"
+    return min(pool, key=lambda x: (last[x], rpm(x), x)), "stalest"
+
+
+if board_p is None:
+    if unt:
+        m, reason = min(unt, key=lambda m: (rpm(m), m)), "untested"
+    elif elig:
+        m, reason = min(elig, key=lambda m: (last[m], rpm(m), m)), "stalest"
+    else:
+        print(f"PICK_ORACLE date={date} model=none reason=none last_test=none candidates={len(cands)} eligible=0 untested=0")
+        sys.exit(3)
+    print(f"PICK_ORACLE date={date} model={m} reason={reason} last_test={last.get(m, 'none')} candidates={len(cands)} eligible={len(elig)} untested={len(unt)}")
+    sys.exit(0)
+
+# The board groups of spec D23. The groups go in order 1, 2, 3.
+groups = {1: [], 2: [], 3: []}
+for x in elig:
+    groups[group_of(x)].append(x)
+m, reason, group = None, "none", 0
+for g in (1, 2, 3):
+    if groups[g]:
+        m, reason = pick_within(groups[g])
+        group = g
+        break
+if m is None:
     print(f"PICK_ORACLE date={date} model=none reason=none last_test=none candidates={len(cands)} eligible=0 untested=0")
     sys.exit(3)
-print(f"PICK_ORACLE date={date} model={m} reason={reason} last_test={last.get(m, 'none')} candidates={len(cands)} eligible={len(elig)} untested={len(unt)}")
+print(f"PICK_ORACLE date={date} model={m} reason={reason} last_test={last.get(m, 'none')} candidates={len(cands)} eligible={len(elig)} untested={len(unt)} group={group} new={'yes' if group in (1, 2) else 'no'}")

@@ -1,8 +1,10 @@
 // The board-aware pick order of Phase 7 (spec D23).
 //
 // The cases use synthetic files in a temporary root. They invoke the
-// TypeScript picker and the Python oracle directly. No case starts a model,
-// a job, a network request, or a write outside the temporary root.
+// TypeScript picker and the Python oracle directly. The oracle is the
+// independent copy of the selection rule. It takes the board file as its 7th
+// positional argument. No case starts a model, a job, a network request, or a
+// write outside the temporary root.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -10,6 +12,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 const HARNESS = join(ROOT, "harness");
+const ORACLE = join(ROOT, "measure/tracks/daily_model_schedule/pick-oracle.py");
 const TMP_ROOT = "/tmp/opencode";
 const DATE = "2026-11-16";
 const D23 = "D23 board-aware pick order";
@@ -106,11 +109,10 @@ function runTs(f: Fixture, board: string | null): PickResult {
 }
 
 function runOracle(f: Fixture, board: string | null): PickResult {
-  const args = [];
-  if (board !== null) args.push("--board", board);
-  args.push(f.catalog, f.served, f.pricing, f.runs, f.days, DATE);
-  const r = spawnSync("python3", ["-I", join(HARNESS, "pick-oracle.py"), ...args], {
-    cwd: HARNESS, env: baseEnv(f), encoding: "utf8", timeout: 20_000, maxBuffer: 4 * 1024 * 1024,
+  const args = [f.catalog, f.served, f.pricing, f.runs, f.days, DATE];
+  if (board !== null) args.push(board);
+  const r = spawnSync("python3", ["-I", ORACLE, ...args], {
+    cwd: ROOT, env: baseEnv(f), encoding: "utf8", timeout: 20_000, maxBuffer: 4 * 1024 * 1024,
   });
   return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "", error: r.error?.message ?? "" };
 }
@@ -138,6 +140,12 @@ describe("daily pick board order", () => {
     expect(ts.stderr, `${D23}: the TypeScript line must stay unchanged`).toBe(
       "DAILY_PICK date=2026-11-16 model=ranked-model reason=untested last_test=none candidates=3 eligible=3 untested=3\n",
     );
+    const oracle = runOracle(f, null);
+    expect(oracle.error, `${D23}: the oracle must run`).toBe("");
+    expect(oracle.status, `${D23}: the oracle must keep its exit code\n${oracle.stderr}`).toBe(0);
+    expect(oracle.stdout, `${D23}: the oracle stdout must stay unchanged`).toBe(
+      "PICK_ORACLE date=2026-11-16 model=ranked-model reason=untested last_test=none candidates=3 eligible=3 untested=3\n",
+    );
   });
 
   caseOf("P2 the TypeScript picker selects group 1 and marks it new", f => {
@@ -155,8 +163,8 @@ describe("daily pick board order", () => {
 
   caseOf("P3 the Python oracle selects group 1 and marks it new", f => {
     const result = runOracle(f, f.board);
-    expect(result.error, `${D23}: harness/pick-oracle.py must run`).toBe("");
-    expect(result.status, `${D23}: the oracle must accept --board\n${result.stderr}`).toBe(0);
+    expect(result.error, `${D23}: measure/tracks/daily_model_schedule/pick-oracle.py must run`).toBe("");
+    expect(result.status, `${D23}: the oracle must accept the board argument\n${result.stderr}`).toBe(0);
     expect(result.stdout, `${D23}: the oracle line must end with the group fields`).toBe(
       "PICK_ORACLE date=2026-11-16 model=fresh-model reason=untested last_test=none candidates=3 eligible=3 untested=3 group=1 new=yes\n",
     );
@@ -166,7 +174,7 @@ describe("daily pick board order", () => {
     const ts = runTs(f, f.board);
     const oracle = runOracle(f, f.board);
     expect(ts.status, `${D23}: the TypeScript picker must accept --board\n${ts.stderr}`).toBe(0);
-    expect(oracle.status, `${D23}: the oracle must accept --board\n${oracle.stderr}`).toBe(0);
+    expect(oracle.status, `${D23}: the oracle must accept the board argument\n${oracle.stderr}`).toBe(0);
     const tsLine = labeled(ts, "DAILY_PICK ");
     const oracleLine = labeled(oracle, "PICK_ORACLE ");
     expect(tsLine.replace(/^DAILY_PICK /, ""), `${D23}: both labeled lines must stay equal`).toBe(
