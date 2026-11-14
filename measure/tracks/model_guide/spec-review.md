@@ -2,6 +2,7 @@
 
 Author model: claude-code/claude-opus-5-5[1m]#high
 Reviser model: opencode/minimax-m3.1-flash-free#high (round 1 fixes)
+Reviser model: opencode-go/deepseek-v4.1-flash (round 2 fixes)
 
 The reviewer writes only under `measure/runs/model_guide/`. The author or a
 Build session updates this file after a review.
@@ -89,8 +90,138 @@ Finding: F12 [Nit] plan.md task 0.1: The completed registry task has no commit S
 
 Author response: plan task 0.1 now starts with the SHA `bbde00d` on its first line.
 
-## Round 2 — pending
+## Round 2 — 2026-11-14
 
-The reviewer of round 1 reads the revised spec and plan. The reviewer writes
-only under `measure/runs/model_guide/`. The author or a Build session updates
-this file after that review.
+Reviewer model: opencode-go/deepseek-v4.1-flash
+Reviewer result: `measure/runs/model_guide/spec-review-2fae48c.json`
+Baseline: `ea36fae`. Reviewed HEAD: `2fae48c`.
+Reviewer status: fail. The reviewer raised 3 Blocker findings, 4 Major
+findings, and 4 Nit findings. The findings are F13 to F23.
+
+The reviewer dispositions of the round 1 findings are in the result file.
+The findings F1, F2, F4, F8, F10, and F12 stay fixed. The findings F3, F5,
+F6, F7, F9, and F11 were partly fixed. This revision fixes them: F3 by F18,
+F5 by F16, F6 by F14 and F17, F7 by F15, F9 by F13, and F11 by F22.
+
+The PM decided on 2026-11-14. The words are exact.
+
+> PM DECISION on model_guide spec review round 2: ACCEPTED. F13 to F23 are fix items, not risks. One author revision today with your fixes, no third review round, then Phase 1 goes to strategy and Red.
+> One change to F16: Doubao on the Ark plan is the second judge only if a start test passes first (the ByteDance ark-code-latest route failed at its API on 11-13), and the Ark plan ends about 11-22. The spec must name the rule after that: the second judge comes from a family that is not ranked in that round; if none is available, a disputed finding is left out and never counts against a route.
+
+Fact: the orchestrator ran the start test on 2026-11-14.
+`volcengine-agent-plan/ark-code-latest` answered `ARK OK`. Spec EV14 holds
+the fact.
+
+### F13 [Blocker] — FIX
+
+Finding: spec.md D17 and plan.md 2.4: the print-audit input check reads a
+size and a schema that the hand-off file and its MANIFEST do not hold.
+
+Author response: spec D17 now reads the SHA-256 from `MANIFEST.txt` and the
+shape of the file. The shape is the top keys `source`, `note`, `routes`,
+`summary`, and `errors`, and 52 rows in `errors` with the fields that the
+file holds. The size test and the schema-key test are gone. Spec acceptance
+6 and plan tasks 2.1 and 2.4 follow the new check.
+
+### F14 [Blocker] — FIX
+
+Finding: spec.md D13 and D8 and plan.md 4.11: the pilot set has no identity,
+no selection rule, no seeding task, and no relation to the ranked set.
+
+Author response: spec D13 names the pilot set `mg-2026-11p`. It holds the
+first 6 qualified commits in the D4 order, and at least 12 plants. The
+fixture author seeds it by the method of D5 to D7. It is separate from the
+ranked set `mg-2026-11a`. A reseed makes `mg-2026-11p2`, then
+`mg-2026-11p3`. Plan task 3.16 seeds the pilot set, and task 4.11 runs it.
+
+### F15 [Blocker] — FIX
+
+Finding: spec.md D15 and FR-15 and plan.md 4.2: a source with no value gives
+`wait` in the spec and `stopped` in the plan test.
+
+Author response: spec D15, FR-15, and plan task 4.2 now agree. A quota error,
+a limit error, a read failure, a source with no value, a missing field, and a
+value that is not a number give `stopped`. A window of 70 % or more gives
+`wait`.
+
+### F16 [Major] — FIX
+
+Finding: spec.md D5, D11, R3, and Q9: the second judge was a ranked family,
+and an unclear verdict removed the rank of the route.
+
+Author response: the second judge is ByteDance Doubao, the route
+`volcengine-agent-plan/ark-code-latest`. That family is not ranked. The start
+test passed on 2026-11-14 (spec EV14). The Ark plan ends at about
+2026-11-22. After that date, or when a start test fails, the second judge
+comes from a family that is not ranked in that round. When no judge is
+available, a disputed finding is left out and never counts against a route.
+An unclear verdict marks the pass `provisional` and never takes away the rank
+of a route. The route `opencode/minimax-m3.1-flash-free#high` is no longer
+the second judge. Spec OD5, D11, FR-14, R3, R4, and Q9 hold the rule.
+
+### F17 [Major] — FIX
+
+Finding: spec.md D13 and R7 and plan.md Phase 4: the pilot passes and the
+main passes have no counting rule, and the dates do not show the 2026-11-22
+result.
+
+Author response: spec D13 now holds the counting rule. When the pilot set
+passes the gate with no reseed, and the ranked set `mg-2026-11a` holds the
+same 6 diffs, a pilot pass counts as a main pass of the same route. The pilot
+runs on the nights of 2026-11-20 and 2026-11-21. Each pilot route gets its
+last pass on the night of 2026-11-22. Each other reachable route gets its
+passes on the nights of 2026-11-20 to 2026-11-22. So the first results still
+land by 2026-11-22. A reseed does not fit, and the page shows `incomplete`.
+Plan tasks 4.11 and 4.12 and the date table follow the rule. Acceptance 11
+names the open pass as a reason.
+
+### F18 [Major] — FIX
+
+Finding: spec.md D16 and acceptance 5 and plan.md 1.1: the few-runs mark of a
+work-type row counts export runs, not results, and a work-type row does not
+sum the role rows.
+
+Author response: spec D16, FR-3, acceptance 5, and plan task 1.1 now count
+results (`pass + fail`). A work-type row sums the role rows of its route and
+work type. Spec D18 names the result count for a work-type row.
+
+### F19 [Major] — FIX
+
+Finding: spec.md D9 and D11 and plan.md 3.15 and 4.13: the public manifest
+holds the key SHA-256 before the apply adds `real_defects` to the key.
+
+Author response: spec D9 and D11 now put the manifest hash after the apply.
+Plan task 3.15 writes the manifest first and does not commit it. Task 4.13
+runs the apply, writes the key SHA-256 values into the manifest, and commits
+the manifest after the apply.
+
+### F20 [Nit] — FIX
+
+Finding: spec.md OD6 and D17: the checklist item is singular, but a row can
+hold 0 to 3 items.
+
+Author response: spec OD6 and D17 now say "the checklist items (0 to 3)".
+
+### F21 [Nit] — FIX
+
+Finding: spec.md OD8 and R9: Daniel turned on Global regions at about 11:00
+on 2026-11-14.
+
+Author response: spec OD8, D22, and R9 record the fact. The region rule stays
+as a guard.
+
+### F22 [Nit] — FIX
+
+Finding: plan.md 2.4, 2.6, and 4.8: three Green tasks write two files, but the
+plan header says one tool or one page.
+
+Author response: the plan rule is now "one tool or one page, plus its
+wiring". The plan header, the constraints, and tasks 2.4, 2.6, and 4.8 hold
+the rule.
+
+### F23 [Nit] — FIX
+
+Finding: plan.md 0.3: the verify line asks for "withdrawn or kept".
+
+Author response: plan task 0.3 now asks for fixed, partly fixed, or not
+fixed.

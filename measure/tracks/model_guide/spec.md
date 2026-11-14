@@ -3,6 +3,7 @@
 Spec format: classic FR list. Track type: feature. Base commit: `ea36fae`.
 Author model: `claude-code/claude-opus-5-5[1m]#high`. Date: 2026-11-14.
 Revision 2, 2026-11-14: the findings F1 to F12 of the spec review round 1.
+Revision 3, 2026-11-14: the findings F13 to F23 of the spec review round 2.
 
 ## Summary
 
@@ -68,24 +69,29 @@ The PM decided these points on 2026-11-14. Each decision binds the track.
 - **OD4. Q5, the merge on page B.** The merge joins only the `#<variant>`
   rows and the `[1m]` rows of one route. The same model on another provider
   stays a separate row.
-- **OD5. F5, the second judge.** A second judge comes from a family that is
-  not Anthropic. Only the verdicts that both judges agree on count. A
-  disagreement counts as unclear and never counts against the model.
+- **OD5. F5 and F16, the second judge.** The second judge is ByteDance
+  Doubao, the route `volcengine-agent-plan/ark-code-latest`. That family is
+  not ranked. Its start test passed on 2026-11-14 (EV14). Only the verdicts
+  that both judges agree on count. A disputed finding is left out and never
+  counts against a route. An unclear verdict never takes away the rank of a
+  route. The PM decided this rule on 2026-11-14 (F16).
 - **OD6. Q7, the print-audit error types.** The file
   `~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json`
   holds the error types. Its SHA-256 is
   `f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87`.
   `MANIFEST.txt` sits next to it. The file holds 52 rows. Each row holds an
-  id, a severity, the checklist item code and text, and the result of each
-  run. 43 rows hold a checklist item and 9 rows hold none. The file holds a
-  summary and a bias note. It holds types only and no page content. The
-  orchestrator checked the SHA-256 on 2026-11-14.
+  id, a severity, the checklist items (0 to 3), and the result of each run. A
+  checklist item holds a code and a text. 43 rows hold 1 to 3 checklist items
+  and 9 rows hold none. The file holds a summary and a bias note. It holds
+  types only and no page content. The orchestrator checked the SHA-256 on
+  2026-11-14.
 - **OD7. F6, the pilot gate.** A defect set whose scores do not spread does
   not go to ranking. The PM wrote that this answers the point of Daniel that
   the scores sit at the top.
-- **OD8. The route fact of 2026-11-14.** The new OpenCode Go account rejects
-  the models that are hosted outside Europe and the United States until
-  Daniel turns on Global regions. D22 and R9 hold this rule.
+- **OD8. The route fact of 2026-11-14.** Daniel turned on Global regions on
+  the new OpenCode Go account at about 11:00 on 2026-11-14. The region rule
+  stays as a guard: the account rejects a model that is hosted outside
+  Europe and the United States. D22 and R9 hold this rule.
 
 ## Evidence
 
@@ -166,6 +172,9 @@ The author measured each item on 2026-11-14 with read-only commands.
 - **EV13. The test layout.** `harness/schedule-tests/*.test.ts` run with
   `cd harness && npx vitest run schedule-tests/<file> --configLoader native`.
   They copy scripts into a temp repo and start no model.
+- **EV14. The start test of the second judge.** The orchestrator ran a start
+  test on 2026-11-14. The route `volcengine-agent-plan/ark-code-latest`
+  answered `ARK OK`. So the second judge of D11 is reachable on 2026-11-14.
 
 ## Definitions
 
@@ -396,7 +405,10 @@ questions".
      id, the creation date, and for each diff the id, the repo, the commit,
      the parent, the SHA-256 of the seeded diff, and the SHA-256 of the key.
      It also holds the plant counts by class and by severity for the whole
-     set. It holds no file path and no line of a plant.
+     set. It holds no file path and no line of a plant. The SHA-256 of a key
+     goes into the manifest after the adjudication apply of D11 adds
+     `real_defects` to that key. The orchestrator commits the manifest after
+     the apply.
    - The score file `harness/model-guide/data/review-scores/<set_id>.json`
      (D13).
    The leak check (FR-10) runs before each commit of track A data. Each
@@ -439,10 +451,15 @@ questions".
       only to remove duplicates. A group never gets one verdict for all of
       its members.
     - **The judges.** Two judges read each finding. The first judge is the
-      route `claude-code/claude-opus-5-5[1m]#high`. The second judge is the
-      route `opencode/minimax-m3.1-flash-free#high`, which is of a family
-      that is not Anthropic (OD5). The second judge never reads the verdicts
-      of the first judge. Neither judge sees the route name of a finding.
+      route `claude-code/claude-opus-5-5[1m]#high`. The second judge is
+      ByteDance Doubao, the route `volcengine-agent-plan/ark-code-latest`.
+      That family is not ranked. Its start test passed on 2026-11-14 (EV14).
+      The Ark plan ends at about 2026-11-22. After that date, or when a start
+      test fails, the second judge comes from a family that is not ranked in
+      that round. When no such judge is available, a disputed finding is left
+      out and never counts against a route. The second judge never reads the
+      verdicts of the first judge. Neither judge sees the route name of a
+      finding.
     - **The verdicts.** Each judge gives one verdict to each finding:
       - `real-defect`: the defect was in the source diff before the seeding.
         It goes to `real_defects` of the key. It is neutral in the score. The
@@ -453,8 +470,8 @@ questions".
         `provisional`.
     - **The rule of two.** Only a verdict that both judges agree on counts. A
       disagreement counts as `unclear`. An `unclear` verdict never counts
-      against the model. It marks the pass `provisional`, and the route has
-      no rank for that set.
+      against the model, and it never takes away the rank of a route. It
+      marks the pass `provisional`. The route keeps its rank.
     - **No rescue.** A finding that names a plant at a wrong line or with a
       wrong class never counts as found. There is no `plant:<id>` verdict.
     - **The blind queue.** The tool writes the unmatched findings of each
@@ -464,6 +481,9 @@ questions".
     - **The hand-off.** The orchestrator reads each `real-defect` verdict and
       sends it to the PM orchestrator as a hand-off, because the defect is in
       another project. This track never writes in a source repo.
+    - **The manifest.** `adjudicate.ts apply` writes `real_defects` into the
+      key first. The set manifest records the SHA-256 of that key after the
+      apply. The orchestrator commits the manifest after the apply.
     - **The lost plant.** A plant that no route finds in the pilot and in
       every run of a complete set goes to the two judges once more. When both
       judges find that it is not a defect, the set gets a new id without that
@@ -501,9 +521,13 @@ questions".
       reviews, and the real defects found.
     - **N.** N = 3 passes for each route and each set.
     - **The pilot gate.** A set goes to ranking only after a pilot. The
-      pilot set has 6 seeded diffs, 3 from each source repo, and at least 12
-      plants. The pilot runs 2 routes with 2 passes each, so each route has
-      a worst-of-2 score. The pilot routes are
+      pilot set is `mg-2026-11p`. It has 6 seeded diffs and at least 12
+      plants. The 6 diffs are the first 6 qualified commits in the D4 order.
+      The fixture author seeds them by the method of D5 to D7. The pilot set
+      is separate from the ranked set `mg-2026-11a`. A reseed makes a new set
+      id: `mg-2026-11p2`, then `mg-2026-11p3`.
+      The pilot runs 2 routes with 2 passes each, so each route has a
+      worst-of-2 score. The pilot routes are
       `minimax-cn-coding-plan/MiniMax-M3.1-Flash` and
       `kimi-code-plan-cn/kimi-for-coding#high`. A pilot route that is
       unreachable or region-blocked is replaced by the next route of D12.
@@ -512,15 +536,28 @@ questions".
         points or more.
       - The best worst-of-2 score is below 90.
       A set that fails a rule does not go to ranking. The fixture author
-      seeds a harder set. The harder set has plants of 2 to 6 lines, and at
-      least half of its plants have the classes C1, C2, C5, or C7. The pilot
-      runs again. After 2 reseeds the orchestrator sends the set to the PM.
-      This gate answers the point of Daniel that the scores sit at the top
-      (OD7).
+      seeds a harder pilot set with the next set id. The harder set has
+      plants of 2 to 6 lines, and at least half of its plants have the
+      classes C1, C2, C5, or C7. The pilot runs again. After 2 reseeds the
+      orchestrator sends the set to the PM. This gate answers the point of
+      Daniel that the scores sit at the top (OD7).
+    - **The pilot passes count.** When the pilot set passes the gate with no
+      reseed, and the ranked set `mg-2026-11a` holds the same 6 diffs, the
+      passes of the pilot set count as main passes of the same route. Each
+      pilot route then needs 1 more pass for its 3 passes.
+    - **The dates of the pilot.** The pilot runs on the nights of 2026-11-20
+      and 2026-11-21, with one pass for each pilot route on each night. Each
+      other reachable route gets its passes on the nights of 2026-11-20 to
+      2026-11-22. Each pilot route gets its last pass on the night of
+      2026-11-22. So the first track A results still land by 2026-11-22
+      (D20). A reseed does not fit before 2026-11-22. The orchestrator tells
+      the PM the new date, and the page shows `incomplete` for each route
+      without 3 complete passes.
     - **Rank.** The rank uses the worst pass score of the N passes. A tie
       goes to the higher worst blocker recall, and then to the higher median
-      score. A route with fewer than 3 complete passes, or with a
-      `provisional` pass, shows `incomplete` and has no rank.
+      score. A route with fewer than 3 complete passes shows `incomplete` and
+      has no rank. A `provisional` pass stays complete and does not remove
+      the rank.
     - **Transport errors.** No response, a provider error, a timeout of
       600 s, or a quota stop is not a model result. The runner tries the diff
       again up to 2 times. When all three tries fail, the pass stays open and
@@ -581,10 +618,11 @@ questions".
     - **The state of each route.** The quota read gives one state for each
       route. The states are `ready`, `wait`, and `stopped`.
       - `ready`: every window is below 70 %.
-      - `wait`: a window is 70 % or more, or the source gives no value. No
-        pass starts. The route waits for the next night.
-      - `stopped`: the source gives a quota error, a limit error, or a read
-        failure. The route stops for the night.
+      - `wait`: a window is 70 % or more. No pass starts. The route waits
+        for the next night.
+      - `stopped`: the source gives a quota error, a limit error, a read
+        failure, a source with no value, a missing field, or a value that is
+        not a number. The route stops for the night.
     - **The rules.** A pass starts only when the state is `ready`. The pass
       stops when a window reaches 80 %, and it marks the pass open. A route
       with no quota source runs at most 1 pass per night. It stops at the
@@ -622,15 +660,18 @@ questions".
     - **Role groups.** The page has one table for producer roles and one
       table for checker roles.
     - **Work-type tables.** The page has one table for each work type of
-      `work_types`. The `all_time` block gives one row for each route and
+      `work_types`. The `all_time` block gives one row for each route, role,
+      and work type. A work-type row sums the role rows of that route and
       work type. Each `work_types` value holds `runs`, `pass`, and `fail`
       only. These tables use that data and no other data.
       - **The pass rate of a work type.** `pass / (pass + fail)`. A row with
         `pass + fail` of 0 has no rate.
-      - **The run count.** The page shows `pass + fail` beside each rate.
-      - **The minimum.** A row with fewer than 10 runs gets the mark
-        `few runs`. It goes below the other rows, and it cannot pick.
-      - **The rank.** The higher pass rate first, then the higher run count.
+      - **The result count.** The page shows `pass + fail` beside each rate.
+      - **The minimum.** A row with fewer than 10 results (`pass + fail`)
+        gets the mark `few runs`. The mark counts results, not export runs
+        (`runs`). It goes below the other rows, and it cannot pick.
+      - **The rank.** The higher pass rate first, then the higher result
+        count.
       - **No blocking rate.** The export has no blocking findings for a work
         type. These tables show no blocking rate and no error count.
       - **No data.** A work type with no row says "no pick yet".
@@ -658,14 +699,17 @@ questions".
       `~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json`
       with the SHA-256
       `f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87`
-      and `MANIFEST.txt` next to it. The input check reads the SHA-256, the
-      size, and the schema. A mismatch gives exit 2 and no output file. The
-      input file never enters the repository.
+      and `MANIFEST.txt` next to it. The input check reads the SHA-256 from
+      `MANIFEST.txt` and the shape of the file. The shape is the top keys
+      `source`, `note`, `routes`, `summary`, and `errors`, and 52 rows in
+      `errors` with the fields that the file holds. A mismatch gives exit 2
+      and no output file. This check has no size test and no schema-key test.
+      The input file never enters the repository.
     - **The content.** The file holds the key size of 52 errors, the blocker
       count of 13, the error types with the count of each type, the checklist
-      item code and text of each error, the result of each run, the summary,
-      and the bias note. The two results are "k3.1-pro" 11 of 13 blockers and
-      "Sonnet 5.5" 13 of 13 blockers.
+      items (0 to 3) of each error with the code and the text of each item,
+      the result of each run, the summary, and the bias note. The two results
+      are "k3.1-pro" 11 of 13 blockers and "Sonnet 5.5" 13 of 13 blockers.
     - **The page.** The block on page B shows the two results, the error
       types with their counts, and the bias note. The block holds no book
       text, no page, and no file name. The block says that the data point is
@@ -695,9 +739,10 @@ questions".
 
     - **Pick rule.** The first source picks the first and the second choice
       from its rank. A model qualifies only with 10 runs or more in the page
-      B row, or with a complete rank (track A). When the first source
-      has no qualified model, the second source picks. When neither has one,
-      the cell says "no pick yet: not enough evidence".
+      B row (10 results for a work-type row), or with a complete rank (track
+      A). When the first source has no qualified model, the second source
+      picks. When neither has one, the cell says "no pick yet: not enough
+      evidence".
     - **Evidence cell.** The source, the number, and the run count, for
       example "page B: pass 0.86 (n=114)".
     - **Evidence date.** The `generated_on` of the export, or the date of the
@@ -744,9 +789,10 @@ questions".
       builds the preview again. Daniel gives his word again when a drifted
       file is in the approved set.
 
-22. **D22. The region rule of the Go routes.** The new OpenCode Go account
-    rejects a model that is hosted outside Europe and the United States until
-    Daniel turns on Global regions (OD8). A Go route that returns this error
+22. **D22. The region rule of the Go routes.** Daniel turned on Global
+    regions on the new OpenCode Go account at about 11:00 on 2026-11-14. The
+    rule stays as a guard: the account rejects a model that is hosted outside
+    Europe and the United States (OD8). A Go route that returns this error
     has no rank for that night. The runner marks the route state
     `region-blocked` and stops the route for the night. The probe of D14
     records the same state. The orchestrator sends the state to the PM. The
@@ -777,8 +823,9 @@ The producer table ranks by pass rate and then by blocking rate. The checker
 table ranks by pass rate only. A row with fewer than 10 runs with a result
 gets the mark `few runs` and goes below the other rows. Each rate has its
 run count beside it. The work-type tables rank by the pass rate of
-`pass / (pass + fail)` and then by the run count. A work-type row with
-fewer than 10 runs gets the mark `few runs` and cannot pick.
+`pass / (pass + fail)` and then by the result count. A work-type row with
+fewer than 10 results (`pass + fail`) gets the mark `few runs` and cannot
+pick.
 
 ### FR-4 — The page and the method note
 
@@ -862,18 +909,19 @@ the private folder.
 ### FR-14 — The review page
 
 The preview tool writes `review.html` and `review.json` from the score file
-(D13). A route with fewer than 3 complete passes or a `provisional` pass
-shows `incomplete` and has no rank. A set that fails the pilot gate of D13
-has no rank on the page.
+(D13). A route with fewer than 3 complete passes shows `incomplete` and has
+no rank. A `provisional` pass does not remove the rank. A set that fails the
+pilot gate of D13 has no rank on the page.
 
 ### FR-15 — The quota sources
 
 `harness/model-guide/quota.ts` reads the quota source of the provider of a
 route, as D15 holds. It gives one state for each route: `ready`, `wait`, or
 `stopped`. It reads the OpenChamber endpoint for the providers that have
-one. It gives the state `stopped` for a quota error, a limit error, or a
-read failure. It gives the state `wait` for a window of 70 % or more and for
-a source with no value. A route with no quota source gets the fixed cap of
+one. It gives the state `stopped` for a quota error, a limit error, a read
+failure, a source with no value, a missing field, or a value that is not a
+number. It gives the state `wait` for a window of 70 % or more. A route with
+no quota source gets the fixed cap of
 1 pass per night of D15.
 
 ## Non-functional requirements
@@ -913,12 +961,14 @@ a source with no value. A route with no quota source gets the fixed cap of
    rate has its run count. Rows with fewer than 10 runs with a result carry
    `few runs`. No rank uses a rating.
 5. Each work-type table shows the pass rate of `pass / (pass + fail)` with
-   its run count. A row with fewer than 10 runs carries `few runs` and
-   cannot pick. A work type with no row says "no pick yet".
+   its result count. A work-type row sums the role rows. A row with fewer
+   than 10 results carries `few runs` and cannot pick. A work type with no
+   row says "no pick yet".
 6. The print-audit block shows 11 of 13 and 13 of 13, the 52 errors, and the
    error types with their counts. The block shows no placeholder line. The
-   input check of the print-audit file stops with exit 2 on a wrong SHA-256,
-   a wrong size, or a wrong schema.
+   input check of the print-audit file stops with exit 2 on a wrong SHA-256
+   from `MANIFEST.txt`, a missing top key, or a wrong count of `errors`
+   rows.
 7. The overview table in the preview has the six rows of D18, each with a
    pick or "no pick yet: not enough evidence", the evidence, and a date.
 8. Until the approval record exists, `git status` shows no change under
@@ -932,7 +982,7 @@ a source with no value. A route with no quota source gets the fixed cap of
     minus the lowest worst-of-2 score is 20 points or more, and the best
     worst-of-2 score is below 90. A set that fails a rule has no rank.
 11. By 2026-11-22, each reachable route of D12 has 3 complete passes or a
-    recorded reason (unreachable, quota stop, region block, or provisional).
+    recorded reason (unreachable, quota stop, region block, or open pass).
     The preview shows the track A rank by the worst pass.
 12. No run used a metered route, and no pass started at 70 % or more of a
     window.
@@ -965,8 +1015,9 @@ The answers are in "Owner decisions".
   rank.
 - **Q9 (D5, D11).** Is Opus the fixture author and the first judge?
   Default: yes. Opus is not in the ranked list. The adjudication is blind to
-  the route name. A second judge of another family reads each finding
-  (OD5).
+  the route name. A second judge of a family that is not ranked reads each
+  finding: ByteDance Doubao on
+  `volcengine-agent-plan/ark-code-latest` (OD5).
 - **Q10 (D13).** Are the weights 5, 2, and 1, the false-claim cost of 2, and
   N = 3 correct? Default: yes, for the first set.
 
@@ -992,14 +1043,15 @@ The answers are in "Owner decisions".
   The keys stay private, but a later model can know a seeded diff. A new set
   id each quarter limits this.
 - **R3. Same-family bias.** The Opus author and the first judge are in the
-  same family as the Sonnet route. The second judge comes from a family that
-  is not Anthropic. Only the verdicts that both judges agree on count. The
-  blind adjudication and the fixed operator catalog limit the bias. Q9 covers
-  it.
+  same family as the Sonnet route. The second judge is ByteDance Doubao, a
+  family that is not ranked. Only the verdicts that both judges agree on
+  count. The blind adjudication and the fixed operator catalog limit the
+  bias. Q9 covers it.
 - **R4. Unmatched true findings.** A good model can find real defects. D11
-  makes them neutral, not false claims. An `unclear` verdict blocks the rank
-  of a route until both judges decide. A wrong line or a wrong class never
-  counts as found.
+  makes them neutral, not false claims. An `unclear` verdict marks the pass
+  `provisional` and leaves the rank of the route unchanged. A disputed
+  finding is left out and never counts against a route. A wrong line or a
+  wrong class never counts as found.
 - **R5. Line counts.** A model can give a wrong line. The line prefixes of
   D10 and the window of 3 lines limit this. A claim outside that window
   does not count as found.
@@ -1013,7 +1065,8 @@ The answers are in "Owner decisions".
 - **R8. The private folder.** A loss of the folder loses the keys. The
   public SHA-256 values show a changed or a lost key. A new set replaces a
   lost one.
-- **R9. The Go region rule.** The new OpenCode Go account rejects a model
-  that is hosted outside Europe and the United States until Daniel turns on
-  Global regions. A Go route with that error has no rank for that night. The
+- **R9. The Go region rule.** Daniel turned on Global regions on the new
+  OpenCode Go account at about 11:00 on 2026-11-14. The rule stays as a
+  guard: the account rejects a model that is hosted outside Europe and the
+  United States. A Go route with that error has no rank for that night. The
   track A rank then holds fewer routes. The probe of D14 finds it early.

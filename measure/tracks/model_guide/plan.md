@@ -7,8 +7,9 @@ review set and the scorer, then the first track A runs, and then the publish
 gate and the weekly update. Spec: `spec.md`. Base commit: `ea36fae`.
 
 Revision 2, 2026-11-14: the findings F1 to F12 of the spec review round 1.
-Each Green task writes one tool or one page. Each task has its own verify
-line.
+Revision 3, 2026-11-14: the findings F13 to F23 of the spec review round 2.
+Each Green task writes one tool or one page, plus its wiring. Each task has
+its own verify line.
 
 Order by date:
 
@@ -16,7 +17,8 @@ Order by date:
 |---|---|
 | Mon 2026-11-16 18:00 | spec and plan done; the spec review runs before task 1.1 |
 | Wed 2026-11-18 | page B and the overview table in the preview folder (Phases 1 and 2) |
-| Thu 2026-11-19 | set `mg-2026-11a` and the runner ready (Phases 3 and 4.1 to 4.9) |
+| Thu 2026-11-19 | sets `mg-2026-11a` and `mg-2026-11p` and the runner ready (Phases 3 and 4.1 to 4.9) |
+| Fri 2026-11-20 and Sat 2026-11-21 | the pilot of `mg-2026-11p` (task 4.11); its passes count as main passes |
 | Sun 2026-11-22 | track A first results in the preview folder (Phase 4) |
 | after Daniel's word | the first publish (Phase 5) |
 
@@ -28,7 +30,8 @@ Constraints for every role:
 - The spec reviewer writes only under `measure/runs/model_guide/`. The author
   or a Build session updates `measure/tracks/model_guide/spec-review.md`
   after a review.
-- Each Green task writes one tool or one page. It has its own verify line.
+- Each Green task writes one tool or one page, plus its wiring. It has its
+  own verify line.
 - Stage files by explicit path: `git commit -m ... -- <paths>`. Never stage
   `.opencode/`, `tech-debt.md`, or `measure/runs/`. On an `index.lock`
   error, run the commit once more.
@@ -116,7 +119,8 @@ applies them in `docs/`.
   - The reviewer writes only under `measure/runs/model_guide/`.
   - The author or a Build session updates `spec-review.md` after the review.
   - Verify: the result file of round 2 names each finding of round 1 as
-    withdrawn or kept. `spec-review.md` has a round 2 section.
+    fixed, partly fixed, or not fixed. `spec-review.md` has a round 2
+    section.
 
 ## Phase 1: Page B in the preview folder (by Wed 2026-11-18)
 
@@ -136,16 +140,18 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
   - Producer rank: pass rate, then the lower blocking rate. Checker rank:
     pass rate only.
   - Each rate carries its run count.
-  - The work-type pass rate = `pass / (pass + fail)`, with the run count
+  - The work-type pass rate = `pass / (pass + fail)`, with the result count
     `pass + fail` beside it.
-  - The work-type rank: the higher pass rate, then the higher run count.
+  - A work-type row sums the role rows of its route and work type.
+  - The work-type rank: the higher pass rate, then the higher result count.
   - The coverage block holds the runs, the dates, the two shares, the
     left-out duplicates, and the `unknown` and `other` runs.
   - The 4-week pass rate uses the last 4 ISO weeks of `weekly`.
   Edge cases:
   - A row with 9 runs with a result gets `few runs` and goes below a row
     with 10. A row with 10 has no mark.
-  - A work type with fewer than 10 runs gets `few runs` and cannot pick.
+  - A work type with fewer than 10 results (`pass + fail`) gets `few runs`
+    and cannot pick.
   - A work type with `pass + fail` of 0 has no rate.
   - `unknown` and `other` are in no rank and do not merge.
   - A rank that a rating alone would change does not change.
@@ -223,10 +229,12 @@ Spec D17, D18, D19, FR-5, FR-6.
   - The block shows 11 of 13 and 13 of 13, the key size 52, the error types
     with their counts, the checklist items of the mapped rows, the result of
     each run, and the bias note.
-  - The input check of the hand-off file of spec OD6 passes on the file.
+  - The input check of the hand-off file of spec OD6 passes on the file. It
+    reads the SHA-256 from `MANIFEST.txt` and the shape of the file (spec
+    D17).
   Edge cases:
-  - A changed byte, a wrong size, or a wrong schema of the hand-off file
-    gives exit 2 and no output file.
+  - A changed byte, a wrong SHA-256 in `MANIFEST.txt`, a missing top key, or
+    a wrong count of `errors` rows gives exit 2 and no output file.
   - The file holds no key `pages`, `text`, or `file`; a test fails on any
     such key.
   - The page shows no line "Error types: not yet received.".
@@ -260,10 +268,11 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Verify: the file fails on the Phase 1 code. Record the failed test names
     in `measure/runs/model_guide/red-2.3.txt`.
 - [ ] 2.4 Green. Write `harness/model-guide/data/print-audit-2026-11.json` and
-  the print-audit block of `harness/model-guide/pages/real-work.html`. Touch
-  no test file.
+  the print-audit block of `harness/model-guide/pages/real-work.html`, plus
+  that wiring. Touch no test file.
   - The data file comes from the hand-off file of spec OD6. The input check
-    of spec D17 passes first. The file holds no book text and no page.
+    of spec D17 passes first: the SHA-256 from `MANIFEST.txt` and the shape
+    of the file. The file holds no book text and no page.
   - Verify: `cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
 - [ ] 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test file
@@ -271,7 +280,8 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
     passes.
 - [ ] 2.6 Green. Write `harness/model-guide/pages/guide-section.html` and the
-  overview edit of `harness/model-guide/preview.sh`. Touch no test file.
+  overview edit of `harness/model-guide/preview.sh`, plus that wiring. Touch
+  no test file.
   - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
 - [ ] 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
@@ -347,8 +357,8 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - No JSON block, invalid JSON, or a finding without `file` or `line`
     makes the review `invalid`, with 0 found and 0 false claims.
   - A score below 0 becomes 0.
-  - An `unclear` verdict marks the pass `provisional`, and the route has no
-    rank. Fewer than 3 complete passes gives `incomplete`.
+  - An `unclear` verdict marks the pass `provisional`, and the route keeps
+    its rank. Fewer than 3 complete passes gives `incomplete`.
   - The score file holds no `new_lines`, `witness`, `operator`, `file`, or
     finding text.
   - Verify: the file fails on the Phase 2 code. Record the failed test names
@@ -421,11 +431,23 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - The choice of each diff is rule-based (spec D4). The author chooses no
     diff.
   - Verify: `review-set.ts lint mg-2026-11a` passes.
-- [ ] 3.15 The public manifest. Commit
-  `harness/model-guide/data/sets/mg-2026-11a.json` with an explicit path.
-  - Run `leak-check.ts` before the commit.
-  - Verify: the leak check passes, and the manifest SHA-256 values match the
-    private files.
+- [ ] 3.15 The public manifest, first write. Run
+  `review-set.ts lint mg-2026-11a`. It writes
+  `harness/model-guide/data/sets/mg-2026-11a.json` with the SHA-256 of each
+  seeded diff and the counts. The key SHA-256 values wait for the apply of
+  task 4.13.
+  - Do not commit the manifest in this task. Its key SHA-256 values change
+    after the apply (spec D9).
+  - Verify: the lint passes, and the manifest holds no key field and no
+    seeded line.
+- [ ] 3.16 The pilot seeding (spec D5 to D8, D13). The fixture author
+  `claude-code/claude-opus-5-5[1m]#high` writes set `mg-2026-11p` in a fresh
+  session, in the private folder only.
+  - The pilot set holds the first 6 qualified commits in the D4 order, with
+    at least 12 plants. The author uses the method of D5 to D7.
+  - The pilot set is separate from `mg-2026-11a`. A reseed makes `mg-2026-11p2`,
+    and then `mg-2026-11p3`.
+  - Verify: `review-set.ts lint mg-2026-11p` passes.
 
 Verify (Phase 3): spec acceptance 9 holds.
 
@@ -469,8 +491,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - A source with every window below 70 % gives `ready`.
   - A window at 70 % gives `wait`, and no pass starts.
   Edge cases:
-  - A quota error, a limit error, and a read failure give `stopped`.
-  - A missing field and a value that is not a number give `stopped`.
+  - A quota error, a limit error, a read failure, a source with no value, a
+    missing field, and a value that is not a number give `stopped`.
   - A route with no quota source runs at most 1 pass per night, and it stops
     at the first quota or limit error.
   - Verify: the file fails on the Phase 3 code. Record the failed test names
@@ -506,7 +528,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: `git diff --stat ea36fae -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests`
     prints nothing.
 - [ ] 4.8 Green. Write `harness/model-guide/pages/review.html` and the
-  review page edit of `harness/model-guide/preview.sh`. Touch no test file.
+  review page edit of `harness/model-guide/preview.sh`, plus that wiring.
+  Touch no test file.
   - Verify: the test files of Phases 1 to 4 pass, and
     `git status --short docs/` prints nothing.
 - [ ] 4.9 Checks. One code checker reads the diff against spec D12 to D15
@@ -522,20 +545,29 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - The orchestrator sends each `unreachable` route to the PM (owner
     question Q8).
   - Verify: each route of `routes.json` has one line in the file.
-- [ ] 4.11 The pilot gate (spec D13, OD7). The pilot set of 6 diffs with at
-  least 12 plants runs on the two pilot routes with 2 passes each.
+- [ ] 4.11 The pilot gate (spec D13, OD7). The pilot set `mg-2026-11p` runs
+  on the two pilot routes with 2 passes each, on the nights of 2026-11-20 and
+  2026-11-21.
+  - The pilot set holds the first 6 qualified commits in the D4 order (task
+    3.16).
   - The pilot routes are `minimax-cn-coding-plan/MiniMax-M3.1-Flash` and
     `kimi-code-plan-cn/kimi-for-coding#high`.
   - The pilot runs through `heavy-run.sh`, in the window of spec D15.
   - The worst-of-2 score of each pilot route goes into the score file.
+  - A pilot pass counts as a main pass of the route when the ranked set
+    `mg-2026-11a` holds the same diffs (spec D13). Each pilot route then
+    needs 1 more pass, on the night of 2026-11-22.
   - Verify: the best worst-of-2 score minus the lowest worst-of-2 score is 20
     points or more, and the best worst-of-2 score is below 90. When a rule
-    fails, the orchestrator seeds a harder set (task 3.14) and runs the
-    pilot again. After 2 reseeds the orchestrator sends the set to the PM.
+    fails, the orchestrator seeds a harder set as `mg-2026-11p2` (task 3.16)
+    and runs the pilot again. After 2 reseeds the orchestrator sends the set
+    to the PM.
 - [ ] 4.12 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
   (02:00 to 06:00 +07). One pass per reachable route per night.
   - Command for each route:
     `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route <route>`.
+  - The pass of a pilot route on 11-20 and 11-21 is the pilot pass of task
+    4.11 (spec D13).
   - Verify: each reachable route has 3 complete passes, or the file
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
     stop, region block, or open pass).
@@ -543,11 +575,19 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
   - The first judge is `claude-code/claude-opus-5-5[1m]#high`. The second
-    judge is the route of spec D11 from a family that is not Anthropic. The
-    second judge never reads the verdicts of the first judge.
+    judge is ByteDance Doubao, `volcengine-agent-plan/ark-code-latest` (spec
+    D11). That family is not ranked. The second judge never reads the
+    verdicts of the first judge.
+  - The apply writes the key `real_defects` first. Then run
+    `review-set.ts lint mg-2026-11a` again, so the manifest holds the key
+    SHA-256 values. Run `leak-check.ts`. Commit
+    `harness/model-guide/data/sets/mg-2026-11a.json` with an explicit path.
+    The commit comes after the apply (spec D9).
   - The orchestrator sends the real-defect list to the PM as a hand-off.
-  - Verify: no finding stays without a verdict of both judges, or the routes
-    with an `unclear` verdict show `incomplete`.
+  - Verify: each finding has a verdict of both judges, or it is left out and
+    counts against no route. Each pass with an `unclear` verdict shows
+    `provisional`, and its route keeps its rank. Each key SHA-256 in the
+    manifest matches its private key file.
 - [ ] 4.14 The score file and the review page.
   - Write `harness/model-guide/data/review-scores/mg-2026-11a.json`. Run
     `leak-check.ts`. Commit the file with an explicit path.
