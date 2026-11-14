@@ -1152,8 +1152,19 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
     oracle in this phase. The Green role does not write it.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds an open task, so the task went from `[ ]` to `[x]`.
   - Deviation: r3: the brief named a wrong oracle path; Red fixed the spec, the oracle, and P3/P4.
-- [x] 7.1b Red: the D24 amendment for heavy steps (PM 2026-11-15).
-- [ ] 7.2 Green: the implementation of D21 to D25. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector, the heavy-run gate, and the notice fields. The job always passes the board file to both pickers. A REST night ends before the catalog fetch. The heavy-run split follows the amended D24 of task 7.1b.
+- [x] 2632407 7.1b Red: the D24 amendment for heavy steps (PM 2026-11-15).
+  - Files: `measure/tracks/daily_model_schedule/spec.md` holds EV28, EV29, the amended D24, FR-20, and AC-19. `harness/schedule-tests/daily-catchup.test.ts` holds the cases C9, C10, and C11. `harness/schedule-tests/daily-heavy-steps.test.ts` holds the new file with the cases H1 to H7.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-catchup.test.ts schedule-tests/daily-heavy-steps.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exits non-zero.
+  - Failing cases: C9, C10, and C11 name the missing D24 cron gate. H1 to H6 name the missing heavy seam of the self-check, the canary, the memory gate, and the grading step. H7 holds the light path and passes at HEAD.
+  - Evidence: EV29 holds the measured grading time of every track group. No grading step is over 1800 s. The largest value of every group stays under 400 s.
+  - Lane: light lane. Maker: opencode/minimax-m3.1-flash-free#high (MiniMax).
+- [x] 51eab64 7.1c Red: D26, the high-use rule (Daniel 2026-11-15).
+  - Files: `measure/tracks/daily_model_schedule/spec.md` holds EV30, D26, the FR-2 cross-reference, FR-22, AC-21, and the new skip reasons of D19. `measure/tracks/daily_model_schedule/pick-oracle.py` holds the D26 filter. `harness/schedule-tests/daily-pick-board.test.ts` holds the cases Q1 to Q5. `harness/schedule-tests/daily-catchup.test.ts` holds the cases C13 and C14.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-pick-board.test.ts schedule-tests/daily-catchup.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exits non-zero.
+  - Failing cases: Q1, Q3, and Q4 name the missing D26 filter of the selector. Q2 and Q5 name the missing `--board` flag of `harness/daily-pick.ts`. C13 and C14 name the missing D26 check of the job.
+  - Note: the oracle is the file of the Red role. It now holds the D26 filter. With the real price table, the catalog of 2026w46, the served list of 2026w46, and the public board, the oracle picks `mimo-v2.6-pro` in group 1. The next pick is `mimo-v2.6-flash` in group 2. The model `minimax-m3` is not in the live list of 2026w46, so it is no candidate.
+  - Lane: light lane. Maker: opencode/minimax-m3.1-flash-free#high (MiniMax).
+- [ ] 7.2 Green: the implementation of D21 to D25. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector, the heavy-run gate, and the notice fields. The job always passes the board file to both pickers. A REST night ends before the catalog fetch. The heavy-run split follows the amended D24 of task 7.1b, and the pick follows D26 of task 7.1c.
   - Verify: the Red command of task 7.1 exits 0.
   - Verify: the notice seam and publish notice commands of task 7.1 exit 0.
   - Verify: `bash -n harness/cron-daily.sh` exits 0.
