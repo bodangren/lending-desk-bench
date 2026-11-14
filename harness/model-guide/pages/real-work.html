@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Real work</title>
+  <meta name="description" content="Real-work outcomes of our role runs, merged by model and ranked by pass rate." />
+  <link rel="stylesheet" href="./assets/css/site.css" />
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="wrap inner">
+      <a class="brand" href="./"><span class="brand-mark"></span> Lending Desk Bench</a>
+      <div class="nav-links">
+        <a href="./">Overview</a>
+        <a href="./methodology.html">Methodology</a>
+        <a href="./results.html">Results</a>
+        <a class="active" href="./real-work.html">Real work</a>
+        <a href="./review.html">Review</a>
+        <a href="./models/">Models</a>
+        <a href="./tracks.html">Tracks</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap stack">
+    <h1>Real work</h1>
+    <p class="section-lede">This page shows how our role runs performed in real
+    work. It merges routes by model. It ranks by pass rate, not by rating.</p>
+
+    <section class="card">
+      <h2>Source</h2>
+      <p><!--MODEL-GUIDE:SOURCE--></p>
+    </section>
+
+    <section class="card">
+      <h2>Coverage</h2>
+      <!--MODEL-GUIDE:COVERAGE-->
+    </section>
+
+    <section class="card">
+      <h2>Producer roles</h2>
+      <p class="muted">Producer roles write or change files. The rank uses the
+      higher pass rate first, then the lower blocking rate.</p>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th scope="col">Rank</th>
+          <th scope="col">Model</th>
+          <th scope="col">Routes</th>
+          <th scope="col">Runs</th>
+          <th scope="col">Pass</th>
+          <th scope="col">Fail</th>
+          <th scope="col">Error</th>
+          <th scope="col">No result</th>
+          <th scope="col">Blocking</th>
+          <th scope="col">Pass rate</th>
+          <th scope="col">Blocking rate</th>
+          <th scope="col">Ratings</th>
+          <th scope="col">Agreement</th>
+          <th scope="col">Trend</th>
+          <th scope="col">Mark</th>
+        </tr></thead>
+        <tbody>
+<!--MODEL-GUIDE:PRODUCER-ROWS-->
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="card">
+      <h2>Checker roles</h2>
+      <p class="muted">Checker roles review or judge. The rank uses the pass
+      rate only. The table shows the blocking rate beside the rate.</p>
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th scope="col">Rank</th>
+          <th scope="col">Model</th>
+          <th scope="col">Routes</th>
+          <th scope="col">Runs</th>
+          <th scope="col">Pass</th>
+          <th scope="col">Fail</th>
+          <th scope="col">Error</th>
+          <th scope="col">No result</th>
+          <th scope="col">Blocking</th>
+          <th scope="col">Pass rate</th>
+          <th scope="col">Blocking rate</th>
+          <th scope="col">Ratings</th>
+          <th scope="col">Agreement</th>
+          <th scope="col">Trend</th>
+          <th scope="col">Mark</th>
+        </tr></thead>
+        <tbody>
+<!--MODEL-GUIDE:CHECKER-ROWS-->
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="card">
+      <h2>Work types</h2>
+      <p class="muted">Each table ranks models for one work type. The rate is
+      pass divided by pass plus fail. A row with fewer than 10 results carries
+      the mark few runs and cannot pick.</p>
+<!--MODEL-GUIDE:WORK-TYPES-->
+    </section>
+
+    <section class="card">
+      <h2>Print audit</h2>
+<!--MODEL-GUIDE:PRINT-AUDIT-->
+    </section>
+
+    <section class="card">
+      <h2>Method</h2>
+      <p>Route names stay as written in the record, so #high and [1m] variants
+      are separate routes. This page merges them by model.</p>
+      <p class="muted">The merge joins only the #high and [1m] rows of one
+      route. The same model on another provider stays a separate row.
+      Unknown and other get no rank. The pass rate is pass divided by pass
+      plus fail plus error. No result stays out of the rate. The trend uses
+      the last 4 ISO weeks of the record. The rank never uses a rating.</p>
+    </section>
+  </main>
+</body>
+</html>
