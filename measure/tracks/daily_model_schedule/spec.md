@@ -274,6 +274,74 @@ All facts come from the files on disk and from read-only commands on
     `muse-spark-1.2-contributor`, `muse-spark-1.3-contributor`, and
     `deepseek-v4-flash-vision-exp` with `high_usage: true`. Rule 5 excludes
     the last three.
+- **EV31. The pick list and the catch-up order of Daniel (2026-11-15).** The
+  order came from Daniel through the PM at 06:1x. It is exact in quotation:
+
+  > "High use" = every model with more than 10,000 requests per month in the Go plan table "Estimated requests" on https://opencode.ai/docs/console/go/ (read 11-15 06:2x). Test highest use first. Increase the number of runs per day for now to catch up (the tower has 12 threads and 31 GB; one heavy step at a time still holds).
+  >
+  > List, highest first (ON = already on the board):
+  > Unlimited (free, limited time): Beam Free, Iceman Contributor Free, LongCat 2.5 Free; Muse Spark 1.3 Contributor 226,600; Muse Spark 1.2 Contributor 226,600; DeepSeek V4.1 Flash 216,670 ON; MiMo-V2.6-Flash 150,400; MiMo-V2.5 150,400; LongCat-2.0 57,200; GLM-5.3-Flash 31,580; Qwen3.8 Flash 27,000; Qwen3.7 Plus 21,600; Hy3 21,500; GPT 6 Luna 21,130 ON; MiniMax M3.1 Flash 19,380 ON; Claude Haiku 5.5 19,230 ON; MiMo-V2.6-Pro 16,300; MiMo-V2.5-Pro 16,300; MiniMax M3 16,000; Hy4 13,500; GPT 5.6 Luna 10,250.
+  > Out: Kimi K2.7 Code 6,750, Hy4 preview 6,770, and the rest under 10,000.
+  >
+  > Orders: 1. Today: start the catch-up from the top of the list (Beam Free, Iceman, LongCat 2.5 Free, Muse 1.3, Muse 1.2, ...), as many runs per day as the time and the Go limits allow, through the heavy-step split. Publish after each day. 2. The list check (Red test first) reads this table, so a model under 10,000 cannot be picked.
+
+  The facts of the order:
+  - The list holds 21 models. The three free models hold no count.
+  - The orchestrator read the page on 2026-11-15 at 06:3x. The Go plan prices
+    per 1M tokens are input, output, cached read, cached write, and the
+    monthly limit. Iceman Contributor Free: Free, Free, Free, none,
+    Unlimited. LongCat 2.5 Free: the same. Beam Free: the same. Hy4: $0.834,
+    $2.501, $0.042, none, $60.
+  - The catalog ids of the new rows are `beam-free`,
+    `iceman-contributor-free`, `longcat-2.5-free`, `hy4`, `mimo-v2.5`, and
+    `mimo-v2.5-pro`.
+  - The live Go catalog of 2026-11-15 lists `beam-free`,
+    `iceman-contributor-free`, `longcat-2.5-free`, `hy4`,
+    `muse-spark-1.2-contributor`, `muse-spark-1.3-contributor`,
+    `mimo-v2.6-flash`, `mimo-v2.6-pro`, `minimax-m3`, `longcat-2.0`,
+    `glm-5.3-flash`, `qwen3.8-flash`, `qwen3.7-plus`, `hy3`, and
+    `gpt-5.6-luna`. It does not list `mimo-v2.5` or `mimo-v2.5-pro`.
+  - The file `harness/go-pricing.json` (retrieved 2026-10-24) has no entry for
+    `iceman-contributor-free`, `longcat-2.5-free`, or `hy4`. Its
+    `requests_per_month` values are stale. The value of `glm-5.3-flash` is
+    7900. The page says 31,580.
+  - The public board `docs/assets/data/benchmark.json` holds four ranked
+    models: `deepseek-v4.1-flash`, `gpt-6-luna`, `minimax-m3.1-flash`, and
+    `claude-haiku-5-5`. They are the four models marked ON.
+- **EV32. The recent-models rule and the Go quota of Daniel (2026-11-15).**
+  The order came from Daniel through the PM at 06:3x. It is exact in
+  quotation:
+
+  > 1. "Recent models" rule: test only the LATEST version of each model family. Muse Spark 1.3 Contributor is the latest Muse; drop 1.2. Corrected list (Go plan > 10,000 requests/month, latest only, highest first; ON = on the board): Beam Free, Iceman Contributor Free, LongCat 2.5 Free, Muse Spark 1.3 Contributor, DeepSeek V4.1 Flash ON, MiMo-V2.6-Flash, GLM-5.3-Flash, Qwen3.8 Flash, GPT 6 Luna ON, MiniMax M3.1 Flash ON, Claude Haiku 5.5 ON, MiMo-V2.6-Pro, Hy4. Out as older versions: Muse 1.2, MiMo-V2.5 and V2.5-Pro, LongCat-2.0, Qwen3.7 Plus, Hy3, GPT 5.6 Luna, MiniMax M3. Nine models to run.
+  > 2. Go quota: Daniel wants the current Go subscription run to 100 % (it is at 92.9 % of the month), then he switches to the second subscription, then this one runs on its credit. So the go-guard stop at 95 % must go to 100 % for this account. Change it in the same change as the list check.
+
+  The facts of the order:
+  - The Go plan table "Estimated requests" of
+    https://opencode.ai/docs/console/go/ (read 2026-11-15 06:3x) holds these
+    requests per month: GLM-5.3-Flash 31,580; Kimi K2.7 Code 6,750;
+    LongCat-2.0 57,200; Beam Free, Iceman Contributor Free, and LongCat 2.5
+    Free Unlimited; MiMo-V2.6-Flash 150,400; MiMo-V2.6-Pro 16,300;
+    MiMo-V2.5 150,400; MiMo-V2.5-Pro 16,300; MiniMax M3.1 Flash 19,380;
+    MiniMax M3 16,000; Muse Spark 1.3 and 1.2 Contributor 226,600;
+    Qwen3.8 Flash 27,000; Qwen3.7 Plus 21,600; DeepSeek V4.1 Flash 216,670;
+    Hy4 13,500; Hy4 preview 6,770; Hy3 21,500; GPT 6 Luna 21,130; GPT 5.6
+    Luna 10,250; Claude Haiku 5.5 19,230. Every other model holds under
+    10,000.
+  - The Go plan prices per 1M tokens are input, output, cached read, cached
+    write, and the monthly limit. Iceman Contributor Free: Free, Free, Free,
+    none, Unlimited. LongCat 2.5 Free: the same. Beam Free: the same. Hy4:
+    $0.834, $2.501, $0.042, none, $60.
+  - The catalog ids of the new rows are `beam-free`,
+    `iceman-contributor-free`, `longcat-2.5-free`, and `hy4`.
+  - The live Go catalog of 2026-11-15 serves all 13 list models.
+  - The file `harness/go-pricing.json` (retrieved 2026-10-24) has no entry
+    for `iceman-contributor-free`, `longcat-2.5-free`, or `hy4`. Its
+    `requests_per_month` values are stale: it holds `glm-5.3-flash` at 7900
+    (the page says 31,580) and `deepseek-v4.1-flash` at 173,330 (the page
+    says 216,670).
+  - The corrected list order is the pick order: the three unlimited models
+    first, then the counts highest first. The list holds 13 models. Nine
+    models are to run against the public board.
 
 ## Definitions
 
@@ -576,15 +644,17 @@ date 2026-10-25.
       cleanup, so a signal stop also sends its line.
     - Known gap (out of scope): a SIGKILL or an out-of-memory kill runs no
       trap and sends no line; the systemd journal still shows the failure.
-18. **D18. The monthly Go guard.** It amends D12.
+18. **D18. The monthly Go guard.** It amends D12. Amended on 2026-11-15 by
+    task 7.1d (EV32): the monthly stop moves from 95 to 100 for this
+    account. The old text stays for the record.
     - The weekly stop stays "above 80". A weekly value of 80 continues, and
       80.0001 stops with the reason `weekly used 80.0001 percent`.
-    - The monthly stop becomes "above 95". A monthly value of 95 continues,
-      and 95.0001 stops with the reason `monthly used 95.0001 percent`.
+    - The monthly stop becomes "at or above 100". A monthly value of 99.9
+      continues, and 100 stops with the reason `monthly used 100 percent`.
     - The other monthly reasons do not change. A missing field, a non-finite
       value, and a value below 0 stop the day as before. A monthly value of
       84.06 continues.
-    - The Go window ends on Sat 2026-11-21 20:44 (EV18). The limit of 95
+    - The Go window ends on Sat 2026-11-21 20:44 (EV18). The limit of 100
       gives the run days until that date.
 19. **D19. The exit codes of a live run.** It amends the exit 0 of a stop in
     D12, the lock exit of D9, the `none` exit, D15, and D17. It replaces the
@@ -612,8 +682,9 @@ date 2026-10-25.
       `lending-desk-daily SKIP <date> exit=3: <reason>; publish=none
       rows=<runs>` when no push happened. `<reason>` is one of `go-guard
       <go_guard_stop text>`, `lock held`, `no high-use model`, `not high-use:
-      <model>`, `no new model`, or `no docs change`. The reason `no eligible
-      model` of the earlier text is now `no high-use model` (D26).
+      <model>`, or `no docs change`. The reason `no eligible
+      model` of the earlier text is now `no high-use model` (D26). The reason
+      `no new model` is retired by D27.
     - **1, 2, 130, 143.** A failure. Each D16 push failure is a failure, also
       on a skip day. The job sends one FAIL line (D17).
     - A dry run does not change. A guard stop in a dry run exits 0 and sends
@@ -751,29 +822,128 @@ date 2026-10-25.
     new=<yes|no> board=<n2> due=<m>`. Here `n2` is the board length read again
     after the export. The FAIL line ends with ` model=<id|none>`. The
     300-character cut stays.
-26. **D26. The high-use rule.** Added on 2026-11-15 by task 7.1c.
-    - **The high-use set.** A model is in the high-use set when the price
-      table holds it with `high_usage: true` and rule 5 of `PLAN.md` does not
-      exclude it. Rule 5 excludes the Muse Spark training models and the Flash
-      Vision Exp model. Their ids are `muse-spark-1.2-contributor`,
-      `muse-spark-1.3-contributor`, and `deepseek-v4-flash-vision-exp`. A
-      later Muse Spark or Flash Vision Exp model is excluded too.
-    - **Selector filter.** `harness/daily-pick.ts` and
-      `measure/tracks/daily_model_schedule/pick-oracle.py` consider only the
-      high-use set. The groups and the order of D23 apply inside that set.
-      The filter adds no field to the output. The lines stay as they are.
-    - **Cron check before the first batch.** The job reads the price table
-      and checks the chosen model. A model that is not in the high-use set
-      gives one line `DAILY SKIP not high-use: <model>`. The job runs no
-      batch. The skip reason is `not high-use: <model>`. The job exits 3 and
-      sends the D17 notice.
-    - **No high-use model.** When the selector finds no new model on a night
-      that needs a new model, the job prints one line
-      `DAILY SKIP no high-use model`. It runs no batch. The skip reason is
-      `no high-use model`. The job exits 3 and sends the D17 notice. The job
-      never falls back to a model outside the high-use set.
+26. **D26. The pick list.** Replaces the `high_usage` flag rule of task 7.1c
+    for the pick. The weekly batch and the `PLAN.md` site rank rule keep the
+    rule 5 exclusions. The old text stays for the record.
+    - **The data.** The pick list is the "Estimated requests" column of the
+      Go plan page `https://opencode.ai/docs/console/go/`. The page was read
+      on 2026-11-15 (EV31, EV32). The data lives in
+      `harness/go-pricing.json`.
+      - The top level holds `pick_min_requests_per_month: 10000`,
+        `requests_source: "https://opencode.ai/docs/console/go/"`, and
+        `requests_read: "2026-11-15"`.
+      - Every model of the list holds `requests_per_month` with the page
+        value.
+      - The three free models hold `requests_unlimited: true`. They are
+        `beam-free`, `iceman-contributor-free`, and `longcat-2.5-free`.
+      - Every model of the list holds `page_order`. It is the row number of
+        the page table. The first row has the number 1.
+      - A model that is an older version of its family holds
+        `superseded_by` with the id of the newer version. The older versions
+        are: `muse-spark-1.2-contributor` (by `muse-spark-1.3-contributor`),
+        `mimo-v2.5` (by `mimo-v2.6-flash`), `mimo-v2.5-pro` (by
+        `mimo-v2.6-pro`), `longcat-2.0` (by `longcat-2.5-free`),
+        `qwen3.7-plus` (by `qwen3.8-flash`), `hy3` (by `hy4`), `gpt-5.6-luna`
+        (by `gpt-6-luna`), and `minimax-m3` (by `minimax-m3.1-flash`).
+    - **The on-list rule.** A model is on the list when `requests_unlimited`
+      is true, or when `requests_per_month` is more than
+      `pick_min_requests_per_month`, and the model holds no
+      `superseded_by`. A model at or under the limit is never on the list. A
+      superseded model is never on the list. The job never picks such a
+      model. The rule 5 exclusions of `PLAN.md` do not apply to the pick.
+      The Muse Spark models are on the list.
+    - **The list order.** The unlimited models come first of all. They follow
+      the `page_order` order. The other models follow, with
+      `requests_per_month` highest first. Equal counts keep the `page_order`
+      order. A model without `page_order` comes after every model with a
+      `page_order`. The id in byte order is the last tie-break.
+    - **The filters.** A candidate is live in the catalog, served by the
+      account, priced in the table, and without a run in the week of the day.
+      A candidate that fails a filter is never picked.
+    - **The newness.** A candidate is new when its id is not in `models[].id`
+      of the board file. A history model counts as new. A model on the board
+      is never picked.
+    - **The pick.** The pick is the first new candidate in the list order. The
+      group order of D23 does not apply. Rules 4 and 5 of the selection rule
+      do not apply. The reason field keeps its meaning. The reason is
+      `untested` when the model has no OpenCode run. The reason is `stalest`
+      otherwise.
+    - **The output.** The output keeps its fields. The `order` array holds the
+      eligible new candidates in the list order. The count `eligible` is the
+      length of the `order` array. The count `untested` counts the entries of
+      the `order` array without an OpenCode run. The `group` and `new` fields
+      keep the meaning of D23. The pick has `new: true`.
+    - **The exclude flag.** The selector takes the optional flag `--exclude
+      <id1,id2,...>`. The ids stay out of the pick and out of the `order`
+      array. The flag is empty in a normal pick. The oracle takes the same
+      list as its 8th positional argument.
+    - **The resume rule.** The selector resumes from the day record only when
+      the exclude list is empty. A day record with a non-empty exclude list
+      gives a new selection.
+    - **The job check.** Before the first batch of a model, the job reads the
+      price table and checks the chosen model. A model that is not on the list
+      gives one line `DAILY SKIP not high-use: <model>`. The job runs no batch
+      for that model. The skip reason is `not high-use: <model>`. The job
+      exits 3 and sends the D17 notice.
+    - **No list model.** When the selector finds no new list model, the job
+      prints one line `DAILY SKIP no high-use model`. It runs no batch. The
+      skip reason is `no high-use model`. The job exits 3 and sends the D17
+      notice. The job never falls back to a model outside the list.
     - **Line texts.** The two lines are exact: `DAILY SKIP not high-use:
       <model>` and `DAILY SKIP no high-use model`.
+27. **D27. The catch-up loop.** Added on 2026-11-15 by task 7.1d.
+    - **The loop.** One job run repeats the model cycle for the next new list
+      model. The cycle holds: the pick, the Go guard, the four track batches
+      with the D24 split, the export, the publish commit, the push, and one
+      notice.
+    - **The conditions.** The loop goes on while all of these hold.
+      - A new list model exists.
+      - The Go guard passes before the model.
+      - The local time is before `BENCH_DAILY_LAST_START` at the start of the
+        model.
+      - Fewer than `BENCH_DAILY_MAX_MODELS` models ran in this job run.
+    - **The defaults.** The seam `BENCH_DAILY_LAST_START` has the default
+      `20:00`. The seam `BENCH_DAILY_MAX_MODELS` has the default `12`. Both
+      values are orchestrator defaults; the PM may change them. The seam
+      `BENCH_DAILY_NOW` names the local time as `HH:MM`. Without it, the job
+      reads the local time.
+    - **The order of the checks.** The job picks the model first. Then it
+      checks the number of models that ran. Then it checks the local time.
+      Then it reads the Go guard. Then it runs the batches.
+    - **The stop lines.** The line `DAILY STOP last-start <HH:MM>` names the
+      value of `BENCH_DAILY_LAST_START`. The line `DAILY STOP max-models <n>`
+      names the number of models that ran in this job run. The line `DAILY STOP
+      caught up` ends the loop when no new list model is left and at least
+      one model ran in this job run. The line `DAILY SKIP no high-use model`
+      of D26 ends the job when the first cycle has no model. The job exits 0
+      after a stop line. A stop line sends no notice.
+    - **The model failure.** A batch that ends with a non-zero exit code and
+      holds run ids of the model is a model-level failure. The job prints one
+      line `DAILY FAIL model: <model> produced no valid run`. It sends one
+      FAIL notice for that model. The loop goes on to the next model. The
+      failed model stays out of the rest of the job run.
+    - **The harness failure.** A batch that ends with a non-zero exit code and
+      holds no run id is a harness-level failure. The same holds for a fault
+      in the self-check, the canary, the guard read, the export, the commit,
+      and the push. The job sends one FAIL notice. The loop stops. The job
+      exits 1.
+    - **The tried models.** The job keeps the models it tried in this job run.
+      It passes them to the next pick with the `--exclude` flag of D26.
+    - **The day record.** The day record holds one entry per model of the day.
+      The record adds a `models` array. Each entry holds `model`, `reason`,
+      `run_ids`, `runner_exit`, and `go_guard_stop`. The top level keeps its
+      fields. The top level `model` names the first model of the day. The top
+      level `run_ids` holds the run ids of every model of the day.
+    - **The notices.** The job sends one notice per model. A published model
+      sends a PUBLISH notice. A failed model sends a FAIL notice. The job
+      sends no notice for a stop line.
+    - **The due count.** The due count of D22 does not stop the loop. The
+      catch-up ends when every list model that is live, served, and priced is
+      on the board.
+    - **The REST rule.** The REST rule of D22 is retired. The job runs the
+      loop on every night. The line `DAILY REST caught up: board=<n> due=<m>`
+      is retired. The line `DAILY SKIP no new model` is retired. The line
+      `DAILY CATCHUP local=<date> run_day=<yes|no> board=<n> due=<m>` stays.
 
 ## Functional requirements
 
@@ -791,7 +961,7 @@ date 2026-10-25.
 
 - The candidate list is the live list, less each unpriced model and each
   unservable model (D2, D3).
-- The selector and the oracle keep only the high-use set of D26.
+- The selector and the oracle keep only the pick list of D26.
 - The selector output lists `unpriced`, `gone`, `unservable`, and
   `this_week` models by name.
 - **Check.** On synthetic inputs, an unpriced live model, a priced model that
@@ -890,13 +1060,13 @@ Amended by D18 and D19. The old text stays for the record.
 
 The amended rule (D18, D19):
 
-- The weekly window stops above 80. The monthly window stops above 95. A
-  monthly value of 95 continues, and 95.0001 stops with the reason
-  `monthly used 95.0001 percent`. The other monthly reasons do not change.
+- The weekly window stops above 80. The monthly window stops at or above
+  100. A monthly value of 99.9 continues, and 100 stops with the reason
+  `monthly used 100 percent`. The other monthly reasons do not change.
 - A live stop exits 3 and sends one SKIP line (D19). A dry-run stop exits 0
   and sends nothing.
 - **Check.** With a stub `BENCH_DAILY_QUOTA_CMD`: 80 and 0 continue and
-  80.0001 stops for the weekly window; 95 and 0 continue and 95.0001 stops
+  80.0001 stops for the weekly window; 99.9 and 0 continue and 100 stops
   for the monthly window; a monthly 84.06 continues. A live stop gives exit
   3, the skip line, and no further batch call. A dry-run stop prints the
   skip line, plans zero runs, exits 0, and makes no model call.
@@ -1086,21 +1256,55 @@ The amended rule (D20):
 - **Check.** A publish notice, a skip notice, and a fail notice end with the
   D25 fields. The skip notice names `new=no` when no new model exists.
 
-### FR-22 — The high-use rule
+### FR-22 — The pick list
 
-- The selector and the oracle consider only the high-use set of D26. The
-  groups and the order of D23 apply inside that set.
+- The selector and the oracle consider only the pick list of D26. A model
+  is on the list when `requests_unlimited` is true or
+  `requests_per_month` is more than `pick_min_requests_per_month`, and the
+  model holds no `superseded_by`. A model at or under the limit or
+  superseded is never picked and never appears in the order list.
+- The list order comes first: the unlimited models in `page_order` order,
+  then the counts highest first, with equal counts in `page_order` order.
+  The group order of D23 does not order the pick. A model on the board is
+  never picked. A history model counts as new.
 - The job checks the chosen model against the price table before the first
-  batch. A model outside the high-use set gives one line
+  batch. A model outside the list gives one line
   `DAILY SKIP not high-use: <model>`, exit 3, the D17 notice, and no batch.
-- A night with no new high-use model gives one line
+- A night with no new list model gives one line
   `DAILY SKIP no high-use model`, exit 3, and the D17 notice. The job never
-  falls back to a model outside the high-use set.
-- **Check.** A model with the highest requests that is not high use is never
-  picked. A high-use group 1 model comes first. `kimi-k2.7-code` is never
-  picked. The order list holds only high-use models. A picked model outside
-  the set gives the pinned line and the notice. A night with no new high-use
-  model gives the pinned line and the notice.
+  falls back to a model outside the list.
+- **Check.** On fixture tables: a model at 10,000 or less is never picked;
+  a superseded model with the highest count is never picked; the unlimited
+  models come first; equal counts keep the page row order; a board model is
+  never picked; a history model is picked; `kimi-k2.7-code` (6,750) and
+  `hy4-preview` (6,770) are never picked. On the real table the on-list set
+  equals the 13 models of EV32 in the EV32 order, and the oracle picks
+  `beam-free` first. A picked model outside the list gives the pinned line
+  and the notice. A night with no new list model gives the pinned line and
+  the notice.
+
+### FR-23 — The catch-up loop
+
+- One job run repeats the model cycle of D27 for the next new list model
+  while a new list model exists, the Go guard passes before each model, the
+  local time is before `BENCH_DAILY_LAST_START` (orchestrator default
+  `20:00`) at the start of each model, and fewer than
+  `BENCH_DAILY_MAX_MODELS` (orchestrator default `12`) models ran in this
+  job run. The PM may change both defaults.
+- The stop lines are `DAILY STOP last-start <HH:MM>`, `DAILY STOP
+  max-models <n>`, and `DAILY STOP caught up`. The first cycle with no model
+  gives `DAILY SKIP no high-use model`. The job exits 0 after a stop line.
+- A model-level failure sends one FAIL notice and the loop goes on. A
+  harness-level failure sends one FAIL notice and stops the job with exit 1.
+- The due count of D22 does not stop the loop. The catch-up ends when every
+  list model that is live, served, and priced is on the board. The day
+  record holds one entry per model of the day.
+- **Check.** With the selector, batch, publish, and notice seams: two new
+  list models in one job run give two batch sets, two publish lines, and two
+  notices; the last-start seam stops the loop with the pinned line; the
+  max-models seam stops the loop; a model-level failure goes on; a
+  harness-level failure stops; the due count does not stop the loop in
+  catch-up.
 
 ## Non-functional requirements
 
@@ -1165,8 +1369,8 @@ The amended rule (D20):
    or non-finite value stops the day with its specified reason: exit 0, one
    `DAILY SKIP go-guard` line, and no model call after the stop (FR-10).
    The amended rule: the weekly window stops above 80 and the monthly
-   window stops above 95. A live stop exits 3 and sends one SKIP line. A
-   dry-run stop exits 0 and sends nothing (FR-10, D18, D19).
+   window stops at or above 100. A live stop exits 3 and sends one SKIP
+   line. A dry-run stop exits 0 and sends nothing (FR-10, D18, D19).
 10. **AC-10** Replaced by AC-14. The old text stays for the record.
     The job pushes only its own docs commit, and only when
     `origin/main` equals its parent. Every other case prints one
@@ -1219,13 +1423,29 @@ The amended rule (D20):
 20. **AC-20** PUBLISH, SKIP, and FAIL notices carry the D25 fields. The
     board length comes from the second board read. The notice stays within
     300 characters (FR-21, D25).
-21. **AC-21** The selector and the oracle consider only the high-use set of
-    D26. A model outside that set is never picked and never appears in the
-    order list. The job checks the chosen model before the first batch. A
-    model outside the set gives `DAILY SKIP not high-use: <model>`, exit 3,
-    the D17 notice, and no batch. A night with no new high-use model gives
-    `DAILY SKIP no high-use model`, exit 3, and the D17 notice. The job never
-    falls back to a model outside the high-use set (FR-22, D26).
+21. **AC-21** Amended by task 7.1d. The old text stays for the record. The
+    selector and the oracle consider only the pick list of D26: a model on
+    the list holds `requests_unlimited` true or `requests_per_month` above
+    `pick_min_requests_per_month`, and holds no `superseded_by`. A model at
+    or under the limit or superseded is never picked and never appears in
+    the order list. The unlimited models come first, then the counts
+    highest first, with equal counts in `page_order` order. A model on the
+    board is never picked; a history model counts as new. The job checks
+    the chosen model before the first batch. A model outside the list gives
+    `DAILY SKIP not high-use: <model>`, exit 3, the D17 notice, and no
+    batch. A night with no new list model gives `DAILY SKIP no high-use
+    model`, exit 3, and the D17 notice. The job never falls back to a
+    model outside the list (FR-22, D26).
+22. **AC-22** One job run repeats the model cycle of D27 while a new list
+    model exists, the Go guard passes before each model, the local time is
+    before `BENCH_DAILY_LAST_START` (orchestrator default `20:00`) at the
+    start of each model, and fewer than `BENCH_DAILY_MAX_MODELS`
+    (orchestrator default `12`) models ran in this job run. The stop lines
+    are `DAILY STOP last-start <HH:MM>`, `DAILY STOP max-models <n>`, and
+    `DAILY STOP caught up`. A model-level failure sends one FAIL notice and
+    the loop goes on. A harness-level failure sends one FAIL notice and
+    stops the job with exit 1. The due count of D22 does not stop the loop.
+    The day record holds one entry per model of the day (FR-23, D27).
 
 ## Out of scope
 
@@ -1239,7 +1459,7 @@ The amended rule (D20):
 - A systemd `OnFailure=` unit.
 - A Tasks notice to Daniel.
 - Any change of the weekly Go guard limit (80). D18 changes only the monthly
-  limit, by PM decision 2 of 2026-11-13.
+  limit, by PM decision 2 of 2026-11-13, amended by EV32 of 2026-11-15.
   - Amended on 2026-11-13 (the checker of task 6.3, finding F1). The old
     text stays for the record: Any change of the Go guard limit.
 - Publishing on a day with the reason `none`.
@@ -1256,8 +1476,8 @@ The amended rule (D20):
 - **R3 Spend.** Each run day spends up to 12 agent runs (D1). O1 approved
   it on 2026-10-31 with 3 conditions. The Go guard of D12 stops a run day
   when the weekly window is above 80 percent, when the monthly window is
-  above 95 percent (D18), or when either window is below 0, so the job never
-  draws on the paid Go credit balance.
+  at or above 100 percent (D18), or when either window is below 0, so the
+  job never draws on the paid Go credit balance.
   - Amended on 2026-11-13 (the checker of task 6.3, finding F2). The old
     text stays for the record: The Go guard of D12 stops a run day when
     either window is above 80 percent or below 0, so the job never draws on
