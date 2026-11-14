@@ -262,7 +262,14 @@ describe("page B merge and rates", () => {
   });
 
   it("marks 9 results with few runs and 10 without it, and puts the mark below", () => {
-    const page = runOk(FIXTURE, "m5");
+    const staged = stagedCopy((doc) => {
+      const z = doc.all_time.find((item: any) => item.route === "z/m" && item.role === "coder");
+      z.pass = 7;
+      z.fail = 3;
+      z.error = 0;
+      z.no_result = 8;
+    });
+    const page = runOk(staged, "m5");
     expect(row(page.producer, "w/m").pass_rate.n).toBe(9);
     expect(row(page.producer, "w/m").few_runs).toBe(true);
     expect(row(page.producer, "w/m").can_pick).toBe(false);
