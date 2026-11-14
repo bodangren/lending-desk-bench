@@ -225,16 +225,21 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `git status --short docs/` prints nothing.
   - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
-- [ ] 1.8 Checks. One code checker reads the diff against spec D16 and D21.
+- [x] 3a477f5 1.8 Checks. One code checker reads the diff against spec D16 and D21.
   - The checker confirms that no path writes under `docs/` without the
     approval record, that the rank uses no rating, and that the work-type
     tables use only the data of the export.
   - Verify: `measure/runs/model_guide/check-1.8.json` has status pass, or
     each blocking finding has a fix commit.
-- [x] 54836d0 1.9 The preview with the real export.
-  - Evidence: commit ef2d16f (PM manifest fallback) plus this plan-record commit.
-    `measure/runs/model_guide/preview-1.9.txt` holds the command, exit 0, and the
-    checked values.
+  - Evidence: reviews A, B, and C at 2131746
+    (`measure/runs/model_guide/review-a-2131746.json`,
+    `review-b-2131746.json`, `review-c-2131746.json`) found blockers A1 and
+    A2. Fix commit 3a477f5 addresses each blocking finding. New reviews on
+    the new HEAD follow.
+- [x] ef2d16f 1.9 The preview with the real export.
+  - Evidence: commit ef2d16f (PM manifest fallback) plus the plan-record
+    commit 2131746. `measure/runs/model_guide/preview-1.9.txt` holds the
+    command, exit 0, and the checked values.
   - Command:
     `harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json`.
   - Verify: `.tmp/model-guide-preview/real-work.html` shows the SHA-256
@@ -247,10 +252,14 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `harness/model-guide-tests/input-check.test.ts`, and
     `harness/model-guide-tests/leak-guard.test.ts`.
   - Evidence: `red-1.10.txt` holds the failed test names and exit 1.
-- [~] 1.11 Green. Review fixes, round 1. Fix A1, A2, A3, B1, B2, C2, C4 in
+- [x] 3a477f5 1.11 Green. Review fixes, round 1. Fix A1, A2, A3, B1, B2, C2, C4 in
   `harness/model-guide/` and the task 1.9 record (A4). Touch no test file.
   - Verify: run `preview-gate.test.ts`, `input-check.test.ts`, and
     `leak-guard.test.ts` with one worker.
+  - Evidence: `preview-gate.test.ts` exit 0, `input-check.test.ts` exit 0,
+    `real-work.test.ts` exit 0, and `leak-guard.test.ts` exit 0, each run
+    alone with `--maxWorkers=1 --reporter=dot`. The role log is
+    `measure/runs/model_guide/green-p1-43384ea.log`.
 
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
