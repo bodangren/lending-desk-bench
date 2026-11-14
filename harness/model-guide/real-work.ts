@@ -73,6 +73,14 @@ function readManifestLine(text: string, key: string): string | null {
   return match ? match[1].trim() : null;
 }
 
+/** Fallback for the PM export manifest (spec EV1): one `sha256sum` style
+ * line `<sha256>  <size>  <file>`. The Red fixture uses `sha256:` and
+ * `size:` lines instead. Both formats carry the same two values. */
+function readManifestSumLine(text: string): { sha256: string; size: string } | null {
+  const match = text.match(/^([0-9a-f]{64})\s+(\d+)\s+\S+.*$/m);
+  return match ? { sha256: match[1], size: match[2] } : null;
+}
+
 interface Accum {
   model: string;
   routes: Set<string>;
@@ -135,8 +143,11 @@ function main(): void {
 
   const bytes = readFileSync(input);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
-  if (readManifestLine(manifest, "sha256") !== sha256) refuse("sha256");
-  if (readManifestLine(manifest, "size") !== String(bytes.length)) {
+  const sumLine = readManifestSumLine(manifest);
+  const shaExpected = readManifestLine(manifest, "sha256") ?? sumLine?.sha256;
+  if (shaExpected !== sha256) refuse("sha256");
+  const sizeExpected = readManifestLine(manifest, "size") ?? sumLine?.size;
+  if (sizeExpected !== String(bytes.length)) {
     refuse("size");
   }
 
