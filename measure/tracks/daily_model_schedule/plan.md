@@ -1115,3 +1115,38 @@ explicit live flag.
   - Verify: the public page shows a `generated_at` of 2026-11-14 or later, and no hand step ran.
   - Lane: light lane. One maker, one checker in a different family.
 
+## Phase 7: Nightly catch-up (PM 2026-11-14)
+
+The PM order is exact in quotation:
+
+> Rule from now: each run day (Wed, Sun) adds one NEW model to the leaderboard. A run day with no new model is a failure. ... 3. Catch-up: add one extra model each night while the Go month stays under your 95 % guard. 4. After the Go reset (11-21 20:44): one new model each night until the leaderboard holds 4 plus one model per run day since 10-25. Then go back to Wed and Sun. 5. Order of models: untested Go models first, then the history models again on the OpenCode runner. 6. A failed run day gets a rerun the next night. Do not wait for the next run day. 7. Each night run goes through heavy-run, as now.
+
+This phase adds the nightly timer, catch-up rule, board-aware pick order, heavy-run gate, and notice fields of spec D21 to D25.
+
+- [ ] 7.1 Red: the spec amendment and the targeted Red tests. The role adds D21 to D25 to `spec.md`, with the matching evidence, functional requirements, acceptance criteria, and the D19 REST exit row. The role adds `harness/schedule-tests/daily-catchup.test.ts` and `harness/schedule-tests/daily-pick-board.test.ts`. The tests cover the timer text, night rule, REST path, due dates, pick groups, heavy-run gate, and notice fields. Every test that starts `cron-daily.sh` uses the notice sink, board seam, and safe heavy-run seam. No test reaches a real model, catalog fetch, heavy-run, OpenCode command, OpenChamber command, docs tree, or real home.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-catchup.test.ts schedule-tests/daily-pick-board.test.ts --configLoader native --maxWorkers=1` exits non-zero. Each failure names a missing rule of D21 to D25.
+  - Verify: `cd harness && npx vitest run schedule-tests/notice-seam-guard.test.ts --configLoader native --maxWorkers=1 --reporter=verbose` exits 0.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --configLoader native --maxWorkers=1 --reporter=verbose` exits 0.
+  - Lane: light lane. Maker: `nvidia/minimaxai/minimax-m3.1-flash#thinking` (MiniMax). Checker: task 7.3 uses a different family.
+- [ ] 7.2 Green: the implementation of D21 to D25. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector and oracle, the heavy-run gate, and the notice fields. The job always passes `--board` to both pickers. A REST night ends before the catalog fetch. A live track batch runs through heavy-run.
+  - Verify: the Red command of task 7.1 exits 0.
+  - Verify: the notice seam and publish notice commands of task 7.1 exit 0.
+  - Verify: `bash -n harness/cron-daily.sh` exits 0.
+  - Lane: light lane. Maker: `claude-code/claude-sonnet-5-5#high` (Anthropic). Checker: task 7.3 uses a different family.
+- [ ] 7.3 Checker review of D21 to D25, task 7.1, and task 7.2. The checker family must differ from MiniMax, Anthropic, and Kimi. The role writes `measure/runs/daily_model_schedule/check-7.3.json`.
+  - Verify: the file shows `status: pass` and no blocking finding.
+  - Lane: light lane. One independent checker.
+- [ ] 7.4 Night suites behind heavy-run. The role runs the relevant schedule suites through `heavy-run.sh` during the night window. The logs sit under `measure/runs/daily_model_schedule/`.
+  - Verify: each suite log holds a `Tests` line with no failed test.
+  - Verify: the process check holds no `fake-openc` or `cron-daily` process.
+  - Lane: light lane. One heavy run.
+- [ ] 7.5 Push and timer install by a Build session before Mon 2026-11-16 01:00. The Build session pushes the merged branch and installs the updated `lending-desk-daily.timer` as a systemd user unit. It reloads systemd and enables the nightly timer.
+  - Verify: `systemctl --user is-enabled lending-desk-daily.timer` prints `enabled`.
+  - Verify: `systemctl --user is-active lending-desk-daily.timer` prints `active`.
+  - Verify: the installed timer holds `OnCalendar=*-*-* 01:00:00`.
+  - Lane: light lane. One Build session.
+- [ ] 7.6 Record the first catch-up night and the PM line. The role records the CATCHUP line, the board and due counts, the picked group, the heavy-run result, the notice result, and the PM line. The role also records the public board change.
+  - Verify: the first catch-up night adds one new model to the leaderboard.
+  - Verify: the PM line names the model, new flag, board length, and due count.
+  - Lane: light lane. One maker, one checker in a different family.
+

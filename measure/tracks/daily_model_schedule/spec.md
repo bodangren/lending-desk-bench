@@ -13,6 +13,11 @@ model: a model with no test, or else the model with the stalest last test
 date. It runs that model through the existing batch path, and it publishes
 the site data. The job sends no model call for any other model.
 
+From 2026-11-14, the timer fires every night. A non-run night adds a new
+model while the leaderboard is below its due count. A caught-up non-run
+night ends before the catalog fetch. The pick order gives new models first,
+then history models, then ranked models.
+
 The track changes no scoring rule, no hashed file, and no price. It does not
 re-enable the weekly cron.
 
@@ -166,6 +171,14 @@ All facts come from the files on disk and from read-only commands on
   is used only when the job runs under systemd (or an explicit live flag);
   every test sets a fake notice seam; add one test that fails if the suite
   calls the real notice command. Log this as a finding of the round."
+- **EV26. The PM order on nightly catch-up (2026-11-14).** The order is
+  exact in quotation:
+
+  > Rule from now: each run day (Wed, Sun) adds one NEW model to the leaderboard. A run day with no new model is a failure. ... 3. Catch-up: add one extra model each night while the Go month stays under your 95 % guard. 4. After the Go reset (11-21 20:44): one new model each night until the leaderboard holds 4 plus one model per run day since 10-25. Then go back to Wed and Sun. 5. Order of models: untested Go models first, then the history models again on the OpenCode runner. 6. A failed run day gets a rerun the next night. Do not wait for the next run day. 7. Each night run goes through heavy-run, as now.
+- **EV27. The daily job does not use heavy-run today.** The file
+  `harness/cron-daily.sh` calls each track batch directly. It does not call
+  `heavy-run.sh`. Its lock path is `.tmp/weekly-cron.lock`. D24 adds the
+  heavy-run gate.
 
 ## Definitions
 
@@ -481,19 +494,30 @@ date 2026-10-25.
 19. **D19. The exit codes of a live run.** It amends the exit 0 of a stop in
     D12, the lock exit of D9, the `none` exit, D15, and D17. It replaces the
     "exit 0" of the second condition of Daniel of 2026-10-31.
+
+    The exit-code table, amended by D22, is:
+
+    | Exit | Live outcome | PM notice |
+    |---|---|---|
+    | 0 | A full day passes its push. A REST night ends before the catalog fetch. | A full day sends one PUBLISH line. A REST night sends none. |
+    | 3 | A skip occurs. | The job sends one SKIP line. |
+    | 1, 2, 130, 143 | A failure occurs. | The job sends one FAIL line. |
+
     - **0.** Every batch of the day ran with no guard stop, and the push
-      passed. The job sends one PUBLISH line (D17).
+      passed. The job sends one PUBLISH line (D17). A REST night also exits
+      0. It sends no notice (D22).
     - **3.** A skip. A skip is a guard stop (before or after a run), the
-      lock held (D9), no eligible model (the reason `none`), or a day with
-      runs whose page step changed no file under `docs/`. A guard stop still
+      lock held (D9), no eligible model (the reason `none`), no new model
+      (D22), or a day with runs whose page step changed no file under
+      `docs/`. A guard stop still
       runs steps (5) to (9) of D12, commits `docs/` when it changed (D15),
       and pushes under D16. It then exits 3. The job sends one SKIP line:
       `lending-desk-daily SKIP <date> exit=3: <reason>; publish=<short sha>
       range=<old short>..<new short> commits=<n> rows=<runs>`, or
       `lending-desk-daily SKIP <date> exit=3: <reason>; publish=none
       rows=<runs>` when no push happened. `<reason>` is one of `go-guard
-      <go_guard_stop text>`, `lock held`, `no eligible model`, or
-      `no docs change`.
+      <go_guard_stop text>`, `lock held`, `no eligible model`, `no new model`,
+      or `no docs change`.
     - **1, 2, 130, 143.** A failure. Each D16 push failure is a failure, also
       on a skip day. The job sends one FAIL line (D17).
     - A dry run does not change. A guard stop in a dry run exits 0 and sends
@@ -519,6 +543,62 @@ date 2026-10-25.
       run. The `DAILY NOTIFY <line>` log line shows the same text.
     - A test never reads the real PM config. The child environment of a test
       holds no real `HOME`.
+21. **D21. Timer.** `harness/systemd/lending-desk-daily.timer` gets
+    `OnCalendar=*-*-* 01:00:00` and a Description that says every night. The
+    header comment of `cron-daily.sh` (line 9) says the same. A Build session
+    installs the unit (task 7.5).
+22. **D22. Night rule.** After the lock, the job reads:
+    - `LOCAL_DATE` is the local date at job start. The seam is
+      `BENCH_DAILY_LOCAL_DATE`.
+    - `RUN_DAY` is yes when `LOCAL_DATE` is a Wednesday or a Sunday.
+    - `BOARD n` is the length of `models` in
+      `docs/assets/data/benchmark.json`. The seam is `BENCH_DAILY_BOARD`, a
+      file path.
+    - `DUE m` is 4 plus the number of Wednesdays and Sundays `d` with
+      `2026-10-25 < d <= LOCAL_DATE`.
+
+    The job prints `DAILY CATCHUP local=<date> run_day=<yes|no> board=<n>
+    due=<m>`. On a night that is not a run day:
+    - When `n >= m`, it prints `DAILY REST caught up: board=<n> due=<m>` and
+      `DAILY END ...`. It exits 0 and sends no notice. This check comes
+      before the catalog fetch.
+    - When `n < m`, it continues. If the pick is then not a new model, which
+      means group 3 or none, it prints `DAILY SKIP no new model`. It exits 3
+      with the SKIP notice (D19).
+
+    A run day always runs, as now. Rule 6 follows from the same check. A
+    failed run day leaves `n < m`, so the next night runs. A dry run prints
+    the CATCHUP and REST lines and exits 0.
+23. **D23. Pick order.** `harness/daily-pick.ts` and
+    `harness/pick-oracle.py` take a new optional flag `--board
+    <benchmark.json>`. The job always passes it.
+    - Group 1 holds a model whose id is in neither `models[].id` nor
+      `history.models[].id`.
+    - Group 2 holds a model whose id is in `history.models[].id` only.
+    - Group 3 holds a model whose id is in `models[].id`.
+
+    Groups go in order 1, 2, 3. Inside each group, the existing rules 4 and
+    5 apply. They order by untested requests first, then by stalest. A new
+    model is group 1 or 2. With the flag, the JSON output adds `group` and
+    `new` as a true or false value. The `DAILY_PICK` line and the
+    `PICK_ORACLE` line both end with ` group=<g> new=<yes|no>`. Without the
+    flag, output stays byte-for-byte as now. The two lines stay equal for the
+    same inputs.
+24. **D24. heavy-run.** In a live run, each track batch runs as
+    `HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 "$HEAVY" "$BATCH" --model
+    "$MODEL"` with `BENCH_TRACK` exported. `HEAVY` is
+    `${BENCH_DAILY_HEAVY:-/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh}`.
+    The gate order is like D20. The seam comes first. Else under `VITEST`,
+    the batch runs directly and the job prints `DAILY HEAVY skipped: test`.
+    Else the real script runs. The job prints `DAILY HEAVY <path>` once
+    before the first batch. A real script that is missing or not executable
+    gives `DAILY FAIL heavy: heavy-run.sh is missing` and exit 2 before the
+    first batch. A non-zero heavy-run exit is the batch exit. It uses the
+    existing runner-failure path. A dry run never calls heavy-run.
+25. **D25. Notice fields.** The PUBLISH and SKIP lines end with ` model=<id|none>
+    new=<yes|no> board=<n2> due=<m>`. Here `n2` is the board length read again
+    after the export. The FAIL line ends with ` model=<id|none>`. The
+    300-character cut stays.
 
 ## Functional requirements
 
@@ -768,6 +848,60 @@ The amended rule (D20):
   case G4 proves that the live flag sends a HAND line. The case G5 proves
   that a test sends nothing under `VITEST`.
 
+### FR-17 — Nightly timer
+
+- The timer runs every night at 01:00 local time. Its Description says every
+  night. The header comment of `cron-daily.sh` says the same (D21).
+- **Check.** The timer text holds `OnCalendar=*-*-* 01:00:00`. Its
+  Description names every night. The script header names every night.
+
+### FR-18 — Night rule and REST
+
+- After the lock, the job reads the local date, the board length, and the due
+  count (D22). It prints the CATCHUP line before any catalog fetch.
+- A caught-up night that is not a run day prints REST. It exits 0 and sends
+  no notice. The check comes before the catalog fetch.
+- A night that is not a run day runs while the board is below the due count.
+  A run day always runs. A failed run day leaves the board below the due
+  count. The next night then runs.
+- **Check.** A caught-up Monday reaches REST without reading the catalog. A
+  Monday below the due count runs. A Monday with only a group 3 pick skips
+  with exit 3. Wednesday and Sunday always run. The due counts for
+  2026-11-15, 2026-11-18, and 2026-11-22 are 10, 11, and 12.
+
+### FR-19 — Board-aware pick order
+
+- The selector and the oracle take the optional `--board <benchmark.json>`
+  flag. The job always passes it (D23).
+- The groups are 1 for a new model, 2 for a history-only model, and 3 for a
+  ranked model. The group order comes before rules 4 and 5.
+- With the flag, the output names the group and whether the model is new.
+  Without the flag, output stays byte-for-byte unchanged.
+- **Check.** Both implementations select the same group and model. Their
+  labeled lines match after the prefix. The group 1, 2, and 3 cases cover
+  the new-model flag.
+
+### FR-20 — Heavy-run batches
+
+- A live batch runs through heavy-run with the D24 command and environment.
+  The seam comes before the `VITEST` rule (D24).
+- Under `VITEST`, the batch runs directly and the job prints
+  `DAILY HEAVY skipped: test`. A missing real script fails before the first
+  batch. A dry run never calls heavy-run.
+- **Check.** The heavy seam receives each track batch. It sees
+  `HEAVY_MIN_AVAIL_MB=1500` and `HEAVY_PRIORITY=p2`. The exported
+  `BENCH_TRACK` names the track. The missing script gives exit 2 and the D24
+  fail line.
+
+### FR-21 — Notice fields
+
+- The PUBLISH and SKIP notices end with the model, new flag, board length,
+  and due count (D25). The board length is read again after the export.
+- The FAIL notice ends with the model. The notice stays within 300
+  characters.
+- **Check.** A publish notice, a skip notice, and a fail notice end with the
+  D25 fields. The skip notice names `new=no` when no new model exists.
+
 ## Non-functional requirements
 
 - **NFR-1 No other model call.** The job sends a model call for the day's
@@ -787,16 +921,18 @@ The amended rule (D20):
   existing harness modules. The tests use the existing Vitest.
 - **NFR-6 Test seams.** `cron-daily.sh` reads `BENCH_RUNS_ROOT`,
   `BENCH_PRICING_PATH`, `BENCH_DAILY_DIR`, `BENCH_DAILY_DATE`,
+  `BENCH_DAILY_LOCAL_DATE`, `BENCH_DAILY_BOARD`,
   `BENCH_DAILY_CATALOG`, `BENCH_DAILY_SERVED`, `BENCH_DAILY_PUBLISH`,
   `BENCH_DAILY_LOCK`, `BENCH_DAILY_QUOTA_CMD` (the guard source),
   `BENCH_DAILY_BATCH` (the batch command, default `harness/batch.sh`),
-  `BENCH_DAILY_SELECT`, and `BENCH_DAILY_POST` (`0` skips the Playwright
-  check, the two marker blocks, and the five post-batch steps).
-  Each seam (`BENCH_DAILY_QUOTA_CMD`, `BENCH_DAILY_BATCH`, and
-  `BENCH_DAILY_SELECT`) is the path of one executable, with no arguments.
-  `BENCH_DAILY_RUNNER` is retired: the job runs the batches itself (D12).
-  The tests use the seams. Without them, the job uses the real paths and
-  commands.
+  `BENCH_DAILY_SELECT`, `BENCH_DAILY_HEAVY`, and `BENCH_DAILY_POST` (`0`
+  skips the Playwright check, the two marker blocks, and the five post-batch
+  steps). Each command seam (`BENCH_DAILY_QUOTA_CMD`, `BENCH_DAILY_BATCH`,
+  `BENCH_DAILY_SELECT`, and `BENCH_DAILY_HEAVY`) is the path of one
+  executable, with no arguments. `BENCH_DAILY_BOARD` is a file path.
+  `BENCH_DAILY_LOCAL_DATE` is a date value. `BENCH_DAILY_RUNNER` is retired:
+  the job runs the batches itself (D12). The tests use the seams. Without
+  them, the job uses the real paths and commands.
 
 ## Owner decisions
 
@@ -863,6 +999,23 @@ The amended rule (D20):
     The amended rule of D20: the real transport runs only under the timer
     unit or under the live flag. A hand run sends a HAND line. A test sends
     nothing (FR-16, D20).
+16. **AC-16** The timer fires every night at 01:00 local time. Its
+    Description and the script header say every night (FR-17, D21).
+17. **AC-17** The job prints CATCHUP on every night. A caught-up
+    non-run night reaches REST before the catalog fetch. It exits 0 and
+    sends no notice. A run day always runs. A night below the due count
+    runs (FR-18, D22).
+18. **AC-18** The job always passes `--board` to both pickers. The picker
+    groups are 1, 2, and 3. The group order comes first. The labeled lines
+    match. Output without the flag stays byte-for-byte unchanged
+    (FR-19, D23).
+19. **AC-19** Every live track batch runs through heavy-run with the D24
+    environment. Under `VITEST`, the job skips heavy-run. A missing script
+    fails before the first batch. A dry run never calls heavy-run
+    (FR-20, D24).
+20. **AC-20** PUBLISH, SKIP, and FAIL notices carry the D25 fields. The
+    board length comes from the second board read. The notice stays within
+    300 characters (FR-21, D25).
 
 ## Out of scope
 
