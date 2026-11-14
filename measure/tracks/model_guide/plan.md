@@ -260,6 +260,16 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `real-work.test.ts` exit 0, and `leak-guard.test.ts` exit 0, each run
     alone with `--maxWorkers=1 --reporter=dot`. The role log is
     `measure/runs/model_guide/green-p1-43384ea.log`.
+- [x] d632534 1.12 Red. Review fixes, round 2 (F12 to F20, F23).
+  - Files: `harness/model-guide-tests/preview-gate.test.ts`.
+  - Evidence: red-1.12.txt holds the failed test names and exit 1.
+- [~] 1.13 Green. Review fixes, round 2. Fix F12 to F21 and F23 in
+  `harness/model-guide/`, and re-run the task 1.9 preview at the final HEAD.
+  Touch no test file.
+  - Verify: run `model-guide-tests/preview-gate.test.ts`,
+    `model-guide-tests/input-check.test.ts`, and
+    `model-guide-tests/real-work.test.ts` with one worker and the reporter set
+    to dot.
 
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
