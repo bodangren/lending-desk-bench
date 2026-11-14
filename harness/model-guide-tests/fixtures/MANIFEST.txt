@@ -1,0 +1,4 @@
+sha256: d4076566acc458c3715855a04d53956d03d4d764a38c20bf5f3ea0248302f20f
+size: 24068
+source-commit: none (synthetic fixture, 2026-11-14)
+row-counts: weekly_rows 55, all_time_rows 11

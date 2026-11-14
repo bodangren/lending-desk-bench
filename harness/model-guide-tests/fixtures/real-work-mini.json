@@ -1,0 +1,1254 @@
+{
+  "schema": "real-work-outcomes/1",
+  "generated_on": "2026-11-14",
+  "definitions": {
+    "pass": "result pass",
+    "fail": "result fail",
+    "error": "result error, timeout, or abandoned",
+    "no_result": "result not recorded",
+    "blocking_findings": "findings with severity blocking",
+    "week": "ISO week of the run start time, UTC",
+    "runs": "run rows; a pick row paired with a collected row of the same route counts once"
+  },
+  "coverage": {
+    "runs": 285,
+    "runs_with_known_route": 162,
+    "share_known_route": 0.568,
+    "runs_with_result": 240,
+    "share_with_result": 0.842,
+    "paired_duplicates_left_out": 4,
+    "first_run_date": "2026-09-28",
+    "last_run_date": "2026-11-08"
+  },
+  "weekly": [
+    {
+      "route": "x/m#high",
+      "role": "red",
+      "week": "2026-W40",
+      "runs": 3,
+      "pass": 1,
+      "fail": 2,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "red",
+      "week": "2026-W41",
+      "runs": 2,
+      "pass": 1,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "red",
+      "week": "2026-W42",
+      "runs": 4,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "red",
+      "week": "2026-W43",
+      "runs": 3,
+      "pass": 2,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "red",
+      "week": "2026-W44",
+      "runs": 4,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "red",
+      "week": "2026-W45",
+      "runs": 3,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "red",
+      "week": "2026-W40",
+      "runs": 2,
+      "pass": 1,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "red",
+      "week": "2026-W41",
+      "runs": 3,
+      "pass": 1,
+      "fail": 2,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "red",
+      "week": "2026-W42",
+      "runs": 2,
+      "pass": 1,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "red",
+      "week": "2026-W43",
+      "runs": 2,
+      "pass": 1,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "red",
+      "week": "2026-W44",
+      "runs": 3,
+      "pass": 2,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m",
+      "role": "red",
+      "week": "2026-W40",
+      "runs": 1,
+      "pass": 1,
+      "fail": 0,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m",
+      "role": "red",
+      "week": "2026-W41",
+      "runs": 1,
+      "pass": 0,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m",
+      "role": "red",
+      "week": "2026-W42",
+      "runs": 2,
+      "pass": 1,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m",
+      "role": "red",
+      "week": "2026-W43",
+      "runs": 2,
+      "pass": 0,
+      "fail": 1,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m",
+      "role": "red",
+      "week": "2026-W44",
+      "runs": 1,
+      "pass": 0,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "green",
+      "week": "2026-W40",
+      "runs": 6,
+      "pass": 4,
+      "fail": 2,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "green",
+      "week": "2026-W41",
+      "runs": 8,
+      "pass": 4,
+      "fail": 4,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "green",
+      "week": "2026-W42",
+      "runs": 6,
+      "pass": 4,
+      "fail": 2,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "green",
+      "week": "2026-W43",
+      "runs": 7,
+      "pass": 4,
+      "fail": 3,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "green",
+      "week": "2026-W44",
+      "runs": 8,
+      "pass": 4,
+      "fail": 2,
+      "error": 0,
+      "no_result": 2,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "green",
+      "week": "2026-W45",
+      "runs": 9,
+      "pass": 4,
+      "fail": 3,
+      "error": 0,
+      "no_result": 2,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "z/m",
+      "role": "coder",
+      "week": "2026-W40",
+      "runs": 3,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "z/m",
+      "role": "coder",
+      "week": "2026-W41",
+      "runs": 3,
+      "pass": 3,
+      "fail": 0,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "z/m",
+      "role": "coder",
+      "week": "2026-W42",
+      "runs": 3,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "z/m",
+      "role": "coder",
+      "week": "2026-W43",
+      "runs": 3,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "z/m",
+      "role": "coder",
+      "week": "2026-W44",
+      "runs": 5,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 2,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "z/m",
+      "role": "coder",
+      "week": "2026-W45",
+      "runs": 1,
+      "pass": 0,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "w/m",
+      "role": "small",
+      "week": "2026-W42",
+      "runs": 3,
+      "pass": 3,
+      "fail": 0,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "w/m",
+      "role": "small",
+      "week": "2026-W43",
+      "runs": 3,
+      "pass": 3,
+      "fail": 0,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "w/m",
+      "role": "small",
+      "week": "2026-W44",
+      "runs": 4,
+      "pass": 2,
+      "fail": 0,
+      "error": 0,
+      "no_result": 2,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "w/m",
+      "role": "small",
+      "week": "2026-W45",
+      "runs": 2,
+      "pass": 1,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "review-a",
+      "week": "2026-W40",
+      "runs": 3,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "review-a",
+      "week": "2026-W41",
+      "runs": 4,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "review-a",
+      "week": "2026-W42",
+      "runs": 3,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "review-a",
+      "week": "2026-W43",
+      "runs": 4,
+      "pass": 2,
+      "fail": 0,
+      "error": 1,
+      "no_result": 1,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "review-a",
+      "week": "2026-W44",
+      "runs": 3,
+      "pass": 2,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "review-a",
+      "week": "2026-W45",
+      "runs": 3,
+      "pass": 2,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "review-a",
+      "week": "2026-W42",
+      "runs": 3,
+      "pass": 3,
+      "fail": 0,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "review-a",
+      "week": "2026-W43",
+      "runs": 5,
+      "pass": 2,
+      "fail": 1,
+      "error": 1,
+      "no_result": 1,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "review-a",
+      "week": "2026-W44",
+      "runs": 2,
+      "pass": 1,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "week": "2026-W40",
+      "runs": 4,
+      "pass": 3,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "week": "2026-W41",
+      "runs": 4,
+      "pass": 3,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "week": "2026-W42",
+      "runs": 4,
+      "pass": 3,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "week": "2026-W43",
+      "runs": 4,
+      "pass": 2,
+      "fail": 1,
+      "error": 1,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "week": "2026-W44",
+      "runs": 3,
+      "pass": 2,
+      "fail": 1,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "week": "2026-W45",
+      "runs": 1,
+      "pass": 1,
+      "fail": 0,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "unknown",
+      "role": "record",
+      "week": "2026-W40",
+      "runs": 21,
+      "pass": 10,
+      "fail": 5,
+      "error": 2,
+      "no_result": 4,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "unknown",
+      "role": "record",
+      "week": "2026-W41",
+      "runs": 20,
+      "pass": 10,
+      "fail": 5,
+      "error": 2,
+      "no_result": 3,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "unknown",
+      "role": "record",
+      "week": "2026-W42",
+      "runs": 20,
+      "pass": 10,
+      "fail": 5,
+      "error": 1,
+      "no_result": 4,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "unknown",
+      "role": "record",
+      "week": "2026-W43",
+      "runs": 20,
+      "pass": 10,
+      "fail": 5,
+      "error": 2,
+      "no_result": 3,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "unknown",
+      "role": "record",
+      "week": "2026-W44",
+      "runs": 19,
+      "pass": 10,
+      "fail": 5,
+      "error": 1,
+      "no_result": 3,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "unknown",
+      "role": "record",
+      "week": "2026-W45",
+      "runs": 20,
+      "pass": 10,
+      "fail": 5,
+      "error": 2,
+      "no_result": 3,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "other",
+      "role": "record",
+      "week": "2026-W44",
+      "runs": 1,
+      "pass": 1,
+      "fail": 0,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "other",
+      "role": "record",
+      "week": "2026-W45",
+      "runs": 2,
+      "pass": 0,
+      "fail": 1,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    }
+  ],
+  "all_time": [
+    {
+      "route": "x/m#high",
+      "role": "red",
+      "work_types": {
+        "app code": {
+          "runs": 10,
+          "pass": 8,
+          "fail": 2
+        },
+        "print books": {
+          "runs": 3,
+          "pass": 0,
+          "fail": 0
+        },
+        "tooling": {
+          "runs": 6,
+          "pass": 2,
+          "fail": 4
+        }
+      },
+      "runs": 19,
+      "pass": 10,
+      "fail": 6,
+      "error": 0,
+      "no_result": 3,
+      "blocking_findings": 1,
+      "ratings": {
+        "correctness": {
+          "mean": 4.8,
+          "n": 5
+        },
+        "other": {
+          "mean": 4.4,
+          "n": 5
+        }
+      },
+      "rater_checks": {
+        "n": 3,
+        "agreed": 2,
+        "agreement": 0.6667
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "red",
+      "work_types": {
+        "app code": {
+          "runs": 8,
+          "pass": 6,
+          "fail": 2
+        },
+        "print books": {
+          "runs": 2,
+          "pass": 0,
+          "fail": 0
+        },
+        "tooling": {
+          "runs": 2,
+          "pass": 0,
+          "fail": 2
+        }
+      },
+      "runs": 12,
+      "pass": 6,
+      "fail": 4,
+      "error": 0,
+      "no_result": 2,
+      "blocking_findings": 1,
+      "ratings": {
+        "correctness": {
+          "mean": 4.6,
+          "n": 5
+        }
+      },
+      "rater_checks": {
+        "n": 2,
+        "agreed": 2,
+        "agreement": 1.0
+      }
+    },
+    {
+      "route": "x/m",
+      "role": "red",
+      "work_types": {
+        "app code": {
+          "runs": 4,
+          "pass": 2,
+          "fail": 0
+        },
+        "print books": {
+          "runs": 1,
+          "pass": 0,
+          "fail": 0
+        },
+        "tooling": {
+          "runs": 2,
+          "pass": 0,
+          "fail": 2
+        }
+      },
+      "runs": 7,
+      "pass": 2,
+      "fail": 2,
+      "error": 0,
+      "no_result": 3,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "green",
+      "work_types": {
+        "app code": {
+          "runs": 12,
+          "pass": 8,
+          "fail": 2
+        },
+        "docs and ops": {
+          "runs": 12,
+          "pass": 9,
+          "fail": 1
+        },
+        "print books": {
+          "runs": 10,
+          "pass": 4,
+          "fail": 6
+        },
+        "tooling": {
+          "runs": 10,
+          "pass": 3,
+          "fail": 7
+        }
+      },
+      "runs": 44,
+      "pass": 24,
+      "fail": 16,
+      "error": 0,
+      "no_result": 4,
+      "blocking_findings": 0,
+      "ratings": {
+        "correctness": {
+          "mean": 3.8,
+          "n": 10
+        }
+      },
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "z/m",
+      "role": "coder",
+      "work_types": {
+        "app code": {
+          "runs": 12,
+          "pass": 6,
+          "fail": 4
+        },
+        "docs and ops": {
+          "runs": 6,
+          "pass": 5,
+          "fail": 0
+        }
+      },
+      "runs": 18,
+      "pass": 11,
+      "fail": 4,
+      "error": 0,
+      "no_result": 3,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "w/m",
+      "role": "small",
+      "work_types": {
+        "app code": {
+          "runs": 12,
+          "pass": 9,
+          "fail": 0
+        }
+      },
+      "runs": 12,
+      "pass": 9,
+      "fail": 0,
+      "error": 0,
+      "no_result": 3,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m#high",
+      "role": "review-a",
+      "work_types": {},
+      "runs": 20,
+      "pass": 12,
+      "fail": 3,
+      "error": 1,
+      "no_result": 4,
+      "blocking_findings": 6,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m[1m]#high",
+      "role": "review-a",
+      "work_types": {},
+      "runs": 10,
+      "pass": 6,
+      "fail": 1,
+      "error": 1,
+      "no_result": 2,
+      "blocking_findings": 3,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "work_types": {},
+      "runs": 20,
+      "pass": 14,
+      "fail": 5,
+      "error": 1,
+      "no_result": 0,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "unknown",
+      "role": "record",
+      "work_types": {},
+      "runs": 120,
+      "pass": 60,
+      "fail": 30,
+      "error": 10,
+      "no_result": 20,
+      "blocking_findings": 5,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "other",
+      "role": "record",
+      "work_types": {},
+      "runs": 3,
+      "pass": 1,
+      "fail": 1,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    }
+  ]
+}
