@@ -1211,18 +1211,29 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Evidence, Red 7.1e: the four CONTEST items of the first round are fixed in the Red tests and the oracle of `c890f1f`, and the D28 spec is `ceea302`. The D28 gate reads `MemAvailable` after the D9 lock and before the catalog fetch. It waits while the value stays at or under `BENCH_DAILY_MEM_START_MB` (default 8000) and skips the day with the pinned line. A failed read fails the job with the pinned line.
   - Evidence, test files run one at a time with `--maxWorkers=1` from `harness/`, every one exit 0: `schedule-tests/daily-catchup.test.ts` (21 passed); `schedule-tests/daily-pick-board.test.ts` (13 passed); `schedule-tests/go-pick-list.test.ts` (1 passed); `schedule-tests/daily-heavy-steps.test.ts` (7 passed); `schedule-tests/daily-publish-notice.test.ts` (16 passed); `schedule-tests/daily-schedule.test.ts` (109 passed); `schedule-tests/daily-unit-gate.test.ts` (6 passed); `schedule-tests/notice-seam-guard.test.ts` (5 passed); `tests/meta/go-cost.test.ts` (9 passed). The log is `measure/runs/daily_model_schedule/green-p7-fbb5def.log`.
   - Note: `harness/node_modules` is an untracked symlink to the main checkout. It is never staged.
-- [x] 7.3 Checker review of D21 to D25, task 7.1, and task 7.2. The checker family must differ from MiniMax, Anthropic, and Kimi. The role writes `measure/runs/daily_model_schedule/check-7.3.json`.
+- [x] 102289e 7.3 Checker review of D21 to D25, task 7.1, and task 7.2. The checker family must differ from MiniMax, Anthropic, and Kimi. The role writes `measure/runs/daily_model_schedule/check-7.3.json`.
   - Verify: the file shows `status: pass` and no blocking finding.
   - Lane: light lane. One independent checker.
   - Evidence: check-7.3.json status pass at 9332c91 (route opencode/glm-5.3-flash-free#high, round 3), no blocking finding; K1-1 fixed by 7.1f; K1-2 to K1-5 are nonblocking Nits.
-- [ ] 7.4 Night suites behind heavy-run. The role runs the relevant schedule suites through `heavy-run.sh` during the night window. The logs sit under `measure/runs/daily_model_schedule/`.
+- [x] 102289e 7.4 Night suites behind heavy-run. The role runs the relevant schedule suites through `heavy-run.sh` during the night window. The logs sit under `measure/runs/daily_model_schedule/`.
   - Verify: each suite log holds a `Tests` line with no failed test.
   - Verify: the process check holds no `fake-openc` or `cron-daily` process.
   - Lane: light lane. One heavy run.
-- [ ] 7.5 Push and timer install by a Build session before Mon 2026-11-16 01:00. The Build session pushes the merged branch and installs the updated `lending-desk-daily.timer` as a systemd user unit. It reloads systemd and enables the nightly timer.
+  - Evidence: the suites ran at p7-green `102289e` on the night of 2026-11-15 through `heavy-run.sh` with `HEAVY_MIN_AVAIL_MB=1500` and `HEAVY_PRIORITY=p2`.
+  - Evidence: the schedule suite exited 0 with `Test Files  19 passed (19)` and `Tests  223 passed (223)`. The log is `/home/daniebo/Desktop/lending-desk-bench-p7green/measure/runs/daily_model_schedule/night-7.4-schedule.log`.
+  - Evidence: the go-cost suite exited 0 with `Test Files  1 passed (1)` and `Tests  9 passed (9)`. The log is `/home/daniebo/Desktop/lending-desk-bench-p7green/measure/runs/daily_model_schedule/night-7.4-go-cost.log`.
+  - Evidence: the process check showed only the real catch-up unit (pid 3942168, `cron-daily.sh` of `lending-desk-catchup-glm-5-3-flash`). It showed no test leftover.
+  - Deviation: the Build session ran on claude-code/claude-opus-5-5[1m] because the dispatch named no model. measure-guard denies `[~]` in Phase 7 while Phase 6 holds an open task, so the task went from `[ ]` to `[x]`, as task 7.1d did.
+- [x] 6452f29 7.5 Push and timer install by a Build session before Mon 2026-11-16 01:00. The Build session pushes the merged branch and installs the updated `lending-desk-daily.timer` as a systemd user unit. It reloads systemd and enables the nightly timer.
   - Verify: `systemctl --user is-enabled lending-desk-daily.timer` prints `enabled`.
   - Verify: `systemctl --user is-active lending-desk-daily.timer` prints `active`.
   - Verify: the installed timer holds `OnCalendar=*-*-* 01:00:00`.
+  - Evidence: the merge commit is `6452f29` with the message "Merge branch 'p7-green': daily_model_schedule Phase 7 (D21-D28)". The merge took both parents: `58811b2` on main and `102289e` on p7-green. No file under `docs/` changed.
+  - Evidence: the push was a fast-forward, `119b06d..6452f29`, 15 commits, no force.
+  - Evidence: `bash -n` exits 0 for all 28 files of `harness/*.sh` and for `harness/model-guide/preview.sh` and `harness/model-guide/update.sh`.
+  - Evidence: `cp harness/systemd/lending-desk-daily.timer harness/systemd/lending-desk-daily.service ~/.config/systemd/user/` copied the merged units. `systemctl --user daemon-reload` exits 0, `enable` exits 0, and `restart` exits 0.
+  - Evidence: `is-enabled` prints `enabled`, `is-active` prints `active`, and `show -p TimersCalendar` prints `OnCalendar=*-*-* 01:00:00 ; next_elapse=Mon 2026-11-16 01:00:00 +07`. `list-timers` prints the next run Mon 2026-11-16 01:00:00 +07. The service unit stays `inactive`.
+  - Deviation: the timer install happened at 00:48, after the catch-up unit ended at 00:19 (the D9 lock), and before the 01:00 deadline.
   - Lane: light lane. One Build session.
 - [ ] 7.6 Record the first catch-up night and the PM line. The role records the CATCHUP line, the board and due counts, the picked group, the heavy-run result, the notice result, and the PM line. The role also records the public board change.
   - Verify: the first catch-up night adds one new model to the leaderboard.
