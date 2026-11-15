@@ -1373,12 +1373,12 @@ describe("O1 conditions", () => {
     assertSkip(w, r, "monthly value -1 is below 0", "6.5.28");
     expect(record(w).go_guard_stop, `6.5.28: missing ${D12Q} go_guard_stop`).toBe("monthly value -1 is below 0");
   });
-  caseOf("6.5.29 monthly above 95: the skip line names the monthly window", w => {
+  caseOf("6.5.29 monthly above 100: the skip line names the monthly window", w => {
     jobSetup(w);
-    const r = guardJob(w, [{ value: 10, monthly: 96 }], "quota-monthly-96.cjs");
-    assertSkip(w, r, "monthly used 96 percent", "6.5.29");
+    const r = guardJob(w, [{ value: 10, monthly: 100.0001 }], "quota-monthly-1000001.cjs");
+    assertSkip(w, r, "monthly used 100.0001 percent", "6.5.29");
     expect(record(w).run_ids, `6.5.29: missing ${D12Q} empty run_ids`).toEqual([]);
-    expect(record(w).go_guard_stop, `6.5.29: missing ${D12Q} go_guard_stop`).toBe("monthly used 96 percent");
+    expect(record(w).go_guard_stop, `6.5.29: missing ${D12Q} go_guard_stop`).toBe("monthly used 100.0001 percent");
   });
   caseOf("6.5.30 clean-read line: the weekly value comes first and the monthly value second", w => {
     jobSetup(w);
@@ -1418,10 +1418,10 @@ describe("O1 conditions", () => {
       expect(lines(r, "DAILY GO-GUARD "), `6.5.31 ${item.label}: missing ${D12Q} monthly=80`).toEqual(Array(4).fill("DAILY GO-GUARD weekly=10 monthly=80"));
     });
   });
-  caseOf("6.5.32 monthly 80.0001: the day continues under the monthly limit of 95", w => {
+  caseOf("6.5.32 monthly 80.0001: the day continues under the monthly limit of 100", w => {
     jobSetup(w);
     const r = guardJob(w, [{ value: 10, monthly: 80.0001 }], "quota-monthly-800001.cjs");
-    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.32: ${D12Q} must not stop below 95`).toEqual([]);
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.32: ${D12Q} must not stop below 100`).toEqual([]);
     expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.32: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
     expect(record(w).go_guard_stop, `6.5.32: ${D12Q} go_guard_stop null`).toBe(null);
   });
@@ -1437,20 +1437,20 @@ describe("O1 conditions", () => {
   });
   caseOf("6.5.34 monthly stop before batch 2: the record keeps the build run ids", w => {
     jobSetup(w);
-    const r = guardJob(w, [{ value: 10, monthly: 10 }, { value: 10, monthly: 96 }], "quota-monthly-b2.cjs");
+    const r = guardJob(w, [{ value: 10, monthly: 10 }, { value: 10, monthly: 100.0001 }], "quota-monthly-b2.cjs");
     expect(lines(r, "DAILY GO-GUARD "), `6.5.34: missing ${D12Q} clean read`).toEqual(["DAILY GO-GUARD weekly=10 monthly=10"]);
-    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.34: missing ${D12Q} monthly stop`).toEqual(["DAILY SKIP go-guard: monthly used 96 percent"]);
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.34: missing ${D12Q} monthly stop`).toEqual(["DAILY SKIP go-guard: monthly used 100.0001 percent"]);
     expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.34: missing ${D12B} build batch only`).toEqual(["build"]);
     expect(r.status, `6.5.34: missing ${D12Q} exit 3`).toBe(3);
-    expect(record(w).go_guard_stop, `6.5.34: missing ${D12Q} go_guard_stop`).toBe("monthly used 96 percent");
+    expect(record(w).go_guard_stop, `6.5.34: missing ${D12Q} go_guard_stop`).toBe("monthly used 100.0001 percent");
     expect(record(w).run_ids.slice().sort(), `6.5.34: missing ${D12B} build run ids`).toEqual(trackIds("build").slice().sort());
     expect(readdirSync(w.runs).some(name => name.includes("-bugfix-") || name.includes("-tests-") || name.includes("-change-")), `6.5.34: a later ${D12B} call must not run`).toBe(false);
   });
   caseOf("6.5.35 dry-run monthly stop: planned=0 and no batch dry run", w => {
     jobSetup(w);
-    const quota = writeQuota(w, "quota-monthly-dry-stop.cjs", [{ value: 10, monthly: 96 }]);
+    const quota = writeQuota(w, "quota-monthly-dry-stop.cjs", [{ value: 10, monthly: 100.0001 }]);
     const r = job(w, ["--dry-run"], { BENCH_DAILY_QUOTA_CMD: quota });
-    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.35: missing ${D12Q} monthly stop`).toEqual(["DAILY SKIP go-guard: monthly used 96 percent"]);
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.35: missing ${D12Q} monthly stop`).toEqual(["DAILY SKIP go-guard: monthly used 100.0001 percent"]);
     expect(lines(r, "DAILY GO-GUARD "), `6.5.35: a stop must not print DAILY GO-GUARD`).toEqual([]);
     expect(lines(r, "DAILY DRY-RUN "), `6.5.35: missing ${D12Q} planned=0`).toEqual(["DAILY DRY-RUN planned=0"]);
     expect(r.status, `6.5.35: missing ${D12Q} exit 0`).toBe(0);
@@ -1472,17 +1472,17 @@ describe("O1 conditions", () => {
       expect(record(w).go_guard_stop, `6.5.36 ${item.label}: missing ${D12Q} weekly reason`).toBe(item.reason);
     });
   });
-  caseOf("6.5.37 monthly 95: the day continues", w => {
+  caseOf("6.5.37 monthly 99.9: the day continues", w => {
     jobSetup(w);
-    const r = guardJob(w, [{ value: 10, monthly: 95 }], "quota-monthly-95.cjs");
-    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.37: ${D12Q} must not stop at 95`).toEqual([]);
+    const r = guardJob(w, [{ value: 10, monthly: 99.9 }], "quota-monthly-999.cjs");
+    expect(lines(r, "DAILY SKIP go-guard:"), `6.5.37: ${D12Q} must not stop at 99.9`).toEqual([]);
     expect(orderLog(w).filter(row => row.kind === "batch").map(row => row.track), `6.5.37: missing ${D12B}`).toEqual(["build", "bugfix", "tests", "change"]);
     expect(record(w).go_guard_stop, `6.5.37: ${D12Q} go_guard_stop null`).toBe(null);
   });
-  caseOf("6.5.38 monthly 95.0001: the skip line keeps the full number", w => {
+  caseOf("6.5.38 monthly 100.0001: the skip line keeps the full number", w => {
     jobSetup(w);
-    const r = guardJob(w, [{ value: 10, monthly: 95.0001 }], "quota-monthly-950001.cjs");
-    assertSkip(w, r, "monthly used 95.0001 percent", "6.5.38");
+    const r = guardJob(w, [{ value: 10, monthly: 100.0001 }], "quota-monthly-1000001b.cjs");
+    assertSkip(w, r, "monthly used 100.0001 percent", "6.5.38");
   });
 });
 
@@ -1751,9 +1751,9 @@ describe("adversarial 4b", () => {
       { label: "monthly 0", weekly: "10", monthly: "0", stop: null, line: /^DAILY GO-GUARD weekly=10 monthly=0$/ },
       { label: "monthly -0", weekly: "10", monthly: "-0", stop: null, line: /^DAILY GO-GUARD weekly=10 monthly=-?0$/ },
       { label: "monthly 8e1", weekly: "10", monthly: "8e1", stop: null, line: /^DAILY GO-GUARD weekly=10 monthly=80$/ },
-      { label: "monthly 95.00000000000001", weekly: "10", monthly: "95.00000000000001", stop: "monthly used 95.00000000000001 percent" },
-      { label: "monthly 95.00001", weekly: "10", monthly: "95.00001", stop: "monthly used 95.00001 percent" },
-      { label: "monthly 9.51e1", weekly: "10", monthly: "9.51e1", stop: "monthly used 95.1 percent" },
+      { label: "monthly 100.00000000000001", weekly: "10", monthly: "100.00000000000001", stop: "monthly used 100.00000000000001 percent" },
+      { label: "monthly 100.00001", weekly: "10", monthly: "100.00001", stop: "monthly used 100.00001 percent" },
+      { label: "monthly 100.0001", weekly: "10", monthly: "100.0001", stop: "monthly used 100.0001 percent" },
       { label: "monthly -0.00001", weekly: "10", monthly: "-0.00001", stop: "monthly value -0.00001 is below 0" },
       { label: "monthly -1e-7", weekly: "10", monthly: "-1e-7", stop: "monthly value -1e-7 is below 0" },
       { label: "monthly 1e21", weekly: "10", monthly: "1e21", stop: "monthly used 1e+21 percent" },

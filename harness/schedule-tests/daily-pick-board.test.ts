@@ -1,16 +1,16 @@
-// The board-aware pick order of Phase 7 (spec D23) and the high-use rule of
-// task 7.1c (spec D26).
+// The board-aware pick order of Phase 7 (spec D23) and the pick list of
+// task 7.1d (spec D26, rewritten from the high-use rule of task 7.1c).
 //
 // The cases use synthetic files in a temporary root. They invoke the
 // TypeScript picker and the Python oracle directly. The oracle is the
 // independent copy of the selection rule. It takes the board file as its 7th
-// positional argument. No case starts a model, a job, a network request, or a
-// write outside the temporary root.
+// positional argument and the exclude list of D26 as its 8th. No case starts
+// a model, a job, a network request, or a write outside the temporary root.
 //
-// D26 interface: the price table field `high_usage`, the rule 5 exclusions
-// `muse-spark-1.2-contributor`, `muse-spark-1.3-contributor`, and
-// `deepseek-v4-flash-vision-exp`. The pick never holds a model outside the
-// high-use set.
+// D26 interface: the top-level `pick_min_requests_per_month`,
+// `requests_source`, `requests_read`; per model `requests_per_month`,
+// `requests_unlimited`, `page_order`, and `superseded_by`. A model at or
+// under the limit or superseded is never picked.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -23,7 +23,7 @@ const REAL_PRICING = join(HARNESS, "go-pricing.json");
 const TMP_ROOT = "/tmp/opencode";
 const DATE = "2026-11-16";
 const D23 = "D23 board-aware pick order";
-const D26 = "D26 high-use rule";
+const D26 = "D26 pick list";
 
 let FAILED = 0;
 let PASS_COUNT = 0;
@@ -69,25 +69,51 @@ function fixture(): Fixture {
   const board = join(root, "benchmark.json");
   for (const dir of [home, runs, days]) mkdirSync(dir, { recursive: true });
 
-  writePricing({ root, pricing } as Fixture, ["fresh-model", "history-model", "ranked-model"]);
+  writePricing({ root, home, pricing, catalog, served, runs, days, board } as Fixture,
+    ["fresh-model", "history-model", "ranked-model"]);
   writeFileSync(catalog, JSON.stringify({ live: ["fresh-model", "history-model", "ranked-model"] }));
   writeFileSync(served, "opencode-go/fresh-model\nopencode-go/history-model\nopencode-go/ranked-model\n");
-  writeBoard({ root, board } as Fixture, ["ranked-model"], ["history-model"]);
+  writeBoard({ root, home, pricing, catalog, served, runs, days, board } as Fixture,
+    ["ranked-model"], ["history-model"]);
   return { root, home, pricing, catalog, served, runs, days, board };
 }
 
 function writePricing(f: Fixture, ids: string[]): void {
-  const requests: Record<string, number> = { "fresh-model": 100, "history-model": 200, "ranked-model": 300,
-    "history-old": 50, "history-new": 10 };
+  const requests: Record<string, number> = { "fresh-model": 100, "history-model": 200, "ranked-model": 300 };
   const models: Record<string, unknown> = {};
-  for (const id of ids) {
-    models[id] = { name: id, api: "openai-completions", high_usage: true, batch: true,
-      requests_per_month: requests[id] ?? 1, monthly_usage_usd: 15,
+  ids.forEach((id, index) => {
+    models[id] = { name: id, api: "openai-completions", batch: true,
+      requests_per_month: requests[id] ?? 1, page_order: index + 1, monthly_usage_usd: 15,
       rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } };
+  });
+  writeFileSync(f.pricing, JSON.stringify({
+    schema: 1, source: "test", retrieved: "2026-11-15", provider: "opencode-go",
+    pick_min_requests_per_month: 1, requests_source: "https://opencode.ai/docs/console/go/",
+    requests_read: "2026-11-15", deepseek_rate: "off-peak", aliases: {},
+    apis: { "openai-completions": { baseUrl: "https://example.invalid" } }, models,
+  }));
+}
+
+// A price table in the D26 shape of task 7.1d. `rpm` is `requests_per_month`;
+// `unlimited` sets `requests_unlimited: true`; `order` is `page_order`;
+// `supersededBy` sets `superseded_by`.
+type ListSpec = { id: string; rpm?: number; unlimited?: boolean; order?: number; supersededBy?: string };
+
+function writeListPricing(f: Fixture, specs: ListSpec[]): void {
+  const models: Record<string, unknown> = {};
+  for (const spec of specs) {
+    const entry: Record<string, unknown> = { name: spec.id, api: "openai-completions", batch: true,
+      monthly_usage_usd: 15, rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } };
+    if (spec.unlimited) entry.requests_unlimited = true;
+    else entry.requests_per_month = spec.rpm ?? 0;
+    if (spec.order !== undefined) entry.page_order = spec.order;
+    if (spec.supersededBy) entry.superseded_by = spec.supersededBy;
+    models[spec.id] = entry;
   }
   writeFileSync(f.pricing, JSON.stringify({
-    schema: 1, source: "test", retrieved: "2026-11-14", provider: "opencode-go",
-    high_usage_min_requests_per_month: 1, deepseek_rate: "off-peak", aliases: {},
+    schema: 1, source: "test", retrieved: "2026-11-15", provider: "opencode-go",
+    pick_min_requests_per_month: 10000, requests_source: "https://opencode.ai/docs/console/go/",
+    requests_read: "2026-11-15", deepseek_rate: "off-peak", aliases: {},
     apis: { "openai-completions": { baseUrl: "https://example.invalid" } }, models,
   }));
 }
@@ -100,24 +126,6 @@ function writeBoard(f: Fixture, ranked: string[], history: string[]): void {
   }, null, 2) + "\n");
 }
 
-type ModelSpec = { id: string; high: boolean; requests: number };
-
-// A price table where each model holds its own `high_usage` flag. The D26
-// filter reads that flag.
-function writeMixedPricing(f: Fixture, specs: ModelSpec[]): void {
-  const models: Record<string, unknown> = {};
-  for (const spec of specs) {
-    models[spec.id] = { name: spec.id, api: "openai-completions", high_usage: spec.high, batch: true,
-      requests_per_month: spec.requests, monthly_usage_usd: 15,
-      rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } };
-  }
-  writeFileSync(f.pricing, JSON.stringify({
-    schema: 1, source: "test", retrieved: "2026-11-15", provider: "opencode-go",
-    high_usage_min_requests_per_month: 7000, deepseek_rate: "off-peak", aliases: {},
-    apis: { "openai-completions": { baseUrl: "https://example.invalid" } }, models,
-  }));
-}
-
 function writeLive(f: Fixture, ids: string[]): void {
   writeFileSync(f.catalog, JSON.stringify({ live: ids }));
   writeFileSync(f.served, ids.map((id) => `opencode-go/${id}`).join("\n") + "\n");
@@ -127,21 +135,23 @@ function baseEnv(f: Fixture): Record<string, string> {
   return { PATH: `${dirname(process.execPath)}:/usr/bin:/bin`, HOME: f.home, TSX_DISABLE_CACHE: "1" };
 }
 
-function runTs(f: Fixture, board: string | null, pricing: string = f.pricing): PickResult {
+function runTs(f: Fixture, board: string | null, pricing: string = f.pricing, exclude: string[] = []): PickResult {
   const args = [
     join(HARNESS, "daily-pick.ts"), "--catalog", f.catalog, "--served", f.served,
     "--date", DATE, "--runs-root", f.runs, "--pricing", pricing, "--day-dir", f.days,
   ];
   if (board !== null) args.push("--board", board);
+  if (exclude.length) args.push("--exclude", exclude.join(","));
   const r = spawnSync(join(HARNESS, "node_modules/.bin/tsx"), args, {
     cwd: HARNESS, env: baseEnv(f), encoding: "utf8", timeout: 20_000, maxBuffer: 4 * 1024 * 1024,
   });
   return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "", error: r.error?.message ?? "" };
 }
 
-function runOracle(f: Fixture, board: string | null, pricing: string = f.pricing): PickResult {
+function runOracle(f: Fixture, board: string | null, pricing: string = f.pricing, exclude: string[] = []): PickResult {
   const args = [f.catalog, f.served, pricing, f.runs, f.days, DATE];
   if (board !== null) args.push(board);
+  if (exclude.length) args.push(exclude.join(","));
   const r = spawnSync("python3", ["-I", ORACLE, ...args], {
     cwd: ROOT, env: baseEnv(f), encoding: "utf8", timeout: 20_000, maxBuffer: 4 * 1024 * 1024,
   });
@@ -179,25 +189,25 @@ describe("daily pick board order", () => {
     );
   });
 
-  caseOf("P2 the TypeScript picker selects group 1 and marks it new", f => {
+  caseOf("P2 the TypeScript picker selects the first new model in the list order", f => {
     const result = runTs(f, f.board);
     expect(result.error, `${D23}: the TypeScript picker must run`).toBe("");
     expect(result.status, `${D23}: the TypeScript picker must accept --board\n${result.stderr}`).toBe(0);
     const output = JSON.parse(result.stdout) as { model: string; group: number; new: boolean };
-    expect(output.model, `${D23}: group 1 must come first`).toBe("fresh-model");
-    expect(output.group, `${D23}: the JSON must name group 1`).toBe(1);
-    expect(output.new, `${D23}: group 1 must be new`).toBe(true);
+    expect(output.model, `${D26}: the list order must pick the highest-count new model`).toBe("history-model");
+    expect(output.group, `${D26}: the JSON must name group 2`).toBe(2);
+    expect(output.new, `${D26}: a history model must be new`).toBe(true);
     expect(result.stderr, `${D23}: the DAILY_PICK line must end with the group fields`).toBe(
-      "DAILY_PICK date=2026-11-16 model=fresh-model reason=untested last_test=none candidates=3 eligible=3 untested=3 group=1 new=yes\n",
+      "DAILY_PICK date=2026-11-16 model=history-model reason=untested last_test=none candidates=3 eligible=2 untested=2 group=2 new=yes\n",
     );
   });
 
-  caseOf("P3 the Python oracle selects group 1 and marks it new", f => {
+  caseOf("P3 the Python oracle selects the first new model in the list order", f => {
     const result = runOracle(f, f.board);
     expect(result.error, `${D23}: measure/tracks/daily_model_schedule/pick-oracle.py must run`).toBe("");
     expect(result.status, `${D23}: the oracle must accept the board argument\n${result.stderr}`).toBe(0);
     expect(result.stdout, `${D23}: the oracle line must end with the group fields`).toBe(
-      "PICK_ORACLE date=2026-11-16 model=fresh-model reason=untested last_test=none candidates=3 eligible=3 untested=3 group=1 new=yes\n",
+      "PICK_ORACLE date=2026-11-16 model=history-model reason=untested last_test=none candidates=3 eligible=2 untested=2 group=2 new=yes\n",
     );
   });
 
@@ -213,145 +223,157 @@ describe("daily pick board order", () => {
     );
   });
 
-  caseOf("P5 group 2 wins before group 3 and remains new", f => {
-    writeFileSync(f.catalog, JSON.stringify({ live: ["history-model", "ranked-model"] }));
-    writeFileSync(f.served, "opencode-go/history-model\nopencode-go/ranked-model\n");
-    writeBoard(f, ["ranked-model"], ["history-model"]);
-    const ts = runTs(f, f.board);
-    const oracle = runOracle(f, f.board);
-    expect(ts.status, `${D23}: the TypeScript picker must accept the group 2 case\n${ts.stderr}`).toBe(0);
-    expect(oracle.status, `${D23}: the oracle must accept the group 2 case\n${oracle.stderr}`).toBe(0);
-    const output = JSON.parse(ts.stdout) as { model: string; group: number; new: boolean };
-    expect(output.model, `${D23}: group 2 must win before group 3`).toBe("history-model");
-    expect(output.group, `${D23}: the JSON must name group 2`).toBe(2);
-    expect(output.new, `${D23}: group 2 must remain new`).toBe(true);
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D23}: both lines must stay equal`)
-      .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
-  });
-
-  caseOf("P6 group 3 is selected only when groups 1 and 2 are empty", f => {
-    writeFileSync(f.catalog, JSON.stringify({ live: ["ranked-model"] }));
-    writeFileSync(f.served, "opencode-go/ranked-model\n");
+  caseOf("P5 a model on the board is never picked", f => {
+    writeListPricing(f, [
+      { id: "ranked-model", rpm: 999999, order: 1 },
+      { id: "fresh-model", rpm: 20000, order: 2 },
+    ]);
+    writeLive(f, ["ranked-model", "fresh-model"]);
     writeBoard(f, ["ranked-model"], []);
     const ts = runTs(f, f.board);
     const oracle = runOracle(f, f.board);
-    expect(ts.status, `${D23}: the TypeScript picker must accept the group 3 case\n${ts.stderr}`).toBe(0);
-    expect(oracle.status, `${D23}: the oracle must accept the group 3 case\n${oracle.stderr}`).toBe(0);
+    expect(ts.status, `${D26}: the TypeScript picker must accept the board case\n${ts.stderr}`).toBe(0);
+    expect(oracle.status, `${D26}: the oracle must accept the board case\n${oracle.stderr}`).toBe(0);
     const output = JSON.parse(ts.stdout) as { model: string; group: number; new: boolean };
-    expect(output.model, `${D23}: group 3 holds the ranked model`).toBe("ranked-model");
-    expect(output.group, `${D23}: the JSON must name group 3`).toBe(3);
-    expect(output.new, `${D23}: group 3 must not be new`).toBe(false);
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D23}: both lines must stay equal`)
-      .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
-  });
-
-  caseOf("P7 group 2 keeps the stalest rule", f => {
-    writePricing(f, ["history-old", "history-new", "ranked-model"]);
-    writeFileSync(f.catalog, JSON.stringify({ live: ["history-old", "history-new", "ranked-model"] }));
-    writeFileSync(f.served, "opencode-go/history-old\nopencode-go/history-new\nopencode-go/ranked-model\n");
-    writeBoard(f, ["ranked-model"], ["history-old", "history-new"]);
-    plantRun(f, "a-history-old-2026w45-r1", "history-old", "2026w45");
-    plantRun(f, "a-history-new-2026w46-r1", "history-new", "2026w46");
-    const ts = runTs(f, f.board);
-    const oracle = runOracle(f, f.board);
-    expect(ts.status, `${D23}: the TypeScript picker must accept the stalest case\n${ts.stderr}`).toBe(0);
-    expect(oracle.status, `${D23}: the oracle must accept the stalest case\n${oracle.stderr}`).toBe(0);
-    const output = JSON.parse(ts.stdout) as { model: string; group: number; new: boolean };
-    expect(output.model, `${D23}: group 2 must keep the stalest order`).toBe("history-old");
-    expect(output.group, `${D23}: the JSON must name group 2`).toBe(2);
-    expect(output.new, `${D23}: group 2 must remain new`).toBe(true);
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D23}: both lines must stay equal`)
-      .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
-  });
-
-  caseOf("Q1 a model outside the high-use set is never picked", f => {
-    writeMixedPricing(f, [
-      { id: "high-model", high: true, requests: 300 },
-      { id: "low-model", high: false, requests: 900 },
-    ]);
-    writeLive(f, ["high-model", "low-model"]);
-    const ts = runTs(f, null);
-    expect(ts.error, `${D26}: the TypeScript picker must run`).toBe("");
-    expect(ts.status, `${D26}: the TypeScript picker must keep its exit code\n${ts.stderr}`).toBe(0);
-    const output = JSON.parse(ts.stdout) as { model: string };
-    expect(output.model, `${D26}: the model with the most requests outside the high-use set must never be picked`)
-      .toBe("high-model");
-    const oracle = runOracle(f, null);
-    expect(oracle.status, `${D26}: the oracle must keep its exit code\n${oracle.stderr}`).toBe(0);
-    expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must pick the high-use model`)
-      .toContain("model=high-model");
+    expect(output.model, `${D26}: a board model must never be picked`).toBe("fresh-model");
+    expect(output.group, `${D26}: the JSON must name group 1`).toBe(1);
+    expect(output.new, `${D26}: group 1 must be new`).toBe(true);
     expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
       .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
   });
 
-  caseOf("Q2 a high-use group 1 model comes first", f => {
-    writeMixedPricing(f, [
-      { id: "g1-model", high: true, requests: 100 },
-      { id: "g2-model", high: true, requests: 500 },
-      { id: "g3-model", high: true, requests: 900 },
-    ]);
-    writeLive(f, ["g1-model", "g2-model", "g3-model"]);
-    writeBoard(f, ["g3-model"], ["g2-model"]);
+  caseOf("P6 no new model gives exit 3", f => {
+    writeListPricing(f, [{ id: "ranked-model", rpm: 999999, order: 1 }]);
+    writeLive(f, ["ranked-model"]);
+    writeBoard(f, ["ranked-model"], []);
     const ts = runTs(f, f.board);
-    expect(ts.error, `${D26}: the TypeScript picker must run`).toBe("");
-    expect(ts.status, `${D26}: the TypeScript picker must accept --board\n${ts.stderr}`).toBe(0);
-    const output = JSON.parse(ts.stdout) as { model: string; group: number; new: boolean };
-    expect(output.model, `${D26}: the high-use group 1 model must come first`).toBe("g1-model");
-    expect(output.group, `${D26}: the JSON must name group 1`).toBe(1);
-    expect(output.new, `${D26}: group 1 must be new`).toBe(true);
     const oracle = runOracle(f, f.board);
-    expect(oracle.status, `${D26}: the oracle must accept the board argument\n${oracle.stderr}`).toBe(0);
-    expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must pick the same model`)
-      .toContain("model=g1-model group=1 new=yes");
+    expect(ts.status, `${D26}: a night with no new model must exit 3\n${ts.stderr}`).toBe(3);
+    expect(oracle.status, `${D26}: the oracle must exit 3\n${oracle.stderr}`).toBe(3);
+    const output = JSON.parse(ts.stdout) as { model: string | null };
+    expect(output.model, `${D26}: the output must name no model`).toBeNull();
+    expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must name no model`).toContain("model=none");
   });
 
-  caseOf("Q3 kimi-k2.7-code is never picked", f => {
-    writeLive(f, ["kimi-k2.7-code"]);
+  caseOf("P7 a history model counts as new", f => {
+    writeListPricing(f, [
+      { id: "history-model", rpm: 40000, order: 1 },
+      { id: "ranked-model", rpm: 999999, order: 2 },
+    ]);
+    writeLive(f, ["history-model", "ranked-model"]);
+    writeBoard(f, ["ranked-model"], ["history-model"]);
+    const ts = runTs(f, f.board);
+    const oracle = runOracle(f, f.board);
+    expect(ts.status, `${D26}: the TypeScript picker must accept the history case\n${ts.stderr}`).toBe(0);
+    expect(oracle.status, `${D26}: the oracle must accept the history case\n${oracle.stderr}`).toBe(0);
+    const output = JSON.parse(ts.stdout) as { model: string; group: number; new: boolean };
+    expect(output.model, `${D26}: a history model must be picked`).toBe("history-model");
+    expect(output.group, `${D26}: the JSON must name group 2`).toBe(2);
+    expect(output.new, `${D26}: a history model must be new`).toBe(true);
+    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+      .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
+  });
+
+  caseOf("Q1 a model at or under 10,000 requests is never picked", f => {
+    writeListPricing(f, [
+      { id: "at-limit-model", rpm: 10000, order: 1 },
+      { id: "under-limit-model", rpm: 5000, order: 2 },
+    ]);
+    writeLive(f, ["at-limit-model", "under-limit-model"]);
+    const ts = runTs(f, null);
+    const oracle = runOracle(f, null);
+    expect(ts.status, `${D26}: a night with no on-list model must exit 3\n${ts.stderr}`).toBe(3);
+    expect(oracle.status, `${D26}: the oracle must exit 3\n${oracle.stderr}`).toBe(3);
+    const output = JSON.parse(ts.stdout) as { model: string | null };
+    expect(output.model, `${D26}: a model at or under the limit must never be picked`).toBeNull();
+    expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must name no model`).toContain("model=none");
+  });
+
+  caseOf("Q2 a superseded model with the highest count is never picked", f => {
+    writeListPricing(f, [
+      { id: "old-version", rpm: 900000, order: 1, supersededBy: "new-version" },
+      { id: "new-version", rpm: 20000, order: 2 },
+      { id: "other-model", rpm: 30000, order: 3 },
+    ]);
+    writeLive(f, ["old-version", "new-version", "other-model"]);
+    const ts = runTs(f, null);
+    const oracle = runOracle(f, null);
+    expect(ts.status, `${D26}: the TypeScript picker must keep its exit code\n${ts.stderr}`).toBe(0);
+    expect(oracle.status, `${D26}: the oracle must keep its exit code\n${oracle.stderr}`).toBe(0);
+    const output = JSON.parse(ts.stdout) as { model: string; order: Array<{ model: string }> };
+    expect(output.model, `${D26}: a superseded model must never be picked`).toBe("other-model");
+    expect(output.order.map((row) => row.model), `${D26}: the order must hold no superseded model`)
+      .toEqual(["other-model", "new-version"]);
+    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+      .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
+  });
+
+  caseOf("Q3 the unlimited models come first", f => {
+    writeListPricing(f, [
+      { id: "unlimited-a", unlimited: true, order: 1 },
+      { id: "unlimited-b", unlimited: true, order: 2 },
+      { id: "counted-model", rpm: 999999, order: 3 },
+    ]);
+    writeLive(f, ["unlimited-a", "unlimited-b", "counted-model"]);
+    const ts = runTs(f, null);
+    const oracle = runOracle(f, null);
+    expect(ts.status, `${D26}: the TypeScript picker must keep its exit code\n${ts.stderr}`).toBe(0);
+    expect(oracle.status, `${D26}: the oracle must keep its exit code\n${oracle.stderr}`).toBe(0);
+    const output = JSON.parse(ts.stdout) as { model: string; order: Array<{ model: string }> };
+    expect(output.model, `${D26}: the first unlimited model must be picked`).toBe("unlimited-a");
+    expect(output.order.map((row) => row.model), `${D26}: the unlimited models must come first`)
+      .toEqual(["unlimited-a", "unlimited-b", "counted-model"]);
+    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+      .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
+  });
+
+  caseOf("Q4 equal counts keep the page row order", f => {
+    writeListPricing(f, [
+      { id: "row-x", rpm: 50000, order: 3 },
+      { id: "row-y", rpm: 50000, order: 1 },
+      { id: "row-z", rpm: 50000, order: 2 },
+    ]);
+    writeLive(f, ["row-x", "row-y", "row-z"]);
+    const ts = runTs(f, null);
+    const oracle = runOracle(f, null);
+    expect(ts.status, `${D26}: the TypeScript picker must keep its exit code\n${ts.stderr}`).toBe(0);
+    expect(oracle.status, `${D26}: the oracle must keep its exit code\n${oracle.stderr}`).toBe(0);
+    const output = JSON.parse(ts.stdout) as { model: string; order: Array<{ model: string }> };
+    expect(output.model, `${D26}: the lowest page_order must win the tie`).toBe("row-y");
+    expect(output.order.map((row) => row.model), `${D26}: equal counts must keep the page row order`)
+      .toEqual(["row-y", "row-z", "row-x"]);
+    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+      .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
+  });
+
+  caseOf("Q5 kimi-k2.7-code and hy4-preview are never picked", f => {
+    writeLive(f, ["kimi-k2.7-code", "hy4-preview"]);
     const ts = runTs(f, null, REAL_PRICING);
     expect(ts.error, `${D26}: the TypeScript picker must run`).toBe("");
-    expect(ts.status, `${D26}: a night without a high-use model must exit 3\n${ts.stderr}`).toBe(3);
+    expect(ts.status, `${D26}: a night with no on-list model must exit 3\n${ts.stderr}`).toBe(3);
     const output = JSON.parse(ts.stdout) as { model: string | null };
-    expect(output.model, `${D26}: kimi-k2.7-code must never be picked`).toBeNull();
+    expect(output.model, `${D26}: kimi-k2.7-code and hy4-preview must never be picked`).toBeNull();
     expect(ts.stdout, `${D26}: the output must not name kimi-k2.7-code`).not.toContain("kimi-k2.7-code");
     const oracle = runOracle(f, null, REAL_PRICING);
     expect(oracle.status, `${D26}: the oracle must exit 3\n${oracle.stderr}`).toBe(3);
-    expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must name no model`)
-      .toContain("model=none");
+    expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must name no model`).toContain("model=none");
   });
 
-  caseOf("Q4 the order list holds only high-use models", f => {
-    writeMixedPricing(f, [
-      { id: "high-model", high: true, requests: 300 },
-      { id: "low-model", high: false, requests: 900 },
+  caseOf("Q6 the exclude flag keeps the tried models out", f => {
+    writeListPricing(f, [
+      { id: "alpha-model", rpm: 30000, order: 1 },
+      { id: "beta-model", rpm: 20000, order: 2 },
     ]);
-    writeLive(f, ["high-model", "low-model"]);
-    const ts = runTs(f, null);
-    expect(ts.status, `${D26}: the TypeScript picker must keep its exit code\n${ts.stderr}`).toBe(0);
-    const output = JSON.parse(ts.stdout) as { order: Array<{ model: string }> };
-    expect(output.order.map((row) => row.model), `${D26}: the order must hold only high-use models`)
-      .toEqual(["high-model"]);
-  });
-
-  caseOf("Q5 the real table and the public board pick the next on-list model", f => {
-    writeLive(f, [
-      "deepseek-v4.1-flash", "muse-spark-1.3-contributor", "glm-5.3-flash", "gpt-5.6-luna",
-      "gpt-6-luna", "kimi-k2.7-code", "mimo-v2.6-flash", "mimo-v2.6-pro", "minimax-m3.1-flash",
-    ]);
-    writeBoard(f,
-      ["deepseek-v4.1-flash", "gpt-6-luna", "minimax-m3.1-flash", "claude-haiku-5-5"],
-      ["muse-spark-1.2-contributor", "muse-spark-1.3-contributor", "deepseek-v4.1-flash",
-        "mimo-v2.5", "mimo-v2.6-flash", "longcat-2.0", "qwen3.8-flash", "qwen3.7-plus", "hy3",
-        "gpt-5.6-luna", "glm-5.3-flash"]);
-    const ts = runTs(f, f.board, REAL_PRICING);
+    writeLive(f, ["alpha-model", "beta-model"]);
+    const ts = runTs(f, null, f.pricing, ["alpha-model"]);
     expect(ts.error, `${D26}: the TypeScript picker must run`).toBe("");
-    expect(ts.status, `${D26}: the TypeScript picker must accept --board\n${ts.stderr}`).toBe(0);
-    const output = JSON.parse(ts.stdout) as { model: string; group: number; new: boolean };
-    expect(output.model, `${D26}: the next on-list model must be mimo-v2.6-pro`).toBe("mimo-v2.6-pro");
-    expect(output.group, `${D26}: mimo-v2.6-pro must be group 1`).toBe(1);
-    expect(output.new, `${D26}: mimo-v2.6-pro must be new`).toBe(true);
-    const oracle = runOracle(f, f.board, REAL_PRICING);
-    expect(oracle.status, `${D26}: the oracle must accept the board argument\n${oracle.stderr}`).toBe(0);
-    expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must pick mimo-v2.6-pro`)
-      .toContain("model=mimo-v2.6-pro");
+    expect(ts.status, `${D26}: the TypeScript picker must accept --exclude\n${ts.stderr}`).toBe(0);
+    const output = JSON.parse(ts.stdout) as { model: string };
+    expect(output.model, `${D26}: the excluded model must stay out of the pick`).toBe("beta-model");
+    const oracle = runOracle(f, null, f.pricing, ["alpha-model"]);
+    expect(oracle.status, `${D26}: the oracle must accept the exclude list\n${oracle.stderr}`).toBe(0);
+    expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must pick the same model`).toContain("model=beta-model");
+    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+      .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
   });
 });

@@ -23,7 +23,7 @@ const STOP = "weekly used 81 percent";
 const D15 = "D15 publish after a zero-run guard stop";
 const D16 = "D16 fast-forward push";
 const D17 = "D17 notice to the PM";
-const D18 = "D18 monthly guard 95";
+const D18 = "D18 monthly guard 100";
 const D19 = "D19 exit codes";
 
 let FAILED = 0;
@@ -412,12 +412,34 @@ describe("publish and notice", () => {
     ]);
   });
 
-  caseOf("N14 monthly 84.06: the day runs and exits 0", f => {
-    writeQuota(f, 0, 84.06);
+  caseOf("N14 monthly 99.9: the day runs and exits 0", f => {
+    writeQuota(f, 0, 99.9);
     const r = runJob(f);
-    expect(r.status, `${D18}: a monthly value below 95 must not stop the day\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(r.status, `${D18}: a monthly value below 100 must not stop the day\n${r.stdout}\n${r.stderr}`).toBe(0);
     expect(lines(r, "DAILY SKIP go-guard:"), `${D18}: the monthly value must not stop the day`).toEqual([]);
     expect(lines(r, "DAILY GO-GUARD ").length, `${D18}: the day needs four clean guard reads`).toBe(4);
     expect(lines(r, "DAILY RUNS "), `${D18}: the four batches must run`).toEqual(["DAILY RUNS 8"]);
+  });
+
+  caseOf("N15 monthly 100: the day stops with the monthly reason", f => {
+    writeQuota(f, 0, 100);
+    const r = runJob(f);
+    expect(r.status, `${D18}: a monthly value of 100 must stop the day\n${r.stdout}\n${r.stderr}`).toBe(3);
+    expect(lines(r, "DAILY SKIP go-guard:"), `${D18}: the job must print the monthly stop line`)
+      .toEqual(["DAILY SKIP go-guard: monthly used 100 percent"]);
+    const sent = sinkLines(f);
+    expect(sent, `${D18}: the stop must send one SKIP line`).toHaveLength(1);
+    expect(sent[0], `${D18}: the SKIP line must name the monthly reason`).toContain("go-guard monthly used 100 percent");
+  });
+
+  caseOf("N16 weekly 80.0001: the day still stops with the weekly reason", f => {
+    writeQuota(f, 80.0001, 10);
+    const r = runJob(f);
+    expect(r.status, `${D18}: the weekly stop must stay above 80\n${r.stdout}\n${r.stderr}`).toBe(3);
+    expect(lines(r, "DAILY SKIP go-guard:"), `${D18}: the job must print the weekly stop line`)
+      .toEqual(["DAILY SKIP go-guard: weekly used 80.0001 percent"]);
+    const sent = sinkLines(f);
+    expect(sent, `${D18}: the stop must send one SKIP line`).toHaveLength(1);
+    expect(sent[0], `${D18}: the SKIP line must name the weekly reason`).toContain("go-guard weekly used 80.0001 percent");
   });
 });

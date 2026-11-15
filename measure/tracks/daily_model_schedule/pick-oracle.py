@@ -2,22 +2,26 @@
 # It reads the same inputs as harness/daily-pick.ts and prints one labeled line.
 # The orchestrator compares this line with the DAILY_PICK line (PICK_MATCH).
 #
-#   python3 -I pick-oracle.py <catalog.json> <served.txt> <go-pricing.json> <runs> <day-dir> <YYYY-MM-DD> [<benchmark.json>]
+#   python3 -I pick-oracle.py <catalog.json> <served.txt> <go-pricing.json> <runs> <day-dir> <YYYY-MM-DD> [<benchmark.json>] [<exclude.csv>]
 #
-# The 7th argument is the board file of spec D23. With it, the pick follows
-# the groups 1, 2, and 3, and the line ends with the group fields. Without it,
-# the output stays byte-for-byte as now.
+# The 7th argument is the board file of spec D23. With it, the line ends with
+# the group fields. The 8th argument is the exclude list of spec D26: a
+# comma-separated list of ids that stay out of the pick and the order array.
 #
 # Exit 0 with a pick, exit 3 with no eligible model, exit 1 on a bad input.
 import datetime as dt, glob, json, os, re, sys
 
 cat_p, served_p, pricing_p, runs, days, date = sys.argv[1:7]
-board_p = sys.argv[7] if len(sys.argv) > 7 else None
+board_p = sys.argv[7] if len(sys.argv) > 7 and sys.argv[7] else None
+excluded = set(sys.argv[8].split(",")) if len(sys.argv) > 8 and sys.argv[8] else set()
 cat = json.load(open(cat_p))
 live = cat.get("live")
 assert isinstance(live, list) and live and all(isinstance(x, str) for x in live), "PICK_ORACLE=fail empty or malformed live list"
 pricing = json.load(open(pricing_p))
 models, aliases, prov = pricing["models"], pricing["aliases"], pricing["provider"]
+# The pick list minimum of spec D26. The pinned table holds it; the default
+# is the value of the spec when the field is absent.
+pick_min = pricing.get("pick_min_requests_per_month", 10000)
 served = {line.strip() for line in open(served_p) if line.strip()}
 assert served, "PICK_ORACLE=fail empty served list"
 day = dt.date.fromisoformat(date)
@@ -101,57 +105,58 @@ for name in sorted(os.listdir(runs)):
     if t:
         weeks.setdefault(m, set()).add(f"{t.group(1)}w{t.group(2)}")
 
-# The high-use set of spec D26. The price table holds the field
-# `high_usage`. Rule 5 of PLAN.md skips the Muse Spark training models and
-# the Flash Vision Exp model.
-def is_high_use(model_id):
+
+# The pick list of spec D26. A model is on the list when `requests_unlimited`
+# is true or `requests_per_month` is more than `pick_min_requests_per_month`,
+# and the model holds no `superseded_by`. The rule 5 exclusions of PLAN.md do
+# not apply to the pick.
+def on_list(model_id):
     spec = models.get(model_id)
-    if not isinstance(spec, dict) or spec.get("high_usage") is not True:
+    if not isinstance(spec, dict):
         return False
-    if model_id.startswith("muse-spark"):
+    if spec.get("superseded_by"):
         return False
-    return model_id != "deepseek-v4-flash-vision-exp"
+    if spec.get("requests_unlimited") is True:
+        return True
+    rpm = spec.get("requests_per_month")
+    return isinstance(rpm, (int, float)) and not isinstance(rpm, bool) and rpm > pick_min
 
 
-cands = [m for m in dict.fromkeys(live) if m in models and f"{prov}/{m}" in served and is_high_use(m)]
-elig = [m for m in cands if week not in weeks.get(m, set())]
+def page_order(model_id):
+    value = models[model_id].get("page_order")
+    return value if isinstance(value, int) else None
+
+
+def list_key(model_id):
+    # Unlimited models first, in page_order. Then the counts highest first;
+    # equal counts keep the page_order. A model without page_order comes
+    # after every model with a page_order. The id in byte order is the last
+    # tie-break.
+    spec = models[model_id]
+    unlimited = 0 if spec.get("requests_unlimited") is True else 1
+    rpm = spec.get("requests_per_month")
+    rpm = rpm if isinstance(rpm, (int, float)) and not isinstance(rpm, bool) else 0
+    order = page_order(model_id)
+    return (unlimited, -rpm if unlimited else 0, order is None, order if order is not None else 0, model_id)
+
+
+cands = [m for m in dict.fromkeys(live) if m in models and f"{prov}/{m}" in served and on_list(m)]
+# New of spec D26: not in models[].id of the board. History models count as
+# new. The exclude list of D26 stays out of the pick and the order array.
+new = cands if board_p is None else [m for m in cands if m not in ranked_ids]
+new = [m for m in new if m not in excluded]
+elig = [m for m in new if week not in weeks.get(m, set())]
+elig.sort(key=list_key)
 unt = [m for m in elig if m not in last]
 
-
-def rpm(m):
-    return -models[m]["requests_per_month"]
-
-
-def pick_within(pool):
-    # Rule 4 first, then rule 5, inside one group.
-    pool_unt = [x for x in pool if x not in last]
-    if pool_unt:
-        return min(pool_unt, key=lambda x: (rpm(x), x)), "untested"
-    return min(pool, key=lambda x: (last[x], rpm(x), x)), "stalest"
-
-
-if board_p is None:
-    if unt:
-        m, reason = min(unt, key=lambda m: (rpm(m), m)), "untested"
-    elif elig:
-        m, reason = min(elig, key=lambda m: (last[m], rpm(m), m)), "stalest"
-    else:
-        print(f"PICK_ORACLE date={date} model=none reason=none last_test=none candidates={len(cands)} eligible=0 untested=0")
-        sys.exit(3)
-    print(f"PICK_ORACLE date={date} model={m} reason={reason} last_test={last.get(m, 'none')} candidates={len(cands)} eligible={len(elig)} untested={len(unt)}")
-    sys.exit(0)
-
-# The board groups of spec D23. The groups go in order 1, 2, 3.
-groups = {1: [], 2: [], 3: []}
-for x in elig:
-    groups[group_of(x)].append(x)
-m, reason, group = None, "none", 0
-for g in (1, 2, 3):
-    if groups[g]:
-        m, reason = pick_within(groups[g])
-        group = g
-        break
-if m is None:
+if not elig:
     print(f"PICK_ORACLE date={date} model=none reason=none last_test=none candidates={len(cands)} eligible=0 untested=0")
     sys.exit(3)
+
+m = elig[0]
+reason = "untested" if m not in last else "stalest"
+if board_p is None:
+    print(f"PICK_ORACLE date={date} model={m} reason={reason} last_test={last.get(m, 'none')} candidates={len(cands)} eligible={len(elig)} untested={len(unt)}")
+    sys.exit(0)
+group = group_of(m)
 print(f"PICK_ORACLE date={date} model={m} reason={reason} last_test={last.get(m, 'none')} candidates={len(cands)} eligible={len(elig)} untested={len(unt)} group={group} new={'yes' if group in (1, 2) else 'no'}")

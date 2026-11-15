@@ -1,9 +1,15 @@
-// The nightly catch-up rules of Phase 7 (spec D21, D22, D24, and D25).
+// The nightly catch-up rules of Phase 7 (spec D21, D22, D24, D25, D26, D27).
 //
 // D24 interface: `BENCH_DAILY_HEAVY`, `BENCH_HEAVY`, and
 // `BENCH_MEM_FLOOR_MB=1500`. The cron lines are `DAILY HEAVY <path>`,
 // `DAILY HEAVY skipped: test`, and
 // `DAILY FAIL heavy: heavy-run.sh is missing`.
+//
+// D27 interface: `BENCH_DAILY_LAST_START` (default 20:00),
+// `BENCH_DAILY_MAX_MODELS` (default 12), and `BENCH_DAILY_NOW`. The cron
+// lines are `DAILY STOP last-start <HH:MM>`, `DAILY STOP max-models <n>`,
+// `DAILY STOP caught up`, and `DAILY FAIL model: <model> produced no valid
+// run`. The REST lines of D22 are retired.
 //
 // Every job case runs a copy of `cron-daily.sh` in a temporary repository.
 // The child environment has a temporary HOME, a notice sink, a board file,
@@ -27,7 +33,8 @@ const D21 = "D21 nightly timer";
 const D22 = "D22 night rule";
 const D24 = "D24 heavy-run";
 const D25 = "D25 notice fields";
-const D26 = "D26 high-use rule";
+const D26 = "D26 pick list";
+const D27 = "D27 catch-up loop";
 
 let FAILED = 0;
 let PASS_COUNT = 0;
@@ -61,7 +68,7 @@ type Fixture = {
   quota: string; batch: string; selector: string; notify: string; sink: string;
   board: string; heavy: string; heavyLog: string; selectorLog: string;
   batchLog: string; opencodeMarker: string; openchamberMarker: string;
-  cgroup: string; pmConfig: string; lock: string;
+  cgroup: string; pmConfig: string; lock: string; queue: string;
 };
 type JobResult = { status: number | null; stdout: string; stderr: string };
 
@@ -92,13 +99,18 @@ fs.appendFileSync(process.env.BATCH_LOG, JSON.stringify({
   heavyPath: process.env.BENCH_HEAVY ?? '',
   memoryFloorMb: process.env.BENCH_MEM_FLOOR_MB ?? '',
 }) + '\\n');
-if (!args.includes('--dry-run')) {
+function plantRun() {
   const artifacts = path.join(process.env.BENCH_RUNS_ROOT, 'a-' + model.replaceAll('.', '-') + '-' + track + '-' + process.env.WEEK + '-r1', 'artifacts');
   fs.mkdirSync(artifacts, {recursive:true});
   fs.writeFileSync(path.join(artifacts, 'provenance.json'), JSON.stringify({
     executor: {kind: 'opencode'}, model: 'opencode-go/' + model, arm: 'a', track,
   }));
 }
+// D27 harness-level failure: a non-zero exit with no run id of the model.
+if (process.env.BATCH_HARNESS_FAIL === '1' && !args.includes('--dry-run')) process.exit(1);
+// D27 model-level failure: a non-zero exit with run ids of the model.
+if (process.env.BATCH_FAIL_MODEL === model && !args.includes('--dry-run')) { plantRun(); process.exit(1); }
+if (!args.includes('--dry-run')) plantRun();
 if (process.env.STUB_UPDATE_BOARD === '1') {
   const board = JSON.parse(fs.readFileSync(process.env.STUB_BOARD_PATH, 'utf8'));
   if (!board.models.some((row) => row.id === model)) board.models.push({id: model});
@@ -112,9 +124,22 @@ const args = process.argv.slice(2);
 fs.appendFileSync(process.env.SELECTOR_LOG, JSON.stringify(args) + '\\n');
 const group = Number(process.env.PICK_GROUP || '1');
 const isNew = process.env.PICK_NEW !== 'false';
-const model = process.env.PICK_MODEL || 'fresh-model';
-const reason = process.env.PICK_REASON || (isNew ? 'untested' : 'stalest');
-if (process.env.PICK_EXIT === '3') {
+// D27: the queue file holds one model per line. The first call pops the
+// first line; an empty queue gives the model=none path.
+let model = process.env.PICK_MODEL || 'fresh-model';
+const queuePath = process.env.SELECTOR_QUEUE || '';
+let queued = false;
+if (queuePath && fs.existsSync(queuePath)) {
+  const lines = fs.readFileSync(queuePath, 'utf8').split('\\n').filter(Boolean);
+  if (lines.length > 0) {
+    model = lines[0];
+    queued = true;
+    fs.writeFileSync(queuePath, lines.slice(1).join('\\n') + (lines.length > 1 ? '\\n' : ''));
+  } else {
+    model = null;
+  }
+}
+if (model === null || process.env.PICK_EXIT === '3') {
   console.log(JSON.stringify({
     schema: 1, date: process.env.BENCH_DAILY_DATE, week: process.env.WEEK || '2026w47', model: null,
     reason: 'none', last_test: null, counts: {live: 0, candidates: 0, eligible: 0, untested: 0},
@@ -124,6 +149,7 @@ if (process.env.PICK_EXIT === '3') {
     + ' last_test=none candidates=0 eligible=0 untested=0');
   process.exit(3);
 }
+const reason = queued ? 'untested' : (process.env.PICK_REASON || (isNew ? 'untested' : 'stalest'));
 const output = {
   schema: 1, date: process.env.BENCH_DAILY_DATE, week: process.env.WEEK || '2026w47', model,
   reason, last_test: null, counts: {live: 2, candidates: 2, eligible: 2, untested: 1},
@@ -163,21 +189,23 @@ function fixture(): Fixture {
   const cgroup = join(root, "cgroup.txt");
   const pmConfig = join(root, "pm-config.json");
   const lock = join(root, "daily.lock");
+  const queue = join(root, "selector-queue.txt");
   for (const dir of [join(repo, "harness"), home, bin, runs, days]) mkdirSync(dir, { recursive: true });
 
   writeFileSync(pricing, JSON.stringify({
-    schema: 1, source: "test", retrieved: "2026-11-14", provider: "opencode-go",
-    high_usage_min_requests_per_month: 1, deepseek_rate: "off-peak", aliases: {},
+    schema: 1, source: "test", retrieved: "2026-11-15", provider: "opencode-go",
+    pick_min_requests_per_month: 10000, requests_source: "https://opencode.ai/docs/console/go/",
+    requests_read: "2026-11-15", deepseek_rate: "off-peak", aliases: {},
     apis: { "openai-completions": { baseUrl: "https://example.invalid" } },
     models: {
-      [FRESH]: { name: FRESH, api: "openai-completions", high_usage: true, batch: true,
-        requests_per_month: 100, monthly_usage_usd: 15,
+      [FRESH]: { name: FRESH, api: "openai-completions", batch: true,
+        requests_per_month: 50000, page_order: 1, monthly_usage_usd: 15,
         rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
-      [RANKED]: { name: RANKED, api: "openai-completions", high_usage: true, batch: true,
-        requests_per_month: 90, monthly_usage_usd: 15,
+      [RANKED]: { name: RANKED, api: "openai-completions", batch: true,
+        requests_per_month: 40000, page_order: 2, monthly_usage_usd: 15,
         rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
-      [LOW]: { name: LOW, api: "openai-completions", high_usage: false, batch: true,
-        requests_per_month: 900, monthly_usage_usd: 15,
+      [LOW]: { name: LOW, api: "openai-completions", batch: true,
+        requests_per_month: 900, page_order: 3, monthly_usage_usd: 15,
         rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
     },
   }));
@@ -220,7 +248,7 @@ exec "$@"
 
   return { root, repo, origin, home, bin, runs, days, pricing, catalog, served, quota, batch,
     selector, notify, sink, board, heavy, heavyLog, selectorLog, batchLog, opencodeMarker,
-    openchamberMarker, cgroup, pmConfig, lock };
+    openchamberMarker, cgroup, pmConfig, lock, queue };
 }
 
 function setBoard(f: Fixture, count: number, history: string[] = []): void {
@@ -249,6 +277,7 @@ function runJob(f: Fixture, options: { args?: string[]; env?: Record<string, str
     BENCH_DAILY_QUOTA_CMD: f.quota, BENCH_DAILY_POST: "0", BENCH_DAILY_PUBLISH: "0",
     BENCH_DAILY_LOCK: f.lock, BENCH_DAILY_NOTIFY_CMD: f.notify,
     BENCH_DAILY_CGROUP_FILE: f.cgroup, BENCH_DAILY_PM_CONFIG: f.pmConfig,
+    BENCH_DAILY_NOW: "02:00",
     SELECTOR_LOG: f.selectorLog, BATCH_LOG: f.batchLog, HEAVY_LOG: f.heavyLog,
     STUB_BOARD_PATH: f.board,
   };
@@ -291,17 +320,19 @@ describe("nightly catch-up", () => {
     expect(header, `${D21}: the script header must say every night`).toMatch(/every night/i);
   });
 
-  caseOf("C2 a caught-up Monday rests before the catalog fetch", f => {
+  caseOf("C2 a caught-up night with no list model gives the pinned skip", f => {
     setBoard(f, 10);
-    const r = runJob(f, { env: { BENCH_DAILY_CATALOG: join(f.root, "missing-catalog.json") } });
-    expect(r.status, `${D22}: a REST night must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    const r = runJob(f, { env: { PICK_EXIT: "3" } });
+    expect(r.status, `${D27}: a caught-up night with no model must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
     expect(lines(r, "DAILY CATCHUP "), `${D22}: the job must print the catch-up line`)
       .toEqual(["DAILY CATCHUP local=2026-11-16 run_day=no board=10 due=10"]);
-    expect(lines(r, "DAILY REST "), `${D22}: the job must print the REST line`)
-      .toEqual(["DAILY REST caught up: board=10 due=10"]);
-    expect(lines(r, "DAILY FAIL catalog:"), `${D22}: REST must come before the catalog fetch`).toEqual([]);
-    expect(selectorArgs(f), `${D22}: REST must come before the selector`).toEqual([]);
-    expect(sinkLines(f), `${D22}: a REST night must send no notice`).toEqual([]);
+    expect(lines(r, "DAILY REST "), `${D27}: the REST line is retired`).toEqual([]);
+    expect(lines(r, "DAILY SKIP "), `${D27}: the job must print the pinned skip line`)
+      .toEqual(["DAILY SKIP no high-use model"]);
+    expect(batchCalls(f), `${D27}: the skip must stop before the first batch`).toEqual([]);
+    const sent = sinkLines(f);
+    expect(sent, `${D27}: the skip must send one notice`).toHaveLength(1);
+    expect(sent[0], `${D27}: the notice must name the reason`).toContain("exit=3: no high-use model");
   });
 
   caseOf("C3 a Monday below the due count runs with the board flag", f => {
@@ -318,20 +349,18 @@ describe("nightly catch-up", () => {
       .toEqual(["build", "bugfix", "tests", "change"]);
   });
 
-  caseOf("C4 a Monday with only a group 3 pick skips with exit 3", f => {
+  caseOf("C4 a run day with no list model gives the pinned skip", f => {
     setBoard(f, 9);
-    const r = runJob(f, { env: { PICK_GROUP: "3", PICK_NEW: "false", PICK_MODEL: RANKED, PICK_REASON: "stalest" } });
-    expect(r.status, `${D22}: no new model must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
+    const r = runJob(f, { env: { BENCH_DAILY_DATE: "2026-11-18", BENCH_DAILY_LOCAL_DATE: "2026-11-18", PICK_EXIT: "3" } });
+    expect(r.status, `${D27}: a run day with no model must exit 3\n${r.stdout}\n${r.stderr}`).toBe(3);
     expect(lines(r, "DAILY CATCHUP "), `${D22}: the job must print the catch-up line`)
-      .toEqual(["DAILY CATCHUP local=2026-11-16 run_day=no board=9 due=10"]);
-    expect(lines(r, "DAILY SKIP "), `${D22}: the job must print the no-new-model skip line`)
-      .toEqual(["DAILY SKIP no new model"]);
-    expect(batchCalls(f), `${D22}: the skip must stop before the first batch`).toEqual([]);
+      .toEqual(["DAILY CATCHUP local=2026-11-18 run_day=yes board=9 due=11"]);
+    expect(lines(r, "DAILY SKIP "), `${D27}: the job must print the pinned skip line`)
+      .toEqual(["DAILY SKIP no high-use model"]);
+    expect(batchCalls(f), `${D27}: the skip must stop before the first batch`).toEqual([]);
     const sent = sinkLines(f);
-    expect(sent, `${D25}: the skip must send one notice`).toHaveLength(1);
-    expect(sent[0], `${D25}: the skip notice must name the no-new-model reason`).toContain("exit=3: no new model");
-    expect(sent[0], `${D25}: the skip notice must end with the board fields`)
-      .toMatch(/ model=ranked-0 new=no board=9 due=10$/);
+    expect(sent, `${D27}: the skip must send one notice`).toHaveLength(1);
+    expect(sent[0], `${D27}: the notice must name the reason`).toContain("exit=3: no high-use model");
   });
 
   caseOf("C5 Wednesday always runs even when the board is caught up", f => {
@@ -377,15 +406,16 @@ describe("nightly catch-up", () => {
     expect(observed, `${D22}: the due count must match the run days`).toEqual(expected);
   });
 
-  caseOf("C8 a dry run prints the catch-up and REST lines", f => {
+  caseOf("C8 a dry run with no list model prints the pinned skip and exits 0", f => {
     setBoard(f, 10);
-    const r = runJob(f, { args: ["--dry-run"] });
-    expect(r.status, `${D22}: a dry REST night must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    const r = runJob(f, { args: ["--dry-run"], env: { PICK_EXIT: "3" } });
+    expect(r.status, `${D27}: a dry run must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
     expect(lines(r, "DAILY CATCHUP "), `${D22}: a dry run must print the catch-up line`)
       .toEqual(["DAILY CATCHUP local=2026-11-16 run_day=no board=10 due=10"]);
-    expect(lines(r, "DAILY REST "), `${D22}: a dry run must print the REST line`)
-      .toEqual(["DAILY REST caught up: board=10 due=10"]);
-    expect(sinkLines(f), `${D22}: a dry run must send no notice`).toEqual([]);
+    expect(lines(r, "DAILY REST "), `${D27}: the REST line is retired`).toEqual([]);
+    expect(lines(r, "DAILY SKIP "), `${D27}: a dry run must print the pinned skip line`)
+      .toEqual(["DAILY SKIP no high-use model"]);
+    expect(sinkLines(f), `${D27}: a dry run must send no notice`).toEqual([]);
   });
 
   caseOf("C9 the cron job exports the heavy path and memory floor to every batch", f => {
@@ -470,5 +500,106 @@ describe("nightly catch-up", () => {
     expect(sent, `${D26}: the skip must send one notice`).toHaveLength(1);
     expect(sent[0], `${D26}: the notice must name the reason`)
       .toContain("exit=3: no high-use model");
+  });
+
+  caseOf("C15 two new list models in one job run give two batch sets, two publish lines, and two notices", f => {
+    setBoard(f, 9);
+    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    const r = runJob(f, { env: { BENCH_DAILY_PUBLISH: "1", STUB_UPDATE_BOARD: "1", SELECTOR_QUEUE: f.queue } });
+    expect(r.status, `${D27}: the catch-up night must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(batchCalls(f).map(call => call.track), `${D27}: two models must give two batch sets`)
+      .toEqual(["build", "bugfix", "tests", "change", "build", "bugfix", "tests", "change"]);
+    expect(lines(r, "DAILY PUBLISH ").length, `${D27}: each model must publish`).toBe(2);
+    const sent = sinkLines(f);
+    expect(sent, `${D27}: each model must send one notice`).toHaveLength(2);
+    expect(sent.filter(line => line.includes("PUBLISH") && line.includes(FRESH)), `${D27}: fresh-model must publish`).toHaveLength(1);
+    expect(sent.filter(line => line.includes("PUBLISH") && line.includes(RANKED)), `${D27}: ranked-0 must publish`).toHaveLength(1);
+    const record = JSON.parse(readFileSync(join(f.days, "2026-11-16.json"), "utf8")) as { models: Array<{ model: string }> };
+    expect(record.models.map(entry => entry.model), `${D27}: the day record must hold one entry per model`)
+      .toEqual([FRESH, RANKED]);
+  });
+
+  caseOf("C16 the last-start seam stops the loop with the pinned line", f => {
+    setBoard(f, 9);
+    writeFileSync(f.queue, `${FRESH}\n`);
+    const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue, BENCH_DAILY_LAST_START: "01:30" } });
+    expect(r.status, `${D27}: a last-start stop must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(lines(r, "DAILY STOP "), `${D27}: the job must print the pinned last-start line`)
+      .toEqual(["DAILY STOP last-start 01:30"]);
+    expect(batchCalls(f), `${D27}: a last-start stop must run no batch`).toEqual([]);
+    expect(sinkLines(f), `${D27}: a stop line must send no notice`).toEqual([]);
+  });
+
+  caseOf("C17 the max-models seam stops the loop with the pinned line", f => {
+    setBoard(f, 9);
+    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue, BENCH_DAILY_MAX_MODELS: "1" } });
+    expect(r.status, `${D27}: a max-models stop must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(batchCalls(f).map(call => call.track), `${D27}: one model must give one batch set`)
+      .toEqual(["build", "bugfix", "tests", "change"]);
+    expect(lines(r, "DAILY STOP "), `${D27}: the job must print the pinned max-models line`)
+      .toEqual(["DAILY STOP max-models 1"]);
+    expect(sinkLines(f), `${D27}: a stop line must send no notice`).toEqual([]);
+  });
+
+  caseOf("C18 the loop ends with the pinned caught-up line after the last model", f => {
+    setBoard(f, 9);
+    writeFileSync(f.queue, `${FRESH}\n`);
+    const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue, BENCH_DAILY_PUBLISH: "1", STUB_UPDATE_BOARD: "1" } });
+    expect(r.status, `${D27}: a caught-up stop must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(batchCalls(f).map(call => call.track), `${D27}: the one model must run its batch set`)
+      .toEqual(["build", "bugfix", "tests", "change"]);
+    expect(lines(r, "DAILY STOP "), `${D27}: the job must print the pinned caught-up line`)
+      .toEqual(["DAILY STOP caught up"]);
+    const sent = sinkLines(f);
+    expect(sent, `${D27}: the model must send one notice`).toHaveLength(1);
+    expect(sent[0], `${D27}: the notice must be a publish`).toContain("PUBLISH");
+    expect(sent[0], `${D27}: the notice must name the model`).toContain(FRESH);
+  });
+
+  caseOf("C19 a model-level failure sends one FAIL notice and the loop goes on", f => {
+    setBoard(f, 9);
+    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    const r = runJob(f, { env: {
+      SELECTOR_QUEUE: f.queue, BENCH_DAILY_PUBLISH: "1", STUB_UPDATE_BOARD: "1",
+      BATCH_FAIL_MODEL: FRESH,
+    } });
+    expect(r.status, `${D27}: the loop must go on after a model failure\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(lines(r, "DAILY FAIL model: ").length, `${D27}: the job must print the model failure line`)
+      .toBeGreaterThanOrEqual(1);
+    expect(lines(r, "DAILY FAIL model: ").filter(line => line.includes(FRESH)).length,
+      `${D27}: the failure line must name the failed model`).toBeGreaterThanOrEqual(1);
+    const sent = sinkLines(f);
+    expect(sent.filter(line => line.includes("FAIL") && line.includes(FRESH)), `${D27}: the failed model must send one FAIL notice`).toHaveLength(1);
+    expect(sent.filter(line => line.includes("PUBLISH") && line.includes(RANKED)), `${D27}: the next model must publish`).toHaveLength(1);
+    expect(batchCalls(f).filter(call => call.args.includes(RANKED)).length, `${D27}: the next model must run its batch set`).toBe(4);
+    expect(selectorArgs(f).length, `${D27}: the job must pick again after the failure`).toBe(2);
+  });
+
+  caseOf("C20 a harness-level failure sends one FAIL notice and stops the loop", f => {
+    setBoard(f, 9);
+    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue, BATCH_HARNESS_FAIL: "1" } });
+    expect(r.status, `${D27}: a harness failure must exit 1\n${r.stdout}\n${r.stderr}`).toBe(1);
+    expect(batchCalls(f).length, `${D27}: the harness failure must stop the batches`).toBe(1);
+    expect(selectorArgs(f).length, `${D27}: the harness failure must stop the picks`).toBe(1);
+    const sent = sinkLines(f);
+    expect(sent, `${D27}: the harness failure must send one notice`).toHaveLength(1);
+    expect(sent[0], `${D27}: the notice must be a FAIL`).toContain("FAIL");
+  });
+
+  caseOf("C21 the due count does not stop the loop in catch-up", f => {
+    setBoard(f, 100);
+    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue, BENCH_DAILY_PUBLISH: "1", STUB_UPDATE_BOARD: "1" } });
+    expect(r.status, `${D27}: a caught-up board must not stop the loop\n${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(lines(r, "DAILY CATCHUP "), `${D22}: the job must print the catch-up line`)
+      .toEqual(["DAILY CATCHUP local=2026-11-16 run_day=no board=100 due=10"]);
+    expect(lines(r, "DAILY REST "), `${D27}: the REST line is retired`).toEqual([]);
+    expect(batchCalls(f).map(call => call.track), `${D27}: both models must run their batch sets`)
+      .toEqual(["build", "bugfix", "tests", "change", "build", "bugfix", "tests", "change"]);
+    expect(lines(r, "DAILY STOP "), `${D27}: the loop must end with the caught-up line`)
+      .toEqual(["DAILY STOP caught up"]);
+    expect(sinkLines(f), `${D27}: both models must send one notice each`).toHaveLength(2);
   });
 });
