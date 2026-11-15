@@ -532,12 +532,29 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: commit 9ecfa60 holds the tool.
     `measure/runs/model_guide/green-p2-9813d5f.log` holds the single-file
     command, its exit code, its Tests line, and the failed test names.
-- [~] 2.6 Green. Write `harness/model-guide/pages/guide-section.html` and the
+- [x] 61c99c1 2.6 Green. Write `harness/model-guide/pages/guide-section.html` and the
   overview edit of `harness/model-guide/preview.sh`, plus that wiring. Touch
   no test file.
+  - `preview.sh` runs `guide.ts` during the preview, writes `model-guide.json`
+    into the preview folder, and inserts the six D18 rows above the current
+    hero from `pages/guide-section.html`. It reads the newest score file under
+    `harness/model-guide/data/review-scores/` when one exists, and it passes
+    no score file before Phase 4.
+  - Each row shows the pick or "no pick yet: not enough evidence", the second
+    choice, the evidence cell, the evidence date, and the base line beside the
+    pick where one exists. A stale table shows the stale mark. A second
+    preview over a published index keeps one section.
+  - Every model name and every data text uses `html.escape`. The table sits in
+    a `.table-wrap` with `tabindex="0"`, `role="region"`, and an aria-label;
+    long text wraps at 390 px.
+  - A temp repo copy that holds no build or tests data file keeps the page and
+    omits the table. The real repo holds all three data files.
   - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
-- [ ] 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
+  - Evidence: commit 61c99c1 holds the section template and the preview edit.
+    `measure/runs/model_guide/green-p2-38b24ce.log` holds the single-file
+    commands, their exit codes, and their Tests lines.
+- [~] 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
