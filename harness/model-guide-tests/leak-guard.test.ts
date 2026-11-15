@@ -1,4 +1,4 @@
-import { lstatSync, readFileSync, readlinkSync, readdirSync } from "node:fs";
+import { lstatSync, readFileSync, readlinkSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -8,6 +8,9 @@ import { describe, expect, it } from "vitest";
  * The guard scans every file under `harness/model-guide-tests/`.
  * It rejects the hand-off path context and the real export SHA-256.
  * Each needle is built from two parts, so this file does not match itself.
+ *
+ * A symlink entry resolves to its target text when the target is a plain
+ * file, and the match ignores letter case (ADV-12, ADV-13).
  *
  * The test reads only committed test files and synthetic fixtures.
  */
@@ -19,24 +22,41 @@ const EXPORT_SHA_NEEDLE = [
   "5aa16a7ddd6688455735bf312df5464f2",
 ].join("");
 
-function filesUnder(dir: string, prefix = ""): string[] {
-  const out: string[] = [];
+interface Entry {
+  rel: string;
+  text: string;
+}
+
+function filesUnder(dir: string, prefix = ""): Entry[] {
+  const out: Entry[] = [];
   for (const name of readdirSync(dir).sort()) {
     const full = join(dir, name);
     const rel = prefix ? `${prefix}/${name}` : name;
     const info = lstatSync(full);
     if (info.isDirectory()) out.push(...filesUnder(full, rel));
-    else if (info.isSymbolicLink()) out.push(`link ${rel} ${readlinkSync(full)}`);
-    else out.push(rel);
+    else if (info.isSymbolicLink()) {
+      // ADV-12: the link line is scan text, never a path. A plain-file
+      // target is read in place; a dangling or unreadable link scans the
+      // link line only.
+      const linkText = `link ${rel} ${readlinkSync(full)}`;
+      let text = linkText;
+      try {
+        if (statSync(full).isFile()) text = `${linkText}\n${readFileSync(full, "utf8")}`;
+      } catch {
+        // keep the link line as the scan text
+      }
+      out.push({ rel, text });
+    } else out.push({ rel, text: readFileSync(full, "utf8") });
   }
   return out;
 }
 
 function hits(needle: string): string[] {
+  const lower = needle.toLowerCase();
   const found: string[] = [];
-  for (const rel of filesUnder(TEST_DIR)) {
-    const text = readFileSync(join(TEST_DIR, rel), "utf8");
-    if (text.includes(needle)) found.push(rel);
+  for (const { rel, text } of filesUnder(TEST_DIR)) {
+    // ADV-13: compare in lower case, so letter case hides no needle.
+    if (text.toLowerCase().includes(lower)) found.push(rel);
   }
   return found;
 }
