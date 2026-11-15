@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-16T00:19:20",
+  "generated_at": "2026-11-16T03:04:53",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
@@ -564,7 +564,7 @@
       },
       "go": {
         "model_id": "deepseek-v4.1-flash",
-        "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+        "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
         "usd": 0.063357,
         "monthly_usage_usd": 80,
         "monthly_pct": 0.079,
@@ -923,7 +923,7 @@
         },
         "go": {
           "model_id": "deepseek-v4.1-flash",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.063357,
           "monthly_usage_usd": 80,
           "monthly_pct": 0.079,
@@ -1282,7 +1282,7 @@
         },
         "go": {
           "model_id": "deepseek-v4.1-flash",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.065688,
           "monthly_usage_usd": 80,
           "monthly_pct": 0.082,
@@ -1668,7 +1668,7 @@
       },
       "go": {
         "model_id": "mimo-v2.6-flash",
-        "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+        "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
         "usd": 0.039494,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.066,
@@ -2031,7 +2031,7 @@
         },
         "go": {
           "model_id": "mimo-v2.6-flash",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.039494,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.066,
@@ -2394,7 +2394,7 @@
         },
         "go": {
           "model_id": "mimo-v2.6-flash",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.063311,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.106,
@@ -2784,7 +2784,7 @@
       },
       "go": {
         "model_id": "gpt-6-luna",
-        "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+        "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
         "usd": 0.011801,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.079,
@@ -3143,7 +3143,7 @@
         },
         "go": {
           "model_id": "gpt-6-luna",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.011801,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.079,
@@ -3503,7 +3503,7 @@
         },
         "go": {
           "model_id": "gpt-6-luna",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.060638,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.404,
@@ -3889,7 +3889,7 @@
       },
       "go": {
         "model_id": "muse-spark-1.3-contributor",
-        "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+        "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
         "usd": 0.012527,
         "monthly_usage_usd": 60,
         "monthly_pct": 0.021,
@@ -4252,7 +4252,7 @@
         },
         "go": {
           "model_id": "muse-spark-1.3-contributor",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.012527,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.021,
@@ -4615,7 +4615,7 @@
         },
         "go": {
           "model_id": "muse-spark-1.3-contributor",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.016625,
           "monthly_usage_usd": 60,
           "monthly_pct": 0.028,
@@ -5005,7 +5005,7 @@
       },
       "go": {
         "model_id": "minimax-m3.1-flash",
-        "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+        "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
         "usd": 0.132365,
         "monthly_usage_usd": 20,
         "monthly_pct": 0.662,
@@ -5366,7 +5366,7 @@
         },
         "go": {
           "model_id": "minimax-m3.1-flash",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.132365,
           "monthly_usage_usd": 20,
           "monthly_pct": 0.662,
@@ -5727,7 +5727,7 @@
         },
         "go": {
           "model_id": "minimax-m3.1-flash",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.195587,
           "monthly_usage_usd": 20,
           "monthly_pct": 0.978,
@@ -6113,7 +6113,7 @@
       },
       "go": {
         "model_id": "glm-5.3-flash",
-        "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+        "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
         "usd": 0.059592,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.397,
@@ -6478,7 +6478,7 @@
         },
         "go": {
           "model_id": "glm-5.3-flash",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.059592,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.397,
@@ -6843,7 +6843,7 @@
         },
         "go": {
           "model_id": "glm-5.3-flash",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.059822,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.399,
@@ -7236,7 +7236,7 @@
       },
       "go": {
         "model_id": "claude-haiku-5-5",
-        "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+        "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
         "usd": 0.030799,
         "monthly_usage_usd": 15,
         "monthly_pct": 0.205,
@@ -7598,7 +7598,7 @@
         },
         "go": {
           "model_id": "claude-haiku-5-5",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.030799,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.205,
@@ -7960,7 +7960,7 @@
         },
         "go": {
           "model_id": "claude-haiku-5-5",
-          "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+          "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
           "usd": 0.066374,
           "monthly_usage_usd": 15,
           "monthly_pct": 0.442,
@@ -8354,7 +8354,7 @@
           },
           "go": {
             "model_id": "muse-spark-1.2-contributor",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.009961,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.017,
@@ -8708,7 +8708,7 @@
           },
           "go": {
             "model_id": "muse-spark-1.3-contributor",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.008563,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.014,
@@ -9049,7 +9049,7 @@
           },
           "go": {
             "model_id": "muse-spark-1.3-contributor",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.011079,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.018,
@@ -9417,7 +9417,7 @@
           },
           "go": {
             "model_id": "deepseek-v4.1-flash",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.029438,
             "monthly_usage_usd": 80,
             "monthly_pct": 0.037,
@@ -9778,7 +9778,7 @@
           },
           "go": {
             "model_id": "mimo-v2.5",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.004926,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.008,
@@ -10120,7 +10120,7 @@
           },
           "go": {
             "model_id": "mimo-v2.5",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.011843,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.02,
@@ -10473,7 +10473,7 @@
           },
           "go": {
             "model_id": "mimo-v2.6-flash",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.008556,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.014,
@@ -10815,7 +10815,7 @@
           },
           "go": {
             "model_id": "mimo-v2.6-flash",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.04553,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.076,
@@ -11171,7 +11171,7 @@
           },
           "go": {
             "model_id": "longcat-2.0",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.023322,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.039,
@@ -11515,7 +11515,7 @@
           },
           "go": {
             "model_id": "longcat-2.0",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.078344,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.131,
@@ -11555,6 +11555,722 @@
             ],
             "runs": [
               "b-longcat-2-0-2026w38"
+            ]
+          },
+          "ranked": false
+        }
+      },
+      {
+        "id": "glm-5.3-flash",
+        "name": "GLM-5.3-Flash",
+        "provider_model": "opencode-go/glm-5.3-flash",
+        "executor": {
+          "kind": "pi",
+          "name": "pi",
+          "version": "0.84.1"
+        },
+        "ranked": false,
+        "no_skills": {
+          "id": "glm-5.3-flash",
+          "name": "GLM-5.3-Flash",
+          "provider_model": "opencode-go/glm-5.3-flash",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "summary": "",
+          "score": {
+            "total": 90.4,
+            "completion": 0.9337,
+            "adversarial": 0.8667,
+            "adherence": 0.8333,
+            "quality": 0.9167,
+            "weights": {
+              "completion": 0.55,
+              "adversarial": 0.2,
+              "adherence": 0.15,
+              "quality": 0.1
+            },
+            "tiers": {
+              "0": {
+                "rate": 1.0,
+                "scale": 1.0
+              },
+              "1": {
+                "rate": 0.9722,
+                "scale": 1.0
+              },
+              "2": {
+                "rate": 0.75,
+                "scale": 1.0
+              }
+            }
+          },
+          "passes": {
+            "passed": 71,
+            "failed": 7,
+            "total": 78
+          },
+          "advisory": {
+            "passed": 1,
+            "total": 2,
+            "results": {
+              "ADV.useActionState": true,
+              "ADV.useOptimistic": false
+            }
+          },
+          "domains": {
+            "A": {
+              "pass": 5,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "A.boundary",
+                "A.due-soon",
+                "A.ok",
+                "A.overdue",
+                "A.returned"
+              ],
+              "rate": 1.0
+            },
+            "M": {
+              "pass": 2,
+              "fail": 1,
+              "failed": [
+                "M.closeout"
+              ],
+              "passed": [
+                "M.metadata-valid",
+                "M.plan-complete"
+              ],
+              "rate": 0.6667
+            },
+            "G": {
+              "pass": 13,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "G.400",
+                "G.401",
+                "G.409",
+                "G.filter-both",
+                "G.filter-item",
+                "G.filter-overdue",
+                "G.fresh",
+                "G.get200",
+                "G.patch200",
+                "G.patch400",
+                "G.patch409",
+                "G.post-fields",
+                "G.post201"
+              ],
+              "rate": 1.0
+            },
+            "P": {
+              "pass": 13,
+              "fail": 2,
+              "failed": [
+                "P.dedup-item",
+                "P.n-plus-one"
+              ],
+              "passed": [
+                "P.action-race",
+                "P.auth-before-parse",
+                "P.axe-clean",
+                "P.concurrent-checkout",
+                "P.concurrent-return",
+                "P.filter-literal",
+                "P.hydration-clean",
+                "P.malformed-json",
+                "P.no-key-leak",
+                "P.retry-after-error",
+                "P.searchparams-async",
+                "P.stale-after-mutate",
+                "P.validate-before-io"
+              ],
+              "rate": 0.8667
+            },
+            "C": {
+              "pass": 8,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "C.empty",
+                "C.filter-both",
+                "C.filter-case",
+                "C.filter-category",
+                "C.filter-q",
+                "C.parallel-reads",
+                "C.renders",
+                "C.renders-all"
+              ],
+              "rate": 1.0
+            },
+            "B": {
+              "pass": 5,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "B.badge",
+                "B.image-alt",
+                "B.image-response",
+                "B.link",
+                "B.name-category"
+              ],
+              "rate": 1.0
+            },
+            "H": {
+              "pass": 2,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "H.error",
+                "H.loading"
+              ],
+              "rate": 1.0
+            },
+            "D": {
+              "pass": 7,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "D.form-hidden",
+                "D.history-order",
+                "D.history-status",
+                "D.metadata",
+                "D.notfound",
+                "D.renders",
+                "D.return-visible"
+              ],
+              "rate": 1.0
+            },
+            "E": {
+              "pass": 7,
+              "fail": 4,
+              "failed": [
+                "E.error-announced",
+                "E.pending",
+                "E.return-pending",
+                "E.return-submits"
+              ],
+              "passed": [
+                "E.error-shown",
+                "E.labels",
+                "E.member-options",
+                "E.optimistic",
+                "E.return-error",
+                "E.return-optimistic",
+                "E.submits"
+              ],
+              "rate": 0.6364
+            },
+            "F": {
+              "pass": 9,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "F.auth-checkout",
+                "F.auth-return",
+                "F.checkout-conflict",
+                "F.checkout-record",
+                "F.future-due-date",
+                "F.lifecycle",
+                "F.post-mutation-state",
+                "F.return-not-on-loan",
+                "F.return-record"
+              ],
+              "rate": 1.0
+            },
+            "ADV": {
+              "pass": 1,
+              "fail": 1,
+              "failed": [
+                "ADV.useOptimistic"
+              ],
+              "passed": [
+                "ADV.useActionState"
+              ],
+              "rate": 0.5
+            }
+          },
+          "results": {
+            "A.returned": true,
+            "A.overdue": true,
+            "A.due-soon": true,
+            "A.ok": true,
+            "A.boundary": true,
+            "M.metadata-valid": true,
+            "M.plan-complete": true,
+            "M.closeout": false,
+            "G.get200": true,
+            "G.401": true,
+            "G.filter-item": true,
+            "G.filter-overdue": true,
+            "G.filter-both": true,
+            "G.fresh": true,
+            "G.post201": true,
+            "G.400": true,
+            "G.409": true,
+            "P.concurrent-checkout": true,
+            "G.patch200": true,
+            "G.patch409": true,
+            "G.patch400": true,
+            "P.concurrent-return": true,
+            "P.malformed-json": true,
+            "P.auth-before-parse": true,
+            "G.post-fields": true,
+            "C.renders": true,
+            "C.renders-all": true,
+            "B.name-category": true,
+            "B.badge": true,
+            "B.link": true,
+            "B.image-alt": true,
+            "C.filter-q": true,
+            "C.filter-case": true,
+            "P.searchparams-async": true,
+            "P.filter-literal": true,
+            "C.filter-category": true,
+            "C.filter-both": true,
+            "C.empty": true,
+            "P.hydration-clean": true,
+            "H.loading": true,
+            "B.image-response": true,
+            "C.parallel-reads": true,
+            "D.renders": true,
+            "D.history-order": true,
+            "D.history-status": true,
+            "D.notfound": true,
+            "D.metadata": true,
+            "D.form-hidden": true,
+            "D.return-visible": true,
+            "E.return-submits": false,
+            "E.return-pending": false,
+            "E.return-optimistic": true,
+            "E.submits": true,
+            "E.pending": false,
+            "E.optimistic": true,
+            "E.error-shown": true,
+            "P.stale-after-mutate": true,
+            "E.member-options": true,
+            "E.labels": true,
+            "E.error-announced": false,
+            "F.auth-checkout": true,
+            "F.auth-return": true,
+            "F.checkout-conflict": true,
+            "F.return-not-on-loan": true,
+            "F.checkout-record": true,
+            "F.return-record": true,
+            "F.future-due-date": true,
+            "F.post-mutation-state": true,
+            "F.lifecycle": true,
+            "E.return-error": true,
+            "P.no-key-leak": true,
+            "P.n-plus-one": false,
+            "P.validate-before-io": true,
+            "P.dedup-item": false,
+            "P.action-race": true,
+            "P.retry-after-error": true,
+            "P.axe-clean": true,
+            "ADV.useActionState": true,
+            "ADV.useOptimistic": false,
+            "H.error": true
+          },
+          "usage": {
+            "input": 319802,
+            "output": 26818,
+            "cacheRead": 1416960,
+            "cacheWrite": 0,
+            "totalTokens": 1763580,
+            "costUsd": 0.103888,
+            "assistantTurns": 79,
+            "toolCalls": 92
+          },
+          "go": {
+            "model_id": "glm-5.3-flash",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
+            "usd": 0.103888,
+            "monthly_usage_usd": 15,
+            "monthly_pct": 0.693,
+            "unmapped": false,
+            "rate": "off-peak"
+          },
+          "thinking": "max",
+          "wall_seconds": 1631,
+          "historical_score": 90.4,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          },
+          "fixture_revision": 1,
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "grader_browser": "legacy-headless-shell",
+          "executor": {
+            "kind": "pi",
+            "name": "pi",
+            "version": "0.84.1"
+          },
+          "sources": {
+            "regrade": "runs/a-glm-5-3-flash-2026w38",
+            "agent": "runs/a-glm-5-3-flash-2026w38"
+          },
+          "repeats": {
+            "week": "2026w38",
+            "n": 1,
+            "median": 90.4,
+            "worst": 90.4,
+            "best": 90.4,
+            "totals": [
+              90.4
+            ],
+            "runs": [
+              "a-glm-5-3-flash-2026w38"
+            ]
+          },
+          "ranked": false
+        },
+        "skills": {
+          "id": "glm-5.3-flash-skills",
+          "name": "GLM-5.3-Flash (Skills)",
+          "provider_model": "opencode-go/glm-5.3-flash",
+          "arm": "b",
+          "arm_label": "Skills",
+          "summary": "",
+          "score": {
+            "total": 57.2,
+            "completion": 0.5051,
+            "adversarial": 0.6144,
+            "adherence": 1.0,
+            "quality": 0.7296,
+            "weights": {
+              "completion": 0.6,
+              "adversarial": 0.2,
+              "quality": 0.2
+            },
+            "tiers": {
+              "0": {
+                "rate": 0.7143,
+                "scale": 1.0
+              },
+              "1": {
+                "rate": 0.6667,
+                "scale": 0.7937
+              },
+              "2": {
+                "rate": 0.2727,
+                "scale": 0.5879
+              }
+            }
+          },
+          "passes": {
+            "passed": 45,
+            "failed": 26,
+            "total": 71
+          },
+          "advisory": {
+            "passed": 0,
+            "total": 2,
+            "results": {
+              "ADV.useActionState": false,
+              "ADV.useOptimistic": false
+            }
+          },
+          "domains": {
+            "A": {
+              "pass": 5,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "A.boundary",
+                "A.due-soon",
+                "A.ok",
+                "A.overdue",
+                "A.returned"
+              ],
+              "rate": 1.0
+            },
+            "M": {
+              "pass": 1,
+              "fail": 2,
+              "failed": [
+                "M.closeout",
+                "M.plan-complete"
+              ],
+              "passed": [
+                "M.metadata-valid"
+              ],
+              "rate": 0.3333
+            },
+            "G": {
+              "pass": 13,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "G.400",
+                "G.401",
+                "G.409",
+                "G.filter-both",
+                "G.filter-item",
+                "G.filter-overdue",
+                "G.fresh",
+                "G.get200",
+                "G.patch200",
+                "G.patch400",
+                "G.patch409",
+                "G.post-fields",
+                "G.post201"
+              ],
+              "rate": 1.0
+            },
+            "P": {
+              "pass": 8,
+              "fail": 2,
+              "failed": [
+                "P.dedup-item",
+                "P.stale-after-mutate"
+              ],
+              "passed": [
+                "P.concurrent-checkout",
+                "P.concurrent-return",
+                "P.filter-literal",
+                "P.hydration-clean",
+                "P.n-plus-one",
+                "P.no-key-leak",
+                "P.searchparams-async",
+                "P.validate-before-io"
+              ],
+              "rate": 0.8
+            },
+            "C": {
+              "pass": 8,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "C.empty",
+                "C.filter-both",
+                "C.filter-case",
+                "C.filter-category",
+                "C.filter-q",
+                "C.parallel-reads",
+                "C.renders",
+                "C.renders-all"
+              ],
+              "rate": 1.0
+            },
+            "B": {
+              "pass": 5,
+              "fail": 0,
+              "failed": [],
+              "passed": [
+                "B.badge",
+                "B.image-alt",
+                "B.image-response",
+                "B.link",
+                "B.name-category"
+              ],
+              "rate": 1.0
+            },
+            "H": {
+              "pass": 0,
+              "fail": 2,
+              "failed": [
+                "H.error",
+                "H.loading"
+              ],
+              "passed": [],
+              "rate": 0.0
+            },
+            "D": {
+              "pass": 5,
+              "fail": 2,
+              "failed": [
+                "D.form-hidden",
+                "D.return-visible"
+              ],
+              "passed": [
+                "D.history-order",
+                "D.history-status",
+                "D.metadata",
+                "D.notfound",
+                "D.renders"
+              ],
+              "rate": 0.7143
+            },
+            "E": {
+              "pass": 0,
+              "fail": 9,
+              "failed": [
+                "E.error-shown",
+                "E.member-options",
+                "E.optimistic",
+                "E.pending",
+                "E.return-error",
+                "E.return-optimistic",
+                "E.return-pending",
+                "E.return-submits",
+                "E.submits"
+              ],
+              "passed": [],
+              "rate": 0.0
+            },
+            "F": {
+              "pass": 0,
+              "fail": 9,
+              "failed": [
+                "F.auth-checkout",
+                "F.auth-return",
+                "F.checkout-conflict",
+                "F.checkout-record",
+                "F.future-due-date",
+                "F.lifecycle",
+                "F.post-mutation-state",
+                "F.return-not-on-loan",
+                "F.return-record"
+              ],
+              "passed": [],
+              "rate": 0.0
+            },
+            "ADV": {
+              "pass": 0,
+              "fail": 2,
+              "failed": [
+                "ADV.useActionState",
+                "ADV.useOptimistic"
+              ],
+              "passed": [],
+              "rate": 0.0
+            }
+          },
+          "results": {
+            "A.returned": true,
+            "A.overdue": true,
+            "A.due-soon": true,
+            "A.ok": true,
+            "A.boundary": true,
+            "M.metadata-valid": true,
+            "M.plan-complete": false,
+            "M.closeout": false,
+            "G.get200": true,
+            "G.401": true,
+            "G.filter-item": true,
+            "G.filter-overdue": true,
+            "G.filter-both": true,
+            "G.fresh": true,
+            "G.post201": true,
+            "G.400": true,
+            "G.409": true,
+            "P.concurrent-checkout": true,
+            "G.patch200": true,
+            "G.patch409": true,
+            "G.patch400": true,
+            "P.concurrent-return": true,
+            "G.post-fields": true,
+            "C.renders": true,
+            "C.renders-all": true,
+            "B.name-category": true,
+            "B.badge": true,
+            "B.link": true,
+            "B.image-alt": true,
+            "C.filter-q": true,
+            "C.filter-case": true,
+            "P.searchparams-async": true,
+            "P.filter-literal": true,
+            "C.filter-category": true,
+            "C.filter-both": true,
+            "C.empty": true,
+            "P.hydration-clean": true,
+            "H.loading": false,
+            "B.image-response": true,
+            "C.parallel-reads": true,
+            "D.renders": true,
+            "D.history-order": true,
+            "D.history-status": true,
+            "D.notfound": true,
+            "D.metadata": true,
+            "D.form-hidden": false,
+            "D.return-visible": false,
+            "E.return-submits": false,
+            "E.return-pending": false,
+            "E.return-optimistic": false,
+            "E.submits": false,
+            "E.pending": false,
+            "E.optimistic": false,
+            "E.error-shown": false,
+            "P.stale-after-mutate": false,
+            "E.member-options": false,
+            "F.auth-checkout": false,
+            "F.auth-return": false,
+            "F.checkout-conflict": false,
+            "F.return-not-on-loan": false,
+            "F.checkout-record": false,
+            "F.return-record": false,
+            "F.future-due-date": false,
+            "F.post-mutation-state": false,
+            "F.lifecycle": false,
+            "E.return-error": false,
+            "P.no-key-leak": true,
+            "P.n-plus-one": true,
+            "P.validate-before-io": true,
+            "P.dedup-item": false,
+            "ADV.useActionState": false,
+            "ADV.useOptimistic": false,
+            "H.error": false
+          },
+          "usage": {
+            "input": 91618,
+            "output": 6529,
+            "cacheRead": 142848,
+            "cacheWrite": 0,
+            "totalTokens": 240995,
+            "costUsd": 0.021293,
+            "assistantTurns": 25,
+            "toolCalls": 38
+          },
+          "go": {
+            "model_id": "glm-5.3-flash",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
+            "usd": 0.021293,
+            "monthly_usage_usd": 15,
+            "monthly_pct": 0.142,
+            "unmapped": false,
+            "rate": "off-peak"
+          },
+          "thinking": "max",
+          "wall_seconds": 850,
+          "historical_score": 57.2,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          },
+          "fixture_revision": 1,
+          "adherence": null,
+          "grader_browser": "legacy-headless-shell",
+          "executor": {
+            "kind": "pi",
+            "name": "pi",
+            "version": "0.84.1"
+          },
+          "sources": {
+            "regrade": "runs/b-glm-5-3-flash-2026w38",
+            "agent": "runs/b-glm-5-3-flash-2026w38"
+          },
+          "repeats": {
+            "week": "2026w38",
+            "n": 1,
+            "median": 57.2,
+            "worst": 57.2,
+            "best": 57.2,
+            "totals": [
+              57.2
+            ],
+            "runs": [
+              "b-glm-5-3-flash-2026w38"
             ]
           },
           "ranked": false
@@ -11883,7 +12599,7 @@
           },
           "go": {
             "model_id": "qwen3.8-flash",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.052532,
             "monthly_usage_usd": 30,
             "monthly_pct": 0.175,
@@ -12229,7 +12945,7 @@
           },
           "go": {
             "model_id": "qwen3.8-flash",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.027028,
             "monthly_usage_usd": 30,
             "monthly_pct": 0.09,
@@ -12599,7 +13315,7 @@
           },
           "go": {
             "model_id": "qwen3.7-plus",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.584692,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.974,
@@ -12962,7 +13678,7 @@
           },
           "go": {
             "model_id": "qwen3.7-plus",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.238485,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.397,
@@ -13338,7 +14054,7 @@
           },
           "go": {
             "model_id": "hy3",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.068937,
             "monthly_usage_usd": 60,
             "monthly_pct": 0.115,
@@ -13714,7 +14430,7 @@
           },
           "go": {
             "model_id": "gpt-5.6-luna",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.085777,
             "monthly_usage_usd": 15,
             "monthly_pct": 0.572,
@@ -14061,7 +14777,7 @@
           },
           "go": {
             "model_id": "gpt-5.6-luna",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
+            "pricing_sha256": "e12f18de85f47e81071d6059dbeb402946cb3cc7b29ea80db02b03f1024f93a8",
             "usd": 0.115076,
             "monthly_usage_usd": 15,
             "monthly_pct": 0.767,
@@ -14101,722 +14817,6 @@
             ],
             "runs": [
               "b-gpt-5-6-luna-2026w38"
-            ]
-          },
-          "ranked": false
-        }
-      },
-      {
-        "id": "glm-5.3-flash",
-        "name": "GLM-5.3-Flash",
-        "provider_model": "opencode-go/glm-5.3-flash",
-        "executor": {
-          "kind": "pi",
-          "name": "pi",
-          "version": "0.84.1"
-        },
-        "ranked": false,
-        "no_skills": {
-          "id": "glm-5.3-flash",
-          "name": "GLM-5.3-Flash",
-          "provider_model": "opencode-go/glm-5.3-flash",
-          "arm": "a",
-          "arm_label": "No Skills",
-          "summary": "",
-          "score": {
-            "total": 90.4,
-            "completion": 0.9337,
-            "adversarial": 0.8667,
-            "adherence": 0.8333,
-            "quality": 0.9167,
-            "weights": {
-              "completion": 0.55,
-              "adversarial": 0.2,
-              "adherence": 0.15,
-              "quality": 0.1
-            },
-            "tiers": {
-              "0": {
-                "rate": 1.0,
-                "scale": 1.0
-              },
-              "1": {
-                "rate": 0.9722,
-                "scale": 1.0
-              },
-              "2": {
-                "rate": 0.75,
-                "scale": 1.0
-              }
-            }
-          },
-          "passes": {
-            "passed": 71,
-            "failed": 7,
-            "total": 78
-          },
-          "advisory": {
-            "passed": 1,
-            "total": 2,
-            "results": {
-              "ADV.useActionState": true,
-              "ADV.useOptimistic": false
-            }
-          },
-          "domains": {
-            "A": {
-              "pass": 5,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "A.boundary",
-                "A.due-soon",
-                "A.ok",
-                "A.overdue",
-                "A.returned"
-              ],
-              "rate": 1.0
-            },
-            "M": {
-              "pass": 2,
-              "fail": 1,
-              "failed": [
-                "M.closeout"
-              ],
-              "passed": [
-                "M.metadata-valid",
-                "M.plan-complete"
-              ],
-              "rate": 0.6667
-            },
-            "G": {
-              "pass": 13,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "G.400",
-                "G.401",
-                "G.409",
-                "G.filter-both",
-                "G.filter-item",
-                "G.filter-overdue",
-                "G.fresh",
-                "G.get200",
-                "G.patch200",
-                "G.patch400",
-                "G.patch409",
-                "G.post-fields",
-                "G.post201"
-              ],
-              "rate": 1.0
-            },
-            "P": {
-              "pass": 13,
-              "fail": 2,
-              "failed": [
-                "P.dedup-item",
-                "P.n-plus-one"
-              ],
-              "passed": [
-                "P.action-race",
-                "P.auth-before-parse",
-                "P.axe-clean",
-                "P.concurrent-checkout",
-                "P.concurrent-return",
-                "P.filter-literal",
-                "P.hydration-clean",
-                "P.malformed-json",
-                "P.no-key-leak",
-                "P.retry-after-error",
-                "P.searchparams-async",
-                "P.stale-after-mutate",
-                "P.validate-before-io"
-              ],
-              "rate": 0.8667
-            },
-            "C": {
-              "pass": 8,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "C.empty",
-                "C.filter-both",
-                "C.filter-case",
-                "C.filter-category",
-                "C.filter-q",
-                "C.parallel-reads",
-                "C.renders",
-                "C.renders-all"
-              ],
-              "rate": 1.0
-            },
-            "B": {
-              "pass": 5,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "B.badge",
-                "B.image-alt",
-                "B.image-response",
-                "B.link",
-                "B.name-category"
-              ],
-              "rate": 1.0
-            },
-            "H": {
-              "pass": 2,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "H.error",
-                "H.loading"
-              ],
-              "rate": 1.0
-            },
-            "D": {
-              "pass": 7,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "D.form-hidden",
-                "D.history-order",
-                "D.history-status",
-                "D.metadata",
-                "D.notfound",
-                "D.renders",
-                "D.return-visible"
-              ],
-              "rate": 1.0
-            },
-            "E": {
-              "pass": 7,
-              "fail": 4,
-              "failed": [
-                "E.error-announced",
-                "E.pending",
-                "E.return-pending",
-                "E.return-submits"
-              ],
-              "passed": [
-                "E.error-shown",
-                "E.labels",
-                "E.member-options",
-                "E.optimistic",
-                "E.return-error",
-                "E.return-optimistic",
-                "E.submits"
-              ],
-              "rate": 0.6364
-            },
-            "F": {
-              "pass": 9,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "F.auth-checkout",
-                "F.auth-return",
-                "F.checkout-conflict",
-                "F.checkout-record",
-                "F.future-due-date",
-                "F.lifecycle",
-                "F.post-mutation-state",
-                "F.return-not-on-loan",
-                "F.return-record"
-              ],
-              "rate": 1.0
-            },
-            "ADV": {
-              "pass": 1,
-              "fail": 1,
-              "failed": [
-                "ADV.useOptimistic"
-              ],
-              "passed": [
-                "ADV.useActionState"
-              ],
-              "rate": 0.5
-            }
-          },
-          "results": {
-            "A.returned": true,
-            "A.overdue": true,
-            "A.due-soon": true,
-            "A.ok": true,
-            "A.boundary": true,
-            "M.metadata-valid": true,
-            "M.plan-complete": true,
-            "M.closeout": false,
-            "G.get200": true,
-            "G.401": true,
-            "G.filter-item": true,
-            "G.filter-overdue": true,
-            "G.filter-both": true,
-            "G.fresh": true,
-            "G.post201": true,
-            "G.400": true,
-            "G.409": true,
-            "P.concurrent-checkout": true,
-            "G.patch200": true,
-            "G.patch409": true,
-            "G.patch400": true,
-            "P.concurrent-return": true,
-            "P.malformed-json": true,
-            "P.auth-before-parse": true,
-            "G.post-fields": true,
-            "C.renders": true,
-            "C.renders-all": true,
-            "B.name-category": true,
-            "B.badge": true,
-            "B.link": true,
-            "B.image-alt": true,
-            "C.filter-q": true,
-            "C.filter-case": true,
-            "P.searchparams-async": true,
-            "P.filter-literal": true,
-            "C.filter-category": true,
-            "C.filter-both": true,
-            "C.empty": true,
-            "P.hydration-clean": true,
-            "H.loading": true,
-            "B.image-response": true,
-            "C.parallel-reads": true,
-            "D.renders": true,
-            "D.history-order": true,
-            "D.history-status": true,
-            "D.notfound": true,
-            "D.metadata": true,
-            "D.form-hidden": true,
-            "D.return-visible": true,
-            "E.return-submits": false,
-            "E.return-pending": false,
-            "E.return-optimistic": true,
-            "E.submits": true,
-            "E.pending": false,
-            "E.optimistic": true,
-            "E.error-shown": true,
-            "P.stale-after-mutate": true,
-            "E.member-options": true,
-            "E.labels": true,
-            "E.error-announced": false,
-            "F.auth-checkout": true,
-            "F.auth-return": true,
-            "F.checkout-conflict": true,
-            "F.return-not-on-loan": true,
-            "F.checkout-record": true,
-            "F.return-record": true,
-            "F.future-due-date": true,
-            "F.post-mutation-state": true,
-            "F.lifecycle": true,
-            "E.return-error": true,
-            "P.no-key-leak": true,
-            "P.n-plus-one": false,
-            "P.validate-before-io": true,
-            "P.dedup-item": false,
-            "P.action-race": true,
-            "P.retry-after-error": true,
-            "P.axe-clean": true,
-            "ADV.useActionState": true,
-            "ADV.useOptimistic": false,
-            "H.error": true
-          },
-          "usage": {
-            "input": 319802,
-            "output": 26818,
-            "cacheRead": 1416960,
-            "cacheWrite": 0,
-            "totalTokens": 1763580,
-            "costUsd": 0.103888,
-            "assistantTurns": 79,
-            "toolCalls": 92
-          },
-          "go": {
-            "model_id": "glm-5.3-flash",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
-            "usd": 0.103888,
-            "monthly_usage_usd": 15,
-            "monthly_pct": 0.693,
-            "unmapped": false,
-            "rate": "off-peak"
-          },
-          "thinking": "max",
-          "wall_seconds": 1631,
-          "historical_score": 90.4,
-          "trust": {
-            "valid": true,
-            "trusted": true,
-            "publishable": true,
-            "rankable": true,
-            "under_load": false
-          },
-          "fixture_revision": 1,
-          "adherence": {
-            "contract": 1,
-            "classes": []
-          },
-          "grader_browser": "legacy-headless-shell",
-          "executor": {
-            "kind": "pi",
-            "name": "pi",
-            "version": "0.84.1"
-          },
-          "sources": {
-            "regrade": "runs/a-glm-5-3-flash-2026w38",
-            "agent": "runs/a-glm-5-3-flash-2026w38"
-          },
-          "repeats": {
-            "week": "2026w38",
-            "n": 1,
-            "median": 90.4,
-            "worst": 90.4,
-            "best": 90.4,
-            "totals": [
-              90.4
-            ],
-            "runs": [
-              "a-glm-5-3-flash-2026w38"
-            ]
-          },
-          "ranked": false
-        },
-        "skills": {
-          "id": "glm-5.3-flash-skills",
-          "name": "GLM-5.3-Flash (Skills)",
-          "provider_model": "opencode-go/glm-5.3-flash",
-          "arm": "b",
-          "arm_label": "Skills",
-          "summary": "",
-          "score": {
-            "total": 57.2,
-            "completion": 0.5051,
-            "adversarial": 0.6144,
-            "adherence": 1.0,
-            "quality": 0.7296,
-            "weights": {
-              "completion": 0.6,
-              "adversarial": 0.2,
-              "quality": 0.2
-            },
-            "tiers": {
-              "0": {
-                "rate": 0.7143,
-                "scale": 1.0
-              },
-              "1": {
-                "rate": 0.6667,
-                "scale": 0.7937
-              },
-              "2": {
-                "rate": 0.2727,
-                "scale": 0.5879
-              }
-            }
-          },
-          "passes": {
-            "passed": 45,
-            "failed": 26,
-            "total": 71
-          },
-          "advisory": {
-            "passed": 0,
-            "total": 2,
-            "results": {
-              "ADV.useActionState": false,
-              "ADV.useOptimistic": false
-            }
-          },
-          "domains": {
-            "A": {
-              "pass": 5,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "A.boundary",
-                "A.due-soon",
-                "A.ok",
-                "A.overdue",
-                "A.returned"
-              ],
-              "rate": 1.0
-            },
-            "M": {
-              "pass": 1,
-              "fail": 2,
-              "failed": [
-                "M.closeout",
-                "M.plan-complete"
-              ],
-              "passed": [
-                "M.metadata-valid"
-              ],
-              "rate": 0.3333
-            },
-            "G": {
-              "pass": 13,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "G.400",
-                "G.401",
-                "G.409",
-                "G.filter-both",
-                "G.filter-item",
-                "G.filter-overdue",
-                "G.fresh",
-                "G.get200",
-                "G.patch200",
-                "G.patch400",
-                "G.patch409",
-                "G.post-fields",
-                "G.post201"
-              ],
-              "rate": 1.0
-            },
-            "P": {
-              "pass": 8,
-              "fail": 2,
-              "failed": [
-                "P.dedup-item",
-                "P.stale-after-mutate"
-              ],
-              "passed": [
-                "P.concurrent-checkout",
-                "P.concurrent-return",
-                "P.filter-literal",
-                "P.hydration-clean",
-                "P.n-plus-one",
-                "P.no-key-leak",
-                "P.searchparams-async",
-                "P.validate-before-io"
-              ],
-              "rate": 0.8
-            },
-            "C": {
-              "pass": 8,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "C.empty",
-                "C.filter-both",
-                "C.filter-case",
-                "C.filter-category",
-                "C.filter-q",
-                "C.parallel-reads",
-                "C.renders",
-                "C.renders-all"
-              ],
-              "rate": 1.0
-            },
-            "B": {
-              "pass": 5,
-              "fail": 0,
-              "failed": [],
-              "passed": [
-                "B.badge",
-                "B.image-alt",
-                "B.image-response",
-                "B.link",
-                "B.name-category"
-              ],
-              "rate": 1.0
-            },
-            "H": {
-              "pass": 0,
-              "fail": 2,
-              "failed": [
-                "H.error",
-                "H.loading"
-              ],
-              "passed": [],
-              "rate": 0.0
-            },
-            "D": {
-              "pass": 5,
-              "fail": 2,
-              "failed": [
-                "D.form-hidden",
-                "D.return-visible"
-              ],
-              "passed": [
-                "D.history-order",
-                "D.history-status",
-                "D.metadata",
-                "D.notfound",
-                "D.renders"
-              ],
-              "rate": 0.7143
-            },
-            "E": {
-              "pass": 0,
-              "fail": 9,
-              "failed": [
-                "E.error-shown",
-                "E.member-options",
-                "E.optimistic",
-                "E.pending",
-                "E.return-error",
-                "E.return-optimistic",
-                "E.return-pending",
-                "E.return-submits",
-                "E.submits"
-              ],
-              "passed": [],
-              "rate": 0.0
-            },
-            "F": {
-              "pass": 0,
-              "fail": 9,
-              "failed": [
-                "F.auth-checkout",
-                "F.auth-return",
-                "F.checkout-conflict",
-                "F.checkout-record",
-                "F.future-due-date",
-                "F.lifecycle",
-                "F.post-mutation-state",
-                "F.return-not-on-loan",
-                "F.return-record"
-              ],
-              "passed": [],
-              "rate": 0.0
-            },
-            "ADV": {
-              "pass": 0,
-              "fail": 2,
-              "failed": [
-                "ADV.useActionState",
-                "ADV.useOptimistic"
-              ],
-              "passed": [],
-              "rate": 0.0
-            }
-          },
-          "results": {
-            "A.returned": true,
-            "A.overdue": true,
-            "A.due-soon": true,
-            "A.ok": true,
-            "A.boundary": true,
-            "M.metadata-valid": true,
-            "M.plan-complete": false,
-            "M.closeout": false,
-            "G.get200": true,
-            "G.401": true,
-            "G.filter-item": true,
-            "G.filter-overdue": true,
-            "G.filter-both": true,
-            "G.fresh": true,
-            "G.post201": true,
-            "G.400": true,
-            "G.409": true,
-            "P.concurrent-checkout": true,
-            "G.patch200": true,
-            "G.patch409": true,
-            "G.patch400": true,
-            "P.concurrent-return": true,
-            "G.post-fields": true,
-            "C.renders": true,
-            "C.renders-all": true,
-            "B.name-category": true,
-            "B.badge": true,
-            "B.link": true,
-            "B.image-alt": true,
-            "C.filter-q": true,
-            "C.filter-case": true,
-            "P.searchparams-async": true,
-            "P.filter-literal": true,
-            "C.filter-category": true,
-            "C.filter-both": true,
-            "C.empty": true,
-            "P.hydration-clean": true,
-            "H.loading": false,
-            "B.image-response": true,
-            "C.parallel-reads": true,
-            "D.renders": true,
-            "D.history-order": true,
-            "D.history-status": true,
-            "D.notfound": true,
-            "D.metadata": true,
-            "D.form-hidden": false,
-            "D.return-visible": false,
-            "E.return-submits": false,
-            "E.return-pending": false,
-            "E.return-optimistic": false,
-            "E.submits": false,
-            "E.pending": false,
-            "E.optimistic": false,
-            "E.error-shown": false,
-            "P.stale-after-mutate": false,
-            "E.member-options": false,
-            "F.auth-checkout": false,
-            "F.auth-return": false,
-            "F.checkout-conflict": false,
-            "F.return-not-on-loan": false,
-            "F.checkout-record": false,
-            "F.return-record": false,
-            "F.future-due-date": false,
-            "F.post-mutation-state": false,
-            "F.lifecycle": false,
-            "E.return-error": false,
-            "P.no-key-leak": true,
-            "P.n-plus-one": true,
-            "P.validate-before-io": true,
-            "P.dedup-item": false,
-            "ADV.useActionState": false,
-            "ADV.useOptimistic": false,
-            "H.error": false
-          },
-          "usage": {
-            "input": 91618,
-            "output": 6529,
-            "cacheRead": 142848,
-            "cacheWrite": 0,
-            "totalTokens": 240995,
-            "costUsd": 0.021293,
-            "assistantTurns": 25,
-            "toolCalls": 38
-          },
-          "go": {
-            "model_id": "glm-5.3-flash",
-            "pricing_sha256": "79a5881d60e734158e112d915ac3588ea3a25dc6e8f940bb7ea3d351bd8235c2",
-            "usd": 0.021293,
-            "monthly_usage_usd": 15,
-            "monthly_pct": 0.142,
-            "unmapped": false,
-            "rate": "off-peak"
-          },
-          "thinking": "max",
-          "wall_seconds": 850,
-          "historical_score": 57.2,
-          "trust": {
-            "valid": true,
-            "trusted": true,
-            "publishable": true,
-            "rankable": true,
-            "under_load": false
-          },
-          "fixture_revision": 1,
-          "adherence": null,
-          "grader_browser": "legacy-headless-shell",
-          "executor": {
-            "kind": "pi",
-            "name": "pi",
-            "version": "0.84.1"
-          },
-          "sources": {
-            "regrade": "runs/b-glm-5-3-flash-2026w38",
-            "agent": "runs/b-glm-5-3-flash-2026w38"
-          },
-          "repeats": {
-            "week": "2026w38",
-            "n": 1,
-            "median": 57.2,
-            "worst": 57.2,
-            "best": 57.2,
-            "totals": [
-              57.2
-            ],
-            "runs": [
-              "b-glm-5-3-flash-2026w38"
             ]
           },
           "ranked": false
