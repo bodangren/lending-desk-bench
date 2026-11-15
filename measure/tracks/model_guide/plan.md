@@ -859,10 +859,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     passes.
   - Evidence: commit 9d7f3f2 holds the tool. `measure/runs/model_guide/green-p3-6e49630.log`
     holds the exit codes of the seven runs and the empty `docs/` status.
-- [~] 3.11 Green. Write `harness/model-guide/review-prompt.md`. Touch no test
+- [x] d297316 3.11 Green. Write `harness/model-guide/review-prompt.md`. Touch no test
   file and no other file.
   - Verify: the test files of Phases 1 to 3 pass.
-- [ ] 3.12 Checks. One code checker reads the diff against spec D4 to D13
+  - Evidence: commit d297316 holds the prompt. `measure/runs/model_guide/green-p3-17ebb29.log`
+    holds the exit codes of the 14 runs and the empty `docs/` status. The leak
+    check on a temp repo that stages only the prompt prints nothing.
+- [~] 3.12 Checks. One code checker reads the diff against spec D4 to D13
   and D22.
   - The checker confirms that no public output can hold a key field, that
     the lint checks the operator catalog, and that the rule of two judges
