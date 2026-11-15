@@ -655,6 +655,25 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: `measure/runs/model_guide/green-p2-58811b2.log` holds the
     commands, the exit codes, and the unchanged six rows of the task 2.9
     preview.
+- [x] a26cf96 2.16 Red. UX test for the print-audit bias note (P2U1-1).
+  - Finding: `measure/runs/model_guide/ux-browser-b4fba01.json`. The block
+    renders only the top-level `note` (the scope note), so
+    `summary.bias_note` never reaches `real-work.html` and the string
+    `wrote the answer key` appears 0 times in the page.
+  - Spec D17: the block shows the two results, the error types with their
+    counts, and the bias note. The tool header and spec D17 list the bias
+    note as an output item of its own, beside the summary.
+  - Verify: `cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native`
+    and the same line for `preview-gate.test.ts` fail on the new tests
+    only, and `update.test.ts`, `adversarial-p2.test.ts`, and
+    `guide.test.ts` each exit 0.
+  - Evidence: commit a26cf96 holds the two tests in `print-audit.test.ts`
+    and the one test in `preview-gate.test.ts`; no existing assertion and
+    no fixture file changed.
+    `measure/runs/model_guide/red-2.16.txt` holds the failed test names,
+    the exit codes, the Tests lines of each single-file run, and the
+    recorded contract decision on the output field `bias_note`.
+- [ ] 2.17 Green. Show the bias note in the print-audit block (P2U1-1). Touch no test file.
 
 Verify (Phase 2): page B and the overview table are in the preview folder by
 Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
