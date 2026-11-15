@@ -1,0 +1,13 @@
+{
+  "schema": "model-guide-key/1",
+  "set_id": "mg-2026-11a",
+  "diff_id": "mono-c1",
+  "source": {
+    "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+    "commit": "aa2770e2382c619abcfc1e56f4bdf5f801b1ffae",
+    "parent": "84d16591788453d3abd4b14e13c50c47c105831b"
+  },
+  "seeded_diff_sha256": "245bf2a724c7b4fd05951c4c5f5526470c909f454361934443f8d315a9490c2b",
+  "plants": [],
+  "real_defects": []
+}

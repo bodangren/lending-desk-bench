@@ -1,0 +1,75 @@
+{
+  "schema": "model-guide-key/1",
+  "set_id": "mg-2026-11a",
+  "diff_id": "mono-01",
+  "source": {
+    "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+    "commit": "ed0557672220584b7a27d59c489ca10488b9074e",
+    "parent": "7078bd70e2ac87615fd0ea87f02870138b47b987"
+  },
+  "seeded_diff_sha256": "330d9bc740904891744456996f62cea5f871f0f877ae5725d0b714d8384dcb11",
+  "plants": [
+    {
+      "id": "P1",
+      "file": "src/mono-01.ts",
+      "new_lines": [
+        10,
+        11
+      ],
+      "class": "C7",
+      "accepted_classes": [
+        "C7",
+        "C3"
+      ],
+      "severity": "major",
+      "operator": "C7-5 add-required-field",
+      "witness": "An empty input 25 returns success instead of an error."
+    },
+    {
+      "id": "P2",
+      "file": "src/mono-01.ts",
+      "new_lines": [
+        20,
+        21
+      ],
+      "class": "C8",
+      "accepted_classes": [
+        "C8"
+      ],
+      "severity": "major",
+      "operator": "C8-1 always-true-assert",
+      "witness": "An empty input 26 returns success instead of an error."
+    },
+    {
+      "id": "P3",
+      "file": "src/mono-01.ts",
+      "new_lines": [
+        30,
+        31
+      ],
+      "class": "C9",
+      "accepted_classes": [
+        "C9"
+      ],
+      "severity": "major",
+      "operator": "C9-2 unbounded-read",
+      "witness": "An empty input 27 returns success instead of an error."
+    },
+    {
+      "id": "P4",
+      "file": "src/mono-01.ts",
+      "new_lines": [
+        48,
+        49
+      ],
+      "class": "C1",
+      "accepted_classes": [
+        "C1"
+      ],
+      "severity": "major",
+      "operator": "C1-3 wrong-owner-check",
+      "witness": "An empty input 28 returns success instead of an error."
+    }
+  ],
+  "real_defects": []
+}

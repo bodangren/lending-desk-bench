@@ -1,0 +1,3 @@
+```json
+{"findings":[{"line":10,"severity":"major","class":"C1","title":"t","reason":"r"}]}
+```

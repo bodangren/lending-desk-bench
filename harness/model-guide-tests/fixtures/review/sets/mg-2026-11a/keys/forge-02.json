@@ -1,0 +1,74 @@
+{
+  "schema": "model-guide-key/1",
+  "set_id": "mg-2026-11a",
+  "diff_id": "forge-02",
+  "source": {
+    "repo": "bodangren/advantage-forge",
+    "commit": "b00f717cd9518d7854254104e511fb461dae28b7",
+    "parent": "33d103ee8f5c5f7f99ff2d5e3eea71e2c7ac660d"
+  },
+  "seeded_diff_sha256": "330d9bc740904891744456996f62cea5f871f0f877ae5725d0b714d8384dcb11",
+  "plants": [
+    {
+      "id": "P1",
+      "file": "src/forge-02.ts",
+      "new_lines": [
+        10,
+        11
+      ],
+      "class": "C5",
+      "accepted_classes": [
+        "C5"
+      ],
+      "severity": "blocker",
+      "operator": "C5-5 trust-client-flag",
+      "witness": "An empty input 5 returns success instead of an error."
+    },
+    {
+      "id": "P2",
+      "file": "src/forge-02.ts",
+      "new_lines": [
+        20,
+        21
+      ],
+      "class": "C6",
+      "accepted_classes": [
+        "C6"
+      ],
+      "severity": "blocker",
+      "operator": "C6-1 log-secret",
+      "witness": "An empty input 6 returns success instead of an error."
+    },
+    {
+      "id": "P3",
+      "file": "src/forge-02.ts",
+      "new_lines": [
+        30,
+        31
+      ],
+      "class": "C7",
+      "accepted_classes": [
+        "C7"
+      ],
+      "severity": "blocker",
+      "operator": "C7-2 change-return-shape",
+      "witness": "An empty input 7 returns success instead of an error."
+    },
+    {
+      "id": "P4",
+      "file": "src/forge-02.ts",
+      "new_lines": [
+        48,
+        49
+      ],
+      "class": "C8",
+      "accepted_classes": [
+        "C8"
+      ],
+      "severity": "blocker",
+      "operator": "C8-3 skip-test",
+      "witness": "An empty input 8 returns success instead of an error."
+    }
+  ],
+  "real_defects": []
+}

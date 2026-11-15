@@ -1,0 +1,3 @@
+```json
+{"findings":[{"file":"src/forge-01.ts","severity":"major","class":"C1","title":"t","reason":"r"}]}
+```

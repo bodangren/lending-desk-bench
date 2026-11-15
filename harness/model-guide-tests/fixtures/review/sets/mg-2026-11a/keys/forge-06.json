@@ -1,0 +1,74 @@
+{
+  "schema": "model-guide-key/1",
+  "set_id": "mg-2026-11a",
+  "diff_id": "forge-06",
+  "source": {
+    "repo": "bodangren/advantage-forge",
+    "commit": "c2309f773c3d1ba7681f6855387660b8bd26f8aa",
+    "parent": "2970f47907e277d445e2952fca1eae53d4e6ffa9"
+  },
+  "seeded_diff_sha256": "330d9bc740904891744456996f62cea5f871f0f877ae5725d0b714d8384dcb11",
+  "plants": [
+    {
+      "id": "P1",
+      "file": "src/forge-06.ts",
+      "new_lines": [
+        10,
+        11
+      ],
+      "class": "C3",
+      "accepted_classes": [
+        "C3"
+      ],
+      "severity": "major",
+      "operator": "C3-1 invert-condition",
+      "witness": "An empty input 21 returns success instead of an error."
+    },
+    {
+      "id": "P2",
+      "file": "src/forge-06.ts",
+      "new_lines": [
+        20,
+        21
+      ],
+      "class": "C4",
+      "accepted_classes": [
+        "C4"
+      ],
+      "severity": "major",
+      "operator": "C4-2 drop-await",
+      "witness": "An empty input 22 returns success instead of an error."
+    },
+    {
+      "id": "P3",
+      "file": "src/forge-06.ts",
+      "new_lines": [
+        30,
+        31
+      ],
+      "class": "C5",
+      "accepted_classes": [
+        "C5"
+      ],
+      "severity": "major",
+      "operator": "C5-3 raw-query",
+      "witness": "An empty input 23 returns success instead of an error."
+    },
+    {
+      "id": "P4",
+      "file": "src/forge-06.ts",
+      "new_lines": [
+        48,
+        49
+      ],
+      "class": "C6",
+      "accepted_classes": [
+        "C6"
+      ],
+      "severity": "major",
+      "operator": "C6-4 log-personal-data",
+      "witness": "An empty input 24 returns success instead of an error."
+    }
+  ],
+  "real_defects": []
+}

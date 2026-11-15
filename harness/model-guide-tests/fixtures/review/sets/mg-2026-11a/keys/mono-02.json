@@ -1,0 +1,74 @@
+{
+  "schema": "model-guide-key/1",
+  "set_id": "mg-2026-11a",
+  "diff_id": "mono-02",
+  "source": {
+    "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+    "commit": "354feb65aa2962a11eb1bdb6e367d302a44a386b",
+    "parent": "80e2e195ac983e82ea33f780b9000b209620a3cf"
+  },
+  "seeded_diff_sha256": "330d9bc740904891744456996f62cea5f871f0f877ae5725d0b714d8384dcb11",
+  "plants": [
+    {
+      "id": "P1",
+      "file": "src/mono-02.ts",
+      "new_lines": [
+        10,
+        11
+      ],
+      "class": "C2",
+      "accepted_classes": [
+        "C2"
+      ],
+      "severity": "major",
+      "operator": "C2-4 drop-unique",
+      "witness": "An empty input 29 returns success instead of an error."
+    },
+    {
+      "id": "P2",
+      "file": "src/mono-02.ts",
+      "new_lines": [
+        20,
+        21
+      ],
+      "class": "C3",
+      "accepted_classes": [
+        "C3"
+      ],
+      "severity": "major",
+      "operator": "C3-5 swap-arguments",
+      "witness": "An empty input 30 returns success instead of an error."
+    },
+    {
+      "id": "P3",
+      "file": "src/mono-02.ts",
+      "new_lines": [
+        30,
+        31
+      ],
+      "class": "C4",
+      "accepted_classes": [
+        "C4"
+      ],
+      "severity": "major",
+      "operator": "C4-1 swallow-error",
+      "witness": "An empty input 31 returns success instead of an error."
+    },
+    {
+      "id": "P4",
+      "file": "src/mono-02.ts",
+      "new_lines": [
+        48,
+        49
+      ],
+      "class": "C5",
+      "accepted_classes": [
+        "C5"
+      ],
+      "severity": "major",
+      "operator": "C5-2 drop-type-check",
+      "witness": "An empty input 32 returns success instead of an error."
+    }
+  ],
+  "real_defects": []
+}

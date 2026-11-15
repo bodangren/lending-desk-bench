@@ -1,0 +1,74 @@
+{
+  "schema": "model-guide-key/1",
+  "set_id": "mg-2026-11a",
+  "diff_id": "forge-05",
+  "source": {
+    "repo": "bodangren/advantage-forge",
+    "commit": "b0b9da718a6ebbded3e06a8cdd422a47c12d7dfb",
+    "parent": "4101a051bd87554198f7736e3701abcbbc8cc8be"
+  },
+  "seeded_diff_sha256": "330d9bc740904891744456996f62cea5f871f0f877ae5725d0b714d8384dcb11",
+  "plants": [
+    {
+      "id": "P1",
+      "file": "src/forge-05.ts",
+      "new_lines": [
+        10,
+        11
+      ],
+      "class": "C8",
+      "accepted_classes": [
+        "C8"
+      ],
+      "severity": "major",
+      "operator": "C8-2 remove-assert",
+      "witness": "An empty input 17 returns success instead of an error."
+    },
+    {
+      "id": "P2",
+      "file": "src/forge-05.ts",
+      "new_lines": [
+        20,
+        21
+      ],
+      "class": "C9",
+      "accepted_classes": [
+        "C9"
+      ],
+      "severity": "major",
+      "operator": "C9-3 missing-order",
+      "witness": "An empty input 18 returns success instead of an error."
+    },
+    {
+      "id": "P3",
+      "file": "src/forge-05.ts",
+      "new_lines": [
+        30,
+        31
+      ],
+      "class": "C1",
+      "accepted_classes": [
+        "C1"
+      ],
+      "severity": "major",
+      "operator": "C1-4 missing-owner-check",
+      "witness": "An empty input 19 returns success instead of an error."
+    },
+    {
+      "id": "P4",
+      "file": "src/forge-05.ts",
+      "new_lines": [
+        48,
+        49
+      ],
+      "class": "C2",
+      "accepted_classes": [
+        "C2"
+      ],
+      "severity": "major",
+      "operator": "C2-5 partial-write",
+      "witness": "An empty input 20 returns success instead of an error."
+    }
+  ],
+  "real_defects": []
+}

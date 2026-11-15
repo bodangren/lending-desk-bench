@@ -1,0 +1,74 @@
+{
+  "schema": "model-guide-key/1",
+  "set_id": "mg-2026-11a",
+  "diff_id": "forge-03",
+  "source": {
+    "repo": "bodangren/advantage-forge",
+    "commit": "b802df587131c5e01e45f505317b859725802a83",
+    "parent": "f626408c8aebe2cb422eae11b98712ed7f19f70c"
+  },
+  "seeded_diff_sha256": "330d9bc740904891744456996f62cea5f871f0f877ae5725d0b714d8384dcb11",
+  "plants": [
+    {
+      "id": "P1",
+      "file": "src/forge-03.ts",
+      "new_lines": [
+        10,
+        11
+      ],
+      "class": "C9",
+      "accepted_classes": [
+        "C9"
+      ],
+      "severity": "blocker",
+      "operator": "C9-4 extra-call-per-row",
+      "witness": "An empty input 9 returns success instead of an error."
+    },
+    {
+      "id": "P2",
+      "file": "src/forge-03.ts",
+      "new_lines": [
+        20,
+        21
+      ],
+      "class": "C1",
+      "accepted_classes": [
+        "C1"
+      ],
+      "severity": "blocker",
+      "operator": "C1-5 open-route",
+      "witness": "An empty input 10 returns success instead of an error."
+    },
+    {
+      "id": "P3",
+      "file": "src/forge-03.ts",
+      "new_lines": [
+        30,
+        31
+      ],
+      "class": "C2",
+      "accepted_classes": [
+        "C2"
+      ],
+      "severity": "blocker",
+      "operator": "C2-1 wrong-field-write",
+      "witness": "An empty input 11 returns success instead of an error."
+    },
+    {
+      "id": "P4",
+      "file": "src/forge-03.ts",
+      "new_lines": [
+        48,
+        49
+      ],
+      "class": "C3",
+      "accepted_classes": [
+        "C3"
+      ],
+      "severity": "blocker",
+      "operator": "C3-2 off-by-one",
+      "witness": "An empty input 12 returns success instead of an error."
+    }
+  ],
+  "real_defects": []
+}

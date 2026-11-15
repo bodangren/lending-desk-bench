@@ -1,0 +1,16 @@
+The review follows.
+
+```json
+{
+  "findings": [
+    {
+      "file": "src/forge-01.ts",
+      "line": 16,
+      "severity": "major",
+      "class": "C1",
+      "title": "defect",
+      "reason": "the call returns success"
+    }
+  ]
+}
+```
