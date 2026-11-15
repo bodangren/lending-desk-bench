@@ -151,6 +151,9 @@ function runTs(f: Fixture, board: string | null, pricing: string = f.pricing, ex
 function runOracle(f: Fixture, board: string | null, pricing: string = f.pricing, exclude: string[] = []): PickResult {
   const args = [f.catalog, f.served, pricing, f.runs, f.days, DATE];
   if (board !== null) args.push(board);
+  // Without a board, an empty 7th argument keeps the exclude list in the 8th
+  // slot. The oracle treats an empty board argument as no board.
+  else if (exclude.length) args.push("");
   if (exclude.length) args.push(exclude.join(","));
   const r = spawnSync("python3", ["-I", ORACLE, ...args], {
     cwd: ROOT, env: baseEnv(f), encoding: "utf8", timeout: 20_000, maxBuffer: 4 * 1024 * 1024,
@@ -166,8 +169,11 @@ function plantRun(f: Fixture, id: string, model: string, week: string): void {
   }));
 }
 
-function labeled(result: PickResult, prefix: string): string {
-  return result.stdout.split(/\r?\n/).find(line => line.startsWith(prefix)) ?? "";
+// The TypeScript picker prints its labeled line to stderr (case P1 pins it
+// there and pins stdout to the JSON). The oracle prints its line to stdout.
+// Read each line from the pinned stream.
+function labeled(result: PickResult, prefix: string, stream: "stdout" | "stderr" = "stdout"): string {
+  return result[stream].split(/\r?\n/).find(line => line.startsWith(prefix)) ?? "";
 }
 
 describe("daily pick board order", () => {
@@ -216,7 +222,7 @@ describe("daily pick board order", () => {
     const oracle = runOracle(f, f.board);
     expect(ts.status, `${D23}: the TypeScript picker must accept --board\n${ts.stderr}`).toBe(0);
     expect(oracle.status, `${D23}: the oracle must accept the board argument\n${oracle.stderr}`).toBe(0);
-    const tsLine = labeled(ts, "DAILY_PICK ");
+    const tsLine = labeled(ts, "DAILY_PICK ", "stderr");
     const oracleLine = labeled(oracle, "PICK_ORACLE ");
     expect(tsLine.replace(/^DAILY_PICK /, ""), `${D23}: both labeled lines must stay equal`).toBe(
       oracleLine.replace(/^PICK_ORACLE /, ""),
@@ -238,7 +244,7 @@ describe("daily pick board order", () => {
     expect(output.model, `${D26}: a board model must never be picked`).toBe("fresh-model");
     expect(output.group, `${D26}: the JSON must name group 1`).toBe(1);
     expect(output.new, `${D26}: group 1 must be new`).toBe(true);
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+    expect(labeled(ts, "DAILY_PICK ", "stderr").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
       .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
   });
 
@@ -270,7 +276,7 @@ describe("daily pick board order", () => {
     expect(output.model, `${D26}: a history model must be picked`).toBe("history-model");
     expect(output.group, `${D26}: the JSON must name group 2`).toBe(2);
     expect(output.new, `${D26}: a history model must be new`).toBe(true);
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+    expect(labeled(ts, "DAILY_PICK ", "stderr").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
       .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
   });
 
@@ -304,7 +310,7 @@ describe("daily pick board order", () => {
     expect(output.model, `${D26}: a superseded model must never be picked`).toBe("other-model");
     expect(output.order.map((row) => row.model), `${D26}: the order must hold no superseded model`)
       .toEqual(["other-model", "new-version"]);
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+    expect(labeled(ts, "DAILY_PICK ", "stderr").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
       .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
   });
 
@@ -323,7 +329,7 @@ describe("daily pick board order", () => {
     expect(output.model, `${D26}: the first unlimited model must be picked`).toBe("unlimited-a");
     expect(output.order.map((row) => row.model), `${D26}: the unlimited models must come first`)
       .toEqual(["unlimited-a", "unlimited-b", "counted-model"]);
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+    expect(labeled(ts, "DAILY_PICK ", "stderr").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
       .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
   });
 
@@ -342,7 +348,7 @@ describe("daily pick board order", () => {
     expect(output.model, `${D26}: the lowest page_order must win the tie`).toBe("row-y");
     expect(output.order.map((row) => row.model), `${D26}: equal counts must keep the page row order`)
       .toEqual(["row-y", "row-z", "row-x"]);
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+    expect(labeled(ts, "DAILY_PICK ", "stderr").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
       .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
   });
 
@@ -373,7 +379,7 @@ describe("daily pick board order", () => {
     const oracle = runOracle(f, null, f.pricing, ["alpha-model"]);
     expect(oracle.status, `${D26}: the oracle must accept the exclude list\n${oracle.stderr}`).toBe(0);
     expect(labeled(oracle, "PICK_ORACLE "), `${D26}: the oracle must pick the same model`).toContain("model=beta-model");
-    expect(labeled(ts, "DAILY_PICK ").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
+    expect(labeled(ts, "DAILY_PICK ", "stderr").replace(/^DAILY_PICK /, ""), `${D26}: both lines must stay equal`)
       .toBe(labeled(oracle, "PICK_ORACLE ").replace(/^PICK_ORACLE /, ""));
   });
 });

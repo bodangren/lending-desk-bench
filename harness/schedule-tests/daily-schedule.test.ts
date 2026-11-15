@@ -13,7 +13,7 @@ const SELECTOR = "harness/daily-pick.ts (5.1)";
 const PIN = "harness/batch.sh --model (5.2)";
 const JOB = "harness/cron-daily.sh (5.3), day record run_ids/runner_exit (5.4)";
 type Json = Record<string, any>;
-type Work = { root: string; runs: string; days: string; pricing: string; catalog: string; served: string; home: string; bin: string };
+type Work = { root: string; runs: string; days: string; pricing: string; catalog: string; served: string; home: string; bin: string; meminfo: string };
 type Result = { status: number | null; stdout: string; stderr: string };
 type Row = { model: string; last_test: string | null; requests_per_month: number };
 
@@ -56,8 +56,10 @@ function workspace(): Work {
   const root = mkdtempSync(join(tmpdir(), "daily-schedule-"));
   const w = { root, runs: join(root, "runs"), days: join(root, "reports/daily"),
     pricing: join(root, "pricing.json"), catalog: join(root, "catalog.json"), served: join(root, "served.txt"),
-    home: join(root, "home"), bin: join(root, "bin") };
+    home: join(root, "home"), bin: join(root, "bin"), meminfo: join(root, "meminfo") };
   for (const path of [w.runs, w.days, w.home, w.bin]) mkdirSync(path, { recursive: true });
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(w.meminfo, "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
   // The notice sink of D17. It exists before any case lists the root.
   notifySink(root);
   // The cron sources toolchain.sh. Give it a synthetic nvm installation.
@@ -86,7 +88,8 @@ function inputs(w: Work, models: Record<string, number>, live = Object.keys(mode
 }
 function env(w: Work, values: Record<string, string> = {}): NodeJS.ProcessEnv {
   return { PATH: `${w.bin}:${dirname(process.execPath)}:/usr/bin:/bin`, HOME: w.home,
-    TMPDIR: w.root, TSX_DISABLE_CACHE: "1", _BENCH_ENV_LOADED: "1", ...values };
+    TMPDIR: w.root, TSX_DISABLE_CACHE: "1", _BENCH_ENV_LOADED: "1",
+    BENCH_MEMINFO: w.meminfo, ...values };
 }
 function exec(w: Work, command: string, args: string[], values: Record<string, string> = {}): Result {
   const r = spawnSync(command, args, { cwd: ROOT, env: env(w, values), encoding: "utf8", timeout: 20_000, maxBuffer: 4 * 1024 * 1024 });
@@ -703,6 +706,7 @@ describe("artifacts", () => {
         BENCH_DAILY_QUOTA_CMD: join(w.root, "quota.cjs"), BENCH_DAILY_PUBLISH: "1",
         BENCH_DAILY_NOTIFY_CMD: notifySink(w.root),
         BENCH_DAILY_LOCK: join(w.root, "publish.lock"), STUB_LOG: join(w.root, "publish-stub.jsonl"),
+        BENCH_MEMINFO: w.meminfo,
         STUB_DOCS_DIR: join(repo, "docs") },
     });
     const result: Result = { status: r.status, stdout: r.stdout, stderr: r.stderr };
@@ -1057,7 +1061,8 @@ function runCopied(w: Work, repo: string, reachPush: boolean, extra: Record<stri
     BENCH_DAILY_BATCH: stub, BENCH_DAILY_POST: "0", BENCH_DAILY_QUOTA_CMD: join(w.root, "quota.cjs"),
     BENCH_DAILY_PUBLISH: "1", BENCH_DAILY_LOCK: join(w.root, "publish.lock"),
     BENCH_DAILY_NOTIFY_CMD: notifySink(w.root),
-    STUB_LOG: join(w.root, "stub.jsonl"), STUB_DOCS_DIR: join(repo, "docs"), ...extra,
+    STUB_LOG: join(w.root, "stub.jsonl"), STUB_DOCS_DIR: join(repo, "docs"),
+    BENCH_MEMINFO: w.meminfo, ...extra,
   };
   // HEAD still runs BENCH_DAILY_RUNNER. Set it only when the case must reach the push.
   if (reachPush) env.BENCH_DAILY_RUNNER = stub;
@@ -1293,7 +1298,7 @@ describe("O1 conditions", () => {
     for (const line of ["Type=oneshot", "WorkingDirectory=/home/daniebo/Desktop/lending-desk-bench", "ExecStart=/home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh", "StandardOutput=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log", "StandardError=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log"]) {
       expect(service, `6.5.22: missing ${D11} service line ${line}`).toContain(line);
     }
-    for (const line of ["OnCalendar=Wed,Sun 01:00:00", "Persistent=false", "Unit=lending-desk-daily.service", "WantedBy=timers.target"]) {
+    for (const line of ["OnCalendar=*-*-* 01:00:00", "Persistent=false", "Unit=lending-desk-daily.service", "WantedBy=timers.target"]) {
       expect(timer, `6.5.22: missing ${D11} timer line ${line}`).toContain(line);
     }
     expect(timer.join("\n").includes("Persistent=true"), `6.5.22: ${D11} forbids Persistent=true`).toBe(false);

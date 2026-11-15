@@ -1171,14 +1171,50 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Note: the oracle with the real price table, the catalog of 2026w46, the served list of 2026w46, and the public board picks `muse-spark-1.3-contributor` on the current stale table. After the Green data update it must pick `beam-free` first.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds an open task, so the task went from `[ ]` to `[x]`.
   - Lane: light lane. Maker: kimi-code-plan-cn/kimi-for-coding#high (Kimi), substitution for the free MiniMax route.
-- [ ] 7.2 Green: the implementation of D21 to D25. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector, the heavy-run gate, and the notice fields. The job always passes the board file to both pickers. A REST night ends before the catalog fetch. The heavy-run split follows the amended D24 of task 7.1b, and the pick follows D26 of task 7.1c. Green also updates harness/go-pricing.json to the D26 data, implements D27, and sets the monthly guard stop to 100 %.
+- [x] c890f1f 7.1e Red. Test fixes from the Green 7.2 CONTEST items, and the D28 unit start gate.
+  - Files: `measure/tracks/daily_model_schedule/spec.md` holds D28, FR-24,
+    AC-23, the D19 reason amendment, and the NFR-6 seam amendment (commit
+    `ceea302`). The four test files hold the CONTEST fixes and the new D28
+    cases U1 to U6 (commit `c890f1f`). No production file changed.
+  - Part A evidence, each file alone with `--no-cache --configLoader native
+    --maxWorkers=1` from `harness/`: `daily-pick-board.test.ts` exit 0 (13
+    passed); `daily-catchup.test.ts` exit 0 (21 passed);
+    `daily-schedule.test.ts` exit 0 (109 passed). All pass on Green's code
+    at `c67bbbe`.
+  - Part B evidence: `daily-unit-gate.test.ts` exit 1 (2 passed, 4 failed).
+    The failing cases are U2, U4, U5, and U6; each names the missing D28
+    gate. The cases U1 and U3 pass at HEAD and pin the D9 lock answer (one
+    `cron-daily.sh` at a time for both unit names; recovery starts the job).
+  - The record is `measure/runs/daily_model_schedule/red-7.1e.txt`.
+  - Lane: light lane. Maker: kimi-code-plan-cn/kimi-for-coding#high (Kimi).
+- [x] f560e77 7.1f Red. Test seam for the D28 memory gate in the job test files (check K1-1).
+  - Evidence: the nine K1-1 files pin BENCH_MEMINFO to a fixture meminfo with
+    MemAvailable 16000000 kB in the shared base environment of each file. No
+    case reads the real /proc/meminfo. Every assertion stays as it was;
+    daily-unit-gate.test.ts stays unchanged. The record is
+    `measure/runs/daily_model_schedule/red-7.1f.txt`. Each file alone from
+    `harness/` with `--configLoader native --maxWorkers=1` exits 0:
+    `notice-seam-guard.test.ts` 5 passed; `daily-schedule-green.test.ts`
+    4 passed; `daily-catchup.test.ts` 21 passed;
+    `daily-publish-notice.test.ts` 16 passed;
+    `daily-selfcheck-default.test.ts` 2 passed; `daily-served-retry.test.ts`
+    3 passed; `opencode-host-isolation.test.ts` 11 passed;
+    `opencode-host-trap.test.ts` 4 passed; `daily-schedule.test.ts`
+    109 passed.
+  - Lane: light lane. Maker: kimi-code-plan-cn/kimi-for-coding#high (Kimi).
+- [x] 4934cb3 7.2 Green: the implementation of D18 and D21 to D28. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector, the heavy-run gate, the notice fields, and the D28 unit start gate. The job always passes the board file to both pickers. The REST lines are retired by D27, so the job runs the catch-up loop on every night. The heavy-run split follows the amended D24 of task 7.1b, and the pick follows D26 of task 7.1d. Green also updates harness/go-pricing.json to the D26 data, implements D27, and sets the monthly guard stop to 100 %.
   - Verify: the Red command of task 7.1 exits 0.
   - Verify: the notice seam and publish notice commands of task 7.1 exit 0.
   - Verify: `bash -n harness/cron-daily.sh` exits 0.
   - Lane: light lane. Maker: `claude-code/claude-sonnet-5-5#high` (Anthropic). Checker: task 7.3 uses a different family.
-- [ ] 7.3 Checker review of D21 to D25, task 7.1, and task 7.2. The checker family must differ from MiniMax, Anthropic, and Kimi. The role writes `measure/runs/daily_model_schedule/check-7.3.json`.
+  - Evidence: the implementation commits are `4934cb3` (the D26 price data and the optional Go model fields), `6999c4b` (the D26 pick list, `--board`, and `--exclude`), `6845a0a` (the D24 heavy-run split of `batch.sh` and `run.sh`), `f5d1f74` (the D21 to D27 catch-up flow and the D18 stop at 100), and `eba8363` (the D28 unit start gate). The D26 list rule is active only when the price table declares `pick_min_requests_per_month`, so the Phase 6 tests and lines stay byte-for-byte. The monthly Go stop is at or above 100 percent; the weekly stop stays above 80. `bash -n harness/cron-daily.sh` exits 0.
+  - Evidence, Red 7.1e: the four CONTEST items of the first round are fixed in the Red tests and the oracle of `c890f1f`, and the D28 spec is `ceea302`. The D28 gate reads `MemAvailable` after the D9 lock and before the catalog fetch. It waits while the value stays at or under `BENCH_DAILY_MEM_START_MB` (default 8000) and skips the day with the pinned line. A failed read fails the job with the pinned line.
+  - Evidence, test files run one at a time with `--maxWorkers=1` from `harness/`, every one exit 0: `schedule-tests/daily-catchup.test.ts` (21 passed); `schedule-tests/daily-pick-board.test.ts` (13 passed); `schedule-tests/go-pick-list.test.ts` (1 passed); `schedule-tests/daily-heavy-steps.test.ts` (7 passed); `schedule-tests/daily-publish-notice.test.ts` (16 passed); `schedule-tests/daily-schedule.test.ts` (109 passed); `schedule-tests/daily-unit-gate.test.ts` (6 passed); `schedule-tests/notice-seam-guard.test.ts` (5 passed); `tests/meta/go-cost.test.ts` (9 passed). The log is `measure/runs/daily_model_schedule/green-p7-fbb5def.log`.
+  - Note: `harness/node_modules` is an untracked symlink to the main checkout. It is never staged.
+- [x] 7.3 Checker review of D21 to D25, task 7.1, and task 7.2. The checker family must differ from MiniMax, Anthropic, and Kimi. The role writes `measure/runs/daily_model_schedule/check-7.3.json`.
   - Verify: the file shows `status: pass` and no blocking finding.
   - Lane: light lane. One independent checker.
+  - Evidence: check-7.3.json status pass at 9332c91 (route opencode/glm-5.3-flash-free#high, round 3), no blocking finding; K1-1 fixed by 7.1f; K1-2 to K1-5 are nonblocking Nits.
 - [ ] 7.4 Night suites behind heavy-run. The role runs the relevant schedule suites through `heavy-run.sh` during the night window. The logs sit under `measure/runs/daily_model_schedule/`.
   - Verify: each suite log holds a `Tests` line with no failed test.
   - Verify: the process check holds no `fake-openc` or `cron-daily` process.

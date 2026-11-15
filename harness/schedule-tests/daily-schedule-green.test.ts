@@ -14,7 +14,7 @@ const DAILY_SCRIPT = process.env.BENCH_GREEN_CRON_DAILY ?? join(HARNESS, "cron-d
 const DAY = "2026-10-26";
 const STEPS = ["recost-1", "rescore-all", "guard-10", "batch-build", "guard-81", "rescore-week", "recost-2", "python-export-site-data.py", "python-generate-model-pages.py", "cleanup"];
 
-type Fixture = { root: string; repo: string; log: string; home: string; bin: string; runs: string; days: string; pricing: string; catalog: string; served: string; chrome: string };
+type Fixture = { root: string; repo: string; log: string; home: string; bin: string; runs: string; days: string; pricing: string; catalog: string; served: string; chrome: string; meminfo: string };
 
 function script(path: string, body: string) {
   mkdirSync(dirname(path), { recursive: true });
@@ -33,6 +33,7 @@ function fixture(failCompare = false): Fixture {
   const catalog = join(root, "catalog.json");
   const served = join(root, "served.txt");
   const log = join(root, "steps.log");
+  const meminfo = join(root, "meminfo");
   mkdirSync(harness, { recursive: true });
   mkdirSync(bin, { recursive: true });
   mkdirSync(home, { recursive: true });
@@ -58,6 +59,8 @@ function fixture(failCompare = false): Fixture {
   writeFileSync(catalog, JSON.stringify({ live: ["glm-5.2"] }));
   writeFileSync(served, "opencode-go/glm-5.2\n");
   writeFileSync(log, "");
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(meminfo, "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
 
   script(join(bin, "node"), `#!/usr/bin/env bash
 if [ "${failCompare ? "1" : "0"}" = 1 ] && [ "\${1:-}" = -e ] && [[ "\${2:-}" == *DAILY_GUARD_VALUE* ]]; then exit 88; fi
@@ -82,7 +85,7 @@ if [ "\${WEEK:-}" = all ]; then printf 'rescore-all\\n' >> "$STEP_LOG"; else pri
   // BENCH_SYSTEM_CHROME, so the test never touches the real browser.
   const chrome = join(root, "opt/google/chrome/chrome");
   script(chrome, "#!/usr/bin/env bash\nexit 0\n");
-  return { root, repo, log, home, bin, runs, days, pricing, catalog, served, chrome };
+  return { root, repo, log, home, bin, runs, days, pricing, catalog, served, chrome, meminfo };
 }
 
 function job(f: Fixture, quota: number[], post: boolean) {
@@ -124,6 +127,7 @@ if (track === 'build') {
     BENCH_DAILY_PUBLISH: "0", BENCH_DAILY_POST: post ? "1" : "0", BENCH_DAILY_LOCK: join(f.root, "lock"),
     BENCH_DAILY_NOTIFY_CMD: join(f.root, "notify.sh"),
     BENCH_SYSTEM_CHROME: f.chrome,
+    BENCH_MEMINFO: f.meminfo,
   };
   return spawnSync("bash", [join(f.repo, "harness/cron-daily.sh")], { cwd: f.repo, env, encoding: "utf8", timeout: 30_000 });
 }

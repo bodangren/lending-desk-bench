@@ -38,6 +38,7 @@ type Fixture = {
   childPid: string;
   sweepPid: string;
   readyFile: string;
+  meminfo: string;
 };
 
 type Active = { root: string; pids: number[]; pidFiles: string[] };
@@ -178,6 +179,8 @@ function fixture(): Fixture {
   }]) + "\n");
   writeFileSync(join(root, "catalog.json"), JSON.stringify({ live: [MODEL_REF] }) + "\n");
   writeFileSync(join(root, "pricing.json"), JSON.stringify({ provider: "opencode-go", models: { [MODEL]: {} } }) + "\n");
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(join(root, "meminfo"), "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
   fakeOpencode(bin);
   const script = childScript(bin);
   decoyScript(bin);
@@ -191,6 +194,7 @@ function fixture(): Fixture {
     root, repo, harness, bin, sharedHome,
     childPid: join(root, "child.pid"), sweepPid: join(root, "sweep.pid"),
     readyFile: join(root, "ready"),
+    meminfo: join(root, "meminfo"),
   };
 }
 
@@ -218,6 +222,7 @@ function testEnv(f: Fixture, extra: Record<string, string> = {}): Record<string,
     BENCH_DAILY_NOTIFY_CMD: join(f.bin, "notify"),
     FAKE_NOTIFY_RECORD: join(f.root, "notify-sink.txt"),
     BENCH_PRICING_PATH: join(f.root, "pricing.json"),
+    BENCH_MEMINFO: f.meminfo,
     ...extra,
   };
 }

@@ -55,6 +55,7 @@ type Fixture = {
   sharedHome: string;
   record: string;
   modelsCount: string;
+  meminfo: string;
 };
 
 /** The fake Console export. The values are inert strings. */
@@ -192,6 +193,8 @@ function fixture(): Fixture {
   writeFileSync(join(sharedHome, ".local", "share", "opencode", "fake-auth.json"), fakeExport());
   writeFileSync(join(root, "catalog.json"), JSON.stringify({ live: [MODEL_REF] }) + "\n");
   writeFileSync(join(root, "pricing.json"), JSON.stringify({ provider: "opencode-go", models: { [MODEL]: {} } }) + "\n");
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(join(root, "meminfo"), "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
   shellStub(bin, "quota", `printf '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":20}}}}\\n'`);
   shellStub(bin, "select", `printf '{"model":"${MODEL_REF}","run_ids":[],"reason":"new"}\\n'`);
   shellStub(bin, "batch", `printf '[1/1] DRY-RUN START ${MODEL}\\n'`);
@@ -201,6 +204,7 @@ function fixture(): Fixture {
     root, repo, harness, bin, sharedHome,
     record: join(root, "calls.jsonl"),
     modelsCount: join(root, "models-count.txt"),
+    meminfo: join(root, "meminfo"),
   };
 }
 
@@ -233,6 +237,7 @@ function testEnv(f: Fixture, extra: Record<string, string>): Record<string, stri
     BENCH_DAILY_NOTIFY_CMD: join(f.bin, "notify"),
     FAKE_NOTIFY_RECORD: join(f.root, "notify-sink.txt"),
     BENCH_PRICING_PATH: join(f.root, "pricing.json"),
+    BENCH_MEMINFO: f.meminfo,
     ...extra,
   };
 }

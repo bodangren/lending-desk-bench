@@ -987,7 +987,18 @@ if ! hydrate_candidate_dependencies; then
 fi
 
 # here is what let it drift out of sync with collect.ts.
-if AGENT_EXIT="$AGENT_EXIT" THINKING="$THINKING" API_PORT="$API_PORT" E2E_PORT="$E2E_PORT" \
+# D24: the grading step runs through heavy-run p2 with the floor and the limit.
+# The agent step above stays outside. A non-zero heavy-run exit is the grade
+# exit, so the existing grade failure path applies.
+if [ -n "${BENCH_HEAVY:-}" ]; then
+  if HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 HEAVY_RUN_TIMEOUT_S=1800 \
+    AGENT_EXIT="$AGENT_EXIT" THINKING="$THINKING" API_PORT="$API_PORT" E2E_PORT="$E2E_PORT" \
+    "$BENCH_HEAVY" "$H/grade.sh" "$RUN_ID" "$PROVIDER/$MODEL" "$ARM" "$((END-START))"; then
+    GRADE_RC=0
+  else
+    GRADE_RC=$?
+  fi
+elif AGENT_EXIT="$AGENT_EXIT" THINKING="$THINKING" API_PORT="$API_PORT" E2E_PORT="$E2E_PORT" \
   "$H/grade.sh" "$RUN_ID" "$PROVIDER/$MODEL" "$ARM" "$((END-START))"; then
   GRADE_RC=0
 else

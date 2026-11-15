@@ -38,6 +38,7 @@ type Fixture = {
   sharedHome: string;
   record: string;
   selfcheck: string;
+  meminfo: string;
 };
 
 /** The fake `opencode`. It starts no server and calls no model. */
@@ -136,11 +137,13 @@ function fixture(): Fixture {
   writeFileSync(join(root, "catalog.json"), JSON.stringify({ live: [MODEL_REF] }) + "\n");
   writeFileSync(join(root, "pricing.json"), JSON.stringify({ provider: "opencode-go", models: { [MODEL]: {} } }) + "\n");
   writeFileSync(join(root, "served.txt"), `${MODEL_REF}\n`);
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(join(root, "meminfo"), "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
   shellStub(bin, "quota", `printf '{"usage":{"windows":{"weekly":{"usedPercent":10},"monthly":{"usedPercent":20}}}}\\n'`);
   shellStub(bin, "select", `printf '{"model":"${MODEL_REF}","run_ids":[],"reason":"new"}\\n'`);
   // The notice sink of D17. It keeps the test away from the PM session.
   shellStub(bin, "notify", `printf '%s\\n' "$1" >> ${JSON.stringify(join(root, "notify-sink.txt"))}`);
-  return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl"), selfcheck: join(root, "selfcheck.txt") };
+  return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl"), selfcheck: join(root, "selfcheck.txt"), meminfo: join(root, "meminfo") };
 }
 
 /** The environment of one case. It holds no XDG variable and no OPENCODE_DB. */
@@ -167,6 +170,7 @@ function testEnv(f: Fixture, extra: Record<string, string>): Record<string, stri
     BENCH_DAILY_PUBLISH: "0",
     BENCH_DAILY_NOTIFY_CMD: join(f.bin, "notify"),
     BENCH_PRICING_PATH: join(f.root, "pricing.json"),
+    BENCH_MEMINFO: f.meminfo,
     ...extra,
   };
 }

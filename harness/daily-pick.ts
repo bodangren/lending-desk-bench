@@ -8,10 +8,18 @@
 //   Selection mode:
 //     tsx daily-pick.ts --catalog <file> --served <file> --date <YYYY-MM-DD>
 //        [--runs-root <dir>] [--pricing <file>] [--day-dir <dir>]
+//        [--board <benchmark.json>] [--exclude <id1,id2,...>]
 //     Defaults: <repo>/runs, harness/go-pricing.json, <repo>/reports/daily.
 //   Run-list mode:
 //     tsx daily-pick.ts --day-runs <id> --week <YYYYwWW>
 //        [--runs-root <dir>] [--pricing <file>]
+//
+// The price table decides the rule. A table that declares
+// `pick_min_requests_per_month` uses the pick list of spec D26 (the Go plan
+// page): a model is on the list when `requests_unlimited` is true or
+// `requests_per_month` is more than the minimum, and it holds no
+// `superseded_by`. A table without the field keeps rule 4 and rule 5, so the
+// synthetic tables of the older tests stay byte-for-byte.
 //
 // Exit 0 for a pick or a resume, 3 when no model is eligible, 2 for an input
 // fault (one `daily-pick: <reason>` line on stderr, nothing on stdout).
@@ -49,7 +57,8 @@ function parseArgs(argv: string[]): Args {
       continue;
     }
     if (arg === "--catalog" || arg === "--served" || arg === "--date" || arg === "--runs-root"
-      || arg === "--pricing" || arg === "--day-dir" || arg === "--day-runs" || arg === "--week") {
+      || arg === "--pricing" || arg === "--day-dir" || arg === "--day-runs" || arg === "--week"
+      || arg === "--board" || arg === "--exclude") {
       pending = arg.slice(2).replaceAll("-", "_");
       continue;
     }
@@ -93,6 +102,34 @@ function requireDir(value: string | undefined, label: string, fallback: string):
   const dir = value ?? fallback;
   if (!existsSync(dir) || !statSync(dir).isDirectory()) fault(`${label} ${dir} is missing`);
   return dir;
+}
+
+// The board file of spec D23: the ranked ids (`models[].id`) and the history
+// ids (`history.models[].id`). A board that does not exist yet counts as
+// empty, so the job can pass the file before the first publish (D23).
+type Board = { ranked: Set<string>; history: Set<string> };
+
+function loadBoard(value: string | undefined): Board | null {
+  if (value === undefined || value === "") return null;
+  const board: Board = { ranked: new Set<string>(), history: new Set<string>() };
+  if (!existsSync(value)) return board;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(value, "utf8"));
+  } catch {
+    fault(`the board file ${value} is not JSON`);
+  }
+  if (!isRecord(parsed)) return board;
+  const ranked = Array.isArray(parsed.models) ? parsed.models : [];
+  for (const entry of ranked) {
+    if (isRecord(entry) && typeof entry.id === "string") board.ranked.add(entry.id);
+  }
+  const history = isRecord(parsed.history) ? parsed.history.models : undefined;
+  const historyModels = Array.isArray(history) ? history : [];
+  for (const entry of historyModels) {
+    if (isRecord(entry) && typeof entry.id === "string") board.history.add(entry.id);
+  }
+  return board;
 }
 
 type DayRecord = { date: string; model?: string; run_ids: string[] };
@@ -213,6 +250,10 @@ function selection(args: Args): never {
   const week = isoWeek(date);
   const runsRoot = requireDir(args.runs_root, "runs root", DEFAULT_RUNS);
   const dayDir = args.day_dir ?? DEFAULT_DAY_DIR;
+  // D26: `--exclude` keeps the tried models out of the pick and the order.
+  const excluded = new Set(
+    (args.exclude ?? "").split(",").map((id) => id.trim()).filter((id) => id !== ""),
+  );
 
   let pricing: GoPricing;
   try {
@@ -222,6 +263,10 @@ function selection(args: Args): never {
   }
   const models = pricing.models;
   const provider = String(pricing.provider ?? "opencode-go");
+  // The D26 pick list is active only when the table declares its minimum. A
+  // synthetic or older table without the field keeps rule 4 and rule 5.
+  const pickMinRaw = pricing.pick_min_requests_per_month;
+  const pickMin = typeof pickMinRaw === "number" && Number.isFinite(pickMinRaw) ? pickMinRaw : null;
 
   let catalog: unknown;
   try {
@@ -245,7 +290,9 @@ function selection(args: Args): never {
 
   const records = loadDayRecords(dayDir);
   const today = records.find((record) => record.date === date);
-  if (today) {
+  // D26: the selector resumes from the day record only when the exclude list
+  // is empty. A day record with a non-empty exclude list gives a new choice.
+  if (today && excluded.size === 0) {
     const resume = { schema: 1, date, week, model: today.model, reason: "resume" };
     console.log(JSON.stringify(resume));
     console.error(`DAILY_PICK date=${date} model=${today.model} reason=resume`);
@@ -266,20 +313,12 @@ function selection(args: Args): never {
   // defect (case 6.1.11). The excluded lists sort in byte order.
   const unpriced = live.filter((id) => !models[id]).sort(byteOrder);
   const gone = Object.keys(models).filter((id) => !live.includes(id)).sort(byteOrder);
-  const candidates = live.filter((id) => models[id] && served.has(`${provider}/${id}`)).sort(byteOrder);
+  const priced = live.filter((id) => models[id] && served.has(`${provider}/${id}`)).sort(byteOrder);
   const unservable = live.filter((id) => models[id] && !served.has(`${provider}/${id}`)).sort(byteOrder);
-  const thisWeek = candidates.filter((id) => weeks.get(id)?.has(week)).sort(byteOrder);
-  const eligible = candidates.filter((id) => !weeks.get(id)?.has(week));
-
   const requests = (id: string): number => {
     const value = models[id]?.requests_per_month;
     return typeof value === "number" && Number.isFinite(value) ? value : 0;
   };
-  // Rule 4 and rule 5 stay apart. An untested candidate has no run at all, so
-  // it has no last test date. A tested candidate whose run id has no week
-  // token has the zero date. That candidate competes in the stalest set only.
-  const untested = eligible.filter((id) => !last.has(id));
-  const tested = eligible.filter((id) => last.has(id));
   // Rule 4 order: requests highest first, then the id in byte order.
   const byRequests = (a: string, b: string): number => {
     const ra = requests(a);
@@ -295,20 +334,108 @@ function selection(args: Args): never {
     if (la !== lb) return la < lb ? -1 : 1;
     return byRequests(a, b);
   };
-  untested.sort(byRequests);
-  tested.sort(byStalest);
-  // The order holds every eligible candidate. The pick is the first one.
-  const ranked = untested.length > 0 ? [...untested, ...tested] : tested;
 
-  const order = ranked.map((id) => ({
+  if (pickMin === null) {
+    // Rule 4 and rule 5 stay apart. An untested candidate has no run at all,
+    // so it has no last test date. A tested candidate whose run id has no week
+    // token has the zero date. That candidate competes in the stalest set only.
+    const candidates = priced;
+    const thisWeek = candidates.filter((id) => weeks.get(id)?.has(week)).sort(byteOrder);
+    const eligible = candidates.filter((id) => !weeks.get(id)?.has(week) && !excluded.has(id));
+    const untested = eligible.filter((id) => !last.has(id));
+    const tested = eligible.filter((id) => last.has(id));
+    untested.sort(byRequests);
+    tested.sort(byStalest);
+    // The order holds every eligible candidate. The pick is the first one.
+    const ranked = untested.length > 0 ? [...untested, ...tested] : tested;
+
+    const order = ranked.map((id) => ({
+      model: id,
+      last_test: last.get(id) ?? null,
+      requests_per_month: requests(id),
+    }));
+
+    const pick = ranked[0] ?? null;
+    const reason = pick === null ? "none" : last.has(pick) ? "stalest" : "untested";
+    const output = {
+      schema: 1,
+      date,
+      week,
+      model: pick,
+      reason,
+      last_test: pick === null ? null : last.get(pick) ?? null,
+      counts: { live: live.length, candidates: candidates.length, eligible: eligible.length, untested: untested.length },
+      excluded: { unpriced, gone, unservable, this_week: thisWeek },
+      order,
+    };
+    console.log(JSON.stringify(output));
+    console.error(`DAILY_PICK date=${date} model=${pick ?? "none"} reason=${reason}`
+      + ` last_test=${output.last_test ?? "none"} candidates=${candidates.length}`
+      + ` eligible=${eligible.length} untested=${untested.length}`);
+    process.exit(pick === null ? 3 : 0);
+  }
+
+  // The pick list of D26. A model at or under the minimum is never on the
+  // list, and a superseded model is never on the list.
+  const onList = (id: string): boolean => {
+    const spec = models[id];
+    if (!spec) return false;
+    if (spec.superseded_by) return false;
+    if (spec.requests_unlimited === true) return true;
+    const rpm = spec.requests_per_month;
+    return typeof rpm === "number" && Number.isFinite(rpm) && rpm > pickMin;
+  };
+  // The list order: unlimited models first in page order, then the counts
+  // highest first, equal counts in page order, then the id in byte order.
+  const listKey = (id: string): [number, number, number, number, string] => {
+    const spec = models[id];
+    const unlimited = spec?.requests_unlimited === true;
+    const order = typeof spec?.page_order === "number" && Number.isFinite(spec.page_order)
+      ? spec.page_order
+      : null;
+    return [
+      unlimited ? 0 : 1,
+      unlimited ? 0 : -requests(id),
+      order === null ? 1 : 0,
+      order ?? 0,
+      id,
+    ];
+  };
+  const byListKey = (a: string, b: string): number => {
+    const ka = listKey(a);
+    const kb = listKey(b);
+    for (let index = 0; index < 4; index += 1) {
+      const left = ka[index] as number;
+      const right = kb[index] as number;
+      if (left !== right) return left - right;
+    }
+    return byteOrder(a, b);
+  };
+
+  const board = loadBoard(args.board);
+  const candidates = priced.filter((id) => onList(id));
+  const thisWeek = candidates.filter((id) => weeks.get(id)?.has(week)).sort(byteOrder);
+  // Newness of D26: not in `models[].id` of the board. A history model counts
+  // as new. Without the board flag every list candidate counts as new.
+  const newCandidates = (board === null ? candidates : candidates.filter((id) => !board.ranked.has(id)))
+    .filter((id) => !excluded.has(id));
+  const eligible = newCandidates.filter((id) => !weeks.get(id)?.has(week));
+  eligible.sort(byListKey);
+  const untested = eligible.filter((id) => !last.has(id));
+
+  const order = eligible.map((id) => ({
     model: id,
     last_test: last.get(id) ?? null,
     requests_per_month: requests(id),
   }));
 
-  const pick = ranked[0] ?? null;
+  const pick = eligible[0] ?? null;
   const reason = pick === null ? "none" : last.has(pick) ? "stalest" : "untested";
-  const output = {
+  const group = pick === null || board === null
+    ? 0
+    : board.ranked.has(pick) ? 3 : board.history.has(pick) ? 2 : 1;
+  const isNew = group === 1 || group === 2;
+  const output: Record<string, unknown> = {
     schema: 1,
     date,
     week,
@@ -319,10 +446,18 @@ function selection(args: Args): never {
     excluded: { unpriced, gone, unservable, this_week: thisWeek },
     order,
   };
+  if (board !== null) {
+    output.group = group;
+    output.new = isNew;
+  }
   console.log(JSON.stringify(output));
-  console.error(`DAILY_PICK date=${date} model=${pick ?? "none"} reason=${reason}`
+  let line = `DAILY_PICK date=${date} model=${pick ?? "none"} reason=${reason}`
     + ` last_test=${output.last_test ?? "none"} candidates=${candidates.length}`
-    + ` eligible=${eligible.length} untested=${untested.length}`);
+    + ` eligible=${eligible.length} untested=${untested.length}`;
+  if (board !== null && pick !== null) {
+    line += ` group=${group} new=${isNew ? "yes" : "no"}`;
+  }
+  console.error(line);
   process.exit(pick === null ? 3 : 0);
 }
 

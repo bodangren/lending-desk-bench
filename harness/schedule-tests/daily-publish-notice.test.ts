@@ -56,7 +56,7 @@ type Fixture = {
   root: string; repo: string; origin: string; home: string; bin: string;
   runs: string; days: string; pricing: string; catalog: string; served: string;
   quota: string; batch: string; sink: string; notify: string; notifyFail: string;
-  marker: string; initial: string;
+  marker: string; initial: string; meminfo: string;
 };
 type JobResult = { status: number | null; stdout: string; stderr: string };
 
@@ -110,6 +110,7 @@ function fixture(): Fixture {
   const served = join(root, "served.txt");
   const sink = join(root, "notify-sink.txt");
   const marker = join(root, "openchamber-ran.txt");
+  const meminfo = join(root, "meminfo");
   for (const dir of [join(repo, "harness"), home, bin, runs, days]) mkdirSync(dir, { recursive: true });
 
   writeFileSync(pricing, JSON.stringify({
@@ -124,6 +125,8 @@ function fixture(): Fixture {
   }));
   writeFileSync(catalog, JSON.stringify({ live: [MODEL] }));
   writeFileSync(served, `opencode-go/${MODEL}\n`);
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(meminfo, "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
 
   copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
   // cron-daily.sh sources opencode-host.sh (track opencode_host_isolation).
@@ -156,7 +159,7 @@ function fixture(): Fixture {
   return {
     root, repo, origin, home, bin, runs, days, pricing, catalog, served,
     quota, batch, sink, notify, notifyFail, marker,
-    initial: git(["rev-parse", "HEAD"], repo, home),
+    initial: git(["rev-parse", "HEAD"], repo, home), meminfo,
   };
 }
 
@@ -178,6 +181,7 @@ function runJob(f: Fixture, options: { args?: string[]; env?: Record<string, str
     BENCH_DAILY_BATCH: f.batch, BENCH_DAILY_POST: "0", BENCH_DAILY_QUOTA_CMD: f.quota,
     BENCH_DAILY_PUBLISH: "1", BENCH_DAILY_LOCK: join(f.root, "publish.lock"),
     STUB_LOG: join(f.root, "stub.jsonl"), STUB_DOCS_DIR: join(f.repo, "docs"),
+    BENCH_MEMINFO: f.meminfo,
   };
   const notify = options.notify === undefined ? f.notify : options.notify;
   if (notify) env.BENCH_DAILY_NOTIFY_CMD = notify;

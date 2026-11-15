@@ -51,6 +51,7 @@ type Fixture = {
   root: string; repo: string; home: string; bin: string; runs: string; days: string;
   pricing: string; catalog: string; served: string; quota: string; batch: string;
   marker: string; record: string; cgroup: string; pmConfig: string; lock: string;
+  meminfo: string;
 };
 type JobResult = { status: number | null; stdout: string; stderr: string };
 
@@ -94,6 +95,7 @@ function fixture(): Fixture {
   const cgroup = join(root, "cgroup.txt");
   const pmConfig = join(root, "pm-config.json");
   const lock = join(root, "publish.lock");
+  const meminfo = join(root, "meminfo");
   for (const dir of [join(repo, "harness"), home, bin, runs, days]) mkdirSync(dir, { recursive: true });
 
   writeFileSync(pricing, JSON.stringify({
@@ -105,6 +107,8 @@ function fixture(): Fixture {
   }));
   writeFileSync(catalog, JSON.stringify({ live: ["glm-5.2"] }));
   writeFileSync(served, "opencode-go/glm-5.2\n");
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(meminfo, "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
 
   copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
   // cron-daily.sh sources opencode-host.sh (track opencode_host_isolation).
@@ -126,7 +130,7 @@ exit 0
   writeFileSync(cgroup, `${AGENT_CGROUP}\n`);
   writeFileSync(pmConfig, JSON.stringify({ pmSession: "ses_test" }) + "\n");
   return { root, repo, home, bin, runs, days, pricing, catalog, served, quota, batch,
-    marker, record, cgroup, pmConfig, lock };
+    marker, record, cgroup, pmConfig, lock, meminfo };
 }
 
 /**
@@ -142,7 +146,7 @@ function runJob(f: Fixture, values: Record<string, string> = {}): JobResult {
     BENCH_DAILY_DATE: DATE, BENCH_DAILY_CATALOG: join(f.root, "missing-catalog.json"),
     BENCH_DAILY_SERVED: f.served, BENCH_DAILY_QUOTA_CMD: f.quota, BENCH_DAILY_BATCH: f.batch,
     BENCH_DAILY_POST: "0", BENCH_DAILY_PUBLISH: "0", BENCH_DAILY_LOCK: f.lock,
-    BENCH_DAILY_CGROUP_FILE: f.cgroup, ...values,
+    BENCH_DAILY_CGROUP_FILE: f.cgroup, BENCH_MEMINFO: f.meminfo, ...values,
   };
   // The notice seam is off in this file, so no test can reach the PM session.
   delete env.BENCH_DAILY_NOTIFY_CMD;
