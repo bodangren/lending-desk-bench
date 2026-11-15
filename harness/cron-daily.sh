@@ -932,6 +932,7 @@ if [ "$BRANCH" != "main" ]; then
   exit 1
 fi
 
+# The label names the models of the day runs, in run order, each once (D10).
 # The body reports excluded models from the full day record, including on resume.
 # A guard stop with zero runs gets the one-line message of D15.
 node -e '
@@ -943,7 +944,14 @@ fs.writeFileSync(process.argv[3], "Publish daily " + record.date + " site data: 
 process.exit(0);
 }
 const reason = pick.reason === "resume" ? "resume" : record.reason;
-const lines = ["Publish daily " + record.date + " OpenCode Go results: " + record.model + " (" + reason + ").", ""];
+const labels = [];
+for (const row of Array.isArray(record.models) ? record.models : []) {
+if (!row || !row.model) continue;
+if (!Array.isArray(row.run_ids) || row.run_ids.length === 0) continue;
+if (!labels.includes(row.model)) labels.push(row.model);
+}
+const label = labels.length ? labels.join(", ") : record.model;
+const lines = ["Publish daily " + record.date + " OpenCode Go results: " + label + " (" + reason + ").", ""];
 const ex = record.excluded ?? {};
 for (const key of ["unpriced", "gone", "unservable"]) {
 if ((ex[key] ?? []).length) lines.push(key.charAt(0).toUpperCase() + key.slice(1) + ": " + ex[key].join(", "));
