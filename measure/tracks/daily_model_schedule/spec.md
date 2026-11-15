@@ -853,6 +853,19 @@ date 2026-10-25.
       superseded model is never on the list. The job never picks such a
       model. The rule 5 exclusions of `PLAN.md` do not apply to the pick.
       The Muse Spark models are on the list.
+    - **The board filter.** Amended on 2026-11-16 by the PM ruling of task
+      7.9. The picker candidate set is the set of models of
+      `harness/go-pricing.json` with `high_usage: true` and `batch: true` —
+      the same filter as `batch_models` in `harness/export-site-data.py` —
+      and then the existing D26 rules apply (the request floor, the latest
+      family version only). A free or `requests_unlimited` model with
+      `high_usage: false` is never picked. The picker and the export use one
+      shared filter, so they cannot disagree again. Daniel's rule
+      (2026-11-15), exact in quotation: "pick candidates only from the
+      OpenCode Go high-use list". Evidence of the disagreement: the 01:00
+      run of 2026-11-16 picked `beam-free` and `iceman-contributor-free`;
+      their runs scored but got no board row, because the export builds the
+      board only from the filtered set.
     - **The list order.** The unlimited models come first of all. They follow
       the `page_order` order. The other models follow, with
       `requests_per_month` highest first. Equal counts keep the `page_order`

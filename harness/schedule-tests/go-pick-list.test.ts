@@ -7,6 +7,10 @@
 // of EV32 in the EV32 order: unlimited first, then the counts highest
 // first, with equal counts in `page_order` order. It fails on the stale
 // table and passes after the Green data update of task 7.2.
+//
+// G3 applies the board filter of D26 (PM ruling 2026-11-16, task 7.9):
+// against the public-board fixture the oracle picks the first high-use,
+// batch, latest-version model with no board row, and never beam-free.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -29,12 +33,14 @@ const SUPERSEDED = [
   "qwen3.7-plus", "hy3", "gpt-5.6-luna", "minimax-m3",
 ];
 const UNDER_LIMIT = ["kimi-k2.7-code", "hy4-preview"];
-const BOARD_ON = ["deepseek-v4.1-flash", "gpt-6-luna", "minimax-m3.1-flash", "claude-haiku-5-5"];
-const NINE_TO_RUN = [
-  "beam-free", "iceman-contributor-free", "longcat-2.5-free",
-  "muse-spark-1.3-contributor", "mimo-v2.6-flash", "glm-5.3-flash",
-  "qwen3.8-flash", "mimo-v2.6-pro", "hy4",
+const BOARD_ON = [
+  "deepseek-v4.1-flash", "mimo-v2.6-flash", "gpt-6-luna", "muse-spark-1.3-contributor",
+  "minimax-m3.1-flash", "glm-5.3-flash", "claude-haiku-5-5",
 ];
+// Under the board filter of D26 (PM 2026-11-16) these are the on-list models
+// that are high_usage=true, batch=true, and have no board row: the oracle
+// must pick the first of them in list order, never a free model.
+const TO_RUN_OFF_BOARD = ["qwen3.8-flash", "mimo-v2.6-pro"];
 
 let FAILED = 0;
 let PASS_COUNT = 0;
@@ -98,7 +104,7 @@ describe("go pick list", () => {
       }
       pass("G2 the superseded and under-limit models are off the list");
 
-      console.log("=== G3 the oracle picks beam-free first against the public board ===");
+      console.log("=== G3 the oracle picks the first high-use batch model off the board, never beam-free ===");
       const catalog = join(root, "catalog.json");
       const served = join(root, "served.txt");
       const board = join(root, "benchmark.json");
@@ -118,12 +124,25 @@ describe("go pick list", () => {
       });
       const line = (r.stdout ?? "").trim();
       if (r.status !== 0) throw new Error(`the oracle must exit 0, got ${r.status}: ${line}\n${r.stderr}`);
-      if (!line.includes("model=beam-free")) throw new Error(`the oracle must pick beam-free first: ${line}`);
-      const toRun = ON_LIST_IN_ORDER.filter((id) => !BOARD_ON.includes(id));
-      if (JSON.stringify(toRun) !== JSON.stringify(NINE_TO_RUN)) {
-        throw new Error(`nine-to-run mismatch: ${toRun.join(", ")}`);
+      if (!line.includes("model=qwen3.8-flash")) {
+        throw new Error(`D26 board filter (PM 2026-11-16): the oracle must pick qwen3.8-flash, the first high-use batch model with no board row: ${line}`);
       }
-      pass("G3 the oracle picks beam-free first against the public board");
+      if (line.includes("beam-free")) {
+        throw new Error(`D26 board filter (PM 2026-11-16): the oracle must never pick beam-free (high_usage=false, batch=false): ${line}`);
+      }
+      const qwen = (pricing.models as Record<string, any>)["qwen3.8-flash"];
+      if (!(qwen.high_usage === true && qwen.batch === true)) {
+        throw new Error(`the expected pick qwen3.8-flash must hold high_usage=true and batch=true in the real table`);
+      }
+      const onBoardFilter = (id: string): boolean => {
+        const spec = (pricing.models as Record<string, any>)[id];
+        return spec.high_usage === true && spec.batch === true;
+      };
+      const toRun = ON_LIST_IN_ORDER.filter((id) => !BOARD_ON.includes(id) && onBoardFilter(id));
+      if (JSON.stringify(toRun) !== JSON.stringify(TO_RUN_OFF_BOARD)) {
+        throw new Error(`off-board high-use batch set mismatch: ${toRun.join(", ")}`);
+      }
+      pass("G3 the oracle picks the first high-use batch model off the board, never beam-free");
     } catch (error) { fail("go pick list", error); throw error; }
     finally { rmSync(root, { recursive: true, force: true }); }
   }, 30_000);
