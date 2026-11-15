@@ -307,29 +307,15 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     real-work.test.ts 19 passed, and leak-guard.test.ts 2 passed, each run
     alone with exit 0. The A3-3 test now asserts the exact refusal line
     (A4-4/C4-3) and passes at HEAD, so it pins the line text for Green.
-- [~] 1.17 Green. Review fixes, round 4. Fix the four items in harness/model-guide/. Touch no test file.
-  - F1 (A4-1/C4-2): preview.sh refuses an unreadable docs entry with
-    `preview: unreadable <path>`, exit 2, no traceback and no `cp:` line,
-    before any write: no half-built preview folder, and an existing preview
-    folder stays byte-identical. The dead `sys.exit` branch gets `import sys`
-    or goes away.
-  - F2 (B3-1/A4-2): preview.sh refuses every symlink under docs/ (a link to a
-    file in docs, a `../../` link out of docs, and a directory link) with
-    `preview: refused path <path>`, exit 2, before any write. publish.ts
-    uses lstat in the docs walk and maps every non-regular entry to
-    `publish: drift <path>`, exit 2, so no publish write goes through a
-    link.
-  - F3 (A4-3): publish.ts wraps the readdirSync of the walk and maps an
-    unreadable docs directory to `publish: drift <path>`, exit 2, no stack
-    trace, no write.
-  - F4 (A4-4/C4-3): the A3-3 test asserts the exact line
-    `preview: refused path <link path>`; this Red task already tightened
-    the test, so Green keeps the line text.
-  - Verify: run `model-guide-tests/preview-gate.test.ts`,
-    `model-guide-tests/input-check.test.ts`,
-    `model-guide-tests/real-work.test.ts`, and
-    `model-guide-tests/leak-guard.test.ts` with one worker and the reporter
-    set to dot; `bash -n harness/model-guide/preview.sh`.
+- [x] 6553f5b 1.17 Green. Review fixes, round 4 (A4-1/C4-2, B3-1/A4-2, A4-3, A4-4/C4-3).
+  - Files: `harness/model-guide/preview.sh`, `harness/model-guide/publish.ts`.
+  - Evidence: the Red run at HEAD failed `Tests 9 failed | 76 passed (85)`,
+    exit 1. After the fix, each file alone with one worker and the dot
+    reporter exits 0: preview-gate 85 passed, input-check 15 passed,
+    real-work 19 passed, leak-guard 2 passed; `bash -n
+    harness/model-guide/preview.sh` exits 0. The role log is
+    `measure/runs/model_guide/green-p1-6dc3b4f.log`. The task 1.9 preview
+    re-run record is `measure/runs/model_guide/preview-1.17.txt`.
 
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
