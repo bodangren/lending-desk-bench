@@ -327,6 +327,42 @@ if ! flock -n 9; then
   exit "$SKIP_RC"
 fi
 
+# ---- Unit start gate (D28) ------------------------------------------------------
+# A Lending batch unit starts only when MemAvailable is over the start limit.
+# The D9 lock above already gives one cron-daily.sh at a time for every unit
+# name of the class, so D28 adds only the memory gate. A low value waits, then
+# skips the day. A failed read fails the job (NFR-4).
+mem_available_mb() {
+  local kb
+  kb="$(awk '/^MemAvailable:/ {print $2; exit}' "$1" 2>/dev/null)"
+  [[ "$kb" =~ ^[0-9]+$ ]] || return 1
+  echo $(( kb / 1024 ))
+}
+MEMINFO="${BENCH_MEMINFO:-/proc/meminfo}"
+MEM_START_MB="${BENCH_DAILY_MEM_START_MB:-8000}"
+MEM_POLL_S="${BENCH_MEM_POLL_S:-60}"
+MEM_WAIT_S="${BENCH_MEM_WAIT_S:-1200}"
+if ! MEM_MB="$(mem_available_mb "$MEMINFO")"; then
+  daily_fail "memory: $MEMINFO has no readable MemAvailable"
+  echo "DAILY END $(date -Is)"
+  exit 1
+fi
+if [ "$MEM_MB" -le "$MEM_START_MB" ]; then
+  MEM_WAITED=0
+  while [ "$MEM_WAITED" -lt "$MEM_WAIT_S" ]; do
+    sleep "$MEM_POLL_S"
+    MEM_WAITED=$((MEM_WAITED + MEM_POLL_S))
+    if ! MEM_MB="$(mem_available_mb "$MEMINFO")"; then break; fi
+    if [ "$MEM_MB" -gt "$MEM_START_MB" ]; then break; fi
+  done
+  if [ "$MEM_MB" -le "$MEM_START_MB" ]; then
+    echo "DAILY SKIP memory: MemAvailable $MEM_MB MB at or under $MEM_START_MB MB"
+    echo "DAILY END $(date -Is)"
+    SKIP_REASON="memory: MemAvailable $MEM_MB MB at or under $MEM_START_MB MB"
+    exit "$SKIP_RC"
+  fi
+fi
+
 # ---- OpenCode host isolation (spec D1, D6, D8) ---------------------------------
 # This job owns one OpenCode job folder. The line below is the spec D8 line; a
 # dry run prints it too. The traps of spec D6 make the EXIT trap run on signals.
