@@ -6,12 +6,25 @@
  * Exit 0 writes `<folder>/real-work.json` with schema
  * `model-guide-real-work/1`. Exit 2 writes no output file and prints one
  * line `input-check: <check>` on stdout. The checks run in this order:
- * manifest, sha256, size, schema, run-sum. The schema check also tests the
- * type of each coverage key and of `generated_on`. The tool never copies the
- * input file into the repository.
+ * input, json, manifest, sha256, size, schema, run-sum.
+ *   input    the path is missing or is not a regular file
+ *   json     the input text is not JSON
+ *   schema   `schema` is not `real-work-outcomes/1`; a coverage key is
+ *            missing or has the wrong type; a coverage count is not a
+ *            non-negative safe integer; a row of `weekly` or `all_time`
+ *            holds no string route, a count that is not a non-negative safe
+ *            integer, or a malformed `ratings`, `rater_checks`, or
+ *            `work_types` value
+ *   run-sum  the `runs` sum of `weekly` or of `all_time` is not a safe
+ *            integer, or differs from `coverage.runs`
+ * The output holds only the named coverage keys of spec EV4 (plus
+ * `unknown_runs` and `other_runs`), so no extra key of the input reaches the
+ * public file. Work-type and rating-axis names are kept as own keys (a name
+ * such as `__proto__` stays a row). The tool never copies the input file
+ * into the repository.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
 const PRODUCER_ROLES = new Set([
@@ -43,9 +56,69 @@ const REQUIRED_COVERAGE_KEYS = [
   "paired_duplicates_left_out",
 ];
 
+/** The count keys of a row. Each is a non-negative safe integer. */
+const COUNT_KEYS = [
+  "runs",
+  "pass",
+  "fail",
+  "error",
+  "no_result",
+  "blocking_findings",
+];
+
 function refuse(check: string): never {
   process.stdout.write(`input-check: ${check}\n`);
   process.exit(2);
+}
+
+/** A count is a whole number at or above 0 that a sum can hold. */
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+/** Add two validated counts and refuse a sum that leaves the safe range. */
+function safeAdd(total: number, value: number): number {
+  const sum = total + value;
+  if (!Number.isSafeInteger(sum)) refuse("schema");
+  return sum;
+}
+
+/** A row of `weekly` or `all_time`: a string route, safe counts, and
+ * well-formed ratings, rater checks, and work-type counts. */
+function isRow(row: unknown): boolean {
+  if (typeof row !== "object" || row === null || Array.isArray(row)) return false;
+  const entry = row as Record<string, any>;
+  if (typeof entry.route !== "string") return false;
+  for (const key of COUNT_KEYS) {
+    if (!isCount(entry[key])) return false;
+  }
+  if (entry.rater_checks !== undefined) {
+    const checks = entry.rater_checks;
+    if (typeof checks !== "object" || checks === null || Array.isArray(checks)) return false;
+    if (!isCount(checks.n) || !isCount(checks.agreed)) return false;
+  }
+  if (entry.ratings !== undefined) {
+    const ratings = entry.ratings;
+    if (typeof ratings !== "object" || ratings === null || Array.isArray(ratings)) return false;
+    for (const axis of Object.keys(ratings)) {
+      const value = ratings[axis];
+      if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+      if (typeof value.mean !== "number" || !Number.isFinite(value.mean)) return false;
+      if (!isCount(value.n)) return false;
+    }
+  }
+  if (entry.work_types !== undefined) {
+    const types = entry.work_types;
+    if (typeof types !== "object" || types === null || Array.isArray(types)) return false;
+    for (const name of Object.keys(types)) {
+      const value = types[name];
+      if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+      for (const key of ["runs", "pass", "fail"]) {
+        if (!isCount(value[key])) return false;
+      }
+    }
+  }
+  return true;
 }
 
 function round4(value: number): number {
@@ -139,27 +212,29 @@ function newAccum(model: string): Accum {
 
 function addRow(acc: Accum, row: any): void {
   acc.routes.add(row.route);
-  acc.runs += num(row, "runs");
-  acc.pass += num(row, "pass");
-  acc.fail += num(row, "fail");
-  acc.error += num(row, "error");
-  acc.noResult += num(row, "no_result");
-  acc.blocking += num(row, "blocking_findings");
+  acc.runs = safeAdd(acc.runs, num(row, "runs"));
+  acc.pass = safeAdd(acc.pass, num(row, "pass"));
+  acc.fail = safeAdd(acc.fail, num(row, "fail"));
+  acc.error = safeAdd(acc.error, num(row, "error"));
+  acc.noResult = safeAdd(acc.noResult, num(row, "no_result"));
+  acc.blocking = safeAdd(acc.blocking, num(row, "blocking_findings"));
   const ratings = row.ratings ?? {};
   for (const axis of Object.keys(ratings)) {
     const mean = ratings[axis]?.mean;
     const n = ratings[axis]?.n;
     if (typeof mean === "number" && typeof n === "number" && n > 0) {
       acc.ratingSum.set(axis, (acc.ratingSum.get(axis) ?? 0) + mean * n);
-      acc.ratingN.set(axis, (acc.ratingN.get(axis) ?? 0) + n);
+      acc.ratingN.set(axis, safeAdd(acc.ratingN.get(axis) ?? 0, n));
     }
   }
-  acc.raterN += num(row.rater_checks, "n");
-  acc.raterAgreed += num(row.rater_checks, "agreed");
+  acc.raterN = safeAdd(acc.raterN, num(row.rater_checks, "n"));
+  acc.raterAgreed = safeAdd(acc.raterAgreed, num(row.rater_checks, "agreed"));
 }
 
 function main(): void {
   const { input, out } = parseArgs(process.argv.slice(2));
+
+  if (!existsSync(input) || !statSync(input).isFile()) refuse("input");
 
   const manifestPath = join(dirname(input), "MANIFEST.txt");
   if (!existsSync(manifestPath)) refuse("manifest");
@@ -176,16 +251,30 @@ function main(): void {
   }
   if (sumLine && sumLine.file !== basename(input)) refuse("manifest");
 
-  const doc = JSON.parse(bytes.toString("utf8"));
-  if (doc.schema !== "real-work-outcomes/1") refuse("schema");
-  if (typeof doc.generated_on !== "string") refuse("schema");
-  const coverage = doc.coverage ?? {};
+  let doc: unknown;
+  try {
+    doc = JSON.parse(bytes.toString("utf8"));
+  } catch {
+    refuse("json");
+  }
+  if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
+    refuse("schema");
+  }
+  const root = doc as Record<string, any>;
+  if (root.schema !== "real-work-outcomes/1") refuse("schema");
+  if (typeof root.generated_on !== "string") refuse("schema");
+  if (
+    typeof root.coverage !== "object" ||
+    root.coverage === null ||
+    Array.isArray(root.coverage)
+  ) {
+    refuse("schema");
+  }
+  const coverage = root.coverage as Record<string, any>;
   for (const key of REQUIRED_COVERAGE_KEYS) {
     if (!Object.hasOwn(coverage, key)) refuse("schema");
   }
-  if (typeof coverage.runs !== "number" || !Number.isFinite(coverage.runs)) {
-    refuse("schema");
-  }
+  if (!isCount(coverage.runs)) refuse("schema");
   if (typeof coverage.first_run_date !== "string") refuse("schema");
   if (typeof coverage.last_run_date !== "string") refuse("schema");
   if (
@@ -200,14 +289,23 @@ function main(): void {
   ) {
     refuse("schema");
   }
-  const leftOut = doc.coverage?.paired_duplicates_left_out;
-  if (typeof leftOut !== "number" || !Number.isInteger(leftOut)) refuse("schema");
-  const weekly = Array.isArray(doc.weekly) ? doc.weekly : [];
-  const allTime = Array.isArray(doc.all_time) ? doc.all_time : [];
-  const weeklyRuns = weekly.reduce((sum: number, r: any) => sum + num(r, "runs"), 0);
-  const allTimeRuns = allTime.reduce((sum: number, r: any) => sum + num(r, "runs"), 0);
-  if (weeklyRuns !== num(doc.coverage, "runs")) refuse("run-sum");
-  if (allTimeRuns !== num(doc.coverage, "runs")) refuse("run-sum");
+  if (!isCount(coverage.paired_duplicates_left_out)) refuse("schema");
+  const leftOut = coverage.paired_duplicates_left_out;
+  for (const key of ["runs_with_known_route", "runs_with_result"]) {
+    if (Object.hasOwn(coverage, key) && !isCount(coverage[key])) refuse("schema");
+  }
+  for (const key of ["weekly", "all_time"] as const) {
+    if (root[key] !== undefined && !Array.isArray(root[key])) refuse("schema");
+  }
+  const weekly: any[] = root.weekly ?? [];
+  const allTime: any[] = root.all_time ?? [];
+  for (const row of [...weekly, ...allTime]) {
+    if (!isRow(row)) refuse("schema");
+  }
+  const weeklyRuns = weekly.reduce((sum: number, r: any) => safeAdd(sum, r.runs), 0);
+  const allTimeRuns = allTime.reduce((sum: number, r: any) => safeAdd(sum, r.runs), 0);
+  if (weeklyRuns !== coverage.runs) refuse("run-sum");
+  if (allTimeRuns !== coverage.runs) refuse("run-sum");
 
   const weeks = [...new Set(weekly.map((r: any) => r.week))].sort();
   const last4 = new Set(weeks.slice(-4));
@@ -234,21 +332,22 @@ function main(): void {
       if (!last4.has(row.week)) continue;
       if (!group.has(row.role)) continue;
       if (modelKey(row.route) !== key) continue;
-      pass += num(row, "pass");
-      fail += num(row, "fail");
-      error += num(row, "error");
+      pass = safeAdd(pass, row.pass);
+      fail = safeAdd(fail, row.fail);
+      error = safeAdd(error, row.error);
     }
-    const n = pass + fail + error;
+    const n = safeAdd(safeAdd(pass, fail), error);
     return { value: n === 0 ? null : pass / n, n };
   };
 
   const toRow = (acc: Accum, group: Set<string>, rankByBlocking: boolean) => {
-    const n = acc.pass + acc.fail + acc.error;
-    const ratings: Record<string, { mean: number; n: number }> = {};
+    const n = safeAdd(safeAdd(acc.pass, acc.fail), acc.error);
+    const ratingEntries: Array<[string, { mean: number; n: number }]> = [];
     for (const [axis, sum] of acc.ratingSum) {
       const axisN = acc.ratingN.get(axis) ?? 0;
-      if (axisN > 0) ratings[axis] = { mean: round4(sum / axisN), n: axisN };
+      if (axisN > 0) ratingEntries.push([axis, { mean: round4(sum / axisN), n: axisN }]);
     }
+    const ratings = Object.fromEntries(ratingEntries);
     return {
       model: acc.model,
       routes: [...acc.routes].sort(),
@@ -319,15 +418,15 @@ function main(): void {
       }
       const acc = table.get(key)!;
       acc.routes.add(row.route);
-      acc.runs += num(types[name], "runs");
-      acc.pass += num(types[name], "pass");
-      acc.fail += num(types[name], "fail");
+      acc.runs = safeAdd(acc.runs, num(types[name], "runs"));
+      acc.pass = safeAdd(acc.pass, num(types[name], "pass"));
+      acc.fail = safeAdd(acc.fail, num(types[name], "fail"));
     }
   }
-  const workTypes: Record<string, unknown[]> = {};
+  const workTypeEntries: Array<[string, unknown[]]> = [];
   for (const [name, table] of work) {
     const rows = [...table].map(([model, acc]) => {
-      const n = acc.pass + acc.fail;
+      const n = safeAdd(acc.pass, acc.fail);
       return {
         model,
         routes: [...acc.routes].sort(),
@@ -356,31 +455,52 @@ function main(): void {
     rows.forEach((r, i) => {
       r.rank = i + 1;
     });
-    workTypes[name] = rows;
+    workTypeEntries.push([name, rows]);
   }
+  const workTypes = Object.fromEntries(workTypeEntries);
 
   const unknownRuns = allTime
     .filter((r: any) => r.route === "unknown")
-    .reduce((sum: number, r: any) => sum + num(r, "runs"), 0);
+    .reduce((sum: number, r: any) => safeAdd(sum, r.runs), 0);
   const otherRuns = allTime
     .filter((r: any) => r.route === "other")
-    .reduce((sum: number, r: any) => sum + num(r, "runs"), 0);
+    .reduce((sum: number, r: any) => safeAdd(sum, r.runs), 0);
+
+  const coverageOut: Record<string, unknown> = {
+    runs: coverage.runs,
+    first_run_date: coverage.first_run_date,
+    last_run_date: coverage.last_run_date,
+    share_known_route: coverage.share_known_route,
+    share_with_result: coverage.share_with_result,
+    paired_duplicates_left_out: leftOut,
+  };
+  for (const key of ["runs_with_known_route", "runs_with_result"]) {
+    if (Object.hasOwn(coverage, key)) coverageOut[key] = coverage[key];
+  }
+  coverageOut.unknown_runs = unknownRuns;
+  coverageOut.other_runs = otherRuns;
 
   const page = {
     schema: "model-guide-real-work/1",
     source: {
       file: basename(input),
       sha256,
-      generated_on: doc.generated_on,
+      generated_on: root.generated_on,
     },
-    coverage: { ...doc.coverage, unknown_runs: unknownRuns, other_runs: otherRuns },
+    coverage: coverageOut,
     producer: producerRows,
     checker: checkerRows,
     work_types: workTypes,
   };
 
+  let text: string;
+  try {
+    text = `${JSON.stringify(page, null, 2)}\n`;
+  } catch {
+    refuse("schema");
+  }
   mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, "real-work.json"), `${JSON.stringify(page, null, 2)}\n`);
+  writeFileSync(join(out, "real-work.json"), text);
 }
 
 main();
