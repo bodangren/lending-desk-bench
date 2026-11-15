@@ -11,16 +11,25 @@
  *
  * The checks run in this order:
  *   1. no approval record        -> exit 2, `publish: no approval record`
- *   2. no files section or rows  -> exit 2, `publish: no files`
- *   3. a malformed record row    -> exit 2, `publish: bad line <text>`
- *   4. an unsafe approval path, or a path that names a folder
+ *   2. no non-empty `approved_by:` line, or no non-empty `date:` line in the
+ *      record                     -> exit 2, `publish: bad approval record`;
+ *                                   the record is the consent artifact
+ *   3. no files section or rows  -> exit 2, `publish: no files`
+ *   4. a malformed record row    -> exit 2, `publish: bad line <text>`
+ *   5. an unsafe approval path, or a path that names a folder
  *                                -> exit 2, `publish: bad path <path>`
- *   5. an approved SHA-256 differs from the preview file
+ *   6. an approved SHA-256 differs from the preview file
  *                                -> exit 2, `publish: sha256 <path>`
- *   6. no preview base file, or invalid JSON in it
+ *   7. no preview base file, or invalid JSON in it, or a JSON value that is
+ *      not an object, or a `docs` value that is not an object
  *                                -> exit 2, `publish: no preview base` or
  *                                   `publish: bad preview base`
- *   7. a docs/ file differs from preview-base.json, or a docs/ entry cannot
+ *   8. the docs root is not a plain folder (for example a symlink)
+ *                                -> exit 2, `publish: bad docs root`; the
+ *                                   tool lstats the root and follows no root
+ *                                   link, so no copied file reaches a link
+ *                                   target
+ *   9. a docs/ file differs from preview-base.json, or a docs/ entry cannot
  *      be read (for example a dangling symlink) or is not a plain file or
  *      folder (a symlink to a file or to a directory)
  *                                -> exit 2, `publish: drift <path>`; the
@@ -29,15 +38,24 @@
  *                                   writes through no link and each link
  *                                   target stays byte-identical; an
  *                                   unreadable directory maps to the same
- *                                   drift line without a stack trace
- *   8. else copy each approved preview file to `<repo>/docs/<path>`, exit 0.
+ *                                   drift line without a stack trace, and
+ *                                   the root itself prints `.`
+ *  10. a destination that cannot be written
+ *                                -> exit 2, `publish: write <path>`; each
+ *                                   approved file is staged in its target
+ *                                   folder before the first rename, so a
+ *                                   refused run leaves no partial set
+ *  11. else copy each approved preview file to `<repo>/docs/<path>`, exit 0.
  * Each refusal prints one line on stdout and writes no file.
  * The drift check uses own-property checks on the preview base map.
  * A usage error prints `usage: publish.ts --preview <folder>` on stderr,
  * keeps stdout empty, and exits 2.
  */
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync,
+  statSync, writeFileSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
@@ -76,7 +94,13 @@ interface ApprovalRow {
 
 function readApproval(): ApprovalRow[] {
   if (!existsSync(APPROVAL)) refuse("publish: no approval record");
-  const lines = readFileSync(APPROVAL, "utf8").split("\n");
+  const text = readFileSync(APPROVAL, "utf8");
+  const owner = text.match(/^approved_by: (.+)$/m);
+  const date = text.match(/^date: (.+)$/m);
+  if (!owner?.[1].trim() || !date?.[1].trim()) {
+    refuse("publish: bad approval record");
+  }
+  const lines = text.split("\n");
   const start = lines.findIndex((line) => line.trim() === "files:");
   if (start === -1) refuse("publish: no files");
   const rows: ApprovalRow[] = [];
@@ -103,7 +127,7 @@ function docsFiles(): { files: string[]; broken: string[] } {
     try {
       names = readdirSync(dir).sort();
     } catch {
-      broken.push(prefix);
+      broken.push(prefix || ".");
       return;
     }
     for (const name of names) {
@@ -144,16 +168,32 @@ function main(): void {
 
   const basePath = join(preview, "preview-base.json");
   if (!existsSync(basePath)) refuse("publish: no preview base");
-  let base: { docs?: Record<string, string> };
+  let parsed: unknown;
   try {
-    base = JSON.parse(readFileSync(basePath, "utf8"));
+    parsed = JSON.parse(readFileSync(basePath, "utf8"));
   } catch {
     refuse("publish: bad preview base");
   }
-  const baseDocs: Record<string, string> = base.docs ?? {};
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    refuse("publish: bad preview base");
+  }
+  const base = parsed as { docs?: unknown };
+  if (
+    base.docs !== undefined &&
+    (typeof base.docs !== "object" || base.docs === null || Array.isArray(base.docs))
+  ) {
+    refuse("publish: bad preview base");
+  }
+  const baseDocs = (base.docs ?? {}) as Record<string, string>;
   const hasOwn = (obj: object, key: string): boolean =>
     Object.prototype.hasOwnProperty.call(obj, key);
 
+  const docsRoot = join(ROOT, "docs");
+  try {
+    if (!lstatSync(docsRoot).isDirectory()) refuse("publish: bad docs root");
+  } catch {
+    // A missing docs root falls to the drift walk below.
+  }
   const drifted = new Set<string>();
   const current = docsFiles();
   for (const rel of current.files) {
@@ -182,11 +222,31 @@ function main(): void {
   }
   if (drifted.size > 0) process.exit(2);
 
+  // Stage every approved file in its target folder before the first rename,
+  // so a failed run leaves no partial set.
+  const staged: Array<{ tmp: string; dest: string }> = [];
+  const drop = (): void => {
+    for (const item of staged) {
+      try {
+        rmSync(item.tmp, { force: true });
+      } catch {
+        // The temp file is gone or cannot be removed; the run still refuses.
+      }
+    }
+  };
   for (const row of approved) {
     const dest = join(ROOT, "docs", row.path);
-    mkdirSync(dirname(dest), { recursive: true });
-    writeFileSync(dest, readFileSync(join(preview, row.path)));
+    try {
+      mkdirSync(dirname(dest), { recursive: true });
+      const tmp = join(dirname(dest), `.publish-${process.pid}-${staged.length}.tmp`);
+      writeFileSync(tmp, readFileSync(join(preview, row.path)));
+      staged.push({ tmp, dest });
+    } catch {
+      drop();
+      refuse(`publish: write ${row.path}`);
+    }
   }
+  for (const item of staged) renameSync(item.tmp, item.dest);
 }
 
 main();
