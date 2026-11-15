@@ -1270,6 +1270,12 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Evidence: the record is `measure/runs/daily_model_schedule/red-7.9.txt`. F1 fails on the free model pick, F2 fails on the offenders beam-free, iceman-contributor-free, longcat-2.5-free, and hy4, and G3 fails on the oracle pick beam-free; daily-pick-board and daily-catchup stay green.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
 - [x] 40f98a4fdb3ef1aabb5e388f20d76a02ba094221 7.10 Green. daily-pick.ts picks only from the board filter; one shared rule with export-site-data.py. Touch no test file. Starts only when no lending-desk unit runs.
+  - Files: `harness/daily-pick.ts` adds the D26 board filter to the list branch: a candidate needs `high_usage` and `batch` not false, the same filter as `batch_models` in `export-site-data.py`. The rule 4 and rule 5 path stays unchanged. `measure/tracks/daily_model_schedule/pick-oracle.py` adds the same filter to its candidate set. No test file changed.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 --reporter=dot` exits 0.
+  - Verify: the same command exits 0 on `go-pick-list`, `daily-pick-board`, `daily-catchup`, `daily-schedule`, `daily-publish-notice`, and `daily-publish-label`.
+  - Verify: the real-table pick in a temporary folder names `qwen3.8-flash`, and the oracle line equals the `DAILY_PICK` line.
+  - Evidence: the record is `measure/runs/daily_model_schedule/green-p7-0f71749.log`. Cases F1, F2, and G3 passed at fix 40f98a4, and the cited suites stayed green. The cited log holds the real-table pick.
+  - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
 - [x] 4214c72f996fe79b4858a562860057e73e4203fe 7.11 Red. The publish label names only the runs of the publish range (check K2-1).
   - Files: `harness/schedule-tests/daily-publish-label.test.ts` only. The
     case L2 is rewritten: on a two-model D27 day each publish names only the
@@ -1280,11 +1286,11 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --maxWorkers=1 --reporter=dot` exits 0.
   - Evidence: the record is `measure/runs/daily_model_schedule/red-7.11.txt`. L2 fails on the second publish subject `alpha-model, beta-model`, L5 fails on the subject `day-record-model, pinned-run-model`, and L1, L3, L4 pass.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
-- [ ] 7.12 Green. Scope the publish label to the runs of the current publish. Touch no test file.
-  - Files: `harness/daily-pick.ts` adds the D26 board filter to the list branch: a candidate needs `high_usage` and `batch` not false, the same filter as `batch_models` in `export-site-data.py`. The rule 4 and rule 5 path stays unchanged. `measure/tracks/daily_model_schedule/pick-oracle.py` adds the same filter to its candidate set. No test file changed.
-  - Verify: `cd harness && npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 --reporter=dot` exits 0.
-  - Verify: the same command exits 0 on `go-pick-list`, `daily-pick-board`, `daily-catchup`, `daily-schedule`, `daily-publish-notice`, and `daily-publish-label`.
-  - Verify: the real-table pick in a temporary folder names `qwen3.8-flash`, and the oracle line equals the `DAILY_PICK` line.
-  - Evidence: the record is `measure/runs/daily_model_schedule/green-p7-0f71749.log`. Cases F1, F2, and G3 passed at fix 40f98a4, and the cited suites stayed green. The cited log holds the real-table pick.
+- [x] a630195fb7ad92ec1aab91d4727e49432af75046 7.12 Green. Scope the publish label to the runs of the current publish. Touch no test file.
+  - Files: `harness/cron-daily.sh` changes only the message node block. The block takes `$RUNLIST_OUT` and `$RUNS_ROOT` as two more arguments. It reads the model of each run of the current cycle from `runs/<id>/artifacts/provenance.json`, strips the provider prefix, and joins each model once in run order. It never joins `record.models` or `record.run_ids` and never uses `record.model`. The D15 zero-run line, the resume reason, and the excluded body lines stay. No test file changed.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-label.test.ts --maxWorkers=1 --reporter=dot` exits 0 with all five cases.
+  - Verify: the same command exits 0 on `daily-publish-notice`, `daily-schedule`, `daily-catchup`, `daily-unit-gate`, and `daily-pick-board-filter`.
+  - Verify: `bash -n harness/cron-daily.sh` exits 0.
+  - Evidence: the record is `measure/runs/daily_model_schedule/green-p7-eeb6c2b.log`. At role base eeb6c2b case L2 and case L5 failed with the whole-day label; the cited suites passed at fix a630195.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
 
