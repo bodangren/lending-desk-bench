@@ -459,6 +459,33 @@ describe("review B round 2: symlinked write targets and newline score names", ()
     }
   });
 
+  it("P2B2-1d before the approval a symlinked .tmp parent gives exit 2 and no outside write", () => {
+    // The preview folder sits at <root>/.tmp/model-guide-preview. The
+    // refusal loop checks that folder, but a link on its parent .tmp takes
+    // `mkdir -p` and both copies outside the repo (P2ADV2-1).
+    const outside = tempDir("outside-tmp-parent");
+    const outsideBefore = treeHashes(outside);
+    expect(outsideBefore, "the outside folder starts empty").toEqual({});
+    const { root, exportPath } = updateRepo("link-tmp-parent");
+    symlinkSync(outside, join(root, ".tmp"));
+    const treeBefore = treeHashes(root);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+    const result = runUpdate(root, exportPath);
+    expect(
+      result.status,
+      `a symlinked .tmp parent must exit 2: ${result.stdout}\n${result.stderr}`,
+    ).toBe(2);
+    const lines = result.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
+    expect(lines, `one refusal line, got: ${result.stdout}`).toHaveLength(1);
+    expect(lines[0], "the line is the documented refusal line")
+      .toMatch(/^update: refused path .+$/);
+    expect(lines[0], "the line names the planted parent").toContain(".tmp");
+    expect(treeHashes(outside), "the outside folder stays empty").toEqual(outsideBefore);
+    expect(treeHashes(root), "the repo stays byte-identical").toEqual(treeBefore);
+    expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
+  });
+
   it("P2B2-2 update: a newest score file whose name holds a newline does not steer the pick (the newest file by modification time wins)", () => {
     const { root, exportPath } = updateRepo("newline-scores");
     const scoresDir = join(root, "harness", "model-guide", "data", "review-scores");
