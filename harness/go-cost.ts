@@ -36,7 +36,13 @@ export type GoModel = {
   api: GoApi;
   high_usage: boolean;
   batch: boolean;
-  requests_per_month: number;
+  // The "Estimated requests" value of the Go plan page (spec D26). A model
+  // that the page does not list holds no value.
+  requests_per_month?: number;
+  // The D26 pick list of the Go plan page.
+  requests_unlimited?: boolean;
+  page_order?: number;
+  superseded_by?: string;
   monthly_usage_usd: number;
   rates: GoRates;
   tiers?: GoRates[];
@@ -50,6 +56,11 @@ export type GoPricing = {
   source: string;
   retrieved: string;
   high_usage_min_requests_per_month: number;
+  // The D26 pick list: the minimum of the "Estimated requests" column, the
+  // page, and the read date.
+  pick_min_requests_per_month?: number;
+  requests_source?: string;
+  requests_read?: string;
   deepseek_rate: string;
   provider: string;
   apis: Record<GoApi, { baseUrl: string }>;
@@ -163,7 +174,7 @@ export function recostUsage(
 export function batchModels(pricing: GoPricing = loadPricing().pricing): string[] {
   return Object.entries(pricing.models)
     .filter(([, spec]) => spec.high_usage && spec.batch)
-    .sort((a, b) => b[1].requests_per_month - a[1].requests_per_month)
+    .sort((a, b) => (b[1].requests_per_month ?? 0) - (a[1].requests_per_month ?? 0))
     .map(([id]) => id);
 }
 
