@@ -1,0 +1,857 @@
+{
+  "schema": "model-guide-print-audit/1",
+  "source": {
+    "sha256": "f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87"
+  },
+  "totals": {
+    "errors": 52,
+    "blockers": 13
+  },
+  "routes": {
+    "kimi-code-plan-cn/k3.1-pro": "11 of 13",
+    "claude-code/claude-sonnet-5-5#high": "13 of 13"
+  },
+  "error_types": {
+    "minor": 21,
+    "major": 18,
+    "blocker": 13
+  },
+  "errors": [
+    {
+      "id": "E01",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C1",
+          "text": "Each letter guide shows the strokes of its own letter, in the right order and direction."
+        },
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E02",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C1",
+          "text": "Each letter guide shows the strokes of its own letter, in the right order and direction."
+        },
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E03",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C1",
+          "text": "Each letter guide shows the strokes of its own letter, in the right order and direction."
+        },
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E04",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C1",
+          "text": "Each letter guide shows the strokes of its own letter, in the right order and direction."
+        },
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E05",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C1",
+          "text": "Each letter guide shows the strokes of its own letter, in the right order and direction."
+        },
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E06",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C1",
+          "text": "Each letter guide shows the strokes of its own letter, in the right order and direction."
+        },
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E07",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C2",
+          "text": "Each start dot sits on stroke 1, at the right place for that letter, in every cell."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E08",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C2",
+          "text": "Each start dot sits on stroke 1, at the right place for that letter, in every cell."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E09",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "C2",
+          "text": "Each start dot sits on stroke 1, at the right place for that letter, in every cell."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E10",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "C2",
+          "text": "Each start dot sits on stroke 1, at the right place for that letter, in every cell."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E11",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "C2",
+          "text": "Each start dot sits on stroke 1, at the right place for that letter, in every cell."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E12",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "C2",
+          "text": "Each start dot sits on stroke 1, at the right place for that letter, in every cell."
+        },
+        {
+          "code": "F3",
+          "text": "Each script instruction matches the page: position (above/below), action (look/color/draw), counts, numbers."
+        }
+      ],
+      "results": [
+        "PARTLY",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E13",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E14",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        },
+        {
+          "code": "F3",
+          "text": "Each script instruction matches the page: position (above/below), action (look/color/draw), counts, numbers."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E15",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        },
+        {
+          "code": "F3",
+          "text": "Each script instruction matches the page: position (above/below), action (look/color/draw), counts, numbers."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E16",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "D6",
+          "text": "Each picture the script names is on the page."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E17",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "D3",
+          "text": "A tricky word such as \"and\" has no picture."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E18",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "D4",
+          "text": "Each picture shows one answer only."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E19",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "D1",
+          "text": "A Thai child of 4 to 8 names each picture as its word (nut = peanut, not acorn)."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E20",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "D1",
+          "text": "A Thai child of 4 to 8 names each picture as its word (nut = peanut, not acorn)."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E21",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "D1",
+          "text": "A Thai child of 4 to 8 names each picture as its word (nut = peanut, not acorn)."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E22",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "A6",
+          "text": "No picture loses content at its edges."
+        },
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E23",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "E2",
+          "text": "Decodable text uses only taught sounds and taught tricky words."
+        },
+        {
+          "code": "F5",
+          "text": "Each step uses the right material (read-along vs decodable)."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E24",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "D2",
+          "text": "Each word is common at this age; rare or unclear words fail (alligator, olive)."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E25",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "D1",
+          "text": "A Thai child of 4 to 8 names each picture as its word (nut = peanut, not acorn)."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E26",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "D2",
+          "text": "Each word is common at this age; rare or unclear words fail (alligator, olive)."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E27",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "D1",
+          "text": "A Thai child of 4 to 8 names each picture as its word (nut = peanut, not acorn)."
+        },
+        {
+          "code": "D2",
+          "text": "Each word is common at this age; rare or unclear words fail (alligator, olive)."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E28",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "D1",
+          "text": "A Thai child of 4 to 8 names each picture as its word (nut = peanut, not acorn)."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E29",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E30",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E31",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E32",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E33",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E34",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E35",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "PARTLY"
+      ]
+    },
+    {
+      "id": "E36",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "D5",
+          "text": "Each reader picture shows what its sentence says: who, how many, where."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E37",
+      "severity": "major",
+      "type": "major",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E38",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "F3",
+          "text": "Each script instruction matches the page: position (above/below), action (look/color/draw), counts, numbers."
+        },
+        {
+          "code": "G1",
+          "text": "A non-reader can start each task from the icon, the number and the teacher's words."
+        }
+      ],
+      "results": [
+        "PARTLY",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E39",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "G3",
+          "text": "No page prints the answer to its own task."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "PARTLY"
+      ]
+    },
+    {
+      "id": "E40",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "F3",
+          "text": "Each script instruction matches the page: position (above/below), action (look/color/draw), counts, numbers."
+        },
+        {
+          "code": "G2",
+          "text": "Each item the teacher calls by number has that number printed."
+        }
+      ],
+      "results": [
+        "PARTLY",
+        "PARTLY"
+      ]
+    },
+    {
+      "id": "E41",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "F3",
+          "text": "Each script instruction matches the page: position (above/below), action (look/color/draw), counts, numbers."
+        },
+        {
+          "code": "G3",
+          "text": "No page prints the answer to its own task."
+        },
+        {
+          "code": "G4",
+          "text": "Each task is possible (items to sort are not already sorted)."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E42",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E43",
+      "severity": "major",
+      "type": "major",
+      "checklist": [
+        {
+          "code": "G2",
+          "text": "Each item the teacher calls by number has that number printed."
+        }
+      ],
+      "results": [
+        "PARTLY",
+        "PARTLY"
+      ]
+    },
+    {
+      "id": "E44",
+      "severity": "blocker",
+      "type": "blocker",
+      "checklist": [
+        {
+          "code": "E1",
+          "text": "Each word listed for a sound has that sound in the place the task names (cup fails as /p/)."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "FOUND"
+      ]
+    },
+    {
+      "id": "E45",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E46",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E47",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E48",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E49",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "C1",
+          "text": "Each letter guide shows the strokes of its own letter, in the right order and direction."
+        },
+        {
+          "code": "C3",
+          "text": "Stroke directions match the formation words of the script (\"Up to the top. Down.\")."
+        }
+      ],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E50",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E51",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [],
+      "results": [
+        "MISSED",
+        "MISSED"
+      ]
+    },
+    {
+      "id": "E52",
+      "severity": "minor",
+      "type": "minor",
+      "checklist": [
+        {
+          "code": "E4",
+          "text": "Each word list matches the book it describes."
+        }
+      ],
+      "results": [
+        "FOUND",
+        "FOUND"
+      ]
+    }
+  ],
+  "summary": {
+    "key": {
+      "blockers": 13,
+      "majors": 18,
+      "minors": 21
+    },
+    "k31pro": {
+      "blockers_found": 11,
+      "majors_found": 8,
+      "majors_partly": 3,
+      "minors_found": 1,
+      "minors_partly": 1,
+      "wrong_claims": {
+        "real": 9,
+        "disputed": 1,
+        "unchecked": 2
+      }
+    },
+    "s55": {
+      "blockers_found": 13,
+      "majors_found": 13,
+      "majors_partly": 1,
+      "minors_found": 6,
+      "minors_partly": 2,
+      "wrong_claims": {
+        "real": 11,
+        "disputed": 1,
+        "unchecked": 9
+      }
+    },
+    "bias_note": "A Sonnet 5.5 session wrote the answer key, so the s55 score may be too high. Review A noted E35 for s55 is partial, not found (minors found 5, not 6)."
+  },
+  "note": "Seeded-error answer key of one unreleased book proof. Error types and severities only; no page content. Checklist items come from the spec map where it exists, else from the report rows that found the error; errors that both runs missed and the spec does not map have an empty list."
+}

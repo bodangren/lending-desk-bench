@@ -21,8 +21,11 @@
 # the preview folder, records the SHA-256 of each copied file in
 # preview-base.json, adds the Real work and Review nav links to the preview
 # index.html (links that already exist stay single), and renders
-# real-work.html from the page template and the tool output. The fresh
-# real-work.json and real-work.html win over any stale copies from docs/.
+# real-work.html from the page template, the tool output, and the print-audit
+# data file of spec D17. The print-audit block shows the totals, the two route
+# results, the error types with their counts, the bias note, and the 52 rows
+# with their checklist items and results. It shows no placeholder line. The
+# fresh real-work.json and real-work.html win over any stale copies from docs/.
 # It writes no file under docs/. Exit 0 on success. Exit 2 when the input
 # check of real-work.ts fails; it writes nothing near the preview folder in
 # that case.
@@ -335,6 +338,67 @@ def work_tables(work_types):
     return "\n".join(parts)
 
 
+def print_audit_block():
+    """The print-audit block of spec D17, built from the data file of FR-5.
+
+    The block holds lists, not tables. A work-type table or the page guard of
+    PA1-1 reads the page after the last work-type heading, so the block adds
+    no table there.
+    """
+    path = os.path.join(root, "harness", "model-guide", "data", "print-audit-2026-11.json")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            audit = json.load(handle)
+    except (OSError, ValueError):
+        return "<p>The print audit data file is not in this preview.</p>"
+    totals = audit.get("totals") or {}
+    parts = [
+        f"<p>The print audit of the seeded-error key: {int(totals.get('errors', 0))} "
+        f"error rows, {int(totals.get('blockers', 0))} blockers. This data point is "
+        "one calibration run of the audit. It is not a rank.</p>"
+    ]
+    routes = audit.get("routes") or {}
+    if routes:
+        found = "; ".join(
+            f"{html.escape(str(name))} {html.escape(str(result))}"
+            for name, result in routes.items()
+        )
+        parts.append(f"<p><strong>Blockers found:</strong> {found}.</p>")
+    types = audit.get("error_types") or {}
+    if types:
+        entries = "\n".join(
+            f"<dt>{html.escape(str(name))}</dt><dd>{int(count)}</dd>"
+            for name, count in types.items()
+        )
+        parts.append(
+            "<p><strong>Error types with their counts:</strong></p>\n<dl>\n"
+            f"{entries}\n</dl>"
+        )
+    if isinstance(audit.get("note"), str):
+        parts.append(f'<p class="muted">{html.escape(audit["note"])}</p>')
+    rows = []
+    for row in audit.get("errors") or []:
+        items = "; ".join(
+            f"{html.escape(str(item.get('code', '')))}: "
+            f"{html.escape(str(item.get('text', '')))}"
+            for item in (row.get("checklist") or [])
+        )
+        results = ", ".join(
+            html.escape(str(value)) for value in (row.get("results") or [])
+        )
+        rows.append(
+            f"<li>{html.escape(str(row.get('id', '')))} "
+            f"({html.escape(str(row.get('severity', '')))}): "
+            f"{items or 'no checklist item'}; results {results}.</li>"
+        )
+    if rows:
+        parts.append(
+            "<p><strong>The error rows, their checklist items, and the results:</strong></p>\n"
+            "<ul>\n" + "\n".join(rows) + "\n</ul>"
+        )
+    return "\n".join(parts)
+
+
 with open(os.path.join(preview, "real-work.json"), encoding="utf-8") as handle:
     page = json.load(handle)
 
@@ -368,7 +432,7 @@ replacements = {
     "<!--MODEL-GUIDE:PRODUCER-ROWS-->": main_rows(page["producer"]),
     "<!--MODEL-GUIDE:CHECKER-ROWS-->": main_rows(page["checker"]),
     "<!--MODEL-GUIDE:WORK-TYPES-->": work_tables(page["work_types"]),
-    "<!--MODEL-GUIDE:PRINT-AUDIT-->": "",
+    "<!--MODEL-GUIDE:PRINT-AUDIT-->": print_audit_block(),
 }
 for token, value in replacements.items():
     if token not in template:
