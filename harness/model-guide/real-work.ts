@@ -407,11 +407,12 @@ function main(): void {
   }
   const work: Map<string, Map<string, WorkAccum>> = new Map();
   for (const row of allTime) {
-    if (row.route === "unknown" || row.route === "other") continue;
-    const key = modelKey(row.route);
     const types = row.work_types ?? {};
+    const skipped = row.route === "unknown" || row.route === "other";
+    const key = skipped ? "" : modelKey(row.route);
     for (const name of Object.keys(types)) {
       if (!work.has(name)) work.set(name, new Map());
+      if (skipped) continue;
       const table = work.get(name)!;
       if (!table.has(key)) {
         table.set(key, { runs: 0, pass: 0, fail: 0, routes: new Set() });

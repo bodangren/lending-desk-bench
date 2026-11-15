@@ -312,6 +312,9 @@ def work_tables(work_types):
                 html.escape(rate_text(row["pass_rate"], 4)),
                 "few runs" if row.get("few_runs") else "",
             ]))
+        if not rows:
+            parts.append(f"<h3>{html.escape(name)}</h3>\n<p>no pick yet</p>")
+            continue
         parts.append(
             f"<h3>{html.escape(name)}</h3>\n"
             '<div class="table-wrap" tabindex="0" role="region"'
