@@ -399,8 +399,14 @@ folder.
 
 Spec D17, D18, D19, FR-5, FR-6.
 
-- [ ] 2.1 Red. The print-audit block. Write
-  `harness/model-guide-tests/print-audit.test.ts` and no other file.
+- [x] 721d77a 2.1 Red. The print-audit block. Write
+  `harness/model-guide-tests/print-audit.test.ts`,
+  `harness/model-guide-tests/preview-gate.test.ts`, and the fixture folders
+  `harness/model-guide-tests/fixtures/print-audit/` and
+  `harness/model-guide-tests/fixtures/page-guard/`.
+  - Plan change (PA2-1): the widened file list cites PA2-1 of
+    `measure/runs/model_guide/phase-acceptance-9cb95b6.json`. Task 2.1 needs
+    `preview-gate.test.ts` for the four page guards G1 to G4.
   Normal cases:
   - The block shows 11 of 13 and 13 of 13, the key size 52, the error types
     with their counts, the checklist items of the mapped rows, the result of
@@ -416,8 +422,13 @@ Spec D17, D18, D19, FR-5, FR-6.
   - The page shows no line "Error types: not yet received.".
   - Verify: the file fails on the Phase 1 code. Record the failed test names
     in `measure/runs/model_guide/red-2.1.txt`.
-- [ ] 2.2 Red. The overview table. Write `harness/model-guide-tests/guide.test.ts`
+  - Evidence: commit 721d77a holds both test files and both fixture folders.
+    `measure/runs/model_guide/red-2.1.txt` holds the failed test names, the
+    exit codes, the Tests lines, and the PA2-1 reason that G1 to G4 pass at
+    the base.
+- [~] 2.2 Red. The overview table. Write `harness/model-guide-tests/guide.test.ts`
   and no other file.
+  - Note: next Red role owns this task.
   Normal cases:
   - The table has the six rows of spec D18 in that order.
   - The first source picks the first and the second choice. The evidence
