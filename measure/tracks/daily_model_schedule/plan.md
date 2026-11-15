@@ -1238,6 +1238,7 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
 - [ ] 7.6 Record the first catch-up night and the PM line. The role records the CATCHUP line, the board and due counts, the picked group, the heavy-run result, the notice result, and the PM line. The role also records the public board change.
   - Verify: the first catch-up night adds one new model to the leaderboard.
   - Verify: the PM line names the model, new flag, board length, and due count.
+  - Note: PM stop 2026-11-16 04:40:56: the orchestrator stopped lending-desk-daily.service by PM order at the model boundary after the iceman-contributor-free publish f6c2920; the next pick (qwen3.8-flash) had started no run; the unit ended failed with exit 143 and sent a FAIL notice that names the stop.
   - Lane: light lane. One maker, one checker in a different family.
 - [x] a69193df64a08d9a0cb711183c9da1f968e65d22 7.7 Red. Publish label from the run models (PM 2026-11-16).
   - Files: `harness/schedule-tests/daily-publish-label.test.ts` is the new file
@@ -1248,7 +1249,13 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --maxWorkers=1 --reporter=dot` exits 0.
   - Evidence: the record is `measure/runs/daily_model_schedule/red-7.7.txt`. The L1 and L2 failures name the label rule; L3 and L4 pin the D15 guard-stop line, the resume reason, and the excluded body lines, and pass at HEAD.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
-- [ ] 7.8 Green. The publish label from the run models in cron-daily.sh. Touch no test file. Starts only when no lending-desk unit runs.
+- [x] 0a3070bc43ad61a19226f3d4d9f81d33f5b7df30 7.8 Green. The publish label from the run models in cron-daily.sh. Touch no test file. Starts only when no lending-desk unit runs.
+  - Files: `harness/cron-daily.sh` changes only the message builder node block. The label names the models of the day runs from `record.models`, in run order, each once. The label falls back to `record.model` when no model entry has a run. No test file changed.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-label.test.ts --maxWorkers=1 --reporter=dot` exits 0.
+  - Verify: `cd harness` and the same command on `daily-publish-notice`, `daily-schedule`, `daily-catchup`, `daily-pick-board`, and `daily-unit-gate` each exits 0.
+  - Verify: `bash -n harness/cron-daily.sh` exits 0.
+  - Evidence: the record is `measure/runs/daily_model_schedule/green-p7-f6c2920.log`. Case L1 and case L2 failed at role base f6c2920 before the change. The cited suites passed after the change.
+  - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
 - [x] ac41ec935b33f94bc30c004e1b44c9fc96933ad8 7.9 Red. The D26 picker uses the board filter (high_usage and batch) (PM 2026-11-16).
   - Files: `measure/tracks/daily_model_schedule/spec.md` amends D26 with the
     board filter (the same filter as `batch_models` in
