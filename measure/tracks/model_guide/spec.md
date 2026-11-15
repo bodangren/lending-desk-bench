@@ -743,6 +743,15 @@ questions".
       A). When the first source has no qualified model, the second source
       picks. When neither has one, the cell says "no pick yet: not enough
       evidence".
+    - **Ruling Q1 (PM, 2026-11-15).** The Test writing row uses the page B
+      producer table as a whole while `real-work.json` has no role key. The
+      evidence cell starts with "page B producer". A red-only table comes
+      when the export carries the role.
+    - **Ruling Q2 (PM, 2026-11-15).** The plan line "Verify (Phase 2)" wins.
+      While track A has no complete rank, the Code review row shows "no pick
+      yet: not enough evidence". The page B checker table does not pick for
+      code review before Phase 4, because a checker pass rate measures the
+      checked work, not the review skill.
     - **Evidence cell.** The source, the number, and the run count, for
       example "page B: pass 0.86 (n=114)".
     - **Evidence date.** The `generated_on` of the export, or the date of the
