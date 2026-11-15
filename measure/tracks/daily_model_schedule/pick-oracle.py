@@ -140,7 +140,16 @@ def list_key(model_id):
     return (unlimited, -rpm if unlimited else 0, order is None, order if order is not None else 0, model_id)
 
 
-cands = [m for m in dict.fromkeys(live) if m in models and f"{prov}/{m}" in served and on_list(m)]
+def high_use(model_id):
+    # The board filter of spec D26 (PM 2026-11-16): the pick candidate set is
+    # the OpenCode Go high-use list, the same filter as `batch_models` in
+    # harness/export-site-data.py. A missing flag counts as set, so the
+    # synthetic tables of the older cases keep their candidates.
+    spec = models.get(model_id) or {}
+    return spec.get("high_usage") is not False and spec.get("batch") is not False
+
+
+cands = [m for m in dict.fromkeys(live) if m in models and f"{prov}/{m}" in served and on_list(m) and high_use(m)]
 # New of spec D26: not in models[].id of the board. History models count as
 # new. The exclude list of D26 stays out of the pick and the order array.
 new = cands if board_p is None else [m for m in cands if m not in ranked_ids]

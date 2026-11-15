@@ -18,8 +18,10 @@
 // `pick_min_requests_per_month` uses the pick list of spec D26 (the Go plan
 // page): a model is on the list when `requests_unlimited` is true or
 // `requests_per_month` is more than the minimum, and it holds no
-// `superseded_by`. A table without the field keeps rule 4 and rule 5, so the
-// synthetic tables of the older tests stay byte-for-byte.
+// `superseded_by`. A `high_usage` or `batch` flag set to false keeps a model
+// off the pick (D26 board filter, PM 2026-11-16). A table without the field
+// keeps rule 4 and rule 5, so the synthetic tables of the older tests stay
+// byte-for-byte.
 //
 // Exit 0 for a pick or a resume, 3 when no model is eligible, 2 for an input
 // fault (one `daily-pick: <reason>` line on stderr, nothing on stdout).
@@ -385,6 +387,14 @@ function selection(args: Args): never {
     const rpm = spec.requests_per_month;
     return typeof rpm === "number" && Number.isFinite(rpm) && rpm > pickMin;
   };
+  // The board filter of D26 (PM 2026-11-16): a candidate is on the OpenCode
+  // Go high-use list when `high_usage` and `batch` are set, the same filter as
+  // `batch_models` in export-site-data.py. A missing flag counts as set, so
+  // the synthetic tables of the older cases keep their candidates.
+  const onHighUse = (id: string): boolean => {
+    const spec = models[id];
+    return spec?.high_usage !== false && spec?.batch !== false;
+  };
   // The list order: unlimited models first in page order, then the counts
   // highest first, equal counts in page order, then the id in byte order.
   const listKey = (id: string): [number, number, number, number, string] => {
@@ -413,7 +423,7 @@ function selection(args: Args): never {
   };
 
   const board = loadBoard(args.board);
-  const candidates = priced.filter((id) => onList(id));
+  const candidates = priced.filter((id) => onList(id) && onHighUse(id));
   const thisWeek = candidates.filter((id) => weeks.get(id)?.has(week)).sort(byteOrder);
   // Newness of D26: not in `models[].id` of the board. A history model counts
   // as new. Without the board flag every list candidate counts as new.
