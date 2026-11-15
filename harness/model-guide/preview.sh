@@ -26,6 +26,20 @@
 # results, the error types with their counts, the bias note, and the 52 rows
 # with their checklist items and results. It shows no placeholder line. The
 # fresh real-work.json and real-work.html win over any stale copies from docs/.
+# It runs guide.ts next, writes model-guide.json into the preview folder, and
+# renders the six rows of spec D18 from pages/guide-section.html inline into
+# the preview index.html, before the current hero (FR-7, acceptance 7). Each
+# row shows the pick or "no pick yet: not enough evidence", the second choice,
+# the evidence cell, the evidence date, and the base line beside the pick. A
+# stale table shows the stale mark. The table sits in a .table-wrap with
+# tabindex="0", role="region", and an aria-label, and long text wraps at
+# 390 px. Every model name and every data text is escaped with html.escape.
+# The guide needs docs/assets/data/benchmark.json, docs/assets/data/
+# tracks.json, and the print-audit data file. When one is absent the preview
+# keeps the page and omits the table; the real repo holds all three. It reads
+# the newest review score file under harness/model-guide/data/review-scores/
+# when one exists, because Phase 4 creates that file. --today is the current
+# date, so a live preview shows its own age.
 # It writes no file under docs/. Exit 0 on success. Exit 2 when the input
 # check of real-work.ts fails; it writes nothing near the preview folder in
 # that case.
@@ -95,6 +109,47 @@ STATUS=$?
 set -e
 if [ "$STATUS" -ne 0 ]; then
   exit "$STATUS"
+fi
+
+# The overview table needs the build and tests data files and the print-audit
+# data file. A repo copy without one keeps the page and omits the table.
+OVERVIEW=""
+GUIDE_DATA="$ROOT/harness/model-guide/data"
+if [ -f "$ROOT/docs/assets/data/benchmark.json" ] \
+  && [ -f "$ROOT/docs/assets/data/tracks.json" ] \
+  && [ -f "$GUIDE_DATA/print-audit-2026-11.json" ]; then
+  OVERVIEW=1
+fi
+# The newest review score file, when Phase 4 wrote one. Without one track A
+# has no rank, which guide.ts accepts.
+SCORES=""
+for candidate in "$GUIDE_DATA"/review-scores/*.json; do
+  if [ -f "$candidate" ]; then
+    SCORES="$candidate"
+  fi
+done
+if [ -n "$OVERVIEW" ]; then
+  GUIDE_ARGS=(--real-work "$STAGING/real-work.json"
+    --print-audit "$GUIDE_DATA/print-audit-2026-11.json"
+    --benchmark "$ROOT/docs/assets/data/benchmark.json"
+    --tracks "$ROOT/docs/assets/data/tracks.json"
+    --today "$(date +%F)" --out "$STAGING")
+  if [ -n "$SCORES" ]; then
+    GUIDE_ARGS=(--real-work "$STAGING/real-work.json" --scores "$SCORES"
+      --print-audit "$GUIDE_DATA/print-audit-2026-11.json"
+      --benchmark "$ROOT/docs/assets/data/benchmark.json"
+      --tracks "$ROOT/docs/assets/data/tracks.json"
+      --today "$(date +%F)" --out "$STAGING")
+  fi
+  set +e
+  npx tsx model-guide/guide.ts "${GUIDE_ARGS[@]}"
+  GUIDE_STATUS=$?
+  set -e
+  if [ "$GUIDE_STATUS" -ne 0 ]; then
+    # A bad data file must not stop the rest of the preview. The page keeps
+    # the table out rather than show a pick that no source supports.
+    echo "preview: no overview table (guide.ts exit $GUIDE_STATUS)"
+  fi
 fi
 
 # Refuse a symlink inside an existing preview folder before any write: a
@@ -190,10 +245,16 @@ mkdir -p "$PREVIEW_ABS"
 # copies that docs/ may hold.
 cp -a "$ROOT/docs/." "$PREVIEW_ABS/"
 cp "$STAGING/real-work.json" "$PREVIEW_ABS/real-work.json"
+if [ -f "$STAGING/model-guide.json" ]; then
+  cp "$STAGING/model-guide.json" "$PREVIEW_ABS/model-guide.json"
+else
+  rm -f "$PREVIEW_ABS/model-guide.json"
+fi
 
 export MODEL_GUIDE_ROOT="$ROOT"
 export MODEL_GUIDE_PREVIEW="$PREVIEW_ABS"
 export MODEL_GUIDE_TEMPLATE="$SCRIPT_DIR/pages/real-work.html"
+export MODEL_GUIDE_GUIDE_TEMPLATE="$SCRIPT_DIR/pages/guide-section.html"
 python3 - <<'PY'
 import hashlib
 import html
@@ -203,6 +264,7 @@ import os
 root = os.environ["MODEL_GUIDE_ROOT"]
 preview = os.environ["MODEL_GUIDE_PREVIEW"]
 template_path = os.environ["MODEL_GUIDE_TEMPLATE"]
+guide_template_path = os.environ["MODEL_GUIDE_GUIDE_TEMPLATE"]
 
 
 def sha256_file(path):
@@ -231,10 +293,75 @@ with open(os.path.join(preview, "preview-base.json"), "w", encoding="utf-8") as 
     json.dump(base, handle, indent=2)
     handle.write("\n")
 
+def overview_rows(page):
+    """The six rows of spec D18 from model-guide.json, escaped.
+
+    The pick cell carries the base line beside the pick when the tool wrote
+    one. The base line never changes the pick.
+    """
+    rows = []
+    for row in page.get("rows") or []:
+        pick = html.escape(str(row.get("pick") or ""))
+        base = row.get("base_line")
+        if base is not None:
+            pick = f'{pick}<br><span class="muted">base line {float(base):.1f}</span>'
+        second = row.get("second")
+        cells = [
+            html.escape(str(row.get("kind") or "")),
+            pick,
+            html.escape(str(second)) if second is not None else "none",
+            html.escape(str(row.get("evidence") or "")),
+            html.escape(str(row.get("evidence_date") or "")),
+        ]
+        rows.append("<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>")
+    return "\n".join(rows)
+
+
+def overview_stale(page):
+    if not page.get("stale"):
+        return ""
+    return (
+        '<p class="muted" data-stale="true">Stale: the newest evidence date is '
+        "more than 14 days before today. Run the weekly update.</p>"
+    )
+
+
+def insert_overview(index_html):
+    """Put the overview section first, above the current hero."""
+    guide_path = os.path.join(preview, "model-guide.json")
+    if not os.path.exists(guide_path) or not os.path.exists(guide_template_path):
+        return index_html
+    with open(guide_path, encoding="utf-8") as handle:
+        page = json.load(handle)
+    with open(guide_template_path, encoding="utf-8") as handle:
+        section = handle.read()
+    replacements = {
+        "<!--MODEL-GUIDE:OVERVIEW-ROWS-->": overview_rows(page),
+        "<!--MODEL-GUIDE:OVERVIEW-STALE-->": overview_stale(page),
+    }
+    for token, value in replacements.items():
+        if token not in section:
+            raise SystemExit(f"preview: guide template token is missing: {token}")
+        section = section.replace(token, value)
+    # A second preview over a published index keeps exactly one section.
+    marker = 'id="model-guide"'
+    if marker in index_html:
+        start = index_html.rfind("<section", 0, index_html.find(marker))
+        end = index_html.find("</section>", start)
+        if start != -1 and end != -1:
+            index_html = index_html[:start] + index_html[end + len("</section>"):]
+    for anchor in ('<header class="hero', "<main", "</body>"):
+        position = index_html.find(anchor)
+        if position != -1:
+            return index_html[:position] + section + "\n" + index_html[position:]
+    return index_html + "\n" + section
+
+
 index_path = os.path.join(preview, "index.html")
 if os.path.exists(index_path):
     with open(index_path, encoding="utf-8") as handle:
         index_html = handle.read()
+    before = index_html
     # A published index already holds the links; keep exactly one of each.
     missing = ""
     if 'href="./real-work.html"' not in index_html:
@@ -243,6 +370,8 @@ if os.path.exists(index_path):
         missing += '<a href="./review.html">Review</a>'
     if missing:
         index_html = index_html.replace(">Results</a>", f">Results</a>{missing}", 1)
+    index_html = insert_overview(index_html)
+    if index_html != before:
         with open(index_path, "w", encoding="utf-8") as handle:
             handle.write(index_html)
 
