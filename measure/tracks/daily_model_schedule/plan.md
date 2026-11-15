@@ -1269,5 +1269,11 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Verify: `cd harness && npx vitest run schedule-tests/daily-pick-board.test.ts --maxWorkers=1 --reporter=dot` and `cd harness && npx vitest run schedule-tests/daily-catchup.test.ts --maxWorkers=1 --reporter=dot` exit 0.
   - Evidence: the record is `measure/runs/daily_model_schedule/red-7.9.txt`. F1 fails on the free model pick, F2 fails on the offenders beam-free, iceman-contributor-free, longcat-2.5-free, and hy4, and G3 fails on the oracle pick beam-free; daily-pick-board and daily-catchup stay green.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
-- [ ] 7.10 Green. daily-pick.ts picks only from the board filter; one shared rule with export-site-data.py. Touch no test file. Starts only when no lending-desk unit runs.
+- [x] 40f98a4fdb3ef1aabb5e388f20d76a02ba094221 7.10 Green. daily-pick.ts picks only from the board filter; one shared rule with export-site-data.py. Touch no test file. Starts only when no lending-desk unit runs.
+  - Files: `harness/daily-pick.ts` adds the D26 board filter to the list branch: a candidate needs `high_usage` and `batch` not false, the same filter as `batch_models` in `export-site-data.py`. The rule 4 and rule 5 path stays unchanged. `measure/tracks/daily_model_schedule/pick-oracle.py` adds the same filter to its candidate set. No test file changed.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 --reporter=dot` exits 0.
+  - Verify: the same command exits 0 on `go-pick-list`, `daily-pick-board`, `daily-catchup`, `daily-schedule`, `daily-publish-notice`, and `daily-publish-label`.
+  - Verify: the real-table pick in a temporary folder names `qwen3.8-flash`, and the oracle line equals the `DAILY_PICK` line.
+  - Evidence: the record is `measure/runs/daily_model_schedule/green-p7-0f71749.log`. Cases F1, F2, and G3 passed at fix 40f98a4, and the cited suites stayed green. The cited log holds the real-table pick.
+  - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
 
