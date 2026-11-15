@@ -6,8 +6,9 @@ import { basename, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 
 /**
- * Red tests for plan task 2.1: the print-audit input check and the
- * print-audit data file (spec D17, OD6, FR-5). They call the planned tool
+ * Red tests for plan task 2.1, re-pinned by task 2.4a to the real OD6 key
+ * shape: the print-audit input check and the print-audit data file
+ * (spec D17, OD6, FR-5). They call the tool
  * `harness/model-guide/print-audit.ts`.
  *
  * Pinned command-line interface:
@@ -16,6 +17,23 @@ import { afterAll, describe, expect, it } from "vitest";
  * output file, and prints exactly one line on stdout:
  * `input-check: <check>`.
  *
+ * Fixture shape (the real OD6 key shape, synthetic values only):
+ *   top keys   `source` (string), `note` (string), `routes` (short key ->
+ *              route name string), `summary` (object), `errors` (52 rows)
+ *   summary    `key` holds `blockers`, `majors`, `minors`; one object per
+ *              route short key holds `blockers_found` and the other
+ *              counts; `bias_note` is a string
+ *   row        `id` (string), `severity` (`blocker` | `major` | `minor`),
+ *              `checklist` (0 to 3 objects with `item` and `text`, both
+ *              strings), and one string per route short key
+ *   the row has no `type`, no `results` list, and no checklist `code`
+ *
+ * Ruling (spec D17, orchestrator 2026-11-15): the error types are the
+ * severity classes `blocker`, `major`, `minor` with the count of rows of
+ * each; the checklist code is the `item` value; a run result is the row
+ * value under the route short key; a route result is `blockers_found` of
+ * that route over `summary.key.blockers`.
+ *
  * The checks and their order:
  *   input     the path is missing or is not a regular file
  *   manifest  MANIFEST.txt is missing next to the input file, or its
@@ -23,8 +41,11 @@ import { afterAll, describe, expect, it } from "vitest";
  *   sha256    the SHA-256 differs from the `sha256:` line of MANIFEST.txt
  *   json      the input text is not JSON
  *   keys      a top key of `source`, `note`, `routes`, `summary`, or
- *             `errors` is missing
- *   errors    `errors` is not an array of exactly 52 rows
+ *             `errors` is missing, or a route value is not a string
+ *   errors    `errors` is not an array of exactly 52 valid rows; a valid
+ *             row holds `id`, `severity`, `checklist`, and one string per
+ *             route short key, and no `type` and no `results` key; a
+ *             checklist item holds `item` and `text`
  *
  * Spec D17 (finding F13) drops the size check and the schema-key check for
  * this file. No test asserts a size field or a schema key of the hand-off.
@@ -40,10 +61,12 @@ import { afterAll, describe, expect, it } from "vitest";
  *   totals.errors                52
  *   totals.blockers              13
  *   routes                       each route name to `11 of 13` style text
- *   error_types                  each error type to its row count
+ *   error_types                  `blocker`, `major`, `minor` to the row
+ *                                count of that severity class
  *   errors                       the 52 input rows, in order, with the
- *                                fields `id`, `severity`, `type`,
- *                                `checklist`, and `results`
+ *                                fields `id`, `severity`, `checklist`
+ *                                (`code` and `text`), and `results` (one
+ *                                value per route, in route order)
  *   summary                      the input `summary`
  *   note                         the input `note` (the bias note)
  *
@@ -65,7 +88,7 @@ const MANIFEST = join(FIXTURE_DIR, "MANIFEST.txt");
 const OUTPUT_NAME = "print-audit-2026-11.json";
 const PLACEHOLDER = "Error types: not yet received.";
 const TOP_KEYS = ["source", "note", "routes", "summary", "errors"];
-const ROW_KEYS = ["id", "severity", "type", "checklist", "results"];
+const ROW_KEYS = ["id", "severity", "checklist", "results"];
 
 const roots: string[] = [];
 afterAll(() => {
@@ -201,7 +224,7 @@ function forbiddenKeys(value: unknown, path: string[] = []): string[] {
 
 function histogram(rows: any[]): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const row of rows) out[row.type] = (out[row.type] ?? 0) + 1;
+  for (const row of rows) out[row.severity] = (out[row.severity] ?? 0) + 1;
   return out;
 }
 
@@ -217,6 +240,21 @@ describe("print-audit input check (spec D17)", () => {
     expect(data.routes["k3.1-pro"]).toBe("11 of 13");
     expect(data.routes["Sonnet 5.5"]).toBe("13 of 13");
 
+    // Ruling D17: a route result is blockers_found over summary.key.blockers.
+    const routeKeys = Object.keys(fixture.routes);
+    for (const key of routeKeys) {
+      const name = fixture.routes[key];
+      expect(data.routes[name], `route ${name}`).toBe(
+        `${fixture.summary[key].blockers_found} of ${fixture.summary.key.blockers}`,
+      );
+    }
+    expect(Object.keys(data.routes).sort()).toEqual(
+      Object.values(fixture.routes).slice().sort(),
+    );
+
+    // Ruling D17: the error types are the severity classes with the count
+    // of rows of each.
+    expect(Object.keys(data.error_types).sort()).toEqual(["blocker", "major", "minor"]);
     expect(data.error_types).toEqual(histogram(fixture.errors));
     const typeTotal = Object.values(data.error_types).reduce(
       (sum: number, n: number) => sum + n,
@@ -230,15 +268,26 @@ describe("print-audit input check (spec D17)", () => {
     );
     for (const [index, row] of data.errors.entries()) {
       expect(Object.keys(row).sort(), `row ${index} fields`).toEqual([...ROW_KEYS].sort());
-      expect(row.checklist).toEqual(fixture.errors[index].checklist);
-      expect(row.results).toEqual(fixture.errors[index].results);
+      const source = fixture.errors[index];
+      expect(row.severity, `row ${index} severity`).toBe(source.severity);
+      expect(row.results, `row ${index} results`).toEqual(
+        routeKeys.map((key) => source[key]),
+      );
+      expect(row.checklist, `row ${index} checklist`).toHaveLength(source.checklist.length);
+      for (const [i, item] of row.checklist.entries()) {
+        expect(Object.keys(item).sort(), `row ${index} item ${i} fields`).toEqual(
+          ["code", "text"],
+        );
+        expect(item.code, `row ${index} item ${i} code`).toBe(source.checklist[i].item);
+        expect(item.text, `row ${index} item ${i} text`).toBe(source.checklist[i].text);
+      }
     }
     const withItems = data.errors.filter((row: any) => row.checklist.length > 0);
     const withoutItems = data.errors.filter((row: any) => row.checklist.length === 0);
     expect(withItems).toHaveLength(43);
     expect(withoutItems).toHaveLength(9);
 
-    expect(data.summary).toBe(fixture.summary);
+    expect(JSON.stringify(data.summary)).toBe(JSON.stringify(fixture.summary));
     expect(data.note).toBe(fixture.note);
     expect(text).not.toContain(PLACEHOLDER);
   });
@@ -247,7 +296,7 @@ describe("print-audit input check (spec D17)", () => {
     const dir = tempDir("changed-byte");
     const json = join(dir, "print-audit-mini.json");
     const original = readFileSync(FIXTURE, "utf8");
-    const changed = original.replace("52 error rows", "53 error rows");
+    const changed = original.replace("synthetic print-audit", "synthetic print-aud1t");
     expect(changed, "the byte really changed").not.toBe(original);
     writeFileSync(json, changed);
     expect(sha256(json)).not.toBe(manifestSha());
@@ -283,6 +332,38 @@ describe("print-audit input check (spec D17)", () => {
     expectRefusal(pair.json, "row-count-out", "errors");
   });
 
+  it("N5: a row with a type key gives exit 2, one named line, and no output file", () => {
+    const pair = staged("row-type", (doc) => {
+      doc.errors[0].type = "missing content";
+    });
+    expectRefusal(pair.json, "row-type-out", "errors");
+  });
+
+  it("N5: a row with a results list gives exit 2, one named line, and no output file", () => {
+    const pair = staged("row-results", (doc) => {
+      doc.errors[0].results = ["found", "found", "missed"];
+    });
+    expectRefusal(pair.json, "row-results-out", "errors");
+  });
+
+  it("N5: a checklist item with code instead of item gives exit 2, one named line, and no output file", () => {
+    const pair = staged("item-code", (doc) => {
+      const item = doc.errors[0].checklist[0];
+      item.code = item.item;
+      delete item.item;
+    });
+    expectRefusal(pair.json, "item-code-out", "errors");
+  });
+
+  it("N5: a route value in the old object shape gives exit 2, one named line, and no output file", () => {
+    const pair = staged("route-object", (doc) => {
+      for (const key of Object.keys(doc.routes)) {
+        doc.routes[key] = { blockers_total: 13, blockers_resolved: 11 };
+      }
+    });
+    expectRefusal(pair.json, "route-object-out", "keys");
+  });
+
   it("N3: the output holds no pages, text, or file key outside the checklist", () => {
     const { text, data } = accept();
     const found = forbiddenKeys(data);
@@ -294,11 +375,14 @@ describe("print-audit input check (spec D17)", () => {
   it("N3: every string value of the output comes from the fixture or from a computed label", () => {
     const { data } = accept();
     const fixture = JSON.parse(readFileSync(FIXTURE, "utf8"));
+    // Ruling D17: a route result is blockers_found over summary.key.blockers.
+    const routeResults = Object.keys(fixture.routes).map(
+      (key) => `${fixture.summary[key].blockers_found} of ${fixture.summary.key.blockers}`,
+    );
     const allowed = new Set([
       ...stringValues(fixture),
       "model-guide-print-audit/1",
-      "11 of 13",
-      "13 of 13",
+      ...routeResults,
       manifestSha(),
     ]);
     const stray = stringValues(data).filter((value) => !allowed.has(value));

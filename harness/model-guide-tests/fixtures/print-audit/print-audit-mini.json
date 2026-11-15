@@ -2,923 +2,849 @@
   "source": "synthetic print-audit calibration (fixture, 2026-11-15)",
   "note": "One calibration run on a fixed sample. It is one data point and not a rank.",
   "routes": {
-    "k3.1-pro": {
-      "blockers_total": 13,
-      "blockers_resolved": 11
-    },
-    "Sonnet 5.5": {
-      "blockers_total": 13,
-      "blockers_resolved": 13
-    }
+    "k31pro": "k3.1-pro",
+    "s55": "Sonnet 5.5",
+    "bad01": "\"><img src=x onerror=alert(1)>"
   },
-  "summary": "52 error rows, 13 of them blockers. Two routes were checked.",
+  "summary": {
+    "key": {
+      "blockers": 13,
+      "majors": 20,
+      "minors": 19
+    },
+    "k31pro": {
+      "blockers_found": 11,
+      "majors_found": 14,
+      "majors_partly": 3,
+      "minors_found": 12,
+      "minors_partly": 4,
+      "wrong_claims": 1
+    },
+    "s55": {
+      "blockers_found": 13,
+      "majors_found": 17,
+      "majors_partly": 2,
+      "minors_found": 15,
+      "minors_partly": 3,
+      "wrong_claims": 0
+    },
+    "bad01": {
+      "blockers_found": 7,
+      "majors_found": 9,
+      "majors_partly": 5,
+      "minors_found": 8,
+      "minors_partly": 6,
+      "wrong_claims": 2
+    },
+    "__proto__": {
+      "blockers_found": 5,
+      "majors_found": 0,
+      "majors_partly": 0,
+      "minors_found": 0,
+      "minors_partly": 0,
+      "wrong_claims": 0
+    },
+    "bias_note": "The sample favors layout errors. One calibration run only."
+  },
   "errors": [
     {
       "id": "E001",
       "severity": "blocker",
-      "type": "\"><img src=x onerror=alert(1)>",
       "checklist": [
         {
-          "code": "C1-1",
-          "text": "the list marker is missing on the last item"
-        },
-        {
-          "code": "C1-2",
-          "text": "the sentence repeats the previous line"
+          "item": "PA001-1",
+          "text": "the label reads \"><img src=x onerror=alert(1)>"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E002",
       "severity": "blocker",
-      "type": "missing content",
       "checklist": [
         {
-          "code": "C2-1",
-          "text": "the sentence repeats the previous line"
+          "item": "PA002-1",
+          "text": "field \"__proto__\" must be a plain string"
         },
         {
-          "code": "C2-2",
-          "text": "the code sample uses an old flag"
-        },
-        {
-          "code": "C2-3",
-          "text": "the caption names the wrong column"
+          "item": "PA002-2",
+          "text": "the heading level jumps from h2 to h4"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E003",
       "severity": "blocker",
-      "type": "wrong claim",
       "checklist": [
         {
-          "code": "C3-1",
-          "text": "the code sample uses an old flag"
+          "item": "PA003-1",
+          "text": "the heading level jumps from h2 to h4"
+        },
+        {
+          "item": "PA003-2",
+          "text": "the list marker is missing on the last item"
+        },
+        {
+          "item": "PA003-3",
+          "text": "the sentence repeats the previous line"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E004",
       "severity": "blocker",
-      "type": "broken link",
       "checklist": [
         {
-          "code": "C4-1",
-          "text": "the caption names the wrong column"
-        },
-        {
-          "code": "C4-2",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA004-1",
+          "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E005",
       "severity": "blocker",
-      "type": "typo",
       "checklist": [
         {
-          "code": "C5-1",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA005-1",
+          "text": "the sentence repeats the previous line"
         },
         {
-          "code": "C5-2",
-          "text": "the heading level jumps from h2 to h4"
-        },
-        {
-          "code": "C5-3",
-          "text": "the list marker is missing on the last item"
+          "item": "PA005-2",
+          "text": "the code sample uses an old flag"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E006",
       "severity": "blocker",
-      "type": "formatting",
       "checklist": [
         {
-          "code": "C6-1",
+          "item": "PA006-1",
+          "text": "the code sample uses an old flag"
+        },
+        {
+          "item": "PA006-2",
+          "text": "the caption names the wrong column"
+        },
+        {
+          "item": "PA006-3",
           "text": "the heading level jumps from h2 to h4"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E007",
       "severity": "blocker",
-      "type": "missing content",
       "checklist": [
         {
-          "code": "C7-1",
-          "text": "the list marker is missing on the last item"
-        },
-        {
-          "code": "C7-2",
-          "text": "the sentence repeats the previous line"
+          "item": "PA007-1",
+          "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E008",
       "severity": "blocker",
-      "type": "wrong claim",
       "checklist": [
         {
-          "code": "C8-1",
-          "text": "the sentence repeats the previous line"
+          "item": "PA008-1",
+          "text": "the heading level jumps from h2 to h4"
         },
         {
-          "code": "C8-2",
-          "text": "the code sample uses an old flag"
-        },
-        {
-          "code": "C8-3",
-          "text": "the caption names the wrong column"
+          "item": "PA008-2",
+          "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E009",
       "severity": "blocker",
-      "type": "broken link",
       "checklist": [
         {
-          "code": "C9-1",
+          "item": "PA009-1",
+          "text": "the list marker is missing on the last item"
+        },
+        {
+          "item": "PA009-2",
+          "text": "the sentence repeats the previous line"
+        },
+        {
+          "item": "PA009-3",
           "text": "the code sample uses an old flag"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E010",
       "severity": "blocker",
-      "type": "typo",
       "checklist": [
         {
-          "code": "C10-1",
-          "text": "the caption names the wrong column"
-        },
-        {
-          "code": "C10-2",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA010-1",
+          "text": "the sentence repeats the previous line"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E011",
       "severity": "blocker",
-      "type": "formatting",
       "checklist": [
         {
-          "code": "C11-1",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA011-1",
+          "text": "the code sample uses an old flag"
         },
         {
-          "code": "C11-2",
-          "text": "the heading level jumps from h2 to h4"
-        },
-        {
-          "code": "C11-3",
-          "text": "the list marker is missing on the last item"
+          "item": "PA011-2",
+          "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E012",
       "severity": "blocker",
-      "type": "missing content",
       "checklist": [
         {
-          "code": "C12-1",
+          "item": "PA012-1",
+          "text": "the caption names the wrong column"
+        },
+        {
+          "item": "PA012-2",
           "text": "the heading level jumps from h2 to h4"
+        },
+        {
+          "item": "PA012-3",
+          "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "missed",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E013",
       "severity": "blocker",
-      "type": "wrong claim",
       "checklist": [
         {
-          "code": "C13-1",
-          "text": "the list marker is missing on the last item"
-        },
-        {
-          "code": "C13-2",
-          "text": "the sentence repeats the previous line"
+          "item": "PA013-1",
+          "text": "the heading level jumps from h2 to h4"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "missed",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E014",
-      "severity": "minor",
-      "type": "broken link",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C14-1",
+          "item": "PA014-1",
+          "text": "the list marker is missing on the last item"
+        },
+        {
+          "item": "PA014-2",
           "text": "the sentence repeats the previous line"
-        },
-        {
-          "code": "C14-2",
-          "text": "the code sample uses an old flag"
-        },
-        {
-          "code": "C14-3",
-          "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E015",
-      "severity": "minor",
-      "type": "typo",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C15-1",
+          "item": "PA015-1",
+          "text": "the sentence repeats the previous line"
+        },
+        {
+          "item": "PA015-2",
           "text": "the code sample uses an old flag"
+        },
+        {
+          "item": "PA015-3",
+          "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E016",
-      "severity": "minor",
-      "type": "formatting",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C16-1",
-          "text": "the caption names the wrong column"
-        },
-        {
-          "code": "C16-2",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA016-1",
+          "text": "the code sample uses an old flag"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E017",
-      "severity": "minor",
-      "type": "missing content",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C17-1",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA017-1",
+          "text": "the caption names the wrong column"
         },
         {
-          "code": "C17-2",
+          "item": "PA017-2",
           "text": "the heading level jumps from h2 to h4"
-        },
-        {
-          "code": "C17-3",
-          "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E018",
-      "severity": "minor",
-      "type": "wrong claim",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C18-1",
+          "item": "PA018-1",
           "text": "the heading level jumps from h2 to h4"
+        },
+        {
+          "item": "PA018-2",
+          "text": "the list marker is missing on the last item"
+        },
+        {
+          "item": "PA018-3",
+          "text": "the sentence repeats the previous line"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E019",
-      "severity": "minor",
-      "type": "broken link",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C19-1",
+          "item": "PA019-1",
           "text": "the list marker is missing on the last item"
-        },
-        {
-          "code": "C19-2",
-          "text": "the sentence repeats the previous line"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E020",
-      "severity": "minor",
-      "type": "typo",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C20-1",
+          "item": "PA020-1",
           "text": "the sentence repeats the previous line"
         },
         {
-          "code": "C20-2",
+          "item": "PA020-2",
           "text": "the code sample uses an old flag"
-        },
-        {
-          "code": "C20-3",
-          "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E021",
-      "severity": "minor",
-      "type": "formatting",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C21-1",
+          "item": "PA021-1",
           "text": "the code sample uses an old flag"
+        },
+        {
+          "item": "PA021-2",
+          "text": "the caption names the wrong column"
+        },
+        {
+          "item": "PA021-3",
+          "text": "the heading level jumps from h2 to h4"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E022",
-      "severity": "minor",
-      "type": "missing content",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C22-1",
+          "item": "PA022-1",
           "text": "the caption names the wrong column"
-        },
-        {
-          "code": "C22-2",
-          "text": "field \"__proto__\" must be a plain string"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E023",
-      "severity": "minor",
-      "type": "wrong claim",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C23-1",
-          "text": "field \"__proto__\" must be a plain string"
-        },
-        {
-          "code": "C23-2",
+          "item": "PA023-1",
           "text": "the heading level jumps from h2 to h4"
         },
         {
-          "code": "C23-3",
+          "item": "PA023-2",
           "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E024",
-      "severity": "minor",
-      "type": "broken link",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C24-1",
-          "text": "the heading level jumps from h2 to h4"
+          "item": "PA024-1",
+          "text": "the list marker is missing on the last item"
+        },
+        {
+          "item": "PA024-2",
+          "text": "the sentence repeats the previous line"
+        },
+        {
+          "item": "PA024-3",
+          "text": "the code sample uses an old flag"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E025",
-      "severity": "minor",
-      "type": "typo",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C25-1",
-          "text": "the list marker is missing on the last item"
-        },
-        {
-          "code": "C25-2",
+          "item": "PA025-1",
           "text": "the sentence repeats the previous line"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E026",
-      "severity": "minor",
-      "type": "formatting",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C26-1",
-          "text": "the sentence repeats the previous line"
-        },
-        {
-          "code": "C26-2",
+          "item": "PA026-1",
           "text": "the code sample uses an old flag"
         },
         {
-          "code": "C26-3",
+          "item": "PA026-2",
           "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E027",
-      "severity": "minor",
-      "type": "missing content",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C27-1",
-          "text": "the code sample uses an old flag"
+          "item": "PA027-1",
+          "text": "the caption names the wrong column"
+        },
+        {
+          "item": "PA027-2",
+          "text": "the heading level jumps from h2 to h4"
+        },
+        {
+          "item": "PA027-3",
+          "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E028",
-      "severity": "minor",
-      "type": "wrong claim",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C28-1",
-          "text": "the caption names the wrong column"
-        },
-        {
-          "code": "C28-2",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA028-1",
+          "text": "the heading level jumps from h2 to h4"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "partial",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E029",
-      "severity": "minor",
-      "type": "broken link",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C29-1",
-          "text": "field \"__proto__\" must be a plain string"
-        },
-        {
-          "code": "C29-2",
-          "text": "the heading level jumps from h2 to h4"
-        },
-        {
-          "code": "C29-3",
+          "item": "PA029-1",
           "text": "the list marker is missing on the last item"
+        },
+        {
+          "item": "PA029-2",
+          "text": "the sentence repeats the previous line"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "partial",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E030",
-      "severity": "minor",
-      "type": "typo",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C30-1",
-          "text": "the heading level jumps from h2 to h4"
-        }
-      ],
-      "results": [
-        "pass"
-      ]
-    },
-    {
-      "id": "E031",
-      "severity": "minor",
-      "type": "formatting",
-      "checklist": [
-        {
-          "code": "C31-1",
-          "text": "the list marker is missing on the last item"
-        },
-        {
-          "code": "C31-2",
-          "text": "the sentence repeats the previous line"
-        }
-      ],
-      "results": [
-        "pass",
-        "fail"
-      ]
-    },
-    {
-      "id": "E032",
-      "severity": "minor",
-      "type": "missing content",
-      "checklist": [
-        {
-          "code": "C32-1",
+          "item": "PA030-1",
           "text": "the sentence repeats the previous line"
         },
         {
-          "code": "C32-2",
+          "item": "PA030-2",
           "text": "the code sample uses an old flag"
         },
         {
-          "code": "C32-3",
+          "item": "PA030-3",
           "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "partial",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
-      "id": "E033",
-      "severity": "minor",
-      "type": "wrong claim",
+      "id": "E031",
+      "severity": "major",
       "checklist": [
         {
-          "code": "C33-1",
+          "item": "PA031-1",
           "text": "the code sample uses an old flag"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "missed",
+      "s55": "partial",
+      "bad01": "missed"
+    },
+    {
+      "id": "E032",
+      "severity": "major",
+      "checklist": [
+        {
+          "item": "PA032-1",
+          "text": "the caption names the wrong column"
+        },
+        {
+          "item": "PA032-2",
+          "text": "the heading level jumps from h2 to h4"
+        }
+      ],
+      "k31pro": "missed",
+      "s55": "partial",
+      "bad01": "missed"
+    },
+    {
+      "id": "E033",
+      "severity": "major",
+      "checklist": [
+        {
+          "item": "PA033-1",
+          "text": "the heading level jumps from h2 to h4"
+        },
+        {
+          "item": "PA033-2",
+          "text": "the list marker is missing on the last item"
+        },
+        {
+          "item": "PA033-3",
+          "text": "the sentence repeats the previous line"
+        }
+      ],
+      "k31pro": "missed",
+      "s55": "missed",
+      "bad01": "missed"
     },
     {
       "id": "E034",
       "severity": "minor",
-      "type": "broken link",
       "checklist": [
         {
-          "code": "C34-1",
-          "text": "the caption names the wrong column"
-        },
-        {
-          "code": "C34-2",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA034-1",
+          "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E035",
       "severity": "minor",
-      "type": "typo",
       "checklist": [
         {
-          "code": "C35-1",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA035-1",
+          "text": "the sentence repeats the previous line"
         },
         {
-          "code": "C35-2",
-          "text": "the heading level jumps from h2 to h4"
-        },
-        {
-          "code": "C35-3",
-          "text": "the list marker is missing on the last item"
+          "item": "PA035-2",
+          "text": "the code sample uses an old flag"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E036",
       "severity": "minor",
-      "type": "formatting",
       "checklist": [
         {
-          "code": "C36-1",
+          "item": "PA036-1",
+          "text": "the code sample uses an old flag"
+        },
+        {
+          "item": "PA036-2",
+          "text": "the caption names the wrong column"
+        },
+        {
+          "item": "PA036-3",
           "text": "the heading level jumps from h2 to h4"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E037",
       "severity": "minor",
-      "type": "missing content",
       "checklist": [
         {
-          "code": "C37-1",
-          "text": "the list marker is missing on the last item"
-        },
-        {
-          "code": "C37-2",
-          "text": "the sentence repeats the previous line"
+          "item": "PA037-1",
+          "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E038",
       "severity": "minor",
-      "type": "wrong claim",
       "checklist": [
         {
-          "code": "C38-1",
-          "text": "the sentence repeats the previous line"
+          "item": "PA038-1",
+          "text": "the heading level jumps from h2 to h4"
         },
         {
-          "code": "C38-2",
-          "text": "the code sample uses an old flag"
-        },
-        {
-          "code": "C38-3",
-          "text": "the caption names the wrong column"
+          "item": "PA038-2",
+          "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E039",
       "severity": "minor",
-      "type": "broken link",
       "checklist": [
         {
-          "code": "C39-1",
+          "item": "PA039-1",
+          "text": "the list marker is missing on the last item"
+        },
+        {
+          "item": "PA039-2",
+          "text": "the sentence repeats the previous line"
+        },
+        {
+          "item": "PA039-3",
           "text": "the code sample uses an old flag"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E040",
       "severity": "minor",
-      "type": "typo",
       "checklist": [
         {
-          "code": "C40-1",
-          "text": "the caption names the wrong column"
-        },
-        {
-          "code": "C40-2",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA040-1",
+          "text": "the sentence repeats the previous line"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E041",
       "severity": "minor",
-      "type": "formatting",
       "checklist": [
         {
-          "code": "C41-1",
-          "text": "field \"__proto__\" must be a plain string"
+          "item": "PA041-1",
+          "text": "the code sample uses an old flag"
         },
         {
-          "code": "C41-2",
-          "text": "the heading level jumps from h2 to h4"
-        },
-        {
-          "code": "C41-3",
-          "text": "the list marker is missing on the last item"
+          "item": "PA041-2",
+          "text": "the caption names the wrong column"
         }
       ],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "found"
     },
     {
       "id": "E042",
       "severity": "minor",
-      "type": "missing content",
       "checklist": [
         {
-          "code": "C42-1",
+          "item": "PA042-1",
+          "text": "the caption names the wrong column"
+        },
+        {
+          "item": "PA042-2",
           "text": "the heading level jumps from h2 to h4"
+        },
+        {
+          "item": "PA042-3",
+          "text": "the list marker is missing on the last item"
         }
       ],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E043",
       "severity": "minor",
-      "type": "wrong claim",
       "checklist": [
         {
-          "code": "C43-1",
-          "text": "the list marker is missing on the last item"
-        },
-        {
-          "code": "C43-2",
-          "text": "the sentence repeats the previous line"
+          "item": "PA043-1",
+          "text": "the heading level jumps from h2 to h4"
         }
       ],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E044",
       "severity": "minor",
-      "type": "broken link",
       "checklist": [],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E045",
       "severity": "minor",
-      "type": "typo",
       "checklist": [],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "found",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E046",
       "severity": "minor",
-      "type": "formatting",
       "checklist": [],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "partial",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E047",
       "severity": "minor",
-      "type": "missing content",
       "checklist": [],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "partial",
+      "s55": "found",
+      "bad01": "partial"
     },
     {
       "id": "E048",
       "severity": "minor",
-      "type": "wrong claim",
       "checklist": [],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "partial",
+      "s55": "found",
+      "bad01": "missed"
     },
     {
       "id": "E049",
       "severity": "minor",
-      "type": "broken link",
       "checklist": [],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "partial",
+      "s55": "partial",
+      "bad01": "missed"
     },
     {
       "id": "E050",
       "severity": "minor",
-      "type": "typo",
       "checklist": [],
-      "results": [
-        "pass",
-        "fail",
-        "error"
-      ]
+      "k31pro": "missed",
+      "s55": "partial",
+      "bad01": "missed"
     },
     {
       "id": "E051",
       "severity": "minor",
-      "type": "formatting",
       "checklist": [],
-      "results": [
-        "pass"
-      ]
+      "k31pro": "missed",
+      "s55": "partial",
+      "bad01": "missed"
     },
     {
       "id": "E052",
       "severity": "minor",
-      "type": "missing content",
       "checklist": [],
-      "results": [
-        "pass",
-        "fail"
-      ]
+      "k31pro": "missed",
+      "s55": "missed",
+      "bad01": "missed"
     }
   ]
 }

@@ -1,4 +1,4 @@
-sha256: 3e398199cf21090c08545053ed9c4cf1f00e33a3881508db4f96bc3899fe9785
-size: 18730
+sha256: 6230bbceadd5cef32cbb355f78d848d8cbec35c0058d15a4d1f702351a1be8ad
+size: 18684
 source-commit: none (synthetic fixture, 2026-11-15)
-row-counts: errors_rows 52, blocker_rows 13, checklist_rows 43, no_checklist_rows 9
+row-counts: errors_rows 52, blocker_rows 13, major_rows 20, minor_rows 19, checklist_rows 43, no_checklist_rows 9

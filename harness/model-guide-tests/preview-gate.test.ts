@@ -1485,7 +1485,10 @@ describe("the UX fixes U1, U3, U4 of task 1.20", () => {
  *
  * The print-audit block is built from `fixtures/print-audit/` through the
  * planned tool `harness/model-guide/print-audit.ts`, which writes
- * `harness/model-guide/data/print-audit-2026-11.json` (spec FR-5).
+ * `harness/model-guide/data/print-audit-2026-11.json` (spec FR-5). Task
+ * 2.4a re-pins the fixture to the real OD6 key shape: `routes` maps a
+ * short key to a route name, a row holds `severity` plus one string per
+ * route short key, and a checklist item holds `item` and `text`.
  * `fixtures/page-guard/` is the page B export behind G1 to G4. No test
  * reads the real hand-off file, the real export, the real docs/, a model,
  * the network, or the private folder.
@@ -1495,7 +1498,10 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
   const PAGE_GUARD_DIR = join(import.meta.dirname, "fixtures", "page-guard");
   const PRINT_AUDIT_TS = join(SOURCE, "print-audit.ts");
   const PLACEHOLDER = "Error types: not yet received.";
-  const HOSTILE_TYPE = '"><img src=x onerror=alert(1)>';
+  // Ruling D17: the fixture is the real OD6 key shape, so the hostile name
+  // is a route name and the hostile text is a checklist item text.
+  const HOSTILE_ROUTE = '"><img src=x onerror=alert(1)>';
+  const HOSTILE_ITEM_TEXT = 'the label reads "><img src=x onerror=alert(1)>';
   const HOSTILE_RAW = "<img src=x onerror=alert(1)>";
 
   /** Python `html.escape(s)`, the escape preview.sh uses. */
@@ -1605,8 +1611,10 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
   }
 
   function typeHistogram(rows: any[]): Record<string, number> {
+    // Ruling D17: an error type is a severity class with the count of rows
+    // of that class.
     const out: Record<string, number> = {};
-    for (const row of rows) out[row.type] = (out[row.type] ?? 0) + 1;
+    for (const row of rows) out[row.severity] = (out[row.severity] ?? 0) + 1;
     return out;
   }
 
@@ -1736,22 +1744,30 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     expect(section).toMatch(/not\s+a\s+rank/i);
   });
 
-  it("T11: the hostile name reaches the HTML escaped and __proto__ adds no route", () => {
+  it("T11: the hostile route name and checklist text reach the HTML escaped, and __proto__ adds no route", () => {
     const { auditSection, audit } = blockSnapshot();
     const section = auditSection as string;
-    expect(section).toContain(escapeHtml(HOSTILE_TYPE));
+    const fixture = auditFixture();
+    // The hostile route name shows in the routes line with its result.
+    expect(section).toContain(`${escapeHtml(HOSTILE_ROUTE)} ${fixture.summary.bad01.blockers_found} of ${fixture.summary.key.blockers}`);
+    expect(section).toContain(escapeHtml(HOSTILE_ITEM_TEXT));
     expect(section, "no raw img tag").not.toContain(HOSTILE_RAW);
     expect(section).toContain("__proto__");
-    const fixture = auditFixture();
-    expect(Object.keys(audit.routes).sort()).toEqual(Object.keys(fixture.routes).sort());
+    // Output route keys are the route names of the fixture (the values of
+    // the short keys). The plain `__proto__` summary key adds no route.
+    expect(Object.keys(audit.routes).sort()).toEqual(
+      Object.values(fixture.routes).slice().sort(),
+    );
     expect(Object.keys(audit.routes)).not.toContain("__proto__");
-    for (const route of Object.keys(fixture.routes)) {
-      expect(section.includes(route), `route ${route} shows in the block`).toBe(true);
+    expect(audit.errors.map((row: any) => row.id)).not.toContain("__proto__");
+    expect(audit.errors).toHaveLength(52);
+    for (const route of Object.values(fixture.routes) as string[]) {
+      expect(section.includes(escapeHtml(route)), `route ${route} shows in the block`).toBe(true);
     }
     expect(
       section.match(/\d+\s+of\s+\d+/g),
-      "the block holds exactly two route results",
-    ).toHaveLength(2);
+      "the block holds one result per route",
+    ).toHaveLength(Object.keys(fixture.routes).length);
   });
 
   it("N4: the block shows every error type with its count and no placeholder line", () => {
@@ -1759,6 +1775,8 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     const section = auditSection as string;
     expect(section).not.toContain(PLACEHOLDER);
     const expected = typeHistogram(auditFixture().errors);
+    // Ruling D17: the error types are the three severity classes.
+    expect(Object.keys(audit.error_types).sort()).toEqual(["blocker", "major", "minor"]);
     expect(Object.keys(audit.error_types).sort()).toEqual(Object.keys(expected).sort());
     for (const [type, count] of Object.entries(expected)) {
       expect(audit.error_types[type], `type ${type}`).toBe(count);
@@ -1768,5 +1786,42 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       const window = section.slice(Math.max(0, at - 40), at + escaped.length + 60);
       expect(window, `the count of ${type}`).toMatch(new RegExp(`\\b${count}\\b`));
     }
+  });
+
+  it("T1: the block rows hold the real row shape and the per-route result of each row", () => {
+    const { auditSection, audit } = blockSnapshot();
+    const section = auditSection as string;
+    const fixture = auditFixture();
+    const routeKeys = Object.keys(fixture.routes);
+    expect(audit.errors).toHaveLength(52);
+    for (const [index, row] of audit.errors.entries()) {
+      const source = fixture.errors[index];
+      expect(Object.keys(row).sort(), `row ${index} fields`).toEqual(
+        ["checklist", "id", "results", "severity"],
+      );
+      expect(row.severity, `row ${index} severity`).toBe(source.severity);
+      expect(row.results, `row ${index} per-route results`).toEqual(
+        routeKeys.map((key) => source[key]),
+      );
+      expect(row.checklist, `row ${index} checklist`).toHaveLength(source.checklist.length);
+      for (const [i, item] of row.checklist.entries()) {
+        expect(Object.keys(item).sort(), `row ${index} item ${i} fields`).toEqual(
+          ["code", "text"],
+        );
+        expect(item.code, `row ${index} item ${i} code`).toBe(source.checklist[i].item);
+        expect(item.text, `row ${index} item ${i} text`).toBe(source.checklist[i].text);
+      }
+    }
+    // The page shows the first row with its item code and text and with
+    // the result of each run.
+    const first = fixture.errors[0];
+    const li = section.match(/<li>E001 [\s\S]*?<\/li>/)?.[0] ?? "";
+    expect(li, "the E001 row reaches the block").not.toBe("");
+    expect(li).toContain(
+      `${escapeHtml(first.checklist[0].item)}: ${escapeHtml(first.checklist[0].text)}`,
+    );
+    expect(li).toContain(
+      `results ${routeKeys.map((key) => first[key]).join(", ")}`,
+    );
   });
 });

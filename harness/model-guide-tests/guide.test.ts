@@ -208,15 +208,18 @@ function realWorkFrom(exportPath: string, tag: string): { json: string; data: an
 }
 
 /** The print-audit data file of task 2.1, assembled from the synthetic
- * hand-off fixture: route results as "x of y" strings, no book content. */
+ * hand-off fixture (the real OD6 key shape, task 2.4a): a route maps a
+ * short key to a route name, and its result is `blockers_found` over
+ * `summary.key.blockers`. Route results are "x of y" strings, no book
+ * content. */
 function printAuditInput(tag: string): string {
   const handoff = JSON.parse(
     readFileSync(join(PRINT_AUDIT_DIR, "print-audit-mini.json"), "utf8"),
   );
   const dir = tempDir(`print-audit-${tag}`);
   const routes: Record<string, string> = {};
-  for (const [name, value] of Object.entries<any>(handoff.routes)) {
-    routes[name] = `${value.blockers_resolved} of ${value.blockers_total}`;
+  for (const [key, name] of Object.entries<any>(handoff.routes)) {
+    routes[name] = `${handoff.summary[key].blockers_found} of ${handoff.summary.key.blockers}`;
   }
   const doc = {
     schema: "model-guide-print-audit/1",
