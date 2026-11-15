@@ -372,6 +372,16 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `real-work.test.ts`, `leak-guard.test.ts`, and `adversarial.test.ts`,
     each alone with one worker and the reporter set to dot.
 
+- [x] 530c73a 1.22 Red. Acceptance 5 "no pick yet" (PA1-1, phase-acceptance-80c17f5).
+  - Evidence: commit 530c73a. The record is `measure/runs/model_guide/red-1.22.txt`
+    (not staged). Ruling: each work type that appears in the export (the work_types
+    keys of any all_time row, including rows on the unknown or other route) gets a
+    section on the page.
+- [~] 1.23 Green. Acceptance 5 "no pick yet" in `harness/model-guide/`. Touch no test file.
+  - Verify: run `preview-gate.test.ts`, `input-check.test.ts`, `real-work.test.ts`,
+    `leak-guard.test.ts`, and `adversarial.test.ts`, each alone with one worker and
+    the reporter set to dot.
+
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
 
