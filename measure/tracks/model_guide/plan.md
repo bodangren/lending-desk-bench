@@ -516,11 +516,23 @@ Spec D17, D18, D19, FR-5, FR-6.
     `measure/runs/model_guide/red-2.5a.txt` holds the single-file commands,
     their exit codes, their Tests lines, and each failed test name with the
     reason it fails at HEAD.
-- [~] 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test file
-  and no other file.
-  - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
-    passes.
-- [ ] 2.6 Green. Write `harness/model-guide/pages/guide-section.html` and the
+- [x] 9ecfa60 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test
+  file and no other file.
+  - The tool holds the pinned command line, the six D18 rows in order, the
+    exact row keys, the evidence forms of page B, page B producer, track A,
+    and print-audit, the evidence dates, the two base lines, the 10-run and
+    complete-rank rules, and rulings Q1 and Q2.
+  - The page-B tables are read into maps. A `__proto__` name stays an
+    ordinary entry, so no hostile name becomes a row or a route.
+  - An absent `--scores` flag or a missing score file gives the no-pick
+    code review row and exit 0. A bad input gives exit 2 and one line.
+  - The three page tests of task 2.6 still fail, because `preview.sh` does
+    not render the table yet: "T5 page", "B8-1 page", and the page part of
+    "D18 Q2".
+  - Evidence: commit 9ecfa60 holds the tool.
+    `measure/runs/model_guide/green-p2-9813d5f.log` holds the single-file
+    command, its exit code, its Tests line, and the failed test names.
+- [~] 2.6 Green. Write `harness/model-guide/pages/guide-section.html` and the
   overview edit of `harness/model-guide/preview.sh`, plus that wiring. Touch
   no test file.
   - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
