@@ -1,0 +1,419 @@
+/** The adjudication queue and the apply (spec D11, FR-12).
+ *
+ * Usage:
+ *   npx tsx model-guide/adjudicate.ts queue <set_id> \
+ *     --private <dir> --raw <dir>
+ *   npx tsx model-guide/adjudicate.ts apply <set_id> \
+ *     --private <dir> --judge-a <file> --judge-b <file>
+ *
+ * Exit 0 writes the files of the command. Exit 2 writes no file and prints
+ * one line `queue: <check>` or `apply: <check>` on stdout. A flag with no
+ * value gives `queue: --<flag> needs a value` or `apply: --<flag> needs a
+ * value`.
+ *
+ * The queue reads the keys of the set:
+ *   <private>/sets/<set_id>/keys/<diff_id>.json
+ * and the raw outputs of every route:
+ *   <raw>/<slug>/<diff_id>.txt
+ * The slug is the route name of the run. The queue never reads it and never
+ * writes it. A missing file contributes no finding.
+ *
+ * The queue counts every finding of an output in order, matched or not. The
+ * finding id is `<diff_id>#F<n>`, with n 1-based and before the 30-finding
+ * cap of spec D10, so the ids match the ids of the scorer. A finding that
+ * matches a plant of its key is not queued: the file is equal, the line is
+ * from `new_lines[0] - 3` to `new_lines[1] + 3`, and the class is in
+ * `accepted_classes`. A missing or invalid block, or a finding without
+ * `file` or `line`, adds no item.
+ *
+ * Two findings are the same claim when the diff id, the file, the line, the
+ * class, the severity, the title, and the reason are equal. The queue keeps
+ * one item per claim, and the id of the item is the id of the first route
+ * that reports the claim.
+ *
+ * The queue groups the items by diff id and file and a 3-line window:
+ * sorted by line, a line that is more than 2 above the group start opens a
+ * new group. The window of a group is `[start, start + 2]`. The queue
+ * writes `<private>/sets/<set_id>/adjudication/queue.json`:
+ *   {
+ *     "set_id": "<set_id>",
+ *     "groups": [{
+ *       "id": "<diff_id>#G<n>",
+ *       "diff_id": "<diff_id>",
+ *       "file": "<path>",
+ *       "window": [<start>, <start + 2>],
+ *       "items": [{
+ *         "id": "<diff_id>#F<n>",
+ *         "line": <line>,
+ *         "claim": {"class", "severity", "title", "reason"}
+ *       }]
+ *     }]
+ *   }
+ * The groups are sorted by diff id, then window start. The items are sorted
+ * by line, then id. The queue holds no route name and no verdict.
+ *
+ * The apply reads the queue and the two judge files. Each judge file is a
+ * flat JSON object that maps a finding id to `real-defect`, `false-claim`, or
+ * `unclear`. Only an equal verdict of both judges counts. A missing or
+ * different verdict is `unclear` (the rule of two, spec D11).
+ *
+ * The apply writes `<private>/sets/<set_id>/adjudication/verdicts.json`, the
+ * flat map that `review-score.ts --verdicts` reads:
+ *   `real-defect` is neutral and adds the finding to the `real_defects` of
+ *   the key of its diff, with exactly `id`, `file`, `new_lines: [line,
+ *   line]`, `class: "R"`, `severity`, and `source: "adjudication"`
+ *   `false-claim` is a false claim when the scorer runs with the map
+ *   `unclear` is neutral and marks the pass `provisional`
+ *
+ * The apply also writes `<private>/sets/<set_id>/adjudication/real-defects.json`
+ * for the PM hand-off:
+ *   {"set_id", "real_defects": [{"id", "diff_id", "file", "line", "class",
+ *    "severity", "title", "reason"}]}
+ *
+ * The apply never marks a plant found. A finding at a wrong line or with a
+ * wrong class stays unmatched, and it can only become a real defect or a
+ * false claim (the no-rescue rule, spec D10, D11).
+ */
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
+
+const VERDICTS = ["real-defect", "false-claim", "unclear"];
+const WINDOW = 2;
+
+/** One refusal line on stdout and exit 2. The tool writes no file. */
+function refuse(command: string, check: string): never {
+  process.stdout.write(`${command}: ${check}\n`);
+  process.exit(2);
+}
+
+function isObject(value: unknown): value is Record<string, any> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+interface Args {
+  setId: string;
+  privateDir: string;
+  rawDir: string;
+  judgeA: string;
+  judgeB: string;
+}
+
+/** The command line. Each flag takes the next token as its value. */
+function parseArgs(argv: string[], command: string): Args {
+  const setId = argv[1] ?? "";
+  if (setId === "" || setId.startsWith("--")) refuse(command, "set_id needs a value");
+  const allowed =
+    command === "queue" ? ["--private", "--raw"] : ["--private", "--judge-a", "--judge-b"];
+  const values: Record<string, string> = {};
+  let i = 2;
+  while (i < argv.length) {
+    const flag = argv[i];
+    if (!allowed.includes(flag)) refuse(command, `unknown flag ${flag}`);
+    const value = argv[i + 1] ?? "";
+    if (value === "" || value.startsWith("--")) refuse(command, `${flag} needs a value`);
+    values[flag] = value;
+    i += 2;
+  }
+  for (const flag of allowed) {
+    if (values[flag] === undefined) refuse(command, `${flag} needs a value`);
+  }
+  return {
+    setId,
+    privateDir: values["--private"],
+    rawDir: values["--raw"] ?? "",
+    judgeA: values["--judge-a"] ?? "",
+    judgeB: values["--judge-b"] ?? "",
+  };
+}
+
+interface SetPlant {
+  file: string;
+  first: number;
+  last: number;
+  class: string;
+  accepted: string[];
+}
+
+/** The plants of one key of the set. */
+function readPlants(key: any): SetPlant[] {
+  const plants: SetPlant[] = [];
+  if (!Array.isArray(key.plants)) return plants;
+  for (const plant of key.plants) {
+    if (!isObject(plant)) continue;
+    const lines = Array.isArray(plant.new_lines) ? plant.new_lines : [];
+    const first = typeof lines[0] === "number" ? lines[0] : 0;
+    const last = typeof lines[lines.length - 1] === "number" ? lines[lines.length - 1] : first;
+    plants.push({
+      file: typeof plant.file === "string" ? plant.file : "",
+      first,
+      last,
+      class: typeof plant.class === "string" ? plant.class : "",
+      accepted: Array.isArray(plant.accepted_classes)
+        ? plant.accepted_classes.filter((name: unknown) => typeof name === "string")
+        : [],
+    });
+  }
+  return plants;
+}
+
+/** A finding matches a plant when the file is equal, the line is in the
+ * window of the plant, and the class is in the accepted classes. */
+function matchesPlant(finding: any, plants: SetPlant[]): boolean {
+  for (const plant of plants) {
+    if (plant.file !== finding.file) continue;
+    if (finding.line < plant.first - WINDOW || finding.line > plant.last + WINDOW) continue;
+    if (!plant.accepted.includes(finding.class)) continue;
+    return true;
+  }
+  return false;
+}
+
+/** The findings of one output text, or null when the block is missing or
+ * invalid. */
+function readFindings(text: string): any[] | null {
+  const marked = text.indexOf("```json");
+  const fence = marked >= 0 ? "```json" : "```";
+  const open = text.indexOf(fence);
+  if (open === -1) return null;
+  const bodyStart = open + fence.length;
+  const close = text.indexOf("```", bodyStart);
+  if (close === -1) return null;
+  let doc: any;
+  try {
+    doc = JSON.parse(text.slice(bodyStart, close).trim());
+  } catch {
+    return null;
+  }
+  if (!isObject(doc) || !Array.isArray(doc.findings)) return null;
+  return doc.findings;
+}
+
+interface Entry {
+  diffId: string;
+  file: string;
+  id: string;
+  line: number;
+  claim: { class: string; severity: string; title: string; reason: string };
+}
+
+/** The claim text of a finding. A missing text is an empty string. */
+function claimOf(finding: any): Entry["claim"] {
+  return {
+    class: typeof finding.class === "string" ? finding.class : "",
+    severity: typeof finding.severity === "string" ? finding.severity : "",
+    title: typeof finding.title === "string" ? finding.title : "",
+    reason: typeof finding.reason === "string" ? finding.reason : "",
+  };
+}
+
+/** The key of a claim. Two findings with the same key are the same claim. */
+function claimKey(diffId: string, file: string, line: number, claim: Entry["claim"]): string {
+  return [diffId, file, line, claim.class, claim.severity, claim.title, claim.reason].join(" ");
+}
+
+interface Group {
+  diffId: string;
+  file: string;
+  start: number;
+  items: Entry[];
+}
+
+/** The queue file of the set. */
+function writeQueue(args: Args): void {
+  const keysDir = join(args.privateDir, "sets", args.setId, "keys");
+  if (!existsSync(keysDir) || !statSync(keysDir).isDirectory()) {
+    refuse("queue", `set missing ${args.setId}`);
+  }
+  if (!existsSync(args.rawDir) || !statSync(args.rawDir).isDirectory()) {
+    refuse("queue", "raw missing");
+  }
+
+  const diffIds = readdirSync(keysDir)
+    .filter((name) => name.endsWith(".json"))
+    .sort()
+    .map((name) => basename(name, ".json"));
+  const plantsByDiff = new Map<string, SetPlant[]>();
+  for (const diffId of diffIds) {
+    const key = JSON.parse(readFileSync(join(keysDir, `${diffId}.json`), "utf8"));
+    plantsByDiff.set(diffId, readPlants(key));
+  }
+  const slugs = readdirSync(args.rawDir)
+    .filter((name) => statSync(join(args.rawDir, name)).isDirectory())
+    .sort();
+
+  // One item per claim. The first route that reports a claim keeps the id.
+  const entries = new Map<string, Entry>();
+  for (const slug of slugs) {
+    for (const diffId of diffIds) {
+      const path = join(args.rawDir, slug, `${diffId}.txt`);
+      if (!existsSync(path) || !statSync(path).isFile()) continue;
+      const findings = readFindings(readFileSync(path, "utf8"));
+      if (findings === null) continue;
+      const plants = plantsByDiff.get(diffId) ?? [];
+      findings.forEach((finding: any, index: number) => {
+        if (!isObject(finding)) return;
+        if (typeof finding.file !== "string" || finding.file === "") return;
+        if (typeof finding.line !== "number" || !Number.isFinite(finding.line)) return;
+        if (matchesPlant(finding, plants)) return;
+        const claim = claimOf(finding);
+        const key = claimKey(diffId, finding.file, finding.line, claim);
+        if (entries.has(key)) return;
+        entries.set(key, {
+          diffId,
+          file: finding.file,
+          id: `${diffId}#F${index + 1}`,
+          line: finding.line,
+          claim,
+        });
+      });
+    }
+  }
+
+  // The groups hold the items of one diff and file and a 3-line window.
+  const byDiffFile = new Map<string, Entry[]>();
+  for (const entry of entries.values()) {
+    const key = `${entry.diffId} ${entry.file}`;
+    const list = byDiffFile.get(key) ?? [];
+    list.push(entry);
+    byDiffFile.set(key, list);
+  }
+  const groups: Group[] = [];
+  for (const list of byDiffFile.values()) {
+    const sorted = [...list].sort((a, b) => a.line - b.line || a.id.localeCompare(b.id));
+    let current: Group | null = null;
+    for (const entry of sorted) {
+      if (current === null || entry.line - current.start > WINDOW) {
+        current = { diffId: entry.diffId, file: entry.file, start: entry.line, items: [] };
+        groups.push(current);
+      }
+      current.items.push(entry);
+    }
+  }
+  groups.sort(
+    (a, b) => a.diffId.localeCompare(b.diffId) || a.start - b.start || a.file.localeCompare(b.file),
+  );
+
+  const doc = {
+    set_id: args.setId,
+    groups: groups.map((group, index) => ({
+      id: `${group.diffId}#G${index + 1}`,
+      diff_id: group.diffId,
+      file: group.file,
+      window: [group.start, group.start + WINDOW],
+      items: group.items.map((entry) => ({
+        id: entry.id,
+        line: entry.line,
+        claim: entry.claim,
+      })),
+    })),
+  };
+
+  const dir = join(args.privateDir, "sets", args.setId, "adjudication");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "queue.json"), `${JSON.stringify(doc, null, 2)}\n`);
+}
+
+/** The apply of the two judge files to the queue. */
+function writeApply(args: Args): void {
+  const dir = join(args.privateDir, "sets", args.setId, "adjudication");
+  const queuePath = join(dir, "queue.json");
+  if (!existsSync(queuePath) || !statSync(queuePath).isFile()) {
+    refuse("apply", "queue missing");
+  }
+  const queue = JSON.parse(readFileSync(queuePath, "utf8"));
+  if (!isObject(queue) || !Array.isArray(queue.groups)) refuse("apply", "queue");
+  const judgeA = readJudgeFile(args.judgeA);
+  const judgeB = readJudgeFile(args.judgeB);
+
+  const verdicts: Record<string, string> = {};
+  const realDefects: any[] = [];
+  const keyAdditions = new Map<string, any[]>();
+  for (const group of queue.groups) {
+    if (!isObject(group) || !Array.isArray(group.items)) refuse("apply", "queue");
+    const diffId = typeof group.diff_id === "string" ? group.diff_id : "";
+    // The file of a finding is on its group, not in its claim.
+    const groupFile = typeof group.file === "string" ? group.file : "";
+    for (const item of group.items) {
+      if (!isObject(item) || typeof item.id !== "string") refuse("apply", "queue");
+      const claim = isObject(item.claim) ? item.claim : {};
+      const first = judgeA[item.id];
+      const second = judgeB[item.id];
+      // The rule of two: only an equal verdict of both judges counts.
+      const verdict = first === second && VERDICTS.includes(first) ? first : "unclear";
+      verdicts[item.id] = verdict;
+      if (verdict !== "real-defect") continue;
+      const line = typeof item.line === "number" ? item.line : 0;
+      const file = groupFile;
+      const severity = typeof claim.severity === "string" ? claim.severity : "";
+      realDefects.push({
+        id: item.id,
+        diff_id: diffId,
+        file,
+        line,
+        class: typeof claim.class === "string" ? claim.class : "",
+        severity,
+        title: typeof claim.title === "string" ? claim.title : "",
+        reason: typeof claim.reason === "string" ? claim.reason : "",
+      });
+      const list = keyAdditions.get(diffId) ?? [];
+      list.push({
+        id: item.id,
+        file,
+        new_lines: [line, line],
+        class: "R",
+        severity,
+        source: "adjudication",
+      });
+      keyAdditions.set(diffId, list);
+    }
+  }
+
+  // The key of a diff holds its confirmed real defects (spec D7, D11).
+  const keysDir = join(args.privateDir, "sets", args.setId, "keys");
+  for (const [diffId, additions] of keyAdditions) {
+    const keyPath = join(keysDir, `${diffId}.json`);
+    if (!existsSync(keyPath)) refuse("apply", `key missing ${diffId}`);
+    const key = JSON.parse(readFileSync(keyPath, "utf8"));
+    const known = Array.isArray(key.real_defects) ? key.real_defects : [];
+    key.real_defects = [...known, ...additions];
+    writeFileSync(keyPath, `${JSON.stringify(key, null, 2)}\n`);
+  }
+
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "verdicts.json"), `${JSON.stringify(verdicts, null, 2)}\n`);
+  writeFileSync(
+    join(dir, "real-defects.json"),
+    `${JSON.stringify({ set_id: args.setId, real_defects: realDefects }, null, 2)}\n`,
+  );
+}
+
+/** The verdicts of one judge. A missing or unreadable file is an empty
+ * map, so every finding stays unclear. */
+function readJudgeFile(file: string): Record<string, string> {
+  if (!existsSync(file) || !statSync(file).isFile()) return {};
+  let doc: any;
+  try {
+    doc = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return {};
+  }
+  if (!isObject(doc)) return {};
+  const verdicts: Record<string, string> = {};
+  for (const [id, verdict] of Object.entries(doc)) {
+    if (typeof verdict === "string") verdicts[id] = verdict;
+  }
+  return verdicts;
+}
+
+function main(): void {
+  const argv = process.argv.slice(2);
+  const command = argv[0];
+  if (command !== "queue" && command !== "apply") {
+    refuse("queue", "unknown command");
+  }
+  const args = parseArgs(argv, command);
+  if (command === "queue") writeQueue(args);
+  else writeApply(args);
+}
+
+main();
