@@ -1171,6 +1171,22 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Note: the oracle with the real price table, the catalog of 2026w46, the served list of 2026w46, and the public board picks `muse-spark-1.3-contributor` on the current stale table. After the Green data update it must pick `beam-free` first.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds an open task, so the task went from `[ ]` to `[x]`.
   - Lane: light lane. Maker: kimi-code-plan-cn/kimi-for-coding#high (Kimi), substitution for the free MiniMax route.
+- [x] c890f1f 7.1e Red. Test fixes from the Green 7.2 CONTEST items, and the D28 unit start gate.
+  - Files: `measure/tracks/daily_model_schedule/spec.md` holds D28, FR-24,
+    AC-23, the D19 reason amendment, and the NFR-6 seam amendment (commit
+    `ceea302`). The four test files hold the CONTEST fixes and the new D28
+    cases U1 to U6 (commit `c890f1f`). No production file changed.
+  - Part A evidence, each file alone with `--no-cache --configLoader native
+    --maxWorkers=1` from `harness/`: `daily-pick-board.test.ts` exit 0 (13
+    passed); `daily-catchup.test.ts` exit 0 (21 passed);
+    `daily-schedule.test.ts` exit 0 (109 passed). All pass on Green's code
+    at `c67bbbe`.
+  - Part B evidence: `daily-unit-gate.test.ts` exit 1 (2 passed, 4 failed).
+    The failing cases are U2, U4, U5, and U6; each names the missing D28
+    gate. The cases U1 and U3 pass at HEAD and pin the D9 lock answer (one
+    `cron-daily.sh` at a time for both unit names; recovery starts the job).
+  - The record is `measure/runs/daily_model_schedule/red-7.1e.txt`.
+  - Lane: light lane. Maker: kimi-code-plan-cn/kimi-for-coding#high (Kimi).
 - [~] 7.2 Green: the implementation of D21 to D25. The role updates the nightly timer text, the `cron-daily.sh` header, the local-date and board rules, the selector, the heavy-run gate, and the notice fields. The job always passes the board file to both pickers. A REST night ends before the catalog fetch. The heavy-run split follows the amended D24 of task 7.1b, and the pick follows D26 of task 7.1c. Green also updates harness/go-pricing.json to the D26 data, implements D27, and sets the monthly guard stop to 100 %.
   - Verify: the Red command of task 7.1 exits 0.
   - Verify: the notice seam and publish notice commands of task 7.1 exit 0.
