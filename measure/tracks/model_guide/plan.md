@@ -485,6 +485,10 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: commit 5a0350c holds the tool, the data file, and the block
     wiring. `measure/runs/model_guide/green-p2-66c1759.log` holds the exit
     codes of the single-file runs and the OD6 input check.
+- [x] 3fef9a8 2.4a Red. Re-pin the print-audit fixture to the real OD6 key shape (Green 2.4 shape note).
+  - Ruling (D17): the error types are the severity classes blocker, major, minor with the count of rows of each; the checklist code is the `item` value; a run result is the row value under the route short key; a route result is `blockers_found` over `summary.key.blockers`.
+  - Evidence: commit 3fef9a8 holds the fixture pair, `print-audit.test.ts`, the PA2-1 block of `preview-gate.test.ts`, and the real-shape assembly helper of `guide.test.ts` and `update.test.ts`. `measure/runs/model_guide/red-2.4a.txt` holds the single-file commands, their exit codes, their Tests lines, and each failed test name with the reason it fails at HEAD.
+- [~] 2.4b Green. Read only the real OD6 shape in print-audit.ts. Touch no test file.
 - [~] 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
