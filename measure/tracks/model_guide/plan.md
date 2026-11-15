@@ -779,6 +779,17 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.3.txt` holds the command, the
     exit code, the failed test names, and the W of the reused corpus. The
     test adds no fixture; it reuses the keys and outputs of task 3.2.
+- [x] 0959cc2 3.3a Red. The score file meets the guide.ts reader (Phase 2 contract)
+  and D13 provisional passes. Change
+  `harness/model-guide-tests/review-score.test.ts` so that `routes[].passes`
+  is the array of the route's pass records, and add an end-to-end test with
+  `guide.ts`. Add a `guide.test.ts` test that a route with 3 passes, one of
+  them provisional, keeps its rank.
+  - Verify: the new and changed tests fail at HEAD. Record the failed test
+    names in `measure/runs/model_guide/red-3.3a.txt`.
+  - Evidence: `measure/runs/model_guide/red-3.3a.txt` holds the two commands,
+    the exit codes, the five failed test names, and the reason of each. The
+    test adds no fixture.
 - [x] 5097acc 3.4 Red. The adjudication queue. Write
   `harness/model-guide-tests/adjudicate.test.ts` and no other file.
   Normal cases:
@@ -829,6 +840,11 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     passes.
   - Evidence: commit f023951 holds the tool. `measure/runs/model_guide/green-p3-35be00c.log`
     holds the exit codes of the five runs and the empty `docs/` status.
+- [ ] 3.8a Green. review-score.ts writes the route passes as pass records;
+  guide.ts counts a provisional pass (D13). Touch no test file.
+  - Verify: `cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native`
+    and `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
+    pass.
 - [~] 3.9 Green. Write `harness/model-guide/adjudicate.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native`
