@@ -847,11 +847,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     pass.
   - Evidence: commit fd96d3b holds the two tools. `measure/runs/model_guide/green-p3-5fc37de.log`
     holds the exit codes of the eight runs and the empty `docs/` status.
-- [~] 3.9 Green. Write `harness/model-guide/adjudicate.ts`. Touch no test
+- [x] fd42d41 3.9 Green. Write `harness/model-guide/adjudicate.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native`
     passes.
-- [ ] 3.10 Green. Write `harness/model-guide/leak-check.ts`. Touch no test
+  - Evidence: commit fd42d41 holds the tool. `measure/runs/model_guide/green-p3-5eeceab.log`
+    holds the exit codes of the six runs and the empty `docs/` status.
+- [~] 3.10 Green. Write `harness/model-guide/leak-check.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native`
     passes.
