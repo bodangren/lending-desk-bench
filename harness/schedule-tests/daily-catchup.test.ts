@@ -72,6 +72,7 @@ type Fixture = {
   board: string; heavy: string; heavyLog: string; selectorLog: string;
   batchLog: string; opencodeMarker: string; openchamberMarker: string;
   cgroup: string; pmConfig: string; lock: string; queue: string;
+  meminfo: string;
 };
 type JobResult = { status: number | null; stdout: string; stderr: string };
 
@@ -193,6 +194,7 @@ function fixture(): Fixture {
   const pmConfig = join(root, "pm-config.json");
   const lock = join(root, "daily.lock");
   const queue = join(root, "selector-queue.txt");
+  const meminfo = join(root, "meminfo");
   for (const dir of [join(repo, "harness"), home, bin, runs, days]) mkdirSync(dir, { recursive: true });
 
   writeFileSync(pricing, JSON.stringify({
@@ -214,6 +216,8 @@ function fixture(): Fixture {
   }));
   writeFileSync(catalog, JSON.stringify({ live: [FRESH, QUEUED, LOW] }));
   writeFileSync(served, `opencode-go/${FRESH}\nopencode-go/${QUEUED}\nopencode-go/${LOW}\n`);
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(meminfo, "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
 
   const cronSource = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8")
     .replaceAll("/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh", join(root, "missing-real-heavy.sh"));
@@ -251,7 +255,7 @@ exec "$@"
 
   return { root, repo, origin, home, bin, runs, days, pricing, catalog, served, quota, batch,
     selector, notify, sink, board, heavy, heavyLog, selectorLog, batchLog, opencodeMarker,
-    openchamberMarker, cgroup, pmConfig, lock, queue };
+    openchamberMarker, cgroup, pmConfig, lock, queue, meminfo };
 }
 
 function setBoard(f: Fixture, count: number, history: string[] = []): void {
@@ -280,7 +284,7 @@ function runJob(f: Fixture, options: { args?: string[]; env?: Record<string, str
     BENCH_DAILY_QUOTA_CMD: f.quota, BENCH_DAILY_POST: "0", BENCH_DAILY_PUBLISH: "0",
     BENCH_DAILY_LOCK: f.lock, BENCH_DAILY_NOTIFY_CMD: f.notify,
     BENCH_DAILY_CGROUP_FILE: f.cgroup, BENCH_DAILY_PM_CONFIG: f.pmConfig,
-    BENCH_DAILY_NOW: "02:00",
+    BENCH_DAILY_NOW: "02:00", BENCH_MEMINFO: f.meminfo,
     SELECTOR_LOG: f.selectorLog, BATCH_LOG: f.batchLog, HEAVY_LOG: f.heavyLog,
     STUB_BOARD_PATH: f.board,
   };

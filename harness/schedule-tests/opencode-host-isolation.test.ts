@@ -51,6 +51,7 @@ type Fixture = {
   bin: string;
   sharedHome: string;
   record: string;
+  meminfo: string;
 };
 
 /** The fake Console export. The values are inert strings. */
@@ -194,7 +195,9 @@ function fixture(): Fixture {
   fakeRg(bin);
   fakePodman(bin);
   writeFileSync(join(sharedHome, ".local", "share", "opencode", "fake-auth.json"), fakeExport());
-  return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl") };
+  // The D28 memory seam: a fixture file, never the real /proc/meminfo.
+  writeFileSync(join(root, "meminfo"), "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
+  return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl"), meminfo: join(root, "meminfo") };
 }
 
 /**
@@ -215,6 +218,7 @@ function testEnv(f: Fixture, extra: Record<string, string>): Record<string, stri
     BENCH_OPENCODE_BIN: join(f.bin, "opencode"),
     FAKE_OPENCODE_RECORD: f.record,
     OPENCODE_DB: join(f.sharedHome, ".local", "share", "opencode", "opencode.db"),
+    BENCH_MEMINFO: f.meminfo,
     ...extra,
   };
 }
