@@ -1293,7 +1293,7 @@ describe("O1 conditions", () => {
     for (const line of ["Type=oneshot", "WorkingDirectory=/home/daniebo/Desktop/lending-desk-bench", "ExecStart=/home/daniebo/Desktop/lending-desk-bench/harness/cron-daily.sh", "StandardOutput=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log", "StandardError=append:/home/daniebo/Desktop/lending-desk-bench/reports/cron-daily.log"]) {
       expect(service, `6.5.22: missing ${D11} service line ${line}`).toContain(line);
     }
-    for (const line of ["OnCalendar=Wed,Sun 01:00:00", "Persistent=false", "Unit=lending-desk-daily.service", "WantedBy=timers.target"]) {
+    for (const line of ["OnCalendar=*-*-* 01:00:00", "Persistent=false", "Unit=lending-desk-daily.service", "WantedBy=timers.target"]) {
       expect(timer, `6.5.22: missing ${D11} timer line ${line}`).toContain(line);
     }
     expect(timer.join("\n").includes("Persistent=true"), `6.5.22: ${D11} forbids Persistent=true`).toBe(false);

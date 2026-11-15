@@ -27,7 +27,10 @@ const ROOT = resolve(import.meta.dirname, "../..");
 const HARNESS = join(ROOT, "harness");
 const TMP_ROOT = "/tmp/opencode";
 const FRESH = "fresh-model";
-const RANKED = "ranked-0";
+// The second queued model of a catch-up night. It must be new to the board:
+// `setBoard` already holds `ranked-0`, so a second run of it would change no
+// file under `docs/` and D19 would make the publish a skip.
+const QUEUED = "queued-model";
 const LOW = "low-model";
 const D21 = "D21 nightly timer";
 const D22 = "D22 night rule";
@@ -201,7 +204,7 @@ function fixture(): Fixture {
       [FRESH]: { name: FRESH, api: "openai-completions", batch: true,
         requests_per_month: 50000, page_order: 1, monthly_usage_usd: 15,
         rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
-      [RANKED]: { name: RANKED, api: "openai-completions", batch: true,
+      [QUEUED]: { name: QUEUED, api: "openai-completions", batch: true,
         requests_per_month: 40000, page_order: 2, monthly_usage_usd: 15,
         rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
       [LOW]: { name: LOW, api: "openai-completions", batch: true,
@@ -209,8 +212,8 @@ function fixture(): Fixture {
         rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
     },
   }));
-  writeFileSync(catalog, JSON.stringify({ live: [FRESH, RANKED, LOW] }));
-  writeFileSync(served, `opencode-go/${FRESH}\nopencode-go/${RANKED}\nopencode-go/${LOW}\n`);
+  writeFileSync(catalog, JSON.stringify({ live: [FRESH, QUEUED, LOW] }));
+  writeFileSync(served, `opencode-go/${FRESH}\nopencode-go/${QUEUED}\nopencode-go/${LOW}\n`);
 
   const cronSource = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8")
     .replaceAll("/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh", join(root, "missing-real-heavy.sh"));
@@ -504,7 +507,7 @@ describe("nightly catch-up", () => {
 
   caseOf("C15 two new list models in one job run give two batch sets, two publish lines, and two notices", f => {
     setBoard(f, 9);
-    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    writeFileSync(f.queue, `${FRESH}\n${QUEUED}\n`);
     const r = runJob(f, { env: { BENCH_DAILY_PUBLISH: "1", STUB_UPDATE_BOARD: "1", SELECTOR_QUEUE: f.queue } });
     expect(r.status, `${D27}: the catch-up night must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
     expect(batchCalls(f).map(call => call.track), `${D27}: two models must give two batch sets`)
@@ -513,10 +516,10 @@ describe("nightly catch-up", () => {
     const sent = sinkLines(f);
     expect(sent, `${D27}: each model must send one notice`).toHaveLength(2);
     expect(sent.filter(line => line.includes("PUBLISH") && line.includes(FRESH)), `${D27}: fresh-model must publish`).toHaveLength(1);
-    expect(sent.filter(line => line.includes("PUBLISH") && line.includes(RANKED)), `${D27}: ranked-0 must publish`).toHaveLength(1);
+    expect(sent.filter(line => line.includes("PUBLISH") && line.includes(QUEUED)), `${D27}: queued-model must publish`).toHaveLength(1);
     const record = JSON.parse(readFileSync(join(f.days, "2026-11-16.json"), "utf8")) as { models: Array<{ model: string }> };
     expect(record.models.map(entry => entry.model), `${D27}: the day record must hold one entry per model`)
-      .toEqual([FRESH, RANKED]);
+      .toEqual([FRESH, QUEUED]);
   });
 
   caseOf("C16 the last-start seam stops the loop with the pinned line", f => {
@@ -532,7 +535,7 @@ describe("nightly catch-up", () => {
 
   caseOf("C17 the max-models seam stops the loop with the pinned line", f => {
     setBoard(f, 9);
-    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    writeFileSync(f.queue, `${FRESH}\n${QUEUED}\n`);
     const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue, BENCH_DAILY_MAX_MODELS: "1" } });
     expect(r.status, `${D27}: a max-models stop must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
     expect(batchCalls(f).map(call => call.track), `${D27}: one model must give one batch set`)
@@ -559,7 +562,7 @@ describe("nightly catch-up", () => {
 
   caseOf("C19 a model-level failure sends one FAIL notice and the loop goes on", f => {
     setBoard(f, 9);
-    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    writeFileSync(f.queue, `${FRESH}\n${QUEUED}\n`);
     const r = runJob(f, { env: {
       SELECTOR_QUEUE: f.queue, BENCH_DAILY_PUBLISH: "1", STUB_UPDATE_BOARD: "1",
       BATCH_FAIL_MODEL: FRESH,
@@ -571,14 +574,14 @@ describe("nightly catch-up", () => {
       `${D27}: the failure line must name the failed model`).toBeGreaterThanOrEqual(1);
     const sent = sinkLines(f);
     expect(sent.filter(line => line.includes("FAIL") && line.includes(FRESH)), `${D27}: the failed model must send one FAIL notice`).toHaveLength(1);
-    expect(sent.filter(line => line.includes("PUBLISH") && line.includes(RANKED)), `${D27}: the next model must publish`).toHaveLength(1);
-    expect(batchCalls(f).filter(call => call.args.includes(RANKED)).length, `${D27}: the next model must run its batch set`).toBe(4);
-    expect(selectorArgs(f).length, `${D27}: the job must pick again after the failure`).toBe(2);
+    expect(sent.filter(line => line.includes("PUBLISH") && line.includes(QUEUED)), `${D27}: the next model must publish`).toHaveLength(1);
+    expect(batchCalls(f).filter(call => call.args.includes(QUEUED)).length, `${D27}: the next model must run its batch set`).toBe(4);
+    expect(selectorArgs(f).length, `${D27}: the job must pick again after the failure and once more for the caught-up check`).toBe(3);
   });
 
   caseOf("C20 a harness-level failure sends one FAIL notice and stops the loop", f => {
     setBoard(f, 9);
-    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    writeFileSync(f.queue, `${FRESH}\n${QUEUED}\n`);
     const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue, BATCH_HARNESS_FAIL: "1" } });
     expect(r.status, `${D27}: a harness failure must exit 1\n${r.stdout}\n${r.stderr}`).toBe(1);
     expect(batchCalls(f).length, `${D27}: the harness failure must stop the batches`).toBe(1);
@@ -590,7 +593,7 @@ describe("nightly catch-up", () => {
 
   caseOf("C21 the due count does not stop the loop in catch-up", f => {
     setBoard(f, 100);
-    writeFileSync(f.queue, `${FRESH}\n${RANKED}\n`);
+    writeFileSync(f.queue, `${FRESH}\n${QUEUED}\n`);
     const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue, BENCH_DAILY_PUBLISH: "1", STUB_UPDATE_BOARD: "1" } });
     expect(r.status, `${D27}: a caught-up board must not stop the loop\n${r.stdout}\n${r.stderr}`).toBe(0);
     expect(lines(r, "DAILY CATCHUP "), `${D22}: the job must print the catch-up line`)
