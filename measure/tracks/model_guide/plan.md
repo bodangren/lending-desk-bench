@@ -673,7 +673,18 @@ Spec D17, D18, D19, FR-5, FR-6.
     `measure/runs/model_guide/red-2.16.txt` holds the failed test names,
     the exit codes, the Tests lines of each single-file run, and the
     recorded contract decision on the output field `bias_note`.
-- [ ] 2.17 Green. Show the bias note in the print-audit block (P2U1-1). Touch no test file.
+- [x] 70ebfc5 2.17 Green. Show the bias note in the print-audit block (P2U1-1). Touch no test file.
+  - `print-audit.ts` writes `bias_note` beside `summary` and `note`, from
+    `summary.bias_note` when it is a string. `preview.sh`
+    `print_audit_block` renders it, escaped, and keeps the top-level note
+    line. The real data file is regenerated from the hand-off whose SHA-256
+    matches its MANIFEST, and only the `bias_note` item changed.
+  - Verify: `print-audit.test.ts` and `preview-gate.test.ts` exit 0 run
+    alone, and the other required suites stay exit 0. `git status --short
+    docs/` prints nothing.
+  - Evidence: `measure/runs/model_guide/green-p2-8579399.log` holds the
+    commands, the exit codes, and the unchanged six rows of the task 2.9
+    preview.
 
 Verify (Phase 2): page B and the overview table are in the preview folder by
 Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
