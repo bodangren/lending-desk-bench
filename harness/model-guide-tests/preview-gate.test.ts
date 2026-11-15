@@ -1467,3 +1467,306 @@ describe("the UX fixes U1, U3, U4 of task 1.20", () => {
     expect(others, `U4 aria-current on other links: ${others.join(" ")}`).toEqual([]);
   });
 });
+
+/**
+ * Red tests for plan task 2.1, phase 2: the print-audit block (spec D17,
+ * FR-5, T1, T11, N4) and the four page guards of PA2-1 (G1 to G4).
+ *
+ * PA2-1 is the accepted finding of
+ * `measure/runs/model_guide/phase-acceptance-9cb95b6.json`. It says that no
+ * test asserted the generated date, the coverage numbers, the `few runs`
+ * mark, or the ` (n=...)` run count in the generated `real-work.html`. The
+ * behavior exists, so G1 to G4 pass at the Phase 1 base. Their proof is
+ * their falsification condition: a hardcoded date, a dropped thousands
+ * comma, a missed mark, or a dropped count.
+ *
+ * The print-audit cases fail at the Phase 1 base: the Phase 1 code has no
+ * print-audit tool and no print-audit block.
+ *
+ * The print-audit block is built from `fixtures/print-audit/` through the
+ * planned tool `harness/model-guide/print-audit.ts`, which writes
+ * `harness/model-guide/data/print-audit-2026-11.json` (spec FR-5).
+ * `fixtures/page-guard/` is the page B export behind G1 to G4. No test
+ * reads the real hand-off file, the real export, the real docs/, a model,
+ * the network, or the private folder.
+ */
+describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
+  const PRINT_AUDIT_DIR = join(import.meta.dirname, "fixtures", "print-audit");
+  const PAGE_GUARD_DIR = join(import.meta.dirname, "fixtures", "page-guard");
+  const PRINT_AUDIT_TS = join(SOURCE, "print-audit.ts");
+  const PLACEHOLDER = "Error types: not yet received.";
+  const HOSTILE_TYPE = '"><img src=x onerror=alert(1)>';
+  const HOSTILE_RAW = "<img src=x onerror=alert(1)>";
+
+  /** Python `html.escape(s)`, the escape preview.sh uses. */
+  function escapeHtml(value: string): string {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#x27;");
+  }
+
+  function stagePageGuard(root: string): string {
+    const dir = join(root, "fixture-page-guard");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "real-work-page.json"),
+      readFileSync(join(PAGE_GUARD_DIR, "real-work-page.json")),
+    );
+    writeFileSync(join(dir, "MANIFEST.txt"), readFileSync(join(PAGE_GUARD_DIR, "MANIFEST.txt")));
+    return join(dir, "real-work-page.json");
+  }
+
+  /** Write the print-audit data file of the temp repo through the tool. */
+  function stagePrintAuditData(root: string): void {
+    if (!existsSync(PRINT_AUDIT_TS)) {
+      throw new Error(
+        `production file is missing: ${PRINT_AUDIT_TS} (Phase 1 has no print-audit tool)`,
+      );
+    }
+    const dir = join(root, "fixture-print-audit");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "print-audit-mini.json"),
+      readFileSync(join(PRINT_AUDIT_DIR, "print-audit-mini.json")),
+    );
+    writeFileSync(join(dir, "MANIFEST.txt"), readFileSync(join(PRINT_AUDIT_DIR, "MANIFEST.txt")));
+    const tsx = join(root, "harness", "node_modules", ".bin", "tsx");
+    const out = join(root, "harness", "model-guide", "data");
+    const result = spawnSync(
+      tsx,
+      ["model-guide/print-audit.ts", "--input", join(dir, "print-audit-mini.json"), "--out", out],
+      { cwd: join(root, "harness"), env: env(), encoding: "utf8", timeout: 60_000 },
+    );
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(existsSync(join(out, "print-audit-2026-11.json"))).toBe(true);
+  }
+
+  interface Snapshot {
+    page: string;
+    json: any;
+    audit?: any;
+    auditSection?: string;
+  }
+
+  let pageGuardCache: Snapshot | null = null;
+  let blockCache: Snapshot | null = null;
+
+  /** The generated page of the page-guard fixture (G1 to G4). */
+  function pageGuardSnapshot(): Snapshot {
+    if (!pageGuardCache) {
+      const root = repoFixture("page-guard");
+      const exportPath = stagePageGuard(root);
+      const result = runPreviewArgs(root, ["--export", exportPath]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const preview = previewFolder(root);
+      pageGuardCache = {
+        page: readFileSync(join(preview, "real-work.html"), "utf8"),
+        json: JSON.parse(readFileSync(join(preview, "real-work.json"), "utf8")),
+      };
+    }
+    return pageGuardCache;
+  }
+
+  /** The generated page that holds the print-audit block (T1, T11, N4). */
+  function blockSnapshot(): Snapshot {
+    if (!blockCache) {
+      const root = repoFixture("print-audit-block");
+      stagePrintAuditData(root);
+      const exportPath = stagePageGuard(root);
+      const result = runPreviewArgs(root, ["--export", exportPath]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const preview = previewFolder(root);
+      const page = readFileSync(join(preview, "real-work.html"), "utf8");
+      const at = page.indexOf("<h2>Print audit</h2>");
+      expect(at, "the page holds a Print audit heading").toBeGreaterThan(-1);
+      const start = page.lastIndexOf("<section", at);
+      const end = page.indexOf("</section>", at);
+      expect(end, "the Print audit section closes").toBeGreaterThan(at);
+      blockCache = {
+        page,
+        json: JSON.parse(readFileSync(join(preview, "real-work.json"), "utf8")),
+        audit: JSON.parse(
+          readFileSync(
+            join(root, "harness", "model-guide", "data", "print-audit-2026-11.json"),
+            "utf8",
+          ),
+        ),
+        auditSection: page.slice(start, end + "</section>".length),
+      };
+    }
+    return blockCache;
+  }
+
+  function auditFixture(): any {
+    return JSON.parse(readFileSync(join(PRINT_AUDIT_DIR, "print-audit-mini.json"), "utf8"));
+  }
+
+  function typeHistogram(rows: any[]): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const row of rows) out[row.type] = (out[row.type] ?? 0) + 1;
+    return out;
+  }
+
+  function bodyRows(section: string): string[][] {
+    const body = section.split("</thead>")[1] ?? "";
+    const rows = [...body.matchAll(/<tr>([\s\S]*?)<\/tr>/g)];
+    return rows.map((match) => {
+      const cells = [...match[1].matchAll(/<td>([\s\S]*?)<\/td>/g)];
+      return cells.map((cell) => cell[1]);
+    });
+  }
+
+  function mainSection(page: string, heading: string): string {
+    const at = page.indexOf(`<h2>${heading}</h2>`);
+    expect(at, `the page holds a ${heading} heading`).toBeGreaterThan(-1);
+    const end = page.indexOf("</section>", at);
+    expect(end).toBeGreaterThan(at);
+    return page.slice(at, end);
+  }
+
+  function workTypeSection(page: string, name: string): string {
+    const at = page.indexOf(`<h3>${escapeHtml(name)}</h3>`);
+    expect(at, `the page holds the ${name} work type`).toBeGreaterThan(-1);
+    const nextHeading = page.indexOf("<h3>", at + 1);
+    const nextSection = page.indexOf("</section>", at);
+    const end = nextHeading < 0 || nextSection < nextHeading ? nextSection : nextHeading;
+    return page.slice(at, end);
+  }
+
+  it("G1: the source line carries generated 2026-10-20 from the sentinel fixture", () => {
+    const { page } = pageGuardSnapshot();
+    expect(page).toContain("generated 2026-10-20");
+    expect(page).not.toContain("generated 2026-11-14");
+  });
+
+  it("G2: the coverage block holds 1,285, the two dates, and both shares as percents", () => {
+    const { page, json } = pageGuardSnapshot();
+    expect(json.coverage.runs).toBe(1285);
+    expect(page).toContain("1,285");
+    expect(page).toContain(
+      `${json.coverage.first_run_date} to ${json.coverage.last_run_date}`,
+    );
+    expect(page).toContain("2026-10-01 to 2026-11-01");
+    expect(page).toContain(`${(json.coverage.share_known_route * 100).toFixed(1)} %`);
+    expect(page).toContain(`${(json.coverage.share_with_result * 100).toFixed(1)} %`);
+    expect(page).toContain("38.9 %");
+    expect(page).toContain("77.8 %");
+  });
+
+  it("G3: each few-runs row shows few runs and a row with 10 results shows none", () => {
+    const { page, json } = pageGuardSnapshot();
+    for (const [group, heading] of [
+      ["producer", "Producer roles"],
+      ["checker", "Checker roles"],
+    ] as const) {
+      const rows = json[group];
+      expect(rows.some((row: any) => row.few_runs), `${group} has a marked row`).toBe(true);
+      expect(rows.some((row: any) => !row.few_runs), `${group} has an unmarked row`).toBe(true);
+      const html = bodyRows(mainSection(page, heading));
+      expect(html).toHaveLength(rows.length);
+      rows.forEach((row: any, index: number) => {
+        expect(
+          html[index].join(" ").includes("few runs"),
+          `${group} row ${index} (${row.model}, n=${row.pass_rate.n})`,
+        ).toBe(row.few_runs);
+      });
+    }
+    for (const [name, rows] of Object.entries<any>(json.work_types)) {
+      const html = bodyRows(workTypeSection(page, name));
+      expect(html).toHaveLength(rows.length);
+      rows.forEach((row: any, index: number) => {
+        expect(
+          html[index].join(" ").includes("few runs"),
+          `work type ${name} row ${index} (${row.model}, n=${row.pass_rate.n})`,
+        ).toBe(row.few_runs);
+      });
+    }
+  });
+
+  it("G4: each rate cell ends with (n=<pass_rate.n>) and the integer equals the JSON value", () => {
+    const { page, json } = pageGuardSnapshot();
+    const check = (cells: string[], label: string, rate: any, at: number) => {
+      if (rate.value === null) {
+        expect(cells[at]).toBe("no rate");
+        return;
+      }
+      expect(
+        cells[at].endsWith(` (n=${rate.n})`),
+        `${label}: cell ${JSON.stringify(cells[at])} must end with (n=${rate.n})`,
+      ).toBe(true);
+    };
+    for (const [group, heading] of [
+      ["producer", "Producer roles"],
+      ["checker", "Checker roles"],
+    ] as const) {
+      const html = bodyRows(mainSection(page, heading));
+      json[group].forEach((row: any, index: number) => {
+        check(html[index], `${group} pass rate`, row.pass_rate, 9);
+        check(html[index], `${group} blocking rate`, row.blocking_rate, 10);
+      });
+    }
+    for (const [name, rows] of Object.entries<any>(json.work_types)) {
+      const html = bodyRows(workTypeSection(page, name));
+      rows.forEach((row: any, index: number) => {
+        check(html[index], `${name} pass rate`, row.pass_rate, 6);
+      });
+    }
+  });
+
+  it("T1: the print-audit block shows 52, 13, both results, the bias note, and the calibration line", () => {
+    const { auditSection } = blockSnapshot();
+    const section = auditSection as string;
+    const fixture = auditFixture();
+    expect(section).toMatch(/52\s+(errors?|rows?)|(errors?|rows?)\s*[:\-]?\s*52/i);
+    expect(section).toMatch(/13\s+blockers?|blockers?\s*[:\-]?\s*13/i);
+    expect(section).toContain("11 of 13");
+    expect(section).toContain("13 of 13");
+    expect(section).toContain("k3.1-pro");
+    expect(section).toContain("Sonnet 5.5");
+    const notePattern = fixture.note
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("\\s+");
+    expect(section, "the bias note reaches the block").toMatch(new RegExp(notePattern));
+    expect(section).toMatch(/one\s+calibration\s+run/i);
+    expect(section).toMatch(/not\s+a\s+rank/i);
+  });
+
+  it("T11: the hostile name reaches the HTML escaped and __proto__ adds no route", () => {
+    const { auditSection, audit } = blockSnapshot();
+    const section = auditSection as string;
+    expect(section).toContain(escapeHtml(HOSTILE_TYPE));
+    expect(section, "no raw img tag").not.toContain(HOSTILE_RAW);
+    expect(section).toContain("__proto__");
+    const fixture = auditFixture();
+    expect(Object.keys(audit.routes).sort()).toEqual(Object.keys(fixture.routes).sort());
+    expect(Object.keys(audit.routes)).not.toContain("__proto__");
+    for (const route of Object.keys(fixture.routes)) {
+      expect(section.includes(route), `route ${route} shows in the block`).toBe(true);
+    }
+    expect(
+      section.match(/\d+\s+of\s+\d+/g),
+      "the block holds exactly two route results",
+    ).toHaveLength(2);
+  });
+
+  it("N4: the block shows every error type with its count and no placeholder line", () => {
+    const { auditSection, audit } = blockSnapshot();
+    const section = auditSection as string;
+    expect(section).not.toContain(PLACEHOLDER);
+    const expected = typeHistogram(auditFixture().errors);
+    expect(Object.keys(audit.error_types).sort()).toEqual(Object.keys(expected).sort());
+    for (const [type, count] of Object.entries(expected)) {
+      expect(audit.error_types[type], `type ${type}`).toBe(count);
+      const escaped = escapeHtml(type);
+      const at = section.indexOf(escaped);
+      expect(at, `the block shows the type ${type}`).toBeGreaterThan(-1);
+      const window = section.slice(Math.max(0, at - 40), at + escaped.length + 60);
+      expect(window, `the count of ${type}`).toMatch(new RegExp(`\\b${count}\\b`));
+    }
+  });
+});

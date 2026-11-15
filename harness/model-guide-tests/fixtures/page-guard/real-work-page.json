@@ -1,0 +1,192 @@
+{
+  "schema": "real-work-outcomes/1",
+  "generated_on": "2026-10-20",
+  "definitions": {
+    "pass": "result pass",
+    "fail": "result fail",
+    "error": "result error, timeout, or abandoned",
+    "no_result": "result not recorded",
+    "blocking_findings": "findings with severity blocking",
+    "week": "ISO week of the run start time, UTC",
+    "runs": "run rows"
+  },
+  "coverage": {
+    "runs": 1285,
+    "runs_with_known_route": 500,
+    "share_known_route": 0.389,
+    "runs_with_result": 1000,
+    "share_with_result": 0.778,
+    "paired_duplicates_left_out": 0,
+    "first_run_date": "2026-10-01",
+    "last_run_date": "2026-11-01"
+  },
+  "weekly": [
+    {
+      "route": "x/m",
+      "role": "red",
+      "week": "2026-W40",
+      "runs": 1260,
+      "pass": 600,
+      "fail": 500,
+      "error": 100,
+      "no_result": 60,
+      "blocking_findings": 10,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "red",
+      "week": "2026-W41",
+      "runs": 9,
+      "pass": 4,
+      "fail": 4,
+      "error": 1,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "x/m",
+      "role": "review-a",
+      "week": "2026-W42",
+      "runs": 6,
+      "pass": 3,
+      "fail": 2,
+      "error": 1,
+      "no_result": 0,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "week": "2026-W43",
+      "runs": 10,
+      "pass": 4,
+      "fail": 3,
+      "error": 3,
+      "no_result": 0,
+      "blocking_findings": 2,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      }
+    }
+  ],
+  "all_time": [
+    {
+      "route": "x/m",
+      "role": "red",
+      "runs": 1260,
+      "pass": 600,
+      "fail": 500,
+      "error": 100,
+      "no_result": 60,
+      "blocking_findings": 10,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      },
+      "work_types": {
+        "app code": {
+          "runs": 1160,
+          "pass": 580,
+          "fail": 500
+        },
+        "tooling": {
+          "runs": 10,
+          "pass": 6,
+          "fail": 4
+        }
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "red",
+      "runs": 9,
+      "pass": 4,
+      "fail": 4,
+      "error": 1,
+      "no_result": 0,
+      "blocking_findings": 0,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      },
+      "work_types": {
+        "app code": {
+          "runs": 9,
+          "pass": 4,
+          "fail": 4
+        }
+      }
+    },
+    {
+      "route": "x/m",
+      "role": "review-a",
+      "runs": 6,
+      "pass": 3,
+      "fail": 2,
+      "error": 1,
+      "no_result": 0,
+      "blocking_findings": 1,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      },
+      "work_types": {
+        "tooling": {
+          "runs": 6,
+          "pass": 3,
+          "fail": 2
+        }
+      }
+    },
+    {
+      "route": "y/m",
+      "role": "review-b",
+      "runs": 10,
+      "pass": 4,
+      "fail": 3,
+      "error": 3,
+      "no_result": 0,
+      "blocking_findings": 2,
+      "ratings": {},
+      "rater_checks": {
+        "n": 0,
+        "agreed": 0,
+        "agreement": null
+      },
+      "work_types": {
+        "tooling": {
+          "runs": 5,
+          "pass": 2,
+          "fail": 3
+        }
+      }
+    }
+  ]
+}
