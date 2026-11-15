@@ -682,7 +682,8 @@ date 2026-10-25.
       `lending-desk-daily SKIP <date> exit=3: <reason>; publish=none
       rows=<runs>` when no push happened. `<reason>` is one of `go-guard
       <go_guard_stop text>`, `lock held`, `no high-use model`, `not high-use:
-      <model>`, or `no docs change`. The reason `no eligible
+      <model>`, or `no docs change`. D28 adds the reason `memory: <text>`.
+      The reason `no eligible
       model` of the earlier text is now `no high-use model` (D26). The reason
       `no new model` is retired by D27.
     - **1, 2, 130, 143.** A failure. Each D16 push failure is a failure, also
@@ -944,6 +945,41 @@ date 2026-10-25.
       loop on every night. The line `DAILY REST caught up: board=<n> due=<m>`
       is retired. The line `DAILY SKIP no new model` is retired. The line
       `DAILY CATCHUP local=<date> run_day=<yes|no> board=<n> due=<m>` stays.
+28. **D28. The unit start gate.** Added on 2026-11-15 by task 7.1e (PM
+    decision 2026-11-15, C105, exact in quotation): "a Lending batch unit
+    (lending-desk-daily.service or lending-desk-catchup-<model>.service,
+    cron-daily.sh) is an allowed heavy class: one Lending unit at a time, and
+    start it only when MemAvailable is over 8000 MB. It does not go through
+    heavy-run.sh." D24 stays as written.
+    - **The allowed class.** A systemd user unit that runs
+      `harness/cron-daily.sh` — `lending-desk-daily.service` or
+      `lending-desk-catchup-<model>.service` — is a heavy class. The unit
+      does not wrap the job in heavy-run.sh.
+    - **One unit at a time.** The existing D9 lock already gives one
+      `cron-daily.sh` at a time for every unit name of the class: each unit
+      runs the same script from the same repository root, and the script
+      takes one exclusive non-blocking lock on `.tmp/weekly-cron.lock` (seam
+      `BENCH_DAILY_LOCK`) at start. A second unit prints
+      `DAILY SKIP lock held` and skips (D19). D28 adds no new lock.
+    - **The memory gate.** After the lock and before the catalog fetch, the
+      job reads `MemAvailable` from the memory file. The seam
+      `BENCH_MEMINFO` names the file. Its default is `/proc/meminfo`, the
+      same seam as D24. The job converts the value to MB with
+      `floor(kB / 1024)`. A value over `BENCH_DAILY_MEM_START_MB` starts the
+      unit. The default is 8000. A value at or under the limit waits: the
+      job polls the file every `BENCH_MEM_POLL_S` (default 60) up to
+      `BENCH_MEM_WAIT_S` (default 1200) in total.
+    - **The skip.** A value that stays at or under the limit skips the day.
+      The line is exact: `DAILY SKIP memory: MemAvailable <n> MB at or under
+      <limit> MB`. Here `<n>` is the last read and `<limit>` is the
+      effective value of `BENCH_DAILY_MEM_START_MB`. The skip reason is the
+      same text. The gate runs before the pick, so the notice names no
+      model. The job exits 3 and sends one SKIP notice (D19, D17). A dry run
+      prints the skip line and exits 0, and it sends no notice (D19).
+    - **A failed read.** A missing or unreadable file, or a missing or
+      invalid `MemAvailable` line, fails the job: one line
+      `DAILY FAIL memory: <path> has no readable MemAvailable` and exit 1,
+      with one FAIL notice (NFR-4). The job runs no batch.
 
 ## Functional requirements
 
@@ -1306,6 +1342,27 @@ The amended rule (D20):
   harness-level failure stops; the due count does not stop the loop in
   catch-up.
 
+### FR-24 — The unit start gate
+
+- A Lending batch unit (`lending-desk-daily.service` or
+  `lending-desk-catchup-<model>.service`, `harness/cron-daily.sh`) is an
+  allowed heavy class. It does not go through heavy-run.sh. One unit runs at
+  a time: the D9 lock serializes every unit of the class, and a second unit
+  skips with `DAILY SKIP lock held` (D28).
+- The job starts only when `MemAvailable` is over
+  `BENCH_DAILY_MEM_START_MB` (orchestrator default 8000). It reads the value
+  from `BENCH_MEMINFO` (default `/proc/meminfo`). A value at or under the
+  limit polls every `BENCH_MEM_POLL_S` (default 60) up to
+  `BENCH_MEM_WAIT_S` (default 1200). A value that stays low skips the day
+  with the pinned line, exit 3, and one SKIP notice. The gate runs after the
+  lock and before the catalog fetch.
+- **Check.** With the job seams: a held lock skips a second run with no
+  batch and no pick; a low `MemAvailable` value skips the day with the
+  pinned line, exit 3, one SKIP notice, and no batch; a value that recovers
+  during the wait starts the job; a dry run prints the skip line and exits
+  0; a failed read fails the job with the pinned FAIL line and one FAIL
+  notice.
+
 ## Non-functional requirements
 
 - **NFR-1 No other model call.** The job sends a model call for the day's
@@ -1337,6 +1394,10 @@ The amended rule (D20):
   `BENCH_DAILY_LOCAL_DATE` is a date value. `BENCH_DAILY_RUNNER` is retired:
   the job runs the batches itself (D12). The tests use the seams. Without
   them, the job uses the real paths and commands.
+  - Amended by D28 (task 7.1e). The seam list adds `BENCH_MEMINFO` (the
+    memory file of the unit start gate, default `/proc/meminfo`) and
+    `BENCH_DAILY_MEM_START_MB` (the gate limit, default 8000). The seams
+    `BENCH_MEM_POLL_S` and `BENCH_MEM_WAIT_S` keep their D24 defaults.
 
 ## Owner decisions
 
@@ -1446,6 +1507,12 @@ The amended rule (D20):
     the loop goes on. A harness-level failure sends one FAIL notice and
     stops the job with exit 1. The due count of D22 does not stop the loop.
     The day record holds one entry per model of the day (FR-23, D27).
+23. **AC-23** The unit start gate of D28 holds: one Lending unit at a time
+    through the D9 lock, and the job starts only when `MemAvailable` is over
+    `BENCH_DAILY_MEM_START_MB`. A low value polls and then skips the day
+    with the pinned line, exit 3, and one SKIP notice. A dry run prints the
+    skip line and exits 0. A failed read fails the job with one FAIL notice
+    (FR-24, D28).
 
 ## Out of scope
 
