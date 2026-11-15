@@ -645,7 +645,16 @@ Spec D17, D18, D19, FR-5, FR-6.
     `harness/model-guide-tests/update.test.ts`.
     `measure/runs/model_guide/red-2.14.txt` holds the failed test name, the
     exit codes, and the Tests lines of each single-file run.
-- [ ] 2.15 Green. Fix P2ADV2-1 in update.sh (refuse a symlink on every parent of the preview folder inside the repo). Touch no test file.
+- [x] 2e4e641 2.15 Green. Fix P2ADV2-1 in update.sh (refuse a symlink on every parent of the preview folder inside the repo). Touch no test file.
+  - The -L refusal loop builds the chain of folders between the repo root
+    and `$PREVIEW_ABS`, so a planted `<repo>/.tmp` link gives one line
+    `update: refused path <path>` and exit 2 before the mktemp and the
+    input check. A deeper preview path stays covered.
+  - Verify: `update.test.ts` exits 0 with P2B2-1d green, and the other
+    required suites stay exit 0. `git status --short docs/` prints nothing.
+  - Evidence: `measure/runs/model_guide/green-p2-58811b2.log` holds the
+    commands, the exit codes, and the unchanged six rows of the task 2.9
+    preview.
 
 Verify (Phase 2): page B and the overview table are in the preview folder by
 Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
