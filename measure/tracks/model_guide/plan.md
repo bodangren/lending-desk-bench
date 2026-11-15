@@ -620,7 +620,18 @@ Spec D17, D18, D19, FR-5, FR-6.
     the one test in `preview-gate.test.ts`.
     `measure/runs/model_guide/red-2.12.txt` holds the failed test names,
     the exit codes, and the Tests lines of each single-file run.
-- [ ] 2.13 Green. Fix P2B2-1 and P2B2-2 in update.sh and preview.sh. Touch no test file.
+- [x] 38d1071 2.13 Green. Fix P2B2-1 and P2B2-2 in update.sh and preview.sh. Touch no test file.
+  - `update.sh` refuses a symlink at every path it writes through: the
+    three data folders, the two docs target files, the preview folder, and
+    its two target files (exit 2, one refusal line, before any write).
+    Both scripts pick the newest score file by whole-path modification time,
+    so a newline in a name cannot steer the pick.
+  - Verify: `update.test.ts` and `preview-gate.test.ts` exit 0 run alone,
+    and the other required suites stay exit 0. `git status --short docs/`
+    prints nothing.
+  - Evidence: `measure/runs/model_guide/green-p2-313ab94.log` holds the
+    commands, the exit codes, and the unchanged six rows of the task 2.9
+    preview.
 
 Verify (Phase 2): page B and the overview table are in the preview folder by
 Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
