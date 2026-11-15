@@ -329,4 +329,14 @@ describe("page B merge and rates", () => {
     expect(trend.value).toBeCloseTo(13 / 18, 6);
     expect(trend.value).not.toBeCloseTo(0.6, 6);
   });
+
+  it("keeps a work type carried only by the unknown route with an empty row list", () => {
+    const staged = stagedCopy((doc) => {
+      const unknown = doc.all_time.find((item: any) => item.route === "unknown");
+      unknown.work_types = { translation: { runs: 5, pass: 3, fail: 2 } };
+    });
+    const page = runOk(staged, "pa1-1-data");
+    expect(Object.keys(page.work_types)).toContain("translation");
+    expect(page.work_types["translation"]).toEqual([]);
+  });
 });

@@ -1302,6 +1302,39 @@ describe("the preview and the publish gate", () => {
     expect(readFileSync(join(preview, "index.html"), "utf8")).toBe(indexBefore);
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
   });
+
+  it('Acceptance 5: an export with no work-type rows renders "no pick yet"', () => {
+    const root = repoFixture("pa1-1-empty");
+    stageFixture(root, (doc) => {
+      for (const item of doc.all_time) item.work_types = {};
+    });
+    const result = runPreview(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const page = readFileSync(join(previewFolder(root), "real-work.html"), "utf8");
+    expect(page).toContain("no pick yet");
+  });
+
+  it('Acceptance 5 (PA1-1): a work type carried only by the unknown route renders a heading and "no pick yet" with no table', () => {
+    const root = repoFixture("pa1-1-unknown");
+    stageFixture(root, (doc) => {
+      const unknown = doc.all_time.find((item: any) => item.route === "unknown");
+      unknown.work_types = { translation: { runs: 5, pass: 3, fail: 2 } };
+    });
+    const result = runPreview(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const page = readFileSync(join(previewFolder(root), "real-work.html"), "utf8");
+    expect(page).toContain("<h3>translation</h3>");
+    const start = page.indexOf("<h3>translation</h3>");
+    const nextHeading = page.indexOf("<h3>", start + 1);
+    const section = nextHeading < 0 ? page.slice(start) : page.slice(start, nextHeading);
+    expect(section).toContain("no pick yet");
+    expect(section).not.toContain("<table>");
+    const appCode = page.indexOf("<h3>app code</h3>");
+    expect(appCode).toBeGreaterThan(-1);
+    const appNext = page.indexOf("<h3>", appCode + 1);
+    const appSection = appNext < 0 ? page.slice(appCode) : page.slice(appCode, appNext);
+    expect(appSection).toContain("<table>");
+  });
 });
 
 /**
