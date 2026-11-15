@@ -59,6 +59,9 @@
  *   real_defects, by_class, by_severity
  * A route record holds exactly:
  *   route, state, passes, worst, median, best, worst_blocker_recall, rank
+ * The `passes` of a route record holds the pass records of that route, in
+ * pass order. The Phase 2 reader `guide.ts` reads the state, the date, the
+ * score, and the recall of each one.
  * The rank is 1-based over the complete routes, ordered by the higher worst
  * score, then the higher worst blocker recall, then the higher median. An
  * incomplete route has `rank: null` and comes after every ranked route. A
@@ -322,7 +325,7 @@ function medianOf(values: number[]): number {
 interface RouteRecord {
   route: string;
   state: string;
-  passes: number;
+  passes: any[];
   worst: number;
   median: number;
   best: number;
@@ -347,10 +350,18 @@ function routeRecords(passes: any[]): RouteRecord[] {
     const recalls = list.map((pass: any) =>
       typeof pass.blocker_recall === "number" ? pass.blocker_recall : 0,
     );
+    // The route holds the pass records of the route, in pass order. The
+    // Phase 2 reader `guide.ts` reads the state, the date, the score, and
+    // the recall of each one.
+    const ordered = [...list].sort((a: any, b: any) => {
+      const left = typeof a.pass === "number" ? a.pass : 0;
+      const right = typeof b.pass === "number" ? b.pass : 0;
+      return left - right;
+    });
     records.push({
       route,
       state: list.length >= COMPLETE_PASSES ? "complete" : "incomplete",
-      passes: list.length,
+      passes: ordered,
       worst: scores.length === 0 ? 0 : Math.min(...scores),
       median: scores.length === 0 ? 0 : medianOf(scores),
       best: scores.length === 0 ? 0 : Math.max(...scores),

@@ -53,8 +53,9 @@
  *
  * A page B row qualifies with `pass_rate.n >= 10` (it carries `can_pick`).
  * The first source gives the first and the second choice from its rank.
- * A track A route qualifies with state "complete" and 3 complete passes,
- * and the rank orders the worst pass score, highest first. A tie goes to
+ * A track A route qualifies with state "complete" and 3 complete passes. A
+ * provisional pass is complete (spec D13), so it counts for the threshold.
+ * The rank orders the worst pass score, highest first. A tie goes to
  * the higher worst blocker recall, and then to the higher median score
  * (spec D13). When the first source has no qualified model the second
  * source picks; the base lines never pick.
@@ -244,7 +245,10 @@ function readTrackARank(file: string | null): RouteRank[] {
     if (route.state !== "complete") continue;
     const passes: Array<{ date: string; score: number; recall: number }> = [];
     for (const pass of route.passes) {
-      if (!isObject(pass) || pass.state !== "complete") continue;
+      if (!isObject(pass)) continue;
+      // Spec D13: a provisional pass stays complete. It counts for the
+      // 3-pass threshold, and it does not remove the rank of the route.
+      if (pass.state !== "complete" && pass.state !== "provisional") continue;
       const date = asDate(pass.date);
       if (date === null || typeof pass.score !== "number" || !Number.isFinite(pass.score)) {
         refuse("scores");
