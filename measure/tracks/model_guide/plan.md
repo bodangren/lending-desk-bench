@@ -747,7 +747,7 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     exit code, and the failed test names. The fixture set holds 14 diffs and
     48 plants, and `fixtures/review/outputs/` holds the raw outputs that
     tasks 3.3 and 3.4 reuse.
-- [~] 3.3 Red. The scorer. Write `harness/model-guide-tests/review-score.test.ts`
+- [x] cf3781d 3.3 Red. The scorer. Write `harness/model-guide-tests/review-score.test.ts`
   and no other file.
   Normal cases:
   - A finding in the window with an accepted class matches. The plant
@@ -776,7 +776,10 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     finding text.
   - Verify: the file fails on the Phase 2 code. Record the failed test names
     in `measure/runs/model_guide/red-3.3.txt`.
-- [ ] 3.4 Red. The adjudication queue. Write
+  - Evidence: `measure/runs/model_guide/red-3.3.txt` holds the command, the
+    exit code, the failed test names, and the W of the reused corpus. The
+    test adds no fixture; it reuses the keys and outputs of task 3.2.
+- [~] 3.4 Red. The adjudication queue. Write
   `harness/model-guide-tests/adjudicate.test.ts` and no other file.
   Normal cases:
   - The queue writes one item per finding, with the id of the finding, and
