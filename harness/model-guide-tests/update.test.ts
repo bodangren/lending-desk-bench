@@ -10,6 +10,7 @@ import {
   readFileSync,
   readlinkSync,
   readdirSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -244,9 +245,14 @@ function updateRepo(tag: string): { root: string; exportPath: string } {
   return { root, exportPath: join(root, EXPORT_COPY) };
 }
 
-/** The approval record of spec D21. The gate is its existence. */
+/** The approval record of spec D21. The gate is its existence. The helper
+ * commits the record, so the record itself is clean before the run and the
+ * status that a refused or an approved run must leave holds only the files
+ * of the case. */
 function approve(root: string): void {
   writeFileSync(join(root, APPROVAL), ["approved_by: Daniel", "date: 2026-11-15", ""].join("\n"));
+  git(root, ["add", APPROVAL]);
+  git(root, ["commit", "-q", "-m", "approval record"]);
 }
 
 function runUpdate(root: string, exportPath: string) {
@@ -326,8 +332,11 @@ describe("the weekly update (spec D19, D21)", () => {
     const { root, exportPath } = updateRepo("bad-input");
     approve(root);
     // One byte more than the manifest holds: the SHA-256 check must refuse
-    // the file before any write.
+    // the file before any write. The status below is the status of the
+    // case: the fixture copy is dirty on purpose, and the run must not
+    // move it.
     writeFileSync(exportPath, `${readFileSync(exportPath, "utf8")}\n`);
+    const dirty = git(root, ["status", "--short"]);
     const before = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
@@ -340,6 +349,7 @@ describe("the weekly update (spec D19, D21)", () => {
     expect(treeHashes(root)).toEqual(before);
     expect(existsSync(join(root, PREVIEW_DIR)), "no preview folder appears").toBe(false);
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
-    expect(git(root, ["status", "--short"])).toBe("");
+    expect(git(root, ["status", "--short"]), "the refused run changes no status")
+      .toBe(dirty);
   });
 });
