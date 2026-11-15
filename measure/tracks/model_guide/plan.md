@@ -588,6 +588,11 @@ Spec D17, D18, D19, FR-5, FR-6.
     <phase_base_sha>..HEAD -- docs/` prints nothing) fails only on the
     daily publish commits 05acc8c and 119b06d, which are not Phase 2 work
     (nit P2A1-2).
+  - Note: PM 2026-11-16 rewrote closeout gate item 3 to exclude the daily
+    publish commits (subject starts with `Publish daily`, changes only
+    `docs/assets/data/`), and answered Q6: the print-audit block names the
+    full routes `kimi-code-plan-cn/k3.1-pro` and
+    `claude-code/claude-sonnet-5-5#high`.
 - [x] c205762 2.9 The preview with the table.
   - Evidence: `measure/runs/model_guide/preview-2.9.txt` holds the command,
     exit 0, and the six rows with their picks, second choices, evidence, and

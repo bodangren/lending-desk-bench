@@ -1,12 +1,16 @@
 # Test strategy — model_guide
 
-This file covers Phase 1 and Phase 2 in full. It gives Phases 3 to 5 a short
-section, so a later revision can extend it. Spec: `spec.md`. Plan: `plan.md`.
-Anti-pattern catalog: `measure/anti-patterns.md`.
+This file covers Phase 1, Phase 2, and Phase 3 in full. It gives Phases 4
+and 5 a short section, so a later revision can extend it. Spec: `spec.md`.
+Plan: `plan.md`. Anti-pattern catalog: `measure/anti-patterns.md`.
 
 Revision 2 (2026-11-15) adds Phase 2. It folds in the Phase 1 lessons:
 PA2-1 (page-level facts of page B), PA1-1 (empty states), UX U1 (390 px),
 and B8-1 (hostile name).
+
+Revision 3 (2026-11-16) adds Phase 3. It folds in the Phase 2 acceptance
+records: nit P2A1-2 (the daily publish commits in the `docs/` range) and the
+Q6 ruling (the print-audit block names the full routes).
 
 ## 1. Risk of each phase
 
@@ -14,7 +18,7 @@ and B8-1 (hostile name).
 |---|---|---|---|
 | 1 Page B | `real-work.ts`, `real-work.html`, `preview.sh`, `publish.ts` | high | A new public data path and the publish gate land here. A wrong rate can become a pick. |
 | 2 Print audit and table | `print-audit-2026-11.json`, `guide.ts`, `update.sh`, `guide-section.html` | high | The table names a model to the owner, and `update.sh` gains the first path that writes `docs/` after an approval. The print-audit file comes from a hand-off. |
-| 3 Review set and scorer | `pick-diffs.ts`, `review-set.ts`, `review-score.ts`, `adjudicate.ts`, `leak-check.ts` | high | A wrong score gives a wrong rank. A leak makes the set unusable. |
+| 3 Review set and scorer | `pick-diffs.ts`, `review-set.ts`, `review-score.ts`, `adjudicate.ts`, `leak-check.ts` | high | A wrong match or a wrong weight gives a wrong rank. A leaked key (spec D9) cannot be withdrawn. The phase also writes the first public facts of track A. |
 | 4 Runner and first results | `review-run.sh`, `quota.ts`, `provider-credential.sh`, `review.html` | critical | Live model calls, credentials, and quota spend. |
 | 5 Publish | `publish-approval.md`, `publish.ts` run, weekly update | critical | A write under `docs/` reaches the public site on the next timer start (spec EV8). |
 
@@ -136,8 +140,24 @@ checker status of pass, or each blocking finding has a fix commit.
 
 1. The four lines of `GREEN_TEST_COMMAND` exit 0.
 2. `git status --short docs/` prints nothing.
-3. `git diff --name-only <phase_base_sha>..HEAD -- docs/` prints nothing
-   (spec D21).
+3. The `docs/` range check prints nothing. The range excludes the daily
+   publish commits (PM 2026-11-16, nit P2A1-2). A commit leaves the range
+   only when its subject starts with `Publish daily` AND it changes only
+   paths under `docs/assets/data/`. Any other commit that touches `docs/`
+   prints and fails the gate. The exact form:
+
+   ```bash
+   git rev-list <phase_base_sha>..HEAD -- docs/ | while read -r c; do
+     subj=$(git log -1 --format=%s "$c")
+     other=$(git show --pretty=format: --name-only "$c" \
+       -- ':(exclude)docs/assets/data/' | grep -c .)
+     case "$subj" in "Publish daily"*) [ "$other" -eq 0 ] && continue ;; esac
+     echo "$c $subj"
+   done
+   ```
+
+   Run it in `bash` without `set -e`: `grep -c .` exits 1 on a zero match,
+   and that is the wanted value, not an error.
 4. `git diff --stat <phase_base_sha>..HEAD -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh harness/model-guide/preview.sh`
    prints nothing for the first four paths. `preview.sh` may change, so the
    checker reads its diff and confirms that the copy and scan code did not
@@ -156,19 +176,90 @@ No test reads them.
 
 ### 2.3 Phase 3
 
-Risk: high.
+Risk: high. A wrong match or a wrong weight gives a wrong rank (spec D13).
+A leaked key (spec D9) is permanent: a committed key cannot be withdrawn.
+The phase starts no model, spends no quota, and writes no page. It does
+write the first public facts of track A, so a wrong field becomes a public
+contract.
 
-Red command shape, one line at a time: `pick-diffs.test.ts`,
-`review-set.test.ts`, `review-score.test.ts`, `adjudicate.test.ts`, and
-`leak-check.test.ts`, each with `--configLoader native --maxWorkers=1`.
-Red tasks 3.1 to 3.5 own one file each. `GREEN_TEST_COMMAND` is the same
-lines, one per Green task 3.6 to 3.10; task 3.11 carries no test file.
+Red command, one line at a time. Each line exits non-zero on the Phase 2
+HEAD, because the module under test does not exist:
 
-Green gate: each line exits 0. Closeout gate: same lines, the task 3.12
-checker pass, task 3.13 writes the candidate lists to the private folder,
-and task 3.14 and 3.16 `lint` passes. Tasks 3.13, 3.14, and 3.16 read the
-network or start a model. They are not tests, and they run through
-`heavy-run.sh`.
+```bash
+cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+```
+
+Owners of the Red lines:
+
+- Task 3.1 owns line 1, and the fake `gh` under `fixtures/fakes/`.
+- Task 3.2 owns line 2, and the synthetic diffs and keys under
+  `fixtures/review/`.
+- Task 3.3 owns line 3.
+- Task 3.4 owns line 4.
+- Task 3.5 owns line 5.
+
+Each Red role records the failed test names in
+`measure/runs/model_guide/red-3.1.txt` to `red-3.5.txt`.
+
+Tasks 3.3 and 3.4 reuse the `fixtures/review/` files of task 3.2. Their
+plan lines say "and no other file". A new fixture in 3.3 or 3.4 is a plan
+change, and the orchestrator widens the line first, as PA2-1 did. The file
+`leak-check.test.ts` is new. It is not the Phase 1 file `leak-guard.test.ts`,
+and no role adds cases to `leak-guard.test.ts`.
+
+`GREEN_TEST_COMMAND` is the same five lines, one per Green task:
+
+- Task 3.6 owns line 1.
+- Task 3.7 owns line 2, plus `git status --short docs/`, which prints
+  nothing.
+- Task 3.8 owns line 3.
+- Task 3.9 owns line 4.
+- Task 3.10 owns line 5.
+- Task 3.11 owns no line. The prompt is an artifact (section 7).
+- Tasks 3.13 to 3.16 own no line. They read the network or start a model,
+  and they run through `heavy-run.sh`.
+
+**Green gate.** Each of the five lines exits 0 on the task HEAD, with a
+labeled `Tests  N passed` line (A3). `git status --short docs/` prints
+nothing. Task 3.12 has a checker status of pass, or each blocking finding
+has a fix commit.
+
+**Closeout gate.** On the final phase HEAD:
+
+1. The five lines of `GREEN_TEST_COMMAND` exit 0.
+2. `git status --short docs/` prints nothing.
+3. The `docs/` range check of section 2.2 item 3 prints nothing.
+4. `git diff --stat <phase_base_sha>..HEAD -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh harness/model-guide/routes.json`
+   prints nothing. Phase 3 creates no route file (plan 4.5 owns it). The
+   `test:meta:logic` exclude list of `harness/package.json` is unchanged;
+   the checker reads that diff (A7).
+5. Task 3.12 shows `measure/runs/model_guide/check-3.12.json` with status
+   pass.
+6. Task 3.13 shows one candidate list for each source repo of spec EV7 in
+   the private folder, each with 7 or more qualified commits. No list is in
+   the repository.
+7. Tasks 3.14 and 3.16 show a lint pass for `mg-2026-11a` and `mg-2026-11p`.
+   Task 3.15 writes `harness/model-guide/data/sets/mg-2026-11a.json` and
+   does not commit it. No set manifest is committed in Phase 3.
+   `git status --porcelain -- harness/model-guide/data/sets/` shows untracked
+   entries for `mg-2026-11a.json` and `mg-2026-11p.json` only, and no other
+   path. Both files hold no key field and no seeded line (spec acceptance 9).
+8. `leak-check.ts` exits 0 on the final tree.
+
+Item 3 replaces a bare `git diff --name-only <phase_base_sha>..HEAD -- docs/`
+check. The nightly publish job commits `docs/` on main, and those commits are
+not Phase 3 work. The rule is the same as the Phase 2 rule.
+
+Model families for the routes (recommendation only, the orchestrator picks):
+Red `bailian-token-plan/qwen3.8-max#high`; Green
+`opencode-go/muse-spark-1.3-contributor#high`. The two families differ. Both
+served Phase 2 roles through a plan quota. The first is not in the D12
+ranked list, and the second is; a role run is not a track A pass, so a ranked
+route may serve a role.
 
 ### 2.4 Phase 4
 
@@ -267,6 +358,37 @@ a real hand-off byte, a book page, or a book line.
   hand-off folder names. Each needle is built from two parts, so the guard
   does not match its own text.
 
+### 3.3 Phase 3 fixtures
+
+- `fixtures/fakes/gh` is the only network edge. The executable appends its
+  argv and the HTTP method to `$FAKE_GH_LOG`, and it prints a canned JSON
+  body from `fixtures/fakes/gh-commits.json`. It exits 3 on a verb other
+  than `api`, and 1 on an unknown path. Each test puts its folder first on
+  `PATH`, then asserts the exact log lines.
+- `fixtures/review/` holds one synthetic source diff, the seeded diffs, and
+  the keys of spec D7. `src-01.diff` holds `+` and `-` lines with the `L<n>`
+  prefixes of D10. `seed-01.diff` changes only `+` lines. The test computes
+  `seeded_diff_sha256` with `node:crypto` from the fixture file, so a stale
+  constant cannot pass.
+- The keys cover one case each: a plant in a removed line, two plants 7
+  lines apart, a plant of 7 lines, a wrong hunk header, a wrong SHA-256, a
+  valid operator for each class, and one operator outside the catalog of its
+  class.
+- The review outputs cover: a valid block with 1 finding; a finding at
+  `new_lines[0] - 3` and at `new_lines[1] + 3`; a finding one line further
+  out; a wrong class at the right line; two findings between two plants; a
+  duplicate finding; 31 findings; no block; invalid JSON; a finding with no
+  `line`; and a finding with an absolute path.
+- One set fixture meets D8: 12 diffs, 6 from each source repo, 3 to 5 plants
+  each, 40 to 60 plants, 14 or more blockers, each class C1 to C7 with 3 or
+  more plants, C8 and C9 with 1 or more, and 2 controls. One pilot fixture
+  meets D13: 6 diffs and 12 or more plants.
+- The private root is a `mkdtemp` folder. Each write command takes
+  `--private <dir>`. No test reads or writes the real private folder. One
+  guard builds the folder name from two parts, as the Phase 1 guard does.
+- Dates are explicit. The manifest creation date comes from a fixture value
+  or a `--created` value, never the wall clock.
+
 ## 4. Test groups and falsification
 
 ### 4.1 Phase 1
@@ -324,6 +446,57 @@ the fixture against itself is vacuous and does not count (A4). Every
 "no data", empty-state, and refusal clause of spec D17 to D19 has its own
 group above: N4, T5, T6, T7, U1, U3, and G3.
 
+### 4.3 Phase 3
+
+| Group | File | What it proves | Falsification condition |
+|---|---|---|---|
+| PK1 Candidate list | `pick-diffs.test.ts` | The tool calls `gh api` GET only, and it lists the commits that meet each rule of D4, newest first. Each test asserts the exact `$FAKE_GH_LOG` lines. | Change the order, or let a merge commit through. PK1 must fail. |
+| PK2 Each refusal | same file | A merge commit, a date outside 2026-08-01 to 2026-11-13, a file count outside 1 to 8, a line count outside 40 to 400, a code share below 60 %, a lock file, a binary file, a path under `dist/`, `build/`, or `generated/`, and a file over 2 000 lines each give one reason line and no selection. | Remove one rule. The matching case must fail. |
+| PK3 Selection | same file | The tool takes the first qualified commits, skips each diff that a set holds, and stops at the D8 count. | Drop the skip. The held-diff case must fail. |
+| PK4 No other call | same file | The fake log holds `api` entries only. No `pr`, `repo`, `clone`, `git`, or local checkout call happens. | Call `gh pr list`. PK4 must fail. |
+| S1 Lint accept | `review-set.test.ts` | A set that meets D5 to D8 passes, and the manifest holds the fields of D9 and no other field. | Add one field to the fixture key and keep it in the manifest. S1 must fail. |
+| S2 Plant refusals | same file | A plant in a removed line, plants fewer than 8 lines apart, a plant over 6 lines, a wrong hunk header, a wrong SHA-256, and a class or severity count below D8 each fail with one named line and exit 2, and write no manifest. | Remove one branch. S2 must fail. |
+| S3 Operator catalog | same file | One operator of each class passes. An operator that is not in the catalog of its class fails, and the line names the class and the operator. | Accept a C3 operator in a C1 plant. S3 must fail. |
+| S4 Count profile | same file | The D8 counts apply to `mg-2026-11a`. A `mg-2026-11p*` id uses the D13 pilot counts: 6 diffs and 12 or more plants. | Apply the D8 count to the pilot id. S4 must fail, and task 3.16 could not pass. |
+| S5 Manifest secrecy | same file | The manifest holds no `new_lines`, `witness`, `operator`, `file`, line, or plant text. Each SHA-256 is 64 hex characters. | Add `new_lines` to the manifest writer. S5 must fail. |
+| R1 Match | `review-score.test.ts` | A finding in the window with an accepted class matches, and the plant weight counts once. A second finding on a found plant is neutral. The max is 30 findings. | Count a duplicate twice. R1 must fail. |
+| R2 Window edges | same file | `new_lines[0] - 3` and `new_lines[1] + 3` match. One line further does not. A wrong class at the right line does not match, and no verdict makes it found. A finding between two plants matches the nearer one. | Widen the window to 4. R2 must fail. |
+| R3 Score | same file | `max(0, 100 × F / W − 2 × X)`, with one decimal. A negative result is 0. The record holds blocker recall, the found, missed, and false-claim counts, and the counts by class and severity. | Use the sum of weights of all plants for `F`. R3 must fail. A found blocker counts 5. |
+| R4 Invalid and states | same file | No JSON block, invalid JSON, or a finding without `file` or `line` makes the review `invalid` with 0 found and 0 false claims. An `unclear` verdict marks the pass `provisional` and keeps the rank. Fewer than 3 complete passes gives `incomplete`. | Let an invalid review count its findings. R4 must fail. Treat `provisional` as incomplete. R4 must fail. |
+| R5 Rank | same file | The rank uses the worst pass. A tie goes to the worst blocker recall, then to the median. A route with 2 complete passes has no rank. | Rank on the best pass. R5 must fail. |
+| R6 Score-file shape | same file | The score file holds no `new_lines`, `witness`, `operator`, `file`, line, or finding text at any depth. | Add a `file` key. R6 must fail. |
+| J1 Queue units | `adjudicate.test.ts` | One item per finding, each with its finding id, grouped by file and a 3-line window. A group with two different claims holds two items and no shared verdict. | Group the two claims under one verdict. J1 must fail. |
+| J2 Apply | same file | `real-defect` maps to neutral and to the key. `false-claim` maps to a false claim. `unclear` maps to `provisional`. A verdict that the two judges do not share counts as `unclear`. | Count a disagreement as a false claim. J2 must fail. |
+| J3 Blind queue | same file | The queue file holds no route name, and it holds no verdict of the other judge. | Write the route name into the item. J3 must fail. |
+| J4 No rescue | same file | A finding with a wrong line or a wrong class never becomes found through `apply`. A disagreement never counts against the model. | Add a `plant:<id>` rescue. J4 must fail. |
+| K1 Clean pass | `leak-check.test.ts` | A clean staged tree exits 0. | Fail on the clean tree. K1 proves the check reads a real tree. |
+| K2 Key field | same file | A staged file with `new_lines`, `witness`, or `operator` exits 2 with one named line. | Remove one field from the scan. K2 must fail. |
+| K3 Private path | same file | A staged file with the private folder path exits 2. | Skip the path scan. K3 must fail. |
+| K4 Seeded line | same file | A seeded line of 20 characters or more that is not in the source diff exits 2. The same line, when the source diff holds it, does not fail. A line of 19 characters does not fail. | Match a bare prefix, or a 19-character line. K4 must fail. |
+| K5 Docs and preview | same file | A file under `docs/` or under the preview folder is scanned even when it is not staged (FR-10). Such a file with a key field, the private path, or a seeded line exits 2. | Scan the staged set only. K5 must fail. |
+
+**Guard cases.** G5 to G9 are the Phase 3 guard cases. They run inside the
+five files above, and each one fails at the Phase 2 HEAD, because the module
+under test is absent. They are Red cases, not base-passing guards, and the
+Red roles record them as `fail`.
+
+- **G5 exactness (A7).** K4 and S5 match exact field names and the private
+  path. The word "witness" in prose does not fail K4. A 19-character line
+  does not fail K4.
+- **G6 network shape.** PK4 reads the fake log. Any call other than `api`
+  fails.
+- **G7 no secret field.** S5 and R6 scan exact key names at any depth. A
+  value that holds the word "operator" does not fail.
+- **G8 blindness.** J3 reads the queue file. A route name in the item
+  fails.
+- **G9 environment.** Every file passes under `BENCH_TRACK=change` with a
+  pinned `TZ`, and the private root is a `mkdtemp` folder.
+
+**No base-passing guard.** Phase 3 declares no case that passes at the Phase
+2 HEAD. A case that passes at the base needs its own label and its own
+falsification condition, as G1 to G4 do. The Phase 3 files have none, so no
+empty-state claim rests on a vacuous pass (A4).
+
 ## 5. Architecture guardrails and changed contracts
 
 - **No write under `docs/` before Phase 5** (spec D21). The preview tool
@@ -355,6 +528,39 @@ group above: N4, T5, T6, T7, U1, U3, and G3.
   after the edit. The closeout gate reads the `preview.sh` diff.
 - **Secrecy.** Phase 2 reads no key, no seeded diff, and no credential
   value. The page holds no book text, no page, and no file name (spec D17).
+- **Track A secrecy is the top contract of Phase 3** (spec D9). The
+  repository holds only `data/sets/<set_id>.json` and
+  `data/review-scores/<set_id>.json`. Both field sets are closed. A new
+  field is a contract change, and checker 3.12 must name it. The seeded
+  diffs, the keys, the raw outputs, and the adjudication notes stay in the
+  private folder. S5, R6, J3, and K1 to K5 prove it.
+- **The score file is the Phase 4 page input.** `review.html` (spec D13,
+  FR-14) reads the field names and the state words `invalid`,
+  `provisional`, and `incomplete` that Phase 3 fixes here. A later rename is
+  a new contract. The state words are asserted as words, not as booleans
+  (A3).
+- **The manifest is the page's set-count source** (spec D13). Its per-diff
+  SHA-256 values must equal the seeded diffs, so the lint recomputes the
+  hunk headers and the SHA-256 values. It does not trust the key
+  (S2).
+- **`pick-diffs.ts` reads no local checkout and calls no other verb than
+  `gh api` GET** (spec D4). The finding has no local `git` call, and no
+  token in argv or in a log line (PK4, G6). The fake `gh` replaces the real
+  binary on `PATH`.
+- **A write command needs an explicit `--private <dir>`.** A missing value
+  gives exit 2 with a named line. Without the flag no test can be hermetic,
+  and a test would touch the real private folder (A11, A13).
+- **`harness/model-guide/routes.json` is Phase 4's file** (plan 4.5).
+  Phase 3 must not create it. The checker reads the file list, not the
+  whole tree.
+- **One test file per Red task, and one fixture owner.** Task 3.1 owns the
+  fake `gh`, task 3.2 owns `fixtures/review/`, and tasks 3.3 and 3.4 reuse
+  it. A new fixture in 3.3 or 3.4 needs the plan line widened first
+  (PA2-1).
+- **Parallel work on main.** The tracks `daily_model_schedule` and the
+  nightly publish commit on `main`. Every gate names explicit paths or the
+  `docs/` range rule of section 2.2. No gate is a whole-tree
+  `git status --short`.
 
 ## 6. The plan 1.2 conflict with spec D17
 
@@ -396,6 +602,23 @@ no size and no schema key, as spec D17 states.
   the synthetic pair only. Task 2.4 copies the real values into the data
   file, and task 2.9 reads the preview.
 
+Phase 3 splits the same way.
+
+- **Live behavior.** `review-set.test.ts`, `adjudicate.test.ts`,
+  `leak-check.test.ts`, and `pick-diffs.test.ts` start the tool as a
+  subprocess in a temp repo and read the exit code and the written JSON.
+  `review-score.test.ts` calls the scorer in process with a fixture key and
+  a fixture output, and it reads the pass record. Each assertion reads the
+  tool output, not the fixture text.
+- **Artifact.** `review-prompt.md` (task 3.11) is an artifact. No test
+  asserts its prose, because a test that reads the file and asserts a
+  string proves no product behavior (A4). Its one behavior-bearing item,
+  the fenced JSON block of D10, is proven by the Phase 4 runner, which
+  passes the file to the model. Checker 3.12 reads the file as an artifact
+  and records that fact.
+- **No documentation test.** A test that only reads `spec.md`, `plan.md`,
+  or a record file does not count in any phase.
+
 ## 8. Intentionally-red aggregate suite
 
 The Phase 1 files exist from the Red tasks and fail until task 1.7. That
@@ -403,6 +626,13 @@ state is intended. The three Phase 2 files do not exist before task 2.1,
 2.2, and 2.3. From then on they fail until their Green tasks. The four
 guard groups G1 to G4 pass at the base by design, and the new print-audit
 page cases in `preview-gate.test.ts` fail.
+
+The five Phase 3 files do not exist before tasks 3.1 to 3.5. Each one fails
+on the absent module until its Green task. No Phase 3 case passes at the
+base (section 4.3). The Phase 1 and Phase 2 files stay green and are not
+part of the Phase 3 gate. The untracked
+`harness/model-guide/data/sets/mg-2026-11a.json` of task 3.15 is intended
+and is not committed there.
 
 No role edits a test to reach a green aggregate run. The aggregate suite is
 not a gate for Phase 1 or Phase 2; the gate is the targeted lines of
@@ -418,7 +648,7 @@ blocks the phase. Before 22:00, a role runs one file at a time with
 |---|---|---|---|---|
 | 1 | yes: publish gate, no `docs/` write, no real export bytes in the repo | yes: CLI exit codes of `real-work.ts`, `preview.sh`, `publish.ts` | yes: malformed export, drift, approval shortcuts | yes: section 9.1 |
 | 2 | yes: no book text, no page, no file name in the print-audit data; no real hand-off byte in the repo; `update.sh` writes two explicit paths | yes: `guide.ts` output shape and its `--today` value, `update.sh` paths and exit codes, the HTML escape of a hand-off name | yes: changed byte, wrong manifest SHA, missing top key, 51 rows, stale boundary, incomplete route, hostile name, empty sources | yes: section 9.2: the overview table and the print-audit block |
-| 3 | yes: leak check, score file fields | no: no product route | yes: wrong line, wrong class, judge disagreement | no: no page in Phase 3 |
+| 3 | yes: leak check, score-file fields, no token or private path in the repo | yes for the API: subcommand names, exit codes, manifest and score field sets, the `--private` flag; no for UX | yes: wrong line, wrong class, judge disagreement, 31 findings, invalid JSON, hostile `set_id` | no: section 9.3 |
 | 4 | yes: credentials, quota, metered refusal | no: no product route | yes: quota states, retries, region block, value scan | yes: `review.html` |
 | 5 | yes: approval record, drift, explicit paths | no: no new CLI | yes: missing approval, wrong SHA, drift | yes: the published pages |
 
@@ -463,12 +693,36 @@ A page change needs this check, per UX round 1 item U1. The Review C role
 runs it and records the two widths. A missing 390 px check blocks the
 phase.
 
+### 9.3 Phase 3 review reasons
+
+- **Review A applies.** The five tools are the product of the phase. A code
+  review reads them against spec D4 to D13 and D22.
+- **Review B (security) applies.** The phase owns the secrecy rule of D9:
+  the leak check, no token in argv or in a log line, no private folder path
+  in the repository, and no network edge except the fake `gh`.
+- **Review C (UX/API) applies at the API only.** The CLI subcommand names,
+  the exit codes, the manifest and score field sets, and the `--private`
+  flag are a contract. The score file becomes the Phase 4 page input, so a
+  field error here becomes a page contract there. The phase adds no page, so
+  the UX part does not apply.
+- **Adversarial testing applies.** It covers a wrong line, a wrong class, a
+  judge disagreement, a duplicate finding, 31 findings, invalid JSON, a
+  hostile `set_id` such as `../x`, a key with a `__proto__` name, and a
+  nested key field in the manifest.
+- **The UX browser review does not apply.** Phase 3 adds no page and
+  changes no page byte. The preview of task 2.9 is unchanged, and no score
+  file lands in the repository during the phase, so the code review row of
+  the Phase 2 table cannot move. The first page that reads the score file is
+  `review.html` in Phase 4 (spec D13, FR-14); the manifest counts reach a
+  page there too. If a Green role changes `preview.sh` or a template, the
+  browser review becomes required, in the form of section 9.2.
+
 ## 10. Anti-pattern coverage
 
 A1 and A8 are retired. A9 and A10 do not apply now: no track is archived,
 and the repo has no `measure/generate.sh` and no `.git/hooks/pre-commit`.
-A12 does not apply to Phase 2: no task of the phase is `[b]`, so no
-closeout-candidate reading can go wrong.
+A12 does not apply to Phase 2 or Phase 3: no task of either phase is `[b]`,
+so no closeout-candidate reading can go wrong.
 
 | Phase | Anti-pattern | Defense | Falsification |
 |---|---|---|---|
@@ -487,9 +741,15 @@ closeout-candidate reading can go wrong.
 | 2 | A11 inherited environment | The guide tests pin `--today` and the temp root, and read no `BENCH_TRACK`. Run `guide.test.ts` once with `BENCH_TRACK=change`. | Set `BENCH_TRACK=change`. The verdict must not move. Set no `--today`. T6 must fail. |
 | 2 | A13 ignored artifact | `.tmp/` is ignored. U1 and U3 compare hashes of the temp tree inside the test, not `git diff`. | Change one byte in the temp `docs/`. U1 must fail. |
 | 2 | A14 stale registry note | The orchestrator moves the registry note after the Phase 2 commit. | Compare the registry note with the first open Phase 2 task. |
-| 3 | A2 and A7, secrecy | `leak-check.ts` test uses a staged file with a key field, the private path, and a 20-character seeded line. The filter matches exact field names, not bare words. | Add one exact key field. The leak check must fail. Add only the word "witness" in prose. It must not fail. |
-| 3 | A4 | A wrong line and a wrong class never count as found. A score below 0 becomes 0. | Add a verdict that rescues a wrong-line finding. The case must fail. |
-| 3 | A5, A11 | The score file holds no finding text. The test reads no environment value. | Run with `BENCH_TRACK=change`. The verdict must not move. |
+| 3 | A2, adapted: a public-fact write with no leak gate | The manifest and the score file are the only public writes, and the lint plus `leak-check.ts` gate them. K2 to K5 fail on a key field, the private path, or a seeded line. | Remove the leak check from the path before a track A data commit. A key field in the manifest must fail the gate. |
+| 3 | A3 digit-only count | Every count is a labeled integer: `blockers_found`, `summary.key.blockers`, `Tests  N passed`. The score is a parsed number with one decimal. | Replace a count check with a bare digit search. It must pass on an empty object. |
+| 3 | A4 vacuous pass | No Phase 3 case passes at the base. A wrong line or a wrong class never counts as found. An invalid review has 0 found and 0 false claims. K1 proves the clean tree is a real tree. | Add a verdict that rescues a wrong-line finding, or empty the key. R1, R2, and J4 must fail, not pass. |
+| 3 | A5 false plan claim | Each Red and Green task cites its single-file command and its labeled line. Task 3.15 says "do not commit", and the gate allows the two untracked set manifests. | Run the cited line. A non-zero exit with an `[x]` mark is a false claim. A committed manifest at 3.15 is a false claim. |
+| 3 | A6 registry overstatement | No "complete" status before the lint exits 0 and checker 3.12 passes. | Compare the registry note with the first open Phase 3 task. |
+| 3 | A7 over-broad filter | The field scans match exact key names at any depth and the exact private path. Prose does not fail. The `harness/package.json` exclude list is frozen. | Widen K4 to the bare word "witness". It must still pass on prose and fail on the field. |
+| 3 | A11 inherited environment | `--private` is explicit, `TZ` is pinned, the date is explicit, and the fake `gh` is first on `PATH`. Run each file once with `BENCH_TRACK=change`. | Set `BENCH_TRACK=change`. The verdict must not move. |
+| 3 | A13 ignored artifact | The private root is a `mkdtemp` folder. The tests compare SHA-256 values inside the test, not with `git diff`. | Change one byte of the seeded diff. S2 and R1 must fail. |
+| 3 | A14 stale registry note | The orchestrator moves the registry note after the Phase 3 commit. | Compare the note with the first open Phase 3 task. |
 | 4 | A3, A4 | A window at 70 % gives no call. Three transport failures leave the pass open and not complete. | Count an open pass as complete. The rank case must fail. |
 | 4 | A7, A11, A12 | The route filter reads `routes.json`, not a word match. The fake child holds `fake-opencode`. A `[b]` task is not a closeout candidate. | Add a route outside `routes.json`. The runner must refuse it. |
 | 4 | A13 | `ps` shows no fake child after the run, and the temp tree is clean. | Leave one fake child. The trap case must fail. |
@@ -513,6 +773,12 @@ strategy for Phase 2`, and before Red task 2.1 starts. This file names no
 value, because the value does not exist before that commit. The accepted
 Phase 1 HEAD is the `role_base_sha` of this revision, not the Phase 2 base.
 
+For Phase 3, the orchestrator captures the value directly after the commit
+`docs(model_guide): test strategy for Phase 3 and Phase 2 records`, and
+before Red task 3.1 starts. Run `git rev-parse HEAD` once, on that commit,
+and store the value. The accepted Phase 2 HEAD, and the `role_base_sha` of
+this revision, predate the strategy commit. Neither one is the Phase 3 base.
+
 ## 12. Evidence to record
 
 Phase 1: task 1.1, 1.2, and 1.3 record the Red summary lines and the failed
@@ -532,3 +798,15 @@ for task 2.4 are the path
 the SHA-256 `f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87`,
 52 rows, 13 blockers, 43 rows with 1 to 3 checklist items, and 9 rows with
 none. The strategy re-checked the hash on 2026-11-15; it matches.
+
+Phase 3: tasks 3.1 to 3.5 record the Red summary lines, the exit codes, and
+the failed test names in `red-3.1.txt` to `red-3.5.txt`. Task 3.1 also
+records the `$FAKE_GH_LOG` lines of one run. Tasks 3.6 to 3.10 record the
+Green summary line, the command, and `git status --short docs/`. Task 3.11
+records the prompt file and the fact that no test reads it. Task 3.12
+records the checker JSON path. Task 3.13 records the two candidate lists in
+the private folder and the count of qualified commits for each. Tasks 3.14,
+3.15, and 3.16 record the lint line, the manifest path, and the
+`git status --porcelain -- harness/model-guide/data/sets/` line. The
+strategy records the count rule of S4 as an assumption: D8 for
+`mg-2026-11a`, the D13 pilot counts for `mg-2026-11p*`.

@@ -1000,7 +1000,7 @@ no quota source gets the fixed cap of
 
 Each question has a default. The track continues with the default. The
 questions Q2, Q3, Q4, Q5, and Q7 were answered by the PM on 2026-11-14.
-The answers are in "Owner decisions".
+Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
 
 - **Q1 (D3).** How does the overview table relate to `domain_trust`?
   Default: `domain_trust` stays as it is. The "app code" row links its
@@ -1015,8 +1015,9 @@ The answers are in "Owner decisions".
 - **Q5 (D16).** Answered on 2026-11-14 (OD4). The merge removes only
   `#<variant>` and `[1m]` of one route. The same model on another provider
   stays separate.
-- **Q6 (D17).** Which route is "k3.1-pro" in the print audit? Default: the
-  page shows the PM label "k3.1-pro" and names no route.
+- **Q6 (D17).** Answered on 2026-11-16 (PM). The default is replaced by
+  the binding 2.4a ruling. The page names the full routes:
+  `kimi-code-plan-cn/k3.1-pro` and `claude-code/claude-sonnet-5-5#high`.
 - **Q7 (D17).** Answered on 2026-11-14 (OD6). The error types come from the
   hand-off file of OD6. The page always shows them.
 - **Q8 (D14).** Can the Claude route run in an isolated job store? Default:
