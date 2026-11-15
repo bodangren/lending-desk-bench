@@ -314,7 +314,8 @@ def work_tables(work_types):
             ]))
         parts.append(
             f"<h3>{html.escape(name)}</h3>\n"
-            '<div class="table-wrap"><table>\n'
+            '<div class="table-wrap" tabindex="0" role="region"'
+            f' aria-label="{html.escape(name)} table"><table>\n'
             "<thead><tr>"
             "<th scope=\"col\">Rank</th>"
             "<th scope=\"col\">Model</th>"
