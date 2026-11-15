@@ -1239,4 +1239,14 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Verify: the first catch-up night adds one new model to the leaderboard.
   - Verify: the PM line names the model, new flag, board length, and due count.
   - Lane: light lane. One maker, one checker in a different family.
+- [x] a69193df64a08d9a0cb711183c9da1f968e65d22 7.7 Red. Publish label from the run models (PM 2026-11-16).
+  - Files: `harness/schedule-tests/daily-publish-label.test.ts` is the new file
+    with the cases L1 to L4. It uses the seams of the schedule suite: the
+    notice sink, the board seam, the safe heavy-run seam, the selector queue,
+    the stub batch, and the fake OpenCode. No production file changed.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-label.test.ts --maxWorkers=1 --reporter=dot` exits non-zero, and each failure names the missing PM rule of 2026-11-16 (the label comes from the model of the runs in the publish range).
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-publish-notice.test.ts --maxWorkers=1 --reporter=dot` exits 0.
+  - Evidence: the record is `measure/runs/daily_model_schedule/red-7.7.txt`. The L1 and L2 failures name the label rule; L3 and L4 pin the D15 guard-stop line, the resume reason, and the excluded body lines, and pass at HEAD.
+  - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
+- [ ] 7.8 Green. The publish label from the run models in cron-daily.sh. Touch no test file. Starts only when no lending-desk unit runs.
 
