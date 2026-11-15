@@ -26,8 +26,9 @@
  * The output holds the 52 rows with the fields id, severity, checklist (a
  * code and a text), and results; the error types with their counts; the two
  * route results as `11 of 13` style text; the summary; and the bias note.
- * No key `pages`, `text`, or `file` sits outside a checklist item, so no
- * page and no file name reaches the page.
+ * The bias note is null when the summary holds no string. No key `pages`,
+ * `text`, or `file` sits outside a checklist item, so no page and no file
+ * name reaches the page.
  *
  * The tool reads one hand-off shape only (spec OD6, D17):
  *   rows   a row holds `id`, `severity`, `checklist`, and one string per
@@ -193,6 +194,7 @@ function main(): void {
     errors,
     summary: doc.summary,
     note: doc.note,
+    bias_note: typeof summary.bias_note === "string" ? summary.bias_note : null,
   };
 
   mkdirSync(out, { recursive: true });

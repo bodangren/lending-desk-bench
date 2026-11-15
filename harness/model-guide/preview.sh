@@ -23,9 +23,10 @@
 # index.html (links that already exist stay single), and renders
 # real-work.html from the page template, the tool output, and the print-audit
 # data file of spec D17. The print-audit block shows the totals, the two route
-# results, the error types with their counts, the bias note, and the 52 rows
-# with their checklist items and results. It shows no placeholder line. The
-# fresh real-work.json and real-work.html win over any stale copies from docs/.
+# results, the error types with their counts, the scope note, the bias note
+# of `summary.bias_note`, and the 52 rows with their checklist items and
+# results. It shows no placeholder line. The fresh real-work.json and
+# real-work.html win over any stale copies from docs/.
 # It runs guide.ts next, writes model-guide.json into the preview folder, and
 # renders the six rows of spec D18 from pages/guide-section.html inline into
 # the preview index.html, before the current hero (FR-7, acceptance 7). Each
@@ -516,6 +517,12 @@ def print_audit_block():
         )
     if isinstance(audit.get("note"), str):
         parts.append(f'<p class="muted">{html.escape(audit["note"])}</p>')
+    summary = audit.get("summary")
+    bias_note = summary.get("bias_note") if isinstance(summary, dict) else None
+    if isinstance(bias_note, str):
+        parts.append(
+            f'<p class="muted"><strong>Bias note:</strong> {html.escape(bias_note)}</p>'
+        )
     rows = []
     for row in audit.get("errors") or []:
         items = "; ".join(

@@ -801,5 +801,6 @@
     },
     "bias_note": "A Sonnet 5.5 session wrote the answer key, so the s55 score may be too high. Review A noted E35 for s55 is partial, not found (minors found 5, not 6)."
   },
-  "note": "Seeded-error answer key of one unreleased book proof. Error types and severities only; no page content. Checklist items come from the spec map where it exists, else from the report rows that found the error; errors that both runs missed and the spec does not map have an empty list."
+  "note": "Seeded-error answer key of one unreleased book proof. Error types and severities only; no page content. Checklist items come from the spec map where it exists, else from the report rows that found the error; errors that both runs missed and the spec does not map have an empty list.",
+  "bias_note": "A Sonnet 5.5 session wrote the answer key, so the s55 score may be too high. Review A noted E35 for s55 is partial, not found (minors found 5, not 6)."
 }
