@@ -779,7 +779,7 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.3.txt` holds the command, the
     exit code, the failed test names, and the W of the reused corpus. The
     test adds no fixture; it reuses the keys and outputs of task 3.2.
-- [~] 3.4 Red. The adjudication queue. Write
+- [x] 5097acc 3.4 Red. The adjudication queue. Write
   `harness/model-guide-tests/adjudicate.test.ts` and no other file.
   Normal cases:
   - The queue writes one item per finding, with the id of the finding, and
@@ -794,7 +794,10 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - A disagreement never counts against the model.
   - Verify: the file fails on the Phase 2 code. Record the failed test names
     in `measure/runs/model_guide/red-3.4.txt`.
-- [ ] 3.5 Red. The leak check. Write `harness/model-guide-tests/leak-check.test.ts`
+  - Evidence: `measure/runs/model_guide/red-3.4.txt` holds the command, the
+    exit code, and the failed test names. The test reuses the task 3.2
+    corpus and the task 3.3 verdict contract; it adds no fixture.
+- [~] 3.5 Red. The leak check. Write `harness/model-guide-tests/leak-check.test.ts
   and no other file.
   Normal cases:
   - The leak check passes on a clean tree.
