@@ -450,7 +450,7 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
 
   it("T4: with no qualified model in the first source the print-audit second source picks", () => {
     const staged = stagedExport("print-books", (doc) =>
-      starveWorkType(doc, "print books", { runs: 8, pass: 3, fail: 4 }));
+      starveWorkType(doc, "print books", { runs: 8, pass: 1, fail: 1 }));
     const rw = realWorkFrom(staged, "print-books");
     expect(rw.data.work_types["print books"].length).toBeGreaterThan(0);
     expect(rw.data.work_types["print books"].every((row: any) => !row.can_pick),
