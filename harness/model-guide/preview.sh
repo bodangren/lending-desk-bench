@@ -7,12 +7,14 @@
 # `preview: refused path <value>` on stdout, exit 2, before any write.
 # It refuses a symlink inside an existing preview folder with
 # `preview: refused path <path>` on stdout, exit 2, before any write; the
-# path is the link. It refuses any symlink under docs/ with
-# `preview: refused path <absolute link path>` on stdout, exit 2, before
-# any write; the link target stays byte-identical. It refuses an
-# unreadable entry under docs/ (for example mode 000) with
+# path is the link. It refuses any symlink under docs/, and any other
+# non-regular entry (for example a FIFO), with
+# `preview: refused path <absolute path>` on stdout, exit 2, before any
+# write; the link target stays byte-identical. It refuses an unreadable
+# entry under docs/ (for example mode 000) with
 # `preview: unreadable <path relative to the repo>` on stdout, exit 2,
-# before any write.
+# before any write; the docs root prints as `docs`. The scan never uses
+# find, so an unreadable folder gives one refusal line, not a find error.
 # It runs the input check into a temp folder first, so a refused run leaves
 # an existing preview folder byte-identical and leaves no new folder behind,
 # not even a parent that mkdir -p created. On success it copies docs/ into
@@ -102,20 +104,81 @@ if [ -d "$PREVIEW_ABS" ]; then
   fi
 fi
 
-# Refuse any symlink under docs/ before any write: a valid link can point
-# outside docs/ and let a later publish write through it.
-LINK="$(find "$ROOT/docs" -type l -print -quit)"
-if [ -n "$LINK" ]; then
-  echo "preview: refused path $LINK"
-  exit 2
-fi
+# Scan docs/ once, before any write, and report the first refusal: a symlink
+# or another non-regular entry (a FIFO would hang the copy), or an entry that
+# cannot be read. The scan lists each folder itself, so an unreadable folder
+# gives one refusal line and not a find error. A bash walk is not used
+# because readdir in Python reports each folder it cannot open.
+SCAN="$(
+python3 - "$ROOT" <<'PY'
+import os
+import stat
+import sys
 
-# Refuse an unreadable entry under docs/ before any write: a mode 000 file
-# or folder would fail the copy after mkdir -p and leave a half-built
-# preview folder.
-UNREADABLE="$(find "$ROOT/docs" ! -readable -print -quit)"
-if [ -n "$UNREADABLE" ]; then
-  echo "preview: unreadable ${UNREADABLE#"$ROOT"/}"
+root = sys.argv[1]
+docs = os.path.join(root, "docs")
+refused = None
+unreadable = None
+
+
+def walk(path, rel):
+    global refused, unreadable
+    try:
+        names = sorted(os.listdir(path))
+    except OSError:
+        if unreadable is None:
+            unreadable = rel or "docs"
+        return
+    for name in names:
+        full = os.path.join(path, name)
+        child = f"{rel}/{name}" if rel else name
+        try:
+            info = os.lstat(full)
+        except OSError:
+            if unreadable is None:
+                unreadable = child
+            continue
+        mode = info.st_mode
+        if stat.S_ISLNK(mode):
+            if refused is None:
+                refused = full
+        elif stat.S_ISDIR(mode):
+            walk(full, child)
+        elif stat.S_ISREG(mode):
+            if not os.access(full, os.R_OK) and unreadable is None:
+                unreadable = child
+        elif refused is None:
+            refused = full
+
+
+try:
+    root_info = os.lstat(docs)
+except OSError:
+    root_info = None
+if root_info is None:
+    if unreadable is None:
+        unreadable = "docs"
+elif stat.S_ISLNK(root_info.st_mode):
+    refused = docs
+elif not stat.S_ISDIR(root_info.st_mode):
+    refused = docs
+else:
+    walk(docs, "docs")
+
+if refused is not None:
+    print("refused\t" + refused)
+elif unreadable is not None:
+    print("unreadable\t" + unreadable)
+PY
+)"
+if [ -n "$SCAN" ]; then
+  SCAN_KIND="${SCAN%%$'\t'*}"
+  SCAN_VALUE="${SCAN#*$'\t'}"
+  if [ "$SCAN_KIND" = "refused" ]; then
+    echo "preview: refused path $SCAN_VALUE"
+  else
+    echo "preview: unreadable $SCAN_VALUE"
+  fi
   exit 2
 fi
 
