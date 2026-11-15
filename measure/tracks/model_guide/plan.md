@@ -280,7 +280,26 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
   - Files: `harness/model-guide-tests/preview-gate.test.ts`,
     `harness/model-guide-tests/input-check.test.ts`.
   - Evidence: `red-1.14.txt` holds the failed test names and exit 1.
-- [~] 1.15 Green. Review fixes, round 3. Fix the five items in harness/model-guide/. Touch no test file.
+- [x] e73023d 1.15 Green. Review fixes, round 3. Fix the five items in harness/model-guide/. Touch no test file.
+  - F1 (A3-1/C3-1): preview.sh runs the input check into a temp folder first;
+    a refused run leaves an existing preview folder byte-identical and no new
+    folder, not even a created parent. F2 (A3-2/C3-3): real-work.ts checks the
+    types of the coverage keys and `generated_on` in the schema check, before
+    the run-sum check. F3 (A3-3): preview.sh refuses a symlink inside an
+    existing preview folder with `preview: refused path <path>`, exit 2, no
+    docs write. F4 (C3-2/A3-4): the nav insert keeps exactly one of each link.
+    F5 (B2-1): publish.ts and preview.sh map an unreadable docs entry to a
+    refusal line, exit 2, no stack trace.
+  - Verify: run `model-guide-tests/preview-gate.test.ts`,
+    `model-guide-tests/input-check.test.ts`,
+    `model-guide-tests/real-work.test.ts`, and
+    `model-guide-tests/leak-guard.test.ts` with one worker and the reporter
+    set to dot; `bash -n harness/model-guide/preview.sh`.
+  - Evidence: commit e73023d. Each of the four test files exits 0 when run
+    alone with `--maxWorkers=1 --reporter=dot`; `bash -n
+    harness/model-guide/preview.sh` exits 0. The role log is
+    `measure/runs/model_guide/green-p1-eb85c0a.log`. The task 1.9 preview
+    re-run record is `measure/runs/model_guide/preview-1.15.txt`.
 
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
