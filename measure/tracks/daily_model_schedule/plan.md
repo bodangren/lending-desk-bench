@@ -1249,4 +1249,18 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Evidence: the record is `measure/runs/daily_model_schedule/red-7.7.txt`. The L1 and L2 failures name the label rule; L3 and L4 pin the D15 guard-stop line, the resume reason, and the excluded body lines, and pass at HEAD.
   - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
 - [ ] 7.8 Green. The publish label from the run models in cron-daily.sh. Touch no test file. Starts only when no lending-desk unit runs.
+- [x] ac41ec935b33f94bc30c004e1b44c9fc96933ad8 7.9 Red. The D26 picker uses the board filter (high_usage and batch) (PM 2026-11-16).
+  - Files: `measure/tracks/daily_model_schedule/spec.md` amends D26 with the
+    board filter (the same filter as `batch_models` in
+    `harness/export-site-data.py`), quoting Daniel's rule of 2026-11-15.
+    `harness/schedule-tests/daily-pick-board-filter.test.ts` is the new file
+    with the cases F1 and F2. `harness/schedule-tests/go-pick-list.test.ts`
+    changes G3 to the new rule (the oracle picks the first high-use, batch
+    model off the board, never beam-free). No production file changed.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 --reporter=dot` exits non-zero, and each failure names the missing board filter of D26 (PM 2026-11-16).
+  - Verify: `cd harness && npx vitest run schedule-tests/go-pick-list.test.ts --maxWorkers=1 --reporter=dot` exits non-zero on G3, and G1 and G2 still pass.
+  - Verify: `cd harness && npx vitest run schedule-tests/daily-pick-board.test.ts --maxWorkers=1 --reporter=dot` and `cd harness && npx vitest run schedule-tests/daily-catchup.test.ts --maxWorkers=1 --reporter=dot` exit 0.
+  - Evidence: the record is `measure/runs/daily_model_schedule/red-7.9.txt`. F1 fails on the free model pick, F2 fails on the offenders beam-free, iceman-contributor-free, longcat-2.5-free, and hy4, and G3 fails on the oracle pick beam-free; daily-pick-board and daily-catchup stay green.
+  - Deviation: measure-guard denies `[~]` in Phase 7 while Phase 6 holds the open task 6.8, so the task went from `[ ]` to `[x]` at the record step, as task 7.1d did.
+- [ ] 7.10 Green. daily-pick.ts picks only from the board filter; one shared rule with export-site-data.py. Touch no test file. Starts only when no lending-desk unit runs.
 
