@@ -817,11 +817,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     passes.
   - Evidence: commit d095a38 holds the tool. `measure/runs/model_guide/green-p3-192da41.log`
     holds the exit codes of the three runs and the empty `docs/` status.
-- [~] 3.7 Green. Write `harness/model-guide/review-set.ts`. Touch no test
+- [x] 2acd4fa 3.7 Green. Write `harness/model-guide/review-set.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native`
     passes.
-- [ ] 3.8 Green. Write `harness/model-guide/review-score.ts`. Touch no test
+  - Evidence: commit 2acd4fa holds the tool. `measure/runs/model_guide/green-p3-7e52d2e.log`
+    holds the exit codes of the four runs and the empty `docs/` status.
+- [~] 3.8 Green. Write `harness/model-guide/review-score.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native`
     passes.
