@@ -729,7 +729,7 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.1.txt` holds the command, the
     exit code, the failed test names, and the exact `$FAKE_GH_LOG` lines that
     the accepted run must make.
-- [~] 3.2 Red. The set lint. Write `harness/model-guide-tests/review-set.test.ts`
+- [x] 2dda97b 3.2 Red. The set lint. Write `harness/model-guide-tests/review-set.test.ts`
   and the synthetic diffs and keys under
   `harness/model-guide-tests/fixtures/review/`. Touch no other file.
   Normal cases:
@@ -743,7 +743,11 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - An operator that is not in the catalog of its class fails the lint.
   - Verify: the file fails on the Phase 2 code. Record the failed test names
     in `measure/runs/model_guide/red-3.2.txt`.
-- [ ] 3.3 Red. The scorer. Write `harness/model-guide-tests/review-score.test.ts`
+  - Evidence: `measure/runs/model_guide/red-3.2.txt` holds the command, the
+    exit code, and the failed test names. The fixture set holds 14 diffs and
+    48 plants, and `fixtures/review/outputs/` holds the raw outputs that
+    tasks 3.3 and 3.4 reuse.
+- [~] 3.3 Red. The scorer. Write `harness/model-guide-tests/review-score.test.ts`
   and no other file.
   Normal cases:
   - A finding in the window with an accepted class matches. The plant
