@@ -565,10 +565,13 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: commit 93f79f1 holds the three fixes and no production file.
     `measure/runs/model_guide/red-2.7a.txt` holds the commands, the exit
     codes, and the Tests lines of each single-file run.
-- [~] 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
+- [x] 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
+  - Evidence: commit 1cc8792 holds `harness/model-guide/update.sh`.
+    `measure/runs/model_guide/green-p2-be59fe2.log` holds the command, its
+    exit code, and its Tests line.
 - [ ] 2.8 Checks. One code checker reads the diff against spec D17 to D19.
   - Verify: `measure/runs/model_guide/check-2.8.json` has status pass, or
     each blocking finding has a fix commit.
