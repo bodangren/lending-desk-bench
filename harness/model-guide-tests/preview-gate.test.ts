@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync,
-  readdirSync, rmSync, symlinkSync, writeFileSync,
+  readdirSync, rmSync, statSync, symlinkSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -45,6 +45,21 @@ import { afterAll, describe, expect, it } from "vitest";
  *   The value is the exact `--preview` argument. Standard error stays empty.
  *   The tool also refuses the root path `/`.
  *
+ *   Any symlink under docs/ — a relative link to a file inside docs/, a
+ *   `../../` link to a file outside docs/, or a link to a directory — gives
+ *   exit 2 and this exact line on stdout:
+ *     preview: refused path <absolute link path>
+ *   before any write. No preview folder is created, docs/ stays unchanged,
+ *   and the link target stays byte-identical. Standard error stays empty.
+ *
+ *   An unreadable entry under docs/ (mode 000) gives exit 2 and this exact
+ *   line on stdout:
+ *     preview: unreadable <path relative to the repo>
+ *   before any write: no traceback and no `cp:` line on stderr, no
+ *   half-built preview folder, and an existing preview folder stays
+ *   byte-identical. The case is skipped with a reason when the test runs as
+ *   root, because mode 000 stays readable for root.
+ *
  *   The tool resolves relative `--export` and `--preview` values against the
  *   caller folder. It then uses the absolute paths after it changes folders.
  *
@@ -73,6 +88,12 @@ import { afterAll, describe, expect, it } from "vitest";
  *   The bad path line uses the exact path from the record. An empty path gives
  *   `publish: bad path ` with one trailing space.
  *   Each drift path is relative to docs and uses `/` separators.
+ *   A docs/ entry that is a symlink (to a file or to a directory) or an
+ *   unreadable directory gives exit 2 and `publish: drift <path relative to
+ *   docs/>`; the path of a symlink is the link itself. The walk states each
+ *   entry without following links, so the copy loop never writes through a
+ *   link and each link target stays byte-identical. The approval rows stay
+ *   checked first, and a record that names only matching files stays valid.
  *
  *   A malformed record row gives exit 2 and this exact line on stdout:
  *     publish: bad line <text>
@@ -127,6 +148,11 @@ const INDEX_HTML = `<!doctype html>
 
 const SITE_CSS = "body { font-family: sans-serif; }\n";
 const BENCHMARK_JSON = '{"schema":1,"rows":[]}\n';
+
+/** Mode 000 stays readable for root, so the unreadable cases cannot occur. */
+const isRoot = typeof process.getuid === "function" && process.getuid() === 0;
+const ROOT_SKIP_REASON =
+  "skipped as root: a mode 000 entry stays readable for root, so the refusal case cannot occur";
 
 const roots: string[] = [];
 afterAll(() => {
@@ -298,6 +324,38 @@ function writeApprovalText(root: string, text: string): void {
 
 function approvedHashes(root: string, paths: string[]): Array<[string, string]> {
   return paths.map((path) => [sha256(join(previewFolder(root), path)), path]);
+}
+
+/** Build the preview folder by hand with the preview base that preview.sh
+ * records: each docs file follows links to its target content, and a link
+ * to a directory stays out of the base (os.walk does not descend it). The
+ * publish tests use this so they do not depend on what preview.sh does with
+ * a docs symlink. */
+function writeDocsBase(root: string): void {
+  const docs = join(root, "docs");
+  const base: Record<string, string> = {};
+  const walk = (dir: string, prefix: string): void => {
+    for (const name of readdirSync(dir).sort()) {
+      const full = join(dir, name);
+      const rel = prefix ? `${prefix}/${name}` : name;
+      const info = lstatSync(full);
+      if (info.isSymbolicLink()) {
+        if (statSync(full).isFile()) base[rel] = sha256(full);
+        continue;
+      }
+      if (info.isDirectory()) {
+        walk(full, rel);
+        continue;
+      }
+      base[rel] = sha256(full);
+    }
+  };
+  walk(docs, "");
+  mkdirSync(previewFolder(root), { recursive: true });
+  writeFileSync(
+    join(previewFolder(root), "preview-base.json"),
+    `${JSON.stringify({ schema: "model-guide-preview-base/1", docs: base }, null, 2)}\n`,
+  );
 }
 
 function expectPreviewRefusal(root: string, value: string, cwd: string): void {
@@ -1020,10 +1078,9 @@ describe("the preview and the publish gate", () => {
     const docsBefore = snapshot(join(root, "docs"));
     const result = runPreview(root);
     expect(result.status, `A3-3 status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe(`preview: refused path ${join(preview, "real-work.json")}\n`);
+    expect(result.stderr).toBe("");
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
-    const lines = result.stdout.split("\n").filter((line) => line !== "");
-    expect(lines.length).toBe(1);
-    expect(lines[0].length).toBeGreaterThan(0);
   });
 
   it("C3-2 keeps exactly one of each nav link on a second preview over a published index", () => {
@@ -1075,6 +1132,174 @@ describe("the preview and the publish gate", () => {
     const result = runPreview(root);
     expect(result.status, `B2-1 preview status: ${result.status}`).toBe(2);
     expect(result.stderr).not.toMatch(/Traceback|    at /);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
+
+  it("B3-1 refuses preview.sh with a relative symlink under docs before any write", () => {
+    const root = repoFixture("b3-1-preview-rel");
+    symlinkSync("index.html", join(root, "docs", "alias.html"));
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPreview(root);
+    expect(result.status, `B3-1 status: ${result.status}`).toBe(2);
+    expect(result.stdout)
+      .toBe(`preview: refused path ${join(root, "docs", "alias.html")}\n`);
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(existsSync(join(root, ".tmp"))).toBe(false);
+  });
+
+  it("B3-1 refuses preview.sh with an outside symlink under docs before any write", () => {
+    const { parent, root } = nestedRepoFixture("b3-1-preview-out");
+    writeFileSync(join(parent, "outside.html"), "outside\n");
+    symlinkSync("../../outside.html", join(root, "docs", "escape.html"));
+    const docsBefore = snapshot(join(root, "docs"));
+    const outsideBefore = readFileSync(join(parent, "outside.html"), "utf8");
+    const result = runPreview(root);
+    expect(result.status, `B3-1 status: ${result.status}`).toBe(2);
+    expect(result.stdout)
+      .toBe(`preview: refused path ${join(root, "docs", "escape.html")}\n`);
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(readFileSync(join(parent, "outside.html"), "utf8")).toBe(outsideBefore);
+    expect(existsSync(join(root, ".tmp"))).toBe(false);
+  });
+
+  it("B3-1 refuses preview.sh with a directory symlink under docs before any write", () => {
+    const { parent, root } = nestedRepoFixture("b3-1-preview-dir");
+    mkdirSync(join(parent, "outside-dir"), { recursive: true });
+    writeFileSync(join(parent, "outside-dir", "outside.txt"), "outside\n");
+    symlinkSync("../../outside-dir", join(root, "docs", "dirlink"), "dir");
+    const docsBefore = snapshot(join(root, "docs"));
+    const outsideBefore = readFileSync(join(parent, "outside-dir", "outside.txt"), "utf8");
+    const result = runPreview(root);
+    expect(result.status, `B3-1 status: ${result.status}`).toBe(2);
+    expect(result.stdout)
+      .toBe(`preview: refused path ${join(root, "docs", "dirlink")}\n`);
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(readFileSync(join(parent, "outside-dir", "outside.txt"), "utf8"))
+      .toBe(outsideBefore);
+    expect(existsSync(join(root, ".tmp"))).toBe(false);
+  });
+
+  it("B3-1 refuses publish with a relative docs symlink in the approval row and writes through no link", () => {
+    const root = repoFixture("b3-1-publish-rel");
+    symlinkSync("index.html", join(root, "docs", "alias.html"));
+    writeDocsBase(root);
+    const preview = previewFolder(root);
+    writeFileSync(join(preview, "index.html"), "<html>preview index</html>\n");
+    symlinkSync("index.html", join(preview, "alias.html"));
+    writeApproval(root, [[sha256(join(preview, "alias.html")), "alias.html"]]);
+    const docsBefore = snapshot(join(root, "docs"));
+    const previewBefore = snapshot(preview);
+    const result = runPublish(root);
+    expect(result.status, `B3-1 publish status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe("publish: drift alias.html\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(snapshot(preview)).toEqual(previewBefore);
+    expect(readFileSync(join(root, "docs", "index.html"), "utf8")).toBe(INDEX_HTML);
+  });
+
+  it("B3-1 refuses publish with an outside docs symlink and leaves the outside file byte-identical", () => {
+    const { parent, root } = nestedRepoFixture("b3-1-publish-out");
+    writeFileSync(join(parent, "outside.html"), "docs-side\n");
+    writeFileSync(join(root, "outside.html"), "preview-side\n");
+    symlinkSync("../../outside.html", join(root, "docs", "escape.html"));
+    writeDocsBase(root);
+    const preview = previewFolder(root);
+    symlinkSync("../../outside.html", join(preview, "escape.html"));
+    writeApproval(root, [[sha256(join(preview, "escape.html")), "escape.html"]]);
+    const docsBefore = snapshot(join(root, "docs"));
+    const previewBefore = snapshot(preview);
+    const outsideBefore = readFileSync(join(parent, "outside.html"), "utf8");
+    const result = runPublish(root);
+    expect(result.status, `B3-1 publish status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe("publish: drift escape.html\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(snapshot(preview)).toEqual(previewBefore);
+    expect(readFileSync(join(parent, "outside.html"), "utf8")).toBe(outsideBefore);
+  });
+
+  it("B3-1 refuses publish with a directory symlink under docs and writes no file", () => {
+    const { parent, root } = nestedRepoFixture("b3-1-publish-dir");
+    mkdirSync(join(parent, "outside-dir"), { recursive: true });
+    writeFileSync(join(parent, "outside-dir", "secret.txt"), "secret\n");
+    symlinkSync("../../outside-dir", join(root, "docs", "dirlink"), "dir");
+    writeDocsBase(root);
+    const preview = previewFolder(root);
+    writeFileSync(join(preview, "real-work.html"), "<html>page</html>\n");
+    writeFileSync(join(preview, "real-work.json"), "{}\n");
+    writeApproval(root, approvedHashes(root, ["real-work.html", "real-work.json"]));
+    const docsBefore = snapshot(join(root, "docs"));
+    const previewBefore = snapshot(preview);
+    const secretBefore = readFileSync(join(parent, "outside-dir", "secret.txt"), "utf8");
+    const result = runPublish(root);
+    expect(result.status, `B3-1 publish status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe("publish: drift dirlink\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(snapshot(preview)).toEqual(previewBefore);
+    expect(readFileSync(join(parent, "outside-dir", "secret.txt"), "utf8"))
+      .toBe(secretBefore);
+    expect(existsSync(join(root, "docs", "real-work.html"))).toBe(false);
+  });
+
+  it("A4-3 refuses publish with an unreadable directory under docs without a stack trace", (ctx) => {
+    if (isRoot) ctx.skip(ROOT_SKIP_REASON);
+    const root = repoFixture("a4-3-lockdir");
+    expect(runPreview(root).status).toBe(0);
+    mkdirSync(join(root, "docs", "lockdir"));
+    writeFileSync(join(root, "docs", "lockdir", "inner.txt"), "inner\n");
+    writeApproval(root, approvedHashes(root, ["real-work.html", "real-work.json"]));
+    const docsBefore = snapshot(join(root, "docs"));
+    const previewBefore = snapshot(previewFolder(root));
+    chmodSync(join(root, "docs", "lockdir"), 0o000);
+    const result = runPublish(root);
+    chmodSync(join(root, "docs", "lockdir"), 0o755);
+    expect(result.status, `A4-3 status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe("publish: drift lockdir\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(previewFolder(root))).toEqual(previewBefore);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(existsSync(join(root, "docs", "real-work.html"))).toBe(false);
+  });
+
+  it("A4-1 refuses preview.sh with an unreadable file under docs without a traceback or a half-built folder", (ctx) => {
+    if (isRoot) ctx.skip(ROOT_SKIP_REASON);
+    const root = repoFixture("a4-1-locked");
+    writeFileSync(join(root, "docs", "locked.txt"), "locked\n");
+    const docsBefore = snapshot(join(root, "docs"));
+    chmodSync(join(root, "docs", "locked.txt"), 0o000);
+    const result = runPreview(root);
+    chmodSync(join(root, "docs", "locked.txt"), 0o644);
+    expect(result.status, `A4-1 status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe("preview: unreadable docs/locked.txt\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    expect(existsSync(previewFolder(root))).toBe(false);
+    expect(existsSync(join(root, ".tmp"))).toBe(false);
+  });
+
+  it("A4-1 keeps an existing preview folder byte-identical when a docs entry is unreadable", (ctx) => {
+    if (isRoot) ctx.skip(ROOT_SKIP_REASON);
+    const root = repoFixture("a4-1-existing");
+    expect(runPreview(root).status).toBe(0);
+    const preview = previewFolder(root);
+    const indexBefore = readFileSync(join(preview, "index.html"), "utf8");
+    writeFileSync(join(root, "docs", "index.html"), `${INDEX_HTML}<!-- later edit -->\n`);
+    writeFileSync(join(root, "docs", "locked.txt"), "locked\n");
+    const docsBefore = snapshot(join(root, "docs"));
+    const previewBefore = snapshot(preview);
+    chmodSync(join(root, "docs", "locked.txt"), 0o000);
+    const result = runPreview(root);
+    chmodSync(join(root, "docs", "locked.txt"), 0o644);
+    expect(result.status, `A4-1 status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe("preview: unreadable docs/locked.txt\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(preview)).toEqual(previewBefore);
+    expect(readFileSync(join(preview, "index.html"), "utf8")).toBe(indexBefore);
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
   });
 });
