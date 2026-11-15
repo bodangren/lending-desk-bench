@@ -358,8 +358,16 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     preview-gate tests and the four companion files still pass. The record
     is `measure/runs/model_guide/red-1.20.txt` (not staged). U2 and U5 stay
     out of scope as nonblocking phase-acceptance items.
-- [~] 1.21 Green. UX fixes U1, U3, U4 in `harness/model-guide/`. Touch no
-  test file.
+- [x] 7618b8c 1.21 Green. UX fixes U1, U3, U4 in `harness/model-guide/`.
+  Touch no test file.
+  - Evidence: commit 7618b8c. U1 gives the source paragraph
+    `style="overflow-wrap: anywhere"` in `pages/real-work.html`; U3 gives
+    every `.table-wrap` `tabindex="0"`, `role="region"`, and a table name in
+    `aria-label` (the two role tables in `pages/real-work.html` and the
+    work-type boxes in `preview.sh`); U4 adds `aria-current="page"` to the
+    `./real-work.html` nav link only. The role log is
+    `measure/runs/model_guide/green-p1-d344a21.log`. The task 1.9 preview
+    re-run record is `measure/runs/model_guide/preview-1.21.txt`.
   - Verify: run `preview-gate.test.ts`, `input-check.test.ts`,
     `real-work.test.ts`, `leak-guard.test.ts`, and `adversarial.test.ts`,
     each alone with one worker and the reporter set to dot.
