@@ -1,0 +1,32 @@
+{
+  "schema": "model-guide-review-scores/1",
+  "set_id": "mg-2026-11a",
+  "routes": [
+    {
+      "route": "opencode-go/kimi-k2.7-code",
+      "state": "complete",
+      "passes": [
+        { "date": "2026-11-11", "score": 92.0, "state": "complete" },
+        { "date": "2026-11-12", "score": 88.0, "state": "complete" },
+        { "date": "2026-11-13", "score": 84.0, "state": "complete" }
+      ]
+    },
+    {
+      "route": "opencode-go/mimo-v2.6-flash",
+      "state": "complete",
+      "passes": [
+        { "date": "2026-11-11", "score": 80.0, "state": "complete" },
+        { "date": "2026-11-12", "score": 79.0, "state": "complete" },
+        { "date": "2026-11-13", "score": 76.0, "state": "complete" }
+      ]
+    },
+    {
+      "route": "opencode-go/deepseek-v4.1-flash",
+      "state": "incomplete",
+      "passes": [
+        { "date": "2026-11-12", "score": 95.0, "state": "complete" },
+        { "date": "2026-11-13", "score": 90.0, "state": "complete" }
+      ]
+    }
+  ]
+}

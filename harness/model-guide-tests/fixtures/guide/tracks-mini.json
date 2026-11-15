@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "generated_at": "2026-11-14T00:00:00",
+  "tracks": {
+    "tests": {
+      "models": [
+        { "model": "x/m", "arm": "a", "total": 98.7 },
+        { "model": "y/m", "arm": "a", "total": 94.0 },
+        { "model": "w/m", "arm": "a", "total": 90.9 },
+        { "model": "z/m", "arm": "a", "total": 79.4 }
+      ]
+    }
+  }
+}

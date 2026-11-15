@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "generated_at": "2026-11-14T00:00:00",
+  "models": [
+    { "provider_model": "x/m", "arm": "a", "score": { "total": 93.0 } },
+    { "provider_model": "y/m", "arm": "a", "score": { "total": 95.0 } },
+    { "provider_model": "z/m", "arm": "a", "score": { "total": 88.9 } },
+    { "provider_model": "w/m", "arm": "a", "score": { "total": 85.0 } }
+  ]
+}
