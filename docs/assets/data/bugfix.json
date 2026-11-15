@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "track": "bugfix",
-  "generated_at": "2026-11-15T20:24:06",
+  "generated_at": "2026-11-16T00:19:21",
   "scoring": {
     "weights": {
       "repair": 0.45,
@@ -16,6 +16,360 @@
     "name": "opencode"
   },
   "models": [
+    {
+      "run_id": "bf-a-glm-5-3-flash-2026w46-r1",
+      "model": "opencode-go/glm-5.3-flash",
+      "slug": "glm-5-3-flash",
+      "arm": "a",
+      "arm_label": "No Skills",
+      "week": "2026w46",
+      "fixture_revision": 2,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w46",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-a-glm-5-3-flash-2026w46-r1"
+        ]
+      },
+      "axes": {
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 1,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 112,
+      "grader_browser": "chrome",
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w46"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
+      "executor": {
+        "kind": "opencode",
+        "name": "opencode",
+        "version": "opencode v2.2.4"
+      },
+      "ranked": true,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      }
+    },
+    {
+      "run_id": "bf-b-glm-5-3-flash-2026w46-r1",
+      "model": "opencode-go/glm-5.3-flash",
+      "slug": "glm-5-3-flash",
+      "arm": "b",
+      "arm_label": "Skills",
+      "week": "2026w46",
+      "fixture_revision": 2,
+      "total": 100.0,
+      "repeats": {
+        "week": "2026w46",
+        "n": 1,
+        "median": 100.0,
+        "worst": 100.0,
+        "best": 100.0,
+        "totals": [
+          100.0
+        ],
+        "runs": [
+          "bf-b-glm-5-3-flash-2026w46-r1"
+        ]
+      },
+      "axes": {
+        "repair": 1,
+        "regression": 1,
+        "robustness": 1,
+        "adherence": 1,
+        "quality": 1,
+        "weights": {
+          "repair": 0.45,
+          "regression": 0.2,
+          "robustness": 0.15,
+          "adherence": 0.1,
+          "quality": 0.1
+        }
+      },
+      "adherence": {
+        "contract": 1,
+        "classes": []
+      },
+      "class_rates": {
+        "functional": 1,
+        "security": 1,
+        "performance": 1,
+        "reliability": 1
+      },
+      "request_rates": null,
+      "bugs": [
+        {
+          "id": "BUG-fn-status-precedence",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.returned"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-boundary",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "A.boundary"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-history-order",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "D.history-order"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-filter-case",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "C.filter-case"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-fn-contract-400",
+          "class": "functional",
+          "repaired": true,
+          "detectors": [
+            "G.400"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-action-auth",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "F.auth-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-sec-route-401",
+          "class": "security",
+          "repaired": true,
+          "detectors": [
+            "G.401"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-waterfall",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "C.parallel-reads"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-perf-dedup",
+          "class": "performance",
+          "repaired": true,
+          "detectors": [
+            "P.dedup-item"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-race",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "P.concurrent-checkout"
+          ],
+          "failed_detectors": []
+        },
+        {
+          "id": "BUG-rel-return-unguarded",
+          "class": "reliability",
+          "repaired": true,
+          "detectors": [
+            "F.return-not-on-loan"
+          ],
+          "failed_detectors": []
+        }
+      ],
+      "tests": null,
+      "churn_lines": 109,
+      "grader_browser": "chrome",
+      "trend": {
+        "ema": 100.0,
+        "min": 100.0,
+        "max": 100.0,
+        "n": 1,
+        "weeks": [
+          "2026w46"
+        ],
+        "medians": [
+          100.0
+        ]
+      },
+      "executor": {
+        "kind": "opencode",
+        "name": "opencode",
+        "version": "opencode v2.2.4"
+      },
+      "ranked": true,
+      "trust": {
+        "valid": true,
+        "trusted": true,
+        "publishable": true,
+        "rankable": true,
+        "under_load": false
+      }
+    },
     {
       "run_id": "bf-a-mimo-v2-6-flash-2026w46-r1",
       "model": "opencode-go/mimo-v2.6-flash",

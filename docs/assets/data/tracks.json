@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-15T20:24:06",
+  "generated_at": "2026-11-16T00:19:21",
   "executor": {
     "series": "opencode",
     "name": "opencode",
@@ -16,6 +16,360 @@
         "quality": 0.1
       },
       "models": [
+        {
+          "run_id": "bf-a-glm-5-3-flash-2026w46-r1",
+          "model": "opencode-go/glm-5.3-flash",
+          "slug": "glm-5-3-flash",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "week": "2026w46",
+          "fixture_revision": 2,
+          "total": 100.0,
+          "repeats": {
+            "week": "2026w46",
+            "n": 1,
+            "median": 100.0,
+            "worst": 100.0,
+            "best": 100.0,
+            "totals": [
+              100.0
+            ],
+            "runs": [
+              "bf-a-glm-5-3-flash-2026w46-r1"
+            ]
+          },
+          "axes": {
+            "repair": 1,
+            "regression": 1,
+            "robustness": 1,
+            "adherence": 1,
+            "quality": 1,
+            "weights": {
+              "repair": 0.45,
+              "regression": 0.2,
+              "robustness": 0.15,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "performance": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": [
+            {
+              "id": "BUG-fn-status-precedence",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "A.returned"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-boundary",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "A.boundary"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-history-order",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "D.history-order"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-filter-case",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "C.filter-case"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-contract-400",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "G.400"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-sec-action-auth",
+              "class": "security",
+              "repaired": true,
+              "detectors": [
+                "F.auth-checkout"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-sec-route-401",
+              "class": "security",
+              "repaired": true,
+              "detectors": [
+                "G.401"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-perf-waterfall",
+              "class": "performance",
+              "repaired": true,
+              "detectors": [
+                "C.parallel-reads"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-perf-dedup",
+              "class": "performance",
+              "repaired": true,
+              "detectors": [
+                "P.dedup-item"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-rel-race",
+              "class": "reliability",
+              "repaired": true,
+              "detectors": [
+                "P.concurrent-checkout"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-rel-return-unguarded",
+              "class": "reliability",
+              "repaired": true,
+              "detectors": [
+                "F.return-not-on-loan"
+              ],
+              "failed_detectors": []
+            }
+          ],
+          "tests": null,
+          "churn_lines": 112,
+          "grader_browser": "chrome",
+          "trend": {
+            "ema": 100.0,
+            "min": 100.0,
+            "max": 100.0,
+            "n": 1,
+            "weeks": [
+              "2026w46"
+            ],
+            "medians": [
+              100.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "bf-b-glm-5-3-flash-2026w46-r1",
+          "model": "opencode-go/glm-5.3-flash",
+          "slug": "glm-5-3-flash",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w46",
+          "fixture_revision": 2,
+          "total": 100.0,
+          "repeats": {
+            "week": "2026w46",
+            "n": 1,
+            "median": 100.0,
+            "worst": 100.0,
+            "best": 100.0,
+            "totals": [
+              100.0
+            ],
+            "runs": [
+              "bf-b-glm-5-3-flash-2026w46-r1"
+            ]
+          },
+          "axes": {
+            "repair": 1,
+            "regression": 1,
+            "robustness": 1,
+            "adherence": 1,
+            "quality": 1,
+            "weights": {
+              "repair": 0.45,
+              "regression": 0.2,
+              "robustness": 0.15,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "performance": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": [
+            {
+              "id": "BUG-fn-status-precedence",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "A.returned"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-boundary",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "A.boundary"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-history-order",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "D.history-order"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-filter-case",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "C.filter-case"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-contract-400",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "G.400"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-sec-action-auth",
+              "class": "security",
+              "repaired": true,
+              "detectors": [
+                "F.auth-checkout"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-sec-route-401",
+              "class": "security",
+              "repaired": true,
+              "detectors": [
+                "G.401"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-perf-waterfall",
+              "class": "performance",
+              "repaired": true,
+              "detectors": [
+                "C.parallel-reads"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-perf-dedup",
+              "class": "performance",
+              "repaired": true,
+              "detectors": [
+                "P.dedup-item"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-rel-race",
+              "class": "reliability",
+              "repaired": true,
+              "detectors": [
+                "P.concurrent-checkout"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-rel-return-unguarded",
+              "class": "reliability",
+              "repaired": true,
+              "detectors": [
+                "F.return-not-on-loan"
+              ],
+              "failed_detectors": []
+            }
+          ],
+          "tests": null,
+          "churn_lines": 109,
+          "grader_browser": "chrome",
+          "trend": {
+            "ema": 100.0,
+            "min": 100.0,
+            "max": 100.0,
+            "n": 1,
+            "weeks": [
+              "2026w46"
+            ],
+            "medians": [
+              100.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
         {
           "run_id": "bf-a-mimo-v2-6-flash-2026w46-r1",
           "model": "opencode-go/mimo-v2.6-flash",
@@ -1946,6 +2300,85 @@
           }
         },
         {
+          "run_id": "tt-b-glm-5-3-flash-2026w46-r1",
+          "model": "opencode-go/glm-5.3-flash",
+          "slug": "glm-5-3-flash",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w46",
+          "fixture_revision": 2,
+          "total": 87.7,
+          "repeats": {
+            "week": "2026w46",
+            "n": 1,
+            "median": 87.7,
+            "worst": 87.7,
+            "best": 87.7,
+            "totals": [
+              87.7
+            ],
+            "runs": [
+              "tt-b-glm-5-3-flash-2026w46-r1"
+            ]
+          },
+          "axes": {
+            "kill": 0.9333333333333333,
+            "validity": 1,
+            "adherence": 0.5,
+            "quality": 0.6666666666666667,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 0.5,
+            "classes": [
+              "files_added"
+            ]
+          },
+          "class_rates": {
+            "functional": 0.8571428571428571,
+            "security": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 34,
+            "valid": 34
+          },
+          "churn_lines": 24,
+          "grader_browser": "none",
+          "trend": {
+            "ema": 87.7,
+            "min": 87.7,
+            "max": 87.7,
+            "n": 1,
+            "weeks": [
+              "2026w46"
+            ],
+            "medians": [
+              87.7
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
           "run_id": "tt-a-gpt-5-6-luna-2026w43-r1",
           "model": "opencode-go/gpt-5.6-luna",
           "slug": "gpt-5-6-luna",
@@ -2023,16 +2456,16 @@
           }
         },
         {
-          "run_id": "tt-a-glm-5-3-flash-2026w43-r1",
+          "run_id": "tt-a-glm-5-3-flash-2026w46-r1",
           "model": "opencode-go/glm-5.3-flash",
           "slug": "glm-5-3-flash",
           "arm": "a",
           "arm_label": "No Skills",
-          "week": "2026w43",
+          "week": "2026w46",
           "fixture_revision": 2,
           "total": 0.0,
           "repeats": {
-            "week": "2026w43",
+            "week": "2026w46",
             "n": 1,
             "median": 0.0,
             "worst": 0.0,
@@ -2041,7 +2474,7 @@
               0.0
             ],
             "runs": [
-              "tt-a-glm-5-3-flash-2026w43-r1"
+              "tt-a-glm-5-3-flash-2026w46-r1"
             ]
           },
           "axes": {
@@ -2079,18 +2512,20 @@
             "ema": 0.0,
             "min": 0.0,
             "max": 0.0,
-            "n": 1,
+            "n": 2,
             "weeks": [
-              "2026w43"
+              "2026w43",
+              "2026w46"
             ],
             "medians": [
+              0.0,
               0.0
             ]
           },
           "executor": {
             "kind": "opencode",
             "name": "opencode",
-            "version": "opencode v2.1.4"
+            "version": "opencode v2.2.4"
           },
           "ranked": true,
           "trust": {
@@ -2098,7 +2533,7 @@
             "trusted": false,
             "publishable": false,
             "rankable": false,
-            "under_load": true
+            "under_load": false
           }
         },
         {
@@ -2270,6 +2705,160 @@
         "quality": 0.1
       },
       "models": [
+        {
+          "run_id": "ch-a-glm-5-3-flash-2026w46-r1",
+          "model": "opencode-go/glm-5.3-flash",
+          "slug": "glm-5-3-flash",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "week": "2026w46",
+          "fixture_revision": 2,
+          "total": 100.0,
+          "repeats": {
+            "week": "2026w46",
+            "n": 1,
+            "median": 100.0,
+            "worst": 100.0,
+            "best": 100.0,
+            "totals": [
+              100.0
+            ],
+            "runs": [
+              "ch-a-glm-5-3-flash-2026w46-r1"
+            ]
+          },
+          "axes": {
+            "change": 1,
+            "regression": 1,
+            "robustness": 1,
+            "adherence": 1,
+            "quality": 1,
+            "weights": {
+              "change": 0.45,
+              "regression": 0.25,
+              "robustness": 0.1,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": null,
+          "request_rates": {
+            "CR-1": 1,
+            "CR-2": 1,
+            "CR-3": 1,
+            "CR-4": 1
+          },
+          "bugs": null,
+          "tests": null,
+          "churn_lines": 86,
+          "grader_browser": "chrome",
+          "trend": {
+            "ema": 100.0,
+            "min": 100.0,
+            "max": 100.0,
+            "n": 1,
+            "weeks": [
+              "2026w46"
+            ],
+            "medians": [
+              100.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "ch-b-glm-5-3-flash-2026w46-r1",
+          "model": "opencode-go/glm-5.3-flash",
+          "slug": "glm-5-3-flash",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w46",
+          "fixture_revision": 2,
+          "total": 100.0,
+          "repeats": {
+            "week": "2026w46",
+            "n": 1,
+            "median": 100.0,
+            "worst": 100.0,
+            "best": 100.0,
+            "totals": [
+              100.0
+            ],
+            "runs": [
+              "ch-b-glm-5-3-flash-2026w46-r1"
+            ]
+          },
+          "axes": {
+            "change": 1,
+            "regression": 1,
+            "robustness": 1,
+            "adherence": 1,
+            "quality": 1,
+            "weights": {
+              "change": 0.45,
+              "regression": 0.25,
+              "robustness": 0.1,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": null,
+          "request_rates": {
+            "CR-1": 1,
+            "CR-2": 1,
+            "CR-3": 1,
+            "CR-4": 1
+          },
+          "bugs": null,
+          "tests": null,
+          "churn_lines": 75,
+          "grader_browser": "chrome",
+          "trend": {
+            "ema": 100.0,
+            "min": 100.0,
+            "max": 100.0,
+            "n": 1,
+            "weeks": [
+              "2026w46"
+            ],
+            "medians": [
+              100.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
         {
           "run_id": "ch-a-kimi-k2-7-code-2026w46-r1",
           "model": "opencode-go/kimi-k2.7-code",
