@@ -505,6 +505,17 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: commit b8f9045 holds the tool and the data file.
     `measure/runs/model_guide/green-p2-dcaa77d.log` holds the single-file
     commands, their exit codes, and their Tests lines.
+- [x] c99de30 2.5a Red. Fix the T4 starve cell of guide.test.ts (Green 2.5 block).
+  - The starve cell is per export row. The Phase 1 merge joins the three
+    print-books rows of model x/m, so the cell must keep the merged model
+    under 10 results: `{ runs: 8, pass: 1, fail: 1 }` gives x/m n 6.
+  - The docs-and-ops twin T5 keeps its cell and stays valid.
+  - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
+    and record the result in `measure/runs/model_guide/red-2.5a.txt`.
+  - Evidence: commit c99de30 holds the one-line T4 cell fix.
+    `measure/runs/model_guide/red-2.5a.txt` holds the single-file commands,
+    their exit codes, their Tests lines, and each failed test name with the
+    reason it fails at HEAD.
 - [~] 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
