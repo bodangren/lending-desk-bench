@@ -7,7 +7,10 @@
 # `preview: refused path <value>` on stdout, exit 2, before any write.
 # It refuses a symlink inside an existing preview folder with
 # `preview: refused path <path>` on stdout, exit 2, before any write; the
-# path is the link. It refuses a dangling entry under docs/ with
+# path is the link. It refuses any symlink under docs/ with
+# `preview: refused path <absolute link path>` on stdout, exit 2, before
+# any write; the link target stays byte-identical. It refuses an
+# unreadable entry under docs/ (for example mode 000) with
 # `preview: unreadable <path relative to the repo>` on stdout, exit 2,
 # before any write.
 # It runs the input check into a temp folder first, so a refused run leaves
@@ -99,10 +102,20 @@ if [ -d "$PREVIEW_ABS" ]; then
   fi
 fi
 
-# Refuse a dangling entry under docs/ before any write.
-DANGLING="$(find "$ROOT/docs" -type l ! -exec test -e {} \; -print -quit)"
-if [ -n "$DANGLING" ]; then
-  echo "preview: unreadable ${DANGLING#"$ROOT"/}"
+# Refuse any symlink under docs/ before any write: a valid link can point
+# outside docs/ and let a later publish write through it.
+LINK="$(find "$ROOT/docs" -type l -print -quit)"
+if [ -n "$LINK" ]; then
+  echo "preview: refused path $LINK"
+  exit 2
+fi
+
+# Refuse an unreadable entry under docs/ before any write: a mode 000 file
+# or folder would fail the copy after mkdir -p and leave a half-built
+# preview folder.
+UNREADABLE="$(find "$ROOT/docs" ! -readable -print -quit)"
+if [ -n "$UNREADABLE" ]; then
+  echo "preview: unreadable ${UNREADABLE#"$ROOT"/}"
   exit 2
 fi
 
@@ -128,14 +141,9 @@ template_path = os.environ["MODEL_GUIDE_TEMPLATE"]
 
 def sha256_file(path):
     digest = hashlib.sha256()
-    try:
-        with open(path, "rb") as handle:
-            for chunk in iter(lambda: handle.read(65536), b""):
-                digest.update(chunk)
-    except OSError:
-        rel = os.path.relpath(path, root).replace(os.sep, "/")
-        print(f"preview: unreadable {rel}")
-        sys.exit(2)
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
     return digest.hexdigest()
 
 

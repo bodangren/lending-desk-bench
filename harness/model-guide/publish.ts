@@ -21,8 +21,15 @@
  *                                -> exit 2, `publish: no preview base` or
  *                                   `publish: bad preview base`
  *   7. a docs/ file differs from preview-base.json, or a docs/ entry cannot
- *      be read (for example a dangling symlink)
- *                                -> exit 2, `publish: drift <path>`
+ *      be read (for example a dangling symlink) or is not a plain file or
+ *      folder (a symlink to a file or to a directory)
+ *                                -> exit 2, `publish: drift <path>`; the
+ *                                   walk stats each entry with lstat and
+ *                                   never follows a link, so the copy loop
+ *                                   writes through no link and each link
+ *                                   target stays byte-identical; an
+ *                                   unreadable directory maps to the same
+ *                                   drift line without a stack trace
  *   8. else copy each approved preview file to `<repo>/docs/<path>`, exit 0.
  * Each refusal prints one line on stdout and writes no file.
  * The drift check uses own-property checks on the preview base map.
@@ -30,7 +37,7 @@
  * keeps stdout empty, and exits 2.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
@@ -83,19 +90,28 @@ function readApproval(): ApprovalRow[] {
   return rows;
 }
 
-/** Every current file of docs/, with `/` separators, sorted per folder. An
- * entry that cannot be stated (for example a dangling symlink) lands in the
- * broken list and becomes a drift refusal, not a stack trace. */
+/** Every current file of docs/, with `/` separators, sorted per folder. The
+ * walk stats each entry with lstat and never follows a link. A symlink (to a
+ * file or to a directory), an entry that cannot be stated, or a directory
+ * that cannot be read lands in the broken list and becomes a drift refusal,
+ * not a stack trace. */
 function docsFiles(): { files: string[]; broken: string[] } {
   const files: string[] = [];
   const broken: string[] = [];
   const walk = (dir: string, prefix: string): void => {
-    for (const name of readdirSync(dir).sort()) {
+    let names: string[];
+    try {
+      names = readdirSync(dir).sort();
+    } catch {
+      broken.push(prefix);
+      return;
+    }
+    for (const name of names) {
       const full = join(dir, name);
       const rel = prefix ? `${prefix}/${name}` : name;
       let info;
       try {
-        info = statSync(full);
+        info = lstatSync(full);
       } catch {
         broken.push(rel);
         continue;
