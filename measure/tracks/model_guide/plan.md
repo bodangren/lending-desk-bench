@@ -377,7 +377,17 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     (not staged). Ruling: each work type that appears in the export (the work_types
     keys of any all_time row, including rows on the unknown or other route) gets a
     section on the page.
-- [~] 1.23 Green. Acceptance 5 "no pick yet" in `harness/model-guide/`. Touch no test file.
+- [x] 56a173b 1.23 Green. Acceptance 5 "no pick yet" in `harness/model-guide/`.
+  Touch no test file.
+  - Evidence: commit 56a173b. `real-work.ts` keeps every work-type name that
+    appears in any all_time row, also on the unknown or other route, with an
+    empty row list; the numeric row build still skips those routes, so the
+    object stays the ADV-8 `Object.fromEntries` build. `preview.sh` renders
+    one section per work_types key: an empty list gives the H3 heading and
+    `no pick yet` with no table, and a filled list keeps the U3 attributes.
+    The role log is `measure/runs/model_guide/green-p1-5993d28.log`. The
+    task 1.9 preview re-run record is
+    `measure/runs/model_guide/preview-1.23.txt`.
   - Verify: run `preview-gate.test.ts`, `input-check.test.ts`, `real-work.test.ts`,
     `leak-guard.test.ts`, and `adversarial.test.ts`, each alone with one worker and
     the reporter set to dot.
