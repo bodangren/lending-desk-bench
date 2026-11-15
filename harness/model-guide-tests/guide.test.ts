@@ -48,7 +48,8 @@ import { afterAll, describe, expect, it } from "vitest";
  *   second        the second choice model, or null when the rank has no
  *                 second qualified model
  *   evidence      "<source>: <number> (n=<count>)". The source prefix is
- *                 "page B", "track A", or "print-audit" (spec D18 example:
+ *                 "page B", "page B producer" (the test writing row only,
+ *                 ruling Q1), "track A", or "print-audit" (spec D18 example:
  *                 "page B: pass 0.86 (n=114)"). Page B numbers are the
  *                 pass rate with 2 decimals; the track A number is the
  *                 worst pass score with 1 decimal; the print-audit number
@@ -71,14 +72,16 @@ import { afterAll, describe, expect, it } from "vitest";
  * type `print books`, then the print-audit data point; tooling = work type
  * `tooling`, then none. The base line itself never picks.
  *
- * Spec D18 names the test writing source "page B producer table, role red".
- * The page B data file `real-work.json` has no role key (Phase 1 contract),
- * so this test proves the producer table as the source and does not pin the
- * role filter. The Red report and the handoff to Green name that open
- * decision. This test also does not pin the code review row when track A
- * has no complete route: spec D18 lets the page B checker table pick there,
- * while the strategy closeout gate wants "no pick yet" until Phase 4. The
- * handoff names that conflict for the orchestrator.
+ * Orchestrator rulings on spec D18, recorded under plan task 2.3:
+ *   Q1 the test writing row uses the page B producer table as a whole. The
+ *      page B data file `real-work.json` has no role key (Phase 1
+ *      contract), so the "role red" filter of D18 cannot apply. The
+ *      evidence cell of that row starts with "page B producer".
+ *   Q2 the code review row shows "no pick yet: not enough evidence" until
+ *      Phase 4, even when the page B checker table holds a qualified
+ *      model. The checker table does not pick for code review before
+ *      Phase 4 (the plan line "Verify (Phase 2)" holds).
+ * The two ruling tests are `D18 Q1` and `D18 Q2` below.
  *
  * Stale rule (spec D19): the mark uses the newest evidence_date of the
  * table against `--today`. The tool takes `--today`, so the verdict does
@@ -122,7 +125,7 @@ const KINDS = [
 ];
 const ROOT_KEYS = ["rows", "schema", "stale", "today"].sort();
 const ROW_KEYS = ["base_line", "evidence", "evidence_date", "kind", "pick", "second"].sort();
-const EVIDENCE_RE = /^(page B|track A|print-audit): .+ \(n=\d+\)$/;
+const EVIDENCE_RE = /^(page B producer|page B|track A|print-audit): .+ \(n=\d+\)$/;
 const HOSTILE_ROUTE = 'y/"><img src=x onerror=alert(1)>';
 const HOSTILE_RAW = "<img src=x onerror=alert(1)>";
 
@@ -372,9 +375,9 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(rowOf(guide, "tooling").evidence).toBe("page B: pass 0.30 (n=10)");
 
     // The test writing evidence comes from the producer table row of the
-    // pick itself. The role filter of D18 is not pinned; see the header.
+    // pick itself, and the cell names that table (ruling Q1).
     const testWriting = rowOf(guide, "test writing");
-    const match = testWriting.evidence.match(/^page B: pass \d+\.\d{2} \(n=(\d+)\)$/);
+    const match = testWriting.evidence.match(/^page B producer: pass \d+\.\d{2} \(n=(\d+)\)$/);
     expect(match, `evidence ${testWriting.evidence}`).not.toBeNull();
     const producer = realWork.producer.find((item: any) => item.model === testWriting.pick);
     expect(producer, `pick ${testWriting.pick} comes from the producer table`).toBeDefined();
@@ -561,6 +564,72 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(index, "the escaped hostile model reaches the page")
       .toContain(escapeHtml(HOSTILE_ROUTE));
     expect(index, "no raw img tag").not.toContain(HOSTILE_RAW);
+  });
+
+  it("D18 Q1: the test writing row picks from the producer table and the evidence cell names it", () => {
+    const { guide, realWork } = main();
+    const producer = realWork.producer;
+    // The source is the producer table as a whole: the fixture holds a
+    // table with a choice, and `real-work.json` carries no role key, so no
+    // role filter can narrow it (ruling Q1).
+    expect(producer.length, "the fixture holds a producer table").toBeGreaterThan(1);
+    expect(Object.keys(producer[0]), "a producer row has no role key").not.toContain("role");
+    expect(producer[0].can_pick, "the producer top qualifies").toBe(true);
+    const row = rowOf(guide, "test writing");
+    expect(row.pick, "the pick comes from the producer table").toBe(producer[0].model);
+    expect(row.evidence, "the evidence cell names the producer table")
+      .toMatch(/^page B producer: /);
+    const match = row.evidence.match(/^page B producer: pass \d+\.\d{2} \(n=(\d+)\)$/);
+    expect(match, `evidence ${row.evidence}`).not.toBeNull();
+    const pickRow = producer.find((item: any) => item.model === row.pick);
+    expect(pickRow, `pick ${row.pick} is a producer row`).toBeDefined();
+    expect(Number(match![1]), "the run count is the producer row count")
+      .toBe(pickRow.pass_rate.n);
+    expect(row.evidence_date).toBe(TODAY);
+  });
+
+  it("D18 Q2: with no complete track A route and a qualified checker row the code review pick is the no-pick words", () => {
+    const { guide, realWork } = main();
+    // The fixture condition: the page B checker table holds a qualified
+    // model, so only the missing complete track A route can stop the pick.
+    const qualifiedChecker = realWork.checker.find((item: any) => item.can_pick);
+    expect(qualifiedChecker, "the checker table holds a qualified model").toBeDefined();
+
+    // (a) model-guide.json. The score file keeps only the incomplete
+    // route, so track A has no complete rank (ruling Q2).
+    const scores = JSON.parse(readFileSync(SCORES, "utf8"));
+    const incomplete = scores.routes.filter((route: any) => route.state !== "complete");
+    expect(incomplete, "one incomplete route in the fixture").toHaveLength(1);
+    const noCompleteFile = join(tempDir("scores-no-complete"), "review-scores-mini.json");
+    writeFileSync(noCompleteFile, JSON.stringify({ ...scores, routes: incomplete }));
+    const run = runGuide({
+      tag: "no-complete",
+      realWork: main().realWorkJson,
+      scores: noCompleteFile,
+      printAudit: printAuditInput("no-complete"),
+      benchmark: BENCHMARK,
+      tracks: TRACKS,
+      today: TODAY,
+    });
+    const row = rowOf(run.data, "Code review");
+    expect(row.pick, "the code review pick is the no-pick words").toBe(NO_PICK);
+    expect(row.pick, "the qualified checker model does not pick").not.toBe(
+      qualifiedChecker.model,
+    );
+    expect(guide.rows.map((item: any) => item.kind)).toEqual(KINDS);
+
+    // (b) the preview index page. The temp preview repo has no score
+    // file, so it has no complete track A route either.
+    const { root, exportPath } = pageRepo("code-review-nopick");
+    const result = runPreview(root, exportPath);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const index = readFileSync(previewIndex(root), "utf8");
+    const cells = [...index.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((match) => match[1]);
+    const codeReview = cells.find((entry) => entry.includes("Code review"));
+    expect(codeReview, "the page holds the code review row").toBeDefined();
+    expect(codeReview, "the code review row shows the no-pick words").toContain(NO_PICK);
+    expect(codeReview, "the qualified checker model is not the page pick")
+      .not.toContain(qualifiedChecker.model);
   });
 });
 
