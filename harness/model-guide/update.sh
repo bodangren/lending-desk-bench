@@ -22,7 +22,8 @@
 # `update: refused path <path>` on stdout, exit 2, before any write, the
 # same way preview.sh refuses a symlink under docs/. The paths are
 # <repo>/docs, <repo>/docs/assets, <repo>/docs/assets/data, the two docs
-# target files, the preview folder, and its two target files.
+# target files, the preview folder and each parent of it inside the repo,
+# and its two target files.
 #
 # A failed input check prints the one `input-check: <check>` line of the
 # tool on stdout, exits 2, and writes no file into the repo: no docs write,
@@ -50,10 +51,17 @@ MODEL_GUIDE_OUT="$ROOT/docs/assets/data/model-guide.json"
 
 # Refuse a symlink on any path this script writes through, before any write
 # (spec D21), the same way preview.sh refuses a symlink under docs/: the
-# three data folders, the two docs target files, the preview folder, and
-# its two target files. A linked name takes a write outside its folder.
+# three data folders, the two docs target files, the preview folder and each
+# parent of it inside the repo, and its two target files. A linked name
+# takes a write outside its folder.
+PREVIEW_CHAIN=()
+NEXT="$PREVIEW_ABS"
+while [ "$NEXT" != "$ROOT" ] && [ "$NEXT" != "/" ] && [ "$NEXT" != "." ]; do
+  PREVIEW_CHAIN=("$NEXT" "${PREVIEW_CHAIN[@]}")
+  NEXT="${NEXT%/*}"
+done
 for path in "$ROOT/docs" "$ROOT/docs/assets" "$DATA_ABS" "$REAL_WORK_OUT" \
-  "$MODEL_GUIDE_OUT" "$PREVIEW_ABS" "$PREVIEW_ABS/real-work.json" \
+  "$MODEL_GUIDE_OUT" "${PREVIEW_CHAIN[@]}" "$PREVIEW_ABS/real-work.json" \
   "$PREVIEW_ABS/model-guide.json"; do
   if [ -L "$path" ]; then
     echo "update: refused path $path"
