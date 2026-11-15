@@ -317,6 +317,31 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `measure/runs/model_guide/green-p1-6dc3b4f.log`. The task 1.9 preview
     re-run record is `measure/runs/model_guide/preview-1.17.txt`.
 
+- [x] 825182a 1.18 Red. Adversarial record and test-owner fixes (ADV-12,
+  ADV-13).
+  - Files: `harness/model-guide-tests/leak-guard.test.ts`.
+  - Evidence: the adversarial record f014ee8
+    (`measure/runs/model_guide/adversarial-0acceea.json`,
+    `adversarial.test.ts`, 49 tests, 22 failed on 0acceea) names ADV-12:
+    the guard pushes the symlink line text `link <rel> <target>` as a
+    relative path and reads it back, so a symlink in the folder throws
+    ENOENT; and ADV-13: the needle match is case-sensitive, so an
+    upper-case export SHA-256 passes.
+  - Verify: run `leak-guard.test.ts` (exit 0) and `adversarial.test.ts`
+    (the remaining failures name only ADV-1 to ADV-11), each alone with
+    one worker and the reporter set to dot.
+  - Evidence: commit 825182a. `leak-guard.test.ts` exits 0 (2 passed) on
+    the real test folder. `adversarial.test.ts` went from 22 failed |
+    27 passed (49) to 20 failed | 29 passed (49), exit 1: the ADV-12 and
+    ADV-13 L tests pass, and every remaining failing test belongs to
+    ADV-1 to ADV-11. The record is `measure/runs/model_guide/red-1.18.txt`
+    (not staged).
+- [~] 1.19 Green. Adversarial fixes ADV-1 to ADV-11 in
+  `harness/model-guide/`. Touch no test file.
+  - Verify: run `preview-gate.test.ts`, `input-check.test.ts`,
+    `real-work.test.ts`, `leak-guard.test.ts`, and `adversarial.test.ts`,
+    each alone with one worker and the reporter set to dot.
+
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
 
