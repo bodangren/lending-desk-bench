@@ -488,7 +488,23 @@ Spec D17, D18, D19, FR-5, FR-6.
 - [x] 3fef9a8 2.4a Red. Re-pin the print-audit fixture to the real OD6 key shape (Green 2.4 shape note).
   - Ruling (D17): the error types are the severity classes blocker, major, minor with the count of rows of each; the checklist code is the `item` value; a run result is the row value under the route short key; a route result is `blockers_found` over `summary.key.blockers`.
   - Evidence: commit 3fef9a8 holds the fixture pair, `print-audit.test.ts`, the PA2-1 block of `preview-gate.test.ts`, and the real-shape assembly helper of `guide.test.ts` and `update.test.ts`. `measure/runs/model_guide/red-2.4a.txt` holds the single-file commands, their exit codes, their Tests lines, and each failed test name with the reason it fails at HEAD.
-- [~] 2.4b Green. Read only the real OD6 shape in print-audit.ts. Touch no test file.
+- [x] b8f9045 2.4b Green. Read only the real OD6 shape in print-audit.ts. Touch no test file.
+  - The tool now reads one hand-off shape. A route value must be a string,
+    a row holds id, severity, checklist (`item` and `text`), and one string
+    per route short key, and a row carries no `type` and no `results` key.
+    The old shape gives exit 2 with `input-check: errors`, and a route value
+    that is not a string gives exit 2 with `input-check: keys`.
+  - The rows of the output hold the fields id, severity, checklist (code and
+    text), and results. `error_types` counts the severity classes. `routes`
+    maps the route name to `blockers_found of summary.key.blockers`. A plain
+    `__proto__` key in summary becomes no route and no row.
+  - The data file `harness/model-guide/data/print-audit-2026-11.json` is
+    refreshed from the hand-off file of SHA-256
+    f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87.
+    `preview.sh` did not change: the block already reads the new row shape.
+  - Evidence: commit b8f9045 holds the tool and the data file.
+    `measure/runs/model_guide/green-p2-dcaa77d.log` holds the single-file
+    commands, their exit codes, and their Tests lines.
 - [~] 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
