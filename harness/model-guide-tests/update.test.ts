@@ -12,6 +12,7 @@ import {
   readdirSync,
   rmSync,
   symlinkSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -351,5 +352,141 @@ describe("the weekly update (spec D19, D21)", () => {
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
     expect(git(root, ["status", "--short"]), "the refused run changes no status")
       .toBe(dirty);
+  });
+});
+
+/**
+ * Review B round 2 (measure/runs/model_guide/review-b-3d42bf8.json).
+ *
+ * P2B2-1 the symlink guard of `update.sh` covers every path component the
+ * script writes through: the two files under `docs/assets/data/`, and before
+ * the approval the preview folder itself and its two target files. A planted
+ * link at any of those names must give exit 2 with one refusal line and must
+ * not move one byte of the link target outside the repo.
+ *
+ * P2B2-2 the newest score file rule of `update.sh` and `preview.sh` keeps
+ * the contract "the newest file by modification time wins" when the newest
+ * file name holds a newline. Both scripts get the same contract, and both
+ * halves are tested: this file covers `update.sh`, `preview-gate.test.ts`
+ * covers `preview.sh`.
+ *
+ * Every git action and every `update.sh` run of these cases happens in a
+ * temp repo under the system temp folder. The link targets live in a second
+ * temp folder outside the repo, so a write through a link is visible as a
+ * changed byte outside the repo.
+ */
+
+/** A synthetic track A score file. A `complete` route with three complete
+ * passes qualifies; an `incomplete` route never qualifies (spec D13). */
+function scoreDoc(routes: Array<{ route: string; state: string; scores: number[] }>): string {
+  const doc = {
+    schema: "model-guide-review-scores/1",
+    set_id: "mg-2026-11a",
+    routes: routes.map(({ route, state, scores }) => ({
+      route,
+      state,
+      passes: scores.map((score, index) => ({
+        date: `2026-11-1${index + 1}`,
+        score,
+        state: "complete",
+      })),
+    })),
+  };
+  return `${JSON.stringify(doc, null, 2)}\n`;
+}
+
+/** Exit 2 and exactly one line that names the refusal or the input check. */
+function expectRefusal(result: { status: number | null; stdout: string; stderr: string }, what: string): void {
+  expect(result.status, `${what} must exit 2: ${result.stdout}\n${result.stderr}`).toBe(2);
+  const lines = result.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
+  expect(lines, `${what} prints one line, got: ${result.stdout}`).toHaveLength(1);
+  expect(lines[0], `${what} names the refusal`).toMatch(/^(update: refused .+|input-check: .+)$/);
+}
+
+describe("review B round 2: symlinked write targets and newline score names", () => {
+  it("P2B2-1a: after the approval a symlink at either docs target file gives exit 2 and no outside write", () => {
+    for (const name of [REAL_WORK_JSON, MODEL_GUIDE_JSON]) {
+      const outside = tempDir(`outside-docs-${name}`);
+      writeFileSync(join(outside, "target.txt"), "outside bytes, must not move\n");
+      const outsideBefore = treeHashes(outside);
+      const { root, exportPath } = updateRepo(`link-docs-${name}`);
+      approve(root);
+      symlinkSync(join(outside, "target.txt"), join(root, DATA_DIR, name));
+      const treeBefore = treeHashes(root);
+      const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+      const result = runUpdate(root, exportPath);
+      expectRefusal(result, `a symlink at docs/assets/data/${name}`);
+      expect(treeHashes(outside), `no write outside the repo (${name})`).toEqual(outsideBefore);
+      expect(treeHashes(root), `the repo stays byte-identical (${name})`).toEqual(treeBefore);
+      expect(git(root, ["rev-list", "--count", "HEAD"]), `no commit (${name})`).toBe(commits);
+    }
+  });
+
+  it("P2B2-1b: before the approval a symlinked preview folder gives exit 2 and no outside write", () => {
+    const outside = tempDir("outside-preview");
+    writeFileSync(join(outside, "keep.txt"), "outside bytes, must not move\n");
+    const outsideBefore = treeHashes(outside);
+    const { root, exportPath } = updateRepo("link-preview-folder");
+    mkdirSync(join(root, ".tmp"), { recursive: true });
+    symlinkSync(outside, join(root, PREVIEW_DIR));
+    const treeBefore = treeHashes(root);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+    const result = runUpdate(root, exportPath);
+    expectRefusal(result, "a symlinked preview folder");
+    expect(treeHashes(outside), "no write outside the repo").toEqual(outsideBefore);
+    expect(treeHashes(root), "the repo stays byte-identical").toEqual(treeBefore);
+    expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
+  });
+
+  it("P2B2-1c: before the approval a symlink at either preview target file gives exit 2 and no outside write", () => {
+    for (const name of [REAL_WORK_JSON, MODEL_GUIDE_JSON]) {
+      const outside = tempDir(`outside-preview-${name}`);
+      writeFileSync(join(outside, "target.txt"), "outside bytes, must not move\n");
+      const outsideBefore = treeHashes(outside);
+      const { root, exportPath } = updateRepo(`link-preview-file-${name}`);
+      mkdirSync(join(root, PREVIEW_DIR), { recursive: true });
+      symlinkSync(join(outside, "target.txt"), join(root, PREVIEW_DIR, name));
+      const treeBefore = treeHashes(root);
+      const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+      const result = runUpdate(root, exportPath);
+      expectRefusal(result, `a symlink at ${PREVIEW_DIR}/${name}`);
+      expect(treeHashes(outside), `no write outside the repo (${name})`).toEqual(outsideBefore);
+      expect(treeHashes(root), `the repo stays byte-identical (${name})`).toEqual(treeBefore);
+      expect(git(root, ["rev-list", "--count", "HEAD"]), `no commit (${name})`).toBe(commits);
+    }
+  });
+
+  it("P2B2-2 update: a newest score file whose name holds a newline does not steer the pick (the newest file by modification time wins)", () => {
+    const { root, exportPath } = updateRepo("newline-scores");
+    const scoresDir = join(root, "harness", "model-guide", "data", "review-scores");
+    mkdirSync(scoresDir, { recursive: true });
+    // The older file has no complete route, so a pick from it shows no pick.
+    const older = join(scoresDir, "evil.json");
+    writeFileSync(older, scoreDoc([
+      { route: "old-model", state: "incomplete", scores: [95.0, 96.0] },
+    ]));
+    // The newest file carries the newline in its name and one complete
+    // route, so only a correct pick shows new-model.
+    const hostile = join(scoresDir, "evil.json\nmg-2026-11a.json");
+    writeFileSync(hostile, scoreDoc([
+      { route: "new-model", state: "complete", scores: [90.0, 91.0, 92.0] },
+    ]));
+    const now = new Date();
+    const old = new Date(now.getTime() - 24 * 3600 * 1000);
+    utimesSync(older, old, old);
+    utimesSync(hostile, now, now);
+
+    const result = runUpdate(root, exportPath);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const page = JSON.parse(readFileSync(join(root, PREVIEW_DIR, MODEL_GUIDE_JSON), "utf8"));
+    const row = page.rows.find((item: any) => item.kind === "Code review");
+    expect(row, "the Code review row").toBeDefined();
+    expect(
+      row.pick,
+      "the newest file by modification time wins; the newline name steers nothing",
+    ).toBe("new-model");
   });
 });

@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync,
-  readdirSync, rmSync, statSync, symlinkSync, writeFileSync,
+  chmodSync, copyFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync,
+  readlinkSync, readdirSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -1823,5 +1823,84 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     expect(li).toContain(
       `results ${routeKeys.map((key) => first[key]).join(", ")}`,
     );
+  });
+});
+
+/**
+ * Review B round 2, P2B2-2 (`measure/runs/model_guide/review-b-3d42bf8.json`):
+ * the `ls -1t | head -n 1` newest score file rule of `preview.sh` parses one
+ * line per name, so a planted newest file whose name holds a newline steers
+ * the pick to an older file. The pinned contract is the same one that
+ * `update.test.ts` pins for `update.sh`: the truly newest file by
+ * modification time wins. The run happens in a temp repo, and the temp repo
+ * gets the real build and tests data files so that the overview table is
+ * rendered at all.
+ */
+describe("review B round 2 (P2B2-2): the newline score name in preview.sh", () => {
+  const GUIDE_FIXTURES = join(import.meta.dirname, "fixtures", "guide");
+
+  /** A synthetic track A score file. A `complete` route with three
+   * complete passes qualifies; an `incomplete` route never qualifies. */
+  function scoreDoc(routes: Array<{ route: string; state: string; scores: number[] }>): string {
+    const doc = {
+      schema: "model-guide-review-scores/1",
+      set_id: "mg-2026-11a",
+      routes: routes.map(({ route, state, scores }) => ({
+        route,
+        state,
+        passes: scores.map((score, index) => ({
+          date: `2026-11-1${index + 1}`,
+          score,
+          state: "complete",
+        })),
+      })),
+    };
+    return `${JSON.stringify(doc, null, 2)}\n`;
+  }
+
+  it("P2B2-2 preview: a newest score file whose name holds a newline does not steer the pick (the newest file by modification time wins)", () => {
+    const root = repoFixture("newline-scores");
+    // The temp repo of this file ships a placeholder benchmark and no tests
+    // data file, and the overview table needs both (plus the print-audit
+    // data file that populateRepo already copies).
+    copyFileSync(
+      join(GUIDE_FIXTURES, "benchmark-mini.json"),
+      join(root, "docs", "assets", "data", "benchmark.json"),
+    );
+    copyFileSync(
+      join(GUIDE_FIXTURES, "tracks-mini.json"),
+      join(root, "docs", "assets", "data", "tracks.json"),
+    );
+    const scoresDir = join(root, "harness", "model-guide", "data", "review-scores");
+    mkdirSync(scoresDir, { recursive: true });
+    // The older file has no complete route, so a pick from it shows no pick.
+    const older = join(scoresDir, "evil.json");
+    writeFileSync(older, scoreDoc([
+      { route: "old-model", state: "incomplete", scores: [95.0, 96.0] },
+    ]));
+    // The newest file carries the newline in its name and one complete
+    // route, so only a correct pick shows new-model.
+    const hostile = join(scoresDir, "evil.json\nmg-2026-11a.json");
+    writeFileSync(hostile, scoreDoc([
+      { route: "new-model", state: "complete", scores: [90.0, 91.0, 92.0] },
+    ]));
+    const now = new Date();
+    const old = new Date(now.getTime() - 24 * 3600 * 1000);
+    utimesSync(older, old, old);
+    utimesSync(hostile, now, now);
+
+    const result = runPreview(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const page = JSON.parse(
+      readFileSync(join(previewFolder(root), "model-guide.json"), "utf8"),
+    );
+    const row = page.rows.find((item: any) => item.kind === "Code review");
+    expect(row, "the Code review row").toBeDefined();
+    expect(
+      row.pick,
+      "the newest file by modification time wins; the newline name steers nothing",
+    ).toBe("new-model");
+    const index = readFileSync(join(previewFolder(root), "index.html"), "utf8");
+    expect(index, "the page shows the same pick").toContain("new-model");
   });
 });
