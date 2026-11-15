@@ -711,7 +711,7 @@ Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
 
 Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
 
-- [ ] 3.1 Red. The candidate diffs. Write
+- [x] 84553cd 3.1 Red. The candidate diffs. Write
   `harness/model-guide-tests/pick-diffs.test.ts` and the fake `gh` under
   `harness/model-guide-tests/fixtures/fakes/`. Touch no other file.
   Normal cases:
@@ -726,7 +726,10 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     a file over 2 000 lines each get a reason line and no selection.
   - Verify: the file fails on the Phase 2 code. Record the failed test names
     in `measure/runs/model_guide/red-3.1.txt`.
-- [ ] 3.2 Red. The set lint. Write `harness/model-guide-tests/review-set.test.ts`
+  - Evidence: `measure/runs/model_guide/red-3.1.txt` holds the command, the
+    exit code, the failed test names, and the exact `$FAKE_GH_LOG` lines that
+    the accepted run must make.
+- [~] 3.2 Red. The set lint. Write `harness/model-guide-tests/review-set.test.ts`
   and the synthetic diffs and keys under
   `harness/model-guide-tests/fixtures/review/`. Touch no other file.
   Normal cases:
