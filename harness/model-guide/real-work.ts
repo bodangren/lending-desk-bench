@@ -6,8 +6,9 @@
  * Exit 0 writes `<folder>/real-work.json` with schema
  * `model-guide-real-work/1`. Exit 2 writes no output file and prints one
  * line `input-check: <check>` on stdout. The checks run in this order:
- * manifest, sha256, size, schema, run-sum. The tool never copies the input
- * file into the repository.
+ * manifest, sha256, size, schema, run-sum. The schema check also tests the
+ * type of each coverage key and of `generated_on`. The tool never copies the
+ * input file into the repository.
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -177,9 +178,27 @@ function main(): void {
 
   const doc = JSON.parse(bytes.toString("utf8"));
   if (doc.schema !== "real-work-outcomes/1") refuse("schema");
+  if (typeof doc.generated_on !== "string") refuse("schema");
   const coverage = doc.coverage ?? {};
   for (const key of REQUIRED_COVERAGE_KEYS) {
     if (!Object.hasOwn(coverage, key)) refuse("schema");
+  }
+  if (typeof coverage.runs !== "number" || !Number.isFinite(coverage.runs)) {
+    refuse("schema");
+  }
+  if (typeof coverage.first_run_date !== "string") refuse("schema");
+  if (typeof coverage.last_run_date !== "string") refuse("schema");
+  if (
+    typeof coverage.share_known_route !== "number" ||
+    !Number.isFinite(coverage.share_known_route)
+  ) {
+    refuse("schema");
+  }
+  if (
+    typeof coverage.share_with_result !== "number" ||
+    !Number.isFinite(coverage.share_with_result)
+  ) {
+    refuse("schema");
   }
   const leftOut = doc.coverage?.paired_duplicates_left_out;
   if (typeof leftOut !== "number" || !Number.isInteger(leftOut)) refuse("schema");

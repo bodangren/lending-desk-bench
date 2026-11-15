@@ -20,7 +20,8 @@
  *   6. no preview base file, or invalid JSON in it
  *                                -> exit 2, `publish: no preview base` or
  *                                   `publish: bad preview base`
- *   7. a docs/ file differs from preview-base.json
+ *   7. a docs/ file differs from preview-base.json, or a docs/ entry cannot
+ *      be read (for example a dangling symlink)
  *                                -> exit 2, `publish: drift <path>`
  *   8. else copy each approved preview file to `<repo>/docs/<path>`, exit 0.
  * Each refusal prints one line on stdout and writes no file.
@@ -82,20 +83,30 @@ function readApproval(): ApprovalRow[] {
   return rows;
 }
 
-/** Every current file of docs/, with `/` separators, sorted per folder. */
-function docsFiles(): string[] {
-  const out: string[] = [];
+/** Every current file of docs/, with `/` separators, sorted per folder. An
+ * entry that cannot be stated (for example a dangling symlink) lands in the
+ * broken list and becomes a drift refusal, not a stack trace. */
+function docsFiles(): { files: string[]; broken: string[] } {
+  const files: string[] = [];
+  const broken: string[] = [];
   const walk = (dir: string, prefix: string): void => {
     for (const name of readdirSync(dir).sort()) {
       const full = join(dir, name);
       const rel = prefix ? `${prefix}/${name}` : name;
-      const info = statSync(full);
+      let info;
+      try {
+        info = statSync(full);
+      } catch {
+        broken.push(rel);
+        continue;
+      }
       if (info.isDirectory()) walk(full, rel);
-      else if (info.isFile()) out.push(rel);
+      else if (info.isFile()) files.push(rel);
+      else broken.push(rel);
     }
   };
   walk(join(ROOT, "docs"), "");
-  return out;
+  return { files, broken };
 }
 
 function main(): void {
@@ -127,20 +138,33 @@ function main(): void {
   const hasOwn = (obj: object, key: string): boolean =>
     Object.prototype.hasOwnProperty.call(obj, key);
 
-  const drifted: string[] = [];
-  for (const rel of docsFiles()) {
-    if (!hasOwn(baseDocs, rel)) drifted.push(rel);
+  const drifted = new Set<string>();
+  const current = docsFiles();
+  for (const rel of current.files) {
+    if (!hasOwn(baseDocs, rel)) drifted.add(rel);
+  }
+  for (const rel of current.broken) {
+    drifted.add(rel);
   }
   for (const rel of Object.keys(baseDocs).sort()) {
     const file = join(ROOT, "docs", rel);
-    if (!existsSync(file) || sha256File(file) !== baseDocs[rel]) {
-      drifted.push(rel);
+    if (!existsSync(file)) {
+      drifted.add(rel);
+      continue;
     }
+    let sha: string;
+    try {
+      sha = sha256File(file);
+    } catch {
+      drifted.add(rel);
+      continue;
+    }
+    if (sha !== baseDocs[rel]) drifted.add(rel);
   }
-  for (const rel of drifted) {
+  for (const rel of [...drifted].sort()) {
     process.stdout.write(`publish: drift ${rel}\n`);
   }
-  if (drifted.length > 0) process.exit(2);
+  if (drifted.size > 0) process.exit(2);
 
   for (const row of approved) {
     const dest = join(ROOT, "docs", row.path);

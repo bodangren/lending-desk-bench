@@ -5,13 +5,22 @@
 # It resolves relative --export and --preview values against the caller
 # folder before it changes folders. It refuses an unsafe preview path with
 # `preview: refused path <value>` on stdout, exit 2, before any write.
-# It copies docs/ into the preview folder, records the SHA-256 of each copied
-# file in preview-base.json, adds the Real work and Review nav links to the
-# preview index.html, and renders real-work.html from the page template and
-# the tool output. The fresh real-work.json and real-work.html win over any
-# stale copies from docs/. It writes no file under docs/. Exit 0 on success.
-# Exit 2 when the input check of real-work.ts fails; it leaves no new
-# preview folder in that case.
+# It refuses a symlink inside an existing preview folder with
+# `preview: refused path <path>` on stdout, exit 2, before any write; the
+# path is the link. It refuses a dangling entry under docs/ with
+# `preview: unreadable <path relative to the repo>` on stdout, exit 2,
+# before any write.
+# It runs the input check into a temp folder first, so a refused run leaves
+# an existing preview folder byte-identical and leaves no new folder behind,
+# not even a parent that mkdir -p created. On success it copies docs/ into
+# the preview folder, records the SHA-256 of each copied file in
+# preview-base.json, adds the Real work and Review nav links to the preview
+# index.html (links that already exist stay single), and renders
+# real-work.html from the page template and the tool output. The fresh
+# real-work.json and real-work.html win over any stale copies from docs/.
+# It writes no file under docs/. Exit 0 on success. Exit 2 when the input
+# check of real-work.ts fails; it writes nothing near the preview folder in
+# that case.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -65,28 +74,43 @@ case "$PREVIEW_ABS" in
     exit 2;;
 esac
 
-PREVIEW_EXISTED=0
-if [ -e "$PREVIEW_ABS" ]; then
-  PREVIEW_EXISTED=1
-fi
-
-# Copy docs/ first so the fresh real-work.json and real-work.html win over
-# stale copies that docs/ may hold.
-mkdir -p "$PREVIEW_ABS"
-cp -a "$ROOT/docs/." "$PREVIEW_ABS/"
+# Run the input check into a temp folder first. A refused run writes nothing
+# near the preview folder: an existing preview folder stays byte-identical,
+# and no new folder stays behind, not even a parent that mkdir -p created.
+STAGING="$(mktemp -d)"
+trap 'rm -rf "$STAGING"' EXIT
 
 cd "$ROOT/harness"
 set +e
-npx tsx model-guide/real-work.ts --input "$EXPORT_ABS" --out "$PREVIEW_ABS"
+npx tsx model-guide/real-work.ts --input "$EXPORT_ABS" --out "$STAGING"
 STATUS=$?
 set -e
 if [ "$STATUS" -ne 0 ]; then
-  # A refused input check leaves no new preview folder.
-  if [ "$PREVIEW_EXISTED" -eq 0 ]; then
-    rm -rf "$PREVIEW_ABS"
-  fi
   exit "$STATUS"
 fi
+
+# Refuse a symlink inside an existing preview folder before any write: a
+# planted link can point under docs/ and take the page write there.
+if [ -d "$PREVIEW_ABS" ]; then
+  PLANTED="$(find "$PREVIEW_ABS" -type l -print -quit 2>/dev/null || true)"
+  if [ -n "$PLANTED" ]; then
+    echo "preview: refused path $PLANTED"
+    exit 2
+  fi
+fi
+
+# Refuse a dangling entry under docs/ before any write.
+DANGLING="$(find "$ROOT/docs" -type l ! -exec test -e {} \; -print -quit)"
+if [ -n "$DANGLING" ]; then
+  echo "preview: unreadable ${DANGLING#"$ROOT"/}"
+  exit 2
+fi
+
+mkdir -p "$PREVIEW_ABS"
+# Copy docs/ so the fresh real-work.json and real-work.html win over stale
+# copies that docs/ may hold.
+cp -a "$ROOT/docs/." "$PREVIEW_ABS/"
+cp "$STAGING/real-work.json" "$PREVIEW_ABS/real-work.json"
 
 export MODEL_GUIDE_ROOT="$ROOT"
 export MODEL_GUIDE_PREVIEW="$PREVIEW_ABS"
@@ -104,9 +128,14 @@ template_path = os.environ["MODEL_GUIDE_TEMPLATE"]
 
 def sha256_file(path):
     digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(65536), b""):
-            digest.update(chunk)
+    try:
+        with open(path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(65536), b""):
+                digest.update(chunk)
+    except OSError:
+        rel = os.path.relpath(path, root).replace(os.sep, "/")
+        print(f"preview: unreadable {rel}")
+        sys.exit(2)
     return digest.hexdigest()
 
 
@@ -128,14 +157,20 @@ with open(os.path.join(preview, "preview-base.json"), "w", encoding="utf-8") as 
     json.dump(base, handle, indent=2)
     handle.write("\n")
 
-NAV_LINKS = '<a href="./real-work.html">Real work</a><a href="./review.html">Review</a>'
 index_path = os.path.join(preview, "index.html")
 if os.path.exists(index_path):
     with open(index_path, encoding="utf-8") as handle:
         index_html = handle.read()
-    index_html = index_html.replace(">Results</a>", f">Results</a>{NAV_LINKS}", 1)
-    with open(index_path, "w", encoding="utf-8") as handle:
-        handle.write(index_html)
+    # A published index already holds the links; keep exactly one of each.
+    missing = ""
+    if 'href="./real-work.html"' not in index_html:
+        missing += '<a href="./real-work.html">Real work</a>'
+    if 'href="./review.html"' not in index_html:
+        missing += '<a href="./review.html">Review</a>'
+    if missing:
+        index_html = index_html.replace(">Results</a>", f">Results</a>{missing}", 1)
+        with open(index_path, "w", encoding="utf-8") as handle:
+            handle.write(index_html)
 
 
 def rate_text(rate, places):
