@@ -411,4 +411,52 @@ describe("print-audit input check (spec D17)", () => {
       expect(count).toBeGreaterThan(0);
     }
   });
+
+  it("P2U1-1: with a top-level note that differs from summary.bias_note the output holds the bias note as its own item", () => {
+    const fixture = JSON.parse(readFileSync(FIXTURE, "utf8"));
+    // The precondition of P2U1-1: the two notes are different texts, so an
+    // output that keeps only one of them can keep the wrong one. The
+    // fixture must keep them different (UX review b4fba01).
+    expect(fixture.note, "the fixture note is the scope note").not.toBe(
+      fixture.summary.bias_note,
+    );
+    const SCOPE = "Scope note sentence that is not the bias note.";
+    const BIAS = "Bias note marker for P2U1-1.";
+    const pair = staged("bias-note", (doc) => {
+      doc.note = SCOPE;
+      doc.summary.bias_note = BIAS;
+    });
+    const out = tempDir("bias-note-out");
+    const result = run(pair.json, out);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const file = join(out, OUTPUT_NAME);
+    expect(existsSync(file), `the tool writes ${OUTPUT_NAME}`).toBe(true);
+    const text = readFileSync(file, "utf8");
+    const data = JSON.parse(text);
+    // The tool header: "The output holds ... the summary; and the bias
+    // note." Spec D17: "The file holds ... the summary, and the bias note."
+    // Both list the bias note as an item of its own beside the summary.
+    expect(data.bias_note, "the output holds the bias note as its own item")
+      .toBe(BIAS);
+    expect(data.summary.bias_note, "the summary keeps the bias note").toBe(BIAS);
+    expect(data.note, "the top-level note does not replace the bias note")
+      .toBe(SCOPE);
+    expect(text, "the bias note text is in the output file").toContain(BIAS);
+  });
+
+  it("P2U1-1: the real print-audit data file holds the real bias note as its own item", () => {
+    const file = join(HARNESS, "model-guide", "data", "print-audit-2026-11.json");
+    expect(existsSync(file), `the real data file exists: ${file}`).toBe(true);
+    const data = JSON.parse(readFileSync(file, "utf8"));
+    // The real bias note of the hand-off, in the words the UX review read.
+    const marker = "may be too high";
+    expect(typeof data.summary?.bias_note, "the real summary holds a bias note")
+      .toBe("string");
+    expect(data.summary.bias_note, "the real bias note names the caveat")
+      .toContain(marker);
+    expect(data.note, "the top-level note does not replace the bias note")
+      .not.toContain(marker);
+    expect(data.bias_note, "the real data file holds the bias note as its own item")
+      .toContain(marker);
+  });
 });

@@ -1824,6 +1824,22 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       `results ${routeKeys.map((key) => first[key]).join(", ")}`,
     );
   });
+
+  it("P2U1-1: the block shows summary.bias_note when the top-level note differs from it", () => {
+    const { auditSection } = blockSnapshot();
+    const section = auditSection as string;
+    const fixture = auditFixture();
+    // The precondition of P2U1-1 (UX review b4fba01): the two notes are
+    // different texts, so a block that renders only the top-level note
+    // shows the scope note and hides the bias note.
+    expect(fixture.note, "the fixture note is the scope note").not.toBe(
+      fixture.summary.bias_note,
+    );
+    expect(
+      section,
+      "the bias note of summary reaches the print-audit block",
+    ).toContain(fixture.summary.bias_note);
+  });
 });
 
 /**
