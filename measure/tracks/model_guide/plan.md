@@ -336,8 +336,15 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     ADV-13 L tests pass, and every remaining failing test belongs to
     ADV-1 to ADV-11. The record is `measure/runs/model_guide/red-1.18.txt`
     (not staged).
-- [~] 1.19 Green. Adversarial fixes ADV-1 to ADV-11 in
+- [x] 1cc5657 1.19 Green. Adversarial fixes ADV-1 to ADV-11 in
   `harness/model-guide/`. Touch no test file.
+  - Evidence: fix SHAs 1cc5657 (publish.ts), f3d5843 (preview.sh),
+    b7e24da (real-work.ts). Each file alone with one worker and the dot
+    reporter exits 0 at b7e24da: preview-gate 85 passed, input-check 15
+    passed, real-work 19 passed, leak-guard 2 passed, adversarial 49
+    passed; `bash -n harness/model-guide/preview.sh` exits 0. The task 1.9
+    preview re-run record is `measure/runs/model_guide/preview-1.19.txt`.
+    The role log is `measure/runs/model_guide/green-p1-8eafbc3.log`.
   - Verify: run `preview-gate.test.ts`, `input-check.test.ts`,
     `real-work.test.ts`, `leak-guard.test.ts`, and `adversarial.test.ts`,
     each alone with one worker and the reporter set to dot.
