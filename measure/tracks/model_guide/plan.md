@@ -823,11 +823,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     passes.
   - Evidence: commit 2acd4fa holds the tool. `measure/runs/model_guide/green-p3-7e52d2e.log`
     holds the exit codes of the four runs and the empty `docs/` status.
-- [~] 3.8 Green. Write `harness/model-guide/review-score.ts`. Touch no test
+- [x] f023951 3.8 Green. Write `harness/model-guide/review-score.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native`
     passes.
-- [ ] 3.9 Green. Write `harness/model-guide/adjudicate.ts`. Touch no test
+  - Evidence: commit f023951 holds the tool. `measure/runs/model_guide/green-p3-35be00c.log`
+    holds the exit codes of the five runs and the empty `docs/` status.
+- [~] 3.9 Green. Write `harness/model-guide/adjudicate.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native`
     passes.
