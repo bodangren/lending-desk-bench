@@ -797,7 +797,7 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.4.txt` holds the command, the
     exit code, and the failed test names. The test reuses the task 3.2
     corpus and the task 3.3 verdict contract; it adds no fixture.
-- [~] 3.5 Red. The leak check. Write `harness/model-guide-tests/leak-check.test.ts
+- [x] 9483f01 3.5 Red. The leak check. Write `harness/model-guide-tests/leak-check.test.ts
   and no other file.
   Normal cases:
   - The leak check passes on a clean tree.
@@ -807,7 +807,11 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     that is not in the source diff.
   - Verify: the file fails on the Phase 2 code. Record the failed test names
     in `measure/runs/model_guide/red-3.5.txt`.
-- [ ] 3.6 Green. Write `harness/model-guide/pick-diffs.ts`. Touch no test
+  - Evidence: `measure/runs/model_guide/red-3.5.txt` holds the command, the
+    exit code, and the failed test names. The test reuses the task 3.2
+    corpus; it adds no fixture, and the 19-character boundary waits for a
+    fixture the plan line does not allow.
+- [~] 3.6 Green. Write `harness/model-guide/pick-diffs.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native`
     passes.
