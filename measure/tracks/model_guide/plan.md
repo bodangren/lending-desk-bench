@@ -349,6 +349,21 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `real-work.test.ts`, `leak-guard.test.ts`, and `adversarial.test.ts`,
     each alone with one worker and the reporter set to dot.
 
+- [x] b06ac41 1.20 Red. UX fixes U1, U3, U4 (ux-browser-2a9d421).
+  - Files: `harness/model-guide-tests/preview-gate.test.ts`.
+  - Evidence: commit b06ac41. The three new tests fail on 2a9d421 for the
+    pinned reasons: U1 the source paragraph carries no wrap rule, U3 the
+    `.table-wrap` tags carry no `tabindex`, `role`, or `aria-label`, U4 the
+    active nav link carries no `aria-current="page"`. The existing
+    preview-gate tests and the four companion files still pass. The record
+    is `measure/runs/model_guide/red-1.20.txt` (not staged). U2 and U5 stay
+    out of scope as nonblocking phase-acceptance items.
+- [~] 1.21 Green. UX fixes U1, U3, U4 in `harness/model-guide/`. Touch no
+  test file.
+  - Verify: run `preview-gate.test.ts`, `input-check.test.ts`,
+    `real-work.test.ts`, `leak-guard.test.ts`, and `adversarial.test.ts`,
+    each alone with one worker and the reporter set to dot.
+
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
 
