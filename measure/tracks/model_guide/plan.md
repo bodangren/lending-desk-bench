@@ -584,6 +584,25 @@ Spec D17, D18, D19, FR-5, FR-6.
     with six rows, picks or "no pick yet", evidence, and dates (spec
     acceptance 7). The orchestrator tells the PM that the preview is
     ready.
+- [x] 9dd0833 2.10 Adversarial. Phase 2 adversarial tests.
+  - `harness/model-guide-tests/adversarial-p2.test.ts` attacks the track A
+    tie-break of spec D13, the newest score file of `preview.sh` and
+    `update.sh`, the no-change rerun of spec D19, the flag validation of
+    `guide.ts`, and a symlinked `docs/assets/data` of spec D21. Every git
+    action and every script run happens in a temp repo.
+  - Evidence: `measure/runs/model_guide/adversarial-6132fb7.json` holds 5
+    blocking defects (P2ADV-1 to P2ADV-5) and 9 passing boundary pins.
+- [x] be41213 2.11 Green. Adversarial fixes P2ADV-1 to P2ADV-5.
+  - `guide.ts` breaks a worst-score tie by the higher worst blocker recall,
+    then the higher median score, and refuses inherited flag names.
+    `preview.sh` and `update.sh` take the newest score file by modification
+    time. `update.sh` refuses a symlinked data path with exit 2 and exits 0
+    with no commit on a no-change rerun.
+  - Verify: `adversarial-p2.test.ts` and the eight required suites each
+    exit 0 run alone, and `git status --short docs/` prints nothing.
+  - Evidence: `measure/runs/model_guide/green-p2-9dd0833.log` holds the
+    commands, the exit codes, the Tests lines, and the unchanged six rows
+    of the task 2.9 preview.
 
 Verify (Phase 2): page B and the overview table are in the preview folder by
 Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
