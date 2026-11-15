@@ -20,7 +20,6 @@
     {
       "id": "E01",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C1",
@@ -39,7 +38,6 @@
     {
       "id": "E02",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C1",
@@ -58,7 +56,6 @@
     {
       "id": "E03",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C1",
@@ -77,7 +74,6 @@
     {
       "id": "E04",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C1",
@@ -96,7 +92,6 @@
     {
       "id": "E05",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C1",
@@ -115,7 +110,6 @@
     {
       "id": "E06",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C1",
@@ -134,7 +128,6 @@
     {
       "id": "E07",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C2",
@@ -149,7 +142,6 @@
     {
       "id": "E08",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C2",
@@ -164,7 +156,6 @@
     {
       "id": "E09",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "C2",
@@ -179,7 +170,6 @@
     {
       "id": "E10",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "C2",
@@ -194,7 +184,6 @@
     {
       "id": "E11",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "C2",
@@ -209,7 +198,6 @@
     {
       "id": "E12",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "C2",
@@ -228,7 +216,6 @@
     {
       "id": "E13",
       "severity": "minor",
-      "type": "minor",
       "checklist": [],
       "results": [
         "MISSED",
@@ -238,7 +225,6 @@
     {
       "id": "E14",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "C3",
@@ -257,7 +243,6 @@
     {
       "id": "E15",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "C3",
@@ -276,7 +261,6 @@
     {
       "id": "E16",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "D6",
@@ -291,7 +275,6 @@
     {
       "id": "E17",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "D3",
@@ -306,7 +289,6 @@
     {
       "id": "E18",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "D4",
@@ -321,7 +303,6 @@
     {
       "id": "E19",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "D1",
@@ -336,7 +317,6 @@
     {
       "id": "E20",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "D1",
@@ -351,7 +331,6 @@
     {
       "id": "E21",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "D1",
@@ -366,7 +345,6 @@
     {
       "id": "E22",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "A6",
@@ -385,7 +363,6 @@
     {
       "id": "E23",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "E2",
@@ -404,7 +381,6 @@
     {
       "id": "E24",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "D2",
@@ -419,7 +395,6 @@
     {
       "id": "E25",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "D1",
@@ -434,7 +409,6 @@
     {
       "id": "E26",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "D2",
@@ -449,7 +423,6 @@
     {
       "id": "E27",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "D1",
@@ -468,7 +441,6 @@
     {
       "id": "E28",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "D1",
@@ -483,7 +455,6 @@
     {
       "id": "E29",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "D5",
@@ -498,7 +469,6 @@
     {
       "id": "E30",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "D5",
@@ -513,7 +483,6 @@
     {
       "id": "E31",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "D5",
@@ -528,7 +497,6 @@
     {
       "id": "E32",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "D5",
@@ -543,7 +511,6 @@
     {
       "id": "E33",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "D5",
@@ -558,7 +525,6 @@
     {
       "id": "E34",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "D5",
@@ -573,7 +539,6 @@
     {
       "id": "E35",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "D5",
@@ -588,7 +553,6 @@
     {
       "id": "E36",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "D5",
@@ -603,7 +567,6 @@
     {
       "id": "E37",
       "severity": "major",
-      "type": "major",
       "checklist": [],
       "results": [
         "MISSED",
@@ -613,7 +576,6 @@
     {
       "id": "E38",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "F3",
@@ -632,7 +594,6 @@
     {
       "id": "E39",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "G3",
@@ -647,7 +608,6 @@
     {
       "id": "E40",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "F3",
@@ -666,7 +626,6 @@
     {
       "id": "E41",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "F3",
@@ -689,7 +648,6 @@
     {
       "id": "E42",
       "severity": "minor",
-      "type": "minor",
       "checklist": [],
       "results": [
         "MISSED",
@@ -699,7 +657,6 @@
     {
       "id": "E43",
       "severity": "major",
-      "type": "major",
       "checklist": [
         {
           "code": "G2",
@@ -714,7 +671,6 @@
     {
       "id": "E44",
       "severity": "blocker",
-      "type": "blocker",
       "checklist": [
         {
           "code": "E1",
@@ -729,7 +685,6 @@
     {
       "id": "E45",
       "severity": "minor",
-      "type": "minor",
       "checklist": [],
       "results": [
         "MISSED",
@@ -739,7 +694,6 @@
     {
       "id": "E46",
       "severity": "minor",
-      "type": "minor",
       "checklist": [],
       "results": [
         "MISSED",
@@ -749,7 +703,6 @@
     {
       "id": "E47",
       "severity": "minor",
-      "type": "minor",
       "checklist": [],
       "results": [
         "MISSED",
@@ -759,7 +712,6 @@
     {
       "id": "E48",
       "severity": "minor",
-      "type": "minor",
       "checklist": [],
       "results": [
         "MISSED",
@@ -769,7 +721,6 @@
     {
       "id": "E49",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "C1",
@@ -788,7 +739,6 @@
     {
       "id": "E50",
       "severity": "minor",
-      "type": "minor",
       "checklist": [],
       "results": [
         "MISSED",
@@ -798,7 +748,6 @@
     {
       "id": "E51",
       "severity": "minor",
-      "type": "minor",
       "checklist": [],
       "results": [
         "MISSED",
@@ -808,7 +757,6 @@
     {
       "id": "E52",
       "severity": "minor",
-      "type": "minor",
       "checklist": [
         {
           "code": "E4",

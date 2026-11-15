@@ -13,25 +13,31 @@
  *   sha256    the SHA-256 of the file differs from the manifest line
  *   json      the file text is not JSON
  *   keys      a top key of `source`, `note`, `routes`, `summary`, or
- *             `errors` is missing, or a route result is unreadable
- *   errors    `errors` is not an array of exactly 52 rows
+ *             `errors` is missing, or a route value is not a string, or
+ *             `summary.key.blockers` or a route `blockers_found` is not an
+ *             integer
+ *   errors    `errors` is not an array of exactly 52 valid rows; a valid row
+ *             holds `id`, `severity`, `checklist`, and one string per route
+ *             short key, and no `type` and no `results` key; a checklist item
+ *             holds `item` and `text`
  * Spec D17 (finding F13) drops the size check and the schema-key check for
  * this file.
  *
- * The output holds the 52 rows with the fields id, severity, type,
- * checklist (a code and a text), and results; the error types with their
- * counts; the two route results as `11 of 13` style text; the summary; and
- * the bias note. No key `pages`, `text`, or `file` sits outside a checklist
- * item, so no page and no file name reaches the page.
+ * The output holds the 52 rows with the fields id, severity, checklist (a
+ * code and a text), and results; the error types with their counts; the two
+ * route results as `11 of 13` style text; the summary; and the bias note.
+ * No key `pages`, `text`, or `file` sits outside a checklist item, so no
+ * page and no file name reaches the page.
  *
- * Two hand-off shapes are accepted (spec OD6, D17):
- *   rows   a row holds `type` and `results`, as the Red fixture does; else
- *          the row `severity` is the error type and the values under the
- *          route keys are the results of the runs
- *   routes a route maps to `{ blockers_total, blockers_resolved }`; else it
- *          maps to a route name and `summary` holds the blocker counts
- * The hand-off of OD6 holds no row type. There the severity class is the
- * one per-row classification of the file, so it is the error type.
+ * The tool reads one hand-off shape only (spec OD6, D17):
+ *   rows   a row holds `id`, `severity`, `checklist`, and one string per
+ *          route short key; the severity class is the error type and the
+ *          values under the route keys are the results of the runs
+ *   routes a route short key maps to a route name string and
+ *          `summary[key].blockers_found` over `summary.key.blockers` is the
+ *          route result
+ * The old shape (a row `type` key, a row `results` list, a checklist item
+ * without `item`, or a route value that is not a string) is refused.
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -83,28 +89,36 @@ function manifestSha(text: string): string | null {
   return sum ? sum[1] : null;
 }
 
-/** The one classification of a row: its own `type`, else its severity. */
-function rowType(row: Record<string, any>): string {
-  if (typeof row.type === "string") return row.type;
-  if (typeof row.severity === "string") return row.severity;
-  return "no type";
+/** A checklist item of the real shape holds `item` and `text`, both strings. */
+function validChecklist(value: unknown): value is Array<Record<string, any>> {
+  if (!Array.isArray(value)) return false;
+  return value.every(
+    (item: unknown) =>
+      isObject(item) && typeof item.item === "string" && typeof item.text === "string",
+  );
+}
+
+/** A valid row holds id, severity, checklist, and one string per route key.
+ * The old shape (`type` or `results`) is refused. */
+function validRow(row: unknown, routeKeys: string[]): row is Record<string, any> {
+  if (!isObject(row)) return false;
+  if (Object.hasOwn(row, "type") || Object.hasOwn(row, "results")) return false;
+  if (typeof row.id !== "string" || typeof row.severity !== "string") return false;
+  if (!validChecklist(row.checklist)) return false;
+  return routeKeys.every((key) => typeof row[key] === "string");
 }
 
 function rowChecklist(row: Record<string, any>): Array<{ code: string; text: string }> {
-  const items = Array.isArray(row.checklist) ? row.checklist : [];
-  return items
-    .filter((item: unknown) => isObject(item))
-    .map((item: Record<string, any>) => ({
-      code: String(item.code ?? item.item ?? ""),
-      text: String(item.text ?? ""),
-    }));
+  return (row.checklist as Array<Record<string, any>>).map((item) => ({
+    code: item.item,
+    text: item.text,
+  }));
 }
 
-/** The results of the runs: the row `results`, else the value under each
- * route key in route order (the shape of the OD6 hand-off). */
+/** The results of the runs: the row value under each route short key, in
+ * route order. */
 function rowResults(row: Record<string, any>, routeKeys: string[]): string[] {
-  if (Array.isArray(row.results)) return row.results.map((value: unknown) => String(value));
-  return routeKeys.map((key) => String(row[key] ?? ""));
+  return routeKeys.map((key) => row[key]);
 }
 
 function main(): void {
@@ -132,41 +146,33 @@ function main(): void {
     if (!(key in doc)) refuse("keys");
   }
 
-  const rows: unknown[] = Array.isArray(doc.errors) ? doc.errors : [];
-  if (rows.length !== ROW_COUNT) refuse("errors");
-  if (!rows.every((row) => isObject(row))) refuse("errors");
-
   const routeKeys = isObject(doc.routes) ? Object.keys(doc.routes) : [];
   if (routeKeys.length === 0) refuse("keys");
   const summary = isObject(doc.summary) ? doc.summary : {};
+  const total = isObject(summary.key) ? summary.key.blockers : undefined;
+  if (!Number.isSafeInteger(total)) refuse("keys");
 
-  const routes: Record<string, string> = {};
+  const entries: Array<[string, string]> = [];
   for (const key of routeKeys) {
-    const value = doc.routes[key];
-    let name = key;
-    let resolved: unknown;
-    let total: unknown;
-    if (typeof value === "string") {
-      name = value;
-      const entry = isObject(summary[key]) ? summary[key] : {};
-      resolved = entry.blockers_found;
-      total = isObject(summary.key) ? summary.key.blockers : undefined;
-    } else if (isObject(value)) {
-      resolved = value.blockers_resolved;
-      total = value.blockers_total;
-    }
-    if (!Number.isSafeInteger(resolved) || !Number.isSafeInteger(total)) refuse("keys");
-    routes[name] = `${resolved} of ${total}`;
+    const name = doc.routes[key];
+    if (typeof name !== "string") refuse("keys");
+    const entry = summary[key];
+    const found = isObject(entry) ? entry.blockers_found : undefined;
+    if (!Number.isSafeInteger(found)) refuse("keys");
+    entries.push([name, `${found} of ${total}`]);
   }
+  const routes: Record<string, string> = Object.fromEntries(entries);
+
+  const rows: unknown[] = Array.isArray(doc.errors) ? doc.errors : [];
+  if (rows.length !== ROW_COUNT) refuse("errors");
+  if (!rows.every((row) => validRow(row, routeKeys))) refuse("errors");
 
   const types = new Map<string, number>();
   const errors = (rows as Array<Record<string, any>>).map((row) => {
-    const type = rowType(row);
-    types.set(type, (types.get(type) ?? 0) + 1);
+    types.set(row.severity, (types.get(row.severity) ?? 0) + 1);
     return {
-      id: String(row.id ?? ""),
-      severity: String(row.severity ?? ""),
-      type,
+      id: row.id,
+      severity: row.severity,
       checklist: rowChecklist(row),
       results: rowResults(row, routeKeys),
     };
