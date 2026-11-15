@@ -18,10 +18,11 @@
 # Another dirty file stays uncommitted. The script never pushes. A rerun
 # with unchanged data exits 0 and makes no commit.
 #
-# A symlink on the data path (<repo>/docs, <repo>/docs/assets, or
-# <repo>/docs/assets/data) is refused with `update: refused path <path>`
-# on stdout, exit 2, before any write, the same way preview.sh refuses a
-# symlink under docs/.
+# A symlink on any path this script writes through is refused with
+# `update: refused path <path>` on stdout, exit 2, before any write, the
+# same way preview.sh refuses a symlink under docs/. The paths are
+# <repo>/docs, <repo>/docs/assets, <repo>/docs/assets/data, the two docs
+# target files, the preview folder, and its two target files.
 #
 # A failed input check prints the one `input-check: <check>` line of the
 # tool on stdout, exits 2, and writes no file into the repo: no docs write,
@@ -47,10 +48,13 @@ APPROVAL="$ROOT/measure/tracks/model_guide/publish-approval.md"
 REAL_WORK_OUT="$ROOT/docs/assets/data/real-work.json"
 MODEL_GUIDE_OUT="$ROOT/docs/assets/data/model-guide.json"
 
-# Refuse a symlink on the data path before any write (spec D21), the same
-# way preview.sh refuses a symlink under docs/. A linked folder takes the
-# two files outside the repo.
-for path in "$ROOT/docs" "$ROOT/docs/assets" "$DATA_ABS"; do
+# Refuse a symlink on any path this script writes through, before any write
+# (spec D21), the same way preview.sh refuses a symlink under docs/: the
+# three data folders, the two docs target files, the preview folder, and
+# its two target files. A linked name takes a write outside its folder.
+for path in "$ROOT/docs" "$ROOT/docs/assets" "$DATA_ABS" "$REAL_WORK_OUT" \
+  "$MODEL_GUIDE_OUT" "$PREVIEW_ABS" "$PREVIEW_ABS/real-work.json" \
+  "$PREVIEW_ABS/model-guide.json"; do
   if [ -L "$path" ]; then
     echo "update: refused path $path"
     exit 2
@@ -73,12 +77,20 @@ fi
 
 # The newest review score file, when Phase 4 wrote one. Without one track A
 # has no rank, which guide.ts accepts. These lines are the shared rule with
-# preview.sh: the newest file by modification time wins, not the
-# alphabetically last glob match.
+# preview.sh: the file with the newest modification time wins, and a name
+# that holds a newline cannot split the choice, because the test compares
+# whole paths.
 newest_score_file() {
   local folder="$1"
+  local candidate newest=""
   [ -d "$folder" ] || return 0
-  { ls -1t -- "$folder"/*.json 2>/dev/null || true; } | head -n 1
+  for candidate in "$folder"/*.json; do
+    [ -f "$candidate" ] || continue
+    if [ -z "$newest" ] || [ "$candidate" -nt "$newest" ]; then
+      newest="$candidate"
+    fi
+  done
+  printf '%s' "$newest"
 }
 SCORES="$(newest_score_file "$GUIDE_DATA/review-scores")"
 
