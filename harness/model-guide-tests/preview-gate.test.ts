@@ -948,4 +948,133 @@ describe("the preview and the publish gate", () => {
     writeFileSync(join(previewFolder(root), "preview-base.json"), "{not-json\n");
     expectPublishRefusal(root, ["publish: bad preview base\n"]);
   });
+
+  const A32_CASES: Array<[string, (doc: any) => void]> = [
+    ["a null coverage runs value", (doc) => { doc.coverage.runs = null; }],
+    ["a number in coverage first_run_date", (doc) => { doc.coverage.first_run_date = 20260928; }],
+    ["a string in coverage share_known_route", (doc) => { doc.coverage.share_known_route = "0.568"; }],
+    ["a missing generated_on", (doc) => { delete doc.generated_on; }],
+  ];
+
+  it.each(A32_CASES)(
+    "A3-2 refuses %s with the schema line, no traceback, and no half-built preview folder",
+    (_label, mutate) => {
+      const root = repoFixture("a3-2");
+      stageFixture(root, mutate);
+      const docsBefore = snapshot(join(root, "docs"));
+      const result = runPreview(root);
+      expect(result.status, `A3-2 status: ${result.status}`).toBe(2);
+      expect(result.stdout).toBe("input-check: schema\n");
+      expect(result.stderr).not.toMatch(/Traceback|    at /);
+      expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(false);
+      expect(existsSync(join(previewFolder(root), "real-work.html"))).toBe(false);
+      expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    },
+  );
+
+  it("A3-1 keeps an existing preview folder byte-identical after an input check refusal", () => {
+    const root = repoFixture("a3-1-existing");
+    expect(runPreview(root).status).toBe(0);
+    const preview = previewFolder(root);
+    const indexBefore = readFileSync(join(preview, "index.html"), "utf8");
+    const baseBefore = readFileSync(join(preview, "preview-base.json"), "utf8");
+    expect(indexBefore).toContain('href="./real-work.html"');
+    stageFixture(root, (doc) => {
+      doc.schema = "real-work-outcomes/invalid";
+    });
+    const before = snapshot(preview);
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPreview(root);
+    expect(result.status, `A3-1 status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe("input-check: schema\n");
+    expect(result.stderr).toBe("");
+    expect(snapshot(preview)).toEqual(before);
+    expect(readFileSync(join(preview, "index.html"), "utf8")).toBe(indexBefore);
+    expect(readFileSync(join(preview, "preview-base.json"), "utf8")).toBe(baseBefore);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
+
+  it("A3-1 leaves no new parent folder after a refusal into a new nested preview folder", () => {
+    const root = repoFixture("a3-1-nested");
+    stageFixture(root, (doc) => {
+      doc.schema = "real-work-outcomes/invalid";
+    });
+    const target = join(root, ".tmp", "a3-1-nested-parent", "leaf");
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPreview(root, target);
+    expect(result.status, `A3-1 nested status: ${result.status}`).toBe(2);
+    expect(result.stdout).toBe("input-check: schema\n");
+    expect(result.stderr).toBe("");
+    expect(existsSync(target)).toBe(false);
+    expect(existsSync(join(root, ".tmp", "a3-1-nested-parent"))).toBe(false);
+    expect(existsSync(join(root, ".tmp"))).toBe(false);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
+
+  it("A3-3 refuses a symlink planted inside an existing preview folder without a docs write", () => {
+    const root = repoFixture("a3-3-symlink");
+    expect(runPreview(root).status).toBe(0);
+    const preview = previewFolder(root);
+    rmSync(join(preview, "real-work.json"));
+    symlinkSync(join(root, "docs", "real-work.json"), join(preview, "real-work.json"));
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPreview(root);
+    expect(result.status, `A3-3 status: ${result.status}`).toBe(2);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+    const lines = result.stdout.split("\n").filter((line) => line !== "");
+    expect(lines.length).toBe(1);
+    expect(lines[0].length).toBeGreaterThan(0);
+  });
+
+  it("C3-2 keeps exactly one of each nav link on a second preview over a published index", () => {
+    const root = repoFixture("c3-2-nav");
+    expect(runPreview(root).status).toBe(0);
+    writeFileSync(
+      join(root, "docs", "index.html"),
+      readFileSync(join(previewFolder(root), "index.html")),
+    );
+    const result = runPreview(root);
+    expect(result.status, `C3-2 status: ${result.status}`).toBe(0);
+    const index = readFileSync(join(previewFolder(root), "index.html"), "utf8");
+    expect(index.split('href="./real-work.html"').length - 1).toBe(1);
+    expect(index.split('href="./review.html"').length - 1).toBe(1);
+  });
+
+  it("B2-1 refuses publish with a dangling symlink under docs and writes no file", () => {
+    const root = repoFixture("b2-1-dangling");
+    expect(runPreview(root).status).toBe(0);
+    writeApproval(root, approvedHashes(root, ["real-work.html", "real-work.json"]));
+    symlinkSync(join(root, "no-such-target.txt"), join(root, "docs", "dangling.txt"));
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPublish(root);
+    expect(result.status, `B2-1 dangling status: ${result.status}`).toBe(2);
+    expect(result.stdout).toContain("publish: drift dangling.txt");
+    expect(result.stderr).not.toMatch(/    at |Traceback/);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
+
+  it("B2-1 refuses publish with an unreadable file under docs and writes no file", () => {
+    const root = repoFixture("b2-1-locked");
+    writeFileSync(join(root, "docs", "locked.txt"), "locked\n");
+    expect(runPreview(root).status).toBe(0);
+    writeApproval(root, approvedHashes(root, ["real-work.html", "real-work.json"]));
+    const docsBefore = snapshot(join(root, "docs"));
+    chmodSync(join(root, "docs", "locked.txt"), 0o000);
+    const result = runPublish(root);
+    expect(result.status, `B2-1 locked status: ${result.status}`).toBe(2);
+    expect(result.stdout).toContain("publish: drift locked.txt");
+    expect(result.stderr).not.toMatch(/    at |Traceback/);
+    chmodSync(join(root, "docs", "locked.txt"), 0o644);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
+
+  it("B2-1 refuses preview.sh with a dangling entry under docs without a traceback", () => {
+    const root = repoFixture("b2-1-preview-dangling");
+    symlinkSync(join(root, "no-such-target.txt"), join(root, "docs", "dangling.txt"));
+    const docsBefore = snapshot(join(root, "docs"));
+    const result = runPreview(root);
+    expect(result.status, `B2-1 preview status: ${result.status}`).toBe(2);
+    expect(result.stderr).not.toMatch(/Traceback|    at /);
+    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
+  });
 });

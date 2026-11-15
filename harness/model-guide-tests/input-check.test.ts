@@ -255,4 +255,19 @@ describe("page B input check", () => {
     expect(result.stderr).toBe(USAGE);
     expect(readdirSync(out)).toEqual([]);
   });
+
+  const A32_CASES: Array<[string, (doc: any) => void]> = [
+    ["a null coverage runs value", (doc) => { doc.coverage.runs = null; }],
+    ["a number in coverage first_run_date", (doc) => { doc.coverage.first_run_date = 20260928; }],
+    ["a string in coverage share_known_route", (doc) => { doc.coverage.share_known_route = "0.568"; }],
+    ["a missing generated_on", (doc) => { delete doc.generated_on; }],
+  ];
+
+  it.each(A32_CASES)(
+    "A3-2 refuses %s with the schema line and no output file",
+    (_label, mutate) => {
+      const pair = staged("a3-2", mutate);
+      expectRefusal(pair.json, "a3-2-out", "schema");
+    },
+  );
 });
