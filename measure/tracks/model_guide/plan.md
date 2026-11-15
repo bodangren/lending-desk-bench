@@ -453,18 +453,23 @@ Spec D17, D18, D19, FR-5, FR-6.
     exit codes, the Tests lines, and the two open spec decisions that the
     test leaves unpinned (the D18 role `red` filter, and the code review
     fallback before Phase 4).
-- [~] 2.3 Red. The weekly update. Write `harness/model-guide-tests/update.test.ts`
-  and no other file.
-  - Note: next Red role owns this task.
+- [x] b839dab 2.3 Red. The weekly update. Write `harness/model-guide-tests/update.test.ts` and add the two D18 ruling tests to `harness/model-guide-tests/guide.test.ts`.
+  - File list: no new fixture folder. Both files reuse `fixtures/real-work-mini.json`, `fixtures/print-audit/`, and `fixtures/guide/`. The two commits are `b839dab` (tests) and this plan commit.
   Normal cases:
   - `update.sh` before the approval writes into the preview folder only.
   - `update.sh` after the approval writes the two data files into a temp
     `docs/assets/data/` and runs `git commit` with explicit paths only.
   Edge cases:
   - `update.sh` with a failed input check gives exit 2 and changes no file.
+  - Ruling Q1 (spec D18): the test writing row uses the page B producer table as a whole, because `real-work.json` has no role key; its evidence cell starts with "page B producer".
+  - Ruling Q2 (spec D18): the code review row shows "no pick yet: not enough evidence" while track A has no complete rank, even when the page B checker table has a qualified model; the checker table does not pick for code review before Phase 4.
   - Verify: the file fails on the Phase 1 code. Record the failed test names
     in `measure/runs/model_guide/red-2.3.txt`.
-- [ ] 2.4 Green. Write `harness/model-guide/data/print-audit-2026-11.json` and
+  - Evidence: commit b839dab holds `update.test.ts` and the two ruling tests
+    in `guide.test.ts`. `measure/runs/model_guide/red-2.3.txt` holds the
+    failed test names, the exit codes, and the Tests lines of the eight
+    single-file runs.
+- [~] 2.4 Green. Write `harness/model-guide/data/print-audit-2026-11.json` and
   the print-audit block of `harness/model-guide/pages/real-work.html`, plus
   that wiring. Touch no test file.
   - The data file comes from the hand-off file of spec OD6. The input check
