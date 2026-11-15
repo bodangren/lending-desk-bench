@@ -214,6 +214,29 @@ if [ "$DRY_RUN" = "1" ]; then
   exit 0
 fi
 
+# ---- Heavy-run split (D24) ------------------------------------------------------
+# The meta self-check, the reference canary, and every grading step of run.sh
+# go through heavy-run with priority p2, the 1500 MB floor, and the 1800 s
+# limit. The agent step stays outside. Without BENCH_HEAVY the batch keeps the
+# light path (the weekly job and the hand runs).
+HEAVY_MEM_FLOOR_MB="1500"
+HEAVY_PRIORITY_TOKEN="p2"
+HEAVY_TIMEOUT_S="1800"
+SELFCHECK_HEAVY=""
+SELFCHECK_HEAVY_RC=0
+# The policed self-check line of case 6.4.2 calls `env`, so the wrap lives in a
+# narrow `env` function that is active only while the self-check command runs.
+# Every other `env` call of the batch passes through unchanged.
+env() {
+  if [ "${SELFCHECK_HEAVY:-}" = "1" ] && [ -n "${BENCH_HEAVY:-}" ]; then
+    HEAVY_MIN_AVAIL_MB="$HEAVY_MEM_FLOOR_MB" HEAVY_PRIORITY="$HEAVY_PRIORITY_TOKEN" \
+      HEAVY_RUN_TIMEOUT_S="$HEAVY_TIMEOUT_S" command "$BENCH_HEAVY" env "$@"
+    SELFCHECK_HEAVY_RC=$?
+    return "$SELFCHECK_HEAVY_RC"
+  fi
+  command env "$@"
+}
+
 # ---- Harness self-check ------------------------------------------------------
 # Neither of these ran in the grading path before. The meta suite polices the
 # criteria, the spec matrix and the control manifest. The sensitivity controls
@@ -249,11 +272,17 @@ else
   # so a non-build BENCH_TRACK exported for the batch must not leak into it.
   # The repeat-count variables are scrubbed for the same reason: the suite
   # asserts the default repeat counts.
+  if [ -n "${BENCH_HEAVY:-}" ]; then SELFCHECK_HEAVY=1; fi
   if ! env -u BENCH_TRACK -u REPS -u REPS_BUILD -u REPS_BUGFIX -u REPS_TESTS -u REPS_CHANGE npm run --silent "$meta_script" > "meta-selfcheck.log" 2>&1; then
-    echo "harness self-check failed: the meta suite did not pass" >&2
+    if [ -n "${BENCH_HEAVY:-}" ]; then
+      echo "harness self-check failed: heavy-run exited $SELFCHECK_HEAVY_RC" >&2
+    else
+      echo "harness self-check failed: the meta suite did not pass" >&2
+    fi
     echo "see harness/meta-selfcheck.log" >&2
     exit 3
   fi
+  SELFCHECK_HEAVY=""
 
   if [ "$SELFCHECK" != logic ]; then
     control_scope="--fast"
@@ -355,12 +384,31 @@ if [ "${BENCH_CANARY:-1}" = "0" ]; then
 else
   canary_id="canary-${TRACK}-${WEEK}-$(date +%s)"
   echo "CANARY $(date -Is) — $canary_id"
-  case "$TRACK" in
-    build)  AGENT_SKIP=1 OVERLAY="$PWD/../reference" ./run.sh local reference a "$canary_id" > "canary.log" 2>&1 ;;
-    bugfix) AGENT_SKIP=1 BENCH_BUG_SET=clean ./run.sh local reference a "$canary_id" > "canary.log" 2>&1 ;;
-    tests)  AGENT_SKIP=1 OVERLAY="$PWD/tests-track/oracle-overlay" ./run.sh local oracle a "$canary_id" > "canary.log" 2>&1 ;;
-    change) AGENT_SKIP=1 OVERLAY="$PWD/../reference-change" ./run.sh local reference-change a "$canary_id" > "canary.log" 2>&1 ;;
-  esac
+  CANARY_RC=0
+  if [ -n "${BENCH_HEAVY:-}" ]; then
+    # D24: the canary runs through heavy-run p2 with the floor and the limit.
+    case "$TRACK" in
+      build)  HEAVY_MIN_AVAIL_MB="$HEAVY_MEM_FLOOR_MB" HEAVY_PRIORITY="$HEAVY_PRIORITY_TOKEN" HEAVY_RUN_TIMEOUT_S="$HEAVY_TIMEOUT_S" \
+                "$BENCH_HEAVY" env AGENT_SKIP=1 OVERLAY="$PWD/../reference" ./run.sh local reference a "$canary_id" > "canary.log" 2>&1 || CANARY_RC=$? ;;
+      bugfix) HEAVY_MIN_AVAIL_MB="$HEAVY_MEM_FLOOR_MB" HEAVY_PRIORITY="$HEAVY_PRIORITY_TOKEN" HEAVY_RUN_TIMEOUT_S="$HEAVY_TIMEOUT_S" \
+                "$BENCH_HEAVY" env AGENT_SKIP=1 BENCH_BUG_SET=clean ./run.sh local reference a "$canary_id" > "canary.log" 2>&1 || CANARY_RC=$? ;;
+      tests)  HEAVY_MIN_AVAIL_MB="$HEAVY_MEM_FLOOR_MB" HEAVY_PRIORITY="$HEAVY_PRIORITY_TOKEN" HEAVY_RUN_TIMEOUT_S="$HEAVY_TIMEOUT_S" \
+                "$BENCH_HEAVY" env AGENT_SKIP=1 OVERLAY="$PWD/tests-track/oracle-overlay" ./run.sh local oracle a "$canary_id" > "canary.log" 2>&1 || CANARY_RC=$? ;;
+      change) HEAVY_MIN_AVAIL_MB="$HEAVY_MEM_FLOOR_MB" HEAVY_PRIORITY="$HEAVY_PRIORITY_TOKEN" HEAVY_RUN_TIMEOUT_S="$HEAVY_TIMEOUT_S" \
+                "$BENCH_HEAVY" env AGENT_SKIP=1 OVERLAY="$PWD/../reference-change" ./run.sh local reference-change a "$canary_id" > "canary.log" 2>&1 || CANARY_RC=$? ;;
+    esac
+    if [ "$CANARY_RC" -ne 0 ]; then
+      echo "canary failed: heavy-run exited $CANARY_RC for $canary_id" >&2
+      exit 3
+    fi
+  else
+    case "$TRACK" in
+      build)  AGENT_SKIP=1 OVERLAY="$PWD/../reference" ./run.sh local reference a "$canary_id" > "canary.log" 2>&1 ;;
+      bugfix) AGENT_SKIP=1 BENCH_BUG_SET=clean ./run.sh local reference a "$canary_id" > "canary.log" 2>&1 ;;
+      tests)  AGENT_SKIP=1 OVERLAY="$PWD/tests-track/oracle-overlay" ./run.sh local oracle a "$canary_id" > "canary.log" 2>&1 ;;
+      change) AGENT_SKIP=1 OVERLAY="$PWD/../reference-change" ./run.sh local reference-change a "$canary_id" > "canary.log" 2>&1 ;;
+    esac
+  fi
   canary_score="../runs/$canary_id/artifacts/score.json"
   if ! node -e 'const s=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8")); process.exit(s.valid===true && s.total===100 ? 0 : 1);' "$canary_score" 2>/dev/null; then
     echo "canary failed: $canary_id did not score a valid 100; see harness/canary.log and $canary_score" >&2
@@ -390,6 +438,31 @@ for rep in $(seq 1 "$REPS"); do
           SKIP=$((SKIP+1)); continue
         elif [ -e "$score" ]; then
           echo "[$N/$TOTAL] RE-RUN $run_id (score is invalid, stale, blocked, or untrusted)"
+        fi
+      fi
+
+      # D24 memory gate: a candidate starts only when MemAvailable holds the
+      # floor. Otherwise the batch waits up to BENCH_MEM_WAIT_S and skips the
+      # candidate with the pinned lines.
+      if [ -n "${BENCH_MEM_FLOOR_MB:-}" ]; then
+        mem_file="${BENCH_MEMINFO:-/proc/meminfo}"
+        mem_poll="${BENCH_MEM_POLL_S:-60}"
+        mem_wait="${BENCH_MEM_WAIT_S:-1200}"
+        mem_mb="$(awk '/^MemAvailable:/ {print int($2 / 1024); exit}' "$mem_file" 2>/dev/null)"
+        if [ -n "$mem_mb" ] && [ "$mem_mb" -lt "$BENCH_MEM_FLOOR_MB" ]; then
+          echo "[$N/$TOTAL] WAIT $run_id (memory: MemAvailable $mem_mb MB under $BENCH_MEM_FLOOR_MB MB)"
+          waited=0
+          while [ "$waited" -lt "$mem_wait" ]; do
+            sleep "$mem_poll"
+            waited=$((waited + mem_poll))
+            mem_mb="$(awk '/^MemAvailable:/ {print int($2 / 1024); exit}' "$mem_file" 2>/dev/null)"
+            [ -n "$mem_mb" ] || break
+            [ "$mem_mb" -ge "$BENCH_MEM_FLOOR_MB" ] && break
+          done
+          if [ -z "$mem_mb" ] || [ "$mem_mb" -lt "$BENCH_MEM_FLOOR_MB" ]; then
+            echo "[$N/$TOTAL] SKIP $run_id (memory: MemAvailable ${mem_mb:-0} MB under $BENCH_MEM_FLOOR_MB MB after $mem_wait s)"
+            SKIP=$((SKIP+1)); continue
+          fi
         fi
       fi
 
