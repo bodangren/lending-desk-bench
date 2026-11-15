@@ -1,8 +1,8 @@
 [Unit]
-Description=Run the Lending Desk daily OpenCode Go benchmark on Wednesday and Sunday
+Description=Run the Lending Desk daily OpenCode Go benchmark every night
 
 [Timer]
-OnCalendar=Wed,Sun 01:00:00
+OnCalendar=*-*-* 01:00:00
 Persistent=false
 Unit=lending-desk-daily.service
 
