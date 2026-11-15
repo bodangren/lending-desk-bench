@@ -575,7 +575,10 @@ Spec D17, D18, D19, FR-5, FR-6.
 - [ ] 2.8 Checks. One code checker reads the diff against spec D17 to D19.
   - Verify: `measure/runs/model_guide/check-2.8.json` has status pass, or
     each blocking finding has a fix commit.
-- [ ] 2.9 The preview with the table.
+- [x] c205762 2.9 The preview with the table.
+  - Evidence: `measure/runs/model_guide/preview-2.9.txt` holds the command,
+    exit 0, and the six rows with their picks, second choices, evidence, and
+    dates.
   - Command: `harness/model-guide/preview.sh --export <the 2026-11-14 file>`.
   - Verify: `.tmp/model-guide-preview/index.html` shows the table first,
     with six rows, picks or "no pick yet", evidence, and dates (spec
