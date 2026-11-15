@@ -426,9 +426,12 @@ Spec D17, D18, D19, FR-5, FR-6.
     `measure/runs/model_guide/red-2.1.txt` holds the failed test names, the
     exit codes, the Tests lines, and the PA2-1 reason that G1 to G4 pass at
     the base.
-- [~] 2.2 Red. The overview table. Write `harness/model-guide-tests/guide.test.ts`
-  and no other file.
-  - Note: next Red role owns this task.
+- [x] 7da3eca 2.2 Red. The overview table. Write `harness/model-guide-tests/guide.test.ts`
+  and the fixture folder `harness/model-guide-tests/fixtures/guide/`.
+  - File list: the fixture folder holds the synthetic track A score file
+    `review-scores-mini.json` and the base-line files `benchmark-mini.json`
+    and `tracks-mini.json`. The test also reuses `fixtures/real-work-mini.json`
+    and `fixtures/print-audit/print-audit-mini.json`.
   Normal cases:
   - The table has the six rows of spec D18 in that order.
   - The first source picks the first and the second choice. The evidence
@@ -444,8 +447,15 @@ Spec D17, D18, D19, FR-5, FR-6.
   - A track A route with `incomplete` does not qualify.
   - Verify: the file fails on the Phase 1 code. Record the failed test names
     in `measure/runs/model_guide/red-2.2.txt`.
-- [ ] 2.3 Red. The weekly update. Write `harness/model-guide-tests/update.test.ts`
+  - Evidence: commit 7da3eca holds the test file and the fixture folder
+    `harness/model-guide-tests/fixtures/guide/`.
+    `measure/runs/model_guide/red-2.2.txt` holds the failed test names, the
+    exit codes, the Tests lines, and the two open spec decisions that the
+    test leaves unpinned (the D18 role `red` filter, and the code review
+    fallback before Phase 4).
+- [~] 2.3 Red. The weekly update. Write `harness/model-guide-tests/update.test.ts`
   and no other file.
+  - Note: next Red role owns this task.
   Normal cases:
   - `update.sh` before the approval writes into the preview folder only.
   - `update.sh` after the approval writes the two data files into a temp
