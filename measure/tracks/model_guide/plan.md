@@ -276,6 +276,12 @@ Spec D16, D21, FR-1 to FR-4, FR-7.
     `measure/runs/model_guide/green-p1-885947e.log`. The task 1.9 preview
     re-run record is `measure/runs/model_guide/preview-1.13.txt`.
 
+- [x] 563a263 1.14 Red. Review fixes, round 3 (A3-1/C3-1, A3-2/C3-3, A3-3, C3-2/A3-4, B2-1).
+  - Files: `harness/model-guide-tests/preview-gate.test.ts`,
+    `harness/model-guide-tests/input-check.test.ts`.
+  - Evidence: `red-1.14.txt` holds the failed test names and exit 1.
+- [ ] 1.15 Green. Review fixes, round 3. Fix the five items in harness/model-guide/. Touch no test file.
+
 Verify (Phase 1): spec acceptance 2, 3, 4, 5, and 8 hold in the preview
 folder.
 
