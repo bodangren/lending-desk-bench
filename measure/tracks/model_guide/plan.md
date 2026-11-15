@@ -554,6 +554,17 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: commit 61c99c1 holds the section template and the preview edit.
     `measure/runs/model_guide/green-p2-38b24ce.log` holds the single-file
     commands, their exit codes, and their Tests lines.
+- [x] 93f79f1 2.7a Red. Fix approve() and the U3 status check of update.test.ts (Green 2.7 block).
+  - `approve(root)` commits the approval record before `update.sh` runs, so
+    the record never shows up as an untracked `measure/` path in U2. U3
+    reads `git status --short` once after the byte append and compares the
+    run-end status with that string, because the fixture copy is dirty by
+    design. The file also imports `rmSync`, which its cleanup hook used.
+  - Verify: `cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native`
+    passes with `harness/model-guide/update.sh` present.
+  - Evidence: commit 93f79f1 holds the three fixes and no production file.
+    `measure/runs/model_guide/red-2.7a.txt` holds the commands, the exit
+    codes, and the Tests lines of each single-file run.
 - [~] 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native`
