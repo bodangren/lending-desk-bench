@@ -1,12 +1,16 @@
-// The publish label of the commit message (PM ruling 2026-11-16, task 7.7).
+// The publish label of the commit message (PM ruling 2026-11-16, tasks 7.7
+// and 7.11; checker finding K2-1).
 //
 // The message line
 //   Publish daily <date> OpenCode Go results: <label> (<reason>).
 // takes <label> from the model of the runs in the publish range, in run
-// order, each model once. It never takes <label> from the day record model
-// (`record.model`). A pinned catch-up unit can publish runs of model B on a
-// day record whose model is model A; the message names B, not A. A D27 day
-// with runs of two models names both models in run order, each once.
+// order, each model once. The publish range is the runs of THIS publish, not
+// the whole day record: under D27 each model publishes its own commit, and
+// each commit names only the model of the runs it publishes. It never takes
+// <label> from the day record model (`record.model`) and never from the
+// models of earlier publishes of the same day. A pinned catch-up unit can
+// publish runs of model B on a day record whose model is model A and whose
+// entries hold published runs of other models; the message names B, not A.
 // The zero-run guard-stop line of D15, the resume reason, and the
 // excluded-models body lines stay as they are.
 //
@@ -319,25 +323,23 @@ describe("publish label from the run models", () => {
       .toMatch(new RegExp(`^Publish daily ${DATE} OpenCode Go results: .+ \\(pm-pin catch-up\\)\\.$`));
   });
 
-  caseOf("L2 a D27 day with runs of two models: the last label names both in run order, each once", f => {
+  caseOf("L2 a D27 day with two models: each publish names only the model of its own publish range", f => {
     writeFileSync(f.queue, `${ALPHA}\n${BETA}\n`);
     const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue } });
     expect(r.status, `${D27}: the catch-up night must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
     expect(lines(r, "DAILY PUBLISH ").length, `${D27}: each model must publish its own commit`).toBe(2);
     const subjects = publishSubjects(f);
     expect(subjects.length, `${D10}: the day must hold two publish commits`).toBe(2);
-    const [last, first] = subjects;
-    expect(first, `${D10}: the first commit covers the runs of the first model only\n${first}`)
+    const [second, first] = subjects;
+    expect(first, `${D10}: the first publish covers the runs of the first model\n${first}`)
       .toContain(ALPHA);
-    expect(first, `${D10}: the first commit covers no second-model run\n${first}`)
+    expect(first, `${D10}: the first publish covers no second-model run\n${first}`)
       .not.toContain(BETA);
-    expect(last, `${D10}: the label must name the first run model\n${last}`).toContain(ALPHA);
-    expect(last, `${D10}: the label must name the second run model\n${last}`).toContain(BETA);
-    expect(last.indexOf(ALPHA), `${D10}: the models must appear in run order\n${last}`)
-      .toBeLessThan(last.indexOf(BETA));
-    expect(last.split(ALPHA).length - 1, `${D10}: each model appears once\n${last}`).toBe(1);
-    expect(last.split(BETA).length - 1, `${D10}: each model appears once\n${last}`).toBe(1);
-    expect(last, `${D10}: the message shape and the reason must stay\n${last}`)
+    expect(second, `${D10}: the second publish covers the runs of the second model\n${second}`)
+      .toContain(BETA);
+    expect(second, `${D10}: the second publish must name only its own publish range, not the first model of the day\n${second}`)
+      .not.toContain(ALPHA);
+    expect(second, `${D10}: the message shape and the reason must stay\n${second}`)
       .toMatch(new RegExp(`^Publish daily ${DATE} OpenCode Go results: .+ \\(untested\\)\\.$`));
   });
 
@@ -377,5 +379,42 @@ describe("publish label from the run models", () => {
     expect(body, `${D10}: the unpriced body line must stay`).toContain("Unpriced: ghost-model");
     expect(body, `${D10}: the gone body line must stay`).toContain("Gone: dead-model");
     expect(body, `${D10}: the unservable body line must stay`).toContain("Unservable: absent-model");
+  });
+
+  caseOf("L5 a pinned publish on a record with published entries of other models names only the pinned model", f => {
+    // The day record already holds the published entry of another model (D27),
+    // with its runs on disk, as after an earlier publish of the same day.
+    const earlierRuns: Array<[string, string]> = [
+      ["a-day-record-model-build-2026w47-r1", "build"],
+      ["a-day-record-model-bugfix-2026w47-r1", "bugfix"],
+    ];
+    const earlierIds = earlierRuns.map(([id]) => id);
+    for (const [id, track] of earlierRuns) {
+      const artifacts = join(f.runs, id, "artifacts");
+      mkdirSync(artifacts, { recursive: true });
+      writeFileSync(join(artifacts, "provenance.json"), JSON.stringify({
+        executor: { kind: "opencode" }, model: `opencode-go/${RECORD_MODEL}`, arm: "a", track,
+      }));
+    }
+    writeRecord(f, {
+      schema: 1, date: DATE, model: RECORD_MODEL, reason: "pm-pin catch-up",
+      run_ids: earlierIds,
+      models: [{
+        model: RECORD_MODEL, reason: "untested", run_ids: earlierIds,
+        runner_exit: 0, go_guard_stop: null,
+      }],
+    });
+    writeFileSync(f.queue, `${PINNED}\n`);
+    const r = runJob(f, { env: { SELECTOR_QUEUE: f.queue } });
+    expect(r.status, `${D19}: the pinned publish must exit 0\n${r.stdout}\n${r.stderr}`).toBe(0);
+    const subjects = publishSubjects(f);
+    expect(subjects.length, `${D10}: the pinned night must make one publish commit\n${r.stdout}\n${r.stderr}`).toBe(1);
+    const subject = subjects[0];
+    expect(subject, `${D10}: the label must name the model of this publish range\n${subject}`)
+      .toContain(PINNED);
+    expect(subject, `${D10}: the label must not name the model of an earlier published entry\n${subject}`)
+      .not.toContain(RECORD_MODEL);
+    expect(subject, `${D10}: the message shape and the record reason must stay\n${subject}`)
+      .toMatch(new RegExp(`^Publish daily ${DATE} OpenCode Go results: .+ \\(pm-pin catch-up\\)\\.$`));
   });
 });
