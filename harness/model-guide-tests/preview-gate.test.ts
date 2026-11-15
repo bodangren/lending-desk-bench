@@ -1303,3 +1303,134 @@ describe("the preview and the publish gate", () => {
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
   });
 });
+
+/**
+ * Red tests for plan task 1.20: the UX findings U1, U3, and U4 of the
+ * browser review `measure/runs/model_guide/ux-browser-2a9d421.json`. They
+ * read the generated `real-work.html` in the preview folder.
+ *
+ * Pinned contracts:
+ *
+ * U1 (blocking): at 390 px the Source card clips the SHA-256, because the
+ *   source paragraph has no wrap rule and `.card` sets `overflow: hidden`
+ *   (spec D16 requires the readable hash on the page). The generated page
+ *   must carry a wrap rule for the source paragraph or for an element that
+ *   wraps it inside the Source card: `overflow-wrap: anywhere` or
+ *   `word-break: break-all`, either in an inline `style` attribute or in a
+ *   class rule inside a `<style>` block of the generated page. Both forms
+ *   pass. The fix needs no change under `docs/`.
+ *
+ * U3 (minor): every `.table-wrap` scroll box in the generated page carries
+ *   `tabindex="0"`, `role="region"`, and a non-empty `aria-label`, so a
+ *   keyboard user can scroll the tables and a screen reader names the box.
+ *
+ * U4 (nit): the nav link with `href="./real-work.html"` carries
+ *   `aria-current="page"`, and no other link in the page carries
+ *   `aria-current`.
+ *
+ * Out of scope: U2 (checker table width) and U5 (site-wide favicon 404).
+ * They go to the phase acceptance as nonblocking items.
+ */
+describe("the UX fixes U1, U3, U4 of task 1.20", () => {
+  const WRAP_DECL = /overflow-wrap\s*:\s*anywhere|word-break\s*:\s*break-all/;
+
+  function generatedPage(tag: string): string {
+    const root = repoFixture(tag);
+    const result = runPreview(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    return readFileSync(join(previewFolder(root), "real-work.html"), "utf8");
+  }
+
+  /** The Source card: the `<section>` that holds `<h2>Source</h2>`. */
+  function sourceSection(page: string): string {
+    const at = page.indexOf("<h2>Source</h2>");
+    expect(at, "the page holds a Source heading").toBeGreaterThan(-1);
+    const start = page.lastIndexOf("<section", at);
+    const end = page.indexOf("</section>", at);
+    expect(start, "the Source heading sits in a section").toBeGreaterThan(-1);
+    expect(end, "the Source section closes").toBeGreaterThan(at);
+    return page.slice(start, end + "</section>".length);
+  }
+
+  function styleCarriesWrap(tag: string): boolean {
+    const m = tag.match(/\bstyle\s*=\s*"([^"]*)"/);
+    return m !== null && WRAP_DECL.test(m[1]);
+  }
+
+  function classesOf(tag: string): string[] {
+    const m = tag.match(/\bclass\s*=\s*"([^"]*)"/);
+    return m ? m[1].split(/\s+/).filter(Boolean) : [];
+  }
+
+  function styleBlocks(page: string): string[] {
+    return [...page.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]);
+  }
+
+  /** True when a `<style>` block of the page holds a rule whose selector
+   * names `.cls` and whose body carries the wrap declaration. */
+  function classRuleCarriesWrap(page: string, cls: string): boolean {
+    for (const css of styleBlocks(page)) {
+      for (const chunk of css.split("}")) {
+        const brace = chunk.indexOf("{");
+        if (brace < 0) continue;
+        const selector = chunk.slice(0, brace);
+        const body = chunk.slice(brace + 1);
+        if (selector.includes(`.${cls}`) && WRAP_DECL.test(body)) return true;
+      }
+    }
+    return false;
+  }
+
+  it("U1: the source paragraph or a wrapper in the Source card carries a wrap rule", () => {
+    const page = generatedPage("u1");
+    const section = sourceSection(page);
+    const h2End = section.indexOf("</h2>");
+    const shaAt = section.indexOf("SHA-256");
+    expect(shaAt, "the Source card holds the SHA-256 line").toBeGreaterThan(-1);
+    const pOpen = section.lastIndexOf("<p", shaAt);
+    expect(pOpen, "the SHA-256 line sits in a paragraph").toBeGreaterThan(h2End);
+    const pTag = section.slice(pOpen, section.indexOf(">", pOpen) + 1);
+    const wrapperTags =
+      section.slice(h2End + "</h2>".length, pOpen).match(/<[a-zA-Z][^>]*>/g) ?? [];
+    const chain = [pTag, ...wrapperTags];
+    const inline = chain.some(styleCarriesWrap);
+    const viaClass = chain.some((tag) =>
+      classesOf(tag).some((cls) => classRuleCarriesWrap(page, cls)),
+    );
+    expect(
+      inline || viaClass,
+      "U1: the source paragraph or a wrapper inside the Source card must carry " +
+        "`overflow-wrap: anywhere` or `word-break: break-all`, as an inline style " +
+        `attribute or as a class rule in a <style> block of the page. Paragraph tag: ` +
+        `${pTag}; wrapper tags: ${wrapperTags.join(" ") || "none"}`,
+    ).toBe(true);
+  });
+
+  it("U3: every .table-wrap box carries tabindex, role, and a non-empty aria-label", () => {
+    const page = generatedPage("u3");
+    const tags = page.match(/<[a-zA-Z][^>]*class="[^"]*\btable-wrap\b[^"]*"[^>]*>/g) ?? [];
+    expect(tags.length, "the page holds the table-wrap scroll boxes").toBeGreaterThanOrEqual(6);
+    for (const tag of tags) {
+      expect(tag, `U3 tabindex missing: ${tag}`).toMatch(/\btabindex\s*=\s*"0"/);
+      expect(tag, `U3 role missing: ${tag}`).toMatch(/\brole\s*=\s*"region"/);
+      expect(tag, `U3 aria-label missing or empty: ${tag}`).toMatch(
+        /\baria-label\s*=\s*"[^"]+"/,
+      );
+    }
+  });
+
+  it('U4: the ./real-work.html nav link carries aria-current="page" and no other link does', () => {
+    const page = generatedPage("u4");
+    const anchors = page.match(/<a\b[^>]*>/g) ?? [];
+    const realWork = anchors.filter((tag) => /\bhref\s*=\s*"\.\/real-work\.html"/.test(tag));
+    expect(realWork.length, "the nav holds exactly one ./real-work.html link").toBe(1);
+    expect(realWork[0], `U4 aria-current missing: ${realWork[0]}`).toMatch(
+      /\baria-current\s*=\s*"page"/,
+    );
+    const others = anchors.filter(
+      (tag) =>
+        /\baria-current\b/.test(tag) && !/\bhref\s*=\s*"\.\/real-work\.html"/.test(tag),
+    );
+    expect(others, `U4 aria-current on other links: ${others.join(" ")}`).toEqual([]);
+  });
+});
