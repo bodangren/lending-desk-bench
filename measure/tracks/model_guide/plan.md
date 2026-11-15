@@ -840,11 +840,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     passes.
   - Evidence: commit f023951 holds the tool. `measure/runs/model_guide/green-p3-35be00c.log`
     holds the exit codes of the five runs and the empty `docs/` status.
-- [ ] 3.8a Green. review-score.ts writes the route passes as pass records;
+- [x] fd96d3b 3.8a Green. review-score.ts writes the route passes as pass records;
   guide.ts counts a provisional pass (D13). Touch no test file.
   - Verify: `cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native`
     and `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
     pass.
+  - Evidence: commit fd96d3b holds the two tools. `measure/runs/model_guide/green-p3-5fc37de.log`
+    holds the exit codes of the eight runs and the empty `docs/` status.
 - [~] 3.9 Green. Write `harness/model-guide/adjudicate.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native`
