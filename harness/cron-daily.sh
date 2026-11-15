@@ -422,7 +422,7 @@ process.stdout.write("within");
 const n = Number(process.env.DAILY_GUARD_VALUE);
 if (!Number.isFinite(n)) process.exit(88);
 if (n < 0) { process.stdout.write("below-zero"); process.exit(1); }
-if (n > 95) { process.stdout.write("above-95"); process.exit(2); }
+if (n >= 100) { process.stdout.write("at-or-above-100"); process.exit(2); }
 process.stdout.write("within");
 ' )" || comparison_rc=$?
   if [ "$comparison_rc" -eq 1 ] && [ "$comparison" = "below-zero" ]; then
@@ -430,7 +430,7 @@ process.stdout.write("within");
     GUARD_STOP="monthly value $monthly_value is below 0"
     return 1
   fi
-  if [ "$comparison_rc" -eq 2 ] && [ "$comparison" = "above-95" ]; then
+  if [ "$comparison_rc" -eq 2 ] && [ "$comparison" = "at-or-above-100" ]; then
     echo "DAILY SKIP go-guard: monthly used $monthly_value percent"
     GUARD_STOP="monthly used $monthly_value percent"
     return 1
