@@ -469,15 +469,23 @@ Spec D17, D18, D19, FR-5, FR-6.
     in `guide.test.ts`. `measure/runs/model_guide/red-2.3.txt` holds the
     failed test names, the exit codes, and the Tests lines of the eight
     single-file runs.
-- [~] 2.4 Green. Write `harness/model-guide/data/print-audit-2026-11.json` and
+- [x] 5a0350c 2.4 Green. Write `harness/model-guide/data/print-audit-2026-11.json` and
   the print-audit block of `harness/model-guide/pages/real-work.html`, plus
   that wiring. Touch no test file.
   - The data file comes from the hand-off file of spec OD6. The input check
     of spec D17 passes first: the SHA-256 from `MANIFEST.txt` and the shape
     of the file. The file holds no book text and no page.
+  - File list: the tool `harness/model-guide/print-audit.ts` writes the data
+    file, and the `print-audit_block` function of
+    `harness/model-guide/preview.sh` renders the block into the template
+    token `<!--MODEL-GUIDE:PRINT-AUDIT-->`. The block holds lists and no
+    table, so the page guard PA1-1 reads no table after the work types.
   - Verify: `cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
-- [ ] 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test file
+  - Evidence: commit 5a0350c holds the tool, the data file, and the block
+    wiring. `measure/runs/model_guide/green-p2-66c1759.log` holds the exit
+    codes of the single-file runs and the OD6 input check.
+- [~] 2.5 Green. Write `harness/model-guide/guide.ts`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native`
     passes.
