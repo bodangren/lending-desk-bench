@@ -38,8 +38,9 @@
 # tracks.json, and the print-audit data file. When one is absent the preview
 # keeps the page and omits the table; the real repo holds all three. It reads
 # the newest review score file under harness/model-guide/data/review-scores/
-# when one exists, because Phase 4 creates that file. --today is the current
-# date, so a live preview shows its own age.
+# when one exists, because Phase 4 creates that file. The newest file by
+# modification time wins, not the alphabetically last glob match. --today is
+# the current date, so a live preview shows its own age.
 # It writes no file under docs/. Exit 0 on success. Exit 2 when the input
 # check of real-work.ts fails; it writes nothing near the preview folder in
 # that case.
@@ -121,13 +122,15 @@ if [ -f "$ROOT/docs/assets/data/benchmark.json" ] \
   OVERVIEW=1
 fi
 # The newest review score file, when Phase 4 wrote one. Without one track A
-# has no rank, which guide.ts accepts.
-SCORES=""
-for candidate in "$GUIDE_DATA"/review-scores/*.json; do
-  if [ -f "$candidate" ]; then
-    SCORES="$candidate"
-  fi
-done
+# has no rank, which guide.ts accepts. These lines are the shared rule with
+# update.sh: the newest file by modification time wins, not the
+# alphabetically last glob match.
+newest_score_file() {
+  local folder="$1"
+  [ -d "$folder" ] || return 0
+  { ls -1t -- "$folder"/*.json 2>/dev/null || true; } | head -n 1
+}
+SCORES="$(newest_score_file "$GUIDE_DATA/review-scores")"
 if [ -n "$OVERVIEW" ]; then
   GUIDE_ARGS=(--real-work "$STAGING/real-work.json"
     --print-audit "$GUIDE_DATA/print-audit-2026-11.json"

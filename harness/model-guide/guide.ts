@@ -54,9 +54,10 @@
  * A page B row qualifies with `pass_rate.n >= 10` (it carries `can_pick`).
  * The first source gives the first and the second choice from its rank.
  * A track A route qualifies with state "complete" and 3 complete passes,
- * and the rank orders the worst pass score, highest first. When the first
- * source has no qualified model the second source picks; the base lines
- * never pick.
+ * and the rank orders the worst pass score, highest first. A tie goes to
+ * the higher worst blocker recall, and then to the higher median score
+ * (spec D13). When the first source has no qualified model the second
+ * source picks; the base lines never pick.
  *
  * Ruling Q1 (PM, 2026-11-15): the test writing row uses the page B
  * producer table as a whole, because `real-work.json` has no role key. Its
@@ -129,12 +130,15 @@ function parseArgs(argv: string[]): Args {
   };
   let i = 0;
   while (i < argv.length) {
-    const key = FLAGS[argv[i]];
+    const flag = argv[i];
+    // Own keys only: `__proto__`, `constructor`, and `toString` are
+    // inherited names, not flags of this tool.
+    const key = Object.hasOwn(FLAGS, flag) ? FLAGS[flag] : undefined;
     const value = argv[i + 1] ?? "";
     if (key === undefined || value === "" || value.startsWith("--")) {
       refuse("args");
     }
-    args[key] = key === "scores" ? value : value;
+    args[key] = value;
     i += 2;
   }
   for (const key of ["realWork", "printAudit", "benchmark", "tracks", "today", "out"] as const) {
@@ -208,13 +212,27 @@ function readRealWork(file: string): RealWork {
 interface RouteRank {
   route: string;
   worst: number;
+  worstRecall: number;
+  median: number;
   passes: Array<{ date: string; score: number }>;
   lastDate: string;
 }
 
+/** The median of the values; for an even count the mean of the two middle
+ * values. */
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
 /** The track A rank of spec D13. A route qualifies with a complete state
  * and 3 complete passes; the rank orders the worst pass score, highest
- * first. A missing or unreadable score file gives an empty rank. */
+ * first. A tie goes to the higher worst blocker recall, and then to the
+ * higher median score. A missing or unreadable score file gives an empty
+ * rank. */
 function readTrackARank(file: string | null): RouteRank[] {
   if (file === null || !existsSync(file) || !statSync(file).isFile()) return [];
   const doc = readJsonFile(file, "scores");
@@ -224,21 +242,41 @@ function readTrackARank(file: string | null): RouteRank[] {
     if (!isObject(route) || typeof route.route !== "string") refuse("scores");
     if (typeof route.state !== "string" || !Array.isArray(route.passes)) refuse("scores");
     if (route.state !== "complete") continue;
-    const passes: Array<{ date: string; score: number }> = [];
+    const passes: Array<{ date: string; score: number; recall: number }> = [];
     for (const pass of route.passes) {
       if (!isObject(pass) || pass.state !== "complete") continue;
       const date = asDate(pass.date);
       if (date === null || typeof pass.score !== "number" || !Number.isFinite(pass.score)) {
         refuse("scores");
       }
-      passes.push({ date, score: pass.score });
+      const recall =
+        typeof pass.blocker_recall === "number" && Number.isFinite(pass.blocker_recall)
+          ? pass.blocker_recall
+          : 0;
+      passes.push({ date, score: pass.score, recall });
     }
     if (passes.length < TRACK_A_PASSES) continue;
     passes.sort((a, b) => a.date.localeCompare(b.date));
     const worst = Math.min(...passes.map((pass) => pass.score));
-    rank.push({ route: route.route, worst, passes, lastDate: passes[passes.length - 1].date });
+    const worstRecall = Math.min(...passes.map((pass) => pass.recall));
+    const median = medianOf(passes.map((pass) => pass.score));
+    rank.push({
+      route: route.route,
+      worst,
+      worstRecall,
+      median,
+      passes,
+      lastDate: passes[passes.length - 1].date,
+    });
   }
-  rank.sort((a, b) => b.worst - a.worst || a.route.localeCompare(b.route));
+  // Spec D13: worst score, then worst blocker recall, then median score.
+  rank.sort(
+    (a, b) =>
+      b.worst - a.worst ||
+      b.worstRecall - a.worstRecall ||
+      b.median - a.median ||
+      a.route.localeCompare(b.route),
+  );
   return rank;
 }
 
