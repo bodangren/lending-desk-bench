@@ -66,6 +66,9 @@ import { afterAll, describe, expect, it } from "vitest";
  *
  * A route record holds exactly:
  *   route, state, passes, worst, median, best, worst_blocker_recall, rank
+ * `passes` is the array of the route's pass records (the same objects as the
+ * top-level `passes`, in pass order), because the Phase 2 reader `guide.ts`
+ * reads `state`, `date`, `score`, and `blocker_recall` from each one.
  * `state` is `complete` when the route has 3 or more pass records (a
  * provisional pass is complete) and `incomplete` otherwise. `worst` is the
  * lowest score, `best` the highest, `median` the middle score, and
@@ -460,7 +463,8 @@ describe("R4 invalid reviews and pass states", () => {
     const route = doc.routes.find((entry: any) => entry.route === "route/a");
     expect(route.state).toBe("complete");
     expect(route.rank).toBe(1);
-    expect(route.passes).toBe(3);
+    expect(route.passes).toHaveLength(3);
+    expect(route.passes.map((entry: any) => entry.pass)).toEqual([1, 2, 3]);
   });
 
   it("R4 gives incomplete with fewer than 3 complete passes", () => {
@@ -471,7 +475,7 @@ describe("R4 invalid reviews and pass states", () => {
     const route = doc.routes.find((entry: any) => entry.route === "route/a");
     expect(route.state).toBe("incomplete");
     expect(route.rank).toBeNull();
-    expect(route.passes).toBe(2);
+    expect(route.passes).toHaveLength(2);
   });
 });
 
@@ -570,6 +574,67 @@ describe("R6 the score file shape and the write flags", () => {
       expect(value).not.toContain("returns success");
       expect(value).not.toContain("```");
     }
+  });
+
+  it("R6 writes routes[].passes as the array of that route's pass records", () => {
+    const doc = scoreMany("route-passes", [
+      { route: "route/a", pass: 1, outputs: { "forge-01": "match-01" } },
+      { route: "route/a", pass: 2, outputs: { "forge-01": "match-01" } },
+      { route: "route/a", pass: 3, outputs: { "forge-01": "accepted-alt" } },
+    ]);
+    const route = doc.routes.find((entry: any) => entry.route === "route/a");
+    expect(Array.isArray(route.passes), "routes[].passes is an array").toBe(true);
+    expect(route.passes).toHaveLength(3);
+    expect(route.passes.map((entry: any) => entry.pass)).toEqual([1, 2, 3]);
+    for (const entry of route.passes) expect(Object.keys(entry).sort()).toEqual(PASS_KEYS);
+    for (const entry of route.passes) {
+      expect(entry).toEqual(
+        doc.passes.find(
+          (pass: any) => pass.route === entry.route && pass.pass === entry.pass,
+        ),
+      );
+    }
+  });
+
+  it("R6 satisfies the guide.ts reader and names the route in the Code review row", () => {
+    const route = "kimi-code-plan-cn/kimi-for-coding#high";
+    const scoresDir = tempDir("scores-guide");
+    const dates = ["2026-11-20", "2026-11-21", "2026-11-22"];
+    dates.forEach((date, index) => {
+      const outputsDir = buildOutputs(`guide-pass-${index}`, { "forge-01": "match-01" });
+      const result = runScore(scoresDir, outputsDir, { route, pass: index + 1, date });
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    });
+    const scores = join(scoresDir, `${SET}.json`);
+    const inputs = tempDir("guide-inputs");
+    writeFileSync(
+      join(inputs, "real-work.json"),
+      JSON.stringify({ source: { generated_on: "2026-11-20" }, producer: [], checker: [], work_types: {} }),
+    );
+    writeFileSync(join(inputs, "print-audit.json"), JSON.stringify({ routes: { "route/a": "1 of 2" } }));
+    writeFileSync(join(inputs, "benchmark.json"), JSON.stringify({ models: [{ score: { total: 1 } }] }));
+    writeFileSync(join(inputs, "tracks.json"), JSON.stringify({ tracks: { tests: { models: [{ total: 1 }] } } }));
+    const out = tempDir("guide-out");
+    const result = spawnSync(
+      join(HARNESS, "node_modules", ".bin", "tsx"),
+      [
+        "model-guide/guide.ts",
+        "--real-work", join(inputs, "real-work.json"),
+        "--scores", scores,
+        "--print-audit", join(inputs, "print-audit.json"),
+        "--benchmark", join(inputs, "benchmark.json"),
+        "--tracks", join(inputs, "tracks.json"),
+        "--today", "2026-11-22",
+        "--out", out,
+      ],
+      { cwd: HARNESS, env: env(tempDir("home-guide")), encoding: "utf8", timeout: 60_000 },
+    );
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const guide = JSON.parse(readFileSync(join(out, "model-guide.json"), "utf8"));
+    const row = guide.rows.find((entry: any) => entry.kind === "Code review");
+    expect(row.pick).toBe(route);
+    expect(row.evidence).toBe("track A: worst 3.8 (n=3)");
+    expect(row.evidence_date).toBe("2026-11-22");
   });
 
   it("each missing value exits 2 with one named line and writes nothing", () => {

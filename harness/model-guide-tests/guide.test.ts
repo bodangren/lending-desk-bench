@@ -550,6 +550,28 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(codeReview.second).toBe("opencode-go/mimo-v2.6-flash");
   });
 
+  it("T7b: a track A route with one provisional pass keeps its rank (D13)", () => {
+    const scores = JSON.parse(readFileSync(SCORES, "utf8"));
+    const top = scores.routes[0];
+    expect(top.passes).toHaveLength(3);
+    top.passes[0].state = "provisional";
+    const file = join(tempDir("scores-provisional"), "review-scores-mini.json");
+    writeFileSync(file, JSON.stringify(scores));
+    const run = runGuide({
+      tag: "provisional",
+      realWork: main().realWorkJson,
+      scores: file,
+      printAudit: printAuditInput("provisional"),
+      benchmark: BENCHMARK,
+      tracks: TRACKS,
+      today: TODAY,
+    });
+    const codeReview = rowOf(run.data, "Code review");
+    expect(codeReview.pick, "a provisional pass does not remove the rank").toBe(top.route);
+    expect(codeReview.evidence).toBe("track A: worst 84.0 (n=3)");
+    expect(codeReview.evidence_date).toBe("2026-11-13");
+  });
+
   it("T5 page: the preview index shows the no-pick words for the empty row", () => {
     const { root, exportPath } = pageRepo("nopick", (doc) =>
       starveWorkType(doc, "docs and ops", { runs: 8, pass: 5, fail: 3 }));
