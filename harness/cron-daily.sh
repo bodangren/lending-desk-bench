@@ -932,11 +932,13 @@ if [ "$BRANCH" != "main" ]; then
   exit 1
 fi
 
-# The label names the models of the day runs, in run order, each once (D10).
-# The body reports excluded models from the full day record, including on resume.
-# A guard stop with zero runs gets the one-line message of D15.
+# The label names the models of the runs of this publish, in run order, each
+# once (D10). The run ids are the ones of the current cycle. The body reports
+# excluded models from the full day record, including on resume. A guard stop
+# with zero runs gets the one-line message of D15.
 node -e '
 const fs = require("node:fs");
+const path = require("node:path");
 const record = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
 const pick = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 if (Number(process.argv[4]) === 0 && process.argv[5]) {
@@ -944,20 +946,25 @@ fs.writeFileSync(process.argv[3], "Publish daily " + record.date + " site data: 
 process.exit(0);
 }
 const reason = pick.reason === "resume" ? "resume" : record.reason;
+const runIds = JSON.parse(fs.readFileSync(process.argv[6], "utf8"));
 const labels = [];
-for (const row of Array.isArray(record.models) ? record.models : []) {
-if (!row || !row.model) continue;
-if (!Array.isArray(row.run_ids) || row.run_ids.length === 0) continue;
-if (!labels.includes(row.model)) labels.push(row.model);
+for (const id of runIds) {
+let model = null;
+try {
+model = JSON.parse(fs.readFileSync(path.join(process.argv[7], id, "artifacts", "provenance.json"), "utf8")).model;
+} catch {}
+if (typeof model !== "string" || model === "") continue;
+const bare = model.slice(model.lastIndexOf("/") + 1);
+if (!labels.includes(bare)) labels.push(bare);
 }
-const label = labels.length ? labels.join(", ") : record.model;
+const label = labels.length ? labels.join(", ") : pick.model;
 const lines = ["Publish daily " + record.date + " OpenCode Go results: " + label + " (" + reason + ").", ""];
 const ex = record.excluded ?? {};
 for (const key of ["unpriced", "gone", "unservable"]) {
 if ((ex[key] ?? []).length) lines.push(key.charAt(0).toUpperCase() + key.slice(1) + ": " + ex[key].join(", "));
 }
 fs.writeFileSync(process.argv[3], lines.join("\n") + "\n");
-' "$RECORD" "$PICK_OUT" "$MSG_FILE" "$N_RUNS" "$GUARD_STOP"
+' "$RECORD" "$PICK_OUT" "$MSG_FILE" "$N_RUNS" "$GUARD_STOP" "$RUNLIST_OUT" "$RUNS_ROOT"
 if ! git commit -F "$MSG_FILE" -- docs/; then
   daily_fail "publish: the commit of docs/ failed"
   echo "DAILY PUBLISH none"
