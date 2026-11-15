@@ -1,0 +1,1429 @@
+{
+  "repos/bodangren/advantage-forge/commits": [
+    {
+      "sha": "1111111111111111111111111111111111111101",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990001"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-11-14T00:00:00Z"
+        },
+        "message": "commit date after\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111102",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990002"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-11-13T23:59:59Z"
+        },
+        "message": "commit Q date upper\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111103",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990003"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-11-12T09:00:00Z"
+        },
+        "message": "commit Q 75 percent\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111104",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990004"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-11-10T09:00:00Z"
+        },
+        "message": "commit binary\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111105",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990005"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-11-05T09:00:00Z"
+        },
+        "message": "commit Q lines lower\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111106",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990006"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-11-02T09:00:00Z"
+        },
+        "message": "commit lock\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111107",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990007"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-25T09:00:00Z"
+        },
+        "message": "commit Q boundaries\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111108",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990008"
+        },
+        {
+          "sha": "9999999999999999999999999999999999990097"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-20T09:00:00Z"
+        },
+        "message": "commit merge\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111109",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990009"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-15T09:00:00Z"
+        },
+        "message": "commit file over 2000\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111110",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990010"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-10T09:00:00Z"
+        },
+        "message": "commit file count 9\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111111",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990011"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-08T09:00:00Z"
+        },
+        "message": "commit generated path\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111112",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990012"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-06T09:00:00Z"
+        },
+        "message": "commit dist path\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111113",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990013"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-04T09:00:00Z"
+        },
+        "message": "commit build path\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111114",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990014"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-02T09:00:00Z"
+        },
+        "message": "commit file count 0\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111115",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990015"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-09-30T09:00:00Z"
+        },
+        "message": "commit lines 401\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111116",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990016"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-09-28T09:00:00Z"
+        },
+        "message": "commit lines 39\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111117",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990017"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-09-25T09:00:00Z"
+        },
+        "message": "commit code share 50\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111118",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990018"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-09-15T09:00:00Z"
+        },
+        "message": "commit Q three files\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111119",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990019"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-08-01T00:00:00Z"
+        },
+        "message": "commit Q date lower\n\nbody"
+      }
+    },
+    {
+      "sha": "1111111111111111111111111111111111111120",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990020"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-07-31T23:59:59Z"
+        },
+        "message": "commit date before\n\nbody"
+      }
+    }
+  ],
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits": [
+    {
+      "sha": "3333333333333333333333333333333333333301",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990201"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-11-13T09:00:00.000Z"
+        },
+        "message": "mono 1"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333302",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990202"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-11-06T09:00:00.000Z"
+        },
+        "message": "mono 2"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333303",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990203"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-30T09:00:00.000Z"
+        },
+        "message": "mono 3"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333304",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990204"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-23T09:00:00.000Z"
+        },
+        "message": "mono 4"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333305",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990205"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-16T09:00:00.000Z"
+        },
+        "message": "mono 5"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333306",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990206"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-09T09:00:00.000Z"
+        },
+        "message": "mono 6"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333307",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990207"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-10-02T09:00:00.000Z"
+        },
+        "message": "mono 7"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333308",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990208"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-09-25T09:00:00.000Z"
+        },
+        "message": "mono 8"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333309",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990209"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-09-18T09:00:00.000Z"
+        },
+        "message": "mono 9"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333310",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990210"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-09-11T09:00:00.000Z"
+        },
+        "message": "mono 10"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333311",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990211"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-09-04T09:00:00.000Z"
+        },
+        "message": "mono 11"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333312",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990212"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-08-28T09:00:00.000Z"
+        },
+        "message": "mono 12"
+      }
+    },
+    {
+      "sha": "3333333333333333333333333333333333333313",
+      "parents": [
+        {
+          "sha": "9999999999999999999999999999999999990213"
+        }
+      ],
+      "commit": {
+        "committer": {
+          "date": "2026-08-21T09:00:00.000Z"
+        },
+        "message": "mono 13"
+      }
+    }
+  ],
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111101": {
+    "sha": "1111111111111111111111111111111111111101",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990001"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-11-14T00:00:00Z"
+      },
+      "message": "commit date after\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/after.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111102": {
+    "sha": "1111111111111111111111111111111111111102",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990002"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-11-13T23:59:59Z"
+      },
+      "message": "commit Q date upper\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/a.ts",
+        "status": "modified",
+        "additions": 30,
+        "deletions": 20,
+        "changes": 50,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/b.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111103": {
+    "sha": "1111111111111111111111111111111111111103",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990003"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-11-12T09:00:00Z"
+      },
+      "message": "commit Q 75 percent\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/c.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 30,
+        "changes": 90,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "docs/readme.md",
+        "status": "modified",
+        "additions": 30,
+        "deletions": 0,
+        "changes": 30,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111104": {
+    "sha": "1111111111111111111111111111111111111104",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990004"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-11-10T09:00:00Z"
+      },
+      "message": "commit binary\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "assets/logo.png",
+        "status": "added",
+        "additions": 0,
+        "deletions": 0,
+        "changes": 0
+      },
+      {
+        "filename": "src/g.ts",
+        "status": "modified",
+        "additions": 70,
+        "deletions": 30,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111105": {
+    "sha": "1111111111111111111111111111111111111105",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990005"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-11-05T09:00:00Z"
+      },
+      "message": "commit Q lines lower\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/d.ts",
+        "status": "modified",
+        "additions": 40,
+        "deletions": 0,
+        "changes": 40,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111106": {
+    "sha": "1111111111111111111111111111111111111106",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990006"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-11-02T09:00:00Z"
+      },
+      "message": "commit lock\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "package-lock.json",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 10,
+        "changes": 20,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/f.ts",
+        "status": "modified",
+        "additions": 50,
+        "deletions": 30,
+        "changes": 80,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111107": {
+    "sha": "1111111111111111111111111111111111111107",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990007"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-25T09:00:00Z"
+      },
+      "message": "commit Q boundaries\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "app/a.ts",
+        "status": "modified",
+        "additions": 40,
+        "deletions": 20,
+        "changes": 60,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "app/b.ts",
+        "status": "modified",
+        "additions": 40,
+        "deletions": 20,
+        "changes": 60,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "app/c.ts",
+        "status": "modified",
+        "additions": 40,
+        "deletions": 20,
+        "changes": 60,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "app/d.ts",
+        "status": "modified",
+        "additions": 40,
+        "deletions": 20,
+        "changes": 60,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "docs/a.md",
+        "status": "modified",
+        "additions": 30,
+        "deletions": 10,
+        "changes": 40,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "docs/b.md",
+        "status": "modified",
+        "additions": 30,
+        "deletions": 10,
+        "changes": 40,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "docs/c.md",
+        "status": "modified",
+        "additions": 30,
+        "deletions": 10,
+        "changes": 40,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "docs/d.md",
+        "status": "modified",
+        "additions": 30,
+        "deletions": 10,
+        "changes": 40,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111108": {
+    "sha": "1111111111111111111111111111111111111108",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990008"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-20T09:00:00Z"
+      },
+      "message": "commit merge\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/merge.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111109": {
+    "sha": "1111111111111111111111111111111111111109",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990009"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-15T09:00:00Z"
+      },
+      "message": "commit file over 2000\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/big.ts",
+        "status": "modified",
+        "additions": 1500,
+        "deletions": 1000,
+        "changes": 2500,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111110": {
+    "sha": "1111111111111111111111111111111111111110",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990010"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-10T09:00:00Z"
+      },
+      "message": "commit file count 9\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/n0.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/n1.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/n2.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/n3.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/n4.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/n5.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/n6.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/n7.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "src/n8.ts",
+        "status": "modified",
+        "additions": 10,
+        "deletions": 0,
+        "changes": 10,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111111": {
+    "sha": "1111111111111111111111111111111111111111",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990011"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-08T09:00:00Z"
+      },
+      "message": "commit generated path\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/generated/schema.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111112": {
+    "sha": "1111111111111111111111111111111111111112",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990012"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-06T09:00:00Z"
+      },
+      "message": "commit dist path\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "dist/app.js",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111113": {
+    "sha": "1111111111111111111111111111111111111113",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990013"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-04T09:00:00Z"
+      },
+      "message": "commit build path\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "build/app.js",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111114": {
+    "sha": "1111111111111111111111111111111111111114",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990014"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-02T09:00:00Z"
+      },
+      "message": "commit file count 0\n\nbody"
+    },
+    "files": []
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111115": {
+    "sha": "1111111111111111111111111111111111111115",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990015"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-09-30T09:00:00Z"
+      },
+      "message": "commit lines 401\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/long.ts",
+        "status": "modified",
+        "additions": 300,
+        "deletions": 101,
+        "changes": 401,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111116": {
+    "sha": "1111111111111111111111111111111111111116",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990016"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-09-28T09:00:00Z"
+      },
+      "message": "commit lines 39\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/short.ts",
+        "status": "modified",
+        "additions": 30,
+        "deletions": 9,
+        "changes": 39,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111117": {
+    "sha": "1111111111111111111111111111111111111117",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990017"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-09-25T09:00:00Z"
+      },
+      "message": "commit code share 50\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/e.ts",
+        "status": "modified",
+        "additions": 40,
+        "deletions": 10,
+        "changes": 50,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "docs/e.md",
+        "status": "modified",
+        "additions": 50,
+        "deletions": 0,
+        "changes": 50,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111118": {
+    "sha": "1111111111111111111111111111111111111118",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990018"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-09-15T09:00:00Z"
+      },
+      "message": "commit Q three files\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "app/x.ts",
+        "status": "modified",
+        "additions": 50,
+        "deletions": 30,
+        "changes": 80,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "app/y.tsx",
+        "status": "modified",
+        "additions": 50,
+        "deletions": 20,
+        "changes": 70,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      },
+      {
+        "filename": "web/z.js",
+        "status": "modified",
+        "additions": 40,
+        "deletions": 10,
+        "changes": 50,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111119": {
+    "sha": "1111111111111111111111111111111111111119",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990019"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-08-01T00:00:00Z"
+      },
+      "message": "commit Q date lower\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "tools/a.py",
+        "status": "modified",
+        "additions": 70,
+        "deletions": 30,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111120": {
+    "sha": "1111111111111111111111111111111111111120",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990020"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-07-31T23:59:59Z"
+      },
+      "message": "commit date before\n\nbody"
+    },
+    "files": [
+      {
+        "filename": "src/before.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333301": {
+    "sha": "3333333333333333333333333333333333333301",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990201"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-11-13T09:00:00.000Z"
+      },
+      "message": "mono 1"
+    },
+    "files": [
+      {
+        "filename": "src/m1.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333302": {
+    "sha": "3333333333333333333333333333333333333302",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990202"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-11-06T09:00:00.000Z"
+      },
+      "message": "mono 2"
+    },
+    "files": [
+      {
+        "filename": "src/m2.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333303": {
+    "sha": "3333333333333333333333333333333333333303",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990203"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-30T09:00:00.000Z"
+      },
+      "message": "mono 3"
+    },
+    "files": [
+      {
+        "filename": "src/m3.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333304": {
+    "sha": "3333333333333333333333333333333333333304",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990204"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-23T09:00:00.000Z"
+      },
+      "message": "mono 4"
+    },
+    "files": [
+      {
+        "filename": "src/m4.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333305": {
+    "sha": "3333333333333333333333333333333333333305",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990205"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-16T09:00:00.000Z"
+      },
+      "message": "mono 5"
+    },
+    "files": [
+      {
+        "filename": "src/m5.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333306": {
+    "sha": "3333333333333333333333333333333333333306",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990206"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-09T09:00:00.000Z"
+      },
+      "message": "mono 6"
+    },
+    "files": [
+      {
+        "filename": "src/m6.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333307": {
+    "sha": "3333333333333333333333333333333333333307",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990207"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-10-02T09:00:00.000Z"
+      },
+      "message": "mono 7"
+    },
+    "files": [
+      {
+        "filename": "src/m7.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333308": {
+    "sha": "3333333333333333333333333333333333333308",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990208"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-09-25T09:00:00.000Z"
+      },
+      "message": "mono 8"
+    },
+    "files": [
+      {
+        "filename": "src/m8.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333309": {
+    "sha": "3333333333333333333333333333333333333309",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990209"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-09-18T09:00:00.000Z"
+      },
+      "message": "mono 9"
+    },
+    "files": [
+      {
+        "filename": "src/m9.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333310": {
+    "sha": "3333333333333333333333333333333333333310",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990210"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-09-11T09:00:00.000Z"
+      },
+      "message": "mono 10"
+    },
+    "files": [
+      {
+        "filename": "src/m10.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333311": {
+    "sha": "3333333333333333333333333333333333333311",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990211"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-09-04T09:00:00.000Z"
+      },
+      "message": "mono 11"
+    },
+    "files": [
+      {
+        "filename": "src/m11.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333312": {
+    "sha": "3333333333333333333333333333333333333312",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990212"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-08-28T09:00:00.000Z"
+      },
+      "message": "mono 12"
+    },
+    "files": [
+      {
+        "filename": "src/m12.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  },
+  "repos/Reading-Advantage-Thailand/reading-advantage-monorepo/commits/3333333333333333333333333333333333333313": {
+    "sha": "3333333333333333333333333333333333333313",
+    "parents": [
+      {
+        "sha": "9999999999999999999999999999999999990213"
+      }
+    ],
+    "commit": {
+      "committer": {
+        "date": "2026-08-21T09:00:00.000Z"
+      },
+      "message": "mono 13"
+    },
+    "files": [
+      {
+        "filename": "src/m13.ts",
+        "status": "modified",
+        "additions": 60,
+        "deletions": 40,
+        "changes": 100,
+        "patch": "@@ -1,2 +1,2 @@\n-old\n+new"
+      }
+    ]
+  }
+}

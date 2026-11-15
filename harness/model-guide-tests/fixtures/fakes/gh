@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+/**
+ * The fake `gh` of the model-guide tests. It is the only network edge.
+ *
+ * Pinned behavior (test-strategy.md section 3.3):
+ *   - every call appends one line to `$FAKE_GH_LOG`:
+ *       `<verb> <method> <argument>...`
+ *     For example `api GET repos/owner/name/commits --paginate`.
+ *   - a verb other than `api` exits 3.
+ *   - an unknown API path exits 1.
+ *   - a known path prints the canned JSON body of
+ *     `fixtures/fakes/gh-commits.json` under that path.
+ *
+ * The method comes from `--method` or `-X`, and it is `GET` by default.
+ * A path is matched without a leading slash and without a query string.
+ */
+import { appendFileSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const argv = process.argv.slice(2);
+const verb = argv.length > 0 ? argv[0] : "";
+const rest = [];
+let method = "GET";
+
+for (let i = 1; i < argv.length; i += 1) {
+  const arg = argv[i];
+  if (arg === "--method" || arg === "-X") {
+    method = argv[i + 1] ?? "";
+    i += 1;
+  } else if (arg.startsWith("--method=")) {
+    method = arg.slice("--method=".length);
+  } else {
+    rest.push(arg);
+  }
+}
+
+const log = process.env.FAKE_GH_LOG;
+if (log) appendFileSync(log, `${[verb, method, ...rest].join(" ")}\n`);
+
+if (verb !== "api") {
+  process.stderr.write(`fake gh: verb is not api: ${verb}\n`);
+  process.exit(3);
+}
+
+const target = rest.find((arg) => !arg.startsWith("-"));
+if (!target) {
+  process.stderr.write("fake gh: no API path\n");
+  process.exit(1);
+}
+const key = target.replace(/^\/+/, "").split("?")[0];
+const fixture = JSON.parse(
+  readFileSync(join(import.meta.dirname, "gh-commits.json"), "utf8"),
+);
+if (!Object.prototype.hasOwnProperty.call(fixture, key)) {
+  process.stderr.write(`fake gh: unknown API path: ${key}\n`);
+  process.exit(1);
+}
+process.stdout.write(`${JSON.stringify(fixture[key])}\n`);
