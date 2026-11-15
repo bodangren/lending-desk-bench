@@ -572,9 +572,22 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: commit 1cc8792 holds `harness/model-guide/update.sh`.
     `measure/runs/model_guide/green-p2-be59fe2.log` holds the command, its
     exit code, and its Tests line.
-- [~] 2.8 Checks. One code checker reads the diff against spec D17 to D19.
+- [x] 70ebfc5 2.8 Checks. One code checker reads the diff against spec D17 to D19.
   - Verify: `measure/runs/model_guide/check-2.8.json` has status pass, or
     each blocking finding has a fix commit.
+  - Evidence: `measure/runs/model_guide/check-2.8.json` holds status pass at
+    e13413f (route `opencode-go/muse-spark-1.3-contributor#high`) and no
+    open blocking finding. Every Phase 2 blocking finding has its fix
+    commit: P2ADV-1 to P2ADV-5 in be41213, P2B2-1 and P2B2-2 in 38d1071,
+    P2ADV2-1 in 2e4e641, and P2U1-1 in 70ebfc5.
+  - Evidence: the five final audits at e13413f each hold status pass:
+    `review-a-e13413f.json`, `review-b-e13413f.json`,
+    `review-c-e13413f.json`, `adversarial-e13413f.json`, and
+    `ux-browser-e13413f.json` under `measure/runs/model_guide/`.
+  - Note: closeout gate item 3 (`git diff --name-only
+    <phase_base_sha>..HEAD -- docs/` prints nothing) fails only on the
+    daily publish commits 05acc8c and 119b06d, which are not Phase 2 work
+    (nit P2A1-2).
 - [x] c205762 2.9 The preview with the table.
   - Evidence: `measure/runs/model_guide/preview-2.9.txt` holds the command,
     exit 0, and the six rows with their picks, second choices, evidence, and
