@@ -565,7 +565,7 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: commit 93f79f1 holds the three fixes and no production file.
     `measure/runs/model_guide/red-2.7a.txt` holds the commands, the exit
     codes, and the Tests lines of each single-file run.
-- [x] 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
+- [x] 1cc8792 2.7 Green. Write `harness/model-guide/update.sh`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native`
     passes, and `git status --short docs/` prints nothing.
@@ -603,6 +603,24 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: `measure/runs/model_guide/green-p2-9dd0833.log` holds the
     commands, the exit codes, the Tests lines, and the unchanged six rows
     of the task 2.9 preview.
+- [x] 62b7433 2.12 Red. Review B round 2 tests (P2B2-1 file symlinks, P2B2-2 newline names).
+  - Findings: `measure/runs/model_guide/review-b-3d42bf8.json`.
+  - P2B2-1: the `update.sh` symlink guard checks only `docs`,
+    `docs/assets`, and `docs/assets/data`, not the files it writes through
+    (`docs/assets/data/real-work.json`, `docs/assets/data/model-guide.json`)
+    and not the preview folder or its two target files before the approval.
+  - P2B2-2: the `ls -1t | head -n 1` newest score file rule of
+    `update.sh` and `preview.sh` is steered by a file name that holds a
+    newline. Pinned contract: the truly newest file by modification time
+    wins for both scripts.
+  - Verify: `cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native`
+    and the same line for `preview-gate.test.ts` fail on the two new
+    findings, and the other required suites exit 0.
+  - Evidence: commit 62b7433 holds the four tests in `update.test.ts` and
+    the one test in `preview-gate.test.ts`.
+    `measure/runs/model_guide/red-2.12.txt` holds the failed test names,
+    the exit codes, and the Tests lines of each single-file run.
+- [ ] 2.13 Green. Fix P2B2-1 and P2B2-2 in update.sh and preview.sh. Touch no test file.
 
 Verify (Phase 2): page B and the overview table are in the preview folder by
 Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
