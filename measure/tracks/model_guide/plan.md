@@ -811,11 +811,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     exit code, and the failed test names. The test reuses the task 3.2
     corpus; it adds no fixture, and the 19-character boundary waits for a
     fixture the plan line does not allow.
-- [~] 3.6 Green. Write `harness/model-guide/pick-diffs.ts`. Touch no test
+- [x] d095a38 3.6 Green. Write `harness/model-guide/pick-diffs.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native`
     passes.
-- [ ] 3.7 Green. Write `harness/model-guide/review-set.ts`. Touch no test
+  - Evidence: commit d095a38 holds the tool. `measure/runs/model_guide/green-p3-192da41.log`
+    holds the exit codes of the three runs and the empty `docs/` status.
+- [~] 3.7 Green. Write `harness/model-guide/review-set.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native`
     passes.
