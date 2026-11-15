@@ -572,7 +572,7 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: commit 1cc8792 holds `harness/model-guide/update.sh`.
     `measure/runs/model_guide/green-p2-be59fe2.log` holds the command, its
     exit code, and its Tests line.
-- [ ] 2.8 Checks. One code checker reads the diff against spec D17 to D19.
+- [~] 2.8 Checks. One code checker reads the diff against spec D17 to D19.
   - Verify: `measure/runs/model_guide/check-2.8.json` has status pass, or
     each blocking finding has a fix commit.
 - [x] c205762 2.9 The preview with the table.
@@ -632,6 +632,20 @@ Spec D17, D18, D19, FR-5, FR-6.
   - Evidence: `measure/runs/model_guide/green-p2-313ab94.log` holds the
     commands, the exit codes, and the unchanged six rows of the task 2.9
     preview.
+- [x] 5037e77 2.14 Red. Adversarial round 2 test (P2ADV2-1 symlinked .tmp parent).
+  - Finding: `measure/runs/model_guide/adversarial-12e753b.json`. The
+    refusal loop of `update.sh` checks `$PREVIEW_ABS` but not its parents
+    inside the repo, so a symlinked `<repo>/.tmp` sends `mkdir -p` and both
+    copies outside the repo with exit 0, against the `update.sh` header and
+    spec D21.
+  - Verify: `cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native`
+    fails on the new test only, and `preview-gate.test.ts`,
+    `adversarial-p2.test.ts`, and `guide.test.ts` each exit 0.
+  - Evidence: commit 5037e77 holds the test `P2B2-1d` in
+    `harness/model-guide-tests/update.test.ts`.
+    `measure/runs/model_guide/red-2.14.txt` holds the failed test name, the
+    exit codes, and the Tests lines of each single-file run.
+- [ ] 2.15 Green. Fix P2ADV2-1 in update.sh (refuse a symlink on every parent of the preview folder inside the repo). Touch no test file.
 
 Verify (Phase 2): page B and the overview table are in the preview folder by
 Wed 2026-11-18. The code review row shows "no pick yet" until Phase 4.
