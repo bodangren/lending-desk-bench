@@ -924,7 +924,15 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.13a.txt` holds the command,
     the exit code, the two failed names, and the fake pad modes. No large
     fixture is committed.
-- [~] 3.13b Green. Fix the pick-diffs output buffer. Touch no test file.
+- [x] a4894ae 3.13b Green. Fix the pick-diffs output buffer. Touch no test file.
+  - Evidence: commit a4894ae holds `harness/model-guide/pick-diffs.ts`. The
+    single-file runs at a4894ae were pick-diffs 21 passed, review-set 18,
+    review-score 25, adjudicate 20, leak-check 13, and guide 16, and
+    `git --no-pager status --short docs/` printed nothing.
+  - Evidence: the round 4 reviews A, B, and C and the round 3 adversarial
+    audit at a4894ae each hold status pass: `review-a-a4894ae.json`,
+    `review-b-a4894ae.json`, `review-c-a4894ae.json`, and
+    `adversarial-a4894ae.json` under `measure/runs/model_guide/`.
 - [x] 5a91775 3.13c Red. pick-diffs retries a transient gh error (found in the 3.13
   rerun). Add tests to `pick-diffs.test.ts` only, with a temp fake `gh`.
   - Verify: the new tests fail at HEAD, and the old pick-diffs tests and
@@ -933,8 +941,12 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.13c.txt` holds the two
     commands, the exit codes, the five failed names, and the retry contract.
     No fixture changed.
-- [~] 3.13d Green. Bounded retry of a transient gh error in pick-diffs. Touch
+- [x] c867117 3.13d Green. Bounded retry of a transient gh error in pick-diffs. Touch
   no test file.
+  - Evidence: commit c867117 holds `harness/model-guide/pick-diffs.ts`.
+    `measure/runs/model_guide/green-p3-69ac213.log` holds the command output
+    of the three runs, pick-diffs 26 passed, adversarial-p3 31, and
+    review-set 18, and the empty `docs/` status.
 - [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
   - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
     holds the exit codes of the four runs and the empty `docs/` status.
