@@ -1061,12 +1061,11 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
 - **R2. The providers see the seeded diffs.** A provider can keep a prompt.
   The keys stay private, but a later model can know a seeded diff. A new set
   id each quarter limits this.
-- **R3. Same-family bias.** The Opus author and the first judge are in the
-  same family as the Sonnet route. The PM changed the fixture author on
-  2026-11-16 (D5). The second judge is ByteDance Doubao, a family that is
-  not ranked. Only the verdicts that both judges agree on
-  count. The blind adjudication and the fixed operator catalog limit the
-  bias. Q9 covers it.
+- **R3. Same-family bias.** The first judge is in the same family as the
+  Sonnet route. The PM changed the fixture author on 2026-11-16 (D5). The
+  second judge is ByteDance Doubao, a family that is not ranked. Only the
+  verdicts that both judges agree on count. The blind adjudication and the
+  fixed operator catalog limit the bias. Q9 covers it.
 - **R4. Unmatched true findings.** A good model can find real defects. D11
   makes them neutral, not false claims. An `unclear` verdict marks the pass
   `provisional` and leaves the rank of the route unchanged. A disputed
