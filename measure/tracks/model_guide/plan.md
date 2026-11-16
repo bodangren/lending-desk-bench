@@ -978,7 +978,7 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     Reading-Advantage-Thailand/reading-advantage-monorepo and 267 for
     bodangren/advantage-forge, each with 12 selected. Both lists are 7 or
     more, so no rule was widened.
-- [x] 3.14 The seeding (spec D5 to D8). The fixture author is the author
+- [x] faaca63 3.14 The seeding (spec D5 to D8). The fixture author is the author
   route of spec D5 (`openai/gpt-6.1-sol#high` with `--allow-codex`; PM
   2026-11-16; the run log names the route that wrote the set). The author
   writes set `mg-2026-11a` in a fresh session, in the private folder only.
@@ -997,7 +997,7 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     C8=18, C9=1. The author route was `openai/gpt-6.1-sol#high`.
     `measure/runs/model_guide/seed-mg-2026-11a.log` records the commands,
     exit codes, counts, and the private-file self-check.
-- [x] 3.15 The public manifest, first write. Run
+- [x] faaca63 3.15 The public manifest, first write. Run
   `review-set.ts lint mg-2026-11a`. It writes
   `harness/model-guide/data/sets/mg-2026-11a.json` with the SHA-256 of each
   seeded diff and the counts. The key SHA-256 values wait for the apply of
