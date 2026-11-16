@@ -978,7 +978,7 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     Reading-Advantage-Thailand/reading-advantage-monorepo and 267 for
     bodangren/advantage-forge, each with 12 selected. Both lists are 7 or
     more, so no rule was widened.
-- [ ] 3.14 The seeding (spec D5 to D8). The fixture author is the author
+- [x] 3.14 The seeding (spec D5 to D8). The fixture author is the author
   route of spec D5 (`openai/gpt-6.1-sol#high` with `--allow-codex`; PM
   2026-11-16; the run log names the route that wrote the set). The author
   writes set `mg-2026-11a` in a fresh session, in the private folder only.
@@ -991,7 +991,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     is a control diff with no plant. The ids are `mono-01` to `mono-07` and
     `forge-01` to `forge-07`; `mono-07` and `forge-07` are the controls.
   - Verify: `review-set.ts lint mg-2026-11a` passes.
-- [ ] 3.15 The public manifest, first write. Run
+  - Evidence: the lint exited 0 through `heavy-run.sh`. The set holds 14
+    diffs: 12 seeded diffs and 2 controls. It holds 44 plants and 19
+    blockers. Class counts: C1=3, C2=3, C3=4, C4=4, C5=3, C6=5, C7=3,
+    C8=18, C9=1. The author route was `openai/gpt-6.1-sol#high`.
+    `measure/runs/model_guide/seed-mg-2026-11a.log` records the commands,
+    exit codes, counts, and the private-file self-check.
+- [x] 3.15 The public manifest, first write. Run
   `review-set.ts lint mg-2026-11a`. It writes
   `harness/model-guide/data/sets/mg-2026-11a.json` with the SHA-256 of each
   seeded diff and the counts. The key SHA-256 values wait for the apply of
@@ -1000,6 +1006,10 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     after the apply (spec D9).
   - Verify: the lint passes, and the manifest holds no key field and no
     seeded line.
+  - Evidence: the lint wrote the manifest and exited 0. The manifest stays
+    untracked and is not committed. The field check and `leak-check.ts`
+    exited 0. `measure/runs/model_guide/seed-mg-2026-11a.log` records the
+    commands and exit codes.
 - [ ] 3.16 The pilot seeding (spec D5 to D8, D13). The fixture author is the
   author route of spec D5 (`openai/gpt-6.1-sol#high` with `--allow-codex`; PM
   2026-11-16; the run log names the route that wrote the set). The author
