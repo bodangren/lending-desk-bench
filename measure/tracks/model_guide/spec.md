@@ -264,6 +264,16 @@ questions".
    fixture author never chooses a diff. A rejected candidate gets a reason
    line in the private folder.
 
+   **Pre-registered rule (PM 2026-11-16).** A test-only diff is a source diff
+   in which every changed file is a test file. A test file has `.test.` or
+   `.spec.` in its base name, or a folder of its path is `__tests__`, `tests`,
+   or `test`. Every other diff is a code diff. When the test-only diffs show
+   no spread in the pilot (D13), the diff choice changes before the ranked
+   runs. Each repo then gives at most 2 test-only diffs in its 7. The
+   tool skips each later test-only commit. It takes the next qualified code
+   commit in the order above. That change makes the new set id `mg-2026-11b`
+   (D8). When the test-only diffs show a spread, nothing changes.
+
 5. **D5. The seeding method.** The PM set the fixture author on 2026-11-16.
    The author is a route of a family outside the ranked list of D12, and it
    is never Opus (Daniel's rule). The PM order of the routes is
@@ -550,7 +560,18 @@ questions".
       plants; only its `set_id` differs. The pilot set is separate from the
       ranked set `mg-2026-11a`. A reseed makes a new set id: `mg-2026-11p2`,
       then `mg-2026-11p3`. Each reseed keeps the same 6 source commits and
-      seeds them again by the harder rule of this gate.
+      seeds them again by the harder rule of this gate. That rule holds only
+      when the test-only rule of D4 does not fire.
+      The pilot report of task 4.11 (2026-11-21) gives, for each pilot route,
+      the found, missed, and false-claim counts and the worst-of-2 score of
+      each diff kind: the test-only diffs and the code diffs. The score of a
+      kind uses the pass-score formula above on the plants of that kind only.
+      The test-only diffs show no spread when the best worst-of-2 score of the
+      kind minus the lowest worst-of-2 score of the kind is below 20 points.
+      When the test-only diffs show no spread, D4 changes before the ranked
+      runs. The next pilot set `mg-2026-11p2` then takes the first 3 diffs of
+      each repo under the changed rule. It therefore does not keep the same 6
+      source commits.
       The pilot runs 3 routes with 2 passes each (PM 2026-11-16), so each
       route has a worst-of-2 score. The pilot routes are
       `minimax-cn-coding-plan/MiniMax-M3.1-Flash`,

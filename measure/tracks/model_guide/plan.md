@@ -1022,7 +1022,8 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     its `set_id` differs (spec D13; PM 2026-11-16).
   - The pilot set is separate from `mg-2026-11a`. A reseed makes
     `mg-2026-11p2`, and then `mg-2026-11p3`. Each reseed keeps the same 6
-    source commits and seeds them again by the harder rule.
+    source commits and seeds them again by the harder rule, unless the
+    test-only rule of spec D4 fires.
   - Verify: `review-set.ts lint mg-2026-11p` passes.
   - Evidence: the lint exited 0 through `heavy-run.sh`. The set holds 6
     diffs, 20 plants, and 11 blockers. All 6 seeded copies match their twins
@@ -1141,6 +1142,15 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `opencode/hy4-flash-free`.
   - The pilot runs through `heavy-run.sh`, in the window of spec D15.
   - The worst-of-2 score of each pilot route goes into the score file.
+  - The report gives, for each pilot route, the found, missed, and
+    false-claim counts and the worst-of-2 score of each diff kind: the
+    test-only diffs and the code diffs. The test-only diffs show no spread
+    when the best worst-of-2 score of the kind minus the lowest worst-of-2
+    score of the kind is below 20 points (spec D13).
+  - When the test-only diffs show no spread, the orchestrator applies the D4
+    change and sends it to the PM before the ranked runs. Each repo then
+    gives at most 2 test-only diffs in its 7, and the ranked set gets the id
+    `mg-2026-11b` (spec D4, D8).
   - A pilot pass counts as a main pass of the route when the ranked set
     `mg-2026-11a` holds the same diffs (spec D13). Each pilot route then
     needs 1 more pass, on the night of 2026-11-22.
