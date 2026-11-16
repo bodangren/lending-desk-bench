@@ -888,6 +888,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.12b.txt` holds the five
     commands, the exit codes, the 12 new failed test names, and the pinned
     refusal lines. No committed fixture changed.
+- [x] 8af3874 3.12e Red. Fix the J2 index case of 3.12a (Green 3.12c block).
+  - Verify: the case passes with the Green 3.12c changes in the tree.
+    Record the result in `measure/runs/model_guide/red-3.12e.txt`.
+  - Evidence: `measure/runs/model_guide/red-3.12e.txt` holds the reason of
+    the fix and the result. The case now uses a plant match to move A
+    between index 2 and index 1; the only failures left in
+    adjudicate.test.ts are the three security cases of 3.12b.
 - [~] 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
 - [ ] 3.12d Green. Fix the security findings of 3.12b. Touch no test file.
 - [ ] 3.13 The candidates. Run `pick-diffs.ts` for each source repo.
