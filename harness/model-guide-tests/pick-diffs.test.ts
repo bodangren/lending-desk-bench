@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -404,6 +404,119 @@ describe("P3T1 the gh output buffer", () => {
     const accepted = accept("large-detail", { extra: { FAKE_GH_DETAIL_PAD: "1500000" } });
     expect(accepted.doc.qualified).toHaveLength(6);
     expect(accepted.doc.selected).toEqual(Q);
+  });
+});
+
+describe("P3T2 the transient gh retry", () => {
+  interface Target {
+    kind: "list" | "detail";
+    sha?: string;
+  }
+
+  /** A temp `gh` that serves the committed bodies and fails the named call
+   * `times` times (-1 for always) with `stderrLine`. The calls land in
+   * `$FAKE_GH_LOG`; a counter file in the fake folder counts the failures. */
+  function flakyFake(tag: string, target: Target, stderrLine: string, times: number): string {
+    const dir = tempDir(`fake-${tag}`);
+    const counter = join(dir, "count");
+    const fixture = join(FAKES, "gh-commits.json");
+    const script = `#!/usr/bin/env node
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.FAKE_GH_LOG, args.join(" ") + "\\n");
+const path = args.find((arg) => arg.startsWith("repos/")) || "";
+const key = path.replace(/^\\/+/, "").split("?")[0];
+const target = ${JSON.stringify(target)};
+let fail = false;
+if (target.kind === "list" && /\\/commits$/.test(key)) fail = true;
+if (target.kind === "detail" && key.endsWith("/commits/" + target.sha)) fail = true;
+if (fail) {
+  let count = 0;
+  try { count = Number(fs.readFileSync(${JSON.stringify(counter)}, "utf8")); } catch {}
+  if (${times} < 0 || count < ${times}) {
+    fs.writeFileSync(${JSON.stringify(counter)}, String(count + 1));
+    process.stderr.write(${JSON.stringify(stderrLine)} + "\\n");
+    process.exit(1);
+  }
+}
+const fixture = JSON.parse(fs.readFileSync(${JSON.stringify(fixture)}, "utf8"));
+process.stdout.write(JSON.stringify(fixture[key]) + "\\n");
+`;
+    writeFileSync(join(dir, "gh"), script);
+    chmodSync(join(dir, "gh"), 0o755);
+    return dir;
+  }
+
+  function extraFor(fakeDir: string): Record<string, string> {
+    return {
+      PATH: `${fakeDir}:${process.env.PATH ?? ""}`,
+      PICK_DIFFS_RETRY_WAIT_MS: "0",
+    };
+  }
+
+  function runWith(tag: string, fakeDir: string) {
+    const privateDir = tempDir(`private-${tag}`);
+    const log = join(tempDir(`log-${tag}`), "gh.log");
+    const home = tempDir(`home-${tag}`);
+    const result = run(["--repo", FORGE, "--set", SET, "--private", privateDir], {
+      home,
+      log,
+      extra: extraFor(fakeDir),
+    });
+    return {
+      result,
+      log,
+      candidateFile: join(privateDir, "candidates", "bodangren__advantage-forge.json"),
+    };
+  }
+
+  const detailPath = `/commits/${Q[0]}`;
+
+  it("P3T2-1 retries a detail call that fails once with HTTP 502", () => {
+    const fake = flakyFake("detail-once", { kind: "detail", sha: Q[0] }, "gh: Server Error (HTTP 502)", 1);
+    const accepted = accept("retry-detail", { extra: extraFor(fake) });
+    expect(accepted.doc.qualified.map((entry: any) => entry.sha)).toContain(Q[0]);
+    expect(logLines(accepted.log).filter((line) => line.includes(detailPath))).toHaveLength(2);
+  });
+
+  it("P3T2-2 retries a list call that fails once with HTTP 504", () => {
+    const fake = flakyFake("list-once", { kind: "list" }, "gh: Server Error (HTTP 504)", 1);
+    const accepted = accept("retry-list", { extra: extraFor(fake) });
+    expect(accepted.doc.qualified).toHaveLength(6);
+    expect(
+      logLines(accepted.log).filter((line) => line.endsWith("/commits --paginate")),
+    ).toHaveLength(2);
+  });
+
+  it("P3T2-3 retries a secondary rate limit and a connection error", () => {
+    for (const [tag, line] of [
+      ["rate-limit", "You have exceeded a secondary rate limit (HTTP 403)"],
+      ["connection", "error connecting to api.github.com"],
+    ] as Array<[string, string]>) {
+      const fake = flakyFake(tag, { kind: "list" }, line, 1);
+      const accepted = accept(`retry-${tag}`, { extra: extraFor(fake) });
+      expect(accepted.doc.qualified, tag).toHaveLength(6);
+    }
+  });
+
+  it("P3T2-4 refuses after 4 tries of a detail 502 and writes the stderr line", () => {
+    const fake = flakyFake("detail-always", { kind: "detail", sha: Q[0] }, "gh: Server Error (HTTP 502)", -1);
+    const { result, log, candidateFile } = runWith("detail-always", fake);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim()).toBe("pick-diffs: gh api failed");
+    expect(existsSync(candidateFile), "no candidates file").toBe(false);
+    expect(logLines(log).filter((line) => line.includes(detailPath))).toHaveLength(4);
+    expect(result.stderr).toContain("gh: Server Error (HTTP 502)");
+  });
+
+  it("P3T2-5 refuses at once on a detail 404 and writes the stderr line", () => {
+    const fake = flakyFake("detail-404", { kind: "detail", sha: Q[0] }, "gh: Not Found (HTTP 404)", -1);
+    const { result, log, candidateFile } = runWith("detail-404", fake);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim()).toBe("pick-diffs: gh api failed");
+    expect(existsSync(candidateFile), "no candidates file").toBe(false);
+    expect(logLines(log).filter((line) => line.includes(detailPath))).toHaveLength(1);
+    expect(result.stderr).toContain("gh: Not Found (HTTP 404)");
   });
 });
 
