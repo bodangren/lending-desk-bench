@@ -954,9 +954,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     `measure/runs/model_guide/red-3.13e.txt`.
   - Evidence: `measure/runs/model_guide/red-3.13e.txt` holds the command,
     the exit code, the three timed-out names, and the bounded-base contract.
-- [~] 3.13f Green. Bound the retry wait of pick-diffs and document the env
+- [x] faaca63 3.13f Green. Bound the retry wait of pick-diffs and document the env
   value and the stderr line in the header (P3A5-1, P3B5-1, P3C5-1). Touch no
   test file.
+  - Evidence: commit faaca63 holds `harness/model-guide/pick-diffs.ts`.
+    `measure/runs/model_guide/green-p3-3756ca1.log` holds the command output
+    of the three runs, pick-diffs 29 passed, adversarial-p3 31, and
+    review-set 18, and the empty `docs/` status.
 - [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
   - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
     holds the exit codes of the four runs and the empty `docs/` status.
