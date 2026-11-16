@@ -880,8 +880,15 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.12a.txt` holds the four
     commands, the exit codes, the failed test names, and the changed id
     assertions. No committed fixture changed.
-- [ ] 3.12b Red. Review round 1 tests, security (P3B1-1 to P3B1-5).
-- [ ] 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
+- [x] 869772e 3.12b Red. Review round 1 tests, security (P3B1-1 to P3B1-5).
+  Change `leak-check.test.ts`, `review-set.test.ts`, `review-score.test.ts`,
+  `adjudicate.test.ts`, and `pick-diffs.test.ts`.
+  - Verify: the new tests fail at HEAD. Record the failed test names and the
+    refusal lines in `measure/runs/model_guide/red-3.12b.txt`.
+  - Evidence: `measure/runs/model_guide/red-3.12b.txt` holds the five
+    commands, the exit codes, the 12 new failed test names, and the pinned
+    refusal lines. No committed fixture changed.
+- [~] 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
 - [ ] 3.12d Green. Fix the security findings of 3.12b. Touch no test file.
 - [ ] 3.13 The candidates. Run `pick-diffs.ts` for each source repo.
   - Store the lists in the private folder. Store nothing in the repository.
