@@ -925,6 +925,16 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     the exit code, the two failed names, and the fake pad modes. No large
     fixture is committed.
 - [~] 3.13b Green. Fix the pick-diffs output buffer. Touch no test file.
+- [x] 5a91775 3.13c Red. pick-diffs retries a transient gh error (found in the 3.13
+  rerun). Add tests to `pick-diffs.test.ts` only, with a temp fake `gh`.
+  - Verify: the new tests fail at HEAD, and the old pick-diffs tests and
+    adversarial-p3 stay green. Record the result in
+    `measure/runs/model_guide/red-3.13c.txt`.
+  - Evidence: `measure/runs/model_guide/red-3.13c.txt` holds the two
+    commands, the exit codes, the five failed names, and the retry contract.
+    No fixture changed.
+- [~] 3.13d Green. Bounded retry of a transient gh error in pick-diffs. Touch
+  no test file.
 - [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
   - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
     holds the exit codes of the four runs and the empty `docs/` status.
