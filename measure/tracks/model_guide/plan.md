@@ -936,9 +936,9 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Verify: each list has 7 or more qualified commits. When a list has
     fewer, the orchestrator tells the PM and widens nothing without an
     answer.
-- [ ] 3.14 The seeding (spec D5 to D8). The fixture author
-  the route of `ra-quota pick` (no Opus, Daniel's rule; a Claude route only
-  when the Claude week is under 80 %, else the next family; PM 2026-11-16)
+- [ ] 3.14 The seeding (spec D5 to D8). The fixture author is the author
+  route of spec D5 (`openai/gpt-6.1-sol#high` with `--allow-codex`; PM
+  2026-11-16; the run log names the route that wrote the set). The author
   writes set `mg-2026-11a` in a fresh session, in the private folder only.
   - The session runs through `heavy-run.sh`. It gets the operator catalog of
     spec D6 and the candidate lists.
@@ -954,9 +954,9 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     after the apply (spec D9).
   - Verify: the lint passes, and the manifest holds no key field and no
     seeded line.
-- [ ] 3.16 The pilot seeding (spec D5 to D8, D13). The fixture author
-  the route of `ra-quota pick` (no Opus, Daniel's rule; a Claude route only
-  when the Claude week is under 80 %, else the next family; PM 2026-11-16)
+- [ ] 3.16 The pilot seeding (spec D5 to D8, D13). The fixture author is the
+  author route of spec D5 (`openai/gpt-6.1-sol#high` with `--allow-codex`; PM
+  2026-11-16; the run log names the route that wrote the set). The author
   writes set `mg-2026-11p` in a fresh session, in the private folder only.
   - The pilot set holds the first 6 qualified commits in the D4 order, with
     at least 12 plants. The author uses the method of D5 to D7.

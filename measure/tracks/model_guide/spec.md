@@ -264,9 +264,17 @@ questions".
    fixture author never chooses a diff. A rejected candidate gets a reason
    line in the private folder.
 
-5. **D5. The seeding method.** The fixture author is the route
-   `claude-code/claude-opus-5-5[1m]#high`. No ranked route seeds (D12). The
-   author works in a fresh session and writes into the private folder only.
+5. **D5. The seeding method.** The PM set the fixture author on 2026-11-16.
+   The author is a route of a family outside the ranked list of D12, and it
+   is never Opus (Daniel's rule). The PM order of the routes is
+   `xai/grok-4.7#high` first. When that route fails on its first call, the
+   author is `openai/gpt-6.1-sol#high` with `--allow-codex`, for these two
+   seeding sessions only. Codex is the last resort (Daniel 11-06). On
+   2026-11-16 the route `xai/grok-4.7#high` failed on its first call
+   ("Model xai/grok-4.7 is not available"), so the author is
+   `openai/gpt-6.1-sol#high`. The orchestrator logs which route wrote each
+   fixture. No ranked route seeds (D12). The author works in a fresh session
+   and writes into the private folder only.
    - A plant changes only `+` lines of the source diff, at most 6 lines in
      one place. The seeding tool recomputes each hunk header.
    - Each plant uses one operator of the catalog in D6, and it must be a
@@ -1024,9 +1032,10 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
   the probe decides. An unreachable route waits for a PM rule and has no
   rank.
 - **Q9 (D5, D11).** Is Opus the fixture author and the first judge?
-  Default: yes. Opus is not in the ranked list. The adjudication is blind to
-  the route name. A second judge of a family that is not ranked reads each
-  finding: ByteDance Doubao on
+  Default: yes. The PM changed the fixture author on 2026-11-16 (D5). The
+  first judge of D11 stays as written. Opus is not in the ranked list. The
+  adjudication is blind to the route name. A second judge of a family that
+  is not ranked reads each finding: ByteDance Doubao on
   `volcengine-agent-plan/ark-code-latest` (OD5).
 - **Q10 (D13).** Are the weights 5, 2, and 1, the false-claim cost of 2, and
   N = 3 correct? Default: yes, for the first set.
@@ -1053,8 +1062,9 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
   The keys stay private, but a later model can know a seeded diff. A new set
   id each quarter limits this.
 - **R3. Same-family bias.** The Opus author and the first judge are in the
-  same family as the Sonnet route. The second judge is ByteDance Doubao, a
-  family that is not ranked. Only the verdicts that both judges agree on
+  same family as the Sonnet route. The PM changed the fixture author on
+  2026-11-16 (D5). The second judge is ByteDance Doubao, a family that is
+  not ranked. Only the verdicts that both judges agree on
   count. The blind adjudication and the fixed operator catalog limit the
   bias. Q9 covers it.
 - **R4. Unmatched true findings.** A good model can find real defects. D11
