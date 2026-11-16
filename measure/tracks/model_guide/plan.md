@@ -1068,8 +1068,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: the file fails on the Phase 3 code. Record the failed test names
     in `measure/runs/model_guide/red-4.1.txt`.
 - [ ] 4.2 Red. The quota sources. Write
-  `harness/model-guide-tests/quota.test.ts` and the fake quota scripts under
-  `harness/model-guide-tests/fixtures/fakes/`. Touch no other file.
+  `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
+  that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
+  It commits no fixture. Touch no other file (test-strategy section 6.2,
+  change 1).
   Normal cases:
   - The read of each quota source of spec D15 gives the state of the route.
   - A source with every window below 70 % gives `ready`.
@@ -1112,6 +1114,17 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     passes.
   - Verify: `git diff --stat ea36fae -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests`
     prints nothing.
+- [ ] 4.8a Red. The review page. Add the page cases V1 to V9 of
+  `measure/tracks/model_guide/test-strategy.md` section 4.4 to
+  `harness/model-guide-tests/preview-gate.test.ts`. Touch no other file.
+  - The cases cover the rank, the worst, median, and best score, the blocker
+    recall, the false claims, the real defects, the counts by class and by
+    severity, the `incomplete` and `provisional` words, the pilot gate, the
+    set counts, the method note, the private-field scan, the nav link, and
+    the empty `docs/` status.
+  - Verify: the V cases fail at HEAD, and the Phase 1 and Phase 2 cases of
+    the file stay green. Record the failed test names in
+    `measure/runs/model_guide/red-4.8a.txt`.
 - [ ] 4.8 Green. Write `harness/model-guide/pages/review.html` and the
   review page edit of `harness/model-guide/preview.sh`, plus that wiring.
   Touch no test file.

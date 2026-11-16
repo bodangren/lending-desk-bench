@@ -1,8 +1,9 @@
 # Test strategy — model_guide
 
-This file covers Phase 1, Phase 2, and Phase 3 in full. It gives Phases 4
-and 5 a short section, so a later revision can extend it. Spec: `spec.md`.
-Plan: `plan.md`. Anti-pattern catalog: `measure/anti-patterns.md`.
+This file covers Phase 1, Phase 2, Phase 3, and Phase 4 in full. It gives
+Phase 5 a short section, so a later revision can extend it. Spec:
+`spec.md`. Plan: `plan.md`. Anti-pattern catalog:
+`measure/anti-patterns.md`.
 
 Revision 2 (2026-11-15) adds Phase 2. It folds in the Phase 1 lessons:
 PA2-1 (page-level facts of page B), PA1-1 (empty states), UX U1 (390 px),
@@ -12,6 +13,15 @@ Revision 3 (2026-11-16) adds Phase 3. It folds in the Phase 2 acceptance
 records: nit P2A1-2 (the daily publish commits in the `docs/` range) and the
 Q6 ruling (the print-audit block names the full routes).
 
+Revision 4 (2026-11-16) adds Phase 4 and the Phase 3 records. Phase 4
+carries live model calls, credentials, and quota. The revision folds in
+three defects that the Phase 3 real runs found and no fake caught: a 26 MB
+`gh` output over the 1 MiB `spawnSync` default (ENOBUFS), one transient
+`gh` error that stopped a one hour run, and an environment wait value
+(`NaN`, `Infinity`) that hung `Atomics.wait`. Each Phase 4 tool that calls a
+live service gets a test of large output, a transient error with a bounded
+retry, and a bad environment value. Each live call gets a timeout.
+
 ## 1. Risk of each phase
 
 | Phase | Product | Risk | Reason |
@@ -19,7 +29,7 @@ Q6 ruling (the print-audit block names the full routes).
 | 1 Page B | `real-work.ts`, `real-work.html`, `preview.sh`, `publish.ts` | high | A new public data path and the publish gate land here. A wrong rate can become a pick. |
 | 2 Print audit and table | `print-audit-2026-11.json`, `guide.ts`, `update.sh`, `guide-section.html` | high | The table names a model to the owner, and `update.sh` gains the first path that writes `docs/` after an approval. The print-audit file comes from a hand-off. |
 | 3 Review set and scorer | `pick-diffs.ts`, `review-set.ts`, `review-score.ts`, `adjudicate.ts`, `leak-check.ts` | high | A wrong match or a wrong weight gives a wrong rank. A leaked key (spec D9) cannot be withdrawn. The phase also writes the first public facts of track A. |
-| 4 Runner and first results | `review-run.sh`, `quota.ts`, `provider-credential.sh`, `review.html` | critical | Live model calls, credentials, and quota spend. |
+| 4 Runner and first results | `review-run.sh`, `quota.ts`, `provider-credential.sh`, `routes.json`, `pages/review.html` | critical | The phase starts live model calls, reads the host credential store, and spends plan quota. A metered call costs money. A value in a raw output cannot be withdrawn. A wrong quota read wastes a night of the only three nights before the date. |
 | 5 Publish | `publish-approval.md`, `publish.ts` run, weekly update | critical | A write under `docs/` reaches the public site on the next timer start (spec EV8). |
 
 ## 2. Gate commands
@@ -263,19 +273,94 @@ route may serve a role.
 
 ### 2.4 Phase 4
 
-Risk: critical.
+Risk: critical. The phase starts live model calls, reads the host credential
+store, and spends plan quota. A metered call costs money. A value in a raw
+output cannot be withdrawn. A wrong quota read wastes a night of the three
+nights that remain before the date.
 
-Red command shape, one line at a time: `review-run.test.ts`,
-`quota.test.ts`, and `credential-provider.test.ts`, each with
-`--configLoader native --maxWorkers=1`. Red tasks 4.1 to 4.3 own one file
-each. `GREEN_TEST_COMMAND` is the same lines, one per Green task 4.4, 4.6,
-and 4.7; task 4.8 reuses the Phase 1 and Phase 4 lines.
+The Red lines run one at a time. Each line exits non-zero on the phase base
+HEAD, because the module under test, or the case, is absent:
 
-Green gate: each line exits 0; `ps -eo pid,args | grep '[f]ake-opencode'`
-prints no line. Closeout gate: the lines exit 0, the task 4.9 checker
-pass, and `git diff --stat <phase_base_sha>..HEAD -- harness/opencode-credential.sh harness/opencode-host.sh`
-prints nothing. Tasks 4.10 to 4.14 run through `heavy-run.sh` in the quota
-window of spec D15.
+```bash
+cd harness && npx vitest run model-guide-tests/review-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+```
+
+Owners of the Red lines:
+
+- Task 4.1 owns line 1, the fake `opencode`, and the one expected Mid Red
+  gate deviation of section 3.4.
+- Task 4.2 owns line 2. It commits no fixture.
+- Task 4.3 owns line 3. It commits no fixture.
+- Task 4.8a owns line 4. It adds the page cases V1 to V9 to
+  `preview-gate.test.ts` and no other file. Task 4.8a is a plan change of
+  section 6.2.
+
+Each Red role records the failed test names in
+`measure/runs/model_guide/red-4.1.txt`, `red-4.2.txt`, `red-4.3.txt`, and
+`red-4.8a.txt`.
+
+`GREEN_TEST_COMMAND` is the same four lines, one line at a time:
+
+- Task 4.4 owns line 2.
+- Task 4.5 owns lines 1, 2, and 3. `routes.json` has no test of its own, so
+  the three Phase 4 files prove it.
+- Task 4.6 owns line 3.
+- Task 4.7 owns line 1.
+- Task 4.8 owns line 4, and the three page files of Phases 1 and 2:
+  `real-work.test.ts`, `guide.test.ts`, and `update.test.ts`.
+- Task 4.9 owns no line. It is the checker.
+- Tasks 4.10 to 4.14 own no line. They read the network or start a model,
+  and they run through `heavy-run.sh`.
+
+**Green gate.** Each cited line exits 0 on the task HEAD, with a labeled
+`Tests  N passed` line (A3). Task 4.7 and task 4.8 also run
+`git status --short docs/`, and it prints nothing. Every Green task runs
+`ps -eo pid,args | grep '[f]ake-opencode'`, and it prints no line. Task 4.9
+has a checker status of pass, or each blocking finding has a fix commit.
+
+**Closeout gate.** On the final phase HEAD:
+
+1. The four lines of `GREEN_TEST_COMMAND` exit 0.
+2. `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+3. `git status --short docs/` prints nothing.
+4. The `docs/` range check of section 2.2 item 3 prints nothing.
+5. `git diff --stat <phase_base_sha>..HEAD -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests`
+   prints nothing (spec D14, `harness/provenance.ts:71`). The checker reads
+   the `test:meta:logic` exclude list of `harness/package.json` and confirms
+   that it did not grow (A7).
+6. `harness/model-guide/routes.json` holds the nine rows of spec D12 in
+   order, each with `family`, `route`, `kind`, `quota_provider`, and
+   `quota_source`, and it holds the second judge of spec D11 with `ranked`
+   false. The Hy row is present. No route of the file has `kind` `metered`.
+7. Task 4.9 shows `measure/runs/model_guide/check-4.9.json` with status
+   pass.
+8. The Phase 1 to Phase 3 regression set passes, one file at a time:
+   `real-work.test.ts`, `input-check.test.ts`, `preview-gate.test.ts`,
+   `print-audit.test.ts`, `guide.test.ts`, `update.test.ts`,
+   `pick-diffs.test.ts`, `review-set.test.ts`, `review-score.test.ts`,
+   `adjudicate.test.ts`, and `leak-check.test.ts`.
+9. `leak-check.ts` exits 0 on the final tree with `--private <dir>` and
+   `--preview .tmp/model-guide-preview`. The only committed track A data
+   files are `harness/model-guide/data/sets/mg-2026-11a.json` and
+   `harness/model-guide/data/review-scores/mg-2026-11a.json`, each in its
+   own commit with an explicit path, and each commit comes after the
+   adjudication apply of task 4.13 (spec D9).
+10. The records of tasks 4.10 to 4.14 exist: `probe-4.10.txt`,
+    `passes-4.12.txt`, `pilot-4.11.txt`, `adjudicate-4.13.txt`, and the
+    preview facts of task 4.14.
+
+No Phase 4 test calls a model, reads the real shared store, or sends a
+packet off the loopback interface. The closeout gate names explicit paths,
+because the tracks `daily_model_schedule` and the nightly publish commit on
+`main`.
+
+Red and Green routes (recommendation only, the orchestrator picks): Red
+`bailian-token-plan/qwen3.8-max#high`; Green
+`opencode-go/muse-spark-1.3-contributor#high`. A role run is not a track A
+pass, so a ranked route may serve a role (section 9.4).
 
 ### 2.5 Phase 5
 
@@ -389,6 +474,83 @@ a real hand-off byte, a book page, or a book line.
 - Dates are explicit. The manifest creation date comes from a fixture value
   or a `--created` value, never the wall clock.
 
+### 3.4 Phase 4 fixtures and fakes
+
+Phase 4 commits one fixture and writes every other fake as a temp script.
+The reason is the Mid Red gate rule: `non_test_paths` in
+`measure_interphase_checks.py` counts each committed path without a `.test.`
+suffix and outside a `tests/` segment as a non-test file. Red 3.13c and
+3.13e avoided the rule with temp fake scripts that the test writes.
+
+**The one committed fixture: `fixtures/fakes/fake-opencode`.**
+
+- It is a Bash executable with mode 0755. It reads `$FAKE_OPENCODE_SPEC`,
+  a JSON file that the test writes. The spec holds one entry per call: the
+  exit code, the stderr line, the number of stdout bytes, a pad byte count,
+  a sleep in seconds, and the value string to print.
+- It appends to `$FAKE_OPENCODE_LOG` its argv, the text of the file that
+  `$OPENCODE_CONFIG` names, and the value of `$BENCH_OPENCODE_JOB`. It
+  writes each line once, so a retry shows as a second line.
+- It prints a canned JSON line on stdout, for example
+  `{"type":"result","text":"..."}`.
+- The test copies it to `<temp>/bin/fake-opencode` and sets
+  `BENCH_OPENCODE_BIN` to that path. The path holds the text `fake-opencode`,
+  so the `ps` case of task 4.1 finds a live child. `harness/opencode-host.sh`
+  reads `BENCH_OPENCODE_BIN` (line 187) and `harness/opencode-credential.sh`
+  reads it too (line 47), so the fake serves both.
+- **Why committed.** The plan line of task 4.1 names the file, and the
+  `ps -eo pid,args` case needs a stable argv text and an executable with a
+  mode bit that the test does not build.
+- **The expected Mid Red gate deviation.** Red 4.1 records one line in
+  `red-4.1.txt`: `- harness/model-guide-tests/fixtures/fakes/fake-opencode`,
+  with the reason "plan task 4.1 names this file; no product code reads it".
+  The orchestrator accepts this one line and no other. Red 4.2, Red 4.3, and
+  Red 4.8a commit no fixture, so their gate output holds no deviation.
+
+**Temp fakes only (no committed file).**
+
+- **The quota source.** A `node:http` server that the test starts on
+  `127.0.0.1:0`. The test calls `quota.ts` with `--base http://127.0.0.1:<port>`,
+  and it sets `BENCH_QUOTA_BASE` for `review-run.sh`. The precedent is
+  `BENCH_DAILY_QUOTA_CMD` of `harness/cron-daily.sh:509`. The server logs
+  each request path, so the test asserts the exact `/api/quota/<id>` value
+  of each provider.
+- **The port source.** A temp `openchamber` stub on `PATH` that prints
+  `{"instances":[{"port":<port>}]}`, in the shape that
+  `harness/cron-daily.sh:515` parses. The test writes it with
+  `writeFileSync` and `chmodSync(0o755)`, as `pick-diffs.test.ts:445` does
+  for its flaky `gh`.
+- **The credential store.** A temp `opencode` stub through
+  `BENCH_OPENCODE_BIN` that prints a small `auth export` JSON array with
+  three entries: two providers and one entry of another kind. The job folder
+  is a temp folder through `BENCH_OPENCODE_HOME`. The real home and the real
+  shared store are never read.
+- **The set and the keys.** Three temp diffs, each with a two-plant key, in
+  the `model-guide-key/1` shape of spec D7. The tests never read
+  `mg-2026-11a` or `mg-2026-11p`.
+- **The page data.** The page cases V1 to V9 build the score document inline
+  in `preview-gate.test.ts`, as that file builds `INDEX_HTML` inline. No new
+  fixture file, so the line of task 4.8a stays true. The Phase 2 file
+  `fixtures/review-scores-mini.json` stays unchanged, because `guide.test.ts`
+  reads it.
+
+**Temp repo.** Each case of `review-run.test.ts` builds a temp repo the way
+`harness/schedule-tests/rescore-guard.test.ts:71` does: `mkdtempSync`, a
+`harness/` folder with copies of `review-run.sh`, `quota.ts`,
+`provider-credential.sh`, `opencode-host.sh`, `opencode-credential.sh`, and
+its own `harness/model-guide/routes.json`, a `docs/` tree, a `bin/` folder
+with the fake, a `git init`, and a private `mkdtemp` folder. The job folder
+lands in `<temp repo>/.tmp/`, because `opencode_host_begin` builds it under
+`OPENCODE_HOST_ROOT` (`harness/opencode-host.sh:154`).
+
+**Environment.** Every Phase 4 test sets `HOME`, `XDG_CONFIG_HOME`,
+`XDG_DATA_HOME`, `XDG_STATE_HOME`, `XDG_CACHE_HOME`, `XDG_RUNTIME_DIR`,
+`TMPDIR`, and `TZ` inside its temp folder, and it clears `BENCH_TRACK`
+(spec A11). No test reads the real home folder.
+
+**No network.** The only socket is the loopback server of the quota case. No
+test calls `opencode`, `openchamber`, `curl`, `gh`, or a model.
+
 ## 4. Test groups and falsification
 
 ### 4.1 Phase 1
@@ -497,6 +659,77 @@ Red roles record them as `fail`.
 falsification condition, as G1 to G4 do. The Phase 3 files have none, so no
 empty-state claim rests on a vacuous pass (A4).
 
+### 4.4 Phase 4
+
+Three files start at the phase base. The fourth set of cases lands in the
+Phase 1 and 2 file `preview-gate.test.ts`. The runner rows R1 to R15 cover
+every case of plan task 4.1, plus the three Phase 3 lesson cases: a large
+output (R10), a transient error with a bounded retry (R7), and a bad
+environment value (R8). Each live call has a timeout (R14, Q5).
+
+| Group | File | What it proves | Falsification condition |
+|---|---|---|---|
+| R1 Pass shape | `review-run.test.ts` | A pass of a `plan` route with every window below 70 % calls the fake once for each diff of the set, stores one raw output for each diff in the private folder only, and writes one pass record with the state `open` or complete. | Skip one diff, or write one raw output outside the private folder. R1 must fail. |
+| R2 Call shape | same file | Each call is `run --standalone --format json --model <route>`, and `$FAKE_OPENCODE_LOG` holds those five parts in that order for each call. | Drop `--standalone`, or put the model before the flags. R2 must fail. |
+| R3 Deny list | same file | The job config that `$OPENCODE_CONFIG` names lists `read`, `edit`, `bash`, `webfetch`, `websearch`, `question`, `subagent`, and `skill`, each with the effect `deny`. The fake copies the config text into its log. | Remove one name, or set its effect to `allow`. R3 must fail, and the missing name is in the failure line. |
+| R4 Route refusal | same file | A route that `routes.json` does not hold gives exit 2, one named line, an empty fake log, and no pass record. A route whose `kind` is `metered` (the temp file holds `deepseek/deepseek-flash#high`) gives the same result. | Accept any route name, or read a rank list in place of `routes.json` (A7). R4 must fail. |
+| R5 70 % start | same file | A window at 70 % at the start gives no call, no raw output, and the state `wait`. At 69.9 % the pass starts. | Compare with `>` in place of `>=`, or start the pass and stop it after one call. R5 must fail at 70 %. |
+| R6 80 % stop | same file | A window that reaches 80 % after the second diff stops the pass. The pass record holds the state `open`, the two stored outputs, and no complete marker. At 79 % the pass runs to the end. | Stop only at 100 %, or mark the pass complete. R6 must fail. |
+| R7 Transient retry | same file | Two failures then one success give three log lines for the same diff, and the pass completes. Three failures give three lines, and the pass stays `open` and not complete. The retry wait is the pinned bounded base. | Retry a fourth time, or count a third failure as a model result. R7 must fail. |
+| R8 Bad wait value | same file | `MG_RUN_RETRY_WAIT_MS` with `NaN`, `Infinity`, `-1`, and `1e999` gives the bounded base, or exit 2 with one named line. Each case ends inside the 20 s `spawnSync` timeout. | Pass the value to `Atomics.wait` without a bound. The case times out and fails (Phase 3 record 3). |
+| R9 Value scan | same file | A raw output that holds a value of `provider-credential.sh scan-values` is deleted. The pass stops with one named line, and no copy of the value stays in the private folder or in the log file. | Store the output before the scan, or skip the scan. R9 must fail, and the test greps the whole temp tree for the value. |
+| R10 Large output | same file | A 2 MiB raw output is stored whole, and a value in its last 1 000 bytes is found by the scan. | Cap the read at 1 MiB. The tail value escapes and R10 must fail (Phase 3 record 1). |
+| R11 Region error | same file | A Go route whose stderr holds the region error of spec D22 ends with the state `region-blocked`, one stored error line, no raw output, and no rank for the night. The retry count stays at zero. | Treat the line as a transport error and retry three times, or leave the state `open`. R11 must fail. |
+| R12 Trap | same file | A fake child that sleeps is stopped: `kill -0 <pid>` fails after the run, no `opencode-host-*` folder stays under `<temp repo>/.tmp/`, and `ps -eo pid,args \| grep '[f]ake-opencode'` prints no line. | Remove the trap, or use `kill -9` on the shell only. R12 must fail, and the child stays. |
+| R13 No write | same file | The temp repo tree, with `.tmp/` excluded, is byte-identical after the run. The temp `docs/` tree is byte-identical. The private folder holds the outputs. | Write one file under the temp `docs/`, or write a pass record into the temp repo. R13 must fail. |
+| R14 Call timeout | same file | The call timeout takes its value from `MG_CALL_TIMEOUT_S`, and its default is 600 s (spec D13). With 2 s and a fake that sleeps 30 s, the call ends as a transport error inside 10 s, and the trap still cleans. | Read the default from the wall clock only, or wait for the child. The case times out and fails. |
+| R15 Path safety | same file | `--set ../x`, `--set a/b`, and `--route mega/../x` give exit 2 with one named line, and no folder appears outside the private root. | Join the value into a path without a check. A folder appears and R15 must fail. |
+| Q1 Source path | `quota.test.ts` | Each provider of spec D15 reads `GET /api/quota/<id>` with the id of the table: `claude`, `kimi-for-coding`, `minimax-cn-coding-plan`, and `opencode-go`. The server log holds the four exact paths, and each read gives `ready`. | Use the provider name as the id, for example `claude-code`. Q1 must fail. |
+| Q2 Thresholds | same file | 0, 40, and 69.9 give `ready`. 70, 70.1, and 100 give `wait`. Each value is a labeled number in the output. | Move the boundary to 71, or to 50. Q2 must fail. |
+| Q3 Stopped cases | same file | A 500 answer, a limit error body, a closed port (read failure), `{"usage":{"windows":{}}}`, a window with no `usedPercent`, `usedPercent` as the string `"50"`, and `1e999` each give `stopped` with one named line. | Remove one branch, or accept a string value. Q3 must fail. |
+| Q4 No source | same file | `nvidia`, `bailian-token-plan`, `volcengine-agent-plan`, and an `opencode` free route give the state `ready`, the label `cap` 1, and no request in the server log. | Read a URL for a provider with no source, or give the cap 3 (N of spec D13). Q4 must fail. |
+| Q5 Read timeout | same file | A server that accepts the socket and never answers gives `stopped` with one named line inside 10 s. | Read without a timeout. The case times out and fails (Phase 3 record 3). |
+| Q6 Large body | same file | A 2 MiB body with 200 windows is parsed, and the state follows the highest window. | Cap the body at 1 MiB. Q6 must fail. |
+| Q7 Port source | same file | Without `--base`, the port comes from `openchamber status --json` through `instances[0].port`, in the shape of `harness/cron-daily.sh:515`. A port of 0, `"0"`, or 70000 gives `stopped`. | Hardcode 4096, or accept a port of 0. Q7 must fail. |
+| Q8 Bad port output | same file | A stub that prints no JSON, invalid JSON, and an array in place of an object each give `stopped` with one named line, and no request. | Let an unparsable line reach `curl`. Q8 must fail. |
+| C1 Seed one entry | `credential-provider.test.ts` | `provider-credential.sh seed <p>` writes exactly one entry into the temp job store, and it is the entry of `<p>`. The other two entries of the fake export stay out. Stdout is empty. | Import all entries, or print the payload. C1 must fail. |
+| C2 Scan values | same file | `scan-values <p>` prints the access and orgID values of `<p>`, one per line, and it prints no value of another provider. It prints no `inert` line. The test compares the line count. | Print the access value only, or print every provider. C2 must fail. |
+| C3 Provider with no entry | same file | A provider with no entry gives exit 2, one named line, no value on stdout, and a job store without a new entry. | Exit 0 with an empty store. C3 must fail. |
+| C4 Transient export retry | same file | The first `auth export` call exits 1 with a notice on stderr, and the second prints the array. The seed exits 0, the log holds two calls, and `BENCH_CREDENTIAL_SEED_DELAYS=0` keeps the run short. | Run one call only, and C4 gives exit 2. C4 must fail. |
+| C5 Bad env value | same file | `BENCH_CREDENTIAL_SEED_DELAYS=NaN`, `AGENT_TIMEOUT=Infinity`, and `AGENT_TIMEOUT=-1` each give exit 2 with one named line inside the 20 s timeout. | Let the value reach `sleep`. The case times out and fails (Phase 3 record 3). |
+| C6 No value anywhere | same file | The value strings of the fake export appear in no file of the job folder, in no stderr line, and in no stdout line. The test greps the whole job folder. | Write the payload to a disk file (spec D14). C6 must fail. |
+| C7 Large export | same file | A 2 MiB export with a long unknown field yields the same one-entry import. | Cap the read. C7 must fail (Phase 3 record 1). |
+| V1 Page fields | `preview-gate.test.ts` | `review.html` holds the rank, the worst, median, and best score, the blocker recall, the false claims, the real defects, and the counts by class and severity of each route. Each number equals the value of the score document, and it is labeled. | Print a bare digit, or drop the median. V1 must fail. |
+| V2 Incomplete | same file | A route with 2 complete passes shows the word `incomplete`, no rank number, and no worst score. | Rank two passes, or print `incomplete` as a boolean. V2 must fail. |
+| V3 Provisional | same file | A pass with the state `provisional` stays complete, the route keeps its rank, and the page marks the pass `provisional`. | Drop the rank of a provisional route. V3 must fail. |
+| V4 Pilot gate | same file | With `preview.sh --pilot-gate fail`, the page shows no rank for any route and one named line. With `pass`, or with no flag, it shows the rank. | Ignore the flag, and V4 must fail on the `fail` case. |
+| V5 Set counts | same file | The page shows the manifest counts of the set: the diff count, the plant count, and the blocker count, each with its label, from `data/sets/<set_id>.json`. | Change one count in the temp manifest. The page cell must move. |
+| V6 Method note | same file | The note names the set size, the weights 5, 2, and 1, the false-claim cost 2, N = 3, and the pilot gate. It is page output, not a markdown read. | Remove the note from the template. V6 must fail. |
+| V7 No private field | same file | The page and `review.json` hold no `new_lines`, `witness`, `operator`, `file`, or line value, and no private folder path, at any depth. The scan reads exact key names (A7). | Add a `file` key to the page data. V7 must fail. A prose word must not fail. |
+| V8 Nav link | same file | Each page of the preview holds one link to `./review.html` with the text `Review`, and one link to `./real-work.html`, and no duplicate. | Add the link twice, or drop it from one page. V8 must fail. |
+| V9 No write | same file | The temp `docs/` tree is byte-identical after `preview.sh` runs with the review page. `preview-base.json` lists each copied `docs/` file. | Let `preview.sh` write `review.html` into the temp `docs/`. V9 must fail. |
+
+**Notes on the Phase 4 groups.**
+
+- **No base-passing guard.** All four Red lines fail at the phase base. The
+  runner, the quota tool, and the credential helper do not exist, and
+  `preview-gate.test.ts` fails on V1 to V9. No Phase 4 case passes at the
+  base, so no claim rests on a vacuous pass (A4). The Phase 1 and Phase 2
+  cases of `preview-gate.test.ts` must stay green through task 4.8a; the
+  role reads the per-test lines, not only the exit code.
+- **The lesson cases.** R8, R10, R14, Q5, Q6, C5, and C7 come from the three
+  Phase 3 records. A later review that drops one of them must name the
+  record that it refutes.
+- **The 70 % and 80 % rules are two groups.** Q2 proves the state. R5 and R6
+  prove that the runner obeys the state. One group without the other leaves
+  a hole: a correct `wait` state that the runner ignores.
+- **The cap of one pass.** R4 and Q4 prove the labels; the runner's count of
+  one pass per night for a route with no source is R5's `cap` field plus the
+  `passes-4.12.txt` record. No test proves the night boundary, because the
+  test has no clock (section 7).
+- **The artifact rows.** V6 reads bytes of the generated page, so it proves
+  that the generator ran. It does not prove the rendering; section 9.4 does.
+
 ## 5. Architecture guardrails and changed contracts
 
 - **No write under `docs/` before Phase 5** (spec D21). The preview tool
@@ -556,13 +789,65 @@ empty-state claim rests on a vacuous pass (A4).
 - **One test file per Red task, and one fixture owner.** Task 3.1 owns the
   fake `gh`, task 3.2 owns `fixtures/review/`, and tasks 3.3 and 3.4 reuse
   it. A new fixture in 3.3 or 3.4 needs the plan line widened first
-  (PA2-1).
+  (PA2-1). Task 4.1 owns the fake `opencode`; task 4.8a adds cases to
+  `preview-gate.test.ts`, and it adds no fixture file.
+- **The runner uses the host isolation and the host store rules** (spec D14).
+  `review-run.sh` sources `harness/opencode-host.sh` and calls
+  `opencode_host_begin model-guide` and the cleanup trap. It stores each raw
+  output in the private folder only, and it scans the output before the
+  store. R9, R12, and R13 prove the three rules. `harness/opencode-host.sh`
+  and `harness/opencode-credential.sh` stay byte-identical, because
+  `harness/provenance.ts:71` puts them in the `runner_sha256` list. The
+  closeout gate reads that diff.
+- **No metered route, and no paid spend** (spec D12, D15). `routes.json` holds
+  `kind` `plan` or `free` only. The runner refuses every other value before
+  the first call. R4 proves the refusal, and closeout gate item 6 reads the
+  file.
+- **The quota rules are two thresholds** (spec D15). A pass starts only at
+  `ready`, which means every window is below 70 %. A window at 80 % stops
+  the pass and leaves it open. Q2, R5, and R6 prove the three clauses.
+- **`quota.ts` reads one endpoint shape** (spec D15, FR-15). The URL is
+  `http://127.0.0.1:<port>/api/quota/<id>`, the port comes from
+  `openchamber status --json`, and the value is
+  `usage.windows.<window>.usedPercent`. It reuses the field rules of
+  `guard_read` in `harness/cron-daily.sh:507`. The seams are `--base <url>`
+  and `BENCH_QUOTA_BASE`, so a test reaches a loopback server and no test
+  reads the live endpoint. A provider with no source makes no request, and
+  it gets the fixed cap of 1 pass per night.
+- **The region rule is a state, not a retry** (spec D22). A Go route with the
+  region error gets the state `region-blocked` and no rank for the night.
+  R11 proves it, and task 4.10 records it for each Go route of the probe.
+- **The credential helper prints no value** (spec D14, FR-11). It reads the
+  shared store once per job folder, imports only the entry of the named
+  provider, and writes no payload to a disk file. C1, C2, and C6 prove the
+  three rules. The retry rule is the one of
+  `harness/opencode-credential.sh:38`, and C4 proves it.
+- **`routes.json` is a public contract** (spec D12). Its fields are `family`,
+  `route`, `kind`, `quota_provider`, `quota_source`, and `ranked`. The
+  runner, the checker, and the page read the file. A new field, or a rename,
+  is a contract change, and checker 4.9 must name it.
+- **The review page reads the Phase 3 score fields** (spec D13, FR-14).
+  `review.html` and `review.json` hold the fields `set_id`, `passes`,
+  `routes`, the state words `complete`, `incomplete`, and `provisional`,
+  and the numbers `worst`, `median`, `best`, `worst_blocker_recall`, `rank`,
+  `false_claims`, `real_defects`, `by_class`, and `by_severity`. A rename is
+  a new contract. V1 to V3 assert the words and the labels.
+- **The pilot gate reaches the page** (spec D13, FR-14). The score file holds
+  no pilot field, so `preview.sh` takes `--pilot-gate pass|fail`, with the
+  default `pass`. V4 proves the `fail` case. The orchestrator passes the
+  verdict of task 4.11.
+- **The set manifest stays the page's set-count source** (spec D9, D13). The
+  page shows the counts of `data/sets/<set_id>.json`. The manifest is
+  committed after the adjudication apply only, and closeout gate item 9
+  reads that order.
 - **Parallel work on main.** The tracks `daily_model_schedule` and the
   nightly publish commit on `main`. Every gate names explicit paths or the
   `docs/` range rule of section 2.2. No gate is a whole-tree
   `git status --short`.
 
-## 6. The plan 1.2 conflict with spec D17
+## 6. Plan changes and spec conflicts
+
+### 6.1 The plan 1.2 conflict with spec D17
 
 Plan task 1.2 names "a wrong size, a wrong schema" among its edge cases.
 Spec D17 (finding F13) dropped the size check and the schema-key check for
@@ -577,6 +862,60 @@ print-audit file.
 The Phase 2 print-audit check follows the same split. N1 and N2 test the
 SHA-256 from `MANIFEST.txt`, the top keys, and the 52-row count. They test
 no size and no schema key, as spec D17 states.
+
+### 6.2 Phase 4 plan changes
+
+Two plan changes are needed before the Red tasks of Phase 4 start. Each one
+follows the PA2-1 pattern: the orchestrator widens the line first, and the
+Red role records the change.
+
+**Change 1: task 4.2 names a fixture folder that it does not write.** The
+line says "and the fake quota scripts under
+`harness/model-guide-tests/fixtures/fakes/`". The quota source is an HTTP
+endpoint, so the better fake is an in-process `node:http` server on
+`127.0.0.1:0` plus a temp `openchamber` stub. That keeps the test hermetic,
+it adds no second Mid Red gate deviation, and it keeps the loopback socket
+inside the test. Default: the orchestrator changes the phrase to "and the
+temp fake quota source that the test writes". Red 4.2 records the new
+wording in `red-4.2.txt`. Task 4.3 needs no change, because its line already
+says "and no other file".
+
+**Change 2: no Red task owns the review page (task 4.8).** Task 4.8 writes
+`pages/review.html` and the `preview.sh` wiring as a Green task, and its
+verify line reads "the test files of Phases 1 to 4 pass". No test asserted
+the page, so an empty `review.html` would pass. The change is applied in the
+commit that adds this strategy: plan.md gains one Red row `4.8a` before row
+4.8, and the row reads:
+
+    - [ ] 4.8a Red. The review page. Add the page cases V1 to V9 of
+      `measure/tracks/model_guide/test-strategy.md` section 4.4 to
+      `harness/model-guide-tests/preview-gate.test.ts`. Touch no other file.
+      Verify: the V cases fail at HEAD, and the Phase 1 and Phase 2 cases of
+      the file stay green. Record the failed test names in
+      `measure/runs/model_guide/red-4.8a.txt`.
+
+No checkbox of an existing task moves, and no existing task text changes
+except the one phrase of change 1. The alternative was a phase acceptance of
+the page by hand, with no test. The Red row is the default, because FR-14
+carries real logic: the rank, the `incomplete` row, the `provisional` word,
+and the pilot gate. Without a test, the strategy would hold a vacuous spot
+(A4).
+
+**Assumption A4-1: the pilot verdict reaches `preview.sh`.** The score file
+of spec D13 holds no pilot field, and FR-14 says a set that fails the pilot
+gate has no rank on the page. Default: `preview.sh` takes
+`--pilot-gate pass|fail`, with the default `pass`. The orchestrator passes
+the verdict of task 4.11. A later field in the score file would replace the
+flag, and that change names a new contract (section 5).
+
+**Assumption A4-2: the first judge must not be a ranked family.** Plan task
+4.13 takes the first judge from `ra-quota pick`. The first judge reads the
+seeded source diffs, so a family of spec D12 that judges before its own
+ranked passes could recognize a plant. Default: when the pick gives a family
+of D12, the orchestrator takes the next family of the pick order that is
+outside D12, or ByteDance Doubao, or `openai/gpt-6.1-sol#high` with
+`--allow-codex` as the last resort (Daniel, 2026-11-06). The orchestrator
+records the choice in `adjudicate-4.13.txt`.
 
 ## 7. Artifact tests and live-behavior tests
 
@@ -619,6 +958,50 @@ Phase 3 splits the same way.
 - **No documentation test.** A test that only reads `spec.md`, `plan.md`,
   or a record file does not count in any phase.
 
+Phase 4 splits the same way, and the split matters more here than in any
+earlier phase.
+
+- **Live behavior, offline.** R1 to R15, Q1 to Q8, C1 to C7, and V1 to V9
+  start real product files as subprocesses, or call them in process, and
+  they read the exit code, the written JSON, and the raw output. The fakes
+  replace `opencode`, `openchamber`, and the quota endpoint. No case calls a
+  model.
+- **Artifact assertions.** V6 reads bytes of the generated page. It proves
+  that the generator ran and wrote the text. It does not prove the
+  rendering; the browser review of section 9.4 does.
+- **Live artifact check.** Task 4.10, task 4.11, and task 4.14 read the real
+  artifacts. They are acceptance checks on a live run, not unit tests.
+- **The pilot report is a check, not a test.** Task 4.11 writes the per-kind
+  table of spec D13 into `measure/runs/model_guide/pilot-4.11.txt`. The
+  phase acceptance role recomputes the two worst-of-2 spreads from
+  `data/review-scores/mg-2026-11p.json` and the private source diffs with a
+  one-off `node -e` run. The report fails the check when a field is absent,
+  or when a recomputed number differs from the report. The script reads the
+  private folder, so it runs as a plain script, never as a model session.
+- **What only a live run of tasks 4.10 to 4.12 can prove.** No fake proves
+  these seven facts, and the strategy does not claim them from a test:
+  1. The real `opencode` binary accepts `run --standalone --format json
+     --model <route>` for each family, and it prints a parseable stream. R2
+     proves only the argv contract.
+  2. The real host credential of a provider seeds a fresh job store, and it
+     seeds no other provider entry. C1 proves the code path with a fake
+     export.
+  3. The live quota endpoint answers for `claude`, `kimi-for-coding`,
+     `minimax-cn-coding-plan`, and `opencode-go`, and the port of the live
+     `openchamber status --json` is the one that answers. Q1 and Q7 prove
+     the parser only.
+  4. The reachability states of spec D14 hold for each route, including the
+     region error text of spec D22 for the Go routes. Task 4.10 proves it.
+  5. A pass that starts at 02:00 ends before 06:00 +07 with the 14 diffs of
+     the set, the 600 s call timeout, and the retry budget. No test has a
+     clock.
+  6. A real answer does not trip the value scan. R9 proves a hit on a planted
+     value; a false positive on a real answer would stop every pass, and only
+     task 4.12 shows it.
+  7. A real seeded-diff prompt fits the model context, and the model returns
+     the fenced JSON block of spec D10. The prompt file is an artifact
+     (task 3.11); the live run proves its shape.
+
 ## 8. Intentionally-red aggregate suite
 
 The Phase 1 files exist from the Red tasks and fail until task 1.7. That
@@ -634,12 +1017,36 @@ part of the Phase 3 gate. The untracked
 `harness/model-guide/data/sets/mg-2026-11a.json` of task 3.15 is intended
 and is not committed there.
 
+Phase 4 adds three files, and it adds cases to a fourth. `review-run.test.ts`
+fails from Red 4.1 until Green 4.7, the longest red span of the track, so no
+role may read that file as a signal of a broken tree. `quota.test.ts` fails
+from Red 4.2 until Green 4.4, and `credential-provider.test.ts` fails from
+Red 4.3 until Green 4.6.
+
+`preview-gate.test.ts` holds a mixed state from Red 4.8a until Green 4.8. Its
+Phase 1 and Phase 2 cases (P1 to P4, T1, T4, T5, T11, N4, and G1 to G4) must
+stay green, and the nine V cases of section 4.4 fail. The file therefore
+exits non-zero, and that exit is intended. Each role reads the per-test
+result lines of the two groups, never only the exit code. Green 4.8 makes the
+whole file green.
+
+The date plan keeps this span short. Red 4.1 starts on 2026-11-16. Red 4.2,
+Red 4.3, and Red 4.8a run on 2026-11-17. Green 4.4 to 4.8 run on 2026-11-18,
+and the probe of task 4.10 runs in the window of the night 2026-11-18 to
+2026-11-19. No red file may survive into the first pass night of
+2026-11-20.
+
+The untracked `harness/model-guide/data/sets/mg-2026-11a.json` stays
+untracked through Phase 4 until the adjudication apply of task 4.13 commits
+it with an explicit path. That state is intended, and no role stages it
+early (spec D9).
+
 No role edits a test to reach a green aggregate run. The aggregate suite is
-not a gate for Phase 1 or Phase 2; the gate is the targeted lines of
-section 2. If a full-suite run happens after 22:00, a failure outside these
-files is recorded in `measure/runs/model_guide/` and sent to the
-orchestrator. It does not block the phase. A failure inside these files
-blocks the phase. Before 22:00, a role runs one file at a time with
+not a gate for Phase 1, Phase 2, Phase 3, or Phase 4; the gate is the
+targeted lines of section 2. If a full-suite run happens after 22:00, a
+failure outside these files is recorded in `measure/runs/model_guide/` and
+sent to the orchestrator. It does not block the phase. A failure inside these
+files blocks the phase. Before 22:00, a role runs one file at a time with
 `--maxWorkers=1`.
 
 ## 9. Review applicability
@@ -649,7 +1056,7 @@ blocks the phase. Before 22:00, a role runs one file at a time with
 | 1 | yes: publish gate, no `docs/` write, no real export bytes in the repo | yes: CLI exit codes of `real-work.ts`, `preview.sh`, `publish.ts` | yes: malformed export, drift, approval shortcuts | yes: section 9.1 |
 | 2 | yes: no book text, no page, no file name in the print-audit data; no real hand-off byte in the repo; `update.sh` writes two explicit paths | yes: `guide.ts` output shape and its `--today` value, `update.sh` paths and exit codes, the HTML escape of a hand-off name | yes: changed byte, wrong manifest SHA, missing top key, 51 rows, stale boundary, incomplete route, hostile name, empty sources | yes: section 9.2: the overview table and the print-audit block |
 | 3 | yes: leak check, score-file fields, no token or private path in the repo | yes for the API: subcommand names, exit codes, manifest and score field sets, the `--private` flag; no for UX | yes: wrong line, wrong class, judge disagreement, 31 findings, invalid JSON, hostile `set_id` | no: section 9.3 |
-| 4 | yes: credentials, quota, metered refusal | no: no product route | yes: quota states, retries, region block, value scan | yes: `review.html` |
+| 4 | yes: credentials, quota, metered refusal, the value scan, the private outputs, the trap | yes for the API: the `review-run.sh` flags and exit codes, the states `ready`, `wait`, `stopped`, and `region-blocked`, the `routes.json` fields, the `quota.ts` output, the `provider-credential.sh` subcommands, and `preview.sh --pilot-gate`; yes for UX on `review.html` | yes: quota states, retries, region block, value scan, hostile route and set values, large output, bad env value | yes: section 9.4, `review.html` |
 | 5 | yes: approval record, drift, explicit paths | no: no new CLI | yes: missing approval, wrong SHA, drift | yes: the published pages |
 
 ### 9.1 Phase 1 browser review
@@ -717,6 +1124,78 @@ phase.
   page there too. If a Green role changes `preview.sh` or a template, the
   browser review becomes required, in the form of section 9.2.
 
+### 9.4 Phase 4 review applicability and the secrecy rule
+
+- **Review A applies.** The phase product is `review-run.sh`, `quota.ts`,
+  `provider-credential.sh`, `routes.json`, and `pages/review.html`. The code
+  review reads them against spec D12 to D15, D22, FR-11, FR-14, and FR-15.
+- **Review B (security) applies, and it is the most important review of the
+  phase.** It covers four rules. The runner imports only the entry of the
+  named provider, and it writes no credential value to a disk file
+  (spec D14). It scans each raw output before the store, and it deletes a
+  hit. It stores raw outputs in the private folder only. It refuses a
+  metered route before the first call, so no paid spend happens (spec D12).
+- **Review C (UX/API) applies at the API and at the page.** At the API: the
+  flags and exit codes of `review-run.sh`, `quota.ts`, and
+  `provider-credential.sh`; the four state words; the `routes.json` field
+  set; the `quota.ts` output fields `state` and `cap`; and
+  `preview.sh --pilot-gate`. At the page: the structure of `review.html`.
+- **Adversarial testing applies.** It covers these values and states: a
+  window at exactly 70 % and at 69.9 %; a window that crosses 80 % in the
+  middle of a pass; a quota body with no `usedPercent`, with a string value,
+  and with `1e999`; a closed port; a server that never answers; a 2 MiB body;
+  a 2 MiB raw output; a transient failure of 1, 2, and 3 calls; `NaN`,
+  `Infinity`, `-1`, and `1e999` in each wait value; a region error on a
+  non-Go route; a route name with `../`; a `--set` value with a slash; a fake
+  child that ignores SIGTERM; a value string at the end of a large output;
+  and a manifest count that differs from the set.
+- **The UX browser review applies.** Task 4.8 adds `review.html`, so the
+  page change needs the check of UX round 1 item U1. Start the server in the
+  repo root and open `http://127.0.0.1:8766/review.html`:
+
+  ```bash
+  python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview
+  ```
+
+  Check 1280 px and 390 px. Check that the table shows the rank, the worst,
+  median, and best score, the blocker recall, the false claims, the real
+  defects, and the counts by class and severity, each with its label. Check
+  that a route with fewer than 3 passes shows `incomplete` and no rank
+  number, and that the code review row of `index.html` now shows a pick or
+  the words `no pick yet: not enough evidence`. Check that the page needs no
+  horizontal scroll at 390 px, that the nav holds one `Review` link, and that
+  the method note is readable at 390 px. A missing 390 px check blocks the
+  phase.
+- **The checker of task 4.9 applies.** One code checker reads the diff
+  against spec D12 to D15 and D22. It confirms the metered refusal, the
+  70 % and 80 % rules, the state of each route, the region rule, the
+  credential scan, the `routes.json` field set, and the page fields of
+  section 5. A finding goes into `check-4.9.json` and into the handoff of the
+  checker role.
+
+**The secrecy rule for the audit roles.** Reviews A, B, and C, the
+adversarial role, the phase acceptance role, and checker 4.9 read no file of
+the private folder: no key, no seeded diff, no source diff, no raw output,
+no adjudication note, and no verdict file. The reason is the one of spec D9
+and D11: a model that reads a key can compute a plant, and a family of
+spec D12 that reads a plant could find it in its own ranked pass.
+
+- A role that reads no private file may run on any family.
+- A role that reads one private file runs on a family outside D12. The
+  allowed families are `openai/gpt-6.1-sol#high` with `--allow-codex` as the
+  last resort (Daniel, 2026-11-06), ByteDance Doubao
+  `volcengine-agent-plan/ark-code-latest` after 2026-11-22, and a family that
+  the routes file marks `ranked: false`.
+- The Phase 4 checks that need private data are task 4.13 (the two judges
+  read the seeded source diffs and the queue, and the apply reads the keys)
+  and task 4.14 (the score tool reads the keys and the raw outputs). The
+  pilot report check of section 7 reads the private source diffs. All three
+  run as scripts, or on a family outside D12, and never in the session of a
+  ranked route.
+- The probe file, the pass file, and the pilot report hold route names and
+  error lines. They hold no key, no plant, and no credential value, so a
+  review role may read them.
+
 ## 10. Anti-pattern coverage
 
 A1 and A8 are retired. A9 and A10 do not apply now: no track is archived,
@@ -750,9 +1229,16 @@ so no closeout-candidate reading can go wrong.
 | 3 | A11 inherited environment | `--private` is explicit, `TZ` is pinned, the date is explicit, and the fake `gh` is first on `PATH`. Run each file once with `BENCH_TRACK=change`. | Set `BENCH_TRACK=change`. The verdict must not move. |
 | 3 | A13 ignored artifact | The private root is a `mkdtemp` folder. The tests compare SHA-256 values inside the test, not with `git diff`. | Change one byte of the seeded diff. S2 and R1 must fail. |
 | 3 | A14 stale registry note | The orchestrator moves the registry note after the Phase 3 commit. | Compare the note with the first open Phase 3 task. |
-| 4 | A3, A4 | A window at 70 % gives no call. Three transport failures leave the pass open and not complete. | Count an open pass as complete. The rank case must fail. |
-| 4 | A7, A11, A12 | The route filter reads `routes.json`, not a word match. The fake child holds `fake-opencode`. A `[b]` task is not a closeout candidate. | Add a route outside `routes.json`. The runner must refuse it. |
-| 4 | A13 | `ps` shows no fake child after the run, and the temp tree is clean. | Leave one fake child. The trap case must fail. |
+| 4 | A2, adapted: a pass that spends quota or money without a gate | R4 refuses a route outside `routes.json` and a route whose `kind` is `metered` before the first call. R5 starts no pass at 70 %. R6 stops a pass at 80 %. | Delete the `kind` check, or start a pass at 70 %. R4 or R5 must fail. |
+| 4 | A3 digit-only count | Every number is labeled: `Tests  N passed`, `state: <word>`, `cap: 1`, `worst`, `median`, `best`, `blocker_recall`, `false_claims`, `real_defects`, and the `by_class` and `by_severity` keys. The state is a word, never a boolean. | Replace a state check with a digit or a truthy test. The case must pass on an empty record. |
+| 4 | A4 vacuous pass | No Phase 4 case passes at the base. R6 requires the word `open` and no complete marker. V2 requires the word `incomplete` and no rank number. R9 greps the whole temp tree for the value. | Empty the fake log and the private folder. R1, R9, and V1 must fail, not pass. |
+| 4 | A5 false plan claim | Each Red and Green task cites its line and its labeled summary. The two plan changes of section 6.2 change no checkbox of an existing task. Tasks 4.10 to 4.14 cite the record files they write. | Run the cited line. A non-zero exit with an `[x]` mark is a false claim. An empty `probe-4.10.txt` line is a false claim. |
+| 4 | A6 registry overstatement | No "complete" status before the passes of task 4.12 exist and checker 4.9 passes. The page shows `incomplete` for a route with fewer than 3 passes (spec D13). | Compare the registry note with the first open Phase 4 task. |
+| 4 | A7 over-broad filter | The route filter reads the `route` field of `routes.json`, never a word in a table. V7 and the leak check match exact key names. The `harness/package.json` exclude list is frozen. | Add a route name that holds the text of a ranked route as a substring. The runner must refuse it. |
+| 4 | A11 inherited environment | Every test pins `HOME`, the `XDG_*` paths, `TMPDIR`, and `TZ`, and it clears `BENCH_TRACK`. The fake binaries are first on `PATH` or set through `BENCH_OPENCODE_BIN`. Run each file once with `BENCH_TRACK=change`. | Set `BENCH_TRACK=change`. The verdict must not move. Leave `HOME` unpinned. C6 must fail on the real store. |
+| 4 | A12 checker and `[b]` task | No Phase 4 task is `[b]`. Task 5.2 is the only `[b]` task of the track, and it is in Phase 5. The orchestrator counts the `[b]` tasks by hand before it trusts a closeout candidate. | Read the status command. A closeout candidate with one `[b]` task is not ready. |
+| 4 | A13 ignored artifact | `ps`, `kill -0`, and the folder check prove the trap, and they read the live process table, not `git diff`. `.tmp/` is ignored, so R13 compares a hash tree inside the test. | Leave one fake child, or write one file into the temp `docs/`. R12 or R13 must fail. |
+| 4 | A14 stale registry note | The orchestrator moves the registry note after the Phase 4 commit, and the note names the first open task of the phase. | Compare the note with the first open Phase 4 task. |
 | 5 | A2, A5 | The publish runs only with the record, and the commit holds explicit paths. | Publish with no record. It must exit 2. |
 | 5 | A13, A14 | The drift check hashes each current `docs/` file. The registry note names the publish state. | Change one `docs/` file after the preview. Publish must exit 2 and name it. |
 
@@ -778,6 +1264,21 @@ For Phase 3, the orchestrator captures the value directly after the commit
 before Red task 3.1 starts. Run `git rev-parse HEAD` once, on that commit,
 and store the value. The accepted Phase 2 HEAD, and the `role_base_sha` of
 this revision, predate the strategy commit. Neither one is the Phase 3 base.
+
+For Phase 4, the orchestrator captures the value directly after the commit
+`docs(model_guide): test strategy for Phase 4 and Phase 3 records`, and
+before Red task 4.1 starts. Run `git rev-parse HEAD` once, on that commit,
+and store the value.
+
+```bash
+git rev-parse HEAD            # -> phase_base_sha for Phase 4
+```
+
+The accepted Phase 3 HEAD `17c1069` and the `role_base_sha` of this revision,
+`5feedcf32c118bead3632920b604fcc377ed7db3`, both predate the strategy
+commit. Neither one is the Phase 4 base. A value that predates the strategy
+commit fails closeout gate item 5, because the closeout diff would then hold
+the strategy commit itself.
 
 ## 12. Evidence to record
 
@@ -810,3 +1311,68 @@ the private folder and the count of qualified commits for each. Tasks 3.14,
 `git status --porcelain -- harness/model-guide/data/sets/` line. The
 strategy records the count rule of S4 as an assumption: D8 for
 `mg-2026-11a`, the D13 pilot counts for `mg-2026-11p*`.
+
+Phase 4, one block per task:
+
+- **4.1, 4.2, 4.3, and 4.8a** record the command, the exit code, the failed
+  test names, and the plan change of section 6.2 in `red-4.1.txt`,
+  `red-4.2.txt`, `red-4.3.txt`, and `red-4.8a.txt`. Task 4.1 also records
+  the one Mid Red gate line of section 3.4 and the `$FAKE_OPENCODE_LOG` lines
+  of one run. Task 4.8a also records the per-test result lines of the Phase 1
+  and Phase 2 cases, because the file as a whole is red.
+- **4.4, 4.5, 4.6, 4.7, and 4.8** record the command, the labeled
+  `Tests  N passed` line, the empty `git status --short docs/` output, and
+  the empty `ps -eo pid,args | grep '[f]ake-opencode'` output. Task 4.7 also
+  records the frozen-path diff of plan task 4.7, and task 4.8 the four page
+  lines.
+- **4.9** records the path `measure/runs/model_guide/check-4.9.json`, its
+  status, and each blocking finding with its fix commit.
+- **4.10** records one line for each route of `routes.json` in
+  `probe-4.10.txt`: the route, the state `reachable`, `unreachable`, or
+  `region-blocked`, the error line, the quota state at the start, and the
+  date. The orchestrator sends each `unreachable` route to the PM (owner
+  question Q8).
+- **4.11** records `pilot-4.11.txt` with the two worst-of-2 scores of each
+  pilot route, the found, missed, and false-claim counts, the per-kind table
+  for the test-only diffs and the code diffs, the two spread values, the two
+  gate rules, and the verdict. The acceptance role records the recomputation
+  of the two spreads.
+- **4.12** records `passes-4.12.txt`: one line for each route and each night,
+  with the pass number, the state, and the score, or the reason
+  `quota stop`, `region block`, or `open pass`.
+- **4.13** records `adjudicate-4.13.txt`: the queue count, the two judge
+  routes and their families, the count of agreed verdicts of each kind, the
+  count of findings left out, the apply exit code, the second lint line, the
+  leak-check exit code, and the manifest commit SHA. The first judge follows
+  assumption A4-2 of section 6.2.
+- **4.14** records the score file path, the leak-check exit code, its commit
+  SHA, and the preview facts: the rank order, the worst score of each route,
+  the `incomplete` rows, and the code review row of the table.
+
+### 12.1 Phase 3 records
+
+Phase 3 was accepted at `17c1069`
+(`measure/runs/model_guide/phase-acceptance-17c1069.json`). The record holds
+no blocking finding. The Phase 3 real runs found three defects that no fake
+caught, and revision 4 of this strategy turns each one into a Phase 4 case:
+
+1. **A 26 MB `gh` output over the 1 MiB `spawnSync` default (ENOBUFS).** The
+   fix raised the output buffer (task 3.13b). The Phase 4 lesson: each tool
+   that calls a live service gets a large-output case (R10, Q6, C7).
+2. **One transient `gh` error that stopped a one hour run.** The fix added a
+   bounded retry (task 3.13d). The Phase 4 lesson: each live call gets a
+   bounded retry case (R7, C4).
+3. **An environment wait value of `NaN` and `Infinity` that hung
+   `Atomics.wait`.** The fix bounded the base of the wait (task 3.13f). The
+   Phase 4 lesson: each wait value gets a bad-value case (R8, C5), and every
+   spawn has a timeout (R14, Q5).
+
+The Red tasks 3.13c and 3.13e wrote their fakes as temp scripts, because the
+Mid Red gate counts a file under `fixtures/fakes/` as a non-test file. That
+record is the reason for the single committed fixture and the recorded
+deviation of section 3.4.
+
+The Phase 3 records also fix two forms that Phase 4 must keep: the role log
+`dispositions:` line takes only spec-review ids of the form `F<n>`, so an
+audit finding goes into the handoff and never into that line; and a date in
+a test or a record comes from a value, never from the wall clock.
