@@ -518,6 +518,39 @@ process.stdout.write(JSON.stringify(fixture[key]) + "\\n");
     expect(logLines(log).filter((line) => line.includes(detailPath))).toHaveLength(1);
     expect(result.stderr).toContain("gh: Not Found (HTTP 404)");
   });
+
+  /** One retry case with a bad env base, a 15 s spawn limit, and a 20 s test
+   * limit, so a hang fails the case instead of blocking the suite. */
+  function waitCase(tag: string, value: string) {
+    const fake = flakyFake(`wait-${tag}`, { kind: "detail", sha: Q[0] }, "gh: Server Error (HTTP 502)", 1);
+    const privateDir = tempDir(`private-wait-${tag}`);
+    const log = join(tempDir(`log-wait-${tag}`), "gh.log");
+    const home = tempDir(`home-wait-${tag}`);
+    const result = spawnSync(
+      join(HARNESS, "node_modules", ".bin", "tsx"),
+      ["model-guide/pick-diffs.ts", "--repo", FORGE, "--set", SET, "--private", privateDir],
+      {
+        cwd: HARNESS,
+        env: env(home, log, { ...extraFor(fake), PICK_DIFFS_RETRY_WAIT_MS: value }),
+        encoding: "utf8",
+        timeout: 15_000,
+      },
+    );
+    return {
+      result,
+      candidateFile: join(privateDir, "candidates", "bodangren__advantage-forge.json"),
+    };
+  }
+
+  for (const value of ["abc", "Infinity", "1e308"]) {
+    it(`P3T3 a bad retry wait of ${value} falls back to 5000 and cannot hang`, () => {
+      const { result, candidateFile } = waitCase(value.replace(/\W/g, "-"), value);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(existsSync(candidateFile), "the candidates file is written").toBe(true);
+      const doc = JSON.parse(readFileSync(candidateFile, "utf8"));
+      expect(doc.qualified.map((entry: any) => entry.sha)).toContain(Q[0]);
+    }, 20_000);
+  }
 });
 
 describe("the write flags", () => {
