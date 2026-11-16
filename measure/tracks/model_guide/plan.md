@@ -898,7 +898,9 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
 - [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
   - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
     holds the exit codes of the four runs and the empty `docs/` status.
-- [~] 3.12d Green. Fix the security findings of 3.12b. Touch no test file.
+- [x] 0fb247b 3.12d Green. Fix the security findings of 3.12b. Touch no test file.
+  - Evidence: commit 0fb247b holds the five tools. `measure/runs/model_guide/green-p3-a1a4e56.log`
+    holds the command output of each run and the empty `docs/` status.
 - [ ] 3.13 The candidates. Run `pick-diffs.ts` for each source repo.
   - Store the lists in the private folder. Store nothing in the repository.
   - Verify: each list has 7 or more qualified commits. When a list has
@@ -1059,7 +1061,9 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
-  - The first judge is `claude-code/claude-opus-5-5[1m]#high`. The second
+  - The first judge is the route of `ra-quota pick` (no Opus, Daniel's rule;
+    a Claude route only when the Claude week is under 80 %, else the next
+    family; PM 2026-11-16). The second
     judge is ByteDance Doubao, `volcengine-agent-plan/ark-code-latest` (spec
     D11). That family is not ranked. The second judge never reads the
     verdicts of the first judge.
