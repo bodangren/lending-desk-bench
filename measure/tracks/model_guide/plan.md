@@ -895,6 +895,16 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     the fix and the result. The case now uses a plant match to move A
     between index 2 and index 1; the only failures left in
     adjudicate.test.ts are the three security cases of 3.12b.
+- [x] 463136a 3.12f Red. Make the adversarial defect tests P3X1-1 and P3X1-2 fail
+  first (it.fails to it).
+  - Verify: only those two cases fail; adjudicate and review-set stay green.
+    Record the result and the P3X1-2 refusal line in
+    `measure/runs/model_guide/red-3.12f.txt`.
+  - Evidence: `measure/runs/model_guide/red-3.12f.txt` holds the three
+    commands, the exit codes, the two failed names, and the pinned
+    `lint: plant-line:` line for P3X1-2.
+- [~] 3.12g Green. Fix P3X1-1 (queue dedup key = claim id) and P3X1-2 (lint
+  refuses a plant off the diff lines). Touch no test file.
 - [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
   - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
     holds the exit codes of the four runs and the empty `docs/` status.
