@@ -308,6 +308,16 @@ function crossesRemovedLine(hunk: Hunk, first: number, last: number): boolean {
   return hunk.body.slice(low + 1, high).some((line) => line.kind === "remove");
 }
 
+/** A plant range holds an added line when a `+` line of the diff lies in
+ * it (spec D5: a plant changes added lines). */
+function holdsAddedLine(hunks: Hunk[], first: number, last: number): boolean {
+  return hunks.some((hunk) =>
+    hunk.body.some(
+      (line) => line.kind === "add" && line.number !== null && line.number >= first && line.number <= last,
+    ),
+  );
+}
+
 interface Plant {
   id: string;
   first: number;
@@ -445,6 +455,9 @@ function readDiff(
     }
     if (hunks.some((hunk) => crossesRemovedLine(hunk, plant.first, plant.last))) {
       failures.push(`lint: plant-removed-line: ${diffId} ${plant.id}`);
+    }
+    if (!holdsAddedLine(hunks, plant.first, plant.last)) {
+      failures.push(`lint: plant-line: ${diffId} ${plant.id}`);
     }
   }
   const sorted = [...plants].sort((a, b) => a.first - b.first);

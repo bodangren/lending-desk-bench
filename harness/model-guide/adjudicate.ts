@@ -249,23 +249,16 @@ function claimOf(finding: any): Entry["claim"] {
   };
 }
 
-/** The key of a claim. Two findings with the same key are the same claim. */
+/** The key of a claim: the same tuple the claim id hashes, so two claims
+ * that differ only by a whitespace shift stay two claims. */
 function claimKey(diffId: string, file: string, line: number, claim: Entry["claim"]): string {
-  return [diffId, file, line, claim.class, claim.severity, claim.title, claim.reason].join(" ");
+  return JSON.stringify([diffId, file, line, claim.class, claim.severity, claim.title, claim.reason]);
 }
 
 /** The route-blind claim id of a finding (spec D11, ruling P3A1-1). It is
  * the first 12 hex characters of the SHA-256 of the claim tuple. */
 function claimId(diffId: string, file: string, line: number, claim: Entry["claim"]): string {
-  const canonical = JSON.stringify([
-    diffId,
-    file,
-    line,
-    claim.class,
-    claim.severity,
-    claim.title,
-    claim.reason,
-  ]);
+  const canonical = claimKey(diffId, file, line, claim);
   return `${diffId}#C${createHash("sha256").update(canonical).digest("hex").slice(0, 12)}`;
 }
 
