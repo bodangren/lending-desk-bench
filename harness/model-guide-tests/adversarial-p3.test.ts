@@ -479,6 +479,37 @@ describe("adversarial phase 3: claim identity and the rule of two", () => {
     );
     expect(verdicts[claimId("d1", claim)]).toBe("unclear");
   });
+
+  it("P3X2-1 findings with shuffled JSON key order are one claim", () => {
+    // claimOf reads named fields, so the source order must not matter.
+    const privateDir = miniPrivate("field-order", plants);
+    const dir = tempDir("raw-field-order");
+    const first = '{"file":"other.ts","line":50,"severity":"major","class":"C1","title":"t","reason":"r"}';
+    const second = '{"reason":"r","title":"t","class":"C1","severity":"major","line":50,"file":"other.ts"}';
+    mkdirSync(join(dir, "route_a"), { recursive: true });
+    mkdirSync(join(dir, "route_b"), { recursive: true });
+    writeFileSync(join(dir, "route_a", "d1.txt"), `\`\`\`json\n{"findings": [${first}]}\n\`\`\`\n`);
+    writeFileSync(join(dir, "route_b", "d1.txt"), `\`\`\`json\n{"findings": [${second}]}\n\`\`\`\n`);
+    const result = runQueue(privateDir, dir, tempDir("home-field-order"));
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(queueItemCount(readQueue(privateDir))).toBe(1);
+  });
+
+  it("P3X2-2 claims that differ only in Unicode normalization get two ids", () => {
+    // NFC "caf\u00e9" and NFD "cafe\u0301" are different code points, so
+    // the byte-exact claim tuple of spec D11 gives two ids.
+    const privateDir = miniPrivate("nfc-nfd", plants);
+    const base = { file: "other.ts", line: 50, severity: "major", class: "C1", reason: "r" };
+    const raw = miniRaw("nfc-nfd", {
+      route_a: [{ ...base, title: "caf\u00e9" }],
+      route_b: [{ ...base, title: "cafe\u0301" }],
+    });
+    const result = runQueue(privateDir, raw, tempDir("home-nfc-nfd"));
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const queue = readQueue(privateDir);
+    expect(queueItemCount(queue)).toBe(2);
+    expect(queue.groups[0].items[0].id).not.toBe(queue.groups[0].items[1].id);
+  });
 });
 
 describe("adversarial phase 3: set lint edges", () => {
@@ -551,6 +582,66 @@ describe("adversarial phase 3: set lint edges", () => {
     const { result } = runLint(privateDir, "empty-diff");
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
     expect(result.stdout).toContain("hunk-header");
+  });
+
+  /** Rewrite added lines as context lines in a temp copy, then fix the hunk
+   * header old count and the key SHA-256. Returns nothing. */
+  function toContext(privateDir: string, diffId: string, numbers: number[]): void {
+    const diffPath = join(privateDir, "sets", "mg-2026-11a", "diffs", `${diffId}.diff`);
+    const lines = readFileSync(diffPath, "utf8").split("\n");
+    let converted = 0;
+    const out = lines.map((line) => {
+      const match = /^L(\d+)\s([-+ ])(.*)$/.exec(line);
+      if (match !== null && match[2] === "+" && numbers.includes(Number(match[1]))) {
+        converted += 1;
+        return `L${match[1]}  ${match[3]}`;
+      }
+      return line;
+    });
+    expect(converted, "the diff holds the converted lines").toBe(numbers.length);
+    out[0] = out[0].replace(/^(@@ -\d+),(\d+) /, (whole, start, count) => `${start},${Number(count) + converted} `);
+    writeFileSync(diffPath, out.join("\n"));
+    const keyPath = join(privateDir, "sets", "mg-2026-11a", "keys", `${diffId}.json`);
+    const key = JSON.parse(readFileSync(keyPath, "utf8"));
+    key.seeded_diff_sha256 = createHash("sha256").update(readFileSync(diffPath)).digest("hex");
+    writeFileSync(keyPath, `${JSON.stringify(key, null, 2)}\n`);
+  }
+
+  function setPlant(privateDir: string, diffId: string, plantId: string, lines: [number, number]): void {
+    const keyPath = join(privateDir, "sets", "mg-2026-11a", "keys", `${diffId}.json`);
+    const key = JSON.parse(readFileSync(keyPath, "utf8"));
+    for (const plant of key.plants) if (plant.id === plantId) plant.new_lines = lines;
+    writeFileSync(keyPath, `${JSON.stringify(key, null, 2)}\n`);
+  }
+
+  it("P3X2-3 a plant that half overlaps added lines passes the lint", () => {
+    // P4 at [43, 44] touches the added line 43; the context line 44 only
+    // brackets the range, so holdsAddedLine accepts it.
+    const privateDir = staged("half-overlap");
+    toContext(privateDir, "mono-01", [44, 45, 46]);
+    setPlant(privateDir, "mono-01", "P4", [43, 44]);
+    const { result } = runLint(privateDir, "half-overlap");
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  it("P3X2-4 a plant on context lines only is refused with a plant-line line", () => {
+    const privateDir = staged("context-only");
+    toContext(privateDir, "mono-01", [44, 45, 46]);
+    setPlant(privateDir, "mono-01", "P4", [44, 45]);
+    const { result } = runLint(privateDir, "context-only");
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toContain("lint: plant-line: mono-01 P4");
+  });
+
+  it("P3X2-5 a plant that spans a removed line is still refused", () => {
+    // P1 at [19, 20] holds added lines on both sides, so the new
+    // plant-line check passes it, but the removed line between them must
+    // still fail the plant-removed-line check.
+    const privateDir = staged("removed-span");
+    setPlant(privateDir, "forge-01", "P1", [19, 20]);
+    const { result } = runLint(privateDir, "removed-span");
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toContain("lint: plant-removed-line: forge-01 P1");
   });
 });
 
