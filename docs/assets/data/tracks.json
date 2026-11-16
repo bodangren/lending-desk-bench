@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-16T04:40:39",
+  "generated_at": "2026-11-16T13:26:30",
   "executor": {
     "series": "opencode",
     "name": "opencode",
@@ -1787,6 +1787,360 @@
           }
         },
         {
+          "run_id": "bf-a-qwen3-8-flash-2026w47-r1",
+          "model": "opencode-go/qwen3.8-flash",
+          "slug": "qwen3-8-flash",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "week": "2026w47",
+          "fixture_revision": 2,
+          "total": 100.0,
+          "repeats": {
+            "week": "2026w47",
+            "n": 1,
+            "median": 100.0,
+            "worst": 100.0,
+            "best": 100.0,
+            "totals": [
+              100.0
+            ],
+            "runs": [
+              "bf-a-qwen3-8-flash-2026w47-r1"
+            ]
+          },
+          "axes": {
+            "repair": 1,
+            "regression": 1,
+            "robustness": 1,
+            "adherence": 1,
+            "quality": 1,
+            "weights": {
+              "repair": 0.45,
+              "regression": 0.2,
+              "robustness": 0.15,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "performance": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": [
+            {
+              "id": "BUG-fn-status-precedence",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "A.returned"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-boundary",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "A.boundary"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-history-order",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "D.history-order"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-filter-case",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "C.filter-case"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-contract-400",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "G.400"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-sec-action-auth",
+              "class": "security",
+              "repaired": true,
+              "detectors": [
+                "F.auth-checkout"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-sec-route-401",
+              "class": "security",
+              "repaired": true,
+              "detectors": [
+                "G.401"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-perf-waterfall",
+              "class": "performance",
+              "repaired": true,
+              "detectors": [
+                "C.parallel-reads"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-perf-dedup",
+              "class": "performance",
+              "repaired": true,
+              "detectors": [
+                "P.dedup-item"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-rel-race",
+              "class": "reliability",
+              "repaired": true,
+              "detectors": [
+                "P.concurrent-checkout"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-rel-return-unguarded",
+              "class": "reliability",
+              "repaired": true,
+              "detectors": [
+                "F.return-not-on-loan"
+              ],
+              "failed_detectors": []
+            }
+          ],
+          "tests": null,
+          "churn_lines": 111,
+          "grader_browser": "chrome",
+          "trend": {
+            "ema": 100.0,
+            "min": 100.0,
+            "max": 100.0,
+            "n": 1,
+            "weeks": [
+              "2026w47"
+            ],
+            "medians": [
+              100.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "bf-b-qwen3-8-flash-2026w47-r1",
+          "model": "opencode-go/qwen3.8-flash",
+          "slug": "qwen3-8-flash",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w47",
+          "fixture_revision": 2,
+          "total": 100.0,
+          "repeats": {
+            "week": "2026w47",
+            "n": 1,
+            "median": 100.0,
+            "worst": 100.0,
+            "best": 100.0,
+            "totals": [
+              100.0
+            ],
+            "runs": [
+              "bf-b-qwen3-8-flash-2026w47-r1"
+            ]
+          },
+          "axes": {
+            "repair": 1,
+            "regression": 1,
+            "robustness": 1,
+            "adherence": 1,
+            "quality": 1,
+            "weights": {
+              "repair": 0.45,
+              "regression": 0.2,
+              "robustness": 0.15,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "performance": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": [
+            {
+              "id": "BUG-fn-status-precedence",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "A.returned"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-boundary",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "A.boundary"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-history-order",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "D.history-order"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-filter-case",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "C.filter-case"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-fn-contract-400",
+              "class": "functional",
+              "repaired": true,
+              "detectors": [
+                "G.400"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-sec-action-auth",
+              "class": "security",
+              "repaired": true,
+              "detectors": [
+                "F.auth-checkout"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-sec-route-401",
+              "class": "security",
+              "repaired": true,
+              "detectors": [
+                "G.401"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-perf-waterfall",
+              "class": "performance",
+              "repaired": true,
+              "detectors": [
+                "C.parallel-reads"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-perf-dedup",
+              "class": "performance",
+              "repaired": true,
+              "detectors": [
+                "P.dedup-item"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-rel-race",
+              "class": "reliability",
+              "repaired": true,
+              "detectors": [
+                "P.concurrent-checkout"
+              ],
+              "failed_detectors": []
+            },
+            {
+              "id": "BUG-rel-return-unguarded",
+              "class": "reliability",
+              "repaired": true,
+              "detectors": [
+                "F.return-not-on-loan"
+              ],
+              "failed_detectors": []
+            }
+          ],
+          "tests": null,
+          "churn_lines": 58,
+          "grader_browser": "chrome",
+          "trend": {
+            "ema": 100.0,
+            "min": 100.0,
+            "max": 100.0,
+            "n": 1,
+            "weeks": [
+              "2026w47"
+            ],
+            "medians": [
+              100.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
           "run_id": "bf-b-kimi-k2-7-code-2026w46-r1",
           "model": "opencode-go/kimi-k2.7-code",
           "slug": "kimi-k2-7-code",
@@ -2377,6 +2731,83 @@
             "kind": "opencode",
             "name": "opencode",
             "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "tt-a-qwen3-8-flash-2026w47-r1",
+          "model": "opencode-go/qwen3.8-flash",
+          "slug": "qwen3-8-flash",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "week": "2026w47",
+          "fixture_revision": 2,
+          "total": 96.8,
+          "repeats": {
+            "week": "2026w47",
+            "n": 1,
+            "median": 96.8,
+            "worst": 96.8,
+            "best": 96.8,
+            "totals": [
+              96.8
+            ],
+            "runs": [
+              "tt-a-qwen3-8-flash-2026w47-r1"
+            ]
+          },
+          "axes": {
+            "kill": 1,
+            "validity": 1,
+            "adherence": 1,
+            "quality": 0.6833333333333333,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 1,
+            "security": 1,
+            "reliability": 1
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 39,
+            "valid": 39
+          },
+          "churn_lines": 20,
+          "grader_browser": "none",
+          "trend": {
+            "ema": 96.8,
+            "min": 96.8,
+            "max": 96.8,
+            "n": 1,
+            "weeks": [
+              "2026w47"
+            ],
+            "medians": [
+              96.8
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
           },
           "ranked": true,
           "trust": {
@@ -3384,6 +3815,83 @@
             "kind": "opencode",
             "name": "opencode",
             "version": "opencode v2.1.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "tt-b-qwen3-8-flash-2026w47-r1",
+          "model": "opencode-go/qwen3.8-flash",
+          "slug": "qwen3-8-flash",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w47",
+          "fixture_revision": 2,
+          "total": 28.3,
+          "repeats": {
+            "week": "2026w47",
+            "n": 1,
+            "median": 28.3,
+            "worst": 28.3,
+            "best": 28.3,
+            "totals": [
+              28.3
+            ],
+            "runs": [
+              "tt-b-qwen3-8-flash-2026w47-r1"
+            ]
+          },
+          "axes": {
+            "kill": 0.13333333333333333,
+            "validity": 0.8333333333333334,
+            "adherence": 0.22222222222222224,
+            "quality": 0.13703703703703704,
+            "weights": {
+              "kill": 0.6,
+              "validity": 0.2,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": {
+            "functional": 0.2857142857142857,
+            "security": 0,
+            "reliability": 0
+          },
+          "request_rates": null,
+          "bugs": null,
+          "tests": {
+            "total": 36,
+            "valid": 30
+          },
+          "churn_lines": 2,
+          "grader_browser": "none",
+          "trend": {
+            "ema": 28.3,
+            "min": 28.3,
+            "max": 28.3,
+            "n": 1,
+            "weeks": [
+              "2026w47"
+            ],
+            "medians": [
+              28.3
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
           },
           "ranked": true,
           "trust": {
@@ -4549,6 +5057,160 @@
             "n": 1,
             "weeks": [
               "2026w46"
+            ],
+            "medians": [
+              100.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "ch-a-qwen3-8-flash-2026w47-r1",
+          "model": "opencode-go/qwen3.8-flash",
+          "slug": "qwen3-8-flash",
+          "arm": "a",
+          "arm_label": "No Skills",
+          "week": "2026w47",
+          "fixture_revision": 2,
+          "total": 100.0,
+          "repeats": {
+            "week": "2026w47",
+            "n": 1,
+            "median": 100.0,
+            "worst": 100.0,
+            "best": 100.0,
+            "totals": [
+              100.0
+            ],
+            "runs": [
+              "ch-a-qwen3-8-flash-2026w47-r1"
+            ]
+          },
+          "axes": {
+            "change": 1,
+            "regression": 1,
+            "robustness": 1,
+            "adherence": 1,
+            "quality": 1,
+            "weights": {
+              "change": 0.45,
+              "regression": 0.25,
+              "robustness": 0.1,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": null,
+          "request_rates": {
+            "CR-1": 1,
+            "CR-2": 1,
+            "CR-3": 1,
+            "CR-4": 1
+          },
+          "bugs": null,
+          "tests": null,
+          "churn_lines": 89,
+          "grader_browser": "chrome",
+          "trend": {
+            "ema": 100.0,
+            "min": 100.0,
+            "max": 100.0,
+            "n": 1,
+            "weeks": [
+              "2026w47"
+            ],
+            "medians": [
+              100.0
+            ]
+          },
+          "executor": {
+            "kind": "opencode",
+            "name": "opencode",
+            "version": "opencode v2.2.4"
+          },
+          "ranked": true,
+          "trust": {
+            "valid": true,
+            "trusted": true,
+            "publishable": true,
+            "rankable": true,
+            "under_load": false
+          }
+        },
+        {
+          "run_id": "ch-b-qwen3-8-flash-2026w47-r1",
+          "model": "opencode-go/qwen3.8-flash",
+          "slug": "qwen3-8-flash",
+          "arm": "b",
+          "arm_label": "Skills",
+          "week": "2026w47",
+          "fixture_revision": 2,
+          "total": 100.0,
+          "repeats": {
+            "week": "2026w47",
+            "n": 1,
+            "median": 100.0,
+            "worst": 100.0,
+            "best": 100.0,
+            "totals": [
+              100.0
+            ],
+            "runs": [
+              "ch-b-qwen3-8-flash-2026w47-r1"
+            ]
+          },
+          "axes": {
+            "change": 1,
+            "regression": 1,
+            "robustness": 1,
+            "adherence": 1,
+            "quality": 1,
+            "weights": {
+              "change": 0.45,
+              "regression": 0.25,
+              "robustness": 0.1,
+              "adherence": 0.1,
+              "quality": 0.1
+            }
+          },
+          "adherence": {
+            "contract": 1,
+            "classes": []
+          },
+          "class_rates": null,
+          "request_rates": {
+            "CR-1": 1,
+            "CR-2": 1,
+            "CR-3": 1,
+            "CR-4": 1
+          },
+          "bugs": null,
+          "tests": null,
+          "churn_lines": 93,
+          "grader_browser": "chrome",
+          "trend": {
+            "ema": 100.0,
+            "min": 100.0,
+            "max": 100.0,
+            "n": 1,
+            "weeks": [
+              "2026w47"
             ],
             "medians": [
               100.0
