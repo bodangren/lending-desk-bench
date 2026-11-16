@@ -903,8 +903,10 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: `measure/runs/model_guide/red-3.12f.txt` holds the three
     commands, the exit codes, the two failed names, and the pinned
     `lint: plant-line:` line for P3X1-2.
-- [~] 3.12g Green. Fix P3X1-1 (queue dedup key = claim id) and P3X1-2 (lint
+- [x] 8fee6bb 3.12g Green. Fix P3X1-1 (queue dedup key = claim id) and P3X1-2 (lint
   refuses a plant off the diff lines). Touch no test file.
+  - Evidence: commit 8fee6bb holds the two tools. `measure/runs/model_guide/green-p3-c9d60b9.log`
+    holds the command output of each run and the empty `docs/` status.
 - [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
   - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
     holds the exit codes of the four runs and the empty `docs/` status.
