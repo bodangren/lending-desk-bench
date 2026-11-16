@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -559,6 +559,56 @@ describe("J4 no rescue", () => {
     expect(record.false_claims).toBe(0);
     expect(record.score).toBe(0);
     expect(record.state).toBe("provisional");
+  });
+});
+
+describe("P3B1 the write targets and the set id", () => {
+  it("P3B1-2 refuses a symlink at the queue target before any write", () => {
+    const privateDir = staged("queue-symlink");
+    const raw = buildRaw("queue-symlink", { route_a: { "forge-01": [A] } });
+    const dir = join(privateDir, "sets", SET, "adjudication");
+    mkdirSync(dir, { recursive: true });
+    const target = join(dir, "queue.json");
+    const outside = join(tempDir("outside"), "outside.json");
+    writeFileSync(outside, "keep\n");
+    symlinkSync(outside, target);
+    const result = queue(privateDir, raw);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.split("\n").map((item) => item.trim())).toContain(
+      `queue: symlink: ${target}`,
+    );
+    expect(readFileSync(outside, "utf8")).toBe("keep\n");
+  });
+
+  it("P3B1-2 refuses a symlink at the verdicts target before any write", () => {
+    const privateDir = staged("apply-symlink");
+    const raw = buildRaw("apply-symlink", { route_a: { "forge-01": [A] } });
+    expect(queue(privateDir, raw).status, "the queue is built first").toBe(0);
+    const target = verdictsFile(privateDir);
+    const outside = join(tempDir("outside-apply"), "outside.json");
+    writeFileSync(outside, "keep\n");
+    symlinkSync(outside, target);
+    const judges = { [ID_A]: "real-defect" };
+    const result = apply(privateDir, judges, judges);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.split("\n").map((item) => item.trim())).toContain(
+      `apply: symlink: ${target}`,
+    );
+    expect(readFileSync(outside, "utf8")).toBe("keep\n");
+    expect(readJson(keyFile(privateDir)).real_defects).toEqual([]);
+  });
+
+  it("P3B1-5 refuses a set id that is not a plain name", () => {
+    const privateDir = staged("bad-id");
+    const raw = buildRaw("bad-id", { route_a: { "forge-01": [A] } });
+    const result = spawnSync(
+      join(HARNESS, "node_modules", ".bin", "tsx"),
+      ["model-guide/adjudicate.ts", "queue", "../x", "--private", privateDir, "--raw", raw],
+      { cwd: HARNESS, env: env(tempDir("home-bad-id")), encoding: "utf8", timeout: 60_000 },
+    );
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim()).toBe("queue: set-id: ../x");
+    expect(existsSync(join(privateDir, "x", "adjudication", "queue.json"))).toBe(false);
   });
 });
 

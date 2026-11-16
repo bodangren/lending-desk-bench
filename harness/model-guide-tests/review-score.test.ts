@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -705,6 +705,38 @@ describe("R6 the score file shape and the write flags", () => {
     expect(row.pick).toBe(route);
     expect(row.evidence).toBe("track A: worst 3.8 (n=3)");
     expect(row.evidence_date).toBe("2026-11-22");
+  });
+
+  it("P3B1-2 refuses a symlink at the score-file target before any write", () => {
+    const scoresDir = tempDir("scores-symlink");
+    const outside = join(tempDir("outside"), "outside.json");
+    writeFileSync(outside, "keep\n");
+    const target = join(scoresDir, `${SET}.json`);
+    symlinkSync(outside, target);
+    const outputsDir = buildOutputs("symlink", { "forge-01": "match-01" });
+    const result = runScore(scoresDir, outputsDir, { route: "route/a", pass: 1 });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.split("\n").map((item) => item.trim())).toContain(
+      `score: symlink: ${target}`,
+    );
+    expect(readFileSync(outside, "utf8")).toBe("keep\n");
+  });
+
+  it("P3B1-5 refuses a set id that is not a plain name", () => {
+    const scoresDir = tempDir("scores-bad-id");
+    const outputsDir = buildOutputs("bad-id");
+    const result = spawnSync(
+      join(HARNESS, "node_modules", ".bin", "tsx"),
+      [
+        "model-guide/review-score.ts", "score",
+        "--private", privateDir(), "--set", "../x", "--route", "route/a", "--pass", "1",
+        "--date", "2026-11-20", "--outputs", outputsDir, "--scores", scoresDir,
+      ],
+      { cwd: HARNESS, env: env(tempDir("home-bad-id")), encoding: "utf8", timeout: 60_000 },
+    );
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim()).toBe("score: set-id: ../x");
+    expect(existsSync(join(scoresDir, "..", "x.json"))).toBe(false);
   });
 
   it("each missing value exits 2 with one named line and writes nothing", () => {

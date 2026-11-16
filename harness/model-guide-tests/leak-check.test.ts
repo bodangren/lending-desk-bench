@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -30,7 +30,8 @@ import { afterAll, describe, expect, it } from "vitest";
  *                  prose word "witness" does not fail (G5, G7). A string
  *                  value that holds the word does not fail (G7).
  *                  Line: `leak-check: key-field: <path> <key>`
- *   private-path   the exact absolute path of `--private`.
+ *   private-path   the exact absolute path of `--private`, and its real path
+ *                  when `--private` is a symbolic link (P3B1-3).
  *                  Line: `leak-check: private-path: <path>`
  *   seeded-line    a line of a seeded diff of the private set, of 20
  *                  characters or more, that is not in the matching source
@@ -41,7 +42,10 @@ import { afterAll, describe, expect, it } from "vitest";
  * A target that holds none of these passes. `<path>` is repo-relative for a
  * staged or `docs/` file, and the absolute path for a preview file. The
  * check exits 0 when no target fails and 2 when one target or more fails,
- * with one line for each finding.
+ * with one line for each finding. A broken symbolic link under `docs/` or
+ * the preview folder is skipped: it holds no text and is not a finding
+ * (P3B1-4). A staged path is read byte-exact, including a non-ASCII name
+ * (P3B1-1).
  *
  * The fixture set `sets/mg-2026-11a/` gives the private inputs: `diffs/`
  * holds the seeded diffs and `src/` holds their source diffs. A plant line
@@ -202,6 +206,15 @@ describe("K3 the private path", () => {
     stage(dir, "path.txt", `the folder is ${privateDir}\n`, home);
     expectRefusal(privateDir, dir, "leak-check: private-path: path.txt", "path");
   });
+
+  it("K3 finds the real path of a symlinked private folder", () => {
+    const { dir, home } = repo("private-link");
+    const real = privateCopy("private-link-real");
+    const link = join(tempDir("private-link-parent"), "private-link");
+    symlinkSync(real, link, "dir");
+    stage(dir, "path.txt", `the folder is ${real}\n`, home);
+    expectRefusal(link, dir, "leak-check: private-path: path.txt", "private-link");
+  });
 });
 
 describe("K4 the seeded line", () => {
@@ -227,6 +240,17 @@ describe("K4 the seeded line", () => {
     const result = leak(privateDir, dir, { home: tempDir("home-source-line") });
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   });
+
+  it("K4 finds a seeded line under a non-ASCII staged path", () => {
+    const { dir, home } = repo("non-ascii");
+    const privateDir = privateCopy("non-ascii");
+    const seeded = bodyTexts(join(privateDir, "sets", SET, "diffs", "forge-01.diff"));
+    const source = bodyTexts(join(privateDir, "sets", SET, "src", "forge-01.diff"));
+    const secret = seeded.find((text) => text.length >= 20 && !source.includes(text));
+    expect(secret).toBeTruthy();
+    stage(dir, "café.txt", `${secret}\n`, home);
+    expectRefusal(privateDir, dir, "leak-check: seeded-line: café.txt", "non-ascii");
+  });
 });
 
 describe("K5 docs and preview, unstaged", () => {
@@ -249,6 +273,17 @@ describe("K5 docs and preview, unstaged", () => {
     const preview = tempDir("preview-out");
     write(preview, "page.json", `${JSON.stringify({ line: secret })}\n`);
     expectRefusal(privateDir, dir, `leak-check: seeded-line: ${join(preview, "page.json")}`, "preview", { preview });
+  });
+
+  it("K5 does not crash on a broken symlink under docs/", () => {
+    const { dir, home } = repo("broken-link");
+    const privateDir = privateCopy("broken-link");
+    stage(dir, "notes.md", "A clean note.\n", home);
+    mkdirSync(join(dir, "docs"), { recursive: true });
+    symlinkSync(join(tempDir("gone"), "missing.txt"), join(dir, "docs", "broken"));
+    const result = leak(privateDir, dir, { home: tempDir("home-broken-link") });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(result.stdout.trim()).toBe("");
   });
 });
 

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -365,6 +365,31 @@ describe("G9 environment", () => {
     });
     expect(accepted.doc.selected).toEqual(Q);
     expect(existsSync(join(accepted.home, ".local", "share", "lending-desk-bench"))).toBe(false);
+  });
+});
+
+describe("P3B1 the write target and the set id", () => {
+  it("P3B1-2 refuses a symlink at the candidates target before any write", () => {
+    const privateDir = tempDir("symlink-private");
+    mkdirSync(join(privateDir, "candidates"), { recursive: true });
+    const target = join(privateDir, "candidates", "bodangren__advantage-forge.json");
+    const outside = join(tempDir("outside"), "outside.json");
+    writeFileSync(outside, "keep\n");
+    symlinkSync(outside, target);
+    const result = run(["--repo", FORGE, "--set", SET, "--private", privateDir]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.split("\n").map((item) => item.trim())).toContain(
+      `pick-diffs: symlink: ${target}`,
+    );
+    expect(readFileSync(outside, "utf8")).toBe("keep\n");
+  });
+
+  it("P3B1-5 refuses a set id that is not a plain name", () => {
+    const privateDir = tempDir("bad-id-private");
+    const result = run(["--repo", FORGE, "--set", "../x", "--private", privateDir]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim()).toBe("pick-diffs: set-id: ../x");
+    expect(existsSync(join(privateDir, "candidates"))).toBe(false);
   });
 });
 

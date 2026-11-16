@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -402,6 +402,30 @@ describe("S4 the count profile", () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
     expect(result.stdout.split("\n").map((item) => item.trim())).toContain("lint: counts: diffs 5, needs 6");
     expect(existsSync(join(setsDir, `${PILOT}.json`))).toBe(false);
+  });
+});
+
+describe("P3B1 the write target and the set id", () => {
+  it("P3B1-2 refuses a symlink at the manifest target before any write", () => {
+    const stagedSet = staged("symlink");
+    const outsideDir = tempDir("outside");
+    const outside = join(outsideDir, "outside.json");
+    writeFileSync(outside, "keep\n");
+    symlinkSync(outside, stagedSet.manifest);
+    const result = lint(stagedSet.privateDir, stagedSet.setsDir, {});
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.split("\n").map((item) => item.trim())).toContain(
+      `lint: symlink: ${stagedSet.manifest}`,
+    );
+    expect(readFileSync(outside, "utf8")).toBe("keep\n");
+  });
+
+  it("P3B1-5 refuses a set id that is not a plain name", () => {
+    const stagedSet = staged("bad-id");
+    const result = lint(stagedSet.privateDir, stagedSet.setsDir, { set: "../x" });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim()).toBe("lint: set-id: ../x");
+    expect(existsSync(join(stagedSet.setsDir, "..", "x.json"))).toBe(false);
   });
 });
 
