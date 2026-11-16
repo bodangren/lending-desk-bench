@@ -45,7 +45,7 @@
     import {
       loadData, fmtTokens, fmtUsd, fmtMonthlyPct, fmtSecs, fmtPct1, pct, domainRate, DOMAIN_ORDER,
       modelColor, chartDefaults, mountError, setActiveNav, escapeHtml, cacheHitRate, initSortable,
-      fmtRepeats,
+      fmtRepeats, boardStanding, BOARD_FROZEN_NOTE,
     } from "./assets/js/site.js";
 
     setActiveNav();
@@ -68,6 +68,7 @@
             <div class="chart-box"><canvas id="chart-scores"></canvas></div>
             <div class="chart-box"><canvas id="chart-run-time"></canvas></div>
           </div>
+          <p class="section-lede board-frozen">${escapeHtml(BOARD_FROZEN_NOTE)}</p>
           <div class="table-wrap mt-2">
             <table class="data" id="full-table">
               <thead>
@@ -88,6 +89,7 @@
               <tbody></tbody>
             </table>
           </div>
+          <p class="muted" style="margin:0.9rem 0 0">Provisional: fewer than 3 runs, or runs more than 2 weeks old. Compare these rows with care.</p>
         </section>
 
         <section class="card" id="history-results" hidden></section>
@@ -168,8 +170,11 @@
         const why = !t ? "" : t.under_load
           ? "graded while the host was busy"
           : !t.valid ? "the run is invalid" : "a trust flag failed";
+        // The board is frozen. A row with too few runs or an old run week is
+        // provisional: it does not stand next to rows with three fresh runs.
+        const standing = boardStanding(m.repeats, data.generated_at);
         return `
-        <tr data-sort-name="${escapeHtml(m.name)}" data-sort-score="${m.score.total}"
+        <tr${standing.provisional ? ' class="provisional-row"' : ""} data-sort-name="${escapeHtml(m.name)}" data-sort-score="${m.score.total}"
             data-sort-adherence="${m.score.adherence ?? ""}"
             data-sort-passes="${m.passes.passed / m.passes.total}"
             data-sort-runtime="${m.wall_seconds ?? ""}"
@@ -184,6 +189,10 @@
           </td>
           <td class="num score">${m.score.total.toFixed(1)}${
             unranked ? `<span class="unranked" title="Unranked: ${why}.">unranked</span>` : ""
+          }${
+            standing.provisional
+              ? `<span class="provisional" title="Provisional: ${escapeHtml(standing.reason)}. Not compared on equal terms.">provisional</span>`
+              : ""
           }<div class="subline">${escapeHtml(fmtRepeats(m.repeats))}${m.fixture_revision ? ` · r${m.fixture_revision}` : ""}</div></td>
           <td class="num">${m.score.adherence == null ? "—" : pct(m.score.adherence)}</td>
           <td class="num">${m.passes.passed}/${m.passes.total}</td>

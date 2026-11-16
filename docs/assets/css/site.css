@@ -387,11 +387,23 @@ footer.site-footer a { color: var(--accent); }
 ::-webkit-scrollbar-thumb:hover { background: var(--panel-2); }
 
 /* A total that failed a SCORING.md trust flag. Shown, but never presented as a rank. */
-.unranked {
+.unranked,
+.provisional {
   display: block;
   font-size: 0.7rem;
   font-weight: 400;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   opacity: 0.7;
+}
+
+/* A row that does not stand on equal terms with the rest of the board. */
+.provisional-row td {
+  opacity: 0.72;
+}
+
+/* The frozen board note. */
+.board-frozen {
+  border-left: 2px solid var(--line);
+  padding-left: 0.75rem;
 }

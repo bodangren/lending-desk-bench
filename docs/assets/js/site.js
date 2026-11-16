@@ -35,6 +35,78 @@ export function fmtRepeats(repeats) {
   return repeats.n > 1 ? `worst ${repeats.worst.toFixed(1)} · ${repeats.n} runs · ${repeats.week}` : `1 run · ${repeats.week}`;
 }
 
+/** The board is frozen. A harder test replaces it. */
+export const BOARD_FROZEN_NOTE =
+  "This board is frozen. The current task no longer separates the top models. A harder test on real code from our own repositories will replace it.";
+
+/** "YYYYwNN" -> { year, week }, or null for text that is not a run week. */
+function parseRunWeek(text) {
+  if (typeof text !== "string") return null;
+  const m = /^(\d{4})w(\d{1,2})$/.exec(text.trim());
+  if (!m) return null;
+  const year = Number(m[1]);
+  const week = Number(m[2]);
+  if (week < 1 || week > 53) return null;
+  return { year, week };
+}
+
+/** The Monday that opens an ISO week, as a UTC timestamp. */
+function isoWeekStart({ year, week }) {
+  const jan4 = Date.UTC(year, 0, 4);
+  const jan4Day = new Date(jan4).getUTCDay() || 7;
+  const week1Monday = jan4 - (jan4Day - 1) * 86400000;
+  return week1Monday + (week - 1) * 7 * 86400000;
+}
+
+/** ISO year and week of a UTC date. */
+function isoWeekOfDate(date) {
+  const thursday = new Date(date.getTime());
+  thursday.setUTCDate(thursday.getUTCDate() + 4 - (thursday.getUTCDay() || 7));
+  const year = thursday.getUTCFullYear();
+  const yearStart = Date.UTC(year, 0, 1);
+  const week = Math.ceil(((thursday.getTime() - yearStart) / 86400000 + 1) / 7);
+  return { year, week };
+}
+
+/** ISO year and week of the date part of a stamp such as "2026-11-16T13:26:29". */
+function isoWeekOfStamp(stamp) {
+  if (typeof stamp !== "string") return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(stamp.trim());
+  if (!m) return null;
+  const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  if (Number.isNaN(date.getTime())) return null;
+  return isoWeekOfDate(date);
+}
+
+/** Whole ISO weeks from one week to another. */
+function weeksApart(from, to) {
+  return Math.round((isoWeekStart(to) - isoWeekStart(from)) / (7 * 86400000));
+}
+
+/**
+ * Standing of a board row. A row is provisional when it has fewer than 3 runs
+ * or when its run week is more than 2 ISO weeks before the board's ISO week.
+ */
+export function boardStanding(repeats, generatedAt) {
+  if (!repeats) return { provisional: true, reason: "no repeats" };
+
+  const runWeek = parseRunWeek(repeats.week);
+  if (!runWeek) return { provisional: true, reason: "no run week" };
+
+  const n = Number(repeats.n);
+  if (!Number.isFinite(n)) return { provisional: true, reason: "no run count" };
+
+  const parts = [];
+  if (n < 3) parts.push(n === 1 ? "1 run" : `${n} runs`);
+
+  const boardWeek = isoWeekOfStamp(generatedAt);
+  if (boardWeek) {
+    const age = weeksApart(runWeek, boardWeek);
+    if (age > 2) parts.push(`${repeats.week}, ${age} weeks old`);
+  }
+  return { provisional: parts.length > 0, reason: parts.join(" · ") };
+}
+
 export function loadData() {
   if (!_dataPromise) {
     _dataPromise = fetch(new URL("../data/benchmark.json", import.meta.url), { cache: "no-cache" })
