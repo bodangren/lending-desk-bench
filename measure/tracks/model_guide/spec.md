@@ -589,6 +589,12 @@ questions".
       `kimi-code-plan-cn/kimi-for-coding#high`, and
       `opencode/hy4-flash-free`. A pilot route that is
       unreachable or region-blocked is replaced by the next route of D12.
+      The Kimi route is replaced when it is in wait (spec D15) at 02:00 on a
+      pilot night. The next route of D12 after MiniMax M3.1 Flash takes its
+      place: `opencode-go/deepseek-v4.1-flash`. Kimi gets its passes after
+      its reset, on the night of 2026-11-22. When Kimi has fewer than 3
+      passes after that night, it shows `incomplete` and gets no rank
+      (PM 2026-11-16).
       The set goes to ranking only when both rules hold:
       - The best worst-of-2 score minus the lowest worst-of-2 score is 20
         points or more.
@@ -610,7 +616,8 @@ questions".
       2026-11-22. So the first track A results still land by 2026-11-22
       (D20). A reseed does not fit before 2026-11-22. The orchestrator tells
       the PM the new date, and the page shows `incomplete` for each route
-      without 3 complete passes.
+      without 3 complete passes. The Kimi substitution rule above is part of
+      D13 (PM 2026-11-16).
     - **Rank.** The rank uses the worst pass score of the N passes. A tie
       goes to the higher worst blocker recall, and then to the higher median
       score. A route with fewer than 3 complete passes shows `incomplete` and
