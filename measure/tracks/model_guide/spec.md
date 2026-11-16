@@ -69,12 +69,17 @@ The PM decided these points on 2026-11-14. Each decision binds the track.
 - **OD4. Q5, the merge on page B.** The merge joins only the `#<variant>`
   rows and the `[1m]` rows of one route. The same model on another provider
   stays a separate row.
-- **OD5. F5 and F16, the second judge.** The second judge is ByteDance
-  Doubao, the route `volcengine-agent-plan/ark-code-latest`. That family is
-  not ranked. Its start test passed on 2026-11-14 (EV14). Only the verdicts
-  that both judges agree on count. A disputed finding is left out and never
-  counts against a route. An unclear verdict never takes away the rank of a
-  route. The PM decided this rule on 2026-11-14 (F16).
+- **OD5. F5 and F16, the second judge.** The second judge is the route of
+  `ra-quota pick` at the time of task 4.13. Its family is outside each
+  ranked family of D12, and outside the families of the fixture author and
+  the first judge. The route passes a start test before its first judge
+  call. The orchestrator logs the route that judged each finding. When no
+  such route is ready, a disputed finding is left out and never counts
+  against a route. Only the verdicts that both judges agree on count. An
+  unclear verdict never takes away the rank of a route. The former judge
+  passed its start test on 2026-11-14 (EV14). The PM replaced that route on
+  2026-11-16 (PM 2026-11-16). The PM decided the rule of two on 2026-11-14
+  (F16).
 - **OD6. Q7, the print-audit error types.** The file
   `~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json`
   holds the error types. Its SHA-256 is
@@ -174,7 +179,11 @@ The author measured each item on 2026-11-14 with read-only commands.
   They copy scripts into a temp repo and start no model.
 - **EV14. The start test of the second judge.** The orchestrator ran a start
   test on 2026-11-14. The route `volcengine-agent-plan/ark-code-latest`
-  answered `ARK OK`. So the second judge of D11 is reachable on 2026-11-14.
+  answered `ARK OK`. That test is the historical record only. The PM
+  replaced that route on 2026-11-16 (PM 2026-11-16). Both Ark plans are used
+  up until about 2026-11-22: `ark-agent` (monthly quota exceeded) and
+  `ark-coding` (error 2056). The arkcli SSO credential has expired. D11
+  holds the rule that replaces this route.
 
 ## Definitions
 
@@ -474,15 +483,17 @@ questions".
       only to remove duplicates. A group never gets one verdict for all of
       its members.
     - **The judges.** Two judges read each finding. The first judge is the
-      route `claude-code/claude-opus-5-5[1m]#high`. The second judge is
-      ByteDance Doubao, the route `volcengine-agent-plan/ark-code-latest`.
-      That family is not ranked. Its start test passed on 2026-11-14 (EV14).
-      The Ark plan ends at about 2026-11-22. After that date, or when a start
-      test fails, the second judge comes from a family that is not ranked in
-      that round. When no such judge is available, a disputed finding is left
-      out and never counts against a route. The second judge never reads the
-      verdicts of the first judge. Neither judge sees the route name of a
-      finding.
+      route `claude-code/claude-opus-5-5[1m]#high`. The second judge is the
+      route of `ra-quota pick` at the time of task 4.13. That family is
+      outside each ranked family of D12. It is also outside the family of
+      the fixture author (OpenAI, D5) and the family of the first judge.
+      The route passes a start test before its first judge call. The
+      orchestrator logs the route that judged each finding. When no such
+      route is ready, a disputed finding is left out and never counts
+      against a route. The second judge never reads the verdicts of the
+      first judge. Neither judge sees the route name of a finding. The PM
+      replaced the former second judge, the ByteDance Doubao route, on
+      2026-11-16 (PM 2026-11-16).
     - **The verdicts.** Each judge gives one verdict to each finding:
       - `real-defect`: the defect was in the source diff before the seeding.
         It goes to `real_defects` of the key. It is neutral in the score. The
@@ -1073,9 +1084,10 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
 - **Q9 (D5, D11).** Is Opus the fixture author and the first judge?
   Default: yes. The PM changed the fixture author on 2026-11-16 (D5). The
   first judge of D11 stays as written. Opus is not in the ranked list. The
-  adjudication is blind to the route name. A second judge of a family that
-  is not ranked reads each finding: ByteDance Doubao on
-  `volcengine-agent-plan/ark-code-latest` (OD5).
+  adjudication is blind to the route name. The second judge is the route of
+  `ra-quota pick` at the time of task 4.13. Its family is outside each
+  ranked family of D12, and outside the families of the fixture author and
+  the first judge (OD5, PM 2026-11-16).
 - **Q10 (D13).** Are the weights 5, 2, and 1, the false-claim cost of 2, and
   N = 3 correct? Default: yes, for the first set.
 
@@ -1102,7 +1114,9 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
   id each quarter limits this.
 - **R3. Same-family bias.** The first judge is in the same family as the
   Sonnet route. The PM changed the fixture author on 2026-11-16 (D5). The
-  second judge is ByteDance Doubao, a family that is not ranked. Only the
+  second judge is the route of `ra-quota pick` at the time of task 4.13.
+  Its family is outside each ranked family of D12, and outside the families
+  of the fixture author and the first judge (D11, PM 2026-11-16). Only the
   verdicts that both judges agree on count. The blind adjudication and the
   fixed operator catalog limit the bias. Q9 covers it.
 - **R4. Unmatched true findings.** A good model can find real defects. D11
