@@ -872,6 +872,17 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     holds.
   - Verify: `measure/runs/model_guide/check-3.12.json` has status pass, or
     each blocking finding has a fix commit.
+- [x] 0a898f2 3.12a Red. Review round 1 tests, correctness (P3A1-1 claim ids,
+  P3A1-2 window, P3A1-3/4 missed counts, P3A1-5 D7 key schema). Change
+  `adjudicate.test.ts`, `review-score.test.ts`, and `review-set.test.ts`.
+  - Verify: the new and changed tests fail at HEAD. Record the failed test
+    names in `measure/runs/model_guide/red-3.12a.txt`.
+  - Evidence: `measure/runs/model_guide/red-3.12a.txt` holds the four
+    commands, the exit codes, the failed test names, and the changed id
+    assertions. No committed fixture changed.
+- [ ] 3.12b Red. Review round 1 tests, security (P3B1-1 to P3B1-5).
+- [ ] 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
+- [ ] 3.12d Green. Fix the security findings of 3.12b. Touch no test file.
 - [ ] 3.13 The candidates. Run `pick-diffs.ts` for each source repo.
   - Store the lists in the private folder. Store nothing in the repository.
   - Verify: each list has 7 or more qualified commits. When a list has
