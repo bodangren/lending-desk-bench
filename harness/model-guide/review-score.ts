@@ -17,9 +17,12 @@
  *   <private>/sets/<set_id>/keys/<diff_id>.json
  * The outputs folder holds one raw review per diff:
  *   <outputs>/<diff_id>.txt
- * The verdicts file is a flat JSON object. Each key is a finding id of the
- * form `<diff_id>#F<n>`, where `n` counts the findings of the diff before the
- * 30-finding cap. Each value is `real-defect`, `false-claim`, or `unclear`.
+ * The verdicts file is a flat JSON object. Each key is a claim id of the form
+ * `<diff_id>#C<12 hex>`, and each value is `real-defect`, `false-claim`, or
+ * `unclear`. The claim id is route-blind: it is the first 12 hex characters
+ * of the SHA-256 of
+ * `JSON.stringify([diff_id, file, line, class, severity, title, reason])`.
+ * The same claim in two routes gets the same id and the same verdict.
  *
  * The match of spec D10: a finding matches a plant when the file is equal,
  * the line is from `new_lines[0] - 3` to `new_lines[1] + 3`, and the class is
@@ -49,8 +52,9 @@
  * counted finding pointed at. A finding points at a plant when the file is
  * equal and the line is in the window of the plant. The class of the finding
  * does not matter. A found plant is not missed, because the review reached
- * it. A plant of an invalid diff is missed, because that diff has no
- * finding at all.
+ * it. Every plant of an invalid diff is missed, because that diff has no
+ * finding at all. The top-level `missed` is the sum of the `by_class` missed
+ * values, and it is the sum of the `by_severity` missed values.
  *
  * The score file holds exactly `set_id`, `passes`, and `routes`. A pass
  * record holds exactly:
@@ -69,6 +73,7 @@
  *
  * The score file holds no finding text, no file path, and no line.
  */
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
@@ -205,6 +210,21 @@ function readFindings(text: string): any[] | null {
   return doc.findings;
 }
 
+/** The route-blind claim id of a finding (spec D11, ruling P3A1-1). It is
+ * the first 12 hex characters of the SHA-256 of the claim tuple. */
+function claimId(diffId: string, finding: any): string {
+  const canonical = JSON.stringify([
+    diffId,
+    typeof finding.file === "string" ? finding.file : "",
+    typeof finding.line === "number" ? finding.line : 0,
+    typeof finding.class === "string" ? finding.class : "",
+    typeof finding.severity === "string" ? finding.severity : "",
+    typeof finding.title === "string" ? finding.title : "",
+    typeof finding.reason === "string" ? finding.reason : "",
+  ]);
+  return `${diffId}#C${createHash("sha256").update(canonical).digest("hex").slice(0, 12)}`;
+}
+
 /** The lines between the finding and the plant range. */
 function distanceTo(line: number, plant: SetPlant): number {
   if (line < plant.first) return plant.first - line;
@@ -274,6 +294,12 @@ function scorePass(
     }
     if (findings === null) {
       counts.invalidReviews += 1;
+      // An invalid review has no finding, so every plant of the diff is
+      // missed at every level.
+      for (const plant of plants) {
+        if (plant.class in counts.byClass) counts.byClass[plant.class].missed += 1;
+        if (plant.severity in counts.bySeverity) counts.bySeverity[plant.severity].missed += 1;
+      }
       continue;
     }
     const foundPlants = new Set<string>();
@@ -298,7 +324,7 @@ function scorePass(
         if (plant.severity === "blocker") counts.blockersFound += 1;
         continue;
       }
-      const verdict = verdicts[`${diffId}#F${index + 1}`];
+      const verdict = verdicts[claimId(diffId, finding)];
       if (verdict === "false-claim") counts.falseClaims += 1;
       else if (verdict === "real-defect") counts.realDefects += 1;
       else if (verdict === "unclear") counts.provisional = true;
@@ -421,6 +447,9 @@ function main(): void {
   const recall =
     blockers === 0 ? 0 : Math.round((counts.blockersFound / blockers) * 10000) / 10000;
 
+  // The top-level missed is the sum of the by_class missed values.
+  const missed = CLASSES.reduce((sum, name) => sum + counts.byClass[name].missed, 0);
+
   const record = {
     route: args.route,
     pass: args.pass,
@@ -430,7 +459,7 @@ function main(): void {
     weight,
     found_weight: counts.foundWeight,
     found: counts.found,
-    missed: setPlants.length - counts.found,
+    missed,
     false_claims: counts.falseClaims,
     blockers,
     blockers_found: counts.blockersFound,

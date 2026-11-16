@@ -19,17 +19,19 @@
  * writes it. A missing file contributes no finding.
  *
  * The queue counts every finding of an output in order, matched or not. The
- * finding id is `<diff_id>#F<n>`, with n 1-based and before the 30-finding
- * cap of spec D10, so the ids match the ids of the scorer. A finding that
- * matches a plant of its key is not queued: the file is equal, the line is
- * from `new_lines[0] - 3` to `new_lines[1] + 3`, and the class is in
- * `accepted_classes`. A missing or invalid block, or a finding without
- * `file` or `line`, adds no item.
+ * id of an item is route-blind and claim-keyed (spec D11, ruling P3A1-1):
+ * `<diff_id>#C<12 hex>`, the first 12 hex characters of the SHA-256 of
+ * `JSON.stringify([diff_id, file, line, class, severity, title, reason])`.
+ * Two routes that report the same claim get one id, and two different claims
+ * get two ids. The scorer of task 3.3 computes the same id and looks up the
+ * verdict. A finding that matches a plant of its key (same file, line in
+ * `new_lines[0] - 3` to `new_lines[1] + 3`, class in `accepted_classes`) is
+ * not queued. A missing or invalid block, or a finding without `file` or
+ * `line`, adds no item.
  *
- * Two findings are the same claim when the diff id, the file, the line, the
- * class, the severity, the title, and the reason are equal. The queue keeps
- * one item per claim, and the id of the item is the id of the first route
- * that reports the claim.
+ * Two findings are the same claim when `diff_id`, `file`, `line`, `class`,
+ * `severity`, `title`, and `reason` are equal. The queue keeps one item per
+ * claim and drops the duplicates of the other routes (spec D11).
  *
  * The queue groups the items by diff id and file and a 3-line window:
  * sorted by line, a line that is more than 2 above the group start opens a
@@ -43,7 +45,7 @@
  *       "file": "<path>",
  *       "window": [<start>, <start + 2>],
  *       "items": [{
- *         "id": "<diff_id>#F<n>",
+ *         "id": "<diff_id>#C<12 hex>",
  *         "line": <line>,
  *         "claim": {"class", "severity", "title", "reason"}
  *       }]
@@ -74,11 +76,16 @@
  * wrong class stays unmatched, and it can only become a real defect or a
  * false claim (the no-rescue rule, spec D10, D11).
  */
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
 const VERDICTS = ["real-defect", "false-claim", "unclear"];
-const WINDOW = 2;
+/** The window of a plant match: `new_lines[0] - 3` to `new_lines[1] + 3`. */
+const MATCH_WINDOW = 3;
+/** The window of a group: a line more than 2 above the group start opens a
+ * new group, so the window holds 3 lines. */
+const GROUP_WINDOW = 2;
 
 /** One refusal line on stdout and exit 2. The tool writes no file. */
 function refuse(command: string, check: string): never {
@@ -161,7 +168,7 @@ function readPlants(key: any): SetPlant[] {
 function matchesPlant(finding: any, plants: SetPlant[]): boolean {
   for (const plant of plants) {
     if (plant.file !== finding.file) continue;
-    if (finding.line < plant.first - WINDOW || finding.line > plant.last + WINDOW) continue;
+    if (finding.line < plant.first - MATCH_WINDOW || finding.line > plant.last + MATCH_WINDOW) continue;
     if (!plant.accepted.includes(finding.class)) continue;
     return true;
   }
@@ -211,6 +218,21 @@ function claimKey(diffId: string, file: string, line: number, claim: Entry["clai
   return [diffId, file, line, claim.class, claim.severity, claim.title, claim.reason].join(" ");
 }
 
+/** The route-blind claim id of a finding (spec D11, ruling P3A1-1). It is
+ * the first 12 hex characters of the SHA-256 of the claim tuple. */
+function claimId(diffId: string, file: string, line: number, claim: Entry["claim"]): string {
+  const canonical = JSON.stringify([
+    diffId,
+    file,
+    line,
+    claim.class,
+    claim.severity,
+    claim.title,
+    claim.reason,
+  ]);
+  return `${diffId}#C${createHash("sha256").update(canonical).digest("hex").slice(0, 12)}`;
+}
+
 interface Group {
   diffId: string;
   file: string;
@@ -250,7 +272,7 @@ function writeQueue(args: Args): void {
       const findings = readFindings(readFileSync(path, "utf8"));
       if (findings === null) continue;
       const plants = plantsByDiff.get(diffId) ?? [];
-      findings.forEach((finding: any, index: number) => {
+      findings.forEach((finding: any) => {
         if (!isObject(finding)) return;
         if (typeof finding.file !== "string" || finding.file === "") return;
         if (typeof finding.line !== "number" || !Number.isFinite(finding.line)) return;
@@ -261,7 +283,7 @@ function writeQueue(args: Args): void {
         entries.set(key, {
           diffId,
           file: finding.file,
-          id: `${diffId}#F${index + 1}`,
+          id: claimId(diffId, finding.file, finding.line, claim),
           line: finding.line,
           claim,
         });
@@ -282,7 +304,7 @@ function writeQueue(args: Args): void {
     const sorted = [...list].sort((a, b) => a.line - b.line || a.id.localeCompare(b.id));
     let current: Group | null = null;
     for (const entry of sorted) {
-      if (current === null || entry.line - current.start > WINDOW) {
+      if (current === null || entry.line - current.start > GROUP_WINDOW) {
         current = { diffId: entry.diffId, file: entry.file, start: entry.line, items: [] };
         groups.push(current);
       }
@@ -299,7 +321,7 @@ function writeQueue(args: Args): void {
       id: `${group.diffId}#G${index + 1}`,
       diff_id: group.diffId,
       file: group.file,
-      window: [group.start, group.start + WINDOW],
+      window: [group.start, group.start + GROUP_WINDOW],
       items: group.items.map((entry) => ({
         id: entry.id,
         line: entry.line,

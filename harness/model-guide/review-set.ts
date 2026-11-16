@@ -202,6 +202,14 @@ function isObject(value: unknown): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** The two positive line numbers of a plant range. */
+function isNewLines(lines: unknown[]): boolean {
+  return (
+    lines.length === 2 &&
+    lines.every((line) => typeof line === "number" && Number.isInteger(line) && line > 0)
+  );
+}
+
 function sha256(text: string): string {
   return createHash("sha256").update(text).digest("hex");
 }
@@ -295,16 +303,31 @@ function readPlants(key: any, diffId: string, failures: string[]): Plant[] {
       failures.push(`lint: plant: ${diffId}`);
       continue;
     }
+    const id = typeof plant.id === "string" ? plant.id : "";
     const lines = Array.isArray(plant.new_lines) ? plant.new_lines : [];
     const first = typeof lines[0] === "number" ? lines[0] : 0;
     const last = typeof lines[lines.length - 1] === "number" ? lines[lines.length - 1] : first;
+    const severity = typeof plant.severity === "string" ? plant.severity : "";
+    // The plant schema of D7: an id, two positive line numbers, a file, a
+    // witness, and a severity of the scale.
+    if (id === "") failures.push(`lint: key-schema: ${diffId} ${id} id`);
+    if (!isNewLines(lines)) failures.push(`lint: key-schema: ${diffId} ${id} new_lines`);
+    if (typeof plant.file !== "string" || plant.file === "") {
+      failures.push(`lint: key-schema: ${diffId} ${id} file`);
+    }
+    if (typeof plant.witness !== "string" || plant.witness === "") {
+      failures.push(`lint: key-schema: ${diffId} ${id} witness`);
+    }
+    if (!SEVERITIES.includes(severity)) {
+      failures.push(`lint: key-schema: ${diffId} ${id} severity`);
+    }
     plants.push({
-      id: typeof plant.id === "string" ? plant.id : "",
+      id,
       first,
       last,
       class: typeof plant.class === "string" ? plant.class : "",
       operator: typeof plant.operator === "string" ? plant.operator : "",
-      severity: typeof plant.severity === "string" ? plant.severity : "",
+      severity,
     });
   }
   return plants;
