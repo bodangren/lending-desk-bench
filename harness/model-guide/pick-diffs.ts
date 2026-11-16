@@ -19,6 +19,17 @@
  *   api GET repos/<owner>/<name>/commits/<sha>
  * The tool reads no local checkout and calls no other verb.
  *
+ * A transient `gh` failure is retried. The base wait of a retry is the env
+ * value `PICK_DIFFS_RETRY_WAIT_MS` when that value is a finite number from
+ * 0 to 60000. The default is 5000, and it also covers an empty value, a
+ * non-number, `Infinity`, and a value over 60000. The waits before the
+ * retries are the base x1, x6, and x24, so one call has 4 tries. The
+ * failure is transient when its stderr matches a server error, a rate
+ * limit, or a broken connection. Any other failure, and a spawn error,
+ * refuses at once. Every refusal after a `gh` failure prints
+ * `pick-diffs: gh api failed` on stdout and the last non-empty line of
+ * `gh` stderr on stderr.
+ *
  * A commit qualifies by the rules of spec D4. The first failed rule gives the
  * reason:
  *   1. two parents or more            `merge commit`
@@ -201,13 +212,24 @@ function waitSync(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+/** The base wait of a retry: the env value `PICK_DIFFS_RETRY_WAIT_MS` when
+ * it is a finite number from 0 to 60000, else the default 5000. An empty or
+ * whitespace value gives the default, because `Number("")` is 0. */
+function retryWaitBase(): number {
+  const raw = process.env.PICK_DIFFS_RETRY_WAIT_MS;
+  if (raw === undefined || raw.trim() === "") return 5000;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0 || value > 60000) return 5000;
+  return value;
+}
+
 /** One `gh api` GET call. The method is the GET method only. A transient
  * failure waits and is retried up to three more times. Any other failure
  * refuses at once, after the last line of `gh` stderr lands on stderr. */
 function ghApi(path: string, paginate: boolean): any {
   const args = ["api", "--method", "GET", path];
   if (paginate) args.push("--paginate");
-  const base = Number(process.env.PICK_DIFFS_RETRY_WAIT_MS ?? 5000);
+  const base = retryWaitBase();
   for (let attempt = 0; ; attempt += 1) {
     const run = spawnSync("gh", args, { encoding: "utf8", maxBuffer: GH_MAX_BUFFER });
     if (run.error !== undefined) {
