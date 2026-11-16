@@ -865,13 +865,22 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Evidence: commit d297316 holds the prompt. `measure/runs/model_guide/green-p3-17ebb29.log`
     holds the exit codes of the 14 runs and the empty `docs/` status. The leak
     check on a temp repo that stages only the prompt prints nothing.
-- [~] 3.12 Checks. One code checker reads the diff against spec D4 to D13
+- [x] 8fee6bb 3.12 Checks. One code checker reads the diff against spec D4 to D13
   and D22.
   - The checker confirms that no public output can hold a key field, that
     the lint checks the operator catalog, and that the rule of two judges
     holds.
   - Verify: `measure/runs/model_guide/check-3.12.json` has status pass, or
     each blocking finding has a fix commit.
+  - Evidence: `measure/runs/model_guide/check-3.12.json` holds status pass
+    at 78627f5 (route `opencode-go/muse-spark-1.3-contributor#high`) and no
+    open blocking finding. Every Phase 3 blocking finding has its fix
+    commit: P3A1-1 to P3A1-5 and P3C1-1 and P3C1-2 in 32980bc, P3B1-1 to
+    P3B1-5 in 0fb247b, and P3X1-1 and P3X1-2 in 8fee6bb.
+  - Evidence: the four final audits at d137057 each hold status pass:
+    `review-a-d137057.json`, `review-b-d137057.json`,
+    `review-c-d137057.json`, and `adversarial-d137057.json` under
+    `measure/runs/model_guide/`.
 - [x] 0a898f2 3.12a Red. Review round 1 tests, correctness (P3A1-1 claim ids,
   P3A1-2 window, P3A1-3/4 missed counts, P3A1-5 D7 key schema). Change
   `adjudicate.test.ts`, `review-score.test.ts`, and `review-set.test.ts`.
