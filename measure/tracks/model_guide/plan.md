@@ -1010,7 +1010,7 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     untracked and is not committed. The field check and `leak-check.ts`
     exited 0. `measure/runs/model_guide/seed-mg-2026-11a.log` records the
     commands and exit codes.
-- [ ] 3.16 The pilot seeding (spec D5 to D8, D13). The fixture author is the
+- [x] faaca63 3.16 The pilot seeding (spec D5 to D8, D13). The fixture author is the
   author route of spec D5 (`openai/gpt-6.1-sol#high` with `--allow-codex`; PM
   2026-11-16; the run log names the route that wrote the set). The author
   writes set `mg-2026-11p` in a fresh session, in the private folder only.
@@ -1024,6 +1024,13 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     `mg-2026-11p2`, and then `mg-2026-11p3`. Each reseed keeps the same 6
     source commits and seeds them again by the harder rule.
   - Verify: `review-set.ts lint mg-2026-11p` passes.
+  - Evidence: the lint exited 0 through `heavy-run.sh`. The set holds 6
+    diffs, 20 plants, and 11 blockers. All 6 seeded copies match their twins
+    and their keys by SHA-256. All 6 keys differ only in `set_id`.
+    The author route was `openai/gpt-6.1-sol#high`.
+    `measure/runs/model_guide/seed-mg-2026-11p.log` records the commands,
+    exit codes, and counts. The manifest stays outside the repository at
+    `/tmp/opencode/seed-11p/sets/mg-2026-11p.json`.
 
 Verify (Phase 3): spec acceptance 9 holds.
 
