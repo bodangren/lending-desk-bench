@@ -1081,6 +1081,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   and no other file.
   - The file holds the routes of spec D12 with the quota source of spec D15,
     and the second judge of spec D11.
+  - The file holds the Hy row of spec D12.
   - Verify: the test files of Phase 4 pass.
 - [ ] 4.6 Green. Write `harness/model-guide/provider-credential.sh`. Touch no
   test file and no other file.
@@ -1114,12 +1115,13 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     question Q8).
   - Verify: each route of `routes.json` has one line in the file.
 - [ ] 4.11 The pilot gate (spec D13, OD7). The pilot set `mg-2026-11p` runs
-  on the two pilot routes with 2 passes each, on the nights of 2026-11-20 and
+  on the three pilot routes with 2 passes each, on the nights of 2026-11-20 and
   2026-11-21.
   - The pilot set holds the first 3 qualified commits of each repo in the
     D4 order, newest first (task 3.16).
-  - The pilot routes are `minimax-cn-coding-plan/MiniMax-M3.1-Flash` and
-    `kimi-code-plan-cn/kimi-for-coding#high`.
+  - The pilot routes are `minimax-cn-coding-plan/MiniMax-M3.1-Flash`,
+    `kimi-code-plan-cn/kimi-for-coding#high`, and
+    `opencode/hy4-flash-free`.
   - The pilot runs through `heavy-run.sh`, in the window of spec D15.
   - The worst-of-2 score of each pilot route goes into the score file.
   - A pilot pass counts as a main pass of the route when the ranked set

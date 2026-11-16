@@ -513,8 +513,12 @@ questions".
     | DeepSeek Flash | `opencode-go/deepseek-v4.1-flash` | plan (Go) |
     | GLM 5.3 | `bailian-token-plan/glm-5.3#high` | plan |
     | StepFun | `nvidia/stepfun-ai/step-5-preview#high` | free |
+    | Hy | `opencode/hy4-flash-free` | free |
     | Go | `opencode-go/mimo-v2.6-flash` | plan (Go) |
     | Go | `opencode-go/muse-spark-1.3-contributor#high` | plan (Go) |
+
+    The PM added the Hy row on 2026-11-16. The route is free until about
+    2026-11-30. It gets no build-task or tests-task run.
 
     The file `harness/model-guide/routes.json` holds this list with the
     fields `family`, `route`, `kind`, `quota_provider`, and `quota_source`.
@@ -532,7 +536,9 @@ questions".
     - **Other numbers for each pass:** blocker recall (found blockers divided
       by blockers), the found, missed, and false-claim counts, the invalid
       reviews, and the real defects found.
-    - **N.** N = 3 passes for each route and each set.
+    - **N.** N = 3 passes for each route and each set. N stays 3 for every
+      route, also for a free route, so that the worst pass of each route
+      compares on equal terms.
     - **The pilot gate.** A set goes to ranking only after a pilot. The
       pilot set is `mg-2026-11p`. It has 6 seeded diffs and at least 12
       plants (PM 2026-11-16). The 6 diffs are the first 3 qualified commits
@@ -545,10 +551,11 @@ questions".
       ranked set `mg-2026-11a`. A reseed makes a new set id: `mg-2026-11p2`,
       then `mg-2026-11p3`. Each reseed keeps the same 6 source commits and
       seeds them again by the harder rule of this gate.
-      The pilot runs 2 routes with 2 passes each, so each route has a
-      worst-of-2 score. The pilot routes are
-      `minimax-cn-coding-plan/MiniMax-M3.1-Flash` and
-      `kimi-code-plan-cn/kimi-for-coding#high`. A pilot route that is
+      The pilot runs 3 routes with 2 passes each (PM 2026-11-16), so each
+      route has a worst-of-2 score. The pilot routes are
+      `minimax-cn-coding-plan/MiniMax-M3.1-Flash`,
+      `kimi-code-plan-cn/kimi-for-coding#high`, and
+      `opencode/hy4-flash-free`. A pilot route that is
       unreachable or region-blocked is replaced by the next route of D12.
       The set goes to ranking only when both rules hold:
       - The best worst-of-2 score minus the lowest worst-of-2 score is 20
