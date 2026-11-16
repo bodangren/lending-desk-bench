@@ -66,6 +66,9 @@ const MIN_CODE_SHARE = 0.6;
 const LOCK_NAMES = ["package-lock.json", "npm-shrinkwrap.json", "pnpm-lock.yaml", "yarn.lock"];
 const CODE_EXTENSIONS = [".ts", ".tsx", ".js", ".py", ".sql"];
 const BUILD_SEGMENTS = ["dist", "build", "generated"];
+/** The output ceiling of one `gh` call. The commits list of a source repo is
+ * 26 MB and the Node default is 1 MB. */
+const GH_MAX_BUFFER = 64 * 1024 * 1024;
 
 const REASON_MERGE = "merge commit";
 const REASON_DATE = "committer date outside 2026-08-01 to 2026-11-13";
@@ -168,7 +171,7 @@ function isObject(value: unknown): value is Record<string, any> {
 function ghApi(path: string, paginate: boolean): any {
   const args = ["api", "--method", "GET", path];
   if (paginate) args.push("--paginate");
-  const run = spawnSync("gh", args, { encoding: "utf8" });
+  const run = spawnSync("gh", args, { encoding: "utf8", maxBuffer: GH_MAX_BUFFER });
   if (run.error !== undefined || run.status !== 0) refuse("gh api failed");
   try {
     return JSON.parse(run.stdout);
