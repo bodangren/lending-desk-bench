@@ -393,6 +393,20 @@ describe("P3B1 the write target and the set id", () => {
   });
 });
 
+describe("P3T1 the gh output buffer", () => {
+  it("P3T1-1 reads a commits list output over 1 MiB", () => {
+    const accepted = accept("large-list", { extra: { FAKE_GH_LIST_PAD: "31000000" } });
+    expect(accepted.doc.qualified.map((entry: any) => entry.sha)).toEqual(Q);
+    expect(accepted.doc.selected).toEqual(Q);
+  });
+
+  it("P3T1-2 reads a commit detail output over 1 MiB", () => {
+    const accepted = accept("large-detail", { extra: { FAKE_GH_DETAIL_PAD: "1500000" } });
+    expect(accepted.doc.qualified).toHaveLength(6);
+    expect(accepted.doc.selected).toEqual(Q);
+  });
+});
+
 describe("the write flags", () => {
   it("each missing value exits 2 with one named line and writes nothing", () => {
     const repoDir = tempDir("missing-repo");

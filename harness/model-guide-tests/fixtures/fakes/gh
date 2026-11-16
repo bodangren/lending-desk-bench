@@ -55,4 +55,12 @@ if (!Object.prototype.hasOwnProperty.call(fixture, key)) {
   process.stderr.write(`fake gh: unknown API path: ${key}\n`);
   process.exit(1);
 }
-process.stdout.write(`${JSON.stringify(fixture[key])}\n`);
+// A test can inflate one call to prove that a gh output over the Node
+// default maxBuffer (1 MiB) still reaches the tool. The pad is trailing
+// whitespace, so the printed value stays valid JSON.
+const listPad = Number(process.env.FAKE_GH_LIST_PAD ?? 0);
+const detailPad = Number(process.env.FAKE_GH_DETAIL_PAD ?? 0);
+const isList = /\/commits$/.test(key);
+const isDetail = /\/commits\/[0-9a-f]+$/.test(key);
+const pad = isList ? listPad : isDetail ? detailPad : 0;
+process.stdout.write(`${JSON.stringify(fixture[key])}${" ".repeat(pad)}\n`);
