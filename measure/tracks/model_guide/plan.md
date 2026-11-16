@@ -947,6 +947,16 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     `measure/runs/model_guide/green-p3-69ac213.log` holds the command output
     of the three runs, pick-diffs 26 passed, adversarial-p3 31, and
     review-set 18, and the empty `docs/` status.
+- [x] 33e091d 3.13e Red. A bad retry wait value cannot hang pick-diffs (P3A5-1, P3B5-1).
+  Add tests to `pick-diffs.test.ts` only.
+  - Verify: each case fails at HEAD because the spawn times out; the old
+    tests stay green. Record the result in
+    `measure/runs/model_guide/red-3.13e.txt`.
+  - Evidence: `measure/runs/model_guide/red-3.13e.txt` holds the command,
+    the exit code, the three timed-out names, and the bounded-base contract.
+- [~] 3.13f Green. Bound the retry wait of pick-diffs and document the env
+  value and the stderr line in the header (P3A5-1, P3B5-1, P3C5-1). Touch no
+  test file.
 - [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
   - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
     holds the exit codes of the four runs and the empty `docs/` status.
