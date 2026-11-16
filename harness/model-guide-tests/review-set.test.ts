@@ -342,6 +342,22 @@ describe("S2 the plant refusals", () => {
     expect(changed).toBe(3);
     expectRefusal(stagedSet, "lint: counts: blockers 13, needs 14");
   });
+
+  it("S2 rejects a D7 key plant without new_lines, file, or witness, or with a bad severity", () => {
+    const cases: Array<[string, (plant: any) => void, string]> = [
+      ["no-new-lines", (plant) => { delete plant.new_lines; }, "lint: key-schema: forge-01 P1 new_lines"],
+      ["no-file", (plant) => { delete plant.file; }, "lint: key-schema: forge-01 P1 file"],
+      ["no-witness", (plant) => { delete plant.witness; }, "lint: key-schema: forge-01 P1 witness"],
+      ["bad-severity", (plant) => { plant.severity = "critical"; }, "lint: key-schema: forge-01 P1 severity"],
+    ];
+    for (const [tag, mutate, line] of cases) {
+      const stagedSet = staged(`d7-${tag}`);
+      const key = readKey(stagedSet.privateDir, "forge-01");
+      mutate(key.plants[0]);
+      writeKey(stagedSet.privateDir, "forge-01", key);
+      expectRefusal(stagedSet, line);
+    }
+  });
 });
 
 describe("S4 the count profile", () => {

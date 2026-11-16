@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -27,10 +28,20 @@ import { afterAll, describe, expect, it } from "vitest";
  * text holds one fenced JSON block `{"findings": [...]}` (spec D10). A
  * missing file is an invalid review of that diff.
  *
- * `--verdicts` is a JSON object that maps a finding id to one agreed verdict
- * of the two judges of spec D11: `<diff_id>#F<n>` (n is 1-based, before the
- * 30-finding cap) to `real-defect`, `false-claim`, or `unclear`. No entry is
- * neutral and not a false claim.
+ * `--verdicts` is a JSON object that maps a claim id to one agreed verdict
+ * of the two judges of spec D11: `<diff_id>#C<12 hex>` to `real-defect`,
+ * `false-claim`, or `unclear`. The claim id is route-blind: it is the first
+ * 12 hex characters of the SHA-256 of
+ * `JSON.stringify([diff_id, file, line, class, severity, title, reason])`
+ * (the fixed order of the array, no spaces). The scorer computes it for each
+ * finding of the route it scores and looks it up. No entry is neutral and
+ * not a false claim. The same claim in two routes gets the same id and the
+ * same verdict.
+ *
+ * The `missed` counts: a plant is missed when no finding of the pass found
+ * it. Every plant of a diff whose review is invalid is missed at every
+ * level, and the top-level `missed` equals the sum of the `by_class` missed
+ * values and the sum of the `by_severity` missed values.
  *
  * The pass covers the whole set (spec D13). It reads every key of the set
  * and every output file. A finding matches a plant when the file is equal,
@@ -313,6 +324,27 @@ const P2 = FORGE01.plants[1];
 const P3 = FORGE01.plants[2];
 const P4 = FORGE01.plants[3];
 
+/** The route-blind claim id of a finding (spec D11, ruling P3A1-1). */
+function claimId(diffId: string, finding: {
+  file: string;
+  line: number;
+  class: string;
+  severity: string;
+  title: string;
+  reason: string;
+}): string {
+  const canonical = JSON.stringify([
+    diffId,
+    finding.file,
+    finding.line,
+    finding.class,
+    finding.severity,
+    finding.title,
+    finding.reason,
+  ]);
+  return `${diffId}#C${createHash("sha256").update(canonical).digest("hex").slice(0, 12)}`;
+}
+
 describe("R1 the match", () => {
   it("R1 matches a finding in the window and counts the plant weight once", () => {
     const record = scorePass("match", { route: "route/a", pass: 1, outputs: { "forge-01": "match-01" } });
@@ -350,6 +382,26 @@ describe("R1 the match", () => {
     expect(record.by_class.C4).toEqual({ found: 0, missed: 5 });
     expect(record.by_class.C1.found).toBe(1);
   });
+
+  it("R1 looks up a verdict by the route-blind claim id, not the output position", () => {
+    const X: Finding = { file: P1.file, line: 60, severity: "major", class: "C2", title: "first claim", reason: "the call returns success" };
+    const A: Finding = { file: P1.file, line: 65, severity: "major", class: "C6", title: "second claim", reason: "the token is logged" };
+    const verdicts = { [claimId("forge-01", A)]: "false-claim" };
+    const first = scorePass("claim-a", {
+      route: "route/a", pass: 1,
+      outputs: { "forge-01": [plantFinding(P1), X, A] },
+      verdicts,
+    });
+    const second = scorePass("claim-b", {
+      route: "route/b", pass: 1,
+      outputs: { "forge-01": [plantFinding(P1), A] },
+      verdicts,
+    });
+    expect(first.false_claims).toBe(1);
+    expect(second.false_claims).toBe(1);
+    expect(first.score).toBe(1.8);
+    expect(second.score).toBe(1.8);
+  });
 });
 
 describe("R2 the window and the nearer plant", () => {
@@ -367,7 +419,7 @@ describe("R2 the window and the nearer plant", () => {
     const record = scorePass("wrong-class", {
       route: "route/a", pass: 1,
       outputs: { "forge-01": "wrong-class" },
-      verdicts: { "forge-01#F1": "real-defect" },
+      verdicts: { [claimId("forge-01", { file: P1.file, line: 30, severity: "major", class: "C9", title: "defect", reason: "the call returns success" })]: "real-defect" },
     });
     expect(record.found).toBe(0);
     expect(record.found_weight).toBe(0);
@@ -379,7 +431,7 @@ describe("R2 the window and the nearer plant", () => {
     const record = scorePass("wrong-line", {
       route: "route/a", pass: 1,
       outputs: { "forge-01": "wrong-line" },
-      verdicts: { "forge-01#F1": "real-defect" },
+      verdicts: { [claimId("forge-01", { file: P1.file, line: 90, severity: "major", class: "C1", title: "defect", reason: "the call returns success" })]: "real-defect" },
     });
     expect(record.found).toBe(0);
     expect(record.real_defects).toBe(1);
@@ -408,7 +460,7 @@ describe("R3 the score and the counts", () => {
     const record = scorePass("formula", {
       route: "route/a", pass: 1,
       outputs: { "forge-01": findings },
-      verdicts: { "forge-01#F5": "false-claim" },
+      verdicts: { [claimId("forge-01", { file: P1.file, line: 60, severity: "major", class: "C2", title: "defect", reason: "the call returns success" })]: "false-claim" },
     });
     expect(record.found_weight).toBe(20);
     expect(record.false_claims).toBe(1);
@@ -431,11 +483,29 @@ describe("R3 the score and the counts", () => {
     const record = scorePass("negative", {
       route: "route/a", pass: 1,
       outputs: { "forge-01": "unmatched" },
-      verdicts: { "forge-01#F1": "false-claim", "forge-01#F2": "false-claim" },
+      verdicts: {
+        [claimId("forge-01", { file: P1.file, line: 60, severity: "major", class: "C2", title: "defect", reason: "the call returns success" })]: "false-claim",
+        [claimId("forge-01", { file: P1.file, line: 65, severity: "major", class: "C6", title: "defect", reason: "the call returns success" })]: "false-claim",
+      },
     });
     expect(record.found_weight).toBe(0);
     expect(record.false_claims).toBe(2);
     expect(record.score).toBe(0);
+  });
+
+  it("R3 counts every plant of an invalid review as missed at every level", () => {
+    const record = scorePass("invalid-missed", { route: "route/a", pass: 1, outputs: { "forge-01": "no-block" } });
+    expect(record.invalid_reviews).toBe(1);
+    expect(record.found).toBe(0);
+    expect(record.missed).toBe(48);
+    const byClass = Object.values(record.by_class as Record<string, { missed: number }>)
+      .reduce((sum, entry) => sum + entry.missed, 0);
+    const bySeverity = Object.values(record.by_severity as Record<string, { missed: number }>)
+      .reduce((sum, entry) => sum + entry.missed, 0);
+    expect(byClass).toBe(48);
+    expect(bySeverity).toBe(48);
+    expect(record.by_class.C1).toEqual({ found: 0, missed: 6 });
+    expect(record.by_severity.blocker).toEqual({ found: 0, missed: 16 });
   });
 });
 
@@ -454,7 +524,7 @@ describe("R4 invalid reviews and pass states", () => {
   it("R4 marks an unclear verdict provisional and keeps the rank", () => {
     const doc = scoreMany("unclear", [
       { route: "route/a", pass: 1, outputs: { "forge-01": "match-01" } },
-      { route: "route/a", pass: 2, outputs: { "forge-01": "unmatched" }, verdicts: { "forge-01#F1": "unclear" } },
+      { route: "route/a", pass: 2, outputs: { "forge-01": "unmatched" }, verdicts: { [claimId("forge-01", { file: P1.file, line: 60, severity: "major", class: "C2", title: "defect", reason: "the call returns success" })]: "unclear" } },
       { route: "route/a", pass: 3, outputs: { "forge-01": "match-01" } },
     ]);
     const second = doc.passes.find((entry: any) => entry.route === "route/a" && entry.pass === 2);

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -27,17 +28,22 @@ import { afterAll, describe, expect, it } from "vitest";
  * file contributes no finding.
  *
  * The queue reads the keys of the set and every raw output. It counts every
- * finding of an output in order, matched or not; the finding id is
- * `<diff_id>#F<n>`, with n 1-based and before the 30-finding cap (spec D10).
- * A finding that matches a plant of its key (same file, line in
- * `new_lines[0] - 3` to `new_lines[1] + 3`, class in `accepted_classes`) is
- * not queued. A missing or invalid block, or a finding without `file` or
- * `line`, adds no item.
+ * finding of an output in order, matched or not; a finding that matches a
+ * plant of its key (same file, line in `new_lines[0] - 3` to
+ * `new_lines[1] + 3`, class in `accepted_classes`) is not queued. A missing
+ * or invalid block, or a finding without `file` or `line`, adds no item.
+ *
+ * The id of an item is route-blind and claim-keyed (spec D11, ruling
+ * P3A1-1): `<diff_id>#C<12 hex>`, the first 12 hex characters of the
+ * SHA-256 of
+ * `JSON.stringify([diff_id, file, line, class, severity, title, reason])`
+ * (the fixed order of the array, no spaces). Two routes that report the same
+ * claim get one id; two different claims at the same output index get two
+ * ids. The scorer of task 3.3 computes the same id and looks up the verdict.
  *
  * Two findings are the same claim when `diff_id`, `file`, `line`, `class`,
  * `severity`, `title`, and `reason` are equal. The queue keeps one item per
- * claim and drops the duplicates of the other routes (spec D11). The id of
- * an item is the id of the first route that reports the claim.
+ * claim and drops the duplicates of the other routes (spec D11).
  *
  * The queue groups the items by `diff_id` and `file` and a 3-line window:
  * sorted by line, a line that is more than 2 above the group start opens a
@@ -52,7 +58,7 @@ import { afterAll, describe, expect, it } from "vitest";
  *       "file": "<path>",
  *       "window": [<start>, <start + 2>],
  *       "items": [{
- *         "id": "<diff_id>#F<n>",
+ *         "id": "<diff_id>#C<12 hex>",
  *         "line": <line>,
  *         "claim": {"class", "severity", "title", "reason"}
  *       }]
@@ -110,6 +116,24 @@ interface Finding {
 const A: Finding = { file: FILE, line: 60, severity: "major", class: "C2", title: "First claim", reason: "the call returns success" };
 const B: Finding = { file: FILE, line: 61, severity: "major", class: "C2", title: "Second claim", reason: "the value is stale" };
 const C: Finding = { file: FILE, line: 65, severity: "minor", class: "C6", title: "Third claim", reason: "the token is logged" };
+
+/** The route-blind claim id of a finding (spec D11, ruling P3A1-1). */
+function claimId(diffId: string, finding: Finding): string {
+  const canonical = JSON.stringify([
+    diffId,
+    finding.file,
+    finding.line,
+    finding.class,
+    finding.severity,
+    finding.title,
+    finding.reason,
+  ]);
+  return `${diffId}#C${createHash("sha256").update(canonical).digest("hex").slice(0, 12)}`;
+}
+
+const ID_A = claimId("forge-01", A);
+const ID_B = claimId("forge-01", B);
+const ID_C = claimId("forge-01", C);
 
 const roots: string[] = [];
 afterAll(() => {
@@ -274,7 +298,7 @@ describe("J1 the queue units", () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const doc = readJson(queueFile(privateDir));
     expect(doc.set_id).toBe(SET);
-    expect(items(doc).map((item) => item.id)).toEqual(["forge-01#F1", "forge-01#F2", "forge-01#F3"]);
+    expect(items(doc).map((item) => item.id)).toEqual([ID_A, ID_B, ID_C]);
     expect(items(doc)).toHaveLength(3);
     expect(keyNames(doc)).not.toContain("route");
     for (const value of stringValues(doc)) {
@@ -295,9 +319,9 @@ describe("J1 the queue units", () => {
       file: FILE,
       window: [60, 62],
     });
-    expect(doc.groups[0].items.map((item: any) => item.id)).toEqual(["forge-01#F1", "forge-01#F2"]);
+    expect(doc.groups[0].items.map((item: any) => item.id)).toEqual([ID_A, ID_B]);
     expect(doc.groups[1]).toMatchObject({ id: "forge-01#G2", window: [65, 67] });
-    expect(doc.groups[1].items.map((item: any) => item.id)).toEqual(["forge-01#F3"]);
+    expect(doc.groups[1].items.map((item: any) => item.id)).toEqual([ID_C]);
   });
 
   it("J1 leaves out a finding that matches a plant", () => {
@@ -307,7 +331,48 @@ describe("J1 the queue units", () => {
     const raw = buildRaw("matched", { route_a: { "forge-01": [match, A] } });
     expect(queue(privateDir, raw).status).toBe(0);
     const doc = readJson(queueFile(privateDir));
-    expect(items(doc).map((item) => item.id)).toEqual(["forge-01#F2"]);
+    expect(items(doc).map((item) => item.id)).toEqual([ID_A]);
+  });
+
+  it("J1 gives two routes with different claims at the same index two items", () => {
+    const privateDir = staged("same-index");
+    const raw = buildRaw("same-index", {
+      route_a: { "forge-01": [A] },
+      route_b: { "forge-01": [B] },
+    });
+    expect(queue(privateDir, raw).status).toBe(0);
+    const doc = readJson(queueFile(privateDir));
+    expect(items(doc).map((item) => item.id)).toEqual([ID_A, ID_B]);
+    expect(new Set(items(doc).map((item) => item.id)).size).toBe(2);
+
+    const judges = { [ID_A]: "real-defect", [ID_B]: "real-defect" };
+    expect(apply(privateDir, judges, judges).status).toBe(0);
+    expect(readJson(keyFile(privateDir)).real_defects.map((entry: any) => entry.id)).toEqual([
+      ID_A,
+      ID_B,
+    ]);
+  });
+
+  it("J1 uses the route-blind claim id form", () => {
+    const privateDir = staged("claim-id");
+    const raw = buildRaw("claim-id", { route_a: { "forge-01": [A] } });
+    expect(queue(privateDir, raw).status).toBe(0);
+    const id = items(readJson(queueFile(privateDir)))[0].id;
+    expect(id).toBe(ID_A);
+    expect(id).toMatch(/^forge-01#C[0-9a-f]{12}$/);
+  });
+
+  it("J1 matches at new_lines[0] - 3 and new_lines[1] + 3 and not one line further", () => {
+    const privateDir = staged("window");
+    const lower: Finding = { file: FILE, line: 27, severity: "major", class: "C3", title: "lower edge", reason: "the value is stale" };
+    const upper: Finding = { file: FILE, line: 34, severity: "major", class: "C3", title: "upper edge", reason: "the value is stale" };
+    const outside: Finding = { file: FILE, line: 26, severity: "major", class: "C3", title: "one further", reason: "the value is stale" };
+    const raw = buildRaw("window", { route_a: { "forge-01": [lower, upper, outside] } });
+    expect(queue(privateDir, raw).status).toBe(0);
+    const queued = items(readJson(queueFile(privateDir)));
+    expect(queued).toHaveLength(1);
+    expect(queued[0].line).toBe(26);
+    expect(queued[0].id).toBe(claimId("forge-01", outside));
   });
 });
 
@@ -322,15 +387,15 @@ describe("J2 the apply mapping", () => {
     expect(baseline.false_claims).toBe(0);
     expect(baseline.real_defects).toBe(0);
 
-    const judges = { "forge-01#F1": "real-defect" };
+    const judges = { [ID_A]: "real-defect" };
     const result = apply(privateDir, judges, judges);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    expect(readJson(verdictsFile(privateDir))).toEqual({ "forge-01#F1": "real-defect" });
+    expect(readJson(verdictsFile(privateDir))).toEqual({ [ID_A]: "real-defect" });
 
     const key = readJson(keyFile(privateDir));
     expect(key.real_defects).toEqual([
       {
-        id: "forge-01#F1",
+        id: ID_A,
         file: FILE,
         new_lines: [60, 60],
         class: "R",
@@ -341,7 +406,7 @@ describe("J2 the apply mapping", () => {
     const handoff = readJson(realDefectsFile(privateDir));
     expect(handoff.set_id).toBe(SET);
     expect(handoff.real_defects).toEqual([
-      { id: "forge-01#F1", diff_id: "forge-01", file: FILE, line: 60, class: "C2", severity: "major", title: "First claim", reason: "the call returns success" },
+      { id: ID_A, diff_id: "forge-01", file: FILE, line: 60, class: "C2", severity: "major", title: "First claim", reason: "the call returns success" },
     ]);
 
     const neutral = score(privateDir, "real-after", [A], verdictsFile(privateDir));
@@ -354,9 +419,9 @@ describe("J2 the apply mapping", () => {
     const privateDir = staged("false");
     const raw = buildRaw("false", { route_a: { "forge-01": [A] } });
     expect(queue(privateDir, raw).status).toBe(0);
-    const judges = { "forge-01#F1": "false-claim" };
+    const judges = { [ID_A]: "false-claim" };
     expect(apply(privateDir, judges, judges).status).toBe(0);
-    expect(readJson(verdictsFile(privateDir))).toEqual({ "forge-01#F1": "false-claim" });
+    expect(readJson(verdictsFile(privateDir))).toEqual({ [ID_A]: "false-claim" });
     expect(readJson(keyFile(privateDir)).real_defects).toEqual([]);
 
     const record = score(privateDir, "false-after", [A], verdictsFile(privateDir));
@@ -369,9 +434,9 @@ describe("J2 the apply mapping", () => {
     const privateDir = staged("unclear");
     const raw = buildRaw("unclear", { route_a: { "forge-01": [A] } });
     expect(queue(privateDir, raw).status).toBe(0);
-    const judges = { "forge-01#F1": "unclear" };
+    const judges = { [ID_A]: "unclear" };
     expect(apply(privateDir, judges, judges).status).toBe(0);
-    expect(readJson(verdictsFile(privateDir))).toEqual({ "forge-01#F1": "unclear" });
+    expect(readJson(verdictsFile(privateDir))).toEqual({ [ID_A]: "unclear" });
     const record = score(privateDir, "unclear-after", [A], verdictsFile(privateDir));
     expect(record.state).toBe("provisional");
     expect(record.false_claims).toBe(0);
@@ -382,9 +447,9 @@ describe("J2 the apply mapping", () => {
     const privateDir = staged("disagree");
     const raw = buildRaw("disagree", { route_a: { "forge-01": [A] } });
     expect(queue(privateDir, raw).status).toBe(0);
-    const result = apply(privateDir, { "forge-01#F1": "false-claim" }, { "forge-01#F1": "real-defect" });
+    const result = apply(privateDir, { [ID_A]: "false-claim" }, { [ID_A]: "real-defect" });
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    expect(readJson(verdictsFile(privateDir))).toEqual({ "forge-01#F1": "unclear" });
+    expect(readJson(verdictsFile(privateDir))).toEqual({ [ID_A]: "unclear" });
     expect(readJson(keyFile(privateDir)).real_defects).toEqual([]);
 
     const record = score(privateDir, "disagree-after", [A], verdictsFile(privateDir));
@@ -403,17 +468,36 @@ describe("J2 the apply mapping", () => {
 
     const result = apply(
       privateDir,
-      { "forge-01#F1": "real-defect", "forge-01#F2": "false-claim" },
-      { "forge-01#F1": "real-defect", "forge-01#F2": "false-claim" },
+      { [ID_A]: "real-defect", [ID_B]: "false-claim" },
+      { [ID_A]: "real-defect", [ID_B]: "false-claim" },
     );
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     expect(readJson(verdictsFile(privateDir))).toEqual({
-      "forge-01#F1": "real-defect",
-      "forge-01#F2": "false-claim",
+      [ID_A]: "real-defect",
+      [ID_B]: "false-claim",
     });
     expect(readJson(keyFile(privateDir)).real_defects.map((entry: any) => entry.id)).toEqual([
-      "forge-01#F1",
+      ID_A,
     ]);
+  });
+
+  it("J2 keeps one claim at different indices as one item and costs both routes the same", () => {
+    const privateDir = staged("claim-indices");
+    const raw = buildRaw("claim-indices", {
+      route_a: { "forge-01": [C, A] },
+      route_b: { "forge-01": [A] },
+    });
+    expect(queue(privateDir, raw).status).toBe(0);
+    const doc = readJson(queueFile(privateDir));
+    expect(items(doc).map((item) => item.id)).toEqual([ID_A]);
+
+    const judges = { [ID_A]: "false-claim" };
+    expect(apply(privateDir, judges, judges).status).toBe(0);
+    const first = score(privateDir, "indices-a", [C, A], verdictsFile(privateDir));
+    const second = score(privateDir, "indices-b", [A], verdictsFile(privateDir));
+    expect(first.false_claims).toBe(1);
+    expect(second.false_claims).toBe(1);
+    expect(first.score).toBe(second.score);
   });
 });
 
@@ -441,12 +525,13 @@ describe("J4 no rescue", () => {
   it("J4 never makes a wrong-line finding found through apply", () => {
     const privateDir = staged("wrong-line");
     const finding: Finding = { file: FILE, line: 90, severity: "major", class: "C1", title: "a claim", reason: "the call returns success" };
+    const id = claimId("forge-01", finding);
     const raw = buildRaw("wrong-line", { route_a: { "forge-01": [finding] } });
     expect(queue(privateDir, raw).status).toBe(0);
-    const judges = { "forge-01#F1": "real-defect" };
+    const judges = { [id]: "real-defect" };
     expect(apply(privateDir, judges, judges).status).toBe(0);
     const key = readJson(keyFile(privateDir));
-    expect(key.real_defects.map((entry: any) => entry.id)).toEqual(["forge-01#F1"]);
+    expect(key.real_defects.map((entry: any) => entry.id)).toEqual([id]);
     const record = score(privateDir, "wrong-line-after", [finding], verdictsFile(privateDir));
     expect(record.found).toBe(0);
     expect(record.real_defects).toBe(1);
@@ -455,9 +540,10 @@ describe("J4 no rescue", () => {
   it("J4 never makes a wrong-class finding found through apply", () => {
     const privateDir = staged("wrong-class");
     const finding: Finding = { file: FILE, line: 30, severity: "major", class: "C9", title: "a claim", reason: "the value is stale" };
+    const id = claimId("forge-01", finding);
     const raw = buildRaw("wrong-class", { route_a: { "forge-01": [finding] } });
     expect(queue(privateDir, raw).status).toBe(0);
-    const judges = { "forge-01#F1": "real-defect" };
+    const judges = { [id]: "real-defect" };
     expect(apply(privateDir, judges, judges).status).toBe(0);
     const record = score(privateDir, "wrong-class-after", [finding], verdictsFile(privateDir));
     expect(record.found).toBe(0);
@@ -468,7 +554,7 @@ describe("J4 no rescue", () => {
     const privateDir = staged("no-penalty");
     const raw = buildRaw("no-penalty", { route_a: { "forge-01": [A] } });
     expect(queue(privateDir, raw).status).toBe(0);
-    expect(apply(privateDir, { "forge-01#F1": "false-claim" }, { "forge-01#F1": "unclear" }).status).toBe(0);
+    expect(apply(privateDir, { [ID_A]: "false-claim" }, { [ID_A]: "unclear" }).status).toBe(0);
     const record = score(privateDir, "no-penalty-after", [A], verdictsFile(privateDir));
     expect(record.false_claims).toBe(0);
     expect(record.score).toBe(0);
