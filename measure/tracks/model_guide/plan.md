@@ -967,11 +967,17 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
 - [x] 0fb247b 3.12d Green. Fix the security findings of 3.12b. Touch no test file.
   - Evidence: commit 0fb247b holds the five tools. `measure/runs/model_guide/green-p3-a1a4e56.log`
     holds the command output of each run and the empty `docs/` status.
-- [ ] 3.13 The candidates. Run `pick-diffs.ts` for each source repo.
+- [x] faaca63 3.13 The candidates. Run `pick-diffs.ts` for each source repo.
   - Store the lists in the private folder. Store nothing in the repository.
   - Verify: each list has 7 or more qualified commits. When a list has
     fewer, the orchestrator tells the PM and widens nothing without an
     answer.
+  - Evidence: `measure/runs/model_guide/candidates-3.13.txt` holds the two
+    commands, the exit codes, the attempt history, the output paths, and
+    the counts: 702 qualified commits for
+    Reading-Advantage-Thailand/reading-advantage-monorepo and 267 for
+    bodangren/advantage-forge, each with 12 selected. Both lists are 7 or
+    more, so no rule was widened.
 - [ ] 3.14 The seeding (spec D5 to D8). The fixture author is the author
   route of spec D5 (`openai/gpt-6.1-sol#high` with `--allow-codex`; PM
   2026-11-16; the run log names the route that wrote the set). The author
