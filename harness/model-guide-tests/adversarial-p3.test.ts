@@ -373,7 +373,7 @@ describe("adversarial phase 3: claim identity and the rule of two", () => {
     { id: "P1", file: "src/a.ts", lines: [10, 12], class: "C1", accepted: ["C1"], severity: "major" },
   ];
 
-  it.fails("P3X1-1 two different claims split by whitespace get two queue items", () => {
+  it("P3X1-1 two different claims split by whitespace get two queue items", () => {
     // Title "a b" + reason "c" and title "a" + reason "b c" are different
     // claims (spec D11: two different claims get two ids), but the queue
     // dedup key joins the fields with a space, so both join to one string.
@@ -505,7 +505,7 @@ describe("adversarial phase 3: set lint edges", () => {
     };
   }
 
-  it.fails("P3X1-2 a plant outside every hunk of its diff is refused", () => {
+  it("P3X1-2 a plant outside every hunk of its diff is refused", () => {
     // The plant at new_lines [9999, 9999] changes no `+` line of its diff
     // (spec D5), so FR-8 must refuse it instead of counting its weight in W.
     const privateDir = staged("outside");
