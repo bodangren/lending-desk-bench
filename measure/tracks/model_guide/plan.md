@@ -895,16 +895,19 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     the fix and the result. The case now uses a plant match to move A
     between index 2 and index 1; the only failures left in
     adjudicate.test.ts are the three security cases of 3.12b.
-- [~] 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
-- [ ] 3.12d Green. Fix the security findings of 3.12b. Touch no test file.
+- [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
+  - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
+    holds the exit codes of the four runs and the empty `docs/` status.
+- [~] 3.12d Green. Fix the security findings of 3.12b. Touch no test file.
 - [ ] 3.13 The candidates. Run `pick-diffs.ts` for each source repo.
   - Store the lists in the private folder. Store nothing in the repository.
   - Verify: each list has 7 or more qualified commits. When a list has
     fewer, the orchestrator tells the PM and widens nothing without an
     answer.
 - [ ] 3.14 The seeding (spec D5 to D8). The fixture author
-  `claude-code/claude-opus-5-5[1m]#high` writes set `mg-2026-11a` in a fresh
-  session, in the private folder only.
+  the route of `ra-quota pick` (no Opus, Daniel's rule; a Claude route only
+  when the Claude week is under 80 %, else the next family; PM 2026-11-16)
+  writes set `mg-2026-11a` in a fresh session, in the private folder only.
   - The session runs through `heavy-run.sh`. It gets the operator catalog of
     spec D6 and the candidate lists.
   - The choice of each diff is rule-based (spec D4). The author chooses no
@@ -920,8 +923,9 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - Verify: the lint passes, and the manifest holds no key field and no
     seeded line.
 - [ ] 3.16 The pilot seeding (spec D5 to D8, D13). The fixture author
-  `claude-code/claude-opus-5-5[1m]#high` writes set `mg-2026-11p` in a fresh
-  session, in the private folder only.
+  the route of `ra-quota pick` (no Opus, Daniel's rule; a Claude route only
+  when the Claude week is under 80 %, else the next family; PM 2026-11-16)
+  writes set `mg-2026-11p` in a fresh session, in the private folder only.
   - The pilot set holds the first 6 qualified commits in the D4 order, with
     at least 12 plants. The author uses the method of D5 to D7.
   - The pilot set is separate from `mg-2026-11a`. A reseed makes `mg-2026-11p2`,
