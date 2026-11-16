@@ -845,6 +845,9 @@ questions".
       ops; print-book audit; tooling.
     - **Columns.** Kind of work; use this model; second choice; evidence;
       evidence date.
+    - **Names (PM P1 2026-11-16).** The pick cells use the plain model names
+      from `harness/model-guide/data/model-names.json`. A key with no name
+      shows its key without the plan prefix.
     - **Sources for each row.**
 
       | Row | First source | Second source |
@@ -943,7 +946,10 @@ The tool merges the rows by model key and computes the pass rate, the
 blocking rate, the `no_result` count, the ratings with `n`, the rater
 agreement with `n`, and the 4-week pass rate (D16). `unknown` and `other`
 stay out of every rank. The merge joins only the `#<variant>` rows and the
-`[1m]` rows of one route.
+`[1m]` rows of one route. The file
+`harness/model-guide/data/model-names.json` is a committed data file.
+`guide.ts` and `real-work.ts` read it and never write it
+(PM P1 2026-11-16).
 
 ### FR-3 — The rank and the small-sample mark
 
@@ -1124,6 +1130,9 @@ no quota source gets the fixed cap of
     The preview shows the track A rank by the worst pass.
 12. No run used a metered route, and no pass started at 70 % or more of a
     window.
+13. `real-work.html` has no horizontal overflow at 390, 980, and 1280 px. A
+    wide table scrolls inside its own box with a visible hint. The page is
+    about 3 screens long at 1280 px (PM P1 2026-11-16).
 
 ## Owner questions
 
