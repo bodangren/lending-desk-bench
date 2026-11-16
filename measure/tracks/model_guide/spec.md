@@ -397,9 +397,14 @@ questions".
 8. **D8. The size of the first set.** The first review set is `mg-2026-11a`.
    It has 12 seeded diffs, 6 from each source repo, with 3 to 5 plants each.
    It also has 2 control diffs with no plant (1 from each repo). So it has
-   14 diffs and 40 to 60 plants. At least 14 plants are blockers. Each class
-   C1 to C7 has at least 3 plants. C8 and C9 have at least 1 plant each. A
-   set has a fixed content: a change makes a new set id.
+   14 diffs and 40 to 60 plants. Each source repo gives its first 7
+   qualified commits in the D4 order, newest first. The first 6 of each repo
+   are seeded, and the 7th of each repo is the control diff with no plant.
+   The diff ids are `mono-01` to `mono-07` and `forge-01` to `forge-07` in
+   that order, so `mono-07` and `forge-07` are the controls. At least 14
+   plants are blockers. Each class C1 to C7 has at least 3 plants. C8 and
+   C9 have at least 1 plant each. A set has a fixed content: a change makes
+   a new set id.
 
 ### Track A: secrecy
 
@@ -530,10 +535,16 @@ questions".
     - **N.** N = 3 passes for each route and each set.
     - **The pilot gate.** A set goes to ranking only after a pilot. The
       pilot set is `mg-2026-11p`. It has 6 seeded diffs and at least 12
-      plants. The 6 diffs are the first 6 qualified commits in the D4 order.
-      The fixture author seeds them by the method of D5 to D7. The pilot set
-      is separate from the ranked set `mg-2026-11a`. A reseed makes a new set
-      id: `mg-2026-11p2`, then `mg-2026-11p3`.
+      plants (PM 2026-11-16). The 6 diffs are the first 3 qualified commits
+      of each repo in the D4 order, newest first. These are `mono-01` to
+      `mono-03` and `forge-01` to `forge-03` of `mg-2026-11a`. The fixture
+      author seeds them by the method of D5 to D7. Each pilot seeded diff is
+      byte-identical to the seeded diff of the same id in `mg-2026-11a`,
+      with the same seeded-diff SHA-256. The pilot key holds the same
+      plants; only its `set_id` differs. The pilot set is separate from the
+      ranked set `mg-2026-11a`. A reseed makes a new set id: `mg-2026-11p2`,
+      then `mg-2026-11p3`. Each reseed keeps the same 6 source commits and
+      seeds them again by the harder rule of this gate.
       The pilot runs 2 routes with 2 passes each, so each route has a
       worst-of-2 score. The pilot routes are
       `minimax-cn-coding-plan/MiniMax-M3.1-Flash` and

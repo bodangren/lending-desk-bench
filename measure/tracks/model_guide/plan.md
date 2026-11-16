@@ -966,6 +966,10 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
     spec D6 and the candidate lists.
   - The choice of each diff is rule-based (spec D4). The author chooses no
     diff.
+  - The set takes the first 7 qualified commits of each repo in the D4
+    order, newest first. The first 6 of each repo are seeded, and the 7th
+    is a control diff with no plant. The ids are `mono-01` to `mono-07` and
+    `forge-01` to `forge-07`; `mono-07` and `forge-07` are the controls.
   - Verify: `review-set.ts lint mg-2026-11a` passes.
 - [ ] 3.15 The public manifest, first write. Run
   `review-set.ts lint mg-2026-11a`. It writes
@@ -980,10 +984,15 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   author route of spec D5 (`openai/gpt-6.1-sol#high` with `--allow-codex`; PM
   2026-11-16; the run log names the route that wrote the set). The author
   writes set `mg-2026-11p` in a fresh session, in the private folder only.
-  - The pilot set holds the first 6 qualified commits in the D4 order, with
-    at least 12 plants. The author uses the method of D5 to D7.
-  - The pilot set is separate from `mg-2026-11a`. A reseed makes `mg-2026-11p2`,
-    and then `mg-2026-11p3`.
+  - The pilot set holds the first 3 qualified commits of each repo in the
+    D4 order, newest first, with at least 12 plants. These are `mono-01` to
+    `mono-03` and `forge-01` to `forge-03` of `mg-2026-11a`. Each pilot
+    seeded diff is a byte-identical copy of the same id in `mg-2026-11a`,
+    with the same seeded-diff SHA-256. The key holds the same plants; only
+    its `set_id` differs (spec D13; PM 2026-11-16).
+  - The pilot set is separate from `mg-2026-11a`. A reseed makes
+    `mg-2026-11p2`, and then `mg-2026-11p3`. Each reseed keeps the same 6
+    source commits and seeds them again by the harder rule.
   - Verify: `review-set.ts lint mg-2026-11p` passes.
 
 Verify (Phase 3): spec acceptance 9 holds.
@@ -1087,8 +1096,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
 - [ ] 4.11 The pilot gate (spec D13, OD7). The pilot set `mg-2026-11p` runs
   on the two pilot routes with 2 passes each, on the nights of 2026-11-20 and
   2026-11-21.
-  - The pilot set holds the first 6 qualified commits in the D4 order (task
-    3.16).
+  - The pilot set holds the first 3 qualified commits of each repo in the
+    D4 order, newest first (task 3.16).
   - The pilot routes are `minimax-cn-coding-plan/MiniMax-M3.1-Flash` and
     `kimi-code-plan-cn/kimi-for-coding#high`.
   - The pilot runs through `heavy-run.sh`, in the window of spec D15.
