@@ -916,6 +916,15 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   refuses a plant off the diff lines). Touch no test file.
   - Evidence: commit 8fee6bb holds the two tools. `measure/runs/model_guide/green-p3-c9d60b9.log`
     holds the command output of each run and the empty `docs/` status.
+- [x] d00169c 3.13a Red. pick-diffs reads a gh output over 1 MiB (ENOBUFS found in
+  3.13). Add one test to `pick-diffs.test.ts` and the fake `gh` mode it needs.
+  - Verify: the new tests fail at HEAD with `pick-diffs: gh api failed`, and
+    the other pick-diffs tests stay green. Record the result in
+    `measure/runs/model_guide/red-3.13a.txt`.
+  - Evidence: `measure/runs/model_guide/red-3.13a.txt` holds the command,
+    the exit code, the two failed names, and the fake pad modes. No large
+    fixture is committed.
+- [~] 3.13b Green. Fix the pick-diffs output buffer. Touch no test file.
 - [x] 32980bc 3.12c Green. Fix the correctness findings of 3.12a. Touch no test file.
   - Evidence: commit 32980bc holds the three tools. `measure/runs/model_guide/green-p3-dc5c319.log`
     holds the exit codes of the four runs and the empty `docs/` status.
