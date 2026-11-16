@@ -9,7 +9,7 @@
  * value` and exit 2.
  *
  * The check reads the git index of the repo with `git` only:
- *   git -C <repo> diff --cached --name-only
+ *   git -C <repo> diff --cached --name-only -z
  *   git -C <repo> show :<path>
  * The work tree of a staged file is never read, so the check reads the
  * content that the commit will hold. The private folder is never scanned.
@@ -45,7 +45,7 @@
  * `docs/`, and the absolute path for a file under the preview folder.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 const KEY_FIELDS = ["new_lines", "witness", "operator"];
@@ -136,16 +136,36 @@ function seededLines(privateDir: string): string[] {
   return [...secrets];
 }
 
-/** Every file under a folder. */
+/** The stat of a path, or null when a link in it is broken. */
+function statOf(path: string): ReturnType<typeof statSync> | null {
+  try {
+    return statSync(path);
+  } catch {
+    return null;
+  }
+}
+
+/** Every file under a folder. A broken link is skipped, not a finding. */
 function filesUnder(dir: string): string[] {
   if (!existsSync(dir) || !statSync(dir).isDirectory()) return [];
   const out: string[] = [];
   for (const name of readdirSync(dir).sort()) {
     const full = join(dir, name);
-    if (statSync(full).isDirectory()) out.push(...filesUnder(full));
+    const stat = statOf(full);
+    if (stat === null) continue;
+    if (stat.isDirectory()) out.push(...filesUnder(full));
     else out.push(full);
   }
   return out;
+}
+
+/** The real path of a path, or the path itself when it does not exist. */
+function realOf(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
 }
 
 /** One `git` call in the repo. */
@@ -155,11 +175,12 @@ function git(repo: string, args: string[]): string | null {
   return run.stdout;
 }
 
-/** The paths of the staged files of the repo. */
+/** The paths of the staged files of the repo. The `-z` output holds each
+ * raw name, so a name with a non-ASCII or quoted character survives. */
 function stagedPaths(repo: string): string[] {
-  const out = git(repo, ["diff", "--cached", "--name-only"]);
+  const out = git(repo, ["diff", "--cached", "--name-only", "-z"]);
   if (out === null) return [];
-  return out.split("\n").filter((line) => line !== "");
+  return out.split("\0").filter((name) => name !== "");
 }
 
 /** The content of a staged file, read from the index. */
@@ -197,9 +218,10 @@ function scan(text: string, label: string, privatePaths: string[], secrets: stri
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
-  // The private folder path, as the caller gave it and as the system reads
-  // it. A link in the path must not hide the folder.
-  const privatePaths = [args.privateDir, resolve(args.privateDir)];
+  // The private folder path, as the caller gave it, as the system reads it,
+  // and as the file system resolves it. A link in the path must not hide the
+  // folder.
+  const privatePaths = [...new Set([args.privateDir, resolve(args.privateDir), realOf(args.privateDir)])];
   const secrets = seededLines(args.privateDir);
 
   const findings: string[] = [];

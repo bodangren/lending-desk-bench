@@ -50,8 +50,8 @@
  * holds no wall-clock value.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join, sep } from "node:path";
 
 const SCHEMA = "model-guide-candidates/1";
 const DEFAULT_LIMIT = 12;
@@ -83,6 +83,41 @@ function refuse(reason: string): never {
   process.exit(2);
 }
 
+/** A set id is a plain name: it starts with a letter or a digit, holds only
+ * letters, digits, `.`, `_`, and `-`, and holds no `..`. */
+const SET_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+function isPlainSetId(setId: string): boolean {
+  return SET_ID_RE.test(setId) && !setId.includes("..");
+}
+
+/** The write path of a target inside a named root: the target, then each
+ * folder up to and including the root. */
+function writePath(target: string, root: string): string[] {
+  const paths = [target];
+  let dir = dirname(target);
+  while (dir !== root && dir.startsWith(`${root}${sep}`)) {
+    paths.push(dir);
+    dir = dirname(dir);
+  }
+  if (dir === root) paths.push(root);
+  return paths;
+}
+
+/** A link on the write path takes the write outside its folder, so the tool
+ * refuses before any write. A path that does not exist is not a link. */
+function refuseSymlink(paths: string[]): void {
+  for (const path of paths) {
+    let info;
+    try {
+      info = lstatSync(path);
+    } catch {
+      continue;
+    }
+    if (info.isSymbolicLink()) refuse(`symlink: ${path}`);
+  }
+}
+
 interface Args {
   repo: string;
   set: string;
@@ -108,6 +143,7 @@ function parseArgs(argv: string[]): Args {
   for (const flag of ["--repo", "--set", "--private"]) {
     if (values[flag] === undefined) refuse(`${flag} needs a value`);
   }
+  if (!isPlainSetId(values["--set"])) refuse(`set-id: ${values["--set"]}`);
   const [owner, name] = values["--repo"].split("/");
   if (owner === "" || name === "" || name.includes("/")) refuse("--repo needs an owner and a name");
   let limit = DEFAULT_LIMIT;
@@ -259,6 +295,8 @@ function heldCommits(privateDir: string, setId: string): Set<string> {
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
   const [owner, name] = args.repo.split("/");
+  const target = join(args.privateDir, "candidates", `${owner}__${name}.json`);
+  refuseSymlink(writePath(target, args.privateDir));
 
   const list = ghApi(`repos/${owner}/${name}/commits`, true);
   if (!Array.isArray(list)) refuse("gh api gave no commit list");
@@ -325,7 +363,7 @@ function main(): void {
 
   const dir = join(args.privateDir, "candidates");
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, `${owner}__${name}.json`), `${JSON.stringify(doc, null, 2)}\n`);
+  writeFileSync(target, `${JSON.stringify(doc, null, 2)}\n`);
 }
 
 main();

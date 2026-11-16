@@ -77,8 +77,8 @@
  * false claim (the no-rescue rule, spec D10, D11).
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, sep } from "node:path";
 
 const VERDICTS = ["real-defect", "false-claim", "unclear"];
 /** The window of a plant match: `new_lines[0] - 3` to `new_lines[1] + 3`. */
@@ -91,6 +91,41 @@ const GROUP_WINDOW = 2;
 function refuse(command: string, check: string): never {
   process.stdout.write(`${command}: ${check}\n`);
   process.exit(2);
+}
+
+/** A set id is a plain name: it starts with a letter or a digit, holds only
+ * letters, digits, `.`, `_`, and `-`, and holds no `..`. */
+const SET_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+function isPlainSetId(setId: string): boolean {
+  return SET_ID_RE.test(setId) && !setId.includes("..");
+}
+
+/** The write path of a target inside a named root: the target, then each
+ * folder up to and including the root. */
+function writePath(target: string, root: string): string[] {
+  const paths = [target];
+  let dir = dirname(target);
+  while (dir !== root && dir.startsWith(`${root}${sep}`)) {
+    paths.push(dir);
+    dir = dirname(dir);
+  }
+  if (dir === root) paths.push(root);
+  return paths;
+}
+
+/** A link on the write path takes the write outside its folder, so the tool
+ * refuses before any write. A path that does not exist is not a link. */
+function refuseSymlink(command: string, paths: string[]): void {
+  for (const path of paths) {
+    let info;
+    try {
+      info = lstatSync(path);
+    } catch {
+      continue;
+    }
+    if (info.isSymbolicLink()) refuse(command, `symlink: ${path}`);
+  }
 }
 
 function isObject(value: unknown): value is Record<string, any> {
@@ -109,6 +144,7 @@ interface Args {
 function parseArgs(argv: string[], command: string): Args {
   const setId = argv[1] ?? "";
   if (setId === "" || setId.startsWith("--")) refuse(command, "set_id needs a value");
+  if (!isPlainSetId(setId)) refuse(command, `set-id: ${setId}`);
   const allowed =
     command === "queue" ? ["--private", "--raw"] : ["--private", "--judge-a", "--judge-b"];
   const values: Record<string, string> = {};
@@ -242,6 +278,9 @@ interface Group {
 
 /** The queue file of the set. */
 function writeQueue(args: Args): void {
+  const dir = join(args.privateDir, "sets", args.setId, "adjudication");
+  const queuePath = join(dir, "queue.json");
+  refuseSymlink("queue", writePath(queuePath, args.privateDir));
   const keysDir = join(args.privateDir, "sets", args.setId, "keys");
   if (!existsSync(keysDir) || !statSync(keysDir).isDirectory()) {
     refuse("queue", `set missing ${args.setId}`);
@@ -330,15 +369,18 @@ function writeQueue(args: Args): void {
     })),
   };
 
-  const dir = join(args.privateDir, "sets", args.setId, "adjudication");
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "queue.json"), `${JSON.stringify(doc, null, 2)}\n`);
+  writeFileSync(queuePath, `${JSON.stringify(doc, null, 2)}\n`);
 }
 
 /** The apply of the two judge files to the queue. */
 function writeApply(args: Args): void {
   const dir = join(args.privateDir, "sets", args.setId, "adjudication");
   const queuePath = join(dir, "queue.json");
+  const verdictsPath = join(dir, "verdicts.json");
+  const realDefectsPath = join(dir, "real-defects.json");
+  refuseSymlink("apply", writePath(verdictsPath, args.privateDir));
+  refuseSymlink("apply", writePath(realDefectsPath, args.privateDir));
   if (!existsSync(queuePath) || !statSync(queuePath).isFile()) {
     refuse("apply", "queue missing");
   }
@@ -394,6 +436,7 @@ function writeApply(args: Args): void {
   const keysDir = join(args.privateDir, "sets", args.setId, "keys");
   for (const [diffId, additions] of keyAdditions) {
     const keyPath = join(keysDir, `${diffId}.json`);
+    refuseSymlink("apply", writePath(keyPath, args.privateDir));
     if (!existsSync(keyPath)) refuse("apply", `key missing ${diffId}`);
     const key = JSON.parse(readFileSync(keyPath, "utf8"));
     const known = Array.isArray(key.real_defects) ? key.real_defects : [];
@@ -402,9 +445,9 @@ function writeApply(args: Args): void {
   }
 
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "verdicts.json"), `${JSON.stringify(verdicts, null, 2)}\n`);
+  writeFileSync(verdictsPath, `${JSON.stringify(verdicts, null, 2)}\n`);
   writeFileSync(
-    join(dir, "real-defects.json"),
+    realDefectsPath,
     `${JSON.stringify({ set_id: args.setId, real_defects: realDefects }, null, 2)}\n`,
   );
 }

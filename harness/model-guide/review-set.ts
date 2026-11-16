@@ -70,8 +70,8 @@
  * The manifest holds no plant text, no file path, and no line.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, sep } from "node:path";
 
 const KEY_SCHEMA = "model-guide-key/1";
 const DEFAULT_SETS = "harness/model-guide/data/sets";
@@ -164,6 +164,41 @@ function refuseAll(lines: string[]): never {
   process.exit(2);
 }
 
+/** A set id is a plain name: it starts with a letter or a digit, holds only
+ * letters, digits, `.`, `_`, and `-`, and holds no `..`. */
+const SET_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+function isPlainSetId(setId: string): boolean {
+  return SET_ID_RE.test(setId) && !setId.includes("..");
+}
+
+/** The write path of a target inside a named root: the target, then each
+ * folder up to and including the root. */
+function writePath(target: string, root: string): string[] {
+  const paths = [target];
+  let dir = dirname(target);
+  while (dir !== root && dir.startsWith(`${root}${sep}`)) {
+    paths.push(dir);
+    dir = dirname(dir);
+  }
+  if (dir === root) paths.push(root);
+  return paths;
+}
+
+/** A link on the write path takes the write outside its folder, so the tool
+ * refuses before any write. A path that does not exist is not a link. */
+function refuseSymlink(paths: string[], line: string): void {
+  for (const path of paths) {
+    let info;
+    try {
+      info = lstatSync(path);
+    } catch {
+      continue;
+    }
+    if (info.isSymbolicLink()) refuse(`${line}: symlink: ${path}`);
+  }
+}
+
 interface Args {
   setId: string;
   privateDir: string;
@@ -176,6 +211,7 @@ function parseArgs(argv: string[]): Args {
   if (argv[0] !== "lint") refuse("lint: unknown command");
   const setId = argv[1] ?? "";
   if (setId === "" || setId.startsWith("--")) refuse("lint: set_id needs a value");
+  if (!isPlainSetId(setId)) refuse(`lint: set-id: ${setId}`);
   const values: Record<string, string> = {};
   let i = 2;
   while (i < argv.length) {
@@ -471,6 +507,8 @@ function checkCounts(diffs: DiffEntry[], setId: string, failures: string[]): voi
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
+  const manifestPath = join(args.setsDir, `${args.setId}.json`);
+  refuseSymlink(writePath(manifestPath, args.setsDir), "lint");
   const setDir = join(args.privateDir, "sets", args.setId);
   const keysDir = join(setDir, "keys");
   const diffsDir = join(setDir, "diffs");
@@ -516,7 +554,7 @@ function main(): void {
   };
 
   mkdirSync(args.setsDir, { recursive: true });
-  writeFileSync(join(args.setsDir, `${args.setId}.json`), `${JSON.stringify(manifest, null, 2)}\n`);
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 main();

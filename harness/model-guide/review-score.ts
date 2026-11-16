@@ -74,8 +74,8 @@
  * The score file holds no finding text, no file path, and no line.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, sep } from "node:path";
 
 const DEFAULT_SCORES = "harness/model-guide/data/review-scores";
 const WEIGHTS: Record<string, number> = { blocker: 5, major: 2, minor: 1 };
@@ -90,6 +90,41 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 function refuse(check: string): never {
   process.stdout.write(`score: ${check}\n`);
   process.exit(2);
+}
+
+/** A set id is a plain name: it starts with a letter or a digit, holds only
+ * letters, digits, `.`, `_`, and `-`, and holds no `..`. */
+const SET_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+function isPlainSetId(setId: string): boolean {
+  return SET_ID_RE.test(setId) && !setId.includes("..");
+}
+
+/** The write path of a target inside a named root: the target, then each
+ * folder up to and including the root. */
+function writePath(target: string, root: string): string[] {
+  const paths = [target];
+  let dir = dirname(target);
+  while (dir !== root && dir.startsWith(`${root}${sep}`)) {
+    paths.push(dir);
+    dir = dirname(dir);
+  }
+  if (dir === root) paths.push(root);
+  return paths;
+}
+
+/** A link on the write path takes the write outside its folder, so the tool
+ * refuses before any write. A path that does not exist is not a link. */
+function refuseSymlink(paths: string[]): void {
+  for (const path of paths) {
+    let info;
+    try {
+      info = lstatSync(path);
+    } catch {
+      continue;
+    }
+    if (info.isSymbolicLink()) refuse(`symlink: ${path}`);
+  }
 }
 
 interface Args {
@@ -130,6 +165,7 @@ function parseArgs(argv: string[]): Args {
   for (const flag of ["--private", "--set", "--route", "--pass", "--date", "--outputs"]) {
     if (values[flag] === undefined) refuse(`${flag} needs a value`);
   }
+  if (!isPlainSetId(values["--set"])) refuse(`set-id: ${values["--set"]}`);
   const pass = Number(values["--pass"]);
   if (!Number.isInteger(pass) || pass < 1) refuse("--pass needs a number");
   if (!DATE_RE.test(values["--date"])) refuse("--date needs a date");
@@ -411,6 +447,8 @@ function routeRecords(passes: any[]): RouteRecord[] {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
+  const scorePath = join(args.scoresDir, `${args.setId}.json`);
+  refuseSymlink(writePath(scorePath, args.scoresDir));
   const keysDir = join(args.privateDir, "sets", args.setId, "keys");
   if (!existsSync(keysDir) || !statSync(keysDir).isDirectory()) {
     refuse(`set-missing ${args.setId}`);
@@ -470,7 +508,6 @@ function main(): void {
     by_severity: counts.bySeverity,
   };
 
-  const scorePath = join(args.scoresDir, `${args.setId}.json`);
   let passes: any[] = [];
   if (existsSync(scorePath) && statSync(scorePath).isFile()) {
     let doc: any;
