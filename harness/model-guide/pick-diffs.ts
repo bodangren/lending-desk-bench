@@ -69,6 +69,22 @@ const BUILD_SEGMENTS = ["dist", "build", "generated"];
 /** The output ceiling of one `gh` call. The commits list of a source repo is
  * 26 MB and the Node default is 1 MB. */
 const GH_MAX_BUFFER = 64 * 1024 * 1024;
+/** A `gh` failure is transient when its stderr matches one of these
+ * patterns, case-insensitive. */
+const GH_TRANSIENT_PATTERNS = [
+  "HTTP 5\\d\\d",
+  "HTTP 429",
+  "secondary rate limit",
+  "error connecting to",
+  "connection reset",
+  "unexpected EOF",
+  "timeout",
+  "TLS handshake",
+];
+const GH_TRANSIENT = new RegExp(GH_TRANSIENT_PATTERNS.join("|"), "i");
+/** The waits before each retry, as multiples of the base wait. They give
+ * four tries for one call. */
+const GH_RETRY_SCALES = [1, 6, 24];
 
 const REASON_MERGE = "merge commit";
 const REASON_DATE = "committer date outside 2026-08-01 to 2026-11-13";
@@ -167,16 +183,49 @@ function isObject(value: unknown): value is Record<string, any> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** One `gh api` GET call. The method is the GET method only. */
+/** The last non-empty line of a `gh` stderr, or an empty string. */
+function lastStderrLine(text: string | null): string {
+  const lines = (text ?? "").split("\n").filter((line) => line.trim() !== "");
+  return lines.length === 0 ? "" : lines[lines.length - 1].trim();
+}
+
+/** The last line of `gh` stderr on the stderr of the tool. */
+function reportGhStderr(text: string | null): void {
+  const line = lastStderrLine(text);
+  if (line !== "") process.stderr.write(`${line}\n`);
+}
+
+/** The synchronous wait of a retry, so the rest of the tool stays
+ * synchronous. */
+function waitSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/** One `gh api` GET call. The method is the GET method only. A transient
+ * failure waits and is retried up to three more times. Any other failure
+ * refuses at once, after the last line of `gh` stderr lands on stderr. */
 function ghApi(path: string, paginate: boolean): any {
   const args = ["api", "--method", "GET", path];
   if (paginate) args.push("--paginate");
-  const run = spawnSync("gh", args, { encoding: "utf8", maxBuffer: GH_MAX_BUFFER });
-  if (run.error !== undefined || run.status !== 0) refuse("gh api failed");
-  try {
-    return JSON.parse(run.stdout);
-  } catch {
-    refuse("gh api gave no JSON");
+  const base = Number(process.env.PICK_DIFFS_RETRY_WAIT_MS ?? 5000);
+  for (let attempt = 0; ; attempt += 1) {
+    const run = spawnSync("gh", args, { encoding: "utf8", maxBuffer: GH_MAX_BUFFER });
+    if (run.error !== undefined) {
+      reportGhStderr(run.stderr);
+      refuse("gh api failed");
+    }
+    if (run.status === 0) {
+      try {
+        return JSON.parse(run.stdout);
+      } catch {
+        refuse("gh api gave no JSON");
+      }
+    }
+    if (attempt >= GH_RETRY_SCALES.length || !GH_TRANSIENT.test(run.stderr ?? "")) {
+      reportGhStderr(run.stderr);
+      refuse("gh api failed");
+    }
+    waitSync(base * GH_RETRY_SCALES[attempt]);
   }
 }
 
