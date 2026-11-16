@@ -704,51 +704,105 @@ questions".
       `real-work-outcomes/1`, or when a run sum differs from
       `coverage.runs`. It never copies the input file into the repository.
     - **Source line.** The page shows the file name, its SHA-256, and
-      `generated_on`.
+      `generated_on`. These values sit in the "About this data" footer
+      (PM P1 2026-11-16).
     - **Coverage block.** The page shows the runs, the date range, the share
       with a known model, the share with a result, and the left-out paired
-      duplicates. It also shows the runs of `unknown` and `other`.
+      duplicates. It also shows the runs of `unknown` and `other`. The block
+      sits in the "About this data" footer (PM P1 2026-11-16).
     - **Merge.** Rows with the same model key merge by sums. The merge joins
       only the `#<variant>` rows and the `[1m]` rows of one route. The same
       model on another provider stays a separate row (OD4). The page lists
-      the routes of each merged row. The method note says: "Route names
-      stay as written in the record, so #high and [1m] variants are
+      the routes of each merged row in a small second line or a tooltip, not
+      in a Routes column (PM P1 2026-11-16). The method note says: "Route
+      names stay as written in the record, so #high and [1m] variants are
       separate routes. This page merges them by model." `unknown` and
       `other` do not merge and get no rank.
     - **Role groups.** The page has one table for producer roles and one
       table for checker roles.
     - **Work-type tables.** The page has one table for each work type of
-      `work_types`. The `all_time` block gives one row for each route, role,
-      and work type. A work-type row sums the role rows of that route and
-      work type. Each `work_types` value holds `runs`, `pass`, and `fail`
+      `work_types`. Each table sits in a tab or a collapsed section
+      (PM P1 2026-11-16). The `all_time` block gives one row for each route,
+      role, and work type. A work-type row sums the role rows of that route
+      and work type. Each `work_types` value holds `runs`, `pass`, and `fail`
       only. These tables use that data and no other data.
       - **The pass rate of a work type.** `pass / (pass + fail)`. A row with
         `pass + fail` of 0 has no rate.
-      - **The result count.** The page shows `pass + fail` beside each rate.
+      - **The result count.** The Runs column shows `pass + fail`
+        (PM P1 2026-11-16).
       - **The minimum.** A row with fewer than 10 results (`pass + fail`)
         gets the mark `few runs`. The mark counts results, not export runs
-        (`runs`). It goes below the other rows, and it cannot pick.
+        (`runs`). It goes into the collapsed group "Too few runs to rank"
+        under its table, with no rank number, and it never picks
+        (PM P1 2026-11-16).
       - **The rank.** The higher pass rate first, then the higher result
-        count.
-      - **No blocking rate.** The export has no blocking findings for a work
-        type. These tables show no blocking rate and no error count.
-      - **No data.** A work type with no row says "no pick yet".
+        count. Only rows with 10 or more results get a rank number
+        (PM P1 2026-11-16).
+      - **Blocking column.** The export has no blocking findings for a work
+        type. These tables drop the Blocking % column and the error count
+        (PM P1 2026-11-16).
+      - **No data.** A work type with no qualifying row says "no pick yet".
     - **Pass rate.** `pass / (pass + fail + error)`. `no_result` stays out
-      of the rate. The page shows it in its own column.
+      of the rate. The page shows it in its own column behind the "More
+      columns" toggle (PM P1 2026-11-16).
     - **Blocking rate.** Blocking findings for each run with a result.
     - **Rank.** Producer table: the higher pass rate first, then the lower
       blocking rate. Checker table: the higher pass rate first. The checker
       table shows the blocking rate, but the rank does not use it, because a
-      checker that finds more blockers is not worse (OD3). Each
-      rate has its run count beside it, for example `0.82 (n=114)`.
+      checker that finds more blockers is not worse (OD3). Each rate shows
+      as a whole percent, and the Runs column holds the result count
+      (PM P1 2026-11-16).
     - **Small samples.** A merged row with fewer than 10 runs with a result
-      gets the mark `few runs` and goes below the rows without the mark. A
-      route with fewer than 10 runs always has fewer than 10 runs with a
-      result, so this rule covers the PM rule.
-    - **Ratings.** The page shows the mean of each axis and its `n`, and the
-      rater agreement with its `n`. The rank never uses a rating.
+      gets the mark `few runs` and goes into the collapsed group "Too few
+      runs to rank" under its table. It gets no rank number and it never
+      picks. A route with fewer than 10 runs always has fewer than 10 runs
+      with a result, so this rule covers the PM rule (PM P1 2026-11-16).
+    - **Ratings.** The Rating column shows one value: the mean of the axis
+      means, with one decimal, of 5. Each axis mean and its `n`, and the
+      rater agreement with its `n`, sit behind the "More columns" toggle.
+      The rank never uses a rating (PM P1 2026-11-16).
     - **Trend.** One column shows the pass rate of the last 4 ISO weeks of
-      the `weekly` block, with its run count.
+      the `weekly` block, as a whole percent. The Runs column holds the run
+      count (PM P1 2026-11-16).
+    - **Layout (PM P1 2026-11-16).** This block replaces the display rules
+      above that it names. The data rules stay: the input check, the merge,
+      the rates as formulas, the rank order, and the 10-result minimum.
+      - **Top block.** The top block comes first, above every table. For
+        each role group (producer, checker) and each work type, one line
+        gives the recommended model, its pass rate in whole %, and its
+        result count. The recommended model is rank 1 among the rows with
+        10 or more results. With no such row, the line says "no pick yet".
+        The block fits one screen at 390 px.
+      - **Names.** Each row shows a plain model name, for example
+        "Kimi K3.1", "DeepSeek V4.1 Flash", or "MiniMax M3.1 Flash". The
+        file `harness/model-guide/data/model-names.json` maps each model key
+        to its public name. A key with no name shows the key without its
+        plan prefix. The route shows only in a small second line or a
+        tooltip. The default view has no Routes column.
+      - **Rank display.** Only rows with 10 or more results get a rank
+        number. Rows with fewer results sit in the collapsed group "Too few
+        runs to rank" under their table, with no rank number. They never
+        pick.
+      - **Default columns.** The default table shows Model, Runs, Pass %,
+        Blocking %, Rating, and Trend, so 6 columns or fewer. A work-type
+        table drops Blocking %, because the data has no blocking findings.
+        The other columns sit behind a "More columns" toggle: routes, pass,
+        fail, error, no result, blocking count, each rating axis with its
+        `n`, and the agreement with its `n`.
+      - **Numbers.** A rate shows as a whole % with no decimals. Runs shows
+        the result count, so no "(n=...)" text sits beside a rate. Rating
+        shows one value, the mean of the axis means, with one decimal, of
+        5. An empty value shows a dash ("–"), never a sentence.
+      - **Work-type sections.** Each work type sits in a tab or a collapsed
+        section. The page is about 3 screens long at 1280 px.
+      - **Footer.** The source line, the coverage block, and the merge
+        method note move into a short "About this data" footer. The footer
+        comes after the tables.
+      - **Width.** The page has no horizontal overflow at 390, 980, or
+        1280 px. A wide table scrolls inside its own box and shows a visible
+        scroll hint.
+      - **Look.** The page uses the look of `docs/results.html`: the same
+        fonts, card style, and header, from `docs/assets/css/site.css`.
 
 17. **D17. The print-audit data point.** The file
     `harness/model-guide/data/print-audit-2026-11.json` holds the
@@ -811,7 +865,7 @@ questions".
       code review before Phase 4, because a checker pass rate measures the
       checked work, not the review skill.
     - **Evidence cell.** The source, the number, and the run count, for
-      example "page B: pass 0.86 (n=114)".
+      example "page B: pass 86 %, 114 results" (PM P1 2026-11-16).
     - **Evidence date.** The `generated_on` of the export, or the date of the
       last complete pass of track A, for each row.
     - **Base line.** The build and tests scores never pick. They show beside
@@ -888,18 +942,21 @@ stay out of every rank. The merge joins only the `#<variant>` rows and the
 
 The producer table ranks by pass rate and then by blocking rate. The checker
 table ranks by pass rate only. A row with fewer than 10 runs with a result
-gets the mark `few runs` and goes below the other rows. Each rate has its
-run count beside it. The work-type tables rank by the pass rate of
+gets the mark `few runs` and goes into the collapsed group "Too few runs to
+rank". Each rate shows as a whole percent, and the Runs column holds the
+result count. The work-type tables rank by the pass rate of
 `pass / (pass + fail)` and then by the result count. A work-type row with
 fewer than 10 results (`pass + fail`) gets the mark `few runs` and cannot
-pick.
+pick (PM P1 2026-11-16).
 
 ### FR-4 — The page and the method note
 
-`real-work.html` shows the source line, the coverage block, the producer
-table, the checker table, the work-type tables, the print-audit block, and
-the method note of D16. The page reuses `docs/assets/css/site.css` and the
-nav of the other pages.
+`real-work.html` shows the top block first, then the producer table, the
+checker table, the work-type sections, and the print-audit block. The "About
+this data" footer holds the source line, the coverage block, and the merge
+method note of D16 (PM P1 2026-11-16). The page reuses the look of
+`docs/results.html`, `docs/assets/css/site.css`, and the nav of the other
+pages.
 
 ### FR-5 — The print-audit block
 
@@ -1020,17 +1077,24 @@ no quota source gets the fixed cap of
 1. `measure/tracks.md` shows `model_guide`, shows `rigor_a_h` as paused with
    the PM reason, and has a backlog line for the replay track with no date.
 2. With the 2026-11-14 export, the preview folder holds `real-work.html` and
-   `real-work.json` by 2026-11-18. The page shows the SHA-256
-   `dae855ca…64f2`, `generated_on` 2026-11-14, and the coverage numbers 1,798
-   runs, 2026-06-06 to 2026-11-13, 50.6 %, and 71.7 %.
+   `real-work.json` by 2026-11-18. The top block comes first and gives one
+   line for each role group and each work type. The "About this data" footer
+   shows the SHA-256 `dae855ca…64f2`, `generated_on` 2026-11-14, and the
+   coverage numbers 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, and 71.7 %
+   (PM P1 2026-11-16).
 3. A changed byte in the export makes the input check stop with exit 2.
-4. Merged rows list their routes. The method note states the merge. Each
-   rate has its run count. Rows with fewer than 10 runs with a result carry
-   `few runs`. No rank uses a rating.
-5. Each work-type table shows the pass rate of `pass / (pass + fail)` with
-   its result count. A work-type row sums the role rows. A row with fewer
-   than 10 results carries `few runs` and cannot pick. A work type with no
-   row says "no pick yet".
+4. Each row shows a plain model name. A route shows in a second line or a
+   tooltip, not in a default column. The footer method note states the
+   merge. A rate shows as a whole percent, and Runs holds the result count.
+   Rows with fewer than 10 runs with a result carry `few runs` in the
+   collapsed group "Too few runs to rank" and get no rank number. No rank
+   uses a rating (PM P1 2026-11-16).
+5. Each work-type table shows the pass rate of `pass / (pass + fail)` as a
+   whole percent, and Runs holds the result count. A work-type table drops
+   the Blocking % column. A work-type row sums the role rows. A row with
+   fewer than 10 results carries `few runs` in the collapsed group "Too few
+   runs to rank" and cannot pick. A work type with no qualifying row says
+   "no pick yet" in the top block (PM P1 2026-11-16).
 6. The print-audit block shows 11 of 13 and 13 of 13, the 52 errors, and the
    error types with their counts. The block shows no placeholder line. The
    input check of the print-audit file stops with exit 2 on a wrong SHA-256
