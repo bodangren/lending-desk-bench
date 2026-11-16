@@ -835,3 +835,102 @@ process.exit(1);
     expect(existsSync(candidateFile), "no partial candidates file").toBe(false);
   });
 });
+
+describe("adversarial phase 3 round 4: the gh retry", () => {
+  const FAKES = join(FIXTURES, "fakes");
+  const FORGE = "bodangren/advantage-forge";
+
+  /** A temp `gh` that serves the committed bodies and fails the list call
+   * `times` times (-1 for always) with `stderrLine` and `stdoutDecoy`. */
+  function retryFake(tag: string, stderrLine: string, times: number, stdoutDecoy: string, sleepMs: number): string {
+    const dir = tempDir(`fake-retry-${tag}`);
+    const counter = join(dir, "count");
+    const fixture = join(FAKES, "gh-commits.json");
+    const script = `#!/usr/bin/env node
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.FAKE_GH_LOG, args.join(" ") + "\\n");
+const path = args.find((arg) => arg.startsWith("repos/")) || "";
+const key = path.replace(/^\\/+/, "").split("?")[0];
+const sleepMs = ${sleepMs};
+const slept = ${JSON.stringify(join(dir, "slept"))};
+if (sleepMs > 0 && !fs.existsSync(slept)) {
+  fs.writeFileSync(slept, "1");
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, sleepMs);
+}
+if (/\\/commits$/.test(key)) {
+  let count = 0;
+  try { count = Number(fs.readFileSync(${JSON.stringify(counter)}, "utf8")); } catch {}
+  if (${times} < 0 || count < ${times}) {
+    fs.writeFileSync(${JSON.stringify(counter)}, String(count + 1));
+    process.stdout.write(${JSON.stringify(stdoutDecoy)});
+    process.stderr.write(${JSON.stringify(stderrLine)} + "\\n");
+    process.exit(1);
+  }
+}
+const bodies = JSON.parse(fs.readFileSync(${JSON.stringify(fixture)}, "utf8"));
+process.stdout.write(JSON.stringify(bodies[key]) + "\\n");
+`;
+    writeFileSync(join(dir, "gh"), script);
+    chmodSync(join(dir, "gh"), 0o755);
+    return dir;
+  }
+
+  function runRetry(tag: string, fakeDir: string) {
+    const privateDir = tempDir(`private-retry-${tag}`);
+    const log = join(tempDir(`log-retry-${tag}`), "gh.log");
+    const home = tempDir(`home-retry-${tag}`);
+    const childEnv: Record<string, string | undefined> = {
+      ...process.env, PATH: `${fakeDir}:${process.env.PATH ?? ""}`, FAKE_GH_LOG: log,
+      HOME: home, TZ: "UTC", NO_COLOR: "1", npm_config_loglevel: "silent",
+      PICK_DIFFS_RETRY_WAIT_MS: "0",
+    };
+    delete childEnv.BENCH_TRACK;
+    const result = spawnSync(join(HARNESS, "node_modules", ".bin", "tsx"),
+      ["model-guide/pick-diffs.ts", "--repo", FORGE, "--set", "mg-2026-11a", "--private", privateDir],
+      { cwd: HARNESS, env: childEnv as NodeJS.ProcessEnv, encoding: "utf8", timeout: 60_000 });
+    return {
+      result, log,
+      candidateFile: join(privateDir, "candidates", "bodangren__advantage-forge.json"),
+    };
+  }
+
+  function listCalls(log: string): number {
+    return readFileSync(log, "utf8").split("\n").filter((line) => line.endsWith("/commits --paginate")).length;
+  }
+
+  it("P3X4-1 a 404 whose body holds a transient word is retried, then refused with no file", () => {
+    // The transient patterns match the whole stderr, so "timeout" in a
+    // permanent 404 body costs 4 calls; the refusal is still fail-closed.
+    const fake = retryFake("over-broad", "gh: Not Found (HTTP 404): fix timeout handling", -1, "", 0);
+    const { result, log, candidateFile } = runRetry("over-broad", fake);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim()).toBe("pick-diffs: gh api failed");
+    expect(existsSync(candidateFile), "no candidates file").toBe(false);
+    expect(listCalls(log), "a transient-worded 404 costs 4 list calls").toBe(4);
+    expect(result.stderr).toContain("gh: Not Found (HTTP 404): fix timeout handling");
+  });
+
+  it("P3X4-2 stdout of failed tries is ignored and the refetch doubles no row", () => {
+    // Two transient failures print a decoy `[]` list on stdout; the success
+    // refetches the whole list, so the 6 forge rows appear exactly once.
+    const fake = retryFake("decoy", "gh: Server Error (HTTP 502)", 2, "[]", 0);
+    const { result, log, candidateFile } = runRetry("decoy", fake);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(listCalls(log), "two failures plus one success").toBe(3);
+    expect(existsSync(candidateFile), "the candidates file is written").toBe(true);
+    const doc = JSON.parse(readFileSync(candidateFile, "utf8"));
+    expect(doc.qualified).toHaveLength(6);
+    expect(new Set(doc.qualified.map((entry: any) => entry.sha)).size, "no doubled row").toBe(6);
+  });
+
+  it("P3X4-3 a gh that answers after 2 s still succeeds", () => {
+    // No spawn timeout fires early: a slow first list call is tolerated.
+    const fake = retryFake("slow", "gh: Server Error (HTTP 502)", 0, "", 2000);
+    const { result, candidateFile } = runRetry("slow", fake);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(existsSync(candidateFile), "the candidates file is written").toBe(true);
+    const doc = JSON.parse(readFileSync(candidateFile, "utf8"));
+    expect(doc.qualified).toHaveLength(6);
+  }, 10_000);
+});
