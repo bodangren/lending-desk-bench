@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  chmodSync,
   copyFileSync,
   cpSync,
   existsSync,
@@ -761,5 +762,76 @@ describe("adversarial phase 3: the score file through guide.ts", () => {
     const row = page.rows.find((item: any) => item.kind === "Code review");
     expect(row, "the Code review row").toBeDefined();
     expect(row.pick).toBe("r-invalid");
+  });
+});
+
+describe("adversarial phase 3 round 3: the gh output ceiling", () => {
+  const PICK_TOOL = join(SOURCE, "pick-diffs.ts");
+  const FAKES = join(FIXTURES, "fakes");
+  const FORGE = "bodangren/advantage-forge";
+
+  function runPick(tag: string, extra: Record<string, string> = {}, fakeDir?: string) {
+    requireProduction();
+    const home = tempDir(`home-pick-${tag}`);
+    const log = join(tempDir(`log-pick-${tag}`), "gh.log");
+    const privateDir = tempDir(`private-pick-${tag}`);
+    const path = fakeDir ? `${fakeDir}:${FAKES}:${process.env.PATH ?? ""}` : `${FAKES}:${process.env.PATH ?? ""}`;
+    const childEnv: Record<string, string | undefined> = {
+      ...process.env, PATH: path, FAKE_GH_LOG: log,
+      HOME: home, TZ: "UTC", NO_COLOR: "1", npm_config_loglevel: "silent", ...extra,
+    };
+    delete childEnv.BENCH_TRACK;
+    const result = spawnSync(join(HARNESS, "node_modules", ".bin", "tsx"),
+      ["model-guide/pick-diffs.ts", "--repo", FORGE, "--set", "mg-2026-11a", "--private", privateDir],
+      { cwd: HARNESS, env: childEnv as NodeJS.ProcessEnv, encoding: "utf8", timeout: 60_000 });
+    return { result, privateDir, candidateFile: join(privateDir, "candidates", "bodangren__advantage-forge.json") };
+  }
+
+  /** A temp `gh` that answers the list call and fails or truncates after it. */
+  function failingFake(tag: string, mode: "detail-fails" | "truncated-list"): string {
+    const dir = tempDir(`fake-gh-${tag}`);
+    const SHAA = "a".repeat(40);
+    const SHAB = "b".repeat(40);
+    const list = [
+      { sha: SHAA, parents: [{ sha: "c".repeat(40) }], commit: { committer: { date: "2026-09-01T00:00:00Z" } } },
+      { sha: SHAB, parents: [{ sha: "d".repeat(40) }], commit: { committer: { date: "2026-09-02T00:00:00Z" } } },
+    ];
+    const detail = { files: [{ filename: "src/a.ts", additions: 30, deletions: 10, patch: "@@ x @@\n+a\n" }] };
+    writeFileSync(join(dir, "gh"), `#!/usr/bin/env node
+const fs = require("node:fs");
+fs.appendFileSync(process.env.FAKE_GH_LOG, process.argv.slice(2).join(" ") + "\\n");
+const path = process.argv[5];
+const mode = ${JSON.stringify(mode)};
+if (mode === "truncated-list") { process.stdout.write('{"incomplete": true'); process.exit(0); }
+if (/\\/commits$/.test(path)) { process.stdout.write(JSON.stringify(${JSON.stringify(list)})); process.exit(0); }
+if (path.endsWith("/commits/${SHAA}")) { process.stdout.write(JSON.stringify(${JSON.stringify(detail)})); process.exit(0); }
+process.stderr.write("fake gh: failing detail\\n");
+process.exit(1);
+`);
+    chmodSync(join(dir, "gh"), 0o755);
+    return dir;
+  }
+
+  it("P3X3-1 a commits list over 64 MiB fails closed with no candidates file", () => {
+    // 72 MB of trailing pad exceeds GH_MAX_BUFFER (64 MiB), so the spawn
+    // errors and the tool must refuse before writing anything.
+    const { result, candidateFile } = runPick("over-ceiling", { FAKE_GH_LIST_PAD: "72000000" });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toContain("pick-diffs: gh api failed");
+    expect(existsSync(candidateFile), "no partial candidates file").toBe(false);
+  });
+
+  it("P3X3-2 a detail call that fails mid-run fails closed with no candidates file", () => {
+    const { result, candidateFile } = runPick("detail-fails", {}, failingFake("detail-fails", "detail-fails"));
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toContain("pick-diffs: gh api failed");
+    expect(existsSync(candidateFile), "no partial candidates file").toBe(false);
+  });
+
+  it("P3X3-3 a list with a truncated JSON tail is refused with no candidates file", () => {
+    const { result, candidateFile } = runPick("truncated-list", {}, failingFake("truncated-list", "truncated-list"));
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toContain("pick-diffs: gh api gave no JSON");
+    expect(existsSync(candidateFile), "no partial candidates file").toBe(false);
   });
 });
