@@ -483,9 +483,18 @@ describe("J2 the apply mapping", () => {
 
   it("J2 keeps one claim at different indices as one item and costs both routes the same", () => {
     const privateDir = staged("claim-indices");
+    const plant = readJson(keyFile(privateDir)).plants[0];
+    const match: Finding = {
+      file: plant.file,
+      line: plant.new_lines[0],
+      severity: plant.severity,
+      class: plant.class,
+      title: "a real plant",
+      reason: "the call is wrong",
+    };
     const raw = buildRaw("claim-indices", {
-      route_a: { "forge-01": [C, A] },
-      route_b: { "forge-01": [A] },
+      route_a: { "forge-01": [match, A] },
+      route_b: { "forge-01": [A, match] },
     });
     expect(queue(privateDir, raw).status).toBe(0);
     const doc = readJson(queueFile(privateDir));
@@ -493,11 +502,14 @@ describe("J2 the apply mapping", () => {
 
     const judges = { [ID_A]: "false-claim" };
     expect(apply(privateDir, judges, judges).status).toBe(0);
-    const first = score(privateDir, "indices-a", [C, A], verdictsFile(privateDir));
-    const second = score(privateDir, "indices-b", [A], verdictsFile(privateDir));
+    const first = score(privateDir, "indices-a", [match, A], verdictsFile(privateDir));
+    const second = score(privateDir, "indices-b", [A, match], verdictsFile(privateDir));
+    expect(first.found).toBe(1);
+    expect(second.found).toBe(1);
     expect(first.false_claims).toBe(1);
     expect(second.false_claims).toBe(1);
-    expect(first.score).toBe(second.score);
+    expect(first.score).toBe(1.8);
+    expect(second.score).toBe(1.8);
   });
 });
 
