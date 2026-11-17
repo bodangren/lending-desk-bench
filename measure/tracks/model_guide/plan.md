@@ -1225,10 +1225,12 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     judge is the route of `ra-quota pick` at that time (spec D11,
     PM 2026-11-16). Its family is outside each ranked family of D12, outside the
     family of the fixture author, and outside the family of the first judge. The
-    first route to test is `opencode-go/qwen3.8-flash`. Its start test and its
-    judge calls run through the model_guide runner path (`heavy-run.sh` and
-    `opencode run --standalone` with the job's own `OPENCODE_HOME`), never through
-    a subagent. With no ready route, each disputed finding is left out. The
+    routes to test, in order, are `opencode-go/mimo-v2.6-flash`, then
+    `opencode-go/muse-spark-1.3-contributor#high` (PM audit 2026-11-17). Their
+    start test and their judge calls run through the model_guide runner path
+    (`heavy-run.sh` and `opencode run --standalone` with the job's own
+    `OPENCODE_HOME`), never through a subagent. With no ready route, each
+    disputed finding is left out. The
     second judge never reads the verdicts of the first judge.
   - The apply writes the key `real_defects` first. Then run
     `review-set.ts lint mg-2026-11a` again, so the manifest holds the key

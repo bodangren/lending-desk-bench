@@ -845,9 +845,10 @@ questions".
       ops; print-book audit; tooling.
     - **Columns.** Kind of work; use this model; second choice; evidence;
       evidence date.
-    - **Names (PM P1 2026-11-16).** The pick cells use the plain model names
-      from `harness/model-guide/data/model-names.json`. A key with no name
-      shows its key without the plan prefix.
+    - **Names (accepted by the PM 2026-11-17 after audit).** The pick cells
+      use the plain model names from
+      `harness/model-guide/data/model-names.json`. A key with no name shows
+      its key without the plan prefix.
     - **Sources for each row.**
 
       | Row | First source | Second source |
@@ -949,7 +950,7 @@ stay out of every rank. The merge joins only the `#<variant>` rows and the
 `[1m]` rows of one route. The file
 `harness/model-guide/data/model-names.json` is a committed data file.
 `guide.ts` and `real-work.ts` read it and never write it
-(PM P1 2026-11-16).
+(accepted by the PM 2026-11-17 after audit).
 
 ### FR-3 — The rank and the small-sample mark
 
@@ -1132,7 +1133,8 @@ no quota source gets the fixed cap of
     window.
 13. `real-work.html` has no horizontal overflow at 390, 980, and 1280 px. A
     wide table scrolls inside its own box with a visible hint. The page is
-    about 3 screens long at 1280 px (PM P1 2026-11-16).
+    about 3 screens long at 1280 px (accepted by the PM 2026-11-17 after
+    audit).
 
 ## Owner questions
 
