@@ -1422,7 +1422,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     passes.
   - Verify: `git diff --stat ea36fae -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests`
     prints nothing.
-- [ ] 4.8a Red. The review page. Add the page cases V1 to V9 of
+- [~] 4.8a Red. The review page. Add the page cases V1 to V9 of
   `measure/tracks/model_guide/test-strategy.md` section 4.4 to
   `harness/model-guide-tests/preview-gate.test.ts`. Touch no other file.
   - The cases cover the rank, the worst, median, and best score, the blocker
@@ -1433,6 +1433,24 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: the V cases fail at HEAD, and the Phase 1 and Phase 2 cases of
     the file stay green. Record the failed test names in
     `measure/runs/model_guide/red-4.8a.txt`.
+  - Evidence: run on 2026-11-18 with `cd harness && npx vitest run
+    model-guide-tests/preview-gate.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot`. Exit 1, `Tests  9 failed | 102 passed
+    (111)`. First failure line: `FAIL model-guide-tests/preview-gate.test.ts
+    > the review page cases V1 to V9 of task 4.8a > V1: the page holds the
+    rank, worst, median, best, blocker recall, false claims, real defects,
+    and the counts by class and severity`. The message is `review.html is
+    missing from the preview folder`. All nine V cases fail for the missing
+    page, and the 102 Phase 1 to Phase 3 cases stay green (A4). V9 runs its
+    docs snapshot, its `git status --short docs/`, and its preview-base
+    check before the page check, and all three pass at the base, so the
+    git path of the case is proven live. Authoring check: the same bytes of
+    the test file ran in a temp harness under `/tmp/opencode/valp` with a
+    prototype review page in a patched copy of `preview.sh`, and the run
+    gave `Tests  9 passed | 102 skipped (111)`, exit 0. No env seam, no
+    new fixture file, no production file, and no `docs/` file. The temp
+    harness and the temp folders of the earlier review-run runs were
+    removed after the run.
 - [ ] 4.8 Green. Write `harness/model-guide/pages/review.html` and the
   review page edit of `harness/model-guide/preview.sh`, plus that wiring.
   Touch no test file.
