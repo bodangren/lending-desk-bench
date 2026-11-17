@@ -582,8 +582,8 @@ function rankRows(rows: RowLike[]): RowLike[] {
   ranked.forEach((row, position) => {
     row.rank = position + 1;
   });
+  // The rows below the minimum stay in the order of the data, with no rank.
   const rest = rows.filter((row) => !qualifies(row));
-  rest.sort((a, b) => countOfRow(b) - countOfRow(a) || (a.model < b.model ? -1 : 1));
   return [...ranked, ...rest];
 }
 
