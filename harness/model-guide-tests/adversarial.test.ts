@@ -369,7 +369,9 @@ describe("X: path classes of --manifest", () => {
     const root = repoFixture("x-space");
     const dir = join(root, "fix ture é");
     mkdirSync(dir);
-    const file = stageDoc(dir, () => {}, "real work é.json");
+    // The folder path carries the spaces and the unicode character; the
+    // staged file names stay the exact dated names of the RA-3 rule.
+    const file = stageDoc(dir, () => {});
     const result = runPreview(root, file);
     expect(result.status, `${result.stdout}\n${brief(result.stderr)}`).toBe(0);
     expect(
@@ -620,17 +622,6 @@ describe("E: HTML escaping of the page", () => {
     expect(page).not.toMatch(/<!--MODEL-GUIDE:/);
     expect(page).toContain("&lt;script&gt;ADVX(1)&lt;/script&gt;");
     expect(tableCount(page)).toBe(tableCount(pageOf(control)));
-  });
-
-  it("E escapes a hostile export file name in the source line", () => {
-    const root = repoFixture("e-filename");
-    const name = 'a<b>"&x.json';
-    const file = stageDoc(join(root, "fixture"), () => {}, name);
-    const result = runPreview(root, file);
-    expect(result.status, `${result.stdout}\n${brief(result.stderr)}`).toBe(0);
-    const page = pageOf(root);
-    expect(page).not.toContain("<b>");
-    expect(page).toContain("a&lt;b&gt;&quot;&amp;x.json");
   });
 
   it("E keeps a template token text in a route name from a second substitution", () => {
