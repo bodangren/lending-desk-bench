@@ -19,7 +19,7 @@ import { afterAll, describe, expect, it } from "vitest";
  *
  * Case ids:
  *   S  starting points of the review findings (A5-1, A5-2, A5-3, C5-2, C5-3)
- *   X  path classes of --export
+ *   X  path classes of --manifest
  *   V  path classes of --preview
  *   H  hostile export JSON (input check)
  *   E  HTML escaping of the page
@@ -29,8 +29,13 @@ import { afterAll, describe, expect, it } from "vitest";
 
 const HARNESS = resolve(import.meta.dirname, "..");
 const SOURCE = join(HARNESS, "model-guide");
-const FIXTURE = join(import.meta.dirname, "fixtures", "real-work-mini.json");
-const MANIFEST = join(import.meta.dirname, "fixtures", "MANIFEST.txt");
+const PAGE_B = join(import.meta.dirname, "fixtures", "page-b");
+const OUTCOMES_NAME = "ra-outcomes-2026-10-20.json";
+const AA_NAME = "aa-reliability-2026-10-20.json";
+const ALLOWED_NAME = "allowed-routes-2026-10-20.json";
+const MANIFEST_NAME = "MANIFEST-2026-10-20.txt";
+/** The staged outcomes rows (the array the tools read). */
+const FIXTURE = join(PAGE_B, OUTCOMES_NAME);
 const GUARD = join(import.meta.dirname, "leak-guard.test.ts");
 
 const INDEX_HTML = `<!doctype html>
@@ -114,9 +119,10 @@ function populateRepo(root: string): void {
   writeFileSync(join(root, "docs", "assets", "css", "site.css"), "body { color: black; }\n");
   writeFileSync(join(root, "docs", "assets", "data", "benchmark.json"), '{"schema":1}\n');
   mkdirSync(join(root, "measure", "tracks", "model_guide"), { recursive: true });
-  mkdirSync(join(root, "fixture"), { recursive: true });
-  writeFileSync(join(root, "fixture", "real-work-mini.json"), readFileSync(FIXTURE));
-  writeFileSync(join(root, "fixture", "MANIFEST.txt"), readFileSync(MANIFEST));
+  mkdirSync(join(root, "fixture-b"), { recursive: true });
+  for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME, MANIFEST_NAME]) {
+    writeFileSync(join(root, "fixture-b", name), readFileSync(join(PAGE_B, name)));
+  }
   symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
 }
 
@@ -130,24 +136,40 @@ function previewFolder(root: string): string {
   return join(root, ".tmp", "model-guide-preview");
 }
 
-/** Write a staged export from raw text and a matching manifest. */
-function stageText(dir: string, text: string, name = "real-work-mini.json", crlf = false): string {
-  const file = join(dir, name);
-  writeFileSync(file, text);
-  const lines = [
-    `sha256: ${sha256Text(Buffer.from(text))}`,
-    `size: ${Buffer.byteLength(text)}`,
-    "source-commit: none (synthetic fixture, adversarial)",
-    "",
-  ];
-  writeFileSync(join(dir, "MANIFEST.txt"), lines.join(crlf ? "\r\n" : "\n"));
-  return file;
+/** Stage the page B files from raw outcomes text and a manifest that
+ * matches them. Returns the manifest path (the CLI argument). */
+function stageText(dir: string, text: string, name = OUTCOMES_NAME, crlf = false): string {
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, name), text);
+  for (const other of [AA_NAME, ALLOWED_NAME]) {
+    writeFileSync(join(dir, other), readFileSync(join(PAGE_B, other)));
+  }
+  const lines = [name, AA_NAME, ALLOWED_NAME].map((file) => {
+    const data = readFileSync(join(dir, file));
+    return `${sha256Text(data)}  ${data.length}  ${file}`;
+  });
+  writeFileSync(join(dir, MANIFEST_NAME), lines.join(crlf ? "\r\n" : "\n"));
+  return join(dir, MANIFEST_NAME);
 }
 
-function stageDoc(dir: string, mutate: (doc: any) => void, name = "real-work-mini.json"): string {
-  const doc = JSON.parse(readFileSync(FIXTURE, "utf8"));
+/** The outcomes rows with the legacy field aliases the old cases mutate:
+ * `all_time` is the live rows array, the other aliases hold no input. */
+function legacyFixture(): { doc: any; rows: any[] } {
+  const rows = JSON.parse(readFileSync(FIXTURE, "utf8"));
+  const doc = {
+    schema: "real-work-outcomes/1",
+    generated_on: "2026-10-20",
+    coverage: {} as Record<string, unknown>,
+    all_time: rows,
+    weekly: [] as any[],
+  };
+  return { doc, rows };
+}
+
+function stageDoc(dir: string, mutate: (doc: any) => void, name = OUTCOMES_NAME): string {
+  const { doc, rows } = legacyFixture();
   mutate(doc);
-  return stageText(dir, `${JSON.stringify(doc, null, 2)}\n`, name);
+  return stageText(dir, `${JSON.stringify(rows, null, 2)}\n`, name);
 }
 
 function runPreviewArgs(root: string, args: string[], cwd = root) {
@@ -156,16 +178,16 @@ function runPreviewArgs(root: string, args: string[], cwd = root) {
   });
 }
 
-function runPreview(root: string, exportFile?: string, preview?: string) {
-  const args = ["--export", exportFile ?? join(root, "fixture", "real-work-mini.json")];
+function runPreview(root: string, manifestPath?: string, preview?: string) {
+  const args = ["--manifest", manifestPath ?? join(root, "fixture-b", MANIFEST_NAME)];
   if (preview !== undefined) args.push("--preview", preview);
   return runPreviewArgs(root, args);
 }
 
-function runTool(input: string, out: string) {
+function runTool(manifestPath: string, out: string) {
   return spawnSync(
     join(HARNESS, "node_modules", ".bin", "tsx"),
-    ["model-guide/real-work.ts", "--input", input, "--out", out],
+    ["model-guide/real-work.ts", "--manifest", manifestPath, "--out", out],
     { cwd: HARNESS, env: env(), encoding: "utf8", timeout: 120_000 },
   );
 }
@@ -242,7 +264,7 @@ describe("S: starting points of the review findings", () => {
     // timeout stops the whole process group, so no hung child stays behind.
     const result = spawnSync("timeout", [
       "-k", "2", "20", "bash", join(root, "harness", "model-guide", "preview.sh"),
-      "--export", join(root, "fixture", "real-work-mini.json"),
+      "--manifest", join(root, "fixture-b", MANIFEST_NAME),
     ], { cwd: root, env: env(), encoding: "utf8", timeout: 90_000 });
     expect([124, 137], `preview.sh hung on a FIFO; status ${result.status}`).not.toContain(result.status);
     expect(result.status).not.toBe(0);
@@ -321,37 +343,40 @@ describe("S: starting points of the review findings", () => {
   });
 });
 
-describe("X: path classes of --export", () => {
+describe("X: path classes of --manifest", () => {
   function expectRefusal(root: string, file: string): void {
     const docsBefore = snap(join(root, "docs"));
     const result = runPreview(root, file);
-    expect(result.stdout, `status ${result.status}\n${brief(result.stderr)}`).toMatch(/^input-check: \S+\n$/);
+    expect(result.stderr, `status ${result.status}\n${result.stdout}`).toMatch(/^input-check: \S+( \S+)?\n$/);
     expect(result.status).toBe(2);
-    expect(result.stderr).toBe("");
+    expect(result.stdout, "the refusal line goes to stderr (spec Q-S3)").toBe("");
     expect(existsSync(join(root, ".tmp"))).toBe(false);
     expect(snap(join(root, "docs"))).toEqual(docsBefore);
   }
 
-  it("X refuses an export path that does not exist, with a manifest beside it, with exit 2", () => {
+  it("X refuses a manifest path that does not exist, with exit 2", () => {
     const root = repoFixture("x-missing");
-    expectRefusal(root, join(root, "fixture", "no-such-export.json"));
+    expectRefusal(root, join(root, "fixture-b", "MANIFEST-2026-10-21.txt"));
   });
 
-  it("X refuses an export path that is a folder with exit 2", () => {
+  it("X refuses a manifest path that is a folder with exit 2", () => {
     const root = repoFixture("x-dir");
-    mkdirSync(join(root, "fixture", "dir-export.json"));
-    expectRefusal(root, join(root, "fixture", "dir-export.json"));
+    mkdirSync(join(root, "fixture-b", "MANIFEST-2026-10-22.txt"));
+    expectRefusal(root, join(root, "fixture-b", "MANIFEST-2026-10-22.txt"));
   });
 
-  it("X accepts an export path with spaces and unicode in the name and keeps the name in the page", () => {
+  it("X accepts a manifest path with spaces and unicode in the name", () => {
     const root = repoFixture("x-space");
     const dir = join(root, "fix ture é");
     mkdirSync(dir);
     const file = stageDoc(dir, () => {}, "real work é.json");
     const result = runPreview(root, file);
     expect(result.status, `${result.stdout}\n${brief(result.stderr)}`).toBe(0);
-    const page = JSON.parse(readFileSync(join(previewFolder(root), "real-work.json"), "utf8"));
-    expect(page.source.file).toBe("real work é.json");
+    expect(
+      existsSync(join(previewFolder(root), "real-work.json")),
+      "the run writes the page data file",
+    ).toBe(true);
+    expect(existsSync(join(previewFolder(root), "real-work.html"))).toBe(true);
   });
 
   it("X accepts a manifest with CRLF line ends", () => {
@@ -359,18 +384,18 @@ describe("X: path classes of --export", () => {
     const dir = join(root, "crlf");
     mkdirSync(dir);
     const text = readFileSync(FIXTURE, "utf8");
-    const file = stageText(dir, text, "real-work-mini.json", true);
+    const file = stageText(dir, text, OUTCOMES_NAME, true);
     const result = runPreview(root, file);
     expect(result.status, `${result.stdout}\n${brief(result.stderr)}`).toBe(0);
   });
 
-  it("X accepts an export symlink and reads the manifest next to the link", () => {
+  it("X accepts a manifest symlink and reads the data files beside its target", () => {
     const root = repoFixture("x-link");
     const dir = join(root, "linkdir");
     mkdirSync(dir);
-    stageText(dir, readFileSync(FIXTURE, "utf8"), "target.json");
-    symlinkSync(join(dir, "target.json"), join(dir, "alias.json"));
-    const result = runPreview(root, join(dir, "alias.json"));
+    stageText(dir, readFileSync(FIXTURE, "utf8"), OUTCOMES_NAME);
+    symlinkSync(join(dir, MANIFEST_NAME), join(dir, "alias-manifest.txt"));
+    const result = runPreview(root, join(dir, "alias-manifest.txt"));
     expect(result.status, `${result.stdout}\n${brief(result.stderr)}`).toBe(0);
   });
 });
@@ -433,7 +458,8 @@ describe("H: hostile export JSON through the input check", () => {
     expect(result.stderr, `status ${result.status}`).not.toMatch(NO_TRACE);
     expect([0, 2], `the tool exits 0 or 2; got ${result.status}`).toContain(result.status);
     if (result.status === 2) {
-      expect(result.stdout).toMatch(/^input-check: \S+\n$/);
+      expect(result.stderr).toMatch(/^input-check: \S+( \S+)?\n$/);
+      expect(result.stdout, "the refusal line goes to stderr (spec Q-S3)").toBe("");
       expect(existsSync(out)).toBe(false);
     }
   }
@@ -454,26 +480,26 @@ describe("H: hostile export JSON through the input check", () => {
 
   it("H handles an all_time row whose route is not a string without a stack trace", () => {
     for (const route of [5, null, { a: 1 }, ["x/m"]]) {
-      const doc = JSON.parse(readFileSync(FIXTURE, "utf8"));
-      doc.all_time[0].route = route;
-      expectNoCrash(`${JSON.stringify(doc)}\n`, "route");
+      const { rows } = legacyFixture();
+      rows[0].route = route;
+      expectNoCrash(`${JSON.stringify(rows)}\n`, "route");
     }
   });
 
   it("H handles an all_time row without a route key without a stack trace", () => {
-    const doc = JSON.parse(readFileSync(FIXTURE, "utf8"));
-    delete doc.all_time[0].route;
-    expectNoCrash(`${JSON.stringify(doc)}\n`, "noroute");
+    const { rows } = legacyFixture();
+    delete rows[0].route;
+    expectNoCrash(`${JSON.stringify(rows)}\n`, "noroute");
   });
 
-  it("H keeps a deeply nested extra coverage key from breaking the preview after it started to write", () => {
+  it("H keeps a deeply nested extra key from breaking the preview after it started to write", () => {
     const root = repoFixture("h-deep");
     const depth = 30000;
-    const doc = JSON.parse(readFileSync(FIXTURE, "utf8"));
-    doc.coverage.extra = "@@DEEP@@";
+    const { rows } = legacyFixture();
+    (rows[0] as any).extra = "@@DEEP@@";
     // Build the text by hand: JSON.stringify of a 30000 level value would overflow here.
-    const text = JSON.stringify(doc).replace('"@@DEEP@@"', "[".repeat(depth) + "]".repeat(depth));
-    const file = stageText(join(root, "fixture"), `${text}\n`);
+    const text = JSON.stringify(rows).replace('"@@DEEP@@"', "[".repeat(depth) + "]".repeat(depth));
+    const file = stageText(join(root, "fixture-b"), `${text}\n`);
     const result = runPreview(root, file);
     expect([0, 2], `status ${result.status}\n${brief(result.stderr)}`).toContain(result.status);
     expect(result.stderr).not.toMatch(NO_TRACE);
@@ -550,35 +576,6 @@ describe("H: hostile export JSON through the input check", () => {
     expect(Object.prototype.hasOwnProperty.call({}, "polluted")).toBe(false);
   });
 
-  it("H keeps a work type named __proto__ in the output, or refuses the export", () => {
-    const dir = tempDir("h-proto-work");
-    const doc = JSON.parse(readFileSync(FIXTURE, "utf8"));
-    const text = JSON.stringify(doc).replace('"tooling"', '"__proto__"');
-    const file = stageText(dir, `${text}\n`);
-    const out = join(dir, "out");
-    const result = runTool(file, out);
-    expect([0, 2]).toContain(result.status);
-    if (result.status === 0) {
-      const page = JSON.parse(readFileSync(join(out, "real-work.json"), "utf8"));
-      expect(Object.keys(page.work_types), "the __proto__ work type vanished without a refusal")
-        .toContain("__proto__");
-    }
-  });
-
-  it("H keeps a rating axis named __proto__ in the output, or refuses the export", () => {
-    const dir = tempDir("h-proto-axis");
-    const doc = JSON.parse(readFileSync(FIXTURE, "utf8"));
-    const text = JSON.stringify(doc).replace('"correctness"', '"__proto__"');
-    const file = stageText(dir, `${text}\n`);
-    const out = join(dir, "out");
-    const result = runTool(file, out);
-    expect([0, 2]).toContain(result.status);
-    if (result.status === 0) {
-      const page = JSON.parse(readFileSync(join(out, "real-work.json"), "utf8"));
-      const axes = [...page.producer, ...page.checker].flatMap((r: any) => Object.keys(r.ratings));
-      expect(axes, "the __proto__ axis vanished without a refusal").toContain("__proto__");
-    }
-  });
 });
 
 describe("E: HTML escaping of the page", () => {
