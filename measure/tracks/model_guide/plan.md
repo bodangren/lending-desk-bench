@@ -1067,7 +1067,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - After each run, `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
   - Verify: the file fails on the Phase 3 code. Record the failed test names
     in `measure/runs/model_guide/red-4.1.txt`.
-- [~] 4.1a Red. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Change
+- [x] 2cb7efd 4.1a Red. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Change
   the layout group G1 to G4 of `harness/model-guide-tests/preview-gate.test.ts`
   and add the cases of the new rules. Touch no other file.
   - G1 and G2: the source line (file name, SHA-256, generated date) and the
