@@ -252,7 +252,7 @@ function updateRepo(tag: string): { root: string; manifest: string } {
   git(root, ["commit", "-q", "-m", "initial"]);
   expect(git(root, ["status", "--short"]), "the temp repo starts clean").toBe("");
   expect(git(root, ["remote"]), "the temp repo has no remote").toBe("");
-  return { root, manifest: join(root, EXPORT_COPY) };
+  return { root, manifest: join(root, MANIFEST_COPY) };
 }
 
 /** The approval record of spec D21. The gate is its existence. The helper

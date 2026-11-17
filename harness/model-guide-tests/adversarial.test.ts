@@ -545,15 +545,17 @@ describe("H: hostile export JSON through the input check", () => {
 
   it("H refuses a negative result count, or keeps every pass rate inside 0 to 1", () => {
     expectSaneOrRefused((doc) => {
-      const row = doc.all_time.find((r: any) => r.route === "x/m#high");
-      row.pass = 50;
-      row.fail = -30;
+      const row = doc.all_time.find((r: any) => r.route === "t1/prod-one#high");
+      expect(row, "the fixture holds the t1/prod-one#high producer row").toBeDefined();
+      row!.pass = 50;
+      row!.fail = -30;
     }, "negative");
   });
 
   it("H refuses a count too large to add, or keeps every count a finite number", () => {
     expectSaneOrRefused((doc) => {
-      const rows = doc.all_time.filter((r: any) => r.role === "red" && r.route.startsWith("x/"));
+      const rows = doc.all_time.filter((r: any) => r.role === "red" && r.route.startsWith("t1/"));
+      expect(rows.length, "the fixture holds red t1 producer rows").toBeGreaterThanOrEqual(2);
       for (const row of rows.slice(0, 2)) row.pass = 1e308;
     }, "huge");
   });

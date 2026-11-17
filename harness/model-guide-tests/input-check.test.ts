@@ -122,6 +122,9 @@ interface StageOptions {
   /** File names to leave out of the folder but keep in the manifest, with
    * the SHA-256 and size of the fixture file (DS2 missing input). */
   manifestKeep?: string[];
+  /** Build every manifest line from the committed fixture file, so a
+   * changed staged file must fail the SHA-256 check (DS1, DS2). */
+  manifestFromFixture?: boolean;
   /** Exact manifest text; replaces the generated one. */
   manifestText?: string;
 }
@@ -170,6 +173,7 @@ function stagePageB(tag: string, opts: StageOptions = {}): { dir: string; manife
       (opts.manifestKeep ?? []).includes(name),
   ).filter((name) => !(opts.manifestOmit ?? []).includes(name));
   const lines = names.map((name) => {
+    if (opts.manifestFromFixture) return manifestLine(join(PAGE_B, name), name);
     const staged = join(dir, name);
     if (existsSync(staged)) return manifestLine(staged, name);
     return manifestLine(join(PAGE_B, name), name);
@@ -247,10 +251,10 @@ describe("DS1 integrity of each staged file", () => {
       expect(() => JSON.parse(changed), "the flip keeps the file valid JSON").not.toThrow();
       const opts: StageOptions =
         name === OUTCOMES_NAME
-          ? { outcomesText: changed }
+          ? { outcomesText: changed, manifestFromFixture: true }
           : name === AA_NAME
-            ? { aaText: changed }
-            : { allowedText: changed };
+            ? { aaText: changed, manifestFromFixture: true }
+            : { allowedText: changed, manifestFromFixture: true };
       const { dir } = stagePageB(`sha-${name}`, opts);
       expectRefusal(join(dir, MANIFEST_NAME), `sha-${name}`, `input-check: sha256 ${name}`);
     },
@@ -276,7 +280,10 @@ describe("DS2 order and refusals", () => {
     const changed = original.replace('"role":', '"role"~');
     expect(changed.length).toBe(original.length);
     expect(() => JSON.parse(changed), "the flip breaks the JSON").toThrow();
-    const { dir } = stagePageB("integrity-first", { outcomesText: changed });
+    const { dir } = stagePageB("integrity-first", {
+      outcomesText: changed,
+      manifestFromFixture: true,
+    });
     expectRefusal(
       join(dir, MANIFEST_NAME),
       "integrity-first",
