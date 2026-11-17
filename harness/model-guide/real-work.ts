@@ -1,41 +1,51 @@
-/** Page B data tool (spec D16, FR-1 to FR-3).
+/** Page B data tool (spec D16 "Data source (PM 2026-11-17)", FR-1 to FR-3).
  *
  * Usage:
- *   npx tsx model-guide/real-work.ts --input <export.json> --out <folder>
+ *   npx tsx model-guide/real-work.ts --manifest <file> --out <folder>
  *
- * Exit 0 writes `<folder>/real-work.json` with schema
- * `model-guide-real-work/1`. Exit 2 writes no output file and prints one
- * line `input-check: <check>` on stdout. The checks run in this order:
- * input, json, manifest, sha256, size, schema, run-sum.
- *   input    the path is missing or is not a regular file
- *   json     the input text is not JSON
- *   schema   `schema` is not `real-work-outcomes/1`; a coverage key is
- *            missing or has the wrong type; a coverage count is not a
- *            non-negative safe integer; a row of `weekly` or `all_time`
- *            holds no string route, a count that is not a non-negative safe
- *            integer, or a malformed `ratings`, `rater_checks`, or
- *            `work_types` value
- *   run-sum  the `runs` sum of `weekly` or of `all_time` is not a safe
- *            integer, or differs from `coverage.runs`
- * The output holds only the named coverage keys of spec EV4 (plus
- * `unknown_runs` and `other_runs`), so no extra key of the input reaches the
- * public file. Work-type and rating-axis names are kept as own keys (a name
- * such as `__proto__` stays a row). The tool never copies the input file
- * into the repository.
+ * The manifest is `<sha256>  <size>  <file name>`, one line for each of the
+ * three dated data files: `ra-outcomes-<date>.json`, `aa-reliability-<date>
+ * .json`, and `allowed-routes-<date>.json` (Q-S2). The tool reads the three
+ * files next to the manifest. The read date and the export date are the date
+ * in the MANIFEST-<date>.txt file name (Q-S4).
+ *
+ * Exit 0 writes `<folder>/real-work.json`. Exit 2 writes no output file and
+ * prints one line `input-check: <check> <file name>` on stderr (Q-S3). The
+ * checks run in this order: manifest, input, sha256, size, json, schema.
+ *   manifest a missing manifest, a name that is not a base name, a duplicate
+ *            line, or no line for one of the three files
+ *   input    a named data file is missing or is not a regular file
+ *   sha256   a file does not match the SHA-256 of its manifest line
+ *   size     a file does not match the size of its manifest line
+ *   json     a file is not JSON
+ *   schema   the outcomes file is not an array, the AA file holds no models
+ *            object, or the allowed file holds no route array
+ * A usage error gives exit 2, one usage line on stderr, and empty stdout.
+ *
+ * The tool works with own keys only: the tables are Maps and arrays, so a
+ * route or model name such as `__proto__` stays an ordinary row. A row whose
+ * route is missing or is not a string is left out. A route is stripped at the
+ * first " (" because some routes carry a free-text note; the model key is the
+ * route without `#<variant>` and `[1m]` (D16).
+ *
+ * The output holds the producer table, the checker table, the ten role lines
+ * of the top block, the per-role rows of D18, the coverage of the footer, and
+ * the three source files. It never copies an input file.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
-const PRODUCER_ROLES = new Set([
-  "green",
-  "red",
-  "coder",
-  "small",
-  "strategy",
-  "record",
-]);
-const CHECKER_ROLES = new Set([
+const OUTPUT_NAME = "real-work.json";
+const SCHEMA = "model-guide-real-work/2";
+const MIN_COUNT = 5;
+const NET_SCORE_GATE = 20;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MANIFEST_RE = /^MANIFEST-(\d{4}-\d{2}-\d{2})\.txt$/;
+const SUM_LINE_RE = /^([0-9a-f]{64}) {2}(\d+) {2}(.+)$/;
+
+const PRODUCER_ROLES = new Set(["green", "red", "coder", "small", "strategy", "record"]);
+const GATE_ROLES = new Set([
   "review-a",
   "review-b",
   "review-c",
@@ -45,88 +55,57 @@ const CHECKER_ROLES = new Set([
   "final-acceptance",
 ]);
 
-/** Every coverage key that the preview page reads. A missing key is a
- * schema refusal. The check runs before any write (spec D16, FR-1). */
-const REQUIRED_COVERAGE_KEYS = [
-  "runs",
-  "first_run_date",
-  "last_run_date",
-  "share_known_route",
-  "share_with_result",
-  "paired_duplicates_left_out",
+/** The top block lines, in the order of spec D16 rule 8. */
+const ROLES: Array<{ id: string; label: string; kind: "producer" | "gate" }> = [
+  { id: "red", label: "Red", kind: "producer" },
+  { id: "green", label: "Green", kind: "producer" },
+  { id: "coder", label: "Coder", kind: "producer" },
+  { id: "review-a", label: "Review A", kind: "gate" },
+  { id: "review-b", label: "Review B", kind: "gate" },
+  { id: "review-c", label: "Review C", kind: "gate" },
+  { id: "adversarial", label: "Adversarial", kind: "gate" },
+  { id: "acceptance", label: "Acceptance", kind: "gate" },
+  { id: "phase-acceptance", label: "Phase acceptance", kind: "gate" },
+  { id: "final-acceptance", label: "Final acceptance", kind: "gate" },
 ];
 
-/** The count keys of a row. Each is a non-negative safe integer. */
-const COUNT_KEYS = [
-  "runs",
-  "pass",
-  "fail",
-  "error",
-  "no_result",
-  "blocking_findings",
-];
+const KIND_PREFIX: Record<FileKind, string> = {
+  outcomes: "ra-outcomes-",
+  aa: "aa-reliability-",
+  allowed: "allowed-routes-",
+};
+const KIND_ORDER: FileKind[] = ["outcomes", "aa", "allowed"];
 
-function refuse(check: string): never {
-  process.stdout.write(`input-check: ${check}\n`);
+type FileKind = "outcomes" | "aa" | "allowed";
+
+function usage(): never {
+  process.stderr.write("usage: real-work.ts --manifest <file> --out <folder>\n");
   process.exit(2);
 }
 
-/** A count is a whole number at or above 0 that a sum can hold. */
-function isCount(value: unknown): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+function refuse(check: string, name: string): never {
+  process.stderr.write(`input-check: ${check} ${name}\n`);
+  process.exit(2);
 }
 
-/** Add two validated counts and refuse a sum that leaves the safe range. */
-function safeAdd(total: number, value: number): number {
-  const sum = total + value;
-  if (!Number.isSafeInteger(sum)) refuse("schema");
-  return sum;
+function isObject(value: unknown): value is Record<string, any> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** A row of `weekly` or `all_time`: a string route, safe counts, and
- * well-formed ratings, rater checks, and work-type counts. */
-function isRow(row: unknown): boolean {
-  if (typeof row !== "object" || row === null || Array.isArray(row)) return false;
-  const entry = row as Record<string, any>;
-  if (typeof entry.route !== "string") return false;
-  for (const key of COUNT_KEYS) {
-    if (!isCount(entry[key])) return false;
-  }
-  if (entry.rater_checks !== undefined) {
-    const checks = entry.rater_checks;
-    if (typeof checks !== "object" || checks === null || Array.isArray(checks)) return false;
-    if (!isCount(checks.n) || !isCount(checks.agreed)) return false;
-  }
-  if (entry.ratings !== undefined) {
-    const ratings = entry.ratings;
-    if (typeof ratings !== "object" || ratings === null || Array.isArray(ratings)) return false;
-    for (const axis of Object.keys(ratings)) {
-      const value = ratings[axis];
-      if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-      if (typeof value.mean !== "number" || !Number.isFinite(value.mean)) return false;
-      if (!isCount(value.n)) return false;
-    }
-  }
-  if (entry.work_types !== undefined) {
-    const types = entry.work_types;
-    if (typeof types !== "object" || types === null || Array.isArray(types)) return false;
-    for (const name of Object.keys(types)) {
-      const value = types[name];
-      if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-      for (const key of ["runs", "pass", "fail"]) {
-        if (!isCount(value[key])) return false;
-      }
-    }
-  }
-  return true;
+/** A finite number at or above 0, or null. A data error leaves the value
+ * out of its average (it never counts as a zero). */
+function numberOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
-function round4(value: number): number {
-  return Math.round(value * 10000) / 10000;
+function count(value: unknown): number {
+  return numberOrNull(value) ?? 0;
 }
 
-function round3(value: number): number {
-  return Math.round(value * 1000) / 1000;
+/** Strip the free-text note at the first " (" and trim (D16). */
+function stripNote(route: string): string {
+  const at = route.indexOf(" (");
+  return (at < 0 ? route : route.slice(0, at)).trim();
 }
 
 /** Remove the `#<variant>` part and the `[1m]` part. The provider stays. */
@@ -134,374 +113,657 @@ function modelKey(route: string): string {
   return route.replace(/\[1m\]/g, "").split("#")[0];
 }
 
-function num(row: any, key: string): number {
-  const value = row?.[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+/** The `#<variant>` part of a route, or null. */
+function variantOf(route: string): string | null {
+  const at = route.indexOf("#");
+  return at < 0 ? null : route.slice(at + 1);
 }
 
-function parseArgs(argv: string[]): { input: string; out: string } {
-  let input = "";
+/** The last path part of a model key, in lower case, without a `-free`
+ * suffix. That name matches a model key or an alias of the AA file. */
+function canonicalName(model: string): string {
+  const parts = model.split("/");
+  let name = (parts[parts.length - 1] ?? model).toLowerCase();
+  if (name.endsWith("-free")) name = name.slice(0, -"-free".length);
+  return name;
+}
+
+function parseArgs(argv: string[]): { manifest: string; out: string } {
+  let manifest = "";
   let out = "";
   let i = 0;
   while (i < argv.length) {
-    if (argv[i] === "--input") {
-      input = argv[i + 1] ?? "";
+    const flag = argv[i];
+    const value = argv[i + 1] ?? "";
+    if (flag === "--manifest") {
+      if (value === "") usage();
+      manifest = value;
       i += 2;
-    } else if (argv[i] === "--out") {
-      out = argv[i + 1] ?? "";
+    } else if (flag === "--out") {
+      if (value === "") usage();
+      out = value;
       i += 2;
     } else {
-      process.stderr.write("usage: real-work.ts --input <file> --out <folder>\n");
-      process.exit(2);
+      usage();
     }
   }
-  if (!input || !out) {
-    process.stderr.write("usage: real-work.ts --input <file> --out <folder>\n");
-    process.exit(2);
+  if (!manifest || !out) usage();
+  return { manifest, out };
+}
+
+function dateOfManifestName(name: string): string | null {
+  const match = MANIFEST_RE.exec(name);
+  if (!match) return null;
+  const date = match[1];
+  const time = Date.parse(`${date}T00:00:00Z`);
+  if (!Number.isFinite(time)) return null;
+  if (new Date(time).toISOString().slice(0, 10) !== date) return null;
+  return DATE_RE.test(date) ? date : null;
+}
+
+interface ManifestEntry {
+  kind: FileKind;
+  name: string;
+  sha256: string;
+  size: number;
+}
+
+/** Read the manifest and claim one base-name entry for each of the three
+ * kinds. A line whose name carries no kind prefix fills a free kind. */
+function readManifest(
+  manifestPath: string,
+): { dir: string; date: string; entries: ManifestEntry[] } {
+  const givenName = basename(manifestPath);
+  if (!existsSync(manifestPath) || !statSync(manifestPath).isFile()) {
+    refuse("manifest", givenName);
   }
-  return { input, out };
+  let real: string;
+  try {
+    real = realpathSync(manifestPath);
+  } catch {
+    refuse("manifest", givenName);
+  }
+  const date = dateOfManifestName(basename(real)) ?? dateOfManifestName(givenName);
+  if (date === null) refuse("manifest", givenName);
+
+  let text: string;
+  try {
+    text = readFileSync(real, "utf8");
+  } catch {
+    refuse("manifest", givenName);
+  }
+
+  const lines = text
+    .split("\n")
+    .map((line) => line.replace(/\r$/, ""))
+    .filter((line) => line.trim() !== "");
+
+  const claimed = new Map<FileKind, ManifestEntry>();
+  const unclaimed: Array<{ name: string; sha256: string; size: number }> = [];
+  for (const line of lines) {
+    const match = SUM_LINE_RE.exec(line);
+    // A line that is not in the `<sha256>  <size>  <file name>` form carries
+    // no data and is ignored (test-strategy 13.3).
+    if (!match) continue;
+    const name = match[3].trim();
+    if (name === "" || name === "." || name === ".." || name.includes("/") || name.includes("\\")) {
+      refuse("manifest", name);
+    }
+    const entry = { name, sha256: match[1], size: Number(match[2]) };
+    if (!Number.isSafeInteger(entry.size)) refuse("manifest", name);
+    const kind = KIND_ORDER.find((item) => name.startsWith(KIND_PREFIX[item]));
+    if (kind !== undefined) {
+      if (claimed.has(kind)) refuse("manifest", name);
+      claimed.set(kind, { ...entry, kind });
+    } else {
+      unclaimed.push(entry);
+    }
+  }
+
+  for (const entry of unclaimed) {
+    const free = KIND_ORDER.find((kind) => !claimed.has(kind));
+    if (free === undefined) refuse("manifest", entry.name);
+    claimed.set(free, { ...entry, kind: free });
+  }
+  for (const kind of KIND_ORDER) {
+    if (!claimed.has(kind)) refuse("manifest", `${KIND_PREFIX[kind]}${date}.json`);
+  }
+
+  return {
+    dir: dirname(real),
+    date,
+    entries: KIND_ORDER.map((kind) => claimed.get(kind)!),
+  };
 }
 
-function readManifestLine(text: string, key: string): string | null {
-  const match = text.match(new RegExp(`^${key}: (.+)$`, "m"));
-  return match ? match[1].trim() : null;
-}
-
-/** Fallback for the PM export manifest (spec EV1): one `sha256sum` style
- * line `<sha256>  <size>  <file>`. The Red fixture uses `sha256:` and
- * `size:` lines instead. Both formats carry the same two values. The file
- * name of a sum line must equal the base name of the input file. */
-function readManifestSumLine(
-  text: string,
-): { sha256: string; size: string; file: string } | null {
-  const match = text.match(/^([0-9a-f]{64})\s+(\d+)\s+(\S+).*$/m);
-  return match ? { sha256: match[1], size: match[2], file: match[3] } : null;
-}
-
-interface Accum {
+interface ProducerAccum {
   model: string;
+  kind: "producer";
   routes: Set<string>;
+  roles: Set<string>;
+  routeCounts: Map<string, number>;
+  tasks: number;
+  accepted: number;
+  rateSum: number;
+  rateAccepted: number;
+  reworkSum: number;
+  reworkTasks: number;
+  cleanupSum: number;
+  cleanupTasks: number;
+  tokenSum: number;
+  tokenAccepted: number;
   runs: number;
   pass: number;
   fail: number;
   error: number;
-  noResult: number;
-  blocking: number;
-  ratingSum: Map<string, number>;
-  ratingN: Map<string, number>;
-  raterN: number;
-  raterAgreed: number;
+  noVerdict: number;
+  findings: number;
+  escapes: number;
 }
 
-function newAccum(model: string): Accum {
+interface GateAccum {
+  model: string;
+  kind: "gate";
+  routes: Set<string>;
+  roles: Set<string>;
+  routeCounts: Map<string, number>;
+  decided: number;
+  pass: number;
+  fail: number;
+  error: number;
+  noVerdict: number;
+  findings: number;
+  escapes: number;
+  runs: number;
+}
+
+type Accum = ProducerAccum | GateAccum;
+
+function newProducer(model: string): ProducerAccum {
   return {
     model,
+    kind: "producer",
     routes: new Set(),
+    roles: new Set(),
+    routeCounts: new Map(),
+    tasks: 0,
+    accepted: 0,
+    rateSum: 0,
+    rateAccepted: 0,
+    reworkSum: 0,
+    reworkTasks: 0,
+    cleanupSum: 0,
+    cleanupTasks: 0,
+    tokenSum: 0,
+    tokenAccepted: 0,
     runs: 0,
     pass: 0,
     fail: 0,
     error: 0,
-    noResult: 0,
-    blocking: 0,
-    ratingSum: new Map(),
-    ratingN: new Map(),
-    raterN: 0,
-    raterAgreed: 0,
+    noVerdict: 0,
+    findings: 0,
+    escapes: 0,
   };
 }
 
-function addRow(acc: Accum, row: any): void {
-  acc.routes.add(row.route);
-  acc.runs = safeAdd(acc.runs, num(row, "runs"));
-  acc.pass = safeAdd(acc.pass, num(row, "pass"));
-  acc.fail = safeAdd(acc.fail, num(row, "fail"));
-  acc.error = safeAdd(acc.error, num(row, "error"));
-  acc.noResult = safeAdd(acc.noResult, num(row, "no_result"));
-  acc.blocking = safeAdd(acc.blocking, num(row, "blocking_findings"));
-  const ratings = row.ratings ?? {};
-  for (const axis of Object.keys(ratings)) {
-    const mean = ratings[axis]?.mean;
-    const n = ratings[axis]?.n;
-    if (typeof mean === "number" && typeof n === "number" && n > 0) {
-      acc.ratingSum.set(axis, (acc.ratingSum.get(axis) ?? 0) + mean * n);
-      acc.ratingN.set(axis, safeAdd(acc.ratingN.get(axis) ?? 0, n));
+function newGate(model: string): GateAccum {
+  return {
+    model,
+    kind: "gate",
+    routes: new Set(),
+    roles: new Set(),
+    routeCounts: new Map(),
+    decided: 0,
+    pass: 0,
+    fail: 0,
+    error: 0,
+    noVerdict: 0,
+    findings: 0,
+    escapes: 0,
+    runs: 0,
+  };
+}
+
+/** Add one row to its model accumulator. The averages keep their own
+ * denominators, and a null value leaves the denominator (D16, DS5, DS6). */
+function addRow(acc: Accum, row: Record<string, any>, route: string): void {
+  acc.routes.add(route);
+  if (row.role !== undefined && PRODUCER_ROLES.has(row.role)) acc.roles.add(row.role);
+  else if (row.role !== undefined && GATE_ROLES.has(row.role)) acc.roles.add(row.role);
+  const counted = acc.kind === "producer" ? count(row.tasks) : count(row.decided);
+  acc.routeCounts.set(route, (acc.routeCounts.get(route) ?? 0) + counted);
+
+  if (acc.kind === "producer") {
+    const tasks = count(row.tasks);
+    acc.tasks += tasks;
+    acc.accepted += count(row.accepted);
+    const rate = numberOrNull(row.first_round_rate);
+    if (rate !== null && rate <= 1) {
+      acc.rateSum += rate * count(row.accepted);
+      acc.rateAccepted += count(row.accepted);
+    }
+    const rework = numberOrNull(row.mean_rework_rounds);
+    if (rework !== null) {
+      acc.reworkSum += rework * tasks;
+      acc.reworkTasks += tasks;
+    }
+    const cleanup = numberOrNull(row.cleanup_share);
+    if (cleanup !== null && cleanup <= 1) {
+      acc.cleanupSum += cleanup * tasks;
+      acc.cleanupTasks += tasks;
+    }
+    const tokens = numberOrNull(row.tokens_per_accepted);
+    if (tokens !== null) {
+      acc.tokenSum += tokens * count(row.accepted);
+      acc.tokenAccepted += count(row.accepted);
+    }
+    acc.runs += count(row.runs);
+    acc.pass += count(row.pass);
+    acc.fail += count(row.fail);
+    acc.error += count(row.error);
+    acc.noVerdict += count(row.no_verdict);
+    acc.findings += count(row.findings);
+    acc.escapes += count(row.escaped_findings);
+    return;
+  }
+
+  acc.decided += count(row.decided);
+  acc.pass += count(row.pass);
+  acc.fail += count(row.fail);
+  acc.error += count(row.error);
+  acc.noVerdict += count(row.no_verdict);
+  acc.findings += count(row.findings);
+  acc.escapes += count(row.escapes);
+  acc.runs += count(row.runs);
+}
+
+interface AaEntry {
+  netScore?: unknown;
+  rated?: unknown;
+  byEffort?: Record<string, { netScore?: unknown }>;
+  aliases?: unknown[];
+}
+
+/** The AA `models` block, indexed by lower-case model key and alias. */
+function aaIndex(models: Record<string, unknown>): Map<string, AaEntry> {
+  const index = new Map<string, AaEntry>();
+  for (const [key, value] of Object.entries(models)) {
+    if (!isObject(value)) continue;
+    const entry = value as AaEntry;
+    const name = key.toLowerCase();
+    if (!index.has(name)) index.set(name, entry);
+    if (Array.isArray(entry.aliases)) {
+      for (const alias of entry.aliases) {
+        if (typeof alias !== "string") continue;
+        const aliasName = alias.toLowerCase();
+        if (!index.has(aliasName)) index.set(aliasName, entry);
+      }
     }
   }
-  acc.raterN = safeAdd(acc.raterN, num(row.rater_checks, "n"));
-  acc.raterAgreed = safeAdd(acc.raterAgreed, num(row.rater_checks, "agreed"));
+  return index;
+}
+
+function netScoreValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** The AA net score of a merged row: the `byEffort` entry of the route with
+ * the most counted runs, else the primary row. No match, or `rated` false,
+ * gives null ("not rated"). */
+function netScoreOf(acc: Accum, index: Map<string, AaEntry>): number | null {
+  const entry = index.get(canonicalName(acc.model));
+  if (entry === undefined || entry.rated === false) return null;
+  let bestVariant: string | null = null;
+  let bestCount = -1;
+  for (const [route, counted] of acc.routeCounts) {
+    if (counted > bestCount) {
+      bestCount = counted;
+      bestVariant = variantOf(route);
+    }
+  }
+  if (bestVariant !== null && isObject(entry.byEffort)) {
+    const effort = entry.byEffort[bestVariant];
+    if (isObject(effort)) return netScoreValue(effort.netScore);
+  }
+  return netScoreValue(entry.netScore);
+}
+
+/** The allowed model keys: an entry of `allowedRoutes` or
+ * `orchestratorRoutes` after the same stripping of `#<variant>` and `[1m]`. */
+function allowedKeys(doc: Record<string, any>): Set<string> {
+  const keys = new Set<string>();
+  for (const list of [doc.allowedRoutes, doc.orchestratorRoutes]) {
+    if (!Array.isArray(list)) continue;
+    for (const value of list) {
+      if (typeof value !== "string") continue;
+      keys.add(modelKey(value));
+    }
+  }
+  return keys;
+}
+
+interface RowLike {
+  model: string;
+  kind: "producer" | "gate";
+  routes: string[];
+  roles: string[];
+  allowed: boolean;
+  not_for_verdicts: boolean;
+  net_score: number | null;
+  rank: number | null;
+  runs: number;
+  pass: number;
+  fail: number;
+  error: number;
+  no_result: number;
+  blocking_findings: number;
+  pass_rate: { value: number | null; n: number };
+  tasks?: number;
+  accepted?: number;
+  first_round?: { value: number | null; n: number };
+  mean_rework?: number | null;
+  cleanup_share?: number | null;
+  tokens_per_accepted?: number | null;
+  findings?: number;
+  findings_per_run?: number;
+  escapes?: number;
+  rate_count?: number;
+}
+
+function rateOf(pass: number, denominator: number): { value: number | null; n: number } {
+  return { value: denominator > 0 ? pass / denominator : null, n: denominator };
+}
+
+function roundTo(value: number, digits: number): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+function producerRow(acc: ProducerAccum, index: Map<string, AaEntry>, allowed: Set<string>): RowLike {
+  const notAllowed = !allowed.has(acc.model);
+  const net = netScoreOf(acc, index);
+  return {
+    model: acc.model,
+    kind: "producer",
+    routes: [...acc.routes].sort(),
+    roles: [...acc.roles].sort(),
+    tasks: acc.tasks,
+    accepted: acc.accepted,
+    first_round: { value: acc.rateAccepted > 0 ? acc.rateSum / acc.rateAccepted : null, n: acc.rateAccepted },
+    mean_rework: acc.reworkTasks > 0 ? roundTo(acc.reworkSum / acc.reworkTasks, 4) : null,
+    cleanup_share: acc.cleanupTasks > 0 ? roundTo(acc.cleanupSum / acc.cleanupTasks, 4) : null,
+    tokens_per_accepted:
+      acc.tokenAccepted > 0 ? roundTo(acc.tokenSum / acc.tokenAccepted, 2) : null,
+    runs: acc.runs,
+    pass: acc.pass,
+    fail: acc.fail,
+    error: acc.error,
+    no_result: acc.noVerdict,
+    blocking_findings: acc.findings,
+    escapes: acc.escapes,
+    pass_rate: rateOf(acc.pass, acc.pass + acc.fail + acc.error),
+    net_score: net,
+    allowed: !notAllowed,
+    not_for_verdicts: net === null || net < NET_SCORE_GATE,
+    rank: null,
+    rate_count: acc.tasks,
+  };
+}
+
+function gateRow(acc: GateAccum, index: Map<string, AaEntry>, allowed: Set<string>): RowLike {
+  const net = netScoreOf(acc, index);
+  return {
+    model: acc.model,
+    kind: "gate",
+    routes: [...acc.routes].sort(),
+    roles: [...acc.roles].sort(),
+    runs: acc.decided,
+    pass: acc.pass,
+    fail: acc.fail,
+    error: acc.error,
+    no_result: acc.noVerdict,
+    blocking_findings: acc.findings,
+    escapes: acc.escapes,
+    findings: acc.findings,
+    findings_per_run: acc.decided > 0 ? roundTo(acc.findings / acc.decided, 4) : 0,
+    pass_rate: rateOf(acc.pass, acc.decided),
+    net_score: net,
+    allowed: allowed.has(acc.model),
+    not_for_verdicts: net === null || net < NET_SCORE_GATE,
+    rank: null,
+    rate_count: acc.decided,
+  };
+}
+
+function rateValue(row: RowLike): number | null {
+  if (row.kind === "producer") return row.first_round?.value ?? null;
+  return row.pass_rate.value;
+}
+
+function reworkValue(row: RowLike): number | null {
+  return row.kind === "producer" ? (row.mean_rework ?? null) : null;
+}
+
+function escapesValue(row: RowLike): number {
+  return row.escapes ?? 0;
+}
+
+function countOfRow(row: RowLike): number {
+  return row.kind === "producer" ? (row.tasks ?? 0) : row.runs;
+}
+
+/** True when the row meets the minimum and holds a rate, so it ranks. */
+function qualifies(row: RowLike): boolean {
+  return countOfRow(row) >= MIN_COUNT && rateValue(row) !== null;
+}
+
+/** The rank order of D16: the higher rate first, then the lower rework (a
+ * producer) or the fewer escapes (a gate), then the higher count, then the
+ * model key. */
+function compareRows(a: RowLike, b: RowLike): number {
+  const rateA = rateValue(a) ?? 0;
+  const rateB = rateValue(b) ?? 0;
+  if (rateB !== rateA) return rateB - rateA;
+  if (a.kind === "producer" && b.kind === "producer") {
+    const reworkA = reworkValue(a);
+    const reworkB = reworkValue(b);
+    const valueA = reworkA === null ? Number.POSITIVE_INFINITY : reworkA;
+    const valueB = reworkB === null ? Number.POSITIVE_INFINITY : reworkB;
+    if (valueA !== valueB) return valueA < valueB ? -1 : 1;
+  } else {
+    if (escapesValue(a) !== escapesValue(b)) return escapesValue(a) - escapesValue(b);
+  }
+  if (countOfRow(b) !== countOfRow(a)) return countOfRow(b) - countOfRow(a);
+  return a.model < b.model ? -1 : a.model > b.model ? 1 : 0;
+}
+
+function rankRows(rows: RowLike[]): RowLike[] {
+  const ranked = rows.filter(qualifies).sort(compareRows);
+  ranked.forEach((row, position) => {
+    row.rank = position + 1;
+  });
+  const rest = rows.filter((row) => !qualifies(row));
+  rest.sort((a, b) => countOfRow(b) - countOfRow(a) || (a.model < b.model ? -1 : 1));
+  return [...ranked, ...rest];
+}
+
+interface TopPick {
+  model: string;
+  rate: number;
+  count: number;
+  net_score: number | null;
+}
+
+function pickOf(rows: RowLike[], kind: "producer" | "gate"): TopPick | null {
+  for (const row of rows) {
+    if (!qualifies(row)) continue;
+    if (!row.allowed) continue;
+    if (kind === "gate" && (row.net_score === null || row.net_score < NET_SCORE_GATE)) continue;
+    return {
+      model: row.model,
+      rate: rateValue(row) ?? 0,
+      count: countOfRow(row),
+      net_score: row.net_score,
+    };
+  }
+  return null;
 }
 
 function main(): void {
-  const { input, out } = parseArgs(process.argv.slice(2));
+  const { manifest, out } = parseArgs(process.argv.slice(2));
+  const parsed = readManifest(manifest);
 
-  if (!existsSync(input) || !statSync(input).isFile()) refuse("input");
-
-  const manifestPath = join(dirname(input), "MANIFEST.txt");
-  if (!existsSync(manifestPath)) refuse("manifest");
-  const manifest = readFileSync(manifestPath, "utf8");
-
-  const bytes = readFileSync(input);
-  const sha256 = createHash("sha256").update(bytes).digest("hex");
-  const sumLine = readManifestSumLine(manifest);
-  const shaExpected = readManifestLine(manifest, "sha256") ?? sumLine?.sha256;
-  if (shaExpected !== sha256) refuse("sha256");
-  const sizeExpected = readManifestLine(manifest, "size") ?? sumLine?.size;
-  if (sizeExpected !== String(bytes.length)) {
-    refuse("size");
+  // Integrity before parse (D16, DS2).
+  const bytes = new Map<FileKind, Buffer>();
+  for (const entry of parsed.entries) {
+    const path = join(parsed.dir, entry.name);
+    if (!existsSync(path) || !statSync(path).isFile()) refuse("input", entry.name);
+    bytes.set(entry.kind, readFileSync(path));
   }
-  if (sumLine && sumLine.file !== basename(input)) refuse("manifest");
+  for (const entry of parsed.entries) {
+    const data = bytes.get(entry.kind)!;
+    const digest = createHash("sha256").update(data).digest("hex");
+    if (digest !== entry.sha256) refuse("sha256", entry.name);
+  }
+  for (const entry of parsed.entries) {
+    if (bytes.get(entry.kind)!.length !== entry.size) refuse("size", entry.name);
+  }
 
-  let doc: unknown;
-  try {
-    doc = JSON.parse(bytes.toString("utf8"));
-  } catch {
-    refuse("json");
+  const docs = new Map<FileKind, unknown>();
+  for (const entry of parsed.entries) {
+    try {
+      docs.set(entry.kind, JSON.parse(bytes.get(entry.kind)!.toString("utf8")));
+    } catch {
+      refuse("json", entry.name);
+    }
   }
-  if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
-    refuse("schema");
-  }
-  const root = doc as Record<string, any>;
-  if (root.schema !== "real-work-outcomes/1") refuse("schema");
-  if (typeof root.generated_on !== "string") refuse("schema");
+
+  const nameOf = (kind: FileKind) => parsed.entries.find((entry) => entry.kind === kind)!.name;
+  const outcomes = docs.get("outcomes");
+  if (!Array.isArray(outcomes)) refuse("schema", nameOf("outcomes"));
+  const aa = docs.get("aa");
+  if (!isObject(aa) || !isObject(aa.models)) refuse("schema", nameOf("aa"));
+  const allowedDoc = docs.get("allowed");
   if (
-    typeof root.coverage !== "object" ||
-    root.coverage === null ||
-    Array.isArray(root.coverage)
+    !isObject(allowedDoc) ||
+    !Array.isArray(allowedDoc.allowedRoutes) ||
+    !Array.isArray(allowedDoc.orchestratorRoutes)
   ) {
-    refuse("schema");
+    refuse("schema", nameOf("allowed"));
   }
-  const coverage = root.coverage as Record<string, any>;
-  for (const key of REQUIRED_COVERAGE_KEYS) {
-    if (!Object.hasOwn(coverage, key)) refuse("schema");
-  }
-  if (!isCount(coverage.runs)) refuse("schema");
-  if (typeof coverage.first_run_date !== "string") refuse("schema");
-  if (typeof coverage.last_run_date !== "string") refuse("schema");
-  if (
-    typeof coverage.share_known_route !== "number" ||
-    !Number.isFinite(coverage.share_known_route)
-  ) {
-    refuse("schema");
-  }
-  if (
-    typeof coverage.share_with_result !== "number" ||
-    !Number.isFinite(coverage.share_with_result)
-  ) {
-    refuse("schema");
-  }
-  if (!isCount(coverage.paired_duplicates_left_out)) refuse("schema");
-  const leftOut = coverage.paired_duplicates_left_out;
-  for (const key of ["runs_with_known_route", "runs_with_result"]) {
-    if (Object.hasOwn(coverage, key) && !isCount(coverage[key])) refuse("schema");
-  }
-  for (const key of ["weekly", "all_time"] as const) {
-    if (root[key] !== undefined && !Array.isArray(root[key])) refuse("schema");
-  }
-  const weekly: any[] = root.weekly ?? [];
-  const allTime: any[] = root.all_time ?? [];
-  for (const row of [...weekly, ...allTime]) {
-    if (!isRow(row)) refuse("schema");
-  }
-  const weeklyRuns = weekly.reduce((sum: number, r: any) => safeAdd(sum, r.runs), 0);
-  const allTimeRuns = allTime.reduce((sum: number, r: any) => safeAdd(sum, r.runs), 0);
-  if (weeklyRuns !== coverage.runs) refuse("run-sum");
-  if (allTimeRuns !== coverage.runs) refuse("run-sum");
 
-  const weeks = [...new Set(weekly.map((r: any) => r.week))].sort();
-  const last4 = new Set(weeks.slice(-4));
+  const index = aaIndex(aa.models);
+  const allowed = allowedKeys(allowedDoc);
+  const roleKindOf = new Map(ROLES.map((role) => [role.id, role.kind]));
 
-  const producer = new Map<string, Accum>();
-  const checker = new Map<string, Accum>();
-  for (const row of allTime) {
-    if (row.route === "unknown" || row.route === "other") continue;
-    const key = modelKey(row.route);
-    if (PRODUCER_ROLES.has(row.role)) {
-      if (!producer.has(key)) producer.set(key, newAccum(key));
-      addRow(producer.get(key)!, row);
-    } else if (CHECKER_ROLES.has(row.role)) {
-      if (!checker.has(key)) checker.set(key, newAccum(key));
-      addRow(checker.get(key)!, row);
+  const producerAccums = new Map<string, ProducerAccum>();
+  const gateAccums = new Map<string, GateAccum>();
+  const roleAccums = new Map<string, Map<string, Accum>>();
+  for (const role of ROLES) roleAccums.set(role.id, new Map());
+
+  let rows = 0;
+  const routes = new Set<string>();
+  let unknownRows = 0;
+
+  for (const raw of outcomes) {
+    if (!isObject(raw)) continue;
+    if (typeof raw.route !== "string") continue;
+    const route = stripNote(raw.route);
+    if (route === "") continue;
+    if (raw.kind !== "producer" && raw.kind !== "gate") continue;
+    if (typeof raw.role !== "string") continue;
+    rows += 1;
+    routes.add(route);
+    const unknown = route === "unknown";
+    if (unknown) {
+      unknownRows += 1;
+      // The route unknown shows no table row and takes no rank (Q-S10).
+      continue;
+    }
+    const model = modelKey(route);
+    if (model === "") continue;
+    const isProducer = raw.kind === "producer";
+    const role = raw.role;
+    const roleKind = roleKindOf.get(role) ?? null;
+
+    if (isProducer) {
+      if (!producerAccums.has(model)) producerAccums.set(model, newProducer(model));
+      addRow(producerAccums.get(model)!, raw, route);
+    } else {
+      if (!gateAccums.has(model)) gateAccums.set(model, newGate(model));
+      addRow(gateAccums.get(model)!, raw, route);
+    }
+
+    if (roleKind !== null) {
+      const table = roleAccums.get(role)!;
+      if (!table.has(model)) {
+        table.set(model, roleKind === "producer" ? newProducer(model) : newGate(model));
+      }
+      addRow(table.get(model)!, raw, route);
     }
   }
 
-  const trendOf = (key: string, group: Set<string>): { value: number | null; n: number } => {
-    let pass = 0;
-    let fail = 0;
-    let error = 0;
-    for (const row of weekly) {
-      if (!last4.has(row.week)) continue;
-      if (!group.has(row.role)) continue;
-      if (modelKey(row.route) !== key) continue;
-      pass = safeAdd(pass, row.pass);
-      fail = safeAdd(fail, row.fail);
-      error = safeAdd(error, row.error);
-    }
-    const n = safeAdd(safeAdd(pass, fail), error);
-    return { value: n === 0 ? null : pass / n, n };
-  };
+  const producerRows = rankRows(
+    [...producerAccums.values()]
+      .filter((acc) => acc.tasks > 0)
+      .map((acc) => producerRow(acc, index, allowed)),
+  );
+  const gateRows = rankRows(
+    [...gateAccums.values()].map((acc) => gateRow(acc, index, allowed)),
+  );
 
-  const toRow = (acc: Accum, group: Set<string>, rankByBlocking: boolean) => {
-    const n = safeAdd(safeAdd(acc.pass, acc.fail), acc.error);
-    const ratingEntries: Array<[string, { mean: number; n: number }]> = [];
-    for (const [axis, sum] of acc.ratingSum) {
-      const axisN = acc.ratingN.get(axis) ?? 0;
-      if (axisN > 0) ratingEntries.push([axis, { mean: round4(sum / axisN), n: axisN }]);
-    }
-    const ratings = Object.fromEntries(ratingEntries);
-    return {
-      model: acc.model,
-      routes: [...acc.routes].sort(),
-      runs: acc.runs,
-      pass: acc.pass,
-      fail: acc.fail,
-      error: acc.error,
-      no_result: acc.noResult,
-      blocking_findings: acc.blocking,
-      pass_rate: { value: n === 0 ? null : round4(acc.pass / n), n },
-      blocking_rate: { value: n === 0 ? null : round3(acc.blocking / n), n },
-      ratings,
-      rater_checks: {
-        n: acc.raterN,
-        agreed: acc.raterAgreed,
-        agreement: acc.raterN === 0 ? null : round4(acc.raterAgreed / acc.raterN),
-      },
-      trend: trendOf(acc.model, group),
-      few_runs: n < 10,
-      can_pick: n >= 10,
-      rank: 0,
-      rankByBlocking,
-    };
-  };
-
-  const sortMain = (rows: ReturnType<typeof toRow>) => {
-    const rateOf = (r: (typeof rows)[number]) => r.pass_rate.value;
-    rows.sort((a, b) => {
-      if (a.few_runs !== b.few_runs) return a.few_runs ? 1 : -1;
-      const ra = rateOf(a);
-      const rb = rateOf(b);
-      if (ra === null && rb === null) return a.model < b.model ? -1 : 1;
-      if (ra === null) return 1;
-      if (rb === null) return -1;
-      if (rb !== ra) return rb - ra;
-      if (a.rankByBlocking && b.rankByBlocking) {
-        const ba = a.blocking_rate.value ?? 0;
-        const bb = b.blocking_rate.value ?? 0;
-        if (ba !== bb) return ba - bb;
-      }
-      return a.model < b.model ? -1 : 1;
-    });
-    rows.forEach((r, i) => {
-      r.rank = i + 1;
-    });
-    return rows.map(({ rankByBlocking: _drop, ...rest }) => rest);
-  };
-
-  const producerRows = sortMain([...producer.values()].map((a) => toRow(a, PRODUCER_ROLES, true)));
-  const checkerRows = sortMain([...checker.values()].map((a) => toRow(a, CHECKER_ROLES, false)));
-
-  interface WorkAccum {
-    runs: number;
-    pass: number;
-    fail: number;
-    routes: Set<string>;
+  const byRole: Record<string, RowLike[]> = {};
+  const top: Array<{ role: string; label: string; kind: "producer" | "gate"; pick: TopPick | null }> = [];
+  for (const role of ROLES) {
+    const table = roleAccums.get(role.id)!;
+    const roleRows = rankRows(
+      [...table.values()].map((acc) =>
+        acc.kind === "producer"
+          ? producerRow(acc as ProducerAccum, index, allowed)
+          : gateRow(acc as GateAccum, index, allowed),
+      ),
+    );
+    byRole[role.id] = roleRows;
+    top.push({ role: role.id, label: role.label, kind: role.kind, pick: pickOf(roleRows, role.kind) });
   }
-  const work: Map<string, Map<string, WorkAccum>> = new Map();
-  for (const row of allTime) {
-    const types = row.work_types ?? {};
-    const skipped = row.route === "unknown" || row.route === "other";
-    const key = skipped ? "" : modelKey(row.route);
-    for (const name of Object.keys(types)) {
-      if (!work.has(name)) work.set(name, new Map());
-      if (skipped) continue;
-      const table = work.get(name)!;
-      if (!table.has(key)) {
-        table.set(key, { runs: 0, pass: 0, fail: 0, routes: new Set() });
-      }
-      const acc = table.get(key)!;
-      acc.routes.add(row.route);
-      acc.runs = safeAdd(acc.runs, num(types[name], "runs"));
-      acc.pass = safeAdd(acc.pass, num(types[name], "pass"));
-      acc.fail = safeAdd(acc.fail, num(types[name], "fail"));
-    }
-  }
-  const workTypeEntries: Array<[string, unknown[]]> = [];
-  for (const [name, table] of work) {
-    const rows = [...table].map(([model, acc]) => {
-      const n = safeAdd(acc.pass, acc.fail);
-      return {
-        model,
-        routes: [...acc.routes].sort(),
-        runs: acc.runs,
-        pass: acc.pass,
-        fail: acc.fail,
-        pass_rate: { value: n === 0 ? null : round4(acc.pass / n), n },
-        few_runs: n < 10,
-        can_pick: n >= 10,
-        rank: 0,
-      };
-    });
-    rows.sort((a, b) => {
-      if (a.few_runs !== b.few_runs) return a.few_runs ? 1 : -1;
-      if (a.pass_rate.value === null && b.pass_rate.value === null) {
-        return a.model < b.model ? -1 : 1;
-      }
-      if (a.pass_rate.value === null) return 1;
-      if (b.pass_rate.value === null) return -1;
-      if (b.pass_rate.value !== a.pass_rate.value) {
-        return b.pass_rate.value - a.pass_rate.value;
-      }
-      if (b.pass_rate.n !== a.pass_rate.n) return b.pass_rate.n - a.pass_rate.n;
-      return a.model < b.model ? -1 : 1;
-    });
-    rows.forEach((r, i) => {
-      r.rank = i + 1;
-    });
-    workTypeEntries.push([name, rows]);
-  }
-  const workTypes = Object.fromEntries(workTypeEntries);
 
-  const unknownRuns = allTime
-    .filter((r: any) => r.route === "unknown")
-    .reduce((sum: number, r: any) => safeAdd(sum, r.runs), 0);
-  const otherRuns = allTime
-    .filter((r: any) => r.route === "other")
-    .reduce((sum: number, r: any) => safeAdd(sum, r.runs), 0);
-
-  const coverageOut: Record<string, unknown> = {
-    runs: coverage.runs,
-    first_run_date: coverage.first_run_date,
-    last_run_date: coverage.last_run_date,
-    share_known_route: coverage.share_known_route,
-    share_with_result: coverage.share_with_result,
-    paired_duplicates_left_out: leftOut,
-  };
-  for (const key of ["runs_with_known_route", "runs_with_result"]) {
-    if (Object.hasOwn(coverage, key)) coverageOut[key] = coverage[key];
-  }
-  coverageOut.unknown_runs = unknownRuns;
-  coverageOut.other_runs = otherRuns;
+  const unknownShare = rows > 0 ? roundTo((unknownRows / rows) * 100, 1) : 0;
+  const outcomesName = nameOf("outcomes");
+  const outcomesSha = createHash("sha256").update(bytes.get("outcomes")!).digest("hex");
 
   const page = {
-    schema: "model-guide-real-work/1",
+    schema: SCHEMA,
     source: {
-      file: basename(input),
-      sha256,
-      generated_on: root.generated_on,
+      sha256: outcomesSha,
+      generated_on: parsed.date,
+      read_date: parsed.date,
+      export_date: parsed.date,
+      files: parsed.entries.map((entry) => ({
+        name: entry.name,
+        sha256: entry.sha256,
+        size: entry.size,
+      })),
     },
-    coverage: coverageOut,
+    coverage: {
+      rows,
+      routes: routes.size,
+      unknown_rows: unknownRows,
+      unknown_share: unknownShare,
+    },
     producer: producerRows,
-    checker: checkerRows,
-    work_types: workTypes,
+    checker: gateRows,
+    top,
+    by_role: byRole,
   };
 
-  let text: string;
-  try {
-    text = `${JSON.stringify(page, null, 2)}\n`;
-  } catch {
-    refuse("schema");
-  }
+  const text = `${JSON.stringify(page, null, 2)}\n`;
   mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, "real-work.json"), text);
+  writeFileSync(join(out, OUTPUT_NAME), text);
 }
 
-main();
+try {
+  main();
+} catch {
+  process.stderr.write("input-check: error real-work\n");
+  process.exit(2);
+}
