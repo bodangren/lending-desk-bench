@@ -1222,7 +1222,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `git status --short docs/` prints nothing.
   - The `page-check` browser proof at 390, 980, and 1280 px stays with the
     orchestrator (test-strategy 13.9).
-- [ ] 4.1g Red. Checker rank by net score, pick labels, escapes "no data",
+- [~] 4.1g Red. Checker rank by net score, pick labels, escapes "no data",
   overview text (spec D16 Data source C1 to C3, D18, PM 2026-11-18). Change
   only test files and fixtures under `harness/model-guide-tests/`.
   - Cases: the checker rank order incl. not-rated rows last and the ties; the
@@ -1233,6 +1233,20 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     number otherwise; the overview text says 5, not 10.
   - Verify: the new cases fail for missing behavior and the other cases pass.
     Record the failed names in `measure/runs/model_guide/red-4.1g.txt`.
+  - Evidence: the four changed files run one at a time on 2026-11-18 with
+    `--configLoader native --maxWorkers=1 --reporter=dot`.
+    `real-work.test.ts` exits 1 with `Tests  4 failed | 10 passed (14)`,
+    first failure DS7 (`expected '0' to be 'no data'`).
+    `preview-gate.test.ts` exits 1 with `Tests  6 failed | 96 passed (102)`,
+    first failure G3 (`Checker roles ranked rows`).
+    `guide.test.ts` exits 1 with `Tests  1 failed | 17 passed (18)`,
+    first failure DS26 (`to contain '5 tasks or runs'`).
+    `adversarial-p4.test.ts` exits 1 with `Tests  7 failed | 11 passed (18)`,
+    first failure ADV4-1 (`[ 'p1/alpha', '', '' ]`).
+    The unchanged fixture consumers stay green: input-check 23,
+    leak-check 22, update 9, adversarial 46, adversarial-p2 13,
+    adversarial-p3 34, every run exit 0. No run carries a NameError, a
+    TypeError, a ReferenceError, a syntax error, or a missing helper.
 - [ ] 4.1h Green. Implement 4.1g in `harness/model-guide/` (`real-work.ts`,
   `preview.sh`, `pages/real-work.html`, `pages/guide-section.html`,
   `guide.ts` if the checker order reaches it). Make no design choice beyond
