@@ -302,3 +302,159 @@ describe("the write flags", () => {
     expect(result.stdout.trim()).toBe("leak-check: --private needs a value");
   });
 });
+
+/**
+ * Red tests for plan task 4.1e: leak-check coverage of the four page B
+ * fixture files (test-strategy 13.7, groups LG1 to LG3). The three dated
+ * data files and the MANIFEST are staged files at the commit of task 4.1f,
+ * so the tool covers them with no code change. These guards pass at the
+ * role base, and each has a falsification condition (A4).
+ */
+const PAGE_B = join(import.meta.dirname, "fixtures", "page-b");
+const PAGE_B_OUTCOMES = "ra-outcomes-2026-10-20.json";
+const PAGE_B_AA = "aa-reliability-2026-10-20.json";
+const PAGE_B_ALLOWED = "allowed-routes-2026-10-20.json";
+const PAGE_B_MANIFEST = "MANIFEST-2026-10-20.txt";
+const PAGE_B_FILES = [PAGE_B_OUTCOMES, PAGE_B_AA, PAGE_B_ALLOWED, PAGE_B_MANIFEST];
+
+function stagePageB(dir: string, home: string, overrides: Record<string, string> = {}): void {
+  for (const name of PAGE_B_FILES) {
+    const text = overrides[name] ?? readFileSync(join(PAGE_B, name), "utf8");
+    stage(dir, name, text, home);
+  }
+}
+
+describe("LG1 the clean page B set", () => {
+  it("LG1: a temp repo that stages the four page B fixture files passes the leak check", () => {
+    const { dir, home } = repo("lg1");
+    const privateDir = privateCopy("lg1");
+    stagePageB(dir, home);
+    const result = leak(privateDir, dir, { home: tempDir("home-lg1") });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(result.stdout.trim()).toBe("");
+  });
+});
+
+describe("LG2 the key fields of the page B files", () => {
+  it("LG2: an operator key in a row of the outcomes array gives key-field", () => {
+    const { dir, home } = repo("lg2-outcomes");
+    const privateDir = privateCopy("lg2-outcomes");
+    const rows = JSON.parse(readFileSync(join(PAGE_B, PAGE_B_OUTCOMES), "utf8"));
+    rows[0].operator = "C1-1 remove-role-check";
+    stagePageB(dir, home, { [PAGE_B_OUTCOMES]: `${JSON.stringify(rows)}\n` });
+    expectRefusal(
+      privateDir,
+      dir,
+      `leak-check: key-field: ${PAGE_B_OUTCOMES} operator`,
+      "lg2-outcomes",
+    );
+  });
+
+  it("LG2: an operator key inside a models entry of the AA file gives key-field", () => {
+    const { dir, home } = repo("lg2-aa");
+    const privateDir = privateCopy("lg2-aa");
+    const doc = JSON.parse(readFileSync(join(PAGE_B, PAGE_B_AA), "utf8"));
+    doc.models["gate-one"].operator = "C1-1 remove-role-check";
+    stagePageB(dir, home, { [PAGE_B_AA]: `${JSON.stringify(doc)}\n` });
+    expectRefusal(
+      privateDir,
+      dir,
+      `leak-check: key-field: ${PAGE_B_AA} operator`,
+      "lg2-aa",
+    );
+  });
+
+  it("LG2: a top-level witness key in the allowed file gives key-field", () => {
+    const { dir, home } = repo("lg2-allowed");
+    const privateDir = privateCopy("lg2-allowed");
+    const doc = JSON.parse(readFileSync(join(PAGE_B, PAGE_B_ALLOWED), "utf8"));
+    doc.witness = "a sentence";
+    stagePageB(dir, home, { [PAGE_B_ALLOWED]: `${JSON.stringify(doc)}\n` });
+    expectRefusal(
+      privateDir,
+      dir,
+      `leak-check: key-field: ${PAGE_B_ALLOWED} witness`,
+      "lg2-allowed",
+    );
+  });
+
+  it("LG2: a route note that holds the word operator as prose passes", () => {
+    const { dir, home } = repo("lg2-prose");
+    const privateDir = privateCopy("lg2-prose");
+    const rows = JSON.parse(readFileSync(join(PAGE_B, PAGE_B_OUTCOMES), "utf8"));
+    rows[0].route = `${rows[0].route} (the operator noted the run)`;
+    stagePageB(dir, home, { [PAGE_B_OUTCOMES]: `${JSON.stringify(rows)}\n` });
+    const result = leak(privateDir, dir, { home: tempDir("home-lg2-prose") });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+});
+
+describe("LG3 the private path and the seeded line in page B files", () => {
+  it("LG3: a route note that holds the private folder path gives private-path", () => {
+    const { dir, home } = repo("lg3-path");
+    const privateDir = privateCopy("lg3-path");
+    const rows = JSON.parse(readFileSync(join(PAGE_B, PAGE_B_OUTCOMES), "utf8"));
+    rows[0].route = `t1/prod-leak (${privateDir})`;
+    stagePageB(dir, home, { [PAGE_B_OUTCOMES]: `${JSON.stringify(rows)}\n` });
+    expectRefusal(
+      privateDir,
+      dir,
+      `leak-check: private-path: ${PAGE_B_OUTCOMES}`,
+      "lg3-path",
+    );
+  });
+
+  it("LG3: a route note that holds a seeded line of 20 characters or more gives seeded-line", () => {
+    const { dir, home } = repo("lg3-seeded");
+    const privateDir = privateCopy("lg3-seeded");
+    const seeded = bodyTexts(join(privateDir, "sets", SET, "diffs", "forge-01.diff"));
+    const source = bodyTexts(join(privateDir, "sets", SET, "src", "forge-01.diff"));
+    const secret = seeded.find((text) => text.length >= 20 && !source.includes(text));
+    expect(secret, "the fixture has a seeded-only line of 20 characters or more").toBeTruthy();
+    const rows = JSON.parse(readFileSync(join(PAGE_B, PAGE_B_OUTCOMES), "utf8"));
+    rows[0].route = `t1/prod-leak (${secret})`;
+    stagePageB(dir, home, { [PAGE_B_OUTCOMES]: `${JSON.stringify(rows)}\n` });
+    expectRefusal(
+      privateDir,
+      dir,
+      `leak-check: seeded-line: ${PAGE_B_OUTCOMES}`,
+      "lg3-seeded",
+    );
+  });
+
+  it("LG3: a route note that holds a line under 20 characters passes", () => {
+    const { dir, home } = repo("lg3-short");
+    const privateDir = privateCopy("lg3-short");
+    const seeded = bodyTexts(join(privateDir, "sets", SET, "diffs", "forge-01.diff"));
+    const short =
+      seeded.find((text) => text.length > 0 && text.length < 20) ?? "a short line!!!";
+    expect(short.length, "the probe line is under 20 characters").toBeLessThan(20);
+    const rows = JSON.parse(readFileSync(join(PAGE_B, PAGE_B_OUTCOMES), "utf8"));
+    rows[0].route = `t1/prod-short (${short})`;
+    stagePageB(dir, home, { [PAGE_B_OUTCOMES]: `${JSON.stringify(rows)}\n` });
+    const result = leak(privateDir, dir, { home: tempDir("home-lg3-short") });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  });
+
+  it("LG3: the MANIFEST text is scanned for the private folder path", () => {
+    const { dir, home } = repo("lg3-manifest");
+    const privateDir = privateCopy("lg3-manifest");
+    const rows = JSON.parse(readFileSync(join(PAGE_B, PAGE_B_OUTCOMES), "utf8"));
+    stagePageB(dir, home, { [PAGE_B_OUTCOMES]: `${JSON.stringify(rows)}\n` });
+    const lines = readFileSync(join(PAGE_B, PAGE_B_MANIFEST), "utf8")
+      .split("\n")
+      .filter((line) => line !== "")
+      .map((line) =>
+        line.endsWith(`  ${PAGE_B_OUTCOMES}`)
+          ? `${line.slice(0, line.length - PAGE_B_OUTCOMES.length)}${privateDir}`
+          : line,
+      );
+    stage(dir, PAGE_B_MANIFEST, `${lines.join("\n")}\n`, home);
+    expectRefusal(
+      privateDir,
+      dir,
+      `leak-check: private-path: ${PAGE_B_MANIFEST}`,
+      "lg3-manifest",
+    );
+  });
+});
