@@ -119,6 +119,9 @@ interface StageOptions {
   omit?: string[];
   /** File names to leave out of the manifest only. */
   manifestOmit?: string[];
+  /** File names to leave out of the folder but keep in the manifest, with
+   * the SHA-256 and size of the fixture file (DS2 missing input). */
+  manifestKeep?: string[];
   /** Exact manifest text; replaces the generated one. */
   manifestText?: string;
 }
@@ -162,12 +165,19 @@ function stagePageB(tag: string, opts: StageOptions = {}): { dir: string; manife
     writeFileSync(join(dir, ALLOWED_NAME), text);
   }
   const names = THREE_FILES.filter(
-    (name) => !omit.includes(name) && !(opts.manifestOmit ?? []).includes(name),
-  );
+    (name) =>
+      !omit.includes(name) ||
+      (opts.manifestKeep ?? []).includes(name),
+  ).filter((name) => !(opts.manifestOmit ?? []).includes(name));
+  const lines = names.map((name) => {
+    const staged = join(dir, name);
+    if (existsSync(staged)) return manifestLine(staged, name);
+    return manifestLine(join(PAGE_B, name), name);
+  });
   if (!omit.includes(MANIFEST_NAME)) {
     writeFileSync(
       join(dir, MANIFEST_NAME),
-      opts.manifestText ?? manifestOf(dir, names),
+      opts.manifestText ?? `${lines.join("\n")}\n`,
     );
   }
   return { dir, manifest: join(dir, MANIFEST_NAME) };
@@ -337,7 +347,10 @@ describe("DS2 order and refusals", () => {
   );
 
   it("DS2: a missing data file gives input with the file name", () => {
-    const { dir } = stagePageB("missing-input", { omit: [AA_NAME] });
+    const { dir } = stagePageB("missing-input", {
+      omit: [AA_NAME],
+      manifestKeep: [AA_NAME],
+    });
     expect(existsSync(join(dir, AA_NAME))).toBe(false);
     expect(
       readFileSync(join(dir, MANIFEST_NAME), "utf8"),

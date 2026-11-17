@@ -492,7 +492,7 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
 
   it("T6: evidence 15 days old shows stale and 14 days shows none", () => {
     expect(main().guide.stale).toBe(false);
-    for (const [today, stale] of [["2026-11-29", true], ["2026-11-28", false]] as Array<
+    for (const [today, stale] of [["2026-11-28", true], ["2026-11-27", false]] as Array<
       [string, boolean]
     >) {
       const run = runGuide({

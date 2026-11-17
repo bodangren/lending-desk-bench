@@ -730,7 +730,9 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
 
   it("P2ADV-14 stale boundary (spec D19, FR-6): 14 days is fresh, 15 days is stale", () => {
     const inputs = guideInputs("stale-boundary");
-    for (const [today, stale] of [["2026-11-28", false], ["2026-11-29", true]] as const) {
+    // The case passes no --scores, so no track A date applies: the newest
+    // evidence date is the staged export date 2026-10-20.
+    for (const [today, stale] of [["2026-11-03", false], ["2026-11-04", true]] as const) {
       const run = guideRaw([
         "model-guide/guide.ts",
         "--real-work", inputs.realWork,
@@ -742,7 +744,7 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
       expect(run.status, run.stdout).toBe(0);
       const page = JSON.parse(readFileSync(join(run.out, "model-guide.json"), "utf8"));
       expect(page.today).toBe(today);
-      expect(page.stale, `evidence 2026-11-14 against --today ${today}`).toBe(stale);
+      expect(page.stale, `evidence 2026-10-20 against --today ${today}`).toBe(stale);
     }
   });
 });
