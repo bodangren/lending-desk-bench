@@ -14,9 +14,8 @@
  *   args        a required flag is missing, a flag holds no value, or a
  *               flag is unknown
  *   today       the `--today` value is not a real calendar date
- *   real-work   the file is missing, is not JSON, or holds no
- *               `source.generated_on` date and no `producer`, `checker`,
- *               or `work_types` table
+ *   real-work   the file is missing, is not JSON, or holds no source date
+ *               and no producer, checker, or role table
  *   scores      the file is present but is not JSON, or a route holds no
  *               string name, no string state, or a pass without a date or
  *               a numeric score
@@ -38,42 +37,40 @@
  *   pick          the model of the first qualified source, or the exact
  *                 words "no pick yet: not enough evidence"
  *   second        the second qualified model of that source, or null
- *   evidence      "<source>: <number> (n=<count>)". The source is
- *                 "page B", "page B producer" (test writing, ruling Q1),
- *                 "track A", or "print-audit". A page B number is the pass
- *                 rate with 2 decimals; a track A number is the worst pass
- *                 score with 1 decimal; a print-audit number is the route
- *                 result text "x of y" with n = y.
- *   evidence_date the export `generated_on`, or the last complete track A
- *                 pass date for the track A pick
+ *   evidence      the source, the number, and the count (spec D18 PM
+ *                 2026-11-17): "page B producer: accept <n> %, <count>
+ *                 tasks", "track A: worst <n> (n=<count>)", "print-audit:
+ *                 <x> of <y> (n=<y>)", or the exact words "no pick yet" for
+ *                 a row with no source.
+ *   evidence_date the export date of the outcomes file (the date in the
+ *                 MANIFEST name, Q-S4), or the date of the last complete
+ *                 track A pass for the track A pick
  *   base_line     null, except the highest build total of `--benchmark` on
  *                 the app code row and the highest tests total of
  *                 `--tracks` on the test writing row. The base line never
  *                 picks and never changes a pick (spec D18).
  *
- * A page B row qualifies with `pass_rate.n >= 10` (it carries `can_pick`).
- * The first source gives the first and the second choice from its rank.
- * A track A route qualifies with state "complete" and 3 complete passes. A
- * provisional pass is complete (spec D13), so it counts for the threshold.
- * The rank orders the worst pass score, highest first. A tie goes to
- * the higher worst blocker recall, and then to the higher median score
- * (spec D13). When the first source has no qualified model the second
- * source picks; the base lines never pick.
+ * `real-work.json` is the output of `real-work.ts --manifest` (schema
+ * `model-guide-real-work/2`). It holds the producer and the checker table
+ * and the per-role rows; it has no work-type split (spec D16 "Data
+ * source"). A page B producer row qualifies with 5 tasks or more and a
+ * first-round rate (ruling Q1: the test writing row reads the producer role
+ * `red`). A track A route qualifies with state "complete" and 3 complete
+ * passes; a provisional pass counts (spec D13). When the first source has
+ * no qualified model the second source picks.
  *
- * Ruling Q1 (PM, 2026-11-15): the test writing row uses the page B
- * producer table as a whole, because `real-work.json` has no role key. Its
- * evidence cell starts with "page B producer".
- * Ruling Q2 (PM, 2026-11-15): with no complete track A rank the code
- * review pick is the exact no-pick words, even when the page B checker
- * table holds a qualified model.
+ * Ruling Q2 (PM, 2026-11-15): with no complete track A rank the code review
+ * pick is the exact no-pick words, even when the page B checker table holds
+ * a qualified model. The rows "app code", "docs and ops", and "tooling" have
+ * no source, so they show the no-pick words.
  *
- * The print-audit second source reads the tool output of task 2.4b: a
- * route name maps to its "x of y" result, and the rank orders the blockers
- * found, highest first. It never iterates the summary keys as routes.
+ * The print-audit second source reads the tool output of task 2.4b: a route
+ * name maps to its "x of y" result, and the rank orders the blockers found,
+ * highest first. It never iterates the summary keys as routes.
  *
- * Inputs are read as own entries only. A `__proto__` name stays an
- * ordinary map entry (the tables are read into maps and arrays), so no
- * hostile name becomes a row or a route of the output file.
+ * Inputs are read as own entries only. A `__proto__` name stays an ordinary
+ * map entry (the tables are read into maps and arrays), so no hostile name
+ * becomes a row or a route of the output file.
  */
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -81,6 +78,7 @@ import { join } from "node:path";
 const OUTPUT_NAME = "model-guide.json";
 const SCHEMA = "model-guide-overview/1";
 const NO_PICK = "no pick yet: not enough evidence";
+const NO_PICK_EVIDENCE = "no pick yet";
 const STALE_DAYS = 14;
 const TRACK_A_PASSES = 3;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -180,33 +178,36 @@ function asDate(value: unknown): string | null {
   return text;
 }
 
-/** Real work page B data (tool of Phase 1, schema `model-guide-real-work/1`).
- * The three tables are kept as arrays; the work-type names are read into a
- * Map, so a name such as `__proto__` stays an ordinary key. */
+/** Real work page B data (the tool output of schema
+ * `model-guide-real-work/2`). The three tables are kept as arrays; the role
+ * names are read into a Map, so a name such as `__proto__` stays an
+ * ordinary key. */
 interface RealWork {
-  generatedOn: string;
+  exportDate: string;
   producer: any[];
   checker: any[];
-  workTypes: Map<string, any[]>;
+  byRole: Map<string, any[]>;
 }
 
 function readRealWork(file: string): RealWork {
   const doc = readJsonFile(file, "real-work");
   if (!isObject(doc) || !isObject(doc.source)) refuse("real-work");
-  const generatedOn = asDate(doc.source.generated_on);
-  if (generatedOn === null) refuse("real-work");
+  const exportDate =
+    asDate(doc.source.export_date) ?? asDate(doc.source.generated_on);
+  if (exportDate === null) refuse("real-work");
   if (!Array.isArray(doc.producer) || !Array.isArray(doc.checker)) refuse("real-work");
-  if (!isObject(doc.work_types)) refuse("real-work");
-  const workTypes = new Map<string, any[]>();
-  for (const [name, rows] of Object.entries(doc.work_types)) {
-    if (!Array.isArray(rows)) refuse("real-work");
-    workTypes.set(name, rows);
+  const byRole = new Map<string, any[]>();
+  if (isObject(doc.by_role)) {
+    for (const [name, rows] of Object.entries(doc.by_role)) {
+      if (!Array.isArray(rows)) refuse("real-work");
+      byRole.set(name, rows);
+    }
   }
   return {
-    generatedOn,
+    exportDate,
     producer: doc.producer,
     checker: doc.checker,
-    workTypes,
+    byRole,
   };
 }
 
@@ -344,39 +345,49 @@ interface Source {
   date: string;
 }
 
-/** A page B table of real-work.json, already ranked by the tool. A row
- * qualifies with `can_pick` (10 runs or more). With no qualified row the
- * pick is the no-pick words; the evidence still cites the top row, so the
- * reader sees how little evidence the row holds. */
-function fromPageB(rows: any[] | undefined, prefix: string, date: string): Source {
+/** A page B producer role table of real-work.json, already ranked by the
+ * tool. A row qualifies with 5 tasks or more, a first-round rate, and an
+ * allowed model (spec D18). The evidence cell holds the source, the rate,
+ * and the task count (PM 2026-11-17). */
+function fromProducerRole(rows: any[] | undefined, date: string): Source {
   const table = Array.isArray(rows) ? rows : [];
   const qualified = table.filter(
-    (row) => isObject(row) && row.can_pick === true && typeof row.model === "string",
+    (row) =>
+      isObject(row) &&
+      typeof row.model === "string" &&
+      typeof row.tasks === "number" &&
+      row.tasks >= 5 &&
+      isObject(row.first_round) &&
+      typeof row.first_round.value === "number" &&
+      row.allowed !== false,
   );
-  const shown = qualified[0] ?? table.find((row) => isObject(row) && typeof row.model === "string");
-  const pick = qualified.length > 0 ? qualified[0].model : NO_PICK;
-  const second = qualified.length > 1 ? qualified[1].model : null;
-  let evidence = `${prefix}: no runs (n=0)`;
-  if (isObject(shown) && isObject(shown.pass_rate)) {
-    const value = shown.pass_rate.value;
-    const n = shown.pass_rate.n;
-    if (typeof value === "number" && typeof n === "number") {
-      evidence = `${prefix}: pass ${value.toFixed(2)} (n=${n})`;
-    }
+  if (qualified.length === 0) {
+    return { pick: NO_PICK, second: null, evidence: NO_PICK_EVIDENCE, date };
   }
-  return { pick, second, evidence, date };
+  const best = qualified[0];
+  return {
+    pick: best.model,
+    second: qualified.length > 1 ? qualified[1].model : null,
+    evidence: `page B producer: accept ${Math.round(best.first_round.value * 100)} %, ${best.tasks} tasks`,
+    date,
+  };
+}
+
+/** A row with no source: the no-pick words and no second choice. */
+function noSource(date: string): Source {
+  return { pick: NO_PICK, second: null, evidence: NO_PICK_EVIDENCE, date };
 }
 
 /** The track A rank. Ruling Q2: with no complete rank the pick is the
  * no-pick words, and the page B checker table does not pick for code
  * review. */
-function fromTrackA(rank: RouteRank[], generatedOn: string): Source {
+function fromTrackA(rank: RouteRank[], exportDate: string): Source {
   if (rank.length === 0) {
     return {
       pick: NO_PICK,
       second: null,
       evidence: "track A: no complete rank (n=0)",
-      date: generatedOn,
+      date: exportDate,
     };
   }
   const best = rank[0];
@@ -390,13 +401,13 @@ function fromTrackA(rank: RouteRank[], generatedOn: string): Source {
 
 /** The print-audit data point. The rank orders the blockers found, highest
  * first. */
-function fromPrintAudit(routes: AuditRoute[], generatedOn: string): Source {
+function fromPrintAudit(routes: AuditRoute[], exportDate: string): Source {
   if (routes.length === 0) {
     return {
       pick: NO_PICK,
       second: null,
       evidence: "print-audit: no route (n=0)",
-      date: generatedOn,
+      date: exportDate,
     };
   }
   const best = routes[0];
@@ -404,7 +415,7 @@ function fromPrintAudit(routes: AuditRoute[], generatedOn: string): Source {
     pick: best.route,
     second: routes.length > 1 ? routes[1].route : null,
     evidence: `print-audit: ${best.text} (n=${best.total})`,
-    date: generatedOn,
+    date: exportDate,
   };
 }
 
@@ -447,25 +458,23 @@ function main(): void {
   const buildBaseLine = readBuildBaseLine(args.benchmark);
   const testsBaseLine = readTestsBaseLine(args.tracks);
 
-  const generatedOn = realWork.generatedOn;
-  const codeReview = fromTrackA(rank, generatedOn);
-  const appCode = fromPageB(realWork.workTypes.get("app code"), "page B", generatedOn);
-  const testWriting = fromPageB(realWork.producer, "page B producer", generatedOn);
-  const docsAndOps = fromPageB(realWork.workTypes.get("docs and ops"), "page B", generatedOn);
-  const printBooks = fromPageB(realWork.workTypes.get("print books"), "page B", generatedOn);
-  const tooling = fromPageB(realWork.workTypes.get("tooling"), "page B", generatedOn);
-
-  // The print-book audit row falls to the print-audit data point when the
-  // work-type table has no qualified model.
-  const printBookSource =
-    printBooks.pick === NO_PICK ? fromPrintAudit(audit, generatedOn) : printBooks;
+  const exportDate = realWork.exportDate;
+  const codeReview = fromTrackA(rank, exportDate);
+  // The new export has no work-type split (spec D16 "Data source"). The
+  // rows app code, docs and ops, and tooling have no source, and the
+  // print-book audit row falls to the print-audit data point.
+  const appCode = noSource(exportDate);
+  const testWriting = fromProducerRole(realWork.byRole.get("red"), exportDate);
+  const docsAndOps = noSource(exportDate);
+  const printBooks = fromPrintAudit(audit, exportDate);
+  const tooling = noSource(exportDate);
 
   const rows: Row[] = [
     rowOf(KINDS[0], codeReview, null),
     rowOf(KINDS[1], appCode, buildBaseLine),
     rowOf(KINDS[2], testWriting, testsBaseLine),
     rowOf(KINDS[3], docsAndOps, null),
-    rowOf(KINDS[4], printBookSource, null),
+    rowOf(KINDS[4], printBooks, null),
     rowOf(KINDS[5], tooling, null),
   ];
 
