@@ -48,8 +48,12 @@ const GUIDE_TOOL = join(SOURCE, "guide.ts");
 const TSX = join(HARNESS, "node_modules", ".bin", "tsx");
 const FIXTURES = join(import.meta.dirname, "fixtures");
 const FIXTURE_SET = join(FIXTURES, "review", "sets", "mg-2026-11a");
-const EXPORT_FIXTURE = join(FIXTURES, "real-work-mini.json");
-const MANIFEST_FIXTURE = join(FIXTURES, "MANIFEST.txt");
+const PAGE_B = join(FIXTURES, "page-b");
+const OUTCOMES_NAME = "ra-outcomes-2026-10-20.json";
+const AA_NAME = "aa-reliability-2026-10-20.json";
+const ALLOWED_NAME = "allowed-routes-2026-10-20.json";
+const MANIFEST_NAME = "MANIFEST-2026-10-20.txt";
+const EXPORT_FIXTURE = join(PAGE_B, OUTCOMES_NAME);
 const PRINT_AUDIT_DIR = join(FIXTURES, "print-audit");
 const GUIDE_FIXTURES = join(FIXTURES, "guide");
 const BENCHMARK = join(GUIDE_FIXTURES, "benchmark-mini.json");
@@ -244,11 +248,12 @@ function runLeak(privateDir: string, repoDir: string, home: string) {
 
 function realWorkFrom(tag: string): string {
   const fixture = tempDir(`export-${tag}`);
-  copyFileSync(EXPORT_FIXTURE, join(fixture, "real-work-mini.json"));
-  copyFileSync(MANIFEST_FIXTURE, join(fixture, "MANIFEST.txt"));
+  for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME, MANIFEST_NAME]) {
+    copyFileSync(join(PAGE_B, name), join(fixture, name));
+  }
   const out = tempDir(`real-work-${tag}`);
   const result = tsx(
-    ["model-guide/real-work.ts", "--input", join(fixture, "real-work-mini.json"), "--out", out],
+    ["model-guide/real-work.ts", "--manifest", join(fixture, MANIFEST_NAME), "--out", out],
     tempDir(`home-rw-${tag}`),
   );
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);

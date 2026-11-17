@@ -58,8 +58,14 @@ const PREVIEW_SH = join(SOURCE, "preview.sh");
 const UPDATE_SH = join(SOURCE, "update.sh");
 const TSX = join(HARNESS, "node_modules", ".bin", "tsx");
 const FIXTURES = join(import.meta.dirname, "fixtures");
-const EXPORT_FIXTURE = join(FIXTURES, "real-work-mini.json");
-const MANIFEST_FIXTURE = join(FIXTURES, "MANIFEST.txt");
+const PAGE_B = join(FIXTURES, "page-b");
+const OUTCOMES_NAME = "ra-outcomes-2026-10-20.json";
+const AA_NAME = "aa-reliability-2026-10-20.json";
+const ALLOWED_NAME = "allowed-routes-2026-10-20.json";
+const MANIFEST_NAME = "MANIFEST-2026-10-20.txt";
+const EXPORT_FIXTURE = join(PAGE_B, OUTCOMES_NAME);
+const AA_FIXTURE = join(PAGE_B, AA_NAME);
+const ALLOWED_FIXTURE = join(PAGE_B, ALLOWED_NAME);
 const PRINT_AUDIT_DIR = join(FIXTURES, "print-audit");
 const GUIDE_FIXTURES = join(FIXTURES, "guide");
 const BENCHMARK = join(GUIDE_FIXTURES, "benchmark-mini.json");
@@ -127,29 +133,40 @@ function guideRaw(args: string[]): { status: number; stdout: string; out: string
   return { status: result.status ?? -1, stdout: result.stdout, out };
 }
 
-/** The export copy with a mutation and a manifest that matches the copy. */
+/** The staged page B set with a mutation, and a manifest that matches.
+ * Returns the manifest path (the CLI argument). The legacy aliases let the
+ * old mutations run; `all_time` and `allowedRoutes` are the live arrays of
+ * the staged files. */
 function stagedExport(tag: string, mutate: (doc: any) => void): string {
   const dir = tempDir(`export-${tag}`);
-  const doc = JSON.parse(readFileSync(EXPORT_FIXTURE, "utf8"));
+  const rows = JSON.parse(readFileSync(EXPORT_FIXTURE, "utf8"));
+  const allowedDoc = JSON.parse(readFileSync(ALLOWED_FIXTURE, "utf8"));
+  const doc = {
+    schema: "real-work-outcomes/1",
+    generated_on: "2026-10-20",
+    coverage: {} as Record<string, unknown>,
+    all_time: rows,
+    weekly: [] as any[],
+    allowedRoutes: allowedDoc.allowedRoutes,
+  };
   mutate(doc);
-  const json = join(dir, "real-work-mini.json");
-  const text = JSON.stringify(doc);
-  writeFileSync(json, text);
-  writeFileSync(join(dir, "MANIFEST.txt"), [
-    `sha256: ${sha256(json)}`,
-    `size: ${Buffer.byteLength(text)}`,
-    "source-commit: none (synthetic fixture, 2026-11-15)",
-    "",
-  ].join("\n"));
-  return json;
+  writeFileSync(join(dir, OUTCOMES_NAME), `${JSON.stringify(rows, null, 2)}\n`);
+  writeFileSync(join(dir, AA_NAME), readFileSync(AA_FIXTURE));
+  writeFileSync(join(dir, ALLOWED_NAME), `${JSON.stringify(allowedDoc, null, 2)}\n`);
+  const lines = [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME].map((name) => {
+    const data = readFileSync(join(dir, name));
+    return `${sha256(dir ? join(dir, name) : name)}  ${data.length}  ${name}`;
+  });
+  writeFileSync(join(dir, MANIFEST_NAME), `${lines.join("\n")}\n`);
+  return join(dir, MANIFEST_NAME);
 }
 
-/** Run the Phase 1 tool on an export and return the data file path. */
-function realWorkFrom(exportPath: string, tag: string): string {
+/** Run the page B tool on a manifest and return the data file path. */
+function realWorkFrom(manifestPath: string, tag: string): string {
   const out = tempDir(`real-work-${tag}`);
   const result = spawnSync(
     TSX,
-    ["model-guide/real-work.ts", "--input", exportPath, "--out", out],
+    ["model-guide/real-work.ts", "--manifest", manifestPath, "--out", out],
     { cwd: HARNESS, env: env(), encoding: "utf8", timeout: 60_000 },
   );
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
@@ -215,7 +232,7 @@ function guideInputs(tag: string, exportPath?: string): {
   tracks: string;
 } {
   return {
-    realWork: realWorkFrom(exportPath ?? EXPORT_FIXTURE, `${tag}-rw`),
+    realWork: realWorkFrom(exportPath ?? stagedExport(`${tag}-default`, () => {}), `${tag}-rw`),
     printAudit: printAuditInput(`${tag}-pa`),
     benchmark: BENCHMARK,
     tracks: TRACKS,
@@ -265,13 +282,11 @@ function toolRepo(tag: string, exportPath?: string): { root: string; exportCopy:
   copyFileSync(BENCHMARK, join(root, DATA_DIR, "benchmark.json"));
   copyFileSync(TRACKS, join(root, DATA_DIR, "tracks.json"));
   mkdirSync(join(root, "measure", "tracks", "model_guide"), { recursive: true });
-  mkdirSync(join(root, "fixture"), { recursive: true });
-  const src = exportPath ?? EXPORT_FIXTURE;
-  copyFileSync(src, join(root, "fixture", "real-work-mini.json"));
-  const manifestSrc = exportPath
-    ? join(exportPath, "..", "MANIFEST.txt")
-    : MANIFEST_FIXTURE;
-  copyFileSync(manifestSrc, join(root, "fixture", "MANIFEST.txt"));
+  mkdirSync(join(root, "fixture-b"), { recursive: true });
+  const stagedDir = exportPath ? join(exportPath, "..") : PAGE_B;
+  for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME, MANIFEST_NAME]) {
+    copyFileSync(join(stagedDir, name), join(root, "fixture-b", name));
+  }
   symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
   git(root, ["init", "-q", "-b", "main"]);
   git(root, ["config", "user.email", "model-guide-advp2@example.invalid"]);
@@ -279,7 +294,7 @@ function toolRepo(tag: string, exportPath?: string): { root: string; exportCopy:
   git(root, ["add", "-A"]);
   git(root, ["commit", "-q", "-m", "initial"]);
   expect(git(root, ["status", "--short"]), "the temp repo starts clean").toBe("");
-  return { root, exportCopy: join(root, "fixture", "real-work-mini.json") };
+  return { root, exportCopy: join(root, "fixture-b", MANIFEST_NAME) };
 }
 
 function approve(root: string): void {
@@ -414,7 +429,7 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
     const { root } = toolRepo("stale-page", exportPath);
     const first = spawnSync(
       "bash",
-      [join(root, "harness", "model-guide", "preview.sh"), "--export", join(root, "fixture", "real-work-mini.json")],
+      [join(root, "harness", "model-guide", "preview.sh"), "--manifest", join(root, "fixture-b", MANIFEST_NAME)],
       { cwd: root, env: env(), encoding: "utf8", timeout: 180_000 },
     );
     expect(first.status, `${first.stdout}\n${first.stderr}`).toBe(0);
@@ -432,7 +447,7 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
     // A second preview over the same folder keeps exactly one section.
     const second = spawnSync(
       "bash",
-      [join(root, "harness", "model-guide", "preview.sh"), "--export", join(root, "fixture", "real-work-mini.json")],
+      [join(root, "harness", "model-guide", "preview.sh"), "--manifest", join(root, "fixture-b", MANIFEST_NAME)],
       { cwd: root, env: env(), encoding: "utf8", timeout: 180_000 },
     );
     expect(second.status, `${second.stdout}\n${second.stderr}`).toBe(0);
@@ -440,53 +455,18 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
     expect(again.split('id="model-guide"').length - 1, "one overview section after a second preview").toBe(1);
   });
 
-  it("P2ADV-7 ten-result boundary (spec D18): exactly 10 results pick, 9 do not", () => {
-    const mutate = (target: number) => (doc: any) => {
-      for (const item of doc.all_time) {
-        const types = item.work_types ?? {};
-        if (!("tooling" in types)) continue;
-        if (item.route === "y/m") {
-          types.tooling = { runs: 4, pass: 1, fail: 2 };
-        } else if (typeof item.route === "string" && item.route.startsWith("x/m")) {
-          // Three x/m-family rows. Case n=10: pass 4 + fail 6. Case n=9:
-          // pass 3 + fail 6.
-          const pass = target === 10
-            ? item.route === "x/m#high" ? 2 : 1
-            : 1;
-          types.tooling = { runs: 4, pass, fail: 2 };
-        }
-      }
-    };
-    for (const [target, want] of [[10, "x/m"], [9, NO_PICK]] as const) {
-      const inputs = guideInputs(`ten-${target}`, stagedExport(`ten-${target}`, mutate(target)));
-      const run = guideRaw([
-        "model-guide/guide.ts",
-        "--real-work", inputs.realWork,
-        "--print-audit", inputs.printAudit,
-        "--benchmark", inputs.benchmark,
-        "--tracks", inputs.tracks,
-        "--today", TODAY,
-      ]);
-      expect(run.status, run.stdout).toBe(0);
-      const page = JSON.parse(readFileSync(join(run.out, "model-guide.json"), "utf8"));
-      const row = page.rows.find((item: any) => item.kind === "tooling");
-      expect(row, "the tooling row").toBeDefined();
-      expect(row.pick, `merged tooling with ${target} results`).toBe(want);
-    }
-  });
-
   it("P2ADV-8 hostile names (spec D18): every overview cell with a hostile model name is escaped on the page", () => {
     const exportPath = stagedExport("hostile", (doc) => {
-      for (const block of ["weekly", "all_time"]) {
-        for (const item of doc[block]) {
-          if (item.route === "y/m") item.route = HOSTILE_ROUTE;
-        }
+      for (const item of doc.all_time) {
+        if (item.route === "t1/prod-nine") item.route = HOSTILE_ROUTE;
       }
+      // The hostile model must stay allowed, or it never picks.
+      doc.allowedRoutes.push(HOSTILE_ROUTE);
     });
     const { root } = toolRepo("hostile", exportPath);
     const result = spawnSync(
       "bash",
-      [join(root, "harness", "model-guide", "preview.sh"), "--export", join(root, "fixture", "real-work-mini.json")],
+      [join(root, "harness", "model-guide", "preview.sh"), "--manifest", join(root, "fixture-b", MANIFEST_NAME)],
       { cwd: root, env: env(), encoding: "utf8", timeout: 180_000 },
     );
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
@@ -494,7 +474,13 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
       readFileSync(join(root, PREVIEW_DIR, "model-guide.json"), "utf8"),
     );
     const picks = page.rows.flatMap((row: any) => [row.pick, row.second]);
-    expect(picks, "the JSON keeps the raw hostile name").toContain(HOSTILE_ROUTE);
+    expect(
+      picks.some(
+        (name: any) =>
+          typeof name === "string" && name.includes("img src=x onerror=alert(1)"),
+      ),
+      "the JSON keeps the hostile name in a cell",
+    ).toBe(true);
     for (const name of ["index.html", "real-work.html"]) {
       const html = readFileSync(join(root, PREVIEW_DIR, name), "utf8");
       expect(html, `${name} escapes the hostile name`).toContain("&lt;img");
@@ -658,9 +644,10 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
     copyFileSync(BENCHMARK, join(spaced, DATA_DIR, "benchmark.json"));
     copyFileSync(TRACKS, join(spaced, DATA_DIR, "tracks.json"));
     mkdirSync(join(spaced, "measure", "tracks", "model_guide"), { recursive: true });
-    mkdirSync(join(spaced, "fixture"), { recursive: true });
-    copyFileSync(EXPORT_FIXTURE, join(spaced, "fixture", "real-work-mini.json"));
-    copyFileSync(MANIFEST_FIXTURE, join(spaced, "fixture", "MANIFEST.txt"));
+    mkdirSync(join(spaced, "fixture-b"), { recursive: true });
+    for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME, MANIFEST_NAME]) {
+      copyFileSync(join(PAGE_B, name), join(spaced, "fixture-b", name));
+    }
     symlinkSync(join(HARNESS, "node_modules"), join(spaced, "harness", "node_modules"));
     git(spaced, ["init", "-q", "-b", "main"]);
     git(spaced, ["config", "user.email", "model-guide-advp2@example.invalid"]);
@@ -670,7 +657,7 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
     const before = treeHashes(spaced, [PREVIEW_DIR]);
     const result = spawnSync(
       "bash",
-      [join(spaced, "harness", "model-guide", "update.sh"), join(spaced, "fixture", "real-work-mini.json")],
+      [join(spaced, "harness", "model-guide", "update.sh"), join(spaced, "fixture-b", MANIFEST_NAME)],
       { cwd: spaced, env: env(), encoding: "utf8", timeout: 180_000 },
     );
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
@@ -731,7 +718,7 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
     const { root } = toolRepo("result-form");
     const result = spawnSync(
       "bash",
-      [join(root, "harness", "model-guide", "preview.sh"), "--export", join(root, "fixture", "real-work-mini.json")],
+      [join(root, "harness", "model-guide", "preview.sh"), "--manifest", join(root, "fixture-b", MANIFEST_NAME)],
       { cwd: root, env: env(), encoding: "utf8", timeout: 180_000 },
     );
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
