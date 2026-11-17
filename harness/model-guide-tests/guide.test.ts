@@ -644,6 +644,16 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
         doc.allowedRoutes.push("opencode-go/synthetic-unknown");
       },
     });
+    // The print-audit source carries a #variant route as its key, so the
+    // overview must map it to the plain name of its model key (RA2-2).
+    const auditFile = join(root, "harness", "model-guide", "data", "print-audit-2026-11.json");
+    expect(existsSync(auditFile), "the temp repo holds the print-audit data file").toBe(true);
+    const audit = JSON.parse(readFileSync(auditFile, "utf8"));
+    audit.routes = {
+      "claude-code/claude-sonnet-5-5#high": "13 of 13",
+      "kimi-code-plan-cn/k3.1-pro": "11 of 13",
+    };
+    writeFileSync(auditFile, `${JSON.stringify(audit, null, 2)}\n`);
     const result = runPreview(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const index = readFileSync(previewIndex(root), "utf8");
@@ -671,6 +681,29 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     const docs = rows.find((entry) => /docs and ops/i.test(entry));
     expect(docs, "the page holds the docs and ops row").toBeDefined();
     expect(docs, "the no-pick words stay as they are").toContain(NO_PICK);
+
+    // The print-book audit row picks from the print-audit source, whose
+    // best route is the #variant key claude-code/claude-sonnet-5-5#high
+    // (RA2-2). Both cells must show plain names.
+    const auditRow = rows.find((entry) => /print-book audit/i.test(entry));
+    expect(auditRow, "the page holds the print-book audit row").toBeDefined();
+    const auditTds = [...auditRow!.matchAll(/<td>([\s\S]*?)<\/td>/g)].map((cell) =>
+      cell[1].replace(/<[^>]*>/g, "").trim(),
+    );
+    expect(auditTds.length, "the row holds the five cells of the table").toBe(5);
+    expect(auditTds[1], "the #variant pick maps to its model key name").toContain(
+      "Claude Sonnet 5.5",
+    );
+    expect(auditTds[1], "the pick cell holds no #variant text").not.toContain("#high");
+    expect(auditTds[1], "the pick cell holds no raw route key").not.toContain(
+      "claude-code/claude-sonnet-5-5",
+    );
+    expect(auditTds[2], "the second cell shows the plain name of its key").toContain(
+      "Kimi K3.1 Pro",
+    );
+    expect(auditTds[2], "the second cell holds no raw route key").not.toContain(
+      "kimi-code-plan-cn/k3.1-pro",
+    );
   });
 
   it("RA-2: the Test writing pick skips a not-allowed row and a row below the minimum", () => {
@@ -692,9 +725,10 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(baseRow.pick, "the not-allowed row never picks").not.toBe("t1/prod-evil");
     expect(baseRow.pick, "the 4-task row never picks").not.toBe("t1/prod-tiny");
 
-    // The variant lowers the rate of the red prod-one row to 0.5, so a
-    // missing allowed filter picks t1/prod-evil and a missing minimum picks
-    // t1/prod-tiny. Both filters must hold.
+    // The fixture allows t1/prod-tiny, so only the minimum of 5 keeps it
+    // out of the pick. The variant lowers the rate of the red prod-one row
+    // to 0.5: a missing allowed filter then picks t1/prod-evil, and a
+    // missing minimum picks t1/prod-tiny. Both filters must hold.
     const variant = realWorkFrom("ra2-variant", {
       outcomes: (rows) => {
         for (const row of rows) {

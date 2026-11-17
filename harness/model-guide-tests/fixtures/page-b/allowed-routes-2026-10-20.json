@@ -17,7 +17,8 @@
     "t1/gate-seven",
     "t1/gate-eight",
     "t1/gate-eleven",
-    "t1/gate-twelve"
+    "t1/gate-twelve",
+    "t1/prod-tiny"
   ],
   "orchestratorRoutes": [
     "t1/gate-two[1m]"

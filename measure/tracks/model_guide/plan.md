@@ -1141,6 +1141,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     for one reason: the tool still speaks the old `--input` or `--export`
     usage line. No case fails with a TypeError, a ReferenceError, a missing
     helper, or a syntax error. The guards FX1, FX3, and LG1 to LG3 pass.
+  - Fix round r8: at ba3142a, `adversarial.test.ts` exited 0 with `Tests  46 passed (46)`; this round (RA2-1, RA2-2): guide 17 passed, preview-gate 99 passed, real-work 13 passed, input-check 23 passed, leak-check 22 passed, update 9 passed, adversarial 46 passed, every run exit 0.
   - Follow-up fixes (Mid Red, 2026-11-17): f205c80 keeps the manifest line of
     the omitted file in DS2, moves T6 to `2026-11-28` true and `2026-11-27`
     false, and bases P2ADV-14 on the export date `2026-10-20`; d94f549 stages
