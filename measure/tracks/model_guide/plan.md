@@ -1039,7 +1039,7 @@ Verify (Phase 3): spec acceptance 9 holds.
 
 Spec D12 to D15, D22, FR-11, FR-14, FR-15.
 
-- [ ] 4.1 Red. The review runner. Write
+- [~] 4.1 Red. The review runner. Write
   `harness/model-guide-tests/review-run.test.ts` and the fake `opencode`
   under `harness/model-guide-tests/fixtures/fakes/`. Touch no other file.
   Each test copies the scripts that it runs into a temp repo, the same as
@@ -1067,6 +1067,21 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - After each run, `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
   - Verify: the file fails on the Phase 3 code. Record the failed test names
     in `measure/runs/model_guide/red-4.1.txt`.
+  - Evidence: run on 2026-11-18 with `cd harness && npx vitest run
+    model-guide-tests/review-run.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot`. Exit 1, `Tests  23 failed (23)`. First
+    failure line: `FAIL model-guide-tests/review-run.test.ts > P4 R1 the
+    pass shape of the review runner > R1 calls the fake once for each diff,
+    stores one raw output per diff in the private folder, and writes one
+    pass record`. The message is `the review runner is missing:
+    /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/review-run.sh`.
+    All 23 cases fail on the missing runner, so no case passes at the phase
+    base (A4). The first run of the file failed in the temp quota server:
+    the source string held a real newline inside a JavaScript string
+    literal. The fix doubles the escapes, and the test commit holds it.
+    After the run, `ps -eo pid,args | grep '[f]ake-opencode'` prints no
+    line. Reuse decision: reuse the two untracked files of the stopped run,
+    with the escape fix. See `measure/runs/model_guide/red-4.1.txt`.
 - [x] 2cb7efd 4.1a Red. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Change
   the layout group G1 to G4 of `harness/model-guide-tests/preview-gate.test.ts`
   and add the cases of the new rules. Touch no other file.
