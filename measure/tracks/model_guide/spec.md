@@ -889,14 +889,17 @@ questions".
         Findings per run, Escapes, and Net score. The rank holds the rows
         with 5 runs or more: the higher AA net score first; a row that is not
         rated ranks after every rated row; then the higher findings per run;
-        then more runs; then the model key (replaced by PM 2026-11-18). The
-        other rows sit in "Too few tasks". The Pass % column stays, and the
-        checker table text says: "A high pass % does not mean a good
-        checker." (PM 2026-11-18). Findings per run replaces Blocking % and
-        Blockers per run on page B. Escapes take no part in any rank. When
+        then more runs; then the model key in ascending order, A to Z
+        (replaced by PM 2026-11-18; tie-break direction orchestrator
+        2026-11-18). The other rows sit in "Too few tasks". The Pass % column
+        stays, and the checker table text says: "A high pass % does not mean
+        a good checker." (PM 2026-11-18). Findings per run replaces Blocking %
+        and Blockers per run on page B. Escapes take no part in any rank. When
         the sum of escapes over all gate rows of the outcomes file is 0,
         every Escapes cell shows "no data", because there is no escape data
-        yet; otherwise a cell shows the number (PM 2026-11-18).
+        yet; otherwise a cell shows the number. The rule covers every Escapes
+        cell of the checker table, in the ranked rows and in "Too few tasks"
+        (PM 2026-11-18; cell scope orchestrator 2026-11-18).
       - **AA net score.** The tool takes the last path part of the model
         key, in lower case, and removes a "-free" suffix. It matches that
         name to a model key or an alias of the AA file. A merged row uses
@@ -914,18 +917,21 @@ questions".
         table with the mark "not allowed" and never picks.
       - **Top block.** One line per role, in this order: Red, Green, Coder,
         Review A, Review B, Review C, Adversarial, Acceptance, Phase
-        acceptance, Final acceptance. Each line uses only the rows of that
-        role, merged by model key. The pick is rank 1 among the rows that
+        acceptance, Final acceptance. Each line starts with its role label
+        and a colon (orchestrator 2026-11-18). Each line uses only the rows of
+        that role, merged by model key. The pick is rank 1 among the rows that
         meet the minimum of 5, that are allowed, and, for a gate role, that
         have a net score of 20 or more. A gate role picks inside the rows of
         that role, in the checker rank order of the Checker table
         (PM 2026-11-18). Each line shows the numbers of that role only, with
         the label "in this role" (PM 2026-11-18; the role, name, rate, and
-        count form is replaced). A producer line has the form "<plain name>
-        <rate> % in this role, <count> tasks". A gate line has the form
-        "<plain name> <pass rate> % pass in this role, <count> runs, net
-        <net score>". The net score shows as in the Checker table. With no
-        pick, the line says "no pick yet".
+        count form is replaced). A producer line has the form "<role label>:
+        <plain name> <rate> % in this role, <count> tasks". A gate line has
+        the form "<role label>: <plain name> <pass rate> % pass in this role,
+        <count> runs, net <net score>". A line with no pick has the form
+        "<role label>: no pick yet" (the three forms: orchestrator
+        2026-11-18, fix of the PM 2026-11-18 forms). The net score shows as
+        in the Checker table.
       - **Work types.** The new export has no work-type split. The work-type
         sections leave page B.
       - **Width.** At 390 px the model name cell takes the free width of
@@ -1145,8 +1151,9 @@ The producer table ranks by the first-round accept %, then the lower rework,
 then more tasks, over the rows with 5 tasks or more and a first-round rate.
 The checker table ranks by the AA net score, high first; a row that is not
 rated ranks after every rated row; then by findings per run, high first; then
-by more runs; then by the model key. The checker rank holds the rows with 5
-runs or more (the pass %, escape, and run-count order is replaced by
+by more runs; then by the model key, A to Z (tie-break orchestrator
+2026-11-18). The checker rank holds the rows with 5 runs or more (the pass %,
+escape, and run-count order is replaced by
 PM 2026-11-18). A row below its minimum goes into the collapsed group "Too
 few tasks". A pick also needs an allowed model, and, for a gate role, an AA
 net score of 20 or more, in the same checker order inside the rows of that
