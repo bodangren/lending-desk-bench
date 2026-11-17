@@ -1222,7 +1222,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `git status --short docs/` prints nothing.
   - The `page-check` browser proof at 390, 980, and 1280 px stays with the
     orchestrator (test-strategy 13.9).
-- [~] 4.1g Red. Checker rank by net score, pick labels, escapes "no data",
+- [x] edc7372 4.1g Red. Checker rank by net score, pick labels, escapes "no data",
   overview text (spec D16 Data source C1 to C3, D18, PM 2026-11-18). Change
   only test files and fixtures under `harness/model-guide-tests/`.
   - Cases: the checker rank order incl. not-rated rows last and the ties; the
@@ -1247,12 +1247,41 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     leak-check 22, update 9, adversarial 46, adversarial-p2 13,
     adversarial-p3 34, every run exit 0. No run carries a NameError, a
     TypeError, a ReferenceError, a syntax error, or a missing helper.
-- [ ] 4.1h Green. Implement 4.1g in `harness/model-guide/` (`real-work.ts`,
+- [x] a86c872 4.1h Green. Implement 4.1g in `harness/model-guide/` (`real-work.ts`,
   `preview.sh`, `pages/real-work.html`, `pages/guide-section.html`,
   `guide.ts` if the checker order reaches it). Make no design choice beyond
   the spec; send any open choice to the orchestrator.
   - Verify: the 4.1g test files and all page B test files pass one at a time,
     and `page-check` at 390, 980, and 1280 px shows no page overflow.
+  - Changes: the checker rank orders by the AA net score high first, a
+    not-rated row after every rated row, then findings per run high first,
+    then more runs, then the model key ascending (PM 2026-11-18); escapes
+    leave the rank. A gate pick takes the checker rank order inside its role.
+    Each top line is the sentence form with the label "in this role", and a
+    line with no pick says exactly "no pick yet"; the role sits in the
+    `data-role` attribute. `real-work.json` gains
+    `coverage.escapes_total`, and the page shows "no data" in every Escapes
+    cell while that total is 0. The Checker roles text carries "A high pass %
+    does not mean a good checker.", and the About this data footer carries
+    the effort-level sentence. `pages/guide-section.html` says a model needs
+    5 tasks or runs. `guide.ts` does not change, because ruling Q2 keeps the
+    checker table out of the Code review pick.
+  - Evidence (2026-11-18, one file at a time from `harness/`, each with
+    `--configLoader native --maxWorkers=1 --reporter=dot`, at HEAD a86c872):
+    - `real-work.test.ts` exits 0 with `Tests  14 passed (14)`.
+    - `preview-gate.test.ts` exits 0 with `Tests  102 passed (102)`.
+    - `guide.test.ts` exits 0 with `Tests  18 passed (18)`.
+    - `adversarial-p4.test.ts` exits 0 with `Tests  18 passed (18)`.
+    - `input-check.test.ts` exits 0 with `Tests  23 passed (23)`.
+    - `update.test.ts` exits 0 with `Tests  9 passed (9)`.
+    - `leak-check.test.ts` exits 0 with `Tests  22 passed (22)`.
+    - `adversarial.test.ts` exits 0 with `Tests  46 passed (46)`.
+    - `adversarial-p2.test.ts` exits 0 with `Tests  13 passed (13)`.
+    - `adversarial-p3.test.ts` exits 0 with `Tests  34 passed (34)`.
+  - The preview on the real files exits 0 and `git status --short docs/`
+    prints nothing. The ten top lines show the sentence forms, and the
+    Escapes cells read "no data" because the real outcomes file holds no
+    escape. The `page-check` browser proof stays with the orchestrator.
 - [ ] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
