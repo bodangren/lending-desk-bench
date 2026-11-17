@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "source": {
+    "readDate": "2026-10-20",
+    "benchmark": "synthetic fixture for Red 4.1e"
+  },
+  "models": {
+    "prod-one": {
+      "rated": true,
+      "aliases": [],
+      "netScore": 40.4,
+      "byEffort": {
+        "high": {
+          "netScore": 44.4,
+          "effort": "high"
+        }
+      }
+    },
+    "gate-one": {
+      "rated": true,
+      "aliases": [],
+      "netScore": 18.5,
+      "byEffort": {
+        "high": {
+          "netScore": 41.5,
+          "effort": "high"
+        },
+        "low": {
+          "netScore": 12.5,
+          "effort": "low"
+        }
+      }
+    },
+    "gate-two-canon": {
+      "rated": true,
+      "aliases": [
+        "gate-two"
+      ],
+      "netScore": 33.3
+    },
+    "gate-three": {
+      "rated": true,
+      "aliases": [],
+      "netScore": 22.2
+    },
+    "gate-four": {
+      "rated": true,
+      "aliases": [],
+      "netScore": 28.4
+    },
+    "gate-five": {
+      "rated": false,
+      "aliases": []
+    },
+    "gate-six": {
+      "rated": true,
+      "aliases": [],
+      "netScore": 19.9
+    },
+    "gate-seven": {
+      "rated": true,
+      "aliases": [],
+      "netScore": 20
+    },
+    "gate-nine": {
+      "rated": true,
+      "aliases": [],
+      "netScore": 50.5
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "allowedRoutes": [
+    "t1/prod-one",
+    "t1/prod-two",
+    "t1/prod-three#high",
+    "t1/prod-four",
+    "t1/prod-five",
+    "t1/prod-six",
+    "t1/prod-seven",
+    "t1/prod-nine",
+    "t1/prod-strat",
+    "t1/gate-one",
+    "opencode/gate-three-free",
+    "t1/gate-four",
+    "t1/gate-five",
+    "t1/gate-six",
+    "t1/gate-seven",
+    "t1/gate-eight",
+    "t1/gate-eleven",
+    "t1/gate-twelve"
+  ],
+  "orchestratorRoutes": [
+    "t1/gate-two[1m]"
+  ]
+}

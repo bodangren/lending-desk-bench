@@ -1,60 +1,58 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 
 /**
- * Red tests for plan task 1.1: the merge and the rates of page B (spec D16,
- * FR-1 to FR-3, FR-7). They call the planned tool `harness/model-guide/real-work.ts`.
+ * Red tests for plan task 4.1e: the merge, the ranks, the marks, the AA
+ * net score, the allowed list, and the top block of the Data source block
+ * (spec D16 "Data source (PM 2026-11-17)" rules, Tool details). Groups DS4
+ * to DS13 (test-strategy 13.4). The cases build the page through
+ * `harness/model-guide/preview.sh` and read the `data-mg` hooks of section
+ * 13.6.
  *
- * Pinned command-line interface:
- *   cd harness && npx tsx model-guide/real-work.ts --input <export.json> --out <folder>
- * Exit 0: writes `<folder>/real-work.json`. Exit 2: writes no output file, and
- * prints one line `input-check: <check>` on stdout. The checks are sha256,
- * size, schema, run-sum, and manifest.
+ * Pinned CLI (spec Q-S1):
+ *   bash harness/model-guide/preview.sh --manifest <MANIFEST-date.txt> \
+ *     [--preview <folder>]
+ * Usage line: `usage: preview.sh --manifest <file> [--preview <folder>]`
  *
- * Pinned output file `real-work.json`, schema `model-guide-real-work/1`:
- *   source: { file, sha256, generated_on }
- *   coverage: { runs, first_run_date, last_run_date, share_known_route,
- *               share_with_result, paired_duplicates_left_out,
- *               unknown_runs, other_runs }  (the input keys plus the last two)
- *   producer: Row[] and checker: Row[]  (sorted by rank, then model)
- *   work_types: { <work type>: WorkRow[] }  (sorted by rank, then model)
- * Row: { model, routes[], runs, pass, fail, error, no_result,
- *        blocking_findings, pass_rate{value,n}, blocking_rate{value,n},
- *        ratings{<axis>:{mean,n}}, rater_checks{n,agreed,agreement},
- *        trend{value,n}, few_runs, can_pick, rank }
- * WorkRow: { model, routes[], runs, pass, fail, pass_rate{value,n},
- *            few_runs, can_pick, rank }
- *
- * Rules that the output must hold:
- * - The model key removes `#<variant>` and `[1m]` only. The provider stays.
- * - pass_rate = pass / (pass + fail + error), rounded to 4 decimals.
- *   Its n is pass + fail + error. no_result stays out of the rate.
- * - blocking_rate = blocking_findings / (pass + fail + error), rounded to 3
- *   decimals. Its n is pass + fail + error.
- * - producer rank: higher pass_rate, then lower blocking_rate.
- *   checker rank: higher pass_rate only. A rating never moves a rank.
- * - few_runs is true when pass_rate.n < 10. A few_runs row ranks below every
- *   row without the mark. can_pick is pass_rate.n >= 10.
- * - work-type pass_rate = pass / (pass + fail), rounded to 4 decimals. Its n
- *   is pass + fail. A work-type row sums the rows of its model and work type.
- *   The rank is the higher rate, then the higher n. A few_runs work row cannot
- *   pick.
- * - trend = pass / (pass + fail + error) over the last 4 ISO weeks present in
- *   `weekly`, with n = pass + fail + error of those weeks.
- * - `unknown` and `other` are in no table. The coverage block holds their runs.
- *
- * The fixture is synthetic. No test reads the real export, the real docs/, a
- * model, the network, or the private folder.
+ * The tests pin no field of `real-work.json` (the spec names none). Every
+ * computed value comes from a `data-mg` hook and a labeled parse (A3).
+ * The fixture is `fixtures/page-b/` with the sentinel date 2026-10-20. No
+ * test reads a real dated file, the real docs/, a model, the network, or
+ * the private folder.
  */
 
 const HARNESS = resolve(import.meta.dirname, "..");
-const TOOL = join(HARNESS, "model-guide", "real-work.ts");
-const FIXTURE = join(import.meta.dirname, "fixtures", "real-work-mini.json");
-const MINI = JSON.parse(readFileSync(FIXTURE, "utf8"));
+const SOURCE = join(HARNESS, "model-guide");
+const PREVIEW_SH = join(SOURCE, "preview.sh");
+const PAGE_B = join(import.meta.dirname, "fixtures", "page-b");
+
+const DATE = "2026-10-20";
+const OUTCOMES_NAME = `ra-outcomes-${DATE}.json`;
+const AA_NAME = `aa-reliability-${DATE}.json`;
+const ALLOWED_NAME = `allowed-routes-${DATE}.json`;
+const MANIFEST_NAME = `MANIFEST-${DATE}.txt`;
+
+const INDEX_HTML = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Overview</title>
+<link rel="stylesheet" href="./assets/css/site.css"></head>
+<body><nav><a href="./methodology.html">Methodology</a>
+<a href="./results.html">Results</a><a href="./models/">Models</a>
+<a href="./tracks.html">Tracks</a></nav>
+<main><h1>Overview</h1></main></body></html>
+`;
 
 const roots: string[] = [];
 afterAll(() => {
@@ -68,275 +66,572 @@ function tempDir(tag: string): string {
 }
 
 function requireProduction(): void {
-  if (!existsSync(TOOL)) throw new Error(`production file is missing: ${TOOL}`);
+  if (!existsSync(PREVIEW_SH)) throw new Error(`production file is missing: ${PREVIEW_SH}`);
 }
 
 function env(): NodeJS.ProcessEnv {
-  const copy = { ...process.env, NO_COLOR: "1" };
+  const copy = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
   delete copy.BENCH_TRACK;
   return copy;
 }
 
-function runTool(input: string, out: string) {
+function sha256(file: string): string {
+  return createHash("sha256").update(readFileSync(file)).digest("hex");
+}
+
+function manifestLine(file: string, name: string): string {
+  const data = readFileSync(file);
+  return `${createHash("sha256").update(data).digest("hex")}  ${data.length}  ${name}`;
+}
+
+/** A temp repo with docs/, the model-guide folder, and the staged page B
+ * fixture set. `mutate` may replace the staged outcomes array or the
+ * allowed list before the manifest is written. */
+function repoFixture(
+  tag: string,
+  mutate?: { outcomes?: (rows: any[]) => void; allowed?: (doc: any) => void },
+): string {
   requireProduction();
-  return spawnSync("npx", ["tsx", "model-guide/real-work.ts", "--input", input, "--out", out], {
-    cwd: HARNESS, env: env(), encoding: "utf8", timeout: 60_000,
-  });
+  const root = tempDir(`repo-${tag}`);
+  mkdirSync(join(root, "harness"), { recursive: true });
+  cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
+  mkdirSync(join(root, "docs", "assets", "css"), { recursive: true });
+  mkdirSync(join(root, "docs", "assets", "data"), { recursive: true });
+  writeFileSync(join(root, "docs", "index.html"), INDEX_HTML);
+  writeFileSync(join(root, "docs", "assets", "css", "site.css"), "body { font-family: sans-serif; }\n");
+  writeFileSync(
+    join(root, "docs", "assets", "data", "benchmark.json"),
+    '{"schema":1,"rows":[]}\n',
+  );
+  mkdirSync(join(root, "measure", "tracks", "model_guide"), { recursive: true });
+
+  const staged = join(root, "fixture-b");
+  mkdirSync(staged, { recursive: true });
+
+  let outcomesText = readFileSync(join(PAGE_B, OUTCOMES_NAME), "utf8");
+  if (mutate?.outcomes) {
+    const rows = JSON.parse(outcomesText);
+    mutate.outcomes(rows);
+    outcomesText = JSON.stringify(rows, null, 2) + "\n";
+  }
+  writeFileSync(join(staged, OUTCOMES_NAME), outcomesText);
+
+  writeFileSync(join(staged, AA_NAME), readFileSync(join(PAGE_B, AA_NAME)));
+
+  let allowedText = readFileSync(join(PAGE_B, ALLOWED_NAME), "utf8");
+  if (mutate?.allowed) {
+    const doc = JSON.parse(allowedText);
+    mutate.allowed(doc);
+    allowedText = JSON.stringify(doc, null, 2) + "\n";
+  }
+  writeFileSync(join(staged, ALLOWED_NAME), allowedText);
+
+  writeFileSync(
+    join(staged, MANIFEST_NAME),
+    [
+      manifestLine(join(staged, OUTCOMES_NAME), OUTCOMES_NAME),
+      manifestLine(join(staged, AA_NAME), AA_NAME),
+      manifestLine(join(staged, ALLOWED_NAME), ALLOWED_NAME),
+      "",
+    ].join("\n"),
+  );
+  symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
+  return root;
 }
 
-function outputOf(result: ReturnType<typeof runTool>, out: string) {
+function manifestOf(root: string): string {
+  return join(root, "fixture-b", MANIFEST_NAME);
+}
+
+function runPreview(root: string) {
+  return spawnSync(
+    "bash",
+    [join(root, "harness", "model-guide", "preview.sh"), "--manifest", manifestOf(root)],
+    { cwd: root, env: env(), encoding: "utf8", timeout: 120_000 },
+  );
+}
+
+function previewFolder(root: string): string {
+  return join(root, ".tmp", "model-guide-preview");
+}
+
+function buildPage(root: string): string {
+  const result = runPreview(root);
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-  const file = join(out, "real-work.json");
-  expect(existsSync(file), `missing output file: ${file}`).toBe(true);
-  return JSON.parse(readFileSync(file, "utf8"));
+  const file = join(previewFolder(root), "real-work.html");
+  expect(existsSync(file), `missing ${file}`).toBe(true);
+  return readFileSync(file, "utf8");
 }
 
-function runOk(input: string, tag: string) {
-  const out = tempDir(tag);
-  return outputOf(runTool(input, out), out);
+let baseCache: string | null = null;
+/** The page built once from the base fixture and shared by DS4 to DS13. */
+function basePage(): string {
+  if (!baseCache) baseCache = buildPage(repoFixture("base"));
+  return baseCache;
 }
 
-/** A copy of the fixture with a mutation and a manifest that matches the copy. */
-function stagedCopy(mutate: (doc: any) => void): string {
-  const dir = tempDir("staged");
-  const doc = JSON.parse(readFileSync(FIXTURE, "utf8"));
-  mutate(doc);
-  const file = join(dir, "real-work-mini.json");
-  const text = JSON.stringify(doc);
-  writeFileSync(file, text);
-  const sha = createHash("sha256").update(readFileSync(file)).digest("hex");
-  writeFileSync(join(dir, "MANIFEST.txt"), [
-    `sha256: ${sha}`,
-    `size: ${Buffer.byteLength(text)}`,
-    "source-commit: none (synthetic fixture, 2026-11-14)",
-    `row-counts: weekly_rows ${doc.weekly.length}, all_time_rows ${doc.all_time.length}`,
-    "",
-  ].join("\n"));
-  return file;
+let namedCache: string | null = null;
+/** The page with two keys renamed to a named and an unnamed model key. */
+function namedKeyPage(): string {
+  if (!namedCache) {
+    namedCache = buildPage(
+      repoFixture("names", {
+        outcomes: (rows) => {
+          for (const row of rows) {
+            if (row.route === "t1/prod-five") row.route = "kimi-code-plan-cn/kimi-for-coding";
+            if (row.route === "t1/prod-six") row.route = "opencode-go/synthetic-unknown";
+          }
+        },
+      }),
+    );
+  }
+  return namedCache;
 }
 
-function row(rows: any[], model: string) {
-  const found = rows.find((item) => item.model === model);
-  expect(found, `row ${model}`).toBeDefined();
-  return found;
+function unescape(value: string): string {
+  return value
+    .replaceAll("&quot;", '"')
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&#x27;", "'")
+    .replaceAll("&amp;", "&");
 }
 
-function order(rows: any[]): string[] {
-  return rows.map((item) => item.model);
+function sectionOf(page: string, heading: string): string {
+  const at = page.indexOf(`<h2>${heading}</h2>`);
+  expect(at, `the page holds a ${heading} heading`).toBeGreaterThan(-1);
+  const end = page.indexOf("</section>", at);
+  expect(end, `the ${heading} section closes`).toBeGreaterThan(at);
+  return page.slice(at, end);
 }
 
-describe("page B merge and rates", () => {
-  it("merges the three route variants of one model by sums and lists the routes", () => {
-    const page = runOk(FIXTURE, "m1");
-    const merged = row(page.producer, "x/m");
-    expect([...merged.routes].sort()).toEqual(["x/m", "x/m#high", "x/m[1m]#high"]);
-    expect(merged.runs).toBe(38);
-    expect(merged.pass).toBe(18);
-    expect(merged.fail).toBe(12);
-    expect(merged.error).toBe(0);
-    expect(merged.no_result).toBe(8);
-    expect(merged.blocking_findings).toBe(3);
-  });
+interface Row {
+  key: string;
+  rank: string | null;
+  cells: string[];
+  html: string;
+}
 
-  it("keeps the same model on two providers as two rows", () => {
-    const page = runOk(FIXTURE, "m1b");
-    expect(order(page.producer)).toContain("x/m");
-    expect(order(page.producer)).toContain("y/m");
-    expect(page.producer.filter((item: any) => item.model === "x/m")).toHaveLength(1);
-    expect(row(page.producer, "x/m").routes).not.toContain("y/m");
-    expect(row(page.producer, "y/m").routes).toEqual(["y/m"]);
-  });
-
-  it("keeps unknown and other out of the ranks and unmerged", () => {
-    const page = runOk(FIXTURE, "m1c");
-    expect(order(page.producer)).not.toContain("unknown");
-    expect(order(page.producer)).not.toContain("other");
-    expect(order(page.checker)).not.toContain("unknown");
-    expect(order(page.checker)).not.toContain("other");
-    expect(page.producer.some((item: any) => item.routes.includes("unknown"))).toBe(false);
-    expect(page.coverage.unknown_runs).toBe(120);
-    expect(page.coverage.other_runs).toBe(3);
-  });
-
-  it("computes the pass rate without no_result and keeps no_result in its own field", () => {
-    const page = runOk(FIXTURE, "m2");
-    const producer = row(page.producer, "y/m");
-    expect(producer.pass_rate.value).toBeCloseTo(0.6, 6);
-    expect(producer.pass_rate.n).toBe(40);
-    expect(producer.no_result).toBe(4);
-    expect(producer.pass_rate.value).not.toBeCloseTo(24 / 44, 6);
-    expect(producer.blocking_rate.value).toBeCloseTo(0, 6);
-    expect(producer.blocking_rate.n).toBe(40);
-  });
-
-  it("carries the run count beside each rate", () => {
-    const page = runOk(FIXTURE, "m2b");
-    expect(row(page.producer, "x/m").pass_rate.n).toBe(30);
-    expect(row(page.producer, "x/m").blocking_rate.n).toBe(30);
-    expect(row(page.producer, "z/m").pass_rate.n).toBe(15);
-    expect(row(page.checker, "x/m").pass_rate.n).toBe(24);
-    expect(row(page.checker, "y/m").blocking_rate.n).toBe(20);
-  });
-
-  it("ranks producers by pass rate then by the lower blocking rate", () => {
-    const page = runOk(FIXTURE, "m3");
-    expect(order(page.producer)).toEqual(["z/m", "y/m", "x/m", "w/m"]);
-    expect(page.producer.map((item: any) => item.rank)).toEqual([1, 2, 3, 4]);
-    expect(row(page.producer, "y/m").pass_rate.value)
-      .toBeCloseTo(row(page.producer, "x/m").pass_rate.value, 6);
-    expect(row(page.producer, "y/m").blocking_rate.value)
-      .toBeLessThan(row(page.producer, "x/m").blocking_rate.value);
-  });
-
-  it("ranks checkers by pass rate only", () => {
-    const page = runOk(FIXTURE, "m3b");
-    expect(order(page.checker)).toEqual(["x/m", "y/m"]);
-    expect(row(page.checker, "x/m").pass_rate.value)
-      .toBeGreaterThan(row(page.checker, "y/m").pass_rate.value);
-    expect(row(page.checker, "x/m").blocking_rate.value)
-      .toBeGreaterThan(row(page.checker, "y/m").blocking_rate.value);
-  });
-
-  it("does not move a rank when a rating changes alone", () => {
-    const before = runOk(FIXTURE, "m3c");
-    const staged = stagedCopy((doc) => {
-      const ym = doc.all_time.find((item: any) => item.route === "y/m" && item.role === "green");
-      ym.ratings = { correctness: { mean: 5, n: 10 } };
-      const zm = doc.all_time.find((item: any) => item.route === "z/m");
-      zm.ratings = { correctness: { mean: 1, n: 10 } };
+function rowsOf(region: string): Row[] {
+  const out: Row[] = [];
+  for (const m of region.matchAll(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/g)) {
+    const raw = m[1].match(/\bdata-model-key="([^"]*)"/)?.[1];
+    if (raw === undefined) continue;
+    out.push({
+      key: unescape(raw),
+      rank: m[1].match(/\bdata-rank="([^"]*)"/)?.[1] ?? null,
+      cells: [...m[2].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map((cell) =>
+        cell[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+      ),
+      html: m[0],
     });
-    const after = runOk(staged, "m3d");
-    expect(order(after.producer)).toEqual(order(before.producer));
-    expect(after.producer.map((item: any) => item.rank))
-      .toEqual(before.producer.map((item: any) => item.rank));
+  }
+  return out;
+}
+
+function headersOf(table: string): string[] {
+  return [...table.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map((m) =>
+    m[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+  );
+}
+
+function defaultTableOf(section: string, label: string): string {
+  const m = section.match(/<table\b[^>]*data-mg="default-table"[^>]*>[\s\S]*?<\/table>/);
+  expect(m, `${label} holds a default table`).toBeTruthy();
+  return m![0];
+}
+
+function fewGroupRows(section: string, label: string): Row[] {
+  const at = section.indexOf('data-mg="too-few"');
+  expect(at, `${section ? label : label} holds a Too few tasks group`).toBeGreaterThan(-1);
+  const open = section.lastIndexOf("<details", at);
+  const end = section.indexOf("</details>", at);
+  expect(end, "the too-few group closes").toBeGreaterThan(at);
+  return rowsOf(section.slice(open < 0 ? at : open, end));
+}
+
+function rowIn(region: string, key: string): Row {
+  const found = rowsOf(region).find((row) => row.key === key);
+  expect(found, `row ${key} exists`).toBeDefined();
+  return found!;
+}
+
+function rankedKeys(section: string): string[] {
+  return rowsOf(section)
+    .filter((row) => row.rank !== null)
+    .map((row) => row.key);
+}
+
+function hookText(region: string, hook: string): string {
+  const at = region.indexOf(`data-mg="${hook}"`);
+  expect(at, `the page holds data-mg="${hook}"`).toBeGreaterThan(-1);
+  const open = region.lastIndexOf("<", at);
+  const tag = region.slice(open, region.indexOf(">", at) + 1);
+  const tagName = tag.match(/^<([a-zA-Z][\w-]*)/)?.[1];
+  expect(tagName, `the ${hook} hook sits on an element`).toBeTruthy();
+  const bodyStart = region.indexOf(">", at) + 1;
+  const close = region.indexOf(`</${tagName}>`, bodyStart);
+  expect(close, `the ${hook} element closes`).toBeGreaterThan(bodyStart);
+  return region.slice(bodyStart, close).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function hookElementRegion(region: string, hook: string): string {
+  const at = region.indexOf(`data-mg="${hook}"`);
+  expect(at, `the section holds data-mg="${hook}"`).toBeGreaterThan(-1);
+  const open = region.lastIndexOf("<", at);
+  const tag = region.slice(open, region.indexOf(">", at) + 1);
+  const tagName = tag.match(/^<([a-zA-Z][\w-]*)/)?.[1];
+  expect(tagName, `the ${hook} hook sits on an element`).toBeTruthy();
+  const close = region.indexOf(`</${tagName}>`, at);
+  expect(close, `the ${hook} element closes`).toBeGreaterThan(at);
+  return region.slice(open, close + tagName!.length + 3);
+}
+
+function moreColumnsRegion(section: string): string {
+  return hookElementRegion(section, "more-columns");
+}
+
+function footerRegion(page: string): string {
+  const at = page.indexOf('data-mg="about-footer"');
+  expect(at, "the page holds the About this data footer").toBeGreaterThan(-1);
+  const end = page.indexOf("</body>", at);
+  expect(end, "the footer closes").toBeGreaterThan(at);
+  return page.slice(at, end);
+}
+
+function footerNumber(page: string, hook: string): number {
+  const text = hookText(footerRegion(page), hook);
+  const match = text.match(/^(\d+)$/);
+  expect(match, `${hook} holds one integer, got "${text}"`).toBeTruthy();
+  return Number(match![1]);
+}
+
+interface Pick {
+  role: string | null;
+  key: string | null;
+  name: string | null;
+  rate: string | null;
+  count: string | null;
+  none: boolean;
+}
+
+function picksOf(page: string): Pick[] {
+  const at = page.indexOf('data-mg="top-block"');
+  expect(at, "the page holds the top block").toBeGreaterThan(-1);
+  const end = page.indexOf("</section>", at);
+  const region = page.slice(at, end > at ? end : page.length);
+  const out: Pick[] = [];
+  const re = /<([a-zA-Z][\w-]*)\b([^>]*\bdata-mg="pick"[^>]*)>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(region)) !== null) {
+    const tag = m[1];
+    const close = region.indexOf(`</${tag}>`, re.lastIndex);
+    expect(close, "a pick line closes").toBeGreaterThan(re.lastIndex);
+    const inner = region.slice(re.lastIndex, close);
+    out.push({
+      role: m[2].match(/\bdata-role="([^"]*)"/)?.[1] ?? null,
+      key: m[2].match(/\bdata-model-key="([^"]*)"/)?.[1] ?? null,
+      name: inner.includes('data-mg="pick-name"') ? hookText(inner, "pick-name") : null,
+      rate: inner.includes('data-mg="pick-rate"') ? hookText(inner, "pick-rate") : null,
+      count: inner.includes('data-mg="pick-count"') ? hookText(inner, "pick-count") : null,
+      none: inner.includes('data-mg="pick-none"'),
+    });
+    re.lastIndex = close + tag.length + 3;
+  }
+  return out;
+}
+
+const PRODUCER_HEADERS = [
+  "Model",
+  "Tasks",
+  "First-round accept %",
+  "Rework",
+  "Cleanup %",
+  "Tokens per accepted task",
+];
+const CHECKER_HEADERS = ["Model", "Runs", "Pass %", "Findings per run", "Escapes", "Net score"];
+
+function producerSection(page: string): string {
+  return sectionOf(page, "Producer roles");
+}
+
+function checkerSection(page: string): string {
+  return sectionOf(page, "Checker roles");
+}
+
+describe("DS4 to DS13: the page built from the page B fixture", () => {
+  it("DS4: a route note strips at the first space-paren, so keys stay whole and the footer route count is 30", () => {
+    const page = basePage();
+    const keys = rowsOf(`${producerSection(page)}${checkerSection(page)}`).map((row) => row.key);
+    expect(keys.length, "the page holds data rows").toBeGreaterThan(0);
+    for (const key of keys) {
+      expect(key, `model key ${key} holds no note text`).not.toContain(" (");
+      expect(key, `model key ${key} holds no ra-quota text`).not.toContain("ra-quota");
+    }
+    expect(keys, "the note-carrying route merges into t1/prod-two").toContain("t1/prod-two");
+    const row = rowIn(producerSection(page), "t1/prod-two");
+    expect(row.cells[1], "t1/prod-two shows the summed tasks").toBe("20");
+    expect(footerNumber(page, "footer-routes"), "the stripped route count").toBe(30);
   });
 
-  it("shows the mean of each axis with its n", () => {
-    const page = runOk(FIXTURE, "m3e");
-    const merged = row(page.producer, "x/m");
-    expect(merged.ratings.correctness.mean).toBeCloseTo(4.7, 6);
-    expect(merged.ratings.correctness.n).toBe(10);
-    expect(merged.ratings.other.mean).toBeCloseTo(4.4, 6);
-    expect(merged.ratings.other.n).toBe(5);
+  it("DS5: the producer merge weights the first-round rate by accepted and the averages by their own denominators", () => {
+    const page = basePage();
+    const row = rowIn(producerSection(page), "t1/prod-one");
+    expect(row.cells.length, "the producer row holds six cells").toBe(PRODUCER_HEADERS.length);
+    expect(row.cells[1]).toBe("23");
+    expect(row.cells[2], "first-round accept % = sum(rate*accepted)/sum(accepted) = 10/15").toBe("67 %");
+    expect(row.cells[3], "rework = sum(rework*tasks)/sum(tasks) = 30/20").toBe("1.5");
+    expect(row.cells[4], "cleanup = sum(cleanup*tasks)/sum(tasks) = 2/15").toBe("13 %");
+    expect(row.cells[5], "tokens = sum(tokens*accepted)/sum(accepted) = 3400000/10").toBe("340k");
   });
 
-  it("computes a work-type rate as pass over pass plus fail with the result count", () => {
-    const page = runOk(FIXTURE, "m4");
-    const work = row(page.work_types["app code"], "x/m");
-    expect(work.pass_rate.value).toBeCloseTo(0.8, 6);
-    expect(work.pass_rate.n).toBe(20);
-    expect(work.runs).toBe(22);
-    expect(work.pass).toBe(16);
-    expect(work.fail).toBe(4);
+  it("DS6: a null cell leaves the average denominator, an empty average shows a dash, and a zero-task row has no row", () => {
+    const page = basePage();
+    const seven = rowIn(producerSection(page), "t1/prod-seven");
+    expect(seven.cells[1]).toBe("9");
+    for (const index of [2, 3, 4, 5]) {
+      expect(seven.cells[index], `cell ${index} of t1/prod-seven shows a dash`).toBe("–");
+    }
+    const pageText = page;
+    expect(pageText.includes('data-model-key="t1/prod-zero"'), "t1/prod-zero has no row").toBe(
+      false,
+    );
   });
 
-  it("sums the role rows of a route and work type", () => {
-    const page = runOk(FIXTURE, "m4b");
-    const work = row(page.work_types["app code"], "x/m");
-    expect(work.routes.sort()).toEqual(["x/m", "x/m#high", "x/m[1m]#high"]);
-    expect(work.runs).toBe(10 + 8 + 4);
-    expect(work.pass).toBe(8 + 6 + 2);
-    expect(work.fail).toBe(2 + 2 + 0);
+  it("DS7: the checker merge sums decided, not runs", () => {
+    const page = basePage();
+    const one = rowIn(checkerSection(page), "t1/gate-one");
+    expect(one.cells.length, "the checker row holds six cells").toBe(CHECKER_HEADERS.length);
+    expect(one.cells[1], "runs = sum(decided) = 6+4+5").toBe("15");
+    expect(one.cells[2], "pass % = 12/15").toBe("80 %");
+    expect(one.cells[3], "findings per run = 16/15").toBe("1.07");
+    expect(one.cells[4], "escapes = 1+0+2").toBe("3");
+    const two = rowIn(checkerSection(page), "t1/gate-two");
+    expect(two.cells[1], "runs = 7+5+5").toBe("17");
+    expect(two.cells[2], "pass % = 16/17").toBe("94 %");
+    expect(two.cells[3], "findings per run = 6/17").toBe("0.35");
+    expect(two.cells[4]).toBe("0");
+    const twelve = fewGroupRows(checkerSection(page), "checker").find(
+      (row) => row.key === "t1/gate-twelve",
+    );
+    expect(twelve, "t1/gate-twelve sits in the too-few group").toBeDefined();
+    expect(twelve!.cells[1], "runs = decided = 3, not runs = 9").toBe("3");
+    expect(twelve!.rank, "a 3-run row has no rank").toBeNull();
   });
 
-  it("ranks work types by rate then by the higher result count", () => {
-    const page = runOk(FIXTURE, "m4c");
-    expect(order(page.work_types["app code"])).toEqual(["x/m", "y/m", "z/m", "w/m"]);
-    expect(order(page.work_types["tooling"])).toEqual(["y/m", "x/m"]);
-    expect(order(page.work_types["print books"])).toEqual(["y/m", "x/m"]);
-    expect(row(page.work_types["app code"], "x/m").pass_rate.n).toBe(20);
-    expect(row(page.work_types["app code"], "y/m").pass_rate.n).toBe(10);
+  it("DS8: the minimum is 5 tasks or runs, and a row with 5 tasks and no rate sits in Too few tasks", () => {
+    const page = basePage();
+    const producer = producerSection(page);
+    const checker = checkerSection(page);
+    expect(rowIn(producer, "t1/prod-six").rank, "5 tasks rank").not.toBeNull();
+    expect(rowIn(checker, "t1/gate-seven").rank, "5 runs rank").not.toBeNull();
+    const five = fewGroupRows(producer, "producer").find((row) => row.key === "t1/prod-five");
+    expect(five, "t1/prod-five (4 tasks) sits in Too few tasks").toBeDefined();
+    expect(five!.rank, "4 tasks get no rank").toBeNull();
+    const eleven = fewGroupRows(checker, "checker").find((row) => row.key === "t1/gate-eleven");
+    expect(eleven, "t1/gate-eleven (4 runs) sits in Too few tasks").toBeDefined();
+    expect(eleven!.rank, "4 runs get no rank").toBeNull();
+    const seven = fewGroupRows(producer, "producer").find((row) => row.key === "t1/prod-seven");
+    expect(seven, "t1/prod-seven (9 tasks, no rate) sits in Too few tasks").toBeDefined();
+    expect(seven!.rank, "a row with no rate gets no rank").toBeNull();
   });
 
-  it("uses only runs, pass, and fail of a work type", () => {
-    const before = runOk(FIXTURE, "m4d");
-    const staged = stagedCopy((doc) => {
-      for (const item of doc.all_time) {
-        if (item.work_types?.["app code"]) item.work_types["app code"].blocking_findings = 99;
-        if (item.work_types?.["app code"]) item.work_types["app code"].error = 7;
+  it("DS9: the producer rank orders by accept %, then lower rework, then more tasks", () => {
+    const page = basePage();
+    const section = producerSection(page);
+    expect(rankedKeys(section)).toEqual([
+      "t1/prod-eight",
+      "t1/prod-strat",
+      "t1/prod-one",
+      "t2/prod-two",
+      "t1/prod-four",
+      "t1/prod-three",
+      "t1/prod-two",
+      "t1/prod-nine",
+      "t1/prod-six",
+    ]);
+    const ranks = rowsOf(section)
+      .filter((row) => row.rank !== null)
+      .map((row) => Number(row.rank));
+    expect(ranks, "ranks run 1 to n in order").toEqual(ranks.map((_, index) => index + 1));
+  });
+
+  it("DS10: the checker rank orders by pass %, then fewer escapes, then more runs, and the route unknown never shows", () => {
+    const page = basePage();
+    const section = checkerSection(page);
+    expect(rankedKeys(section)).toEqual([
+      "t1/gate-five",
+      "t1/gate-nine",
+      "t1/gate-eight",
+      "t1/gate-six",
+      "opencode/gate-three-free",
+      "t1/gate-seven",
+      "t1/gate-four",
+      "t1/gate-two",
+      "t1/gate-one",
+      't1/"><img src=x onerror=alert(1)>',
+      "t1/__proto__",
+    ]);
+    const ranks = rowsOf(section)
+      .filter((row) => row.rank !== null)
+      .map((row) => Number(row.rank));
+    expect(ranks, "ranks run 1 to n in order").toEqual(ranks.map((_, index) => index + 1));
+    expect(
+      section.includes('data-model-key="unknown"'),
+      "the route unknown shows no row (spec Q-S10)",
+    ).toBe(false);
+    expect(
+      producerSection(page).includes('data-model-key="unknown"'),
+      "the route unknown shows no producer row",
+    ).toBe(false);
+  });
+
+  it("DS11: the AA net score uses byEffort of the busiest variant, an alias, and the -free suffix", () => {
+    const page = basePage();
+    const checker = checkerSection(page);
+    expect(rowIn(checker, "t1/gate-one").cells[5], "byEffort.high of the most counted runs").toBe(
+      "41.5",
+    );
+    expect(rowIn(checker, "t1/gate-two").cells[5], "the alias gate-two-canon").toBe("33.3");
+    expect(rowIn(checker, "opencode/gate-three-free").cells[5], "the -free suffix strips").toBe(
+      "22.2",
+    );
+    expect(rowIn(checker, "t1/gate-five").cells[5], "rated false").toBe("not rated");
+    expect(rowIn(checker, "t1/gate-eight").cells[5], "no AA entry").toBe("not rated");
+
+    const more = moreColumnsRegion(producerSection(page));
+    const prodOne = rowsOf(more).find((row) => row.key === "t1/prod-one");
+    expect(prodOne, "the more-columns view holds t1/prod-one").toBeDefined();
+    expect(
+      prodOne!.cells.some((cell) => Number(cell) === 44.4),
+      `the AA net score of t1/prod-one is 44.4, got ${JSON.stringify(prodOne!.cells)}`,
+    ).toBe(true);
+  });
+
+  it("DS12: the marks not-for-verdicts and not-allowed sit on the model rows as attributes", () => {
+    const page = basePage();
+    const checker = checkerSection(page);
+    for (const key of ["t1/gate-five", "t1/gate-eight", "t1/gate-six"]) {
+      expect(
+        rowIn(checker, key).html,
+        `${key} carries data-mark="not-for-verdicts"`,
+      ).toContain('data-mark="not-for-verdicts"');
+    }
+    expect(
+      rowIn(checker, "t1/gate-seven").html,
+      "a net score of exactly 20 is not marked",
+    ).not.toContain("data-mark=");
+    expect(rowIn(checker, "t1/gate-nine").html, "a not-allowed model is marked").toContain(
+      'data-mark="not-allowed"',
+    );
+    for (const key of ["t1/gate-one", "t1/gate-two"]) {
+      expect(rowIn(checker, key).html, `${key} carries no mark`).not.toContain("data-mark=");
+    }
+    const producer = producerSection(page);
+    expect(rowIn(producer, "t1/prod-eight").html, "not allowed").toContain(
+      'data-mark="not-allowed"',
+    );
+    expect(rowIn(producer, "t2/prod-two").html, "not allowed on the other provider").toContain(
+      'data-mark="not-allowed"',
+    );
+    expect(rowIn(producer, "t1/prod-one").html, "an allowed rated model carries no mark").not.toContain(
+      "data-mark=",
+    );
+    // Spec Q-S8: the mark "not for verdicts" shows on both tables, because
+    // rule 6 marks the model.
+    expect(
+      rowIn(producer, "t1/prod-five").html,
+      "an unrated producer row carries not-for-verdicts (spec Q-S8)",
+    ).toContain('data-mark="not-for-verdicts"');
+  });
+
+  it("DS13: the top block gives one line per role in the given order, with the filters of rule 8", () => {
+    const page = basePage();
+    const at = page.indexOf('data-mg="top-block"');
+    const firstTable = page.indexOf("<table");
+    expect(firstTable, "the page holds a table").toBeGreaterThan(-1);
+    expect(at, "the top block sits before the first table").toBeLessThan(firstTable);
+
+    const expected: Array<
+      [string, string | null, number | null, number | null]
+    > = [
+      ["red", "t1/prod-one", 100, 5],
+      ["green", "t1/prod-one", 62, 15],
+      ["coder", null, null, null],
+      ["review-a", "t1/gate-two", 100, 7],
+      ["review-b", null, null, null],
+      ["review-c", "t1/gate-seven", 100, 5],
+      ["adversarial", null, null, null],
+      ["acceptance", null, null, null],
+      ["phase-acceptance", "t1/gate-two", 80, 5],
+      ["final-acceptance", null, null, null],
+    ];
+    const picks = picksOf(page);
+    expect(picks, "one line for each of the ten roles").toHaveLength(expected.length);
+    expect(
+      picks.map((pick) => pick.role),
+      "the lines run in the order of spec rule 8",
+    ).toEqual(expected.map(([role]) => role));
+    for (const [role, key, rate, count] of expected) {
+      const pick = picks.find((item) => item.role === role)!;
+      if (key === null) {
+        expect(pick.none, `${role} says no pick yet`).toBe(true);
+        expect(pick.key, `${role} carries no data-model-key`).toBeNull();
+        continue;
       }
-    });
-    const after = runOk(staged, "m4e");
-    expect(row(after.work_types["app code"], "x/m").pass_rate.value).toBeCloseTo(0.8, 6);
-    expect(order(after.work_types["app code"])).toEqual(order(before.work_types["app code"]));
+      expect(pick.none, `${role} has a pick`).toBe(false);
+      expect(pick.key, `${role} pick`).toBe(key);
+      expect(pick.name, `${role} name`).toBeTruthy();
+      const rateText = pick.rate ?? "";
+      expect(rateText, `${role} rate "${rateText}" is a whole percent`).toMatch(/^\d+\s*%$/);
+      expect(Number(rateText.match(/^(\d+)/)![1]), `${role} rate`).toBe(rate!);
+      const countText = pick.count ?? "";
+      expect(countText, `${role} count "${countText}" is an integer`).toMatch(/^\d+$/);
+      expect(Number(countText), `${role} count`).toBe(count!);
+    }
+  });
+});
+
+describe("DS17: plain names and the routes of a row", () => {
+  it("DS17: two providers with one plain name stay two rows, the default table has no Routes column, and the routes sit in More columns", () => {
+    const page = basePage();
+    const section = producerSection(page);
+    const headers = headersOf(defaultTableOf(section, "producer"));
+    expect(headers, "the default table keeps the pinned columns").toEqual(PRODUCER_HEADERS);
+    expect(headers, "no Routes column in the default view").not.toContain("Routes");
+    const one = rowIn(section, "t1/prod-two");
+    const two = rowIn(section, "t2/prod-two");
+    expect(one.cells[0], "t1/prod-two shows its plain name").toContain("prod-two");
+    expect(two.cells[0], "t2/prod-two shows the same plain name").toContain("prod-two");
+    expect(one.key).not.toBe(two.key);
+
+    const more = section.match(
+      /<details\b[^>]*data-mg="more-columns"[^>]*>[\s\S]*?<\/details>/,
+    );
+    expect(more, "the producer More columns toggle exists").toBeTruthy();
+    expect(headersOf(more![0]), "the more-columns view lists the routes").toContain("Routes");
+    const routesOfKey = rowsOf(more![0]).find((row) => row.key === "t1/prod-two");
+    expect(routesOfKey, "the more-columns view holds t1/prod-two").toBeDefined();
+    expect(
+      routesOfKey!.cells.some((cell) => cell.includes("t1/prod-two")),
+      `the routes of t1/prod-two reach the row: ${JSON.stringify(routesOfKey!.cells)}`,
+    ).toBe(true);
   });
 
-  it("marks 9 results with few runs and 10 without it, and puts the mark below", () => {
-    const staged = stagedCopy((doc) => {
-      const z = doc.all_time.find((item: any) => item.route === "z/m" && item.role === "coder");
-      z.pass = 7;
-      z.fail = 3;
-      z.error = 0;
-      z.no_result = 8;
-    });
-    const page = runOk(staged, "m5");
-    expect(row(page.producer, "w/m").pass_rate.n).toBe(9);
-    expect(row(page.producer, "w/m").few_runs).toBe(true);
-    expect(row(page.producer, "w/m").can_pick).toBe(false);
-    expect(row(page.producer, "z/m").pass_rate.n).toBe(10);
-    expect(row(page.producer, "z/m").few_runs).toBe(false);
-    expect(row(page.producer, "z/m").can_pick).toBe(true);
-    expect(order(page.producer).indexOf("w/m"))
-      .toBeGreaterThan(order(page.producer).indexOf("z/m"));
-  });
-
-  it("marks a work type under 10 results and makes it unable to pick", () => {
-    const page = runOk(FIXTURE, "m5b");
-    const z = row(page.work_types["docs and ops"], "z/m");
-    expect(z.pass_rate.n).toBe(5);
-    expect(z.pass_rate.value).toBeCloseTo(1, 6);
-    expect(z.few_runs).toBe(true);
-    expect(z.can_pick).toBe(false);
-    expect(row(page.work_types["docs and ops"], "y/m").few_runs).toBe(false);
-    expect(row(page.work_types["docs and ops"], "y/m").can_pick).toBe(true);
-  });
-
-  it("gives no rate to a work type with no result", () => {
-    const page = runOk(FIXTURE, "m5c");
-    const work = row(page.work_types["print books"], "x/m");
-    expect(work.pass_rate.value).toBeNull();
-    expect(work.pass_rate.n).toBe(0);
-    expect(work.few_runs).toBe(true);
-    expect(work.can_pick).toBe(false);
-  });
-
-  it("shows no agreement value when rater_checks.n is 0", () => {
-    const page = runOk(FIXTURE, "m5d");
-    expect(row(page.producer, "y/m").rater_checks.n).toBe(0);
-    expect(row(page.producer, "y/m").rater_checks.agreement).toBeNull();
-    expect(row(page.producer, "x/m").rater_checks.n).toBe(5);
-    expect(row(page.producer, "x/m").rater_checks.agreed).toBe(4);
-    expect(row(page.producer, "x/m").rater_checks.agreement).toBeCloseTo(0.8, 6);
-  });
-
-  it("puts the coverage numbers in the coverage block", () => {
-    const page = runOk(FIXTURE, "m6");
-    expect(page.coverage).toMatchObject(MINI.coverage);
-    expect(page.coverage.runs).toBe(285);
-    expect(page.coverage.first_run_date).toBe("2026-09-28");
-    expect(page.coverage.last_run_date).toBe("2026-11-08");
-    expect(page.coverage.share_known_route).toBeCloseTo(0.568, 6);
-    expect(page.coverage.share_with_result).toBeCloseTo(0.842, 6);
-    expect(page.coverage.paired_duplicates_left_out).toBe(4);
-    expect(page.coverage.unknown_runs).toBe(120);
-    expect(page.coverage.other_runs).toBe(3);
-  });
-
-  it("computes the 4-week pass rate from the last 4 ISO weeks", () => {
-    const page = runOk(FIXTURE, "m6b");
-    const trend = row(page.producer, "x/m").trend;
-    expect(trend.n).toBe(18);
-    expect(trend.value).toBeCloseTo(13 / 18, 6);
-    expect(trend.value).not.toBeCloseTo(0.6, 6);
-  });
-
-  it("keeps a work type carried only by the unknown route with an empty row list", () => {
-    const staged = stagedCopy((doc) => {
-      const unknown = doc.all_time.find((item: any) => item.route === "unknown");
-      unknown.work_types = { translation: { runs: 5, pass: 3, fail: 2 } };
-    });
-    const page = runOk(staged, "pa1-1-data");
-    expect(Object.keys(page.work_types)).toContain("translation");
-    expect(page.work_types["translation"]).toEqual([]);
+  it("DS17: a key in model-names.json shows its plain name and an unnamed key drops the plan prefix", () => {
+    const page = namedKeyPage();
+    const cells = [...page.matchAll(/<td\b[^>]*data-mg="model-name"[^>]*>([\s\S]*?)<\/td>/g)].map(
+      (m) => m[1].replace(/<[^>]*>/g, "").trim(),
+    );
+    expect(cells.length, "the rows hold model-name cells").toBeGreaterThan(0);
+    const named = cells.find((cell) => cell.includes("Kimi For Coding"));
+    expect(named, "the named key shows its name from model-names.json").toBeDefined();
+    expect(named, "the model cell holds no raw key").not.toContain("kimi-code-plan-cn/kimi-for-coding");
+    const unnamed = cells.find((cell) => cell.includes("synthetic-unknown"));
+    expect(unnamed, "an unnamed key shows the key without its plan prefix").toBeDefined();
+    expect(
+      unnamed,
+      "the model cell holds no provider prefix",
+    ).not.toContain("opencode-go/synthetic-unknown");
   });
 });

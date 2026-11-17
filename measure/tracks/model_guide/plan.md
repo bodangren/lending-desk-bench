@@ -1102,7 +1102,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     overflow, a wide table scrolls inside its own box with a visible hint, and
     the page is about 3 screens long at 1280 px.
   - Evidence: commit c8041cc. `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot` gives `Tests  106 passed (106)`, exit 0.
-- [ ] 4.1e Red. Page B data source (spec D16 "Data source (PM 2026-11-17)").
+- [~] 4.1e Red. Page B data source (spec D16 "Data source (PM 2026-11-17)").
   Write synthetic fixtures under `harness/model-guide-tests/fixtures/` (an
   outcomes file, an AA file, an allowed list, and a MANIFEST) and change only
   test files.
