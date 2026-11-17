@@ -1039,7 +1039,7 @@ Verify (Phase 3): spec acceptance 9 holds.
 
 Spec D12 to D15, D22, FR-11, FR-14, FR-15.
 
-- [~] 4.1 Red. The review runner. Write
+- [x] 4e00ec2 4.1 Red. The review runner. Write
   `harness/model-guide-tests/review-run.test.ts` and the fake `opencode`
   under `harness/model-guide-tests/fixtures/fakes/`. Touch no other file.
   Each test copies the scripts that it runs into a temp repo, the same as
@@ -1082,6 +1082,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     After the run, `ps -eo pid,args | grep '[f]ake-opencode'` prints no
     line. Reuse decision: reuse the two untracked files of the stopped run,
     with the escape fix. See `measure/runs/model_guide/red-4.1.txt`.
+  - The Red commits are 4e00ec2 (the test file and the fake) and f274fa8
+    (the tool-path seam). The Red fix 8e111d2 makes R4 and R6 follow spec
+    D12 to D15. Green 4.7 makes the file pass at 303f73d, so this row is
+    `[x]`.
 - [x] 2cb7efd 4.1a Red. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Change
   the layout group G1 to G4 of `harness/model-guide-tests/preview-gate.test.ts`
   and add the cases of the new rules. Touch no other file.
@@ -1338,7 +1342,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - The preview on the real files exits 0 and `git status --short docs/`
     prints nothing. The `page-check` browser proof stays with the
     orchestrator.
-- [x] dce6401 4.2 Red. The quota sources. Write
+- [x] 60e0da3 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
   It commits no fixture. Touch no other file (test-strategy section 6.2,
@@ -1414,6 +1418,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     file holds the cap 1 for a provider with no source and the cap 3 for a
     provider with a source. After the run,
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+  - Fix commit 82a0e6a: `quota.ts` starts its work with `void main()` and no
+    top-level await. The review runner copies the tool into a temp repo that
+    holds no `type: module` package.json, and tsx then compiles the file as
+    CJS. The file still passes `Tests  15 passed (15)`.
 - [x] 7bf337a 4.5 Green. Write `harness/model-guide/routes.json`. Touch no
   test file and no other file.
   - The file holds the routes of spec D12 with the quota source of spec D15.
@@ -1431,8 +1439,9 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     (test-strategy 2.4). At this HEAD `quota.test.ts` passes with
     `Tests  15 passed (15)`; `review-run.test.ts` and
     `credential-provider.test.ts` still fail for the missing modules of
-    tasks 4.6 and 4.7. All three Phase 4 files pass at the 4.7 HEAD, which
-    the 4.7 row and `green-4.4-4.7.log` record.
+    tasks 4.6 and 4.7. `credential-provider.test.ts` passes at the 4.6
+    HEAD (11 passed). `review-run.test.ts` passes at the 4.7 HEAD with
+    `Tests  23 passed (23)`, so the three Phase 4 files pass at 303f73d.
 - [x] 4d8f87c 4.6 Green. Write `harness/model-guide/provider-credential.sh`.
   Touch no test file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native`
@@ -1446,13 +1455,25 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     value into any file, and it never prints one. `bash -n` on the script
     exits 0. After the run, `ps -eo pid,args | grep '[f]ake-opencode'`
     prints no line.
-- [ ] 4.7 Green. Write `harness/model-guide/review-run.sh`. Touch no test
-  file and no other file. Do not change `harness/opencode-credential.sh` or
-  `harness/opencode-host.sh`.
+- [x] 303f73d 4.7 Green. Write `harness/model-guide/review-run.sh`. Touch no
+  test file and no other file. Do not change `harness/opencode-credential.sh`
+  or `harness/opencode-host.sh`.
   - Verify: `cd harness && npx vitest run model-guide-tests/review-run.test.ts --configLoader native`
     passes.
-  - Verify: `git diff --stat ea36fae -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests`
-    prints nothing.
+  - Verify: `git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests`
+    prints nothing (orchestrator 2026-11-18). The earlier value `ea36fae` is
+    not an ancestor of `main`.
+  - Evidence: run on 2026-11-18 with `cd harness && npx vitest run
+    model-guide-tests/review-run.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot`. Exit 0, `Tests  23 passed (23)`. The
+    runner reads the quota before each pass and before each diff, stops at
+    a window of 80 %, retries a transport error twice, marks a Go route with
+    the region error `region-blocked`, and deletes a raw output that holds a
+    credential value. The Red fix of task 4.1 is 8e111d2: the case R4 file
+    no longer holds the unknown route, and R6 starts at 69.9 %. The
+    `phase_base_sha` check above prints nothing. `bash -n` on the runner
+    exits 0. After the run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
 - [~] 4.8a Red. The review page. Add the page cases V1 to V9 of
   `measure/tracks/model_guide/test-strategy.md` section 4.4 to
   `harness/model-guide-tests/preview-gate.test.ts`. Touch no other file.
