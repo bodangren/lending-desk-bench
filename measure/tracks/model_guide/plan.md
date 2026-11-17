@@ -1370,7 +1370,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     After the recorded run, `ps -eo pid,args | grep '[f]ake-opencode'`
     prints no line, no `vitest` or `quota` process stays alive, and no
     `mg-quota` temp folder stays under `/tmp`.
-- [ ] 4.3 Red. The provider credential. Write
+- [~] 4.3 Red. The provider credential. Write
   `harness/model-guide-tests/credential-provider.test.ts` and no other file.
   Normal cases:
   - `provider-credential.sh seed <p>` imports only the entry of provider
@@ -1380,6 +1380,25 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - A provider with no entry gives exit 2 and no value.
   - Verify: the file fails on the Phase 3 code. Record the failed test names
     in `measure/runs/model_guide/red-4.3.txt`.
+  - Evidence: run on 2026-11-18 with `cd harness && npx vitest run
+    model-guide-tests/credential-provider.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot`. Exit 1, `Tests  11 failed (11)`. First
+    failure line: `FAIL model-guide-tests/credential-provider.test.ts > C1
+    the seed > C1 seeds exactly the entry of the provider into the job
+    store and prints no value`. The message is `the provider credential
+    script is missing:
+    /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/provider-credential.sh`.
+    All 11 cases fail on the missing script, so no case passes at the phase
+    base (A4). The file holds no tool-path seam: `SCRIPT_SOURCE` is a fixed
+    join. Authoring check: the same bytes of the test file were copied to a
+    temp harness under `/tmp/opencode/val/harness` with a throwaway
+    prototype of `provider-credential.sh`, and the run gave `Tests  11
+    passed (11)`, so the temp fake, the temp repo, and every assertion
+    work. One prototype defect was fixed first: the script must resolve
+    `harness/opencode-host.sh` two levels up from
+    `harness/model-guide/`. After the recorded run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` prints no line, and no
+    `mg-cred` temp folder stays under `/tmp`.
 - [ ] 4.4 Green. Write `harness/model-guide/quota.ts`. Touch no test file
   and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native`
