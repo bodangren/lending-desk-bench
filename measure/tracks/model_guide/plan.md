@@ -1372,7 +1372,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `mg-quota` temp folder stays under `/tmp`.
   - The Red commits are 60e0da3 (the test file) and dce6401 (the tool-path
     seam). Green 4.4 makes the file pass at 9c1dfa6, so this row is `[x]`.
-- [~] 4.3 Red. The provider credential. Write
+- [x] f7e7da4 4.3 Red. The provider credential. Write
   `harness/model-guide-tests/credential-provider.test.ts` and no other file.
   Normal cases:
   - `provider-credential.sh seed <p>` imports only the entry of provider
@@ -1401,6 +1401,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `harness/model-guide/`. After the recorded run,
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line, and no
     `mg-cred` temp folder stays under `/tmp`.
+  - Green 4.6 makes the file pass at 4d8f87c, so this row is `[x]`.
 - [x] 9c1dfa6 4.4 Green. Write `harness/model-guide/quota.ts`. Touch no test
   file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native`
@@ -1432,10 +1433,19 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `credential-provider.test.ts` still fail for the missing modules of
     tasks 4.6 and 4.7. All three Phase 4 files pass at the 4.7 HEAD, which
     the 4.7 row and `green-4.4-4.7.log` record.
-- [ ] 4.6 Green. Write `harness/model-guide/provider-credential.sh`. Touch no
-  test file and no other file.
+- [x] 4d8f87c 4.6 Green. Write `harness/model-guide/provider-credential.sh`.
+  Touch no test file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native`
     passes.
+  - Evidence: run on 2026-11-18 with `cd harness && npx vitest run
+    model-guide-tests/credential-provider.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot`. Exit 0, `Tests  11 passed (11)`. `seed`
+    imports exactly the entry of the provider and prints no value, and
+    `scan-values` prints the access value then the orgID. A provider with no
+    entry gives exit 2 with one named line. The helper writes no credential
+    value into any file, and it never prints one. `bash -n` on the script
+    exits 0. After the run, `ps -eo pid,args | grep '[f]ake-opencode'`
+    prints no line.
 - [ ] 4.7 Green. Write `harness/model-guide/review-run.sh`. Touch no test
   file and no other file. Do not change `harness/opencode-credential.sh` or
   `harness/opencode-host.sh`.
