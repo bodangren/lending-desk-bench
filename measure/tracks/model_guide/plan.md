@@ -1102,24 +1102,6 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     overflow, a wide table scrolls inside its own box with a visible hint, and
     the page is about 3 screens long at 1280 px.
   - Evidence: commit c8041cc. `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot` gives `Tests  106 passed (106)`, exit 0.
-- [ ] 4.1c Red. Blockers per run and print-audit names (spec D16, D17, PM
-  2026-11-17). Change only
-  `harness/model-guide-tests/preview-gate.test.ts`.
-  - The default columns of the producer table and the checker table are
-    Model, Runs, Pass %, Blockers per run, Rating, Trend.
-  - A blockers-per-run cell is a number with two decimals, equal to the
-    `blocking_rate` value of the JSON (rounded), with no % sign. An empty
-    value is a dash.
-  - The print-audit block shows plain names and no raw route key.
-  - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
-    fails only on these cases. Record the failed test names in
-    `measure/runs/model_guide/red-4.1c.txt`.
-- [ ] 4.1d Green. Change only `harness/model-guide/preview.sh` and, if
-  needed, `harness/model-guide/pages/real-work.html` and
-  `harness/model-guide/data/model-names.json`. Make no design choice beyond
-  the two changes.
-  - Verify: the test file of 4.1c passes.
-  - Verify with `page-check` at 390, 980, and 1280 px: no page overflow.
 - [ ] 4.1e Red. Page B data source (spec D16 "Data source (PM 2026-11-17)").
   Write synthetic fixtures under `harness/model-guide-tests/fixtures/` (an
   outcomes file, an AA file, an allowed list, and a MANIFEST) and change only
@@ -1130,12 +1112,16 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     and a `-free` key; the mark "not for verdicts"; the mark "not allowed"
     and no pick for it; one top line per role in the given order; no
     work-type section; no producer pass rate; and the footer values.
+  - The print-audit block shows plain names and no raw route key (spec D17,
+    PM 2026-11-17).
   - Verify: the new cases fail and the other cases pass. Record the failed
     test names in `measure/runs/model_guide/red-4.1e.txt`.
 - [ ] 4.1f Green. Implement the data source in `harness/model-guide/` (the
   page B tool, `preview.sh`, the template, `model-names.json`) and add the
   three dated data files and the MANIFEST. Make no design choice beyond the
   spec; send any open choice to the orchestrator.
+  - The print-audit block of `preview.sh` shows the plain names of spec D17
+    and no raw route key.
   - Verify: the 4.1e test file passes, `leak-check.ts` passes, and
     `page-check` at 390, 980, and 1280 px shows no page overflow.
 - [ ] 4.2 Red. The quota sources. Write
@@ -1312,10 +1298,10 @@ Spec D19, D21.
   - Verify: `docs/real-work.html`, `docs/review.html`, the three data files,
     and the table in `docs/index.html` match the approved SHA-256 values.
 - [ ] 5.4 The first weekly update. When the PM sends the next export, run
-  `harness/model-guide/update.sh <file>`.
+  `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>`.
   - Verify: `docs/assets/data/real-work.json` and
-    `docs/assets/data/model-guide.json` show the new `generated_on` and the
-    new SHA-256, and the commit holds only those two paths.
+    `docs/assets/data/model-guide.json` show the new read date and the three
+    file SHA-256 values, and the commit holds only those two paths.
 
 Verify (Phase 5): the site shows page B, the review page, and the overview
 table, and each table shows its evidence date.

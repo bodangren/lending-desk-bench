@@ -486,7 +486,10 @@ questions".
       only to remove duplicates. A group never gets one verdict for all of
       its members.
     - **The judges.** Two judges read each finding. The first judge is the
-      route `claude-code/claude-opus-5-5[1m]#high`. The second judge is "no
+      route of `ra-quota pick` for a decision role (AA net score 20 or more:
+      `claude-code/claude-sonnet-5-5#max` or
+      `opencode-go/muse-spark-1.3-contributor#high`), never an Opus subagent
+      (owner routing rule, PM 2026-11-17). The second judge is "no
       ready route" (the D11 fallback): each disputed finding is left out.
       Reason: every route outside the ranked families of D12 with an
       AA-Omniscience net score of 20 or more is not allowed (Kimi, GPT) or
@@ -961,14 +964,16 @@ questions".
       | Row | First source | Second source |
       |---|---|---|
       | Code review | track A rank (worst of N) | page B checker table |
-      | App code | page B producer table | build base line |
+      | App code | none | build base line |
       | Test writing | page B producer table, role `red` | tests track base line |
-      | Docs and ops | page B producer table | none |
-      | Print-book audit | page B producer table | print-audit data point |
-      | Tooling | page B producer table | none |
+      | Docs and ops | none | none |
+      | Print-book audit | none | print-audit data point |
+      | Tooling | none | none |
 
-      The new export has no work-type split, so no row uses a work-type table
-      (PM 2026-11-17).
+      The new export has no work-type split, so the rows App code, Docs and
+      ops, Print-book audit, and Tooling have no page B source. Each of those
+      rows uses its second source. A row with no second source says "no pick
+      yet" (PM 2026-11-17).
     - **Pick rule.** The first source picks the first and the second choice
       from its rank. A model qualifies with 5 tasks or more in a producer
       row, with 5 runs or more in a gate row, or with a complete rank (track
@@ -996,9 +1001,10 @@ questions".
       the pick as a check. The `domain_trust` link follows D3.
 
 19. **D19. The weekly update.** The PM sends a new export each week. The
-    orchestrator runs `harness/model-guide/update.sh` on the new dated data
-    files. The script runs the input check of the Data source block of D16,
-    writes `real-work.json`, and writes `model-guide.json` (PM 2026-11-17).
+    orchestrator runs `harness/model-guide/update.sh <path of
+    MANIFEST-<date>.txt>`. The tool reads the three dated files next to that
+    manifest. It runs the input check of the Data source block of D16, writes
+    `real-work.json`, and writes `model-guide.json` (PM 2026-11-17).
     Before the approval (D21), it writes into the preview folder. After the
     approval, it writes into `docs/assets/data/`, and it commits the two data
     files with explicit paths. The standing push rule then applies. A table
@@ -1282,11 +1288,12 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
   the probe decides. An unreachable route waits for a PM rule and has no
   rank.
 - **Q9 (D5, D11).** Is Opus the fixture author and the first judge?
-  Default: yes. The PM changed the fixture author on 2026-11-16 (D5). The
-  first judge of D11 stays as written. Opus is not in the ranked list. The
-  adjudication is blind to the route name. The second judge is "no ready
-  route" (the D11 fallback). An allowed route with a net score of 20 or more
-  then replaces it (OD5, PM 2026-11-17).
+  Default: no (PM 2026-11-17). The PM changed the fixture author on
+  2026-11-16 (D5). The first judge is the route of `ra-quota pick` for a
+  decision role, never an Opus subagent (D11, PM 2026-11-17). Opus is not in
+  the ranked list. The adjudication is blind to the route name. The second
+  judge is "no ready route" (the D11 fallback). An allowed route with a net
+  score of 20 or more then replaces it (OD5, PM 2026-11-17).
 - **Q10 (D13).** Are the weights 5, 2, and 1, the false-claim cost of 2, and
   N = 3 correct? Default: yes, for the first set.
 
@@ -1311,12 +1318,12 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
 - **R2. The providers see the seeded diffs.** A provider can keep a prompt.
   The keys stay private, but a later model can know a seeded diff. A new set
   id each quarter limits this.
-- **R3. Same-family bias.** The first judge is in the same family as the
-  Sonnet route. The PM changed the fixture author on 2026-11-16 (D5). The
-  second judge is "no ready route" (the D11 fallback) (D11, PM 2026-11-17).
-  Only the
-  verdicts that both judges agree on count. The blind adjudication and the
-  fixed operator catalog limit the bias. Q9 covers it.
+- **R3. Same-family bias.** The first judge can be in the same family as the
+  Sonnet route (D11, PM 2026-11-17). The PM changed the fixture author on
+  2026-11-16 (D5). The second judge is "no ready route" (the D11 fallback)
+  (D11, PM 2026-11-17). Only the verdicts that both judges agree on count.
+  The blind adjudication and the fixed operator catalog limit the bias. Q9
+  covers it.
 - **R4. Unmatched true findings.** A good model can find real defects. D11
   makes them neutral, not false claims. An `unclear` verdict marks the pass
   `provisional` and leaves the rank of the route unchanged. A disputed
