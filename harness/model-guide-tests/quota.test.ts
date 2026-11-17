@@ -58,8 +58,9 @@ import { describe, expect, it } from "vitest";
 
 const HARNESS = resolve(import.meta.dirname, "..");
 
-/** The module under test. The seam lets a prototype run outside the repo. */
-const QUOTA_SOURCE = process.env.MG_QUOTA_PROTO ?? join(HARNESS, "model-guide", "quota.ts");
+/** The module under test. Its path is fixed, so a gate cannot point the
+ * test at a file outside the repository. */
+const QUOTA_SOURCE = join(HARNESS, "model-guide", "quota.ts");
 const TSX_BIN = join(HARNESS, "node_modules", ".bin", "tsx");
 
 /** The providers of spec D15 with a source, and the id of that source. */
