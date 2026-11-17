@@ -1141,17 +1141,16 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     for one reason: the tool still speaks the old `--input` or `--export`
     usage line. No case fails with a TypeError, a ReferenceError, a missing
     helper, or a syntax error. The guards FX1, FX3, and LG1 to LG3 pass.
-  - Follow-up fix commit f205c80 (Mid Red, 2026-11-17): the DS2 missing-input
-    case keeps the manifest line of the omitted file (`manifestKeep`), T6 uses
-    `2026-11-28` true and `2026-11-27` false, and P2ADV-14 uses dates from the
-    export date `2026-10-20`. Three cases stay open for a second Mid Red
-    retry: the three DS1 flipped-byte cases and the DS2 integrity-first case
-    stage a manifest that matches the flipped bytes, so `sha256` cannot be
-    refused; `update.test.ts` `updateRepo` returns the outcomes path instead
-    of `MANIFEST_COPY`; and `adversarial.test.ts` "H refuses a negative result
-    count" names the retired route `x/m#high`. The detail is in
-    `measure/runs/model_guide/green-4.1f.log`.
-- [~] 4.1f Green. Implement the data source in `harness/model-guide/` (the
+  - Follow-up fixes (Mid Red, 2026-11-17): f205c80 keeps the manifest line of
+    the omitted file in DS2, moves T6 to `2026-11-28` true and `2026-11-27`
+    false, and bases P2ADV-14 on the export date `2026-10-20`; d94f549 stages
+    the fixture MANIFEST line for the three DS1 flipped-byte cases and the DS2
+    integrity-first case, returns `MANIFEST_COPY` from `updateRepo`, and names
+    a page-b route in the adversarial negative-count case. The file then exits
+    0 with `Tests  20 passed (20)`, `update.test.ts` with
+    `Tests  9 passed (9)`, and `adversarial.test.ts` with
+    `Tests  47 passed (47)`.
+- [x] d25b556 4.1f Green. Implement the data source in `harness/model-guide/` (the
   page B tool `real-work.ts`, `preview.sh`, the template, `model-names.json`,
   `guide.ts`, and `update.sh`) (orchestrator 2026-11-17) and add the three
   dated data files and the MANIFEST. Make no design choice beyond the spec;
@@ -1161,30 +1160,18 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: the 4.1e test file passes, the `guide.ts` and `update.sh` test
     files of 4.1e pass (orchestrator 2026-11-17), `leak-check.ts` passes,
     and `page-check` at 390, 980, and 1280 px shows no page overflow.
-  - Evidence (2026-11-17, one file at a time from `harness/`, each with
-    `--configLoader native --maxWorkers=1 --reporter=dot`):
+  - Evidence (2026-11-18, one file at a time from `harness/`, each with
+    `--configLoader native --maxWorkers=1 --reporter=dot`, at HEAD d94f549):
+    - `input-check.test.ts` exits 0 with `Tests  20 passed (20)`.
     - `real-work.test.ts` exits 0 with `Tests  12 passed (12)`.
     - `preview-gate.test.ts` exits 0 with `Tests  99 passed (99)`; the F20
       root-path case passes with the new parser.
     - `guide.test.ts` exits 0 with `Tests  15 passed (15)`.
+    - `update.test.ts` exits 0 with `Tests  9 passed (9)`.
+    - `leak-check.test.ts` exits 0 with `Tests  22 passed (22)`.
+    - `adversarial.test.ts` exits 0 with `Tests  47 passed (47)`.
     - `adversarial-p2.test.ts` exits 0 with `Tests  13 passed (13)`.
     - `adversarial-p3.test.ts` exits 0 with `Tests  34 passed (34)`.
-    - `leak-check.test.ts` exits 0 with `Tests  22 passed (22)`.
-    - `input-check.test.ts` exits 1 with `Tests  4 failed | 16 passed (20)`.
-      The four cases are the three DS1 flipped-byte cases and the DS2
-      integrity-first case. Each stages a MANIFEST line that matches the
-      flipped bytes, so no tool can refuse it with `sha256`. A second Mid Red
-      retry stages the fixture's MANIFEST line for those cases.
-    - `update.test.ts` exits 1 with `Tests  3 failed | 6 passed (9)`. The
-      failures are U1, U2, and P2B2-2. `updateRepo` returns
-      `join(root, EXPORT_COPY)`, the outcomes file, and not
-      `join(root, MANIFEST_COPY)`. With the manifest path the run exits 0 and
-      writes both preview files; a run with one extra byte gives exit 2 and
-      `input-check: sha256 ra-outcomes-2026-10-20.json` on stderr.
-    - `adversarial.test.ts` exits 1 with `Tests  1 failed | 46 passed (47)`.
-      The case "H refuses a negative result count, or keeps every pass rate
-      inside 0 to 1" names the retired route `x/m#high`, so `find` gives
-      `undefined` inside the test before any tool runs.
   - Commits: 4930b32 (real-work.ts), bc96827 (too-few order), a997185
     (preview.sh and the template), 5647f41 (guide.ts), 7a54b85 (update.sh and
     model-names.json), d25b556 (the three data files and the MANIFEST).
@@ -1197,9 +1184,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     boxes, the footer values (rows 217, routes 53, unknown rows 6, share
     2.8 %, dates 2026-11-17), no work-type hook, and no raw route key in the
     print-audit block.
-  - The task stays `[~]`: the Green gate needs the three files above at exit
-    0, and their remaining failures are Red-side. The `page-check` browser
-    proof stays with the orchestrator.
+  - The `page-check` browser proof at 390, 980, and 1280 px stays with the
+    orchestrator (test-strategy 13.9).
 - [ ] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
