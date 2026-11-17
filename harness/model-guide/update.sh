@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # The weekly update of the model guide (spec D19, D21).
 #
-# Usage: update.sh <export file>
+# Usage: update.sh <path of MANIFEST-<date>.txt>
 # Run it with cwd <repo> (FR-5). <repo> is three levels above this script.
+# The manifest is the `MANIFEST-<date>.txt` of spec D16 (Q-S1, Q-S2). The
+# script reads the three dated data files next to it; the date in its name is
+# the read date and the export date (Q-S4).
 #
 # The script runs the input check of real-work.ts first, into a temp folder
 # outside the repo. It then writes real-work.json there, runs guide.ts to
@@ -35,13 +38,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 if [ $# -ne 1 ]; then
-  echo "usage: update.sh <export file>" >&2
+  echo "usage: update.sh <path of MANIFEST-<date>.txt>" >&2
   exit 2
 fi
 
 # Resolve against the caller folder before any cd; use absolute paths only
 # after this point.
-EXPORT_ABS="$(realpath -m -- "$1")"
+MANIFEST_ABS="$(realpath -m -- "$1")"
 PREVIEW_ABS="$ROOT/.tmp/model-guide-preview"
 DATA_ABS="$ROOT/docs/assets/data"
 GUIDE_DATA="$ROOT/harness/model-guide/data"
@@ -76,7 +79,7 @@ trap 'rm -rf "$STAGING"' EXIT
 
 cd "$ROOT/harness"
 set +e
-npx tsx model-guide/real-work.ts --input "$EXPORT_ABS" --out "$STAGING"
+npx tsx model-guide/real-work.ts --manifest "$MANIFEST_ABS" --out "$STAGING"
 STATUS=$?
 set -e
 if [ "$STATUS" -ne 0 ]; then
