@@ -1102,6 +1102,24 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     overflow, a wide table scrolls inside its own box with a visible hint, and
     the page is about 3 screens long at 1280 px.
   - Evidence: commit c8041cc. `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot` gives `Tests  106 passed (106)`, exit 0.
+- [ ] 4.1c Red. Blockers per run and print-audit names (spec D16, D17, PM
+  2026-11-17). Change only
+  `harness/model-guide-tests/preview-gate.test.ts`.
+  - The default columns of the producer table and the checker table are
+    Model, Runs, Pass %, Blockers per run, Rating, Trend.
+  - A blockers-per-run cell is a number with two decimals, equal to the
+    `blocking_rate` value of the JSON (rounded), with no % sign. An empty
+    value is a dash.
+  - The print-audit block shows plain names and no raw route key.
+  - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
+    fails only on these cases. Record the failed test names in
+    `measure/runs/model_guide/red-4.1c.txt`.
+- [ ] 4.1d Green. Change only `harness/model-guide/preview.sh` and, if
+  needed, `harness/model-guide/pages/real-work.html` and
+  `harness/model-guide/data/model-names.json`. Make no design choice beyond
+  the two changes.
+  - Verify: the test file of 4.1c passes.
+  - Verify with `page-check` at 390, 980, and 1280 px: no page overflow.
 - [ ] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.

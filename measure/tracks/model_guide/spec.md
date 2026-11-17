@@ -746,13 +746,15 @@ questions".
         count. Only rows with 10 or more results get a rank number
         (PM P1 2026-11-16).
       - **Blocking column.** The export has no blocking findings for a work
-        type. These tables drop the Blocking % column and the error count
-        (PM P1 2026-11-16).
+        type. These tables drop the Blockers per run column and the error
+        count (PM P1 2026-11-16, PM 2026-11-17).
       - **No data.** A work type with no qualifying row says "no pick yet".
     - **Pass rate.** `pass / (pass + fail + error)`. `no_result` stays out
       of the rate. The page shows it in its own column behind the "More
       columns" toggle (PM P1 2026-11-16).
-    - **Blocking rate.** Blocking findings for each run with a result.
+    - **Blocking rate.** Blocking findings for each run with a result. The
+      column "Blockers per run" shows this value as a number with two
+      decimals, for example 1.64, and never as a percent (PM 2026-11-17).
     - **Rank.** Producer table: the higher pass rate first, then the lower
       blocking rate. Checker table: the higher pass rate first. The checker
       table shows the blocking rate, but the rank does not use it, because a
@@ -791,15 +793,18 @@ questions".
         runs to rank" under their table, with no rank number. They never
         pick.
       - **Default columns.** The default table shows Model, Runs, Pass %,
-        Blocking %, Rating, and Trend, so 6 columns or fewer. A work-type
-        table drops Blocking %, because the data has no blocking findings.
+        Blockers per run, Rating, and Trend, so 6 columns or fewer. A
+        work-type table drops Blockers per run, because the data has no
+        blocking findings (PM 2026-11-17).
         The other columns sit behind a "More columns" toggle: routes, pass,
         fail, error, no result, blocking count, each rating axis with its
         `n`, and the agreement with its `n`.
-      - **Numbers.** A rate shows as a whole % with no decimals. Runs shows
-        the result count, so no "(n=...)" text sits beside a rate. Rating
-        shows one value, the mean of the axis means, with one decimal, of
-        5. An empty value shows a dash ("–"), never a sentence.
+      - **Numbers.** A rate shows as a whole % with no decimals. A
+        blockers-per-run value shows a number with two decimals, for example
+        1.64, and no % sign (PM 2026-11-17). Runs shows the result count, so
+        no "(n=...)" text sits beside a rate. Rating shows one value, the
+        mean of the axis means, with one decimal, of 5. An empty value shows
+        a dash ("–"), never a sentence.
       - **Work-type sections.** Each work type sits in a tab or a collapsed
         section. The page is about 3 screens long at 1280 px.
       - **Footer.** The source line, the coverage block, and the merge
@@ -828,11 +833,17 @@ questions".
       count of 13, the error types with the count of each type, the checklist
       items (0 to 3) of each error with the code and the text of each item,
       the result of each run, the summary, and the bias note. The two results
-      are "k3.1-pro" 11 of 13 blockers and "Sonnet 5.5" 13 of 13 blockers.
+      are "Kimi K3.1 Pro" 11 of 13 blockers and "Claude Sonnet 5.5" 13 of 13
+      blockers, as plain names (PM 2026-11-17).
     - **The page.** The block on page B shows the two results, the error
-      types with their counts, and the bias note. The block holds no book
-      text, no page, and no file name. The block says that the data point is
-      one calibration run, not a rank.
+      types with their counts, and the bias note. The block shows a plain
+      model name for each result, from
+      `harness/model-guide/data/model-names.json` (PM 2026-11-17). The rule
+      is the same as D16: a key with no name shows the key without its plan
+      prefix, and a `#<variant>` suffix of a route maps to the name of its
+      model key. The block holds no raw route key, no book text, no page,
+      and no file name. The block says that the data point is one
+      calibration run, not a rank.
     - **No placeholder.** The block always shows the error types. The line
       "Error types: not yet received." does not exist in this track.
 
@@ -957,8 +968,9 @@ stay out of every rank. The merge joins only the `#<variant>` rows and the
 The producer table ranks by pass rate and then by blocking rate. The checker
 table ranks by pass rate only. A row with fewer than 10 runs with a result
 gets the mark `few runs` and goes into the collapsed group "Too few runs to
-rank". Each rate shows as a whole percent, and the Runs column holds the
-result count. The work-type tables rank by the pass rate of
+rank". Each rate shows as a whole percent, the Blockers per run column shows
+a number with two decimals, and the Runs column holds the result count
+(PM 2026-11-17). The work-type tables rank by the pass rate of
 `pass / (pass + fail)` and then by the result count. A work-type row with
 fewer than 10 results (`pass + fail`) gets the mark `few runs` and cannot
 pick (PM P1 2026-11-16).
@@ -976,8 +988,9 @@ pages.
 
 The block reads `harness/model-guide/data/print-audit-2026-11.json` and shows
 D17. The block always shows the error types with their counts. The block
-shows no placeholder line. The tool that writes the file runs the input check
-of D17 on the hand-off file first.
+shows the plain model names of D17 and no raw route key (PM 2026-11-17). The
+block shows no placeholder line. The tool that writes the file runs the input
+check of D17 on the hand-off file first.
 
 ### FR-6 — The overview table
 
@@ -1100,15 +1113,16 @@ no quota source gets the fixed cap of
 4. Each row shows a plain model name. A route shows in a second line or a
    tooltip, not in a default column. The footer method note states the
    merge. A rate shows as a whole percent, and Runs holds the result count.
-   Rows with fewer than 10 runs with a result carry `few runs` in the
-   collapsed group "Too few runs to rank" and get no rank number. No rank
-   uses a rating (PM P1 2026-11-16).
+   The Blockers per run column shows a number with two decimals, or a dash
+   (PM 2026-11-17). Rows with fewer than 10 runs with a result carry
+   `few runs` in the collapsed group "Too few runs to rank" and get no rank
+   number. No rank uses a rating (PM P1 2026-11-16).
 5. Each work-type table shows the pass rate of `pass / (pass + fail)` as a
    whole percent, and Runs holds the result count. A work-type table drops
-   the Blocking % column. A work-type row sums the role rows. A row with
-   fewer than 10 results carries `few runs` in the collapsed group "Too few
-   runs to rank" and cannot pick. A work type with no qualifying row says
-   "no pick yet" in the top block (PM P1 2026-11-16).
+   the Blockers per run column (PM 2026-11-17). A work-type row sums the role
+   rows. A row with fewer than 10 results carries `few runs` in the collapsed
+   group "Too few runs to rank" and cannot pick. A work type with no
+   qualifying row says "no pick yet" in the top block (PM P1 2026-11-16).
 6. The print-audit block shows 11 of 13 and 13 of 13, the 52 errors, and the
    error types with their counts. The block shows no placeholder line. The
    input check of the print-audit file stops with exit 2 on a wrong SHA-256
@@ -1156,8 +1170,9 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
   `#<variant>` and `[1m]` of one route. The same model on another provider
   stays separate.
 - **Q6 (D17).** Answered on 2026-11-16 (PM). The default is replaced by
-  the binding 2.4a ruling. The page names the full routes:
-  `kimi-code-plan-cn/k3.1-pro` and `claude-code/claude-sonnet-5-5#high`.
+  the binding 2.4a ruling. The PM replaced the route-name rule on
+  2026-11-17: the page shows the plain names "Kimi K3.1 Pro" and
+  "Claude Sonnet 5.5" (D17, PM 2026-11-17).
 - **Q7 (D17).** Answered on 2026-11-14 (OD6). The error types come from the
   hand-off file of OD6. The page always shows them.
 - **Q8 (D14).** Can the Claude route run in an isolated job store? Default:
