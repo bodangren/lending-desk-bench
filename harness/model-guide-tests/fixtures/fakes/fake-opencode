@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# The fake `opencode` of the review runner test (plan task 4.1).
+#
+# The fixture never calls a model, never opens a socket, and never reads the
+# real home folder. It replaces the host binary of `opencode_host_run`
+# (`harness/opencode-host.sh:187`) and of `harness/opencode-credential.sh`
+# (line 47) through `BENCH_OPENCODE_BIN`. The path of this file holds the text
+# `fake-opencode`, so a `ps -eo pid,args` read finds the child of a live call.
+#
+# The spec file `$FAKE_OPENCODE_SPEC` is a JSON file that the test writes:
+#
+#   {
+#     "calls": [
+#       { "exit": 0, "stderr": "", "stdout_bytes": 0, "pad_bytes": 0,
+#         "sleep": 0, "value": "..." }
+#     ],
+#     "auth_export": "[{ ... }]",
+#     "auth_export_exit": 0,
+#     "auth_import_exit": 0
+#   }
+#
+# One entry of `calls` belongs to one model call, and the entries are used in
+# the order of the calls.
+#
+#   exit          the exit code of the call.
+#   stderr        the line the call prints on stderr.
+#   stdout_bytes  the total size of stdout when it is above zero.
+#   pad_bytes     the number of pad bytes printed before the value, used when
+#                 `stdout_bytes` is zero.
+#   sleep         the number of seconds the call waits before it ends.
+#   value         the text the call prints on stdout.
+#
+# The pad bytes come before the value, so a value can sit in the last bytes of
+# a large output. The `auth` calls answer with the `auth_export` text of the
+# spec and use no entry of `calls`.
+#
+# The log file `$FAKE_OPENCODE_LOG` gets one line per call:
+#
+#   argv0=<program path>\targv=<arguments>\tconfig=<job config text>\tjob=<job folder>
+#
+# The config text is the text of the file that `$OPENCODE_CONFIG` names. The
+# file `$FAKE_OPENCODE_PID_FILE` gets one line per call with the pid of the
+# fake, so a test can read the pid of a stopped child after the run.
+set -uo pipefail
+
+SELF_PATH="$0"
+SPEC_FILE="${FAKE_OPENCODE_SPEC:-}"
+LOG_FILE="${FAKE_OPENCODE_LOG:-}"
+PID_FILE="${FAKE_OPENCODE_PID_FILE:-}"
+JOB_FOLDER="${BENCH_OPENCODE_JOB:-}"
+
+DRAIN_PID=""
+SLEEP_PID=""
+
+cleanup() {
+  if [ -n "$SLEEP_PID" ]; then kill "$SLEEP_PID" 2>/dev/null || true; fi
+  if [ -n "$DRAIN_PID" ]; then kill "$DRAIN_PID" 2>/dev/null || true; fi
+}
+on_signal() { exit 143; }
+trap cleanup EXIT
+trap on_signal TERM
+trap on_signal INT
+
+if [ -n "$PID_FILE" ]; then
+  printf '%s\n' "$$" >> "$PID_FILE"
+fi
+
+# The prompt of a call can arrive on stdin. Draining it keeps a writer from
+# seeing a broken pipe. The drain holds no output pipe of the caller.
+if [ ! -t 0 ]; then
+  ( exec cat >/dev/null 2>&1 ) &
+  DRAIN_PID=$!
+fi
+
+CONFIG_TEXT=""
+if [ -n "${OPENCODE_CONFIG:-}" ] && [ -f "${OPENCODE_CONFIG}" ]; then
+  CONFIG_TEXT="$(cat -- "$OPENCODE_CONFIG" 2>/dev/null || true)"
+  CONFIG_TEXT="${CONFIG_TEXT//$'\t'/ }"
+  CONFIG_TEXT="${CONFIG_TEXT//$'\n'/ }"
+fi
+
+ARGV_TEXT="$*"
+
+write_log() {
+  [ -n "$LOG_FILE" ] || return 0
+  printf 'argv0=%s\targv=%s\tconfig=%s\tjob=%s\n' \
+    "$SELF_PATH" "$ARGV_TEXT" "$CONFIG_TEXT" "$JOB_FOLDER" >> "$LOG_FILE"
+}
+
+# The fields of one spec entry, NUL separated, for `mapfile -d ''`.
+# $1 is the mode ("call", "auth_export", or "auth_import"), $2 the index of
+# the model call.
+spec_fields() {
+  node -e '
+const fs = require("node:fs");
+let spec = {};
+try { spec = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch (error) { spec = {}; }
+const mode = process.argv[2];
+const index = Number(process.argv[3] || "0");
+let entry = {};
+if (mode === "call") {
+  const calls = Array.isArray(spec.calls) ? spec.calls : [];
+  entry = calls[index] && typeof calls[index] === "object" ? calls[index] : {};
+} else if (mode === "auth_export") {
+  entry = { exit: spec.auth_export_exit, value: spec.auth_export };
+} else if (mode === "auth_import") {
+  entry = { exit: spec.auth_import_exit, value: "" };
+}
+const num = (value) => (typeof value === "number" && Number.isFinite(value)) ? value : 0;
+const text = (value) => (typeof value === "string") ? value : "";
+const exitCode = num(entry.exit);
+const stderrText = text(entry.stderr);
+const stdoutBytes = num(entry.stdout_bytes);
+const padBytes = num(entry.pad_bytes);
+const sleepSeconds = num(entry.sleep);
+const value = text(entry.value);
+const valueBytes = Buffer.byteLength(value, "utf8");
+let total = stdoutBytes > 0 ? stdoutBytes : valueBytes + padBytes;
+if (total < valueBytes) total = valueBytes;
+const fields = [
+  String(exitCode), stderrText, String(stdoutBytes), String(padBytes),
+  String(sleepSeconds), value, String(total - valueBytes), String(total),
+];
+process.stdout.write(fields.map((field) => field + "\0").join(""));
+' "$SPEC_FILE" "$1" "${2:-0}"
+}
+
+# Reads the fields of one spec entry into the array FIELDS.
+read_fields() {
+  FIELDS=()
+  local work="${SPEC_FILE}.work.$$"
+  mkdir -p "$work" 2>/dev/null || work="${TMPDIR:-/tmp}"
+  if spec_fields "$1" "${2:-0}" > "$work/fields" 2>/dev/null; then
+    mapfile -d '' -t FIELDS < "$work/fields"
+  fi
+  rm -f "$work/fields"
+  rmdir "$work" 2>/dev/null || true
+}
+
+if [ "${1:-}" = "auth" ]; then
+  write_log
+  case "${2:-}" in
+    export)
+      read_fields auth_export 0
+      printf '%s\n' "${FIELDS[5]:-}"
+      exit "${FIELDS[0]:-0}"
+      ;;
+    import)
+      read_fields auth_import 0
+      printf '%s' "${FIELDS[5]:-}"
+      exit "${FIELDS[0]:-0}"
+      ;;
+    *)
+      printf 'fake-opencode: unknown auth subcommand\n' >&2
+      exit 2
+      ;;
+  esac
+fi
+
+write_log
+
+# The index of this model call. The counter sits next to the spec file.
+COUNTER_FILE="${SPEC_FILE}.calls"
+INDEX=0
+if [ -f "$COUNTER_FILE" ]; then
+  INDEX="$(cat "$COUNTER_FILE" 2>/dev/null || printf '0')"
+  case "$INDEX" in ''|*[!0-9]*) INDEX=0 ;; esac
+fi
+printf '%s\n' "$((INDEX + 1))" > "$COUNTER_FILE"
+
+read_fields call "$INDEX"
+EXIT_CODE="${FIELDS[0]:-0}"
+STDERR_TEXT="${FIELDS[1]:-}"
+SLEEP_SECONDS="${FIELDS[4]:-0}"
+VALUE="${FIELDS[5]:-}"
+PAD_LENGTH="${FIELDS[6]:-0}"
+
+if [ "$SLEEP_SECONDS" != "0" ]; then
+  sleep "$SLEEP_SECONDS" >/dev/null 2>&1 &
+  SLEEP_PID=$!
+  wait "$SLEEP_PID" 2>/dev/null || true
+fi
+
+if [ -n "$STDERR_TEXT" ]; then
+  printf '%s\n' "$STDERR_TEXT" >&2
+fi
+
+if [ "$PAD_LENGTH" -gt 0 ] 2>/dev/null; then
+  head -c "$PAD_LENGTH" /dev/zero | tr '\0' 'x'
+fi
+printf '%s' "$VALUE"
+
+exit "$EXIT_CODE"
