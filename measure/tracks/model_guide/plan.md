@@ -1413,14 +1413,25 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     file holds the cap 1 for a provider with no source and the cap 3 for a
     provider with a source. After the run,
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
-- [ ] 4.5 Green. Write `harness/model-guide/routes.json`. Touch no test file
-  and no other file.
+- [x] 7bf337a 4.5 Green. Write `harness/model-guide/routes.json`. Touch no
+  test file and no other file.
   - The file holds the routes of spec D12 with the quota source of spec D15.
     It holds no second-judge route while the D11 fallback holds, and it holds
     the second judge when an allowed route replaces the fallback
     (PM 2026-11-17).
   - The file holds the Hy row of spec D12.
   - Verify: the test files of Phase 4 pass.
+  - Evidence: the file holds the nine rows of spec D12 in order, each with
+    exactly `family`, `route`, `kind`, `quota_provider`, and `quota_source`.
+    The kinds are `plan` and `free` only. The Hy row `opencode/hy4-flash-free`
+    is present with the quota source null. There is no second-judge row,
+    because spec D11 keeps the fallback "no ready route" and no allowed
+    route replaces it yet. The file holds no test of its own
+    (test-strategy 2.4). At this HEAD `quota.test.ts` passes with
+    `Tests  15 passed (15)`; `review-run.test.ts` and
+    `credential-provider.test.ts` still fail for the missing modules of
+    tasks 4.6 and 4.7. All three Phase 4 files pass at the 4.7 HEAD, which
+    the 4.7 row and `green-4.4-4.7.log` record.
 - [ ] 4.6 Green. Write `harness/model-guide/provider-credential.sh`. Touch no
   test file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native`
