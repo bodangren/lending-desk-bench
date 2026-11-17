@@ -1338,7 +1338,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - The preview on the real files exits 0 and `git status --short docs/`
     prints nothing. The `page-check` browser proof stays with the
     orchestrator.
-- [~] 4.2 Red. The quota sources. Write
+- [x] dce6401 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
   It commits no fixture. Touch no other file (test-strategy section 6.2,
@@ -1370,6 +1370,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     After the recorded run, `ps -eo pid,args | grep '[f]ake-opencode'`
     prints no line, no `vitest` or `quota` process stays alive, and no
     `mg-quota` temp folder stays under `/tmp`.
+  - The Red commits are 60e0da3 (the test file) and dce6401 (the tool-path
+    seam). Green 4.4 makes the file pass at 9c1dfa6, so this row is `[x]`.
 - [~] 4.3 Red. The provider credential. Write
   `harness/model-guide-tests/credential-provider.test.ts` and no other file.
   Normal cases:
@@ -1399,10 +1401,18 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `harness/model-guide/`. After the recorded run,
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line, and no
     `mg-cred` temp folder stays under `/tmp`.
-- [ ] 4.4 Green. Write `harness/model-guide/quota.ts`. Touch no test file
-  and no other file.
+- [x] 9c1dfa6 4.4 Green. Write `harness/model-guide/quota.ts`. Touch no test
+  file and no other file.
   - Verify: `cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native`
     passes.
+  - Evidence: run on 2026-11-18 with `cd harness && npx vitest run
+    model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1
+    --reporter=dot`. Exit 0, `Tests  15 passed (15)`. The tool reads
+    `GET /api/quota/<id>` for the four sourced providers, gives `wait` at
+    70 %, and gives `stopped` with one named line for each error case. The
+    file holds the cap 1 for a provider with no source and the cap 3 for a
+    provider with a source. After the run,
+    `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
 - [ ] 4.5 Green. Write `harness/model-guide/routes.json`. Touch no test file
   and no other file.
   - The file holds the routes of spec D12 with the quota source of spec D15.
