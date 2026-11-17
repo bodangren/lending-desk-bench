@@ -28,6 +28,16 @@
 # index.html (links that already exist stay single), and renders
 # real-work.html from the page template, the tool output, and the print-audit
 # data file of spec D17.
+# It renders review.html and review.json from the newest score file under
+# harness/model-guide/data/review-scores/, the public set manifest of that
+# set, and pages/review.html (spec D13, FR-14; plan task 4.8). The page shows
+# the rank, the worst, median, and best pass score, the blocker recall, the
+# false claims, the real defects, and the counts by class and severity. It
+# shows the set counts and the method note. --pilot-gate fail hides every
+# rank and prints one line `preview: pilot gate fail`. A route with fewer than
+# three complete passes shows incomplete and takes no rank. A provisional
+# pass keeps the rank of its route. The page holds no private field and no
+# private path.
 # Page B shows the two tables of spec D16: the producer table with the
 # default columns Model, Tasks, First-round accept %, Rework, Cleanup %, and
 # Tokens per accepted task, and the checker table with Model, Runs, Pass %,
@@ -67,6 +77,7 @@ MANIFEST=""
 PREVIEW_SET=""
 PREVIEW=""
 ODD=0
+PILOT_GATE="pass"
 
 usage() {
   echo "usage: preview.sh --manifest <file> [--preview <folder>]" >&2
@@ -83,6 +94,9 @@ while [ $# -gt 0 ]; do
       [ $# -ge 2 ] || usage
       [ -n "$2" ] || usage
       PREVIEW_SET=1; PREVIEW="$2"; shift 2;;
+    --pilot-gate)
+      [ $# -ge 2 ] || usage
+      PILOT_GATE="$2"; shift 2;;
     *)
       # A token that names no flag of this version: the path refusal below
       # keeps its priority, and the usage line follows when the path is safe.
@@ -115,6 +129,10 @@ case "$PREVIEW_ABS" in
 esac
 
 [ "$ODD" -eq 0 ] || usage
+case "$PILOT_GATE" in
+  pass|fail) ;;
+  *) usage ;;
+esac
 [ -n "$MANIFEST" ] || usage
 MANIFEST_ABS="$(realpath -m -- "$MANIFEST")"
 
@@ -288,6 +306,9 @@ export MODEL_GUIDE_PREVIEW="$PREVIEW_ABS"
 export MODEL_GUIDE_TEMPLATE="$SCRIPT_DIR/pages/real-work.html"
 export MODEL_GUIDE_GUIDE_TEMPLATE="$SCRIPT_DIR/pages/guide-section.html"
 export MODEL_GUIDE_MANIFEST="$MANIFEST_ABS"
+export MODEL_GUIDE_SCORES="$SCORES"
+export MODEL_GUIDE_REVIEW_TEMPLATE="$SCRIPT_DIR/pages/review.html"
+export MODEL_GUIDE_PILOT_GATE="$PILOT_GATE"
 python3 - <<'PY'
 import hashlib
 import html
@@ -822,4 +843,218 @@ for token, value in replacements.items():
 
 with open(os.path.join(preview, "real-work.html"), "w", encoding="utf-8") as handle:
     handle.write(template)
+
+# The review page of task 4.8 (spec D13, FR-14). The set is the newest score
+# file of the preview rule. Its public manifest sits next to the score file
+# under data/sets/.
+SCORES_PATH = os.environ.get("MODEL_GUIDE_SCORES", "")
+REVIEW_TEMPLATE_PATH = os.environ.get("MODEL_GUIDE_REVIEW_TEMPLATE", "")
+PILOT_GATE = os.environ.get("MODEL_GUIDE_PILOT_GATE", "pass")
+
+REVIEW_CLASSES = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"]
+REVIEW_SEVERITIES = ["blocker", "major", "minor"]
+
+
+def pass_total(items, field):
+    """The sum of one field over the passes of a route."""
+    total = 0
+    for item in items:
+        value = item.get(field)
+        if isinstance(value, (int, float)):
+            total += value
+    return int(total)
+
+
+def count_total(items, group, key):
+    """The found and missed counts of one class or severity over the passes."""
+    found = 0
+    missed = 0
+    for item in items:
+        cell = (item.get(group) or {}).get(key) or {}
+        if isinstance(cell.get("found"), (int, float)):
+            found += cell.get("found")
+        if isinstance(cell.get("missed"), (int, float)):
+            missed += cell.get("missed")
+    return int(found), int(missed)
+
+
+def review_counts_table(items, route, group, key_attr, keys, head):
+    """One counts table of a route, with the name, found, and missed cells."""
+    cells = []
+    for name in keys:
+        found, missed = count_total(items, group, name)
+        cells.append(
+            f'<tr data-mg="{key_attr}" data-route="{esc(route)}" '
+            f'data-{head.lower()}="{esc(name)}"><td>{esc(name)}</td>'
+            f'<td class="num">{found}</td><td class="num">{missed}</td></tr>'
+        )
+    return (
+        f'<table class="data" data-mg="review-defaults" data-route="{esc(route)}">'
+        f"<caption>{esc(route)} by {esc(head.lower())}</caption>"
+        f"<thead><tr><th>{esc(head)}</th><th>Found</th><th>Missed</th></tr></thead>"
+        f'<tbody>{"".join(cells)}</tbody></table>'
+    )
+
+
+def review_route_rows(scores, pilot_gate):
+    """The route rows of the review table.
+
+    A complete route with a rank shows the rank and the worst, median, and
+    best score. An incomplete route shows the word incomplete through the
+    dashed cells and takes no rank. A provisional pass keeps the route
+    complete. The false claims and the real defects are sums over the
+    passes.
+    """
+    passes = scores.get("passes") or []
+    by_route = {}
+    for item in passes:
+        by_route.setdefault(str(item.get("route") or ""), []).append(item)
+    rows = []
+    for record in scores.get("routes") or []:
+        route = str(record.get("route") or "")
+        route_passes = by_route.get(route, [])
+        complete = record.get("state") == "complete"
+        rank = record.get("rank")
+        if complete and pilot_gate == "pass" and isinstance(rank, int):
+            rank_cell = str(rank)
+            worst = one_decimal(record.get("worst"))
+            median = one_decimal(record.get("median"))
+            best = one_decimal(record.get("best"))
+            recall = pct(record.get("worst_blocker_recall"))
+        else:
+            rank_cell = DASH
+            worst = DASH
+            median = DASH
+            best = DASH
+            recall = DASH
+        state_mark = "" if complete else ' <span class="mark">incomplete</span>'
+        rows.append(
+            f'<tr data-mg="review-route" data-route="{esc(route)}">'
+            f'<td class="routes">{esc(route)}{state_mark}</td>'
+            f'<td class="num" data-mg="review-rank">{esc(rank_cell)}</td>'
+            f'<td class="num" data-mg="review-worst">{esc(worst)}</td>'
+            f'<td class="num" data-mg="review-median">{esc(median)}</td>'
+            f'<td class="num" data-mg="review-best">{esc(best)}</td>'
+            f'<td class="num" data-mg="review-recall">{esc(recall)}</td>'
+            f'<td class="num" data-mg="review-false-claims">'
+            f'{pass_total(route_passes, "false_claims")}</td>'
+            f'<td class="num" data-mg="review-real-defects">'
+            f'{pass_total(route_passes, "real_defects")}</td>'
+            "</tr>"
+        )
+    return rows
+
+
+def review_pass_items(scores):
+    """One item for each pass of each route, with its state."""
+    items = []
+    for item in scores.get("passes") or []:
+        route = str(item.get("route") or "")
+        state = str(item.get("state") or "")
+        number = integer(item.get("pass"))
+        date = esc(item.get("date") or "")
+        score = one_decimal(item.get("score"))
+        items.append(
+            f'<li data-mg="review-pass" data-route="{esc(route)}" '
+            f'data-state="{esc(state)}"><span class="state">{esc(state)}</span> '
+            f"pass {number}, {date}, score {esc(score)}</li>"
+        )
+    return items
+
+
+def review_set_counts(manifest):
+    """The diff, plant, and blocker counts of the public set manifest."""
+    diffs = len(manifest.get("diffs") or [])
+    counts = manifest.get("plant_counts") or {}
+    severities = counts.get("by_severity") or {}
+    plants = 0
+    for value in severities.values():
+        if isinstance(value, (int, float)):
+            plants += value
+    blockers = severities.get("blocker")
+    if not isinstance(blockers, (int, float)):
+        blockers = 0
+    return {"diffs": int(diffs), "plants": int(plants), "blockers": int(blockers)}
+
+
+def review_method(counts):
+    """The method note: the set size, the weights, the cost, N, and the gate."""
+    return (
+        f"The set holds {counts['diffs']} diffs. "
+        "The weights are 5, 2, and 1 for a blocker, a major, and a minor. "
+        "A false claim costs 2 points off the pass score. "
+        "N = 3 passes for each route and each set. "
+        "A set reaches the rank only after the pilot gate."
+    )
+
+
+def write_review(scores_path):
+    """Write review.html from the score file and the public set manifest."""
+    with open(scores_path, encoding="utf-8") as handle:
+        scores = json.load(handle)
+    set_id = os.path.basename(scores_path)
+    if set_id.endswith(".json"):
+        set_id = set_id[: -len(".json")]
+    manifest = {}
+    manifest_path = os.path.join(
+        root, "harness", "model-guide", "data", "sets", set_id + ".json"
+    )
+    try:
+        with open(manifest_path, encoding="utf-8") as handle:
+            manifest = json.load(handle)
+    except (OSError, ValueError):
+        manifest = {}
+    with open(REVIEW_TEMPLATE_PATH, encoding="utf-8") as handle:
+        review = handle.read()
+    routes = [str(record.get("route") or "") for record in (scores.get("routes") or [])]
+    passes = scores.get("passes") or []
+
+    def route_passes(route):
+        return [item for item in passes if str(item.get("route") or "") == route]
+
+    counts = review_set_counts(manifest)
+    class_tables = [
+        review_counts_table(route_passes(route), route, "by_class", "review-class", REVIEW_CLASSES, "Class")
+        for route in routes
+    ]
+    severity_tables = [
+        review_counts_table(route_passes(route), route, "by_severity", "review-severity", REVIEW_SEVERITIES, "Severity")
+        for route in routes
+    ]
+    replacements = {
+        "<!--MODEL-GUIDE:REVIEW-SET-ID-->": (
+            f"Set {esc(set_id)}. The counts come from the public set manifest."
+        ),
+        "<!--MODEL-GUIDE:REVIEW-ROWS-->": "\n".join(review_route_rows(scores, PILOT_GATE)),
+        "<!--MODEL-GUIDE:REVIEW-CLASSES-->": "\n".join(class_tables),
+        "<!--MODEL-GUIDE:REVIEW-SEVERITIES-->": "\n".join(severity_tables),
+        "<!--MODEL-GUIDE:REVIEW-PASSES-->": "\n".join(review_pass_items(scores)),
+        "<!--MODEL-GUIDE:REVIEW-SET-COUNTS-->": (
+            f'<li data-mg="review-set-diffs">{counts["diffs"]} diffs</li>\n'
+            f'<li data-mg="review-set-plants">{counts["plants"]} plants</li>\n'
+            f'<li data-mg="review-set-blockers">{counts["blockers"]} blockers</li>'
+        ),
+        "<!--MODEL-GUIDE:REVIEW-METHOD-->": esc(review_method(counts)),
+    }
+    for token, value in replacements.items():
+        if token not in review:
+            raise SystemExit(f"preview: review template token is missing: {token}")
+        review = review.replace(token, value)
+    with open(os.path.join(preview, "review.html"), "w", encoding="utf-8") as handle:
+        handle.write(review)
+
+
+if SCORES_PATH and os.path.exists(SCORES_PATH) and os.path.exists(REVIEW_TEMPLATE_PATH):
+    write_review(SCORES_PATH)
 PY
+
+# The review data file is a copy of the score file. A run without a score
+# file removes a stale review page, so the folder never shows old results.
+if [ -n "$SCORES" ] && [ -f "$PREVIEW_ABS/review.html" ]; then
+  cp "$SCORES" "$PREVIEW_ABS/review.json"
+  if [ "$PILOT_GATE" = "fail" ]; then
+    echo "preview: pilot gate fail"
+  fi
+else
+  rm -f "$PREVIEW_ABS/review.html" "$PREVIEW_ABS/review.json"
+fi
