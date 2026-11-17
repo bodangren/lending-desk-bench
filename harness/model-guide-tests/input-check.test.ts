@@ -283,10 +283,14 @@ describe("DS2 order and refusals", () => {
     expectRefusal(join(dir, MANIFEST_NAME), "json", `input-check: json ${OUTCOMES_NAME}`);
   });
 
-  it("DS2: no MANIFEST gives manifest", () => {
+  it("DS2: no MANIFEST gives manifest with the manifest file name", () => {
     const { dir } = stagePageB("no-manifest", { omit: [MANIFEST_NAME] });
     expect(existsSync(join(dir, MANIFEST_NAME))).toBe(false);
-    expectRefusal(join(dir, MANIFEST_NAME), "no-manifest", "input-check: manifest");
+    expectRefusal(
+      join(dir, MANIFEST_NAME),
+      "no-manifest",
+      `input-check: manifest ${MANIFEST_NAME}`,
+    );
   });
 
   it("DS2: a MANIFEST with no line for one file gives manifest with the file name", () => {
