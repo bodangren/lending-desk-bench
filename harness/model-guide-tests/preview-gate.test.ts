@@ -1644,84 +1644,404 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     return page.slice(at, end);
   }
 
-  it("G1: the source line carries generated 2026-10-20 from the sentinel fixture", () => {
-    const { page } = pageGuardSnapshot();
-    expect(page).toContain("generated 2026-10-20");
+  /**
+   * Task 4.1a — page B layout, spec D16 "Layout (PM P1 2026-11-16)".
+   *
+   * These cases assert the generated HTML only. They pin these `data-mg`
+   * hooks, which the page render must put into `real-work.html`:
+   *   data-mg="top-block"     the recommendation block, before the first
+   *                           table; one line per role group and work type;
+   *                           each line carries data-mg="pick" (plain text:
+   *                           group label, model, whole %, result count) and
+   *                           data-model-key="<model key>". With no row of
+   *                           10 or more results, the line says "no pick yet".
+   *   data-mg="default-table" on each visible <table>. Its <thead> holds the
+   *                           default columns only.
+   *   data-model-key="<key>"  on each data <tr> of a default table and of a
+   *                           too-few group; data-rank="<n>" only on ranked
+   *                           rows, never on a row with fewer than 10 results.
+   *   data-mg="model-name"    on the <td> that holds the plain model name.
+   *   data-mg="too-few"       a <details> group labelled "Too few runs to
+   *                           rank" under a table, holding the rows with
+   *                           fewer than 10 results and no data-rank.
+   *   data-mg="more-columns"  a <details> toggle whose summary says "More
+   *                           columns" and whose body lists the extra column
+   *                           names (one toggle per table or one page-wide).
+   *   data-mg="work-type"     the wrapper of one work type: a <details>
+   *                           section or a tab with role="tab"/"tabpanel".
+   *   data-mg="about-footer"  the "About this data" footer after the tables;
+   *                           it holds the source line and the coverage block.
+   */
+  function hookStart(page: string, hook: string): number {
+    const at = page.indexOf(`data-mg="${hook}"`);
+    expect(at, `the page holds data-mg="${hook}"`).toBeGreaterThan(-1);
+    return at;
+  }
+
+  function hookRegion(page: string, hook: string, endMarker: string): string {
+    const at = hookStart(page, hook);
+    const end = page.indexOf(endMarker, at);
+    expect(end, `data-mg="${hook}" reaches ${endMarker}`).toBeGreaterThan(at);
+    return page.slice(at, end);
+  }
+
+  function headerTexts(table: string): string[] {
+    return [...table.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map((m) =>
+      m[1].replace(/<[^>]*>/g, "").trim(),
+    );
+  }
+
+  function defaultTables(page: string): string[] {
+    return [...page.matchAll(/<table\b[^>]*data-mg="default-table"[^>]*>[\s\S]*?<\/table>/g)].map(
+      (m) => m[0],
+    );
+  }
+
+  interface RowProbe {
+    key: string;
+    rank: string | null;
+    cells: string[];
+  }
+
+  function rowProbes(table: string): RowProbe[] {
+    const out: RowProbe[] = [];
+    for (const m of table.matchAll(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/g)) {
+      const key = m[1].match(/\bdata-model-key="([^"]*)"/)?.[1];
+      if (key === undefined) continue;
+      out.push({
+        key,
+        rank: m[1].match(/\bdata-rank="([^"]*)"/)?.[1] ?? null,
+        cells: [...m[2].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map((c) =>
+          c[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+        ),
+      });
+    }
+    return out;
+  }
+
+  function fewGroupOf(section: string): string {
+    const at = section.indexOf('data-mg="too-few"');
+    expect(at, "the section holds a Too few runs to rank group").toBeGreaterThan(-1);
+    const open = section.lastIndexOf("<details", at);
+    const end = section.indexOf("</details>", at);
+    expect(end, "the group closes").toBeGreaterThan(at);
+    return section.slice(open < 0 ? at : open, end + "</details>".length);
+  }
+
+  function pickItems(page: string): Array<{ key: string | null; text: string }> {
+    const out: Array<{ key: string | null; text: string }> = [];
+    const re = /<([a-zA-Z][\w-]*)\b([^>]*)>/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(page)) !== null) {
+      if (!/\bdata-mg="pick"/.test(m[2])) continue;
+      const name = m[1];
+      const close = page.indexOf(`</${name}>`, re.lastIndex);
+      if (close < 0) continue;
+      const inner = page.slice(re.lastIndex, close);
+      out.push({
+        key: m[2].match(/\bdata-model-key="([^"]*)"/)?.[1] ?? null,
+        text: inner.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+      });
+      re.lastIndex = close + name.length + 3;
+    }
+    return out;
+  }
+
+  /** A page built from the page-guard export after a mutation. The manifest
+   * is rebuilt, so the input check passes on the changed synthetic bytes. */
+  function pageGuardVariant(tag: string, mutate: (doc: any) => void): Snapshot {
+    const root = repoFixture(tag);
+    const dir = join(root, "fixture-page-guard");
+    mkdirSync(dir, { recursive: true });
+    const doc = JSON.parse(readFileSync(join(PAGE_GUARD_DIR, "real-work-page.json"), "utf8"));
+    mutate(doc);
+    const exportPath = join(dir, "real-work-page.json");
+    const text = `${JSON.stringify(doc, null, 2)}\n`;
+    writeFileSync(exportPath, text);
+    writeFileSync(join(dir, "MANIFEST.txt"), [
+      `sha256: ${sha256(exportPath)}`,
+      `size: ${Buffer.byteLength(text)}`,
+      "",
+    ].join("\n"));
+    const result = runPreviewArgs(root, ["--export", exportPath]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const preview = previewFolder(root);
+    return {
+      page: readFileSync(join(preview, "real-work.html"), "utf8"),
+      json: JSON.parse(readFileSync(join(preview, "real-work.json"), "utf8")),
+    };
+  }
+
+  it("G1: the source line sits in the About this data footer, not at the top of the page", () => {
+    const { page, json } = pageGuardSnapshot();
     expect(page).not.toContain("generated 2026-11-14");
+    const footer = hookRegion(page, "about-footer", "</body>");
+    expect(footer, "the footer is named About this data").toContain("About this data");
+    for (const value of [
+      json.source.file,
+      json.source.sha256,
+      `generated ${json.source.generated_on}`,
+    ]) {
+      expect(footer, `the footer holds the source value ${value}`).toContain(value);
+    }
+    const firstTable = page.indexOf("<table");
+    expect(firstTable, "the page holds a table").toBeGreaterThan(-1);
+    expect(
+      page.indexOf(`generated ${json.source.generated_on}`),
+      "the source line is below the first table",
+    ).toBeGreaterThan(firstTable);
   });
 
-  it("G2: the coverage block holds 1,285, the two dates, and both shares as percents", () => {
+  it("G2: the coverage numbers sit in the same About this data footer", () => {
     const { page, json } = pageGuardSnapshot();
     expect(json.coverage.runs).toBe(1285);
-    expect(page).toContain("1,285");
-    expect(page).toContain(
+    const footer = hookRegion(page, "about-footer", "</body>");
+    for (const value of [
+      "1,285",
       `${json.coverage.first_run_date} to ${json.coverage.last_run_date}`,
-    );
-    expect(page).toContain("2026-10-01 to 2026-11-01");
-    expect(page).toContain(`${(json.coverage.share_known_route * 100).toFixed(1)} %`);
-    expect(page).toContain(`${(json.coverage.share_with_result * 100).toFixed(1)} %`);
-    expect(page).toContain("38.9 %");
-    expect(page).toContain("77.8 %");
+      "2026-10-01 to 2026-11-01",
+      `${(json.coverage.share_known_route * 100).toFixed(1)} %`,
+      `${(json.coverage.share_with_result * 100).toFixed(1)} %`,
+      "38.9 %",
+      "77.8 %",
+    ]) {
+      expect(footer, `the footer holds ${value}`).toContain(value);
+    }
+    expect(footer).toMatch(/Left-out paired duplicates[\s\S]{0,40}\b0\b/);
   });
 
-  it("G3: each few-runs row shows few runs and a row with 10 results shows none", () => {
+  it("G3: a row with fewer than 10 results sits in Too few runs to rank, with no rank, never in the ranked table", () => {
     const { page, json } = pageGuardSnapshot();
-    for (const [group, heading] of [
-      ["producer", "Producer roles"],
-      ["checker", "Checker roles"],
-    ] as const) {
-      const rows = json[group];
-      expect(rows.some((row: any) => row.few_runs), `${group} has a marked row`).toBe(true);
-      expect(rows.some((row: any) => !row.few_runs), `${group} has an unmarked row`).toBe(true);
-      const html = bodyRows(mainSection(page, heading));
-      expect(html).toHaveLength(rows.length);
-      rows.forEach((row: any, index: number) => {
-        expect(
-          html[index].join(" ").includes("few runs"),
-          `${group} row ${index} (${row.model}, n=${row.pass_rate.n})`,
-        ).toBe(row.few_runs);
-      });
-    }
+    const groups: Array<[string, string, any[], boolean]> = [
+      ["producer", "Producer roles", json.producer, true],
+      ["checker", "Checker roles", json.checker, true],
+    ];
     for (const [name, rows] of Object.entries<any>(json.work_types)) {
-      const html = bodyRows(workTypeSection(page, name));
-      expect(html).toHaveLength(rows.length);
-      rows.forEach((row: any, index: number) => {
-        expect(
-          html[index].join(" ").includes("few runs"),
-          `work type ${name} row ${index} (${row.model}, n=${row.pass_rate.n})`,
-        ).toBe(row.few_runs);
-      });
+      groups.push([`work type ${name}`, name, rows, false]);
     }
-  });
-
-  it("G4: each rate cell ends with (n=<pass_rate.n>) and the integer equals the JSON value", () => {
-    const { page, json } = pageGuardSnapshot();
-    const check = (cells: string[], label: string, rate: any, at: number) => {
-      if (rate.value === null) {
-        expect(cells[at]).toBe("no rate");
-        return;
-      }
+    for (const [label, heading, rows, isMain] of groups) {
+      const ranked = rows.filter((r: any) => !r.few_runs);
+      const few = rows.filter((r: any) => r.few_runs);
+      expect(few.length, `${label} has a few-runs row`).toBeGreaterThan(0);
+      expect(ranked.length, `${label} has a ranked row`).toBeGreaterThan(0);
+      const section = isMain ? mainSection(page, heading) : workTypeSection(page, heading);
+      const table = defaultTables(section)[0];
+      expect(table, `${label} holds a default table`).toBeDefined();
+      const rankedRows = rowProbes(table);
       expect(
-        cells[at].endsWith(` (n=${rate.n})`),
-        `${label}: cell ${JSON.stringify(cells[at])} must end with (n=${rate.n})`,
-      ).toBe(true);
-    };
-    for (const [group, heading] of [
-      ["producer", "Producer roles"],
-      ["checker", "Checker roles"],
-    ] as const) {
-      const html = bodyRows(mainSection(page, heading));
-      json[group].forEach((row: any, index: number) => {
-        check(html[index], `${group} pass rate`, row.pass_rate, 9);
-        check(html[index], `${group} blocking rate`, row.blocking_rate, 10);
-      });
+        rankedRows.map((r) => r.key).sort(),
+        `${label} ranked table holds only the ranked rows`,
+      ).toEqual(ranked.map((r: any) => r.model).sort());
+      for (const row of rankedRows) {
+        expect(row.rank, `${label} ranked row ${row.key} has a rank number`).not.toBeNull();
+        expect(Number.isInteger(Number(row.rank)), `${label} rank ${row.rank} is an integer`).toBe(
+          true,
+        );
+      }
+      const fewGroup = fewGroupOf(section);
+      expect(fewGroup).toContain("Too few runs to rank");
+      const fewRows = rowProbes(fewGroup);
+      expect(
+        fewRows.map((r) => r.key).sort(),
+        `${label} too-few group holds only the few-runs rows`,
+      ).toEqual(few.map((r: any) => r.model).sort());
+      for (const row of fewRows) {
+        expect(row.rank, `${label} few-runs row ${row.key} has no rank number`).toBeNull();
+      }
+      for (const row of few) {
+        expect(
+          rankedRows.some((r) => r.key === row.model),
+          `${label} few-runs model ${row.model} is not in the ranked table`,
+        ).toBe(false);
+      }
     }
+  });
+
+  it("G4: a rate is a whole percent with no (n=...), an empty value is a dash, and Runs holds the result count", () => {
+    const { page, json } = pageGuardSnapshot();
+    const groups: Array<[string, any[], boolean]> = [
+      ["Producer roles", json.producer, true],
+      ["Checker roles", json.checker, true],
+    ];
     for (const [name, rows] of Object.entries<any>(json.work_types)) {
-      const html = bodyRows(workTypeSection(page, name));
-      rows.forEach((row: any, index: number) => {
-        check(html[index], `${name} pass rate`, row.pass_rate, 6);
-      });
+      groups.push([name, rows, false]);
     }
+    let dashSeen = false;
+    for (const [heading, rows, isMain] of groups) {
+      const section = isMain ? mainSection(page, heading) : workTypeSection(page, heading);
+      const table = defaultTables(section)[0];
+      expect(table, `${heading} holds a default table`).toBeDefined();
+      const headers = headerTexts(table);
+      const runsAt = headers.indexOf("Runs");
+      const passAt = headers.indexOf("Pass %");
+      const ratingAt = headers.indexOf("Rating");
+      expect(runsAt, `${heading} has a Runs column`).toBeGreaterThan(-1);
+      expect(passAt, `${heading} has a Pass % column`).toBeGreaterThan(-1);
+      for (const row of rowProbes(table)) {
+        const source = rows.find((r: any) => r.model === row.key);
+        expect(source, `${heading} row ${row.key} is in the data`).toBeDefined();
+        const runs = (row.cells[runsAt] ?? "").replace(/,/g, "");
+        expect(runs, `${heading} ${row.key} Runs holds the result count`).toContain(
+          String(source.pass_rate.n),
+        );
+        const pass = row.cells[passAt] ?? "";
+        expect(pass, `${heading} ${row.key} Pass % is a whole percent`).toMatch(/^\d+\s*%$/);
+        expect(pass, `${heading} ${row.key} Pass % has no (n=...) suffix`).not.toContain("(n=");
+        if (ratingAt >= 0) {
+          const rating = row.cells[ratingAt] ?? "";
+          expect(rating, `${heading} ${row.key} empty Rating shows a dash`).toBe("–");
+          dashSeen = true;
+        }
+      }
+    }
+    expect(dashSeen, "the page shows the dash for an empty value").toBe(true);
+  });
+
+  it("G5: the top block gives one ranked-pick line per role group and per work type", () => {
+    const { page, json } = pageGuardSnapshot();
+    const at = hookStart(page, "top-block");
+    const firstTable = page.indexOf("<table");
+    expect(at, "the top block comes before the first table").toBeLessThan(firstTable);
+    const labels = ["Producer roles", "Checker roles", ...Object.keys(json.work_types)];
+    const items = pickItems(page);
+    expect(items, "one line per role group and work type").toHaveLength(labels.length);
+    for (const label of labels) {
+      const rows: any[] =
+        label === "Producer roles"
+          ? json.producer
+          : label === "Checker roles"
+            ? json.checker
+            : json.work_types[label];
+      const pick = rows.find((r: any) => r.can_pick && r.rank === 1);
+      expect(pick, `${label} has a rank-1 row with 10 or more results`).toBeDefined();
+      const item = items.find((i) => i.key === pick.model);
+      expect(item, `${label} line names the ranked pick`).toBeDefined();
+      expect(item!.text, `${label} line names the group`).toContain(label);
+      expect(item!.text, `${label} line does not say no pick yet`).not.toContain("no pick yet");
+      expect(item!.text, `${label} line holds the whole percent`).toMatch(
+        new RegExp(`\\b${Math.round(pick.pass_rate.value * 100)}\\s*%`),
+      );
+      expect(item!.text, `${label} line holds the result count`).toContain(
+        String(pick.pass_rate.n),
+      );
+    }
+  });
+
+  it("G6: a group with no row of 10 or more results says no pick yet in the top block", () => {
+    const { page } = pageGuardVariant("top-no-pick", (doc) => {
+      for (const row of doc.all_time) {
+        row.pass = Math.min(row.pass, 2);
+        row.fail = Math.min(row.fail, 2);
+        row.error = 0;
+        for (const name of Object.keys(row.work_types || {})) {
+          row.work_types[name].pass = Math.min(row.work_types[name].pass, 2);
+          row.work_types[name].fail = Math.min(row.work_types[name].fail, 2);
+        }
+      }
+    });
+    const items = pickItems(page);
+    expect(items, "the top block still has one line per group").toHaveLength(4);
+    for (const item of items) {
+      expect(item.text, "each line says no pick yet").toContain("no pick yet");
+    }
+  });
+
+  it("G7: a default table has six columns or fewer and a work-type table drops Blocking %", () => {
+    const { page, json } = pageGuardSnapshot();
+    const allowed = ["Model", "Runs", "Pass %", "Blocking %", "Rating", "Trend"];
+    for (const heading of ["Producer roles", "Checker roles"]) {
+      const table = defaultTables(mainSection(page, heading))[0];
+      expect(table, `${heading} holds a default table`).toBeDefined();
+      const headers = headerTexts(table);
+      expect(headers.length, `${heading} has six columns or fewer`).toBeLessThanOrEqual(6);
+      for (const h of headers) expect(allowed, `${heading} default column ${h}`).toContain(h);
+      expect(headers).toContain("Blocking %");
+      for (const hidden of ["Routes", "Pass", "Fail", "Error", "No result", "Agreement"]) {
+        expect(headers, `${heading} hides ${hidden}`).not.toContain(hidden);
+      }
+    }
+    for (const name of Object.keys(json.work_types)) {
+      const table = defaultTables(workTypeSection(page, name))[0];
+      expect(table, `work type ${name} holds a default table`).toBeDefined();
+      const headers = headerTexts(table);
+      expect(headers.length, `${name} has six columns or fewer`).toBeLessThanOrEqual(6);
+      expect(headers).toContain("Model");
+      expect(headers, `${name} drops Blocking %`).not.toContain("Blocking %");
+    }
+  });
+
+  it("G8: the remaining columns sit behind a More columns toggle", () => {
+    const { page } = pageGuardSnapshot();
+    const more = hookRegion(page, "more-columns", "</details>");
+    expect(more, "the toggle is labelled More columns").toContain("More columns");
+    const hidden = [
+      "Routes",
+      "Pass",
+      "Fail",
+      "Error",
+      "No result",
+      "Blocking count",
+      "Agreement",
+    ];
+    for (const name of hidden) {
+      expect(more, `the toggle holds ${name}`).toContain(name);
+    }
+    for (const table of defaultTables(page)) {
+      const headers = headerTexts(table);
+      for (const name of hidden) {
+        expect(headers, `the default table hides ${name}`).not.toContain(name);
+      }
+    }
+  });
+
+  it("G9: each work type sits in a tab or a collapsed section", () => {
+    const { page, json } = pageGuardSnapshot();
+    for (const name of Object.keys(json.work_types)) {
+      const at = page.indexOf(`<h3>${escapeHtml(name)}</h3>`);
+      expect(at, `the page holds the ${name} work type`).toBeGreaterThan(-1);
+      const hookAt = page.lastIndexOf('data-mg="work-type"', at);
+      expect(hookAt, `${name} is wrapped by a work-type hook`).toBeGreaterThan(-1);
+      const open = page.lastIndexOf("<", hookAt);
+      const tag = page.slice(open, page.indexOf(">", hookAt) + 1);
+      expect(
+        /^<details\b/.test(tag) || /\brole="tab(?:panel)?"/.test(tag),
+        `${name} wrapper is a collapsed section or a tab: ${tag}`,
+      ).toBe(true);
+    }
+  });
+
+  it("G10: a plain model name comes from model-names.json and an unnamed key drops the plan prefix", () => {
+    const namesFile = join(SOURCE, "data", "model-names.json");
+    expect(existsSync(namesFile), "the committed model-names.json exists").toBe(true);
+    const names = JSON.parse(readFileSync(namesFile, "utf8"));
+    const namedKey = "kimi-code-plan-cn/kimi-for-coding";
+    expect(typeof names[namedKey], "model-names.json names the Kimi key").toBe("string");
+    const { page } = pageGuardVariant("names", (doc) => {
+      for (const row of [...doc.weekly, ...doc.all_time]) {
+        if (row.route === "x/m") row.route = namedKey;
+        if (row.route === "y/m") row.route = "opencode-go/synthetic-unknown";
+      }
+    });
+    const modelCells = [...page.matchAll(/<td\b[^>]*data-mg="model-name"[^>]*>([\s\S]*?)<\/td>/g)].map(
+      (m) => m[1].replace(/<[^>]*>/g, "").trim(),
+    );
+    expect(modelCells.length, "the rows hold plain model-name cells").toBeGreaterThan(0);
+    expect(
+      modelCells.some((cell) => cell.includes(escapeHtml(names[namedKey]))),
+      "the named key shows its plain name",
+    ).toBe(true);
+    expect(
+      modelCells.some((cell) => cell.includes(namedKey)),
+      "the named key does not show its raw route key in the model cell",
+    ).toBe(false);
+    expect(
+      modelCells.some((cell) => cell.includes("synthetic-unknown")),
+      "an unnamed key shows the key without its plan prefix",
+    ).toBe(true);
+    expect(
+      modelCells.some((cell) => cell.includes("opencode-go/synthetic-unknown")),
+      "an unnamed key does not show the provider prefix",
+    ).toBe(false);
   });
 
   it("T1: the print-audit block shows 52, 13, both results, the bias note, and the calibration line", () => {
