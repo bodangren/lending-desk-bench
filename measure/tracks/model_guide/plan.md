@@ -1184,6 +1184,24 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     boxes, the footer values (rows 217, routes 53, unknown rows 6, share
     2.8 %, dates 2026-11-17), no work-type hook, and no raw route key in the
     print-audit block.
+  - Review remediation (2026-11-18, commit 065815b): RA-1 shows the plain
+    names in the overview pick and second cells; RA-3 requires each MANIFEST
+    line to name exactly `ra-outcomes-<D>.json`, `aa-reliability-<D>.json`, or
+    `allowed-routes-<D>.json` for the manifest date; RA-4 lists every role of a
+    merged row in the Roles cell; RA-5 states the stderr form of the
+    input-check line. The nine runs at 065815b: `input-check.test.ts`
+    `Tests  23 passed (23)`; `real-work.test.ts` `Tests  13 passed (13)`;
+    `preview-gate.test.ts` `Tests  99 passed (99)`; `guide.test.ts`
+    `Tests  17 passed (17)`; `update.test.ts` `Tests  9 passed (9)`;
+    `leak-check.test.ts` `Tests  22 passed (22)`; `adversarial-p2.test.ts`
+    `Tests  13 passed (13)`; `adversarial-p3.test.ts` `Tests  34 passed (34)`;
+    `adversarial.test.ts` `Tests  2 failed | 45 passed (47)`. The two failures
+    are Red-side: "X accepts a manifest path with spaces and unicode in the
+    name" and "E escapes a hostile export file name in the source line" stage
+    an outcomes file name that RA-3 must refuse. A Mid Red retry names the
+    staged outcomes file `ra-outcomes-2026-10-20.json` in the unicode folder,
+    and retires or re-aims the hostile file-name case. The preview on the real
+    files exits 0 and `git status --short docs/` prints nothing.
   - The `page-check` browser proof at 390, 980, and 1280 px stays with the
     orchestrator (test-strategy 13.9).
 - [ ] 4.2 Red. The quota sources. Write
