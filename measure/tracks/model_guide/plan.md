@@ -1338,7 +1338,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - The preview on the real files exits 0 and `git status --short docs/`
     prints nothing. The `page-check` browser proof stays with the
     orchestrator.
-- [ ] 4.2 Red. The quota sources. Write
+- [~] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
   It commits no fixture. Touch no other file (test-strategy section 6.2,
@@ -1354,6 +1354,22 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     at the first quota or limit error.
   - Verify: the file fails on the Phase 3 code. Record the failed test names
     in `measure/runs/model_guide/red-4.2.txt`.
+  - Evidence: run on 2026-11-18 with `cd harness && npx vitest run
+    model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1
+    --reporter=dot`. Exit 1, `Tests  15 failed (15)`. First failure line:
+    `FAIL model-guide-tests/quota.test.ts > Q1 the source path of each
+    provider > Q1 reads GET /api/quota/<id> for the four providers of spec
+    D15 and gives ready`. The message is `the quota tool is missing:
+    /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/quota.ts`.
+    All 15 cases fail on the missing tool, so no case passes at the phase
+    base (A4). Authoring check: the same file run against a throwaway
+    prototype of `quota.ts` outside the repository, through the seam
+    `MG_QUOTA_PROTO`, gives `Tests  15 passed (15)`, so the in-process
+    quota source, the `openchamber` stub, and every assertion work. One
+    authoring error was fixed first: the Q2 request count was 6, not 9.
+    After the recorded run, `ps -eo pid,args | grep '[f]ake-opencode'`
+    prints no line, no `vitest` or `quota` process stays alive, and no
+    `mg-quota` temp folder stays under `/tmp`.
 - [ ] 4.3 Red. The provider credential. Write
   `harness/model-guide-tests/credential-provider.test.ts` and no other file.
   Normal cases:
