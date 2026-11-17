@@ -1122,6 +1122,25 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     (orchestrator 2026-11-17).
   - Verify: the new cases fail and the other cases pass. Record the failed
     test names in `measure/runs/model_guide/red-4.1e.txt`.
+  - Evidence: the six commands of test-strategy 13.2, run one at a time on
+    2026-11-17, each with `--configLoader native --maxWorkers=1
+    --reporter=dot` from `harness/`:
+    - `npx vitest run model-guide-tests/input-check.test.ts` exits 1 with
+      `Tests  18 failed | 2 passed (20)`.
+    - `npx vitest run model-guide-tests/real-work.test.ts` exits 1 with
+      `Tests  12 failed (12)`.
+    - `npx vitest run model-guide-tests/preview-gate.test.ts` exits 1 with
+      `Tests  92 failed | 7 passed (99)`.
+    - `npx vitest run model-guide-tests/guide.test.ts` exits 1 with
+      `Tests  15 failed (15)`.
+    - `npx vitest run model-guide-tests/update.test.ts` exits 1 with
+      `Tests  5 failed | 4 passed (9)`.
+    - `npx vitest run model-guide-tests/leak-check.test.ts` exits 0 with
+      `Tests  22 passed (22)`.
+    Every DS1 to DS21 case, the changed G cases, FX2, and the page cases fail
+    for one reason: the tool still speaks the old `--input` or `--export`
+    usage line. No case fails with a TypeError, a ReferenceError, a missing
+    helper, or a syntax error. The guards FX1, FX3, and LG1 to LG3 pass.
 - [ ] 4.1f Green. Implement the data source in `harness/model-guide/` (the
   page B tool `real-work.ts`, `preview.sh`, the template, `model-names.json`,
   `guide.ts`, and `update.sh`) (orchestrator 2026-11-17) and add the three
