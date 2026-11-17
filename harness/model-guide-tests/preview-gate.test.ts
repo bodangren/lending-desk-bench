@@ -120,18 +120,15 @@ const PREVIEW_SH = join(SOURCE, "preview.sh");
 const PUBLISH_TS = join(SOURCE, "publish.ts");
 const REAL_WORK_TS = join(SOURCE, "real-work.ts");
 const PAGE = join(SOURCE, "pages", "real-work.html");
-const FIXTURE = join(import.meta.dirname, "fixtures", "real-work-mini.json");
-const MANIFEST = join(import.meta.dirname, "fixtures", "MANIFEST.txt");
+const PAGE_B = join(import.meta.dirname, "fixtures", "page-b");
+const DATE = "2026-10-20";
+const OUTCOMES_NAME = `ra-outcomes-${DATE}.json`;
+const AA_NAME = `aa-reliability-${DATE}.json`;
+const ALLOWED_NAME = `allowed-routes-${DATE}.json`;
+const MANIFEST_NAME = `MANIFEST-${DATE}.txt`;
 const PUBLISH_USAGE = "usage: publish.ts --preview <folder>\n";
-const PREVIEW_USAGE = "usage: preview.sh --export <file> [--preview <folder>]\n";
-const REQUIRED_COVERAGE_KEYS = [
-  "runs",
-  "first_run_date",
-  "last_run_date",
-  "share_known_route",
-  "share_with_result",
-  "paired_duplicates_left_out",
-];
+const PREVIEW_USAGE = "usage: preview.sh --manifest <file> [--preview <folder>]\n";
+const INPUT_CHECK_SCHEMA_LINE = `input-check: schema ${OUTCOMES_NAME}\n`;
 
 const METHOD_NOTE =
   "Route names stay as written in the record, so #high and [1m] variants are " +
@@ -206,6 +203,46 @@ function snapshot(dir: string, includeDirs = false): string[] {
   return out;
 }
 
+function manifestLineOf(file: string, name: string): string {
+  const data = readFileSync(file);
+  return `${createHash("sha256").update(data).digest("hex")}  ${data.length}  ${name}`;
+}
+
+/** Write the four page B fixture files into `<root>/fixture-b/` with a
+ * manifest that matches the staged bytes. */
+function populatePageB(root: string, mutate?: {
+  outcomes?: (rows: any[]) => void;
+  allowed?: (doc: any) => void;
+}): string {
+  const staged = join(root, "fixture-b");
+  mkdirSync(staged, { recursive: true });
+  let outcomesText = readFileSync(join(PAGE_B, OUTCOMES_NAME), "utf8");
+  if (mutate?.outcomes) {
+    const rows = JSON.parse(outcomesText);
+    mutate.outcomes(rows);
+    outcomesText = JSON.stringify(rows, null, 2) + "\n";
+  }
+  writeFileSync(join(staged, OUTCOMES_NAME), outcomesText);
+  writeFileSync(join(staged, AA_NAME), readFileSync(join(PAGE_B, AA_NAME)));
+  let allowedText = readFileSync(join(PAGE_B, ALLOWED_NAME), "utf8");
+  if (mutate?.allowed) {
+    const doc = JSON.parse(allowedText);
+    mutate.allowed(doc);
+    allowedText = JSON.stringify(doc, null, 2) + "\n";
+  }
+  writeFileSync(join(staged, ALLOWED_NAME), allowedText);
+  writeFileSync(
+    join(staged, MANIFEST_NAME),
+    [
+      manifestLineOf(join(staged, OUTCOMES_NAME), OUTCOMES_NAME),
+      manifestLineOf(join(staged, AA_NAME), AA_NAME),
+      manifestLineOf(join(staged, ALLOWED_NAME), ALLOWED_NAME),
+      "",
+    ].join("\n"),
+  );
+  return join(staged, MANIFEST_NAME);
+}
+
 function populateRepo(root: string): void {
   mkdirSync(join(root, "harness"), { recursive: true });
   cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
@@ -215,9 +252,7 @@ function populateRepo(root: string): void {
   writeFileSync(join(root, "docs", "assets", "css", "site.css"), SITE_CSS);
   writeFileSync(join(root, "docs", "assets", "data", "benchmark.json"), BENCHMARK_JSON);
   mkdirSync(join(root, "measure", "tracks", "model_guide"), { recursive: true });
-  mkdirSync(join(root, "fixture"), { recursive: true });
-  writeFileSync(join(root, "fixture", "real-work-mini.json"), readFileSync(FIXTURE));
-  writeFileSync(join(root, "fixture", "MANIFEST.txt"), readFileSync(MANIFEST));
+  populatePageB(root);
   symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
 }
 
@@ -253,18 +288,34 @@ function fakeNpxBin(root: string): string {
   return bin;
 }
 
-function stageFixture(root: string, mutate: (doc: any) => void): void {
-  const doc = JSON.parse(readFileSync(FIXTURE, "utf8"));
-  mutate(doc);
-  const json = join(root, "fixture", "real-work-mini.json");
-  const text = `${JSON.stringify(doc, null, 2)}\n`;
+/** The staged outcomes array with a mutation, and a rebuilt manifest. */
+function stageFixture(root: string, mutate: (rows: any[]) => void): void {
+  const rows = JSON.parse(readFileSync(join(PAGE_B, OUTCOMES_NAME), "utf8"));
+  mutate(rows);
+  const json = join(root, "fixture-b", OUTCOMES_NAME);
+  const text = `${JSON.stringify(rows, null, 2)}\n`;
   writeFileSync(json, text);
-  writeFileSync(join(root, "fixture", "MANIFEST.txt"), [
-    `sha256: ${sha256(json)}`,
-    `size: ${Buffer.byteLength(text)}`,
-    "source-commit: none (synthetic fixture, 2026-11-14)",
-    "",
-  ].join("\n"));
+  rebuildManifest(root);
+}
+
+/** Raw outcomes text (for a wrong top-level shape) and a rebuilt manifest. */
+function stageOutcomesText(root: string, text: string): void {
+  writeFileSync(join(root, "fixture-b", OUTCOMES_NAME), text);
+  rebuildManifest(root);
+}
+
+/** Rewrite the manifest from the three staged files. */
+function rebuildManifest(root: string): void {
+  const staged = join(root, "fixture-b");
+  writeFileSync(
+    join(staged, MANIFEST_NAME),
+    [
+      manifestLineOf(join(staged, OUTCOMES_NAME), OUTCOMES_NAME),
+      manifestLineOf(join(staged, AA_NAME), AA_NAME),
+      manifestLineOf(join(staged, ALLOWED_NAME), ALLOWED_NAME),
+      "",
+    ].join("\n"),
+  );
 }
 
 function previewFolder(root: string): string {
@@ -287,7 +338,7 @@ function runPreviewArgs(
 
 function runPreview(root: string, preview?: string, cwd = root) {
   const args = [
-    "--export", join(root, "fixture", "real-work-mini.json"),
+    "--manifest", join(root, "fixture-b", MANIFEST_NAME),
   ];
   if (preview !== undefined) args.push("--preview", preview);
   return runPreviewArgs(root, args, cwd);
@@ -690,27 +741,11 @@ describe("the preview and the publish gate", () => {
     expectPublishRefusal(root, ["publish: no files\n"]);
   });
 
-  it("B2 refuses a script value in the numeric coverage field without writing a file", () => {
-    const root = repoFixture("b2-coverage");
-    stageFixture(root, (doc) => {
-      doc.coverage.paired_duplicates_left_out = "<scr" + "ipt>alert(1)</scr" + "ipt>";
-    });
-    const docsBefore = snapshot(join(root, "docs"));
-    const previewBefore = snapshot(previewFolder(root));
-    const result = runPreview(root);
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
-    expect(result.stdout).toBe("input-check: schema\n");
-    expect(result.stderr).toBe("");
-    expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
-    expect(snapshot(previewFolder(root))).toEqual(previewBefore);
-    expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(false);
-  });
-
   it("B2 escapes a script value in a route name and never writes the raw tag", () => {
     const root = repoFixture("b2-route");
     const raw = "<im" + "g src=x onerror=alert(1)>";
-    stageFixture(root, (doc) => {
-      doc.all_time[0].route = raw;
+    stageFixture(root, (rows) => {
+      rows[0].route = raw;
     });
     const result = runPreview(root);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
@@ -826,23 +861,24 @@ describe("the preview and the publish gate", () => {
     expect(snapshot(root, true)).toEqual(rootBefore);
   });
 
-  it("F14 resolves a relative export path from the repo root", () => {
+  it("F14 resolves a relative manifest path from the repo root", () => {
     const root = repoFixture("f14-row6");
     const docsBefore = snapshot(join(root, "docs"));
-    const result = runPreviewArgs(root, ["--export", "fixture/real-work-mini.json"], root);
+    const result = runPreviewArgs(root, ["--manifest", `fixture-b/${MANIFEST_NAME}`], root);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(true);
     expect(existsSync(join(previewFolder(root), "real-work.html"))).toBe(true);
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
   });
 
-  it("F14 resolves a relative export path from a folder outside the repo", () => {
+  it("F14 resolves a relative manifest path from a folder outside the repo", () => {
     const root = repoFixture("f14-row7");
     const outside = tempDir("f14-outside");
-    writeFileSync(join(outside, "real-work-mini.json"), readFileSync(FIXTURE));
-    writeFileSync(join(outside, "MANIFEST.txt"), readFileSync(MANIFEST));
+    for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME, MANIFEST_NAME]) {
+      writeFileSync(join(outside, name), readFileSync(join(PAGE_B, name)));
+    }
     const docsBefore = snapshot(join(root, "docs"));
-    const result = runPreviewArgs(root, ["--export", "real-work-mini.json"], outside);
+    const result = runPreviewArgs(root, ["--manifest", MANIFEST_NAME], outside);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(true);
     expect(existsSync(join(previewFolder(root), "real-work.html"))).toBe(true);
@@ -877,11 +913,11 @@ describe("the preview and the publish gate", () => {
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
   });
 
-  it("F15 refuses preview.sh with --export as the last argument", () => {
-    const root = repoFixture("f15-export-last");
+  it("F15 refuses preview.sh with --manifest as the last argument", () => {
+    const root = repoFixture("f15-manifest-last");
     const docsBefore = snapshot(join(root, "docs"));
     const rootBefore = snapshot(root, true);
-    const result = runPreviewArgs(root, ["--export"], root);
+    const result = runPreviewArgs(root, ["--manifest"], root);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe(PREVIEW_USAGE);
@@ -901,11 +937,11 @@ describe("the preview and the publish gate", () => {
     expect(snapshot(root, true)).toEqual(rootBefore);
   });
 
-  it("F15 refuses preview.sh with an empty export value", () => {
-    const root = repoFixture("f15-export-empty");
+  it("F15 refuses preview.sh with an empty manifest value", () => {
+    const root = repoFixture("f15-manifest-empty");
     const docsBefore = snapshot(join(root, "docs"));
     const rootBefore = snapshot(root, true);
-    const result = runPreviewArgs(root, ["--export", ""], root);
+    const result = runPreviewArgs(root, ["--manifest", ""], root);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe(PREVIEW_USAGE);
@@ -919,7 +955,7 @@ describe("the preview and the publish gate", () => {
     const rootBefore = snapshot(root, true);
     const result = runPreviewArgs(
       root,
-      ["--export", join(root, "fixture", "real-work-mini.json"), "--preview", ""],
+      ["--manifest", join(root, "fixture-b", MANIFEST_NAME), "--preview", ""],
       root,
     );
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
@@ -931,16 +967,14 @@ describe("the preview and the publish gate", () => {
 
   it("F19 leaves no preview folder after an input check refusal", () => {
     const root = repoFixture("f19-empty-folder");
-    stageFixture(root, (doc) => {
-      doc.schema = "real-work-outcomes/invalid";
-    });
+    stageOutcomesText(root, '{"rows": []}\n');
     const docsBefore = snapshot(join(root, "docs"));
     const target = previewFolder(root);
     expect(existsSync(target)).toBe(false);
     const result = runPreview(root);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
-    expect(result.stdout).toBe("input-check: schema\n");
-    expect(result.stderr).toBe("");
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(INPUT_CHECK_SCHEMA_LINE);
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
     expect(existsSync(target)).toBe(false);
   });
@@ -966,23 +1000,6 @@ describe("the preview and the publish gate", () => {
     expectPublishRefusal(root, ["publish: bad path assets\n"]);
   });
 
-  it.each(REQUIRED_COVERAGE_KEYS)(
-    "F17 refuses a missing coverage %s key with the schema line",
-    (key) => {
-      const root = repoFixture(`f17-${key}`);
-      stageFixture(root, (doc) => {
-        delete doc.coverage[key];
-      });
-      const docsBefore = snapshot(join(root, "docs"));
-      const result = runPreview(root);
-      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
-      expect(result.stdout).toBe("input-check: schema\n");
-      expect(result.stderr).toBe("");
-      expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
-      expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(false);
-    },
-  );
-
   it("F23 refuses a docs file named constructor after the preview", () => {
     const root = repoFixture("f23-constructor");
     expect(runPreview(root).status).toBe(0);
@@ -1007,29 +1024,6 @@ describe("the preview and the publish gate", () => {
     expectPublishRefusal(root, ["publish: bad preview base\n"]);
   });
 
-  const A32_CASES: Array<[string, (doc: any) => void]> = [
-    ["a null coverage runs value", (doc) => { doc.coverage.runs = null; }],
-    ["a number in coverage first_run_date", (doc) => { doc.coverage.first_run_date = 20260928; }],
-    ["a string in coverage share_known_route", (doc) => { doc.coverage.share_known_route = "0.568"; }],
-    ["a missing generated_on", (doc) => { delete doc.generated_on; }],
-  ];
-
-  it.each(A32_CASES)(
-    "A3-2 refuses %s with the schema line, no traceback, and no half-built preview folder",
-    (_label, mutate) => {
-      const root = repoFixture("a3-2");
-      stageFixture(root, mutate);
-      const docsBefore = snapshot(join(root, "docs"));
-      const result = runPreview(root);
-      expect(result.status, `A3-2 status: ${result.status}`).toBe(2);
-      expect(result.stdout).toBe("input-check: schema\n");
-      expect(result.stderr).not.toMatch(/Traceback|    at /);
-      expect(existsSync(join(previewFolder(root), "real-work.json"))).toBe(false);
-      expect(existsSync(join(previewFolder(root), "real-work.html"))).toBe(false);
-      expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
-    },
-  );
-
   it("A3-1 keeps an existing preview folder byte-identical after an input check refusal", () => {
     const root = repoFixture("a3-1-existing");
     expect(runPreview(root).status).toBe(0);
@@ -1037,15 +1031,13 @@ describe("the preview and the publish gate", () => {
     const indexBefore = readFileSync(join(preview, "index.html"), "utf8");
     const baseBefore = readFileSync(join(preview, "preview-base.json"), "utf8");
     expect(indexBefore).toContain('href="./real-work.html"');
-    stageFixture(root, (doc) => {
-      doc.schema = "real-work-outcomes/invalid";
-    });
+    stageOutcomesText(root, '{"rows": []}\n');
     const before = snapshot(preview);
     const docsBefore = snapshot(join(root, "docs"));
     const result = runPreview(root);
     expect(result.status, `A3-1 status: ${result.status}`).toBe(2);
-    expect(result.stdout).toBe("input-check: schema\n");
-    expect(result.stderr).toBe("");
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(INPUT_CHECK_SCHEMA_LINE);
     expect(snapshot(preview)).toEqual(before);
     expect(readFileSync(join(preview, "index.html"), "utf8")).toBe(indexBefore);
     expect(readFileSync(join(preview, "preview-base.json"), "utf8")).toBe(baseBefore);
@@ -1054,15 +1046,13 @@ describe("the preview and the publish gate", () => {
 
   it("A3-1 leaves no new parent folder after a refusal into a new nested preview folder", () => {
     const root = repoFixture("a3-1-nested");
-    stageFixture(root, (doc) => {
-      doc.schema = "real-work-outcomes/invalid";
-    });
+    stageOutcomesText(root, '{"rows": []}\n');
     const target = join(root, ".tmp", "a3-1-nested-parent", "leaf");
     const docsBefore = snapshot(join(root, "docs"));
     const result = runPreview(root, target);
     expect(result.status, `A3-1 nested status: ${result.status}`).toBe(2);
-    expect(result.stdout).toBe("input-check: schema\n");
-    expect(result.stderr).toBe("");
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(INPUT_CHECK_SCHEMA_LINE);
     expect(existsSync(target)).toBe(false);
     expect(existsSync(join(root, ".tmp", "a3-1-nested-parent"))).toBe(false);
     expect(existsSync(join(root, ".tmp"))).toBe(false);
@@ -1303,38 +1293,6 @@ describe("the preview and the publish gate", () => {
     expect(snapshot(join(root, "docs"))).toEqual(docsBefore);
   });
 
-  it('Acceptance 5: an export with no work-type rows renders "no pick yet"', () => {
-    const root = repoFixture("pa1-1-empty");
-    stageFixture(root, (doc) => {
-      for (const item of doc.all_time) item.work_types = {};
-    });
-    const result = runPreview(root);
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const page = readFileSync(join(previewFolder(root), "real-work.html"), "utf8");
-    expect(page).toContain("no pick yet");
-  });
-
-  it('Acceptance 5 (PA1-1): a work type carried only by the unknown route renders a heading and "no pick yet" with no table', () => {
-    const root = repoFixture("pa1-1-unknown");
-    stageFixture(root, (doc) => {
-      const unknown = doc.all_time.find((item: any) => item.route === "unknown");
-      unknown.work_types = { translation: { runs: 5, pass: 3, fail: 2 } };
-    });
-    const result = runPreview(root);
-    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const page = readFileSync(join(previewFolder(root), "real-work.html"), "utf8");
-    expect(page).toContain("<h3>translation</h3>");
-    const start = page.indexOf("<h3>translation</h3>");
-    const nextHeading = page.indexOf("<h3>", start + 1);
-    const section = nextHeading < 0 ? page.slice(start) : page.slice(start, nextHeading);
-    expect(section).toContain("no pick yet");
-    expect(section).not.toContain("<table>");
-    const appCode = page.indexOf("<h3>app code</h3>");
-    expect(appCode).toBeGreaterThan(-1);
-    const appNext = page.indexOf("<h3>", appCode + 1);
-    const appSection = appNext < 0 ? page.slice(appCode) : page.slice(appCode, appNext);
-    expect(appSection).toContain("<table>");
-  });
 });
 
 /**
@@ -1344,14 +1302,13 @@ describe("the preview and the publish gate", () => {
  *
  * Pinned contracts:
  *
- * U1 (blocking): at 390 px the Source card clips the SHA-256, because the
- *   source paragraph has no wrap rule and `.card` sets `overflow: hidden`
- *   (spec D16 requires the readable hash on the page). The generated page
- *   must carry a wrap rule for the source paragraph or for an element that
- *   wraps it inside the Source card: `overflow-wrap: anywhere` or
- *   `word-break: break-all`, either in an inline `style` attribute or in a
- *   class rule inside a `<style>` block of the generated page. Both forms
- *   pass. The fix needs no change under `docs/`.
+ * U1 (blocking): the SHA-256 values of the About this data footer clip at
+ *   390 px when no element of their chain carries a wrap rule. The footer
+ *   element that holds a SHA-256 must sit inside a chain that carries
+ *   `overflow-wrap: anywhere` or `word-break: break-all`, either as an
+ *   inline `style` attribute or as a class rule inside a `<style>` block of
+ *   the generated page (test-strategy 13.5: U1 retargets the footer file
+ *   list). Both forms pass. The fix needs no change under `docs/`.
  *
  * U3 (minor): every `.table-wrap` scroll box in the generated page carries
  *   `tabindex="0"`, `role="region"`, and a non-empty `aria-label`, so a
@@ -1374,15 +1331,17 @@ describe("the UX fixes U1, U3, U4 of task 1.20", () => {
     return readFileSync(join(previewFolder(root), "real-work.html"), "utf8");
   }
 
-  /** The Source card: the `<section>` that holds `<h2>Source</h2>`. */
-  function sourceSection(page: string): string {
-    const at = page.indexOf("<h2>Source</h2>");
-    expect(at, "the page holds a Source heading").toBeGreaterThan(-1);
-    const start = page.lastIndexOf("<section", at);
-    const end = page.indexOf("</section>", at);
-    expect(start, "the Source heading sits in a section").toBeGreaterThan(-1);
-    expect(end, "the Source section closes").toBeGreaterThan(at);
-    return page.slice(start, end + "</section>".length);
+  /** The About this data footer and the open tag that starts it: the chain
+   * of elements around a footer SHA-256 value. */
+  function footerChain(page: string): string[] {
+    const at = page.indexOf('data-mg="about-footer"');
+    expect(at, "the page holds the About this data footer").toBeGreaterThan(-1);
+    const end = page.indexOf("</body>", at);
+    expect(end, "the footer closes").toBeGreaterThan(at);
+    const footer = page.slice(at, end);
+    const footerTag = page.slice(page.lastIndexOf("<", at), page.indexOf(">", at) + 1);
+    const tags = footer.match(/<[a-zA-Z][^>]*>/g) ?? [];
+    return [footerTag, ...tags];
   }
 
   function styleCarriesWrap(tag: string): boolean {
@@ -1414,28 +1373,22 @@ describe("the UX fixes U1, U3, U4 of task 1.20", () => {
     return false;
   }
 
-  it("U1: the source paragraph or a wrapper in the Source card carries a wrap rule", () => {
+  it("U1: the footer chain that holds a SHA-256 value carries a wrap rule", () => {
     const page = generatedPage("u1");
-    const section = sourceSection(page);
-    const h2End = section.indexOf("</h2>");
-    const shaAt = section.indexOf("SHA-256");
-    expect(shaAt, "the Source card holds the SHA-256 line").toBeGreaterThan(-1);
-    const pOpen = section.lastIndexOf("<p", shaAt);
-    expect(pOpen, "the SHA-256 line sits in a paragraph").toBeGreaterThan(h2End);
-    const pTag = section.slice(pOpen, section.indexOf(">", pOpen) + 1);
-    const wrapperTags =
-      section.slice(h2End + "</h2>".length, pOpen).match(/<[a-zA-Z][^>]*>/g) ?? [];
-    const chain = [pTag, ...wrapperTags];
+    const at = page.indexOf('data-mg="about-footer"');
+    const end = page.indexOf("</body>", at);
+    const footer = page.slice(at, end);
+    const shaAt = footer.search(/[0-9a-f]{64}/);
+    expect(shaAt, "the footer holds a SHA-256 value").toBeGreaterThan(-1);
+    const chain = footerChain(page);
     const inline = chain.some(styleCarriesWrap);
     const viaClass = chain.some((tag) =>
       classesOf(tag).some((cls) => classRuleCarriesWrap(page, cls)),
     );
     expect(
       inline || viaClass,
-      "U1: the source paragraph or a wrapper inside the Source card must carry " +
-        "`overflow-wrap: anywhere` or `word-break: break-all`, as an inline style " +
-        `attribute or as a class rule in a <style> block of the page. Paragraph tag: ` +
-        `${pTag}; wrapper tags: ${wrapperTags.join(" ") || "none"}`,
+      "U1: an element around a footer SHA-256 must carry `overflow-wrap: anywhere` " +
+        `or \`word-break: break-all\`. Chain: ${chain.join(" ")}`,
     ).toBe(true);
   });
 
@@ -1552,7 +1505,6 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
 
   interface Snapshot {
     page: string;
-    json: any;
     audit?: any;
     auditSection?: string;
   }
@@ -1560,17 +1512,14 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
   let pageGuardCache: Snapshot | null = null;
   let blockCache: Snapshot | null = null;
 
-  /** The generated page of the page-guard fixture (G1 to G4). */
+  /** The page built once from the page B fixture (G1 to G4, G6 to G10). */
   function pageGuardSnapshot(): Snapshot {
     if (!pageGuardCache) {
-      const root = repoFixture("page-guard");
-      const exportPath = stagePageGuard(root);
-      const result = runPreviewArgs(root, ["--export", exportPath]);
+      const root = repoFixture("page-b-base");
+      const result = runPreview(root);
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-      const preview = previewFolder(root);
       pageGuardCache = {
-        page: readFileSync(join(preview, "real-work.html"), "utf8"),
-        json: JSON.parse(readFileSync(join(preview, "real-work.json"), "utf8")),
+        page: readFileSync(join(previewFolder(root), "real-work.html"), "utf8"),
       };
     }
     return pageGuardCache;
@@ -1581,8 +1530,7 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     if (!blockCache) {
       const root = repoFixture("print-audit-block");
       stagePrintAuditData(root);
-      const exportPath = stagePageGuard(root);
-      const result = runPreviewArgs(root, ["--export", exportPath]);
+      const result = runPreview(root);
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
       const preview = previewFolder(root);
       const page = readFileSync(join(preview, "real-work.html"), "utf8");
@@ -1593,7 +1541,6 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       expect(end, "the Print audit section closes").toBeGreaterThan(at);
       blockCache = {
         page,
-        json: JSON.parse(readFileSync(join(preview, "real-work.json"), "utf8")),
         audit: JSON.parse(
           readFileSync(
             join(root, "harness", "model-guide", "data", "print-audit-2026-11.json"),
@@ -1747,266 +1694,294 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     return out;
   }
 
-  /** A page built from the page-guard export after a mutation. The manifest
-   * is rebuilt, so the input check passes on the changed synthetic bytes. */
-  function pageGuardVariant(tag: string, mutate: (doc: any) => void): Snapshot {
+  /** A page built from the staged page B fixture after a mutation of the
+   * outcomes rows. The manifest is rebuilt, so the input check passes on
+   * the changed synthetic bytes. */
+  function pageGuardVariant(tag: string, mutate: (rows: any[]) => void): Snapshot {
     const root = repoFixture(tag);
-    const dir = join(root, "fixture-page-guard");
-    mkdirSync(dir, { recursive: true });
-    const doc = JSON.parse(readFileSync(join(PAGE_GUARD_DIR, "real-work-page.json"), "utf8"));
-    mutate(doc);
-    const exportPath = join(dir, "real-work-page.json");
-    const text = `${JSON.stringify(doc, null, 2)}\n`;
-    writeFileSync(exportPath, text);
-    writeFileSync(join(dir, "MANIFEST.txt"), [
-      `sha256: ${sha256(exportPath)}`,
-      `size: ${Buffer.byteLength(text)}`,
-      "",
-    ].join("\n"));
-    const result = runPreviewArgs(root, ["--export", exportPath]);
+    stageFixture(root, mutate);
+    const result = runPreview(root);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const preview = previewFolder(root);
     return {
-      page: readFileSync(join(preview, "real-work.html"), "utf8"),
-      json: JSON.parse(readFileSync(join(preview, "real-work.json"), "utf8")),
+      page: readFileSync(join(previewFolder(root), "real-work.html"), "utf8"),
     };
   }
 
-  it("G1: the source line sits in the About this data footer, not at the top of the page", () => {
-    const { page, json } = pageGuardSnapshot();
-    expect(page).not.toContain("generated 2026-11-14");
-    const footer = hookRegion(page, "about-footer", "</body>");
-    expect(footer, "the footer is named About this data").toContain("About this data");
-    for (const value of [
-      json.source.file,
-      json.source.sha256,
-      `generated ${json.source.generated_on}`,
-    ]) {
-      expect(footer, `the footer holds the source value ${value}`).toContain(value);
+  interface Probe {
+    key: string;
+    rank: string | null;
+    cells: string[];
+  }
+
+  function unescapeHtml(value: string): string {
+    return value
+      .replaceAll("&quot;", '"')
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&#x27;", "'")
+      .replaceAll("&amp;", "&");
+  }
+
+  /** Data rows of a region with their `data-model-key`, `data-rank`, and
+   * their cell texts. The key is HTML-unescaped, so a hostile key compares
+   * against its raw text. */
+  function probesOf(region: string): Probe[] {
+    const out: Probe[] = [];
+    for (const m of region.matchAll(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/g)) {
+      const raw = m[1].match(/\bdata-model-key="([^"]*)"/)?.[1];
+      if (raw === undefined) continue;
+      out.push({
+        key: unescapeHtml(raw),
+        rank: m[1].match(/\bdata-rank="([^"]*)"/)?.[1] ?? null,
+        cells: [...m[2].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map((cell) =>
+          cell[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+        ),
+      });
     }
+    return out;
+  }
+
+  interface TopPick {
+    role: string | null;
+    key: string | null;
+    none: boolean;
+  }
+
+  /** The pick lines of the top block, in document order. */
+  function topPicksOf(page: string): TopPick[] {
+    const at = page.indexOf('data-mg="top-block"');
+    expect(at, "the page holds the top block").toBeGreaterThan(-1);
+    const end = page.indexOf("</section>", at);
+    const region = page.slice(at, end > at ? end : page.length);
+    const out: TopPick[] = [];
+    const re = /<([a-zA-Z][\w-]*)\b([^>]*\bdata-mg="pick"[^>]*)>/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(region)) !== null) {
+      const tag = m[1];
+      const close = region.indexOf(`</${tag}>`, re.lastIndex);
+      expect(close, "a pick line closes").toBeGreaterThan(re.lastIndex);
+      const inner = region.slice(re.lastIndex, close);
+      out.push({
+        role: m[2].match(/\bdata-role="([^"]*)"/)?.[1] ?? null,
+        key: m[2].match(/\bdata-model-key="([^"]*)"/)?.[1] ?? null,
+        none: inner.includes('data-mg="pick-none"'),
+      });
+      re.lastIndex = close + tag.length + 3;
+    }
+    return out;
+  }
+
+  /** The text of one `data-mg` hook element inside a region. */
+  function hookTextOf(region: string, hook: string): string {
+    const at = region.indexOf(`data-mg="${hook}"`);
+    expect(at, `the region holds data-mg="${hook}"`).toBeGreaterThan(-1);
+    const open = region.lastIndexOf("<", at);
+    const tag = region.slice(open, region.indexOf(">", at) + 1);
+    const tagName = tag.match(/^<([a-zA-Z][\w-]*)/)?.[1];
+    expect(tagName, `the ${hook} hook sits on an element`).toBeTruthy();
+    const bodyStart = region.indexOf(">", at) + 1;
+    const close = region.indexOf(`</${tagName}>`, bodyStart);
+    expect(close, `the ${hook} element closes`).toBeGreaterThan(bodyStart);
+    return region.slice(bodyStart, close).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  /** One labeled integer of the About this data footer (A3). */
+  function footerNumber(page: string, hook: string): number {
+    const text = hookTextOf(hookRegion(page, "about-footer", "</body>"), hook);
+    const match = text.match(/^(\d+)$/);
+    expect(match, `${hook} holds one integer, got "${text}"`).toBeTruthy();
+    return Number(match![1]);
+  }
+
+  const PRODUCER_G_COLUMNS = [
+    "Model",
+    "Tasks",
+    "First-round accept %",
+    "Rework",
+    "Cleanup %",
+    "Tokens per accepted task",
+  ];
+  const CHECKER_G_COLUMNS = ["Model", "Runs", "Pass %", "Findings per run", "Escapes", "Net score"];
+
+  it("G1: the footer lists the three files with their SHA-256 values and the read date, below the first table", () => {
+    const { page } = pageGuardSnapshot();
     const firstTable = page.indexOf("<table");
     expect(firstTable, "the page holds a table").toBeGreaterThan(-1);
-    expect(
-      page.indexOf(`generated ${json.source.generated_on}`),
-      "the source line is below the first table",
-    ).toBeGreaterThan(firstTable);
+    const footerAt = page.indexOf('data-mg="about-footer"');
+    expect(footerAt, "the page holds the About this data footer").toBeGreaterThan(-1);
+    expect(footerAt, "the footer sits below the first table").toBeGreaterThan(firstTable);
+    const footer = hookRegion(page, "about-footer", "</body>");
+    expect(footer, "the footer is named About this data").toContain("About this data");
+    const shas = footer.match(/[0-9a-f]{64}/g) ?? [];
+    for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME]) {
+      expect(footer, `the footer lists ${name}`).toContain(name);
+      expect(shas, `the footer holds the SHA-256 of ${name}`).toContain(sha256(join(PAGE_B, name)));
+    }
+    expect(footer, "the footer holds the read date").toContain(DATE);
   });
 
   it("G2: the coverage numbers sit in the same About this data footer", () => {
-    const { page, json } = pageGuardSnapshot();
-    expect(json.coverage.runs).toBe(1285);
+    const { page } = pageGuardSnapshot();
     const footer = hookRegion(page, "about-footer", "</body>");
-    for (const value of [
-      "1,285",
-      `${json.coverage.first_run_date} to ${json.coverage.last_run_date}`,
-      "2026-10-01 to 2026-11-01",
-      `${(json.coverage.share_known_route * 100).toFixed(1)} %`,
-      `${(json.coverage.share_with_result * 100).toFixed(1)} %`,
-      "38.9 %",
-      "77.8 %",
-    ]) {
-      expect(footer, `the footer holds ${value}`).toContain(value);
-    }
-    expect(footer).toMatch(/Left-out paired duplicates[\s\S]{0,40}\b0\b/);
+    expect(footerNumber(page, "footer-rows"), "row count").toBe(35);
+    expect(footerNumber(page, "footer-routes"), "route count").toBe(30);
+    expect(footerNumber(page, "footer-unknown-rows"), "unknown rows").toBe(2);
+    const share = hookTextOf(footer, "footer-unknown-share");
+    expect(share, "the share is a labeled percent").toMatch(/^(\d+(?:\.\d)?)\s*%$/);
+    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(5.7);
+    expect(hookTextOf(footer, "footer-read-date"), "the read date").toBe(DATE);
+    expect(hookTextOf(footer, "footer-export-date"), "the export date").toBe(DATE);
+    expect(footer, "the footer holds the merge method note").toContain(METHOD_NOTE);
   });
 
-  it("G3: a row with fewer than 10 results sits in Too few runs to rank, with no rank, never in the ranked table", () => {
-    const { page, json } = pageGuardSnapshot();
-    const groups: Array<[string, string, any[], boolean]> = [
-      ["producer", "Producer roles", json.producer, true],
-      ["checker", "Checker roles", json.checker, true],
+  it("G3: a row below the minimum of 5 sits in Too few tasks, with no rank, never in the ranked table", () => {
+    const { page } = pageGuardSnapshot();
+    expect(page, "the old group label is gone").not.toContain("Too few runs to rank");
+    const groups: Array<[string, string[], string[]]> = [
+      [
+        "Producer roles",
+        [
+          "t1/prod-eight",
+          "t1/prod-strat",
+          "t1/prod-one",
+          "t2/prod-two",
+          "t1/prod-four",
+          "t1/prod-three",
+          "t1/prod-two",
+          "t1/prod-nine",
+          "t1/prod-six",
+        ],
+        ["t1/prod-five", "t1/prod-seven"],
+      ],
+      [
+        "Checker roles",
+        [
+          "t1/gate-five",
+          "t1/gate-nine",
+          "t1/gate-eight",
+          "t1/gate-six",
+          "opencode/gate-three-free",
+          "t1/gate-seven",
+          "t1/gate-four",
+          "t1/gate-two",
+          "t1/gate-one",
+          't1/"><img src=x onerror=alert(1)>',
+          "t1/__proto__",
+        ],
+        ["t1/gate-eleven", "t1/gate-twelve"],
+      ],
     ];
-    for (const [name, rows] of Object.entries<any>(json.work_types)) {
-      groups.push([`work type ${name}`, name, rows, false]);
-    }
-    for (const [label, heading, rows, isMain] of groups) {
-      const ranked = rows.filter((r: any) => !r.few_runs);
-      const few = rows.filter((r: any) => r.few_runs);
-      expect(few.length, `${label} has a few-runs row`).toBeGreaterThan(0);
-      expect(ranked.length, `${label} has a ranked row`).toBeGreaterThan(0);
-      const section = isMain ? mainSection(page, heading) : workTypeSection(page, heading);
-      const table = defaultTables(section)[0];
-      expect(table, `${label} holds a default table`).toBeDefined();
-      const rankedRows = rowProbes(table);
-      expect(
-        rankedRows.map((r) => r.key).sort(),
-        `${label} ranked table holds only the ranked rows`,
-      ).toEqual(ranked.map((r: any) => r.model).sort());
-      for (const row of rankedRows) {
-        expect(row.rank, `${label} ranked row ${row.key} has a rank number`).not.toBeNull();
-        expect(Number.isInteger(Number(row.rank)), `${label} rank ${row.rank} is an integer`).toBe(
-          true,
-        );
+    for (const [heading, expectedRanked, expectedFew] of groups) {
+      const section = mainSection(page, heading);
+      const ranked = probesOf(section).filter((row) => row.rank !== null);
+      expect(ranked.map((row) => row.key), `${heading} ranked rows`).toEqual(expectedRanked);
+      for (const row of ranked) {
+        expect(Number.isInteger(Number(row.rank)), `${heading} rank ${row.rank} is an integer`)
+          .toBe(true);
       }
       const fewGroup = fewGroupOf(section);
-      expect(fewGroup).toContain("Too few runs to rank");
-      const fewRows = rowProbes(fewGroup);
-      expect(
-        fewRows.map((r) => r.key).sort(),
-        `${label} too-few group holds only the few-runs rows`,
-      ).toEqual(few.map((r: any) => r.model).sort());
-      for (const row of fewRows) {
-        expect(row.rank, `${label} few-runs row ${row.key} has no rank number`).toBeNull();
-      }
-      for (const row of few) {
-        expect(
-          rankedRows.some((r) => r.key === row.model),
-          `${label} few-runs model ${row.model} is not in the ranked table`,
-        ).toBe(false);
+      expect(fewGroup, `${heading} group label`).toContain("Too few tasks");
+      const few = probesOf(fewGroup);
+      expect(few.map((row) => row.key), `${heading} too-few rows`).toEqual(expectedFew);
+      for (const row of few) expect(row.rank, `${row.key} has no rank`).toBeNull();
+      for (const key of expectedFew) {
+        expect(ranked.some((row) => row.key === key), `${key} is not ranked`).toBe(false);
       }
     }
   });
 
-  it("G4: a rate is a whole percent with no (n=...), an empty value is a dash, and Runs holds the result count", () => {
-    const { page, json } = pageGuardSnapshot();
-    const groups: Array<[string, any[], boolean]> = [
-      ["Producer roles", json.producer, true],
-      ["Checker roles", json.checker, true],
-    ];
-    for (const [name, rows] of Object.entries<any>(json.work_types)) {
-      groups.push([name, rows, false]);
-    }
+  it("G4: a rate is a whole percent with no (n=...), an empty value is a dash, and the count columns hold the counts", () => {
+    const { page } = pageGuardSnapshot();
     let dashSeen = false;
-    for (const [heading, rows, isMain] of groups) {
-      const section = isMain ? mainSection(page, heading) : workTypeSection(page, heading);
-      const table = defaultTables(section)[0];
-      expect(table, `${heading} holds a default table`).toBeDefined();
-      const headers = headerTexts(table);
-      const runsAt = headers.indexOf("Runs");
-      const passAt = headers.indexOf("Pass %");
-      const ratingAt = headers.indexOf("Rating");
-      expect(runsAt, `${heading} has a Runs column`).toBeGreaterThan(-1);
-      expect(passAt, `${heading} has a Pass % column`).toBeGreaterThan(-1);
-      for (const row of rowProbes(table)) {
-        const source = rows.find((r: any) => r.model === row.key);
-        expect(source, `${heading} row ${row.key} is in the data`).toBeDefined();
-        const runs = (row.cells[runsAt] ?? "").replace(/,/g, "");
-        expect(runs, `${heading} ${row.key} Runs holds the result count`).toContain(
-          String(source.pass_rate.n),
-        );
-        const pass = row.cells[passAt] ?? "";
-        expect(pass, `${heading} ${row.key} Pass % is a whole percent`).toMatch(/^\d+\s*%$/);
-        expect(pass, `${heading} ${row.key} Pass % has no (n=...) suffix`).not.toContain("(n=");
-        if (ratingAt >= 0) {
-          const rating = row.cells[ratingAt] ?? "";
-          expect(rating, `${heading} ${row.key} empty Rating shows a dash`).toBe("–");
-          dashSeen = true;
-        }
+    const producer = mainSection(page, "Producer roles");
+    const pHeaders = headerTexts(defaultTables(producer)[0]);
+    const pAccept = pHeaders.indexOf("First-round accept %");
+    const pTasks = pHeaders.indexOf("Tasks");
+    expect(pAccept, "the producer table has a first-round column").toBeGreaterThan(-1);
+    expect(pTasks, "the producer table has a Tasks column").toBeGreaterThan(-1);
+    for (const row of probesOf(producer)) {
+      const rate = row.cells[pAccept] ?? "";
+      if (rate === "\u2013") {
+        dashSeen = true;
+        continue;
       }
+      expect(rate, `${row.key} accept % is a whole percent`).toMatch(/^\d+\s*%$/);
+      expect(rate, `${row.key} accept % has no (n=...)`).not.toContain("(n=");
+      expect(row.cells[pTasks], `${row.key} Tasks holds a count`).toMatch(/^\d+$/);
+    }
+    const checker = mainSection(page, "Checker roles");
+    const cHeaders = headerTexts(defaultTables(checker)[0]);
+    const cPass = cHeaders.indexOf("Pass %");
+    const cRuns = cHeaders.indexOf("Runs");
+    expect(cPass, "the checker table has a Pass % column").toBeGreaterThan(-1);
+    expect(cRuns, "the checker table has a Runs column").toBeGreaterThan(-1);
+    for (const row of probesOf(checker)) {
+      const rate = row.cells[cPass] ?? "";
+      expect(rate, `${row.key} pass % is a whole percent`).toMatch(/^\d+\s*%$/);
+      expect(rate, `${row.key} pass % has no (n=...)`).not.toContain("(n=");
+      expect(row.cells[cRuns], `${row.key} Runs holds a count`).toMatch(/^\d+$/);
     }
     expect(dashSeen, "the page shows the dash for an empty value").toBe(true);
   });
 
-  it("G5: the top block gives one ranked-pick line per role group and per work type", () => {
-    const { page, json } = pageGuardSnapshot();
-    const at = hookStart(page, "top-block");
-    const firstTable = page.indexOf("<table");
-    expect(at, "the top block comes before the first table").toBeLessThan(firstTable);
-    const labels = ["Producer roles", "Checker roles", ...Object.keys(json.work_types)];
-    const items = pickItems(page);
-    expect(items, "one line per role group and work type").toHaveLength(labels.length);
-    for (const label of labels) {
-      const rows: any[] =
-        label === "Producer roles"
-          ? json.producer
-          : label === "Checker roles"
-            ? json.checker
-            : json.work_types[label];
-      const pick = rows.find((r: any) => r.can_pick && r.rank === 1);
-      expect(pick, `${label} has a rank-1 row with 10 or more results`).toBeDefined();
-      const item = items.find((i) => i.key === pick.model && i.text.includes(label));
-      expect(item, `${label} line names the ranked pick`).toBeDefined();
-      expect(item!.text, `${label} line names the group`).toContain(label);
-      expect(item!.text, `${label} line does not say no pick yet`).not.toContain("no pick yet");
-      expect(item!.text, `${label} line holds the whole percent`).toMatch(
-        new RegExp(`\\b${Math.round(pick.pass_rate.value * 100)}\\s*%`),
-      );
-      expect(item!.text, `${label} line holds the result count`).toContain(
-        String(pick.pass_rate.n),
-      );
+  it("G6: each top line without a pick shows one of the four causes", () => {
+    const { page } = pageGuardSnapshot();
+    const picks = topPicksOf(page);
+    expect(picks, "one line for each of the ten roles").toHaveLength(10);
+    const none = picks.filter((pick) => pick.none);
+    expect(
+      none.map((pick) => pick.role),
+      "five lines say no pick yet",
+    ).toEqual(["coder", "review-b", "adversarial", "acceptance", "final-acceptance"]);
+    for (const pick of none) {
+      expect(pick.key, `${pick.role} line carries no model key`).toBeNull();
     }
+    // The causes in the fixture: not allowed and not for verdicts rank in
+    // the table but never pick, and a below-minimum net score stops Review B.
+    const checker = probesOf(mainSection(page, "Checker roles"));
+    expect(
+      checker.some((row) => row.key === "t1/gate-nine" && row.rank !== null),
+      "a not-allowed row ranks in the table",
+    ).toBe(true);
+    expect(
+      checker.some((row) => row.key === "t1/gate-eight" && row.rank !== null),
+      "a not-for-verdicts row ranks in the table",
+    ).toBe(true);
+    expect(
+      checker.some((row) => row.key === "t1/gate-one" && row.rank !== null),
+      "gate-one ranks in the table",
+    ).toBe(true);
+    const producer = probesOf(mainSection(page, "Producer roles"));
+    expect(
+      producer.some((row) => row.key === "t1/prod-eight" && row.rank !== null),
+      "a not-allowed producer row ranks in the table",
+    ).toBe(true);
   });
 
-  it("G6: a group with no row of 10 or more results says no pick yet in the top block", () => {
-    const { page } = pageGuardVariant("top-no-pick", (doc) => {
-      for (const row of doc.all_time) {
-        row.pass = Math.min(row.pass, 2);
-        row.fail = Math.min(row.fail, 2);
-        row.error = 0;
-        for (const name of Object.keys(row.work_types || {})) {
-          row.work_types[name].pass = Math.min(row.work_types[name].pass, 2);
-          row.work_types[name].fail = Math.min(row.work_types[name].fail, 2);
-        }
-      }
-    });
-    const items = pickItems(page);
-    expect(items, "the top block still has one line per group").toHaveLength(4);
-    for (const item of items) {
-      expect(item.text, "each line says no pick yet").toContain("no pick yet");
-    }
-  });
-
-  it("G7: a default table has six columns or fewer and a work-type table drops Blocking %", () => {
-    const { page, json } = pageGuardSnapshot();
-    const allowed = ["Model", "Runs", "Pass %", "Blocking %", "Rating", "Trend"];
-    for (const heading of ["Producer roles", "Checker roles"]) {
-      const table = defaultTables(mainSection(page, heading))[0];
-      expect(table, `${heading} holds a default table`).toBeDefined();
-      const headers = headerTexts(table);
-      expect(headers.length, `${heading} has six columns or fewer`).toBeLessThanOrEqual(6);
-      for (const h of headers) expect(allowed, `${heading} default column ${h}`).toContain(h);
-      expect(headers).toContain("Blocking %");
-      for (const hidden of ["Routes", "Pass", "Fail", "Error", "No result", "Agreement"]) {
-        expect(headers, `${heading} hides ${hidden}`).not.toContain(hidden);
-      }
-    }
-    for (const name of Object.keys(json.work_types)) {
-      const table = defaultTables(workTypeSection(page, name))[0];
-      expect(table, `work type ${name} holds a default table`).toBeDefined();
-      const headers = headerTexts(table);
-      expect(headers.length, `${name} has six columns or fewer`).toBeLessThanOrEqual(6);
-      expect(headers).toContain("Model");
-      expect(headers, `${name} drops Blocking %`).not.toContain("Blocking %");
-    }
+  it("G7: the two default tables hold exactly the pinned columns", () => {
+    const { page } = pageGuardSnapshot();
+    expect(
+      headerTexts(defaultTables(mainSection(page, "Producer roles"))[0]),
+      "the producer default columns",
+    ).toEqual(PRODUCER_G_COLUMNS);
+    expect(
+      headerTexts(defaultTables(mainSection(page, "Checker roles"))[0]),
+      "the checker default columns",
+    ).toEqual(CHECKER_G_COLUMNS);
   });
 
   it("G8: the remaining columns sit behind a More columns toggle", () => {
     const { page } = pageGuardSnapshot();
     const more = hookRegion(page, "more-columns", "</details>");
     expect(more, "the toggle is labelled More columns").toContain("More columns");
-    const hidden = [
-      "Routes",
-      "Pass",
-      "Fail",
-      "Error",
-      "No result",
-      "Blocking count",
-      "Agreement",
-    ];
-    for (const name of hidden) {
+    for (const name of ["Routes", "Roles", "Accepted", "AA net score"]) {
       expect(more, `the toggle holds ${name}`).toContain(name);
     }
     for (const table of defaultTables(page)) {
       const headers = headerTexts(table);
-      for (const name of hidden) {
+      for (const name of ["Routes", "Roles", "Accepted", "AA net score"]) {
         expect(headers, `the default table hides ${name}`).not.toContain(name);
       }
-    }
-  });
-
-  it("G9: each work type sits in a tab or a collapsed section", () => {
-    const { page, json } = pageGuardSnapshot();
-    for (const name of Object.keys(json.work_types)) {
-      const at = page.indexOf(`<h3>${escapeHtml(name)}</h3>`);
-      expect(at, `the page holds the ${name} work type`).toBeGreaterThan(-1);
-      const hookAt = page.lastIndexOf('data-mg="work-type"', at);
-      expect(hookAt, `${name} is wrapped by a work-type hook`).toBeGreaterThan(-1);
-      const open = page.lastIndexOf("<", hookAt);
-      const tag = page.slice(open, page.indexOf(">", hookAt) + 1);
-      expect(
-        /^<details\b/.test(tag) || /\brole="tab(?:panel)?"/.test(tag),
-        `${name} wrapper is a collapsed section or a tab: ${tag}`,
-      ).toBe(true);
     }
   });
 
@@ -2016,10 +1991,10 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     const names = JSON.parse(readFileSync(namesFile, "utf8"));
     const namedKey = "kimi-code-plan-cn/kimi-for-coding";
     expect(typeof names[namedKey], "model-names.json names the Kimi key").toBe("string");
-    const { page } = pageGuardVariant("names", (doc) => {
-      for (const row of [...doc.weekly, ...doc.all_time]) {
-        if (row.route === "x/m") row.route = namedKey;
-        if (row.route === "y/m") row.route = "opencode-go/synthetic-unknown";
+    const { page } = pageGuardVariant("names", (rows) => {
+      for (const row of rows) {
+        if (row.route === "t1/prod-five") row.route = namedKey;
+        if (row.route === "t1/prod-six") row.route = "opencode-go/synthetic-unknown";
       }
     });
     const modelCells = [...page.matchAll(/<td\b[^>]*data-mg="model-name"[^>]*>([\s\S]*?)<\/td>/g)].map(
@@ -2238,5 +2213,403 @@ describe("review B round 2 (P2B2-2): the newline score name in preview.sh", () =
     ).toBe("new-model");
     const index = readFileSync(join(previewFolder(root), "index.html"), "utf8");
     expect(index, "the page shows the same pick").toContain("new-model");
+  });
+});
+
+/**
+ * Red tests for plan task 4.1e: groups DS14 to DS21 and FX2 of the Data
+ * source block (test-strategy 13.4). The cases read the generated
+ * `real-work.html` through the `data-mg` hooks of section 13.6. FX2 runs
+ * before the format check DS16 in this file (A4). The fixture is
+ * `fixtures/page-b/` with the sentinel date 2026-10-20.
+ */
+describe("the Data source page groups DS14 to DS21 and FX2", () => {
+  const DASH = "\u2013";
+  const PRODUCER_COLUMNS = [
+    "Model",
+    "Tasks",
+    "First-round accept %",
+    "Rework",
+    "Cleanup %",
+    "Tokens per accepted task",
+  ];
+  const CHECKER_COLUMNS = ["Model", "Runs", "Pass %", "Findings per run", "Escapes", "Net score"];
+
+  interface DsRow {
+    key: string;
+    rank: string | null;
+    cells: string[];
+  }
+
+  function unescape(value: string): string {
+    return value
+      .replaceAll("&quot;", '"')
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&#x27;", "'")
+      .replaceAll("&amp;", "&");
+  }
+
+  function sectionOf(page: string, heading: string): string {
+    const at = page.indexOf(`<h2>${heading}</h2>`);
+    expect(at, `the page holds a ${heading} heading`).toBeGreaterThan(-1);
+    const end = page.indexOf("</section>", at);
+    expect(end, `the ${heading} section closes`).toBeGreaterThan(at);
+    return page.slice(at, end);
+  }
+
+  function headersOf(table: string): string[] {
+    return [...table.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map((m) =>
+      m[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+    );
+  }
+
+  function defaultTableOf(section: string, label: string): string {
+    const m = section.match(/<table\b[^>]*data-mg="default-table"[^>]*>[\s\S]*?<\/table>/);
+    expect(m, `${label} holds a default table`).toBeTruthy();
+    return m![0];
+  }
+
+  function rowsOf(region: string): DsRow[] {
+    const out: DsRow[] = [];
+    for (const m of region.matchAll(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/g)) {
+      const raw = m[1].match(/\bdata-model-key="([^"]*)"/)?.[1];
+      if (raw === undefined) continue;
+      out.push({
+        key: unescape(raw),
+        rank: m[1].match(/\bdata-rank="([^"]*)"/)?.[1] ?? null,
+        cells: [...m[2].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map((cell) =>
+          cell[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+        ),
+      });
+    }
+    return out;
+  }
+
+  function fewGroupOf(section: string): string {
+    const at = section.indexOf('data-mg="too-few"');
+    expect(at, "the section holds a Too few tasks group").toBeGreaterThan(-1);
+    const open = section.lastIndexOf("<details", at);
+    const end = section.indexOf("</details>", at);
+    expect(end, "the group closes").toBeGreaterThan(at);
+    return section.slice(open < 0 ? at : open, end + "</details>".length);
+  }
+
+  function hookTextOf(region: string, hook: string): string {
+    const at = region.indexOf(`data-mg="${hook}"`);
+    expect(at, `the region holds data-mg="${hook}"`).toBeGreaterThan(-1);
+    const open = region.lastIndexOf("<", at);
+    const tag = region.slice(open, region.indexOf(">", at) + 1);
+    const tagName = tag.match(/^<([a-zA-Z][\w-]*)/)?.[1];
+    expect(tagName, `the ${hook} hook sits on an element`).toBeTruthy();
+    const bodyStart = region.indexOf(">", at) + 1;
+    const close = region.indexOf(`</${tagName}>`, bodyStart);
+    expect(close, `the ${hook} element closes`).toBeGreaterThan(bodyStart);
+    return region.slice(bodyStart, close).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  function footerOf(page: string): string {
+    const at = page.indexOf('data-mg="about-footer"');
+    expect(at, "the page holds the About this data footer").toBeGreaterThan(-1);
+    const end = page.indexOf("</body>", at);
+    expect(end, "the footer closes").toBeGreaterThan(at);
+    return page.slice(at, end);
+  }
+
+  function footerNumber(page: string, hook: string): number {
+    const text = hookTextOf(footerOf(page), hook);
+    const match = text.match(/^(\d+)$/);
+    expect(match, `${hook} holds one integer, got "${text}"`).toBeTruthy();
+    return Number(match![1]);
+  }
+
+  function topPickCount(page: string): number {
+    const at = page.indexOf('data-mg="top-block"');
+    expect(at, "the page holds the top block").toBeGreaterThan(-1);
+    const end = page.indexOf("</section>", at);
+    const region = page.slice(at, end > at ? end : page.length);
+    return (region.match(/data-mg="pick"/g) ?? []).length;
+  }
+
+  function hookItemsOf(region: string, hook: string): string[] {
+    const re = new RegExp(`<([a-zA-Z][\\w-]*)\\b[^>]*data-mg="${hook}"[^>]*>`, "g");
+    const out: string[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(region)) !== null) {
+      const tag = m[1];
+      const close = region.indexOf(`</${tag}>`, re.lastIndex);
+      expect(close, `a ${hook} item closes`).toBeGreaterThan(re.lastIndex);
+      out.push(
+        region
+          .slice(re.lastIndex, close)
+          .replace(/<[^>]*>/g, "")
+          .replace(/\s+/g, " ")
+          .trim(),
+      );
+      re.lastIndex = close + tag.length + 3;
+    }
+    return out;
+  }
+
+  function moreColumnsOf(section: string): string {
+    const at = section.indexOf('data-mg="more-columns"');
+    expect(at, "the section holds a More columns toggle").toBeGreaterThan(-1);
+    const open = section.lastIndexOf("<", at);
+    const tag = section.slice(open, section.indexOf(">", at) + 1);
+    const tagName = tag.match(/^<([a-zA-Z][\w-]*)/)?.[1] as string;
+    const close = section.indexOf(`</${tagName}>`, at);
+    expect(close, "the toggle closes").toBeGreaterThan(at);
+    return section.slice(open, close + tagName.length + 3);
+  }
+
+  interface DsPage {
+    root: string;
+    page: string;
+  }
+
+  let dsCache: DsPage | null = null;
+
+  function base(): DsPage {
+    if (!dsCache) {
+      const root = repoFixture("ds-page");
+      const result = runPreview(root);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const file = join(previewFolder(root), "real-work.html");
+      expect(existsSync(file), `missing ${file}`).toBe(true);
+      dsCache = { root, page: readFileSync(file, "utf8") };
+    }
+    return dsCache;
+  }
+
+  function countRanks(page: string): {
+    producerRanked: DsRow[];
+    producerFew: DsRow[];
+    checkerRanked: DsRow[];
+    checkerFew: DsRow[];
+  } {
+    const producer = sectionOf(page, "Producer roles");
+    const checker = sectionOf(page, "Checker roles");
+    return {
+      producerRanked: rowsOf(producer).filter((row) => row.rank !== null),
+      producerFew: rowsOf(fewGroupOf(producer)),
+      checkerRanked: rowsOf(checker).filter((row) => row.rank !== null),
+      checkerFew: rowsOf(fewGroupOf(checker)),
+    };
+  }
+
+  it("FX2: the page holds 9 ranked and 2 too-few producer rows, 11 ranked and 2 too-few checker rows, and 10 top lines", () => {
+    const { page } = base();
+    const counts = countRanks(page);
+    expect(counts.producerRanked, "ranked producer rows").toHaveLength(9);
+    expect(counts.producerFew, "too-few producer rows").toHaveLength(2);
+    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(11);
+    expect(counts.checkerFew, "too-few checker rows").toHaveLength(2);
+    expect(topPickCount(page), "top block lines").toBe(10);
+  });
+
+  it("DS14: the page holds no work-type section and no heading that names a retired work type", () => {
+    const { page } = base();
+    expect(page, "no work-type hook").not.toContain('data-mg="work-type"');
+    const headings = [...page.matchAll(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) =>
+      m[1].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().toLowerCase(),
+    );
+    expect(headings.length, "the page holds headings").toBeGreaterThan(0);
+    for (const name of ["work types", "app code", "docs and ops", "print books", "tooling", "other"]) {
+      expect(headings, `no heading names ${name}`).not.toContain(name);
+    }
+  });
+
+  it("DS15: no producer header matches pass, and the checker table has no blocking columns", () => {
+    const { page } = base();
+    const producer = sectionOf(page, "Producer roles");
+    const pHeaders = [
+      ...headersOf(defaultTableOf(producer, "producer")),
+      ...headersOf(moreColumnsOf(producer)),
+    ];
+    expect(pHeaders.length, "the producer section holds headers").toBeGreaterThan(0);
+    for (const header of pHeaders) {
+      expect(header, `producer header ${header} matches /pass/i`).not.toMatch(/pass/i);
+    }
+    const cHeaders = headersOf(defaultTableOf(sectionOf(page, "Checker roles"), "checker"));
+    expect(cHeaders, "no Blocking % header").not.toContain("Blocking %");
+    expect(cHeaders, "no Blockers per run header").not.toContain("Blockers per run");
+  });
+
+  it("DS16: the default columns match the pinned lists and every number cell matches its format", () => {
+    const { page } = base();
+    const producer = sectionOf(page, "Producer roles");
+    const pTable = defaultTableOf(producer, "producer");
+    const pHeaders = headersOf(pTable);
+    expect(pHeaders, "the producer default columns").toEqual(PRODUCER_COLUMNS);
+    const checker = sectionOf(page, "Checker roles");
+    const cTable = defaultTableOf(checker, "checker");
+    const cHeaders = headersOf(cTable);
+    expect(cHeaders, "the checker default columns").toEqual(CHECKER_COLUMNS);
+
+    const isPercent = (cell: string) => cell === DASH || /^\d+\s*%$/.test(cell);
+    const pTasks = pHeaders.indexOf("Tasks");
+    const pAccept = pHeaders.indexOf("First-round accept %");
+    const pRework = pHeaders.indexOf("Rework");
+    const pCleanup = pHeaders.indexOf("Cleanup %");
+    const pTokens = pHeaders.indexOf("Tokens per accepted task");
+    const pRows = rowsOf(producer);
+    expect(pRows.length, "the producer table holds rows").toBeGreaterThan(0);
+    for (const row of pRows) {
+      expect(row.cells[pTasks], `${row.key} Tasks is an integer`).toMatch(/^\d+$/);
+      expect(isPercent(row.cells[pAccept] ?? ""), `${row.key} accept % is a whole percent`).toBe(true);
+      const rework = row.cells[pRework] ?? "";
+      expect(
+        rework === DASH || /^\d+\.\d$/.test(rework),
+        `${row.key} rework is one decimal or a dash, got "${rework}"`,
+      ).toBe(true);
+      expect(isPercent(row.cells[pCleanup] ?? ""), `${row.key} cleanup is a whole percent`).toBe(true);
+      const tokens = row.cells[pTokens] ?? "";
+      expect(
+        tokens === DASH || /^\d+k$/.test(tokens),
+        `${row.key} tokens are whole thousands or a dash, got "${tokens}"`,
+      ).toBe(true);
+    }
+
+    const cRuns = cHeaders.indexOf("Runs");
+    const cPass = cHeaders.indexOf("Pass %");
+    const cFindings = cHeaders.indexOf("Findings per run");
+    const cEscapes = cHeaders.indexOf("Escapes");
+    const cNet = cHeaders.indexOf("Net score");
+    const cRows = rowsOf(checker);
+    expect(cRows.length, "the checker table holds rows").toBeGreaterThan(0);
+    for (const row of cRows) {
+      expect(row.cells[cRuns], `${row.key} Runs is an integer`).toMatch(/^\d+$/);
+      expect(isPercent(row.cells[cPass] ?? ""), `${row.key} pass % is a whole percent`).toBe(true);
+      const findings = row.cells[cFindings] ?? "";
+      expect(
+        /^\d+\.\d{2}$/.test(findings),
+        `${row.key} findings per run has two decimals and no %, got "${findings}"`,
+      ).toBe(true);
+      expect(row.cells[cEscapes], `${row.key} Escapes is an integer`).toMatch(/^\d+$/);
+      const net = row.cells[cNet] ?? "";
+      expect(
+        net === "not rated" || Number.isFinite(Number(net)),
+        `${row.key} net score is a number or not rated, got "${net}"`,
+      ).toBe(true);
+    }
+    expect(pTable + cTable, "no cell holds (n=").not.toContain("(n=");
+  });
+
+  it("DS18: the About this data footer holds the three files, the dates, and the coverage of the fixture", () => {
+    const { root, page } = base();
+    const at = page.indexOf('data-mg="about-footer"');
+    const firstTable = page.indexOf("<table");
+    expect(at, "the page holds the footer").toBeGreaterThan(-1);
+    expect(firstTable, "the page holds a table").toBeGreaterThan(-1);
+    expect(at, "the footer sits below the first table").toBeGreaterThan(firstTable);
+    const footer = footerOf(page);
+    expect(footer, "the footer is named About this data").toContain("About this data");
+    expect(
+      (footer.match(/data-mg="footer-file"/g) ?? []).length,
+      "three footer-file items",
+    ).toBe(3);
+    for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME]) {
+      expect(footer, `the footer names ${name}`).toContain(name);
+      expect(footer, `the footer holds the SHA-256 of ${name}`).toContain(
+        sha256(join(root, "fixture-b", name)),
+      );
+    }
+    expect(hookTextOf(footer, "footer-read-date"), "the read date").toBe(DATE);
+    expect(hookTextOf(footer, "footer-export-date"), "the export date").toBe(DATE);
+    expect(footer, "the footer holds no real date").not.toContain("2026-11-17");
+    expect(footerNumber(page, "footer-rows"), "row count").toBe(35);
+    expect(footerNumber(page, "footer-routes"), "route count").toBe(30);
+    expect(footerNumber(page, "footer-unknown-rows"), "unknown rows").toBe(2);
+    const share = hookTextOf(footer, "footer-unknown-share");
+    expect(share, "the unknown share is a labeled percent").toMatch(/^(\d+(?:\.\d)?)\s*%$/);
+    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(5.7);
+    expect(footer, "the footer holds the merge method note").toContain(METHOD_NOTE);
+  });
+
+  it("DS19: the number cells carry white-space: nowrap and the model-name cell carries no wrap lock", () => {
+    const { page } = base();
+    const styles = [...page.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]);
+    expect(styles.length, "the page holds a style block").toBeGreaterThan(0);
+    const rules: Array<{ selector: string; body: string }> = [];
+    for (const css of styles) {
+      for (const chunk of css.split("}")) {
+        const brace = chunk.indexOf("{");
+        if (brace < 0) continue;
+        rules.push({ selector: chunk.slice(0, brace), body: chunk.slice(brace + 1) });
+      }
+    }
+    expect(rules.length, "the style block holds rules").toBeGreaterThan(0);
+    const numberRule = rules.some(
+      (rule) => rule.selector.includes("num") && /white-space\s*:\s*nowrap/.test(rule.body),
+    );
+    expect(numberRule, "a number-cell rule carries white-space: nowrap").toBe(true);
+    expect(page, "the page holds model-name cells").toContain('data-mg="model-name"');
+    for (const rule of rules) {
+      if (!rule.selector.includes("model-name")) continue;
+      expect(
+        /white-space\s*:\s*nowrap/.test(rule.body),
+        `the model-name rule ${rule.selector} carries no nowrap`,
+      ).toBe(false);
+      expect(
+        /\b(width|max-width)\s*:/.test(rule.body),
+        `the model-name rule ${rule.selector} carries no fixed width`,
+      ).toBe(false);
+    }
+  });
+
+  it("DS20: the print-audit block maps the raw route keys to plain names and holds no raw key", () => {
+    const root = repoFixture("ds20");
+    const auditFile = join(root, "harness", "model-guide", "data", "print-audit-2026-11.json");
+    expect(existsSync(auditFile), "the temp repo holds the print-audit data file").toBe(true);
+    const doc = JSON.parse(readFileSync(auditFile, "utf8"));
+    doc.routes = {
+      "kimi-code-plan-cn/k3.1-pro": "11 of 13",
+      "claude-code/claude-sonnet-5-5#high": "13 of 13",
+      "opencode-go/synthetic-unknown": "3 of 13",
+    };
+    writeFileSync(auditFile, `${JSON.stringify(doc, null, 2)}\n`);
+    const result = runPreview(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const page = readFileSync(join(previewFolder(root), "real-work.html"), "utf8");
+    const at = page.indexOf("<h2>Print audit</h2>");
+    expect(at, "the page holds a Print audit heading").toBeGreaterThan(-1);
+    const end = page.indexOf("</section>", at);
+    const section = page.slice(at, end);
+    const items = hookItemsOf(section, "audit-result");
+    expect(items.length, "one audit-result item per route").toBeGreaterThanOrEqual(3);
+    for (const text of items) {
+      expect(text, `the item pairs its name with a result: ${text}`).toMatch(/\d+ of \d+/);
+    }
+    const kimi = items.find((text) => text.includes("Kimi K3.1 Pro"));
+    expect(kimi, "the Kimi key shows its plain name").toBeDefined();
+    expect(kimi, "the Kimi result pairs with its count").toContain("11 of 13");
+    const sonnet = items.find((text) => text.includes("Claude Sonnet 5.5"));
+    expect(sonnet, "the Claude key shows its plain name").toBeDefined();
+    expect(sonnet, "the Claude result pairs with its count").toContain("13 of 13");
+    const unnamed = items.find((text) => text.includes("synthetic-unknown"));
+    expect(unnamed, "the unnamed key shows the key without its plan prefix").toBeDefined();
+    for (const raw of [
+      "kimi-code-plan-cn/k3.1-pro",
+      "kimi-code-plan-cn",
+      "claude-code/claude-sonnet-5-5",
+      "claude-code",
+      "#high",
+      "opencode-go/synthetic-unknown",
+    ]) {
+      expect(section, `the block holds no raw key text ${raw}`).not.toContain(raw);
+    }
+  });
+
+  it("DS21: the hostile route reaches the HTML escaped, __proto__ is an ordinary row, and the counts hold", () => {
+    const { page } = base();
+    expect(page, "the page holds no raw img tag").not.toContain("<img");
+    expect(page, "the hostile route is escaped").toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(page, "the __proto__ row is an ordinary row").toContain('data-model-key="t1/__proto__"');
+    const counts = countRanks(page);
+    expect(counts.producerRanked, "ranked producer rows").toHaveLength(9);
+    expect(counts.producerFew, "too-few producer rows").toHaveLength(2);
+    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(11);
+    expect(counts.checkerFew, "too-few checker rows").toHaveLength(2);
+    expect(topPickCount(page), "top block lines").toBe(10);
   });
 });
