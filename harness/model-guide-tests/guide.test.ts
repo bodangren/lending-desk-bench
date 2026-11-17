@@ -644,14 +644,15 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
         doc.allowedRoutes.push("opencode-go/synthetic-unknown");
       },
     });
-    // The print-audit source carries a #variant route as its key, so the
-    // overview must map it to the plain name of its model key (RA2-2).
+    // The print-audit source carries #variant routes as its keys, so the
+    // overview must map each of them to the plain name of its model key
+    // (RA2-2, RA3-2).
     const auditFile = join(root, "harness", "model-guide", "data", "print-audit-2026-11.json");
     expect(existsSync(auditFile), "the temp repo holds the print-audit data file").toBe(true);
     const audit = JSON.parse(readFileSync(auditFile, "utf8"));
     audit.routes = {
       "claude-code/claude-sonnet-5-5#high": "13 of 13",
-      "kimi-code-plan-cn/k3.1-pro": "11 of 13",
+      "kimi-code-plan-cn/k3.1-pro#high": "11 of 13",
     };
     writeFileSync(auditFile, `${JSON.stringify(audit, null, 2)}\n`);
     const result = runPreview(root, manifest);
@@ -698,7 +699,7 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(auditTds[1], "the pick cell holds no raw route key").not.toContain(
       "claude-code/claude-sonnet-5-5",
     );
-    expect(auditTds[2], "the second cell shows the plain name of its key").toContain(
+    expect(auditTds[2], "the second cell maps its #variant route to the plain name").toContain(
       "Kimi K3.1 Pro",
     );
     expect(auditTds[2], "the second cell holds no raw route key").not.toContain(
@@ -727,8 +728,9 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
 
     // The fixture allows t1/prod-tiny, so only the minimum of 5 keeps it
     // out of the pick. The variant lowers the rate of the red prod-one row
-    // to 0.5: a missing allowed filter then picks t1/prod-evil, and a
-    // missing minimum picks t1/prod-tiny. Both filters must hold.
+    // to 0.5: a missing allowed filter then picks t1/prod-evil. A minimum
+    // change in both tools picks t1/prod-tiny there, because the rank order
+    // of the table comes from real-work.ts.
     const variant = realWorkFrom("ra2-variant", {
       outcomes: (rows) => {
         for (const row of rows) {
@@ -753,6 +755,32 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(variantRow.pick, "the 4-task row never picks").not.toBe("t1/prod-tiny");
     expect(variantRow.second, "the second choice passes the filters too").not.toBe("t1/prod-evil");
     expect(variantRow.second).not.toBe("t1/prod-tiny");
+
+    // The second variant makes t1/prod-nine not allowed, so only rows
+    // below the minimum or not allowed remain for the second choice. With
+    // the minimum of 5 the second choice stays null. A guide.ts minimum of
+    // 4 alone (mutant N1) fills it with t1/prod-tiny, because the rank
+    // order of the table still comes from real-work.ts.
+    const secondVariant = realWorkFrom("ra2-second", {
+      allowed: (doc) => {
+        doc.allowedRoutes = doc.allowedRoutes.filter((route) => route !== "t1/prod-nine");
+      },
+    });
+    const runSecond = runGuide({
+      tag: "ra2-second",
+      realWork: secondVariant.json,
+      scores: SCORES,
+      printAudit: printAuditInput("ra2-second"),
+      benchmark: BENCHMARK,
+      tracks: TRACKS,
+      today: TODAY,
+    });
+    const secondRow = rowOf(runSecond.data, "test writing");
+    expect(secondRow.pick, "the pick is still the red rank 1").toBe("t1/prod-one");
+    expect(secondRow.second, "no other red row passes the filters").toBeNull();
+    expect(secondRow.second, "the 4-task row never fills the second choice").not.toBe(
+      "t1/prod-tiny",
+    );
   });
 });
 
