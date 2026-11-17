@@ -22,6 +22,10 @@ three defects that the Phase 3 real runs found and no fake caught: a 26 MB
 live service gets a test of large output, a transient error with a bounded
 retry, and a bad environment value. Each live call gets a timeout.
 
+Revision 5 (2026-11-17) adds section 13: Phase 4 tasks 4.1e and 4.1f, the
+page B data source (PM 2026-11-17). Section 13.5 lists the older page B cases
+that it changes or retires.
+
 ## 1. Risk of each phase
 
 | Phase | Product | Risk | Reason |
@@ -1376,3 +1380,586 @@ The Phase 3 records also fix two forms that Phase 4 must keep: the role log
 `dispositions:` line takes only spec-review ids of the form `F<n>`, so an
 audit finding goes into the handoff and never into that line; and a date in
 a test or a record comes from a value, never from the wall clock.
+
+## 13. Phase 4 tasks 4.1e and 4.1f: page B data source
+
+Revision 5, 2026-11-17. This section covers Red task 4.1e and Green task 4.1f.
+Source: spec D16 "Data source (PM 2026-11-17)" rules 1 to 11, D17, D18, FR-1 to
+FR-5, and acceptance 2 to 5 and 13. The PM replaced the page B input on
+2026-11-17. This section replaces the page B meaning of sections 3.1, 4.1, 4.2,
+and 4.4 where section 13.5 says so. `phase_base_sha` stays
+`57baaaa364f968a2f44c6e14eb96f8a9d68beebf`, the commit of the Phase 4
+strategy. This section starts no new phase.
+
+### 13.1 Risk, scope, and plan changes
+
+Risk: task 4.1e is high. Task 4.1f is high. Phase 4 stays critical. The pair
+starts no model, reads no credential, and spends no quota. The risk is the data
+path. The data reaches a public page and later the overview table. A wrong
+weight, a wrong filter, or a wrong date becomes a public pick.
+
+| Risk | Cause | Covered by |
+|---|---|---|
+| RS1 | A wrong weight gives a plausible but wrong rate. | DS5 |
+| RS2 | A null value counts as zero. | DS6 |
+| RS3 | The pick ignores the minimum, `not allowed`, or the net score. | DS8, DS12, DS13 |
+| RS4 | A top line reuses a table row and not the row of its role. | DS13 |
+| RS5 | A wrong AA match gives a wrong net score and a wrong verdict right. | DS11 |
+| RS6 | A data file changes and the tool still reads it, or the MANIFEST names a path outside its folder. | DS1, DS2, DS3 |
+| RS7 | A route note is free text from role runs. The page and the leak check must treat it as hostile. | DS21, LG1 to LG3 |
+| RS8 | The new input breaks the other test files and `guide.ts`. | 13.5, 13.8 |
+| RS9 | The 390 px width rule needs a browser. | DS19, 13.9 |
+| RS10 | The print-audit block keeps a raw route key. | DS20 |
+| RS11 | A hardcoded date or count passes on the real files only. | DS18, FX1, FX3 |
+
+**Plan changes.** The orchestrator widens the plan lines before Red 4.1e
+starts (the PA2-1 pattern). The Red role records each change in `red-4.1e.txt`.
+No checkbox of an existing task moves.
+
+- **PC-1. Widen row 4.1e.** The row says "change only test files". Red 4.1e
+  may change `input-check.test.ts`, `real-work.test.ts`,
+  `preview-gate.test.ts`, `leak-check.test.ts`, `guide.test.ts`,
+  `update.test.ts`, `adversarial.test.ts`, `adversarial-p2.test.ts`,
+  `adversarial-p3.test.ts`, and the folder `fixtures/`. It changes no other
+  file. The Verify line becomes: the cases of DS1 to DS21, the changed G
+  cases, and the cases that only stage page B data fail at the base; the
+  cases that need no page B data pass; LG1 to LG3 pass by design.
+- **PC-2. Add rows 4.1g (Red) and 4.1h (Green) after 4.1f (default).** They
+  move `guide.ts`, `update.sh`, and `pages/guide-section.html` to the new
+  `real-work.json` and to the D18 source table. Reason: `guide.ts` refuses a
+  `real-work.json` that has no `work_types` object, and `update.sh` still calls
+  `real-work.ts --input`. Neither file is in the 4.1e or 4.1f row. Question
+  Q-S11 holds the alternative.
+- **PC-3. Widen row 4.1f Verify** to the Green gate of section 13.2.
+
+### 13.2 Commands, owners, and gates
+
+PM rule A-23 holds: one test file at a time, `--maxWorkers=1`, no full suite
+before 22:00. Red 4.1e owns these lines. Run one line at a time:
+
+```bash
+cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+```
+
+Lines 1 to 3 exit non-zero at the role base. Line 4 exits 0, because LG1 to
+LG3 are base-passing guards (section 13.7). The files `guide.test.ts`,
+`update.test.ts`, and the three `adversarial*.test.ts` files change only in
+their page B staging helpers and the `update.sh` argument form. The Red role
+runs each one time and records the per-test lines.
+
+`red-4.1e.txt` holds five lists: the failed names grouped by DS id, the
+base-passing guards, the cases that fail only because the CLI and the staging
+changed, the cases tagged `[guide-bound]` (section 13.8), and the fixture
+files that Red committed. Every Red case title starts with its group id, for
+example `DS5: ...`. The Mid Red gate counts a file under
+`harness/model-guide-tests/fixtures/` as a test path (`is_tests_fixture` in
+`measure_interphase_checks.py`), so the new fixtures need no recorded
+deviation. The Red role confirms this with the gate output and records any
+other line.
+
+**Green gate (task 4.1f).** Green changes no test file. All of these hold:
+
+1. Lines 1, 2, and 4 exit 0, each with a labeled `Tests  N passed` line (A3).
+2. Line 3 runs with the filter
+   `-t '^(?!.*\[guide-bound\])'` and exits 0. A run without the filter fails
+   exactly on the tagged names of `red-4.1e.txt`, and on no other name.
+3. `bash -n harness/model-guide/preview.sh` exits 0.
+4. `git status --short docs/` prints nothing.
+5. `git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..HEAD -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh`
+   prints nothing.
+6. The MANIFEST agrees with the files. This loop prints nothing:
+
+   ```bash
+   cd harness/model-guide/data && while read -r sha size name; do
+     [ "$(sha256sum "$name" | cut -d' ' -f1)" = "$sha" ] \
+       && [ "$(stat -c %s "$name")" = "$size" ] || echo "BAD $name"
+   done < MANIFEST-2026-11-17.txt
+   ```
+
+7. Green stages the three files and the MANIFEST by explicit path, and
+   `leak-check.ts` exits 0 before the commit (section 13.7). A finding stops
+   Green. Green never edits a data file to pass the check.
+8. The live check of section 13.9 holds on the real files.
+
+**Data capture (task 4.1f).** Green creates the three files in
+`harness/model-guide/data/`: the output of `ra-quota outcomes --json`, a copy of
+the AA file, and a file with the two fields `allowedRoutes` and
+`orchestratorRoutes` of `~/.config/ra-quota/routes.json`. Green writes the
+MANIFEST after the capture, with the `sha256sum` and the byte size of each
+file. Green adds a plain name to `model-names.json` only for a key of the real
+outcomes file whose public name is sure. A key with no sure name stays unnamed.
+
+**Closeout of the pair.** Three conditions hold. The Green gate holds. Reviews
+A, B, C, the adversarial role, and the browser review of section 13.11 have a
+status of pass, or each blocking finding has a fix commit. The red list of the
+aggregate suite equals the `[guide-bound]` list (section 13.8).
+
+**`phase_base_sha` and `role_base_sha`.** The Phase 4 base is already
+captured. It is the commit of the Phase 4 strategy, `57baaaa364f968a2f44c6e14eb96f8a9d68beebf`,
+and it stays. The orchestrator captures the `role_base_sha` of Red 4.1e with
+one `git rev-parse HEAD`, directly after the commit
+`measure(model_guide): strategy for page B data source (4.1e, 4.1f)` and before
+Red 4.1e starts. The `role_base_sha` of Green 4.1f is the HEAD after the Red
+commit. A value that predates this commit is not valid.
+
+### 13.3 The synthetic fixture
+
+All data is synthetic. Red commits four files under
+`harness/model-guide-tests/fixtures/page-b/`. The sentinel date is
+`2026-10-20`. A page that hardcodes `2026-11-17` fails on it.
+
+- `ra-outcomes-2026-10-20.json`: a JSON array of the rows below. Each row holds
+  the real fields: `route`, `role`, `runs`, `pass`, `fail`, `error`,
+  `no_verdict`, `open`, `decided`, `coverage`, `ratings` (`{}`), `findings`,
+  `escaped_findings`, `kind`, and for a producer `tasks`, `accepted`,
+  `first_round_rate`, `mean_rework_rounds`, `cleanup_share`,
+  `tokens_per_accepted`, and for a gate `escapes`.
+- `aa-reliability-2026-10-20.json`: `schema`, `source.readDate`, `models`.
+- `allowed-routes-2026-10-20.json`: `allowedRoutes` and `orchestratorRoutes`.
+- `MANIFEST-2026-10-20.txt`: one line for each file, `<sha256>  <size>  <name>`,
+  with two spaces between the fields. This is the `sha256sum` form with a size,
+  the form that `real-work.ts` already reads as its fallback. The tool ignores
+  every other line. The read date is the date in the MANIFEST name.
+
+The tests never read the real dated files. Test helpers stage the fixtures into
+`<temp repo>/fixture-b/`, mutate them in memory, and write a new MANIFEST with
+a fresh SHA-256 and size (the `stageFixture` pattern of `preview-gate.test.ts`).
+A tool-level case that wants a stale MANIFEST writes it by hand.
+
+**Producer rows.** Columns: route, role, tasks/accepted, first-round rate,
+rework, cleanup, tokens. `null` means a JSON null.
+
+```
+t1/prod-one#high                       green   10/8   .5   1.0   .2    300000
+t1/prod-one[1m]#high                   red      5/2   1.0  0.0   0.0   500000
+t1/prod-one#high (ra-quota pick; substitution for t1/x)
+                                       green    5/5   .8   4.0   null  null
+t1/prod-one#high                       record   3/0   null null  null  null
+t1/prod-zero                           green    0/0   null null  null  null
+t1/prod-two                            green   12/8   .5   1.0   .1    200000
+t1/prod-two  (note here)               green    8/4   .5   1.0   .1    200000
+t1/prod-three#high                     green   25/16  .5   1.0   .15   250000
+t1/prod-four                           green    6/4   .5   0.5   .3    100000
+t1/prod-five                           green    4/4   .75  0.2   0.0   90000
+t1/prod-six                            green    5/2   .2   2.0   .5    400000
+t1/prod-seven                          green    9/0   null null  null  null
+t1/prod-eight                          green   30/28  .9   0.1   .05   150000
+t1/prod-nine                           red      8/4   .25  1.0   .1    120000
+t2/prod-two                            green   11/8   .6   0.3   .05   180000
+t1/prod-strat                          strategy 6/6   .75  0.0   0.0   50000
+```
+
+**Gate rows.** Columns: route, role, decided (runs), pass, findings, escapes.
+Each row has `fail` equal to decided minus pass and `error` 0. The `no_verdict`
+and `open` counts fill `runs`.
+
+```
+t1/gate-one#high           review-a           6 (8)  5   9  1
+t1/gate-one#low            review-a           4      4   2  0
+t1/gate-one                review-b           5      3   5  2
+t1/gate-two[1m]            review-a           7      7   3  0
+t1/gate-two                spec-review        5      5   1  0
+t1/gate-two                phase-acceptance   5      4   2  0
+opencode/gate-three-free   review-a           6      6   0  0
+t1/gate-four               review-a           9      9   4  1
+t1/gate-five               review-a          20     20   1  0
+t1/gate-six                review-c           7      7   0  0
+t1/gate-seven              review-c           5      5   0  0
+t1/gate-eight              adversarial        8      8   0  0
+t1/gate-nine               adversarial       10     10   2  0
+t1/gate-eleven             review-b           4      4   0  0
+t1/gate-twelve             review-b           3 (9)  3   0  0  (no_verdict 3, open 3)
+t1/"><img src=x onerror=alert(1)>   review-a  5      1   0  0
+t1/__proto__               review-b           6      1   0  0
+unknown                    review-a          50 (60) 50  7  0  (no_verdict 5, open 5)
+unknown                    adversarial       30 (40) 30  3  0  (no_verdict 5, open 5)
+```
+
+**AA file.** The key is the AA model key. A value is `netScore`, and `byEffort`
+and `aliases` when named. `prod-one` 40.4, `byEffort.high` 44.4.
+`gate-one` 18.5, `byEffort.high` 41.5, `byEffort.low` 12.5. `gate-two-canon`
+33.3, `aliases` `["gate-two"]`. `gate-three` 22.2. `gate-four` 28.4.
+`gate-five` with `rated: false` and no `netScore`. `gate-six` 19.9.
+`gate-seven` 20. `gate-nine` 50.5. No entry for `gate-eight`, the hostile
+key, `__proto__`, or the other producers. The values have one decimal at most,
+so no case depends on a trailing zero.
+
+**Allowed file.** `allowedRoutes`: `t1/prod-one`, `t1/prod-two`,
+`t1/prod-three#high`, `t1/prod-four`, `t1/prod-five`, `t1/prod-six`,
+`t1/prod-seven`, `t1/prod-nine`, `t1/prod-strat`, `t1/gate-one`,
+`opencode/gate-three-free`, `t1/gate-four`, `t1/gate-five`, `t1/gate-six`,
+`t1/gate-seven`, `t1/gate-eight`, `t1/gate-eleven`, `t1/gate-twelve`.
+`orchestratorRoutes`: `t1/gate-two[1m]`. These models are not allowed:
+`t1/prod-eight`, `t2/prod-two`, `t1/gate-nine`, the hostile key, and
+`t1/__proto__`.
+
+**Arithmetic.** Rates avoid a half at the whole-percent step, so rounding
+cannot decide a case. Equal rates use values that a binary float holds
+exactly (.5, .25, .75). A python oracle at `/tmp/opencode/strategy-4.1e/oracle.py`
+checked every expected value below on 2026-11-17. The Red role recomputes them
+by hand and writes the formula in a comment beside each constant.
+
+**Expected producer table** (merged by model key over the producer roles; rank
+order; `prod-zero` has no row):
+
+| Rank | Key | Tasks | First-round | Rework | Cleanup | Tokens | Mark |
+|---|---|---|---|---|---|---|---|
+| 1 | `t1/prod-eight` | 30 | 90 % | 0.1 | 5 % | 150k | not allowed |
+| 2 | `t1/prod-strat` | 6 | 75 % | 0.0 | 0 % | 50k | |
+| 3 | `t1/prod-one` | 23 | 67 % | 1.5 | 13 % | 340k | |
+| 4 | `t2/prod-two` | 11 | 60 % | 0.3 | 5 % | 180k | not allowed |
+| 5 | `t1/prod-four` | 6 | 50 % | 0.5 | 30 % | 100k | |
+| 6 | `t1/prod-three` | 25 | 50 % | 1.0 | 15 % | 250k | |
+| 7 | `t1/prod-two` | 20 | 50 % | 1.0 | 10 % | 200k | |
+| 8 | `t1/prod-nine` | 8 | 25 % | 1.0 | 10 % | 120k | |
+| 9 | `t1/prod-six` | 5 | 20 % | 2.0 | 50 % | 400k | |
+
+"Too few tasks": `t1/prod-five` (4 tasks) and `t1/prod-seven` (9 tasks, all
+cells empty, dashes). The More columns view holds the AA net score
+of `t1/prod-one` as 44.4 (the variant `high` has the most tasks).
+
+**Expected checker table** (merged by model key over the gate roles; rank
+order; the merged `unknown` row has 80 runs and no rank):
+
+| Rank | Key | Runs | Pass | Findings/run | Escapes | Net score | Mark |
+|---|---|---|---|---|---|---|---|
+| 1 | `t1/gate-five` | 20 | 100 % | 0.05 | 0 | not rated | not for verdicts |
+| 2 | `t1/gate-nine` | 10 | 100 % | 0.20 | 0 | 50.5 | not allowed |
+| 3 | `t1/gate-eight` | 8 | 100 % | 0.00 | 0 | not rated | not for verdicts |
+| 4 | `t1/gate-six` | 7 | 100 % | 0.00 | 0 | 19.9 | not for verdicts |
+| 5 | `opencode/gate-three-free` | 6 | 100 % | 0.00 | 0 | 22.2 | |
+| 6 | `t1/gate-seven` | 5 | 100 % | 0.00 | 0 | 20 | |
+| 7 | `t1/gate-four` | 9 | 100 % | 0.44 | 1 | 28.4 | |
+| 8 | `t1/gate-two` | 17 | 94 % | 0.35 | 0 | 33.3 | |
+| 9 | `t1/gate-one` | 15 | 80 % | 1.07 | 3 | 41.5 | |
+| 10 | the hostile key | 5 | 20 % | 0.00 | 0 | not rated | |
+| 11 | `t1/__proto__` | 6 | 17 % | 0.00 | 0 | not rated | |
+
+"Too few tasks": `t1/gate-eleven` (4 runs) and `t1/gate-twelve` (3 runs, not
+9). The hostile key and `t1/__proto__` row marks are not asserted.
+
+**Expected top block** (each line uses only the rows of its role):
+
+| Role | Pick | Rate | Count |
+|---|---|---|---|
+| Red | `t1/prod-one` | 100 % | 5 |
+| Green | `t1/prod-one` | 62 % | 15 |
+| Coder | no pick yet | | |
+| Review A | `t1/gate-two` | 100 % | 7 |
+| Review B | no pick yet | | |
+| Review C | `t1/gate-seven` | 100 % | 5 |
+| Adversarial | no pick yet | | |
+| Acceptance | no pick yet | | |
+| Phase acceptance | `t1/gate-two` | 80 % | 5 |
+| Final acceptance | no pick yet | | |
+
+**Expected footer.** Row count 35. Route count 30 (32 without the note strip).
+`unknown` rows 2. `unknown` share 5.7 %. Read date and export date
+`2026-10-20`. Three file names, each with the SHA-256 that the test computes
+from the staged file.
+
+### 13.4 Test groups and falsification
+
+Groups DS1 to DS3 live in `input-check.test.ts`. DS4 to DS13 live in
+`real-work.test.ts` and read the page through `preview.sh`. DS14 to DS21 live in
+`preview-gate.test.ts`. A file builds the page one time from the base fixture
+and shares it, and it builds a variant only for a mutation case. The tests
+assert the page and the exit codes, and they pin no field of `real-work.json`,
+because the spec names none. Every assertion on a computed value reads a
+`data-mg` hook (section 13.6) and parses a labeled value (A3).
+
+| Group | What it proves | Falsification condition |
+|---|---|---|
+| DS1 Integrity | For each of the three files, one flipped byte (size and JSON validity unchanged) gives exit 2, the one stdout line `input-check: sha256 <file name>`, and no `real-work.json`. A MANIFEST size of plus or minus 1 with the right SHA-256 gives `input-check: size <file name>`. | Skip the SHA-256 read of one file. The case for that file must fail. |
+| DS2 Order and refusals | A flipped byte that also breaks the JSON gives `sha256`, not `json` (integrity before parse). A right SHA-256 with invalid JSON gives `json`. No MANIFEST gives `manifest`. A MANIFEST with no line for one file gives `manifest <file name>`. A MANIFEST line that names `../x` or `a/b` gives `manifest`, and a decoy outside the folder is never read. A missing data file gives `input`. A wrong top-level shape gives `schema <file name>`. The shapes are an outcomes file that is not an array, an AA file with no `models` object, and an allowed file that lacks an array. A missing, an empty, or an unknown flag gives one usage line on stderr, empty stdout, and exit 2. Each refusal writes no file, leaves an existing preview folder byte-identical, and leaves the temp `docs/` byte-identical. | Parse before the hash, accept a path with a slash, or exit 1 with a stack trace. The matching case must fail. |
+| DS3 No copy | After a passing run, no file under the preview folder or the temp repo, outside `fixture-b/`, has the name of an input file or the bytes of one. | Copy one input file into the preview folder. DS3 must fail. |
+| DS4 Strip and trim | The rows `t1/prod-one#high (ra-quota pick; ...)` and `t1/prod-two  (note here)` merge into their models: `t1/prod-two` shows 20 tasks, and no model key holds the text ` (` or `ra-quota`. The footer route count is 30. | Do not strip the note. The route count is 32, `t1/prod-two` shows 12 tasks, and a stray row appears. |
+| DS5 Producer merge | `t1/prod-one` shows 23 tasks, 67 %, 1.5, 13 %, and 340k. | Use an unweighted rate (77 %), a task weight for the rate (70 %), an unweighted rework (1.7), or an unweighted token mean (400k). Each fails. |
+| DS6 Null handling | The null cleanup and token cells of two `t1/prod-one` rows leave the average denominators. The model `t1/prod-seven` shows a dash in every average cell. The row `t1/prod-zero` has no row in any table. | Count a null as zero. Cleanup moves off 13 % and tokens move off 340k. A `prod-zero` row appears. |
+| DS7 Checker merge | `t1/gate-one` shows 15 runs (the sum of `decided`), 80 %, 1.07, and 3 escapes. `t1/gate-two` shows 17, 94 %, 0.35, 0. `t1/gate-twelve` shows 3 runs. | Count `runs` in place of `decided`. `t1/gate-twelve` shows 9 and ranks. |
+| DS8 Minimum 5 | 5 tasks or runs rank (`prod-six`, `gate-seven`). 4 do not (`prod-five`, `gate-eleven`). `prod-seven` has 9 tasks and no rate, so it sits in "Too few tasks". | Use 4 or 6 as the minimum. A boundary row moves. |
+| DS9 Producer rank | The `data-rank` order is the table above. A tie in the rate goes to the lower rework (`prod-four` before `prod-three`). A tie in both goes to more tasks (`prod-three` before `prod-two`). | Drop one tie-break level. The row order changes. |
+| DS10 Checker rank | The `data-rank` order is the table above. A tie in the pass % goes to fewer escapes (`gate-four` after every row with 0 escapes, though it has 9 runs). Then more runs (`gate-five`, then `gate-nine`, `gate-eight`, `gate-six`, `gate-three-free`, `gate-seven`). The `unknown` row has no `data-rank`. | Sort on runs first, or rank `unknown`. The order changes. |
+| DS11 AA match | `t1/gate-one` shows 41.5 (`byEffort.high`, the variant with the most runs), not 18.5 or 12.5. `gate-two` shows 33.3 (an alias). `gate-three-free` shows 22.2 (the `-free` suffix). `gate-five` and `gate-eight` show `not rated` (`rated: false`, no entry). `prod-one` shows 44.4 in More columns. | Read the primary row for `gate-one`. Skip the alias or the suffix. Each case fails. |
+| DS12 Marks | `data-mark="not-for-verdicts"` on `gate-five`, `gate-eight`, and `gate-six` (19.9). None on `gate-seven` (20 exactly). `data-mark="not-allowed"` on `gate-nine`, `prod-eight`, and `t2/prod-two`. `gate-one` and `gate-two` carry no mark. The mark is the attribute, not a word of the prose. | Use `> 20`. Lose the mark of an unrated row. Treat `t2/prod-two` as allowed because `t1/prod-two` is. |
+| DS13 Top block | The ten lines of the table in section 13.3, in the given order, one line for each role. Red shows 100 % and 5 (the Red rows only), and Green shows 62 % and 15, not the table row (67 %, 23). Green skips the not-allowed rank 1 (`prod-eight`). Review A skips the rank 1 `gate-five` (not for verdicts). Review B says no pick yet, because `gate-one` has no variant in that role and its primary net score is 18.5. Review C skips `gate-six` (19.9) and picks `gate-seven`. Adversarial says no pick yet, though two rows rank. No line names a `small`, `strategy`, `record`, or `spec-review` role. | Pick rank 1 without the filters. Use the table-level variant for Review B. Reuse the table row for a role. Add a line for `strategy`. Each fails. |
+| DS14 No work type | The page holds no `data-mg="work-type"`, no heading `Work types`, and no heading that names `app code`, `docs and ops`, `print books`, `tooling`, or `other`. The check reads headings and hooks, not prose. | Render a work-type section, or an empty one with "no pick yet". DS14 must fail. |
+| DS15 No producer pass rate | The producer section has no header that matches `/pass/i`, in the default table or in More columns. The checker table has no `Blocking %` and no `Blockers per run` header. | Add `Pass %` to the producer table. DS15 must fail. |
+| DS16 Columns and formats | The default headers equal the two lists of section 13.6, in order. Rates are `^\d+\s*%$`. Rework is `^\d+\.\d$`. Findings per run is `^\d+\.\d{2}$` with no `%`. Tokens is `^\d+k$`. A null average is the dash `–`. Tasks, Runs, and Escapes are integers. No cell holds `(n=`. | Show a rate with a decimal, show findings per run as a percent, or print an empty value as a sentence. Each fails. |
+| DS17 Names and routes | A row shows a plain name (the key without its plan prefix when `model-names.json` has no name). A key that the names file holds shows its name, and the raw key is absent from the model cell. The default table has no `Routes` header, and the More columns view holds the routes. `t1/prod-two` and `t2/prod-two` are two rows with the same plain name and two different `data-model-key` values. | Merge the two providers, or show a Routes column. Each fails. |
+| DS18 Footer | `data-mg="about-footer"` is below the first table and holds three `footer-file` items, each with its file name and a 64 hex SHA-256 equal to the SHA-256 of the staged file. It holds the read date and the export date `2026-10-20` and not `2026-11-17`, the row count 35, the route count 30, the `unknown` row count 2, and the `unknown` share 5.7 %. It holds the merge method note of `METHOD_NOTE`. | Hardcode a date or a count, or show the share as a fraction. Each fails on the sentinel. |
+| DS19 Width (artifact) | The page `<style>` gives the number cells `white-space: nowrap`, and the `model-name` cell has no `white-space: nowrap` and no fixed `width` or `max-width`. This case reads the CSS text. It does not prove the rendering (section 13.9). | Add `white-space: nowrap` to the model cell. DS19 must fail. |
+| DS20 Print-audit names | A data file written into the temp repo with the keys `kimi-code-plan-cn/k3.1-pro` (`11 of 13`), `claude-code/claude-sonnet-5-5#high` (`13 of 13`), and `opencode-go/synthetic-unknown` shows `Kimi K3.1 Pro` and `Claude Sonnet 5.5` (names read from `model-names.json`, the `#high` suffix mapped to its model key) and `synthetic-unknown` (no plan prefix). Each `data-mg="audit-result"` item pairs its name with its `x of y`. The block holds none of the raw keys, no `#high`, and no `kimi-code-plan-cn` or `claude-code` text. | Print `html.escape(route key)`, as `preview.sh` does today. DS20 must fail. |
+| DS21 Hostile text | The hostile route reaches the HTML escaped, and the page holds no raw `<img`. The row `t1/__proto__` is an ordinary row. The page still shows the expected row counts, so no prototype key changed a table. | Remove the escape, or store rows in a plain object keyed by the route. DS21 must fail. |
+| FX1 Fixture agrees | The MANIFEST of `fixtures/page-b/` equals the SHA-256 and size of the three files. | Edit one fixture and keep the MANIFEST. FX1 must fail. |
+| FX2 Not vacuous | Before a format check, a case asserts the row counts: 9 ranked and 2 too-few producer rows, 11 ranked and 2 too-few checker rows, and 10 top lines. | Empty the fixture. FX2 must fail, not pass (A4). |
+| FX3 No real data | A guard scans `harness/model-guide-tests/**/*.ts` for the real dated file names. It builds each needle from two parts, so it does not match itself. | Name a real file in a test. FX3 must fail. |
+
+### 13.5 Existing tests: change, retire, or keep
+
+The names G1 to G10 below mean the ten layout cases of task 4.1a in
+`preview-gate.test.ts`. They do not mean the PA2-1 guards of section 4.2. Red
+owns the final decision for each case inside these rules. Red may merge or
+split cases. Red keeps one case for each DS row and its falsification
+condition.
+
+| Existing case | Decision |
+|---|---|
+| G1 source line in the footer | Change. The footer lists the three files, each with its SHA-256, and the read date. It stays below the first table. |
+| G2 coverage in the footer | Change. The footer holds the row count, route count, `unknown` rows, `unknown` share, and export date (DS18). |
+| G3 "Too few runs to rank" | Change. The minimum is 5, the group label is "Too few tasks", and it applies to both tables. The old label must be absent. |
+| G4 whole percent, dash, Runs count | Change. Use the formats of DS16. |
+| G5 one top line per role group and work type | Replace by DS13: ten lines in the given order. |
+| G6 "no pick yet" in the top block | Change. Per role, for four causes: no row, below the minimum, not allowed, not for verdicts. |
+| G7 six columns or fewer, work type drops Blocking % | Change. The two exact lists of section 13.6. The work-type clause retires. |
+| G8 More columns toggle | Change. The producer toggle holds `Routes`, `Roles`, `Accepted`, and `AA net score`. The default tables hide them. |
+| G9 work type in a tab or a collapsed section | Retire. DS14 replaces it. |
+| G10 plain names | Keep the assertions. Stage the keys by an in-memory edit of the new outcomes fixture. |
+| T1 (two cases), T11, N4, P2U1-1 (print-audit block) | Keep the assertions. The mini fixture holds names with no plan prefix, so the assertions hold. Only the staging helper changes. DS20 adds the prefixed keys. |
+| `Acceptance 5` (two cases), `B2` numeric coverage, `it.each(REQUIRED_COVERAGE_KEYS)`, `it.each(A32_CASES)` | Retire. They test the old export schema or the work-type section. DS1, DS2, and DS14 replace them. |
+| `B2` script value in a route name | Change. Use the hostile row (DS21). |
+| P1 (writes page B, nav, method note), F12 to F15, F19, F20, A1 to A4, B1 to B3, C2 to C4, the symlink and unreadable groups, U1, U3, U4 | Keep. Only the helpers change: `--export` becomes `--manifest`, `PREVIEW_USAGE`, `populateRepo`, `stageFixture`, and the fixture paths. U1 retargets the footer file list (the SHA-256 needs an overflow-wrap rule). |
+| P2B2-2 newline score name | Keep the intent. Tag `[guide-bound]`. |
+
+Other files:
+
+| File | Decision |
+|---|---|
+| `input-check.test.ts` (I1, I2) | Rewrite as DS1 to DS3. The old export cases retire. |
+| `real-work.test.ts` (M1 to M6) | Rewrite as DS4 to DS13. The old export cases retire. |
+| `guide.test.ts` | Decouple. The tests stop running `real-work.ts`. They read a committed snapshot of the old tool output, `fixtures/guide/real-work-legacy.json`, that Red makes once with the old tool at the role base. `guide.ts` is unchanged, so these tests stay green. Row 4.1g replaces the snapshot. |
+| `update.test.ts`, the `update.sh` cases of `adversarial-p2.test.ts` | Migrate to `update.sh <MANIFEST path>` (spec D19) and `fixtures/page-b/`. Tag `[guide-bound]`. |
+| `adversarial.test.ts`, `adversarial-p3.test.ts`, the `preview.sh` cases of `adversarial-p2.test.ts` | Keep. Only the staging helpers change. |
+| `print-audit.test.ts`, `review-score.test.ts`, `leak-guard.test.ts` | No change. |
+
+Red deletes an old fixture (`real-work-mini.json`, `MANIFEST.txt`,
+`page-guard/`) only when `rg` finds no reference in `harness/`. A fixture that
+a file still names stays, and row 4.1g removes it.
+
+### 13.6 The `data-mg` hook contract
+
+The tests find a table by its `<h2>`, `Producer roles` or `Checker roles`, and
+then by `data-mg="default-table"`. They find every other element by the hooks
+below. A hook sits as an attribute of the element. The text of the element is the
+value. These hooks are new or changed. The hooks of task 4.1a not named here
+stay as they are.
+
+| Hook | Contract |
+|---|---|
+| `top-block` | Exactly 10 `pick` items, in the order of section 13.3, before the first table. |
+| `pick` | One item for each role. It carries `data-role` (`red`, `green`, `coder`, `review-a`, `review-b`, `review-c`, `adversarial`, `acceptance`, `phase-acceptance`, `final-acceptance`). A pick carries `data-model-key`. |
+| `pick-name`, `pick-rate`, `pick-count` | Inside a pick. The name is the plain name. The rate matches `^\d+\s*%$`. The count is an integer. |
+| `pick-none` | Inside a line with no pick. Its text is `no pick yet`. The line has no `data-model-key`. |
+| `default-table` | Exactly two. Producer headers: `Model`, `Tasks`, `First-round accept %`, `Rework`, `Cleanup %`, `Tokens per accepted task`. Checker headers: `Model`, `Runs`, `Pass %`, `Findings per run`, `Escapes`, `Net score`. |
+| `data-model-key`, `data-rank` | On each data `<tr>` of a table or a too-few group. `data-rank` only on a row that has 5 or more tasks or runs and a rate. |
+| `model-name` | The cell with the plain name. The routes sit in a `title` or a second line. |
+| `mark` | An element inside the row. It carries `data-mark="not-allowed"` or `data-mark="not-for-verdicts"`. The text is the same words. |
+| `too-few` | A `<details>` under each table. Its summary text is `Too few tasks`. Its rows have no `data-rank`. |
+| `more-columns` | The producer toggle. Summary `More columns`. It lists `Routes`, `Roles`, `Accepted`, `AA net score`. |
+| `about-footer` | Below the tables. It holds the hooks that follow and the method note. |
+| `footer-file`, `footer-name`, `footer-sha256` | Three `footer-file` items with `data-file="<name>"`. Each holds one `footer-name` and one `footer-sha256`. |
+| `footer-read-date`, `footer-export-date`, `footer-rows`, `footer-routes`, `footer-unknown-rows`, `footer-unknown-share` | One element for each value. The share matches `^\d+(\.\d)?\s*%$`. |
+| `audit-result` | In the print-audit block. One item for each route result. The text is the plain name and `x of y`. |
+| `work-type` | Absent. |
+
+### 13.7 Leak-check coverage of the three dated files
+
+`leak-check.ts` scans each staged file, each file under `docs/`, and each file
+under the preview folder. It parses a JSON text and finds a `new_lines`,
+`witness`, or `operator` key at any depth. It finds the private folder path and
+a seeded line of 20 characters or more in any text. The three dated files and
+the MANIFEST are staged files at the commit of task 4.1f, so the tool covers
+them with no code change. These guards prove it. They pass at the role base,
+and each has a falsification condition (A4).
+
+- **LG1 Clean.** In `leak-check.test.ts`, a temp git repo stages the four
+  `fixtures/page-b/` files. Exit 0.
+- **LG2 Key fields.** One run for each of the three JSON files. A key
+  `operator` added to a row of the outcomes array, a key `operator` inside a
+  `models` entry, and a top-level key `witness` in the allowed file each give
+  exit 2 and the line `leak-check: key-field: <path> <key>`. The array shape
+  matters, because the outcomes file is a top-level array. A route note that
+  holds the word `operator` as prose does not fail (A7).
+  Falsification: skip array roots. The outcomes case must fail.
+- **LG3 Path and seeded line.** A route note that holds the private folder path
+  gives `private-path`. A route note that holds a seeded line of 20 characters
+  or more gives `seeded-line`. A 19-character line passes. The MANIFEST text is
+  scanned the same way.
+
+The live check on the real files runs two times. First, Green stages the four
+files by explicit path and runs
+`cd harness && npx tsx model-guide/leak-check.ts --private "$HOME/.local/share/lending-desk-bench/model-guide" --repo .. --preview ../.tmp/model-guide-preview`.
+It exits 0 before the commit. Second, the closeout check scans the committed
+files in a throwaway repo, because the tool reads the index and a committed file
+is no longer staged:
+
+```bash
+t=$(mktemp -d); git -C "$t" init -q
+cp harness/model-guide/data/{ra-outcomes,aa-reliability,allowed-routes}-2026-11-17.json \
+   harness/model-guide/data/MANIFEST-2026-11-17.txt "$t"/
+git -C "$t" add -A
+(cd harness && npx tsx model-guide/leak-check.ts --private "$HOME/.local/share/lending-desk-bench/model-guide" --repo "$t")
+```
+
+The role reads only the exit code and the output lines of the script, never a
+file of the private folder (section 9.4).
+
+### 13.8 Intentionally-red aggregate-suite handling
+
+The default is a hard cutover. The page B tool and `preview.sh` drop `--input`
+and `--export`, because the spec says the new input replaces the old one. A
+cutover makes red every case that stages page B data, from the Red commit until
+Green 4.1f. That state is intended.
+
+| State | Red | Green |
+|---|---|---|
+| After Red 4.1e | `input-check.test.ts`, `real-work.test.ts`, DS cases and changed G cases of `preview-gate.test.ts`, every case that only stages page B data, and the `[guide-bound]` cases. | `leak-check.test.ts`, `guide.test.ts`, `print-audit.test.ts`, `review-score.test.ts`, and the cases that need no page B data. |
+| After Green 4.1f | The `[guide-bound]` cases only: the cases that assert `model-guide.json` or the overview section of `index.html`, and every `update.sh` case. | Every other case. |
+| After Green 4.1h | None. The tag leaves the test files with row 4.1g. | All. |
+
+`preview.sh` keeps its tolerant guide step. After 4.1f, `guide.ts` exits 2 on
+the new `real-work.json`, and `preview.sh` prints `preview: no overview table
+(guide.ts exit 2)` and exits 0. The preview of 2026-11-18 then has no overview
+table until row 4.1h. The Phase 4 closeout needs all files green and
+`rg -n '\[guide-bound\]' harness/model-guide-tests` printing nothing. The
+untracked `review-run.test.ts` and `fake-opencode` of task 4.1 stay red or
+untracked as section 8 says, and this pair does not touch them. No role edits
+a test to reach green. A Green role that finds a failure outside the tagged
+list stops and sends the name to the orchestrator.
+
+### 13.9 Artifact tests and live-behavior proof
+
+- **Live behavior (offline).** DS1 to DS3 start `real-work.ts` or `preview.sh`
+  as a subprocess and read the exit code, the stdout line, and the tree. DS4 to
+  DS13 and DS15 to DS18 and DS20 and DS21 run `preview.sh` in a temp repo and
+  read the hooks of the generated page. No case starts a model, reads the
+  network, or reads the real dated files.
+- **Artifact.** DS19 reads CSS text. It proves that the rule is in the page. It
+  does not prove the width. DS14 reads headings and hooks and proves the
+  generator output.
+- **No documentation test.** A test that reads `spec.md` or `plan.md` does not
+  count.
+- **Live check of task 4.1f, on the real files.** Green builds the preview with
+  `bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt`.
+  It exits 0. `real-work.html` holds 10 pick items and two default tables with
+  at least one ranked row each, the footer values of DS18 for the real files
+  (three file names, three SHA-256 values, `2026-11-17`, the row count, the
+  route count, the `unknown` count and share), no `data-mg="work-type"`, and no
+  raw route key in the print-audit block. `git status --short docs/` prints
+  nothing.
+- **Browser proof.** The orchestrator runs `page-check` on
+  `.tmp/model-guide-preview/real-work.html` at 390, 980, and 1280 px. At 390 px,
+  each `model-name` cell of the two default tables renders in 2 lines or fewer.
+  The line count is the rendered height minus the padding, divided by the line
+  height. The page has no horizontal overflow. The SHA-256 values wrap inside the
+  footer. The top block fits one screen. A wide table scrolls inside its own box
+  with the visible hint. The page is about 3 screens long at 1280 px.
+- **What no fake proves.** The real `ra-quota outcomes --json` shape, the real
+  route notes, and the real AA aliases only appear in the live check. DS4 and
+  DS11 prove the rules on synthetic rows. The live check proves that the real
+  rows do not trip them (for example a route note with a nested bracket).
+
+### 13.10 Architecture guardrails and changed contracts
+
+- **No write under `docs/`** (spec D21). `preview.sh` writes the preview folder
+  only. `git status --short docs/` and DS2 prove it.
+- **The page B tool reads three files and one MANIFEST, and it writes no input
+  file.** DS3 proves it. The tool uses no wall clock for the footer, and it
+  makes no network call.
+- **Integrity before parse.** The tool checks the SHA-256 and the size of a file
+  before it parses the file. DS2 proves the order.
+- **A MANIFEST name is a base name.** A name with a slash or `..` gives exit 2.
+- **The rank uses no rating and no producer pass rate** (spec D16). DS15 proves
+  it.
+- **A pick needs an allowed model, the minimum, and for a gate role a net score
+  of 20 or more** (spec D16, D18). DS8, DS12, and DS13 prove it.
+- **Changed contracts.** The CLI of `real-work.ts` and `preview.sh` changes
+  (Q-S1). The MANIFEST has three lines (Q-S2). The `real-work.json` shape
+  changes, and `guide.ts` reads the old shape until row 4.1h. The hook contract
+  of section 13.6 becomes the test interface of the page. `model-guide.json`
+  keeps its schema in this pair. The checker names each contract change in its
+  record.
+- **Frozen paths.** `harness/provenance.ts`, `harness/tests`,
+  `harness/opencode-host.sh`, and `harness/opencode-credential.sh` do not
+  change. The `test:meta:logic` exclude list of `harness/package.json` does not
+  grow (A7).
+
+### 13.11 Review applicability
+
+| Review | Applies | Focus |
+|---|---|---|
+| Review A (code) | Yes | `real-work.ts`, `preview.sh`, `pages/real-work.html`, `model-names.json`, and the three data files, against rules 1 to 11 and D17. |
+| Review B (security) | Yes | The route note is hostile text and must reach the HTML escaped. The MANIFEST names base names only. The tool checks a hash before it parses. No read outside the data folder. The three public files pass `leak-check.ts`. No real byte in a test. No `docs/` write. |
+| Review C (UX/API) | Yes | The flags, the usage lines, the exit codes, and the `input-check:` lines. The column names, the marks, `not rated`, and the top block text. Two rows with the same plain name (`prod-two` on two providers) must show their routes in a second line or a tooltip. |
+| Adversarial testing | Yes | A flipped byte in each file, a size of plus or minus 1, a MANIFEST with a path, a missing line, a duplicate line, a symlinked data file, an outcomes row with a null `decided`, a negative or a fractional `tasks`, a `first_round_rate` above 1, a route with `#` twice, a route that is only a note, a `routes.json` with an empty list, a net score of `NaN` as a string, and a 2 MiB outcomes file. These probes pin nothing the spec leaves open. A finding goes to the orchestrator. |
+| UX browser review | Yes | On `.tmp/model-guide-preview/real-work.html` built from the real files: widths 390, 980, and 1280 px, the model-name cell lines (section 13.9), the top block on one screen at 390 px, the footer SHA-256 wrap, the marks, the More columns toggle, and the scroll hint. A missing 390 px check blocks the pair. |
+
+The review roles read no file of the private folder (section 9.4).
+
+### 13.12 Anti-pattern coverage
+
+A1 and A8 are retired. A9 and A10 do not apply. A12 does not apply: no task of
+the pair is `[b]`.
+
+| Anti-pattern | Defense | Falsification |
+|---|---|---|
+| A2, adapted: a data path with no integrity gate | DS1 and DS2 refuse a changed byte, a wrong size, and a missing MANIFEST line for each file, and DS2 checks the order. | Remove the SHA-256 read of one file. The case for that file must fail. |
+| A3 digit-only count | Gates parse `Tests  N passed`. Every page value comes from a hook and a labeled parse: `footer-rows`, `pick-count`, `data-rank`. | Replace a hook read with a digit search. The case must pass on an empty page. FX2 then fails. |
+| A4 vacuous pass | FX2 asserts the row counts before a format check. LG1 to LG3 are labeled base-passing guards with a falsification condition. Each DS row names a falsification. | Empty the fixture. FX2, DS5, and DS13 must fail, not pass. |
+| A5 false plan claim | Each Red and Green record cites its command and its labeled line. The `[guide-bound]` list is in `red-4.1e.txt`. | Run the cited line. A non-zero exit with an `[x]` mark is a false claim. |
+| A6, A14 registry notes | The orchestrator moves the registry note after the commits, and it names the first open task. | Compare the note with the first open Phase 4 task. |
+| A7 over-broad filter | A mark is an attribute. The note strip cuts at the first ` (` and no other character. The leak scan reads exact key names. The `-t` filter excludes only the tag. | Put the word `operator` in a route note as prose. LG2 must pass. Put `(` with no space before it in a route. The key must stay whole. |
+| A11 inherited environment | Each file pins `HOME`, `TZ`, and `TMPDIR`, clears `BENCH_TRACK`, and takes every date from the fixture. Run each file one time with `BENCH_TRACK=change`. | Set `BENCH_TRACK=change`. No verdict moves. |
+| A13 ignored artifact | The preview folder is ignored. DS2 and DS3 compare SHA-256 trees inside the test, not `git diff`. The data files are tracked, and the MANIFEST loop proves them. | Change one byte in a temp data file. DS1 must fail. |
+
+### 13.13 Open questions and defaults
+
+The spec is silent on these points. The track continues with each default. The
+Red role pins the default in a test only where section 13.4 says so.
+
+- **Q-S1. The CLI.** Default: `real-work.ts --manifest <MANIFEST-date.txt> --out <folder>`
+  and `preview.sh --manifest <MANIFEST-date.txt> [--preview <folder>]`. The
+  usage lines are `usage: real-work.ts --manifest <file> --out <folder>` and
+  `usage: preview.sh --manifest <file> [--preview <folder>]`. `update.sh` takes
+  the positional manifest of D19. Alternative with less churn: keep the flag
+  name `--export` and give it the MANIFEST path.
+- **Q-S2. The MANIFEST.** Default: `<sha256>  <size>  <file name>`, one line for
+  each of `ra-outcomes-<date>.json`, `aa-reliability-<date>.json`, and
+  `allowed-routes-<date>.json`. The date comes from the MANIFEST name.
+- **Q-S3. The refusal line.** Default: `input-check: <check> <file name>` with
+  the check words `manifest`, `input`, `sha256`, `size`, `json`, and `schema`,
+  exit 2, and no output file. The `schema` check refuses a wrong top-level type
+  only.
+- **Q-S4. The dates.** Default: the read date and the export date are the date
+  in the MANIFEST name.
+- **Q-S5. The coverage.** Default: the row count is the length of the outcomes
+  array. The route count is the number of distinct stripped route strings,
+  `unknown` included. The `unknown` share is the `unknown` rows divided by the
+  row count, with one decimal.
+- **Q-S6. The pick.** Default: the first row of the rank order that passes the
+  filters (allowed, the minimum, and for a gate role a net score of 20 or
+  more). A not-allowed rank 1 does not make "no pick yet" when a later row
+  passes.
+- **Q-S7. The AA lookup.** Default: the `models` block only. The net score
+  format is not pinned (the tests parse a number). A tie in the variant run
+  count is not pinned.
+- **Q-S8. The mark `not for verdicts`.** Default: on the rows of the checker
+  table only. The tests assert nothing about it on producer rows.
+- **Q-S9. A producer row with 5 tasks or more and no rate.** Default: it sits in
+  "Too few tasks" with dashes. A model whose rate rows have an accepted sum of 0
+  has no rate.
+- **Q-S10. The `unknown` row.** Default: the page shows it or hides it. It has no
+  rank, it never picks, and the tests do not pin its place.
+- **Q-S11. The `guide.ts` and `update.sh` follow-up (plan gap).** Default: the
+  orchestrator adds rows 4.1g and 4.1h (PC-2) before the 2026-11-18 preview.
+  Alternative: fold the two files into 4.1e and 4.1f. That removes the
+  `[guide-bound]` state and makes both roles larger.
+- **Q-S12. The old export path.** Default: a hard cutover, with no legacy flag
+  and no legacy template.
+- **Q-S13. The print-audit names.** Default: the page maps the route keys to
+  plain names, and the data file `print-audit-2026-11.json` keeps its raw route
+  keys. D17 can also read as "the file holds plain names". That reading changes
+  `print-audit.ts` and `print-audit.test.ts`.
