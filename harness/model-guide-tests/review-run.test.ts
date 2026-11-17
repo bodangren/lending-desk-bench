@@ -377,6 +377,33 @@ server.listen(0, "127.0.0.1", () => {
 });
 `;
 
+/** The routes file of a temp repo: the route of the case, and the metered
+ * route of the refusal case. A case that needs a route the file does not
+ * hold passes its own list, so the file never holds that route. */
+function routesFile(
+  route: string,
+  options: { kind?: string; quotaProvider?: string | null; quotaSource?: string | null } = {},
+): unknown[] {
+  return [
+    {
+      family: "Go",
+      route,
+      kind: options.kind ?? "plan",
+      quota_provider: options.quotaProvider ?? "opencode-go",
+      quota_source: options.quotaSource ?? "opencode-go",
+      ranked: true,
+    },
+    {
+      family: "DeepSeek Flash",
+      route: METERED_ROUTE,
+      kind: "metered",
+      quota_provider: "deepseek",
+      quota_source: null,
+      ranked: false,
+    },
+  ];
+}
+
 /** Builds the temp repo, the private folder, the fake, and the quota server. */
 async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   const root = mkdtempSync(join(tmpdir(), "mg-review-run-"));
@@ -422,24 +449,12 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
 
   // The routes of the temp repo. The file is a JSON array of route objects.
   const route = scenario.route ?? ROUTE;
-  const routes = scenario.routes ?? [
-    {
-      family: "Go",
-      route,
-      kind: scenario.kind ?? "plan",
-      quota_provider: scenario.quotaProvider ?? "opencode-go",
-      quota_source: scenario.quotaSource ?? "opencode-go",
-      ranked: true,
-    },
-    {
-      family: "DeepSeek Flash",
-      route: METERED_ROUTE,
-      kind: "metered",
-      quota_provider: "deepseek",
-      quota_source: null,
-      ranked: false,
-    },
-  ];
+  const routes = scenario.routes ??
+    routesFile(route, {
+      kind: scenario.kind,
+      quotaProvider: scenario.quotaProvider,
+      quotaSource: scenario.quotaSource,
+    });
   writeFileSync(join(guideDir, "routes.json"), `${JSON.stringify(routes, null, 2)}\n`);
 
   // A synthetic docs tree. It must stay byte-identical.
@@ -766,7 +781,12 @@ describe("P4 R1 the pass shape of the review runner", () => {
 
 describe("P4 R4 the route refusal", () => {
   it("R4 refuses a route that routes.json does not hold before any call", async () => {
-    const fixture = await buildFixture({ route: UNKNOWN_ROUTE });
+    // The route of the run is not in the temp routes.json: the file holds
+    // the plan route of the case, and the run names another route.
+    const fixture = await buildFixture({
+      route: UNKNOWN_ROUTE,
+      routes: routesFile(ROUTE),
+    });
     try {
       assertRunnerExists();
       const result = runRunner(fixture, runArgs(fixture));
@@ -866,8 +886,14 @@ describe("P4 R6 the quota stop rule", () => {
   });
 
   it("R6 runs the pass to the end at 79 %", async () => {
+    // The window starts at 69.9 %, so the pass starts (D15: a window of
+    // 70 % at the start gives no pass). It rises to 79 % after the second
+    // diff, and the pass still runs to the end: the stop rule fires at
+    // 80 % only.
     const fixture = await buildFixture({
-      quotaPercent: 79,
+      quotaPercent: 69.9,
+      quotaStopPercent: 79,
+      quotaStopAfter: 2,
       calls: [
         { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
         { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
