@@ -23,9 +23,12 @@ import { afterAll, describe, expect, it } from "vitest";
  * Red tests for plan task 2.3: the weekly update of spec D19, D21. They
  * call the planned script `harness/model-guide/update.sh`.
  *
- * Pinned command line (spec D19):
- *   bash harness/model-guide/update.sh <export file>
- * run with cwd `<repo>`. `<repo>` is three levels above the script, the
+ * Pinned command line (spec D19, D16 Tool details):
+ *   bash harness/model-guide/update.sh <path of MANIFEST-<date>.txt>
+ * with cwd `<repo>`. The script reads the three dated data files next to
+ * that manifest (spec D19). A usage error gives exit 2 and this line on
+ * stderr: `usage: update.sh <path of MANIFEST-<date>.txt>`.
+ * `<repo>` is three levels above the script, the
  * same rule as `preview.sh`. The script runs the tools with cwd
  * `<repo>/harness`. The default preview folder is
  * `<repo>/.tmp/model-guide-preview`. The script writes no file outside the
@@ -74,8 +77,12 @@ const UPDATE_SH = join(SOURCE, "update.sh");
 const REAL_WORK_TOOL = join(SOURCE, "real-work.ts");
 const GUIDE_TOOL = join(SOURCE, "guide.ts");
 const FIXTURES = join(import.meta.dirname, "fixtures");
-const EXPORT_FIXTURE = join(FIXTURES, "real-work-mini.json");
-const MANIFEST_FIXTURE = join(FIXTURES, "MANIFEST.txt");
+const PAGE_B = join(FIXTURES, "page-b");
+const DATE = "2026-10-20";
+const OUTCOMES_NAME = `ra-outcomes-${DATE}.json`;
+const AA_NAME = `aa-reliability-${DATE}.json`;
+const ALLOWED_NAME = `allowed-routes-${DATE}.json`;
+const MANIFEST_NAME = `MANIFEST-${DATE}.txt`;
 const PRINT_AUDIT_DIR = join(FIXTURES, "print-audit");
 const GUIDE_FIXTURES = join(FIXTURES, "guide");
 const BENCHMARK = join(GUIDE_FIXTURES, "benchmark-mini.json");
@@ -94,8 +101,9 @@ const REAL_WORK_JSON = "real-work.json";
 const MODEL_GUIDE_JSON = "model-guide.json";
 const APPROVAL = join("measure", "tracks", "model_guide", "publish-approval.md");
 const PREVIEW_DIR = join(".tmp", "model-guide-preview");
-const EXPORT_COPY = join("fixture", "real-work-mini.json");
-const MANIFEST_COPY = join("fixture", "MANIFEST.txt");
+const EXPORT_COPY = join("fixture-b", `ra-outcomes-${DATE}.json`);
+const MANIFEST_COPY = join("fixture-b", `MANIFEST-${DATE}.txt`);
+const UPDATE_USAGE = "usage: update.sh <path of MANIFEST-<date>.txt>\n";
 
 const INDEX_HTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Overview</title>
@@ -211,7 +219,7 @@ function printAuditData(tag: string): string {
  * with the synthetic print-audit data file, the base-line data files, the
  * fixture export pair, an approval folder, a `.gitignore`, and one initial
  * commit. Every git command of this file runs inside it. */
-function updateRepo(tag: string): { root: string; exportPath: string } {
+function updateRepo(tag: string): { root: string; manifest: string } {
   requireProduction();
   const root = tempDir(tag);
   mkdirSync(join(root, "harness"), { recursive: true });
@@ -228,9 +236,10 @@ function updateRepo(tag: string): { root: string; exportPath: string } {
     join(root, "harness", "model-guide", "data", "print-audit-2026-11.json"),
   );
   mkdirSync(join(root, "measure", "tracks", "model_guide"), { recursive: true });
-  mkdirSync(join(root, "fixture"), { recursive: true });
-  copyFileSync(EXPORT_FIXTURE, join(root, EXPORT_COPY));
-  copyFileSync(MANIFEST_FIXTURE, join(root, MANIFEST_COPY));
+  mkdirSync(join(root, "fixture-b"), { recursive: true });
+  for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME, MANIFEST_NAME]) {
+    copyFileSync(join(PAGE_B, name), join(root, "fixture-b", name));
+  }
   symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
   writeFileSync(
     join(root, ".gitignore"),
@@ -243,7 +252,7 @@ function updateRepo(tag: string): { root: string; exportPath: string } {
   git(root, ["commit", "-q", "-m", "initial"]);
   expect(git(root, ["status", "--short"]), "the temp repo starts clean").toBe("");
   expect(git(root, ["remote"]), "the temp repo has no remote").toBe("");
-  return { root, exportPath: join(root, EXPORT_COPY) };
+  return { root, manifest: join(root, EXPORT_COPY) };
 }
 
 /** The approval record of spec D21. The gate is its existence. The helper
@@ -256,10 +265,10 @@ function approve(root: string): void {
   git(root, ["commit", "-q", "-m", "approval record"]);
 }
 
-function runUpdate(root: string, exportPath: string) {
+function runUpdate(root: string, manifestPath: string) {
   return spawnSync(
     "bash",
-    [join(root, "harness", "model-guide", "update.sh"), exportPath],
+    [join(root, "harness", "model-guide", "update.sh"), manifestPath],
     { cwd: root, env: env(), encoding: "utf8", timeout: 180_000 },
   );
 }
@@ -272,19 +281,19 @@ function dataFile(root: string, name: string): any {
 
 describe("the weekly update (spec D19, D21)", () => {
   it("U1: before the approval update.sh writes the two data files into the preview folder only", () => {
-    const { root, exportPath } = updateRepo("before-approval");
+    const { root, manifest } = updateRepo("before-approval");
     const before = treeHashes(root, [PREVIEW_DIR]);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, exportPath);
+    const result = runUpdate(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 
     const preview = join(root, PREVIEW_DIR);
     expect(existsSync(join(preview, REAL_WORK_JSON)), "real-work.json in the preview").toBe(true);
     expect(existsSync(join(preview, MODEL_GUIDE_JSON)), "model-guide.json in the preview").toBe(true);
-    const realWork = JSON.parse(readFileSync(join(preview, REAL_WORK_JSON), "utf8"));
-    expect(realWork.schema).toBe("model-guide-real-work/1");
-    expect(realWork.source.generated_on).toBe("2026-11-14");
+    // The spec pins no field of real-work.json (test-strategy 13.4), so the
+    // check reads the file as JSON only.
+    expect(typeof JSON.parse(readFileSync(join(preview, REAL_WORK_JSON), "utf8"))).toBe("object");
     const guide = JSON.parse(readFileSync(join(preview, MODEL_GUIDE_JSON), "utf8"));
     expect(guide.schema).toBe("model-guide-overview/1");
     expect(guide.rows.map((row: any) => row.kind)).toEqual(KINDS);
@@ -298,19 +307,18 @@ describe("the weekly update (spec D19, D21)", () => {
   });
 
   it("U2: after the approval update.sh writes the two data files into docs/assets/data and commits exactly those two paths", () => {
-    const { root, exportPath } = updateRepo("after-approval");
+    const { root, manifest } = updateRepo("after-approval");
     approve(root);
     // One unrelated dirty file: the run must leave it out of the commit.
     writeFileSync(join(root, "docs", "index.html"), `${INDEX_HTML}<!-- dirty, not for this commit -->\n`);
     expect(git(root, ["status", "--short"])).toContain("docs/index.html");
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, exportPath);
+    const result = runUpdate(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 
     const realWork = dataFile(root, REAL_WORK_JSON);
-    expect(realWork.schema).toBe("model-guide-real-work/1");
-    expect(realWork.source.generated_on).toBe("2026-11-14");
+    expect(typeof realWork, "real-work.json parses as JSON").toBe("object");
     const guide = dataFile(root, MODEL_GUIDE_JSON);
     expect(guide.schema).toBe("model-guide-overview/1");
     expect(guide.rows.map((row: any) => row.kind)).toEqual(KINDS);
@@ -330,28 +338,48 @@ describe("the weekly update (spec D19, D21)", () => {
   });
 
   it("U3: a failed input check gives exit 2 and changes no file", () => {
-    const { root, exportPath } = updateRepo("bad-input");
+    const { root, manifest } = updateRepo("bad-input");
     approve(root);
     // One byte more than the manifest holds: the SHA-256 check must refuse
     // the file before any write. The status below is the status of the
     // case: the fixture copy is dirty on purpose, and the run must not
     // move it.
-    writeFileSync(exportPath, `${readFileSync(exportPath, "utf8")}\n`);
+    const outcomes = join(root, EXPORT_COPY);
+    writeFileSync(outcomes, `${readFileSync(outcomes, "utf8")}\n`);
     const dirty = git(root, ["status", "--short"]);
     const before = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, exportPath);
+    const result = runUpdate(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
-    const lines = result.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
-    expect(lines, `stdout of a refused run: ${result.stdout}`).toHaveLength(1);
-    expect(lines[0], "the one line names the input check").toContain("input-check");
+    const lines = `${result.stdout}${result.stderr}`.split("\n").map((line) => line.trim()).filter(Boolean);
+    expect(lines, `one line of a refused run: ${result.stdout}\n${result.stderr}`).toHaveLength(1);
+    expect(lines[0], "the line names the check and the file")
+      .toMatch(/^input-check: \S+ \S+$/);
 
     expect(treeHashes(root)).toEqual(before);
     expect(existsSync(join(root, PREVIEW_DIR)), "no preview folder appears").toBe(false);
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
     expect(git(root, ["status", "--short"]), "the refused run changes no status")
       .toBe(dirty);
+  });
+
+  it("UP1: update.sh with no argument gives the usage line on stderr, exit 2, and writes no file", () => {
+    const { root } = updateRepo("usage");
+    const before = treeHashes(root);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+    const result = spawnSync("bash", [join(root, "harness", "model-guide", "update.sh")], {
+      cwd: root,
+      env: env(),
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stderr).toBe(UPDATE_USAGE);
+    expect(result.stdout, "a usage error writes nothing on stdout").toBe("");
+    expect(treeHashes(root)).toEqual(before);
+    expect(existsSync(join(root, PREVIEW_DIR)), "no preview folder appears").toBe(false);
+    expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
   });
 });
 
@@ -395,12 +423,14 @@ function scoreDoc(routes: Array<{ route: string; state: string; scores: number[]
   return `${JSON.stringify(doc, null, 2)}\n`;
 }
 
-/** Exit 2 and exactly one line that names the refusal or the input check. */
+/** Exit 2 and exactly one line that names the refusal or the input check,
+ * across stdout and stderr: `update.sh` refusals print on stdout and the
+ * tool refusal line goes to stderr (spec Q-S3). */
 function expectRefusal(result: { status: number | null; stdout: string; stderr: string }, what: string): void {
   expect(result.status, `${what} must exit 2: ${result.stdout}\n${result.stderr}`).toBe(2);
-  const lines = result.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
-  expect(lines, `${what} prints one line, got: ${result.stdout}`).toHaveLength(1);
-  expect(lines[0], `${what} names the refusal`).toMatch(/^(update: refused .+|input-check: .+)$/);
+  const lines = `${result.stdout}${result.stderr}`.split("\n").map((line) => line.trim()).filter(Boolean);
+  expect(lines, `${what} prints one line, got: ${result.stdout}\n${result.stderr}`).toHaveLength(1);
+  expect(lines[0], `${what} names the refusal`).toMatch(/^(update: refused .+|input-check: \S+ \S+)$/);
 }
 
 describe("review B round 2: symlinked write targets and newline score names", () => {
@@ -409,13 +439,13 @@ describe("review B round 2: symlinked write targets and newline score names", ()
       const outside = tempDir(`outside-docs-${name}`);
       writeFileSync(join(outside, "target.txt"), "outside bytes, must not move\n");
       const outsideBefore = treeHashes(outside);
-      const { root, exportPath } = updateRepo(`link-docs-${name}`);
+      const { root, manifest } = updateRepo(`link-docs-${name}`);
       approve(root);
       symlinkSync(join(outside, "target.txt"), join(root, DATA_DIR, name));
       const treeBefore = treeHashes(root);
       const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-      const result = runUpdate(root, exportPath);
+      const result = runUpdate(root, manifest);
       expectRefusal(result, `a symlink at docs/assets/data/${name}`);
       expect(treeHashes(outside), `no write outside the repo (${name})`).toEqual(outsideBefore);
       expect(treeHashes(root), `the repo stays byte-identical (${name})`).toEqual(treeBefore);
@@ -427,13 +457,13 @@ describe("review B round 2: symlinked write targets and newline score names", ()
     const outside = tempDir("outside-preview");
     writeFileSync(join(outside, "keep.txt"), "outside bytes, must not move\n");
     const outsideBefore = treeHashes(outside);
-    const { root, exportPath } = updateRepo("link-preview-folder");
+    const { root, manifest } = updateRepo("link-preview-folder");
     mkdirSync(join(root, ".tmp"), { recursive: true });
     symlinkSync(outside, join(root, PREVIEW_DIR));
     const treeBefore = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, exportPath);
+    const result = runUpdate(root, manifest);
     expectRefusal(result, "a symlinked preview folder");
     expect(treeHashes(outside), "no write outside the repo").toEqual(outsideBefore);
     expect(treeHashes(root), "the repo stays byte-identical").toEqual(treeBefore);
@@ -445,13 +475,13 @@ describe("review B round 2: symlinked write targets and newline score names", ()
       const outside = tempDir(`outside-preview-${name}`);
       writeFileSync(join(outside, "target.txt"), "outside bytes, must not move\n");
       const outsideBefore = treeHashes(outside);
-      const { root, exportPath } = updateRepo(`link-preview-file-${name}`);
+      const { root, manifest } = updateRepo(`link-preview-file-${name}`);
       mkdirSync(join(root, PREVIEW_DIR), { recursive: true });
       symlinkSync(join(outside, "target.txt"), join(root, PREVIEW_DIR, name));
       const treeBefore = treeHashes(root);
       const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-      const result = runUpdate(root, exportPath);
+      const result = runUpdate(root, manifest);
       expectRefusal(result, `a symlink at ${PREVIEW_DIR}/${name}`);
       expect(treeHashes(outside), `no write outside the repo (${name})`).toEqual(outsideBefore);
       expect(treeHashes(root), `the repo stays byte-identical (${name})`).toEqual(treeBefore);
@@ -466,18 +496,18 @@ describe("review B round 2: symlinked write targets and newline score names", ()
     const outside = tempDir("outside-tmp-parent");
     const outsideBefore = treeHashes(outside);
     expect(outsideBefore, "the outside folder starts empty").toEqual({});
-    const { root, exportPath } = updateRepo("link-tmp-parent");
+    const { root, manifest } = updateRepo("link-tmp-parent");
     symlinkSync(outside, join(root, ".tmp"));
     const treeBefore = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, exportPath);
+    const result = runUpdate(root, manifest);
     expect(
       result.status,
       `a symlinked .tmp parent must exit 2: ${result.stdout}\n${result.stderr}`,
     ).toBe(2);
-    const lines = result.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
-    expect(lines, `one refusal line, got: ${result.stdout}`).toHaveLength(1);
+    const lines = `${result.stdout}${result.stderr}`.split("\n").map((line) => line.trim()).filter(Boolean);
+    expect(lines, `one refusal line, got: ${result.stdout}\n${result.stderr}`).toHaveLength(1);
     expect(lines[0], "the line is the documented refusal line")
       .toMatch(/^update: refused path .+$/);
     expect(lines[0], "the line names the planted parent").toContain(".tmp");
@@ -487,7 +517,7 @@ describe("review B round 2: symlinked write targets and newline score names", ()
   });
 
   it("P2B2-2 update: a newest score file whose name holds a newline does not steer the pick (the newest file by modification time wins)", () => {
-    const { root, exportPath } = updateRepo("newline-scores");
+    const { root, manifest } = updateRepo("newline-scores");
     const scoresDir = join(root, "harness", "model-guide", "data", "review-scores");
     mkdirSync(scoresDir, { recursive: true });
     // The older file has no complete route, so a pick from it shows no pick.
@@ -506,7 +536,7 @@ describe("review B round 2: symlinked write targets and newline score names", ()
     utimesSync(older, old, old);
     utimesSync(hostile, now, now);
 
-    const result = runUpdate(root, exportPath);
+    const result = runUpdate(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const page = JSON.parse(readFileSync(join(root, PREVIEW_DIR, MODEL_GUIDE_JSON), "utf8"));
     const row = page.rows.find((item: any) => item.kind === "Code review");
