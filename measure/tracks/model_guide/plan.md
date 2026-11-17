@@ -1114,16 +1114,24 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     work-type section; no producer pass rate; and the footer values.
   - The print-audit block shows plain names and no raw route key (spec D17,
     PM 2026-11-17).
+  - The tests also cover `guide.ts` reading the new `real-work.json` (no
+    `work_types`; D18 rows without a page B source) and `update.sh` with the
+    manifest argument (spec D16 rule 12, D19). Red may change the existing
+    test files of `guide.ts`, `update.sh`, `real-work.ts`, and
+    `preview-gate.test.ts`, per test-strategy.md section 13
+    (orchestrator 2026-11-17).
   - Verify: the new cases fail and the other cases pass. Record the failed
     test names in `measure/runs/model_guide/red-4.1e.txt`.
 - [ ] 4.1f Green. Implement the data source in `harness/model-guide/` (the
-  page B tool, `preview.sh`, the template, `model-names.json`) and add the
-  three dated data files and the MANIFEST. Make no design choice beyond the
-  spec; send any open choice to the orchestrator.
+  page B tool `real-work.ts`, `preview.sh`, the template, `model-names.json`,
+  `guide.ts`, and `update.sh`) (orchestrator 2026-11-17) and add the three
+  dated data files and the MANIFEST. Make no design choice beyond the spec;
+  send any open choice to the orchestrator.
   - The print-audit block of `preview.sh` shows the plain names of spec D17
     and no raw route key.
-  - Verify: the 4.1e test file passes, `leak-check.ts` passes, and
-    `page-check` at 390, 980, and 1280 px shows no page overflow.
+  - Verify: the 4.1e test file passes, the `guide.ts` and `update.sh` test
+    files of 4.1e pass (orchestrator 2026-11-17), `leak-check.ts` passes,
+    and `page-check` at 390, 980, and 1280 px shows no page overflow.
 - [ ] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.

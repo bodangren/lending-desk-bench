@@ -856,8 +856,9 @@ questions".
       - **Route key.** The tool strips each route string at the first " ("
         and trims it, because some routes carry free-text notes. The model
         key is the route without `#<variant>` and `[1m]` (the existing merge
-        rule). The route `unknown` gets no rank and never picks. The footer
-        shows its row count.
+        rule). The route `unknown` does not show in the tables or the top
+        block, gets no rank, and never picks. The footer shows its row count
+        and share (orchestrator 2026-11-17).
       - **Counts.** A row of kind `producer` counts its `tasks`. A row of
         kind `gate` counts its `decided`. `no_verdict` runs and open runs
         never count in a rate.
@@ -914,6 +915,43 @@ questions".
         model name does not wrap to 3 lines.
       - **Coverage.** The footer shows the row count, the route count, the
         share of rows with the route `unknown`, and the export date.
+      - **Tool details (orchestrator 2026-11-17).**
+        - **CLI (Q-S1).** `real-work.ts` and `preview.sh` take
+          `--manifest <path of MANIFEST-<date>.txt>`. `update.sh` takes the
+          manifest path as its one positional argument (D19). The tools read
+          the three dated files next to the manifest. The old `--input` and
+          `--export` form is removed. There is no legacy flag (Q-S12).
+        - **MANIFEST format (Q-S2).** One line per file,
+          `<sha256>  <size>  <file name>`, for the three dated files only.
+        - **Refusal (Q-S3).** The tool exits with 2 and writes no output
+          file. It writes one stderr line,
+          `input-check: <check> <file name>`. The checks are manifest,
+          input, sha256, size, json, and schema.
+        - **Dates (Q-S4).** The read date and the export date are the date
+          in the MANIFEST file name.
+        - **Coverage (Q-S5).** The route count is the count of distinct
+          stripped route strings, with `unknown` included. The `unknown`
+          share shows one decimal.
+        - **Pick (Q-S6).** The pick of a top line is the first row in rank
+          order that passes the filters of rule 8.
+        - **AA lookup (Q-S7).** The tool reads only the `models` block of
+          the AA file.
+        - **Mark (Q-S8).** The mark "not for verdicts" shows on the model
+          rows of both tables, checker and producer, because rule 6 marks
+          the model.
+        - **Producer rows (Q-S9).** A producer row with 5 or more tasks and
+          no first-round rate goes in "Too few tasks".
+        - **The route `unknown` (Q-S10).** Its rows do not show in the
+          tables or the top block. Only the footer shows its row count and
+          share.
+        - **Print-audit names (Q-S13).** The page maps the route keys to
+          plain names at render time. The print-audit data file keeps the
+          raw keys. `print-audit.ts` and its test do not change.
+        - **guide.ts and update.sh (strategy plan gap).** `guide.ts` reads
+          the new `real-work.json` schema of the Data source block, with no
+          `work_types`. The D18 rows that have no page B source use their
+          second source or "no pick yet". `update.sh` runs the new input
+          check and the manifest form of the CLI rule.
 
 17. **D17. The print-audit data point.** The file
     `harness/model-guide/data/print-audit-2026-11.json` holds the
@@ -940,9 +978,11 @@ questions".
       `harness/model-guide/data/model-names.json` (PM 2026-11-17). The rule
       is the same as D16: a key with no name shows the key without its plan
       prefix, and a `#<variant>` suffix of a route maps to the name of its
-      model key. The block holds no raw route key, no book text, no page,
-      and no file name. The block says that the data point is one
-      calibration run, not a rank.
+      model key. The page maps the route keys to plain names at render time,
+      and the print-audit data file keeps the raw keys. `print-audit.ts` and
+      its test do not change (orchestrator 2026-11-17). The block holds no
+      raw route key, no book text, no page, and no file name. The block says
+      that the data point is one calibration run, not a rank.
     - **No placeholder.** The block always shows the error types. The line
       "Error types: not yet received." does not exist in this track.
 
@@ -1057,9 +1097,11 @@ questions".
 ### FR-1 — The hand-off input check
 
 `harness/model-guide/real-work.ts` runs the input check of the Data source
-block of D16 on the three dated data files. A mismatch of a SHA-256 or a size
-gives exit 2 and one line that names the failed check. No output file is
-written in that case (PM 2026-11-17).
+block of D16. It takes `--manifest <path of MANIFEST-<date>.txt>` and reads
+the three dated data files next to the manifest. A failed check gives exit 2,
+one stderr line that names the check and the file, and no output file. The
+checks are manifest, input, sha256, size, json, and schema
+(PM 2026-11-17; orchestrator 2026-11-17).
 
 ### FR-2 — The merge and the rates
 
