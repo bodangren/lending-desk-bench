@@ -271,6 +271,7 @@ python3 - <<'PY'
 import hashlib
 import html
 import json
+import math
 import os
 
 root = os.environ["MODEL_GUIDE_ROOT"]
@@ -388,55 +389,176 @@ if os.path.exists(index_path):
             handle.write(index_html)
 
 
-def rate_text(rate, places):
-    if rate["value"] is None:
-        return "no rate"
-    return f"{rate['value']:.{places}f} (n={rate['n']})"
+def model_names():
+    """The plain model names of spec D18 (data/model-names.json)."""
+    path = os.path.join(root, "harness", "model-guide", "data", "model-names.json")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
-def main_row_text(cells):
-    return "<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>"
+NAMES = model_names()
 
 
-def main_rows(rows):
-    out = []
+def model_name(key):
+    """A plain name. A key with no name shows without its plan prefix."""
+    name = NAMES.get(key)
+    if isinstance(name, str) and name.strip():
+        return name
+    _head, sep, tail = str(key).partition("/")
+    return tail if sep else str(key)
+
+
+def pct_text(rate):
+    """A whole percent. An empty value is an en dash (D16 numbers rule)."""
+    value = rate.get("value") if isinstance(rate, dict) else None
+    if value is None:
+        return "–"
+    return f"{int(math.floor(float(value) * 100 + 0.5))} %"
+
+
+def count_text(value):
+    return "–" if value is None else str(value)
+
+
+def rating_text(row):
+    """The mean of the axis means, one decimal, of 5."""
+    ratings = row.get("ratings") or {}
+    means = [
+        entry["mean"]
+        for entry in ratings.values()
+        if isinstance(entry, dict) and entry.get("mean") is not None
+    ]
+    if not means:
+        return "–"
+    return f"{sum(means) / len(means):.1f} / 5"
+
+
+def ratings_text(row):
+    ratings = row.get("ratings") or {}
+    if not ratings:
+        return "–"
+    return "; ".join(
+        f"{axis} {entry['mean']:.2f} (n={entry['n']})"
+        for axis, entry in sorted(ratings.items())
+    )
+
+
+def agreement_text(row):
+    checks = row.get("rater_checks") or {}
+    if checks.get("n", 0) == 0 or checks.get("agreement") is None:
+        return "–"
+    return f"{checks['agreement']:.2f} (n={checks['n']})"
+
+
+def table_head(heads):
+    return "<thead><tr>" + "".join(
+        f'<th scope="col">{html.escape(head)}</th>' for head in heads
+    ) + "</tr></thead>"
+
+
+def model_cell(row, ranked):
+    title = html.escape(", ".join(row.get("routes") or []))
+    badge = f'<span class="rank">#{int(row["rank"])}</span> ' if ranked else ""
+    return (
+        f'<td data-mg="model-name" title="{title}">'
+        f'{badge}{html.escape(model_name(row["model"]))}</td>'
+    )
+
+
+def table_row(row, with_blocking, ranked):
+    rate = row.get("pass_rate") or {}
+    cells = [
+        model_cell(row, ranked),
+        f'<td class="num">{count_text(rate.get("n"))}</td>',
+        f'<td class="num">{pct_text(rate)}</td>',
+    ]
+    if with_blocking:
+        cells.append(f'<td class="num">{pct_text(row.get("blocking_rate"))}</td>')
+    cells.append(f'<td class="num">{rating_text(row)}</td>')
+    cells.append(f'<td class="num">{pct_text(row.get("trend"))}</td>')
+    attrs = f'data-model-key="{html.escape(str(row["model"]))}"'
+    if ranked:
+        attrs += f' data-rank="{int(row["rank"])}"'
+    return f"<tr {attrs}>" + "".join(cells) + "</tr>"
+
+
+def more_columns(label, rows):
+    """The columns that the default table hides (D16 layout)."""
+    heads = [
+        "Model", "Routes", "Pass", "Fail", "Error", "No result",
+        "Blocking count", "Ratings", "Agreement",
+    ]
+    body = []
     for row in rows:
-        ratings = row.get("ratings", {})
-        if ratings:
-            ratings_text = "; ".join(
-                f"{html.escape(axis)} {entry['mean']:.4f} (n={entry['n']})"
-                for axis, entry in sorted(ratings.items())
-            )
-        else:
-            ratings_text = "no ratings"
-        checks = row.get("rater_checks", {})
-        if checks.get("n", 0) == 0 or checks.get("agreement") is None:
-            agreement_text = "no agreement value"
-        else:
-            agreement_text = f"{checks['agreement']:.4f} (n={checks['n']})"
-        trend = row.get("trend", {})
-        if trend.get("value") is None:
-            trend_text = "no trend"
-        else:
-            trend_text = f"{trend['value']:.4f} (n={trend['n']})"
-        out.append(main_row_text([
-            str(row["rank"]),
-            html.escape(row["model"]),
-            html.escape(", ".join(row["routes"])),
-            str(row["runs"]),
-            str(row["pass"]),
-            str(row["fail"]),
-            str(row["error"]),
-            str(row["no_result"]),
-            str(row["blocking_findings"]),
-            html.escape(rate_text(row["pass_rate"], 4)),
-            html.escape(rate_text(row["blocking_rate"], 3)),
-            html.escape(ratings_text),
-            html.escape(agreement_text),
-            html.escape(trend_text),
-            "few runs" if row.get("few_runs") else "",
-        ]))
-    return "\n".join(out)
+        body.append(
+            "<tr>"
+            f"<td>{html.escape(model_name(row['model']))}</td>"
+            f'<td class="routes">{html.escape(", ".join(row.get("routes") or []))}</td>'
+            f'<td class="num">{count_text(row.get("pass"))}</td>'
+            f'<td class="num">{count_text(row.get("fail"))}</td>'
+            f'<td class="num">{count_text(row.get("error"))}</td>'
+            f'<td class="num">{count_text(row.get("no_result"))}</td>'
+            f'<td class="num">{count_text(row.get("blocking_findings"))}</td>'
+            f'<td class="axes">{html.escape(ratings_text(row))}</td>'
+            f'<td class="num">{html.escape(agreement_text(row))}</td>'
+            "</tr>"
+        )
+    return (
+        '<details class="more-columns" data-mg="more-columns">'
+        "<summary>More columns</summary>\n"
+        '<div class="table-wrap" tabindex="0" role="region"'
+        f' aria-label="{html.escape(str(label))}: more columns"><table>'
+        + table_head(heads)
+        + "\n<tbody>\n" + "\n".join(body) + "\n</tbody></table></div>\n</details>"
+    )
+
+
+def main_table(label, rows, with_blocking):
+    """The default table of one group, the Too few runs group, and More columns.
+
+    Only a row with 10 or more results sits in the ranked table and carries a
+    rank number. The other rows sit in the collapsed group and carry no rank.
+    """
+    rows = rows or []
+    ranked = [row for row in rows if not row.get("few_runs")]
+    few = [row for row in rows if row.get("few_runs")]
+    heads = ["Model", "Runs", "Pass %"]
+    if with_blocking:
+        heads.append("Blocking %")
+    heads += ["Rating", "Trend"]
+    escaped_label = html.escape(str(label))
+    parts = []
+    if ranked:
+        parts.append(
+            f'<div class="table-wrap" tabindex="0" role="region"'
+            f' aria-label="{escaped_label} table">'
+            '<table class="data" data-mg="default-table">'
+            + table_head(heads) + "\n<tbody>\n"
+            + "\n".join(table_row(row, with_blocking, True) for row in ranked)
+            + "\n</tbody></table></div>"
+        )
+        parts.append(
+            '<p class="scroll-hint">Scroll sideways for more →</p>'
+        )
+    else:
+        parts.append('<p class="muted">No model has 10 or more results yet.</p>')
+    if few:
+        parts.append(
+            '<details class="few-runs" data-mg="too-few">'
+            "<summary>Too few runs to rank</summary>\n"
+            '<div class="table-wrap" tabindex="0" role="region"'
+            f' aria-label="{escaped_label}: too few runs to rank"><table>'
+            + table_head(heads) + "\n<tbody>\n"
+            + "\n".join(table_row(row, with_blocking, False) for row in few)
+            + "\n</tbody></table></div>\n</details>"
+        )
+    if rows:
+        parts.append(more_columns(label, rows))
+    return "\n".join(parts)
 
 
 def work_tables(work_types):
@@ -444,39 +566,48 @@ def work_tables(work_types):
         return "<p>no pick yet</p>"
     parts = []
     for name in sorted(work_types):
-        rows = []
-        for row in work_types[name]:
-            rows.append(main_row_text([
-                str(row["rank"]),
-                html.escape(row["model"]),
-                html.escape(", ".join(row["routes"])),
-                str(row["runs"]),
-                str(row["pass"]),
-                str(row["fail"]),
-                html.escape(rate_text(row["pass_rate"], 4)),
-                "few runs" if row.get("few_runs") else "",
-            ]))
-        if not rows:
-            parts.append(f"<h3>{html.escape(name)}</h3>\n<p>no pick yet</p>")
-            continue
-        parts.append(
-            f"<h3>{html.escape(name)}</h3>\n"
-            '<div class="table-wrap" tabindex="0" role="region"'
-            f' aria-label="{html.escape(name)} table"><table>\n'
-            "<thead><tr>"
-            "<th scope=\"col\">Rank</th>"
-            "<th scope=\"col\">Model</th>"
-            "<th scope=\"col\">Routes</th>"
-            "<th scope=\"col\">Runs</th>"
-            "<th scope=\"col\">Pass</th>"
-            "<th scope=\"col\">Fail</th>"
-            "<th scope=\"col\">Pass rate</th>"
-            "<th scope=\"col\">Mark</th>"
-            "</tr></thead>\n<tbody>\n"
-            + "\n".join(rows)
-            + "\n</tbody>\n</table></div>"
+        rows = work_types[name] or []
+        opening = (
+            '<details class="work-type" data-mg="work-type">'
+            f"<summary><h3>{html.escape(str(name))}</h3></summary>\n"
         )
+        if not rows:
+            parts.append(opening + '<p class="muted">no pick yet</p>\n</details>')
+            continue
+        parts.append(opening + main_table(name, rows, False) + "\n</details>")
     return "\n".join(parts)
+
+
+def pick_row(label, rows):
+    """One top-block line. A group without a rank-1 row of 10 or more results
+    says no pick yet."""
+    pick = None
+    for row in rows or []:
+        if row.get("can_pick") and row.get("rank") == 1:
+            pick = row
+            break
+    escaped_label = html.escape(str(label))
+    if pick is None:
+        return (
+            '<li data-mg="pick">\n'
+            f'<span class="pick-label">{escaped_label}</span> '
+            '<span class="pick-none">no pick yet</span>\n</li>'
+        )
+    rate = pick.get("pass_rate") or {}
+    return (
+        f'<li data-mg="pick" data-model-key="{html.escape(str(pick["model"]))}">\n'
+        f'<span class="pick-label">{escaped_label}</span> '
+        f'<span class="pick-name">{html.escape(model_name(pick["model"]))}</span> '
+        f'<span class="pick-rate">{pct_text(rate)}</span> '
+        f'<span class="pick-n">{count_text(rate.get("n"))} results</span>\n</li>'
+    )
+
+
+def top_block(producer, checker, work_types):
+    groups = [("Producer roles", producer), ("Checker roles", checker)]
+    for name in sorted(work_types):
+        groups.append((name, work_types[name]))
+    return "\n".join(pick_row(label, rows) for label, rows in groups)
 
 
 def print_audit_block():
@@ -540,8 +671,9 @@ def print_audit_block():
         )
     if rows:
         parts.append(
-            "<p><strong>The error rows, their checklist items, and the results:</strong></p>\n"
-            "<ul>\n" + "\n".join(rows) + "\n</ul>"
+            '<details class="audit-rows">'
+            "<summary>The error rows, their checklist items, and the results</summary>\n"
+            "<ul>\n" + "\n".join(rows) + "\n</ul>\n</details>"
         )
     return "\n".join(parts)
 
@@ -574,12 +706,19 @@ with open(template_path, encoding="utf-8") as handle:
     template = handle.read()
 
 replacements = {
-    "<!--MODEL-GUIDE:SOURCE-->": source_html,
-    "<!--MODEL-GUIDE:COVERAGE-->": coverage_html,
-    "<!--MODEL-GUIDE:PRODUCER-ROWS-->": main_rows(page["producer"]),
-    "<!--MODEL-GUIDE:CHECKER-ROWS-->": main_rows(page["checker"]),
+    "<!--MODEL-GUIDE:TOP-BLOCK-->": top_block(
+        page["producer"], page["checker"], page["work_types"]
+    ),
+    "<!--MODEL-GUIDE:PRODUCER-TABLE-->": main_table(
+        "Producer roles", page["producer"], True
+    ),
+    "<!--MODEL-GUIDE:CHECKER-TABLE-->": main_table(
+        "Checker roles", page["checker"], True
+    ),
     "<!--MODEL-GUIDE:WORK-TYPES-->": work_tables(page["work_types"]),
     "<!--MODEL-GUIDE:PRINT-AUDIT-->": print_audit_block(),
+    "<!--MODEL-GUIDE:SOURCE-->": source_html,
+    "<!--MODEL-GUIDE:COVERAGE-->": coverage_html,
 }
 for token, value in replacements.items():
     if token not in template:
