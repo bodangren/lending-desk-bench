@@ -1282,7 +1282,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     prints nothing. The ten top lines show the sentence forms, and the
     Escapes cells read "no data" because the real outcomes file holds no
     escape. The `page-check` browser proof stays with the orchestrator.
-- [~] 4.1i Red. Role labels on the top lines (spec D16 Top block, orchestrator
+- [x] 9771edb 4.1i Red. Role labels on the top lines (spec D16 Top block, orchestrator
   2026-11-18). Change only test files under `harness/model-guide-tests/`.
   - Cases: each of the ten top lines starts with its role label and a colon,
     in the given order, for a pick and for "no pick yet".
@@ -1299,10 +1299,30 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     first failure ADV4-1 (`red line starts with "Red: ", got "alpha 80 % in
     this role, 20 tasks"`). No run carries a NameError, a TypeError, a
     ReferenceError, or a syntax error.
-- [ ] 4.1j Green. Implement 4.1i in `harness/model-guide/preview.sh` (and the
+- [x] 8805ea2 4.1j Green. Implement 4.1i in `harness/model-guide/preview.sh` (and the
   template if needed).
   - Verify: all page B test files pass one at a time; `page-check` at 390, 980,
     and 1280 px shows no page overflow.
+  - Changes: `top_block` writes each line as "<role label>: <sentence>", with
+    the labels Red, Green, Coder, Review A, Review B, Review C, Adversarial,
+    Acceptance, Phase acceptance, Final acceptance, and a no-pick line as
+    "<role label>: no pick yet". The role stays in the `data-role`
+    attribute; the template is unchanged.
+  - Evidence (2026-11-18, one file at a time from `harness/`, each with
+    `--configLoader native --maxWorkers=1 --reporter=dot`, at HEAD 8805ea2):
+    - `real-work.test.ts` exits 0 with `Tests  14 passed (14)`.
+    - `preview-gate.test.ts` exits 0 with `Tests  102 passed (102)`.
+    - `adversarial-p4.test.ts` exits 0 with `Tests  18 passed (18)`.
+    - `guide.test.ts` exits 0 with `Tests  18 passed (18)`.
+    - `input-check.test.ts` exits 0 with `Tests  23 passed (23)`.
+    - `update.test.ts` exits 0 with `Tests  9 passed (9)`.
+    - `leak-check.test.ts` exits 0 with `Tests  22 passed (22)`.
+    - `adversarial.test.ts` exits 0 with `Tests  46 passed (46)`.
+    - `adversarial-p2.test.ts` exits 0 with `Tests  13 passed (13)`.
+    - `adversarial-p3.test.ts` exits 0 with `Tests  34 passed (34)`.
+  - The preview on the real files exits 0 and `git status --short docs/`
+    prints nothing. The `page-check` browser proof stays with the
+    orchestrator.
 - [ ] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
