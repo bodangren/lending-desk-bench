@@ -1744,6 +1744,7 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
   interface TopPick {
     role: string | null;
     key: string | null;
+    text: string;
     none: boolean;
   }
 
@@ -1765,7 +1766,8 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       out.push({
         role: m[2].match(/\bdata-role="([^"]*)"/)?.[1] ?? null,
         key: m[2].match(/\bdata-model-key="([^"]*)"/)?.[1] ?? null,
-        none: text === "no pick yet",
+        text,
+        none: text.endsWith(": no pick yet"),
       });
       re.lastIndex = close + tag.length + 3;
     }
@@ -1929,10 +1931,29 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     expect(dashSeen, "the page shows the dash for an empty value").toBe(true);
   });
 
-  it("G6: each top line without a pick shows one of the four causes", () => {
+  it("G6: each top line starts with its role label and a colon, and each line without a pick shows one of the four causes", () => {
     const { page } = pageGuardSnapshot();
     const picks = topPicksOf(page);
     expect(picks, "one line for each of the ten roles").toHaveLength(10);
+    // The visible text of every line (spec D16 Top block, orchestrator
+    // 2026-11-18): "<role label>: ..." for a pick and for "no pick yet".
+    const texts: Record<string, string> = {
+      red: "Red: prod-one 100 % in this role, 5 tasks",
+      green: "Green: prod-one 62 % in this role, 15 tasks",
+      coder: "Coder: no pick yet",
+      "review-a": "Review A: gate-one 90 % pass in this role, 10 runs, net 41.5",
+      "review-b": "Review B: no pick yet",
+      "review-c": "Review C: gate-seven 100 % pass in this role, 5 runs, net 20",
+      adversarial: "Adversarial: no pick yet",
+      acceptance: "Acceptance: no pick yet",
+      "phase-acceptance": "Phase acceptance: gate-two 80 % pass in this role, 5 runs, net 33.3",
+      "final-acceptance": "Final acceptance: no pick yet",
+    };
+    for (const pick of picks) {
+      const role = pick.role as string;
+      expect(texts[role], `a text for the role ${role}`).toBeTruthy();
+      expect(pick.text, `${role} visible line text`).toBe(texts[role]);
+    }
     const none = picks.filter((pick) => pick.none);
     expect(
       none.map((pick) => pick.role),

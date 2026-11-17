@@ -334,7 +334,7 @@ function picksOf(page: string): Pick[] {
       role: m[2].match(/\bdata-role="([^"]*)"/)?.[1] ?? null,
       key: m[2].match(/\bdata-model-key="([^"]*)"/)?.[1] ?? null,
       text,
-      none: text === "no pick yet",
+      none: text.endsWith(": no pick yet"),
     });
     re.lastIndex = close + tag.length + 3;
   }
@@ -569,38 +569,35 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     ).toContain('data-mark="not-for-verdicts"');
   });
 
-  it("DS13: the top block gives one line per role in the given order with the in-this-role forms", () => {
+  it("DS13: each of the ten top lines starts with its role label and a colon, in the given order", () => {
     const page = basePage();
     const at = page.indexOf('data-mg="top-block"');
     const firstTable = page.indexOf("<table");
     expect(firstTable, "the page holds a table").toBeGreaterThan(-1);
     expect(at, "the top block sits before the first table").toBeLessThan(firstTable);
 
-    const order = [
-      "red",
-      "green",
-      "coder",
-      "review-a",
-      "review-b",
-      "review-c",
-      "adversarial",
-      "acceptance",
-      "phase-acceptance",
-      "final-acceptance",
-    ];
-    const noPickRoles = ["coder", "review-b", "adversarial", "acceptance", "final-acceptance"];
-    const producerLines: Record<string, { key: string; name: string; rate: number; count: number }> = {
-      red: { key: "t1/prod-one", name: "prod-one", rate: 100, count: 5 },
-      green: { key: "t1/prod-one", name: "prod-one", rate: 62, count: 15 },
+    const expected: Record<string, { text: string; key: string | null }> = {
+      red: { text: "Red: prod-one 100 % in this role, 5 tasks", key: "t1/prod-one" },
+      green: { text: "Green: prod-one 62 % in this role, 15 tasks", key: "t1/prod-one" },
+      coder: { text: "Coder: no pick yet", key: null },
+      "review-a": {
+        text: "Review A: gate-one 90 % pass in this role, 10 runs, net 41.5",
+        key: "t1/gate-one",
+      },
+      "review-b": { text: "Review B: no pick yet", key: null },
+      "review-c": {
+        text: "Review C: gate-seven 100 % pass in this role, 5 runs, net 20",
+        key: "t1/gate-seven",
+      },
+      adversarial: { text: "Adversarial: no pick yet", key: null },
+      acceptance: { text: "Acceptance: no pick yet", key: null },
+      "phase-acceptance": {
+        text: "Phase acceptance: gate-two 80 % pass in this role, 5 runs, net 33.3",
+        key: "t1/gate-two",
+      },
+      "final-acceptance": { text: "Final acceptance: no pick yet", key: null },
     };
-    const gateLines: Record<
-      string,
-      { key: string; name: string; rate: number; count: number; net: number }
-    > = {
-      "review-a": { key: "t1/gate-one", name: "gate-one", rate: 90, count: 10, net: 41.5 },
-      "review-c": { key: "t1/gate-seven", name: "gate-seven", rate: 100, count: 5, net: 20 },
-      "phase-acceptance": { key: "t1/gate-two", name: "gate-two", rate: 80, count: 5, net: 33.3 },
-    };
+    const order = Object.keys(expected);
 
     const picks = picksOf(page);
     expect(picks, "one line for each of the ten roles").toHaveLength(order.length);
@@ -610,38 +607,14 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     ).toEqual(order);
     for (const pick of picks) {
       const role = pick.role as string;
-      if (noPickRoles.includes(role)) {
-        expect(pick.none, `${role} says no pick yet`).toBe(true);
-        expect(pick.text, `${role} line text`).toBe("no pick yet");
-        expect(pick.key, `${role} carries no data-model-key`).toBeNull();
-        continue;
-      }
-      expect(pick.none, `${role} has a pick`).toBe(false);
-      expect(pick.key, `${role} pick key`).toBe(
-        (producerLines[role] ?? gateLines[role]).key,
-      );
-      if (producerLines[role]) {
-        const want = producerLines[role];
-        const m = pick.text.match(/^(.+) (\d+) % in this role, (\d+) tasks$/);
-        expect(
-          m,
-          `${role} line is "<name> <rate> % in this role, <count> tasks", got "${pick.text}"`,
-        ).toBeTruthy();
-        expect(m![1], `${role} plain name`).toBe(want.name);
-        expect(Number(m![2]), `${role} rate`).toBe(want.rate);
-        expect(Number(m![3]), `${role} count`).toBe(want.count);
-      } else {
-        const want = gateLines[role];
-        const m = pick.text.match(/^(.+) (\d+) % pass in this role, (\d+) runs, net (\S+)$/);
-        expect(
-          m,
-          `${role} line is "<name> <rate> % pass in this role, <count> runs, net <net>", got "${pick.text}"`,
-        ).toBeTruthy();
-        expect(m![1], `${role} plain name`).toBe(want.name);
-        expect(Number(m![2]), `${role} pass rate`).toBe(want.rate);
-        expect(Number(m![3]), `${role} count`).toBe(want.count);
-        expect(Number(m![4]), `${role} net score`).toBe(want.net);
-      }
+      const want = expected[role];
+      expect(want, `a line for the role ${role}`).toBeTruthy();
+      expect(
+        pick.text,
+        `${role} visible line text (spec D16 Top block, orchestrator 2026-11-18)`,
+      ).toBe(want.text);
+      expect(pick.key, `${role} pick key`).toBe(want.key);
+      expect(pick.none, `${role} no-pick flag`).toBe(want.key === null);
     }
   });
 
@@ -661,13 +634,13 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     expect(
       reviewA.text,
       "review-a picks the higher net row although its pass rate is lower",
-    ).toBe("gate-one 90 % pass in this role, 10 runs, net 41.5");
+    ).toBe("Review A: gate-one 90 % pass in this role, 10 runs, net 41.5");
     expect(reviewA.key).toBe("t1/gate-one");
     const reviewC = picks.find((pick) => pick.role === "review-c")!;
     expect(
       reviewC.text,
       "review-c picks net 20 over the 100 % row with net 19.9",
-    ).toBe("gate-seven 100 % pass in this role, 5 runs, net 20");
+    ).toBe("Review C: gate-seven 100 % pass in this role, 5 runs, net 20");
     expect(reviewC.key).toBe("t1/gate-seven");
   });
 });

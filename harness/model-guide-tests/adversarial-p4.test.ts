@@ -64,6 +64,20 @@ const ROLE_IDS = [
   "phase-acceptance",
   "final-acceptance",
 ];
+/** The visible role labels of the ten top lines (spec D16 Top block,
+ * orchestrator 2026-11-18). */
+const ROLE_LABEL: Record<string, string> = {
+  red: "Red",
+  green: "Green",
+  coder: "Coder",
+  "review-a": "Review A",
+  "review-b": "Review B",
+  "review-c": "Review C",
+  adversarial: "Adversarial",
+  acceptance: "Acceptance",
+  "phase-acceptance": "Phase acceptance",
+  "final-acceptance": "Final acceptance",
+};
 
 const roots: string[] = [];
 afterAll(() => {
@@ -345,14 +359,15 @@ function rankedKeys(rows: TableRow[]): string[] {
 interface Pick {
   role: string | null;
   key: string | null;
+  text: string;
   rate: string;
   count: string;
   none: boolean;
 }
 
-/** The ten top lines. Each line is one sentence with the label "in this
- * role" (spec D16 Top block, PM 2026-11-18), so the rate and the count
- * come from the text of the line. */
+/** The ten top lines. Each line starts with its role label and a colon and
+ * then holds one of the three forms of spec D16 Top block (orchestrator
+ * 2026-11-18), so the rate and the count come from the text of the line. */
 function picksOf(page: string): Pick[] {
   const at = page.indexOf('data-mg="top-block"');
   expect(at, "the page holds the top block").toBeGreaterThan(-1);
@@ -367,15 +382,18 @@ function picksOf(page: string): Pick[] {
     out.push({
       role: m[1].match(/\bdata-role="([^"]*)"/)?.[1] ?? null,
       key: key === undefined ? null : unescapeHtml(key),
+      text,
       rate: gate ? `${gate[1]} %` : producer ? `${producer[1]} %` : "",
       count: gate ? gate[2] : producer ? producer[2] : "",
-      none: text === "no pick yet",
+      none: text.endsWith(": no pick yet"),
     });
   }
   return out;
 }
 
-/** The ten lines of the top block, in order, with the labeled values. */
+/** The ten lines of the top block, in order, with the labeled values. Each
+ * line starts with "<role label>: " and a no-pick line is exactly
+ * "<role label>: no pick yet" (spec D16 Top block, orchestrator 2026-11-18). */
 function expectTopBlock(
   page: string,
   expected: Record<string, [string, string, string] | null>,
@@ -383,14 +401,22 @@ function expectTopBlock(
   const picks = picksOf(page);
   expect(picks.map((pick) => pick.role), "ten lines in the order of spec D16 rule 8").toEqual(ROLE_IDS);
   for (const pick of picks) {
-    const want = expected[pick.role as string] ?? null;
+    const role = pick.role as string;
+    const label = ROLE_LABEL[role];
+    expect(label, `a role label for ${role}`).toBeTruthy();
+    expect(
+      pick.text.startsWith(`${label}: `),
+      `${role} line starts with "${label}: ", got "${pick.text}"`,
+    ).toBe(true);
+    const want = expected[role] ?? null;
     if (want === null) {
-      expect(pick.none, `${pick.role} says no pick yet`).toBe(true);
-      expect(pick.key, `${pick.role} names no model`).toBeNull();
+      expect(pick.none, `${role} says no pick yet`).toBe(true);
+      expect(pick.text, `${role} no-pick line text`).toBe(`${label}: no pick yet`);
+      expect(pick.key, `${role} names no model`).toBeNull();
       continue;
     }
-    expect(pick.none, `${pick.role} has a pick`).toBe(false);
-    expect([pick.key, pick.rate, pick.count], `${pick.role} pick`).toEqual(want);
+    expect(pick.none, `${role} has a pick`).toBe(false);
+    expect([pick.key, pick.rate, pick.count], `${role} pick`).toEqual(want);
   }
 }
 
