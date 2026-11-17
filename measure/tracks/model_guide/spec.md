@@ -66,7 +66,9 @@ The PM decided these points on 2026-11-14. Each decision binds the track.
   are not plan routes. This track never runs a metered route.
 - **OD3. Q4, the rank of the checker roles.** The checker roles rank by pass
   rate only. The page shows findings per run beside the rate
-  (PM 2026-11-17).
+  (PM 2026-11-17; replaced by PM 2026-11-18). The checker rows rank by the AA
+  net score, then findings per run, then more runs, then the model key
+  (PM 2026-11-18).
 - **OD4. Q5, the merge on page B.** The merge joins only the `#<variant>`
   rows and the `[1m]` rows of one route. The same model on another provider
   stays a separate row.
@@ -885,9 +887,16 @@ questions".
         run = `sum(findings) / sum(decided)`, two decimals. Escapes = the
         sum of `escapes`. The default columns are Model, Runs, Pass %,
         Findings per run, Escapes, and Net score. The rank holds the rows
-        with 5 runs or more: the higher pass % first, then fewer escapes,
-        then more runs. The other rows sit in "Too few tasks". Findings per
-        run replaces Blocking % and Blockers per run on page B.
+        with 5 runs or more: the higher AA net score first; a row that is not
+        rated ranks after every rated row; then the higher findings per run;
+        then more runs; then the model key (replaced by PM 2026-11-18). The
+        other rows sit in "Too few tasks". The Pass % column stays, and the
+        checker table text says: "A high pass % does not mean a good
+        checker." (PM 2026-11-18). Findings per run replaces Blocking % and
+        Blockers per run on page B. Escapes take no part in any rank. When
+        the sum of escapes over all gate rows of the outcomes file is 0,
+        every Escapes cell shows "no data", because there is no escape data
+        yet; otherwise a cell shows the number (PM 2026-11-18).
       - **AA net score.** The tool takes the last path part of the model
         key, in lower case, and removes a "-free" suffix. It matches that
         name to a model key or an alias of the AA file. A merged row uses
@@ -895,6 +904,10 @@ questions".
         `byEffort[<variant>]` when that entry is present, else the primary
         row. No match, or rated false, gives "not rated". A model with a net
         score under 20, or not rated, carries the mark "not for verdicts".
+      - **About this data (PM 2026-11-18).** The footer adds: "The record does
+        not hold the effort level of each run. The net score uses the effort
+        level of the route with the most runs, so a model can score higher at
+        another effort level (for example Claude Sonnet 5.5 at #max)."
       - **Allowed list.** A model key is allowed when it equals an entry of
         `allowedRoutes` or `orchestratorRoutes` after the same stripping of
         `#<variant>` and `[1m]`. A row that is not allowed stays in its
@@ -904,10 +917,15 @@ questions".
         acceptance, Final acceptance. Each line uses only the rows of that
         role, merged by model key. The pick is rank 1 among the rows that
         meet the minimum of 5, that are allowed, and, for a gate role, that
-        have a net score of 20 or more. The line gives the role, the plain
-        model name, the rate (first-round accept % for a producer role, pass
-        % for a gate role), and the count. With no pick, the line says "no
-        pick yet".
+        have a net score of 20 or more. A gate role picks inside the rows of
+        that role, in the checker rank order of the Checker table
+        (PM 2026-11-18). Each line shows the numbers of that role only, with
+        the label "in this role" (PM 2026-11-18; the role, name, rate, and
+        count form is replaced). A producer line has the form "<plain name>
+        <rate> % in this role, <count> tasks". A gate line has the form
+        "<plain name> <pass rate> % pass in this role, <count> runs, net
+        <net score>". The net score shows as in the Checker table. With no
+        pick, the line says "no pick yet".
       - **Work types.** The new export has no work-type split. The work-type
         sections leave page B.
       - **Width.** At 390 px the model name cell takes the free width of
@@ -1019,9 +1037,15 @@ questions".
       row, with 5 runs or more in a gate row, or with a complete rank (track
       A). A gate row also needs an AA net score of 20 or more. A model that is
       not allowed never picks, and a row with the mark "not for verdicts"
-      never picks in a gate row (PM 2026-11-17). When the first source has no
+      never picks in a gate row (PM 2026-11-17). The second source of the Code
+      review row, the page B checker table, follows the checker rank order of
+      D16: the AA net score first, then findings per run, then more runs, then
+      the model key (PM 2026-11-18). When the first source has no
       qualified model, the second source picks. When neither has one, the
       cell says "no pick yet: not enough evidence".
+    - **Overview text (PM 2026-11-18).** The overview section text
+      `harness/model-guide/pages/guide-section.html` says that a model needs
+      5 tasks or runs, as this decision says, not 10.
     - **Ruling Q1 (PM, 2026-11-15).** The Test writing row uses the page B
       producer table as a whole while `real-work.json` has no role key. The
       evidence cell starts with "page B producer". A red-only table comes
@@ -1119,12 +1143,18 @@ and the `[1m]` rows of one route. The file
 
 The producer table ranks by the first-round accept %, then the lower rework,
 then more tasks, over the rows with 5 tasks or more and a first-round rate.
-The checker table ranks by the pass %, then fewer escapes, then more runs,
-over the rows with 5 runs or more (PM 2026-11-17). A row below its minimum
-goes into the collapsed group "Too few tasks". A pick also needs an allowed
-model, and, for a gate role, an AA net score of 20 or more. A rate shows as a
-whole percent, the findings-per-run value shows two decimals, and the Runs
-and Tasks columns hold the count (PM 2026-11-17).
+The checker table ranks by the AA net score, high first; a row that is not
+rated ranks after every rated row; then by findings per run, high first; then
+by more runs; then by the model key. The checker rank holds the rows with 5
+runs or more (the pass %, escape, and run-count order is replaced by
+PM 2026-11-18). A row below its minimum goes into the collapsed group "Too
+few tasks". A pick also needs an allowed model, and, for a gate role, an AA
+net score of 20 or more, in the same checker order inside the rows of that
+role (PM 2026-11-17, PM 2026-11-18). A rate shows as a whole percent, the
+findings-per-run value shows two decimals, and the Runs and Tasks columns
+hold the count (PM 2026-11-17). Escapes take
+no part in any rank. When the sum of escapes over all gate rows of the
+outcomes file is 0, every Escapes cell shows "no data" (PM 2026-11-18).
 
 ### FR-4 — The page and the method note
 
@@ -1268,9 +1298,12 @@ no quota source gets the fixed cap of
    Cleanup %, and Tokens per accepted task. The checker table shows Model,
    Runs, Pass %, Findings per run, Escapes, and Net score. A rate shows as a
    whole percent, and the Runs and Tasks columns hold the count (PM
-   2026-11-17). Rows with fewer than 5 tasks or runs carry "Too few tasks" and
-   get no rank number. A row with the mark "not for verdicts" or "not
-   allowed" never picks.
+   2026-11-17). The checker table ranks by the AA net score first, and its
+   text says "A high pass % does not mean a good checker." An Escapes cell
+   shows "no data" when the sum of escapes over all gate rows is 0, and a
+   number otherwise (PM 2026-11-18). Rows with fewer than 5 tasks or runs
+   carry "Too few tasks" and get no rank number. A row with the mark "not
+   for verdicts" or "not allowed" never picks.
 5. Page B has no work-type section. The producer table shows no self-graded
    pass rate. The checker table shows findings per run in place of Blocking %
    and Blockers per run (PM 2026-11-17).
@@ -1316,7 +1349,8 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
 - **Q3 (D12).** Answered on 2026-11-14 (OD2). DeepSeek Flash runs through
   `opencode-go/deepseek-v4.1-flash`. The routes `deepseek/*` are metered.
 - **Q4 (D16).** Answered on 2026-11-14 (OD3). The checker rank uses the
-  pass rate only. The page shows the blocking rate.
+  pass rate only. The page shows the blocking rate. The PM replaced this
+  answer on 2026-11-18 (OD3, PM 2026-11-18).
 - **Q5 (D16).** Answered on 2026-11-14 (OD4). The merge removes only
   `#<variant>` and `[1m]` of one route. The same model on another provider
   stays separate.

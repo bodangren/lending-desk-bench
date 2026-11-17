@@ -1222,6 +1222,23 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `git status --short docs/` prints nothing.
   - The `page-check` browser proof at 390, 980, and 1280 px stays with the
     orchestrator (test-strategy 13.9).
+- [ ] 4.1g Red. Checker rank by net score, pick labels, escapes "no data",
+  overview text (spec D16 Data source C1 to C3, D18, PM 2026-11-18). Change
+  only test files and fixtures under `harness/model-guide-tests/`.
+  - Cases: the checker rank order incl. not-rated rows last and the ties; the
+    sentence "A high pass % does not mean a good checker."; the
+    About-this-data effort sentence; the gate pick follows the new order (a
+    100 % pass row with a low net score does not pick); both top-line forms
+    with "in this role"; Escapes "no data" when the escape sum is 0, and a
+    number otherwise; the overview text says 5, not 10.
+  - Verify: the new cases fail for missing behavior and the other cases pass.
+    Record the failed names in `measure/runs/model_guide/red-4.1g.txt`.
+- [ ] 4.1h Green. Implement 4.1g in `harness/model-guide/` (`real-work.ts`,
+  `preview.sh`, `pages/real-work.html`, `pages/guide-section.html`,
+  `guide.ts` if the checker order reaches it). Make no design choice beyond
+  the spec; send any open choice to the orchestrator.
+  - Verify: the 4.1g test files and all page B test files pass one at a time,
+    and `page-check` at 390, 980, and 1280 px shows no page overflow.
 - [ ] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
