@@ -535,10 +535,6 @@ function reworkValue(row: RowLike): number | null {
   return row.kind === "producer" ? (row.mean_rework ?? null) : null;
 }
 
-function escapesValue(row: RowLike): number {
-  return row.escapes ?? 0;
-}
-
 function countOfRow(row: RowLike): number {
   return row.kind === "producer" ? (row.tasks ?? 0) : row.runs;
 }
@@ -558,18 +554,33 @@ function rankKey(value: number): number {
 }
 
 function compareRows(a: RowLike, b: RowLike): number {
+  if (a.kind === "gate" && b.kind === "gate") return compareGateRows(a, b);
   const rateA = rankKey(rateValue(a) ?? 0);
   const rateB = rankKey(rateValue(b) ?? 0);
   if (rateB !== rateA) return rateB - rateA;
-  if (a.kind === "producer" && b.kind === "producer") {
-    const reworkA = reworkValue(a);
-    const reworkB = reworkValue(b);
-    const valueA = reworkA === null ? Number.POSITIVE_INFINITY : rankKey(reworkA);
-    const valueB = reworkB === null ? Number.POSITIVE_INFINITY : rankKey(reworkB);
-    if (valueA !== valueB) return valueA < valueB ? -1 : 1;
-  } else {
-    if (escapesValue(a) !== escapesValue(b)) return escapesValue(a) - escapesValue(b);
+  const reworkA = reworkValue(a);
+  const reworkB = reworkValue(b);
+  const valueA = reworkA === null ? Number.POSITIVE_INFINITY : rankKey(reworkA);
+  const valueB = reworkB === null ? Number.POSITIVE_INFINITY : rankKey(reworkB);
+  if (valueA !== valueB) return valueA < valueB ? -1 : 1;
+  if (countOfRow(b) !== countOfRow(a)) return countOfRow(b) - countOfRow(a);
+  return a.model < b.model ? -1 : a.model > b.model ? 1 : 0;
+}
+
+/** The checker rank of spec D16 (PM 2026-11-18): the higher AA net score
+ * first, a row that is not rated after every rated row, then the higher
+ * findings per run, then more runs, then the model key ascending. Escapes
+ * take no part. */
+function compareGateRows(a: RowLike, b: RowLike): number {
+  const netA = a.net_score;
+  const netB = b.net_score;
+  if ((netA === null) !== (netB === null)) return netA === null ? 1 : -1;
+  if (netA !== null && netB !== null && rankKey(netA) !== rankKey(netB)) {
+    return rankKey(netB) - rankKey(netA);
   }
+  const findingsA = rankKey(a.findings_per_run ?? 0);
+  const findingsB = rankKey(b.findings_per_run ?? 0);
+  if (findingsB !== findingsA) return findingsB - findingsA;
   if (countOfRow(b) !== countOfRow(a)) return countOfRow(b) - countOfRow(a);
   return a.model < b.model ? -1 : a.model > b.model ? 1 : 0;
 }
@@ -661,6 +672,7 @@ function main(): void {
   let rows = 0;
   const routes = new Set<string>();
   let unknownRows = 0;
+  let escapesTotal = 0;
 
   for (const raw of outcomes) {
     if (!isObject(raw)) continue;
@@ -671,6 +683,9 @@ function main(): void {
     if (typeof raw.role !== "string") continue;
     rows += 1;
     routes.add(route);
+    // Escapes take no part in a rank. The page shows "no data" when the
+    // outcomes file holds no escape at all (PM 2026-11-18).
+    if (raw.kind === "gate") escapesTotal += count(raw.escapes);
     const unknown = route === "unknown";
     if (unknown) {
       unknownRows += 1;
@@ -746,6 +761,7 @@ function main(): void {
       routes: routes.size,
       unknown_rows: unknownRows,
       unknown_share: unknownShare,
+      escapes_total: escapesTotal,
     },
     producer: producerRows,
     checker: gateRows,

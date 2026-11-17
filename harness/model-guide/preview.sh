@@ -498,6 +498,18 @@ def integer(value):
     return str(int(value))
 
 
+# The escape total of the outcomes file; the page sets it before it renders.
+ESCAPES_TOTAL = 0
+
+
+def escapes_text(value):
+    """An Escapes cell. With no escape in the outcomes file every cell shows
+    "no data", because there is no escape data yet (D16, PM 2026-11-18)."""
+    if ESCAPES_TOTAL == 0:
+        return "no data"
+    return integer(value)
+
+
 def table_head(heads):
     cells = []
     for index, head in enumerate(heads):
@@ -564,7 +576,7 @@ def checker_cells(row):
         f'<td class="num">{integer(row.get("runs"))}</td>',
         f'<td class="num">{pct(rate.get("value"))}</td>',
         f'<td class="num">{two_decimals(row.get("findings_per_run"))}</td>',
-        f'<td class="num">{integer(row.get("escapes"))}</td>',
+        f'<td class="num">{escapes_text(row.get("escapes"))}</td>',
         f'<td class="num">{net_text(row.get("net_score"))}</td>',
     ]
 
@@ -636,41 +648,36 @@ def section_body(aria, rows, heads, more_heads, cells_of, more_cells_of):
     return "\n".join(parts)
 
 
-ROLE_LABELS = {
-    "red": "Red",
-    "green": "Green",
-    "coder": "Coder",
-    "review-a": "Review A",
-    "review-b": "Review B",
-    "review-c": "Review C",
-    "adversarial": "Adversarial",
-    "acceptance": "Acceptance",
-    "phase-acceptance": "Phase acceptance",
-    "final-acceptance": "Final acceptance",
-}
-
-
 def top_block(top):
+    """The ten role lines of spec D16 Top block (PM 2026-11-18).
+
+    A line shows the numbers of its role only, with the label "in this
+    role": "<name> <rate> % in this role, <count> tasks" for a producer
+    role, and "<name> <pass rate> % pass in this role, <count> runs, net
+    <net score>" for a gate role. The role sits in the data-role attribute.
+    A line with no pick says "no pick yet".
+    """
     parts = []
     for item in top or []:
         role = str(item.get("role") or "")
-        label = ROLE_LABELS.get(role, role)
         pick = item.get("pick")
         if not isinstance(pick, dict):
-            parts.append(
-                f'<li data-mg="pick" data-role="{esc(role)}">'
-                f'<span class="pick-label">{esc(label)}</span> '
-                '<span class="pick-none" data-mg="pick-none">no pick yet</span></li>'
-            )
+            parts.append(f'<li data-mg="pick" data-role="{esc(role)}">no pick yet</li>')
             continue
+        name = esc(model_name(pick.get("model") or ""))
+        if item.get("kind") == "gate":
+            text = (
+                f'{name} {pct(pick.get("rate"))} pass in this role, '
+                f'{integer(pick.get("count"))} runs, net {net_text(pick.get("net_score"))}'
+            )
+        else:
+            text = (
+                f'{name} {pct(pick.get("rate"))} in this role, '
+                f'{integer(pick.get("count"))} tasks'
+            )
         parts.append(
             f'<li data-mg="pick" data-role="{esc(role)}" '
-            f'data-model-key="{esc(pick.get("model") or "")}">'
-            f'<span class="pick-label">{esc(label)}</span> '
-            f'<span class="pick-name" data-mg="pick-name">'
-            f'{esc(model_name(pick.get("model") or ""))}</span> '
-            f'<span class="pick-rate" data-mg="pick-rate">{pct(pick.get("rate"))}</span> '
-            f'<span class="pick-count" data-mg="pick-count">{integer(pick.get("count"))}</span></li>'
+            f'data-model-key="{esc(pick.get("model") or "")}">{text}</li>'
         )
     return "\n".join(parts)
 
@@ -757,6 +764,7 @@ with open(os.path.join(preview, "real-work.json"), encoding="utf-8") as handle:
 
 source = page.get("source") or {}
 coverage = page.get("coverage") or {}
+ESCAPES_TOTAL = coverage.get("escapes_total") or 0
 
 with open(template_path, encoding="utf-8") as handle:
     template = handle.read()
