@@ -1067,6 +1067,37 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - After each run, `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
   - Verify: the file fails on the Phase 3 code. Record the failed test names
     in `measure/runs/model_guide/red-4.1.txt`.
+- [ ] 4.1a Red. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Change
+  the layout group G1 to G4 of `harness/model-guide-tests/preview-gate.test.ts`
+  and add the cases of the new rules. Touch no other file.
+  - G1 and G2: the source line (file name, SHA-256, generated date) and the
+    coverage numbers sit in the "About this data" footer.
+  - G3: a row with fewer than 10 results sits in the collapsed group
+    "Too few runs to rank" with no rank number and never in the ranked table.
+  - G4: a rate shows as a whole percent with no `(n=...)` suffix, an empty
+    value shows an em dash, and the Runs column holds the count.
+  - New cases: the top block gives one line per role group and per work type
+    with the recommended model, its whole percent, and its result count, or
+    "no pick yet"; a default table holds six columns or fewer (Model, Runs,
+    Pass %, Blocking %, Rating, Trend) and a work-type table drops Blocking %;
+    the other columns sit behind a "More columns" toggle; each work type sits
+    in a tab or a collapsed section; a plain model name comes from
+    `harness/model-guide/data/model-names.json`, and a key with no name shows
+    its key without the plan prefix.
+  - The data assertions of the page stay unchanged.
+  - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
+    fails only on the new layout cases.
+- [ ] 4.1b Green. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Write
+  the page B render of `harness/model-guide/preview.sh` and the template
+  `harness/model-guide/pages/real-work.html`. Add the committed data file
+  `harness/model-guide/data/model-names.json` with a plain name for each model
+  key. Touch no test file and no other file.
+  - The look comes from `docs/assets/css/site.css`: the fonts, the card style,
+    and the header of `docs/results.html`.
+  - Verify: the test file of 4.1a passes.
+  - Verify with `page-check` at 390, 980, and 1280 px: no horizontal page
+    overflow, a wide table scrolls inside its own box with a visible hint, and
+    the page is about 3 screens long at 1280 px.
 - [ ] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
@@ -1187,9 +1218,14 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - The first judge is the route of `ra-quota pick` (no Opus, Daniel's rule;
     a Claude route only when the Claude week is under 80 %, else the next
     family; PM 2026-11-16). The second
-    judge is ByteDance Doubao, `volcengine-agent-plan/ark-code-latest` (spec
-    D11). That family is not ranked. The second judge never reads the
-    verdicts of the first judge.
+    judge is the route of `ra-quota pick` at that time (spec D11,
+    PM 2026-11-16). Its family is outside each ranked family of D12, outside the
+    family of the fixture author, and outside the family of the first judge. The
+    first route to test is `opencode-go/qwen3.8-flash`. Its start test and its
+    judge calls run through the model_guide runner path (`heavy-run.sh` and
+    `opencode run --standalone` with the job's own `OPENCODE_HOME`), never through
+    a subagent. With no ready route, each disputed finding is left out. The
+    second judge never reads the verdicts of the first judge.
   - The apply writes the key `real_defects` first. Then run
     `review-set.ts lint mg-2026-11a` again, so the manifest holds the key
     SHA-256 values. Run `leak-check.ts`. Commit
