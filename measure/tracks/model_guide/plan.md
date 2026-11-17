@@ -1120,6 +1120,24 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   the two changes.
   - Verify: the test file of 4.1c passes.
   - Verify with `page-check` at 390, 980, and 1280 px: no page overflow.
+- [ ] 4.1e Red. Page B data source (spec D16 "Data source (PM 2026-11-17)").
+  Write synthetic fixtures under `harness/model-guide-tests/fixtures/` (an
+  outcomes file, an AA file, an allowed list, and a MANIFEST) and change only
+  test files.
+  - The cases cover rules 1 to 11: the input check gives exit 2 on a changed
+    byte; the note stripping; both merges with the weighted means; the
+    minimum of 5; the two rank orders; the net-score match with `byEffort`
+    and a `-free` key; the mark "not for verdicts"; the mark "not allowed"
+    and no pick for it; one top line per role in the given order; no
+    work-type section; no producer pass rate; and the footer values.
+  - Verify: the new cases fail and the other cases pass. Record the failed
+    test names in `measure/runs/model_guide/red-4.1e.txt`.
+- [ ] 4.1f Green. Implement the data source in `harness/model-guide/` (the
+  page B tool, `preview.sh`, the template, `model-names.json`) and add the
+  three dated data files and the MANIFEST. Make no design choice beyond the
+  spec; send any open choice to the orchestrator.
+  - Verify: the 4.1e test file passes, `leak-check.ts` passes, and
+    `page-check` at 390, 980, and 1280 px shows no page overflow.
 - [ ] 4.2 Red. The quota sources. Write
   `harness/model-guide-tests/quota.test.ts` and the temp fake quota source
   that the test writes, an in-process `node:http` server on `127.0.0.1:0`.
@@ -1152,8 +1170,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     passes.
 - [ ] 4.5 Green. Write `harness/model-guide/routes.json`. Touch no test file
   and no other file.
-  - The file holds the routes of spec D12 with the quota source of spec D15,
-    and the second judge of spec D11.
+  - The file holds the routes of spec D12 with the quota source of spec D15.
+    It holds no second-judge route while the D11 fallback holds, and it holds
+    the second judge when an allowed route replaces the fallback
+    (PM 2026-11-17).
   - The file holds the Hy row of spec D12.
   - Verify: the test files of Phase 4 pass.
 - [ ] 4.6 Green. Write `harness/model-guide/provider-credential.sh`. Touch no
@@ -1239,17 +1259,17 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   apply`.
   - The first judge is the route of `ra-quota pick` (no Opus, Daniel's rule;
     a Claude route only when the Claude week is under 80 %, else the next
-    family; PM 2026-11-16). The second
-    judge is the route of `ra-quota pick` at that time (spec D11,
-    PM 2026-11-16). Its family is outside each ranked family of D12, outside the
-    family of the fixture author, and outside the family of the first judge. The
-    routes to test, in order, are `opencode-go/mimo-v2.6-flash`, then
-    `opencode-go/muse-spark-1.3-contributor#high` (PM audit 2026-11-17). Their
-    start test and their judge calls run through the model_guide runner path
-    (`heavy-run.sh` and `opencode run --standalone` with the job's own
-    `OPENCODE_HOME`), never through a subagent. With no ready route, each
-    disputed finding is left out. The
-    second judge never reads the verdicts of the first judge.
+    family; PM 2026-11-16). The second judge is "no ready route" (the D11
+    fallback): each disputed finding is left out. Reason: every route outside
+    the ranked families of D12 with an AA-Omniscience net score of 20 or more
+    is not allowed (Kimi, GPT) or not available (Grok, Doubao on Ark). No Opus
+    subagent (owner routing rule). The PM checks again before task 4.13 on
+    2026-11-22. An allowed route with a net score of 20 or more, outside the
+    D12 families, then replaces the fallback (PM 2026-11-17). A start test and
+    a judge call run through the model_guide runner path (`heavy-run.sh` and
+    `opencode run --standalone` with the job's own `OPENCODE_HOME`), never
+    through a subagent. The second judge never reads the verdicts of the first
+    judge.
   - The apply writes the key `real_defects` first. Then run
     `review-set.ts lint mg-2026-11a` again, so the manifest holds the key
     SHA-256 values. Run `leak-check.ts`. Commit

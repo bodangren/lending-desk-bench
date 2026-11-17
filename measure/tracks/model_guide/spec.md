@@ -65,21 +65,24 @@ The PM decided these points on 2026-11-14. Each decision binds the track.
   `opencode-go/deepseek-v4.1-flash`. The routes `deepseek/*` are metered and
   are not plan routes. This track never runs a metered route.
 - **OD3. Q4, the rank of the checker roles.** The checker roles rank by pass
-  rate only. The page shows the blocking rate beside the rate.
+  rate only. The page shows findings per run beside the rate
+  (PM 2026-11-17).
 - **OD4. Q5, the merge on page B.** The merge joins only the `#<variant>`
   rows and the `[1m]` rows of one route. The same model on another provider
   stays a separate row.
-- **OD5. F5 and F16, the second judge.** The second judge is the route of
-  `ra-quota pick` at the time of task 4.13. Its family is outside each
-  ranked family of D12, and outside the families of the fixture author and
-  the first judge. The route passes a start test before its first judge
-  call. The orchestrator logs the route that judged each finding. When no
-  such route is ready, a disputed finding is left out and never counts
-  against a route. Only the verdicts that both judges agree on count. An
-  unclear verdict never takes away the rank of a route. The former judge
-  passed its start test on 2026-11-14 (EV14). The PM replaced that route on
-  2026-11-16 (PM 2026-11-16). The PM decided the rule of two on 2026-11-14
-  (F16).
+- **OD5. F5 and F16, the second judge.** The second judge is "no ready
+  route" (the D11 fallback): each disputed finding is left out. Reason:
+  every route outside the ranked families of D12 with an AA-Omniscience net
+  score of 20 or more is not allowed (Kimi, GPT) or not available (Grok,
+  Doubao on Ark). No Opus subagent (owner routing rule). The PM checks again
+  before task 4.13 on 2026-11-22. An allowed route with a net score of 20 or
+  more, outside the D12 families, then replaces the fallback (PM 2026-11-17).
+  A start test runs before the first judge call of that route. The
+  orchestrator logs the route that judged each finding. Only the verdicts
+  that both judges agree on count. An unclear verdict never takes away the
+  rank of a route. The former judge passed its start test on 2026-11-14
+  (EV14). The PM replaced that route on 2026-11-16 (PM 2026-11-16). The PM
+  decided the rule of two on 2026-11-14 (F16).
 - **OD6. Q7, the print-audit error types.** The file
   `~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json`
   holds the error types. Its SHA-256 is
@@ -483,14 +486,16 @@ questions".
       only to remove duplicates. A group never gets one verdict for all of
       its members.
     - **The judges.** Two judges read each finding. The first judge is the
-      route `claude-code/claude-opus-5-5[1m]#high`. The second judge is the
-      route of `ra-quota pick` at the time of task 4.13. That family is
-      outside each ranked family of D12. It is also outside the family of
-      the fixture author (OpenAI, D5) and the family of the first judge.
-      The route passes a start test before its first judge call. The
-      orchestrator logs the route that judged each finding. When no such
-      route is ready, a disputed finding is left out and never counts
-      against a route. The second judge never reads the verdicts of the
+      route `claude-code/claude-opus-5-5[1m]#high`. The second judge is "no
+      ready route" (the D11 fallback): each disputed finding is left out.
+      Reason: every route outside the ranked families of D12 with an
+      AA-Omniscience net score of 20 or more is not allowed (Kimi, GPT) or
+      not available (Grok, Doubao on Ark). No Opus subagent (owner routing
+      rule). The PM checks again before task 4.13 on 2026-11-22. An allowed
+      route with a net score of 20 or more, outside the D12 families, then
+      replaces the fallback (PM 2026-11-17). A start test runs before the
+      first judge call of that route. The orchestrator logs the route that
+      judged each finding. The second judge never reads the verdicts of the
       first judge. Neither judge sees the route name of a finding. The PM
       replaced the former second judge, the ByteDance Doubao route, on
       2026-11-16 (PM 2026-11-16).
@@ -704,19 +709,21 @@ questions".
 
 16. **D16. Page B.** The page is `real-work.html`. Its data file is
     `real-work.json`. The tool `harness/model-guide/real-work.ts` writes
-    both from one hand-off file.
+    both from one hand-off file (replaced by Data source, PM 2026-11-17).
     - **Input check.** The tool takes the path of the JSON file. It reads
       `MANIFEST.txt` next to it. It stops with exit 2 when the SHA-256 or the
       size differs from the manifest, when `schema` is not
       `real-work-outcomes/1`, or when a run sum differs from
-      `coverage.runs`. It never copies the input file into the repository.
+      `coverage.runs`. It never copies the input file into the repository
+      (replaced by Data source, PM 2026-11-17).
     - **Source line.** The page shows the file name, its SHA-256, and
       `generated_on`. These values sit in the "About this data" footer
-      (PM P1 2026-11-16).
+      (PM P1 2026-11-16; replaced by Data source, PM 2026-11-17).
     - **Coverage block.** The page shows the runs, the date range, the share
       with a known model, the share with a result, and the left-out paired
       duplicates. It also shows the runs of `unknown` and `other`. The block
-      sits in the "About this data" footer (PM P1 2026-11-16).
+      sits in the "About this data" footer (PM P1 2026-11-16; replaced by
+      Data source, PM 2026-11-17).
     - **Merge.** Rows with the same model key merge by sums. The merge joins
       only the `#<variant>` rows and the `[1m]` rows of one route. The same
       model on another provider stays a separate row (OD4). The page lists
@@ -728,11 +735,12 @@ questions".
     - **Role groups.** The page has one table for producer roles and one
       table for checker roles.
     - **Work-type tables.** The page has one table for each work type of
-      `work_types`. Each table sits in a tab or a collapsed section
-      (PM P1 2026-11-16). The `all_time` block gives one row for each route,
-      role, and work type. A work-type row sums the role rows of that route
-      and work type. Each `work_types` value holds `runs`, `pass`, and `fail`
-      only. These tables use that data and no other data.
+      `work_types` (replaced by Data source, PM 2026-11-17). Each table sits
+      in a tab or a collapsed section (PM P1 2026-11-16). The `all_time`
+      block gives one row for each route, role, and work type. A work-type
+      row sums the role rows of that route and work type. Each `work_types`
+      value holds `runs`, `pass`, and `fail` only. These tables use that data
+      and no other data.
       - **The pass rate of a work type.** `pass / (pass + fail)`. A row with
         `pass + fail` of 0 has no rate.
       - **The result count.** The Runs column shows `pass + fail`
@@ -751,37 +759,43 @@ questions".
       - **No data.** A work type with no qualifying row says "no pick yet".
     - **Pass rate.** `pass / (pass + fail + error)`. `no_result` stays out
       of the rate. The page shows it in its own column behind the "More
-      columns" toggle (PM P1 2026-11-16).
+      columns" toggle (PM P1 2026-11-16; replaced by Data source,
+      PM 2026-11-17).
     - **Blocking rate.** Blocking findings for each run with a result. The
       column "Blockers per run" shows this value as a number with two
-      decimals, for example 1.64, and never as a percent (PM 2026-11-17).
+      decimals, for example 1.64, and never as a percent (PM 2026-11-17;
+      replaced by Data source, PM 2026-11-17).
     - **Rank.** Producer table: the higher pass rate first, then the lower
       blocking rate. Checker table: the higher pass rate first. The checker
       table shows the blocking rate, but the rank does not use it, because a
       checker that finds more blockers is not worse (OD3). Each rate shows
       as a whole percent, and the Runs column holds the result count
-      (PM P1 2026-11-16).
+      (PM P1 2026-11-16; replaced by Data source, PM 2026-11-17).
     - **Small samples.** A merged row with fewer than 10 runs with a result
       gets the mark `few runs` and goes into the collapsed group "Too few
       runs to rank" under its table. It gets no rank number and it never
       picks. A route with fewer than 10 runs always has fewer than 10 runs
-      with a result, so this rule covers the PM rule (PM P1 2026-11-16).
+      with a result, so this rule covers the PM rule (PM P1 2026-11-16;
+      replaced by Data source, PM 2026-11-17).
     - **Ratings.** The Rating column shows one value: the mean of the axis
       means, with one decimal, of 5. Each axis mean and its `n`, and the
       rater agreement with its `n`, sit behind the "More columns" toggle.
-      The rank never uses a rating (PM P1 2026-11-16).
+      The rank never uses a rating (PM P1 2026-11-16; replaced by Data
+      source, PM 2026-11-17).
     - **Trend.** One column shows the pass rate of the last 4 ISO weeks of
       the `weekly` block, as a whole percent. The Runs column holds the run
-      count (PM P1 2026-11-16).
+      count (PM P1 2026-11-16; replaced by Data source, PM 2026-11-17).
     - **Layout (PM P1 2026-11-16).** This block replaces the display rules
       above that it names. The data rules stay: the input check, the merge,
-      the rates as formulas, the rank order, and the 10-result minimum.
+      the rates as formulas, the rank order, and the 10-result minimum
+      (replaced by Data source, PM 2026-11-17).
       - **Top block.** The top block comes first, above every table. For
         each role group (producer, checker) and each work type, one line
         gives the recommended model, its pass rate in whole %, and its
         result count. The recommended model is rank 1 among the rows with
         10 or more results. With no such row, the line says "no pick yet".
-        The block fits one screen at 390 px.
+        The block fits one screen at 390 px (replaced by Data source,
+        PM 2026-11-17).
       - **Names.** Each row shows a plain model name, for example
         "Kimi K3.1", "DeepSeek V4.1 Flash", or "MiniMax M3.1 Flash". The
         file `harness/model-guide/data/model-names.json` maps each model key
@@ -791,30 +805,112 @@ questions".
       - **Rank display.** Only rows with 10 or more results get a rank
         number. Rows with fewer results sit in the collapsed group "Too few
         runs to rank" under their table, with no rank number. They never
-        pick.
+        pick (replaced by Data source, PM 2026-11-17).
       - **Default columns.** The default table shows Model, Runs, Pass %,
         Blockers per run, Rating, and Trend, so 6 columns or fewer. A
         work-type table drops Blockers per run, because the data has no
-        blocking findings (PM 2026-11-17).
+        blocking findings (PM 2026-11-17; replaced by Data source,
+        PM 2026-11-17).
         The other columns sit behind a "More columns" toggle: routes, pass,
         fail, error, no result, blocking count, each rating axis with its
-        `n`, and the agreement with its `n`.
+        `n`, and the agreement with its `n` (replaced by Data source,
+        PM 2026-11-17).
       - **Numbers.** A rate shows as a whole % with no decimals. A
         blockers-per-run value shows a number with two decimals, for example
         1.64, and no % sign (PM 2026-11-17). Runs shows the result count, so
         no "(n=...)" text sits beside a rate. Rating shows one value, the
         mean of the axis means, with one decimal, of 5. An empty value shows
-        a dash ("–"), never a sentence.
+        a dash ("–"), never a sentence (replaced by Data source,
+        PM 2026-11-17).
       - **Work-type sections.** Each work type sits in a tab or a collapsed
-        section. The page is about 3 screens long at 1280 px.
+        section. The page is about 3 screens long at 1280 px (replaced by
+        Data source, PM 2026-11-17).
       - **Footer.** The source line, the coverage block, and the merge
         method note move into a short "About this data" footer. The footer
-        comes after the tables.
+        comes after the tables. The source line and the coverage block are
+        replaced by Data source, PM 2026-11-17.
       - **Width.** The page has no horizontal overflow at 390, 980, or
         1280 px. A wide table scrolls inside its own box and shows a visible
         scroll hint.
       - **Look.** The page uses the look of `docs/results.html`: the same
         fonts, card style, and header, from `docs/assets/css/site.css`.
+    - **Data source (PM 2026-11-17).** This block replaces the input of
+      page B: the real-work-outcomes export, its `work_types`, and its
+      blocking data. Each D16 rule that it replaces carries the mark
+      "(replaced by Data source, PM 2026-11-17)".
+      - **Inputs.** The page B data comes from three dated data files in
+        `harness/model-guide/data/`.
+        - `ra-outcomes-2026-11-17.json`: the output of
+          `~/Desktop/advantage-pr/scripts/jobs/ra-quota outcomes --json`.
+        - `aa-reliability-2026-11-17.json`: a copy of
+          `~/Desktop/advantage-pr/measure/reference/aa-reliability-2026-11-17.json`.
+        - `allowed-routes-2026-11-17.json`: only the fields `allowedRoutes`
+          and `orchestratorRoutes` of `~/.config/ra-quota/routes.json`.
+        `MANIFEST-2026-11-17.txt` lists each file with its SHA-256 and its
+        size. The tool stops with exit 2 when a SHA-256 or a size differs.
+        `leak-check.ts` covers the three files. The footer shows each file
+        name, its SHA-256, and the read date.
+      - **Route key.** The tool strips each route string at the first " ("
+        and trims it, because some routes carry free-text notes. The model
+        key is the route without `#<variant>` and `[1m]` (the existing merge
+        rule). The route `unknown` gets no rank and never picks. The footer
+        shows its row count.
+      - **Counts.** A row of kind `producer` counts its `tasks`. A row of
+        kind `gate` counts its `decided`. `no_verdict` runs and open runs
+        never count in a rate.
+      - **Producer table.** The table holds the rows of kind `producer`. A
+        row with `tasks` 0 does not show. Rows merge by model key over the
+        routes and the producer roles. `tasks` and `accepted` are sums.
+        First-round accept % = `sum(first_round_rate × accepted) /
+        sum(accepted)`, over the rows with a rate. Rework =
+        `sum(mean_rework_rounds × tasks) / sum(tasks)`, one decimal.
+        Cleanup % = `sum(cleanup_share × tasks) / sum(tasks)`. Tokens per
+        accepted task = `sum(tokens_per_accepted × accepted) /
+        sum(accepted)`, in whole thousands, for example "343k". Each average
+        uses only the rows where its value is not null. The default columns
+        are Model, Tasks, First-round accept %, Rework, Cleanup %, and
+        Tokens per accepted task. The more-columns view holds routes, roles,
+        accepted, and AA net score. The rank holds the rows with 5 tasks or
+        more and a first-round rate: the higher first-round accept % first,
+        then the lower rework, then more tasks. The other rows sit in the
+        collapsed group "Too few tasks". The page shows no self-graded
+        producer pass rate (PM finding C144).
+      - **Checker table.** The table holds the rows of kind `gate`. Rows
+        merge by model key over the routes and the gate roles. Runs = the
+        sum of `decided`. Pass % = `sum(pass) / sum(decided)`. Findings per
+        run = `sum(findings) / sum(decided)`, two decimals. Escapes = the
+        sum of `escapes`. The default columns are Model, Runs, Pass %,
+        Findings per run, Escapes, and Net score. The rank holds the rows
+        with 5 runs or more: the higher pass % first, then fewer escapes,
+        then more runs. The other rows sit in "Too few tasks". Findings per
+        run replaces Blocking % and Blockers per run on page B.
+      - **AA net score.** The tool takes the last path part of the model
+        key, in lower case, and removes a "-free" suffix. It matches that
+        name to a model key or an alias of the AA file. A merged row uses
+        the variant of its route with the most counted runs:
+        `byEffort[<variant>]` when that entry is present, else the primary
+        row. No match, or rated false, gives "not rated". A model with a net
+        score under 20, or not rated, carries the mark "not for verdicts".
+      - **Allowed list.** A model key is allowed when it equals an entry of
+        `allowedRoutes` or `orchestratorRoutes` after the same stripping of
+        `#<variant>` and `[1m]`. A row that is not allowed stays in its
+        table with the mark "not allowed" and never picks.
+      - **Top block.** One line per role, in this order: Red, Green, Coder,
+        Review A, Review B, Review C, Adversarial, Acceptance, Phase
+        acceptance, Final acceptance. Each line uses only the rows of that
+        role, merged by model key. The pick is rank 1 among the rows that
+        meet the minimum of 5, that are allowed, and, for a gate role, that
+        have a net score of 20 or more. The line gives the role, the plain
+        model name, the rate (first-round accept % for a producer role, pass
+        % for a gate role), and the count. With no pick, the line says "no
+        pick yet".
+      - **Work types.** The new export has no work-type split. The work-type
+        sections leave page B.
+      - **Width.** At 390 px the model name cell takes the free width of
+        its table: the number columns do not wrap and stay narrow, so a
+        model name does not wrap to 3 lines.
+      - **Coverage.** The footer shows the row count, the route count, the
+        share of rows with the route `unknown`, and the export date.
 
 17. **D17. The print-audit data point.** The file
     `harness/model-guide/data/print-audit-2026-11.json` holds the
@@ -860,23 +956,27 @@ questions".
       use the plain model names from
       `harness/model-guide/data/model-names.json`. A key with no name shows
       its key without the plan prefix.
-    - **Sources for each row.**
+    - **Sources for each row (PM 2026-11-17).**
 
       | Row | First source | Second source |
       |---|---|---|
       | Code review | track A rank (worst of N) | page B checker table |
-      | App code | page B work-type table, work type `app code` | build base line |
+      | App code | page B producer table | build base line |
       | Test writing | page B producer table, role `red` | tests track base line |
-      | Docs and ops | page B work-type table, work type `docs and ops` | none |
-      | Print-book audit | page B work-type table, work type `print books` | print-audit data point |
-      | Tooling | page B work-type table, work type `tooling` | none |
+      | Docs and ops | page B producer table | none |
+      | Print-book audit | page B producer table | print-audit data point |
+      | Tooling | page B producer table | none |
 
+      The new export has no work-type split, so no row uses a work-type table
+      (PM 2026-11-17).
     - **Pick rule.** The first source picks the first and the second choice
-      from its rank. A model qualifies only with 10 runs or more in the page
-      B row (10 results for a work-type row), or with a complete rank (track
-      A). When the first source has no qualified model, the second source
-      picks. When neither has one, the cell says "no pick yet: not enough
-      evidence".
+      from its rank. A model qualifies with 5 tasks or more in a producer
+      row, with 5 runs or more in a gate row, or with a complete rank (track
+      A). A gate row also needs an AA net score of 20 or more. A model that is
+      not allowed never picks, and a row with the mark "not for verdicts"
+      never picks in a gate row (PM 2026-11-17). When the first source has no
+      qualified model, the second source picks. When neither has one, the
+      cell says "no pick yet: not enough evidence".
     - **Ruling Q1 (PM, 2026-11-15).** The Test writing row uses the page B
       producer table as a whole while `real-work.json` has no role key. The
       evidence cell starts with "page B producer". A red-only table comes
@@ -886,21 +986,24 @@ questions".
       yet: not enough evidence". The page B checker table does not pick for
       code review before Phase 4, because a checker pass rate measures the
       checked work, not the review skill.
-    - **Evidence cell.** The source, the number, and the run count, for
-      example "page B: pass 86 %, 114 results" (PM P1 2026-11-16).
-    - **Evidence date.** The `generated_on` of the export, or the date of the
-      last complete pass of track A, for each row.
+    - **Evidence cell.** The source, the number, and the count, for example
+      "page B: accept 86 %, 114 tasks". The number is the first-round accept %
+      for a producer source and the pass % for a gate source (PM P1
+      2026-11-16, PM 2026-11-17).
+    - **Evidence date.** The export date of the outcomes file, or the date of
+      the last complete pass of track A, for each row (PM 2026-11-17).
     - **Base line.** The build and tests scores never pick. They show beside
       the pick as a check. The `domain_trust` link follows D3.
 
 19. **D19. The weekly update.** The PM sends a new export each week. The
-    orchestrator runs `harness/model-guide/update.sh <export file>`. The
-    script runs the input check of D16, writes `real-work.json`, and writes
-    `model-guide.json`. Before the approval (D21), it writes into the
-    preview folder. After the approval, it writes into `docs/assets/data/`,
-    and it commits the two data files with explicit paths. The standing push
-    rule then applies. A table whose newest evidence date is more than 14
-    days old shows the mark `stale`.
+    orchestrator runs `harness/model-guide/update.sh` on the new dated data
+    files. The script runs the input check of the Data source block of D16,
+    writes `real-work.json`, and writes `model-guide.json` (PM 2026-11-17).
+    Before the approval (D21), it writes into the preview folder. After the
+    approval, it writes into `docs/assets/data/`, and it commits the two data
+    files with explicit paths. The standing push rule then applies. A table
+    whose newest evidence date is more than 14 days old shows the mark
+    `stale`.
 
 ### Gates and dates
 
@@ -947,42 +1050,43 @@ questions".
 
 ### FR-1 — The hand-off input check
 
-`harness/model-guide/real-work.ts --input <file> --out <folder>` runs the
-input check of D16. A mismatch of the SHA-256, the size, the schema, or the
-run sum gives exit 2 and one line that names the failed check. No output file
-is written in that case.
+`harness/model-guide/real-work.ts` runs the input check of the Data source
+block of D16 on the three dated data files. A mismatch of a SHA-256 or a size
+gives exit 2 and one line that names the failed check. No output file is
+written in that case (PM 2026-11-17).
 
 ### FR-2 — The merge and the rates
 
-The tool merges the rows by model key and computes the pass rate, the
-blocking rate, the `no_result` count, the ratings with `n`, the rater
-agreement with `n`, and the 4-week pass rate (D16). `unknown` and `other`
-stay out of every rank. The merge joins only the `#<variant>` rows and the
-`[1m]` rows of one route. The file
+The tool merges the rows by model key, over the routes and the roles of each
+table, and computes the metrics of the Data source block of D16: the
+first-round accept %, the rework, the cleanup %, the tokens per accepted
+task, the pass %, and the findings per run (PM 2026-11-17). The route
+`unknown` stays out of every rank. The merge joins only the `#<variant>` rows
+and the `[1m]` rows of one route. The file
 `harness/model-guide/data/model-names.json` is a committed data file.
 `guide.ts` and `real-work.ts` read it and never write it
 (accepted by the PM 2026-11-17 after audit).
 
 ### FR-3 — The rank and the small-sample mark
 
-The producer table ranks by pass rate and then by blocking rate. The checker
-table ranks by pass rate only. A row with fewer than 10 runs with a result
-gets the mark `few runs` and goes into the collapsed group "Too few runs to
-rank". Each rate shows as a whole percent, the Blockers per run column shows
-a number with two decimals, and the Runs column holds the result count
-(PM 2026-11-17). The work-type tables rank by the pass rate of
-`pass / (pass + fail)` and then by the result count. A work-type row with
-fewer than 10 results (`pass + fail`) gets the mark `few runs` and cannot
-pick (PM P1 2026-11-16).
+The producer table ranks by the first-round accept %, then the lower rework,
+then more tasks, over the rows with 5 tasks or more and a first-round rate.
+The checker table ranks by the pass %, then fewer escapes, then more runs,
+over the rows with 5 runs or more (PM 2026-11-17). A row below its minimum
+goes into the collapsed group "Too few tasks". A pick also needs an allowed
+model, and, for a gate role, an AA net score of 20 or more. A rate shows as a
+whole percent, the findings-per-run value shows two decimals, and the Runs
+and Tasks columns hold the count (PM 2026-11-17).
 
 ### FR-4 — The page and the method note
 
 `real-work.html` shows the top block first, then the producer table, the
-checker table, the work-type sections, and the print-audit block. The "About
-this data" footer holds the source line, the coverage block, and the merge
-method note of D16 (PM P1 2026-11-16). The page reuses the look of
-`docs/results.html`, `docs/assets/css/site.css`, and the nav of the other
-pages.
+checker table, and the print-audit block. Page B has no work-type section
+(PM 2026-11-17). The "About this data" footer holds the three file names,
+their SHA-256 values, the read date, the coverage numbers, the `unknown` row
+count, and the merge method note of D16 (PM 2026-11-17). The page reuses the
+look of `docs/results.html`, `docs/assets/css/site.css`, and the nav of the
+other pages.
 
 ### FR-5 — The print-audit block
 
@@ -1103,26 +1207,25 @@ no quota source gets the fixed cap of
 
 1. `measure/tracks.md` shows `model_guide`, shows `rigor_a_h` as paused with
    the PM reason, and has a backlog line for the replay track with no date.
-2. With the 2026-11-14 export, the preview folder holds `real-work.html` and
-   `real-work.json` by 2026-11-18. The top block comes first and gives one
-   line for each role group and each work type. The "About this data" footer
-   shows the SHA-256 `dae855ca…64f2`, `generated_on` 2026-11-14, and the
-   coverage numbers 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, and 71.7 %
-   (PM P1 2026-11-16).
+2. With the three dated data files of D16 (2026-11-17), the preview folder
+   holds `real-work.html` and `real-work.json` by 2026-11-18. The top block
+   comes first and gives one line per role of the Data source block. The
+   "About this data" footer shows each file name, its SHA-256, the read date,
+   and the coverage numbers of that block: the row count, the route count,
+   the `unknown` share, and the export date (PM 2026-11-17).
 3. A changed byte in the export makes the input check stop with exit 2.
 4. Each row shows a plain model name. A route shows in a second line or a
    tooltip, not in a default column. The footer method note states the
-   merge. A rate shows as a whole percent, and Runs holds the result count.
-   The Blockers per run column shows a number with two decimals, or a dash
-   (PM 2026-11-17). Rows with fewer than 10 runs with a result carry
-   `few runs` in the collapsed group "Too few runs to rank" and get no rank
-   number. No rank uses a rating (PM P1 2026-11-16).
-5. Each work-type table shows the pass rate of `pass / (pass + fail)` as a
-   whole percent, and Runs holds the result count. A work-type table drops
-   the Blockers per run column (PM 2026-11-17). A work-type row sums the role
-   rows. A row with fewer than 10 results carries `few runs` in the collapsed
-   group "Too few runs to rank" and cannot pick. A work type with no
-   qualifying row says "no pick yet" in the top block (PM P1 2026-11-16).
+   merge. The producer table shows Model, Tasks, First-round accept %, Rework,
+   Cleanup %, and Tokens per accepted task. The checker table shows Model,
+   Runs, Pass %, Findings per run, Escapes, and Net score. A rate shows as a
+   whole percent, and the Runs and Tasks columns hold the count (PM
+   2026-11-17). Rows with fewer than 5 tasks or runs carry "Too few tasks" and
+   get no rank number. A row with the mark "not for verdicts" or "not
+   allowed" never picks.
+5. Page B has no work-type section. The producer table shows no self-graded
+   pass rate. The checker table shows findings per run in place of Blocking %
+   and Blockers per run (PM 2026-11-17).
 6. The print-audit block shows 11 of 13 and 13 of 13, the 52 errors, and the
    error types with their counts. The block shows no placeholder line. The
    input check of the print-audit file stops with exit 2 on a wrong SHA-256
@@ -1181,10 +1284,9 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
 - **Q9 (D5, D11).** Is Opus the fixture author and the first judge?
   Default: yes. The PM changed the fixture author on 2026-11-16 (D5). The
   first judge of D11 stays as written. Opus is not in the ranked list. The
-  adjudication is blind to the route name. The second judge is the route of
-  `ra-quota pick` at the time of task 4.13. Its family is outside each
-  ranked family of D12, and outside the families of the fixture author and
-  the first judge (OD5, PM 2026-11-16).
+  adjudication is blind to the route name. The second judge is "no ready
+  route" (the D11 fallback). An allowed route with a net score of 20 or more
+  then replaces it (OD5, PM 2026-11-17).
 - **Q10 (D13).** Are the weights 5, 2, and 1, the false-claim cost of 2, and
   N = 3 correct? Default: yes, for the first set.
 
@@ -1211,9 +1313,8 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
   id each quarter limits this.
 - **R3. Same-family bias.** The first judge is in the same family as the
   Sonnet route. The PM changed the fixture author on 2026-11-16 (D5). The
-  second judge is the route of `ra-quota pick` at the time of task 4.13.
-  Its family is outside each ranked family of D12, and outside the families
-  of the fixture author and the first judge (D11, PM 2026-11-16). Only the
+  second judge is "no ready route" (the D11 fallback) (D11, PM 2026-11-17).
+  Only the
   verdicts that both judges agree on count. The blind adjudication and the
   fixed operator catalog limit the bias. Q9 covers it.
 - **R4. Unmatched true findings.** A good model can find real defects. D11
@@ -1224,10 +1325,11 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
 - **R5. Line counts.** A model can give a wrong line. The line prefixes of
   D10 and the window of 3 lines limit this. A claim outside that window
   does not count as found.
-- **R6. The real-work record.** Only 50.6 % of the runs have a known model,
-  and 71.7 % have a result. The meaning of a pass differs by role. The page
-  shows the coverage and splits the roles. The work types have no blocking
-  findings, so their tables have no blocking rate.
+- **R6. The real-work record.** The old export had 50.6 % of the runs with a
+  known model and 71.7 % with a result. The page showed its coverage and
+  split the roles. The Data source block of D16 replaces that input
+  (replaced by Data source, PM 2026-11-17). The new risk is the row count per
+  model: a model with fewer than 5 tasks or runs has no rank.
 - **R7. The schedule.** Track A needs the set by 2026-11-19 to run 3 nights
   before 2026-11-22. A late set gives fewer passes, and the page shows
   `incomplete`.
