@@ -334,23 +334,63 @@ with open(os.path.join(preview, "preview-base.json"), "w", encoding="utf-8") as 
     json.dump(base, handle, indent=2)
     handle.write("\n")
 
+def model_names():
+    """The plain model names of spec D17 and D18 (data/model-names.json)."""
+    path = os.path.join(root, "harness", "model-guide", "data", "model-names.json")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+NAMES = model_names()
+
+
+def model_name(key):
+    """A plain name. A key with no name shows without its plan prefix."""
+    name = NAMES.get(key)
+    if isinstance(name, str) and name.strip():
+        return name
+    _head, sep, tail = str(key).partition("/")
+    return tail if sep else str(key)
+
+
+def audit_name(key):
+    """The plain name of a print-audit route key: a `#variant` suffix maps to
+    its model key, and a key with no name drops its plan prefix."""
+    return model_name(str(key).split("#")[0])
+
+
 def overview_rows(page):
     """The six rows of spec D18 from model-guide.json, escaped.
 
-    The pick cell carries the base line beside the pick when the tool wrote
-    one. The base line never changes the pick.
+    The pick cell and the second cell show the plain model names of
+    data/model-names.json, with a `#variant` route mapped to its model key
+    (RA-1). The no-pick words stay as they are. The pick cell carries the
+    base line beside the pick when the tool wrote one. The base line never
+    changes the pick.
     """
     rows = []
     for row in page.get("rows") or []:
-        pick = html.escape(str(row.get("pick") or ""))
+        pick_value = str(row.get("pick") or "")
+        # The pick cells show the plain names of D18, the same names page B
+        # uses. "no pick yet: not enough evidence" stays as it is (RA-1).
+        pick = html.escape(
+            pick_value
+            if pick_value.startswith("no pick yet")
+            else audit_name(pick_value)
+        )
         base = row.get("base_line")
         if base is not None:
             pick = f'{pick}<br><span class="muted">base line {float(base):.1f}</span>'
         second = row.get("second")
+        second_text = audit_name(second) if second is not None else None
         cells = [
             html.escape(str(row.get("kind") or "")),
             pick,
-            html.escape(str(second)) if second is not None else "none",
+            html.escape(second_text) if second_text is not None else "none",
             html.escape(str(row.get("evidence") or "")),
             html.escape(str(row.get("evidence_date") or "")),
         ]
@@ -415,35 +455,6 @@ if os.path.exists(index_path):
     if index_html != before:
         with open(index_path, "w", encoding="utf-8") as handle:
             handle.write(index_html)
-
-
-def model_names():
-    """The plain model names of spec D17 and D18 (data/model-names.json)."""
-    path = os.path.join(root, "harness", "model-guide", "data", "model-names.json")
-    try:
-        with open(path, encoding="utf-8") as handle:
-            data = json.load(handle)
-    except (OSError, ValueError):
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-NAMES = model_names()
-
-
-def model_name(key):
-    """A plain name. A key with no name shows without its plan prefix."""
-    name = NAMES.get(key)
-    if isinstance(name, str) and name.strip():
-        return name
-    _head, sep, tail = str(key).partition("/")
-    return tail if sep else str(key)
-
-
-def audit_name(key):
-    """The plain name of a print-audit route key: a `#variant` suffix maps to
-    its model key, and a key with no name drops its plan prefix."""
-    return model_name(str(key).split("#")[0])
 
 
 def pct(value):

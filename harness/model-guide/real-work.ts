@@ -44,16 +44,6 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MANIFEST_RE = /^MANIFEST-(\d{4}-\d{2}-\d{2})\.txt$/;
 const SUM_LINE_RE = /^([0-9a-f]{64}) {2}(\d+) {2}(.+)$/;
 
-const PRODUCER_ROLES = new Set(["green", "red", "coder", "small", "strategy", "record"]);
-const GATE_ROLES = new Set([
-  "review-a",
-  "review-b",
-  "review-c",
-  "adversarial",
-  "acceptance",
-  "phase-acceptance",
-  "final-acceptance",
-]);
 
 /** The top block lines, in the order of spec D16 rule 8. */
 const ROLES: Array<{ id: string; label: string; kind: "producer" | "gate" }> = [
@@ -75,6 +65,11 @@ const KIND_PREFIX: Record<FileKind, string> = {
   allowed: "allowed-routes-",
 };
 const KIND_ORDER: FileKind[] = ["outcomes", "aa", "allowed"];
+
+/** The one file name of a kind for a date (RA-3, spec D16 Inputs). */
+function expectedName(kind: FileKind, date: string): string {
+  return `${KIND_PREFIX[kind]}${date}.json`;
+}
 
 type FileKind = "outcomes" | "aa" | "allowed";
 
@@ -199,7 +194,6 @@ function readManifest(
     .filter((line) => line.trim() !== "");
 
   const claimed = new Map<FileKind, ManifestEntry>();
-  const unclaimed: Array<{ name: string; sha256: string; size: number }> = [];
   for (const line of lines) {
     const match = SUM_LINE_RE.exec(line);
     // A line that is not in the `<sha256>  <size>  <file name>` form carries
@@ -211,22 +205,16 @@ function readManifest(
     }
     const entry = { name, sha256: match[1], size: Number(match[2]) };
     if (!Number.isSafeInteger(entry.size)) refuse("manifest", name);
-    const kind = KIND_ORDER.find((item) => name.startsWith(KIND_PREFIX[item]));
-    if (kind !== undefined) {
-      if (claimed.has(kind)) refuse("manifest", name);
-      claimed.set(kind, { ...entry, kind });
-    } else {
-      unclaimed.push(entry);
-    }
+    // Each line names exactly one of the three files of this date (RA-3,
+    // spec D16 Inputs). A duplicate line of a kind is refused too.
+    const kind = KIND_ORDER.find((item) => name === expectedName(item, date));
+    if (kind === undefined) refuse("manifest", name);
+    if (claimed.has(kind)) refuse("manifest", name);
+    claimed.set(kind, { ...entry, kind });
   }
 
-  for (const entry of unclaimed) {
-    const free = KIND_ORDER.find((kind) => !claimed.has(kind));
-    if (free === undefined) refuse("manifest", entry.name);
-    claimed.set(free, { ...entry, kind: free });
-  }
   for (const kind of KIND_ORDER) {
-    if (!claimed.has(kind)) refuse("manifest", `${KIND_PREFIX[kind]}${date}.json`);
+    if (!claimed.has(kind)) refuse("manifest", expectedName(kind, date));
   }
 
   return {
@@ -328,8 +316,9 @@ function newGate(model: string): GateAccum {
  * denominators, and a null value leaves the denominator (D16, DS5, DS6). */
 function addRow(acc: Accum, row: Record<string, any>, route: string): void {
   acc.routes.add(route);
-  if (row.role !== undefined && PRODUCER_ROLES.has(row.role)) acc.roles.add(row.role);
-  else if (row.role !== undefined && GATE_ROLES.has(row.role)) acc.roles.add(row.role);
+  // The Roles cell lists every role of the merged rows, also a role outside
+  // the ten lines of rule 8, for example spec-review (RA-4).
+  if (typeof row.role === "string") acc.roles.add(row.role);
   const counted = acc.kind === "producer" ? count(row.tasks) : count(row.decided);
   acc.routeCounts.set(route, (acc.routeCounts.get(route) ?? 0) + counted);
 

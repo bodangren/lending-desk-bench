@@ -28,10 +28,10 @@
 # target files, the preview folder and each parent of it inside the repo,
 # and its two target files.
 #
-# A failed input check prints the one `input-check: <check>` line of the
-# tool on stdout, exits 2, and writes no file into the repo: no docs write,
-# no preview folder, no commit. A failed guide.ts run also writes nothing
-# into the repo.
+# A failed input check prints the one `input-check: <check> <file>` line of
+# the tool on stderr, exits 2, and writes no file into the repo: no docs
+# write, no preview folder, no commit. A failed guide.ts run also writes
+# nothing into the repo.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
