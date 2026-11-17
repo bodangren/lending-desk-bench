@@ -1,0 +1,754 @@
+{
+  "schema": 1,
+  "source": {
+    "benchmark": "AA-Omniscience v1.1",
+    "intelligenceIndex": "AA Intelligence Index v5.0.1",
+    "url": "https://artificialanalysis.ai/evaluations/omniscience",
+    "modelPages": "https://artificialanalysis.ai/models/<aaSlug>",
+    "readDate": "2026-11-17",
+    "method": "Embedded RSC payload (self.__next_f) of the AA pages, field omniscience (net score), omniscienceAccuracy or omniscienceBreakdown.accuracy, omniscienceHallucinationRate or omniscienceBreakdown.hallucinationRate, intelligenceIndex, effort.label. Rates are percent. A model with no AA row, or an AA row with no AA-Omniscience score, is marked rated:false. No gap was filled with another model.",
+    "netScoreRange": "-100 to 100, higher is better",
+    "hallucinationRate": "incorrect answers divided by all non-correct answers (incorrect plus abstained), percent. A model that answers more looks worse on this rate. For information only; the decision rule uses netScore.",
+    "policyField": "netScore",
+    "addedRows": "2026-11-17: tencent-hy4, mimo-v2.6-pro, qwen4-max"
+  },
+  "effortRule": "A route with #<effort> uses byEffort[<effort>] when present, else the primary row (field effort).",
+  "models": {
+    "claude-opus-5-5": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "claude-opus-5-5",
+      "aaName": "Claude Opus 5.5 (Max, Default Fallback)",
+      "sourceUrl": "https://artificialanalysis.ai/models/claude-opus-5-5",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 48.13,
+      "accuracy": 65.5,
+      "hallucinationRate": 50.34,
+      "intelligence": 59.11,
+      "effort": "max",
+      "byEffort": {
+        "xhigh": {
+          "netScore": 43.13,
+          "accuracy": 65.53,
+          "hallucinationRate": 64.99,
+          "intelligence": 57.44,
+          "effort": "xhigh",
+          "aaName": "Claude Opus 5.5 (Xhigh, Default Fallback)",
+          "aaSlug": "claude-opus-5-5-xhigh"
+        },
+        "high": {
+          "netScore": 42.37,
+          "accuracy": 64.83,
+          "hallucinationRate": 63.89,
+          "intelligence": 51.84,
+          "effort": "high",
+          "aaName": "Claude Opus 5.5 (High, Default Fallback)",
+          "aaSlug": "claude-opus-5-5-high"
+        },
+        "medium": {
+          "netScore": 39.77,
+          "accuracy": 63.9,
+          "hallucinationRate": 66.85,
+          "intelligence": 48.21,
+          "effort": "medium",
+          "aaName": "Claude Opus 5.5 (Medium, Default Fallback)",
+          "aaSlug": "claude-opus-5-5-medium"
+        },
+        "low": {
+          "netScore": 39.03,
+          "accuracy": 63.33,
+          "hallucinationRate": 66.27,
+          "intelligence": 34.75,
+          "effort": "low",
+          "aaName": "Claude Opus 5.5 (Low, Default Fallback)",
+          "aaSlug": "claude-opus-5-5-low"
+        }
+      },
+      "note": "Orchestrator model. Claude Code default effort row is the max row."
+    },
+    "claude-sonnet-5-5": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "claude-sonnet-5-5",
+      "aaName": "Claude Sonnet 5.5 (Max, Default Fallback)",
+      "sourceUrl": "https://artificialanalysis.ai/models/claude-sonnet-5-5",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 30.47,
+      "accuracy": 51.47,
+      "hallucinationRate": 43.27,
+      "intelligence": 54.54,
+      "effort": "max",
+      "byEffort": {
+        "xhigh": {
+          "netScore": 20.6,
+          "accuracy": 50.9,
+          "hallucinationRate": 61.71,
+          "intelligence": 49.92,
+          "effort": "xhigh",
+          "aaName": "Claude Sonnet 5.5 (Xhigh, Default Fallback)",
+          "aaSlug": "claude-sonnet-5-5-xhigh"
+        },
+        "high": {
+          "netScore": 18.73,
+          "accuracy": 50.33,
+          "hallucinationRate": 63.62,
+          "intelligence": 41.52,
+          "effort": "high",
+          "aaName": "Claude Sonnet 5.5 (High, Default Fallback)",
+          "aaSlug": "claude-sonnet-5-5-high"
+        },
+        "medium": {
+          "netScore": 18.63,
+          "accuracy": 45.77,
+          "hallucinationRate": 50.03,
+          "intelligence": 30.82,
+          "effort": "medium",
+          "aaName": "Claude Sonnet 5.5 (Medium, Default Fallback)",
+          "aaSlug": "claude-sonnet-5-5-medium"
+        },
+        "low": {
+          "netScore": 20.27,
+          "accuracy": 46.0,
+          "hallucinationRate": 47.65,
+          "intelligence": 25.65,
+          "effort": "low",
+          "aaName": "Claude Sonnet 5.5 (Low, Default Fallback)",
+          "aaSlug": "claude-sonnet-5-5-low"
+        }
+      }
+    },
+    "claude-haiku-5-5": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "claude-haiku-5-5",
+      "aaName": "Claude Haiku 5.5 (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/claude-haiku-5-5",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 12.3,
+      "accuracy": 34.67,
+      "hallucinationRate": 34.23,
+      "intelligence": 36.48,
+      "effort": "max",
+      "byEffort": {
+        "xhigh": {
+          "netScore": 7.83,
+          "accuracy": 33.77,
+          "hallucinationRate": 39.15,
+          "intelligence": 34.64,
+          "effort": "xhigh",
+          "aaName": "Claude Haiku 5.5 (Xhigh)",
+          "aaSlug": "claude-haiku-5-5-xhigh"
+        },
+        "high": {
+          "netScore": 5.3,
+          "accuracy": 31.83,
+          "hallucinationRate": 38.92,
+          "intelligence": 29.87,
+          "effort": "high",
+          "aaName": "Claude Haiku 5.5 (High)",
+          "aaSlug": "claude-haiku-5-5-high"
+        },
+        "medium": {
+          "netScore": 4.17,
+          "accuracy": 31.73,
+          "hallucinationRate": 40.38,
+          "intelligence": 24.6,
+          "effort": "medium",
+          "aaName": "Claude Haiku 5.5 (Medium)",
+          "aaSlug": "claude-haiku-5-5-medium"
+        },
+        "low": {
+          "netScore": 2.17,
+          "accuracy": 30.37,
+          "hallucinationRate": 40.5,
+          "intelligence": 18.62,
+          "effort": "low",
+          "aaName": "Claude Haiku 5.5 (Low)",
+          "aaSlug": "claude-haiku-5-5-low"
+        }
+      }
+    },
+    "claude-fable-5-2": {
+      "rated": true,
+      "aliases": [
+        "claude-fable-5.2"
+      ],
+      "aaSlug": "claude-fable-5-2",
+      "aaName": "Claude Fable 5.2 (Max, Default Fallback)",
+      "sourceUrl": "https://artificialanalysis.ai/models/claude-fable-5-2",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 66.77,
+      "accuracy": 79.13,
+      "hallucinationRate": 59.27,
+      "intelligence": 64.56,
+      "effort": "max",
+      "byEffort": {
+        "xhigh": {
+          "netScore": 64.77,
+          "accuracy": 78.03,
+          "hallucinationRate": 60.39,
+          "intelligence": 62.22,
+          "effort": "xhigh",
+          "aaName": "Claude Fable 5.2 (Xhigh, Default Fallback)",
+          "aaSlug": "claude-fable-5-2-xhigh"
+        },
+        "high": {
+          "netScore": 64.03,
+          "accuracy": 77.23,
+          "hallucinationRate": 57.98,
+          "intelligence": 61.82,
+          "effort": "high",
+          "aaName": "Claude Fable 5.2 (High, Default Fallback)",
+          "aaSlug": "claude-fable-5-2-high"
+        },
+        "medium": {
+          "netScore": 63.5,
+          "accuracy": 76.97,
+          "hallucinationRate": 58.47,
+          "intelligence": 56.41,
+          "effort": "medium",
+          "aaName": "Claude Fable 5.2 (Medium, Default Fallback)",
+          "aaSlug": "claude-fable-5-2-medium"
+        },
+        "low": {
+          "netScore": 62.93,
+          "accuracy": 76.3,
+          "hallucinationRate": 56.4,
+          "intelligence": 53.92,
+          "effort": "low",
+          "aaName": "Claude Fable 5.2 (Low, Default Fallback)",
+          "aaSlug": "claude-fable-5-2-low"
+        }
+      }
+    },
+    "deepseek-v4.1-flash": {
+      "rated": true,
+      "aliases": [
+        "deepseek-flash"
+      ],
+      "aaSlug": "deepseek-v4-1-flash-1017",
+      "aaName": "DeepSeek V4.1 Flash 1017 (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/deepseek-v4-1-flash-1017",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 0.9,
+      "accuracy": 39.6,
+      "hallucinationRate": 64.07,
+      "intelligence": 32.59,
+      "effort": "max",
+      "byEffort": {
+        "high": {
+          "netScore": 1.53,
+          "accuracy": 38.93,
+          "hallucinationRate": 61.24,
+          "intelligence": 28.64,
+          "effort": "high",
+          "aaName": "DeepSeek V4.1 Flash 1017 (High)",
+          "aaSlug": "deepseek-v4-1-flash-1017-high"
+        }
+      },
+      "note": "AA rates the 1017 checkpoint only. The row DeepSeek V4.1 Flash (Max, release 2026-09-10) has no AA-Omniscience score. The model-catalog registry (A-27, 2026-10-28) maps the V4.1 Flash routes and deepseek/deepseek-flash to the 1017 slug. Whether the live routes serve the 1017 checkpoint is an assumption of that registry."
+    },
+    "deepseek-v4.1-flash-economy": {
+      "rated": false,
+      "aliases": [
+        "deepseek-v4.1-flash-economy"
+      ],
+      "note": "not rated by AA: no AA row for the economy variant.",
+      "readDate": "2026-11-17",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "relatedAaRows": [
+        "deepseek-v4-1-flash-1017"
+      ]
+    },
+    "deepseek-v4-pro": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "deepseek-v4-pro",
+      "aaName": "DeepSeek V4 Pro 0813 (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/deepseek-v4-pro",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": -6.37,
+      "accuracy": 45.2,
+      "hallucinationRate": 94.1,
+      "intelligence": 23.06,
+      "effort": "max",
+      "byEffort": {
+        "high": {
+          "netScore": -6.5,
+          "accuracy": 45.13,
+          "hallucinationRate": 94.11,
+          "intelligence": 20.8,
+          "effort": "high",
+          "aaName": "DeepSeek V4 Pro 0813 (High)",
+          "aaSlug": "deepseek-v4-pro-high"
+        }
+      },
+      "note": "AA row name: DeepSeek V4 Pro 0813."
+    },
+    "glm-5.3": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "glm-5-3",
+      "aaName": "GLM-5.3 (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/glm-5-3",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 6.03,
+      "accuracy": 32.33,
+      "hallucinationRate": 38.87,
+      "intelligence": 31.65,
+      "effort": "max",
+      "byEffort": {
+        "low": {
+          "netScore": -11.17,
+          "accuracy": 31.9,
+          "hallucinationRate": 63.24,
+          "intelligence": 23.11,
+          "effort": "low",
+          "aaName": "GLM-5.3 (Low)",
+          "aaSlug": "glm-5-3-low"
+        }
+      }
+    },
+    "glm-5.3-flash": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "glm-5-3-flash",
+      "aaName": "GLM-5.3-Flash",
+      "sourceUrl": "https://artificialanalysis.ai/models/glm-5-3-flash",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 0.67,
+      "accuracy": 28.2,
+      "hallucinationRate": 38.35,
+      "intelligence": 27.8,
+      "effort": "max"
+    },
+    "minimax-m3.1-flash": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "minimax-m3-1-flash",
+      "aaName": "MiniMax-M3.1-Flash",
+      "sourceUrl": "https://artificialanalysis.ai/models/minimax-m3-1-flash",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": -6.4,
+      "accuracy": 45.07,
+      "hallucinationRate": 93.69,
+      "intelligence": 29.06,
+      "effort": "max"
+    },
+    "minimax-m3": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "minimax-m3",
+      "aaName": "MiniMax-M3",
+      "sourceUrl": "https://artificialanalysis.ai/models/minimax-m3",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": -5.5,
+      "accuracy": 44.87,
+      "hallucinationRate": 91.35,
+      "intelligence": 18.88,
+      "effort": null
+    },
+    "mimo-v2.6-flash": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "mimo-v2-6-flash",
+      "aaName": "MiMo-V2.6-Flash",
+      "sourceUrl": "https://artificialanalysis.ai/models/mimo-v2-6-flash",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": -10.83,
+      "accuracy": 27.2,
+      "hallucinationRate": 52.24,
+      "intelligence": 26.73,
+      "effort": null,
+      "note": "AA shows no effort label for this row."
+    },
+    "muse-spark-1.3": {
+      "rated": true,
+      "aliases": [
+        "muse-spark-1.3-contributor"
+      ],
+      "aaSlug": "muse-spark-1-3",
+      "aaName": "Muse Spark 1.3 (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/muse-spark-1-3",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 22.4,
+      "accuracy": 38.0,
+      "hallucinationRate": 25.16,
+      "intelligence": 36.62,
+      "effort": "max",
+      "byEffort": {
+        "xhigh": {
+          "netScore": 23.83,
+          "accuracy": 37.8,
+          "hallucinationRate": 22.45,
+          "intelligence": null,
+          "effort": "xhigh",
+          "aaName": "Muse Spark 1.3 (Xhigh)",
+          "aaSlug": "muse-spark-1-3-xhigh"
+        }
+      },
+      "note": "The contributor route is the same model with a data-use price tier (assumption of the PM tooling, not an AA row). The route runs at #high; AA lists max and xhigh only, and the max row is the primary row."
+    },
+    "kimi-k3.1-pro": {
+      "rated": true,
+      "aliases": [
+        "k3.1-pro"
+      ],
+      "aaSlug": "kimi-k3-1-pro",
+      "aaName": "Kimi K3.1 Pro",
+      "sourceUrl": "https://artificialanalysis.ai/models/kimi-k3-1-pro",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 29.87,
+      "accuracy": 48.93,
+      "hallucinationRate": 37.34,
+      "intelligence": 46.45,
+      "effort": "max"
+    },
+    "qwen3.8-max": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "qwen3-8-max",
+      "aaName": "Qwen3.8 Max (0902)",
+      "sourceUrl": "https://artificialanalysis.ai/models/qwen3-8-max",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 10.47,
+      "accuracy": 29.53,
+      "hallucinationRate": 27.06,
+      "intelligence": 33.65,
+      "effort": "xhigh",
+      "note": "AA row name: Qwen3.8 Max (0902)."
+    },
+    "gpt-6-luna": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "gpt-6-luna",
+      "aaName": "GPT-6 Luna (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/gpt-6-luna",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": -8.27,
+      "accuracy": 39.63,
+      "hallucinationRate": 79.35,
+      "intelligence": 27.86,
+      "effort": "max",
+      "byEffort": {
+        "xhigh": {
+          "netScore": -12.97,
+          "accuracy": 38.6,
+          "hallucinationRate": 83.98,
+          "intelligence": 23.45,
+          "effort": "xhigh",
+          "aaName": "GPT-6 Luna (Xhigh)",
+          "aaSlug": "gpt-6-luna-xhigh"
+        },
+        "high": {
+          "netScore": -12.8,
+          "accuracy": 39.0,
+          "hallucinationRate": 84.92,
+          "intelligence": 21.43,
+          "effort": "high",
+          "aaName": "GPT-6 Luna (High)",
+          "aaSlug": "gpt-6-luna-high"
+        },
+        "medium": {
+          "netScore": -13.57,
+          "accuracy": 38.7,
+          "hallucinationRate": 85.26,
+          "intelligence": 18.45,
+          "effort": "medium",
+          "aaName": "GPT-6 Luna (Medium)",
+          "aaSlug": "gpt-6-luna-medium"
+        },
+        "low": {
+          "netScore": -18.1,
+          "accuracy": 36.1,
+          "hallucinationRate": 84.82,
+          "intelligence": 9.67,
+          "effort": "low",
+          "aaName": "GPT-6 Luna (Low)",
+          "aaSlug": "gpt-6-luna-low"
+        }
+      }
+    },
+    "gpt-6-sol": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "gpt-6-sol",
+      "aaName": "GPT-6 Sol (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/gpt-6-sol",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 21.4,
+      "accuracy": 51.13,
+      "hallucinationRate": 60.85,
+      "intelligence": 44.16,
+      "effort": "max",
+      "note": "AA rates only the max row of GPT-6 Sol on AA-Omniscience; the lower effort rows have no score."
+    },
+    "grok-4.7": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "grok-4-7",
+      "aaName": "Grok 4.7 (Xhigh)",
+      "sourceUrl": "https://artificialanalysis.ai/models/grok-4-7",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 31.23,
+      "accuracy": 42.7,
+      "hallucinationRate": 20.01,
+      "intelligence": 35.49,
+      "effort": "xhigh",
+      "byEffort": {
+        "high": {
+          "netScore": 30,
+          "accuracy": 41.77,
+          "hallucinationRate": 20.21,
+          "intelligence": 35.21,
+          "effort": "high",
+          "aaName": "Grok 4.7 (High)",
+          "aaSlug": "grok-4-7-high"
+        },
+        "low": {
+          "netScore": 27.4,
+          "accuracy": 45.73,
+          "hallucinationRate": 33.78,
+          "intelligence": 31.13,
+          "effort": "low",
+          "aaName": "Grok 4.7 (Low)",
+          "aaSlug": "grok-4-7-low"
+        }
+      }
+    },
+    "step-5-preview": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "step-5",
+      "aaName": "Step 5 Preview",
+      "sourceUrl": "https://artificialanalysis.ai/models/step-5",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 16.43,
+      "accuracy": 36.37,
+      "hallucinationRate": 31.33,
+      "intelligence": 28.53,
+      "effort": null,
+      "note": "AA row name: Step 5 Preview."
+    },
+    "hy4-flash": {
+      "rated": false,
+      "aliases": [
+        "hy4-flash"
+      ],
+      "note": "not rated by AA: AA has no Hy4 Flash row. AA lists Tencent Hy4, a different model; not used here. See the entry tencent-hy4 (AA row Tencent Hy4: net score 5.4, hallucination rate 89.07 percent, intelligence 34.56) for information only.",
+      "readDate": "2026-11-17",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "relatedAaRows": [
+        "tencent-hy4"
+      ]
+    },
+    "qwen3.8-flash": {
+      "rated": false,
+      "aliases": [
+        "qwen3.8-flash"
+      ],
+      "note": "not rated by AA: AA has no Qwen3.8 Flash row. AA lists Qwen3.8-Flash-Next, a different model; not used here.",
+      "readDate": "2026-11-17",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "relatedAaRows": [
+        "qwen3-8-flash-next"
+      ]
+    },
+    "kimi-for-coding": {
+      "rated": false,
+      "aliases": [
+        "kimi-for-coding"
+      ],
+      "note": "not rated by AA: kimi-for-coding is a plan alias, and AA has no row under that name.",
+      "readDate": "2026-11-17",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience"
+    },
+    "tencent-hy4": {
+      "rated": true,
+      "aliases": [
+        "hy4"
+      ],
+      "aaSlug": "tencent-hy4",
+      "aaName": "Tencent Hy4",
+      "sourceUrl": "https://artificialanalysis.ai/models/tencent-hy4",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 5.4,
+      "accuracy": 49.97,
+      "hallucinationRate": 89.07,
+      "intelligence": 34.56,
+      "effort": null,
+      "note": "Tencent Hy4. AA shows no effort label. A different model from Hy4 Flash."
+    },
+    "mimo-v2.6-pro": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "mimo-v2-6-pro",
+      "aaName": "MiMo-V2.6-Pro",
+      "sourceUrl": "https://artificialanalysis.ai/models/mimo-v2-6-pro",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": -4.47,
+      "accuracy": 34.8,
+      "hallucinationRate": 60.22,
+      "intelligence": 29.89,
+      "effort": null,
+      "note": "AA shows no effort label for this row."
+    },
+    "qwen4-max": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "qwen4-max",
+      "aaName": "Qwen4 Max",
+      "sourceUrl": "https://artificialanalysis.ai/models/qwen4-max",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 27.7,
+      "accuracy": 43.7,
+      "hallucinationRate": 28.42,
+      "intelligence": 42.89,
+      "effort": "xhigh"
+    }
+  },
+  "reference": {
+    "qwen3-8-flash-next": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "qwen3-8-flash-next",
+      "aaName": "Qwen3.8-Flash-Next",
+      "sourceUrl": "https://artificialanalysis.ai/models/qwen3-8-flash-next",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": -12.23,
+      "accuracy": 23.53,
+      "hallucinationRate": 46.77,
+      "intelligence": 28.58,
+      "effort": null,
+      "note": "Qwen3.8-Flash-Next. A different model from Qwen3.8 Flash."
+    },
+    "gpt-6-1-sol": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "gpt-6-1-sol",
+      "aaName": "GPT-6.1 Sol (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/gpt-6-1-sol",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 42.03,
+      "accuracy": 61.83,
+      "hallucinationRate": 51.88,
+      "intelligence": 54.61,
+      "effort": "max",
+      "byEffort": {
+        "xhigh": {
+          "netScore": 42.37,
+          "accuracy": 61.07,
+          "hallucinationRate": 48.03,
+          "intelligence": 52.46,
+          "effort": "xhigh",
+          "aaName": "GPT-6.1 Sol (Xhigh)",
+          "aaSlug": "gpt-6-1-sol-xhigh"
+        },
+        "high": {
+          "netScore": 41,
+          "accuracy": 60.4,
+          "hallucinationRate": 48.99,
+          "intelligence": 50.33,
+          "effort": "high",
+          "aaName": "GPT-6.1 Sol (High)",
+          "aaSlug": "gpt-6-1-sol-high"
+        },
+        "medium": {
+          "netScore": 40.17,
+          "accuracy": 59.6,
+          "hallucinationRate": 48.1,
+          "intelligence": 46.35,
+          "effort": "medium",
+          "aaName": "GPT-6.1 Sol (Medium)",
+          "aaSlug": "gpt-6-1-sol-medium"
+        },
+        "low": {
+          "netScore": 38,
+          "accuracy": 58.63,
+          "hallucinationRate": 49.88,
+          "intelligence": 34.8,
+          "effort": "low",
+          "aaName": "GPT-6.1 Sol (Low)",
+          "aaSlug": "gpt-6-1-sol-low"
+        }
+      },
+      "note": "GPT-6.1 Sol, the newer Sol."
+    },
+    "gpt-6-1-terra": {
+      "rated": true,
+      "aliases": [],
+      "aaSlug": "gpt-6-1-terra",
+      "aaName": "GPT-6.1 Terra (Max)",
+      "sourceUrl": "https://artificialanalysis.ai/models/gpt-6-1-terra",
+      "evaluationsUrl": "https://artificialanalysis.ai/evaluations/omniscience",
+      "readDate": "2026-11-17",
+      "netScore": 29.57,
+      "accuracy": 47.63,
+      "hallucinationRate": 34.5,
+      "intelligence": 51.33,
+      "effort": "max",
+      "byEffort": {
+        "xhigh": {
+          "netScore": 28.93,
+          "accuracy": 48.03,
+          "hallucinationRate": 36.75,
+          "intelligence": 45.25,
+          "effort": "xhigh",
+          "aaName": "GPT-6.1 Terra (Xhigh)",
+          "aaSlug": "gpt-6-1-terra-xhigh"
+        },
+        "high": {
+          "netScore": 27.77,
+          "accuracy": 47.27,
+          "hallucinationRate": 36.98,
+          "intelligence": 42.43,
+          "effort": "high",
+          "aaName": "GPT-6.1 Terra (High)",
+          "aaSlug": "gpt-6-1-terra-high"
+        },
+        "medium": {
+          "netScore": 26.6,
+          "accuracy": 47.43,
+          "hallucinationRate": 39.63,
+          "intelligence": 38.17,
+          "effort": "medium",
+          "aaName": "GPT-6.1 Terra (Medium)",
+          "aaSlug": "gpt-6-1-terra-medium"
+        },
+        "low": {
+          "netScore": 22.93,
+          "accuracy": 45.57,
+          "hallucinationRate": 41.58,
+          "intelligence": 29.42,
+          "effort": "low",
+          "aaName": "GPT-6.1 Terra (Low)",
+          "aaSlug": "gpt-6-1-terra-low"
+        }
+      },
+      "note": "GPT-6.1 Terra."
+    }
+  }
+}
