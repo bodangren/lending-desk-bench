@@ -376,17 +376,21 @@ interface AaEntry {
 /** The AA `models` block, indexed by lower-case model key and alias. */
 function aaIndex(models: Record<string, unknown>): Map<string, AaEntry> {
   const index = new Map<string, AaEntry>();
+  // A direct model key wins over an alias, whatever the order of the file
+  // (ADV-6). The two passes keep the rule independent of file order.
+  for (const [key, value] of Object.entries(models)) {
+    if (!isObject(value)) continue;
+    const name = key.toLowerCase();
+    if (!index.has(name)) index.set(name, value as AaEntry);
+  }
   for (const [key, value] of Object.entries(models)) {
     if (!isObject(value)) continue;
     const entry = value as AaEntry;
-    const name = key.toLowerCase();
-    if (!index.has(name)) index.set(name, entry);
-    if (Array.isArray(entry.aliases)) {
-      for (const alias of entry.aliases) {
-        if (typeof alias !== "string") continue;
-        const aliasName = alias.toLowerCase();
-        if (!index.has(aliasName)) index.set(aliasName, entry);
-      }
+    if (!Array.isArray(entry.aliases)) continue;
+    for (const alias of entry.aliases) {
+      if (typeof alias !== "string") continue;
+      const aliasName = alias.toLowerCase();
+      if (!index.has(aliasName)) index.set(aliasName, entry);
     }
   }
   return index;
@@ -410,7 +414,11 @@ function netScoreOf(acc: Accum, index: Map<string, AaEntry>): number | null {
       bestVariant = variantOf(route);
     }
   }
-  if (bestVariant !== null && isObject(entry.byEffort)) {
+  if (
+    bestVariant !== null &&
+    isObject(entry.byEffort) &&
+    Object.hasOwn(entry.byEffort, bestVariant)
+  ) {
     const effort = entry.byEffort[bestVariant];
     if (isObject(effort)) return netScoreValue(effort.netScore);
   }
@@ -463,11 +471,6 @@ function rateOf(pass: number, denominator: number): { value: number | null; n: n
   return { value: denominator > 0 ? pass / denominator : null, n: denominator };
 }
 
-function roundTo(value: number, digits: number): number {
-  const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
-}
-
 function producerRow(acc: ProducerAccum, index: Map<string, AaEntry>, allowed: Set<string>): RowLike {
   const notAllowed = !allowed.has(acc.model);
   const net = netScoreOf(acc, index);
@@ -479,10 +482,9 @@ function producerRow(acc: ProducerAccum, index: Map<string, AaEntry>, allowed: S
     tasks: acc.tasks,
     accepted: acc.accepted,
     first_round: { value: acc.rateAccepted > 0 ? acc.rateSum / acc.rateAccepted : null, n: acc.rateAccepted },
-    mean_rework: acc.reworkTasks > 0 ? roundTo(acc.reworkSum / acc.reworkTasks, 4) : null,
-    cleanup_share: acc.cleanupTasks > 0 ? roundTo(acc.cleanupSum / acc.cleanupTasks, 4) : null,
-    tokens_per_accepted:
-      acc.tokenAccepted > 0 ? roundTo(acc.tokenSum / acc.tokenAccepted, 2) : null,
+    mean_rework: acc.reworkTasks > 0 ? acc.reworkSum / acc.reworkTasks : null,
+    cleanup_share: acc.cleanupTasks > 0 ? acc.cleanupSum / acc.cleanupTasks : null,
+    tokens_per_accepted: acc.tokenAccepted > 0 ? acc.tokenSum / acc.tokenAccepted : null,
     runs: acc.runs,
     pass: acc.pass,
     fail: acc.fail,
@@ -514,7 +516,7 @@ function gateRow(acc: GateAccum, index: Map<string, AaEntry>, allowed: Set<strin
     blocking_findings: acc.findings,
     escapes: acc.escapes,
     findings: acc.findings,
-    findings_per_run: acc.decided > 0 ? roundTo(acc.findings / acc.decided, 4) : 0,
+    findings_per_run: acc.decided > 0 ? acc.findings / acc.decided : 0,
     pass_rate: rateOf(acc.pass, acc.decided),
     net_score: net,
     allowed: allowed.has(acc.model),
@@ -549,15 +551,21 @@ function qualifies(row: RowLike): boolean {
 /** The rank order of D16: the higher rate first, then the lower rework (a
  * producer) or the fewer escapes (a gate), then the higher count, then the
  * model key. */
+/** A rank key after the rounding of FR-3: float noise at the last bits
+ * never breaks a tie. */
+function rankKey(value: number): number {
+  return Math.round(value * 1e9) / 1e9;
+}
+
 function compareRows(a: RowLike, b: RowLike): number {
-  const rateA = rateValue(a) ?? 0;
-  const rateB = rateValue(b) ?? 0;
+  const rateA = rankKey(rateValue(a) ?? 0);
+  const rateB = rankKey(rateValue(b) ?? 0);
   if (rateB !== rateA) return rateB - rateA;
   if (a.kind === "producer" && b.kind === "producer") {
     const reworkA = reworkValue(a);
     const reworkB = reworkValue(b);
-    const valueA = reworkA === null ? Number.POSITIVE_INFINITY : reworkA;
-    const valueB = reworkB === null ? Number.POSITIVE_INFINITY : reworkB;
+    const valueA = reworkA === null ? Number.POSITIVE_INFINITY : rankKey(reworkA);
+    const valueB = reworkB === null ? Number.POSITIVE_INFINITY : rankKey(reworkB);
     if (valueA !== valueB) return valueA < valueB ? -1 : 1;
   } else {
     if (escapesValue(a) !== escapesValue(b)) return escapesValue(a) - escapesValue(b);
@@ -716,7 +724,7 @@ function main(): void {
     top.push({ role: role.id, label: role.label, kind: role.kind, pick: pickOf(roleRows, role.kind) });
   }
 
-  const unknownShare = rows > 0 ? roundTo((unknownRows / rows) * 100, 1) : 0;
+  const unknownShare = rows > 0 ? (unknownRows / rows) * 100 : 0;
   const outcomesName = nameOf("outcomes");
   const outcomesSha = createHash("sha256").update(bytes.get("outcomes")!).digest("hex");
 

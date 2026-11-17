@@ -358,9 +358,13 @@ def model_name(key):
 
 
 def audit_name(key):
-    """The plain name of a print-audit route key: a `#variant` suffix maps to
-    its model key, and a key with no name drops its plan prefix."""
-    return model_name(str(key).split("#")[0])
+    """The plain name of a print-audit route key.
+
+    The rule is the page B model key rule (ADV-5, D17): the key loses `[1m]`
+    and a `#<variant>` suffix before the model-names.json lookup, and a key
+    with no name drops its plan prefix.
+    """
+    return model_name(str(key).replace("[1m]", "").split("#")[0])
 
 
 def overview_rows(page):
@@ -495,15 +499,21 @@ def integer(value):
 
 
 def table_head(heads):
-    return "<thead><tr>" + "".join(
-        f'<th scope="col">{esc(head)}</th>' for head in heads
-    ) + "</tr></thead>"
+    cells = []
+    for index, head in enumerate(heads):
+        # The first column is the model name column (ADV-1).
+        extra = ' class="model-cell"' if index == 0 else ""
+        cells.append(f'<th scope="col"{extra}>{esc(head)}</th>')
+    return "<thead><tr>" + "".join(cells) + "</tr></thead>"
 
 
 def table_wrap(aria, table_html):
+    """A scroll box with its own hint, so a wide table shows the hint and a
+    table that fits keeps it hidden (ADV-2, D16 Width)."""
     return (
         f'<div class="table-wrap" tabindex="0" role="region" '
         f'aria-label="{esc(aria)}">{table_html}</div>'
+        '<p class="scroll-hint">Scroll sideways for more \u2192</p>'
     )
 
 
@@ -522,7 +532,7 @@ def model_cell(row):
     badge = f'<span class="rank">#{int(rank)}</span> ' if isinstance(rank, int) else ""
     name = esc(model_name(row.get("model") or ""))
     return (
-        f'<td data-mg="model-name" title="{esc(routes)}">'
+        f'<td class="model-cell" data-mg="model-name" title="{esc(routes)}">'
         f'{badge}{name}{mark_html(row)}</td>'
     )
 
@@ -603,7 +613,6 @@ def section_body(aria, rows, heads, more_heads, cells_of, more_cells_of):
         body = "".join(data_row(row, cells_of(row), True) for row in ranked)
         parts.append(table_wrap(f"{aria} table", f'<table class="data" data-mg="default-table">'
                                 f"{table_head(heads)}<tbody>{body}</tbody></table>"))
-        parts.append('<p class="scroll-hint">Scroll sideways for more \u2192</p>')
     else:
         parts.append('<p class="muted">No model meets the minimum of 5 yet.</p>')
     if few:

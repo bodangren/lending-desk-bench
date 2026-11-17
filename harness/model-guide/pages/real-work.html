@@ -45,11 +45,12 @@
     .table-wrap th {
       color: var(--muted); font-size: 0.66rem; font-weight: 650;
       font-family: var(--mono); letter-spacing: 0.08em;
-      text-transform: uppercase; white-space: nowrap;
+      text-transform: uppercase;
       background: rgba(26, 33, 48, 0.6);
       border-bottom: 1px solid var(--line);
     }
     .table-wrap tr:last-child td { border-bottom: none; }
+    .table-wrap th.model-cell, .table-wrap td.model-cell { min-width: 10em; }
     .table-wrap td.num {
       text-align: right; font-family: var(--mono); font-size: 0.82rem;
       font-variant-numeric: tabular-nums; white-space: nowrap;
@@ -66,12 +67,10 @@
     }
     .mark[data-mark="not-allowed"] { color: var(--warning, #d08b3a); }
     .scroll-hint {
-      display: none;
       margin: 0.35rem 0 0;
       color: var(--muted); font-family: var(--mono); font-size: 0.68rem;
       letter-spacing: 0.04em;
     }
-    @media (max-width: 800px) { .scroll-hint { display: block; } }
     details { margin-top: 0.7rem; }
     details > summary {
       cursor: pointer; color: var(--accent-cool);
