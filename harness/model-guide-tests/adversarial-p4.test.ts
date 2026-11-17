@@ -1229,3 +1229,204 @@ describe("ADV4 layout in a browser (D16 Data source Width, D16 Width)", () => {
     ).toEqual([]);
   }, 120_000);
 });
+
+describe("ADV4 checker rank of the PM 2026-11-18 rules (D16 Data source, FR-3)", () => {
+  it("ADV4-19: two net scores that differ only in float noise tie, so the higher findings per run ranks first", () => {
+    const { page } = pageOf("adv4-19", {
+      outcomes: [
+        gate("p1/fa", "review-a", 10, 8, 0, 0),
+        gate("p1/fb", "review-a", 10, 8, 4, 0),
+      ],
+      aa: {
+        fa: { rated: true, netScore: 30.000000000000004 },
+        fb: { rated: true, netScore: 30 },
+      },
+      allowed: ["p1/fa", "p1/fb"],
+    });
+    const rows = tableRows(sectionOf(page, "Checker roles"));
+    // A4: both rows qualify and rank.
+    expect(rows).toHaveLength(2);
+    expect(rankedKeys(rows)).toHaveLength(2);
+    expect(rowIn(rows, "p1/fa").cells[5]).toBe("30");
+    expect(rowIn(rows, "p1/fb").cells[5]).toBe("30");
+    expect(rowIn(rows, "p1/fb").cells[3]).toBe("0.40");
+    // The raw noises differ (30.000000000000004 against 30) but round to
+    // one rank key, so findings per run 0.40 against 0.00 decides.
+    expect(rankedKeys(rows), "float noise breaks no tie").toEqual(["p1/fb", "p1/fa"]);
+    expectTopBlock(page, { "review-a": ["p1/fb", "80 %", "10"] });
+  });
+
+  it("ADV4-20: a rated row ranks before a not-rated row whatever the findings per run, and neither picks under 20", () => {
+    const { page } = pageOf("adv4-20", {
+      outcomes: [
+        gate("p1/rneg", "review-a", 10, 10, 0, 0),
+        gate("p1/unr", "review-a", 10, 10, 90, 0),
+      ],
+      aa: {
+        rneg: { rated: true, netScore: -50 },
+        unr: { rated: false, netScore: 99 },
+      },
+      allowed: ["p1/rneg", "p1/unr"],
+    });
+    const rows = tableRows(sectionOf(page, "Checker roles"));
+    // A4: both rows qualify and rank.
+    expect(rows).toHaveLength(2);
+    expect(rankedKeys(rows)).toHaveLength(2);
+    expect(rowIn(rows, "p1/rneg").cells[5]).toBe("-50");
+    expect(rowIn(rows, "p1/unr").cells[5]).toBe("not rated");
+    // The not-rated row holds findings per run 9.00 against 0.00 and the
+    // same runs, but a row that is not rated ranks after every rated row.
+    expect(rowIn(rows, "p1/unr").cells[3]).toBe("9.00");
+    expect(rankedKeys(rows), "rated first, not rated last").toEqual(["p1/rneg", "p1/unr"]);
+    for (const key of ["p1/rneg", "p1/unr"]) {
+      expect(rowIn(rows, key).html, `${key} is not for verdicts`).toContain(
+        'data-mark="not-for-verdicts"',
+      );
+    }
+    // -50 is under 20 and not rated never picks.
+    expectTopBlock(page, {});
+  });
+
+  it("ADV4-21: the gate pick takes the checker order and the 20 boundary, not the pass %", () => {
+    const { page } = pageOf("adv4-21", {
+      outcomes: [
+        gate("p1/hipass", "review-a", 10, 10, 0, 0),
+        gate("p1/lopass", "review-a", 10, 5, 0, 0),
+        gate("p1/ok20", "review-b", 6, 6, 0, 0),
+        gate("p1/lo1999", "review-c", 6, 6, 5, 0),
+      ],
+      aa: {
+        hipass: { rated: true, netScore: 19.99 },
+        lopass: { rated: true, netScore: 40 },
+        ok20: { rated: true, netScore: 20 },
+        lo1999: { rated: true, netScore: 19.99 },
+      },
+      allowed: ["p1/hipass", "p1/lopass", "p1/ok20", "p1/lo1999"],
+    });
+    const rows = tableRows(sectionOf(page, "Checker roles"));
+    // A4: all four rows qualify and rank.
+    expect(rows).toHaveLength(4);
+    expect(rankedKeys(rows)).toHaveLength(4);
+    // Nets 40, 20, then the 19.99 tie: findings per run 0.83 beats 0.00.
+    expect(rankedKeys(rows)).toEqual(["p1/lopass", "p1/ok20", "p1/lo1999", "p1/hipass"]);
+    expect(rowIn(rows, "p1/ok20").html, "20 is not under 20").not.toContain("data-mark=");
+    expect(rowIn(rows, "p1/lo1999").html, "19.99 is under 20").toContain(
+      'data-mark="not-for-verdicts"',
+    );
+    expectTopBlock(page, {
+      // The 100 % row holds net 19.99, so the 50 % row with net 40 picks.
+      "review-a": ["p1/lopass", "50 %", "10"],
+      // The only allowed row of the role holds exactly 20 and picks.
+      "review-b": ["p1/ok20", "100 %", "6"],
+      // The only allowed row of the role holds 19.99 and never picks.
+      "review-c": null,
+    });
+  });
+
+  it("ADV4-22: negative net scores rank high first, carry the verdict mark, and never pick", () => {
+    const { page } = pageOf("adv4-22", {
+      outcomes: [
+        gate("p1/neg3", "adversarial", 8, 8, 0, 0),
+        gate("p1/neg30", "adversarial", 8, 8, 0, 0),
+      ],
+      aa: {
+        neg3: { rated: true, netScore: -3 },
+        neg30: { rated: true, netScore: -30 },
+      },
+      allowed: ["p1/neg3", "p1/neg30"],
+    });
+    const rows = tableRows(sectionOf(page, "Checker roles"));
+    // A4: both rows qualify and rank.
+    expect(rows).toHaveLength(2);
+    expect(rankedKeys(rows), "the higher (less negative) net score first").toEqual([
+      "p1/neg3",
+      "p1/neg30",
+    ]);
+    expect(rowIn(rows, "p1/neg3").cells[5]).toBe("-3");
+    expect(rowIn(rows, "p1/neg30").cells[5]).toBe("-30");
+    for (const key of ["p1/neg3", "p1/neg30"]) {
+      expect(rowIn(rows, key).html, `${key} is under 20`).toContain(
+        'data-mark="not-for-verdicts"',
+      );
+    }
+    expectTopBlock(page, {});
+  });
+});
+
+describe("ADV4 escapes total of the PM 2026-11-18 rule (D16 Data source)", () => {
+  it("ADV4-23: one escape in a Too few tasks row turns every cell to a number; producer and unknown rows follow the gate-row sum", () => {
+    const rated = (name: string) => ({ [name]: { rated: true, netScore: 30 } });
+    // A single escape on a row with 3 runs: the escape sum over all gate
+    // rows is 1, so every Escapes cell shows a number.
+    const few = pageOf("adv4-23a", {
+      outcomes: [
+        gate("p1/e1", "review-a", 10, 8, 0, 0),
+        gate("p1/e2", "review-a", 10, 8, 0, 0),
+        gate("p1/e3", "review-b", 3, 3, 0, 1),
+      ],
+      aa: { ...rated("e1"), ...rated("e2"), ...rated("e3") },
+      allowed: ["p1/e1", "p1/e2", "p1/e3"],
+    }).page;
+    const fewRows = tableRows(sectionOf(few, "Checker roles"));
+    // A4: three rows, two ranked.
+    expect(fewRows).toHaveLength(3);
+    expect(rankedKeys(fewRows)).toEqual(["p1/e1", "p1/e2"]);
+    const fewRow = rowIn(fewRows, "p1/e3");
+    expect(fewRow.rank, "the 3-run row stays in Too few tasks").toBeNull();
+    expect(fewRow.cells[4]).toBe("1");
+    for (const row of fewRows) {
+      expect(row.cells[4], `${row.key} shows a number while the sum is 1`).toMatch(/^\d+$/);
+    }
+
+    // Producer escaped findings are not gate rows, so the sum stays 0.
+    const producerEscape = {
+      ...prod("p1/ep", "green", 6, 3, 0.5, 1.0, 0.1, 1000),
+      escaped_findings: 9,
+    };
+    const producerPage = pageOf("adv4-23b", {
+      outcomes: [producerEscape, gate("p1/eq", "review-a", 6, 6, 0, 0)],
+      aa: { ...rated("eq") },
+      allowed: ["p1/ep", "p1/eq"],
+    }).page;
+    const producerRows = tableRows(sectionOf(producerPage, "Checker roles"));
+    expect(producerRows).toHaveLength(1);
+    expect(rowIn(producerRows, "p1/eq").cells[4], "producer escapes leave the sum at 0").toBe(
+      "no data",
+    );
+
+    // The unknown row is a gate row of the outcomes file, so its escapes
+    // count in the sum and the visible cells show numbers.
+    const unknownPage = pageOf("adv4-23c", {
+      outcomes: [gate("unknown", "review-a", 6, 6, 0, 2), gate("p1/ev", "review-a", 6, 6, 0, 0)],
+      aa: { ...rated("ev") },
+      allowed: ["p1/ev"],
+    }).page;
+    const unknownRows = tableRows(sectionOf(unknownPage, "Checker roles"));
+    expect(unknownRows).toHaveLength(1);
+    expect(rowIn(unknownRows, "p1/ev").cells[4], "the unknown escape turns cells to numbers").toBe(
+      "0",
+    );
+    expect(footerNumber(unknownPage, "footer-unknown-rows")).toBe(1);
+  });
+});
+
+describe("ADV4 top lines with a hostile plain name (D16 Top block, RS7)", () => {
+  it("ADV4-24: a hostile plain name keeps the role label first and reaches the HTML escaped", () => {
+    const { page } = pageOf(
+      "adv4-24",
+      {
+        outcomes: [gate("p1/evil", "review-a", 8, 6, 0, 0)],
+        aa: { evil: { rated: true, netScore: 30 } },
+        allowed: ["p1/evil"],
+      },
+      { names: { "p1/evil": 'Evil: <img src=x onerror=alert(1)> & "quoted"' } },
+    );
+    const rows = tableRows(sectionOf(page, "Checker roles"));
+    // A4: one row, ranked.
+    expect(rows).toHaveLength(1);
+    expect(rankedKeys(rows)).toEqual(["p1/evil"]);
+    expect(page, "the page holds no raw img tag").not.toContain("<img");
+    expect(page, "the hostile name is escaped").toContain("&lt;img");
+    expectTopBlock(page, { "review-a": ["p1/evil", "75 %", "8"] });
+  });
+});
