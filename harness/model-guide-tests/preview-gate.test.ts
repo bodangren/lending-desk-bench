@@ -1914,7 +1914,7 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
             : json.work_types[label];
       const pick = rows.find((r: any) => r.can_pick && r.rank === 1);
       expect(pick, `${label} has a rank-1 row with 10 or more results`).toBeDefined();
-      const item = items.find((i) => i.key === pick.model);
+      const item = items.find((i) => i.key === pick.model && i.text.includes(label));
       expect(item, `${label} line names the ranked pick`).toBeDefined();
       expect(item!.text, `${label} line names the group`).toContain(label);
       expect(item!.text, `${label} line does not say no pick yet`).not.toContain("no pick yet");
