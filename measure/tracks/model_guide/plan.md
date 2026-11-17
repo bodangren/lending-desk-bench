@@ -1282,12 +1282,23 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     prints nothing. The ten top lines show the sentence forms, and the
     Escapes cells read "no data" because the real outcomes file holds no
     escape. The `page-check` browser proof stays with the orchestrator.
-- [ ] 4.1i Red. Role labels on the top lines (spec D16 Top block, orchestrator
+- [~] 4.1i Red. Role labels on the top lines (spec D16 Top block, orchestrator
   2026-11-18). Change only test files under `harness/model-guide-tests/`.
   - Cases: each of the ten top lines starts with its role label and a colon,
     in the given order, for a pick and for "no pick yet".
   - Verify: the new cases fail for missing behavior. Record them in
     `measure/runs/model_guide/red-4.1i.txt`.
+  - Evidence: the three top-line readers run one at a time on 2026-11-18
+    with `--configLoader native --maxWorkers=1 --reporter=dot`.
+    `real-work.test.ts` exits 1 with `Tests  2 failed | 12 passed (14)`,
+    first failure DS13 (`expected 'prod-one 100 % in this role, 5 tasks' to
+    be 'Red: prod-one 100 % in this role, 5 tasks'`).
+    `preview-gate.test.ts` exits 1 with `Tests  1 failed | 101 passed (102)`,
+    first failure G6 (same missing role label).
+    `adversarial-p4.test.ts` exits 1 with `Tests  7 failed | 11 passed (18)`,
+    first failure ADV4-1 (`red line starts with "Red: ", got "alpha 80 % in
+    this role, 20 tasks"`). No run carries a NameError, a TypeError, a
+    ReferenceError, or a syntax error.
 - [ ] 4.1j Green. Implement 4.1i in `harness/model-guide/preview.sh` (and the
   template if needed).
   - Verify: all page B test files pass one at a time; `page-check` at 390, 980,
