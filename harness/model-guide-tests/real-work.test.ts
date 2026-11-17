@@ -309,12 +309,13 @@ function footerNumber(page: string, hook: string): number {
 interface Pick {
   role: string | null;
   key: string | null;
-  name: string | null;
-  rate: string | null;
-  count: string | null;
+  text: string;
   none: boolean;
 }
 
+/** The ten top lines. Each line is one sentence with the label "in this
+ * role" (spec D16 Top block, PM 2026-11-18), so the values come from the
+ * text of the line, not from a rate or count hook. */
 function picksOf(page: string): Pick[] {
   const at = page.indexOf('data-mg="top-block"');
   expect(at, "the page holds the top block").toBeGreaterThan(-1);
@@ -328,13 +329,12 @@ function picksOf(page: string): Pick[] {
     const close = region.indexOf(`</${tag}>`, re.lastIndex);
     expect(close, "a pick line closes").toBeGreaterThan(re.lastIndex);
     const inner = region.slice(re.lastIndex, close);
+    const text = inner.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
     out.push({
       role: m[2].match(/\bdata-role="([^"]*)"/)?.[1] ?? null,
       key: m[2].match(/\bdata-model-key="([^"]*)"/)?.[1] ?? null,
-      name: inner.includes('data-mg="pick-name"') ? hookText(inner, "pick-name") : null,
-      rate: inner.includes('data-mg="pick-rate"') ? hookText(inner, "pick-rate") : null,
-      count: inner.includes('data-mg="pick-count"') ? hookText(inner, "pick-count") : null,
-      none: inner.includes('data-mg="pick-none"'),
+      text,
+      none: text === "no pick yet",
     });
     re.lastIndex = close + tag.length + 3;
   }
@@ -360,7 +360,7 @@ function checkerSection(page: string): string {
 }
 
 describe("DS4 to DS13: the page built from the page B fixture", () => {
-  it("DS4: a route note strips at the first space-paren, so keys stay whole and the footer route count is 30", () => {
+  it("DS4: a route note strips at the first space-paren, so keys stay whole and the footer route count is 36", () => {
     const page = basePage();
     const keys = rowsOf(`${producerSection(page)}${checkerSection(page)}`).map((row) => row.key);
     expect(keys.length, "the page holds data rows").toBeGreaterThan(0);
@@ -371,7 +371,7 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     expect(keys, "the note-carrying route merges into t1/prod-two").toContain("t1/prod-two");
     const row = rowIn(producerSection(page), "t1/prod-two");
     expect(row.cells[1], "t1/prod-two shows the summed tasks").toBe("20");
-    expect(footerNumber(page, "footer-routes"), "the stripped route count").toBe(35);
+    expect(footerNumber(page, "footer-routes"), "the stripped route count").toBe(36);
   });
 
   it("DS5: the producer merge weights the first-round rate by accepted and the averages by their own denominators", () => {
@@ -405,12 +405,14 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     expect(one.cells[1], "runs = sum(decided) = 6+4+5").toBe("15");
     expect(one.cells[2], "pass % = 12/15").toBe("80 %");
     expect(one.cells[3], "findings per run = 16/15").toBe("1.07");
-    expect(one.cells[4], "escapes = 1+0+2").toBe("3");
+    expect(one.cells[4], "the escape sum over all gate rows is 0, so the cell shows no data").toBe(
+      "no data",
+    );
     const two = rowIn(checkerSection(page), "t1/gate-two");
     expect(two.cells[1], "runs = 7+5+5").toBe("17");
     expect(two.cells[2], "pass % = 16/17").toBe("94 %");
     expect(two.cells[3], "findings per run = 6/17").toBe("0.35");
-    expect(two.cells[4]).toBe("0");
+    expect(two.cells[4], "no escape data yet shows no data").toBe("no data");
     const twelve = fewGroupRows(checkerSection(page), "checker").find(
       (row) => row.key === "t1/gate-twelve",
     );
@@ -457,22 +459,27 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     expect(ranks, "ranks run 1 to n in order").toEqual(ranks.map((_, index) => index + 1));
   });
 
-  it("DS10: the checker rank orders by pass %, then fewer escapes, then more runs, and the route unknown never shows", () => {
+  it("DS10: the checker rank orders by AA net score with not-rated rows last, then findings per run, more runs, and the model key, and the route unknown never shows", () => {
     const page = basePage();
     const section = checkerSection(page);
+    // Rated rows first by net score high. Then the not-rated rows by
+    // findings per run high, then more runs, then the model key: gate-eight
+    // and gate-zeta tie on findings (0.00) and runs (8), so the model key
+    // puts gate-eight first.
     expect(rankedKeys(section)).toEqual([
-      "t1/gate-five",
       "t1/gate-nine",
-      "t1/gate-fourteen",
-      "t1/gate-eight",
-      "t1/gate-six",
+      "t1/gate-one",
+      "t1/gate-two",
+      "t1/gate-four",
       "opencode/gate-three-free",
       "t1/gate-seven",
-      "t1/gate-four",
-      "t1/gate-two",
-      "t1/gate-one",
-      't1/"><img src=x onerror=alert(1)>',
+      "t1/gate-six",
+      "t1/gate-five",
+      "t1/gate-fourteen",
+      "t1/gate-eight",
+      "t1/gate-zeta",
       "t1/__proto__",
+      't1/"><img src=x onerror=alert(1)>',
     ]);
     const ranks = rowsOf(section)
       .filter((row) => row.rank !== null)
@@ -562,50 +569,106 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     ).toContain('data-mark="not-for-verdicts"');
   });
 
-  it("DS13: the top block gives one line per role in the given order, with the filters of rule 8", () => {
+  it("DS13: the top block gives one line per role in the given order with the in-this-role forms", () => {
     const page = basePage();
     const at = page.indexOf('data-mg="top-block"');
     const firstTable = page.indexOf("<table");
     expect(firstTable, "the page holds a table").toBeGreaterThan(-1);
     expect(at, "the top block sits before the first table").toBeLessThan(firstTable);
 
-    const expected: Array<
-      [string, string | null, number | null, number | null]
-    > = [
-      ["red", "t1/prod-one", 100, 5],
-      ["green", "t1/prod-one", 62, 15],
-      ["coder", null, null, null],
-      ["review-a", "t1/gate-two", 100, 7],
-      ["review-b", null, null, null],
-      ["review-c", "t1/gate-seven", 100, 5],
-      ["adversarial", null, null, null],
-      ["acceptance", null, null, null],
-      ["phase-acceptance", "t1/gate-two", 80, 5],
-      ["final-acceptance", null, null, null],
+    const order = [
+      "red",
+      "green",
+      "coder",
+      "review-a",
+      "review-b",
+      "review-c",
+      "adversarial",
+      "acceptance",
+      "phase-acceptance",
+      "final-acceptance",
     ];
+    const noPickRoles = ["coder", "review-b", "adversarial", "acceptance", "final-acceptance"];
+    const producerLines: Record<string, { key: string; name: string; rate: number; count: number }> = {
+      red: { key: "t1/prod-one", name: "prod-one", rate: 100, count: 5 },
+      green: { key: "t1/prod-one", name: "prod-one", rate: 62, count: 15 },
+    };
+    const gateLines: Record<
+      string,
+      { key: string; name: string; rate: number; count: number; net: number }
+    > = {
+      "review-a": { key: "t1/gate-one", name: "gate-one", rate: 90, count: 10, net: 41.5 },
+      "review-c": { key: "t1/gate-seven", name: "gate-seven", rate: 100, count: 5, net: 20 },
+      "phase-acceptance": { key: "t1/gate-two", name: "gate-two", rate: 80, count: 5, net: 33.3 },
+    };
+
     const picks = picksOf(page);
-    expect(picks, "one line for each of the ten roles").toHaveLength(expected.length);
+    expect(picks, "one line for each of the ten roles").toHaveLength(order.length);
     expect(
       picks.map((pick) => pick.role),
       "the lines run in the order of spec rule 8",
-    ).toEqual(expected.map(([role]) => role));
-    for (const [role, key, rate, count] of expected) {
-      const pick = picks.find((item) => item.role === role)!;
-      if (key === null) {
+    ).toEqual(order);
+    for (const pick of picks) {
+      const role = pick.role as string;
+      if (noPickRoles.includes(role)) {
         expect(pick.none, `${role} says no pick yet`).toBe(true);
+        expect(pick.text, `${role} line text`).toBe("no pick yet");
         expect(pick.key, `${role} carries no data-model-key`).toBeNull();
         continue;
       }
       expect(pick.none, `${role} has a pick`).toBe(false);
-      expect(pick.key, `${role} pick`).toBe(key);
-      expect(pick.name, `${role} name`).toBeTruthy();
-      const rateText = pick.rate ?? "";
-      expect(rateText, `${role} rate "${rateText}" is a whole percent`).toMatch(/^\d+\s*%$/);
-      expect(Number(rateText.match(/^(\d+)/)![1]), `${role} rate`).toBe(rate!);
-      const countText = pick.count ?? "";
-      expect(countText, `${role} count "${countText}" is an integer`).toMatch(/^\d+$/);
-      expect(Number(countText), `${role} count`).toBe(count!);
+      expect(pick.key, `${role} pick key`).toBe(
+        (producerLines[role] ?? gateLines[role]).key,
+      );
+      if (producerLines[role]) {
+        const want = producerLines[role];
+        const m = pick.text.match(/^(.+) (\d+) % in this role, (\d+) tasks$/);
+        expect(
+          m,
+          `${role} line is "<name> <rate> % in this role, <count> tasks", got "${pick.text}"`,
+        ).toBeTruthy();
+        expect(m![1], `${role} plain name`).toBe(want.name);
+        expect(Number(m![2]), `${role} rate`).toBe(want.rate);
+        expect(Number(m![3]), `${role} count`).toBe(want.count);
+      } else {
+        const want = gateLines[role];
+        const m = pick.text.match(/^(.+) (\d+) % pass in this role, (\d+) runs, net (\S+)$/);
+        expect(
+          m,
+          `${role} line is "<name> <rate> % pass in this role, <count> runs, net <net>", got "${pick.text}"`,
+        ).toBeTruthy();
+        expect(m![1], `${role} plain name`).toBe(want.name);
+        expect(Number(m![2]), `${role} pass rate`).toBe(want.rate);
+        expect(Number(m![3]), `${role} count`).toBe(want.count);
+        expect(Number(m![4]), `${role} net score`).toBe(want.net);
+      }
     }
+  });
+
+  it("DS25: a gate pick follows the checker rank order, so a 100 % pass row with a lower net score does not pick", () => {
+    const page = basePage();
+    const checker = checkerSection(page);
+    // The counterfactual rows exist and rank: gate-five passes 100 % but is
+    // not rated, and gate-six passes 100 % with net 19.9 under the limit.
+    const five = rowIn(checker, "t1/gate-five");
+    expect(five.rank, "gate-five ranks in the checker table").not.toBeNull();
+    expect(five.cells[2], "gate-five passes 100 %").toBe("100 %");
+    const six = rowIn(checker, "t1/gate-six");
+    expect(six.cells[2], "gate-six passes 100 %").toBe("100 %");
+    expect(six.cells[5], "gate-six net score is under 20").toBe("19.9");
+    const picks = picksOf(page);
+    const reviewA = picks.find((pick) => pick.role === "review-a")!;
+    expect(
+      reviewA.text,
+      "review-a picks the higher net row although its pass rate is lower",
+    ).toBe("gate-one 90 % pass in this role, 10 runs, net 41.5");
+    expect(reviewA.key).toBe("t1/gate-one");
+    const reviewC = picks.find((pick) => pick.role === "review-c")!;
+    expect(
+      reviewC.text,
+      "review-c picks net 20 over the 100 % row with net 19.9",
+    ).toBe("gate-seven 100 % pass in this role, 5 runs, net 20");
+    expect(reviewC.key).toBe("t1/gate-seven");
   });
 });
 

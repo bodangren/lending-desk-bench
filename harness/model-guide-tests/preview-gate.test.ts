@@ -1761,10 +1761,11 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       const close = region.indexOf(`</${tag}>`, re.lastIndex);
       expect(close, "a pick line closes").toBeGreaterThan(re.lastIndex);
       const inner = region.slice(re.lastIndex, close);
+      const text = inner.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
       out.push({
         role: m[2].match(/\bdata-role="([^"]*)"/)?.[1] ?? null,
         key: m[2].match(/\bdata-model-key="([^"]*)"/)?.[1] ?? null,
-        none: inner.includes('data-mg="pick-none"'),
+        none: text === "no pick yet",
       });
       re.lastIndex = close + tag.length + 3;
     }
@@ -1823,12 +1824,12 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
   it("G2: the coverage numbers sit in the same About this data footer", () => {
     const { page } = pageGuardSnapshot();
     const footer = hookRegion(page, "about-footer", "</body>");
-    expect(footerNumber(page, "footer-rows"), "row count").toBe(40);
-    expect(footerNumber(page, "footer-routes"), "route count").toBe(35);
+    expect(footerNumber(page, "footer-rows"), "row count").toBe(41);
+    expect(footerNumber(page, "footer-routes"), "route count").toBe(36);
     expect(footerNumber(page, "footer-unknown-rows"), "unknown rows").toBe(2);
     const share = hookTextOf(footer, "footer-unknown-share");
     expect(share, "the share is a labeled percent").toMatch(/^(\d+(?:\.\d)?)\s*%$/);
-    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(5);
+    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(4.9);
     expect(hookTextOf(footer, "footer-read-date"), "the read date").toBe(DATE);
     expect(hookTextOf(footer, "footer-export-date"), "the export date").toBe(DATE);
     expect(footer, "the footer holds the merge method note").toContain(METHOD_NOTE);
@@ -1857,18 +1858,19 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       [
         "Checker roles",
         [
-          "t1/gate-five",
           "t1/gate-nine",
-          "t1/gate-fourteen",
-          "t1/gate-eight",
-          "t1/gate-six",
+          "t1/gate-one",
+          "t1/gate-two",
+          "t1/gate-four",
           "opencode/gate-three-free",
           "t1/gate-seven",
-          "t1/gate-four",
-          "t1/gate-two",
-          "t1/gate-one",
-          't1/"><img src=x onerror=alert(1)>',
+          "t1/gate-six",
+          "t1/gate-five",
+          "t1/gate-fourteen",
+          "t1/gate-eight",
+          "t1/gate-zeta",
           "t1/__proto__",
+          't1/"><img src=x onerror=alert(1)>',
         ],
         ["t1/gate-eleven", "t1/gate-twelve", "t1/gate-variant"],
       ],
@@ -2405,7 +2407,7 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
     const counts = countRanks(page);
     expect(counts.producerRanked, "ranked producer rows").toHaveLength(10);
     expect(counts.producerFew, "too-few producer rows").toHaveLength(3);
-    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(12);
+    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(13);
     expect(counts.checkerFew, "too-few checker rows").toHaveLength(3);
     expect(topPickCount(page), "top block lines").toBe(10);
   });
@@ -2488,7 +2490,10 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
         /^\d+\.\d{2}$/.test(findings),
         `${row.key} findings per run has two decimals and no %, got "${findings}"`,
       ).toBe(true);
-      expect(row.cells[cEscapes], `${row.key} Escapes is an integer`).toMatch(/^\d+$/);
+      expect(
+        row.cells[cEscapes],
+        `${row.key} Escapes shows no data while the escape sum is 0`,
+      ).toBe("no data");
       const net = row.cells[cNet] ?? "";
       expect(
         net === "not rated" || Number.isFinite(Number(net)),
@@ -2520,12 +2525,12 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
     expect(hookTextOf(footer, "footer-read-date"), "the read date").toBe(DATE);
     expect(hookTextOf(footer, "footer-export-date"), "the export date").toBe(DATE);
     expect(footer, "the footer holds no real date").not.toContain("2026-11-17");
-    expect(footerNumber(page, "footer-rows"), "row count").toBe(40);
-    expect(footerNumber(page, "footer-routes"), "route count").toBe(35);
+    expect(footerNumber(page, "footer-rows"), "row count").toBe(41);
+    expect(footerNumber(page, "footer-routes"), "route count").toBe(36);
     expect(footerNumber(page, "footer-unknown-rows"), "unknown rows").toBe(2);
     const share = hookTextOf(footer, "footer-unknown-share");
     expect(share, "the unknown share is a labeled percent").toMatch(/^(\d+(?:\.\d)?)\s*%$/);
-    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(5);
+    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(4.9);
     expect(footer, "the footer holds the merge method note").toContain(METHOD_NOTE);
   });
 
@@ -2611,8 +2616,67 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
     const counts = countRanks(page);
     expect(counts.producerRanked, "ranked producer rows").toHaveLength(10);
     expect(counts.producerFew, "too-few producer rows").toHaveLength(3);
-    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(12);
+    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(13);
     expect(counts.checkerFew, "too-few checker rows").toHaveLength(3);
     expect(topPickCount(page), "top block lines").toBe(10);
+  });
+
+  it("DS22: the checker table text says that a high pass % does not mean a good checker", () => {
+    const { page } = base();
+    const checker = sectionOf(page, "Checker roles");
+    expect(
+      checker,
+      "the checker table carries its warning sentence (spec D16 PM 2026-11-18)",
+    ).toContain("A high pass % does not mean a good checker.");
+  });
+
+  it("DS23: the About this data footer states the effort-level limit of the net score", () => {
+    const { page } = base();
+    const footer = footerOf(page);
+    expect(
+      footer,
+      "the footer holds the effort sentence of spec D16 PM 2026-11-18",
+    ).toContain(
+      "The record does not hold the effort level of each run. The net score uses " +
+        "the effort level of the route with the most runs, so a model can score " +
+        "higher at another effort level (for example Claude Sonnet 5.5 at #max).",
+    );
+  });
+
+  it("DS24: every Escapes cell shows no data when the escape sum is 0, and the number otherwise", () => {
+    const fixtureRows = JSON.parse(readFileSync(join(PAGE_B, OUTCOMES_NAME), "utf8"));
+    const escapeSum = fixtureRows
+      .filter((row: any) => row.kind === "gate")
+      .reduce((total: number, row: any) => total + (row.escapes ?? 0), 0);
+    expect(escapeSum, "the base fixture holds no escape data").toBe(0);
+
+    const { page } = base();
+    const baseRows = rowsOf(sectionOf(page, "Checker roles"));
+    expect(baseRows.length, "the checker table holds rows").toBeGreaterThan(0);
+    for (const row of baseRows) {
+      expect(row.cells[4], `${row.key} shows no data while no escape exists`).toBe("no data");
+    }
+
+    const root = repoFixture("ds24-escapes");
+    stageFixture(root, (rows) => {
+      for (const row of rows) {
+        if (row.kind !== "gate") continue;
+        if (row.route === "t1/gate-one#high") row.escapes = 1;
+        if (row.route === "t1/gate-one") row.escapes = 2;
+        if (row.route === "t1/gate-four") row.escapes = 1;
+      }
+    });
+    const result = runPreview(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const variant = readFileSync(join(previewFolder(root), "real-work.html"), "utf8");
+    const variantRows = rowsOf(sectionOf(variant, "Checker roles"));
+    const byKey = (key: string) => {
+      const found = variantRows.find((row) => row.key === key);
+      expect(found, `row ${key} exists in the variant`).toBeDefined();
+      return found!;
+    };
+    expect(byKey("t1/gate-one").cells[4], "the merged escape sum 1+2 shows as a number").toBe("3");
+    expect(byKey("t1/gate-four").cells[4], "a single escape shows as a number").toBe("1");
+    expect(byKey("t1/gate-two").cells[4], "a zero escape shows as a number").toBe("0");
   });
 });

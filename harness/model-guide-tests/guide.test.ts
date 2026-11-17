@@ -782,6 +782,17 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
       "t1/prod-tiny",
     );
   });
+
+  it("DS26: the overview section text says a model needs 5 tasks or runs, not 10", () => {
+    const template = readFileSync(join(SOURCE, "pages", "guide-section.html"), "utf8");
+    expect(
+      template,
+      "the overview text states the minimum of 5 of spec D18 PM 2026-11-18",
+    ).toContain("5 tasks or runs");
+    expect(template, "the overview text no longer says 10 runs or more").not.toContain(
+      "10 runs or more",
+    );
+  });
 });
 
 const INDEX_HTML = `<!doctype html>

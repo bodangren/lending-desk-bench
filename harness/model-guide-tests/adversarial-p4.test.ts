@@ -64,18 +64,6 @@ const ROLE_IDS = [
   "phase-acceptance",
   "final-acceptance",
 ];
-const ROLE_LABELS = [
-  "Red",
-  "Green",
-  "Coder",
-  "Review A",
-  "Review B",
-  "Review C",
-  "Adversarial",
-  "Acceptance",
-  "Phase acceptance",
-  "Final acceptance",
-];
 
 const roots: string[] = [];
 afterAll(() => {
@@ -357,17 +345,14 @@ function rankedKeys(rows: TableRow[]): string[] {
 interface Pick {
   role: string | null;
   key: string | null;
-  label: string;
   rate: string;
   count: string;
   none: boolean;
 }
 
-function hookIn(inner: string, hook: string): string {
-  const m = inner.match(new RegExp(`data-mg="${hook}"[^>]*>([\\s\\S]*?)</span>`));
-  return m ? textOf(m[1]) : "";
-}
-
+/** The ten top lines. Each line is one sentence with the label "in this
+ * role" (spec D16 Top block, PM 2026-11-18), so the rate and the count
+ * come from the text of the line. */
 function picksOf(page: string): Pick[] {
   const at = page.indexOf('data-mg="top-block"');
   expect(at, "the page holds the top block").toBeGreaterThan(-1);
@@ -376,13 +361,15 @@ function picksOf(page: string): Pick[] {
   const out: Pick[] = [];
   for (const m of region.matchAll(/<li\b([^>]*\bdata-mg="pick"[^>]*)>([\s\S]*?)<\/li>/g)) {
     const key = m[1].match(/\bdata-model-key="([^"]*)"/)?.[1];
+    const text = textOf(m[2]);
+    const gate = text.match(/ (\d+) % pass in this role, (\d+) runs, net /);
+    const producer = text.match(/ (\d+) % in this role, (\d+) tasks/);
     out.push({
       role: m[1].match(/\bdata-role="([^"]*)"/)?.[1] ?? null,
       key: key === undefined ? null : unescapeHtml(key),
-      label: textOf(m[2].match(/class="pick-label">([\s\S]*?)<\/span>/)?.[1] ?? ""),
-      rate: hookIn(m[2], "pick-rate"),
-      count: hookIn(m[2], "pick-count"),
-      none: m[2].includes('data-mg="pick-none"'),
+      rate: gate ? `${gate[1]} %` : producer ? `${producer[1]} %` : "",
+      count: gate ? gate[2] : producer ? producer[2] : "",
+      none: text === "no pick yet",
     });
   }
   return out;
@@ -395,7 +382,6 @@ function expectTopBlock(
 ): void {
   const picks = picksOf(page);
   expect(picks.map((pick) => pick.role), "ten lines in the order of spec D16 rule 8").toEqual(ROLE_IDS);
-  expect(picks.map((pick) => pick.label), "each line carries its role label").toEqual(ROLE_LABELS);
   for (const pick of picks) {
     const want = expected[pick.role as string] ?? null;
     if (want === null) {
@@ -709,7 +695,7 @@ describe("ADV4 ties in the rank keys (D16 Data source, FR-3)", () => {
     }).page;
   }
 
-  it("ADV4-8: ties go to the lower rework, then more tasks, then fewer escapes, then more runs, and row order changes nothing", () => {
+  it("ADV4-8: producer ties go to the lower rework, then more tasks, and checker ties to the net score, findings per run, more runs, then the model key, and row order changes nothing", () => {
     const forward = build("adv4-8a", false);
     const backward = build("adv4-8b", true);
     for (const page of [forward, backward]) {
@@ -722,8 +708,10 @@ describe("ADV4 ties in the rank keys (D16 Data source, FR-3)", () => {
       expect(order.slice(0, 2)).toEqual(["p1/gc", "p1/gb"]);
       expect(order.slice(2).sort()).toEqual(["p1/ga", "p1/gd"]);
       const checker = tableRows(sectionOf(page, "Checker roles"));
-      // 80 % each. xe and xb have no escape, xa has one. xe has more runs.
-      expect(rankedKeys(checker)).toEqual(["p1/xe", "p1/xb", "p1/xa"]);
+      // All three hold net 30 and no findings. xa and xe have 10 runs and
+      // xb has 5, so xb ranks last; xa and xe tie on every key, and the
+      // model key puts p1/xa before p1/xe. Escapes take no part.
+      expect(rankedKeys(checker)).toEqual(["p1/xa", "p1/xe", "p1/xb"]);
     }
     expect(
       rankedKeys(tableRows(sectionOf(backward, "Producer roles"))),
@@ -731,7 +719,7 @@ describe("ADV4 ties in the rank keys (D16 Data source, FR-3)", () => {
     ).toEqual(rankedKeys(tableRows(sectionOf(forward, "Producer roles"))));
     expectTopBlock(forward, {
       green: ["p1/gc", "50 %", "6"],
-      "review-a": ["p1/xe", "80 %", "10"],
+      "review-a": ["p1/xa", "80 %", "10"],
     });
   });
 
