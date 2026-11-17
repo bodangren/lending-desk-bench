@@ -2701,3 +2701,645 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
     expect(byKey("t1/gate-two").cells[4], "a zero escape shows as a number").toBe("0");
   });
 });
+
+// ---------------------------------------------------------------------------
+// The review page cases V1 to V9 of task 4.8a (test-strategy section 4.4,
+// spec D13, D16, FR-14, D21).
+//
+// The tool under test is the review page edit of
+// `harness/model-guide/preview.sh` (Green task 4.8). That edit does not
+// exist at the base of the phase, so every V case fails for the missing
+// page. The Phase 1 and Phase 2 cases above stay green.
+//
+// Contract of the review page:
+//
+//   - preview.sh reads the newest score file under
+//     `harness/model-guide/data/review-scores/` (the rule that guide.ts
+//     uses) and writes `review.html` and `review.json` into the preview
+//     folder. `review.json` is a copy of the score file.
+//   - `preview.sh --pilot-gate pass|fail`, default `pass` (assumption A4-1
+//     of section 6.2). With `fail` the page shows no rank for any route and
+//     preview.sh prints exactly one line on stdout:
+//     `preview: pilot gate fail`.
+//   - The review table carries `data-mg="review-table"` with the heads
+//     Route, Rank, Worst, Median, Best, Blocker recall, False claims,
+//     Real defects. A route row carries `data-mg="review-route"` and
+//     `data-route="<route>"`. Its cells carry `data-mg="review-rank"`,
+//     `data-mg="review-worst"`, `data-mg="review-median"`,
+//     `data-mg="review-best"`, `data-mg="review-recall"`,
+//     `data-mg="review-false-claims"`, and `data-mg="review-real-defects"`.
+//   - The numbers of a route equal the score document: worst, median, and
+//     best with one decimal (D13), the blocker recall as a whole percent
+//     (the worst blocker recall of the route), and the false claims and the
+//     real defects as the sum over the passes of the route.
+//   - The counts by class and by severity of a route are the sum over its
+//     passes. A row carries `data-mg="review-class"` with `data-route` and
+//     `data-class`, or `data-mg="review-severity"` with `data-route` and
+//     `data-severity`, and holds the label, the found count, and the missed
+//     count in that order. The heads are Class, Found, Missed and Severity,
+//     Found, Missed.
+//   - A route with fewer than 3 complete passes has `rank: null` in the
+//     score document. Its row holds the word `incomplete`, no rank number,
+//     and no worst score.
+//   - Each pass carries `data-mg="review-pass"` with `data-route`,
+//     `data-pass`, and `data-state` (`complete` or `provisional`).
+//   - The set counts carry `data-mg="review-set-diffs"`,
+//     `data-mg="review-set-plants"`, and `data-mg="review-set-blockers"`,
+//     each inside `data-mg="review-set-counts"`, and each holds its number
+//     with its label word. The values come from
+//     `data/sets/<set_id>.json`.
+//   - The method note carries `data-mg="review-method"` and names the set
+//     size as `<n> diffs`, the weights 5, 2, and 1, the false-claim cost 2,
+//     `N = 3`, and the pilot gate.
+//   - The page holds no key `new_lines`, `witness`, `operator`, `file`, or
+//     `line`, and no private folder path (secrecy rule, section 9.4).
+//
+// Every case copies the scripts it runs into a temp repo, writes its score
+// document and set manifest inline, and reads no private folder, no key,
+// no real score file, and no model.
+// ---------------------------------------------------------------------------
+
+const V_SET_ID = "mg-v-page";
+const V_RANKED = "opencode-go/muse-spark-1.3-contributor#high";
+const V_FEW = "kimi-code-plan-cn/kimi-for-coding#high";
+const V_CLASSES = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"];
+const V_SEVERITIES = ["blocker", "major", "minor"];
+const V_HEADS = [
+  "Route",
+  "Rank",
+  "Worst",
+  "Median",
+  "Best",
+  "Blocker recall",
+  "False claims",
+  "Real defects",
+];
+const V_PILOT_FAIL_LINE = "preview: pilot gate fail";
+const V_PRIVATE_KEYS = ["new_lines", "witness", "operator", "file", "line"];
+
+function reEscape(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** A pattern that matches one tag carrying every attribute of the list, in
+ * any order, and captures the element with its closing tag. */
+function vAttrPattern(attrs: Array<[string, string]>): string {
+  const looks = attrs
+    .map(([key, value]) => `(?=[^>]*\\b${reEscape(key)}="${reEscape(value)}")`)
+    .join("");
+  return `<([a-z0-9]+)${looks}[^>]*>([\\s\\S]*?)</\\1>`;
+}
+
+function vFirstFragment(html: string, attrs: Array<[string, string]>): string | null {
+  const match = new RegExp(vAttrPattern(attrs), "i").exec(html);
+  return match ? match[0] : null;
+}
+
+function vAllFragments(html: string, attrs: Array<[string, string]>): string[] {
+  const pattern = new RegExp(vAttrPattern(attrs), "gi");
+  const out: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(html)) !== null) out.push(match[0]);
+  return out;
+}
+
+/** The text of a fragment with its tags removed. */
+function vText(fragment: string): string {
+  return fragment
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function vFirstText(html: string, attrs: Array<[string, string]>): string | null {
+  const fragment = vFirstFragment(html, attrs);
+  return fragment === null ? null : vText(fragment);
+}
+
+/** The cell texts of one row, in column order. */
+function vCells(fragment: string): string[] {
+  const out: string[] = [];
+  const pattern = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(fragment)) !== null) out.push(vText(match[1]));
+  return out;
+}
+
+/** The link texts of one href, in page order. */
+function vAnchors(html: string, href: string): string[] {
+  const pattern = new RegExp(`<a\\b[^>]*href="${reEscape(href)}"[^>]*>([\\s\\S]*?)</a>`, "gi");
+  return [...html.matchAll(pattern)].map((match) => vText(match[1]));
+}
+
+/** The row of one route in the review table. */
+function vRouteRow(page: string, route: string): string | null {
+  return vFirstFragment(page, [
+    ["data-mg", "review-route"],
+    ["data-route", route],
+  ]);
+}
+
+function vRowCell(row: string, name: string): string | null {
+  return vFirstText(row, [["data-mg", name]]);
+}
+
+/** The score document of the V cases: one ranked route with a provisional
+ * pass, and one route with two complete passes. */
+function vScoreDoc(): any {
+  const pass = (
+    route: string,
+    number: number,
+    state: "complete" | "provisional",
+    score: number,
+    options: {
+      recall: number;
+      falseClaims: number;
+      realDefects: number;
+      classes: Array<[string, number, number]>;
+      severities: Array<[string, number, number]>;
+      blockers: number;
+      blockersFound: number;
+    },
+  ): any => {
+    const byClass: Record<string, { found: number; missed: number }> = {};
+    const bySeverity: Record<string, { found: number; missed: number }> = {};
+    for (const name of V_CLASSES) byClass[name] = { found: 0, missed: 0 };
+    for (const name of V_SEVERITIES) bySeverity[name] = { found: 0, missed: 0 };
+    for (const [name, found, missed] of options.classes) byClass[name] = { found, missed };
+    for (const [name, found, missed] of options.severities) bySeverity[name] = { found, missed };
+    const found = Object.values(byClass).reduce((sum, item) => sum + item.found, 0);
+    const missed = Object.values(byClass).reduce((sum, item) => sum + item.missed, 0);
+    return {
+      route,
+      pass: number,
+      date: ["2026-11-20", "2026-11-21", "2026-11-22"][number - 1] ?? "2026-11-22",
+      state,
+      score,
+      weight: 40,
+      found_weight: Math.round((score * 40) / 100),
+      found,
+      missed,
+      false_claims: options.falseClaims,
+      blockers: options.blockers,
+      blockers_found: options.blockersFound,
+      blocker_recall: options.recall,
+      invalid_reviews: 0,
+      real_defects: options.realDefects,
+      by_class: byClass,
+      by_severity: bySeverity,
+    };
+  };
+
+  const ranked = [
+    pass(V_RANKED, 1, "complete", 62.0, {
+      recall: 0.5,
+      falseClaims: 2,
+      realDefects: 1,
+      classes: [["C1", 2, 1], ["C2", 1, 2]],
+      severities: [["blocker", 1, 1], ["major", 2, 2], ["minor", 1, 1]],
+      blockers: 4,
+      blockersFound: 2,
+    }),
+    pass(V_RANKED, 2, "complete", 71.5, {
+      recall: 0.75,
+      falseClaims: 1,
+      realDefects: 0,
+      classes: [["C1", 1, 0], ["C3", 0, 1]],
+      severities: [["blocker", 0, 1], ["major", 1, 1]],
+      blockers: 4,
+      blockersFound: 3,
+    }),
+    pass(V_RANKED, 3, "provisional", 84.0, {
+      recall: 1,
+      falseClaims: 0,
+      realDefects: 0,
+      classes: [["C1", 0, 1], ["C2", 1, 0]],
+      severities: [["blocker", 1, 0], ["major", 0, 1], ["minor", 1, 1]],
+      blockers: 4,
+      blockersFound: 4,
+    }),
+  ];
+  const few = [
+    pass(V_FEW, 1, "complete", 55.0, {
+      recall: 0.4,
+      falseClaims: 4,
+      realDefects: 0,
+      classes: [["C4", 1, 3]],
+      severities: [["major", 1, 2], ["minor", 0, 1]],
+      blockers: 5,
+      blockersFound: 2,
+    }),
+    pass(V_FEW, 2, "complete", 66.0, {
+      recall: 0.6,
+      falseClaims: 0,
+      realDefects: 2,
+      classes: [["C5", 2, 0]],
+      severities: [["blocker", 1, 0], ["minor", 1, 1]],
+      blockers: 5,
+      blockersFound: 3,
+    }),
+  ];
+
+  const record = (list: any[]): any => {
+    const scores = list.map((item) => item.score);
+    const recalls = list.map((item) => item.blocker_recall);
+    const sorted = [...scores].sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+    const median =
+      sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+    return {
+      route: list[0].route,
+      state: list.length >= 3 ? "complete" : "incomplete",
+      passes: list,
+      worst: Math.min(...scores),
+      median,
+      best: Math.max(...scores),
+      worst_blocker_recall: Math.min(...recalls),
+      rank: null as number | null,
+    };
+  };
+
+  const records = [record(ranked), record(few)];
+  const complete = records.filter((item) => item.state === "complete");
+  complete.sort((a, b) => b.worst - a.worst || b.worst - a.worst);
+  complete.forEach((item, index) => {
+    item.rank = index + 1;
+  });
+  return {
+    set_id: V_SET_ID,
+    passes: [...ranked, ...few],
+    routes: [...complete, ...records.filter((item) => item.state !== "complete")],
+  };
+}
+
+/** The sum of one field over the passes of one route. */
+function vPassSum(doc: any, route: string, field: "false_claims" | "real_defects"): number {
+  return doc.passes
+    .filter((item: any) => item.route === route)
+    .reduce((sum: number, item: any) => sum + item[field], 0);
+}
+
+/** The count of one class or severity over the passes of one route. */
+function vCountSum(
+  doc: any,
+  route: string,
+  group: "by_class" | "by_severity",
+  key: string,
+): { found: number; missed: number } {
+  let found = 0;
+  let missed = 0;
+  for (const item of doc.passes) {
+    if (item.route !== route) continue;
+    const cell = item[group][key] ?? { found: 0, missed: 0 };
+    found += cell.found;
+    missed += cell.missed;
+  }
+  return { found, missed };
+}
+
+/** The public set manifest of spec D9 for the V cases. */
+function writeVSet(root: string): void {
+  const dir = join(root, "harness", "model-guide", "data", "sets");
+  mkdirSync(dir, { recursive: true });
+  const diffs = Array.from({ length: 3 }, (_, index) => ({
+    id: `v-${index + 1}`,
+    repo: "mono",
+    commit: String(index + 1).repeat(40),
+    parent: String(index + 2).repeat(40),
+    seeded_sha256: "a".repeat(64),
+    key_sha256: "b".repeat(64),
+  }));
+  const doc = {
+    set_id: V_SET_ID,
+    created: "2026-11-17",
+    diffs,
+    plant_counts: {
+      by_class: { C1: 1, C2: 1, C3: 1, C4: 1, C5: 0, C6: 0, C7: 0, C8: 0, C9: 0 },
+      by_severity: { blocker: 2, major: 1, minor: 1 },
+    },
+  };
+  writeFileSync(join(dir, `${V_SET_ID}.json`), `${JSON.stringify(doc, null, 2)}\n`);
+}
+
+/** A temp repo with the score document and the set manifest of the V
+ * cases, written inline (section 4.4: no new fixture file). */
+function buildVRepo(tag: string): string {
+  const root = repoFixture(tag);
+  const scores = join(root, "harness", "model-guide", "data", "review-scores");
+  mkdirSync(scores, { recursive: true });
+  const doc = vScoreDoc();
+  writeFileSync(join(scores, `${V_SET_ID}.json`), `${JSON.stringify(doc, null, 2)}\n`);
+  writeVSet(root);
+  return root;
+}
+
+function vPreview(root: string, extra: string[] = []) {
+  return runPreviewArgs(root, [
+    "--manifest",
+    join(root, "fixture-b", MANIFEST_NAME),
+    "--preview",
+    previewFolder(root),
+    ...extra,
+  ]);
+}
+
+/** The review page of the preview folder. Its absence is the Red reason. */
+function reviewPage(root: string): string {
+  const path = join(previewFolder(root), "review.html");
+  expect(existsSync(path), `review.html is missing from the preview folder: ${path}`).toBe(true);
+  return readFileSync(path, "utf8");
+}
+
+/** The review data file of the preview folder: a copy of the score file. */
+function reviewJson(root: string): any {
+  const path = join(previewFolder(root), "review.json");
+  expect(existsSync(path), `review.json is missing from the preview folder: ${path}`).toBe(true);
+  return JSON.parse(readFileSync(path, "utf8"));
+}
+
+/** Every key of a parsed document, at any depth. */
+function collectKeys(value: unknown, out: string[]): void {
+  if (Array.isArray(value)) {
+    for (const item of value) collectKeys(item, out);
+    return;
+  }
+  if (value !== null && typeof value === "object") {
+    for (const [key, child] of Object.entries(value)) {
+      out.push(key);
+      collectKeys(child, out);
+    }
+  }
+}
+
+/** The git result of one call inside the temp repo. */
+function vGit(root: string, args: string[]): { status: number | null; stdout: string } {
+  const result = spawnSync("git", args, { cwd: root, env: env(), encoding: "utf8", timeout: 60_000 });
+  return { status: result.status, stdout: result.stdout ?? "" };
+}
+
+describe("the review page cases V1 to V9 of task 4.8a", () => {
+  it("V1: the page holds the rank, worst, median, best, blocker recall, false claims, real defects, and the counts by class and severity", () => {
+    const root = buildVRepo("v1");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const doc = vScoreDoc();
+
+    const table = vFirstFragment(page, [["data-mg", "review-table"]]);
+    expect(table, "the page holds the review table").not.toBeNull();
+    const heads = [...(table as string).matchAll(/<th[^>]*>([\s\S]*?)<\/th>/gi)].map((match) =>
+      vText(match[1]),
+    );
+    expect(heads, "the review table heads").toEqual(V_HEADS);
+    for (const head of ["Class", "Found", "Missed", "Severity"]) {
+      expect(page, `the counts tables hold the head ${head}`).toMatch(
+        new RegExp(`<th[^>]*>\\s*${head}\\s*</th>`),
+      );
+    }
+
+    const row = vRouteRow(page, V_RANKED);
+    expect(row, `the page holds a row for ${V_RANKED}`).not.toBeNull();
+    expect(vRowCell(row as string, "review-rank"), "the rank of the ranked route").toBe("1");
+    expect(vRowCell(row as string, "review-worst"), "the worst score").toBe("62.0");
+    expect(vRowCell(row as string, "review-median"), "the median score").toBe("71.5");
+    expect(vRowCell(row as string, "review-best"), "the best score").toBe("84.0");
+    expect(vRowCell(row as string, "review-recall"), "the blocker recall").toBe("50 %");
+    expect(vRowCell(row as string, "review-false-claims"), "the false claims").toBe(
+      String(vPassSum(doc, V_RANKED, "false_claims")),
+    );
+    expect(vRowCell(row as string, "review-real-defects"), "the real defects").toBe(
+      String(vPassSum(doc, V_RANKED, "real_defects")),
+    );
+
+    const fewRow = vRouteRow(page, V_FEW);
+    expect(fewRow, `the page holds a row for ${V_FEW}`).not.toBeNull();
+    expect(vRowCell(fewRow as string, "review-false-claims"), "the false claims of the second route").toBe(
+      String(vPassSum(doc, V_FEW, "false_claims")),
+    );
+    expect(vRowCell(fewRow as string, "review-real-defects"), "the real defects of the second route").toBe(
+      String(vPassSum(doc, V_FEW, "real_defects")),
+    );
+
+    for (const route of [V_RANKED, V_FEW]) {
+      for (const name of V_CLASSES) {
+        const expected = vCountSum(doc, route, "by_class", name);
+        const cells = vCells(
+          vFirstFragment(page, [
+            ["data-mg", "review-class"],
+            ["data-route", route],
+            ["data-class", name],
+          ]) ?? "",
+        );
+        expect(cells, `${route} counts by class ${name}`).toEqual([
+          name,
+          String(expected.found),
+          String(expected.missed),
+        ]);
+      }
+      for (const name of V_SEVERITIES) {
+        const expected = vCountSum(doc, route, "by_severity", name);
+        const cells = vCells(
+          vFirstFragment(page, [
+            ["data-mg", "review-severity"],
+            ["data-route", route],
+            ["data-severity", name],
+          ]) ?? "",
+        );
+        expect(cells, `${route} counts by severity ${name}`).toEqual([
+          name,
+          String(expected.found),
+          String(expected.missed),
+        ]);
+      }
+    }
+  });
+
+  it("V2: a route with two complete passes shows incomplete, no rank number, and no worst score", () => {
+    const root = buildVRepo("v2");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const row = vRouteRow(page, V_FEW);
+    expect(row, `the page holds a row for ${V_FEW}`).not.toBeNull();
+    expect(vText(row as string), "the row of an unranked route").toContain("incomplete");
+    const rank = vRowCell(row as string, "review-rank") ?? "";
+    expect(/\d/.test(rank), `the rank cell of an unranked route holds a number: ${rank}`).toBe(false);
+    const worst = vRowCell(row as string, "review-worst") ?? "";
+    expect(/\d/.test(worst), `the worst cell of an unranked route holds a number: ${worst}`).toBe(
+      false,
+    );
+    const ranked = vRouteRow(page, V_RANKED);
+    expect(vRowCell(ranked as string, "review-rank"), "the ranked route keeps its rank").toBe("1");
+  });
+
+  it("V3: a provisional pass stays complete, the route keeps its rank, and the page marks the pass provisional", () => {
+    const root = buildVRepo("v3");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const row = vRouteRow(page, V_RANKED);
+    expect(vRowCell(row as string, "review-rank"), "a provisional route keeps its rank").toBe("1");
+    const provisional = vAllFragments(page, [
+      ["data-mg", "review-pass"],
+      ["data-route", V_RANKED],
+      ["data-state", "provisional"],
+    ]);
+    expect(provisional, "the page marks the provisional pass of the ranked route").toHaveLength(1);
+    expect(
+      vAllFragments(page, [["data-mg", "review-pass"], ["data-route", V_RANKED]]),
+      "the page lists the three passes of the ranked route",
+    ).toHaveLength(3);
+    expect(
+      vAllFragments(page, [["data-mg", "review-pass"], ["data-route", V_FEW]]),
+      "the page lists the two passes of the other route",
+    ).toHaveLength(2);
+    expect(vText(row as string), "the route with a provisional pass is not incomplete").not.toContain(
+      "incomplete",
+    );
+  });
+
+  it("V4: --pilot-gate fail shows no rank and one named line, and --pilot-gate pass shows the rank", () => {
+    const root = buildVRepo("v4");
+    const fail = vPreview(root, ["--pilot-gate", "fail"]);
+    expect(fail.status, `${fail.stdout}\n${fail.stderr}`).toBe(0);
+    const failPage = reviewPage(root);
+    const lines = fail.stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+    expect(lines, "the pilot gate fail prints one named line").toEqual([V_PILOT_FAIL_LINE]);
+    const ranks = vAllFragments(failPage, [["data-mg", "review-rank"]]).map((item) => vText(item));
+    expect(ranks.length, "the page holds no route row").toBeGreaterThan(0);
+    for (const rank of ranks) {
+      expect(/\d/.test(rank), `a rank number shows with the pilot gate fail: ${rank}`).toBe(false);
+    }
+    expect(vRouteRow(failPage, V_RANKED), "the page still lists the routes").not.toBeNull();
+
+    const pass = vPreview(root, ["--pilot-gate", "pass"]);
+    expect(pass.status, `${pass.stdout}\n${pass.stderr}`).toBe(0);
+    const passPage = reviewPage(root);
+    const ranked = vRouteRow(passPage, V_RANKED);
+    expect(vRowCell(ranked as string, "review-rank"), "the pilot gate pass shows the rank").toBe("1");
+  });
+
+  it("V5: the page shows the diff, plant, and blocker counts of the set manifest, and a changed count moves the cell", () => {
+    const root = buildVRepo("v5");
+    const first = vPreview(root);
+    expect(first.status, `${first.stdout}\n${first.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const diffs = vFirstText(page, [["data-mg", "review-set-diffs"]]) ?? "";
+    const plants = vFirstText(page, [["data-mg", "review-set-plants"]]) ?? "";
+    const blockers = vFirstText(page, [["data-mg", "review-set-blockers"]]) ?? "";
+    expect(diffs, "the diff count of the set").toMatch(/\b3\b/);
+    expect(diffs, "the diff count carries its label").toMatch(/diff/i);
+    expect(plants, "the plant count of the set").toMatch(/\b4\b/);
+    expect(plants, "the plant count carries its label").toMatch(/plant/i);
+    expect(blockers, "the blocker count of the set").toMatch(/\b2\b/);
+    expect(blockers, "the blocker count carries its label").toMatch(/blocker/i);
+
+    const setPath = join(root, "harness", "model-guide", "data", "sets", `${V_SET_ID}.json`);
+    const setDoc = JSON.parse(readFileSync(setPath, "utf8"));
+    setDoc.plant_counts.by_severity.blocker = 5;
+    writeFileSync(setPath, `${JSON.stringify(setDoc, null, 2)}\n`);
+    const second = vPreview(root);
+    expect(second.status, `${second.stdout}\n${second.stderr}`).toBe(0);
+    const moved = vFirstText(reviewPage(root), [["data-mg", "review-set-blockers"]]) ?? "";
+    expect(moved, "the blocker cell follows the manifest").toMatch(/\b5\b/);
+    expect(moved, "the blocker cell moved").not.toBe(blockers);
+  });
+
+  it("V6: the method note names the set size, the weights, the false-claim cost, N = 3, and the pilot gate", () => {
+    const root = buildVRepo("v6");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const note = vFirstText(page, [["data-mg", "review-method"]]);
+    expect(note, "the page holds the method note").not.toBeNull();
+    expect(note, "the note names the set size").toMatch(/\b3 diffs\b/);
+    expect(note, "the note names the weights 5, 2, and 1").toMatch(
+      /\bweights?\b[^0-9]{0,20}5[^0-9]{0,10}2[^0-9]{0,10}1\b/,
+    );
+    expect(note, "the note names the false-claim cost 2").toMatch(
+      /(\bfalse[- ]claims?\b[^0-9]{0,40}\b2\b)|(\b2\b[^0-9]{0,40}false[- ]claims?\b)/i,
+    );
+    expect(note, "the note names N = 3").toMatch(/\bN\s*=\s*3\b/);
+    expect(note, "the note names the pilot gate").toMatch(/\bpilot\b/i);
+  });
+
+  it("V7: the page and review.json hold no private key and no private path, and a prose word does not fail the scan", () => {
+    const root = buildVRepo("v7");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const doc = reviewJson(root);
+    expect(doc, "review.json is a copy of the score file").toEqual(vScoreDoc());
+
+    const keys: string[] = [];
+    collectKeys(doc, keys);
+    expect(
+      keys.filter((key) => V_PRIVATE_KEYS.includes(key)),
+      "review.json holds a private key",
+    ).toEqual([]);
+    for (const key of V_PRIVATE_KEYS) {
+      expect(new RegExp(`"${key}"\\s*:`).test(page), `the page holds the key "${key}"`).toBe(false);
+    }
+    const text = `${page}\n${JSON.stringify(doc)}`;
+    expect(text, "the page holds the private folder path").not.toContain(
+      ".local/share/lending-desk-bench",
+    );
+
+    // A7: the scan reads exact key names, so a prose word never fails it.
+    const prose = "the file of the set and a witness line";
+    expect(
+      V_PRIVATE_KEYS.filter((key) => new RegExp(`"${key}"\\s*:`).test(prose)),
+      "the key scan must not match a prose word",
+    ).toEqual([]);
+    const proseKeys: string[] = [];
+    collectKeys({ note: prose }, proseKeys);
+    expect(proseKeys, "the key scan collects keys, not values").toEqual(["note"]);
+  });
+
+  it("V8: each page of the preview holds one Review link and one Real work link", () => {
+    const root = buildVRepo("v8");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    for (const name of ["index.html", "real-work.html", "review.html"]) {
+      const path = join(previewFolder(root), name);
+      expect(existsSync(path), `${name} is missing from the preview folder: ${path}`).toBe(true);
+      const page = readFileSync(path, "utf8");
+      expect(vAnchors(page, "./review.html"), `${name} Review links`).toEqual(["Review"]);
+      expect(vAnchors(page, "./real-work.html"), `${name} Real work links`).toHaveLength(1);
+    }
+  });
+
+  it("V9: the temp docs tree stays byte-identical, git status docs/ stays empty, and preview-base lists every docs file", () => {
+    const root = buildVRepo("v9");
+    expect(vGit(root, ["init", "-q"]).status, "git init failed").toBe(0);
+    const gitArgs = [
+      "-c",
+      "user.email=review-v9@example.com",
+      "-c",
+      "user.name=review-v9",
+      "-c",
+      "commit.gpgsign=false",
+    ];
+    expect(vGit(root, [...gitArgs, "add", "docs"]).status, "git add docs failed").toBe(0);
+    expect(vGit(root, [...gitArgs, "commit", "-q", "-m", "base"]).status, "git commit failed").toBe(0);
+
+    const before = snapshot(join(root, "docs"));
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    expect(snapshot(join(root, "docs")), "the run changed the temp docs tree").toEqual(before);
+    expect(
+      vGit(root, ["status", "--short", "docs/"]).stdout,
+      "git status --short docs/ prints a line",
+    ).toBe("");
+
+    const base = JSON.parse(readFileSync(join(previewFolder(root), "preview-base.json"), "utf8"));
+    expect(Object.keys(base.docs ?? {}).sort(), "preview-base lists each copied docs file").toEqual(
+      filesUnder(join(root, "docs")).sort(),
+    );
+    // The review page itself is the missing piece at the phase base.
+    expect(existsSync(join(previewFolder(root), "review.html")), "review.html is missing").toBe(true);
+  });
+});
