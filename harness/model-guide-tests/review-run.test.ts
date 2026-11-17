@@ -68,7 +68,9 @@ import { describe, expect, it } from "vitest";
 const HARNESS = resolve(import.meta.dirname, "..");
 const REPO_ROOT = resolve(HARNESS, "..");
 
-const RUNNER_SOURCE = process.env.MG_PROTO_RUNNER ?? join(HARNESS, "model-guide", "review-run.sh");
+/** The module under test. Its path is fixed, so a gate cannot point the
+ * test at a file outside the repository. */
+const RUNNER_SOURCE = join(HARNESS, "model-guide", "review-run.sh");
 const PROMPT_SOURCE = join(HARNESS, "model-guide", "review-prompt.md");
 const QUOTA_SOURCE = join(HARNESS, "model-guide", "quota.ts");
 const HOST_SOURCE = join(HARNESS, "opencode-host.sh");
