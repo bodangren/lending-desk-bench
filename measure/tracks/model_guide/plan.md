@@ -1204,6 +1204,22 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     staged outcomes file `ra-outcomes-2026-10-20.json` in the unicode folder,
     and retires or re-aims the hostile file-name case. The preview on the real
     files exits 0 and `git status --short docs/` prints nothing.
+  - Adversarial remediation (2026-11-18, commit cea0a90): ADV-1 gives the
+    model column `min-width: 10em` and lets the number headers wrap; ADV-2
+    puts a scroll hint after every `.table-wrap`; ADV-3 rounds a rate and a
+    rework to 9 decimals before a rank comparison; ADV-4 keeps the raw
+    weighted values in `real-work.json` and rounds once at display; ADV-5
+    strips `[1m]` and `#<variant>` before the print-audit name lookup; ADV-6
+    makes a direct AA model key win over an alias; ADV-7 reads `byEffort` by
+    own key only. The ten runs at cea0a90: `adversarial-p4.test.ts`
+    `Tests  18 passed (18)`; `real-work.test.ts` `Tests  13 passed (13)`;
+    `preview-gate.test.ts` `Tests  99 passed (99)`; `guide.test.ts`
+    `Tests  17 passed (17)`; `input-check.test.ts` `Tests  23 passed (23)`;
+    `update.test.ts` `Tests  9 passed (9)`; `leak-check.test.ts`
+    `Tests  22 passed (22)`; `adversarial.test.ts` `Tests  46 passed (46)`;
+    `adversarial-p2.test.ts` `Tests  13 passed (13)`; `adversarial-p3.test.ts`
+    `Tests  34 passed (34)`. The preview on the real files exits 0 and
+    `git status --short docs/` prints nothing.
   - The `page-check` browser proof at 390, 980, and 1280 px stays with the
     orchestrator (test-strategy 13.9).
 - [ ] 4.2 Red. The quota sources. Write
