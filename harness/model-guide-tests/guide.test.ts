@@ -47,48 +47,51 @@ import { afterAll, describe, expect, it } from "vitest";
  *                 source has a qualified model
  *   second        the second choice model, or null when the rank has no
  *                 second qualified model
- *   evidence      "<source>: <number> (n=<count>)". The source prefix is
- *                 "page B", "page B producer" (the test writing row only,
- *                 ruling Q1), "track A", or "print-audit" (spec D18 example:
- *                 "page B: pass 0.86 (n=114)"). Page B numbers are the
- *                 pass rate with 2 decimals; the track A number is the
- *                 worst pass score with 1 decimal; the print-audit number
- *                 is the "x of y" route result with (n=<y>).
- *   evidence_date the export `generated_on`, or the date of the last
- *                 complete track A pass for the track A pick (spec D18)
+ *   evidence      the source, the number, and the count. Task 4.1e pins
+ *                 these forms (spec D18 PM 2026-11-17, orchestrator
+ *                 2026-11-17): "page B producer: accept <n> %, <count>
+ *                 tasks" for the test writing row, "track A: worst <n>
+ *                 (n=<count>)", "print-audit: <x> of <y> (n=<y>)", and the
+ *                 exact words "no pick yet" for a row with no source.
+ *   evidence_date the export date of the outcomes file (the date in the
+ *                 MANIFEST name, Q-S4), or the date of the last complete
+ *                 track A pass for a track A pick (spec D18)
  *   base_line     null, except the highest build total of `--benchmark`
  *                 on the app code row and the highest tests total of
  *                 `--tracks` on the test writing row. The base line shows
  *                 beside the pick and never changes it (spec D18).
  *
- * Pick rule (spec D18): the first source gives the first and second choice
- * from its rank. A page B row qualifies with 10 runs or more (10 results
- * for a work-type row); a track A route qualifies with a complete state and
- * 3 complete passes. When the first source has no qualified model the
- * second source picks. Sources per row: Code review = track A rank, then
- * page B checker table; app code = work type `app code`, then the build
- * base line; test writing = producer table, then the tests base line; docs
- * and ops = work type `docs and ops`, then none; print-book audit = work
- * type `print books`, then the print-audit data point; tooling = work type
- * `tooling`, then none. The base line itself never picks.
+ * Pick rule (spec D18, sources PM 2026-11-17): the first source gives the
+ * first and second choice from its rank. A page B producer row qualifies
+ * with 5 tasks or more and a first-round rate; a page B gate row with 5
+ * runs or more, an allowed model, and an AA net score of 20 or more; a
+ * track A route with a complete state and 3 complete passes. When the
+ * first source has no qualified model the second source picks. Sources per
+ * row: Code review = track A rank, then page B checker table; app code =
+ * none (the build base line never picks); test writing = the page B
+ * producer table of role `red`, then the tests base line; docs and ops =
+ * none; print-book audit = none, then the print-audit data point; tooling
+ * = none. The new export has no work-type split, so no row reads a work
+ * type (D18, PM 2026-11-17). The base line itself never picks.
  *
- * Orchestrator rulings on spec D18, recorded under plan task 2.3:
- *   Q1 the test writing row uses the page B producer table as a whole. The
- *      page B data file `real-work.json` has no role key (Phase 1
- *      contract), so the "role red" filter of D18 cannot apply. The
- *      evidence cell of that row starts with "page B producer".
- *   Q2 the code review row shows "no pick yet: not enough evidence" until
- *      Phase 4, even when the page B checker table holds a qualified
- *      model. The checker table does not pick for code review before
- *      Phase 4 (the plan line "Verify (Phase 2)" holds).
- * The two ruling tests are `D18 Q1` and `D18 Q2` below.
+ * Orchestrator rulings on spec D18, recorded under plan task 2.3 and 4.1e:
+ *   Q1 the test writing row names its source "page B producer" and picks
+ *      the rank 1 of the producer role `red` (sources table PM
+ *      2026-11-17; the export carries the role, so the red-only table
+ *      applies).
+ *   Q2 the code review row shows "no pick yet: not enough evidence" while
+ *      track A has no complete rank. The page B checker table does not
+ *      pick for code review.
+ * A row with no source shows "no pick yet" as its evidence text
+ * (orchestrator 2026-11-17).
  *
  * Stale rule (spec D19): the mark uses the newest evidence_date of the
  * table against `--today`. The tool takes `--today`, so the verdict does
  * not move with the wall clock (anti-pattern A11).
  *
- * Fixtures, all synthetic: `fixtures/real-work-mini.json` (the export, run
- * through the Phase 1 tool `real-work.ts`), `fixtures/print-audit/`
+ * Fixtures, all synthetic: `fixtures/page-b/` (the three dated page B
+ * files and their MANIFEST, run through `real-work.ts --manifest`),
+ * `fixtures/print-audit/`
  * (assembled into the print-audit data shape that task 2.1 pinned), and
  * `fixtures/guide/` (`review-scores-mini.json` follows spec D13 with two
  * complete routes and one incomplete route that holds the best worst
@@ -104,7 +107,14 @@ const REAL_WORK_TOOL = join(SOURCE, "real-work.ts");
 const PREVIEW_SH = join(SOURCE, "preview.sh");
 const TSX = join(HARNESS, "node_modules", ".bin", "tsx");
 const FIXTURES = join(import.meta.dirname, "fixtures");
-const EXPORT_FIXTURE = join(FIXTURES, "real-work-mini.json");
+const PAGE_B = join(FIXTURES, "page-b");
+const DATE = "2026-10-20";
+const OUTCOMES_NAME = `ra-outcomes-${DATE}.json`;
+const AA_NAME = `aa-reliability-${DATE}.json`;
+const ALLOWED_NAME = `allowed-routes-${DATE}.json`;
+const MANIFEST_NAME = `MANIFEST-${DATE}.txt`;
+const EXPORT_DATE = DATE;
+const TRACK_A_DATE = "2026-11-13";
 const PRINT_AUDIT_DIR = join(FIXTURES, "print-audit");
 const GUIDE_FIXTURES = join(FIXTURES, "guide");
 const SCORES = join(GUIDE_FIXTURES, "review-scores-mini.json");
@@ -125,8 +135,11 @@ const KINDS = [
 ];
 const ROOT_KEYS = ["rows", "schema", "stale", "today"].sort();
 const ROW_KEYS = ["base_line", "evidence", "evidence_date", "kind", "pick", "second"].sort();
-const EVIDENCE_RE = /^(page B producer|page B|track A|print-audit): .+ \(n=\d+\)$/;
-const HOSTILE_ROUTE = 'y/"><img src=x onerror=alert(1)>';
+const EVIDENCE_RE =
+  /^(page B producer: accept \d+ %, \d+ tasks|track A: worst [\d.]+ \(n=\d+\)|print-audit: \d+ of \d+ \(n=\d+\)|no pick yet)$/;
+const TEST_WRITING_EVIDENCE = "page B producer: accept 100 %, 5 tasks";
+const NO_PICK_EVIDENCE = "no pick yet";
+const HOSTILE_ROUTE = 't1/"><img src=x onerror=alert(1)>';
 const HOSTILE_RAW = "<img src=x onerror=alert(1)>";
 
 /** Python `html.escape(s)`, the escape the pages use. */
@@ -176,29 +189,45 @@ function manifestShaOf(file: string): string {
   return match[1];
 }
 
-/** The export copy with a mutation and a manifest that matches the copy. */
-function stagedExport(tag: string, mutate: (doc: any) => void): string {
-  const dir = tempDir(`export-${tag}`);
-  const doc = JSON.parse(readFileSync(EXPORT_FIXTURE, "utf8"));
-  mutate(doc);
-  const json = join(dir, "real-work-mini.json");
-  const text = JSON.stringify(doc);
-  writeFileSync(json, text);
-  writeFileSync(join(dir, "MANIFEST.txt"), [
-    `sha256: ${sha256(json)}`,
-    `size: ${Buffer.byteLength(text)}`,
-    "source-commit: none (synthetic fixture, 2026-11-15)",
-    "",
-  ].join("\n"));
-  return json;
+/** Stage the three page B data files and a manifest that matches them. */
+function stagePageB(
+  tag: string,
+  mutate?: { outcomes?: (rows: any[]) => void; allowed?: (doc: any) => void },
+): { dir: string; manifest: string } {
+  const dir = tempDir(`page-b-${tag}`);
+  let outcomesText = readFileSync(join(PAGE_B, OUTCOMES_NAME), "utf8");
+  if (mutate?.outcomes) {
+    const rows = JSON.parse(outcomesText);
+    mutate.outcomes(rows);
+    outcomesText = JSON.stringify(rows, null, 2) + "\n";
+  }
+  writeFileSync(join(dir, OUTCOMES_NAME), outcomesText);
+  writeFileSync(join(dir, AA_NAME), readFileSync(join(PAGE_B, AA_NAME)));
+  let allowedText = readFileSync(join(PAGE_B, ALLOWED_NAME), "utf8");
+  if (mutate?.allowed) {
+    const doc = JSON.parse(allowedText);
+    mutate.allowed(doc);
+    allowedText = JSON.stringify(doc, null, 2) + "\n";
+  }
+  writeFileSync(join(dir, ALLOWED_NAME), allowedText);
+  const lines = [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME].map((name) => {
+    const data = readFileSync(join(dir, name));
+    return `${createHash("sha256").update(data).digest("hex")}  ${data.length}  ${name}`;
+  });
+  writeFileSync(join(dir, MANIFEST_NAME), `${lines.join("\n")}\n`);
+  return { dir, manifest: join(dir, MANIFEST_NAME) };
 }
 
-/** Run the Phase 1 tool on an export and return the data file path. */
-function realWorkFrom(exportPath: string, tag: string): { json: string; data: any } {
+/** Run the page B tool on the staged fixture and return the data file path. */
+function realWorkFrom(
+  tag: string,
+  mutate?: { outcomes?: (rows: any[]) => void; allowed?: (doc: any) => void },
+): { json: string; data: any } {
+  const { manifest } = stagePageB(tag, mutate);
   const out = tempDir(`real-work-${tag}`);
   const result = spawnSync(
     TSX,
-    ["model-guide/real-work.ts", "--input", exportPath, "--out", out],
+    ["model-guide/real-work.ts", "--manifest", manifest, "--out", out],
     { cwd: HARNESS, env: env(), encoding: "utf8", timeout: 60_000 },
   );
   expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
@@ -286,7 +315,7 @@ let mainCache: { guide: any; realWork: any; realWorkJson: string } | null = null
 function main(): { guide: any; realWork: any; realWorkJson: string } {
   requireProduction();
   if (!mainCache) {
-    const rw = realWorkFrom(EXPORT_FIXTURE, "main");
+    const rw = realWorkFrom("main");
     const run = runGuide({
       tag: "main",
       realWork: rw.json,
@@ -321,21 +350,6 @@ function worstOf(route: any): number {
   return Math.min(...route.passes.map((pass: any) => pass.score));
 }
 
-/** Work-type rows where every model misses the 10-result minimum. */
-function starveWorkType(doc: any, name: string, cell: any): void {
-  for (const item of doc.all_time) {
-    if (item.work_types?.[name]) item.work_types[name] = { ...cell };
-  }
-}
-
-function renameYM(doc: any): void {
-  for (const block of ["weekly", "all_time"]) {
-    for (const item of doc[block]) {
-      if (item.route === "y/m") item.route = HOSTILE_ROUTE;
-    }
-  }
-}
-
 describe("the overview table (spec D18, D19, FR-6)", () => {
   it("T2: model-guide.json holds the six rows of D18 in order with the pinned fields", () => {
     const data = main().guide;
@@ -365,34 +379,29 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(codeReview.pick).toBe("opencode-go/kimi-k2.7-code");
     expect(codeReview.second).toBe("opencode-go/mimo-v2.6-flash");
     const appCode = rowOf(data, "app code");
-    expect(appCode.pick).toBe("x/m");
-    expect(appCode.second).toBe("y/m");
+    expect(appCode.pick, "the build base line never picks").toBe(NO_PICK);
+    expect(appCode.second, "a row with no pick has no second choice").toBeNull();
   });
 
   it("T3: the evidence cell holds the source, the number, and the run count", () => {
-    const { guide, realWork } = main();
+    const { guide } = main();
     expect(rowOf(guide, "Code review").evidence).toBe("track A: worst 84.0 (n=3)");
-    expect(rowOf(guide, "app code").evidence).toBe("page B: pass 0.80 (n=20)");
-    expect(rowOf(guide, "docs and ops").evidence).toBe("page B: pass 0.90 (n=10)");
-    expect(rowOf(guide, "print-book audit").evidence).toBe("page B: pass 0.40 (n=10)");
-    expect(rowOf(guide, "tooling").evidence).toBe("page B: pass 0.30 (n=10)");
-
-    // The test writing evidence comes from the producer table row of the
-    // pick itself, and the cell names that table (ruling Q1).
-    const testWriting = rowOf(guide, "test writing");
-    const match = testWriting.evidence.match(/^page B producer: pass \d+\.\d{2} \(n=(\d+)\)$/);
-    expect(match, `evidence ${testWriting.evidence}`).not.toBeNull();
-    const producer = realWork.producer.find((item: any) => item.model === testWriting.pick);
-    expect(producer, `pick ${testWriting.pick} comes from the producer table`).toBeDefined();
-    expect(producer.pass_rate.n).toBeGreaterThanOrEqual(10);
-    expect(Number(match![1])).toBe(producer.pass_rate.n);
+    expect(rowOf(guide, "print-book audit").evidence).toBe("print-audit: 13 of 13 (n=13)");
+    expect(rowOf(guide, "test writing").evidence).toBe(TEST_WRITING_EVIDENCE);
+    // A row with no source shows the no-pick words as its evidence text
+    // (orchestrator ruling on spec D18, 2026-11-17).
+    for (const kind of ["app code", "docs and ops", "tooling"]) {
+      expect(rowOf(guide, kind).evidence, `evidence of ${kind}`).toBe(NO_PICK_EVIDENCE);
+    }
   });
 
   it("T2: each row carries its evidence date", () => {
     const data = main().guide;
-    expect(rowOf(data, "Code review").evidence_date).toBe("2026-11-13");
+    expect(rowOf(data, "Code review").evidence_date).toBe(TRACK_A_DATE);
+    // Every other row takes the export date of the outcomes file (spec D18,
+    // the date in the MANIFEST file name, Q-S4).
     for (const kind of KINDS.slice(1)) {
-      expect(rowOf(data, kind).evidence_date, `date of ${kind}`).toBe(TODAY);
+      expect(rowOf(data, kind).evidence_date, `date of ${kind}`).toBe(EXPORT_DATE);
     }
   });
 
@@ -428,36 +437,10 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
       .toEqual(guide.rows.map((row: any) => [row.kind, row.pick, row.second]));
   });
 
-  it("T3: the rows of app code, docs and ops, print books, and tooling use the work-type table", () => {
-    const { guide, realWork } = main();
-    const producerTop = realWork.producer[0].model;
-    const secondOf = (rows: any[]) => (rows[1].can_pick ? rows[1].model : null);
-    const cases: Array<[string, string, string | null]> = [
-      ["app code", realWork.work_types["app code"][0].model, secondOf(realWork.work_types["app code"])],
-      ["docs and ops", realWork.work_types["docs and ops"][0].model, secondOf(realWork.work_types["docs and ops"])],
-      ["print-book audit", realWork.work_types["print books"][0].model, secondOf(realWork.work_types["print books"])],
-      ["tooling", realWork.work_types["tooling"][0].model, secondOf(realWork.work_types["tooling"])],
-    ];
-    for (const [kind, pick, second] of cases) {
-      const row = rowOf(guide, kind);
-      expect(row.pick, `pick of ${kind}`).toBe(pick);
-      expect(row.second, `second of ${kind}`).toBe(second);
-      // The producer rank starts with another model, so a producer-table
-      // pick for these rows would fail here.
-      expect(row.pick, `pick of ${kind} is not the producer top`).not.toBe(producerTop);
-    }
-  });
-
-  it("T4: with no qualified model in the first source the print-audit second source picks", () => {
-    const staged = stagedExport("print-books", (doc) =>
-      starveWorkType(doc, "print books", { runs: 8, pass: 1, fail: 1 }));
-    const rw = realWorkFrom(staged, "print-books");
-    expect(rw.data.work_types["print books"].length).toBeGreaterThan(0);
-    expect(rw.data.work_types["print books"].every((row: any) => !row.can_pick),
-      "the first source has no qualified model").toBe(true);
+  it("T4: the print-audit second source picks for the print-book audit row", () => {
     const run = runGuide({
       tag: "print-books",
-      realWork: rw.json,
+      realWork: main().realWorkJson,
       scores: SCORES,
       printAudit: printAuditInput("print-books"),
       benchmark: BENCHMARK,
@@ -468,18 +451,13 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(row.pick).toBe("Sonnet 5.5");
     expect(row.second).toBe("k3.1-pro");
     expect(row.evidence).toBe("print-audit: 13 of 13 (n=13)");
-    expect(row.evidence_date).toBe(TODAY);
+    expect(row.evidence_date).toBe(EXPORT_DATE);
   });
 
-  it("T5: no qualified model in either source shows the no-pick words", () => {
-    const staged = stagedExport("docs-and-ops", (doc) =>
-      starveWorkType(doc, "docs and ops", { runs: 8, pass: 5, fail: 3 }));
-    const rw = realWorkFrom(staged, "docs-and-ops");
-    expect(rw.data.work_types["docs and ops"].every((row: any) => !row.can_pick),
-      "the first source has no qualified model").toBe(true);
+  it("T5: a row with no source shows the no-pick words", () => {
     const run = runGuide({
       tag: "docs-and-ops",
-      realWork: rw.json,
+      realWork: main().realWorkJson,
       scores: SCORES,
       printAudit: printAuditInput("docs-and-ops"),
       benchmark: BENCHMARK,
@@ -488,10 +466,9 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     });
     const row = rowOf(run.data, "docs and ops");
     expect(row.pick).toBe(NO_PICK);
-    const match = row.evidence.match(/^page B: pass \d+\.\d{2} \(n=(\d+)\)$/);
-    expect(match, `evidence ${row.evidence}`).not.toBeNull();
-    expect(Number(match![1])).toBeLessThan(10);
-    expect(row.evidence_date).toBe(TODAY);
+    expect(row.evidence, "the evidence text of a source-less row").toBe(NO_PICK_EVIDENCE);
+    expect(row.evidence_date).toBe(EXPORT_DATE);
+    expect(row.base_line, "docs and ops has no base line").toBeNull();
   });
 
   it("FR-6: the table is written when the score flag or the score file is absent", () => {
@@ -573,55 +550,52 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
   });
 
   it("T5 page: the preview index shows the no-pick words for the empty row", () => {
-    const { root, exportPath } = pageRepo("nopick", (doc) =>
-      starveWorkType(doc, "docs and ops", { runs: 8, pass: 5, fail: 3 }));
-    const result = runPreview(root, exportPath);
+    const { root, manifest } = pageRepo("nopick");
+    const result = runPreview(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const index = readFileSync(previewIndex(root), "utf8");
     expect(index, "the overview page holds the table").toContain(NO_PICK);
   });
 
   it("B8-1 page: a hostile model name reaches the overview table HTML escaped", () => {
-    const { root, exportPath } = pageRepo("hostile", renameYM);
-    const result = runPreview(root, exportPath);
+    const { root, manifest } = pageRepo("hostile", {
+      outcomes: (rows) => {
+        for (const row of rows) {
+          if (row.route === "t1/prod-one[1m]#high") row.route = HOSTILE_ROUTE;
+        }
+      },
+      allowed: (doc) => {
+        doc.allowedRoutes.push(HOSTILE_ROUTE);
+      },
+    });
+    const result = runPreview(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const index = readFileSync(previewIndex(root), "utf8");
     expect(index, "the escaped hostile model reaches the page")
-      .toContain(escapeHtml(HOSTILE_ROUTE));
+      .toContain("&lt;img src=x onerror=alert(1)&gt;");
     expect(index, "no raw img tag").not.toContain(HOSTILE_RAW);
   });
 
-  it("D18 Q1: the test writing row picks from the producer table and the evidence cell names it", () => {
-    const { guide, realWork } = main();
-    const producer = realWork.producer;
-    // The source is the producer table as a whole: the fixture holds a
-    // table with a choice, and `real-work.json` carries no role key, so no
-    // role filter can narrow it (ruling Q1).
-    expect(producer.length, "the fixture holds a producer table").toBeGreaterThan(1);
-    expect(Object.keys(producer[0]), "a producer row has no role key").not.toContain("role");
-    expect(producer[0].can_pick, "the producer top qualifies").toBe(true);
+  it("D18 Q1: the test writing row picks the rank 1 of the producer role red and the evidence cell names the producer table", () => {
+    const { guide } = main();
+    // The red producer rows of the fixture are t1/prod-one (5 tasks,
+    // accept 100 %) and t1/prod-nine (8 tasks, accept 25 %). The row picks
+    // the first qualified model of that role (spec D18 sources, PM
+    // 2026-11-17) and the second choice follows its rank.
     const row = rowOf(guide, "test writing");
-    expect(row.pick, "the pick comes from the producer table").toBe(producer[0].model);
+    expect(row.pick, "the pick is the red producer rank 1").toBe("t1/prod-one");
+    expect(row.second, "the second choice is the red producer rank 2").toBe("t1/prod-nine");
     expect(row.evidence, "the evidence cell names the producer table")
-      .toMatch(/^page B producer: /);
-    const match = row.evidence.match(/^page B producer: pass \d+\.\d{2} \(n=(\d+)\)$/);
-    expect(match, `evidence ${row.evidence}`).not.toBeNull();
-    const pickRow = producer.find((item: any) => item.model === row.pick);
-    expect(pickRow, `pick ${row.pick} is a producer row`).toBeDefined();
-    expect(Number(match![1]), "the run count is the producer row count")
-      .toBe(pickRow.pass_rate.n);
-    expect(row.evidence_date).toBe(TODAY);
+      .toBe(TEST_WRITING_EVIDENCE);
+    expect(row.evidence_date, "the evidence date is the export date").toBe(EXPORT_DATE);
   });
 
-  it("D18 Q2: with no complete track A route and a qualified checker row the code review pick is the no-pick words", () => {
-    const { guide, realWork } = main();
-    // The fixture condition: the page B checker table holds a qualified
-    // model, so only the missing complete track A route can stop the pick.
-    const qualifiedChecker = realWork.checker.find((item: any) => item.can_pick);
-    expect(qualifiedChecker, "the checker table holds a qualified model").toBeDefined();
-
+  it("D18 Q2: with no complete track A route the code review pick is the no-pick words", () => {
+    const { guide } = main();
     // (a) model-guide.json. The score file keeps only the incomplete
-    // route, so track A has no complete rank (ruling Q2).
+    // routes, so track A has no rank (ruling Q2). The page B checker table
+    // does not pick for code review (spec D18 ruling Q2, PM 2026-11-15),
+    // so the row shows the no-pick words.
     const scores = JSON.parse(readFileSync(SCORES, "utf8"));
     const incomplete = scores.routes.filter((route: any) => route.state !== "complete");
     expect(incomplete, "one incomplete route in the fixture").toHaveLength(1);
@@ -638,23 +612,19 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     });
     const row = rowOf(run.data, "Code review");
     expect(row.pick, "the code review pick is the no-pick words").toBe(NO_PICK);
-    expect(row.pick, "the qualified checker model does not pick").not.toBe(
-      qualifiedChecker.model,
-    );
+    expect(row.second, "no second choice without a rank").toBeNull();
     expect(guide.rows.map((item: any) => item.kind)).toEqual(KINDS);
 
     // (b) the preview index page. The temp preview repo has no score
     // file, so it has no complete track A route either.
-    const { root, exportPath } = pageRepo("code-review-nopick");
-    const result = runPreview(root, exportPath);
+    const { root, manifest } = pageRepo("code-review-nopick");
+    const result = runPreview(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const index = readFileSync(previewIndex(root), "utf8");
     const cells = [...index.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((match) => match[1]);
     const codeReview = cells.find((entry) => entry.includes("Code review"));
     expect(codeReview, "the page holds the code review row").toBeDefined();
     expect(codeReview, "the code review row shows the no-pick words").toContain(NO_PICK);
-    expect(codeReview, "the qualified checker model is not the page pick")
-      .not.toContain(qualifiedChecker.model);
   });
 });
 
@@ -667,9 +637,14 @@ const INDEX_HTML = `<!doctype html>
 <main><h1>Overview</h1></main></body></html>
 `;
 
-/** A temp repo for preview.sh: docs/, the model-guide folder, the fixture
- * export, the print-audit data file, and the base-line data files. */
-function pageRepo(tag: string, mutate?: (doc: any) => void): { root: string; exportPath: string } {
+/** A temp repo for preview.sh: docs/, the model-guide folder, the staged
+ * page B fixture set, the print-audit data file, and the base-line data
+ * files. `mutate` may replace the staged outcomes array or the allowed
+ * list before the manifest is written. */
+function pageRepo(tag: string, mutate?: {
+  outcomes?: (rows: any[]) => void;
+  allowed?: (doc: any) => void;
+}): { root: string; manifest: string } {
   requireProduction();
   const root = tempDir(`page-${tag}`);
   mkdirSync(join(root, "harness"), { recursive: true });
@@ -682,29 +657,22 @@ function pageRepo(tag: string, mutate?: (doc: any) => void): { root: string; exp
   copyFileSync(TRACKS, join(root, "docs", "assets", "data", "tracks.json"));
   mkdirSync(join(root, "harness", "model-guide", "data"), { recursive: true });
   copyFileSync(printAuditInput(tag), join(root, "harness", "model-guide", "data", "print-audit-2026-11.json"));
-  mkdirSync(join(root, "fixture"), { recursive: true });
-  const doc = JSON.parse(readFileSync(EXPORT_FIXTURE, "utf8"));
-  if (mutate) mutate(doc);
-  const json = join(root, "fixture", "real-work-mini.json");
-  const text = JSON.stringify(doc);
-  writeFileSync(json, text);
-  writeFileSync(join(root, "fixture", "MANIFEST.txt"), [
-    `sha256: ${sha256(json)}`,
-    `size: ${Buffer.byteLength(text)}`,
-    "source-commit: none (synthetic fixture, 2026-11-15)",
-    "",
-  ].join("\n"));
+  const staged = stagePageB(tag, mutate);
+  mkdirSync(join(root, "fixture-b"), { recursive: true });
+  for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME, MANIFEST_NAME]) {
+    copyFileSync(join(staged.dir, name), join(root, "fixture-b", name));
+  }
   symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
-  return { root, exportPath: json };
+  return { root, manifest: join(root, "fixture-b", MANIFEST_NAME) };
 }
 
 function previewIndex(root: string): string {
   return join(root, ".tmp", "model-guide-preview", "index.html");
 }
 
-function runPreview(root: string, exportPath: string) {
+function runPreview(root: string, manifest: string) {
   return spawnSync("bash", [join(root, "harness", "model-guide", "preview.sh"),
-    "--export", exportPath], {
+    "--manifest", manifest], {
     cwd: root, env: env(), encoding: "utf8", timeout: 120_000,
   });
 }
