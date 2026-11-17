@@ -1474,7 +1474,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `phase_base_sha` check above prints nothing. `bash -n` on the runner
     exits 0. After the run,
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
-- [~] 4.8a Red. The review page. Add the page cases V1 to V9 of
+- [x] 6be3894 4.8a Red. The review page. Add the page cases V1 to V9 of
   `measure/tracks/model_guide/test-strategy.md` section 4.4 to
   `harness/model-guide-tests/preview-gate.test.ts`. Touch no other file.
   - The cases cover the rank, the worst, median, and best score, the blocker
@@ -1503,13 +1503,43 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     new fixture file, no production file, and no `docs/` file. The temp
     harness and the temp folders of the earlier review-run runs were
     removed after the run.
-- [ ] 4.8 Green. Write `harness/model-guide/pages/review.html` and the
-  review page edit of `harness/model-guide/preview.sh`, plus that wiring.
-  Touch no test file.
+  - Green 4.8 makes the nine V cases pass at 8f8f42d, so this row is `[x]`.
+- [x] 8f8f42d 4.8 Green. Write `harness/model-guide/pages/review.html` and
+  the review page edit of `harness/model-guide/preview.sh`, plus that
+  wiring. Touch no test file.
   - Apply the Real work and Review nav links to every page when the Review
     page exists (review C4-1). Phase 1 keeps index.html only.
   - Verify: the test files of Phases 1 to 4 pass, and
     `git status --short docs/` prints nothing.
+  - Evidence: run on 2026-11-18, one file at a time from `harness/`, each
+    with `--configLoader native --maxWorkers=1 --reporter=dot`:
+    - `preview-gate.test.ts` exits 0 with `Tests  111 passed (111)`.
+    - `real-work.test.ts` exits 0 with `Tests  14 passed (14)`.
+    - `guide.test.ts` exits 0 with `Tests  18 passed (18)`.
+    - `update.test.ts` exits 0 with `Tests  9 passed (9)`.
+    - `leak-check.test.ts` exits 0 with `Tests  22 passed (22)`.
+    - `adversarial.test.ts` exits 0 with `Tests  46 passed (46)`.
+    - `adversarial-p2.test.ts` exits 0 with `Tests  13 passed (13)`.
+    - `adversarial-p3.test.ts` exits 0 with `Tests  34 passed (34)`.
+    - `adversarial-p4.test.ts` exits 0 with `Tests  24 passed (24)`.
+    - `input-check.test.ts` exits 0 with `Tests  23 passed (23)`.
+    - `quota.test.ts` exits 0 with `Tests  15 passed (15)`.
+    - `credential-provider.test.ts` exits 0 with `Tests  11 passed (11)`.
+    - `review-run.test.ts` exits 0 with `Tests  23 passed (23)`.
+    - `bash -n harness/model-guide/preview.sh` exits 0, and
+      `git status --short docs/` prints nothing.
+    - The preview on the real files exits 0 with no stdout line and no
+      stderr line. The real tree holds no score file, so the run removes a
+      stale review page and writes none.
+  - Changes: `pages/review.html` is the new page. `preview.sh` reads the
+    newest score file under `harness/model-guide/data/review-scores/` and
+    the public set manifest of that set, then writes `review.html` and
+    copies the score file to `review.json`. The page shows the review table,
+    the counts by class and severity, the passes, the set counts, and the
+    method note. `--pilot-gate fail` hides every rank and prints one line
+    `preview: pilot gate fail`. The pinned defaults are the newest score
+    file, the sums over the passes of a route, the worst blocker recall as a
+    whole percent, and the method note with `<n> diffs`.
 - [ ] 4.9 Checks. One code checker reads the diff against spec D12 to D15
   and D22.
   - The checker confirms the metered refusal, the 70 % and 80 % rules, the
