@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Real work outcomes</title>
-  <meta name="description" content="Real-work outcomes of our role runs, merged by model and ranked by pass rate." />
+  <meta name="description" content="Real-work outcomes of our role runs, merged by model and ranked by accepted work and checker passes." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -25,17 +25,17 @@
       gap: 0.1rem 0.55rem; line-height: 1.35;
     }
     .pick-label {
-      flex: 0 0 8.4rem;
+      flex: 0 0 10.5rem;
       color: var(--muted);
       font-family: var(--mono); font-size: 0.66rem; font-weight: 650;
       letter-spacing: 0.07em; text-transform: uppercase;
     }
     .pick-name { font-weight: 650; }
     .pick-rate { color: var(--accent-2); font-family: var(--mono); font-size: 0.88rem; }
-    .pick-n { color: var(--muted); font-family: var(--mono); font-size: 0.74rem; }
+    .pick-count { color: var(--muted); font-family: var(--mono); font-size: 0.74rem; }
     .pick-none { color: var(--muted); font-style: italic; }
     @media (max-width: 520px) { .pick-label { flex-basis: 100%; } }
-    .table-wrap { margin-top: 0.6rem; }
+    .table-wrap { margin-top: 0.6rem; overflow-x: auto; }
     .table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
     .table-wrap th, .table-wrap td {
       padding: 0.5rem 0.6rem;
@@ -50,9 +50,21 @@
       border-bottom: 1px solid var(--line);
     }
     .table-wrap tr:last-child td { border-bottom: none; }
-    .table-wrap td.num { text-align: right; font-family: var(--mono); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
-    .table-wrap td.routes, .table-wrap td.axes { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); overflow-wrap: anywhere; }
+    .table-wrap td.num {
+      text-align: right; font-family: var(--mono); font-size: 0.82rem;
+      font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    .table-wrap td.routes {
+      font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+      overflow-wrap: anywhere;
+    }
     .rank { color: var(--accent); font-family: var(--mono); font-size: 0.76rem; margin-right: 0.3rem; }
+    .mark {
+      display: inline-block; margin-left: 0.35rem;
+      color: var(--muted); font-family: var(--mono); font-size: 0.66rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .mark[data-mark="not-allowed"] { color: var(--warning, #d08b3a); }
     .scroll-hint {
       display: none;
       margin: 0.35rem 0 0;
@@ -66,17 +78,19 @@
       font-family: var(--mono); font-size: 0.72rem; font-weight: 650;
       letter-spacing: 0.07em; text-transform: uppercase;
     }
-    details.work-type { border-top: 1px solid var(--line-soft); padding-top: 0.6rem; }
-    details.work-type > summary h3 {
-      display: inline; margin: 0;
-      font-family: var(--display); font-weight: 400; font-size: 1.15rem;
-      text-transform: none; letter-spacing: 0; color: var(--text);
-    }
     .about-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     @media (max-width: 800px) { .about-cols { grid-template-columns: 1fr; } }
     .about-cols dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.9rem; font-size: 0.86rem; }
     .about-cols dt { color: var(--muted); }
     .about-cols dd { margin: 0; font-family: var(--mono); font-size: 0.8rem; }
+    .footer-files { list-style: none; margin: 0.2rem 0 0.6rem; padding: 0; font-size: 0.82rem; }
+    .footer-files li { margin: 0 0 0.35rem; }
+    .footer-name { display: block; font-family: var(--mono); font-size: 0.76rem; }
+    .footer-sha256 {
+      display: block; color: var(--muted);
+      font-family: var(--mono); font-size: 0.7rem;
+      overflow-wrap: anywhere; word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -98,13 +112,13 @@
   <header class="wrap page-head">
     <p class="kicker">Real work</p>
     <h1>Real work outcomes</h1>
-    <p class="lede">This page shows how our role runs performed in real work. It merges routes by model. It ranks by pass rate, not by rating.</p>
+    <p class="lede">This page shows how our role runs performed in real work. It merges routes by model. It ranks producers by first-round accept % and checkers by pass %, never by a self-graded rate.</p>
   </header>
 
   <main class="wrap stack">
     <section class="card" data-mg="top-block" id="picks">
       <h2>The picks</h2>
-      <p class="muted">One line for each role group and each work type: the group, the top model, its pass rate as a whole percent, and its result count.</p>
+      <p class="muted">One line for each role, in the order Red, Green, Coder, Review A, Review B, Review C, Adversarial, Acceptance, Phase acceptance, Final acceptance. A line picks only a model with 5 tasks or runs or more, that the routes file allows, and, for a checker role, a net score of 20 or more.</p>
       <ul class="picks">
 <!--MODEL-GUIDE:TOP-BLOCK-->
       </ul>
@@ -112,20 +126,14 @@
 
     <section class="card">
       <h2>Producer roles</h2>
-      <p class="muted">Producer roles write or change files. The rank uses the higher pass rate first, then the lower blocking rate. Only a model with 10 or more results can pick.</p>
+      <p class="muted">Producer roles write or change files. Tasks count the accepted work. First-round accept % weights each row by its accepted tasks; rework, cleanup, and tokens weight each row by its own count. Only a model with 5 tasks or more and a first-round rate ranks.</p>
 <!--MODEL-GUIDE:PRODUCER-TABLE-->
     </section>
 
     <section class="card">
       <h2>Checker roles</h2>
-      <p class="muted">Checker roles review or judge. The rank uses the pass rate only.</p>
+      <p class="muted">Checker roles review or judge. Runs count the decided runs. Pass % is the sum of passes over the sum of decided runs. Only a model with 5 runs or more ranks.</p>
 <!--MODEL-GUIDE:CHECKER-TABLE-->
-    </section>
-
-    <section class="card">
-      <h2>Work types</h2>
-      <p class="muted">Each collapsed section ranks the models for one work type. The rate is pass divided by pass plus fail. Only a model with 10 or more results can pick.</p>
-<!--MODEL-GUIDE:WORK-TYPES-->
     </section>
 
     <section class="card">
@@ -137,17 +145,25 @@
       <section class="card">
         <h2>About this data</h2>
         <p>Route names stay as written in the record, so #high and [1m] variants are separate routes. This page merges them by model.</p>
-        <p class="muted">The merge joins only the #high and [1m] rows of one route. The same model on another provider stays a separate row. Unknown and other get no rank. The pass rate is pass divided by pass plus fail plus error. No result stays out of the rate. The trend uses the last 4 ISO weeks of the record. The rank never uses a rating.</p>
+        <p class="muted">The merge joins every #variant and [1m] row of one route. A route note ends at the first space and open parenthesis. The same model on another provider stays a separate row. The route unknown shows no table row and takes no rank; the coverage below counts it. The rank never uses a rating, and a producer row never shows a self-graded pass rate.</p>
       </section>
       <section class="card">
         <div class="about-cols">
           <div>
-            <h2>Source</h2>
-            <p style="overflow-wrap: anywhere"><!--MODEL-GUIDE:SOURCE--></p>
+            <h3>Source files</h3>
+            <ul class="footer-files">
+<!--MODEL-GUIDE:FOOTER-FILES-->
+            </ul>
+            <p class="muted">Read date <span data-mg="footer-read-date"><!--MODEL-GUIDE:FOOTER-READ-DATE--></span>, export date <span data-mg="footer-export-date"><!--MODEL-GUIDE:FOOTER-EXPORT-DATE--></span>.</p>
           </div>
           <div>
-            <h2>Coverage</h2>
-            <!--MODEL-GUIDE:COVERAGE-->
+            <h3>Coverage</h3>
+            <dl>
+              <dt>Rows</dt><dd data-mg="footer-rows"><!--MODEL-GUIDE:FOOTER-ROWS--></dd>
+              <dt>Routes</dt><dd data-mg="footer-routes"><!--MODEL-GUIDE:FOOTER-ROUTES--></dd>
+              <dt>Rows with the route unknown</dt><dd data-mg="footer-unknown-rows"><!--MODEL-GUIDE:FOOTER-UNKNOWN-ROWS--></dd>
+              <dt>Share with the route unknown</dt><dd data-mg="footer-unknown-share"><!--MODEL-GUIDE:FOOTER-UNKNOWN-SHARE--></dd>
+            </dl>
           </div>
         </div>
       </section>

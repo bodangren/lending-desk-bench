@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # Build the model-guide preview folder from docs/ and the new pages (FR-7).
-# Usage: preview.sh --export <file> [--preview <folder>]
+# Usage: preview.sh --manifest <file> [--preview <folder>]
 # The default preview folder is <repo>/.tmp/model-guide-preview.
-# It resolves relative --export and --preview values against the caller
+# The manifest is the `MANIFEST-<date>.txt` of spec D16 (Q-S1, Q-S2): the
+# input check of `real-work.ts` reads the three dated data files next to it,
+# and the read date and the export date are the date in its name (Q-S4).
+# It resolves relative --manifest and --preview values against the caller
 # folder before it changes folders. It refuses an unsafe preview path with
-# `preview: refused path <value>` on stdout, exit 2, before any write.
+# `preview: refused path <value>` on stdout, exit 2, before any write. The
+# path refusal runs before the flag check, so a run that names the root path
+# stops on the path and never starts a tool.
 # It refuses a symlink inside an existing preview folder with
 # `preview: refused path <path>` on stdout, exit 2, before any write; the
 # path is the link. It refuses any symlink under docs/, and any other
@@ -22,11 +27,20 @@
 # preview-base.json, adds the Real work and Review nav links to the preview
 # index.html (links that already exist stay single), and renders
 # real-work.html from the page template, the tool output, and the print-audit
-# data file of spec D17. The print-audit block shows the totals, the two route
-# results, the error types with their counts, the scope note, the bias note
-# of `summary.bias_note`, and the 52 rows with their checklist items and
-# results. It shows no placeholder line. The fresh real-work.json and
-# real-work.html win over any stale copies from docs/.
+# data file of spec D17.
+# Page B shows the two tables of spec D16: the producer table with the
+# default columns Model, Tasks, First-round accept %, Rework, Cleanup %, and
+# Tokens per accepted task, and the checker table with Model, Runs, Pass %,
+# Findings per run, Escapes, and Net score. The More columns toggle holds the
+# default columns plus Routes, Roles, Accepted, and AA net score. The
+# "Too few tasks" group holds the rows below the minimum of 5 with no rank.
+# The row marks "not allowed" and "not for verdicts" are attributes. The
+# print-audit block shows the totals, the route results as plain names from
+# data/model-names.json, the error types with their counts, the scope note,
+# the bias note of `summary.bias_note`, and the 52 rows with their checklist
+# items and results. It shows no placeholder line and no raw route key. The
+# About this data footer lists the three source files with their SHA-256 and
+# the read date, and the coverage numbers.
 # It runs guide.ts next, writes model-guide.json into the preview folder, and
 # renders the six rows of spec D18 from pages/guide-section.html inline into
 # the preview index.html, before the current hero (FR-7, acceptance 7). Each
@@ -49,36 +63,38 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-EXPORT=""
+MANIFEST=""
 PREVIEW_SET=""
 PREVIEW=""
+ODD=0
 
 usage() {
-  echo "usage: preview.sh --export <file> [--preview <folder>]" >&2
+  echo "usage: preview.sh --manifest <file> [--preview <folder>]" >&2
   exit 2
 }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --export)
+    --manifest)
       [ $# -ge 2 ] || usage
-      EXPORT="$2"; shift 2;;
+      [ -n "$2" ] || usage
+      MANIFEST="$2"; shift 2;;
     --preview)
       [ $# -ge 2 ] || usage
+      [ -n "$2" ] || usage
       PREVIEW_SET=1; PREVIEW="$2"; shift 2;;
-    *) usage;;
+    *)
+      # A token that names no flag of this version: the path refusal below
+      # keeps its priority, and the usage line follows when the path is safe.
+      ODD=1; shift;;
   esac
 done
-[ -n "$EXPORT" ] || usage
 if [ -z "$PREVIEW_SET" ]; then
   PREVIEW="$ROOT/.tmp/model-guide-preview"
-elif [ -z "$PREVIEW" ]; then
-  usage
 fi
 
 # Resolve against the caller folder before any cd; use only absolute paths
 # after this point.
-EXPORT_ABS="$(realpath -m -- "$EXPORT")"
 PREVIEW_ABS="$(realpath -m -- "$PREVIEW")"
 
 DOCS_REAL="$(realpath "$ROOT/docs")"
@@ -98,6 +114,10 @@ case "$PREVIEW_ABS" in
     exit 2;;
 esac
 
+[ "$ODD" -eq 0 ] || usage
+[ -n "$MANIFEST" ] || usage
+MANIFEST_ABS="$(realpath -m -- "$MANIFEST")"
+
 # Run the input check into a temp folder first. A refused run writes nothing
 # near the preview folder: an existing preview folder stays byte-identical,
 # and no new folder stays behind, not even a parent that mkdir -p created.
@@ -106,7 +126,7 @@ trap 'rm -rf "$STAGING"' EXIT
 
 cd "$ROOT/harness"
 set +e
-npx tsx model-guide/real-work.ts --input "$EXPORT_ABS" --out "$STAGING"
+npx tsx model-guide/real-work.ts --manifest "$MANIFEST_ABS" --out "$STAGING"
 STATUS=$?
 set -e
 if [ "$STATUS" -ne 0 ]; then
@@ -267,6 +287,7 @@ export MODEL_GUIDE_ROOT="$ROOT"
 export MODEL_GUIDE_PREVIEW="$PREVIEW_ABS"
 export MODEL_GUIDE_TEMPLATE="$SCRIPT_DIR/pages/real-work.html"
 export MODEL_GUIDE_GUIDE_TEMPLATE="$SCRIPT_DIR/pages/guide-section.html"
+export MODEL_GUIDE_MANIFEST="$MANIFEST_ABS"
 python3 - <<'PY'
 import hashlib
 import html
@@ -278,6 +299,13 @@ root = os.environ["MODEL_GUIDE_ROOT"]
 preview = os.environ["MODEL_GUIDE_PREVIEW"]
 template_path = os.environ["MODEL_GUIDE_TEMPLATE"]
 guide_template_path = os.environ["MODEL_GUIDE_GUIDE_TEMPLATE"]
+manifest_path = os.environ["MODEL_GUIDE_MANIFEST"]
+
+DASH = "\u2013"
+
+
+def esc(value):
+    return html.escape(str(value))
 
 
 def sha256_file(path):
@@ -390,7 +418,7 @@ if os.path.exists(index_path):
 
 
 def model_names():
-    """The plain model names of spec D18 (data/model-names.json)."""
+    """The plain model names of spec D17 and D18 (data/model-names.json)."""
     path = os.path.join(root, "harness", "model-guide", "data", "model-names.json")
     try:
         with open(path, encoding="utf-8") as handle:
@@ -412,210 +440,226 @@ def model_name(key):
     return tail if sep else str(key)
 
 
-def pct_text(rate):
-    """A whole percent. An empty value is an en dash (D16 numbers rule)."""
-    value = rate.get("value") if isinstance(rate, dict) else None
-    if value is None:
-        return "–"
+def audit_name(key):
+    """The plain name of a print-audit route key: a `#variant` suffix maps to
+    its model key, and a key with no name drops its plan prefix."""
+    return model_name(str(key).split("#")[0])
+
+
+def pct(value):
+    """A whole percent. An empty value is an en dash (spec D16)."""
+    if not isinstance(value, (int, float)):
+        return DASH
     return f"{int(math.floor(float(value) * 100 + 0.5))} %"
 
 
-def count_text(value):
-    return "–" if value is None else str(value)
+def one_decimal(value):
+    if not isinstance(value, (int, float)):
+        return DASH
+    return f"{float(value):.1f}"
 
 
-def rating_text(row):
-    """The mean of the axis means, one decimal, of 5."""
-    ratings = row.get("ratings") or {}
-    means = [
-        entry["mean"]
-        for entry in ratings.values()
-        if isinstance(entry, dict) and entry.get("mean") is not None
-    ]
-    if not means:
-        return "–"
-    return f"{sum(means) / len(means):.1f} / 5"
+def two_decimals(value):
+    if not isinstance(value, (int, float)):
+        return DASH
+    return f"{float(value):.2f}"
 
 
-def ratings_text(row):
-    ratings = row.get("ratings") or {}
-    if not ratings:
-        return "–"
-    return "; ".join(
-        f"{axis} {entry['mean']:.2f} (n={entry['n']})"
-        for axis, entry in sorted(ratings.items())
-    )
+def tokens_text(value):
+    if not isinstance(value, (int, float)):
+        return DASH
+    return f"{int(round(float(value) / 1000))}k"
 
 
-def agreement_text(row):
-    checks = row.get("rater_checks") or {}
-    if checks.get("n", 0) == 0 or checks.get("agreement") is None:
-        return "–"
-    return f"{checks['agreement']:.2f} (n={checks['n']})"
+def net_text(value):
+    if not isinstance(value, (int, float)):
+        return "not rated"
+    return f"{float(value):g}"
+
+
+def integer(value):
+    if not isinstance(value, (int, float)):
+        return DASH
+    return str(int(value))
 
 
 def table_head(heads):
     return "<thead><tr>" + "".join(
-        f'<th scope="col">{html.escape(head)}</th>' for head in heads
+        f'<th scope="col">{esc(head)}</th>' for head in heads
     ) + "</tr></thead>"
 
 
-def model_cell(row, ranked):
-    title = html.escape(", ".join(row.get("routes") or []))
-    badge = f'<span class="rank">#{int(row["rank"])}</span> ' if ranked else ""
+def table_wrap(aria, table_html):
     return (
-        f'<td data-mg="model-name" title="{title}">'
-        f'{badge}{html.escape(model_name(row["model"]))}</td>'
+        f'<div class="table-wrap" tabindex="0" role="region" '
+        f'aria-label="{esc(aria)}">{table_html}</div>'
     )
 
 
-def table_row(row, with_blocking, ranked):
-    rate = row.get("pass_rate") or {}
-    cells = [
-        model_cell(row, ranked),
-        f'<td class="num">{count_text(rate.get("n"))}</td>',
-        f'<td class="num">{pct_text(rate)}</td>',
-    ]
-    if with_blocking:
-        cells.append(f'<td class="num">{pct_text(row.get("blocking_rate"))}</td>')
-    cells.append(f'<td class="num">{rating_text(row)}</td>')
-    cells.append(f'<td class="num">{pct_text(row.get("trend"))}</td>')
-    attrs = f'data-model-key="{html.escape(str(row["model"]))}"'
-    if ranked:
-        attrs += f' data-rank="{int(row["rank"])}"'
+def mark_html(row):
+    parts = []
+    if not row.get("allowed", True):
+        parts.append('<span class="mark" data-mark="not-allowed">not allowed</span>')
+    if row.get("not_for_verdicts"):
+        parts.append('<span class="mark" data-mark="not-for-verdicts">not for verdicts</span>')
+    return "".join(parts)
+
+
+def model_cell(row):
+    routes = ", ".join(str(route) for route in (row.get("routes") or []))
+    rank = row.get("rank")
+    badge = f'<span class="rank">#{int(rank)}</span> ' if isinstance(rank, int) else ""
+    name = esc(model_name(row.get("model") or ""))
+    return (
+        f'<td data-mg="model-name" title="{esc(routes)}">'
+        f'{badge}{name}{mark_html(row)}</td>'
+    )
+
+
+def data_row(row, cells, ranked):
+    attrs = f'data-model-key="{esc(row.get("model") or "")}"'
+    rank = row.get("rank")
+    if ranked and isinstance(rank, int):
+        attrs += f' data-rank="{int(rank)}"'
     return f"<tr {attrs}>" + "".join(cells) + "</tr>"
 
 
-def more_columns(label, rows):
-    """The columns that the default table hides (D16 layout)."""
-    heads = [
-        "Model", "Routes", "Pass", "Fail", "Error", "No result",
-        "Blocking count", "Ratings", "Agreement",
+def producer_cells(row):
+    first = row.get("first_round") or {}
+    return [
+        model_cell(row),
+        f'<td class="num">{integer(row.get("tasks"))}</td>',
+        f'<td class="num">{pct(first.get("value"))}</td>',
+        f'<td class="num">{one_decimal(row.get("mean_rework"))}</td>',
+        f'<td class="num">{pct(row.get("cleanup_share"))}</td>',
+        f'<td class="num">{tokens_text(row.get("tokens_per_accepted"))}</td>',
     ]
-    body = []
-    for row in rows:
-        body.append(
-            "<tr>"
-            f"<td>{html.escape(model_name(row['model']))}</td>"
-            f'<td class="routes">{html.escape(", ".join(row.get("routes") or []))}</td>'
-            f'<td class="num">{count_text(row.get("pass"))}</td>'
-            f'<td class="num">{count_text(row.get("fail"))}</td>'
-            f'<td class="num">{count_text(row.get("error"))}</td>'
-            f'<td class="num">{count_text(row.get("no_result"))}</td>'
-            f'<td class="num">{count_text(row.get("blocking_findings"))}</td>'
-            f'<td class="axes">{html.escape(ratings_text(row))}</td>'
-            f'<td class="num">{html.escape(agreement_text(row))}</td>'
-            "</tr>"
-        )
-    return (
-        '<details class="more-columns" data-mg="more-columns">'
-        "<summary>More columns</summary>\n"
-        '<div class="table-wrap" tabindex="0" role="region"'
-        f' aria-label="{html.escape(str(label))}: more columns"><table>'
-        + table_head(heads)
-        + "\n<tbody>\n" + "\n".join(body) + "\n</tbody></table></div>\n</details>"
-    )
 
 
-def main_table(label, rows, with_blocking):
-    """The default table of one group, the Too few runs group, and More columns.
+def checker_cells(row):
+    rate = row.get("pass_rate") or {}
+    return [
+        model_cell(row),
+        f'<td class="num">{integer(row.get("runs"))}</td>',
+        f'<td class="num">{pct(rate.get("value"))}</td>',
+        f'<td class="num">{two_decimals(row.get("findings_per_run"))}</td>',
+        f'<td class="num">{integer(row.get("escapes"))}</td>',
+        f'<td class="num">{net_text(row.get("net_score"))}</td>',
+    ]
 
-    Only a row with 10 or more results sits in the ranked table and carries a
-    rank number. The other rows sit in the collapsed group and carry no rank.
+
+def producer_more_cells(row):
+    first = row.get("first_round") or {}
+    return producer_cells(row) + [
+        f'<td class="routes">{esc(", ".join(str(route) for route in (row.get("routes") or [])))}</td>',
+        f'<td class="routes">{esc(", ".join(str(role) for role in (row.get("roles") or [])))}</td>',
+        f'<td class="num">{integer(row.get("accepted"))}</td>',
+        f'<td class="num">{net_text(row.get("net_score"))}</td>',
+    ]
+
+
+def checker_more_cells(row):
+    return checker_cells(row) + [
+        f'<td class="routes">{esc(", ".join(str(route) for route in (row.get("routes") or [])))}</td>',
+        f'<td class="routes">{esc(", ".join(str(role) for role in (row.get("roles") or [])))}</td>',
+    ]
+
+
+PRODUCER_HEADS = [
+    "Model",
+    "Tasks",
+    "First-round accept %",
+    "Rework",
+    "Cleanup %",
+    "Tokens per accepted task",
+]
+CHECKER_HEADS = ["Model", "Runs", "Pass %", "Findings per run", "Escapes", "Net score"]
+PRODUCER_MORE_HEADS = PRODUCER_HEADS + ["Routes", "Roles", "Accepted", "AA net score"]
+CHECKER_MORE_HEADS = CHECKER_HEADS + ["Routes", "Roles"]
+
+
+def section_body(aria, rows, heads, more_heads, cells_of, more_cells_of):
+    """The ranked table, the Too few tasks group, and the More columns toggle.
+
+    The More columns table keeps the default columns first, so every data row
+    of the section reads the same number cells in the same positions.
     """
     rows = rows or []
-    ranked = [row for row in rows if not row.get("few_runs")]
-    few = [row for row in rows if row.get("few_runs")]
-    heads = ["Model", "Runs", "Pass %"]
-    if with_blocking:
-        heads.append("Blocking %")
-    heads += ["Rating", "Trend"]
-    escaped_label = html.escape(str(label))
+    ranked = [row for row in rows if isinstance(row.get("rank"), int)]
+    few = [row for row in rows if not isinstance(row.get("rank"), int)]
     parts = []
     if ranked:
-        parts.append(
-            f'<div class="table-wrap" tabindex="0" role="region"'
-            f' aria-label="{escaped_label} table">'
-            '<table class="data" data-mg="default-table">'
-            + table_head(heads) + "\n<tbody>\n"
-            + "\n".join(table_row(row, with_blocking, True) for row in ranked)
-            + "\n</tbody></table></div>"
-        )
-        parts.append(
-            '<p class="scroll-hint">Scroll sideways for more →</p>'
-        )
+        body = "".join(data_row(row, cells_of(row), True) for row in ranked)
+        parts.append(table_wrap(f"{aria} table", f'<table class="data" data-mg="default-table">'
+                                f"{table_head(heads)}<tbody>{body}</tbody></table>"))
+        parts.append('<p class="scroll-hint">Scroll sideways for more \u2192</p>')
     else:
-        parts.append('<p class="muted">No model has 10 or more results yet.</p>')
+        parts.append('<p class="muted">No model meets the minimum of 5 yet.</p>')
     if few:
+        body = "".join(data_row(row, cells_of(row), False) for row in few)
+        few_table = f"<table>{table_head(heads)}<tbody>{body}</tbody></table>"
         parts.append(
-            '<details class="few-runs" data-mg="too-few">'
-            "<summary>Too few runs to rank</summary>\n"
-            '<div class="table-wrap" tabindex="0" role="region"'
-            f' aria-label="{escaped_label}: too few runs to rank"><table>'
-            + table_head(heads) + "\n<tbody>\n"
-            + "\n".join(table_row(row, with_blocking, False) for row in few)
-            + "\n</tbody></table></div>\n</details>"
+            '<details class="few-tasks" data-mg="too-few">'
+            "<summary>Too few tasks</summary>\n"
+            + table_wrap(f"{aria}: too few tasks", few_table)
+            + "\n</details>"
         )
     if rows:
-        parts.append(more_columns(label, rows))
+        body = "".join(data_row(row, more_cells_of(row), False) for row in rows)
+        more_table = f"<table>{table_head(more_heads)}<tbody>{body}</tbody></table>"
+        parts.append(
+            '<details class="more-columns" data-mg="more-columns">'
+            "<summary>More columns</summary>\n"
+            + table_wrap(f"{aria}: more columns", more_table)
+            + "\n</details>"
+        )
     return "\n".join(parts)
 
 
-def work_tables(work_types):
-    if not work_types:
-        return "<p>no pick yet</p>"
+ROLE_LABELS = {
+    "red": "Red",
+    "green": "Green",
+    "coder": "Coder",
+    "review-a": "Review A",
+    "review-b": "Review B",
+    "review-c": "Review C",
+    "adversarial": "Adversarial",
+    "acceptance": "Acceptance",
+    "phase-acceptance": "Phase acceptance",
+    "final-acceptance": "Final acceptance",
+}
+
+
+def top_block(top):
     parts = []
-    for name in sorted(work_types):
-        rows = work_types[name] or []
-        opening = (
-            '<details class="work-type" data-mg="work-type">'
-            f"<summary><h3>{html.escape(str(name))}</h3></summary>\n"
-        )
-        if not rows:
-            parts.append(opening + '<p class="muted">no pick yet</p>\n</details>')
+    for item in top or []:
+        role = str(item.get("role") or "")
+        label = ROLE_LABELS.get(role, role)
+        pick = item.get("pick")
+        if not isinstance(pick, dict):
+            parts.append(
+                f'<li data-mg="pick" data-role="{esc(role)}">'
+                f'<span class="pick-label">{esc(label)}</span> '
+                '<span class="pick-none" data-mg="pick-none">no pick yet</span></li>'
+            )
             continue
-        parts.append(opening + main_table(name, rows, False) + "\n</details>")
-    return "\n".join(parts)
-
-
-def pick_row(label, rows):
-    """One top-block line. A group without a rank-1 row of 10 or more results
-    says no pick yet."""
-    pick = None
-    for row in rows or []:
-        if row.get("can_pick") and row.get("rank") == 1:
-            pick = row
-            break
-    escaped_label = html.escape(str(label))
-    if pick is None:
-        return (
-            '<li data-mg="pick">\n'
-            f'<span class="pick-label">{escaped_label}</span> '
-            '<span class="pick-none">no pick yet</span>\n</li>'
+        parts.append(
+            f'<li data-mg="pick" data-role="{esc(role)}" '
+            f'data-model-key="{esc(pick.get("model") or "")}">'
+            f'<span class="pick-label">{esc(label)}</span> '
+            f'<span class="pick-name" data-mg="pick-name">'
+            f'{esc(model_name(pick.get("model") or ""))}</span> '
+            f'<span class="pick-rate" data-mg="pick-rate">{pct(pick.get("rate"))}</span> '
+            f'<span class="pick-count" data-mg="pick-count">{integer(pick.get("count"))}</span></li>'
         )
-    rate = pick.get("pass_rate") or {}
-    return (
-        f'<li data-mg="pick" data-model-key="{html.escape(str(pick["model"]))}">\n'
-        f'<span class="pick-label">{escaped_label}</span> '
-        f'<span class="pick-name">{html.escape(model_name(pick["model"]))}</span> '
-        f'<span class="pick-rate">{pct_text(rate)}</span> '
-        f'<span class="pick-n">{count_text(rate.get("n"))} results</span>\n</li>'
-    )
-
-
-def top_block(producer, checker, work_types):
-    groups = [("Producer roles", producer), ("Checker roles", checker)]
-    for name in sorted(work_types):
-        groups.append((name, work_types[name]))
-    return "\n".join(pick_row(label, rows) for label, rows in groups)
+    return "\n".join(parts)
 
 
 def print_audit_block():
     """The print-audit block of spec D17, built from the data file of FR-5.
 
-    The block holds lists, not tables. A work-type table or the page guard of
-    PA1-1 reads the page after the last work-type heading, so the block adds
-    no table there.
+    The block holds lists, not tables. A route result shows a plain model
+    name, never the raw route key. The block holds no placeholder line.
     """
     path = os.path.join(root, "harness", "model-guide", "data", "print-audit-2026-11.json")
     try:
@@ -631,15 +675,18 @@ def print_audit_block():
     ]
     routes = audit.get("routes") or {}
     if routes:
-        found = "; ".join(
-            f"{html.escape(str(name))} {html.escape(str(result))}"
+        items = "\n".join(
+            f'<li data-mg="audit-result">{esc(audit_name(name))} {esc(result)}</li>'
             for name, result in routes.items()
         )
-        parts.append(f"<p><strong>Blockers found:</strong> {found}.</p>")
+        parts.append(
+            "<p><strong>Blockers found:</strong></p>\n<ul class=\"audit-results\">\n"
+            f"{items}\n</ul>"
+        )
     types = audit.get("error_types") or {}
     if types:
         entries = "\n".join(
-            f"<dt>{html.escape(str(name))}</dt><dd>{int(count)}</dd>"
+            f"<dt>{esc(name)}</dt><dd>{int(count)}</dd>"
             for name, count in types.items()
         )
         parts.append(
@@ -647,26 +694,20 @@ def print_audit_block():
             f"{entries}\n</dl>"
         )
     if isinstance(audit.get("note"), str):
-        parts.append(f'<p class="muted">{html.escape(audit["note"])}</p>')
+        parts.append(f'<p class="muted">{esc(audit["note"])}</p>')
     summary = audit.get("summary")
     bias_note = summary.get("bias_note") if isinstance(summary, dict) else None
     if isinstance(bias_note, str):
-        parts.append(
-            f'<p class="muted"><strong>Bias note:</strong> {html.escape(bias_note)}</p>'
-        )
+        parts.append(f'<p class="muted"><strong>Bias note:</strong> {esc(bias_note)}</p>')
     rows = []
     for row in audit.get("errors") or []:
         items = "; ".join(
-            f"{html.escape(str(item.get('code', '')))}: "
-            f"{html.escape(str(item.get('text', '')))}"
+            f"{esc(item.get('code', ''))}: {esc(item.get('text', ''))}"
             for item in (row.get("checklist") or [])
         )
-        results = ", ".join(
-            html.escape(str(value)) for value in (row.get("results") or [])
-        )
+        results = ", ".join(esc(value) for value in (row.get("results") or []))
         rows.append(
-            f"<li>{html.escape(str(row.get('id', '')))} "
-            f"({html.escape(str(row.get('severity', '')))}): "
+            f"<li>{esc(row.get('id', ''))} ({esc(row.get('severity', ''))}): "
             f"{items or 'no checklist item'}; results {results}.</li>"
         )
     if rows:
@@ -678,47 +719,56 @@ def print_audit_block():
     return "\n".join(parts)
 
 
+def footer_files(files):
+    parts = []
+    for entry in files or []:
+        name = str(entry.get("name") or "")
+        parts.append(
+            f'<li data-mg="footer-file" data-file="{esc(name)}">'
+            f'<span class="footer-name" data-mg="footer-name">{esc(name)}</span>'
+            f'<span class="footer-sha256" data-mg="footer-sha256">'
+            f'{esc(entry.get("sha256") or "")}</span></li>'
+        )
+    return "\n".join(parts)
+
+
 with open(os.path.join(preview, "real-work.json"), encoding="utf-8") as handle:
     page = json.load(handle)
 
-source = page["source"]
-source_html = (
-    f"File {html.escape(source['file'])}, "
-    f"SHA-256 {html.escape(source['sha256'])}, "
-    f"generated {html.escape(source['generated_on'])}."
-)
-
-coverage = page["coverage"]
-coverage_html = (
-        "<dl>"
-        f"<dt>Runs</dt><dd>{coverage['runs']:,}</dd>"
-        f"<dt>Date range</dt><dd>{html.escape(coverage['first_run_date'])}"
-        f" to {html.escape(coverage['last_run_date'])}</dd>"
-        f"<dt>Share with a known model</dt><dd>{coverage['share_known_route'] * 100:.1f} %</dd>"
-        f"<dt>Share with a result</dt><dd>{coverage['share_with_result'] * 100:.1f} %</dd>"
-        f"<dt>Left-out paired duplicates</dt><dd>{coverage['paired_duplicates_left_out']}</dd>"
-        f"<dt>Runs with route unknown</dt><dd>{coverage['unknown_runs']}</dd>"
-        f"<dt>Runs with route other</dt><dd>{coverage['other_runs']}</dd>"
-        "</dl>"
-    )
+source = page.get("source") or {}
+coverage = page.get("coverage") or {}
 
 with open(template_path, encoding="utf-8") as handle:
     template = handle.read()
 
 replacements = {
-    "<!--MODEL-GUIDE:TOP-BLOCK-->": top_block(
-        page["producer"], page["checker"], page["work_types"]
+    "<!--MODEL-GUIDE:TOP-BLOCK-->": top_block(page.get("top")),
+    "<!--MODEL-GUIDE:PRODUCER-TABLE-->": section_body(
+        "Producer roles",
+        page.get("producer"),
+        PRODUCER_HEADS,
+        PRODUCER_MORE_HEADS,
+        producer_cells,
+        producer_more_cells,
     ),
-    "<!--MODEL-GUIDE:PRODUCER-TABLE-->": main_table(
-        "Producer roles", page["producer"], True
+    "<!--MODEL-GUIDE:CHECKER-TABLE-->": section_body(
+        "Checker roles",
+        page.get("checker"),
+        CHECKER_HEADS,
+        CHECKER_MORE_HEADS,
+        checker_cells,
+        checker_more_cells,
     ),
-    "<!--MODEL-GUIDE:CHECKER-TABLE-->": main_table(
-        "Checker roles", page["checker"], True
-    ),
-    "<!--MODEL-GUIDE:WORK-TYPES-->": work_tables(page["work_types"]),
     "<!--MODEL-GUIDE:PRINT-AUDIT-->": print_audit_block(),
-    "<!--MODEL-GUIDE:SOURCE-->": source_html,
-    "<!--MODEL-GUIDE:COVERAGE-->": coverage_html,
+    "<!--MODEL-GUIDE:FOOTER-FILES-->": footer_files(source.get("files")),
+    "<!--MODEL-GUIDE:FOOTER-READ-DATE-->": esc(source.get("read_date") or ""),
+    "<!--MODEL-GUIDE:FOOTER-EXPORT-DATE-->": esc(source.get("export_date") or ""),
+    "<!--MODEL-GUIDE:FOOTER-ROWS-->": integer(coverage.get("rows")),
+    "<!--MODEL-GUIDE:FOOTER-ROUTES-->": integer(coverage.get("routes")),
+    "<!--MODEL-GUIDE:FOOTER-UNKNOWN-ROWS-->": integer(coverage.get("unknown_rows")),
+    "<!--MODEL-GUIDE:FOOTER-UNKNOWN-SHARE-->": (
+        f'{float(coverage.get("unknown_share") or 0):.1f} %'
+    ),
 }
 for token, value in replacements.items():
     if token not in template:
