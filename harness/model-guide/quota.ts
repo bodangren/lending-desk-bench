@@ -280,4 +280,6 @@ async function main(): Promise<void> {
   emit({ provider, source: id, state: stateOf(answer.windows), cap: SOURCED_CAP, windows: answer.windows });
 }
 
-await main();
+// No top-level await: the runner copies this file into a temp repo that holds
+// no `type: module` package.json, and tsx then compiles it as CJS.
+void main();
