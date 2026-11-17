@@ -1067,7 +1067,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - After each run, `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
   - Verify: the file fails on the Phase 3 code. Record the failed test names
     in `measure/runs/model_guide/red-4.1.txt`.
-- [x] 2cb7efd 4.1a Red. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Change
+- [~] 4.1a Red. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Change
   the layout group G1 to G4 of `harness/model-guide-tests/preview-gate.test.ts`
   and add the cases of the new rules. Touch no other file.
   - G1 and G2: the source line (file name, SHA-256, generated date) and the
@@ -1088,6 +1088,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native`
     fails only on the new layout cases.
   - Evidence: command `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exits 1 with `Tests  10 failed | 96 passed (106)`. The 10 failing cases and their one-line reasons: G1 `the page holds data-mg="about-footer": expected -1 to be greater than -1`; G2 same missing about-footer; G3 `producer holds a default table: expected undefined to be defined`; G4 `Producer roles holds a default table: expected undefined to be defined`; G5 `the page holds data-mg="top-block": expected -1 to be greater than -1`; G6 `the top block still has one line per group: expected [] to have a length of 4 but got +0`; G7 `Producer roles holds a default table: expected undefined to be defined`; G8 `the page holds data-mg="more-columns": expected -1 to be greater than -1`; G9 `app code is wrapped by a work-type hook: expected -1 to be greater than -1`; G10 `the committed model-names.json exists: expected false to be true`. All other 96 tests pass, so only the layout group changed. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (Phase 4 strategy commit, test-strategy section 11); role_base_sha 952299400423bd0abc7ddcf9d45ddbf77da2c486 (HEAD before this Red role). Neither SHA was named in the task message; both were resolved from the repository.
+  - Tests committed and failing: 10 failed, 96 passed (106) in preview-gate.test.ts (2026-11-17). The row closes when task 4.1b passes.
 - [ ] 4.1b Green. Page B layout (spec D16 "Layout (PM P1 2026-11-16)"). Write
   the page B render of `harness/model-guide/preview.sh` and the template
   `harness/model-guide/pages/real-work.html`. Add the committed data file
