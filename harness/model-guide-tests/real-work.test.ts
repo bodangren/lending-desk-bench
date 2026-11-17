@@ -371,7 +371,7 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     expect(keys, "the note-carrying route merges into t1/prod-two").toContain("t1/prod-two");
     const row = rowIn(producerSection(page), "t1/prod-two");
     expect(row.cells[1], "t1/prod-two shows the summed tasks").toBe("20");
-    expect(footerNumber(page, "footer-routes"), "the stripped route count").toBe(30);
+    expect(footerNumber(page, "footer-routes"), "the stripped route count").toBe(35);
   });
 
   it("DS5: the producer merge weights the first-round rate by accepted and the averages by their own denominators", () => {
@@ -440,6 +440,7 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     const page = basePage();
     const section = producerSection(page);
     expect(rankedKeys(section)).toEqual([
+      "t1/prod-evil",
       "t1/prod-eight",
       "t1/prod-strat",
       "t1/prod-one",
@@ -462,6 +463,7 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     expect(rankedKeys(section)).toEqual([
       "t1/gate-five",
       "t1/gate-nine",
+      "t1/gate-fourteen",
       "t1/gate-eight",
       "t1/gate-six",
       "opencode/gate-three-free",
@@ -506,6 +508,21 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
       prodOne!.cells.some((cell) => Number(cell) === 44.4),
       `the AA net score of t1/prod-one is 44.4, got ${JSON.stringify(prodOne!.cells)}`,
     ).toBe(true);
+
+    // RA-6: the fixture's first gate-variant route is its least busy
+    // variant, so the lookup must take the busiest variant, not the first
+    // route and not the primary row.
+    const variantRows = JSON.parse(readFileSync(join(PAGE_B, OUTCOMES_NAME), "utf8"));
+    const firstVariant = variantRows.find(
+      (row: any) => typeof row.route === "string" && row.route.startsWith("t1/gate-variant"),
+    );
+    expect(firstVariant?.route, "the fixture's first variant route is #low").toBe(
+      "t1/gate-variant#low",
+    );
+    expect(
+      rowIn(checker, "t1/gate-variant").cells[5],
+      "the busiest variant wins over the first route",
+    ).toBe("37.5");
   });
 
   it("DS12: the marks not-for-verdicts and not-allowed sit on the model rows as attributes", () => {
@@ -633,5 +650,18 @@ describe("DS17: plain names and the routes of a row", () => {
       unnamed,
       "the model cell holds no provider prefix",
     ).not.toContain("opencode-go/synthetic-unknown");
+  });
+});
+
+describe("RA-4: the checker More columns Roles cell", () => {
+  it("RA-4: the Roles cell lists a gate role that is not in GATE_ROLES", () => {
+    const page = basePage();
+    const more = moreColumnsRegion(checkerSection(page));
+    const row = rowsOf(more).find((item) => item.key === "t1/gate-fourteen");
+    expect(row, "the more-columns view holds the spec-review row").toBeDefined();
+    expect(
+      row!.cells.some((cell) => cell.includes("spec-review")),
+      `the Roles cell lists spec-review: ${JSON.stringify(row!.cells)}`,
+    ).toBe(true);
   });
 });

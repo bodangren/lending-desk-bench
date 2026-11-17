@@ -66,6 +66,21 @@
       "rated": true,
       "aliases": [],
       "netScore": 50.5
+    },
+    "gate-variant": {
+      "rated": true,
+      "aliases": [],
+      "netScore": 10.5,
+      "byEffort": {
+        "low": {
+          "netScore": 12.5,
+          "effort": "low"
+        },
+        "high": {
+          "netScore": 37.5,
+          "effort": "high"
+        }
+      }
     }
   }
 }

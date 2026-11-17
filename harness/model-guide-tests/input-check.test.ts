@@ -409,6 +409,58 @@ describe("DS2 order and refusals", () => {
   });
 });
 
+describe("RA-3 the MANIFEST line names of spec D16 Inputs", () => {
+  /** Rewrite the lines of a staged MANIFEST. */
+  function rewriteManifest(dir: string, change: (lines: string[]) => string[]): void {
+    const lines = readFileSync(join(dir, MANIFEST_NAME), "utf8")
+      .split("\n")
+      .filter((line) => line !== "");
+    writeFileSync(join(dir, MANIFEST_NAME), `${change(lines).join("\n")}\n`);
+  }
+
+  it("RA-3: a line whose date differs from the manifest date gives manifest with that name", () => {
+    const { dir } = stagePageB("ra3-date");
+    rewriteManifest(dir, (lines) =>
+      lines.map((line) =>
+        line.endsWith(`  ${OUTCOMES_NAME}`)
+          ? line.replace(`  ${OUTCOMES_NAME}`, "  ra-outcomes-2026-10-21.json")
+          : line,
+      ),
+    );
+    expectRefusal(
+      join(dir, MANIFEST_NAME),
+      "ra3-date",
+      "input-check: manifest ra-outcomes-2026-10-21.json",
+    );
+  });
+
+  it("RA-3: a line name with no kind prefix gives manifest with that name", () => {
+    const { dir } = stagePageB("ra3-prefix");
+    rewriteManifest(dir, (lines) =>
+      lines.map((line) =>
+        line.endsWith(`  ${AA_NAME}`)
+          ? line.replace(`  ${AA_NAME}`, "  data-2026-10-20.json")
+          : line,
+      ),
+    );
+    expectRefusal(
+      join(dir, MANIFEST_NAME),
+      "ra3-prefix",
+      "input-check: manifest data-2026-10-20.json",
+    );
+  });
+
+  it("RA-3: two lines of the same kind give manifest with that name", () => {
+    const { dir } = stagePageB("ra3-duplicate");
+    rewriteManifest(dir, (lines) => [...lines, lines[0]]);
+    expectRefusal(
+      join(dir, MANIFEST_NAME),
+      "ra3-duplicate",
+      `input-check: manifest ${OUTCOMES_NAME}`,
+    );
+  });
+});
+
 describe("DS3 no copy of an input file", () => {
   it("DS3: a passing run writes no input file name and no input bytes outside the staged folder", () => {
     const workspace = tempDir("ds3");

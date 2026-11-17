@@ -626,6 +626,100 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(codeReview, "the page holds the code review row").toBeDefined();
     expect(codeReview, "the code review row shows the no-pick words").toContain(NO_PICK);
   });
+
+  it("RA-1: the overview pick cells show plain names, a #variant route maps to its model key name, and no-pick words stay", () => {
+    const { root, manifest } = pageRepo("ra1-names", {
+      outcomes: (rows) => {
+        for (const row of rows) {
+          if (row.route === "t1/prod-one[1m]#high") {
+            row.route = "claude-code/claude-sonnet-5-5#high";
+          }
+          if (row.route === "t1/prod-nine") {
+            row.route = "opencode-go/synthetic-unknown";
+          }
+        }
+      },
+      allowed: (doc) => {
+        doc.allowedRoutes.push("claude-code/claude-sonnet-5-5#high");
+        doc.allowedRoutes.push("opencode-go/synthetic-unknown");
+      },
+    });
+    const result = runPreview(root, manifest);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    const index = readFileSync(previewIndex(root), "utf8");
+    const rows = [...index.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((match) => match[1]);
+    const testWriting = rows.find((entry) => /test writing/i.test(entry));
+    expect(testWriting, "the page holds the test writing row").toBeDefined();
+    const tds = [...testWriting!.matchAll(/<td>([\s\S]*?)<\/td>/g)].map((cell) =>
+      cell[1].replace(/<[^>]*>/g, "").trim(),
+    );
+    expect(tds.length, "the row holds the five cells of the table").toBe(5);
+    const names = JSON.parse(readFileSync(join(SOURCE, "data", "model-names.json"), "utf8"));
+    expect(names["claude-code/claude-sonnet-5-5"], "model-names.json names the key").toBe(
+      "Claude Sonnet 5.5",
+    );
+    const pick = tds[1];
+    const second = tds[2];
+    expect(pick, "the pick cell shows the plain name").toContain("Claude Sonnet 5.5");
+    expect(pick, "the pick cell holds no raw route key").not.toContain(
+      "claude-code/claude-sonnet-5-5",
+    );
+    expect(second, "the second cell shows the key without its plan prefix").toContain(
+      "synthetic-unknown",
+    );
+    expect(second, "the second cell holds no plan prefix").not.toContain("opencode-go/");
+    const docs = rows.find((entry) => /docs and ops/i.test(entry));
+    expect(docs, "the page holds the docs and ops row").toBeDefined();
+    expect(docs, "the no-pick words stay as they are").toContain(NO_PICK);
+  });
+
+  it("RA-2: the Test writing pick skips a not-allowed row and a row below the minimum", () => {
+    // The committed fixture holds t1/prod-evil (accept 100 %, 20 tasks,
+    // not allowed) and t1/prod-tiny (accept 100 %, 4 tasks). Neither may
+    // become the pick of the test writing row.
+    const base = realWorkFrom("ra2-base");
+    const runBase = runGuide({
+      tag: "ra2-base",
+      realWork: base.json,
+      scores: SCORES,
+      printAudit: printAuditInput("ra2-base"),
+      benchmark: BENCHMARK,
+      tracks: TRACKS,
+      today: TODAY,
+    });
+    const baseRow = rowOf(runBase.data, "test writing");
+    expect(baseRow.pick, "the pick is the red rank 1 that passes every filter").toBe("t1/prod-one");
+    expect(baseRow.pick, "the not-allowed row never picks").not.toBe("t1/prod-evil");
+    expect(baseRow.pick, "the 4-task row never picks").not.toBe("t1/prod-tiny");
+
+    // The variant lowers the rate of the red prod-one row to 0.5, so a
+    // missing allowed filter picks t1/prod-evil and a missing minimum picks
+    // t1/prod-tiny. Both filters must hold.
+    const variant = realWorkFrom("ra2-variant", {
+      outcomes: (rows) => {
+        for (const row of rows) {
+          if (row.route === "t1/prod-one[1m]#high") row.first_round_rate = 0.5;
+        }
+      },
+    });
+    const runVariant = runGuide({
+      tag: "ra2-variant",
+      realWork: variant.json,
+      scores: SCORES,
+      printAudit: printAuditInput("ra2-variant"),
+      benchmark: BENCHMARK,
+      tracks: TRACKS,
+      today: TODAY,
+    });
+    const variantRow = rowOf(runVariant.data, "test writing");
+    expect(variantRow.pick, "the pick stays the red rank 1 of the allowed rows").toBe(
+      "t1/prod-one",
+    );
+    expect(variantRow.pick, "the not-allowed row never picks").not.toBe("t1/prod-evil");
+    expect(variantRow.pick, "the 4-task row never picks").not.toBe("t1/prod-tiny");
+    expect(variantRow.second, "the second choice passes the filters too").not.toBe("t1/prod-evil");
+    expect(variantRow.second).not.toBe("t1/prod-tiny");
+  });
 });
 
 const INDEX_HTML = `<!doctype html>

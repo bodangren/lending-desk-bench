@@ -1823,12 +1823,12 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
   it("G2: the coverage numbers sit in the same About this data footer", () => {
     const { page } = pageGuardSnapshot();
     const footer = hookRegion(page, "about-footer", "</body>");
-    expect(footerNumber(page, "footer-rows"), "row count").toBe(35);
-    expect(footerNumber(page, "footer-routes"), "route count").toBe(30);
+    expect(footerNumber(page, "footer-rows"), "row count").toBe(40);
+    expect(footerNumber(page, "footer-routes"), "route count").toBe(35);
     expect(footerNumber(page, "footer-unknown-rows"), "unknown rows").toBe(2);
     const share = hookTextOf(footer, "footer-unknown-share");
     expect(share, "the share is a labeled percent").toMatch(/^(\d+(?:\.\d)?)\s*%$/);
-    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(5.7);
+    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(5);
     expect(hookTextOf(footer, "footer-read-date"), "the read date").toBe(DATE);
     expect(hookTextOf(footer, "footer-export-date"), "the export date").toBe(DATE);
     expect(footer, "the footer holds the merge method note").toContain(METHOD_NOTE);
@@ -1841,6 +1841,7 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       [
         "Producer roles",
         [
+          "t1/prod-evil",
           "t1/prod-eight",
           "t1/prod-strat",
           "t1/prod-one",
@@ -1851,13 +1852,14 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
           "t1/prod-nine",
           "t1/prod-six",
         ],
-        ["t1/prod-five", "t1/prod-seven"],
+        ["t1/prod-five", "t1/prod-seven", "t1/prod-tiny"],
       ],
       [
         "Checker roles",
         [
           "t1/gate-five",
           "t1/gate-nine",
+          "t1/gate-fourteen",
           "t1/gate-eight",
           "t1/gate-six",
           "opencode/gate-three-free",
@@ -1868,7 +1870,7 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
           't1/"><img src=x onerror=alert(1)>',
           "t1/__proto__",
         ],
-        ["t1/gate-eleven", "t1/gate-twelve"],
+        ["t1/gate-eleven", "t1/gate-twelve", "t1/gate-variant"],
       ],
     ];
     for (const [heading, expectedRanked, expectedFew] of groups) {
@@ -1882,7 +1884,8 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       const fewGroup = fewGroupOf(section);
       expect(fewGroup, `${heading} group label`).toContain("Too few tasks");
       const few = probesOf(fewGroup);
-      expect(few.map((row) => row.key), `${heading} too-few rows`).toEqual(expectedFew);
+      expect(few.map((row) => row.key).slice().sort(), `${heading} too-few rows`)
+        .toEqual(expectedFew.slice().sort());
       for (const row of few) expect(row.rank, `${row.key} has no rank`).toBeNull();
       for (const key of expectedFew) {
         expect(ranked.some((row) => row.key === key), `${key} is not ranked`).toBe(false);
@@ -2400,10 +2403,10 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
   it("FX2: the page holds 9 ranked and 2 too-few producer rows, 11 ranked and 2 too-few checker rows, and 10 top lines", () => {
     const { page } = base();
     const counts = countRanks(page);
-    expect(counts.producerRanked, "ranked producer rows").toHaveLength(9);
-    expect(counts.producerFew, "too-few producer rows").toHaveLength(2);
-    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(11);
-    expect(counts.checkerFew, "too-few checker rows").toHaveLength(2);
+    expect(counts.producerRanked, "ranked producer rows").toHaveLength(10);
+    expect(counts.producerFew, "too-few producer rows").toHaveLength(3);
+    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(12);
+    expect(counts.checkerFew, "too-few checker rows").toHaveLength(3);
     expect(topPickCount(page), "top block lines").toBe(10);
   });
 
@@ -2517,12 +2520,12 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
     expect(hookTextOf(footer, "footer-read-date"), "the read date").toBe(DATE);
     expect(hookTextOf(footer, "footer-export-date"), "the export date").toBe(DATE);
     expect(footer, "the footer holds no real date").not.toContain("2026-11-17");
-    expect(footerNumber(page, "footer-rows"), "row count").toBe(35);
-    expect(footerNumber(page, "footer-routes"), "route count").toBe(30);
+    expect(footerNumber(page, "footer-rows"), "row count").toBe(40);
+    expect(footerNumber(page, "footer-routes"), "route count").toBe(35);
     expect(footerNumber(page, "footer-unknown-rows"), "unknown rows").toBe(2);
     const share = hookTextOf(footer, "footer-unknown-share");
     expect(share, "the unknown share is a labeled percent").toMatch(/^(\d+(?:\.\d)?)\s*%$/);
-    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(5.7);
+    expect(Number(share.match(/^(\d+(?:\.\d)?)/)![1]), "the unknown share").toBe(5);
     expect(footer, "the footer holds the merge method note").toContain(METHOD_NOTE);
   });
 
@@ -2606,10 +2609,10 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
     expect(page, "the hostile route is escaped").toContain("&lt;img src=x onerror=alert(1)&gt;");
     expect(page, "the __proto__ row is an ordinary row").toContain('data-model-key="t1/__proto__"');
     const counts = countRanks(page);
-    expect(counts.producerRanked, "ranked producer rows").toHaveLength(9);
-    expect(counts.producerFew, "too-few producer rows").toHaveLength(2);
-    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(11);
-    expect(counts.checkerFew, "too-few checker rows").toHaveLength(2);
+    expect(counts.producerRanked, "ranked producer rows").toHaveLength(10);
+    expect(counts.producerFew, "too-few producer rows").toHaveLength(3);
+    expect(counts.checkerRanked, "ranked checker rows").toHaveLength(12);
+    expect(counts.checkerFew, "too-few checker rows").toHaveLength(3);
     expect(topPickCount(page), "top block lines").toBe(10);
   });
 });
