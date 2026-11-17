@@ -548,6 +548,9 @@ describe("ADV4 AA lookup (D16 Data source, AA net score)", () => {
       first === 51,
       `the key-or-alias rule must not depend on file order (k1=${first}, k2=${second})`,
     ).toBe(second === 52);
+    // Orchestrator ruling 2026-11-18 (ADV-6): a direct model key wins over the
+    // alias of another model, whatever the order of the file.
+    expect([first, second], "a direct key wins over an alias").toEqual([25, 26]);
   });
 
   it("ADV4-4: a variant with no byEffort entry, a busiest route with no variant, and inherited names use the primary row", () => {
