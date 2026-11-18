@@ -2323,6 +2323,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   5085d9b162a60559e4bf415fb0f33cb91a627b98. The log is
   `measure/runs/model_guide/green-4.13l.log` (not staged).
+- [~] 93c0dcf 4.13m Red: every opencode call of the credential helper is standalone (PM stop order 2026-11-19).
+- [ ] 4.13n Green: every opencode call of the credential helper is standalone (PM stop order 2026-11-19).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
