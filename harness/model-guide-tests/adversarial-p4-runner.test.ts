@@ -329,7 +329,10 @@ async function buildRunner(options: RunnerOptions = {}): Promise<RunnerFixture> 
     ];
   writeFileSync(join(guideDir, "routes.json"), `${JSON.stringify(routes, null, 2)}\n`);
 
-  const setDir = join(privateDir, "sets", SET_ID, "src");
+  // The review input is the seeded diff of the set (spec D7). The `src/`
+  // folder holds the source diffs without the plants, so the runner never
+  // reads it.
+  const setDir = join(privateDir, "sets", SET_ID, "diffs");
   mkdirSync(setDir, { recursive: true });
   for (const id of options.diffs ?? ["a", "b"]) {
     writeFileSync(join(setDir, `${id}.diff`), diffText(id));
