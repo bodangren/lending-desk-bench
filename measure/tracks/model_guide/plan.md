@@ -2048,7 +2048,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     07418d21f073a3201055832dd5fbd82fa0e8a880; final Green HEAD 75f7419
     before this row, and the plan-evidence commit after it.
-- [ ] 4.13e Red: hardening after Reviews A, B, C (edee50b). Change only
+- [~] 5db6a32 4.13e Red: hardening after Reviews A, B, C (edee50b). Change only
   test files under `harness/model-guide-tests/`. Touch no production file.
   One bullet pins each test:
   - (B2) `judge-run.sh` refuses a `judges.json` row with an empty
@@ -2072,6 +2072,20 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: each new case fails on the phase base HEAD, and the earlier
     cases stay green. Record the failed test names in
     `measure/runs/model_guide/red-4.13e.txt`.
+  - Evidence (Red 5db6a32, 2026-11-18): every bullet holds at least one
+    case; no case was missing, so no new case was added. Failing new or
+    updated cases: J18, J18b, J18c, J19, M5 to M9, DS12, DS13, DS26
+    row-count, G6, ADV4-7, ADV4-21. Guards that hold at HEAD: J18d
+    (committed `judges.json`), P2b (probe retry ceiling is exactly 3
+    calls), the 8 SM4 cases (B5/R3 arg-level refusals already
+    implemented), the DS26 net-0 case. `guide.test.ts` stays green: its
+    N8 change is the pick-rule comment only (`guide.ts` stays decoupled
+    per the test strategy). The three A4 timeouts under `bun test
+    preview-gate.test.ts` are a pre-existing runner artifact (each case
+    takes `(ctx)`, which bun reads as a never-called done callback);
+    those cases are untouched. The N8 ">= 20" to "above 0" assertion
+    changes are recorded in `red-4.13e.txt`. pgrep scans print no line.
+    Row stays `[~]` until Green 4.13f flips it.
 - [ ] 4.13f Green: hardening after Reviews A, B, C (edee50b). Implement row
   4.13e in `harness/model-guide/` (`judge-run.sh`, `review-run.sh`,
   `seed-messages.ts`, `real-work.ts`, `guide.ts`). Fix the `review-run.sh`
