@@ -900,3 +900,59 @@ describe("ADV-R runner block: concurrency, hostile review data, and filter words
     expect(liveFakeOpencode(), "the file leaves no fake child").toEqual([]);
   });
 });
+
+describe("ADV-R runner block: lock isolation between routes", () => {
+  function slugOf(route: string): string {
+    return route.replace(/[^A-Za-z0-9._-]+/g, "-");
+  }
+
+  it("ADV-R-13: two different routes that map to one slug must not lock each other out", async () => {
+    const routeA = "t/one#c";
+    const routeB = "t-one#c";
+    expect(slugOf(routeA), "the slugs collide").toBe(slugOf(routeB));
+    const fx = await buildRunner({
+      route: routeA,
+      diffs: ["a"],
+      routes: [
+        { family: "T", route: routeA, kind: "plan", quota_provider: "opencode-go", quota_source: "opencode-go", ranked: true },
+        { family: "T", route: routeB, kind: "plan", quota_provider: "opencode-go", quota_source: "opencode-go", ranked: true },
+      ],
+      calls: [
+        { exit: 0, sleep: 3, value: '{"findings":[]}' },
+        { exit: 0, value: '{"findings":[]}' },
+      ],
+    });
+    try {
+      const baseEnv = {
+        BENCH_OPENCODE_BIN: join(fx.repo, "bin", "fake-opencode"),
+        BENCH_QUOTA_BASE: fx.quotaBase,
+        FAKE_OPENCODE_SPEC: fx.specPath,
+        FAKE_OPENCODE_LOG: fx.logPath,
+        MG_TEST_SECRET_VALUE: SECRET_A,
+        MG_RUN_RETRY_WAIT_MS: "0",
+        NO_COLOR: "1",
+        TZ: "UTC",
+      };
+      const runAsync = (route: string) =>
+        new Promise<RunResult>((done) => {
+          const child = spawn("bash", [join(fx.repo, "harness", "model-guide", "review-run.sh"), "--route", route, "--set", SET_ID, "--private", fx.privateDir, "--date", "2026-11-20"], {
+            cwd: fx.repo,
+            env: env(baseEnv),
+          });
+          let stdout = "";
+          let stderr = "";
+          child.stdout.on("data", (c: Buffer) => (stdout += c));
+          child.stderr.on("data", (c: Buffer) => (stderr += c));
+          child.on("close", (status: number | null) => done({ status, stdout, stderr }));
+        });
+      const slow = runAsync(routeA);
+      await new Promise((done) => setTimeout(done, 1200));
+      const fast = await runAsync(routeB);
+      const slowResult = await slow;
+      expect(slowResult.status, `route A proceeds: ${slowResult.stdout}${slowResult.stderr}`).toBe(0);
+      expect(fast.status, `route B is not locked by route A: ${fast.stdout}${fast.stderr}`).toBe(0);
+    } finally {
+      await closeFixture(fx);
+    }
+  }, 120_000);
+});
