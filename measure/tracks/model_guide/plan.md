@@ -1595,8 +1595,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     of the checker holds status pass at 8e0c441
     (`measure/runs/model_guide/check-4.9-8e0c441.json`), so this row is
     `[x]`.
-- [~] 4.9a Red. Probe mode, token log, and the new routes.json (spec D12, D14,
-  Tokens; PM 2026-11-18). Change only test files under
+- [x] fe29d81 4.9a Red. Probe mode, token log, and the new routes.json (spec
+  D12, D14, Tokens; PM 2026-11-18). Change only test files under
   `harness/model-guide-tests/` (`review-run.test.ts` and the fake `opencode`,
   which must emit token fields in its json events).
   - `--probe` makes one call on the first control diff and prints the probe
@@ -1625,10 +1625,37 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `pgrep -af 'mg-.*quota-server'` and `ps -eo pid,args | grep
     '[f]ake-opencode'` print no line, and no `mg-*` folder stays under
     `/tmp`.
-- [ ] 4.9b Green. Implement 4.9a in `harness/model-guide/review-run.sh` and
-  `harness/model-guide/routes.json`. Make no design choice beyond the spec.
+  - Green 4.9b makes the ten cases pass at 2f66531, so this row is `[x]`.
+- [x] 2f66531 4.9b Green. Implement 4.9a in `harness/model-guide/review-run.sh`
+  and `harness/model-guide/routes.json`. Make no design choice beyond the
+  spec.
   - Verify: the Phase 4 test files pass one at a time; no `fake-opencode` or
     quota-server process stays.
+  - Evidence: run on 2026-11-18, one file at a time from `harness/`, each
+    with `--configLoader native --maxWorkers=1 --reporter=dot`:
+    - `review-run.test.ts` exits 0 with `Tests  35 passed (35)`.
+    - `adversarial-p4-runner.test.ts` exits 0 with `Tests  14 passed (14)`.
+    - `quota.test.ts` exits 0 with `Tests  15 passed (15)`.
+    - `credential-provider.test.ts` exits 0 with `Tests  11 passed (11)`.
+    - `preview-gate.test.ts` exits 0 with `Tests  111 passed (111)`.
+    - `guide.test.ts` exits 0 with `Tests  18 passed (18)`.
+    - No quota server process, no `fake-opencode` process, and no `mg-*`
+      temp folder stays. The check of the frozen paths from 57baaaa prints
+      nothing.
+  - Changes: `--probe` makes one call on the first control diff, the first
+    diff whose key holds no plant. It writes one record under
+    `<private>/probes/<set_id>/` and no pass record and no raw output. It
+    prints `<route> reachable|unreachable|region-blocked <error line or ->`
+    and exits 0 or 3. A probe blocked by the 70 % rule or by the credential
+    scan is a refusal on stdout with exit 2, and a held lock keeps the lock
+    refusal on stderr. The pass and probe records hold `tokens` with
+    `input`, `output`, `reasoning`, `cache_read`, `cache_write`, and
+    `total`, and each diff entry holds its own `tokens`. `tokens_complete`
+    is false when a call has no token field. `routes.json` holds the six
+    rows of spec D12 and none of the three removed routes. The model call
+    is a background job with a watcher, so a SIGKILL of the runner leaves no
+    call and no fake child; the load watch of `review-run.test.ts` requires
+    it. Rows 4.9a and 4.9b are `[x]`.
 - [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
   per route of `routes.json` on the first control diff of `mg-2026-11a`,
   through `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19.
