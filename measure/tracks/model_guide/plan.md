@@ -1485,6 +1485,16 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `Tests  11 passed (11)`, and `preview-gate.test.ts` keeps `Tests  111
     passed (111)`. No quota server process and no fake `opencode` process
     stay.
+  - Fix 448dbf9 (ADV-R-13, orchestrator 2026-11-18): the lock name and the
+    output folder carry the first 12 hex characters of the SHA-256 of the
+    full route string. Two routes that fold to one slug, for example
+    `t/one#c` and `t-one#c`, keep their own lock and their own output
+    folder. `adversarial-p4-runner.test.ts` exits 0 with `Tests  13 passed
+    (13)`. `review-run.test.ts` keeps `Tests  23 passed (23)`, and
+    `preview-gate.test.ts` keeps `Tests  111 passed (111)`. No quota server
+    process and no fake `opencode` process stay. The pass record name keeps
+    the plain slug, because the decision changes the lock and the output
+    folder only.
 - [x] 6be3894 4.8a Red. The review page. Add the page cases V1 to V9 of
   `measure/tracks/model_guide/test-strategy.md` section 4.4 to
   `harness/model-guide-tests/preview-gate.test.ts`. Touch no other file.
