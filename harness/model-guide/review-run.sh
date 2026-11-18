@@ -21,9 +21,9 @@
 # pass number and before any call (ADV-R-8). A second run that finds the lock
 # held exits 2 with one line on stderr that names the lock. It makes no call
 # and writes no pass record. The trap releases the lock on every exit path.
-# The lock name and the output folder carry the first 12 hex characters of
-# the SHA-256 of the full route string, so two routes that fold to one slug
-# stay apart (ADV-R-13).
+# The lock name, the output folder, and the pass record name carry the first
+# 12 hex characters of the SHA-256 of the full route string, so two routes
+# that fold to one slug stay apart (ADV-R-13, ADV-R-14).
 #
 # Every other run writes one pass record in the private folder. Its `state`
 # is `complete`, `open`, `wait`, or `region-blocked`. The record holds
@@ -221,14 +221,14 @@ LOCKED=1
 PASS_DIR="$PRIVATE/passes/$SET_ID"
 PASS_NO=1
 if [ -d "$PASS_DIR" ]; then
-  existing="$(find "$PASS_DIR" -maxdepth 1 -name "*-${RUN_SLUG}-p*.json" 2>/dev/null | wc -l | tr -d ' ')"
+  existing="$(find "$PASS_DIR" -maxdepth 1 -name "*-${RUN_SLUG}-${ROUTE_TAG}-p*.json" 2>/dev/null | wc -l | tr -d ' ')"
   PASS_NO=$(( existing + 1 ))
 fi
-PASS_FILE="$PASS_DIR/${DATE}-${RUN_SLUG}-p${PASS_NO}.json"
+PASS_FILE="$PASS_DIR/${DATE}-${RUN_SLUG}-${ROUTE_TAG}-p${PASS_NO}.json"
 
 # Spec D15: a route with no quota source runs at most 1 pass per night.
 if [ -z "$QUOTA_PROVIDER" ] && [ -d "$PASS_DIR" ]; then
-  tonight="$(find "$PASS_DIR" -maxdepth 1 -name "${DATE}-${RUN_SLUG}-p*.json" 2>/dev/null | wc -l | tr -d ' ')"
+  tonight="$(find "$PASS_DIR" -maxdepth 1 -name "${DATE}-${RUN_SLUG}-${ROUTE_TAG}-p*.json" 2>/dev/null | wc -l | tr -d ' ')"
   [ "$tonight" -eq 0 ] || refuse "the route allows one pass per night and one pass already ran"
 fi
 
