@@ -2250,8 +2250,32 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     defect (F1: the `weekly` key is unread and the null window stops the
     read). `review-run.test.ts` exits 1 with `52 pass` and `1 fail`; the
     failed name is G4 (0 model calls at weekly 97 %: the null window stops
-    the read). The record is `measure/runs/model_guide/red-4.13i.txt`
-    (not staged). The two pgrep scans print no line at the end of each run.
+    the read). Conversion bb1fa68 (same row, no new task): every
+    opencode-go fake body serves the live window names `5h`, `weekly`,
+    `monthly` plus a null `credits_balance`, with the same percentages.
+    `quota.test.ts`: Q1 serves the live set to opencode-go only, Q7
+    likewise; Q9/Q10 serve it with the week value moved to `weekly` (the
+    three `["week"]` label assertions now read `["weekly"]`; every
+    percentage, state, and count is unchanged). The three runner files
+    serve the live set when the request path is `/api/quota/opencode-go`
+    and keep `5h`/`day`/`week` for the other sources, so the kimi cases
+    are untouched and no assertion changed in these three files. Evidence
+    after conversion (every failure is F1/F2): `quota.test.ts` exits 1
+    with `Tests 11 failed | 13 passed (24)` (Q1, Q7, Q9, Q10 plus the
+    seven 4.13i cases). `review-run.test.ts` exits 1 with `25 pass` and
+    `28 fail` (the Go-gated R1, R2, R3, R7 x2, R9, R10, R11, R12, R13,
+    fake-binary, P1, P2, P3, P5, P7, T1, T2, S1, S2, S4, M1, M2, P2b plus
+    G1, G2, G3, G4). `judge-run.test.ts` exits 1 with `Tests 20 failed |
+    10 passed (30)` (every Go fixture: J1 x2, J2, J3, J4, J5, J6, J7, J8,
+    J10, J12, J13 x2, J14 x2, J15, J19, G1, G2, G3); the kimi J11 cases
+    stay green. Stay-green at HEAD is impossible for a converted Go case:
+    a week-100 refusal needs the `week` key the live source never sends
+    (F1), and a week-97 start needs a usable read the null window blocks
+    (F2). `adversarial-p4-runner.test.ts` exits 1 with `Tests 5 failed | 9
+    passed (14)` (ADV-R-1, R-3, R-5, R-7, R-8). After each run the two
+    pgrep scans print no line. The record is
+    `measure/runs/model_guide/red-4.13i.txt` (not staged); the conversion
+    evidence is appended to `measure/runs/model_guide/red-4.13i.log`.
 - [ ] 4.13j Green: the live Go quota answer (Review A cc8afbd F1, F2;
   Review B cc8afbd B2, N2). Change `harness/model-guide/quota.ts`. Touch no
   test file and do not touch spec.md.
