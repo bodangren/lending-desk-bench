@@ -16,11 +16,11 @@ Gate commands:
 
 ## Phase 1: Refresh the catalog
 
-- [x] 1.1 Refresh `harness/go-pricing.json` from the live catalog and the Go
+- [x] f61a422 1.1 Refresh `harness/go-pricing.json` from the live catalog and the Go
   docs. Add the new models. Update the changed limits and rates. Keep the
   retired entries that stored scores need. Update the `retrieved` date and the
   alias map. Verify with `harness/go-cost.ts --catalog` and
-  `harness/go-cost.ts --batch-lines`.
+  `harness/go-cost.ts --batch-lines`. (archive evidence from git, PM 2026-11-18)
   - Added `claude-haiku-5-5`, `gpt-6-luna`, `minimax-m3.1-flash` as batch
     models. Added `grok-4.7`, `kimi-k3.1-pro`, `step-5-preview`,
     `qwen3.7-max`, and `beam-free` as catalog entries. Raised the DeepSeek
@@ -55,17 +55,17 @@ Gate commands:
 This phase continues the `opencode_executor` track. Its plan holds the task
 detail.
 
-- [x] 2.1 Land the OpenCode executor in `harness/`. The Red suite in
+- [x] f61a422 2.1 Land the OpenCode executor in `harness/`. The Red suite in
   `harness/tests/meta/opencode-*.test.ts` holds the contract. Both gate
-  commands must pass.
+  commands must pass. (archive evidence from git, PM 2026-11-18)
   - The `opencode_executor` track landed the executor. The logic gate and the
     adversarial gate each printed `Test Files  30 passed (30)` and
     `Tests  238 passed (238)`.
 
-## Phase 3: Benchmark the new models [checkpoint: 8b6bf37]
+## Phase 3: Benchmark the new models
 
-- [x] 3.1 Run the batch for the new models. Use both arms. Use the build track
-  repeat count. Record the run ids and the score verdicts.
+- [x] 8b6bf37 3.1 Run the batch for the new models. Use both arms. Use the build track
+  repeat count. Record the run ids and the score verdicts. (archive evidence from git, PM 2026-11-18)
   - The build track ran the three new models on 2026-10-25 with one repeat
     per arm. All six runs graded valid, trusted, publishable scores:
     `a-gpt-6-luna` 94.5, `b-gpt-6-luna` 98.7,
@@ -78,22 +78,22 @@ detail.
     track graded both arms against it on 2026-10-25:
     `a-deepseek-v4-1-flash` 95.0, `b-deepseek-v4-1-flash` 97.7, delta +2.7.
     The weekly cron graded `tt-b-deepseek-v4-1-flash` 98.0.
-- [x] 3.2 Rescore every run with `harness/rescore-doctor.sh`. Verify that each
-  new run is valid, trusted, and publishable.
+- [x] 8b6bf37 3.2 Rescore every run with `harness/rescore-doctor.sh`. Verify that each
+  new run is valid, trusted, and publishable. (archive evidence from git, PM 2026-11-18)
   - `WEEK=2026w43 ./rescore-doctor.sh` kept every total. The legacy Pi runs
     printed one SKIP line each and kept their bytes.
 
 ## Phase 4: Publish
 
-- [x] 4.1 Export the site data with `harness/export-site-data.py`. Generate the
+- [x] 3ae55c6 4.1 Export the site data with `harness/export-site-data.py`. Generate the
   model pages with `harness/generate-model-pages.py`. Verify that the new
-  models appear with their executor and version.
+  models appear with their executor and version. (archive evidence from git, PM 2026-11-18)
   - The site data holds three ranked models and eleven history models. Every
     ranked row carries the executor `opencode` and the version `v2.1.4`.
   - The paired Skills delta for the new models: GPT 6 Luna +4.2,
     MiniMax M3.1 Flash +5.6, Claude Haiku 5.5 +8.8.
-- [x] 4.2 Commit the site data, the model pages, the pricing table, and the
-  track files. Stage only those paths. Push to `main` to publish the pages.
-  - The commit `3ae55c6` holds the site data, the three new model pages, and
+- [x] 3ae55c6 4.2 Commit the site data, the model pages, the pricing table, and the
+  track files. Stage only those paths. Push to `main` to publish the pages. (archive evidence from git, PM 2026-11-18)
+  - The publish commit holds the site data, the three new model pages, and
     the eleven history pages. The push reached `main`. GitHub Pages built the
     deployment and the live data shows the three ranked models.

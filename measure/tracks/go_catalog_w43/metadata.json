@@ -1,0 +1,16 @@
+{
+  "id": "go_catalog_w43",
+  "title": "Refresh the OpenCode Go catalog and benchmark the new models",
+  "type": "Feature",
+  "status": "done",
+  "created": "2026-10-24",
+  "completed": "2026-10-25",
+  "estimated_tasks": 7,
+  "actual_tasks": 7,
+  "source": {
+    "method": "refresh the Go catalog, recost the stored scores, benchmark the new models with the OpenCode executor, and publish the results",
+    "dependencies": [
+      "opencode_executor"
+    ]
+  }
+}
