@@ -749,6 +749,11 @@ questions".
       read skips it. The answer gives `stopped` only when no usable window
       is left. A Go answer needs a usable `5h` value and a usable `weekly`
       value: when either value is not usable, the answer is `stopped`.
+    - **Go quota through ra-quota (PM 2026-11-19).** The production drivers
+      point quota.ts at ra-quota with `status --json`. ra-quota keeps the
+      last good reading for 6 h. A reading older than 6 h, or a missing
+      reading, gives `stopped`. The OpenChamber endpoint is the source
+      only when BENCH_RA_QUOTA is unset.
 
     - **The state of each route.** The quota read gives one state for each
       route. The states are `ready`, `wait`, and `stopped`.
@@ -1336,7 +1341,7 @@ pilot gate of D13 has no rank on the page.
 `harness/model-guide/quota.ts` reads the quota source of the provider of a
 route, as D15 holds. It gives one state for each route: `ready`, `wait`, or
 `stopped`. It reads the OpenChamber endpoint for the providers that have
-one. It gives the state `stopped` for a quota error, a limit error, or a
+one. For Go it reads ra-quota when BENCH_RA_QUOTA is set. It gives the state `stopped` for a quota error, a limit error, or a
 read failure. An unusable window is skipped: a null, non-number, or
 negative value does not count. It gives `stopped` only when no usable
 window is left. For a route with the Go source, a usable 5-hour value and
