@@ -11,7 +11,7 @@
  * holds the id ADV-R-n of the finding.
  */
 
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import {
   chmodSync,
   cpSync,
@@ -49,7 +49,83 @@ const GO_ROUTE = "opencode-go/muse-spark-1.3-contributor#high";
 const SET_ID = "mg-adv-runner";
 
 const roots: string[] = [];
-afterAll(() => {
+
+/** Every quota server this file starts. A process handler kills each entry
+ * when the test process exits or takes a signal, so no server outlives the
+ * run even when a case throws before its own finally block. */
+const quotaChildren = new Set<ChildProcess>();
+
+function trackServer(child: ChildProcess): void {
+  quotaChildren.add(child);
+  child.on("exit", () => {
+    quotaChildren.delete(child);
+  });
+}
+
+function killAllServers(): void {
+  for (const child of [...quotaChildren]) {
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      /* the child is already gone */
+    }
+  }
+}
+
+if (!process.env.MG_ADV_R_CLEANUP_INSTALLED) {
+  process.env.MG_ADV_R_CLEANUP_INSTALLED = "1";
+  process.on("exit", killAllServers);
+  for (const signal of ["SIGINT", "SIGTERM"] as const) {
+    process.on(signal, () => {
+      killAllServers();
+      process.removeAllListeners(signal);
+      process.kill(process.pid, signal);
+    });
+  }
+}
+
+/** Stops one quota server and waits for its exit, up to a bounded wait. */
+async function stopServer(child: ChildProcess, timeoutMs = 5000): Promise<void> {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    quotaChildren.delete(child);
+    return;
+  }
+  const exited = new Promise<void>((done) => {
+    const timer = setTimeout(done, timeoutMs);
+    child.once("exit", () => {
+      clearTimeout(timer);
+      done();
+    });
+  });
+  try {
+    child.kill("SIGKILL");
+  } catch {
+    /* the child is already gone */
+  }
+  await exited;
+  quotaChildren.delete(child);
+}
+
+/** The quota server processes of this run that still answer pgrep. */
+function quotaServerOrphans(): string[] {
+  // The exact probe the gate uses. The checker line holds the pattern text
+  // too, so it is dropped; a real orphan never holds "pgrep -af".
+  const result = spawnSync("sh", ["-c", "pgrep -af 'mg-adv-r-.*quota-server' || true"], {
+    encoding: "utf8",
+    timeout: 10_000,
+  });
+  return String(result.stdout ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "" && !line.includes("pgrep -af"));
+}
+
+afterAll(async () => {
+  killAllServers();
+  for (const child of [...quotaChildren]) {
+    await stopServer(child);
+  }
+  expect(quotaServerOrphans(), "no quota server from this run stays alive").toEqual([]);
   for (const root of roots) rmSync(root, { recursive: true, force: true });
 });
 
@@ -156,7 +232,55 @@ interface RunnerFixture {
   logPath: string;
   requestPath: string;
   quotaBase: string;
-  closeQuota: () => void;
+  quotaChild: ChildProcess | null;
+  closeQuota: () => Promise<void>;
+}
+
+/** Starts one quota server for one temp dir and waits for its PORT line.
+ * The child is tracked, spawned with detached false, and killed by
+ * stopServer. On a start failure the child is stopped before the throw, so
+ * no path leaves a server behind. */
+async function startQuotaServer(
+  dir: string,
+  options: { mode?: string; values?: string; requestLog?: string } = {},
+): Promise<{ child: ChildProcess; port: string }> {
+  const serverFile = join(dir, "quota-server.cjs");
+  writeFileSync(serverFile, QUOTA_SERVER);
+  const child = spawn("node", [serverFile], {
+    cwd: dir,
+    detached: false,
+    env: env({
+      QUOTA_MODE: options.mode ?? process.env.MG_ADV_QUOTA_MODE ?? "fixed",
+      QUOTA_VALUES: options.values ?? process.env.MG_ADV_QUOTA_VALUES ?? "10",
+      QUOTA_REQUEST_LOG: options.requestLog ?? "",
+    }),
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  trackServer(child);
+  let port = "";
+  const seen: string[] = [];
+  child.stdout?.on("data", (chunk: Buffer) => {
+    seen.push(String(chunk));
+    const m = seen.join("").match(/PORT (\d+)/);
+    if (m) port = m[1];
+  });
+  // The server writes one line at start; poll with real sleeps so the
+  // event loop can deliver the pipe data.
+  const startAt = Date.now();
+  while (port === "" && Date.now() - startAt < 8000) {
+    await new Promise((done) => setTimeout(done, 25));
+  }
+  if (port === "") {
+    await stopServer(child);
+  }
+  expect(port, "the quota server prints its port").not.toBe("");
+  return { child, port };
+}
+
+/** Stops the quota server of one fixture and removes its /tmp folder. */
+async function closeFixture(fx: RunnerFixture): Promise<void> {
+  await fx.closeQuota();
+  rmSync(fx.root, { recursive: true, force: true });
 }
 
 /** One temp repo with the runner, the quota server, and the fake opencode. */
@@ -219,31 +343,7 @@ async function buildRunner(options: RunnerOptions = {}): Promise<RunnerFixture> 
   const logPath = join(root, "opencode.log");
   const requestPath = join(root, "quota-requests.log");
 
-  const serverFile = join(root, "quota-server.cjs");
-  writeFileSync(serverFile, QUOTA_SERVER);
-  const child = spawn("node", [serverFile], {
-    cwd: root,
-    env: env({
-      QUOTA_MODE: process.env.MG_ADV_QUOTA_MODE ?? "fixed",
-      QUOTA_VALUES: process.env.MG_ADV_QUOTA_VALUES ?? "10",
-      QUOTA_REQUEST_LOG: requestPath,
-    }),
-    stdio: ["ignore", "pipe", "ignore"],
-  });
-  let port = "";
-  const seen: string[] = [];
-  child.stdout?.on("data", (chunk: Buffer) => {
-    seen.push(String(chunk));
-    const m = seen.join("").match(/PORT (\d+)/);
-    if (m) port = m[1];
-  });
-  // The server writes one line at start; poll with real sleeps so the
-  // event loop can deliver the pipe data.
-  const startAt = Date.now();
-  while (port === "" && Date.now() - startAt < 8000) {
-    await new Promise((done) => setTimeout(done, 25));
-  }
-  expect(port, "the quota server prints its port").not.toBe("");
+  const { child, port } = await startQuotaServer(root, { requestLog: requestPath });
   return {
     root,
     repo,
@@ -252,9 +352,8 @@ async function buildRunner(options: RunnerOptions = {}): Promise<RunnerFixture> 
     logPath,
     requestPath,
     quotaBase: `http://127.0.0.1:${port}`,
-    closeQuota: () => {
-      child.kill("SIGKILL");
-    },
+    quotaChild: child,
+    closeQuota: () => stopServer(child),
   };
 }
 
@@ -381,7 +480,7 @@ describe("ADV-R runner block: route safety, quota shapes, and the mid-pass stop"
       const traces = filesHolding(fx.repo, "pwned").filter((file) => !file.endsWith("routes.json"));
       expect(traces, "no expansion trace outside routes.json").toEqual([]);
     } finally {
-      fx.closeQuota();
+      await closeFixture(fx);
     }
 
     const fx2 = await buildRunner({ diffs: ["a"] });
@@ -395,31 +494,14 @@ describe("ADV-R runner block: route safety, quota shapes, and the mid-pass stop"
       expect(badRoutePath.status, "a parent route value is refused").toBe(2);
       expect(filesUnder(fx2.privateDir).filter((f) => f.includes("..")), "no folder outside the root").toEqual([]);
     } finally {
-      fx2.closeQuota();
+      await closeFixture(fx2);
     }
   });
 
   it("ADV-R-2: a slow, huge, HTML, or string quota answer stops the route instead of hanging or passing", async () => {
     const runQuota = async (mode: string, provider = "opencode-go"): Promise<{ status: number | null; out: string; err: string }> => {
       const dir = tempDir("quota");
-      const serverFile = join(dir, "quota-server.cjs");
-      writeFileSync(serverFile, QUOTA_SERVER);
-      const child = spawn("node", [serverFile], {
-        env: env({ QUOTA_MODE: mode, QUOTA_VALUES: "10" }),
-        stdio: ["ignore", "pipe", "ignore"],
-      });
-      let port = "";
-      const seen: string[] = [];
-      child.stdout?.on("data", (chunk: Buffer) => {
-        seen.push(String(chunk));
-        const m = seen.join("").match(/PORT (\d+)/);
-        if (m) port = m[1];
-      });
-      const startAt = Date.now();
-      while (port === "" && Date.now() - startAt < 8000) {
-        await new Promise((done) => setTimeout(done, 25));
-      }
-      expect(port, `the ${mode} server prints its port`).not.toBe("");
+      const { child, port } = await startQuotaServer(dir, { mode, values: "10" });
       try {
         const result = spawnSync(
           join(HARNESS, "node_modules", ".bin", "tsx"),
@@ -428,7 +510,7 @@ describe("ADV-R runner block: route safety, quota shapes, and the mid-pass stop"
         );
         return { status: result.status, out: String(result.stdout ?? ""), err: String(result.stderr ?? "") };
       } finally {
-        child.kill("SIGKILL");
+        await stopServer(child);
       }
     };
 
@@ -468,7 +550,7 @@ describe("ADV-R runner block: route safety, quota shapes, and the mid-pass stop"
       expect(records[0].outputs, "one stored output").toHaveLength(1);
       expect(Object.keys(records[0]).filter((k) => k === "complete" || k === "rank"), "no completion marker").toEqual([]);
     } finally {
-      fx.closeQuota();
+      await closeFixture(fx);
     }
   });
 });
@@ -497,7 +579,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
       expect(leftovers, "the trap removed the job folder").toEqual([]);
       expect(liveFakeOpencode(), "no fake child stays alive").toEqual([]);
     } finally {
-      fx.closeQuota();
+      await closeFixture(fx);
     }
   });
 
@@ -514,7 +596,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
       expect(filesHolding(fxHit.privateDir, SECRET_A), "no copy of the value stays in the private folder").toEqual([]);
       expect(filesHolding(fxHit.repo, SECRET_A), "no copy of the value stays in the repo").toEqual([]);
     } finally {
-      fxHit.closeQuota();
+      await closeFixture(fxHit);
     }
 
     const fxMiss = await buildRunner({ diffs: ["a"], calls: [{ exit: 0, value: `{"findings":[]} ${nearMiss}` }] });
@@ -524,7 +606,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
       const records = passRecords(fxMiss.privateDir);
       expect(records[0]?.state, "a one-char change is not a hit").toBe("complete");
     } finally {
-      fxMiss.closeQuota();
+      await closeFixture(fxMiss);
     }
 
     const fxOther = await buildRunner({ diffs: ["a"], calls: [{ exit: 0, value: `{"findings":[]} ${SECRET_B}` }] });
@@ -534,7 +616,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
       const records = passRecords(fxOther.privateDir);
       expect(records[0]?.state, "the scan covers only the route provider").toBe("complete");
     } finally {
-      fxOther.closeQuota();
+      await closeFixture(fxOther);
     }
   });
 
@@ -550,7 +632,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
       expect(records[0]?.state, "the tail value stops the pass").toBe("open");
       expect(filesHolding(fx.privateDir, SECRET_A), "no copy of the value stays").toEqual([]);
     } finally {
-      fx.closeQuota();
+      await closeFixture(fx);
     }
   });
 
@@ -567,7 +649,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
       expect(modelCallCount(fxUpper.logPath), "no retry on a region error").toBe(1);
       expect(records[0]?.outputs, "no raw output stays").toHaveLength(0);
     } finally {
-      fxUpper.closeQuota();
+      await closeFixture(fxUpper);
     }
 
     const fxJson = await buildRunner({
@@ -579,7 +661,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
       expect(run.status).toBe(0);
       expect(passRecords(fxJson.privateDir)[0]?.state, "an error inside JSON still blocks").toBe("region-blocked");
     } finally {
-      fxJson.closeQuota();
+      await closeFixture(fxJson);
     }
 
     const fxFree = await buildRunner({
@@ -610,7 +692,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
       expect(records[0]?.state, "a non-Go route retries as transport").toBe("open");
       expect(modelCallCount(fxFree.logPath), "three tries on a non-Go route").toBe(3);
     } finally {
-      fxFree.closeQuota();
+      await closeFixture(fxFree);
     }
   });
 });
@@ -657,7 +739,7 @@ describe("ADV-R runner block: concurrency, hostile review data, and filter words
       expect(passes, "the pass numbers stay apart").toEqual([1, 2]);
       expect(liveFakeOpencode(), "no fake child stays alive").toEqual([]);
     } finally {
-      fx.closeQuota();
+      await closeFixture(fx);
     }
   }, 120_000);
 
@@ -791,7 +873,7 @@ describe("ADV-R runner block: concurrency, hostile review data, and filter words
       expect(modelCallCount(fx.logPath), "no call on any refusal").toBe(0);
       expect(passRecords(fx.privateDir), "no pass record on refusal").toEqual([]);
     } finally {
-      fx.closeQuota();
+      await closeFixture(fx);
     }
   });
 
