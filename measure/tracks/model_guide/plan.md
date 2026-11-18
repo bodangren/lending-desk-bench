@@ -1730,7 +1730,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     one comment says that `diffs/` is the review input (spec D7). The pass
     list and the probe list come from the same glob, so both modes read the
     seeded diff. Rows 4.9c and 4.9d are `[x]`.
-- [~] 4.9e Red: the message line in the prompt (spec D10 ruling 2026-11-18).
+- [x] 4.9e Red: the message line in the prompt (spec D10 ruling 2026-11-18).
   Change only `harness/model-guide-tests/review-run.test.ts`. Touch no
   production file. (Red role base 154eb7d.)
   - The cases pin that the call stdin holds the prompt, the message line,
@@ -1752,8 +1752,14 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     with Green's worktree changes in place. The seed-messages suite
     (`bun test harness/model-guide-tests/seed-messages.test.ts`) exits 1
     with `0 pass` and `9 fail`: every case fails with "production file is
-    missing". Row stays `[~]`.
-- [ ] 4.9f Green: the message line in the prompt, the seeder, and the backfill
+    missing". The row was `[~]` until the Green commit 75f7419.
+  - Evidence (Green 75f7419, 2026-11-18): the Green commit 75f7419
+    implements this contract, and row 4.9f holds the gate counts. `bun test
+    harness/model-guide-tests/review-run.test.ts` exits 0 with `43 pass` and
+    `0 fail`, and `bun test
+    harness/model-guide-tests/seed-messages.test.ts` exits 0 with `9 pass` and
+    `0 fail`. This row is `[x]`.
+- [x] 75f7419 4.9f Green: the message line in the prompt, the seeder, and the backfill
   (spec D10 ruling 2026-11-18).
   - Change `harness/model-guide/review-run.sh` to read the message file and
     put the line between the prompt and the seeded diff. Write the new tool
@@ -1775,6 +1781,33 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `npx tsx model-guide/seed-messages.ts mg-2026-11p`.
   - Verify: list that each diff of both sets has one non-empty message file.
     The Red command exits 0.
+  - Evidence (Green 75f7419, 2026-11-18): the gates run one at a time, and
+    each exits 0.
+    - `bun test harness/model-guide-tests/review-run.test.ts` exits 0 with
+      `43 pass`, `0 fail`, `329 expect() calls`, and `Ran 43 tests across 1
+      file` (61.62s).
+    - `bun test harness/model-guide-tests/seed-messages.test.ts` exits 0 with
+      `9 pass`, `0 fail`, `41 expect() calls`, and `Ran 9 tests across 1
+      file` (3.31s).
+    - `bun test harness/model-guide-tests/pick-diffs.test.ts` exits 0 with
+      `29 pass`, `0 fail`, `220 expect() calls`, and `Ran 29 tests across 1
+      file` (26.14s).
+    - After each gate, `pgrep -af "fake-opencod[e]"` and `pgrep -af
+      "quota-serve[r]"` print no line.
+  - Backfill (Green 75f7419, 2026-11-18, `gh` read only): the run for
+    `mg-2026-11a` prints `seed-messages: 14 written`, and the run for
+    `mg-2026-11p` prints `seed-messages: 6 written`. The set `mg-2026-11a`
+    holds 14 diff files and 14 non-empty message files, and the set
+    `mg-2026-11p` holds 6 diff files and 6 non-empty message files. Every
+    diff id has one message file, and every message file holds one line. The
+    counts of the two sets match.
+  - Changes: the file `harness/model-guide/review-run.sh`, the new file
+    `harness/model-guide/seed-messages.ts`, and this plan row. The Red test
+    file `harness/model-guide-tests/seed-messages.test.ts` is unchanged. The
+    log is `measure/runs/model_guide/green-4.9f.log` (not staged).
+  - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+    07418d21f073a3201055832dd5fbd82fa0e8a880; final Green HEAD 75f7419
+    before this row, and the plan-evidence commit after it.
 - [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
   per pilot route on the first control diff of `mg-2026-11a`, through
   `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19. The pilot
@@ -1946,7 +1979,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     80869bdc6bd546da446d2c86312e0076d70cbe1e; final Green HEAD 61449ae
     before this row, and the plan-evidence commit after it.
-- [~] 4.13c Red: the judge route list (spec D11, PM 2026-11-18). Change only
+- [x] 4.13c Red: the judge route list (spec D11, PM 2026-11-18). Change only
   `harness/model-guide-tests/judge-run.test.ts`. Touch no production file. (Red role base 154eb7d.)
   - The cases pin the accept/refuse rule: `judge-run.sh` accepts each route
     of `judges.json` (the two named judges and the Claude seat); it refuses
@@ -1974,13 +2007,39 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     changes in place. New J17 (no `judges.json`, route from `routes.json`
     refused) fails against Green's routes.json fallback with exit 0,
     expected 2. The Red command exits 1 with
-    `Tests  1 failed | 21 passed (22)`. Row stays `[~]`.
-- [ ] 4.13d Green: the judge route list (spec D11, PM 2026-11-18).
+    `Tests  1 failed | 21 passed (22)`. The row was `[~]` until the Green
+    commit 75f7419.
+  - Evidence (Green 75f7419, 2026-11-18): the Green commit 75f7419
+    implements this contract, and row 4.13d holds the gate counts. The Red
+    command exits 0 with `Tests  22 passed (22)`. This row is `[x]`.
+- [x] 75f7419 4.13d Green: the judge route list (spec D11, PM 2026-11-18).
   - Write `harness/model-guide/judges.json` with the three judge routes,
     each with a `quota_provider` and a `quota_source`. Change `judge-run.sh`
     to accept a route only from `judges.json`. `routes.json` stays the six
     review routes.
   - Verify: the Red command exits 0.
+  - Evidence (Green 75f7419, 2026-11-18): the gates run one at a time, and
+    each exits 0.
+    - `cd harness && npx vitest run
+      model-guide-tests/judge-run.test.ts --configLoader native
+      --maxWorkers=1 --reporter=dot` exits 0 with `Tests  22 passed (22)`
+      and `Test Files  1 passed (1)` (44.36s).
+    - `bun test harness/model-guide-tests/review-run.test.ts` exits 0 with
+      `43 pass`, `0 fail`, `329 expect() calls`, and `Ran 43 tests across 1
+      file` (61.62s).
+    - `cd harness && npx vitest run
+      model-guide-tests/adversarial-p4-runner.test.ts --configLoader native
+      --maxWorkers=1 --reporter=dot` exits 0 with `Tests  14 passed (14)`
+      and `Test Files  1 passed (1)` (65.77s).
+    - After each gate, `pgrep -af "fake-opencod[e]"` and `pgrep -af
+      "quota-serve[r]"` print no line.
+  - Changes: the new file `harness/model-guide/judges.json`, the file
+    `harness/model-guide/judge-run.sh`, and this plan row. The Red test file
+    `harness/model-guide-tests/judge-run.test.ts` is unchanged. The log is
+    `measure/runs/model_guide/green-4.9f.log` (not staged).
+  - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+    07418d21f073a3201055832dd5fbd82fa0e8a880; final Green HEAD 75f7419
+    before this row, and the plan-evidence commit after it.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
