@@ -2323,8 +2323,23 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   5085d9b162a60559e4bf415fb0f33cb91a627b98. The log is
   `measure/runs/model_guide/green-4.13l.log` (not staged).
-- [~] 93c0dcf 4.13m Red: every opencode call of the credential helper is standalone (PM stop order 2026-11-19).
-- [ ] 4.13n Green: every opencode call of the credential helper is standalone (PM stop order 2026-11-19).
+- [x] 93c0dcf 4.13m Red: every opencode call of the credential helper is standalone (PM stop order 2026-11-19).
+- [x] a70e410 4.13n Green: every opencode call of the credential helper is
+  standalone (PM stop order 2026-11-19). `harness/model-guide/provider-credential.sh`
+  adds `--standalone` to the seed `auth export` (line 147), the seed
+  `auth import` (line 179), and the `scan-values` `auth export` (line 187).
+  The argument shape is unchanged. Every other real opencode call of
+  `harness/model-guide/*.sh` already holds the flag (`review-run.sh:594` run,
+  `judge-run.sh:381` run). `harness/opencode-host.sh` holds only the
+  `opencode_host_run` wrapper and no invocation of its own. No test file
+  changed. Gates: `credential-provider.test.ts` 16 passed (16);
+  `review-run.test.ts` 53 pass and 0 fail (bun); `judge-run.test.ts` 30
+  passed (30); `adversarial-p4-runner.test.ts` 14 passed (14). Each run left
+  no `fake-opencode` and no `quota-server` process. Red before the fix was
+  2 failed | 14 passed (ST1, ST2). phase_base_sha
+  57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  38919fdf9a57d41a588de1bf3cab15ad554af25b. The log is
+  `measure/runs/model_guide/green-4.13n.log` (not staged).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
