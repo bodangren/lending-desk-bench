@@ -65,8 +65,8 @@
 # The rules of spec D15: the pass starts only when the quota state is
 # `ready`. For every source but the Go plan, `ready` means every window is
 # below 70 %, and the pass stops when a window reaches 80 %. For the Go plan
-# (`quota_source` `opencode-go`, PM 2026-11-19), `ready` means the 5h window
-# is below 95 % and the week window is below 100 %. The pass stops at those
+# (`quota_provider` `opencode-go`, PM 2026-11-19), `ready` means the 5h window
+# is below 95 % and the weekly window is below 100 %. The pass stops at those
 # same thresholds, and it never stops at 80 %. A route with no quota source
 # runs at most 1 pass per night, and it stops at the first quota or limit
 # error. The refusal of a second pass of the same date prints one line on
@@ -250,17 +250,18 @@ case "$ROUTE_KIND" in
 esac
 
 # The quota rule of the route (spec D15, PM 2026-11-19). The Go plan holds
-# the source `opencode-go`. It waits at 95 % of the 5h window or 100 % of
-# the week window, and a pass stops at those same thresholds. Every other
-# source waits at 70 % of any window, and a pass stops at 80 %.
-GO_QUOTA_SOURCE="opencode-go"
+# the provider `opencode-go`. It waits at 95 % of the 5h window or 100 % of
+# the weekly window, and a pass stops at those same thresholds. Every other
+# source waits at 70 % of any window, and a pass stops at 80 %. The Go rule
+# keys on `quota_provider`, the one field quota.ts reads (task 4.13j N1).
+GO_QUOTA_PROVIDER="opencode-go"
 IS_GO_ROUTE=0
 QUOTA_WAIT_TEXT="a window is 70 % or more"
 QUOTA_STOP_TEXT="a window reached 80 %"
-if [ "$QUOTA_SOURCE" = "$GO_QUOTA_SOURCE" ]; then
+if [ "$QUOTA_PROVIDER" = "$GO_QUOTA_PROVIDER" ]; then
   IS_GO_ROUTE=1
-  QUOTA_WAIT_TEXT="the 5h window reached 95 % or the week window reached 100 %"
-  QUOTA_STOP_TEXT="the 5h window reached 95 % or the week window reached 100 %"
+  QUOTA_WAIT_TEXT="the 5h window reached 95 % or the weekly window reached 100 %"
+  QUOTA_STOP_TEXT="the 5h window reached 95 % or the weekly window reached 100 %"
 fi
 
 # The tools of the run.

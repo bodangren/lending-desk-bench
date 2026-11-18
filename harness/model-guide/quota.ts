@@ -25,15 +25,22 @@
  * stdout holds one JSON line:
  *
  *   {"provider":"...","source":"...","state":"...","cap":N,
- *    "windows":{"5h":V,"day":V,"week":V}}
+ *    "windows":{"5h":V,"weekly":V,"monthly":V}}
  *
- * `state` is `ready`, `wait`, or `stopped`. `ready` means every window is
- * below 70. `wait` means a window is 70 or more. The Go plan (`opencode-go`)
- * uses the thresholds of the PM order of 2026-11-19: `ready` means the 5h
- * window is below 95 and the week window is below 100. `wait` means the 5h
- * window is 95 or more or the week window is 100 or more. On `stopped`,
- * stderr holds exactly one line `quota: <reason>`. The tool exits 0 for
- * every state. Exit 2 is for a bad flag.
+ * The live Go source names its windows `5h`, `weekly`, and `monthly`, and
+ * holds `credits_balance` with a null `usedPercent`. A window whose
+ * `usedPercent` is null, not a number, or negative is not usable: the read
+ * skips it, and `windows` holds the usable windows only.
+ *
+ * `state` is `ready`, `wait`, or `stopped`. `ready` means every usable
+ * window is below 70. `wait` means a usable window is 70 or more. The Go
+ * plan (`opencode-go`) uses the thresholds of the PM order of 2026-11-19:
+ * it requires the `5h` and the `weekly` window, and gives `stopped` when
+ * either name is absent. `ready` means the 5h window is below 95 and the
+ * `weekly` window is below 100. `wait` means the 5h window is 95 or more or
+ * the `weekly` window is 100 or more. On `stopped`, stderr holds exactly one
+ * line `quota: <reason>`. The tool exits 0 for every state. Exit 2 is for a
+ * bad flag.
  *
  * The read has a timeout of 5 s, below the 10 s bound of the contract. The
  * whole answer is parsed, so a 2 MiB body with 200 windows works.
@@ -53,6 +60,12 @@ const GO_PROVIDER = "opencode-go";
 
 /** The 5h window value that moves a Go route to `wait` (spec D15, PM 2026-11-19). */
 const GO_FIVEH_PERCENT = 95;
+
+/** The 5h window name of the live Go source (spec D15). */
+const GO_FIVEH_WINDOW = "5h";
+
+/** The week window name of the live Go source (spec D15, PM 2026-11-19). */
+const GO_WEEK_WINDOW = "weekly";
 
 /** The week window value that moves a Go route to `wait` (spec D15, PM 2026-11-19). */
 const GO_WEEK_PERCENT = 100;
@@ -89,8 +102,12 @@ interface QuotaDoc {
   windows: Record<string, number>;
 }
 
-/** One parsed quota answer, or the reason of a stop. */
-type QuotaRead = { ok: true; windows: Record<string, number> } | { ok: false; reason: string };
+/** One parsed quota answer, or the reason of a stop. `windows` holds the
+ * usable values; `names` holds every window name of the answer, usable or
+ * not. */
+type QuotaRead =
+  | { ok: true; windows: Record<string, number>; names: Set<string> }
+  | { ok: false; reason: string };
 
 /** Prints the JSON line of the answer. */
 function emit(doc: QuotaDoc): void {
@@ -251,26 +268,27 @@ function parseAnswer(body: string): QuotaRead {
   const entries = Object.entries(rawWindows as Record<string, unknown>);
   if (entries.length === 0) return { ok: false, reason: "the quota answer holds no window" };
   const windows: Record<string, number> = {};
+  const names = new Set<string>();
   for (const [name, window] of entries) {
-    if (window === null || typeof window !== "object" || Array.isArray(window)) {
-      return { ok: false, reason: `the window ${name} holds no usedPercent` };
-    }
+    names.add(name);
+    if (window === null || typeof window !== "object" || Array.isArray(window)) continue;
     const value = (window as { usedPercent?: unknown }).usedPercent;
-    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-      return { ok: false, reason: `the window ${name} holds no usable usedPercent` };
-    }
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) continue;
     windows[name] = value;
   }
-  return { ok: true, windows };
+  if (Object.keys(windows).length === 0) {
+    return { ok: false, reason: "the quota answer holds no usable window" };
+  }
+  return { ok: true, windows, names };
 }
 
 /** The state of one set of windows (spec D15). The Go plan uses the 5h and
- * the week thresholds of the PM order of 2026-11-19. Every other source uses
- * the 70 % rule of every window. */
+ * the weekly thresholds of the PM order of 2026-11-19. Every other source
+ * uses the 70 % rule of every usable window. */
 function stateOf(provider: string, windows: Record<string, number>): "ready" | "wait" {
   if (provider === GO_PROVIDER) {
-    const fiveH = windows["5h"];
-    const week = windows["week"];
+    const fiveH = windows[GO_FIVEH_WINDOW];
+    const week = windows[GO_WEEK_WINDOW];
     if (fiveH !== undefined && fiveH >= GO_FIVEH_PERCENT) return "wait";
     if (week !== undefined && week >= GO_WEEK_PERCENT) return "wait";
     return "ready";
@@ -298,6 +316,12 @@ async function main(): Promise<void> {
   const root = resolved.replace(/\/+$/, "");
   const answer = await readQuota(`${root}/api/quota/${id}`);
   if (!answer.ok) stop(provider, id, answer.reason);
+  if (
+    provider === GO_PROVIDER &&
+    (!answer.names.has(GO_FIVEH_WINDOW) || !answer.names.has(GO_WEEK_WINDOW))
+  ) {
+    stop(provider, id, "the Go answer holds no 5h or weekly window");
+  }
   emit({ provider, source: id, state: stateOf(provider, answer.windows), cap: SOURCED_CAP, windows: answer.windows });
 }
 

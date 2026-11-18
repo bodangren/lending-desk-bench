@@ -64,7 +64,7 @@
 # denies every tool, the credential value scan before an answer is used, the
 # flock lock of one set, one judge, and one date, the quota rules of spec D15
 # (no start at 70 %, stop at 80 % of a window; the Go plan waits at 95 % of
-# the 5h window or 100 % of the week window and stops at those thresholds,
+# the 5h window or 100 % of the weekly window and stops at those thresholds,
 # PM 2026-11-19), the watcher of the call, and the token log of the
 # `step-finish` events (spec D13).
 #
@@ -234,17 +234,18 @@ if [ -n "$ROUTE_KIND" ]; then
 fi
 
 # The quota rule of the route (spec D15, PM 2026-11-19). The Go plan holds
-# the source `opencode-go`. It waits at 95 % of the 5h window or 100 % of
-# the week window, and a run stops at those same thresholds. Every other
-# source waits at 70 % of any window, and a run stops at 80 %.
-GO_QUOTA_SOURCE="opencode-go"
+# the provider `opencode-go`. It waits at 95 % of the 5h window or 100 % of
+# the weekly window, and a run stops at those same thresholds. Every other
+# source waits at 70 % of any window, and a run stops at 80 %. The Go rule
+# keys on `quota_provider`, the one field quota.ts reads (task 4.13j N1).
+GO_QUOTA_PROVIDER="opencode-go"
 IS_GO_ROUTE=0
 QUOTA_WAIT_TEXT="a window is 70 % or more"
 QUOTA_STOP_TEXT="a window reached 80 %"
-if [ "$QUOTA_SOURCE" = "$GO_QUOTA_SOURCE" ]; then
+if [ "$QUOTA_PROVIDER" = "$GO_QUOTA_PROVIDER" ]; then
   IS_GO_ROUTE=1
-  QUOTA_WAIT_TEXT="the 5h window reached 95 % or the week window reached 100 %"
-  QUOTA_STOP_TEXT="the 5h window reached 95 % or the week window reached 100 %"
+  QUOTA_WAIT_TEXT="the 5h window reached 95 % or the weekly window reached 100 %"
+  QUOTA_STOP_TEXT="the 5h window reached 95 % or the weekly window reached 100 %"
 fi
 
 # The tools of the run.
