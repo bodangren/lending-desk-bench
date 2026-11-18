@@ -1656,7 +1656,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     is a background job with a watcher, so a SIGKILL of the runner leaves no
     call and no fake child; the load watch of `review-run.test.ts` requires
     it. Rows 4.9a and 4.9b are `[x]`.
-- [~] 4.9c Red: the runner reviews the seeded diffs (spec D7). Change only
+- [~] 9983525 4.9c Red: the runner reviews the seeded diffs (spec D7). Change only
   `harness/model-guide-tests/review-run.test.ts`. Touch no production file.
   - Defect (orchestrator, 2026-11-18): `harness/model-guide/review-run.sh`
     line 242 builds the diff list from `$SET_DIR/src/*.diff`, and line 238
