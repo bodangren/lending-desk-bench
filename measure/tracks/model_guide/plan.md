@@ -1579,6 +1579,17 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     state of each route, the region rule, and the credential scan.
   - Verify: `measure/runs/model_guide/check-4.9.json` has status pass, or
     each blocking finding has a fix commit.
+  - Fix F1 (check-4.9.json, Red e60814a): the one-pass rule of a route with
+    no quota source keys on an empty or null `quota_source`, not on an empty
+    `quota_provider`. A second run of a no-source route for the same
+    `--date` exits 2 before any call. It prints one stderr line
+    `review-run: the route allows one pass per night and one pass already
+    ran`, with empty stdout, and it writes no second pass record. Fix commit
+    0ba6a28. `review-run.test.ts` exits 0 with `Tests  25 passed (25)`; the
+    F2 case passes at the role base with no production change.
+    `adversarial-p4-runner.test.ts` exits 0 with `Tests  14 passed (14)`,
+    and `quota.test.ts` exits 0 with `Tests  15 passed (15)`. This row stays
+    `[ ]` until the checker runs again.
 - [ ] 4.10 The route probe (spec D14). One call per route with a control
   diff, through `heavy-run.sh`, in the window of spec D15.
   - Record `reachable`, `unreachable`, or `region-blocked` with the error
