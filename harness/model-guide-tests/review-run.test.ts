@@ -208,6 +208,10 @@ interface Scenario {
   /** The week value after quotaStopAfter model calls. It defaults to
    * quotaStopPercent. It lets the week rise while 5h stays low. */
   quotaStopWeek?: number;
+  /** When true, the fake quota server serves the real window set of the
+   * live opencode-go source ("5h", "weekly", "monthly", and a null
+   * "credits_balance") instead of "5h", "day", "week" (task 4.13i). */
+  realKeys?: boolean;
   setId?: string;
   routes?: unknown[];
 }
@@ -448,6 +452,7 @@ const requestLog = process.env.QUOTA_REQUEST_LOG || "";
 const weekText = process.env.QUOTA_WEEK || "";
 const weekStart = weekText === "" ? percent : Number(weekText);
 const stopWeekText = process.env.QUOTA_STOP_WEEK || "";
+const realKeys = process.env.QUOTA_REAL_KEYS === "1";
 
 // The number of the model calls of the fake log.
 const modelCalls = () => {
@@ -479,15 +484,30 @@ const server = http.createServer((req, res) => {
     }
     if (stopWeekText !== "") week = Number(stopWeekText);
   }
-  const body = JSON.stringify({
-    usage: {
-      windows: {
-        "5h": { usedPercent: fiveH },
-        day: { usedPercent: day },
-        week: { usedPercent: week },
+  // The real window set of the live opencode-go source (task 4.13i,
+  // Review A cc8afbd F1 and F2): it names the week window "weekly",
+  // holds "monthly", and holds a null "credits_balance". The default fake
+  // serves "5h", "day", "week", which the live source never sends.
+  const body = realKeys
+    ? JSON.stringify({
+      usage: {
+        windows: {
+          "5h": { usedPercent: fiveH },
+          weekly: { usedPercent: week },
+          monthly: { usedPercent: day },
+          credits_balance: { usedPercent: null },
+        },
       },
-    },
-  });
+    })
+    : JSON.stringify({
+      usage: {
+        windows: {
+          "5h": { usedPercent: fiveH },
+          day: { usedPercent: day },
+          week: { usedPercent: week },
+        },
+      },
+    });
   res.writeHead(200, { "content-type": "application/json", connection: "close" });
   res.end(body);
 });
@@ -659,6 +679,7 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   const stopAfter = scenario.quotaStopAfter ?? 2;
   const week = scenario.quotaWeek;
   const stopWeek = scenario.quotaStopWeek;
+  const realKeys = scenario.realKeys ?? false;
   const server = spawn(process.execPath, [serverPath], {
     env: {
       ...process.env,
@@ -668,6 +689,7 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
       QUOTA_STOP_AFTER: String(stopAfter),
       QUOTA_WEEK: week === undefined ? "" : String(week),
       QUOTA_STOP_WEEK: stopWeek === undefined ? "" : String(stopWeek),
+      QUOTA_REAL_KEYS: realKeys ? "1" : "",
       QUOTA_REQUEST_LOG: requestPath,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -1173,6 +1195,49 @@ describe("P4 the Go plan thresholds of the review runner (task 4.13g)", () => {
       dropFixture(stopped);
     }
   }, 120_000);
+
+  it("G4 the pass starts with the real window set at weekly 97 % and refuses at weekly 100 %", async () => {
+    const ready = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 97,
+      realKeys: true,
+      calls: [
+        { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(ready, runArgs(ready));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(modelCalls(logEntries(ready.logPath)), "the runner started no pass at weekly 97 %").toHaveLength(3);
+      const records = passRecords(ready.privateDir);
+      expect(records, "the runner wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("complete");
+    } finally {
+      dropFixture(ready);
+    }
+
+    const wait = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 100,
+      realKeys: true,
+      calls: [{ value: JSON.stringify({ type: "result", text: "RAW-d-01" }) }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(wait, runArgs(wait));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(wait.logPath)), "the runner called the model at weekly 100 %").toEqual([]);
+      expect(filesHolding(wait.privateDir, "RAW-"), "the runner stored a raw output at weekly 100 %").toEqual([]);
+      const records = passRecords(wait.privateDir);
+      expect(records, "the runner wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("wait");
+    } finally {
+      dropFixture(wait);
+    }
+  });
 });
 
 describe("P4 R7 the transient retry", () => {

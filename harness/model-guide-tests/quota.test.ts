@@ -294,6 +294,25 @@ function goBody(fiveH: number, day: number, week: number): string {
   });
 }
 
+/** The body of the live opencode-go window set (Review A cc8afbd F1, F2).
+ * The live endpoint GET /api/quota/opencode-go names the week window
+ * "weekly" and holds "monthly" and a null "credits_balance" beside it.
+ * The older fakes of this file (goBody, windowsBody) serve "day" and
+ * "week", which the live source never sends; they stay for the moved
+ * 70/80 pins, and the new Q11 to Q14 cases serve this real set. */
+function liveGoBody(fiveH: number, weekly: number, monthly: number): string {
+  return JSON.stringify({
+    usage: {
+      windows: {
+        "5h": { usedPercent: fiveH },
+        weekly: { usedPercent: weekly },
+        monthly: { usedPercent: monthly },
+        credits_balance: { usedPercent: null },
+      },
+    },
+  });
+}
+
 /** An answer with a JSON body and a status code. */
 function jsonResponse(body: string, status = 200): QuotaHandler {
   return (_req, res) => {
@@ -527,6 +546,209 @@ describe("Q10 the Go week threshold", () => {
       const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
       const doc = expectState(result, "wait", "week 100");
       expect(doc.windows?.["week"], "week 100: the value is not labeled").toBe(100);
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+});
+
+describe("Q11 the live Go window set (task 4.13i, Review A cc8afbd F1)", () => {
+  it("Q11 gives ready for opencode-go at 5h 50, weekly 97, and monthly 89 with a null credits_balance", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(jsonResponse(liveGoBody(50, 97, 89)));
+    try {
+      const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const doc = expectState(result, "ready", "live set 50/97/89");
+      expect(doc.windows?.["5h"], "live set: the 5h value is not labeled").toBe(50);
+      expect(doc.windows?.["weekly"], "live set: the weekly value is not labeled").toBe(97);
+      expect(doc.windows?.["monthly"], "live set: the monthly value is not labeled").toBe(89);
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+
+  it("Q11 gives wait for opencode-go at weekly 100 with the live window set", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(jsonResponse(liveGoBody(10, 100, 10)));
+    try {
+      const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const doc = expectState(result, "wait", "live set weekly 100");
+      expect(doc.windows?.["weekly"], "live set weekly 100: the weekly value is not labeled").toBe(100);
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+
+  it("Q11 gives wait for opencode-go at 5h 95 with the live window set", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(jsonResponse(liveGoBody(95, 10, 10)));
+    try {
+      const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const doc = expectState(result, "wait", "live set 5h 95");
+      expect(doc.windows?.["5h"], "live set 5h 95: the 5h value is not labeled").toBe(95);
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+});
+
+describe("Q12 a null window is skipped (task 4.13i, Review A cc8afbd F2)", () => {
+  it("Q12 skips a null window; an answer with no usable window gives stopped (Q15 adds the Go required-window rule)", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(jsonResponse(liveGoBody(50, 97, 89)));
+    try {
+      // A null credits_balance beside usable windows gives ready, not stopped.
+      const ready = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectState(ready, "ready", "null beside usable windows");
+      // No usable window at all still gives stopped: every window is null.
+      server.setHandler(
+        jsonResponse(
+          JSON.stringify({
+            usage: {
+              windows: {
+                "5h": { usedPercent: null },
+                weekly: { usedPercent: null },
+              },
+            },
+          }),
+        ),
+      );
+      const allNull = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(allNull, "every window null");
+      // No window at all still gives stopped.
+      server.setHandler(jsonResponse(JSON.stringify({ usage: { windows: {} } })));
+      const noWindow = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(noWindow, "no window");
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+});
+
+describe("Q13 a non-number value is not usable (task 4.13i, Review A cc8afbd F2; Review B N2)", () => {
+  it("Q13 skips a string or negative value beside usable windows and stops when it is the only window", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(
+      jsonResponse(
+        JSON.stringify({
+          usage: {
+            windows: {
+              "5h": { usedPercent: 50 },
+              weekly: { usedPercent: 10 },
+              credits_balance: { usedPercent: "50" },
+            },
+          },
+        }),
+      ),
+    );
+    try {
+      // A string value beside usable windows is skipped, not a stop. NaN
+      // serializes to null over JSON, so Q12 pins the NaN case.
+      const ready = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectState(ready, "ready", "string beside usable windows");
+      // A negative value beside usable windows is skipped too (Review B N2).
+      server.setHandler(
+        jsonResponse(
+          JSON.stringify({
+            usage: {
+              windows: {
+                "5h": { usedPercent: 50 },
+                weekly: { usedPercent: -1 },
+                monthly: { usedPercent: 10 },
+              },
+            },
+          }),
+        ),
+      );
+      const negative = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectState(negative, "ready", "negative beside usable windows");
+      // A string as the only window is still not usable: stopped.
+      server.setHandler(
+        jsonResponse(JSON.stringify({ usage: { windows: { "5h": { usedPercent: "50" } } } })),
+      );
+      const onlyString = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(onlyString, "string as the only window");
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+});
+
+describe("Q14 the 70 % rule of a non-Go source with the real key names (task 4.13i)", () => {
+  it("Q14 gives ready below 70 and wait at 70 for kimi-code-plan-cn on 5h, weekly, and monthly with a null credits_balance", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(jsonResponse(liveGoBody(10, 10, 10)));
+    try {
+      for (const value of [10, 69.9]) {
+        const body = JSON.stringify({
+          usage: {
+            windows: {
+              "5h": { usedPercent: value },
+              weekly: { usedPercent: value },
+              monthly: { usedPercent: value },
+              credits_balance: { usedPercent: null },
+            },
+          },
+        });
+        server.setHandler(jsonResponse(body));
+        const result = await runQuota(sandbox, [
+          "--provider",
+          "kimi-code-plan-cn",
+          "--base",
+          server.base,
+        ]);
+        const doc = expectState(result, "ready", `real keys window ${value}`);
+        expect(doc.windows?.["weekly"], `real keys window ${value}: the weekly value is not labeled`).toBe(
+          value,
+        );
+      }
+      for (const value of [70, 100]) {
+        server.setHandler(jsonResponse(liveGoBody(value, value, value)));
+        const result = await runQuota(sandbox, [
+          "--provider",
+          "kimi-code-plan-cn",
+          "--base",
+          server.base,
+        ]);
+        const doc = expectState(result, "wait", `real keys window ${value}`);
+        expect(doc.windows?.["5h"], `real keys window ${value}: the 5h value is not labeled`).toBe(value);
+      }
+      expect(server.requests.length, "the tool sent no request").toBe(4);
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+});
+
+describe("Q15 the required Go windows (task 4.13i, Review B cc8afbd B2)", () => {
+  it("Q15 gives stopped for opencode-go when 5h or weekly is absent, even beside a usable window", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(
+      jsonResponse(JSON.stringify({ usage: { windows: { "5h": { usedPercent: 10 } } } })),
+    );
+    try {
+      // Spec D15: a missing field is stopped. Both 5h and weekly must be
+      // finite numbers on a Go route; a usable 5h alone is not enough.
+      const noWeekly = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(noWeekly, "5h with no weekly");
+      server.setHandler(
+        jsonResponse(JSON.stringify({ usage: { windows: { weekly: { usedPercent: 10 } } } })),
+      );
+      const noFiveH = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(noFiveH, "weekly with no 5h");
+      // The old fake key "day" is not a required window: day alone stops.
+      server.setHandler(
+        jsonResponse(JSON.stringify({ usage: { windows: { day: { usedPercent: 10 } } } })),
+      );
+      const dayOnly = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(dayOnly, "day only");
     } finally {
       await server.close();
       sandbox.close();
