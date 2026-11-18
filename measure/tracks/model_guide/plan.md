@@ -1595,7 +1595,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     of the checker holds status pass at 8e0c441
     (`measure/runs/model_guide/check-4.9-8e0c441.json`), so this row is
     `[x]`.
-- [ ] 4.9a Red. Probe mode, token log, and the new routes.json (spec D12, D14,
+- [~] 4.9a Red. Probe mode, token log, and the new routes.json (spec D12, D14,
   Tokens; PM 2026-11-18). Change only test files under
   `harness/model-guide-tests/` (`review-run.test.ts` and the fake `opencode`,
   which must emit token fields in its json events).
@@ -1607,6 +1607,24 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     routes are present.
   - Verify: the new cases fail for missing behavior; record names in
     `measure/runs/model_guide/red-4.9a.txt`.
+  - Evidence: run on 2026-11-18 with `cd harness && npx vitest run
+    model-guide-tests/review-run.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot`. Exit 1, `Tests  10 failed | 25 passed
+    (35)`. First failure line: `FAIL model-guide-tests/review-run.test.ts >
+    P4 probe mode, the token log, and routes.json (task 4.9a) > P1 the
+    probe calls the first control diff once, prints reachable, and writes a
+    probe record with the tokens`. The message is `review-run: unknown flag
+    --probe`, `expected 2 to be 0`. The 10 new cases fail for missing
+    behavior and the 25 earlier cases stay green (A4). The cases are P1 to
+    P7 (probe), T1 and T2 (tokens), and J1 (routes.json). Because the fake
+    changed, `adversarial-p4-runner.test.ts` ran too and gave `Tests  14
+    passed (14)`, exit 0. The token event shape is
+    `{"type":"step-finish","tokens":{"input","output","reasoning","cache":
+    {"read","write"}}}`, and the record holds the flat sums with `total`
+    equal to the sum of the five components. After the runs,
+    `pgrep -af 'mg-.*quota-server'` and `ps -eo pid,args | grep
+    '[f]ake-opencode'` print no line, and no `mg-*` folder stays under
+    `/tmp`.
 - [ ] 4.9b Green. Implement 4.9a in `harness/model-guide/review-run.sh` and
   `harness/model-guide/routes.json`. Make no design choice beyond the spec.
   - Verify: the Phase 4 test files pass one at a time; no `fake-opencode` or
