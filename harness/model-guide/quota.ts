@@ -36,11 +36,11 @@
  * window is below 70. `wait` means a usable window is 70 or more. The Go
  * plan (`opencode-go`) uses the thresholds of the PM order of 2026-11-19:
  * it requires the `5h` and the `weekly` window, and gives `stopped` when
- * either name is absent. `ready` means the 5h window is below 95 and the
- * `weekly` window is below 100. `wait` means the 5h window is 95 or more or
- * the `weekly` window is 100 or more. On `stopped`, stderr holds exactly one
- * line `quota: <reason>`. The tool exits 0 for every state. Exit 2 is for a
- * bad flag.
+ * either window is absent or holds no usable value. `ready` means the 5h
+ * window is below 95 and the `weekly` window is below 100. `wait` means the
+ * 5h window is 95 or more or the `weekly` window is 100 or more. On
+ * `stopped`, stderr holds exactly one line `quota: <reason>`. The tool
+ * exits 0 for every state. Exit 2 is for a bad flag.
  *
  * The read has a timeout of 5 s, below the 10 s bound of the contract. The
  * whole answer is parsed, so a 2 MiB body with 200 windows works.
@@ -103,10 +103,9 @@ interface QuotaDoc {
 }
 
 /** One parsed quota answer, or the reason of a stop. `windows` holds the
- * usable values; `names` holds every window name of the answer, usable or
- * not. */
+ * usable values only. */
 type QuotaRead =
-  | { ok: true; windows: Record<string, number>; names: Set<string> }
+  | { ok: true; windows: Record<string, number> }
   | { ok: false; reason: string };
 
 /** Prints the JSON line of the answer. */
@@ -268,9 +267,7 @@ function parseAnswer(body: string): QuotaRead {
   const entries = Object.entries(rawWindows as Record<string, unknown>);
   if (entries.length === 0) return { ok: false, reason: "the quota answer holds no window" };
   const windows: Record<string, number> = {};
-  const names = new Set<string>();
   for (const [name, window] of entries) {
-    names.add(name);
     if (window === null || typeof window !== "object" || Array.isArray(window)) continue;
     const value = (window as { usedPercent?: unknown }).usedPercent;
     if (typeof value !== "number" || !Number.isFinite(value) || value < 0) continue;
@@ -279,7 +276,14 @@ function parseAnswer(body: string): QuotaRead {
   if (Object.keys(windows).length === 0) {
     return { ok: false, reason: "the quota answer holds no usable window" };
   }
-  return { ok: true, windows, names };
+  return { ok: true, windows };
+}
+
+/** True when the usable windows hold `name` with a finite value of 0 or more. */
+function usableWindow(windows: Record<string, number>, name: string): boolean {
+  if (!Object.prototype.hasOwnProperty.call(windows, name)) return false;
+  const value = windows[name];
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
 /** The state of one set of windows (spec D15). The Go plan uses the 5h and
@@ -318,9 +322,9 @@ async function main(): Promise<void> {
   if (!answer.ok) stop(provider, id, answer.reason);
   if (
     provider === GO_PROVIDER &&
-    (!answer.names.has(GO_FIVEH_WINDOW) || !answer.names.has(GO_WEEK_WINDOW))
+    (!usableWindow(answer.windows, GO_FIVEH_WINDOW) || !usableWindow(answer.windows, GO_WEEK_WINDOW))
   ) {
-    stop(provider, id, "the Go answer holds no 5h or weekly window");
+    stop(provider, id, "the Go answer holds no usable 5h or weekly window");
   }
   emit({ provider, source: id, state: stateOf(provider, answer.windows), cap: SOURCED_CAP, windows: answer.windows });
 }
