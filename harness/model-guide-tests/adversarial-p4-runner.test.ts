@@ -956,3 +956,54 @@ describe("ADV-R runner block: lock isolation between routes", () => {
     }
   }, 120_000);
 });
+
+describe("ADV-R runner block: pass records of colliding-slug routes", () => {
+  it("ADV-R-14: concurrent colliding-slug routes keep one pass record per route", async () => {
+    const routeA = "t/one#c";
+    const routeB = "t-one#c";
+    const fx = await buildRunner({
+      route: routeA,
+      diffs: ["a"],
+      routes: [
+        { family: "T", route: routeA, kind: "plan", quota_provider: "opencode-go", quota_source: "opencode-go", ranked: true },
+        { family: "T", route: routeB, kind: "plan", quota_provider: "opencode-go", quota_source: "opencode-go", ranked: true },
+      ],
+      calls: [
+        { exit: 0, sleep: 3, value: '{"findings":[]}' },
+        { exit: 0, sleep: 3, value: '{"findings":[]}' },
+      ],
+    });
+    try {
+      const baseEnv = {
+        BENCH_OPENCODE_BIN: join(fx.repo, "bin", "fake-opencode"),
+        BENCH_QUOTA_BASE: fx.quotaBase,
+        FAKE_OPENCODE_SPEC: fx.specPath,
+        FAKE_OPENCODE_LOG: fx.logPath,
+        MG_TEST_SECRET_VALUE: SECRET_A,
+        MG_RUN_RETRY_WAIT_MS: "0",
+        NO_COLOR: "1",
+        TZ: "UTC",
+      };
+      const runAsync = (route: string) =>
+        new Promise<RunResult>((done) => {
+          const child = spawn("bash", [join(fx.repo, "harness", "model-guide", "review-run.sh"), "--route", route, "--set", SET_ID, "--private", fx.privateDir, "--date", "2026-11-20"], {
+            cwd: fx.repo,
+            env: env(baseEnv),
+          });
+          let stdout = "";
+          let stderr = "";
+          child.stdout.on("data", (c: Buffer) => (stdout += c));
+          child.stderr.on("data", (c: Buffer) => (stderr += c));
+          child.on("close", (status: number | null) => done({ status, stdout, stderr }));
+        });
+      const [a, b] = await Promise.all([runAsync(routeA), runAsync(routeB)]);
+      expect(a.status, `route A exits 0: ${a.stdout}${a.stderr}`).toBe(0);
+      expect(b.status, `route B exits 0: ${b.stdout}${b.stderr}`).toBe(0);
+      const records = passRecords(fx.privateDir);
+      expect(records.length, "A4: one pass record per route").toBe(2);
+      expect(records.map((r) => r.route).sort()).toEqual([routeA, routeB].sort());
+    } finally {
+      await closeFixture(fx);
+    }
+  }, 120_000);
+});
