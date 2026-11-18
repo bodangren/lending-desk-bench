@@ -144,7 +144,7 @@ read_seed_payload() {
   local attempt=1 rc sel_rc out payload
   while :; do
     rc=0
-    out="$(run_opencode auth export 2>"$ERR_FILE")" || rc=$?
+    out="$(run_opencode auth export --standalone 2>"$ERR_FILE")" || rc=$?
     sel_rc=0
     payload=""
     if [ "$rc" -eq 0 ]; then
@@ -176,7 +176,7 @@ read_seed_payload() {
 
 if [ "$MODE" = "seed" ]; then
   payload="$(read_seed_payload)" || refuse "the credential seed failed"
-  if ! printf '%s\n' "$payload" | run_opencode auth import > /dev/null 2>"$IMPORT_ERR_FILE"; then
+  if ! printf '%s\n' "$payload" | run_opencode auth import --standalone > /dev/null 2>"$IMPORT_ERR_FILE"; then
     refuse "the credential import failed"
   fi
   exit 0
@@ -184,7 +184,7 @@ fi
 
 # scan-values reads the job store and prints the values of one entry.
 rc=0
-out="$(run_opencode auth export 2>"$ERR_FILE")" || rc=$?
+out="$(run_opencode auth export --standalone 2>"$ERR_FILE")" || rc=$?
 if [ "$rc" -ne 0 ]; then
   refuse "the job store read failed"
 fi
