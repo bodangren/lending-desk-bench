@@ -33,7 +33,9 @@
 # The rules of spec D15: the pass starts only when the quota state is
 # `ready` (every window below 70 %). The pass stops when a window reaches
 # 80 %. A route with no quota source runs at most 1 pass per night, and it
-# stops at the first quota or limit error.
+# stops at the first quota or limit error. The refusal of a second pass of
+# the same date prints one line on stderr that starts `review-run:` and exits
+# 2, with no call and no pass record.
 #
 # The rules of spec D14: the job folder comes from `opencode_host_begin`, and
 # the trap of `opencode_host_cleanup` removes it. The seed copies the
@@ -226,10 +228,16 @@ if [ -d "$PASS_DIR" ]; then
 fi
 PASS_FILE="$PASS_DIR/${DATE}-${RUN_SLUG}-${ROUTE_TAG}-p${PASS_NO}.json"
 
-# Spec D15: a route with no quota source runs at most 1 pass per night.
-if [ -z "$QUOTA_PROVIDER" ] && [ -d "$PASS_DIR" ]; then
+# Spec D15: a route with no quota source runs at most 1 pass per night. The
+# row says "no source" with a null `quota_source`, and quota.ts gives the cap
+# 1 for that row, so the guard keys on the source (task 4.9 F1). The refusal
+# follows the lock refusal: exit 2, one line on stderr, and no pass record.
+if [ -z "$QUOTA_SOURCE" ] && [ -d "$PASS_DIR" ]; then
   tonight="$(find "$PASS_DIR" -maxdepth 1 -name "${DATE}-${RUN_SLUG}-${ROUTE_TAG}-p*.json" 2>/dev/null | wc -l | tr -d ' ')"
-  [ "$tonight" -eq 0 ] || refuse "the route allows one pass per night and one pass already ran"
+  if [ "$tonight" -ne 0 ]; then
+    echo "review-run: the route allows one pass per night and one pass already ran" >&2
+    exit 2
+  fi
 fi
 
 TMP_ROOT="${TMPDIR:-/tmp}"
