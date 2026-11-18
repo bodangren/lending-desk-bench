@@ -1746,13 +1746,33 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     earlier cases pass with the fixture-written message files. The record is
     `measure/runs/model_guide/red-4.9e.txt` (not staged). pgrep scans print
     no line. Row stays `[~]` until Green 4.9f flips it.
+  - Evidence (Red remediation dd57da7, 2026-11-18): the adversarial fixture
+    writes one non-empty message file per diff, and
+    `adversarial-p4-runner.test.ts` exits 0 with `Tests  14 passed (14)`
+    with Green's worktree changes in place. The seed-messages suite
+    (`bun test harness/model-guide-tests/seed-messages.test.ts`) exits 1
+    with `0 pass` and `9 fail`: every case fails with "production file is
+    missing". Row stays `[~]`.
 - [ ] 4.9f Green: the message line in the prompt, the seeder, and the backfill
   (spec D10 ruling 2026-11-18).
   - Change `harness/model-guide/review-run.sh` to read the message file and
-    put the line between the prompt and the seeded diff. Change
-    `pick-diffs.ts` to write `messages/<diff_id>.txt` from the source commit
-    of each key. Run the backfill for both sets from the `source.commit` of
-    each key (`gh` read only).
+    put the line between the prompt and the seeded diff. Write the new tool
+    `harness/model-guide/seed-messages.ts` (run from `harness/`):
+    `npx tsx model-guide/seed-messages.ts <set_id> --private <dir>
+    [--gh <path>]` (`--gh` defaults to `gh`). For each
+    `<private>/sets/<set_id>/diffs/<diff_id>.diff` it reads
+    `keys/<diff_id>.json` for `source.commit` and `source.repo`, runs
+    `<gh> api repos/<owner>/<repo>/commits/<sha> --jq .commit.message`,
+    and writes the first line of the message to
+    `messages/<diff_id>.txt` (trailing newline, no other text). Exit 0
+    prints one line `seed-messages: <n> written` on stdout. A missing key,
+    a key with no commit or repo, a gh failure, or an empty first line
+    gives exit 2 with one line `seed-messages: <diff_id> <check>` on
+    stdout, and no message file is written for the whole run. The tool
+    reads no file in `src/` and writes nothing outside `messages/`.
+  - Run the backfill for both sets (`gh` read only):
+    `npx tsx model-guide/seed-messages.ts mg-2026-11a` and
+    `npx tsx model-guide/seed-messages.ts mg-2026-11p`.
   - Verify: list that each diff of both sets has one non-empty message file.
     The Red command exits 0.
 - [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
@@ -1948,6 +1968,13 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     staged). pgrep scans print no line. Row stays `[~]` until Green 4.13d
     flips it. No pick-diffs case: its design has no diff_id mapping (see
     the handoff).
+  - Evidence (Red remediation dd57da7, 2026-11-18): the shared fixture
+    always writes a temp `judges.json` holding the fixture route, with no
+    assertion changed; the 18 earlier cases pass with Green's worktree
+    changes in place. New J17 (no `judges.json`, route from `routes.json`
+    refused) fails against Green's routes.json fallback with exit 0,
+    expected 2. The Red command exits 1 with
+    `Tests  1 failed | 21 passed (22)`. Row stays `[~]`.
 - [ ] 4.13d Green: the judge route list (spec D11, PM 2026-11-18).
   - Write `harness/model-guide/judges.json` with the three judge routes,
     each with a `quota_provider` and a `quota_source`. Change `judge-run.sh`
