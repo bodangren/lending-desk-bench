@@ -1656,6 +1656,45 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     is a background job with a watcher, so a SIGKILL of the runner leaves no
     call and no fake child; the load watch of `review-run.test.ts` requires
     it. Rows 4.9a and 4.9b are `[x]`.
+- [~] 4.9c Red: the runner reviews the seeded diffs (spec D7). Change only
+  `harness/model-guide-tests/review-run.test.ts`. Touch no production file.
+  - Defect (orchestrator, 2026-11-18): `harness/model-guide/review-run.sh`
+    line 242 builds the diff list from `$SET_DIR/src/*.diff`, and line 238
+    checks the `src` folder. The `src` folder holds the source diffs
+    (`review-set.ts` line 18, `leak-check.ts` line 38). The seeded diffs are
+    in `diffs/` (spec D7). A pass sends unseeded code to the model, so every
+    plant of a diff counts as missed.
+  - The cases: S1 the pass sends the seeded copy of every diff to the model
+    and no source-only text; S2 a diff that is only in `src/` gets no call and
+    no entry in the pass record; S3 a set with an empty `diffs/` folder and a
+    filled `src/` folder refuses with exit 2 and makes no call; S4 the probe
+    uses the control diff of `diffs/` and its call holds the seeded copy.
+  - The header comment of the test file named `src/<diff_id>.diff`. It names
+    `diffs/<diff_id>.diff` now.
+  - Verify: the four new cases fail for the runner reading `src/`, and the
+    35 earlier cases stay green. Record the failed test names in
+    `measure/runs/model_guide/red-4.9c.log`.
+  - Evidence: run on 2026-11-18 with `bun test
+    harness/model-guide-tests/review-run.test.ts` (the RED_TEST_COMMAND of
+    this task). Exit 1, `35 pass`, `4 fail`, `Ran 39 tests across 1 file`.
+    The same file with `cd harness && npx vitest run
+    model-guide-tests/review-run.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot` gives `Tests  4 failed | 35 passed (39)`.
+    The four failing cases and their reasons: S1 `the call for d-01 holds no
+    seeded diff`, and the call holds `+// SRC-ONLY-d-01`; S2 `the runner
+    called the model for a diff of src/`, one call was expected and four
+    came (one for `d-01` and three retries for the source-only `d-99`); S3
+    `expected +0 to be 2`, because the runner called the model on the `src/`
+    diff and did not refuse; S4 `the probe call holds no seeded diff`, and
+    the call holds `+// SRC-ONLY-d-02`. The 35 earlier cases stay green, so
+    only the new cases fail. The fake `opencode` only: `pgrep -af
+    "fake-opencod[e]"` and `pgrep -af "quota-serve[r]"` print no line, and
+    no `mg-*` folder stays under `/tmp`. phase_base_sha
+    57baaaa364f968a2f44c6e14eb96f8a9d68beebf (the Phase 4 strategy commit,
+    test-strategy section 11); role_base_sha
+    f21bec211ab482ef0d721b7f1a3b0affbec52dee (the HEAD before this Red
+    role). The task message named only the role base; the phase base came
+    from the repository.
 - [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
   per route of `routes.json` on the first control diff of `mg-2026-11a`,
   through `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19.

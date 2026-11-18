@@ -40,7 +40,10 @@
  *     `MG_CALL_TIMEOUT_S`, and `MG_RUN_RETRY_WAIT_MS`.
  *
  * The set of the run is `<private>/sets/<set_id>/`, and its diffs are the
- * `src/<diff_id>.diff` files of that folder, in the order of their names.
+ * `diffs/<diff_id>.diff` files of that folder, in the order of their names.
+ * The `src/<diff_id>.diff` files hold the source diffs without the plants
+ * (`review-set.ts` line 18, `leak-check.ts` line 38). The runner must never
+ * send a source diff to the model (spec D7).
  *
  * The test uses no network, no model, no real home folder, and no real
  * `opencode`. The only socket is the loopback server of the quota case. The
@@ -193,6 +196,9 @@ interface Scenario {
   quotaProvider?: string | null;
   quotaSource?: string | null;
   diffs?: string[];
+  /** When true, the `src/` copy of a diff holds a source-only marker and the
+   * `diffs/` copy holds a seeded marker, so the two texts differ. */
+  distinctCopies?: boolean;
   calls?: CallSpec[];
   quotaPercent?: number;
   quotaStopPercent?: number;
@@ -242,6 +248,18 @@ function diffText(id: string): string {
     " export const third = 4;",
     "",
   ].join("\n");
+}
+
+/** The text of `src/<id>.diff`: the source diff, without the plants. It holds
+ * the marker `SRC-ONLY-<id>`, which the seeded copy does not hold. */
+function sourceDiffText(id: string): string {
+  return `${diffText(id)}+// SRC-ONLY-${id}\n`;
+}
+
+/** The text of `diffs/<id>.diff`: the seeded diff of spec D7. It holds the
+ * marker `SEEDED-<id>`, which the source copy does not hold. */
+function seededDiffText(id: string): string {
+  return `${diffText(id)}+// SEEDED-${id}\n`;
 }
 
 /** The stub of the provider credential helper. The real helper is the file of
@@ -566,8 +584,13 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   mkdirSync(srcDir, { recursive: true });
   mkdirSync(seededDir, { recursive: true });
   for (const diff of diffs) {
-    writeFileSync(join(srcDir, `${diff}.diff`), diffText(diff));
-    writeFileSync(join(seededDir, `${diff}.diff`), diffText(diff));
+    if (scenario.distinctCopies) {
+      writeFileSync(join(srcDir, `${diff}.diff`), sourceDiffText(diff));
+      writeFileSync(join(seededDir, `${diff}.diff`), seededDiffText(diff));
+    } else {
+      writeFileSync(join(srcDir, `${diff}.diff`), diffText(diff));
+      writeFileSync(join(seededDir, `${diff}.diff`), diffText(diff));
+    }
   }
 
   // The spec of the fake.
@@ -1900,6 +1923,169 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
     ];
     for (const route of kept) {
       expect(routes, `${route} must stay in routes.json`).toContain(route);
+    }
+  });
+});
+
+// --- task 4.9c: the runner reviews the seeded diffs of `diffs/` ------------
+//
+// The defect (orchestrator, 2026-11-18). `review-run.sh` line 242 builds the
+// diff list from `$SET_DIR/src/*.diff`, and line 238 checks the `src` folder.
+// The `src` folder holds the source diffs (`review-set.ts` line 18,
+// `leak-check.ts` line 38), and the seeded diffs are in `diffs/` (spec D7).
+// A pass that reads `src/` sends unseeded code to the model, so every plant
+// of the diff counts as missed.
+//
+// The contract of the cases:
+//   - The runner reads the diffs of `<private>/sets/<set_id>/diffs/`, in the
+//     order of their names, and it sends those texts to the model.
+//   - A diff that is only in `src/` is not a diff of the set: it gets no call
+//     and no entry in the pass record.
+//   - A set with no diff in `diffs/` is a refusal: exit 2, one `review-run:`
+//     line, no call, and no pass record.
+//   - The probe uses the control diff of `diffs/`, so its call holds the
+//     seeded copy of that diff.
+//
+// Every case uses the fake `opencode` only, keeps the orphan nets of the PM
+// load watch, and never runs the real `opencode` CLI.
+
+/** Writes the key of every diff of the set. The diff with the id
+ * `controlId` holds no plant, so it is the control diff of the probe mode
+ * (spec D14). */
+function writeSeededControlKey(fixture: Fixture, controlId: string): void {
+  const keysDir = join(fixture.privateDir, "sets", fixture.setId, "keys");
+  mkdirSync(keysDir, { recursive: true });
+  for (const diff of fixture.diffs) {
+    const plants = diff === controlId
+      ? []
+      : [
+          {
+            id: `P-${diff}`,
+            new_lines: [3, 5],
+            file: `src/${diff}.ts`,
+            class: "C1",
+            severity: "blocker",
+            title: "planted",
+            reason: "the test plant",
+            witness: "witness",
+            weight: 5,
+          },
+        ];
+    writeFileSync(
+      join(keysDir, `${diff}.json`),
+      `${JSON.stringify(
+        { schema: "model-guide-key/1", set_id: fixture.setId, diff_id: diff, plants },
+        null,
+        2,
+      )}\n`,
+    );
+  }
+}
+
+describe("P4 the seeded diffs of the set (task 4.9c)", () => {
+  const PROBE_DATE = "2026-11-20";
+
+  it("S1 the pass sends the seeded copy of every diff to the model and no source-only text", async () => {
+    const fixture = await buildFixture({
+      distinctCopies: true,
+      calls: [
+        { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const calls = modelCalls(logEntries(fixture.logPath));
+      expect(calls, "the pass made no call for each diff").toHaveLength(3);
+      for (const [index, diff] of fixture.diffs.entries()) {
+        expect(calls[index].stdin, `the call for ${diff} holds no seeded diff`).toContain(
+          `SEEDED-${diff}`,
+        );
+        expect(calls[index].stdin, `the call for ${diff} holds the source diff`).not.toContain(
+          `SRC-ONLY-${diff}`,
+        );
+      }
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("S2 a diff that is only in src/ gets no call and no entry in the pass record", async () => {
+    const fixture = await buildFixture({
+      distinctCopies: true,
+      diffs: ["d-01"],
+      calls: [{ value: JSON.stringify({ type: "result", text: "RAW-d-01" }) }],
+    });
+    // A diff that is only in the source folder. It is not a diff of the set.
+    writeFileSync(
+      join(fixture.privateDir, "sets", fixture.setId, "src", "d-99.diff"),
+      sourceDiffText("d-99"),
+    );
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const calls = modelCalls(logEntries(fixture.logPath));
+      expect(calls, "the runner called the model for a diff of src/").toHaveLength(1);
+      expect(calls[0].stdin, "the call holds no seeded diff").toContain("SEEDED-d-01");
+      expect(calls[0].stdin, "the call holds the source-only diff").not.toContain("SRC-ONLY-d-99");
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      const diffs = records[0].diffs as any[];
+      expect(diffs.map((entry) => entry.id), "the record holds a diff of src/").toEqual(["d-01"]);
+      expect(
+        filesHolding(fixture.privateDir, "RAW-d-99"),
+        "the runner stored a raw output of the source-only diff",
+      ).toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("S3 a set with an empty diffs/ folder and a filled src/ folder refuses with exit 2 and makes no call", async () => {
+    const fixture = await buildFixture({
+      distinctCopies: true,
+      diffs: [],
+      calls: [{ value: JSON.stringify({ type: "result", text: "RAW-d-01" }) }],
+    });
+    // The source folder holds a diff. The set holds no seeded diff.
+    writeFileSync(
+      join(fixture.privateDir, "sets", fixture.setId, "src", "d-01.diff"),
+      sourceDiffText("d-01"),
+    );
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(named[0], "the refusal line must name the diff").toMatch(/diff|seed/i);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("S4 the probe uses the control diff of diffs/ and its call holds the seeded copy", async () => {
+    const fixture = await buildFixture({
+      distinctCopies: true,
+      calls: [{ value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
+    });
+    writeSeededControlKey(fixture, "d-02");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture), "--probe", "--date", PROBE_DATE]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const calls = modelCalls(logEntries(fixture.logPath));
+      expect(calls, "the probe made no call").toHaveLength(1);
+      expect(calls[0].stdin, "the probe call holds no seeded diff").toContain("SEEDED-d-02");
+      expect(calls[0].stdin, "the probe call holds the source diff").not.toContain("SRC-ONLY-d-02");
+    } finally {
+      dropFixture(fixture);
     }
   });
 });
