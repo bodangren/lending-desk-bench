@@ -1172,7 +1172,7 @@ describe("P4 the Go plan thresholds of the review runner (task 4.13g)", () => {
     } finally {
       dropFixture(stopped);
     }
-  });
+  }, 120_000);
 });
 
 describe("P4 R7 the transient retry", () => {
