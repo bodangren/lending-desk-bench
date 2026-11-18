@@ -718,7 +718,7 @@ questions".
     - **Probe mode (PM 2026-11-18).** `review-run.sh --probe` makes one
       model call on the first control diff of the set (a diff with no
       plant, spec line about 423). On a transport error only, it retries up
-      to 2 more times (3 calls at most), as test P2 pins. It writes no pass
+      to 2 more times (3 calls at most), as test P2b pins. It writes no pass
       record and no stored raw output beyond the probe record. It prints one
       line
       `<route> reachable|unreachable|region-blocked <error line or ->` on
@@ -743,19 +743,25 @@ questions".
       | `opencode-go` | `opencode-go` | OpenChamber `GET /api/quota/opencode-go` |
       | `nvidia`, `bailian-token-plan`, `volcengine-agent-plan`, `opencode` free routes | none | none |
 
+      The Go source names its windows `5h`, `weekly`, and `monthly`, and
+      holds `credits_balance` with a null `usedPercent`. A window whose
+      `usedPercent` is null, not a number, or negative is not usable: the
+      read skips it. A Go answer that lacks the `5h` or the `weekly` window
+      gives `stopped`.
+
     - **The state of each route.** The quota read gives one state for each
       route. The states are `ready`, `wait`, and `stopped`.
-      - For other plans, `ready` means every window is below 70 %.
-        `wait` means a window is at 70 % or more. No pass starts. The
+      - For other plans, `ready` means every usable window is below 70 %.
+        `wait` means a usable window is at 70 % or more. No pass starts. The
         route waits for the next night.
-      - For the Go plan (`quota_source` `opencode-go`), `ready` means the
-        5-hour window is below 95 % and the week window is below 100 %.
-        `wait` means the 5-hour window is at 95 % or more or the week
+      - For the Go plan (`quota_provider` `opencode-go`), `ready` means the
+        5-hour window is below 95 % and the weekly window is below 100 %.
+        `wait` means the 5-hour window is at 95 % or more or the weekly
         window is at 100 % or more. No pass starts. No call starts. The
         route waits for the next night.
       - The state `stopped` means a quota error, a limit error, or a read
-        failure. It also means a source with no value, a missing field,
-        or a value that is not a number. The route stops for the night.
+        failure. It also means a source with no usable window. The route
+        stops for the night.
     - **The rules.** A pass starts only when the state is `ready`. A pass
       with another plan stops when a window reaches 80 %. It marks the
       pass open. A pass with the Go plan stops at the same thresholds as

@@ -1870,11 +1870,11 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `heavy-run.sh harness/model-guide/review-run.sh --set <set_id> --route <route>`.
   - The pass of a pilot route on 11-20 and 11-21 is the pilot pass of task
     4.11 (spec D13).
-  - Night limits (spec D15, PM 2026-11-18): the orchestrator stops the
-    night's runs when the Go 5-hour window is over 95 % or the Go week is
-    over 90 %. The runner's own rules (no start at 70 %, stop at 80 % of a
-    window) stay and are stricter for one route; the night limit covers the
-    whole night.
+  - Night limits (spec D15, PM 2026-11-19): the night limit for Go routes
+    is 5h 95 % / week 100 %. The orchestrator stops the night's Go runs when
+    the 5-hour window is at 95 % or more or the weekly window is at 100 %.
+    The runner's own rules (no start at 70 %, stop at 80 % of a window) stay
+    and are stricter for one route; the night limit covers the whole night.
   - Verify: each reachable pilot route has 3 complete passes, or the file
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
     stop, region block, or open pass). Each line of the file names
@@ -2218,7 +2218,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     3c4e4623c67f1e14c8ab75b2e6b007b5183f2eae; final Green HEAD 94fef2f
     before this row, and the plan-evidence commit after it.
-- [~] 6a3f586 4.13i Red: the live Go quota answer (Review A cc8afbd F1, F2;
+- [x] 6a3f586 4.13i Red: the live Go quota answer (Review A cc8afbd F1, F2;
   Review B cc8afbd B2, N2). Change only
   `harness/model-guide-tests/quota.test.ts` and
   `harness/model-guide-tests/review-run.test.ts`. Touch no production file.
@@ -2276,9 +2276,9 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     pgrep scans print no line. The record is
     `measure/runs/model_guide/red-4.13i.txt` (not staged); the conversion
     evidence is appended to `measure/runs/model_guide/red-4.13i.log`.
-- [ ] 4.13j Green: the live Go quota answer (Review A cc8afbd F1, F2;
-  Review B cc8afbd B2, N2). Change `harness/model-guide/quota.ts`. Touch no
-  test file and do not touch spec.md.
+- [x] 34d6be2 4.13j Green: the live Go quota answer (Review A cc8afbd F1, F2;
+  Review B cc8afbd B2, N2). Change `harness/model-guide/quota.ts` and the
+  spec D15 text. Touch no test file.
   - F1: read the week window under the live key `weekly` in the Go branch
     of `stateOf` (keep `week` only if the PM orders a fallback).
   - F2: skip a window whose usedPercent is null or not a number; keep
@@ -2292,6 +2292,22 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     keys (`5h`, `weekly`, `monthly`, and a null `credits_balance`).
   - Verify: the two Red commands exit 0, one file at a time. The two pgrep
     scans print no line.
+  - Evidence: implementation commit 34d6be2. F1: the Go branch reads
+    `weekly`. F2 and N2: `parseAnswer` skips a window whose `usedPercent` is
+    null, not a number, or negative, and gives `stopped` only when no usable
+    window is left. B2: the Go branch requires the `5h` and the `weekly` name
+    and gives `stopped` when either is absent; a present but unusable window
+    is skipped, as Q13 pins. N1: `review-run.sh` and `judge-run.sh` key the
+    Go rule on `quota_provider`, the field `quota.ts` reads. The `quota.ts`
+    doc comment and spec D15 hold the live keys. Gates: `quota.test.ts` 24
+    passed (24); `review-run.test.ts` 53 pass and 0 fail (bun);
+    `judge-run.test.ts` 30 passed (30); `adversarial-p4-runner.test.ts` 14
+    passed (14). Each run left no `fake-opencode` and no `quota-server`
+    process. The live read at `127.0.0.1:38307` gives `state: ready` and the
+    live window set 5h 4.43 / weekly 1.77 / monthly 0.89. phase_base_sha
+    57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+    84857378fe693da61e9fb074fd37983805c3eb6f. The log is
+    `measure/runs/model_guide/green-4.13j.log` (not staged).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
