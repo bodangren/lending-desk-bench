@@ -623,8 +623,123 @@ describe("Q12 a null window is skipped (task 4.13i, Review A cc8afbd F2)", () =>
   });
 });
 
-describe("Q13 a non-number value is not usable (task 4.13i, Review A cc8afbd F2; Review B N2)", () => {
-  it("Q13 skips a string or negative value beside usable windows and stops when it is the only window", async () => {
+describe("Q13 usable 5h and weekly for opencode-go (task 4.13k, Review B e9e7d36 B2)", () => {
+  it("Q13 gives stopped for opencode-go when weekly is negative, a string, or null beside a usable 5h", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(
+      jsonResponse(
+        JSON.stringify({
+          usage: {
+            windows: {
+              "5h": { usedPercent: 50 },
+              weekly: { usedPercent: -1 },
+              monthly: { usedPercent: 10 },
+            },
+          },
+        }),
+      ),
+    );
+    try {
+      // A negative weekly beside a usable 5h is not usable: the Go week
+      // threshold cannot be evaluated, so the answer is stopped.
+      const negative = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(negative, "negative weekly beside usable 5h");
+      // A string weekly beside a usable 5h is not usable either.
+      server.setHandler(
+        jsonResponse(
+          JSON.stringify({
+            usage: {
+              windows: {
+                "5h": { usedPercent: 50 },
+                weekly: { usedPercent: "50" },
+                monthly: { usedPercent: 10 },
+              },
+            },
+          }),
+        ),
+      );
+      const stringy = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(stringy, "string weekly beside usable 5h");
+      // A null weekly beside a usable 5h is not usable either.
+      server.setHandler(
+        jsonResponse(
+          JSON.stringify({
+            usage: {
+              windows: {
+                "5h": { usedPercent: 50 },
+                weekly: { usedPercent: null },
+                monthly: { usedPercent: 10 },
+              },
+            },
+          }),
+        ),
+      );
+      const nulled = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(nulled, "null weekly beside usable 5h");
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+
+  it("Q13 gives stopped for opencode-go when 5h is unusable beside a usable weekly", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(
+      jsonResponse(
+        JSON.stringify({
+          usage: {
+            windows: {
+              "5h": { usedPercent: -1 },
+              weekly: { usedPercent: 10 },
+              monthly: { usedPercent: 10 },
+            },
+          },
+        }),
+      ),
+    );
+    try {
+      // A negative 5h beside a usable weekly is not usable.
+      const negative = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(negative, "negative 5h beside usable weekly");
+      // A string 5h beside a usable weekly is not usable.
+      server.setHandler(
+        jsonResponse(
+          JSON.stringify({
+            usage: {
+              windows: {
+                "5h": { usedPercent: "50" },
+                weekly: { usedPercent: 10 },
+                monthly: { usedPercent: 10 },
+              },
+            },
+          }),
+        ),
+      );
+      const stringy = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(stringy, "string 5h beside usable weekly");
+      // A null 5h beside a usable weekly is not usable.
+      server.setHandler(
+        jsonResponse(
+          JSON.stringify({
+            usage: {
+              windows: {
+                "5h": { usedPercent: null },
+                weekly: { usedPercent: 10 },
+                monthly: { usedPercent: 10 },
+              },
+            },
+          }),
+        ),
+      );
+      const nulled = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(nulled, "null 5h beside usable weekly");
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+
+  it("Q13 skips an unusable window beside usable windows for kimi-code-plan-cn", async () => {
     const sandbox = makeSandbox();
     const server = await startQuotaServer(
       jsonResponse(
@@ -640,11 +755,11 @@ describe("Q13 a non-number value is not usable (task 4.13i, Review A cc8afbd F2;
       ),
     );
     try {
-      // A string value beside usable windows is skipped, not a stop. NaN
-      // serializes to null over JSON, so Q12 pins the NaN case.
-      const ready = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      // A string value beside usable windows is skipped on a non-Go source.
+      // NaN serializes to null over JSON, so Q12 pins the NaN case.
+      const ready = await runQuota(sandbox, ["--provider", "kimi-code-plan-cn", "--base", server.base]);
       expectState(ready, "ready", "string beside usable windows");
-      // A negative value beside usable windows is skipped too (Review B N2).
+      // A negative value beside usable windows is skipped too.
       server.setHandler(
         jsonResponse(
           JSON.stringify({
@@ -658,14 +773,8 @@ describe("Q13 a non-number value is not usable (task 4.13i, Review A cc8afbd F2;
           }),
         ),
       );
-      const negative = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const negative = await runQuota(sandbox, ["--provider", "kimi-code-plan-cn", "--base", server.base]);
       expectState(negative, "ready", "negative beside usable windows");
-      // A string as the only window is still not usable: stopped.
-      server.setHandler(
-        jsonResponse(JSON.stringify({ usage: { windows: { "5h": { usedPercent: "50" } } } })),
-      );
-      const onlyString = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
-      expectStopped(onlyString, "string as the only window");
     } finally {
       await server.close();
       sandbox.close();

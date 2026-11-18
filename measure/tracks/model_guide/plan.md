@@ -2308,6 +2308,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     84857378fe693da61e9fb074fd37983805c3eb6f. The log is
     `measure/runs/model_guide/green-4.13j.log` (not staged).
+- [~] 4.13k Red: Go needs usable 5h and weekly values (Review B e9e7d36 B2).
+- [ ] 4.13l Green: Go needs usable 5h and weekly values (Review B e9e7d36 B2).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
