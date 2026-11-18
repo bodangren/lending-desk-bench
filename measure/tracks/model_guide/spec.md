@@ -729,7 +729,7 @@ questions".
       `heavy-run.sh`, with one call per pilot route (spec D13).
 
 15. **D15. The quota budget.** The runner reads the quota of the route
-    provider before each pass and before each diff.
+    provider before each pass and before each call.
     - **The live source of each provider.** The source is the OpenChamber
       endpoint `GET http://127.0.0.1:<port>/api/quota/<id>`, with the port
       from `openchamber status --json`. The read gives
@@ -745,21 +745,33 @@ questions".
 
     - **The state of each route.** The quota read gives one state for each
       route. The states are `ready`, `wait`, and `stopped`.
-      - `ready`: every window is below 70 %.
-      - `wait`: a window is 70 % or more. No pass starts. The route waits
-        for the next night.
-      - `stopped`: the source gives a quota error, a limit error, a read
-        failure, a source with no value, a missing field, or a value that is
-        not a number. The route stops for the night.
-    - **The rules.** A pass starts only when the state is `ready`. The pass
-      stops when a window reaches 80 %, and it marks the pass open. A route
-      with no quota source runs at most 1 pass per night. It stops at the
-      first quota or limit error.
-    - **Night limits (PM 2026-11-18).** The orchestrator stops the night's
-      runs when the Go 5-hour window is over 95 % or the Go week is over
-      90 %. The runner's own rules (no start at 70 %, stop at 80 % of a
-      window) stay and are stricter for one route; the night limit covers
-      the whole night.
+      - For other plans, `ready` means every window is below 70 %.
+        `wait` means a window is at 70 % or more. No pass starts. The
+        route waits for the next night.
+      - For the Go plan (`quota_source` `opencode-go`), `ready` means the
+        5-hour window is below 95 % and the week window is below 100 %.
+        `wait` means the 5-hour window is at 95 % or more or the week
+        window is at 100 % or more. No pass starts. No call starts. The
+        route waits for the next night.
+      - The state `stopped` means a quota error, a limit error, or a read
+        failure. It also means a source with no value, a missing field,
+        or a value that is not a number. The route stops for the night.
+    - **The rules.** A pass starts only when the state is `ready`. A pass
+      with another plan stops when a window reaches 80 %. It marks the
+      pass open. A pass with the Go plan stops at the same thresholds as
+      its `wait` state. It stops when the 5-hour window reaches 95 % or
+      the week window reaches 100 %. It marks the pass open. The runner
+      checks the Go thresholds before each call. A route with no quota
+      source runs at most 1 pass per night. It stops at the first quota
+      or limit error.
+    - **Go plan thresholds (PM 2026-11-19).** The Go thresholds match the
+      ra-quota thresholds of the Go rule of Daniel (2026-11-15). The
+      active Go account runs to 100 %. OpenChamber then switches to the
+      second Go account. The night limit for Go routes is the same
+      95 % / 100 %. It stops only the Go routes. A free route such as
+      `opencode/hy4-flash-free` has no Go check. The runner logs a Go
+      call that fails with a quota error after the switch. That route
+      shows `incomplete` for the night.
     - **The window.** The track A window is 02:00 to 06:00 +07. One night
       runs at most one pass for each pilot route. The routes run one at a
       time, in the order of D12. No non-pilot route gets a pass until the PM
@@ -767,7 +779,7 @@ questions".
     - Each pass runs through
       `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh`. The
       orchestrator starts it. This track adds no timer.
-    The 30 % margin is for the work roles of the day.
+    The 30 % margin is for the work roles of the day on other plans.
 
 ### Page B
 
@@ -1317,9 +1329,13 @@ pilot gate of D13 has no rank on the page.
 `harness/model-guide/quota.ts` reads the quota source of the provider of a
 route, as D15 holds. It gives one state for each route: `ready`, `wait`, or
 `stopped`. It reads the OpenChamber endpoint for the providers that have
-one. It gives the state `stopped` for a quota error, a limit error, a read
-failure, a source with no value, a missing field, or a value that is not a
-number. It gives the state `wait` for a window of 70 % or more. A route with
+one. It gives the state `stopped` for a quota error, a limit error, or a
+read failure. It also gives `stopped` for a source with no value, a
+missing field, or a value that is not a number. For a route with another
+quota source, it gives the state `wait` for a window at 70 % or more.
+For a route with the quota source `opencode-go`, it gives the state
+`wait` at the Go thresholds. The 5-hour threshold is 95 % or more. The
+week threshold is 100 % or more. A route with
 no quota source gets the fixed cap of
 1 pass per night of D15.
 
@@ -1393,8 +1409,10 @@ no quota source gets the fixed cap of
 11. By 2026-11-22, each reachable route of D12 has 3 complete passes or a
     recorded reason (unreachable, quota stop, region block, or open pass).
     The preview shows the track A rank by the worst pass.
-12. No run used a metered route, and no pass started at 70 % or more of a
-    window.
+12. No run used a metered route. No pass with another plan started at
+    70 % or more of a window. No Go pass or call started at 95 % or more
+    of the 5-hour window or at 100 % or more of the week window. A Go
+    pass stopped at the same thresholds.
 13. `real-work.html` has no horizontal overflow at 390, 980, and 1280 px. A
     wide table scrolls inside its own box with a visible hint. The page is
     about 3 screens long at 1280 px (accepted by the PM 2026-11-17 after
