@@ -527,7 +527,7 @@ describe("ADV-R runner block: route safety, quota shapes, and the mid-pass stop"
     expect(slow.status, `a silent source stops: ${slow.out}${slow.err}`).toBe(0);
     expect(JSON.parse(slow.out.split("\n").find((l) => l.trim().startsWith("{")) ?? "{}").state).toBe("stopped");
 
-    const huge = await runQuota("huge");
+    const huge = await runQuota("huge", "kimi-code-plan-cn");
     expect(huge.status, `a 2 MiB body parses: ${huge.out}${huge.err}`).toBe(0);
     expect(JSON.parse(huge.out.split("\n").find((l) => l.trim().startsWith("{")) ?? "{}").state).toBe("wait");
 
