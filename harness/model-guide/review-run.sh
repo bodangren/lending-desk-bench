@@ -235,11 +235,14 @@ fi
 # The page path of the run.
 mkdir -p "$PRIVATE" || refuse "the private folder could not be made"
 SET_DIR="$PRIVATE/sets/$SET_ID"
-if [ ! -d "$SET_DIR/src" ]; then
-  refuse "the set has no src folder"
+# The review input is the seeded diff of the set (spec D7). The `src/` folder
+# holds the source diffs without the plants, so the runner never sends it to
+# the model. The `diffs/<diff_id>.diff` files are the input, in name order.
+if [ ! -d "$SET_DIR/diffs" ]; then
+  refuse "the set has no diffs folder"
 fi
 shopt -s nullglob
-DIFF_PATHS=("$SET_DIR/src"/*.diff)
+DIFF_PATHS=("$SET_DIR/diffs"/*.diff)
 shopt -u nullglob
 [ "${#DIFF_PATHS[@]}" -gt 0 ] || refuse "the set has no diff"
 
