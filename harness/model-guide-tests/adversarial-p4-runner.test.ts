@@ -183,8 +183,16 @@ const server = http.createServer((req, res) => {
   }
   const value = values[Math.min(n, values.length - 1)];
   n += 1;
-  const body = JSON.stringify({ usage: { windows: {
-    "5h": { usedPercent: value }, day: { usedPercent: value }, week: { usedPercent: value } } } });
+  // The opencode-go source serves the real window set of the live endpoint
+  // (task 4.13i): "5h", "weekly", "monthly", and a null "credits_balance".
+  // Every other source keeps "5h", "day", "week".
+  const live = (req.url || "").indexOf("/opencode-go") !== -1;
+  const body = live
+    ? JSON.stringify({ usage: { windows: {
+      "5h": { usedPercent: value }, weekly: { usedPercent: value },
+      monthly: { usedPercent: value }, credits_balance: { usedPercent: null } } } })
+    : JSON.stringify({ usage: { windows: {
+      "5h": { usedPercent: value }, day: { usedPercent: value }, week: { usedPercent: value } } } });
   res.writeHead(200, { "content-type": "application/json", connection: "close" });
   res.end(body);
 });

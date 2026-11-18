@@ -281,25 +281,11 @@ async function startQuotaServer(handler: QuotaHandler): Promise<QuotaServer> {
   };
 }
 
-/** The body of a source whose windows hold the three given values. */
-function goBody(fiveH: number, day: number, week: number): string {
-  return JSON.stringify({
-    usage: {
-      windows: {
-        "5h": { usedPercent: fiveH },
-        day: { usedPercent: day },
-        week: { usedPercent: week },
-      },
-    },
-  });
-}
-
-/** The body of the live opencode-go window set (Review A cc8afbd F1, F2).
- * The live endpoint GET /api/quota/opencode-go names the week window
- * "weekly" and holds "monthly" and a null "credits_balance" beside it.
- * The older fakes of this file (goBody, windowsBody) serve "day" and
- * "week", which the live source never sends; they stay for the moved
- * 70/80 pins, and the new Q11 to Q14 cases serve this real set. */
+/** The body of the live opencode-go window set (task 4.13i, Review A
+ * cc8afbd F1, F2). The live endpoint GET /api/quota/opencode-go names the
+ * week window "weekly" and holds "monthly" and a null "credits_balance"
+ * beside it. Every opencode-go fake of this file serves this set; the
+ * windowsBody fake keeps "day" and "week" for the non-Go sources only. */
 function liveGoBody(fiveH: number, weekly: number, monthly: number): string {
   return JSON.stringify({
     usage: {
@@ -326,7 +312,9 @@ function neverAnswer(): QuotaHandler {
   return () => {};
 }
 
-/** The body of a source whose windows all hold one value. */
+/** The body of a source whose windows all hold one value. Non-Go fakes
+ * keep these key names. The opencode-go fakes use liveGoBody (task 4.13i):
+ * the live endpoint has no "day" or "week" key. */
 function windowsBody(value: number): string {
   return JSON.stringify({
     usage: {
@@ -458,6 +446,11 @@ describe("Q1 the source path of each provider", () => {
     const server = await startQuotaServer(jsonResponse(windowsBody(10)));
     try {
       for (const [provider] of SOURCED) {
+        // The opencode-go source serves the live window set; the other
+        // sources keep the old key names (task 4.13i).
+        server.setHandler(
+          jsonResponse(provider === "opencode-go" ? liveGoBody(10, 10, 10) : windowsBody(10)),
+        );
         const result = await runQuota(sandbox, ["--provider", provider, "--base", server.base]);
         const doc = expectState(result, "ready", provider);
         expect(doc.cap, `${provider}: the cap of a sourced provider is the N of spec D13`).toBe(3);
@@ -506,18 +499,18 @@ describe("Q2 the 70 % rule of a non-Go source", () => {
 describe("Q9 the Go 5h threshold", () => {
   it("Q9 gives ready for opencode-go at 5h 94 % and wait at 5h 95 %", async () => {
     const sandbox = makeSandbox();
-    const server = await startQuotaServer(jsonResponse(goBody(80, 10, 10)));
+    const server = await startQuotaServer(jsonResponse(liveGoBody(80, 10, 10)));
     try {
       // A window of 80 % is still ready on a Go route (PM order
       // 2026-11-19: the Go 5h threshold is 95 %, not 70 %).
       for (const fiveH of [80, 94]) {
-        server.setHandler(jsonResponse(goBody(fiveH, 10, 10)));
+        server.setHandler(jsonResponse(liveGoBody(fiveH, 10, 10)));
         const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
         const doc = expectState(result, "ready", `5h ${fiveH}`);
         expect(doc.windows?.["5h"], `5h ${fiveH}: the value is not labeled`).toBe(fiveH);
-        expect(doc.windows?.["week"], `5h ${fiveH}: the week value is not labeled`).toBe(10);
+        expect(doc.windows?.["weekly"], `5h ${fiveH}: the weekly value is not labeled`).toBe(10);
       }
-      server.setHandler(jsonResponse(goBody(95, 10, 10)));
+      server.setHandler(jsonResponse(liveGoBody(95, 10, 10)));
       const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
       const doc = expectState(result, "wait", "5h 95");
       expect(doc.windows?.["5h"], "5h 95: the value is not labeled").toBe(95);
@@ -531,21 +524,21 @@ describe("Q9 the Go 5h threshold", () => {
 describe("Q10 the Go week threshold", () => {
   it("Q10 gives ready for opencode-go at week 99 % and wait at week 100 %", async () => {
     const sandbox = makeSandbox();
-    const server = await startQuotaServer(jsonResponse(goBody(10, 10, 90)));
+    const server = await startQuotaServer(jsonResponse(liveGoBody(10, 90, 10)));
     try {
       // A week of 90 % is still ready on a Go route (PM order
       // 2026-11-19: the Go week threshold is 100 %, not 70 %).
       for (const week of [90, 99]) {
-        server.setHandler(jsonResponse(goBody(10, 10, week)));
+        server.setHandler(jsonResponse(liveGoBody(10, week, 10)));
         const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
         const doc = expectState(result, "ready", `week ${week}`);
-        expect(doc.windows?.["week"], `week ${week}: the value is not labeled`).toBe(week);
+        expect(doc.windows?.["weekly"], `week ${week}: the weekly value is not labeled`).toBe(week);
         expect(doc.windows?.["5h"], `week ${week}: the 5h value is not labeled`).toBe(10);
       }
-      server.setHandler(jsonResponse(goBody(10, 10, 100)));
+      server.setHandler(jsonResponse(liveGoBody(10, 100, 10)));
       const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
       const doc = expectState(result, "wait", "week 100");
-      expect(doc.windows?.["week"], "week 100: the value is not labeled").toBe(100);
+      expect(doc.windows?.["weekly"], "week 100: the weekly value is not labeled").toBe(100);
     } finally {
       await server.close();
       sandbox.close();
@@ -918,7 +911,7 @@ function writeOpenchamberStub(sandbox: Sandbox, output: string): void {
 describe("Q7 the port source", () => {
   it("Q7 reads the port from openchamber status --json when --base is absent", async () => {
     const sandbox = makeSandbox();
-    const server = await startQuotaServer(jsonResponse(windowsBody(10)));
+    const server = await startQuotaServer(jsonResponse(liveGoBody(10, 10, 10)));
     try {
       writeOpenchamberStub(sandbox, JSON.stringify({ instances: [{ port: server.port }] }));
       const result = await runQuota(sandbox, ["--provider", "opencode-go"]);

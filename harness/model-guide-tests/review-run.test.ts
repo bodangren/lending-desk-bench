@@ -484,11 +484,13 @@ const server = http.createServer((req, res) => {
     }
     if (stopWeekText !== "") week = Number(stopWeekText);
   }
-  // The real window set of the live opencode-go source (task 4.13i,
-  // Review A cc8afbd F1 and F2): it names the week window "weekly",
-  // holds "monthly", and holds a null "credits_balance". The default fake
-  // serves "5h", "day", "week", which the live source never sends.
-  const body = realKeys
+  // The opencode-go source serves the real window set of the live
+  // endpoint (task 4.13i): it names the week window "weekly", holds
+  // "monthly", and holds a null "credits_balance". Every other source
+  // keeps "5h", "day", "week". realKeys forces the live set for the G4
+  // case no matter the path.
+  const live = realKeys || url.indexOf("/opencode-go") !== -1;
+  const body = live
     ? JSON.stringify({
       usage: {
         windows: {

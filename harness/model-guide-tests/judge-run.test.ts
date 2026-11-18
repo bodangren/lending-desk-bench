@@ -539,15 +539,31 @@ const server = http.createServer((req, res) => {
     }
     if (stopWeekText !== "") week = Number(stopWeekText);
   }
-  const body = JSON.stringify({
-    usage: {
-      windows: {
-        "5h": { usedPercent: fiveH },
-        day: { usedPercent: day },
-        week: { usedPercent: week },
+  // The opencode-go source serves the real window set of the live
+  // endpoint (task 4.13i): "5h", "weekly", "monthly", and a null
+  // "credits_balance". Every other source keeps "5h", "day", "week",
+  // so the kimi cases pin the 70 % rule on the old names.
+  const live = url.indexOf("/opencode-go") !== -1;
+  const body = live
+    ? JSON.stringify({
+      usage: {
+        windows: {
+          "5h": { usedPercent: fiveH },
+          weekly: { usedPercent: week },
+          monthly: { usedPercent: day },
+          credits_balance: { usedPercent: null },
+        },
       },
-    },
-  });
+    })
+    : JSON.stringify({
+      usage: {
+        windows: {
+          "5h": { usedPercent: fiveH },
+          day: { usedPercent: day },
+          week: { usedPercent: week },
+        },
+      },
+    });
   res.writeHead(200, { "content-type": "application/json", connection: "close" });
   res.end(body);
 });
