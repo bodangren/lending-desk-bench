@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "track": "change_bench",
+  "title": "Change-request benchmark — lending_desk_change",
+  "status": "done",
+  "closed_out": "2026-11-18",
+  "closed_by": "measure-closeout",
+  "pre_closeout_head": "15479e44ef2ae7afde1638b78bfb52b905fda6c8",
+  "archive_move": {
+    "from": "measure/tracks/change_bench",
+    "to": "measure/archive/change_bench",
+    "method": "git mv"
+  },
+  "audits": [
+    {
+      "role": "measure-final-acceptance",
+      "kind": "archive check (mechanical)",
+      "path": "measure/runs/change_bench/final-acceptance-archive-15479e4.json",
+      "status": "pass",
+      "audited_head": "15479e44ef2ae7afde1638b78bfb52b905fda6c8",
+      "provenance_match": true,
+      "scope_note": "The final-acceptance result is an archive check. It proves task markers and commit SHAs only. No quality, adversarial, or browser acceptance ran for this track.",
+      "superseded": [
+        {
+          "path": "measure/runs/change_bench/final-acceptance-archive-2091d16.json",
+          "status": "fail",
+          "reason": "no top-level task line carried a commit SHA at 2091d16"
+        }
+      ]
+    },
+    {
+      "role": "measure-closeout",
+      "kind": "closeout gate",
+      "command": "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track change_bench",
+      "status": "pass"
+    }
+  ],
+  "plan_evidence": {
+    "task_lines": 14,
+    "all_complete": true,
+    "in_progress_markers": 0,
+    "space_markers": 0,
+    "blocked_markers": 0,
+    "commit_shas": [
+      "e9fb565da5cef13658749aa0eb425fc641069625",
+      "2346ef0d7960aa773284419a340e5ba217c01ef6"
+    ],
+    "sha_notes": "Each SHA resolves on main and is an ancestor of the pre-closeout HEAD."
+  },
+  "gates": [
+    {
+      "name": "plan markers",
+      "command": "grep -cE '^- \\[[~ ]\\]' measure/tracks/change_bench/plan.md",
+      "result": "0"
+    },
+    {
+      "name": "A5 false-claim text",
+      "command": "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass|all tests pass|completely fixed' measure/tracks/change_bench/plan.md measure/tracks.md",
+      "result": "no match"
+    },
+    {
+      "name": "A6 registry note",
+      "command": "grep -rn 'change_bench' measure/tracks.md",
+      "result": "one archived entry only; the old note about missing SHAs was false and is gone"
+    },
+    {
+      "name": "A9 archived-track path",
+      "command": "grep -rn 'measure/tracks/change_bench' --include='*.sh' --include='*.ts' --include='*.js' --include='*.py' .",
+      "result": "no test hardcodes the track path; no fix needed"
+    },
+    {
+      "name": "closeout interphase check",
+      "command": "measure_interphase_checks.py closeout --track change_bench",
+      "result": "PASS"
+    }
+  ],
+  "retained_evidence": [
+    "measure/runs/change_bench/final-acceptance-archive-15479e4.json",
+    "measure/runs/change_bench/final-acceptance-archive-15479e4.log",
+    "measure/runs/change_bench/final-acceptance-archive-2091d16.json",
+    "measure/runs/change_bench/final-acceptance-archive-2091d16.log",
+    "measure/archive/change_bench/plan.md",
+    "measure/archive/change_bench/spec.md",
+    "measure/archive/change_bench/metadata.json"
+  ],
+  "artifact_cleanup": {
+    "deleted": [],
+    "note": "The orchestrator named no bulky run artifacts. All run evidence is retained."
+  },
+  "registry": {
+    "moved_from_active": true,
+    "archived_section_entry": true,
+    "description_source": "metadata.json description",
+    "description_matches": true
+  },
+  "staged_paths": [
+    "measure/archive/change_bench/index.md",
+    "measure/archive/change_bench/metadata.json",
+    "measure/archive/change_bench/plan.md",
+    "measure/archive/change_bench/spec.md",
+    "measure/archive/change_bench/automation-supervisor-closeout-manifest.json",
+    "measure/runs/change_bench/final-acceptance-archive-15479e4.json",
+    "measure/runs/change_bench/final-acceptance-archive-15479e4.log",
+    "measure/runs/change_bench/final-acceptance-archive-2091d16.json",
+    "measure/runs/change_bench/final-acceptance-archive-2091d16.log",
+    "measure/tracks.md",
+    "measure/index.md"
+  ],
+  "unstaged_by_order": [
+    ".opencode/",
+    "tech-debt.md",
+    "harness/wt.txt",
+    "harness/model-guide/data/sets/"
+  ]
+}

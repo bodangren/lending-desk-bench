@@ -1,9 +1,11 @@
 {
   "id": "change_bench",
   "title": "Change-request benchmark \u2014 lending_desk_change",
+  "description": "Change-request benchmark for lending_desk_change: change set c1, the X.* criteria, the variant tree, provenance, and calibration. Sources at e9fb565 and 2346ef0. Archived 2026-11-18 on a passing archive check (mechanical); no quality acceptance ran.",
   "type": "Feature",
-  "status": "complete",
+  "status": "done",
   "created": "2026-09-24",
+  "completed": "2026-11-18",
   "estimated_tasks": 13,
   "actual_tasks": 13,
   "source": {
