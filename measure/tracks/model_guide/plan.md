@@ -2308,8 +2308,21 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     84857378fe693da61e9fb074fd37983805c3eb6f. The log is
     `measure/runs/model_guide/green-4.13j.log` (not staged).
-- [~] afef66e 4.13k Red: Go needs usable 5h and weekly values (Review B e9e7d36 B2).
-- [ ] 4.13l Green: Go needs usable 5h and weekly values (Review B e9e7d36 B2).
+- [x] afef66e 4.13k Red: Go needs usable 5h and weekly values (Review B e9e7d36 B2).
+- [x] 8ce8964 4.13l Green: Go needs usable 5h and weekly values (Review B e9e7d36
+  B2; Review A e9e7d36 F3). `harness/model-guide/quota.ts` now reads the usable
+  window map, not the answer names, for `opencode-go`. It gives `stopped` when
+  the 5h value or the weekly value is not a finite number of 0 or more. The
+  non-Go rule is unchanged: an unusable window is skipped, so Q12 stays
+  `ready` on a null `credits_balance`. Spec D15 and FR-15 hold the same rule;
+  the D15 Go sentence says usable values, not names. No test file changed.
+  Gates: `quota.test.ts` 26 passed (26); `review-run.test.ts` 53 pass and 0
+  fail (bun); `judge-run.test.ts` 30 passed (30). Each run left no
+  `fake-opencode` and no `quota-server` process. The live read of
+  `127.0.0.1:38307` gives `state: ready` with an empty stderr.
+  phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  5085d9b162a60559e4bf415fb0f33cb91a627b98. The log is
+  `measure/runs/model_guide/green-4.13l.log` (not staged).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.

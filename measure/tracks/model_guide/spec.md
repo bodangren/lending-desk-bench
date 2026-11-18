@@ -746,8 +746,9 @@ questions".
       The Go source names its windows `5h`, `weekly`, and `monthly`, and
       holds `credits_balance` with a null `usedPercent`. A window whose
       `usedPercent` is null, not a number, or negative is not usable: the
-      read skips it. A Go answer that lacks the `5h` or the `weekly` window
-      gives `stopped`.
+      read skips it. The answer gives `stopped` only when no usable window
+      is left. A Go answer needs a usable `5h` value and a usable `weekly`
+      value: when either value is not usable, the answer is `stopped`.
 
     - **The state of each route.** The quota read gives one state for each
       route. The states are `ready`, `wait`, and `stopped`.
@@ -1336,8 +1337,11 @@ pilot gate of D13 has no rank on the page.
 route, as D15 holds. It gives one state for each route: `ready`, `wait`, or
 `stopped`. It reads the OpenChamber endpoint for the providers that have
 one. It gives the state `stopped` for a quota error, a limit error, or a
-read failure. It also gives `stopped` for a source with no value, a
-missing field, or a value that is not a number. For a route with another
+read failure. An unusable window is skipped: a null, non-number, or
+negative value does not count. It gives `stopped` only when no usable
+window is left. For a route with the Go source, a usable 5-hour value and
+a usable weekly value are both required, and `stopped` follows otherwise.
+For a route with another
 quota source, it gives the state `wait` for a window at 70 % or more.
 For a route with the quota source `opencode-go`, it gives the state
 `wait` at the Go thresholds. The 5-hour threshold is 95 % or more. The
