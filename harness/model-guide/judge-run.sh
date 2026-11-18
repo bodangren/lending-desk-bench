@@ -7,8 +7,18 @@
 #
 # `--set`, `--route`, and `--judge` are required. `--private` defaults to
 # `$HOME/.local/share/lending-desk-bench/model-guide`, the default of
-# `review-run.sh`. `--route` must be a row of `routes.json` with a `kind` of
-# `plan` or `free`, so a judge call is a subscription call.
+# `review-run.sh`.
+#
+# The route list of the run (spec D11, PM 2026-11-18): `judges.json` holds
+# the judge routes, and the runner accepts a route only from that file. A
+# review-only route of `routes.json` is a refusal: exit 2, one `judge-run:`
+# line on stdout, no call, and no judge file. A missing `judges.json` file is
+# a refusal too. The runner never reads `routes.json`, and `review-run.sh`
+# never reads `judges.json`.
+#
+# The judge rows hold no `kind` field: a judge route is a subscription route.
+# A judge row that holds a `kind` keeps the check of `routes.json` (a kind of
+# `plan` or `free`).
 #
 # The input is `<private>/sets/<set_id>/adjudication/queue.json`, the queue of
 # `adjudicate.ts queue`. One model call runs per group. A group is one diff,
@@ -57,7 +67,7 @@ export LC_ALL=C
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GUIDE="$ROOT/harness/model-guide"
-ROUTES_FILE="$GUIDE/routes.json"
+JUDGES_FILE="$GUIDE/judges.json"
 QUOTA_TOOL="$GUIDE/quota.ts"
 CREDENTIAL_HELPER="$GUIDE/provider-credential.sh"
 
@@ -164,8 +174,15 @@ fi
 # The date of the run record and of the lock, in UTC.
 DATE="$(date -u +%F)"
 
-# The route row of `routes.json`: kind, quota provider.
-[ -f "$ROUTES_FILE" ] || refuse "routes.json is missing"
+# The route list of the run (spec D11, PM 2026-11-18). `judges.json` holds
+# the judge routes, and the runner accepts a route only from that file. A
+# missing `judges.json` file is a refusal: the runner never falls back to
+# `routes.json`.
+[ -f "$JUDGES_FILE" ] || refuse "judges.json is missing"
+
+# The route row of the list: kind, quota provider, quota source. A field that
+# the row does not hold is the placeholder `-`, so the three fields keep
+# their place in the row.
 route_rc=0
 route_row="$(node -e '
 const fs = require("node:fs");
@@ -175,19 +192,26 @@ try { doc = JSON.parse(fs.readFileSync(file, "utf8")); } catch { process.exit(4)
 const list = Array.isArray(doc) ? doc : (doc && Array.isArray(doc.routes) ? doc.routes : []);
 const row = list.find((entry) => entry && entry.route === route);
 if (!row) process.exit(3);
-const field = (value) => (typeof value === "string" ? value : "");
+const field = (value) => (typeof value === "string" && value !== "" ? value : "-");
 process.stdout.write([field(row.kind), field(row.quota_provider), field(row.quota_source)].join("\t"));
-' "$ROUTES_FILE" "$ROUTE")" || route_rc=$?
+' "$JUDGES_FILE" "$ROUTE")" || route_rc=$?
 case "$route_rc" in
   0) ;;
-  3) refuse "the route is not in routes.json" ;;
-  *) refuse "routes.json is unreadable" ;;
+  3) refuse "the route is not in judges.json" ;;
+  *) refuse "judges.json is unreadable" ;;
 esac
 IFS=$'\t' read -r ROUTE_KIND QUOTA_PROVIDER QUOTA_SOURCE <<< "$route_row"
-case "$ROUTE_KIND" in
-  plan|free) ;;
-  *) refuse "the route kind is not plan or free: $ROUTE_KIND" ;;
-esac
+if [ "$ROUTE_KIND" = "-" ]; then ROUTE_KIND=""; fi
+if [ "$QUOTA_PROVIDER" = "-" ]; then QUOTA_PROVIDER=""; fi
+if [ "$QUOTA_SOURCE" = "-" ]; then QUOTA_SOURCE=""; fi
+# A judge route is a subscription route (spec D11). The judge rows hold no
+# `kind` field, so the kind check runs only for a row that holds one.
+if [ -n "$ROUTE_KIND" ]; then
+  case "$ROUTE_KIND" in
+    plan|free) ;;
+    *) refuse "the route kind is not plan or free: $ROUTE_KIND" ;;
+  esac
+fi
 
 # The tools of the run.
 TSX=""

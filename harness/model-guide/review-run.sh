@@ -13,9 +13,17 @@
 # The runner refuses, with one line `review-run: <check>` on stdout and exit
 # 2, a flag without a value, a `--set` value that is not a plain id, a
 # `--route` value with a parent segment, a route that `routes.json` does not
-# hold, a route whose `kind` is not `plan` or `free`, a bad wait value, and a
-# set with no diff. A refusal starts no job, makes no call, and writes no
-# pass record.
+# hold, a route whose `kind` is not `plan` or `free`, a bad wait value, a set
+# with no diff, and a diff with no message file. A refusal starts no job,
+# makes no call, and writes no pass record.
+#
+# The message line of the prompt (spec D10 ruling 2026-11-18): the file
+# `<private>/sets/<set_id>/messages/<diff_id>.txt` holds the first line of
+# the commit message of the source commit. The prompt of a call holds three
+# parts in this order: `review-prompt.md`, the message line, and the seeded
+# diff. A missing or empty message file is a refusal: exit 2, one
+# `review-run:` line on stdout, no call, and no pass record. The runner reads
+# `diffs/` and `messages/` only; it never reads `src/`.
 #
 # It holds one exclusive lock for one route, one set, and one date, before the
 # pass number and before any call (ADV-R-8). A second run that finds the lock
@@ -246,6 +254,45 @@ DIFF_PATHS=("$SET_DIR/diffs"/*.diff)
 shopt -u nullglob
 [ "${#DIFF_PATHS[@]}" -gt 0 ] || refuse "the set has no diff"
 
+# The message line of each diff (spec D10 ruling 2026-11-18). The file
+# `messages/<diff_id>.txt` holds the first line of the commit message of the
+# source commit of that diff. The runner reads `diffs/` and `messages/` only.
+MESSAGE_DIR="$SET_DIR/messages"
+MESSAGE_STATE=""
+MESSAGE_TEXT=""
+
+# Reads the message line of one diff into MESSAGE_TEXT. It sets MESSAGE_STATE
+# to `ok`, `missing`, or `empty`, and it returns 1 for the two bad states.
+read_message_line() {
+  local diff_id="$1" file line
+  MESSAGE_TEXT=""
+  file="$MESSAGE_DIR/${diff_id}.txt"
+  if [ ! -f "$file" ]; then
+    MESSAGE_STATE="missing"
+    return 1
+  fi
+  line="$(head -n 1 "$file" 2>/dev/null || true)"
+  line="${line%$'\r'}"
+  if [ -z "${line//[[:space:]]/}" ]; then
+    MESSAGE_STATE="empty"
+    return 1
+  fi
+  MESSAGE_STATE="ok"
+  MESSAGE_TEXT="$line"
+  return 0
+}
+
+# The message file of every diff of the set. A missing or empty file is a
+# refusal before the lock, before the quota read, and before any call, so the
+# refusal leaves no call and no pass record.
+for diff_path in "${DIFF_PATHS[@]}"; do
+  diff_id="${diff_path##*/}"
+  diff_id="${diff_id%.diff}"
+  if ! read_message_line "$diff_id"; then
+    refuse "the message file of ${diff_id} is ${MESSAGE_STATE}"
+  fi
+done
+
 RUN_SLUG="$(printf '%s' "$ROUTE" | tr -cs 'A-Za-z0-9._-' '-')"
 # Two different routes can fold to one slug, for example `t/one#c` and
 # `t-one#c`. The first 12 hex characters of the SHA-256 of the full route
@@ -456,9 +503,9 @@ fi
 # example on SIGKILL), the watcher stops the call, so no model call outlives
 # the runner (PM load watch).
 run_model_call() {
-  local diff_path="$1" raw_path="$2" err_path="$3" rc=0
+  local message_path="$1" diff_path="$2" raw_path="$3" err_path="$4" rc=0
   local parent=$$ watchdog=0
-  cat "$PROMPT_FILE" "$diff_path" | timeout --kill-after=1 "$MG_CALL_TIMEOUT" \
+  cat "$PROMPT_FILE" "$message_path" "$diff_path" | timeout --kill-after=1 "$MG_CALL_TIMEOUT" \
     env -u OPENCODE_DB \
       HOME="$JOB/home" \
       XDG_CONFIG_HOME="$JOB/config" \
@@ -549,7 +596,7 @@ fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
 # one line `<route> <state> <error line or ->` and returns 0 for reachable
 # and 3 for unreachable or region-blocked. A blocked probe is a refusal.
 run_probe() {
-  local control="" control_id="" diff_path diff_id key plants
+  local control="" control_id="" control_message="" diff_path diff_id key plants
   for diff_path in "${DIFF_PATHS[@]}"; do
     diff_id="${diff_path##*/}"
     diff_id="${diff_id%.diff}"
@@ -571,6 +618,7 @@ process.stdout.write(String(plants.length));
   if [ -z "$control" ]; then
     probe_refuse "the set holds no control diff"
   fi
+  control_message="$MESSAGE_DIR/${control_id}.txt"
 
   local probe_dir="$PRIVATE/probes/$SET_ID"
   mkdir -p "$probe_dir" || probe_refuse "the probe folder could not be made"
@@ -580,7 +628,7 @@ process.stdout.write(String(plants.length));
 
   while [ "$attempt" -le 3 ]; do
     rc=0
-    run_model_call "$control" "$staging" "$err_file" || rc=$?
+    run_model_call "$control_message" "$control" "$staging" "$err_file" || rc=$?
     # An empty answer is no response (spec D13), not a model result.
     if [ "$rc" -eq 0 ] && [ ! -s "$staging" ]; then
       rc=125
@@ -642,6 +690,7 @@ fi
 for diff_path in "${DIFF_PATHS[@]}"; do
   diff_id="${diff_path##*/}"
   diff_id="${diff_id%.diff}"
+  message_path="$MESSAGE_DIR/${diff_id}.txt"
 
   # The quota read before each diff (spec D15). The pass stops at 80 %.
   read_quota
@@ -674,7 +723,7 @@ for diff_path in "${DIFF_PATHS[@]}"; do
   stored=""
   while [ "$attempt" -le 3 ]; do
     call_rc=0
-    run_model_call "$diff_path" "$STAGING" "$ERR_FILE" || call_rc=$?
+    run_model_call "$message_path" "$diff_path" "$STAGING" "$ERR_FILE" || call_rc=$?
     # An empty answer is no response (spec D13), not a model result.
     if [ "$call_rc" -eq 0 ] && [ ! -s "$STAGING" ]; then
       call_rc=125

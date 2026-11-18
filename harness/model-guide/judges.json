@@ -1,0 +1,20 @@
+[
+  {
+    "family": "Kimi K3.1 Pro",
+    "route": "kimi-code-plan-cn/k3.1-pro#high",
+    "quota_provider": "kimi-code-plan-cn",
+    "quota_source": "kimi-for-coding"
+  },
+  {
+    "family": "Go",
+    "route": "opencode-go/muse-spark-1.3-contributor#high",
+    "quota_provider": "opencode-go",
+    "quota_source": "opencode-go"
+  },
+  {
+    "family": "Claude Sonnet",
+    "route": "claude-code/claude-sonnet-5-5#max",
+    "quota_provider": "claude-code",
+    "quota_source": "claude"
+  }
+]
