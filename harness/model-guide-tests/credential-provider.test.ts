@@ -153,6 +153,10 @@ set -uo pipefail
 SHARED_FILE="$FAKE_OPENCODE_SHARED"
 STORE_FILE="$FAKE_OPENCODE_STORE"
 COUNTER_FILE="$FAKE_OPENCODE_COUNTER"
+ARGV_FILE="$FAKE_OPENCODE_ARGV"
+if [ -n "$ARGV_FILE" ]; then
+  printf '%s\n' "$*" >> "$ARGV_FILE"
+fi
 if [ "$1" != "auth" ]; then
   echo "fake-opencode: only auth is supported" >&2
   exit 2
@@ -203,6 +207,7 @@ interface Fixture {
   shared: string;
   store: string;
   counter: string;
+  argvLog: string;
   env: Record<string, string>;
   close(): void;
 }
@@ -262,6 +267,7 @@ function buildFixture(options: { failFirst?: number; pad?: number } = {}): Fixtu
   const shared = join(root, "shared-export.json");
   const store = join(root, "job-store.json");
   const counter = join(root, "export-calls.txt");
+  const argvLog = join(root, "opencode-argv.log");
 
   for (const dir of [guide, fakeDir, home, tmp, raw]) mkdirSync(dir, { recursive: true });
   for (const sub of ["home", "config", "data", "state", "cache", "runtime", "tmp"]) {
@@ -299,6 +305,7 @@ function buildFixture(options: { failFirst?: number; pad?: number } = {}): Fixtu
     FAKE_OPENCODE_SHARED: shared,
     FAKE_OPENCODE_STORE: store,
     FAKE_OPENCODE_COUNTER: counter,
+    FAKE_OPENCODE_ARGV: argvLog,
     FAKE_OPENCODE_FAIL_FIRST: String(options.failFirst ?? 0),
     BENCH_CREDENTIAL_SEED_DELAYS: "5 15 30 60",
     AGENT_TIMEOUT: "3600",
@@ -315,6 +322,7 @@ function buildFixture(options: { failFirst?: number; pad?: number } = {}): Fixtu
     shared,
     store,
     counter,
+    argvLog,
     env,
     close: () => {
       rmSync(root, { recursive: true, force: true });
@@ -398,6 +406,20 @@ function exportCalls(fixture: Fixture): number {
   if (!existsSync(fixture.counter)) return 0;
   const text = readFileSync(fixture.counter, "utf8").trim();
   return /^\d+$/.test(text) ? Number(text) : 0;
+}
+
+/** The argv lines the fake recorded, one per opencode call. */
+function argvLines(fixture: Fixture): string[] {
+  if (!existsSync(fixture.argvLog)) return [];
+  return readFileSync(fixture.argvLog, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
+/** The argv tokens of one recorded call line. */
+function argvTokens(line: string): string[] {
+  return line.split(/\s+/).filter((part) => part !== "");
 }
 
 /** The files of one tree. */
@@ -651,5 +673,88 @@ describe("the fake binary of every call", () => {
     } finally {
       fixture.close();
     }
+  });
+});
+
+describe("ST standalone credential calls (PM stop order 2026-11-19)", () => {
+  it("ST1 every call that seed makes holds --standalone", () => {
+    const fixture = buildFixture();
+    try {
+      const result = runHelper(fixture, ["seed", PROVIDER_A]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = argvLines(fixture);
+      expect(lines.length, "seed made no opencode call").toBeGreaterThan(0);
+      for (const line of lines) {
+        expect(argvTokens(line), `seed call holds no --standalone: ${line}`).toContain("--standalone");
+      }
+    } finally {
+      fixture.close();
+    }
+  });
+
+  it("ST2 every call that scan-values makes holds --standalone", () => {
+    const fixture = buildFixture();
+    try {
+      const seed = runHelper(fixture, ["seed", PROVIDER_A]);
+      expect(seed.status, `${seed.stdout}\n${seed.stderr}`).toBe(0);
+      rmSync(fixture.argvLog, { force: true });
+      const result = runHelper(fixture, ["scan-values", PROVIDER_A]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = argvLines(fixture);
+      expect(lines.length, "scan-values made no opencode call").toBeGreaterThan(0);
+      for (const line of lines) {
+        expect(argvTokens(line), `scan-values call holds no --standalone: ${line}`).toContain(
+          "--standalone",
+        );
+      }
+    } finally {
+      fixture.close();
+    }
+  });
+
+  it("ST3 no credential call uses serve and no call runs with no subcommand", () => {
+    const fixture = buildFixture();
+    try {
+      const seed = runHelper(fixture, ["seed", PROVIDER_A]);
+      expect(seed.status, `${seed.stdout}\n${seed.stderr}`).toBe(0);
+      const scan = runHelper(fixture, ["scan-values", PROVIDER_A]);
+      expect(scan.status, `${scan.stdout}\n${scan.stderr}`).toBe(0);
+      const lines = argvLines(fixture);
+      expect(lines.length, "no opencode call was recorded").toBeGreaterThan(0);
+      for (const line of lines) {
+        const tokens = argvTokens(line);
+        expect(tokens.length, `call runs with no subcommand: ${line}`).toBeGreaterThan(1);
+        expect(tokens, `call uses serve: ${line}`).not.toContain("serve");
+        expect(tokens[0], `call does not start with auth: ${line}`).toBe("auth");
+      }
+    } finally {
+      fixture.close();
+    }
+  });
+
+  it("ST4 every opencode call of review-run.sh holds --standalone and no call uses serve", () => {
+    const text = readFileSync(join(HARNESS, "model-guide", "review-run.sh"), "utf8");
+    const calls = text
+      .split(/\r?\n/)
+      .filter((line) => line.includes('"$OPENCODE_BIN" run') || line.includes('"$OPENCODE_BIN" auth'));
+    expect(calls.length, "review-run.sh holds no opencode call").toBeGreaterThan(0);
+    for (const line of calls) {
+      expect(line, `review-run.sh call holds no --standalone: ${line}`).toContain("--standalone");
+      expect(argvTokens(line), `review-run.sh call uses serve: ${line}`).not.toContain("serve");
+    }
+    expect(text.includes(" serve"), "review-run.sh holds a serve call").toBe(false);
+  });
+
+  it("ST5 every opencode call of judge-run.sh holds --standalone and no call uses serve", () => {
+    const text = readFileSync(join(HARNESS, "model-guide", "judge-run.sh"), "utf8");
+    const calls = text
+      .split(/\r?\n/)
+      .filter((line) => line.includes('"$OPENCODE_BIN" run') || line.includes('"$OPENCODE_BIN" auth'));
+    expect(calls.length, "judge-run.sh holds no opencode call").toBeGreaterThan(0);
+    for (const line of calls) {
+      expect(line, `judge-run.sh call holds no --standalone: ${line}`).toContain("--standalone");
+      expect(argvTokens(line), `judge-run.sh call uses serve: ${line}`).not.toContain("serve");
+    }
+    expect(text.includes(" serve"), "judge-run.sh holds a serve call").toBe(false);
   });
 });
