@@ -1656,7 +1656,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     is a background job with a watcher, so a SIGKILL of the runner leaves no
     call and no fake child; the load watch of `review-run.test.ts` requires
     it. Rows 4.9a and 4.9b are `[x]`.
-- [~] 9983525 4.9c Red: the runner reviews the seeded diffs (spec D7). Change only
+- [x] 9983525 4.9c Red: the runner reviews the seeded diffs (spec D7). Change only
   `harness/model-guide-tests/review-run.test.ts`. Touch no production file.
   - Defect (orchestrator, 2026-11-18): `harness/model-guide/review-run.sh`
     line 242 builds the diff list from `$SET_DIR/src/*.diff`, and line 238
@@ -1703,6 +1703,32 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     in place, that file gives `Tests  14 passed (14)`, and `bun test
     harness/model-guide-tests/review-run.test.ts` gives `39 pass` and
     `0 fail`.
+- [x] 49af2be 4.9d Green. The runner reviews the seeded diffs (spec D7).
+  `harness/model-guide/review-run.sh` reads
+  `<private>/sets/<set_id>/diffs/*.diff` at the set check (line 241) and at
+  the diff glob (line 245), so the pass and the probe both use the seeded
+  diff. A set with no seeded diff is a refusal: exit 2, one `review-run:`
+  line on stdout, no call, and no pass record. The `src/` copies never reach
+  the model.
+  - Verify: the four S cases and the 35 earlier cases pass; no
+    `fake-opencode` or quota-server process stays.
+  - Evidence: run on 2026-11-18, one file at a time:
+    - `bun test harness/model-guide-tests/review-run.test.ts` exits 0 with
+      `39 pass`, `0 fail`, `293 expect() calls`, and `Ran 39 tests across 1
+      file` (64.06s).
+    - `cd harness && npx vitest run
+      model-guide-tests/adversarial-p4-runner.test.ts --configLoader native
+      --maxWorkers=1 --reporter=dot` exits 0 with `Tests  14 passed (14)`
+      and `Test Files  1 passed (1)` (67.16s). That file runs under vitest:
+      its 2 MiB and trap cases exceed the 5 s default timeout of `bun
+      test`, and `bun test` on it gives 5 timeouts at the role base too.
+    - The same Red file exits 0 under vitest with `Tests  39 passed (39)`.
+    - `pgrep -af "fake-opencod[e]"` and `pgrep -af "quota-serve[r]"` print
+      no line, and no `mg-*` folder stays under `/tmp`.
+  - Changes: `src` became `diffs` at the folder check and at the glob, and
+    one comment says that `diffs/` is the review input (spec D7). The pass
+    list and the probe list come from the same glob, so both modes read the
+    seeded diff. Rows 4.9c and 4.9d are `[x]`.
 - [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
   per route of `routes.json` on the first control diff of `mg-2026-11a`,
   through `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19.
