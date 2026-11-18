@@ -12,7 +12,7 @@
 #   {
 #     "calls": [
 #       { "exit": 0, "stderr": "", "stdout_bytes": 0, "pad_bytes": 0,
-#         "sleep": 0, "value": "..." }
+#         "sleep": 0, "value": "...", "tokens": { "input": 1, ... } }
 #     ],
 #     "auth_export": "[{ ... }]",
 #     "auth_export_exit": 0,
@@ -29,6 +29,9 @@
 #                 `stdout_bytes` is zero.
 #   sleep         the number of seconds the call waits before it ends.
 #   value         the text the call prints on stdout.
+#   tokens        when it is an object, the call prints one json event
+#                 before the value:
+#                 {"type":"step-finish","tokens":<the object>}
 #
 # The pad bytes come before the value, so a value can sit in the last bytes of
 # a large output. The `auth` calls answer with the `auth_export` text of the
@@ -36,7 +39,7 @@
 #
 # The log file `$FAKE_OPENCODE_LOG` gets one line per call:
 #
-#   argv0=<program path>\targv=<arguments>\tconfig=<job config text>\tjob=<job folder>
+#   argv0=<program path>\targv=<arguments>\tconfig=<job config text>\tjob=<job folder>\tstdin=<the prompt and the diff, with the tabs and line breaks as spaces>
 #
 # The config text is the text of the file that `$OPENCODE_CONFIG` names. The
 # file `$FAKE_OPENCODE_PID_FILE` gets one line per call with the pid of the
@@ -65,11 +68,18 @@ if [ -n "$PID_FILE" ]; then
   printf '%s\n' "$$" >> "$PID_FILE"
 fi
 
-# The prompt of a call can arrive on stdin. Draining it keeps a writer from
-# seeing a broken pipe. The drain holds no output pipe of the caller.
+# The prompt of a call can arrive on stdin. A `run` call reads it to the
+# end, so the log can name the diff that the call reviewed. An `auth` call
+# keeps the background drain, so a writer never sees a broken pipe. The
+# drain holds no output pipe of the caller.
+STDIN_TEXT=""
 if [ ! -t 0 ]; then
-  ( exec cat >/dev/null 2>&1 ) &
-  DRAIN_PID=$!
+  if [ "${1:-}" = "auth" ]; then
+    ( exec cat >/dev/null 2>&1 ) &
+    DRAIN_PID=$!
+  else
+    STDIN_TEXT="$(cat 2>/dev/null || true)"
+  fi
 fi
 
 CONFIG_TEXT=""
@@ -83,8 +93,11 @@ ARGV_TEXT="$*"
 
 write_log() {
   [ -n "$LOG_FILE" ] || return 0
-  printf 'argv0=%s\targv=%s\tconfig=%s\tjob=%s\n' \
-    "$SELF_PATH" "$ARGV_TEXT" "$CONFIG_TEXT" "$JOB_FOLDER" >> "$LOG_FILE"
+  local stdin_line="$STDIN_TEXT"
+  stdin_line="${stdin_line//$'\t'/ }"
+  stdin_line="${stdin_line//$'\n'/ }"
+  printf 'argv0=%s\targv=%s\tconfig=%s\tjob=%s\tstdin=%s\n' \
+    "$SELF_PATH" "$ARGV_TEXT" "$CONFIG_TEXT" "$JOB_FOLDER" "$stdin_line" >> "$LOG_FILE"
 }
 
 # The fields of one spec entry, NUL separated, for `mapfile -d ''`.
@@ -114,12 +127,16 @@ const stdoutBytes = num(entry.stdout_bytes);
 const padBytes = num(entry.pad_bytes);
 const sleepSeconds = num(entry.sleep);
 const value = text(entry.value);
+const tokens = (entry.tokens && typeof entry.tokens === "object" && !Array.isArray(entry.tokens))
+  ? JSON.stringify(entry.tokens)
+  : "";
 const valueBytes = Buffer.byteLength(value, "utf8");
 let total = stdoutBytes > 0 ? stdoutBytes : valueBytes + padBytes;
 if (total < valueBytes) total = valueBytes;
 const fields = [
   String(exitCode), stderrText, String(stdoutBytes), String(padBytes),
   String(sleepSeconds), value, String(total - valueBytes), String(total),
+  tokens,
 ];
 process.stdout.write(fields.map((field) => field + "\0").join(""));
 ' "$SPEC_FILE" "$1" "${2:-0}"
@@ -174,11 +191,18 @@ STDERR_TEXT="${FIELDS[1]:-}"
 SLEEP_SECONDS="${FIELDS[4]:-0}"
 VALUE="${FIELDS[5]:-}"
 PAD_LENGTH="${FIELDS[6]:-0}"
+TOKENS_JSON="${FIELDS[8]:-}"
 
 if [ "$SLEEP_SECONDS" != "0" ]; then
   sleep "$SLEEP_SECONDS" >/dev/null 2>&1 &
   SLEEP_PID=$!
   wait "$SLEEP_PID" 2>/dev/null || true
+fi
+
+# A call with tokens emits its token event first, in the shape of an
+# `opencode run --format json` step-finish event (spec D13, Tokens).
+if [ -n "$TOKENS_JSON" ]; then
+  printf '{"type":"step-finish","tokens":%s}\n' "$TOKENS_JSON"
 fi
 
 if [ -n "$STDERR_TEXT" ]; then

@@ -24,8 +24,13 @@
  *   - Every other run writes one pass record in the private folder. Its
  *     `state` is one of `complete`, `open`, `wait`, or `region-blocked`.
  *   - The pass record holds `set_id`, `route`, `pass`, `date`, `state`,
- *     `diffs`, `outputs`, and `errors`. It holds no `complete` field and no
+ *     `diffs`, `outputs`, `errors`, `tokens`, and `tokens_complete`. Each
+ *     entry of `diffs` holds its `id` and its own `tokens` object (spec
+ *     D13, Tokens, PM 2026-11-18). It holds no `complete` field and no
  *     `rank` field.
+ *   - `--probe` runs the probe mode of spec D14 (PM 2026-11-18). The block
+ *     above the probe cases pins its line, its exit codes, and the probe
+ *     record.
  *   - The raw output of each diff is stored in the private folder only.
  *   - Each model call is `run --standalone --format json --model <route>`.
  *   - The job config of the call denies `read`, `edit`, `bash`, `webfetch`,
@@ -178,6 +183,7 @@ interface CallSpec {
   pad_bytes?: number;
   sleep?: number;
   value?: string;
+  tokens?: Record<string, unknown>;
 }
 
 interface Scenario {
@@ -329,6 +335,7 @@ interface LogEntry {
   argv: string;
   config: string;
   job: string;
+  stdin: string;
 }
 
 /** The log lines of the fake. */
@@ -348,6 +355,7 @@ function logEntries(logPath: string): LogEntry[] {
         argv: fields.argv ?? "",
         config: fields.config ?? "",
         job: fields.job ?? "",
+        stdin: fields.stdin ?? "",
       };
     });
 }
@@ -1430,6 +1438,468 @@ describe("P4 the check 4.9 fixes F1 and F2", () => {
       expect(filesHolding(fixture.privateDir, "RAW-"), "the run stored a raw output").toEqual([]);
     } finally {
       dropFixture(fixture);
+    }
+  });
+});
+
+// --- task 4.9a: probe mode, the token log, and the new routes.json ------
+//
+// Probe mode (spec D14, "Probe mode (PM 2026-11-18)"). `review-run.sh
+// --probe` makes exactly one model call on the first control diff of the
+// set (a diff with no plant), writes no pass record and no stored raw
+// output beyond the probe record, prints one line
+// `<route> reachable|unreachable|region-blocked <error line or ->` on
+// stdout, and gives exit 0 for `reachable`, exit 3 for `unreachable` or
+// `region-blocked`, and exit 2 for a refusal. The probe uses the same
+// lock, quota rules, job isolation, credential scan, and trap as a pass.
+//
+// Contracts this file pins where the spec is silent:
+//   - The probe record lives in `<private>/probes/<set_id>/`. It holds
+//     `set_id`, `route`, `date`, `state`, `tokens`, and `tokens_complete`,
+//     and it names the diff of the call. The pass records stay in
+//     `<private>/passes/`.
+//   - A probe blocked by the quota rule (a window at 70 %) or by the
+//     credential scan is a refusal: exit 2, one `review-run:` line on
+//     stdout, and no pass record. A probe that finds the lock held follows
+//     the lock refusal of `review-run.sh`: exit 2 and one `review-run:`
+//     line on stderr.
+//   - `unreachable` and `region-blocked` print the first line of the
+//     error of the call after the state word.
+//
+// Token shape (spec D13, "Tokens (PM 2026-11-18)"). The fake emits one
+// json event per call that holds tokens, in the shape of an
+// `opencode run --format json` step-finish event:
+//
+//   {"type":"step-finish","tokens":{"input":10,"output":20,"reasoning":5,
+//     "cache":{"read":100,"write":7}}}
+//
+// The record holds the flat sums, and `total` is the sum of the five
+// components:
+//
+//   "tokens": {"input","output","reasoning","cache_read","cache_write",
+//              "total"}
+//
+// Each entry of `diffs` holds its `id` and its own `tokens` object in the
+// same shape. `tokens_complete` is `true` when every call held a token
+// field and `false` when one call did not; a call with no token field
+// adds 0.
+//
+// routes.json (spec D12, PM 2026-11-18): three routes leave the committed
+// file, and the pilot routes stay.
+//
+// Every case keeps the orphan nets of the PM load watch, uses only the
+// fake `opencode`, and never runs the real `opencode` CLI.
+
+describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
+  const PROBE_DATE = "2026-11-20";
+
+  const TOKENS_A = { input: 10, output: 20, reasoning: 5, cache: { read: 100, write: 7 } };
+  const TOKENS_B = { input: 1, output: 2, reasoning: 3, cache: { read: 4, write: 5 } };
+  const TOKENS_C = { input: 11, output: 12, reasoning: 13, cache: { read: 14, write: 15 } };
+  const FLAT_A = { input: 10, output: 20, reasoning: 5, cache_read: 100, cache_write: 7, total: 142 };
+  const FLAT_B = { input: 1, output: 2, reasoning: 3, cache_read: 4, cache_write: 5, total: 15 };
+  const FLAT_C = { input: 11, output: 12, reasoning: 13, cache_read: 14, cache_write: 15, total: 65 };
+  const ZERO_TOKENS = { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0, total: 0 };
+
+  const sleep = (ms: number): Promise<void> =>
+    new Promise<void>((done) => {
+      setTimeout(done, ms);
+    });
+
+  /** Waits until one check holds, or until the bound runs out. */
+  async function waitFor(check: () => boolean, timeoutMs: number): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      if (check()) return true;
+      if (Date.now() >= deadline) return check();
+      await sleep(50);
+    }
+  }
+
+  function probeArgs(fixture: Fixture): string[] {
+    return [...runArgs(fixture), "--probe", "--date", PROBE_DATE];
+  }
+
+  /** The keys of the temp set. `d-02` is the first control diff: it holds
+   * no plant, and the two other diffs hold one each. */
+  function writeControlKeys(fixture: Fixture): void {
+    const keysDir = join(fixture.privateDir, "sets", fixture.setId, "keys");
+    mkdirSync(keysDir, { recursive: true });
+    for (const diff of fixture.diffs) {
+      const plants = diff === "d-02"
+        ? []
+        : [
+            {
+              id: `P-${diff}`,
+              new_lines: [3, 5],
+              file: `src/${diff}.ts`,
+              class: "C1",
+              severity: "blocker",
+              title: "planted",
+              reason: "the test plant",
+              witness: "witness",
+              weight: 5,
+            },
+          ];
+      writeFileSync(
+        join(keysDir, `${diff}.json`),
+        `${JSON.stringify(
+          { schema: "model-guide-key/1", set_id: fixture.setId, diff_id: diff, plants },
+          null,
+          2,
+        )}\n`,
+      );
+    }
+  }
+
+  /** The pass records of a run. They live under `passes/`; a probe record
+   * lives under `probes/` and is not one. */
+  function passRecordsOf(fixture: Fixture): Array<Record<string, unknown>> {
+    return passRecords(join(fixture.privateDir, "passes"));
+  }
+
+  /** The probe records of a run: one json file under `probes/`. */
+  function probeRecords(fixture: Fixture): Array<Record<string, any>> {
+    return filesUnder(join(fixture.privateDir, "probes"))
+      .filter((file) => file.endsWith(".json"))
+      .map((file) => JSON.parse(readFileSync(file, "utf8")));
+  }
+
+  it("P1 the probe calls the first control diff once, prints reachable, and writes a probe record with the tokens", async () => {
+    const fixture = await buildFixture({
+      calls: [{ tokens: TOKENS_A, value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
+    });
+    writeControlKeys(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(result.stdout, "the probe prints one line").toBe(`${ROUTE} reachable -\n`);
+      const calls = modelCalls(logEntries(fixture.logPath));
+      expect(calls, "the probe must make exactly one call").toHaveLength(1);
+      expect(calls[0].stdin, "the call must hold the first control diff").toContain("src/d-02");
+      expect(calls[0].stdin, "the call must hold no other diff").not.toContain("src/d-01");
+      expect(passRecordsOf(fixture), "the probe wrote a pass record").toEqual([]);
+      const records = probeRecords(fixture);
+      expect(records, "the probe wrote no probe record").toHaveLength(1);
+      expect(records[0].state, "the state of the probe record").toBe("reachable");
+      expect(JSON.stringify(records[0]), "the probe record must name the diff").toContain("d-02");
+      expect(records[0].tokens, "the probe record holds the token sums").toEqual(FLAT_A);
+      expect(records[0].tokens_complete, "every call held a token field").toBe(true);
+      expect(
+        filesHolding(fixture.privateDir, "PROBE-d-02"),
+        "the probe stored a raw output",
+      ).toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("P2 the probe prints unreachable with the error line and exits 3", async () => {
+    const fixture = await buildFixture({
+      calls: [
+        { exit: 1, stderr: "provider: transport error" },
+        { exit: 1, stderr: "provider: transport error" },
+        { exit: 1, stderr: "provider: transport error" },
+      ],
+    });
+    writeControlKeys(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      const lines = stdoutLines(result);
+      expect(lines, "the probe prints one line").toHaveLength(1);
+      expect(
+        lines[0].startsWith(`${ROUTE} unreachable `),
+        `wrong probe line: ${lines[0]}`,
+      ).toBe(true);
+      expect(lines[0], "the line must hold the error line").toContain("transport error");
+      expect(
+        modelCalls(logEntries(fixture.logPath)).length,
+        "the probe made no call",
+      ).toBeGreaterThan(0);
+      expect(passRecordsOf(fixture), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("P3 the probe prints region-blocked with the D22 error line and exits 3", async () => {
+    const fixture = await buildFixture({
+      calls: [
+        { exit: 1, stderr: REGION_ERROR },
+        { exit: 1, stderr: REGION_ERROR },
+        { exit: 1, stderr: REGION_ERROR },
+      ],
+    });
+    writeControlKeys(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      const lines = stdoutLines(result);
+      expect(lines, "the probe prints one line").toHaveLength(1);
+      expect(
+        lines[0].startsWith(`${ROUTE} region-blocked `),
+        `wrong probe line: ${lines[0]}`,
+      ).toBe(true);
+      expect(lines[0], "the line must hold the region error").toContain("not available in your region");
+      expect(passRecordsOf(fixture), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("P4 the probe refuses an unknown route and a metered route before any call", async () => {
+    const unknownFixture = await buildFixture({
+      route: UNKNOWN_ROUTE,
+      routes: routesFile(ROUTE),
+    });
+    try {
+      assertRunnerExists();
+      const unknown = runRunner(unknownFixture, probeArgs(unknownFixture));
+      expect(unknown.status, `${unknown.stdout}\n${unknown.stderr}`).toBe(2);
+      const unknownNamed = namedLines(unknown);
+      expect(unknownNamed, `the refusal must name the route: ${unknown.stdout}`).toHaveLength(1);
+      expect(unknownNamed[0], "the refusal line must name the route").toMatch(/route/);
+      expect(logEntries(unknownFixture.logPath), "the probe called the model").toEqual([]);
+      expect(passRecordsOf(unknownFixture), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(unknownFixture);
+    }
+
+    const meteredFixture = await buildFixture({ route: METERED_ROUTE, kind: "metered" });
+    try {
+      const metered = runRunner(meteredFixture, probeArgs(meteredFixture));
+      expect(metered.status, `${metered.stdout}\n${metered.stderr}`).toBe(2);
+      const meteredNamed = namedLines(metered);
+      expect(meteredNamed, `the refusal must name the kind: ${metered.stdout}`).toHaveLength(1);
+      expect(meteredNamed[0], "the refusal line must name the metered kind").toMatch(/kind|metered/);
+      expect(logEntries(meteredFixture.logPath), "the probe called the model").toEqual([]);
+      expect(passRecordsOf(meteredFixture), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(meteredFixture);
+    }
+  });
+
+  it("P5 the probe takes the lock of the route, the set, and the date", async () => {
+    const fixture = await buildFixture({
+      calls: [{ sleep: 30, value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
+    });
+    writeControlKeys(fixture);
+    let holder: ChildProcess | null = null;
+    let holderOut = "";
+    let holderErr = "";
+    try {
+      assertRunnerExists();
+      const child = spawn(
+        "bash",
+        [join(fixture.repo, "harness", "model-guide", "review-run.sh"), ...probeArgs(fixture)],
+        { cwd: fixture.repo, env: spawnEnv(fixture), stdio: ["ignore", "pipe", "pipe"] },
+      );
+      holder = child;
+      // The orphan net kills this child when a test stops before its
+      // finally block, and the afterEach waits for its exit.
+      startedServers.add(child);
+      serverExits.add(
+        new Promise<void>((done) => {
+          child.once("close", () => done());
+        }),
+      );
+      child.stdout.setEncoding("utf8");
+      child.stderr.setEncoding("utf8");
+      child.stdout.on("data", (chunk: string) => {
+        holderOut += chunk;
+      });
+      child.stderr.on("data", (chunk: string) => {
+        holderErr += chunk;
+      });
+
+      const lockDir = join(fixture.privateDir, ".locks");
+      const hasLock = (): boolean =>
+        existsSync(lockDir) &&
+        readdirSync(lockDir).some((name) => name.endsWith(".lock"));
+      const lockSeen = await waitFor(() => hasLock() || child.exitCode !== null, 10_000);
+      expect(
+        lockSeen && hasLock(),
+        `the first probe took no lock (exit ${child.exitCode}, stdout=${holderOut}, stderr=${holderErr})`,
+      ).toBe(true);
+      expect(
+        await waitFor(() => modelCalls(logEntries(fixture.logPath)).length >= 1, 10_000),
+        "the first probe made no call",
+      ).toBe(true);
+
+      const second = runRunner(fixture, probeArgs(fixture));
+      expect(second.status, `${second.stdout}\n${second.stderr}`).toBe(2);
+      const errLines = (second.stderr ?? "")
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+      expect(
+        errLines,
+        `the second probe must print one line on stderr: ${second.stderr}`,
+      ).toHaveLength(1);
+      expect(errLines[0], "the line must start with review-run:").toMatch(/^review-run:/);
+      expect(errLines[0], "the line must name the lock").toMatch(/lock/);
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the second probe called the model",
+      ).toHaveLength(1);
+      expect(passRecordsOf(fixture), "a probe wrote a pass record").toEqual([]);
+    } finally {
+      if (holder !== null) holder.kill("SIGKILL");
+      dropFixture(fixture);
+    }
+  });
+
+  it("P6 the probe obeys the 70 % quota rule and makes no call", async () => {
+    const fixture = await buildFixture({
+      quotaPercent: 70,
+      calls: [{ tokens: TOKENS_A, value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
+    });
+    writeControlKeys(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const lines = stdoutLines(result);
+      expect(lines, `the probe must print one refusal line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "the line must start with review-run:").toMatch(/^review-run:/);
+      expect(lines[0], "the line must name the quota rule").toMatch(/quota/i);
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the probe called the model at 70 %",
+      ).toEqual([]);
+      expect(passRecordsOf(fixture), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("P7 the probe runs the credential scan and stores no value", async () => {
+    const fixture = await buildFixture({
+      calls: [{ value: JSON.stringify({ type: "result", text: SECRET }) }],
+    });
+    writeControlKeys(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const lines = stdoutLines(result);
+      expect(lines, `the probe must print one refusal line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "the line must start with review-run:").toMatch(/^review-run:/);
+      expect(lines[0], "the line must name the credential scan").toMatch(/credential|value/i);
+      expect(
+        filesHolding(fixture.privateDir, SECRET),
+        "the credential value stayed in the private folder",
+      ).toEqual([]);
+      expect(
+        filesHolding(fixture.repo, SECRET),
+        "the credential value stayed in the repository",
+      ).toEqual([]);
+      expect(
+        readFileSync(fixture.logPath, "utf8").includes(SECRET),
+        "the credential value stayed in the log",
+      ).toBe(false);
+      expect(passRecordsOf(fixture), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("T1 the pass record holds the token sums and each diff entry holds its own tokens", async () => {
+    const fixture = await buildFixture({
+      calls: [
+        { tokens: TOKENS_A, value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { tokens: TOKENS_B, value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { tokens: TOKENS_C, value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens, "the token sums of the pass").toEqual({
+        input: 22,
+        output: 34,
+        reasoning: 21,
+        cache_read: 118,
+        cache_write: 27,
+        total: 222,
+      });
+      expect(records[0].tokens_complete, "every call held a token field").toBe(true);
+      const diffs = records[0].diffs as any[];
+      expect(Array.isArray(diffs), "the record must hold diff entries").toBe(true);
+      expect(diffs.map((entry) => entry.id)).toEqual(["d-01", "d-02", "d-03"]);
+      expect(diffs[0].tokens, "the tokens of d-01").toEqual(FLAT_A);
+      expect(diffs[1].tokens, "the tokens of d-02").toEqual(FLAT_B);
+      expect(diffs[2].tokens, "the tokens of d-03").toEqual(FLAT_C);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("T2 a call with no token field adds 0 and sets tokens_complete false", async () => {
+    const fixture = await buildFixture({
+      calls: [
+        { tokens: TOKENS_A, value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { tokens: TOKENS_C, value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens, "the call without tokens adds 0").toEqual({
+        input: 21,
+        output: 32,
+        reasoning: 18,
+        cache_read: 114,
+        cache_write: 22,
+        total: 207,
+      });
+      expect(records[0].tokens_complete, "one call held no token field").toBe(false);
+      const diffs = records[0].diffs as any[];
+      expect(diffs.map((entry) => entry.id)).toEqual(["d-01", "d-02", "d-03"]);
+      expect(diffs[1].tokens, "the call without tokens adds zero").toEqual(ZERO_TOKENS);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("J1 the committed routes.json holds none of the three removed routes and holds the pilot routes", () => {
+    const file = join(HARNESS, "model-guide", "routes.json");
+    expect(existsSync(file), `routes.json is missing: ${file}`).toBe(true);
+    const doc = JSON.parse(readFileSync(file, "utf8"));
+    const rows = Array.isArray(doc) ? doc : (doc.routes ?? []);
+    const routes = rows.map((row: { route?: unknown }) => row.route);
+    const gone = [
+      "kimi-code-plan-cn/kimi-for-coding#high",
+      "bailian-token-plan/glm-5.3#high",
+      "nvidia/stepfun-ai/step-5-preview#high",
+    ];
+    for (const route of gone) {
+      expect(routes, `${route} must leave routes.json (spec D12, PM 2026-11-18)`).not.toContain(
+        route,
+      );
+    }
+    const kept = [
+      "opencode/hy4-flash-free",
+      "opencode-go/deepseek-v4.1-flash",
+      "opencode-go/mimo-v2.6-flash",
+    ];
+    for (const route of kept) {
+      expect(routes, `${route} must stay in routes.json`).toContain(route);
     }
   });
 });
