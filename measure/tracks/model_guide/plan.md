@@ -2174,7 +2174,9 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     and G3 of the review runner, and G1, G2, and G3 of the judge runner.
     The record is `measure/runs/model_guide/red-4.13g.txt` (not staged).
     The two pgrep scans print no line at the end of each run. Row stays
-    `[~]` until Green 4.13h flips it.
+    `[~]` until Green 4.13h flips it. ADV-R-2 commit bae1884: the huge
+    w199 85 case runs on kimi-code-plan-cn; adversarial-p4-runner.test.ts
+    exits 0 with `Tests 14 passed (14)` at HEAD.
 - [ ] 4.13h Green: the Go plan thresholds (PM order 2026-11-19, spec D15).
   Change `harness/model-guide/quota.ts`,
   `harness/model-guide/review-run.sh`, and
