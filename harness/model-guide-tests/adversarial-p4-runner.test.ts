@@ -331,11 +331,17 @@ async function buildRunner(options: RunnerOptions = {}): Promise<RunnerFixture> 
 
   // The review input is the seeded diff of the set (spec D7). The `src/`
   // folder holds the source diffs without the plants, so the runner never
-  // reads it.
+  // reads it. The message line of each diff (spec D10 ruling 2026-11-18)
+  // lives in `messages/<id>.txt`; the runner refuses a set with a missing
+  // or empty message file, so the fixture writes one non-empty line per
+  // diff (the same fixture-only pattern as commit 193c4c2).
   const setDir = join(privateDir, "sets", SET_ID, "diffs");
+  const messagesDir = join(privateDir, "sets", SET_ID, "messages");
   mkdirSync(setDir, { recursive: true });
+  mkdirSync(messagesDir, { recursive: true });
   for (const id of options.diffs ?? ["a", "b"]) {
     writeFileSync(join(setDir, `${id}.diff`), diffText(id));
+    writeFileSync(join(messagesDir, `${id}.txt`), `message line of ${id}\n`);
   }
 
   const specPath = join(root, "spec.json");

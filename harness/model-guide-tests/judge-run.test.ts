@@ -220,9 +220,13 @@ interface Scenario {
   defaultPrivate?: boolean;
   /** A judge file that the case plants before the run. */
   plantedJudgeFile?: { judge: "a" | "b"; text: string };
-  /** The judge routes of the temp `judges.json` (spec D11). When absent, the
-   * case writes no `judges.json`, so the 18 earlier cases keep their shape. */
+  /** The judge routes of the temp `judges.json` (spec D11). When absent,
+   * the fixture writes one entry for the fixture route, so every earlier
+   * case reads its route from `judges.json`. */
   judgesRoutes?: Array<{ route: string; quota_provider: string | null; quota_source: string | null }>;
+  /** When true, the case writes no temp `judges.json` at all. Only J17
+   * uses it, to pin that a route from `routes.json` is refused without it. */
+  judgesMissing?: boolean;
 }
 
 interface Fixture {
@@ -617,11 +621,18 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
     quotaSource: scenario.quotaSource,
   });
   writeFileSync(join(guideDir, "routes.json"), `${JSON.stringify(routes, null, 2)}\n`);
-  if (scenario.judgesRoutes !== undefined) {
-    writeFileSync(
-      join(guideDir, "judges.json"),
-      `${JSON.stringify(scenario.judgesRoutes, null, 2)}\n`,
-    );
+  // Spec D11: judge-run.sh accepts a route only from `judges.json`. The
+  // fixture always writes one, holding the fixture route, so every earlier
+  // case reads its route from it. Only J17 sets `judgesMissing`.
+  if (scenario.judgesMissing !== true) {
+    const judges = scenario.judgesRoutes ?? [
+      {
+        route,
+        quota_provider: scenario.quotaProvider ?? QUOTA_PROVIDER,
+        quota_source: scenario.quotaSource === undefined ? QUOTA_PROVIDER : scenario.quotaSource,
+      },
+    ];
+    writeFileSync(join(guideDir, "judges.json"), `${JSON.stringify(judges, null, 2)}\n`);
   }
 
   // A synthetic docs tree. It must stay byte-identical.
@@ -1876,6 +1887,28 @@ describe("P4 the judge route list (task 4.13c)", () => {
         "--private",
         fixture.privateDir,
       ]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(judgeFile(fixture, "a"), "the runner wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the runner wrote a run record").toBeNull();
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("J17 refuses a route that routes.json holds when judges.json is missing, with exit 2, one named line, no call, and no file", async () => {
+    const fixture = await buildFixture({
+      route: REVIEW_ONLY_ROUTE,
+      quotaProvider: "opencode-go",
+      quotaSource: "opencode-go",
+      judgesMissing: true,
+      calls: judgeCalls(),
+    });
+    try {
+      assertRunnerExists();
+      expect(existsSync(join(fixture.repo, "harness", "model-guide", "judges.json")), "the case left a judges.json behind").toBe(false);
+      const result = runJudge(fixture, judgeArgs(fixture));
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
       expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
       expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
