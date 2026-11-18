@@ -1474,6 +1474,17 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `phase_base_sha` check above prints nothing. `bash -n` on the runner
     exits 0. After the run,
     `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+  - Fix 75b3b33 (ADV-R-8, orchestrator and PM 2026-11-18): the runner holds
+    one exclusive `flock` for one route, one set, and one date, before the
+    pass number and before any call. A second run that finds the lock held
+    exits 2 with one stderr line that names the lock, makes no call, and
+    writes no pass record. The trap releases the lock on every exit path.
+    `adversarial-p4-runner.test.ts` exits 0 with `Tests  12 passed (12)`.
+    `review-run.test.ts` keeps `Tests  23 passed (23)`, `quota.test.ts`
+    keeps `Tests  15 passed (15)`, `credential-provider.test.ts` keeps
+    `Tests  11 passed (11)`, and `preview-gate.test.ts` keeps `Tests  111
+    passed (111)`. No quota server process and no fake `opencode` process
+    stay.
 - [x] 6be3894 4.8a Red. The review page. Add the page cases V1 to V9 of
   `measure/tracks/model_guide/test-strategy.md` section 4.4 to
   `harness/model-guide-tests/preview-gate.test.ts`. Touch no other file.
