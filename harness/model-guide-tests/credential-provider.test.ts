@@ -73,7 +73,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 
 const HARNESS = resolve(import.meta.dirname, "..");
 
@@ -97,6 +97,55 @@ const ORG_C = "FAKE-ORGID-OTHERKIND-0003";
 const VALUES = [ACCESS_A, ORG_A, ACCESS_B, ORG_B, ACCESS_C, ORG_C];
 
 const TWO_MIB = 2 * 1024 * 1024;
+
+// --- the PM load watch: this file leaves no server and no child ----------
+// This file starts no quota server. Every child runs under `spawnSync`, so
+// the run waits for each exit. The registry below removes a temp folder
+// that a failing test left behind.
+/** The temp folders this file created. */
+const tempRoots = new Set<string>();
+
+/** Removes every temp folder this file created and did not remove yet. */
+function sweepTempRoots(): void {
+  for (const root of tempRoots) {
+    rmSync(root, { recursive: true, force: true });
+  }
+  tempRoots.clear();
+}
+
+process.on("exit", sweepTempRoots);
+process.on("SIGINT", () => {
+  sweepTempRoots();
+  process.exit(130);
+});
+process.on("SIGTERM", () => {
+  sweepTempRoots();
+  process.exit(143);
+});
+
+/** The lines of one command of the orphan scan. */
+function commandLines(args: string[]): string[] {
+  const result = spawnSync(args[0], args.slice(1), { encoding: "utf8", timeout: 20_000 });
+  return (result.stdout ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
+afterEach(() => {
+  sweepTempRoots();
+});
+
+/** The load watch of the PM: no server and no fake child of this run may
+ * stay alive after the file. The scan keeps the lines that hold a temp
+ * folder of this suite (`mg-`). */
+afterAll(() => {
+  sweepTempRoots();
+  const quotaOrphans = commandLines(["pgrep", "-f", "mg-.*quota-server"]);
+  const fakeOrphans = commandLines(["bash", "-c", "ps -eo pid,args | grep '[f]ake-opencode'"]);
+  const mine = [...quotaOrphans, ...fakeOrphans].filter((line) => line.includes("mg-"));
+  expect(mine, "an orphan process of this run stays alive").toEqual([]);
+});
 
 /** The fake `opencode`. It is a temp script, never the real binary. */
 const FAKE_SOURCE = `#!/usr/bin/env bash
@@ -201,6 +250,7 @@ function sharedExport(pad = 0): string {
 /** Builds the temp repo, the job folder, the fake, and the env of a case. */
 function buildFixture(options: { failFirst?: number; pad?: number } = {}): Fixture {
   const root = mkdtempSync(join(tmpdir(), "mg-cred-"));
+  tempRoots.add(root);
   const repo = join(root, "repo");
   const guide = join(repo, "harness", "model-guide");
   const job = join(repo, ".tmp", "opencode-host-provider-credential-test");
@@ -266,7 +316,10 @@ function buildFixture(options: { failFirst?: number; pad?: number } = {}): Fixtu
     store,
     counter,
     env,
-    close: () => rmSync(root, { recursive: true, force: true }),
+    close: () => {
+      rmSync(root, { recursive: true, force: true });
+      tempRoots.delete(root);
+    },
   };
 }
 

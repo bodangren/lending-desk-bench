@@ -43,7 +43,7 @@
  * spawn can reach.
  */
 
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmodSync,
@@ -63,7 +63,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 
 const HARNESS = resolve(import.meta.dirname, "..");
 const REPO_ROOT = resolve(HARNESS, "..");
@@ -95,6 +95,81 @@ const UNKNOWN_ROUTE = "opencode-go/not-in-routes#high";
 const SET_ID = "mg-test-set";
 
 const TWO_MIB = 2 * 1024 * 1024;
+
+// --- the PM load watch: this file leaves no server and no temp folder ----
+/** The quota servers this file started. */
+const startedServers = new Set<ChildProcess>();
+/** The exit of each server this file started. */
+const serverExits = new Set<Promise<void>>();
+/** The temp folders this file created. */
+const tempRoots = new Set<string>();
+
+/** Kills every server this file started, without waiting. */
+function killStartedServers(): void {
+  for (const server of startedServers) {
+    try {
+      server.kill("SIGKILL");
+    } catch {
+      // The server is already gone.
+    }
+  }
+  startedServers.clear();
+}
+
+/** Removes every temp folder this file created and did not remove yet. */
+function sweepTempRoots(): void {
+  for (const root of tempRoots) {
+    rmSync(root, { recursive: true, force: true });
+  }
+  tempRoots.clear();
+}
+
+/** Kills every server, waits for each exit, and removes the temp folders. */
+async function stopStartedServers(): Promise<void> {
+  killStartedServers();
+  await Promise.all([...serverExits]);
+  serverExits.clear();
+  sweepTempRoots();
+}
+
+process.on("exit", () => {
+  killStartedServers();
+  sweepTempRoots();
+});
+process.on("SIGINT", () => {
+  killStartedServers();
+  sweepTempRoots();
+  process.exit(130);
+});
+process.on("SIGTERM", () => {
+  killStartedServers();
+  sweepTempRoots();
+  process.exit(143);
+});
+
+/** The lines of one command of the orphan scan. */
+function commandLines(args: string[]): string[] {
+  const result = spawnSync(args[0], args.slice(1), { encoding: "utf8", timeout: 20_000 });
+  return (result.stdout ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
+afterEach(async () => {
+  await stopStartedServers();
+});
+
+/** The load watch of the PM: no server and no fake child of this run may
+ * stay alive after the file. The scan keeps the lines that hold a temp
+ * folder of this suite (`mg-`). */
+afterAll(async () => {
+  await stopStartedServers();
+  const quotaOrphans = commandLines(["pgrep", "-f", "mg-.*quota-server"]);
+  const fakeOrphans = commandLines(["bash", "-c", "ps -eo pid,args | grep '[f]ake-opencode'"]);
+  const mine = [...quotaOrphans, ...fakeOrphans].filter((line) => line.includes("mg-"));
+  expect(mine, "an orphan process of this run stays alive").toEqual([]);
+});
 
 interface CallSpec {
   exit?: number;
@@ -408,6 +483,8 @@ function routesFile(
 async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   const root = mkdtempSync(join(tmpdir(), "mg-review-run-"));
   const fakeRoot = mkdtempSync(join(tmpdir(), "mg-review-fake-"));
+  tempRoots.add(root);
+  tempRoots.add(fakeRoot);
   const repo = join(root, "repo");
   const privateDir = join(root, "private");
   const home = join(root, "home");
@@ -523,6 +600,14 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
+  // The load watch: the file waits for this exit in the afterEach, and the
+  // process handlers kill it when a test stops before its finally block.
+  startedServers.add(server);
+  serverExits.add(
+    new Promise<void>((done) => {
+      server.once("close", () => done());
+    }),
+  );
   const port = await new Promise<number>((done, failed) => {
     let buffer = "";
     const timer = setTimeout(() => failed(new Error("the quota server did not start")), 10_000);
@@ -578,6 +663,8 @@ function dropFixture(fixture: Fixture): void {
   fixture.close();
   rmSync(fixture.root, { recursive: true, force: true });
   rmSync(fixture.fakeRoot, { recursive: true, force: true });
+  tempRoots.delete(fixture.root);
+  tempRoots.delete(fixture.fakeRoot);
 }
 
 /** The environment of a spawn. Every path is inside the temp tree. */

@@ -49,12 +49,12 @@
  * and no real home folder, and it never starts `opencode`.
  */
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 
 const HARNESS = resolve(import.meta.dirname, "..");
 
@@ -73,6 +73,101 @@ const SOURCED: Array<[provider: string, id: string]> = [
 
 /** The providers of spec D15 with no quota source. */
 const UNSOURCED = ["nvidia", "bailian-token-plan", "volcengine-agent-plan", "opencode"];
+
+// --- the PM load watch: this file leaves no server and no child ----------
+/** The in-process quota servers this file started. */
+const liveQuotaServers = new Set<Server>();
+/** The children this file spawned. */
+const startedChildren = new Set<ChildProcess>();
+/** The exit of each child this file spawned. */
+const childExits = new Set<Promise<void>>();
+/** The temp folders this file created. */
+const tempRoots = new Set<string>();
+
+/** Closes every quota server this file started, without waiting. */
+function closeStartedServers(): void {
+  for (const server of liveQuotaServers) {
+    try {
+      server.closeAllConnections();
+      server.close();
+    } catch {
+      // The server is already closed.
+    }
+  }
+  liveQuotaServers.clear();
+}
+
+/** Kills every child this file spawned, without waiting. */
+function killStartedChildren(): void {
+  for (const child of startedChildren) {
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      // The child is already gone.
+    }
+  }
+  startedChildren.clear();
+}
+
+/** Removes every temp folder this file created and did not remove yet. */
+function sweepTempRoots(): void {
+  for (const root of tempRoots) {
+    rmSync(root, { recursive: true, force: true });
+  }
+  tempRoots.clear();
+}
+
+/** Stops every server and child, waits for each exit, and removes the
+ * temp folders. */
+async function stopEverything(): Promise<void> {
+  closeStartedServers();
+  killStartedChildren();
+  await Promise.all([...childExits]);
+  childExits.clear();
+  sweepTempRoots();
+}
+
+process.on("exit", () => {
+  closeStartedServers();
+  killStartedChildren();
+  sweepTempRoots();
+});
+process.on("SIGINT", () => {
+  closeStartedServers();
+  killStartedChildren();
+  sweepTempRoots();
+  process.exit(130);
+});
+process.on("SIGTERM", () => {
+  closeStartedServers();
+  killStartedChildren();
+  sweepTempRoots();
+  process.exit(143);
+});
+
+/** The lines of one command of the orphan scan. */
+function commandLines(args: string[]): string[] {
+  const result = spawnSync(args[0], args.slice(1), { encoding: "utf8", timeout: 20_000 });
+  return (result.stdout ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
+afterEach(async () => {
+  await stopEverything();
+});
+
+/** The load watch of the PM: no server and no child of this run may stay
+ * alive after the file. The scan keeps the lines that hold a temp folder
+ * of this suite (`mg-`). */
+afterAll(async () => {
+  await stopEverything();
+  const quotaOrphans = commandLines(["pgrep", "-f", "mg-.*quota-server"]);
+  const fakeOrphans = commandLines(["bash", "-c", "ps -eo pid,args | grep '[f]ake-opencode'"]);
+  const mine = [...quotaOrphans, ...fakeOrphans].filter((line) => line.includes("mg-"));
+  expect(mine, "an orphan process of this run stays alive").toEqual([]);
+});
 
 /** The result of one run of the tool. */
 interface RunResult {
@@ -103,6 +198,7 @@ interface Sandbox {
 /** Builds the temp tree and the environment of one case. */
 function makeSandbox(): Sandbox {
   const root = mkdtempSync(join(tmpdir(), "mg-quota-"));
+  tempRoots.add(root);
   const home = join(root, "home");
   const tmp = join(root, "tmp");
   const bin = join(root, "bin");
@@ -126,7 +222,10 @@ function makeSandbox(): Sandbox {
     root,
     bin,
     env,
-    close: () => rmSync(root, { recursive: true, force: true }),
+    close: () => {
+      rmSync(root, { recursive: true, force: true });
+      tempRoots.delete(root);
+    },
   };
 }
 
@@ -160,6 +259,9 @@ async function startQuotaServer(handler: QuotaHandler): Promise<QuotaServer> {
   });
   const address = server.address();
   const port = typeof address === "object" && address !== null ? address.port : 0;
+  // The load watch: the afterEach closes this server when a test stops
+  // before its finally block.
+  liveQuotaServers.add(server);
   return {
     port,
     base: `http://127.0.0.1:${port}`,
@@ -167,11 +269,13 @@ async function startQuotaServer(handler: QuotaHandler): Promise<QuotaServer> {
     setHandler: (next: QuotaHandler) => {
       current = next;
     },
-    close: () =>
-      new Promise<void>((done) => {
+    close: () => {
+      liveQuotaServers.delete(server);
+      return new Promise<void>((done) => {
         server.closeAllConnections();
         server.close(() => done());
-      }),
+      });
+    },
   };
 }
 
@@ -216,6 +320,22 @@ async function runQuota(
       env: sandbox.env,
       stdio: ["ignore", "pipe", "pipe"],
     });
+    // The load watch: the afterEach waits for this exit when a test stops
+    // before it awaits the run, and the process handlers kill it.
+    startedChildren.add(child);
+    childExits.add(
+      new Promise<void>((settle) => {
+        let closed = false;
+        const doneOnce = (): void => {
+          if (closed) return;
+          closed = true;
+          startedChildren.delete(child);
+          settle();
+        };
+        child.once("close", doneOnce);
+        child.once("error", doneOnce);
+      }),
+    );
     let stdout = "";
     let stderr = "";
     let settled = false;
