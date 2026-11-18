@@ -6,14 +6,16 @@
 #
 # `seed` reads the shared store with one `opencode auth export` call, retried
 # on a transient failure with the waits of `BENCH_CREDENTIAL_SEED_DELAYS`
-# (default `5 15 30 60`), and imports the one active entry whose `provider`
-# field is `<provider>` into the job store with `opencode auth import`. The
-# payload goes over the pipe of the import call; it never touches a disk.
-# stdout is empty.
+# (default `5 15 30 60`), and imports the one active entry whose
+# `integrationID` field is `<provider>` into the job store with
+# `opencode auth import`. Two active entries of one `integrationID` refuse as
+# ambiguous. The payload goes over the pipe of the import call; it never
+# touches a disk. stdout is empty.
 #
-# `scan-values` reads the job store, selects the entry of `<provider>`, and
-# prints its values, one per line: the access value, then the metadata
-# orgID. It prints no `inert` line and no value of another provider. The
+# `scan-values` reads the job store, selects the entry of `<provider>` by
+# `integrationID` and `active`, and prints its values, one per line: the
+# access value, then the metadata orgID. It prints no `inert` line and no
+# value of another provider. Two active entries refuse as ambiguous. The
 # runner scans each raw output with these values before it stores the output.
 #
 # Every error is one line on stderr `provider-credential: <reason>` and exit
@@ -47,6 +49,33 @@ if [ -z "${BENCH_OPENCODE_HOME:-}" ] || [ ! -d "$BENCH_OPENCODE_HOME" ]; then
   refuse "no job folder: start one with opencode_host_begin"
 fi
 FOLDER="$BENCH_OPENCODE_HOME"
+# The HOME guard of plan task 4.13r F5: the job root must be an absolute path,
+# and the guard compares resolved paths. A symlink out of the job root and a
+# relative job folder are refused before any call.
+case "$FOLDER" in
+  /*) ;;
+  *) refuse "the job root must be an absolute path" ;;
+esac
+FOLDER_REAL="$(realpath "$FOLDER" 2>/dev/null || true)"
+if [ -z "$FOLDER_REAL" ]; then
+  refuse "the job root could not be resolved"
+fi
+
+# A call HOME resolves inside the resolved job root. The comparison is on a
+# path boundary, so a sibling of the job root never matches.
+check_job_home() {
+  local path="$1" real=""
+  case "$path" in
+    /*) ;;
+    *) refuse "the call HOME must be an absolute path" ;;
+  esac
+  real="$(realpath -m "$path" 2>/dev/null || true)"
+  case "$real" in
+    "$FOLDER_REAL"|"$FOLDER_REAL"/*) return 0 ;;
+  esac
+  refuse "the call HOME is outside the job root"
+}
+check_job_home "$FOLDER/home"
 if [ -n "${BENCH_OPENCODE_BIN:-}" ]; then
   OPENCODE_BIN="$BENCH_OPENCODE_BIN"
 else
@@ -83,13 +112,7 @@ trap 'exit 143' TERM
 
 # The HOME guard of plan task 4.13o: every call but the one exempt seed
 # export runs with the job HOME. A HOME outside the job root is refused
-# before the call.
-check_job_home() {
-  case "$1" in
-    "$FOLDER"|"$FOLDER"/*) return 0 ;;
-  esac
-  refuse "the call HOME is outside the job root"
-}
+# before the call. The guard itself is defined above, before any call.
 
 # One `opencode` call of the job store. The environment of the call points
 # every path at the job folder, the same as `opencode_host_run`.
@@ -127,8 +150,9 @@ process.stdin.on("end", () => {
   try { data = JSON.parse(raw.slice(start, end + 1)); } catch { fail("auth export did not print valid JSON"); }
   if (!Array.isArray(data)) fail("auth export did not print a JSON array");
   const active = data.filter((entry) =>
-    entry && typeof entry === "object" && entry.provider === provider && entry.active === true);
+    entry && typeof entry === "object" && entry.integrationID === provider && entry.active === true);
   if (active.length === 0) fail("the store holds no active entry of provider " + provider);
+  if (active.length > 1) fail("the store holds two active entries of provider " + provider + ": ambiguous");
   const entry = active[0];
   const value = entry.value;
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -155,8 +179,17 @@ process.stdin.on("end", () => {
 # in an empty folder outside every git repository. The folder is removed
 # after the call, so the export writes no file of the run.
 run_seed_export() {
-  local dir="" rc=0
-  dir="$(mktemp -d "${TMPDIR:-/tmp}/mg-seed-export.XXXXXX" 2>/dev/null)" || return 2
+  local dir="" base="${TMPDIR:-/tmp}" rc=0
+  # The seed cwd sits outside every git work tree (plan task 4.13r F4). When
+  # the ambient TMPDIR sits inside a work tree, the export falls back to
+  # /tmp. A /tmp that also sits inside a work tree refuses the seed.
+  if git -C "$base" rev-parse --show-toplevel >/dev/null 2>&1; then
+    base="/tmp"
+  fi
+  if git -C "$base" rev-parse --show-toplevel >/dev/null 2>&1; then
+    return 2
+  fi
+  dir="$(mktemp -d "$base/mg-seed-export.XXXXXX" 2>/dev/null)" || return 2
   ( cd "$dir" && timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 \
       BENCH_OPENCODE_JOB="$FOLDER" "$OPENCODE_BIN" auth export "$PROVIDER" --standalone ) || rc=$?
   rm -rf "$dir" 2>/dev/null || true
@@ -200,7 +233,14 @@ read_seed_payload() {
 }
 
 if [ "$MODE" = "seed" ]; then
-  payload="$(read_seed_payload)" || refuse "the credential seed failed"
+  seed_rc=0
+  payload="$(read_seed_payload)" || seed_rc=$?
+  if [ "$seed_rc" -ne 0 ]; then
+    if grep -qi "ambiguous" "$SEL_FILE" 2>/dev/null; then
+      refuse "the store holds two active entries of provider $PROVIDER: ambiguous"
+    fi
+    refuse "the credential seed failed"
+  fi
   if ! printf '%s\n' "$payload" | run_opencode auth import --standalone > /dev/null 2>"$IMPORT_ERR_FILE"; then
     refuse "the credential import failed"
   fi
@@ -216,6 +256,9 @@ fi
 sel_rc=0
 values="$(printf '%s\n' "$out" | MG_PROVIDER="$PROVIDER" MG_MODE=scan node -e "$SELECT_JS" 2>"$SEL_FILE")" || sel_rc=$?
 if [ "$sel_rc" -ne 0 ]; then
+  if grep -qi "ambiguous" "$SEL_FILE" 2>/dev/null; then
+    refuse "the store holds two active entries of provider $PROVIDER: ambiguous"
+  fi
   refuse "the store holds no entry of provider $PROVIDER"
 fi
 if [ -n "$values" ]; then

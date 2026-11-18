@@ -389,10 +389,12 @@ WATCHDOG_PID=""
 # `serve --service` process that the guard stopped under the job root.
 INFRA_LIST=""
 
-# A process is alive when it exists and is no zombie.
+# A process is alive when it exists and is no zombie. BENCH_OPENCODE_PROC
+# points the read at a fake process table (task 4.13q N3).
 daemon_pid_alive() {
-  local stat
-  stat="$(cat "/proc/$1/stat" 2>/dev/null)" || return 1
+  local proc stat
+  proc="${BENCH_OPENCODE_PROC:-/proc}"
+  stat="$(cat "$proc/$1/stat" 2>/dev/null)" || return 1
   stat="${stat##*) }"
   case "$stat" in
     Z*|X*) return 1 ;;
@@ -400,23 +402,42 @@ daemon_pid_alive() {
   esac
 }
 
-# The pids of the processes whose argv holds `serve --service` and whose HOME
-# or cwd is under the job root. A process outside the job root never matches,
-# so the guard never stops a process of another run.
+# The starttime of a process: field 22 of its stat line (plan task 4.13r F3).
+daemon_starttime() {
+  local proc stat
+  proc="${BENCH_OPENCODE_PROC:-/proc}"
+  stat="$(cat "$proc/$1/stat" 2>/dev/null)" || return 1
+  stat="${stat##*) }"
+  local -a fields
+  read -r -a fields <<< "$stat"
+  printf '%s\n' "${fields[19]:-}"
+}
+
+# The pids of the processes whose argv holds the token pair `serve --service`
+# and whose HOME or cwd resolves under the job root. The cmdline is NUL
+# separated, so it is joined before the match (task 4.13r F1). Resolved paths
+# and a path-boundary compare keep a `..` decoy and a sibling folder safe
+# (task 4.13r F2). A process outside the job root never matches, so the
+# guard never stops a process of another run.
 daemon_pids() {
   local root="$1"
   node -e '
 const fs = require("node:fs");
 const base = String(process.argv[1]).replace(/\/+$/, "");
 const proc = String(process.argv[2] || "/proc").replace(/\/+$/, "");
-const under = (path, root) => path !== "" && (path === root || path.startsWith(root + "/"));
+const real = (path) => {
+  if (!path) return "";
+  try { return fs.realpathSync(path); } catch { return ""; }
+};
+const baseReal = real(base);
+const under = (path, root) => path !== "" && root !== "" && (path === root || path.startsWith(root + "/"));
 const pids = [];
 let names = [];
 try { names = fs.readdirSync(proc); } catch { names = []; }
 for (const name of names) {
   if (!/^[0-9]+$/.test(name)) continue;
   let argv = "";
-  try { argv = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8"); } catch { continue; }
+  try { argv = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8").split("\0").join(" "); } catch { continue; }
   if (!argv.includes("serve --service")) continue;
   let home = "";
   try {
@@ -426,7 +447,7 @@ for (const name of names) {
   } catch { home = ""; }
   let cwd = "";
   try { cwd = fs.readlinkSync(proc + "/" + name + "/cwd"); } catch { cwd = ""; }
-  if (!under(home, base) && !under(cwd, base)) continue;
+  if (!under(real(home), baseReal) && !under(real(cwd), baseReal)) continue;
   pids.push(name);
 }
 process.stdout.write(pids.join("\n"));
@@ -438,11 +459,15 @@ process.stdout.write(pids.join("\n"));
 # and one entry of INFRA_LIST. The guard runs after each pass, each probe, and
 # each judge run, and on every exit path.
 stop_daemons() {
-  local root="${1:-}" pids pid waited alive line
+  local root="${1:-}" pids pid waited alive line now
   [ -n "$root" ] || return 0
   pids="$(daemon_pids "$root")"
   [ -n "$pids" ] || return 0
-  for pid in $pids; do kill -TERM "$pid" 2>/dev/null || true; done
+  local -A started_at=()
+  for pid in $pids; do
+    started_at["$pid"]="$(daemon_starttime "$pid" 2>/dev/null || true)"
+    kill -TERM "$pid" 2>/dev/null || true
+  done
   waited=0
   while [ "$waited" -lt 5 ]; do
     alive=0
@@ -453,8 +478,14 @@ stop_daemons() {
     sleep 1
     waited=$(( waited + 1 ))
   done
+  # F3: a pid can be reused inside the TERM-to-KILL window. KILL only when the
+  # starttime is still the one recorded at TERM.
   for pid in $pids; do
-    if daemon_pid_alive "$pid"; then kill -KILL "$pid" 2>/dev/null || true; fi
+    if daemon_pid_alive "$pid"; then
+      now="$(daemon_starttime "$pid" 2>/dev/null || true)"
+      if [ -n "${started_at[$pid]:-}" ] && [ "$now" != "${started_at[$pid]}" ]; then continue; fi
+      kill -KILL "$pid" 2>/dev/null || true
+    fi
   done
   waited=0
   while [ "$waited" -lt 20 ]; do
@@ -657,10 +688,19 @@ JOB="$BENCH_OPENCODE_HOME"
 JOB_CONFIG="$JOB/opencode.json"
 printf '%s\n' '{"permission":{"read":"deny","edit":"deny","bash":"deny","webfetch":"deny","websearch":"deny","question":"deny","subagent":"deny","skill":"deny"}}' > "$JOB_CONFIG"
 
-# The HOME guard of plan task 4.13o: every call of the run holds the job HOME.
-# The one real-HOME call is the seed export inside provider-credential.sh.
-case "$JOB/home" in
-  "$JOB"/*) ;;
+# The HOME guard of plan tasks 4.13o and 4.13r F5: every call of the run holds
+# the job HOME. The one real-HOME call is the seed export inside
+# provider-credential.sh. The job root must be absolute, and the two paths are
+# compared after realpath resolution on a path boundary.
+case "$JOB" in
+  /*) ;;
+  *) refuse "the job root must be an absolute path" ;;
+esac
+JOB_REAL="$(realpath "$JOB" 2>/dev/null || true)"
+[ -n "$JOB_REAL" ] || refuse "the job root could not be resolved"
+JOB_HOME_REAL="$(realpath -m "$JOB/home" 2>/dev/null || true)"
+case "$JOB_HOME_REAL" in
+  "$JOB_REAL"|"$JOB_REAL"/*) ;;
   *) refuse "the job HOME is outside the job root" ;;
 esac
 

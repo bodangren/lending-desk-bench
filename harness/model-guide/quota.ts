@@ -10,6 +10,12 @@
  * `BENCH_QUOTA_BASE`, else the port of `openchamber status --json`
  * (`instances[0].port`).
  *
+ * The Go plan (`opencode-go`) reads through ra-quota (plan task 4.13r point
+ * 8): `${BENCH_RA_QUOTA} status --json` when that seam is set. The tool reads
+ * `.["opencode-go"].windows` percents. A fresh last-good reading (< 6 h) of
+ * `RA_QUOTA_LASTGOOD` stands in when ra-quota gives no usable entry. A stale
+ * (>= 6 h) or missing reading gives `stopped` and names the reading.
+ *
  * The four providers with a quota source read `GET /api/quota/<id>`:
  *
  *   claude-code            -> claude
@@ -50,6 +56,7 @@
  */
 
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { request } from "node:http";
 
 /** The window value that moves a route to `wait` (spec D15). */
@@ -75,6 +82,13 @@ const READ_TIMEOUT_MS = 5_000;
 
 /** The bound of the port source, in milliseconds. */
 const PORT_TIMEOUT_MS = 10_000;
+
+/** The bound of one ra-quota read, in milliseconds. ra-quota has its own
+ * 60 s HTTP timeout, so this bound sits above it. */
+const RA_QUOTA_TIMEOUT_MS = 90_000;
+
+/** The age of a last-good reading that still counts (6 h). */
+const LASTGOOD_TTL_SECONDS = 6 * 3600;
 
 /** The cap of a provider with a quota source: N of spec D13. */
 const SOURCED_CAP = 3;
@@ -279,6 +293,85 @@ function parseAnswer(body: string): QuotaRead {
   return { ok: true, windows };
 }
 
+/** The window values of the ra-quota windows shape: each entry holds a
+ * `percent`. The live ra-quota output removes `credits_balance`, but a null
+ * or negative percent is skipped anyway. A set with no usable value is null. */
+function percentWindows(raw: unknown): Record<string, number> | null {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const windows: Record<string, number> = {};
+  for (const [name, entry] of Object.entries(raw as Record<string, unknown>)) {
+    if (entry === null || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const value = (entry as { percent?: unknown }).percent;
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) continue;
+    windows[name] = value;
+  }
+  return Object.keys(windows).length === 0 ? null : windows;
+}
+
+/** The last-good reading of the Go plan, or null. The file may hold the plan
+ * entry at the top (`RA_QUOTA_LASTGOOD` of the tests) or under `plans` (the
+ * ra-quota file of the operator). */
+function readLastgood(): { fetchedAt: number; windows: Record<string, number> } | null {
+  const path = process.env.RA_QUOTA_LASTGOOD ?? "";
+  if (path === "") return null;
+  let doc: unknown;
+  try {
+    doc = JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return null;
+  }
+  if (doc === null || typeof doc !== "object" || Array.isArray(doc)) return null;
+  const root = doc as Record<string, unknown>;
+  let entry: unknown = root;
+  const plans = root.plans;
+  if (plans !== null && typeof plans === "object" && !Array.isArray(plans)) {
+    entry = (plans as Record<string, unknown>)[GO_PROVIDER];
+  }
+  if (entry === null || typeof entry !== "object" || Array.isArray(entry)) return null;
+  const record = entry as { fetchedAt?: unknown; windows?: unknown };
+  if (typeof record.fetchedAt !== "number" || !Number.isFinite(record.fetchedAt)) return null;
+  const windows = percentWindows(record.windows);
+  if (windows === null) return null;
+  return { fetchedAt: record.fetchedAt, windows };
+}
+
+/** Reads the Go quota through ra-quota `status --json` (plan task 4.13r
+ * point 8). A fresh last-good reading (< 6 h) stands in when the command gives
+ * no usable entry, so a timeout keeps a usable answer. A stale or missing
+ * reading gives the reason of a stop. */
+function readRaQuota(command: string): QuotaRead {
+  const result = spawnSync(command, ["status", "--json"], {
+    encoding: "utf8",
+    timeout: RA_QUOTA_TIMEOUT_MS,
+    maxBuffer: 16 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const text = String(result.stdout ?? "");
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    let doc: unknown;
+    try {
+      doc = JSON.parse(text.slice(start, end + 1));
+    } catch {
+      doc = null;
+    }
+    if (doc !== null && typeof doc === "object" && !Array.isArray(doc)) {
+      const entry = (doc as Record<string, unknown>)[GO_PROVIDER];
+      if (entry !== null && typeof entry === "object" && !Array.isArray(entry)) {
+        const windows = percentWindows((entry as { windows?: unknown }).windows);
+        if (windows !== null) return { ok: true, windows };
+      }
+    }
+  }
+  const lastgood = readLastgood();
+  if (lastgood === null) return { ok: false, reason: "the last-good reading is missing" };
+  if (Date.now() / 1000 - lastgood.fetchedAt >= LASTGOOD_TTL_SECONDS) {
+    return { ok: false, reason: "the last-good reading is stale (older than 6 h)" };
+  }
+  return { ok: true, windows: lastgood.windows };
+}
+
 /** True when the usable windows hold `name` with a finite value of 0 or more. */
 function usableWindow(windows: Record<string, number>, name: string): boolean {
   if (!Object.prototype.hasOwnProperty.call(windows, name)) return false;
@@ -311,6 +404,21 @@ async function main(): Promise<void> {
   }
 
   let resolved = base !== "" ? base : (process.env.BENCH_QUOTA_BASE ?? "");
+  if (provider === GO_PROVIDER) {
+    const raQuota = process.env.BENCH_RA_QUOTA ?? "";
+    if (raQuota !== "") {
+      const answer = readRaQuota(raQuota);
+      if (!answer.ok) stop(provider, id, answer.reason);
+      if (
+        !usableWindow(answer.windows, GO_FIVEH_WINDOW) ||
+        !usableWindow(answer.windows, GO_WEEK_WINDOW)
+      ) {
+        stop(provider, id, "the Go answer holds no usable 5h or weekly window");
+      }
+      emit({ provider, source: id, state: stateOf(provider, answer.windows), cap: SOURCED_CAP, windows: answer.windows });
+      return;
+    }
+  }
   if (resolved === "") {
     const fromPort = baseFromPortSource();
     if (!fromPort.ok) stop(provider, id, fromPort.reason);
