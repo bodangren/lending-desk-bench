@@ -2048,7 +2048,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     07418d21f073a3201055832dd5fbd82fa0e8a880; final Green HEAD 75f7419
     before this row, and the plan-evidence commit after it.
-- [~] 5db6a32 4.13e Red: hardening after Reviews A, B, C (edee50b). Change only
+- [x] 5db6a32 4.13e Red: hardening after Reviews A, B, C (edee50b). Change only
   test files under `harness/model-guide-tests/`. Touch no production file.
   One bullet pins each test:
   - (B2) `judge-run.sh` refuses a `judges.json` row with an empty
@@ -2085,8 +2085,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     takes `(ctx)`, which bun reads as a never-called done callback);
     those cases are untouched. The N8 ">= 20" to "above 0" assertion
     changes are recorded in `red-4.13e.txt`. pgrep scans print no line.
-    Row stays `[~]` until Green 4.13f flips it.
-- [ ] 4.13f Green: hardening after Reviews A, B, C (edee50b). Implement row
+    Row was `[~]` until Green 4.13f flipped it on 2026-11-19.
+- [x] 9ae4e51 4.13f Green: hardening after Reviews A, B, C (edee50b). Implement row
   4.13e in `harness/model-guide/` (`judge-run.sh`, `review-run.sh`,
   `seed-messages.ts`, `real-work.ts`, `guide.ts`). Fix the `review-run.sh`
   header so `--date` says local date (R4). This Green runs after the probe
@@ -2103,6 +2103,45 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     - `bun test harness/model-guide-tests/preview-gate.test.ts`
     - After each gate, `pgrep -af "fake-opencod[e]"` and `pgrep -af
       "quota-serve[r]"` print no line.
+  - Evidence (Green 9ae4e51 and aef521d, 2026-11-19): each gate ran alone,
+    and each exited 0.
+    - `bun test harness/model-guide-tests/review-run.test.ts` gives 49 pass
+      and 0 fail.
+    - `cd harness && npx vitest run model-guide-tests/judge-run.test.ts
+      --configLoader native --maxWorkers=1 --reporter=dot` gives 27 pass and
+      0 fail.
+    - `bun test harness/model-guide-tests/real-work.test.ts` gives 16 pass
+      and 0 fail.
+    - `bun test harness/model-guide-tests/guide.test.ts` gives 18 pass and
+      0 fail.
+    - `bun test harness/model-guide-tests/preview-gate.test.ts` gives 108
+      pass and 3 fail. The three fails are the A4 bun timeouts, a
+      pre-existing runner artifact. The same file under vitest gives 111
+      pass and 0 fail.
+    - `cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts
+      --configLoader native --maxWorkers=1 --reporter=dot` gives 24 pass and
+      0 fail.
+    - `cd harness && npx vitest run
+      model-guide-tests/adversarial-p4-runner.test.ts --configLoader native
+      --maxWorkers=1 --reporter=dot` gives 14 pass and 0 fail.
+    - `bun test harness/model-guide-tests/seed-messages.test.ts` gives 17
+      pass and 0 fail.
+    - The gates of row 4.13f and the extra gates also pass: `quota.test.ts`
+      gives 15, `input-check.test.ts` gives 23, `adversarial.test.ts` gives
+      46, `adversarial-p2.test.ts` gives 13, `adversarial-p3.test.ts` gives
+      34, `update.test.ts` gives 9, and `leak-guard.test.ts` with
+      `review-score.test.ts` gives 27.
+    - After each gate, the two pgrep scans print no line.
+  - Changes: the file `harness/model-guide/review-run.sh` (commit aef521d),
+    the files `harness/model-guide/judge-run.sh`,
+    `harness/model-guide/real-work.ts`, `harness/model-guide/guide.ts`, and
+    `harness/model-guide/pages/real-work.html` (commit 9ae4e51), and this
+    plan row. The Red test files under `harness/model-guide-tests/` are
+    unchanged. The log is `measure/runs/model_guide/green-4.13f.log` (not
+    staged).
+  - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+    242fe529b26f9d1a4e132f407a2036567c7e3011; final Green HEAD 9ae4e51
+    before this row, and the plan-evidence commit after it.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
