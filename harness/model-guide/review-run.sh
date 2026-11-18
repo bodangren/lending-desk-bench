@@ -21,6 +21,9 @@
 # pass number and before any call (ADV-R-8). A second run that finds the lock
 # held exits 2 with one line on stderr that names the lock. It makes no call
 # and writes no pass record. The trap releases the lock on every exit path.
+# The lock name and the output folder carry the first 12 hex characters of
+# the SHA-256 of the full route string, so two routes that fold to one slug
+# stay apart (ADV-R-13).
 #
 # Every other run writes one pass record in the private folder. Its `state`
 # is `complete`, `open`, `wait`, or `region-blocked`. The record holds
@@ -170,6 +173,10 @@ shopt -u nullglob
 [ "${#DIFF_PATHS[@]}" -gt 0 ] || refuse "the set has no diff"
 
 RUN_SLUG="$(printf '%s' "$ROUTE" | tr -cs 'A-Za-z0-9._-' '-')"
+# Two different routes can fold to one slug, for example `t/one#c` and
+# `t-one#c`. The first 12 hex characters of the SHA-256 of the full route
+# string keep each route apart (ADV-R-13).
+ROUTE_TAG="$(printf '%s' "$ROUTE" | sha256sum | cut -c1-12)"
 
 JOB=""
 JOB_CONFIG=""
@@ -200,7 +207,7 @@ trap 'exit 143' TERM
 # lock held exits 2 with one line on stderr and writes no pass record.
 LOCK_DIR="$PRIVATE/.locks"
 mkdir -p "$LOCK_DIR" || refuse "the lock folder could not be made"
-LOCK_FILE="$LOCK_DIR/review-${SET_ID}-${RUN_SLUG}-${DATE}.lock"
+LOCK_FILE="$LOCK_DIR/review-${SET_ID}-${RUN_SLUG}-${ROUTE_TAG}-${DATE}.lock"
 if ! : >> "$LOCK_FILE" 2>/dev/null; then
   refuse "the lock file could not be made"
 fi
@@ -385,7 +392,7 @@ for diff_path in "${DIFF_PATHS[@]}"; do
   fi
 
   if [ -z "$OUT_DIR" ]; then
-    OUT_DIR="$PRIVATE/outputs/$SET_ID/${DATE}-${RUN_SLUG}-p${PASS_NO}"
+    OUT_DIR="$PRIVATE/outputs/$SET_ID/${DATE}-${RUN_SLUG}-${ROUTE_TAG}-p${PASS_NO}"
     mkdir -p "$OUT_DIR" || refuse "the output folder could not be made"
   fi
   STAGING="$OUT_DIR/.incoming-${diff_id}"
