@@ -220,6 +220,9 @@ interface Scenario {
   defaultPrivate?: boolean;
   /** A judge file that the case plants before the run. */
   plantedJudgeFile?: { judge: "a" | "b"; text: string };
+  /** The judge routes of the temp `judges.json` (spec D11). When absent, the
+   * case writes no `judges.json`, so the 18 earlier cases keep their shape. */
+  judgesRoutes?: Array<{ route: string; quota_provider: string | null; quota_source: string | null }>;
 }
 
 interface Fixture {
@@ -614,6 +617,12 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
     quotaSource: scenario.quotaSource,
   });
   writeFileSync(join(guideDir, "routes.json"), `${JSON.stringify(routes, null, 2)}\n`);
+  if (scenario.judgesRoutes !== undefined) {
+    writeFileSync(
+      join(guideDir, "judges.json"),
+      `${JSON.stringify(scenario.judgesRoutes, null, 2)}\n`,
+    );
+  }
 
   // A synthetic docs tree. It must stay byte-identical.
   writeFileSync(join(repo, "docs", "index.html"), "<!doctype html>\n<title>Index</title>\n");
@@ -1736,6 +1745,142 @@ describe("P4 J14 the watcher of the call and the trap of the job folder", () => 
       await waitFor(() => child.exitCode !== null, 5_000);
       const gone = await waitFor(() => liveFakeProcesses().length === 0, 15_000);
       expect(gone, `a fake child stays alive: ${liveFakeProcesses().join(" | ")}`).toBe(true);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+
+// --- task 4.13c: the judge route list (spec D11, PM 2026-11-18) ---------------
+//
+// `judge-run.sh` accepts a route only from `harness/model-guide/judges.json`.
+// A review-only route of `routes.json` and a route that neither file holds
+// are refusals: exit 2, one `judge-run:` line on stdout, no call, and no
+// judge file. `review-run.sh` never reads `judges.json`.
+describe("P4 the judge route list (task 4.13c)", () => {
+  /** The review runner. It must never read the judge route list. */
+  const REVIEW_RUNNER_SOURCE = join(HARNESS, "model-guide", "review-run.sh");
+  /** The three judge routes of spec D11, with their quota read of spec D15. */
+  const JUDGE_ROUTES = [
+    {
+      route: "kimi-code-plan-cn/k3.1-pro#high",
+      quota_provider: "kimi-code-plan-cn",
+      quota_source: "kimi-for-coding",
+    },
+    {
+      route: "opencode-go/muse-spark-1.3-contributor#high",
+      quota_provider: "opencode-go",
+      quota_source: "opencode-go",
+    },
+    {
+      route: "claude-code/claude-sonnet-5-5#max",
+      quota_provider: "claude-code",
+      quota_source: "claude",
+    },
+  ];
+  /** A review-only route of `routes.json` (spec D12). It is not a judge. */
+  const REVIEW_ONLY_ROUTE = "opencode-go/deepseek-v4.1-flash";
+  /** A route that neither `routes.json` nor `judges.json` holds. */
+  const UNKNOWN_ROUTE = "opencode-go/not-a-route#high";
+
+  /** The two answers of one judge run: one fenced block per group. */
+  function judgeCalls(): CallSpec[] {
+    return [
+      {
+        tokens: TOKENS_A,
+        value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+      },
+      {
+        tokens: TOKENS_B,
+        value: answer([jsonBlock(JSON.stringify({ "d-02#C2a3b4c5d6e7f": "false-claim" }))]),
+      },
+    ];
+  }
+
+  it("J15 accepts each route of judges.json and review-run.sh never reads judges.json", async () => {
+    expect(
+      readFileSync(REVIEW_RUNNER_SOURCE, "utf8"),
+      "review-run.sh reads judges.json",
+    ).not.toContain("judges.json");
+    for (const judge of JUDGE_ROUTES) {
+      const fixture = await buildFixture({
+        route: REVIEW_ONLY_ROUTE,
+        quotaProvider: "opencode-go",
+        quotaSource: "opencode-go",
+        judgesRoutes: JUDGE_ROUTES,
+        calls: judgeCalls(),
+      });
+      try {
+        assertRunnerExists();
+        const result = runJudge(fixture, [
+          "--set",
+          fixture.setId,
+          "--route",
+          judge.route,
+          "--judge",
+          "a",
+          "--private",
+          fixture.privateDir,
+        ]);
+        expect(result.status, `${judge.route}: ${result.stdout}\n${result.stderr}`).toBe(0);
+        expect(
+          modelCalls(logEntries(fixture.logPath)),
+          `${judge.route} made no call per group`,
+        ).toHaveLength(2);
+        expect(judgeFile(fixture, "a"), `${judge.route} wrote no judge file`).not.toBeNull();
+        expect(runRecord(fixture, "a"), `${judge.route} wrote no run record`).not.toBeNull();
+      } finally {
+        dropFixture(fixture);
+      }
+    }
+  });
+
+  it("J16 refuses a review-only route of routes.json with exit 2, one named line, no call, and no file", async () => {
+    const fixture = await buildFixture({
+      route: REVIEW_ONLY_ROUTE,
+      quotaProvider: "opencode-go",
+      quotaSource: "opencode-go",
+      judgesRoutes: JUDGE_ROUTES,
+      calls: judgeCalls(),
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(judgeFile(fixture, "a"), "the runner wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the runner wrote a run record").toBeNull();
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("J16b refuses an unknown route with exit 2, one named line, no call, and no file", async () => {
+    const fixture = await buildFixture({
+      route: REVIEW_ONLY_ROUTE,
+      quotaProvider: "opencode-go",
+      quotaSource: "opencode-go",
+      judgesRoutes: JUDGE_ROUTES,
+      calls: judgeCalls(),
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, [
+        "--set",
+        fixture.setId,
+        "--route",
+        UNKNOWN_ROUTE,
+        "--judge",
+        "a",
+        "--private",
+        fixture.privateDir,
+      ]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(judgeFile(fixture, "a"), "the runner wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the runner wrote a run record").toBeNull();
     } finally {
       dropFixture(fixture);
     }

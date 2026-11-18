@@ -592,6 +592,15 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
       writeFileSync(join(seededDir, `${diff}.diff`), diffText(diff));
     }
   }
+  // The message line of each diff (spec D10 ruling 2026-11-18): one line in
+  // `messages/<diff_id>.txt`. The runner sends it between the prompt and the
+  // seeded diff. Every fixture writes it, so the earlier cases stay green
+  // once the Green role lands.
+  const messagesDir = join(privateDir, "sets", setId, "messages");
+  mkdirSync(messagesDir, { recursive: true });
+  for (const diff of diffs) {
+    writeFileSync(join(messagesDir, `${diff}.txt`), `MSG-LINE-${diff} the commit message of the diff\n`);
+  }
 
   // The spec of the fake.
   const secret = SECRET;
@@ -1945,6 +1954,12 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
 //     line, no call, and no pass record.
 //   - The probe uses the control diff of `diffs/`, so its call holds the
 //     seeded copy of that diff.
+//   - The message line (task 4.9e, spec D10 ruling 2026-11-18): M1 the pass
+//     call holds the prompt, the message line of `messages/<diff_id>.txt`,
+//     and the seeded diff in that order; M2 the probe call holds the same
+//     order; M3 a missing message file is a refusal; M4 an empty message
+//     file is a refusal (exit 2, one `review-run:` line on stdout, no call,
+//     no pass record).
 //
 // Every case uses the fake `opencode` only, keeps the orphan nets of the PM
 // load watch, and never runs the real `opencode` CLI.
@@ -2084,6 +2099,110 @@ describe("P4 the seeded diffs of the set (task 4.9c)", () => {
       expect(calls, "the probe made no call").toHaveLength(1);
       expect(calls[0].stdin, "the probe call holds no seeded diff").toContain("SEEDED-d-02");
       expect(calls[0].stdin, "the probe call holds the source diff").not.toContain("SRC-ONLY-d-02");
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+
+// --- task 4.9e: the message line in the prompt (spec D10 ruling 2026-11-18)
+//
+// The prompt holds three parts in this order: `review-prompt.md`, the
+// message line of `messages/<diff_id>.txt`, and the seeded diff. A pass or
+// a probe with a missing or empty message file is a refusal: exit 2, one
+// `review-run:` line on stdout, no call, and no pass record.
+describe("P4 the message line of the prompt (task 4.9e)", () => {
+  const PROBE_DATE = "2026-11-20";
+  /** One single-line snippet of the committed review prompt. The fake logs
+   * the call stdin with tabs and line breaks as spaces, so the pin uses a
+   * snippet with no line break. */
+  const PROMPT_SNIPPET = "You review one code diff.";
+
+  /** The order of the three prompt parts in one call stdin. */
+  function expectPromptOrder(stdin: string, diff: string): void {
+    const promptAt = stdin.indexOf(PROMPT_SNIPPET);
+    const messageAt = stdin.indexOf(`MSG-LINE-${diff}`);
+    const seededAt = stdin.indexOf(`SEEDED-${diff}`);
+    expect(promptAt, "the call holds no review prompt").toBeGreaterThanOrEqual(0);
+    expect(messageAt, `the call holds no message line of ${diff}`).toBeGreaterThanOrEqual(0);
+    expect(seededAt, `the call holds no seeded diff of ${diff}`).toBeGreaterThanOrEqual(0);
+    expect(promptAt, "the message line comes before the prompt").toBeLessThan(messageAt);
+    expect(messageAt, "the seeded diff comes before the message line").toBeLessThan(seededAt);
+  }
+
+  it("M1 the pass call holds the prompt, the message line, and the seeded diff in that order", async () => {
+    const fixture = await buildFixture({
+      distinctCopies: true,
+      calls: [
+        { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const calls = modelCalls(logEntries(fixture.logPath));
+      expect(calls, "the pass made no call for each diff").toHaveLength(3);
+      for (const [index, diff] of fixture.diffs.entries()) {
+        expectPromptOrder(calls[index].stdin, diff);
+      }
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("M2 the probe call holds the prompt, the message line, and the seeded diff in that order", async () => {
+    const fixture = await buildFixture({
+      distinctCopies: true,
+      calls: [{ value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
+    });
+    writeSeededControlKey(fixture, "d-02");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture), "--probe", "--date", PROBE_DATE]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const calls = modelCalls(logEntries(fixture.logPath));
+      expect(calls, "the probe made no call").toHaveLength(1);
+      expectPromptOrder(calls[0].stdin, "d-02");
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("M3 a pass with a missing message file refuses with exit 2, one named line, no call, and no pass record", async () => {
+    const fixture = await buildFixture({
+      distinctCopies: true,
+      calls: [{ value: JSON.stringify({ type: "result", text: "RAW-d-01" }) }],
+    });
+    rmSync(join(fixture.privateDir, "sets", fixture.setId, "messages", "d-01.txt"));
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("M4 a probe with an empty message file refuses with exit 2, one named line, no call, and no record", async () => {
+    const fixture = await buildFixture({
+      distinctCopies: true,
+      calls: [{ value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
+    });
+    writeSeededControlKey(fixture, "d-02");
+    writeFileSync(join(fixture.privateDir, "sets", fixture.setId, "messages", "d-02.txt"), "");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture), "--probe", "--date", PROBE_DATE]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a record").toEqual([]);
     } finally {
       dropFixture(fixture);
     }
