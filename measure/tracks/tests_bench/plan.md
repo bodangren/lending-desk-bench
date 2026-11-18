@@ -27,7 +27,7 @@ Depends on `bench_v2` phases 2, 4, and 5 (fixture r2, contract classes, and
 - [x] 3.2 Admission: the oracle, graded as a tests-track candidate (the canary),
       passes twice on the clean app and once on the variant app, and kills each
       mutant. `tests-results.json` records the outcome per app. No separate
-      verifier is needed: the canary runs every week.
+      verifier is needed: the canary runs every week. deferred:pm, proof outside git: runs/canary-tests-2026w41-1791692210/artifacts/tests-results.json sha256 10dc775ca5067e3e96ea7ba939717b2b1c3fbb55bed545af05aae1f95abb6e25 (PM 2026-11-18)
 
 ## Phase 4: Grading and scoring
 
@@ -40,5 +40,5 @@ Depends on `bench_v2` phases 2, 4, and 5 (fixture r2, contract classes, and
 ## Phase 5: Calibration and reporting
 
 - [x] 2346ef0 5.1 Meta tests: set validation, contract mode, arithmetic. (archive evidence from git, PM 2026-11-18)
-- [x] 5.2 Canary: the oracle suite graded as a candidate scores 100.
+- [x] 5.2 Canary: the oracle suite graded as a candidate scores 100. deferred:pm, proof outside git: runs/canary-tests-2026w41-1791692210/artifacts/score.json sha256 c8eae83b183513a96e91700514dd0fc9ff3caea576cb36589377e69a99f8760b (PM 2026-11-18)
 - [x] 2346ef0 5.3 Export and site rows. (archive evidence from git, PM 2026-11-18)

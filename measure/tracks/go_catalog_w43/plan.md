@@ -48,7 +48,7 @@ Gate commands:
     id again.
 - [x] 1.2 Recost every stored score with `harness/recost.sh`. Verify that no
   stored score lost its cost and that the retired ids resolve as unmapped.
-  - `recost.sh` rewrote 230 score files and exited 0.
+  - `recost.sh` rewrote 230 score files and exited 0. deferred:pm, proof outside git, file not found (PM 2026-11-18)
 
 ## Phase 2: Enable the OpenCode executor
 
