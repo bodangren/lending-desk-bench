@@ -182,6 +182,7 @@ interface CallSpec {
 
 interface Scenario {
   route?: string;
+  family?: string;
   kind?: string;
   quotaProvider?: string | null;
   quotaSource?: string | null;
@@ -454,18 +455,27 @@ server.listen(0, "127.0.0.1", () => {
 
 /** The routes file of a temp repo: the route of the case, and the metered
  * route of the refusal case. A case that needs a route the file does not
- * hold passes its own list, so the file never holds that route. */
+ * hold passes its own list, so the file never holds that route.
+ *
+ * A no-source row keeps the shape of the committed `routes.json`: the
+ * `quota_provider` is not empty and `quota_source` is `null`. `quotaSource`
+ * distinguishes `undefined` (the default source) from `null` (no source). */
 function routesFile(
   route: string,
-  options: { kind?: string; quotaProvider?: string | null; quotaSource?: string | null } = {},
+  options: {
+    family?: string;
+    kind?: string;
+    quotaProvider?: string | null;
+    quotaSource?: string | null;
+  } = {},
 ): unknown[] {
   return [
     {
-      family: "Go",
+      family: options.family ?? "Go",
       route,
       kind: options.kind ?? "plan",
       quota_provider: options.quotaProvider ?? "opencode-go",
-      quota_source: options.quotaSource ?? "opencode-go",
+      quota_source: options.quotaSource === undefined ? "opencode-go" : options.quotaSource,
       ranked: true,
     },
     {
@@ -528,6 +538,7 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   const route = scenario.route ?? ROUTE;
   const routes = scenario.routes ??
     routesFile(route, {
+      family: scenario.family,
       kind: scenario.kind,
       quotaProvider: scenario.quotaProvider,
       quotaSource: scenario.quotaSource,
@@ -1309,6 +1320,114 @@ describe("P4 the fake binary of every spawn", () => {
         expect(call.argv0, "the model call ran a binary outside the temp tree").toContain(fixture.repo);
       }
       expect(liveFakeProcesses(), "a fake process is still alive").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+
+// --- the check 4.9 fixes: F1 the one-pass rule, F2 the stopped read ------
+//
+// F1 (spec D15): "A route with no quota source runs at most 1 pass per
+// night." The row of the committed `routes.json` says "no source" with
+// `quota_source: null` and a non-empty `quota_provider` (`nvidia`), and
+// `quota.ts` returns `ready` with the cap 1 for that row. The guard must
+// key on the empty source, not on an empty provider.
+//
+// Refusal contract of F1. Spec D15 gives no exit code and no line. The
+// runner's own refusal of a second run under the exclusive lock
+// (`review-run.sh`, ADV-R-8) is exit 2 with one line on stderr, so the
+// one-pass refusal follows it: exit 2, exactly one line on stderr that
+// starts with `review-run:` and names the one-pass rule, an empty stdout,
+// no call, and no second pass record.
+//
+// F2 (spec D15): a quota read that gives `stopped` before the first diff
+// leaves the pass `open`, writes one record that holds the quota reason,
+// and makes no call.
+
+describe("P4 the check 4.9 fixes F1 and F2", () => {
+  const NO_SOURCE_ROUTE = "nvidia/stepfun-ai/step-5-preview#high";
+  const RUN_DATE = "2026-11-20";
+
+  it("F1 a route with no quota source runs at most one pass per night, and the second run refuses before any call", async () => {
+    const fixture = await buildFixture({
+      route: NO_SOURCE_ROUTE,
+      family: "StepFun",
+      kind: "free",
+      quotaProvider: "nvidia",
+      quotaSource: null,
+      calls: [
+        { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-04" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-05" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-06" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const args = [...runArgs(fixture), "--date", RUN_DATE];
+
+      const first = runRunner(fixture, args);
+      expect(first.status, `${first.stdout}\n${first.stderr}`).toBe(0);
+      expect(modelCalls(logEntries(fixture.logPath)), "the first run made no call").toHaveLength(3);
+      expect(passRecords(fixture.privateDir), "the first run wrote no pass record").toHaveLength(1);
+      expect(
+        quotaRequests(fixture),
+        "a provider with no quota source sent a quota request",
+      ).toEqual([]);
+
+      const second = runRunner(fixture, args);
+      expect(second.status, `${second.stdout}\n${second.stderr}`).toBe(2);
+      const errLines = (second.stderr ?? "")
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+      expect(
+        errLines,
+        `the second run must print one line on stderr: ${second.stderr}`,
+      ).toHaveLength(1);
+      expect(errLines[0], "the refusal line must start with review-run:").toMatch(/^review-run:/);
+      expect(errLines[0], "the refusal line must name the one-pass rule").toMatch(
+        /one pass per night/,
+      );
+      expect(second.stdout, "the refusal line must not go to stdout").toBe("");
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the second run called the model",
+      ).toHaveLength(3);
+      expect(
+        passRecords(fixture.privateDir),
+        "the second run wrote a second pass record",
+      ).toHaveLength(1);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("F2 a stopped quota read before the pass leaves the pass open with no call", async () => {
+    const fixture = await buildFixture({
+      calls: [{ value: JSON.stringify({ type: "result", text: "RAW-d-01" }) }],
+    });
+    try {
+      assertRunnerExists();
+      // A base with no listener gives the read failure of spec D15, so the
+      // quota state is `stopped` before the first diff.
+      const result = runRunner(fixture, runArgs(fixture), {
+        BENCH_QUOTA_BASE: "http://127.0.0.1:1",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].state, "a stopped quota read must leave the pass open").toBe("open");
+      expect(records[0].outputs ?? [], "no output may be stored").toEqual([]);
+      const errors = (records[0].errors ?? []) as unknown[];
+      expect(errors.length, "the record holds no quota reason").toBeGreaterThan(0);
+      expect(String(errors[0]), "the record must name the quota reason").toContain("quota");
+      expect(modelCalls(logEntries(fixture.logPath)), "the run called the model").toHaveLength(0);
+      expect(filesHolding(fixture.privateDir, "RAW-"), "the run stored a raw output").toEqual([]);
     } finally {
       dropFixture(fixture);
     }
