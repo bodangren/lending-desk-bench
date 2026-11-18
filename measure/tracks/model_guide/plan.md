@@ -1495,6 +1495,18 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     process and no fake `opencode` process stay. The pass record name keeps
     the plain slug, because the decision changes the lock and the output
     folder only.
+  - Fix d820479 (ADV-R-14, orchestrator 2026-11-18): the pass record name
+    carries the same 12-hex route tag, so it is
+    `<date>-<slug>-<tag>-p<pass>.json`. The pass-number count and the
+    one-pass "tonight" count use the slug plus tag. The record content does
+    not change. No reader parses the pass record name: `review-score.ts`
+    reads the key files and the `<outputs>/<diff_id>.txt` files,
+    `preview.sh` reads the newest score file and the set manifest,
+    `guide.ts` reads the score document, and the tests read each JSON file
+    with a `state` field. `adversarial-p4-runner.test.ts` exits 0 with
+    `Tests  14 passed (14)`. `review-run.test.ts` keeps `Tests  23 passed
+    (23)`, `review-score.test.ts` keeps `Tests  25 passed (25)`, and
+    `preview-gate.test.ts` keeps `Tests  111 passed (111)`.
 - [x] 6be3894 4.8a Red. The review page. Add the page cases V1 to V9 of
   `measure/tracks/model_guide/test-strategy.md` section 4.4 to
   `harness/model-guide-tests/preview-gate.test.ts`. Touch no other file.
