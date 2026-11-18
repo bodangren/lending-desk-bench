@@ -8,7 +8,7 @@
 #
 # `--route`, `--set`, and `--private` are required. `--private` defaults to
 # `$HOME/.local/share/lending-desk-bench/model-guide`. `--date` defaults to
-# today in UTC. `--probe` runs the probe mode of spec D14 (PM 2026-11-18).
+# the local date. `--probe` runs the probe mode of spec D14 (PM 2026-11-18).
 #
 # The runner refuses, with one line `review-run: <check>` on stdout and exit
 # 2, a flag without a value, a `--set` value that is not a plain id, a
@@ -17,13 +17,18 @@
 # with no diff, and a diff with no message file. A refusal starts no job,
 # makes no call, and writes no pass record.
 #
-# The message line of the prompt (spec D10 ruling 2026-11-18): the file
-# `<private>/sets/<set_id>/messages/<diff_id>.txt` holds the first line of
-# the commit message of the source commit. The prompt of a call holds three
-# parts in this order: `review-prompt.md`, the message line, and the seeded
-# diff. A missing or empty message file is a refusal: exit 2, one
-# `review-run:` line on stdout, no call, and no pass record. The runner reads
-# `diffs/` and `messages/` only; it never reads `src/`.
+# The message line of the prompt (spec D10 ruling 2026-11-18, task 4.13f
+# B3/B4): the file `<private>/sets/<set_id>/messages/<diff_id>.txt` holds
+# one line: the first line of the commit message of the source commit. A
+# message file with a second line, a control character, a line over 1000
+# bytes, or a link is a refusal, and so is a seeded diff that is a link. A
+# refusal gives exit 2, one `review-run:` line on stdout, no call, and no
+# pass record.
+#
+# The prompt of a call holds three parts in this order: `review-prompt.md`,
+# the checked message line, and the seeded diff. The runner sends the
+# checked line only, so a file with more text never reaches the model. The
+# runner reads `diffs/` and `messages/` only; it never reads `src/`.
 #
 # It holds one exclusive lock for one route, one set, and one date, before the
 # pass number and before any call (ADV-R-8). A second run that finds the lock
@@ -97,7 +102,21 @@ else
   OPENCODE_BIN="$(command -v opencode || true)"
 fi
 
+# The folder of the checked message lines. The runner sends these lines, so
+# the model never reads a second line of a message file.
+MESSAGE_STAGE_DIR=""
+
+# Removes the folder of the checked message lines. The trap calls it on
+# every exit path, and a refusal calls it before the trap is armed.
+drop_message_stage() {
+  if [ -n "$MESSAGE_STAGE_DIR" ]; then
+    rm -rf "$MESSAGE_STAGE_DIR" 2>/dev/null || true
+    MESSAGE_STAGE_DIR=""
+  fi
+}
+
 refuse() {
+  drop_message_stage
   echo "review-run: $1"
   exit 2
 }
@@ -254,25 +273,55 @@ DIFF_PATHS=("$SET_DIR/diffs"/*.diff)
 shopt -u nullglob
 [ "${#DIFF_PATHS[@]}" -gt 0 ] || refuse "the set has no diff"
 
-# The message line of each diff (spec D10 ruling 2026-11-18). The file
-# `messages/<diff_id>.txt` holds the first line of the commit message of the
-# source commit of that diff. The runner reads `diffs/` and `messages/` only.
+# The message line of each diff (spec D10 ruling 2026-11-18, task 4.13f
+# B3/B4). The file `messages/<diff_id>.txt` holds one line: the first line of
+# the commit message of the source commit of that diff. A file with a second
+# line, a control character, a line over 1000 bytes, or a link is a refusal.
+# A seeded diff that is a link is a refusal too.
 MESSAGE_DIR="$SET_DIR/messages"
 MESSAGE_STATE=""
 MESSAGE_TEXT=""
+MESSAGE_MAX_BYTES=1000
+
+# The folder of the checked message lines. Each line is written there, and
+# the call sends that file, so the model reads the checked line only.
+MESSAGE_STAGE_DIR="${TMPDIR:-/tmp}/mg-review-msg.$$"
+mkdir -p "$MESSAGE_STAGE_DIR" 2>/dev/null || refuse "the message stage folder could not be made"
 
 # Reads the message line of one diff into MESSAGE_TEXT. It sets MESSAGE_STATE
-# to `ok`, `missing`, or `empty`, and it returns 1 for the two bad states.
+# to `ok`, `missing`, `empty`, `a symlink`, `a second line`, `a control
+# character`, or `over 1000 bytes`, and it returns 1 for the bad states.
 read_message_line() {
-  local diff_id="$1" file line
+  local diff_id="$1" file line rest bytes
   MESSAGE_TEXT=""
   file="$MESSAGE_DIR/${diff_id}.txt"
+  if [ -L "$file" ]; then
+    MESSAGE_STATE="a symlink"
+    return 1
+  fi
   if [ ! -f "$file" ]; then
     MESSAGE_STATE="missing"
     return 1
   fi
   line="$(head -n 1 "$file" 2>/dev/null || true)"
   line="${line%$'\r'}"
+  # The text after the first line must be empty, so the file holds one line.
+  rest="$(tail -n +2 "$file" 2>/dev/null || true)"
+  if [ -n "$rest" ]; then
+    MESSAGE_STATE="a second line"
+    return 1
+  fi
+  # A control character never reaches the model.
+  if [[ "$line" == *[[:cntrl:]]* ]]; then
+    MESSAGE_STATE="a control character"
+    return 1
+  fi
+  # The count is a byte count, because the runner sets LC_ALL=C.
+  bytes=${#line}
+  if [ "$bytes" -gt "$MESSAGE_MAX_BYTES" ]; then
+    MESSAGE_STATE="over ${MESSAGE_MAX_BYTES} bytes"
+    return 1
+  fi
   if [ -z "${line//[[:space:]]/}" ]; then
     MESSAGE_STATE="empty"
     return 1
@@ -282,15 +331,20 @@ read_message_line() {
   return 0
 }
 
-# The message file of every diff of the set. A missing or empty file is a
-# refusal before the lock, before the quota read, and before any call, so the
-# refusal leaves no call and no pass record.
+# The message file of every diff of the set. A bad message file or a linked
+# seeded diff is a refusal before the lock, before the quota read, and
+# before any call, so the refusal leaves no call and no pass record.
 for diff_path in "${DIFF_PATHS[@]}"; do
   diff_id="${diff_path##*/}"
   diff_id="${diff_id%.diff}"
+  if [ -L "$diff_path" ]; then
+    refuse "the seeded diff of ${diff_id} is a symlink"
+  fi
   if ! read_message_line "$diff_id"; then
     refuse "the message file of ${diff_id} is ${MESSAGE_STATE}"
   fi
+  printf '%s\n' "$MESSAGE_TEXT" > "$MESSAGE_STAGE_DIR/${diff_id}.txt" \
+    || refuse "the checked message line of ${diff_id} could not be written"
 done
 
 RUN_SLUG="$(printf '%s' "$ROUTE" | tr -cs 'A-Za-z0-9._-' '-')"
@@ -327,6 +381,7 @@ on_exit() {
     exec 9>&-
   fi
   rm -f "${TMP_VALUES:-}" "${TMP_QUOTA_ERR:-}" "${TMP_QUOTA_ERR:-}.line" 2>/dev/null || true
+  drop_message_stage
 }
 trap on_exit EXIT
 trap 'exit 130' INT
@@ -618,7 +673,7 @@ process.stdout.write(String(plants.length));
   if [ -z "$control" ]; then
     probe_refuse "the set holds no control diff"
   fi
-  control_message="$MESSAGE_DIR/${control_id}.txt"
+  control_message="$MESSAGE_STAGE_DIR/${control_id}.txt"
 
   local probe_dir="$PRIVATE/probes/$SET_ID"
   mkdir -p "$probe_dir" || probe_refuse "the probe folder could not be made"
@@ -690,7 +745,7 @@ fi
 for diff_path in "${DIFF_PATHS[@]}"; do
   diff_id="${diff_path##*/}"
   diff_id="${diff_id%.diff}"
-  message_path="$MESSAGE_DIR/${diff_id}.txt"
+  message_path="$MESSAGE_STAGE_DIR/${diff_id}.txt"
 
   # The quota read before each diff (spec D15). The pass stops at 80 %.
   read_quota
