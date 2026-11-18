@@ -1730,7 +1730,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     one comment says that `diffs/` is the review input (spec D7). The pass
     list and the probe list come from the same glob, so both modes read the
     seeded diff. Rows 4.9c and 4.9d are `[x]`.
-- [x] 4.9e Red: the message line in the prompt (spec D10 ruling 2026-11-18).
+- [x] c5ea02c 4.9e Red: the message line in the prompt (spec D10 ruling 2026-11-18).
   Change only `harness/model-guide-tests/review-run.test.ts`. Touch no
   production file. (Red role base 154eb7d.)
   - The cases pin that the call stdin holds the prompt, the message line,
@@ -1979,7 +1979,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     80869bdc6bd546da446d2c86312e0076d70cbe1e; final Green HEAD 61449ae
     before this row, and the plan-evidence commit after it.
-- [x] 4.13c Red: the judge route list (spec D11, PM 2026-11-18). Change only
+- [x] c5ea02c 4.13c Red: the judge route list (spec D11, PM 2026-11-18). Change only
   `harness/model-guide-tests/judge-run.test.ts`. Touch no production file. (Red role base 154eb7d.)
   - The cases pin the accept/refuse rule: `judge-run.sh` accepts each route
     of `judges.json` (the two named judges and the Claude seat); it refuses
