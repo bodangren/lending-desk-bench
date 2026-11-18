@@ -1730,9 +1730,32 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     one comment says that `diffs/` is the review input (spec D7). The pass
     list and the probe list come from the same glob, so both modes read the
     seeded diff. Rows 4.9c and 4.9d are `[x]`.
+- [ ] 4.9e Red: the message line in the prompt (spec D10 ruling 2026-11-18).
+  Change only `harness/model-guide-tests/review-run.test.ts`. Touch no
+  production file.
+  - The cases pin that the call stdin holds the prompt, the message line,
+    and the seeded diff in that order (pass and probe), and the refusal for
+    a missing or empty message file.
+  - Verify: the new cases fail on the phase base HEAD, and the earlier cases
+    stay green. Record the failed test names in
+    `measure/runs/model_guide/red-4.9e.txt`.
+- [ ] 4.9f Green: the message line in the prompt, the seeder, and the backfill
+  (spec D10 ruling 2026-11-18).
+  - Change `harness/model-guide/review-run.sh` to read the message file and
+    put the line between the prompt and the seeded diff. Change
+    `pick-diffs.ts` to write `messages/<diff_id>.txt` from the source commit
+    of each key. Run the backfill for both sets from the `source.commit` of
+    each key (`gh` read only).
+  - Verify: list that each diff of both sets has one non-empty message file.
+    The Red command exits 0.
 - [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
-  per route of `routes.json` on the first control diff of `mg-2026-11a`,
-  through `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19.
+  per pilot route on the first control diff of `mg-2026-11a`, through
+  `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19. The pilot
+  routes are `opencode-go/deepseek-v4.1-flash`, `opencode/hy4-flash-free`,
+  and `opencode-go/mimo-v2.6-flash`, in that D12 order. No non-pilot route
+  gets a probe until the PM approves after the pilot token report (Q1, PM
+  2026-11-18). The probe of 2026-11-19 runs before 4.9f and tests
+  reachability only.
   - Command for each route:
     `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --probe --route <route>`.
   - The probe writes no pass record and no stored raw output beyond the
@@ -1741,7 +1764,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Record each line in `measure/runs/model_guide/probe-4.10.txt`.
   - The orchestrator sends each `unreachable` route to the PM (owner
     question Q8).
-  - Verify: each route of `routes.json` has one line in the file.
+  - Verify: each of the 3 pilot routes has one line in the file.
 - [ ] 4.11 The pilot gate (spec D13, OD7). The pilot set `mg-2026-11p` runs
   on the three pilot routes with 2 passes each, on the nights of 2026-11-20 and
   2026-11-21.
@@ -1771,9 +1794,12 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     and runs the pilot again. After 2 reseeds the orchestrator sends the set
     to the PM.
 - [ ] 4.12 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
-  (02:00 to 06:00 +07). One pass per reachable route per night.
+  (02:00 to 06:00 +07). One pass per reachable pilot route per night.
+  Nights 1 and 2 run `mg-2026-11p` (the pilot pass of task 4.11); night 3
+  runs `mg-2026-11a`. No non-pilot route gets a pass until the PM approves
+  after the pilot token report (Q1, PM 2026-11-18).
   - Command for each route:
-    `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route <route>`.
+    `heavy-run.sh harness/model-guide/review-run.sh --set <set_id> --route <route>`.
   - The pass of a pilot route on 11-20 and 11-21 is the pilot pass of task
     4.11 (spec D13).
   - Night limits (spec D15, PM 2026-11-18): the orchestrator stops the
@@ -1781,9 +1807,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     over 90 %. The runner's own rules (no start at 70 %, stop at 80 % of a
     window) stay and are stricter for one route; the night limit covers the
     whole night.
-  - Verify: each reachable route has 3 complete passes, or the file
+  - Verify: each reachable pilot route has 3 complete passes, or the file
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
-    stop, region block, or open pass).
+    stop, region block, or open pass). Each line of the file names
+    `exit=<rc>` and `state=<state>` of the pass record.
 - [x] 71adc88 4.13a Red: the judge runner (spec D11).
   - The new tool is `harness/model-guide/judge-run.sh`. The test file is
     `harness/model-guide-tests/judge-run.test.ts`. Touch no other file.
@@ -1892,22 +1919,38 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     80869bdc6bd546da446d2c86312e0076d70cbe1e; final Green HEAD 61449ae
     before this row, and the plan-evidence commit after it.
+- [ ] 4.13c Red: the judge route list (spec D11, PM 2026-11-18). Change only
+  `harness/model-guide-tests/judge-run.test.ts`. Touch no production file.
+  - The cases pin the accept/refuse rule: `judge-run.sh` accepts each route
+    of `judges.json` (the two named judges and the Claude seat); it refuses
+    a review-only route of `routes.json` and a route that neither file
+    holds, with exit 2, one `judge-run:` line, and no call;
+    `review-run.sh` never reads `judges.json`.
+  - Verify: `cd harness && npx vitest run
+    model-guide-tests/judge-run.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot` fails on the new cases and passes the 18
+    earlier cases. Record the failed test names in
+    `measure/runs/model_guide/red-4.13c.txt`.
+- [ ] 4.13d Green: the judge route list (spec D11, PM 2026-11-18).
+  - Write `harness/model-guide/judges.json` with the three judge routes,
+    each with a `quota_provider` and a `quota_source`. Change `judge-run.sh`
+    to accept a route only from `judges.json`. `routes.json` stays the six
+    review routes.
+  - Verify: the Red command exits 0.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
-  - The first judge is the route of `ra-quota pick` (no Opus, Daniel's rule;
-    a Claude route only when the Claude week is under 80 %, else the next
-    family; PM 2026-11-16). The second judge is "no ready route" (the D11
-    fallback): each disputed finding is left out. Reason: every route outside
-    the ranked families of D12 with an AA-Omniscience net score of 20 or more
-    is not allowed (Kimi, GPT) or not available (Grok, Doubao on Ark). No Opus
-    subagent (owner routing rule). The PM checks again before task 4.13 on
-    2026-11-22. An allowed route with a net score of 20 or more, outside the
-    D12 families, then replaces the fallback (PM 2026-11-17). A start test and
-    a judge call run through the model_guide runner path (`heavy-run.sh` and
-    `opencode run --standalone` with the job's own `OPENCODE_HOME`), never
-    through a subagent. The second judge never reads the verdicts of the first
-    judge.
+  - The first judge is `kimi-code-plan-cn/k3.1-pro#high` and the second
+    judge is `opencode-go/muse-spark-1.3-contributor#high` (PM 2026-11-18),
+    never through a subagent and never an Opus subagent (owner routing
+    rule). A start test of each judge runs before its first judge call,
+    through the model_guide runner path (`heavy-run.sh` and
+    `opencode run --standalone` with the job's own `OPENCODE_HOME`). When
+    Kimi is unreachable or out of quota at judge time,
+    `claude-code/claude-sonnet-5-5#max` takes its seat, but only when
+    Claude is under pace. Else the D11 fallback holds for that finding: the
+    finding is left out. The second judge never reads the verdicts of the
+    first judge.
   - The apply writes the key `real_defects` first. Then run
     `review-set.ts lint mg-2026-11a` again, so the manifest holds the key
     SHA-256 values. Run `leak-check.ts`. Commit
@@ -1922,6 +1965,9 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Write `harness/model-guide/data/review-scores/mg-2026-11a.json`. Run
     `leak-check.ts`. Commit the file with an explicit path.
   - Run `preview.sh` again.
+  - The orchestrator records the scope ruling of the D18 second source for
+    the Code review row: `guide.ts` `fromTrackA` gives no pick when the
+    track A rank is empty.
   - Verify: `.tmp/model-guide-preview/review.html` shows the rank by the
     worst pass, and the code review row of the table has a pick or "no pick
     yet" (spec acceptance 10 and 11).

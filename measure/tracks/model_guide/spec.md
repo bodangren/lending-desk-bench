@@ -75,14 +75,15 @@ The PM decided these points on 2026-11-14. Each decision binds the track.
 - **OD4. Q5, the merge on page B.** The merge joins only the `#<variant>`
   rows and the `[1m]` rows of one route. The same model on another provider
   stays a separate row.
-- **OD5. F5 and F16, the second judge.** The second judge is "no ready
-  route" (the D11 fallback): each disputed finding is left out. Reason:
-  every route outside the ranked families of D12 with an AA-Omniscience net
-  score of 20 or more is not allowed (Kimi, GPT) or not available (Grok,
-  Doubao on Ark). No Opus subagent (owner routing rule). The PM checks again
-  before task 4.13 on 2026-11-22. An allowed route with a net score of 20 or
-  more, outside the D12 families, then replaces the fallback (PM 2026-11-17).
-  A start test runs before the first judge call of that route. The
+- **OD5. F5 and F16, the judges (PM 2026-11-18).** The first judge is
+  `kimi-code-plan-cn/k3.1-pro#high` (AA net 29.9, hallucination 37 %). The
+  second judge is `opencode-go/muse-spark-1.3-contributor#high` (net 22.4,
+  hallucination 25 %). Both sit outside the pilot families (Hy4, DeepSeek,
+  MiMo). Their families differ. A start test runs before the first judge
+  call of each judge. When Kimi is unreachable or out of quota at judge
+  time, `claude-code/claude-sonnet-5-5#max` takes its seat, but only when
+  Claude is under pace. Else the D11 fallback holds for that finding: the
+  finding is left out. No Opus subagent (owner routing rule). The
   orchestrator logs the route that judged each finding. Only the verdicts
   that both judges agree on count. An unclear verdict never takes away the
   rank of a route. The former judge passed its start test on 2026-11-14
@@ -464,6 +465,18 @@ questions".
       its new-side line number, for example `L120 + const x = ...`. A
       removed line shows `L---`. The model gets no repository, no history,
       and no tool.
+    - **Message line (ruling 2026-11-18).** The first line of the
+      commit message of each diff lives in
+      `<private>/sets/<set_id>/messages/<diff_id>.txt`. The file holds one
+      line and no key data. The seeder `pick-diffs.ts` writes it from the
+      source commit. A backfill writes it for the seeded sets `mg-2026-11a`
+      and `mg-2026-11p` before night 1 (2026-11-20 02:00 +07). The runner
+      reads `diffs/` and `messages/` only. It never reads `keys/` and never
+      reads `src/`. The prompt holds three parts in this order:
+      `review-prompt.md`, the message line, the seeded diff. A pass or a
+      probe with a missing or empty message file is a refusal. It exits 2
+      with one `review-run:` line and no call. The judge prompt of
+      `judge-run.sh` stays as it is.
     - **Output.** One fenced JSON block:
       `{"findings": [{"file", "line", "severity", "class", "title", "reason"}]}`.
       `severity` is `blocker`, `major`, or `minor`. `class` is `C1` to `C9`.
@@ -490,23 +503,30 @@ questions".
       gets its own verdict. The tool groups findings that make the same claim
       only to remove duplicates. A group never gets one verdict for all of
       its members.
-    - **The judges.** Two judges read each finding. The first judge is the
-      route of `ra-quota pick` for a decision role (AA net score 20 or more:
-      `claude-code/claude-sonnet-5-5#max` or
-      `opencode-go/muse-spark-1.3-contributor#high`), never an Opus subagent
-      (owner routing rule, PM 2026-11-17). The second judge is "no
-      ready route" (the D11 fallback): each disputed finding is left out.
-      Reason: every route outside the ranked families of D12 with an
-      AA-Omniscience net score of 20 or more is not allowed (Kimi, GPT) or
-      not available (Grok, Doubao on Ark). No Opus subagent (owner routing
-      rule). The PM checks again before task 4.13 on 2026-11-22. An allowed
-      route with a net score of 20 or more, outside the D12 families, then
-      replaces the fallback (PM 2026-11-17). A start test runs before the
-      first judge call of that route. The orchestrator logs the route that
-      judged each finding. The second judge never reads the verdicts of the
-      first judge. Neither judge sees the route name of a finding. The PM
-      replaced the former second judge, the ByteDance Doubao route, on
-      2026-11-16 (PM 2026-11-16).
+    - **The judges (PM 2026-11-18).** Two judges read each finding. The
+      first judge is `kimi-code-plan-cn/k3.1-pro#high` (AA net 29.9,
+      hallucination 37 %). The second judge is
+      `opencode-go/muse-spark-1.3-contributor#high` (net 22.4,
+      hallucination 25 %), never an Opus subagent (owner routing rule, PM
+      2026-11-17). Both sit outside the pilot families (Hy4, DeepSeek,
+      MiMo), and their families differ. A start test runs before the first
+      judge call of each judge. When Kimi is unreachable or out of quota at
+      judge time, `claude-code/claude-sonnet-5-5#max` takes its seat, but
+      only when Claude is under pace. Else the D11 fallback holds for that
+      finding: each disputed finding is left out. The orchestrator logs the
+      route that judged each finding. The second judge never reads the
+      verdicts of the first judge. Neither judge sees the route name of a
+      finding. The PM replaced the former second judge, the ByteDance Doubao
+      route, on 2026-11-16 (PM 2026-11-16).
+    - **The judge route list (PM 2026-11-18).** `routes.json` stays the six
+      review routes. A new file `harness/model-guide/judges.json` lists the
+      judge routes: `kimi-code-plan-cn/k3.1-pro#high`,
+      `opencode-go/muse-spark-1.3-contributor#high`, and
+      `claude-code/claude-sonnet-5-5#max`. Each entry holds a
+      `quota_provider` and a `quota_source`: `kimi-code-plan-cn` reads
+      `kimi-for-coding`, `opencode-go` reads `opencode-go`, and
+      `claude-code` reads `claude`. `judge-run.sh` accepts a route only
+      from `judges.json`. `review-run.sh` never reads `judges.json`.
     - **The verdicts.** Each judge gives one verdict to each finding:
       - `real-defect`: the defect was in the source diff before the seeding.
         It goes to `real_defects` of the key. It is neutral in the score. The
@@ -562,8 +582,9 @@ questions".
     The runner refuses a route whose `kind` is not `plan` or `free`. The
     route `deepseek/deepseek-flash#high` of the real-work record is not in
     the list, because it is metered and is not a plan route (OD2). The quota
-    source of each route is in D15. The second judge of D11 is not in the ranked
-    list. The file holds it with the field `ranked` set to `false`.
+    source of each route is in D15. The file holds six rows and no judge
+    row. The D11 fallback is "no ready route": a disputed finding is left
+    out.
 
 13. **D13. The score and the rank.**
     - **Pass score.** `W` = the sum of the weights of all plants of the set.
@@ -601,7 +622,7 @@ questions".
       source commits.
       The pilot runs 3 routes with 2 passes each (PM 2026-11-16), so each
       route has a worst-of-2 score. The pilot routes are
-      `opencode/hy4-flash-free`, `opencode-go/deepseek-v4.1-flash`, and
+      `opencode-go/deepseek-v4.1-flash`, `opencode/hy4-flash-free`, and
       `opencode-go/mimo-v2.6-flash` (PM 2026-11-18). No Claude route and no
       MiniMax route is in the pilot (PM 2026-11-18). A pilot route that is
       unreachable or region-blocked is replaced by the next route of D12.
@@ -626,13 +647,15 @@ questions".
       passes of the pilot set count as main passes of the same route. Each
       pilot route then needs 1 more pass for its 3 passes.
     - **The dates of the pilot.** The pilot runs on the nights of 2026-11-20
-      and 2026-11-21, with one pass for each pilot route on each night. Each
-      other reachable route gets its passes on the nights of 2026-11-20 to
-      2026-11-22. Each pilot route gets its last pass on the night of
-      2026-11-22. So the first track A results still land by 2026-11-22
-      (D20). A reseed does not fit before 2026-11-22. The orchestrator tells
-      the PM the new date, and the page shows `incomplete` for each route
-      without 3 complete passes. The Kimi substitution rule above is part of
+      and 2026-11-21, with one pass for each pilot route on each night, on
+      the pilot set `mg-2026-11p` (task 4.11). Night 3 (2026-11-22) runs the
+      ranked set `mg-2026-11a`. Each pilot route gets its last pass on the
+      night of 2026-11-22. No non-pilot route gets a probe or a pass until
+      the PM approves after the pilot token report (Q1, PM 2026-11-18). So
+      the first track A results still land by 2026-11-22 (D20). A reseed
+      does not fit before 2026-11-22. The orchestrator tells the PM the new
+      date, and the page shows `incomplete` for each route without 3
+      complete passes. The Kimi substitution rule above is part of
       D13 (PM 2026-11-16; replaced by PM 2026-11-18).
     - **Rank.** The rank uses the worst pass score of the N passes. A tie
       goes to the higher worst blocker recall, and then to the higher median
@@ -686,16 +709,18 @@ questions".
       that fails with the region error of D22 is `region-blocked`. The
       orchestrator sends the error line to the PM. Owner question Q8 covers
       the Claude route, which can need the shared `HOME`.
-    - **Probe mode (PM 2026-11-18).** `review-run.sh --probe` makes exactly
-      one model call on the first control diff of the set (a diff with no
-      plant, spec line about 423). It writes no pass record and no stored raw
-      output beyond the probe record. It prints one line
+    - **Probe mode (PM 2026-11-18).** `review-run.sh --probe` makes one
+      model call on the first control diff of the set (a diff with no
+      plant, spec line about 423). On a transport error only, it retries up
+      to 2 more times (3 calls at most), as test P2 pins. It writes no pass
+      record and no stored raw output beyond the probe record. It prints one
+      line
       `<route> reachable|unreachable|region-blocked <error line or ->` on
       stdout. It gives exit 0 for `reachable`, exit 3 for `unreachable` or
       `region-blocked`, and exit 2 for a refusal. The probe uses the same
       lock, quota rules, job isolation, credential scan, and trap as a pass.
       The probe runs 02:00 to 06:00 +07 on 2026-11-19 through
-      `heavy-run.sh`, with one call per route of `routes.json`.
+      `heavy-run.sh`, with one call per pilot route (spec D13).
 
 15. **D15. The quota budget.** The runner reads the quota of the route
     provider before each pass and before each diff.
@@ -730,8 +755,9 @@ questions".
       window) stay and are stricter for one route; the night limit covers
       the whole night.
     - **The window.** The track A window is 02:00 to 06:00 +07. One night
-      runs at most one pass for each route. The routes run one at a time, in
-      the order of D12.
+      runs at most one pass for each pilot route. The routes run one at a
+      time, in the order of D12. No non-pilot route gets a pass until the PM
+      approves after the pilot token report (Q1, PM 2026-11-18).
     - Each pass runs through
       `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh`. The
       orchestrator starts it. This track adds no timer.
@@ -933,7 +959,7 @@ questions".
         the variant of its route with the most counted runs:
         `byEffort[<variant>]` when that entry is present, else the primary
         row. No match, or rated false, gives "not rated". A model with a net
-        score under 20, or not rated, carries the mark "not for verdicts".
+        score of 0 or less, or not rated, carries the mark "not for verdicts".
       - **About this data (PM 2026-11-18).** The footer adds: "The record does
         not hold the effort level of each run. The net score uses the effort
         level of the route with the most runs, so a model can score higher at
@@ -948,7 +974,7 @@ questions".
         and a colon (orchestrator 2026-11-18). Each line uses only the rows of
         that role, merged by model key. The pick is rank 1 among the rows that
         meet the minimum of 5, that are allowed, and, for a gate role, that
-        have a net score of 20 or more. A gate role picks inside the rows of
+        have a net score above 0. A gate role picks inside the rows of
         that role, in the checker rank order of the Checker table
         (PM 2026-11-18). Each line shows the numbers of that role only, with
         the label "in this role" (PM 2026-11-18; the role, name, rate, and
@@ -1068,7 +1094,7 @@ questions".
     - **Pick rule.** The first source picks the first and the second choice
       from its rank. A model qualifies with 5 tasks or more in a producer
       row, with 5 runs or more in a gate row, or with a complete rank (track
-      A). A gate row also needs an AA net score of 20 or more. A model that is
+      A). A gate row also needs an AA net score above 0. A model that is
       not allowed never picks, and a row with the mark "not for verdicts"
       never picks in a gate row (PM 2026-11-17). The second source of the Code
       review row, the page B checker table, follows the checker rank order of
@@ -1183,7 +1209,7 @@ by more runs; then by the model key, A to Z (tie-break orchestrator
 escape, and run-count order is replaced by
 PM 2026-11-18). A row below its minimum goes into the collapsed group "Too
 few tasks". A pick also needs an allowed model, and, for a gate role, an AA
-net score of 20 or more, in the same checker order inside the rows of that
+net score above 0, in the same checker order inside the rows of that
 role (PM 2026-11-17, PM 2026-11-18). A rate shows as a whole percent, the
 findings-per-run value shows two decimals, and the Runs and Tasks columns
 hold the count (PM 2026-11-17). Escapes take
@@ -1399,11 +1425,13 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
   rank.
 - **Q9 (D5, D11).** Is Opus the fixture author and the first judge?
   Default: no (PM 2026-11-17). The PM changed the fixture author on
-  2026-11-16 (D5). The first judge is the route of `ra-quota pick` for a
-  decision role, never an Opus subagent (D11, PM 2026-11-17). Opus is not in
-  the ranked list. The adjudication is blind to the route name. The second
-  judge is "no ready route" (the D11 fallback). An allowed route with a net
-  score of 20 or more then replaces it (OD5, PM 2026-11-17).
+  2026-11-16 (D5). The first judge is `kimi-code-plan-cn/k3.1-pro#high`
+  and the second judge is
+  `opencode-go/muse-spark-1.3-contributor#high`, never an Opus subagent
+  (D11, PM 2026-11-18). Opus is not in the ranked list. The adjudication is
+  blind to the route name. When Kimi is unreachable or out of quota at
+  judge time, `claude-code/claude-sonnet-5-5#max` takes its seat, but only
+  when Claude is under pace. Else the D11 fallback holds for that finding.
 - **Q10 (D13).** Are the weights 5, 2, and 1, the false-claim cost of 2, and
   N = 3 correct? Default: yes, for the first set.
 
@@ -1428,12 +1456,11 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
 - **R2. The providers see the seeded diffs.** A provider can keep a prompt.
   The keys stay private, but a later model can know a seeded diff. A new set
   id each quarter limits this.
-- **R3. Same-family bias.** The first judge can be in the same family as the
-  Sonnet route (D11, PM 2026-11-17). The PM changed the fixture author on
-  2026-11-16 (D5). The second judge is "no ready route" (the D11 fallback)
-  (D11, PM 2026-11-17). Only the verdicts that both judges agree on count.
-  The blind adjudication and the fixed operator catalog limit the bias. Q9
-  covers it.
+- **R3. Same-family bias.** The judges sit outside the pilot families, and
+  their families differ (D11, PM 2026-11-18). The PM changed the fixture
+  author on 2026-11-16 (D5). Only the verdicts that both judges agree on
+  count. The blind adjudication and the fixed operator catalog limit the
+  bias. Q9 covers it.
 - **R4. Unmatched true findings.** A good model can find real defects. D11
   makes them neutral, not false claims. An `unclear` verdict marks the pass
   `provisional` and leaves the rank of the route unchanged. A disputed

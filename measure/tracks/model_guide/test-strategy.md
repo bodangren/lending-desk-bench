@@ -292,6 +292,11 @@ cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --con
 cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
 ```
 
+The gate for `judge-run.test.ts` (task 4.13b) and `quota.test.ts` (task
+4.4) is `cd harness && npx vitest run
+model-guide-tests/<file>.test.ts --configLoader native --maxWorkers=1
+--reporter=dot`. `bun test` times out J14b and Q5 on its 5 s cap.
+
 Owners of the Red lines:
 
 - Task 4.1 owns line 1, the fake `opencode`, and the one expected Mid Red
@@ -335,10 +340,11 @@ has a checker status of pass, or each blocking finding has a fix commit.
    prints nothing (spec D14, `harness/provenance.ts:71`). The checker reads
    the `test:meta:logic` exclude list of `harness/package.json` and confirms
    that it did not grow (A7).
-6. `harness/model-guide/routes.json` holds the nine rows of spec D12 in
+6. `harness/model-guide/routes.json` holds the six rows of spec D12 in
    order, each with `family`, `route`, `kind`, `quota_provider`, and
-   `quota_source`, and it holds the second judge of spec D11 with `ranked`
-   false. The Hy row is present. No route of the file has `kind` `metered`.
+   `quota_source`, and it holds no judge row: the judge routes live in
+   `harness/model-guide/judges.json`, and the D11 fallback is "no ready
+   route". The Hy row is present. No route of the file has `kind` `metered`.
 7. Task 4.9 shows `measure/runs/model_guide/check-4.9.json` with status
    pass.
 8. The Phase 1 to Phase 3 regression set passes, one file at a time:
@@ -1629,7 +1635,7 @@ order; the merged `unknown` row has 80 runs and no rank):
 | 1 | `t1/gate-five` | 20 | 100 % | 0.05 | 0 | not rated | not for verdicts |
 | 2 | `t1/gate-nine` | 10 | 100 % | 0.20 | 0 | 50.5 | not allowed |
 | 3 | `t1/gate-eight` | 8 | 100 % | 0.00 | 0 | not rated | not for verdicts |
-| 4 | `t1/gate-six` | 7 | 100 % | 0.00 | 0 | 19.9 | not for verdicts |
+| 4 | `t1/gate-six` | 7 | 100 % | 0.00 | 0 | 19.9 | |
 | 5 | `opencode/gate-three-free` | 6 | 100 % | 0.00 | 0 | 22.2 | |
 | 6 | `t1/gate-seven` | 5 | 100 % | 0.00 | 0 | 20 | |
 | 7 | `t1/gate-four` | 9 | 100 % | 0.44 | 1 | 28.4 | |
@@ -1649,7 +1655,7 @@ order; the merged `unknown` row has 80 runs and no rank):
 | Green | `t1/prod-one` | 62 % | 15 |
 | Coder | no pick yet | | |
 | Review A | `t1/gate-two` | 100 % | 7 |
-| Review B | no pick yet | | |
+| Review B | `t1/gate-one` | 60 % | 5 |
 | Review C | `t1/gate-seven` | 100 % | 5 |
 | Adversarial | no pick yet | | |
 | Acceptance | no pick yet | | |
@@ -1684,8 +1690,8 @@ because the spec names none. Every assertion on a computed value reads a
 | DS9 Producer rank | The `data-rank` order is the table above. A tie in the rate goes to the lower rework (`prod-four` before `prod-three`). A tie in both goes to more tasks (`prod-three` before `prod-two`). | Drop one tie-break level. The row order changes. |
 | DS10 Checker rank | The `data-rank` order is the table above. A tie in the pass % goes to fewer escapes (`gate-four` after every row with 0 escapes, though it has 9 runs). Then more runs (`gate-five`, then `gate-nine`, `gate-eight`, `gate-six`, `gate-three-free`, `gate-seven`). The `unknown` row has no `data-rank`. | Sort on runs first, or rank `unknown`. The order changes. |
 | DS11 AA match | `t1/gate-one` shows 41.5 (`byEffort.high`, the variant with the most runs), not 18.5 or 12.5. `gate-two` shows 33.3 (an alias). `gate-three-free` shows 22.2 (the `-free` suffix). `gate-five` and `gate-eight` show `not rated` (`rated: false`, no entry). `prod-one` shows 44.4 in More columns. | Read the primary row for `gate-one`. Skip the alias or the suffix. Each case fails. |
-| DS12 Marks | `data-mark="not-for-verdicts"` on `gate-five`, `gate-eight`, and `gate-six` (19.9). None on `gate-seven` (20 exactly). `data-mark="not-allowed"` on `gate-nine`, `prod-eight`, and `t2/prod-two`. `gate-one` and `gate-two` carry no mark. The mark is the attribute, not a word of the prose. | Use `> 20`. Lose the mark of an unrated row. Treat `t2/prod-two` as allowed because `t1/prod-two` is. |
-| DS13 Top block | The ten lines of the table in section 13.3, in the given order, one line for each role. Red shows 100 % and 5 (the Red rows only), and Green shows 62 % and 15, not the table row (67 %, 23). Green skips the not-allowed rank 1 (`prod-eight`). Review A skips the rank 1 `gate-five` (not for verdicts). Review B says no pick yet, because `gate-one` has no variant in that role and its primary net score is 18.5. Review C skips `gate-six` (19.9) and picks `gate-seven`. Adversarial says no pick yet, though two rows rank. No line names a `small`, `strategy`, `record`, or `spec-review` role. | Pick rank 1 without the filters. Use the table-level variant for Review B. Reuse the table row for a role. Add a line for `strategy`. Each fails. |
+| DS12 Marks | `data-mark="not-for-verdicts"` on `gate-five` and `gate-eight` (not rated). None on `gate-six` (19.9) or `gate-seven` (20). `data-mark="not-allowed"` on `gate-nine`, `prod-eight`, and `t2/prod-two`. `gate-one` and `gate-two` carry no mark. The mark is the attribute, not a word of the prose. | Mark a rated row with a net score above 0. Lose the mark of an unrated row. Treat `t2/prod-two` as allowed because `t1/prod-two` is. |
+| DS13 Top block | The ten lines of the table in section 13.3, in the given order, one line for each role. Red shows 100 % and 5 (the Red rows only), and Green shows 62 % and 15, not the table row (67 %, 23). Green skips the not-allowed rank 1 (`prod-eight`). Review A skips the rank 1 `gate-five` (not for verdicts). Review B picks `gate-one` (60 %, 5 runs, net 18.5), the only qualifying row in that role. Review C picks `gate-seven` (net 20) over `gate-six` (net 19.9). Adversarial says no pick yet, though two rows rank. No line names a `small`, `strategy`, `record`, or `spec-review` role. | Pick rank 1 without the filters. Use the table-level variant for Review B. Reuse the table row for a role. Add a line for `strategy`. Each fails. |
 | DS14 No work type | The page holds no `data-mg="work-type"`, no heading `Work types`, and no heading that names `app code`, `docs and ops`, `print books`, `tooling`, or `other`. The check reads headings and hooks, not prose. | Render a work-type section, or an empty one with "no pick yet". DS14 must fail. |
 | DS15 No producer pass rate | The producer section has no header that matches `/pass/i`, in the default table or in More columns. The checker table has no `Blocking %` and no `Blockers per run` header. | Add `Pass %` to the producer table. DS15 must fail. |
 | DS16 Columns and formats | The default headers equal the two lists of section 13.6, in order. Rates are `^\d+\s*%$`. Rework is `^\d+\.\d$`. Findings per run is `^\d+\.\d{2}$` with no `%`. Tokens is `^\d+k$`. A null average is the dash `–`. Tasks, Runs, and Escapes are integers. No cell holds `(n=`. | Show a rate with a decimal, show findings per run as a percent, or print an empty value as a sentence. Each fails. |
@@ -1875,7 +1881,7 @@ list stops and sends the name to the orchestrator.
 - **The rank uses no rating and no producer pass rate** (spec D16). DS15 proves
   it.
 - **A pick needs an allowed model, the minimum, and for a gate role a net score
-  of 20 or more** (spec D16, D18). DS8, DS12, and DS13 prove it.
+  above 0** (spec D16, D18). DS8, DS12, and DS13 prove it.
 - **Changed contracts.** The CLI of `real-work.ts` and `preview.sh` changes
   (Q-S1). The MANIFEST has three lines (Q-S2). The `real-work.json` shape
   changes, and `guide.ts` reads the old shape until row 4.1h. The hook contract
@@ -1940,8 +1946,8 @@ Red role pins the default in a test only where section 13.4 says so.
   `unknown` included. The `unknown` share is the `unknown` rows divided by the
   row count, with one decimal.
 - **Q-S6. The pick.** Default: the first row of the rank order that passes the
-  filters (allowed, the minimum, and for a gate role a net score of 20 or
-  more). A not-allowed rank 1 does not make "no pick yet" when a later row
+  filters (allowed, the minimum, and for a gate role a net score above
+  0). A not-allowed rank 1 does not make "no pick yet" when a later row
   passes.
 - **Q-S7. The AA lookup.** Default: the `models` block only. The net score
   format is not pinned (the tests parse a number). A tie in the variant run
