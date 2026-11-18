@@ -1784,7 +1784,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: each reachable route has 3 complete passes, or the file
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
     stop, region block, or open pass).
-- [x] 71adc88 4.13a Red: the judge runner (spec D11).
+- [~] 71adc88 4.13a Red: the judge runner (spec D11).
   - The new tool is `harness/model-guide/judge-run.sh`. The test file is
     `harness/model-guide-tests/judge-run.test.ts`. Touch no other file.
   - Usage: `judge-run.sh --set <set_id> --route <route> --judge a|b
