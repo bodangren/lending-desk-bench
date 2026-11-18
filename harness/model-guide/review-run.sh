@@ -385,7 +385,96 @@ LOCKED=0
 CALL_PID=""
 WATCHDOG_PID=""
 
+# The INFRA lines of the daemon guard (plan task 4.13o): one line per
+# `serve --service` process that the guard stopped under the job root.
+INFRA_LIST=""
+
+# A process is alive when it exists and is no zombie.
+daemon_pid_alive() {
+  local stat
+  stat="$(cat "/proc/$1/stat" 2>/dev/null)" || return 1
+  stat="${stat##*) }"
+  case "$stat" in
+    Z*|X*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+# The pids of the processes whose argv holds `serve --service` and whose HOME
+# or cwd is under the job root. A process outside the job root never matches,
+# so the guard never stops a process of another run.
+daemon_pids() {
+  local root="$1"
+  node -e '
+const fs = require("node:fs");
+const base = String(process.argv[1]).replace(/\/+$/, "");
+const proc = String(process.argv[2] || "/proc").replace(/\/+$/, "");
+const under = (path, root) => path !== "" && (path === root || path.startsWith(root + "/"));
+const pids = [];
+let names = [];
+try { names = fs.readdirSync(proc); } catch { names = []; }
+for (const name of names) {
+  if (!/^[0-9]+$/.test(name)) continue;
+  let argv = "";
+  try { argv = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8"); } catch { continue; }
+  if (!argv.includes("serve --service")) continue;
+  let home = "";
+  try {
+    for (const line of fs.readFileSync(proc + "/" + name + "/environ", "utf8").split("\0")) {
+      if (line.startsWith("HOME=")) { home = line.slice(5); break; }
+    }
+  } catch { home = ""; }
+  let cwd = "";
+  try { cwd = fs.readlinkSync(proc + "/" + name + "/cwd"); } catch { cwd = ""; }
+  if (!under(home, base) && !under(cwd, base)) continue;
+  pids.push(name);
+}
+process.stdout.write(pids.join("\n"));
+' "$root" "${BENCH_OPENCODE_PROC:-/proc}" 2>/dev/null || true
+}
+
+# The daemon guard of plan task 4.13o: it stops every daemon under the job
+# root with TERM, then KILL after 5 s. Each stopped pid gives one stderr line
+# and one entry of INFRA_LIST. The guard runs after each pass, each probe, and
+# each judge run, and on every exit path.
+stop_daemons() {
+  local root="${1:-}" pids pid waited alive line
+  [ -n "$root" ] || return 0
+  pids="$(daemon_pids "$root")"
+  [ -n "$pids" ] || return 0
+  for pid in $pids; do kill -TERM "$pid" 2>/dev/null || true; done
+  waited=0
+  while [ "$waited" -lt 5 ]; do
+    alive=0
+    for pid in $pids; do
+      if daemon_pid_alive "$pid"; then alive=1; break; fi
+    done
+    [ "$alive" = "1" ] || break
+    sleep 1
+    waited=$(( waited + 1 ))
+  done
+  for pid in $pids; do
+    if daemon_pid_alive "$pid"; then kill -KILL "$pid" 2>/dev/null || true; fi
+  done
+  waited=0
+  while [ "$waited" -lt 20 ]; do
+    alive=0
+    for pid in $pids; do
+      if daemon_pid_alive "$pid"; then alive=1; break; fi
+    done
+    [ "$alive" = "1" ] || break
+    sleep 0.1
+    waited=$(( waited + 1 ))
+  done
+  for pid in $pids; do
+    line="review-run: INFRA stopped daemon $pid"
+    echo "$line" >&2
+    INFRA_LIST="${INFRA_LIST}${INFRA_LIST:+$'\n'}${line}"
+  done
+}
+
 on_exit() {
+  stop_daemons "$JOB"
   if [ "${BENCH_OPENCODE_HOST_OWNER:-0}" = "1" ]; then
     opencode_host_cleanup >&2 || true
   fi
@@ -499,7 +588,7 @@ write_record() {
   rows="$(printf '%s\n' "${DIFF_ROWS[@]}")"
   node -e '
 const fs = require("node:fs");
-const [file, set, route, pass, date, state, rows, outputs, errors, complete] = process.argv.slice(1);
+const [file, set, route, pass, date, state, rows, outputs, errors, complete, infraText] = process.argv.slice(1);
 const list = (text) => text.split("\n").filter((line) => line !== "");
 const num = (value) => { const n = Number(value); return Number.isFinite(n) ? n : 0; };
 const totals = { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 };
@@ -530,8 +619,10 @@ const doc = {
   tokens: totals,
   tokens_complete: complete === "1",
 };
+const infra = list(infraText);
+if (infra.length > 0) doc.infra = infra;
 fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
-' "$PASS_FILE" "$SET_ID" "$ROUTE" "$PASS_NO" "$DATE" "$state" "$rows" "$OUTPUT_LIST" "$ERROR_LIST" "$TOKENS_ALL"
+' "$PASS_FILE" "$SET_ID" "$ROUTE" "$PASS_NO" "$DATE" "$state" "$rows" "$OUTPUT_LIST" "$ERROR_LIST" "$TOKENS_ALL" "$INFRA_LIST"
 }
 
 # The first quota read of the pass (spec D15). A probe blocked by the quota
@@ -565,6 +656,13 @@ fi
 JOB="$BENCH_OPENCODE_HOME"
 JOB_CONFIG="$JOB/opencode.json"
 printf '%s\n' '{"permission":{"read":"deny","edit":"deny","bash":"deny","webfetch":"deny","websearch":"deny","question":"deny","subagent":"deny","skill":"deny"}}' > "$JOB_CONFIG"
+
+# The HOME guard of plan task 4.13o: every call of the run holds the job HOME.
+# The one real-HOME call is the seed export inside provider-credential.sh.
+case "$JOB/home" in
+  "$JOB"/*) ;;
+  *) refuse "the job HOME is outside the job root" ;;
+esac
 
 # The seed of the route provider only. A failure stops the run before any
 # model call (spec D14).
@@ -640,7 +738,7 @@ write_probe_record() {
   file="$dir/${DATE}-${RUN_SLUG}-${ROUTE_TAG}.json"
   node -e '
 const fs = require("node:fs");
-const [file, set, route, diff, date, state, row, error] = process.argv.slice(1);
+const [file, set, route, diff, date, state, row, error, infraText] = process.argv.slice(1);
 const parts = row.split("\t");
 const num = (value) => { const n = Number(value); return Number.isFinite(n) ? n : 0; };
 const tokens = {
@@ -661,8 +759,10 @@ const doc = {
   tokens_complete: parts[5] === "1",
 };
 if (error !== "") doc.error = error;
+const infra = String(infraText === undefined ? "" : infraText).split("\n").filter((line) => line !== "");
+if (infra.length > 0) doc.infra = infra;
 fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
-' "$file" "$SET_ID" "$ROUTE" "$diff_id" "$DATE" "$state" "$row" "$error_line"
+' "$file" "$SET_ID" "$ROUTE" "$diff_id" "$DATE" "$state" "$row" "$error_line" "$INFRA_LIST"
 }
 
 # The probe: exactly one call on the first control diff of the set, a diff
@@ -746,6 +846,7 @@ process.stdout.write(String(plants.length));
     row="$(printf '0\t0\t0\t0\t0\t0')"
   fi
 
+  stop_daemons "$JOB"
   write_probe_record "$state" "$control_id" "$row" "$error_line"
   if [ "$state" = "reachable" ]; then
     echo "$ROUTE reachable -"
@@ -877,5 +978,6 @@ for diff_path in "${DIFF_PATHS[@]}"; do
   OUTPUT_LIST="${OUTPUT_LIST}${OUTPUT_LIST:+$'\n'}${stored}"
 done
 
+stop_daemons "$JOB"
 write_record "$STATE"
 exit 0

@@ -280,7 +280,96 @@ CALL_PID=""
 WATCHDOG_PID=""
 LOCKED=0
 
+# The INFRA lines of the daemon guard (plan task 4.13o): one line per
+# `serve --service` process that the guard stopped under the job root.
+INFRA_LIST=""
+
+# A process is alive when it exists and is no zombie.
+daemon_pid_alive() {
+  local stat
+  stat="$(cat "/proc/$1/stat" 2>/dev/null)" || return 1
+  stat="${stat##*) }"
+  case "$stat" in
+    Z*|X*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+# The pids of the processes whose argv holds `serve --service` and whose HOME
+# or cwd is under the job root. A process outside the job root never matches,
+# so the guard never stops a process of another run.
+daemon_pids() {
+  local root="$1"
+  node -e '
+const fs = require("node:fs");
+const base = String(process.argv[1]).replace(/\/+$/, "");
+const proc = String(process.argv[2] || "/proc").replace(/\/+$/, "");
+const under = (path, root) => path !== "" && (path === root || path.startsWith(root + "/"));
+const pids = [];
+let names = [];
+try { names = fs.readdirSync(proc); } catch { names = []; }
+for (const name of names) {
+  if (!/^[0-9]+$/.test(name)) continue;
+  let argv = "";
+  try { argv = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8"); } catch { continue; }
+  if (!argv.includes("serve --service")) continue;
+  let home = "";
+  try {
+    for (const line of fs.readFileSync(proc + "/" + name + "/environ", "utf8").split("\0")) {
+      if (line.startsWith("HOME=")) { home = line.slice(5); break; }
+    }
+  } catch { home = ""; }
+  let cwd = "";
+  try { cwd = fs.readlinkSync(proc + "/" + name + "/cwd"); } catch { cwd = ""; }
+  if (!under(home, base) && !under(cwd, base)) continue;
+  pids.push(name);
+}
+process.stdout.write(pids.join("\n"));
+' "$root" "${BENCH_OPENCODE_PROC:-/proc}" 2>/dev/null || true
+}
+
+# The daemon guard of plan task 4.13o: it stops every daemon under the job
+# root with TERM, then KILL after 5 s. Each stopped pid gives one stderr line
+# and one entry of INFRA_LIST. The guard runs after each pass, each probe, and
+# each judge run, and on every exit path.
+stop_daemons() {
+  local root="${1:-}" pids pid waited alive line
+  [ -n "$root" ] || return 0
+  pids="$(daemon_pids "$root")"
+  [ -n "$pids" ] || return 0
+  for pid in $pids; do kill -TERM "$pid" 2>/dev/null || true; done
+  waited=0
+  while [ "$waited" -lt 5 ]; do
+    alive=0
+    for pid in $pids; do
+      if daemon_pid_alive "$pid"; then alive=1; break; fi
+    done
+    [ "$alive" = "1" ] || break
+    sleep 1
+    waited=$(( waited + 1 ))
+  done
+  for pid in $pids; do
+    if daemon_pid_alive "$pid"; then kill -KILL "$pid" 2>/dev/null || true; fi
+  done
+  waited=0
+  while [ "$waited" -lt 20 ]; do
+    alive=0
+    for pid in $pids; do
+      if daemon_pid_alive "$pid"; then alive=1; break; fi
+    done
+    [ "$alive" = "1" ] || break
+    sleep 0.1
+    waited=$(( waited + 1 ))
+  done
+  for pid in $pids; do
+    line="judge-run: INFRA stopped daemon $pid"
+    echo "$line" >&2
+    INFRA_LIST="${INFRA_LIST}${INFRA_LIST:+$'\n'}${line}"
+  done
+}
+
 on_exit() {
+  stop_daemons "$JOB"
   if [ "${BENCH_OPENCODE_HOST_OWNER:-0}" = "1" ]; then
     opencode_host_cleanup >&2 2>/dev/null || true
   fi
@@ -352,6 +441,12 @@ start_job() {
   JOB="$BENCH_OPENCODE_HOME"
   JOB_CONFIG="$JOB/opencode.json"
   printf '%s\n' '{"permission":{"read":"deny","edit":"deny","bash":"deny","webfetch":"deny","websearch":"deny","question":"deny","subagent":"deny","skill":"deny"}}' > "$JOB_CONFIG"
+  # The HOME guard of plan task 4.13o: every call of the run holds the job
+  # HOME. The one real-HOME call is the seed export of the helper.
+  case "$JOB/home" in
+    "$JOB"/*) ;;
+    *) refuse "the job HOME is outside the job root" ;;
+  esac
   if [ -n "$QUOTA_PROVIDER" ]; then
     if ! "$CREDENTIAL_HELPER" seed "$QUOTA_PROVIDER" > /dev/null; then
       refuse "the provider credential seed failed"
@@ -608,7 +703,7 @@ write_files() {
   node -e '
 const fs = require("node:fs");
 const a = process.argv.slice(1);
-const judgeFile = a[0], recordFile = a[1], set = a[2], judge = a[3], route = a[4], date = a[5], state = a[6], rowsText = a[7], verdictDir = a[8], complete = a[9];
+const judgeFile = a[0], recordFile = a[1], set = a[2], judge = a[3], route = a[4], date = a[5], state = a[6], rowsText = a[7], verdictDir = a[8], complete = a[9], infraText = a[10];
 const num = (value) => { const n = Number(value); return Number.isFinite(n) ? n : 0; };
 const totals = { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 };
 const groups = [];
@@ -652,8 +747,10 @@ const doc = {
   tokens: totals,
   tokens_complete: complete === "1",
 };
+const infra = String(infraText === undefined ? "" : infraText).split("\n").filter((line) => line !== "");
+if (infra.length > 0) doc.infra = infra;
 fs.writeFileSync(recordFile, JSON.stringify(doc, null, 2) + "\n");
-' "$JUDGE_FILE" "$RECORD_FILE" "$SET_ID" "$JUDGE" "$ROUTE" "$DATE" "$STATE" "$rows" "$VERDICT_DIR" "$TOKENS_ALL" \
+' "$JUDGE_FILE" "$RECORD_FILE" "$SET_ID" "$JUDGE" "$ROUTE" "$DATE" "$STATE" "$rows" "$VERDICT_DIR" "$TOKENS_ALL" "$INFRA_LIST" \
     || refuse "the judge files could not be written"
 }
 
@@ -797,5 +894,6 @@ fs.writeFileSync(outPath, JSON.stringify(map) + "\n");
   GROUP_INDEX=$(( GROUP_INDEX + 1 ))
 done
 
+stop_daemons "$JOB"
 write_files
 exit 0

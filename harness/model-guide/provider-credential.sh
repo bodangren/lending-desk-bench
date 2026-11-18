@@ -81,9 +81,20 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 ( umask 077; : > "$ERR_FILE"; : > "$SEL_FILE"; : > "$IMPORT_ERR_FILE" )
 
+# The HOME guard of plan task 4.13o: every call but the one exempt seed
+# export runs with the job HOME. A HOME outside the job root is refused
+# before the call.
+check_job_home() {
+  case "$1" in
+    "$FOLDER"|"$FOLDER"/*) return 0 ;;
+  esac
+  refuse "the call HOME is outside the job root"
+}
+
 # One `opencode` call of the job store. The environment of the call points
 # every path at the job folder, the same as `opencode_host_run`.
 run_opencode() {
+  check_job_home "$FOLDER/home"
   timeout "$AGENT_TIMEOUT" env -u OPENCODE_DB \
     HOME="$FOLDER/home" \
     XDG_CONFIG_HOME="$FOLDER/config" \
@@ -138,13 +149,27 @@ process.stdin.on("end", () => {
 });
 '
 
+# The seed export of plan task 4.13o: the one call of the helper with the real
+# HOME of the operator. It is exempt from the HOME guard because its form is
+# fixed: `auth export <provider> --standalone`, with timeout 60, and its cwd
+# in an empty folder outside every git repository. The folder is removed
+# after the call, so the export writes no file of the run.
+run_seed_export() {
+  local dir="" rc=0
+  dir="$(mktemp -d "${TMPDIR:-/tmp}/mg-seed-export.XXXXXX" 2>/dev/null)" || return 2
+  ( cd "$dir" && timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 \
+      BENCH_OPENCODE_JOB="$FOLDER" "$OPENCODE_BIN" auth export "$PROVIDER" --standalone ) || rc=$?
+  rm -rf "$dir" 2>/dev/null || true
+  return "$rc"
+}
+
 # The seed: up to N = waits + 1 calls of `auth export`, with the waits of
 # SEED_DELAYS between calls. It prints the one-entry payload on stdout.
 read_seed_payload() {
   local attempt=1 rc sel_rc out payload
   while :; do
     rc=0
-    out="$(run_opencode auth export --standalone 2>"$ERR_FILE")" || rc=$?
+    out="$(run_seed_export 2>"$ERR_FILE")" || rc=$?
     sel_rc=0
     payload=""
     if [ "$rc" -eq 0 ]; then
