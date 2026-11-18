@@ -2218,6 +2218,56 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     3c4e4623c67f1e14c8ab75b2e6b007b5183f2eae; final Green HEAD 94fef2f
     before this row, and the plan-evidence commit after it.
+- [~] 6a3f586 4.13i Red: the live Go quota answer (Review A cc8afbd F1, F2;
+  Review B cc8afbd B2, N2). Change only
+  `harness/model-guide-tests/quota.test.ts` and
+  `harness/model-guide-tests/review-run.test.ts`. Touch no production file.
+  - `quota.test.ts` serves the real window set of GET
+    `/api/quota/opencode-go` (`5h`, `weekly`, `monthly` as numbers, plus a
+    null `credits_balance`): Q11 gives ready at 5h 50 / weekly 97 / monthly
+    89 and wait at weekly 100 or 5h 95. Q12 skips a null window and gives
+    stopped when no usable window exists. Q13 skips a string or negative
+    value beside usable windows and stops when it is the only window (NaN
+    arrives as null over JSON, pinned by Q12). Q14 keeps the 70 rule for
+    `kimi-code-plan-cn` with the real key names. Q15 (Review B B2) gives
+    stopped for `opencode-go` when `5h` or `weekly` is absent, even beside
+    a usable window, and for `day` only.
+  - `review-run.test.ts` G4 starts a Go pass with the real window set at
+    weekly 97 and refuses at weekly 100, beside the old day/week fake. Old
+    fakes that do not match the live shape: `goBody` and `windowsBody` in
+    `quota.test.ts`, `QUOTA_SERVER_SOURCE` in `review-run.test.ts`, and the
+    judge-run fake bodies (unchanged; a later row moves them).
+  - Verify: each Red command fails on the new cases, and the other cases
+    stay green. Record the failed test names in
+    `measure/runs/model_guide/red-4.13i.txt`. Run one file at a time:
+    `cd harness && npx vitest run model-guide-tests/quota.test.ts
+    --configLoader native --maxWorkers=1 --reporter=dot`; `bun test
+    harness/model-guide-tests/review-run.test.ts`. After each run, `pgrep
+    -af "fake-opencod[e]"` and `pgrep -af "quota-serve[r]"` print no line.
+  - Evidence: Red test commit 6a3f586. `quota.test.ts` exits 1 with
+    `Tests 7 failed | 17 passed (24)`; the failed names are Q11 (three
+    cases), Q12, Q13, Q14, and Q15, each stopped or ready against the
+    defect (F1: the `weekly` key is unread and the null window stops the
+    read). `review-run.test.ts` exits 1 with `52 pass` and `1 fail`; the
+    failed name is G4 (0 model calls at weekly 97 %: the null window stops
+    the read). The record is `measure/runs/model_guide/red-4.13i.txt`
+    (not staged). The two pgrep scans print no line at the end of each run.
+- [ ] 4.13j Green: the live Go quota answer (Review A cc8afbd F1, F2;
+  Review B cc8afbd B2, N2). Change `harness/model-guide/quota.ts`. Touch no
+  test file and do not touch spec.md.
+  - F1: read the week window under the live key `weekly` in the Go branch
+    of `stateOf` (keep `week` only if the PM orders a fallback).
+  - F2: skip a window whose usedPercent is null or not a number; keep
+    `stopped` for an answer with no usable window at all. B2: for
+    `opencode-go`, both `5h` and `weekly` must be finite numbers, else
+    `stopped`. N2: a negative usedPercent is not usable. N1: the runners
+    key the Go rule on `quota_source` but `quota.ts` keys it on
+    `quota_provider`; derive both from one field, or refuse a row where the
+    two disagree.
+  - Update the spec D15 example and the `quota.ts` doc comment to the live
+    keys (`5h`, `weekly`, `monthly`, and a null `credits_balance`).
+  - Verify: the two Red commands exit 0, one file at a time. The two pgrep
+    scans print no line.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
