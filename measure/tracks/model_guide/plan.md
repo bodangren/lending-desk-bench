@@ -8,6 +8,8 @@ gate and the weekly update. Spec: `spec.md`. Base commit: `ea36fae`.
 
 Revision 2, 2026-11-14: the findings F1 to F12 of the spec review round 1.
 Revision 3, 2026-11-14: the findings F13 to F23 of the spec review round 2.
+Revision 4, 2026-11-18: the PM ruling on the route blocker (tasks 4.9, 4.9a,
+4.9b, and 4.10 to 4.12).
 Each Green task writes one tool or one page, plus its wiring. Each task has
 its own verify line.
 
@@ -1430,7 +1432,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     (PM 2026-11-17).
   - The file holds the Hy row of spec D12.
   - Verify: the test files of Phase 4 pass.
-  - Evidence: the file holds the nine rows of spec D12 in order, each with
+  - Evidence: the file holds the nine rows of the spec D12 list of
+    2026-11-17, in order, each with
     exactly `family`, `route`, `kind`, `quota_provider`, and `quota_source`.
     The kinds are `plan` and `free` only. The Hy row `opencode/hy4-flash-free`
     is present with the quota source null. There is no second-judge row,
@@ -1573,7 +1576,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `preview: pilot gate fail`. The pinned defaults are the newest score
     file, the sums over the passes of a route, the worst blocker recall as a
     whole percent, and the method note with `<n> diffs`.
-- [ ] 4.9 Checks. One code checker reads the diff against spec D12 to D15
+- [x] 0ba6a28 4.9 Checks. One code checker reads the diff against spec D12 to D15
   and D22.
   - The checker confirms the metered refusal, the 70 % and 80 % rules, the
     state of each route, the region rule, and the credential scan.
@@ -1588,12 +1591,35 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     0ba6a28. `review-run.test.ts` exits 0 with `Tests  25 passed (25)`; the
     F2 case passes at the role base with no production change.
     `adversarial-p4-runner.test.ts` exits 0 with `Tests  14 passed (14)`,
-    and `quota.test.ts` exits 0 with `Tests  15 passed (15)`. This row stays
-    `[ ]` until the checker runs again.
-- [ ] 4.10 The route probe (spec D14). One call per route with a control
-  diff, through `heavy-run.sh`, in the window of spec D15.
-  - Record `reachable`, `unreachable`, or `region-blocked` with the error
-    line in `measure/runs/model_guide/probe-4.10.txt`.
+    and `quota.test.ts` exits 0 with `Tests  15 passed (15)`. The second run
+    of the checker holds status pass at 8e0c441
+    (`measure/runs/model_guide/check-4.9-8e0c441.json`), so this row is
+    `[x]`.
+- [ ] 4.9a Red. Probe mode, token log, and the new routes.json (spec D12, D14,
+  Tokens; PM 2026-11-18). Change only test files under
+  `harness/model-guide-tests/` (`review-run.test.ts` and the fake `opencode`,
+  which must emit token fields in its json events).
+  - `--probe` makes one call on the first control diff and prints the probe
+    line with the exit codes of D14.
+  - The pass and probe records hold the tokens sums and per-diff tokens.
+  - `tokens_complete` is false when a call has no token field.
+  - `routes.json` holds none of the three removed routes and the pilot
+    routes are present.
+  - Verify: the new cases fail for missing behavior; record names in
+    `measure/runs/model_guide/red-4.9a.txt`.
+- [ ] 4.9b Green. Implement 4.9a in `harness/model-guide/review-run.sh` and
+  `harness/model-guide/routes.json`. Make no design choice beyond the spec.
+  - Verify: the Phase 4 test files pass one at a time; no `fake-opencode` or
+    quota-server process stays.
+- [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
+  per route of `routes.json` on the first control diff of `mg-2026-11a`,
+  through `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19.
+  - Command for each route:
+    `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --probe --route <route>`.
+  - The probe writes no pass record and no stored raw output beyond the
+    probe record. It prints `<route> reachable|unreachable|region-blocked
+    <error line or ->`.
+  - Record each line in `measure/runs/model_guide/probe-4.10.txt`.
   - The orchestrator sends each `unreachable` route to the PM (owner
     question Q8).
   - Verify: each route of `routes.json` has one line in the file.
@@ -1602,9 +1628,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   2026-11-21.
   - The pilot set holds the first 3 qualified commits of each repo in the
     D4 order, newest first (task 3.16).
-  - The pilot routes are `minimax-cn-coding-plan/MiniMax-M3.1-Flash`,
-    `kimi-code-plan-cn/kimi-for-coding#high`, and
-    `opencode/hy4-flash-free`.
+  - The pilot routes are `opencode/hy4-flash-free`,
+    `opencode-go/deepseek-v4.1-flash`, and
+    `opencode-go/mimo-v2.6-flash` (PM 2026-11-18). No Claude route and no
+    MiniMax route is in the pilot (PM 2026-11-18).
   - The pilot runs through `heavy-run.sh`, in the window of spec D15.
   - The worst-of-2 score of each pilot route goes into the score file.
   - The report gives, for each pilot route, the found, missed, and
@@ -1630,6 +1657,11 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route <route>`.
   - The pass of a pilot route on 11-20 and 11-21 is the pilot pass of task
     4.11 (spec D13).
+  - Night limits (spec D15, PM 2026-11-18): the orchestrator stops the
+    night's runs when the Go 5-hour window is over 95 % or the Go week is
+    over 90 %. The runner's own rules (no start at 70 %, stop at 80 % of a
+    window) stay and are stricter for one route; the night limit covers the
+    whole night.
   - Verify: each reachable route has 3 complete passes, or the file
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
     stop, region block, or open pass).

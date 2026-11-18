@@ -4,6 +4,9 @@ Spec format: classic FR list. Track type: feature. Base commit: `ea36fae`.
 Author model: `claude-code/claude-opus-5-5[1m]#high`. Date: 2026-11-14.
 Revision 2, 2026-11-14: the findings F1 to F12 of the spec review round 1.
 Revision 3, 2026-11-14: the findings F13 to F23 of the spec review round 2.
+Revision 4, 2026-11-18: the PM ruling on the route blocker: the D12 route
+list, the D13 pilot routes, the D14 probe mode, the D15 night limits, and the
+token log (PM 2026-11-18).
 
 ## Summary
 
@@ -539,14 +542,17 @@ questions".
     | Family | Route | Kind |
     |---|---|---|
     | Claude Sonnet | `claude-code/claude-sonnet-5-5#high` | plan |
-    | Kimi | `kimi-code-plan-cn/kimi-for-coding#high` | plan |
     | MiniMax M3.1 Flash | `minimax-cn-coding-plan/MiniMax-M3.1-Flash` | plan |
     | DeepSeek Flash | `opencode-go/deepseek-v4.1-flash` | plan (Go) |
-    | GLM 5.3 | `bailian-token-plan/glm-5.3#high` | plan |
-    | StepFun | `nvidia/stepfun-ai/step-5-preview#high` | free |
     | Hy | `opencode/hy4-flash-free` | free |
     | Go | `opencode-go/mimo-v2.6-flash` | plan (Go) |
     | Go | `opencode-go/muse-spark-1.3-contributor#high` | plan (Go) |
+
+    Three routes leave this list for the set `mg-2026-11a`:
+    `kimi-code-plan-cn/kimi-for-coding#high`,
+    `bailian-token-plan/glm-5.3#high`, and
+    `nvidia/stepfun-ai/step-5-preview#high`. They are not on the allowed
+    list (Daniel 11-16) (PM 2026-11-18).
 
     The PM added the Hy row on 2026-11-16. The route is free until about
     2026-11-30. It gets no build-task or tests-task run.
@@ -595,16 +601,16 @@ questions".
       source commits.
       The pilot runs 3 routes with 2 passes each (PM 2026-11-16), so each
       route has a worst-of-2 score. The pilot routes are
-      `minimax-cn-coding-plan/MiniMax-M3.1-Flash`,
-      `kimi-code-plan-cn/kimi-for-coding#high`, and
-      `opencode/hy4-flash-free`. A pilot route that is
+      `opencode/hy4-flash-free`, `opencode-go/deepseek-v4.1-flash`, and
+      `opencode-go/mimo-v2.6-flash` (PM 2026-11-18). No Claude route and no
+      MiniMax route is in the pilot (PM 2026-11-18). A pilot route that is
       unreachable or region-blocked is replaced by the next route of D12.
       The Kimi route is replaced when it is in wait (spec D15) at 02:00 on a
       pilot night. The next route of D12 after MiniMax M3.1 Flash takes its
       place: `opencode-go/deepseek-v4.1-flash`. Kimi gets its passes after
       its reset, on the night of 2026-11-22. When Kimi has fewer than 3
       passes after that night, it shows `incomplete` and gets no rank
-      (PM 2026-11-16).
+      (PM 2026-11-16; replaced by PM 2026-11-18).
       The set goes to ranking only when both rules hold:
       - The best worst-of-2 score minus the lowest worst-of-2 score is 20
         points or more.
@@ -627,7 +633,7 @@ questions".
       (D20). A reseed does not fit before 2026-11-22. The orchestrator tells
       the PM the new date, and the page shows `incomplete` for each route
       without 3 complete passes. The Kimi substitution rule above is part of
-      D13 (PM 2026-11-16).
+      D13 (PM 2026-11-16; replaced by PM 2026-11-18).
     - **Rank.** The rank uses the worst pass score of the N passes. A tie
       goes to the higher worst blocker recall, and then to the higher median
       score. A route with fewer than 3 complete passes shows `incomplete` and
@@ -641,6 +647,12 @@ questions".
       holds, for each route and pass: the date, the numbers above, and the
       counts by class and severity. It holds no finding text, no file path,
       and no line.
+    - **Tokens (PM 2026-11-18).** Each pass record and each probe record
+      holds `"tokens": {"input", "output", "reasoning", "cache_read",
+      "cache_write", "total"}`. The values are the sums over the model calls
+      of the pass, read from the token fields of the opencode json events. A
+      call with no token field adds 0 and sets `"tokens_complete": false`.
+      Each diff entry of the record holds its own `tokens` object.
     - **Review page.** The page `review.html` shows the rank, the worst,
       median, and best pass score, the blocker recall, the false claims, the
       real defects found, and the counts by class and severity. Its data file
@@ -674,6 +686,16 @@ questions".
       that fails with the region error of D22 is `region-blocked`. The
       orchestrator sends the error line to the PM. Owner question Q8 covers
       the Claude route, which can need the shared `HOME`.
+    - **Probe mode (PM 2026-11-18).** `review-run.sh --probe` makes exactly
+      one model call on the first control diff of the set (a diff with no
+      plant, spec line about 423). It writes no pass record and no stored raw
+      output beyond the probe record. It prints one line
+      `<route> reachable|unreachable|region-blocked <error line or ->` on
+      stdout. It gives exit 0 for `reachable`, exit 3 for `unreachable` or
+      `region-blocked`, and exit 2 for a refusal. The probe uses the same
+      lock, quota rules, job isolation, credential scan, and trap as a pass.
+      The probe runs 02:00 to 06:00 +07 on 2026-11-19 through
+      `heavy-run.sh`, with one call per route of `routes.json`.
 
 15. **D15. The quota budget.** The runner reads the quota of the route
     provider before each pass and before each diff.
@@ -702,6 +724,11 @@ questions".
       stops when a window reaches 80 %, and it marks the pass open. A route
       with no quota source runs at most 1 pass per night. It stops at the
       first quota or limit error.
+    - **Night limits (PM 2026-11-18).** The orchestrator stops the night's
+      runs when the Go 5-hour window is over 95 % or the Go week is over
+      90 %. The runner's own rules (no start at 70 %, stop at 80 % of a
+      window) stay and are stricter for one route; the night limit covers
+      the whole night.
     - **The window.** The track A window is 02:00 to 06:00 +07. One night
       runs at most one pass for each route. The routes run one at a time, in
       the order of D12.
