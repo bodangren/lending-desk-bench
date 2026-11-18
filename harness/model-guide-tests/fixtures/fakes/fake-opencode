@@ -31,7 +31,17 @@
 #   value         the text the call prints on stdout.
 #   tokens        when it is an object, the call prints one json event
 #                 before the value:
-#                 {"type":"step-finish","tokens":<the object>}
+#                 {"type":"step-finish","tokens":<the object>}.
+#   daemon        when it is a tag, the call leaves a child process behind
+#                 whose argv holds `serve --service <tag>` and whose HOME is
+#                 the HOME of the call. The child writes its pid to
+#                 `$FAKE_OPENCODE_DAEMON_FILE` (task 4.13o).
+#   daemon_term   the same, but the child ignores SIGTERM, so only SIGKILL
+#                 stops it (task 4.13o).
+#
+# The `auth export` answer comes from the store of the call HOME:
+# `auth_export_job` when HOME is `$BENCH_OPENCODE_JOB/home`, else
+# `auth_export_shared`. Each one falls back to `auth_export` (task 4.13o).
 #
 # The pad bytes come before the value, so a value can sit in the last bytes of
 # a large output. The `auth` calls answer with the `auth_export` text of the
@@ -51,6 +61,11 @@ SPEC_FILE="${FAKE_OPENCODE_SPEC:-}"
 LOG_FILE="${FAKE_OPENCODE_LOG:-}"
 PID_FILE="${FAKE_OPENCODE_PID_FILE:-}"
 JOB_FOLDER="${BENCH_OPENCODE_JOB:-}"
+
+# The argv of the parent process, with NULs and tabs as spaces. The test
+# reads the timeout of an `auth export` call from it (task 4.13o: the seed
+# export runs with timeout 60).
+PPID_CMD="$(tr '\0' ' ' < "/proc/$PPID/cmdline" 2>/dev/null | tr '\t\n' '  ' || true)"
 
 DRAIN_PID=""
 SLEEP_PID=""
@@ -96,8 +111,8 @@ write_log() {
   local stdin_line="$STDIN_TEXT"
   stdin_line="${stdin_line//$'\t'/ }"
   stdin_line="${stdin_line//$'\n'/ }"
-  printf 'argv0=%s\targv=%s\tconfig=%s\tjob=%s\tstdin=%s\n' \
-    "$SELF_PATH" "$ARGV_TEXT" "$CONFIG_TEXT" "$JOB_FOLDER" "$stdin_line" >> "$LOG_FILE"
+  printf 'argv0=%s\targv=%s\tconfig=%s\tjob=%s\thome=%s\tcwd=%s\tppidcmd=%s\tstdin=%s\n' \
+    "$SELF_PATH" "$ARGV_TEXT" "$CONFIG_TEXT" "$JOB_FOLDER" "$HOME" "$PWD" "$PPID_CMD" "$stdin_line" >> "$LOG_FILE"
 }
 
 # The fields of one spec entry, NUL separated, for `mapfile -d ''`.
@@ -114,8 +129,10 @@ let entry = {};
 if (mode === "call") {
   const calls = Array.isArray(spec.calls) ? spec.calls : [];
   entry = calls[index] && typeof calls[index] === "object" ? calls[index] : {};
-} else if (mode === "auth_export") {
-  entry = { exit: spec.auth_export_exit, value: spec.auth_export };
+} else if (mode === "auth_export" || mode === "auth_export_shared" || mode === "auth_export_job") {
+  let storeText = spec[mode === "auth_export" ? "auth_export" : mode];
+  if (storeText === undefined) storeText = spec.auth_export;
+  entry = { exit: spec.auth_export_exit, value: storeText };
 } else if (mode === "auth_import") {
   entry = { exit: spec.auth_import_exit, value: "" };
 }
@@ -127,6 +144,8 @@ const stdoutBytes = num(entry.stdout_bytes);
 const padBytes = num(entry.pad_bytes);
 const sleepSeconds = num(entry.sleep);
 const value = text(entry.value);
+const daemonTag = text(entry.daemon);
+const daemonTermTag = text(entry.daemon_term);
 const tokens = (entry.tokens && typeof entry.tokens === "object" && !Array.isArray(entry.tokens))
   ? JSON.stringify(entry.tokens)
   : "";
@@ -136,7 +155,7 @@ if (total < valueBytes) total = valueBytes;
 const fields = [
   String(exitCode), stderrText, String(stdoutBytes), String(padBytes),
   String(sleepSeconds), value, String(total - valueBytes), String(total),
-  tokens,
+  tokens, daemonTag, daemonTermTag,
 ];
 process.stdout.write(fields.map((field) => field + "\0").join(""));
 ' "$SPEC_FILE" "$1" "${2:-0}"
@@ -158,7 +177,11 @@ if [ "${1:-}" = "auth" ]; then
   write_log
   case "${2:-}" in
     export)
-      read_fields auth_export 0
+      STORE="shared"
+      if [ -n "${BENCH_OPENCODE_JOB:-}" ] && [ "${HOME:-}" = "${BENCH_OPENCODE_JOB}/home" ]; then
+        STORE="job"
+      fi
+      read_fields "auth_export_${STORE}" 0
       printf '%s\n' "${FIELDS[5]:-}"
       exit "${FIELDS[0]:-0}"
       ;;
@@ -192,6 +215,26 @@ SLEEP_SECONDS="${FIELDS[4]:-0}"
 VALUE="${FIELDS[5]:-}"
 PAD_LENGTH="${FIELDS[6]:-0}"
 TOKENS_JSON="${FIELDS[8]:-}"
+DAEMON_TAG="${FIELDS[9]:-}"
+DAEMON_TERM_TAG="${FIELDS[10]:-}"
+
+spawn_daemon_child() {
+  local tag="$1" mode="$2" pidfile="$3"
+  if [ "$mode" = "ignore-term" ]; then
+    setsid env HOME="$HOME" bash -c 'printf "%s\n" "$$" >> "$1"; trap "" TERM; exec -a "fake-opencode serve --service $2" sleep 120' _ "$pidfile" "$tag" </dev/null >/dev/null 2>&1 &
+  else
+    setsid env HOME="$HOME" bash -c 'printf "%s\n" "$$" >> "$1"; exec -a "fake-opencode serve --service $2" sleep 120' _ "$pidfile" "$tag" </dev/null >/dev/null 2>&1 &
+  fi
+  disown 2>/dev/null || true
+}
+if [ -n "${FAKE_OPENCODE_DAEMON_FILE:-}" ]; then
+  if [ -n "$DAEMON_TAG" ]; then
+    spawn_daemon_child "$DAEMON_TAG" "term" "$FAKE_OPENCODE_DAEMON_FILE"
+  fi
+  if [ -n "$DAEMON_TERM_TAG" ]; then
+    spawn_daemon_child "$DAEMON_TERM_TAG" "ignore-term" "$FAKE_OPENCODE_DAEMON_FILE"
+  fi
+fi
 
 if [ "$SLEEP_SECONDS" != "0" ]; then
   sleep "$SLEEP_SECONDS" >/dev/null 2>&1 &

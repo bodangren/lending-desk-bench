@@ -168,10 +168,155 @@ afterEach(async () => {
   await stopStartedServers();
 });
 
+/** The pids of the helper processes (decoys) this file spawned. A case
+ * kills its own helpers in its finally block; the sweep below is the back
+ * stop, so every helper process is gone before the orphan scan
+ * (task 4.13o). */
+const helperPids = new Set<number>();
+
+/** Our own decoy children by pid, so the kill reaps the close event. */
+const decoyProcs = new Map<number, ChildProcess>();
+
+/** Kills one helper process and waits until it is gone, so the runner
+ * leaves no dangling child for the load watch. Our own children (decoys)
+ * are reaped through their close event; other pids are polled. */
+async function killHelper(pid: number): Promise<void> {
+  helperPids.delete(pid);
+  const child = decoyProcs.get(pid);
+  decoyProcs.delete(pid);
+  if (child !== undefined) {
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      return;
+    }
+    await new Promise<void>((done) => {
+      const timer = setTimeout(done, 5000);
+      child.once("close", () => {
+        clearTimeout(timer);
+        done();
+      });
+    });
+    return;
+  }
+  try {
+    process.kill(pid, "SIGKILL");
+  } catch {
+    return;
+  }
+  await waitForDeath(pid, 2000);
+}
+
+/** Kills every helper process this file spawned. */
+function sweepHelpers(): void {
+  for (const pid of [...helperPids]) {
+    helperPids.delete(pid);
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch {
+      // The helper is already gone.
+    }
+  }
+}
+
+/** Spawns a decoy process whose argv holds `serve --service <tag>`, with
+ * its HOME and cwd outside the job root. The guard must never touch it.
+ * The caller owns the pid: it kills it in a finally block. */
+function spawnDecoy(tag: string, home: string): number {
+  const child = spawn("bash", ["-c", 'exec -a "$0" sleep 120', `fake-opencode serve --service ${tag}`], {
+    env: { HOME: home, PATH: "/usr/bin:/bin" },
+    cwd: "/tmp",
+    stdio: "ignore",
+    detached: true,
+  });
+  const pid = child.pid as number;
+  child.unref();
+  helperPids.add(pid);
+  decoyProcs.set(pid, child);
+  return pid;
+}
+
+/** The pids that the fake wrote to the daemon file of the fixture. The
+ * file appears after the daemon starts, so the read polls. */
+async function daemonPids(fixture: Fixture, timeoutMs = 5000): Promise<number[]> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (existsSync(fixture.daemonPath)) {
+      const pids = readFileSync(fixture.daemonPath, "utf8")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "")
+        .map(Number)
+        .filter(Number.isFinite);
+      if (pids.length > 0) {
+        for (const pid of pids) helperPids.add(pid);
+        return pids;
+      }
+    }
+    if (Date.now() >= deadline) return [];
+    await new Promise<void>((done) => setTimeout(done, 50));
+  }
+}
+
+/** The command line of a process. */
+function procCmdline(pid: number): string {
+  try {
+    return readFileSync(`/proc/${pid}/cmdline`, "utf8").replace(/\0/g, " ").trim();
+  } catch {
+    return "";
+  }
+}
+
+/** The environment of a process. */
+function procEnviron(pid: number): string {
+  try {
+    return readFileSync(`/proc/${pid}/environ`, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+/** The HOME of a process, from its environment. */
+function procHome(pid: number): string {
+  const match = /HOME=([^\0]*)/.exec(procEnviron(pid));
+  return match ? match[1] : "";
+}
+
+/** The stderr lines of the runner. */
+function stderrLines(result: { stderr: string | null }): string[] {
+  return (result.stderr ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
+/** The pids of the live processes whose command line holds the text. */
+function liveServeProcesses(): string[] {
+  const out: string[] = [];
+  let names: string[];
+  try {
+    names = readdirSync("/proc");
+  } catch {
+    return out;
+  }
+  for (const name of names) {
+    if (!/^[0-9]+$/.test(name)) continue;
+    const cmdline = procCmdline(Number(name));
+    if (cmdline.includes("serve --service")) out.push(`${name} ${cmdline}`);
+  }
+  return out;
+}
+
+/** The auth export calls of the fake log. */
+function exportCalls(entries: LogEntry[]): LogEntry[] {
+  return entries.filter((entry) => entry.argv.startsWith("auth export"));
+}
+
 /** The load watch of the PM: no server and no fake child of this run may
  * stay alive after the file. The scan keeps the lines that hold a temp
  * folder of this suite (`mg-`). */
 afterAll(async () => {
+  sweepHelpers();
   await stopStartedServers();
   const quotaOrphans = commandLines(["pgrep", "-f", "mg-.*quota-server"]);
   const fakeOrphans = commandLines(["bash", "-c", "ps -eo pid,args | grep '[f]ake-opencode'"]);
@@ -187,6 +332,12 @@ interface CallSpec {
   sleep?: number;
   value?: string;
   tokens?: Record<string, unknown>;
+  /** When set, the call leaves a daemon child behind whose argv holds
+   * `serve --service <tag>` and whose HOME is the HOME of the call
+   * (task 4.13o). */
+  daemon?: string;
+  /** The same, but the child ignores SIGTERM, so only SIGKILL stops it. */
+  daemon_term?: string;
 }
 
 interface Scenario {
@@ -212,6 +363,14 @@ interface Scenario {
    * live opencode-go source ("5h", "weekly", "monthly", and a null
    * "credits_balance") instead of "5h", "day", "week" (task 4.13i). */
   realKeys?: boolean;
+  /** When true, the fixture copies the real provider-credential.sh instead
+   * of the stub, so the seed and the value scan reach the fake (task 4.13o).
+   * The export answers the store of the call HOME: `authExportShared` for a
+   * call outside the job home, `authExportJob` for a call inside it. Each
+   * one is the array text of the store. */
+  realCredential?: boolean;
+  authExportShared?: unknown;
+  authExportJob?: unknown;
   setId?: string;
   routes?: unknown[];
 }
@@ -226,6 +385,7 @@ interface Fixture {
   logPath: string;
   specPath: string;
   pidPath: string;
+  daemonPath: string;
   fakePath: string;
   fakeDir: string;
   requestPath: string;
@@ -356,12 +516,17 @@ function filesHolding(dir: string, needle: string): string[] {
   });
 }
 
-/** One log line of the fake `opencode`. */
+/** One log line of the fake `opencode`. The `home`, `cwd`, and `ppidcmd`
+ * fields are the HOME, the working folder, and the parent argv of the call
+ * (task 4.13o). */
 interface LogEntry {
   argv0: string;
   argv: string;
   config: string;
   job: string;
+  home: string;
+  cwd: string;
+  ppidcmd: string;
   stdin: string;
 }
 
@@ -382,6 +547,9 @@ function logEntries(logPath: string): LogEntry[] {
         argv: fields.argv ?? "",
         config: fields.config ?? "",
         job: fields.job ?? "",
+        home: fields.home ?? "",
+        cwd: fields.cwd ?? "",
+        ppidcmd: fields.ppidcmd ?? "",
         stdin: fields.stdin ?? "",
       };
     });
@@ -571,6 +739,7 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   const logPath = join(fakeRoot, "opencode.log");
   const specPath = join(fakeRoot, "opencode-spec.json");
   const pidPath = join(fakeRoot, "opencode-pids.txt");
+  const daemonPath = join(fakeRoot, "opencode-daemons.txt");
 
   for (const dir of [guideDir, binDir, fakeDir, home, tmp, privateDir]) {
     mkdirSync(dir, { recursive: true });
@@ -585,7 +754,18 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   copyIfPresent(QUOTA_SOURCE, join(guideDir, "quota.ts"));
   copyIfPresent(HOST_SOURCE, join(repo, "harness", "opencode-host.sh"), 0o755);
   copyIfPresent(CREDENTIAL_SOURCE, join(repo, "harness", "opencode-credential.sh"), 0o755);
-  writeFileSync(join(guideDir, "provider-credential.sh"), CREDENTIAL_STUB, { mode: 0o755 });
+  // The credential helper: the stub, or the real file when the case pins
+  // the seed HOME (task 4.13o). The real helper needs no network: it reads
+  // the fake through BENCH_OPENCODE_BIN and selects with node.
+  if (scenario.realCredential === true) {
+    copyIfPresent(
+      join(HARNESS, "model-guide", "provider-credential.sh"),
+      join(guideDir, "provider-credential.sh"),
+      0o755,
+    );
+  } else {
+    writeFileSync(join(guideDir, "provider-credential.sh"), CREDENTIAL_STUB, { mode: 0o755 });
+  }
 
   // The fake `opencode`. The path of the file holds the text `fake-opencode`,
   // and the directory of the PATH entry holds it too, so a resolved
@@ -641,32 +821,33 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
     writeFileSync(join(messagesDir, `${diff}.txt`), `MSG-LINE-${diff} the commit message of the diff\n`);
   }
 
-  // The spec of the fake.
-  const secret = SECRET;
-  writeFileSync(
-    specPath,
-    `${JSON.stringify(
+  // The spec of the fake. The shared and job stores answer `auth export`
+  // by the HOME of the call when the case pins the seed HOME (task 4.13o).
+  // A store that the case does not name falls back to `auth_export`.
+  const specDoc: Record<string, unknown> = {
+    calls: scenario.calls ?? [],
+    auth_export: JSON.stringify([
       {
-        calls: scenario.calls ?? [],
-        auth_export: JSON.stringify([
-          {
-            integrationID: "opencode",
-            active: true,
-            value: {
-              access: secret,
-              refresh: "inert",
-              expires: 9999999999999,
-              metadata: { orgID: "org-test-0123456789" },
-            },
-          },
-        ]),
-        auth_export_exit: 0,
-        auth_import_exit: 0,
+        integrationID: "opencode",
+        active: true,
+        value: {
+          access: SECRET,
+          refresh: "inert",
+          expires: 9999999999999,
+          metadata: { orgID: "org-test-0123456789" },
+        },
       },
-      null,
-      2,
-    )}\n`,
-  );
+    ]),
+    auth_export_exit: 0,
+    auth_import_exit: 0,
+  };
+  if (scenario.authExportShared !== undefined) {
+    specDoc.auth_export_shared = JSON.stringify(scenario.authExportShared);
+  }
+  if (scenario.authExportJob !== undefined) {
+    specDoc.auth_export_job = JSON.stringify(scenario.authExportJob);
+  }
+  writeFileSync(specPath, `${JSON.stringify(specDoc, null, 2)}\n`);
 
   // The quota server of the case. It is the only socket of the file.
   //
@@ -731,6 +912,7 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
     logPath,
     specPath,
     pidPath,
+    daemonPath,
     fakePath,
     fakeDir,
     requestPath,
@@ -780,6 +962,7 @@ function spawnEnv(fixture: Fixture, extra: Record<string, string> = {}): NodeJS.
     FAKE_OPENCODE_SPEC: fixture.specPath,
     FAKE_OPENCODE_LOG: fixture.logPath,
     FAKE_OPENCODE_PID_FILE: fixture.pidPath,
+    FAKE_OPENCODE_DAEMON_FILE: fixture.daemonPath,
     BENCH_QUOTA_BASE: fixture.quotaBase,
     MG_TEST_SECRET_VALUE: SECRET,
     MG_CALL_TIMEOUT_S: "600",
@@ -2623,6 +2806,330 @@ describe("P4 the message file checks (task 4.13e)", () => {
         "the probe retry ceiling is 3 calls (spec D14)",
       ).toHaveLength(3);
       expect(passRecordsOf(fixture), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+// --- task 4.13o: the daemon guard of the runners (PM decision 2026-11-19, point 3) ---
+//
+// The contract that this block pins (no production file implements it yet,
+// so every Red case fails at HEAD for the pinned reason):
+// 1. After each pass and each probe, the runner stops every process whose
+//    argv holds `serve --service` and whose HOME or cwd is under the job
+//    root (TERM, then KILL after 5 s). It writes one stderr line
+//    `review-run: INFRA stopped daemon <pid>` and the same text in the
+//    `infra` array of the pass or probe record.
+// 2. A decoy with the same argv outside the job root survives.
+// 3. The seed makes exactly one real-HOME call, `auth export <provider>
+//    --standalone` (timeout 60, cwd outside the runner cwd with no .git).
+//    The import and the scan-values export use the job HOME. Any other
+//    real-HOME call, and an empty shared store, refuse with exit 2, one
+//    named line, no model call, and no pass record.
+describe("P4 the daemon guard of the review runner (task 4.13o)", () => {
+  const SEED_PROVIDER = "opencode-go";
+  const NO_DELAYS = { BENCH_CREDENTIAL_SEED_DELAYS: "0" };
+
+  /** One entry of the fake shared or job store for the real helper. */
+  function storeEntry(): unknown {
+    return {
+      provider: SEED_PROVIDER,
+      active: true,
+      value: {
+        access: SECRET,
+        refresh: "inert",
+        expires: 9999999999999,
+        metadata: { orgID: "org-test-0123456789" },
+      },
+    };
+  }
+
+  /** The pass records of a run: records with a `diffs` array. */
+  function passRecordsOnly(fixture: Fixture): Array<Record<string, unknown>> {
+    return passRecords(fixture.privateDir).filter((record) => Array.isArray(record.diffs));
+  }
+
+  it("D1 the pass stops the daemon child, writes the INFRA line to stderr and the pass record, and leaves the decoy alive", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}', daemon: "mg-daemon-D1" }],
+    });
+    const decoyPid = spawnDecoy("mg-decoy-D1", fixture.home);
+    let daemonPid = 0;
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const daemons = await daemonPids(fixture);
+      expect(daemons, "the fake left no daemon child").toHaveLength(1);
+      daemonPid = daemons[0];
+      expect(
+        procCmdline(daemonPid),
+        "the daemon argv holds serve --service",
+      ).toContain("serve --service");
+      const job = logEntries(fixture.logPath)[0]?.job ?? "";
+      expect(job, "the log holds the job folder").not.toBe("");
+      expect(procHome(daemonPid), "the daemon HOME is the job HOME").toBe(`${job}/home`);
+      expect(isAlive(daemonPid), "the runner stopped the daemon child").toBe(false);
+      const infra = stderrLines(result).filter((line) => line.includes("INFRA stopped daemon"));
+      expect(infra, "the runner writes one INFRA line to stderr").toHaveLength(1);
+      expect(infra[0]).toBe(`review-run: INFRA stopped daemon ${daemonPid}`);
+      const records = passRecordsOnly(fixture);
+      expect(records, "the runner wrote one pass record").toHaveLength(1);
+      expect(records[0].infra).toEqual([`review-run: INFRA stopped daemon ${daemonPid}`]);
+      expect(isAlive(decoyPid), "the decoy outside the job root survives").toBe(true);
+    } finally {
+      if (daemonPid !== 0) await killHelper(daemonPid);
+      await killHelper(decoyPid);
+      dropFixture(fixture);
+    }
+  });
+
+  it("D3 a daemon that ignores SIGTERM is KILLed after the guard", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}', daemon_term: "mg-daemon-D3" }],
+    });
+    const decoyPid = spawnDecoy("mg-decoy-D3", fixture.home);
+    let daemonPid = 0;
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const daemons = await daemonPids(fixture);
+      expect(daemons, "the fake left no daemon child").toHaveLength(1);
+      daemonPid = daemons[0];
+      expect(isAlive(daemonPid), "the runner KILLed the TERM-ignoring daemon").toBe(false);
+      const infra = stderrLines(result).filter((line) => line.includes("INFRA stopped daemon"));
+      expect(infra, "the runner writes one INFRA line to stderr").toHaveLength(1);
+      expect(infra[0]).toBe(`review-run: INFRA stopped daemon ${daemonPid}`);
+      expect(isAlive(decoyPid), "the decoy outside the job root survives").toBe(true);
+    } finally {
+      if (daemonPid !== 0) await killHelper(daemonPid);
+      await killHelper(decoyPid);
+      dropFixture(fixture);
+    }
+  });
+});
+
+describe("P4 the daemon guard of the probe (task 4.13o)", () => {
+  const PROBE_DATE = "2026-11-20";
+
+  function probeArgs(fixture: Fixture): string[] {
+    return [...runArgs(fixture), "--probe", "--date", PROBE_DATE];
+  }
+
+  /** The keys of the temp set. `d-02` is the first control diff. */
+  function writeControlKeys(fixture: Fixture): void {
+    const keysDir = join(fixture.privateDir, "sets", fixture.setId, "keys");
+    mkdirSync(keysDir, { recursive: true });
+    for (const diff of fixture.diffs) {
+      writeFileSync(
+        join(keysDir, `${diff}.json`),
+        `${JSON.stringify(
+          { schema: "model-guide-key/1", set_id: fixture.setId, diff_id: diff, plants: [] },
+          null,
+          2,
+        )}\n`,
+      );
+    }
+  }
+
+  /** The probe records of a run. */
+  function probeRecordsOf(fixture: Fixture): Array<Record<string, any>> {
+    return filesUnder(join(fixture.privateDir, "probes"))
+      .filter((file) => file.endsWith(".json"))
+      .map((file) => JSON.parse(readFileSync(file, "utf8")));
+  }
+
+  it("D2 the probe stops the daemon child and records the INFRA line and field", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01", "d-02"],
+      calls: [{ value: '{"findings":[]}', daemon: "mg-daemon-D2" }],
+    });
+    writeControlKeys(fixture);
+    const decoyPid = spawnDecoy("mg-decoy-D2", fixture.home);
+    let daemonPid = 0;
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const daemons = await daemonPids(fixture);
+      expect(daemons, "the fake left no daemon child").toHaveLength(1);
+      daemonPid = daemons[0];
+      expect(isAlive(daemonPid), "the probe stopped the daemon child").toBe(false);
+      const infra = stderrLines(result).filter((line) => line.includes("INFRA stopped daemon"));
+      expect(infra, "the probe writes one INFRA line to stderr").toHaveLength(1);
+      expect(infra[0]).toBe(`review-run: INFRA stopped daemon ${daemonPid}`);
+      const records = probeRecordsOf(fixture);
+      expect(records, "the probe wrote one probe record").toHaveLength(1);
+      expect(records[0].infra).toEqual([`review-run: INFRA stopped daemon ${daemonPid}`]);
+      expect(isAlive(decoyPid), "the decoy outside the job root survives").toBe(true);
+    } finally {
+      if (daemonPid !== 0) await killHelper(daemonPid);
+      await killHelper(decoyPid);
+      dropFixture(fixture);
+    }
+  });
+});
+
+describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
+  const SEED_PROVIDER = "opencode-go";
+  const SEED_ARGV = `auth export ${SEED_PROVIDER} --standalone`;
+  const NO_DELAYS = { BENCH_CREDENTIAL_SEED_DELAYS: "0" };
+
+  /** One entry of the fake shared or job store for the real helper. */
+  function storeEntry(): unknown {
+    return {
+      provider: SEED_PROVIDER,
+      active: true,
+      value: {
+        access: SECRET,
+        refresh: "inert",
+        expires: 9999999999999,
+        metadata: { orgID: "org-test-0123456789" },
+      },
+    };
+  }
+
+  it("S1 the seed export uses the real HOME with the exact exempt form, timeout 60, and a cwd outside the runner cwd", async () => {
+    const fixture = await buildFixture({
+      realCredential: true,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      authExportShared: [storeEntry()],
+      authExportJob: [],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture), NO_DELAYS);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const exports = exportCalls(logEntries(fixture.logPath));
+      expect(exports, "the seed made one export call").toHaveLength(1);
+      expect(exports[0].home, "the seed export uses the real HOME").toBe(fixture.home);
+      expect(exports[0].argv, "the seed export has the exact exempt form").toBe(SEED_ARGV);
+      expect(exports[0].cwd, "the seed export runs outside the runner cwd").not.toBe(fixture.repo);
+      expect(
+        existsSync(join(exports[0].cwd, ".git")),
+        "the seed export cwd holds no .git",
+      ).toBe(false);
+      expect(
+        exports[0].ppidcmd.split(" ").slice(0, 2),
+        "the seed export runs with timeout 60",
+      ).toEqual(["timeout", "60"]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("S2 the seed succeeds when the fake real-HOME store holds the provider entry", async () => {
+    const fixture = await buildFixture({
+      realCredential: true,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      authExportShared: [storeEntry()],
+      authExportJob: [],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture), NO_DELAYS);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir).filter((record) => Array.isArray(record.diffs));
+      expect(records, "the runner wrote one pass record").toHaveLength(1);
+      expect(records[0].state, "the pass is complete").toBe("complete");
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("S3 the import call has the job HOME and --standalone", async () => {
+    const fixture = await buildFixture({
+      realCredential: true,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      authExportShared: [storeEntry()],
+      authExportJob: [storeEntry()],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture), NO_DELAYS);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const entries = logEntries(fixture.logPath);
+      const imports = entries.filter((entry) => entry.argv.startsWith("auth import"));
+      expect(imports, "the seed made one import call").toHaveLength(1);
+      expect(imports[0].home, "the import uses the job HOME").toBe(`${imports[0].job}/home`);
+      expect(imports[0].argv, "the import is standalone").toContain("--standalone");
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("S4 the scan-values export reads the job store", async () => {
+    const fixture = await buildFixture({
+      realCredential: true,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      authExportShared: [storeEntry()],
+      authExportJob: [storeEntry()],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture), NO_DELAYS);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const entries = logEntries(fixture.logPath);
+      const calls = exportCalls(entries);
+      expect(calls, "the seed made one export call").toHaveLength(2);
+      const scan = calls[calls.length - 1];
+      expect(scan.home, "the scan-values export uses the job HOME").toBe(`${scan.job}/home`);
+      expect(scan.argv, "the scan-values export has no provider arg").toBe("auth export --standalone");
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("S5 exactly one real-HOME call, the exempt seed export", async () => {
+    const fixture = await buildFixture({
+      realCredential: true,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      authExportShared: [storeEntry()],
+      authExportJob: [],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture), NO_DELAYS);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const entries = logEntries(fixture.logPath);
+      const realHome = entries.filter((entry) => entry.home === fixture.home);
+      expect(
+        realHome.map((entry) => entry.argv),
+        "the only real-HOME call is the exempt seed export",
+      ).toEqual(["auth export opencode-go --standalone"]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("R1 an empty shared store refuses the pass with exit 2, one line, no call, and no record", async () => {
+    const fixture = await buildFixture({
+      realCredential: true,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      authExportShared: [],
+      authExportJob: [storeEntry()],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture), NO_DELAYS);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
     } finally {
       dropFixture(fixture);
     }
