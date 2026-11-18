@@ -1784,7 +1784,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: each reachable route has 3 complete passes, or the file
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
     stop, region block, or open pass).
-- [~] 71adc88 4.13a Red: the judge runner (spec D11).
+- [x] 71adc88 4.13a Red: the judge runner (spec D11).
   - The new tool is `harness/model-guide/judge-run.sh`. The test file is
     `harness/model-guide-tests/judge-run.test.ts`. Touch no other file.
   - Usage: `judge-run.sh --set <set_id> --route <route> --judge a|b
@@ -1846,6 +1846,52 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (the Phase 4
     strategy commit, test-strategy section 11); role_base_sha
     4bdbd3f5f145f1cfe5a817766b162cf8da51dbd4 (the HEAD before this Red role).
+- [x] 61449ae 4.13b Green: the judge runner (spec D11).
+  - `harness/model-guide/judge-run.sh` holds the contract of row 4.13a. It
+    reads `<private>/sets/<set_id>/adjudication/queue.json`, makes one call
+    per group, and writes `judge-<a|b>.json` plus `judge-<a|b>-run.json`.
+  - The prompt holds the seeded diff of the group and its items (id, line,
+    file, class, severity, title, reason). It holds no route name, no slug,
+    and no text of a judge file: the runner reads no judge file.
+  - The answer parse takes the last fenced json block that is a flat object,
+    keeps the ids of the group with a value of `real-defect`, `false-claim`,
+    or `unclear`, and drops other ids and other values.
+  - The safety rules of `review-run.sh` hold: the job folder of
+    `opencode_host_begin` with its own `OPENCODE_HOME`, the call
+    `run --standalone --format json --model <route>`, the job config that
+    denies every tool, the credential value scan, the flock lock of one set,
+    one judge, and one date, the quota rules of spec D15, the watcher of the
+    call, and the token log of the `step-finish` events.
+  - A missing queue, an empty queue, and a bad `--judge` value give exit 2,
+    one `judge-run:` line on stdout, no call, and no file. `--start-test`
+    makes one call on a built-in sample group and prints
+    `<route> ready|not-ready <error line or ->`.
+  - The Red tests are unchanged: the implementation commit touches
+    `judge-run.sh` only.
+  - Verify: the Red command exits 0, and the two live gates pass, one at a
+    time.
+  - Evidence: run on 2026-11-18, after the Red command failed with
+    `Tests  18 failed (18)` at the role base.
+    - `cd harness && npx vitest run
+      model-guide-tests/judge-run.test.ts --configLoader native
+      --maxWorkers=1 --reporter=dot` exits 0 with `Tests  18 passed (18)`
+      and `Test Files  1 passed (1)` (39.19s).
+    - `bun test harness/model-guide-tests/review-run.test.ts` exits 0 with
+      `39 pass`, `0 fail`, `293 expect() calls`, and `Ran 39 tests across 1
+      file` (64.28s).
+    - `cd harness && npx vitest run
+      model-guide-tests/adversarial-p4-runner.test.ts --configLoader native
+      --maxWorkers=1 --reporter=dot` exits 0 with `Tests  14 passed (14)`
+      and `Test Files  1 passed (1)` (66.06s).
+    - After each gate, `pgrep -af "fake-opencod[e]"` and `pgrep -af
+      "quota-serve[r]"` print no line, and no `mg-judge*` folder stays under
+      `/tmp`.
+  - Changes: the new file `harness/model-guide/judge-run.sh` (mode 755) and
+    this plan row. No other file changed, and no shared helper was extracted.
+    The log is `measure/runs/model_guide/green-4.13b.log` (not staged).
+  - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+    80869bdc6bd546da446d2c86312e0076d70cbe1e; final Green HEAD 61449ae
+    before this row, and the plan-evidence commit after it.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
