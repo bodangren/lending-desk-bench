@@ -2176,7 +2176,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     The two pgrep scans print no line at the end of each run. Green 4.13h
     (94fef2f) flipped the row on 2026-11-19. ADV-R-2 commit bae1884: the huge
     w199 85 case runs on kimi-code-plan-cn; adversarial-p4-runner.test.ts
-    exits 0 with `Tests 14 passed (14)` at HEAD.
+    exits 0 with `Tests 14 passed (14)` at HEAD. G2 fix 4b4054c: G2 gets
+    an explicit per-test timeout (`}, 120_000);`, no assertion change;
+    `bun test harness/model-guide-tests/review-run.test.ts` gives 52 pass
+    0 fail, and both pgrep scans print nothing.
 - [x] 94fef2f 4.13h Green: the Go plan thresholds (PM order 2026-11-19, spec D15).
   Change `harness/model-guide/quota.ts`,
   `harness/model-guide/review-run.sh`, and
