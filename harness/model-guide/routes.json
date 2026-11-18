@@ -7,13 +7,6 @@
     "quota_source": "claude"
   },
   {
-    "family": "Kimi",
-    "route": "kimi-code-plan-cn/kimi-for-coding#high",
-    "kind": "plan",
-    "quota_provider": "kimi-code-plan-cn",
-    "quota_source": "kimi-for-coding"
-  },
-  {
     "family": "MiniMax M3.1 Flash",
     "route": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
     "kind": "plan",
@@ -26,20 +19,6 @@
     "kind": "plan",
     "quota_provider": "opencode-go",
     "quota_source": "opencode-go"
-  },
-  {
-    "family": "GLM 5.3",
-    "route": "bailian-token-plan/glm-5.3#high",
-    "kind": "plan",
-    "quota_provider": "bailian-token-plan",
-    "quota_source": null
-  },
-  {
-    "family": "StepFun",
-    "route": "nvidia/stepfun-ai/step-5-preview#high",
-    "kind": "free",
-    "quota_provider": "nvidia",
-    "quota_source": null
   },
   {
     "family": "Hy",

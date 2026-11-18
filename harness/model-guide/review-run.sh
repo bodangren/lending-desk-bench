@@ -4,11 +4,11 @@
 #
 # Usage:
 #   harness/model-guide/review-run.sh --route <route> --set <set_id> \
-#     --private <dir> [--date <YYYY-MM-DD>]
+#     --private <dir> [--date <YYYY-MM-DD>] [--probe]
 #
 # `--route`, `--set`, and `--private` are required. `--private` defaults to
 # `$HOME/.local/share/lending-desk-bench/model-guide`. `--date` defaults to
-# today in UTC.
+# today in UTC. `--probe` runs the probe mode of spec D14 (PM 2026-11-18).
 #
 # The runner refuses, with one line `review-run: <check>` on stdout and exit
 # 2, a flag without a value, a `--set` value that is not a plain id, a
@@ -27,8 +27,27 @@
 #
 # Every other run writes one pass record in the private folder. Its `state`
 # is `complete`, `open`, `wait`, or `region-blocked`. The record holds
-# `set_id`, `route`, `pass`, `date`, `state`, `diffs`, `outputs`, and
-# `errors`; it holds no `complete` field and no `rank` field.
+# `set_id`, `route`, `pass`, `date`, `state`, `diffs`, `outputs`, `errors`,
+# `tokens`, and `tokens_complete`; it holds no `complete` field and no `rank`
+# field. Each entry of `diffs` holds its `id` and its own `tokens` object.
+#
+# The token log of spec D13 (PM 2026-11-18): the runner reads each
+# `{"type":"step-finish","tokens":...}` event of the json output. The tokens
+# object holds `input`, `output`, `reasoning`, `cache.read`, and
+# `cache.write`. The record holds the flat sums with `total` equal to the sum
+# of the five parts. A call with no token field adds 0 and sets
+# `tokens_complete` false.
+#
+# Probe mode of spec D14 (PM 2026-11-18): `--probe` makes exactly one call on
+# the first control diff of the set. A control diff is the first diff whose
+# key holds no plant. The probe writes one record under
+# `<private>/probes/<set_id>/` and no pass record and no raw output. It
+# prints one line `<route> reachable|unreachable|region-blocked <error line
+# or ->` on stdout and exits 0 for `reachable` and 3 for the two error
+# states. A probe blocked by the 70 % quota rule or by the credential scan is
+# a refusal: exit 2 with one `review-run:` line on stdout, no call, and no
+# record. A held lock follows the lock refusal: exit 2 with one line on
+# stderr.
 #
 # The rules of spec D15: the pass starts only when the quota state is
 # `ready` (every window below 70 %). The pass stops when a window reaches
@@ -75,10 +94,56 @@ refuse() {
   exit 2
 }
 
+# One line on stdout and exit 2: a probe refusal (spec D14 probe mode).
+probe_refuse() {
+  echo "review-run: the probe refused: $1"
+  exit 2
+}
+
+# Prints the flat token sums of one raw output and a completeness flag:
+# input<TAB>output<TAB>reasoning<TAB>cache_read<TAB>cache_write<TAB>0|1.
+# It reads the `step-finish` json events of the output (spec D13, Tokens).
+read_tokens() {
+  local file="$1" out
+  out="$(node -e '
+const fs = require("node:fs");
+let raw = "";
+try { raw = fs.readFileSync(process.argv[1], "utf8"); } catch { raw = ""; }
+const sum = { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 };
+let seen = 0;
+const num = (value) => (typeof value === "number" && Number.isFinite(value)) ? value : 0;
+for (const line of raw.split(/\r?\n/)) {
+  const text = line.trim();
+  if (!text.startsWith("{")) continue;
+  let event;
+  try { event = JSON.parse(text); } catch { continue; }
+  if (!event || event.type !== "step-finish") continue;
+  const tokens = event.tokens;
+  if (!tokens || typeof tokens !== "object" || Array.isArray(tokens)) continue;
+  seen += 1;
+  sum.input += num(tokens.input);
+  sum.output += num(tokens.output);
+  sum.reasoning += num(tokens.reasoning);
+  const cache = tokens.cache;
+  if (cache && typeof cache === "object" && !Array.isArray(cache)) {
+    sum.cache_read += num(cache.read);
+    sum.cache_write += num(cache.write);
+  }
+}
+process.stdout.write([sum.input, sum.output, sum.reasoning, sum.cache_read, sum.cache_write, seen > 0 ? 1 : 0].join("\t"));
+' "$file" 2>/dev/null)" || out=""
+  if [[ "$out" =~ ^[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[01]$ ]]; then
+    printf '%s\n' "$out"
+  else
+    printf '0\t0\t0\t0\t0\t0\n'
+  fi
+}
+
 ROUTE=""
 SET_ID=""
 PRIVATE="${HOME:-}/.local/share/lending-desk-bench/model-guide"
 DATE="$(date +%F)"
+PROBE=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --route|--set|--private|--date)
@@ -90,6 +155,10 @@ while [ "$#" -gt 0 ]; do
         --date) DATE="$2" ;;
       esac
       shift 2
+      ;;
+    --probe)
+      PROBE=1
+      shift
       ;;
     *)
       refuse "unknown flag $1"
@@ -182,17 +251,26 @@ ROUTE_TAG="$(printf '%s' "$ROUTE" | sha256sum | cut -c1-12)"
 
 JOB=""
 JOB_CONFIG=""
-DIFF_LIST=""
+DIFF_ROWS=()
+TOKENS_ALL=1
 OUTPUT_LIST=""
 ERROR_LIST=""
 OUT_DIR=""
 STATE="complete"
 STOP=0
 LOCKED=0
+CALL_PID=""
+WATCHDOG_PID=""
 
 on_exit() {
   if [ "${BENCH_OPENCODE_HOST_OWNER:-0}" = "1" ]; then
     opencode_host_cleanup >&2 || true
+  fi
+  if [ -n "${WATCHDOG_PID:-}" ]; then
+    kill -TERM "$WATCHDOG_PID" 2>/dev/null || true
+  fi
+  if [ -n "${CALL_PID:-}" ]; then
+    kill -TERM "$CALL_PID" 2>/dev/null || true
   fi
   if [ "$LOCKED" = "1" ]; then
     flock -u 9 2>/dev/null || true
@@ -288,38 +366,70 @@ process.stdin.on("end", () => {
   return 0
 }
 
-# Writes the one pass record of the run.
+# Writes the one pass record of the run. Each row of DIFF_ROWS holds the diff
+# id and its flat token sums; the record holds the sums and the entries
+# (spec D13, Tokens, PM 2026-11-18).
 write_record() {
-  local state="$1"
+  local state="$1" rows
   mkdir -p "$PASS_DIR" || refuse "the pass folder could not be made"
+  rows="$(printf '%s\n' "${DIFF_ROWS[@]}")"
   node -e '
 const fs = require("node:fs");
-const [file, set, route, pass, date, state, diffs, outputs, errors] = process.argv.slice(1);
+const [file, set, route, pass, date, state, rows, outputs, errors, complete] = process.argv.slice(1);
 const list = (text) => text.split("\n").filter((line) => line !== "");
+const num = (value) => { const n = Number(value); return Number.isFinite(n) ? n : 0; };
+const totals = { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 };
+const diffs = [];
+for (const row of list(rows)) {
+  const parts = row.split("\t");
+  const tokens = {
+    input: num(parts[1]),
+    output: num(parts[2]),
+    reasoning: num(parts[3]),
+    cache_read: num(parts[4]),
+    cache_write: num(parts[5]),
+  };
+  tokens.total = tokens.input + tokens.output + tokens.reasoning + tokens.cache_read + tokens.cache_write;
+  for (const key of ["input", "output", "reasoning", "cache_read", "cache_write"]) totals[key] += tokens[key];
+  diffs.push({ id: parts[0], tokens });
+}
+totals.total = totals.input + totals.output + totals.reasoning + totals.cache_read + totals.cache_write;
 const doc = {
   set_id: set,
   route,
   pass: Number(pass),
   date,
   state,
-  diffs: list(diffs),
+  diffs,
   outputs: list(outputs),
   errors: list(errors),
+  tokens: totals,
+  tokens_complete: complete === "1",
 };
 fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
-' "$PASS_FILE" "$SET_ID" "$ROUTE" "$PASS_NO" "$DATE" "$state" "$DIFF_LIST" "$OUTPUT_LIST" "$ERROR_LIST"
+' "$PASS_FILE" "$SET_ID" "$ROUTE" "$PASS_NO" "$DATE" "$state" "$rows" "$OUTPUT_LIST" "$ERROR_LIST" "$TOKENS_ALL"
 }
 
-# The first quota read of the pass (spec D15).
+# The first quota read of the pass (spec D15). A probe blocked by the quota
+# rule is a refusal, not a pass (spec D14 probe mode, PM 2026-11-18).
 read_quota
-if [ "$QUOTA_STATE" = "wait" ]; then
-  write_record "wait"
-  exit 0
-fi
-if [ "$QUOTA_STATE" = "stopped" ]; then
-  ERROR_LIST="quota: $QUOTA_REASON"
-  write_record "open"
-  exit 0
+if [ "$PROBE" = "1" ]; then
+  if [ "$QUOTA_STATE" = "wait" ]; then
+    probe_refuse "the quota state is wait: a window is 70 % or more"
+  fi
+  if [ "$QUOTA_STATE" = "stopped" ]; then
+    probe_refuse "the quota state is stopped: ${QUOTA_REASON}"
+  fi
+else
+  if [ "$QUOTA_STATE" = "wait" ]; then
+    write_record "wait"
+    exit 0
+  fi
+  if [ "$QUOTA_STATE" = "stopped" ]; then
+    ERROR_LIST="quota: $QUOTA_REASON"
+    write_record "open"
+    exit 0
+  fi
 fi
 
 # The job folder of spec D14.
@@ -338,9 +448,13 @@ if ! "$CREDENTIAL_HELPER" seed "$QUOTA_PROVIDER" > /dev/null; then
   refuse "the provider credential seed failed"
 fi
 
-# Runs one model call with the job store of `opencode_host_run`.
+# Runs one model call with the job store of `opencode_host_run`. The call is
+# a background job with a watcher. When the runner dies without its trap (for
+# example on SIGKILL), the watcher stops the call, so no model call outlives
+# the runner (PM load watch).
 run_model_call() {
   local diff_path="$1" raw_path="$2" err_path="$3" rc=0
+  local parent=$$ watchdog=0
   cat "$PROMPT_FILE" "$diff_path" | timeout --kill-after=1 "$MG_CALL_TIMEOUT" \
     env -u OPENCODE_DB \
       HOME="$JOB/home" \
@@ -354,7 +468,21 @@ run_model_call() {
       OPENCODE_CONFIG="$JOB_CONFIG" \
       BENCH_OPENCODE_JOB="$JOB" \
       "$OPENCODE_BIN" run --standalone --format json --model "$ROUTE" \
-      > "$raw_path" 2> "$err_path" || rc=$?
+      > "$raw_path" 2> "$err_path" &
+  CALL_PID=$!
+  (
+    while kill -0 "$parent" 2>/dev/null; do sleep 0.2; done
+    kill -TERM "$CALL_PID" 2>/dev/null || true
+    sleep 1
+    kill -KILL "$CALL_PID" 2>/dev/null || true
+  ) &
+  watchdog=$!
+  WATCHDOG_PID=$watchdog
+  wait "$CALL_PID" || rc=$?
+  CALL_PID=""
+  kill -TERM "$watchdog" 2>/dev/null || true
+  WATCHDOG_PID=""
+  wait "$watchdog" 2>/dev/null || true
   return "$rc"
 }
 
@@ -378,11 +506,139 @@ is_region_error() {
   grep -qiE 'not available in your region|not supported in your region' "$err_path" 2>/dev/null
 }
 
-DIFF_LIST=""
+# Writes the probe record of one probe under <private>/probes/<set_id>/
+# (spec D14 probe mode, PM 2026-11-18). The record holds the tokens of the
+# call and its state, and no raw output.
+write_probe_record() {
+  local state="$1" diff_id="$2" row="$3" error_line="$4" dir file
+  dir="$PRIVATE/probes/$SET_ID"
+  mkdir -p "$dir" || probe_refuse "the probe folder could not be made"
+  file="$dir/${DATE}-${RUN_SLUG}-${ROUTE_TAG}.json"
+  node -e '
+const fs = require("node:fs");
+const [file, set, route, diff, date, state, row, error] = process.argv.slice(1);
+const parts = row.split("\t");
+const num = (value) => { const n = Number(value); return Number.isFinite(n) ? n : 0; };
+const tokens = {
+  input: num(parts[0]),
+  output: num(parts[1]),
+  reasoning: num(parts[2]),
+  cache_read: num(parts[3]),
+  cache_write: num(parts[4]),
+};
+tokens.total = tokens.input + tokens.output + tokens.reasoning + tokens.cache_read + tokens.cache_write;
+const doc = {
+  set_id: set,
+  route,
+  diff,
+  date,
+  state,
+  tokens,
+  tokens_complete: parts[5] === "1",
+};
+if (error !== "") doc.error = error;
+fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
+' "$file" "$SET_ID" "$ROUTE" "$diff_id" "$DATE" "$state" "$row" "$error_line"
+}
+
+# The probe: exactly one call on the first control diff of the set, a diff
+# whose key holds no plant (spec D14 probe mode, PM 2026-11-18). It prints
+# one line `<route> <state> <error line or ->` and returns 0 for reachable
+# and 3 for unreachable or region-blocked. A blocked probe is a refusal.
+run_probe() {
+  local control="" control_id="" diff_path diff_id key plants
+  for diff_path in "${DIFF_PATHS[@]}"; do
+    diff_id="${diff_path##*/}"
+    diff_id="${diff_id%.diff}"
+    key="$SET_DIR/keys/${diff_id}.json"
+    [ -f "$key" ] || continue
+    plants="$(node -e '
+const fs = require("node:fs");
+let doc = {};
+try { doc = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch { process.exit(1); }
+const plants = Array.isArray(doc.plants) ? doc.plants : [];
+process.stdout.write(String(plants.length));
+' "$key" 2>/dev/null)" || continue
+    if [ "$plants" = "0" ]; then
+      control="$diff_path"
+      control_id="$diff_id"
+      break
+    fi
+  done
+  if [ -z "$control" ]; then
+    probe_refuse "the set holds no control diff"
+  fi
+
+  local probe_dir="$PRIVATE/probes/$SET_ID"
+  mkdir -p "$probe_dir" || probe_refuse "the probe folder could not be made"
+  local staging="$probe_dir/.incoming-${control_id}"
+  local err_file="$probe_dir/.incoming-${control_id}.err"
+  local attempt=1 rc=0 state="" error_line="" row=""
+
+  while [ "$attempt" -le 3 ]; do
+    rc=0
+    run_model_call "$control" "$staging" "$err_file" || rc=$?
+    # An empty answer is no response (spec D13), not a model result.
+    if [ "$rc" -eq 0 ] && [ ! -s "$staging" ]; then
+      rc=125
+    fi
+    if [ "$rc" -eq 0 ]; then
+      state="reachable"
+      break
+    fi
+    error_line="$(head -n 1 "$err_file" 2>/dev/null || true)"
+    if is_region_error "$err_file"; then
+      [ -n "$error_line" ] || error_line="the model is not available in your region"
+      state="region-blocked"
+      break
+    fi
+    [ -n "$error_line" ] || error_line="the model call failed"
+    rm -f "$staging" "$err_file"
+    if [ "$attempt" -lt 3 ]; then
+      sleep "$RETRY_WAIT_SECONDS"
+      attempt=$(( attempt + 1 ))
+      continue
+    fi
+    state="unreachable"
+    break
+  done
+
+  if [ "$state" = "reachable" ]; then
+    local scan_rc=0
+    scan_output "$staging" || scan_rc=$?
+    if [ "$scan_rc" -eq 2 ]; then
+      rm -f "$staging" "$err_file"
+      probe_refuse "the credential value scan failed"
+    fi
+    if [ "$scan_rc" -eq 0 ]; then
+      rm -f "$staging" "$err_file"
+      probe_refuse "a credential value was found in the raw output"
+    fi
+    row="$(read_tokens "$staging")"
+    rm -f "$staging" "$err_file"
+  else
+    rm -f "$staging" "$err_file"
+    row="$(printf '0\t0\t0\t0\t0\t0')"
+  fi
+
+  write_probe_record "$state" "$control_id" "$row" "$error_line"
+  if [ "$state" = "reachable" ]; then
+    echo "$ROUTE reachable -"
+    return 0
+  fi
+  echo "$ROUTE $state $error_line"
+  return 3
+}
+
+if [ "$PROBE" = "1" ]; then
+  probe_status=0
+  run_probe || probe_status=$?
+  exit "$probe_status"
+fi
+
 for diff_path in "${DIFF_PATHS[@]}"; do
   diff_id="${diff_path##*/}"
   diff_id="${diff_id%.diff}"
-  DIFF_LIST="${DIFF_LIST}${DIFF_LIST:+$'\n'}${diff_id}"
 
   # The quota read before each diff (spec D15). The pass stops at 80 %.
   read_quota
@@ -398,6 +654,10 @@ for diff_path in "${DIFF_PATHS[@]}"; do
     STOP=1
     break
   fi
+
+  # This diff is attempted: its record entry starts at zero tokens.
+  DIFF_ROWS+=("${diff_id}"$'\t'"0"$'\t'"0"$'\t'"0"$'\t'"0"$'\t'"0"$'\t'"0")
+  row_index=$(( ${#DIFF_ROWS[@]} - 1 ))
 
   if [ -z "$OUT_DIR" ]; then
     OUT_DIR="$PRIVATE/outputs/$SET_ID/${DATE}-${RUN_SLUG}-${ROUTE_TAG}-p${PASS_NO}"
@@ -423,6 +683,7 @@ for diff_path in "${DIFF_PATHS[@]}"; do
       error_line="$(head -n 1 "$ERR_FILE" 2>/dev/null || true)"
       [ -n "$error_line" ] || error_line="the model is not available in your region"
       rm -f "$STAGING" "$ERR_FILE"
+      TOKENS_ALL=0
       ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}${error_line}"
       STATE="region-blocked"
       STOP=1
@@ -434,6 +695,7 @@ for diff_path in "${DIFF_PATHS[@]}"; do
       attempt=$(( attempt + 1 ))
       continue
     fi
+    TOKENS_ALL=0
     ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}transport error on ${diff_id} after 3 calls"
     STATE="open"
     STOP=1
@@ -442,6 +704,7 @@ for diff_path in "${DIFF_PATHS[@]}"; do
 
   if [ "$STOP" -eq 1 ]; then break; fi
   if [ "$call_rc" -ne 0 ]; then
+    TOKENS_ALL=0
     STATE="open"
     STOP=1
     break
@@ -452,6 +715,7 @@ for diff_path in "${DIFF_PATHS[@]}"; do
   scan_output "$STAGING" || scan_rc=$?
   if [ "$scan_rc" -eq 2 ]; then
     rm -f "$STAGING" "$ERR_FILE"
+    TOKENS_ALL=0
     ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}the credential value scan failed on ${diff_id}"
     echo "review-run: the credential value scan failed on ${diff_id}; the pass stops"
     STATE="open"
@@ -460,12 +724,18 @@ for diff_path in "${DIFF_PATHS[@]}"; do
   fi
   if [ "$scan_rc" -eq 0 ]; then
     rm -f "$STAGING" "$ERR_FILE"
+    TOKENS_ALL=0
     ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}a credential value was found in the raw output of ${diff_id}"
     echo "review-run: a credential value was found in the raw output of ${diff_id}; the pass stops"
     STATE="open"
     STOP=1
     break
   fi
+  # The token log of spec D13: the sums of this diff and its completeness.
+  tokens_row="$(read_tokens "$STAGING")"
+  IFS=$'\t' read -r tok_in tok_out tok_re tok_cr tok_cw tok_ok <<< "$tokens_row"
+  DIFF_ROWS[$row_index]="${diff_id}"$'\t'"${tok_in}"$'\t'"${tok_out}"$'\t'"${tok_re}"$'\t'"${tok_cr}"$'\t'"${tok_cw}"$'\t'"${tok_ok}"
+  if [ "$tok_ok" != "1" ]; then TOKENS_ALL=0; fi
   stored="$OUT_DIR/${diff_id}.txt"
   mv "$STAGING" "$stored"
   rm -f "$ERR_FILE"
