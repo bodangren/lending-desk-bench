@@ -64,7 +64,8 @@ import { afterAll, describe, expect, it } from "vitest";
  * Pick rule (spec D18, sources PM 2026-11-17): the first source gives the
  * first and second choice from its rank. A page B producer row qualifies
  * with 5 tasks or more and a first-round rate; a page B gate row with 5
- * runs or more, an allowed model, and an AA net score of 20 or more; a
+ * runs or more, an allowed model, and an AA net score above 0
+ * (PM 2026-11-18); a
  * track A route with a complete state and 3 complete passes. When the
  * first source has no qualified model the second source picks. Sources per
  * row: Code review = track A rank, then page B checker table; app code =

@@ -2208,3 +2208,182 @@ describe("P4 the message line of the prompt (task 4.9e)", () => {
     }
   });
 });
+
+describe("P4 the message file checks (task 4.13e)", () => {
+  const TOKENS_A = { input: 10, output: 20, reasoning: 5, cache: { read: 100, write: 7 } };
+  const PROBE_DATE = "2026-11-20";
+
+  /** The args of one probe run of the set. */
+  function probeArgs(fixture: Fixture): string[] {
+    return [...runArgs(fixture), "--probe", "--date", PROBE_DATE];
+  }
+
+  /** The keys of the temp set. `d-02` is the first control diff: it holds
+   * no plant, and the two other diffs hold one each. */
+  function writeControlKeys(fixture: Fixture): void {
+    const keysDir = join(fixture.privateDir, "sets", fixture.setId, "keys");
+    mkdirSync(keysDir, { recursive: true });
+    for (const diff of fixture.diffs) {
+      const plants = diff === "d-02"
+        ? []
+        : [
+            {
+              id: `P-${diff}`,
+              new_lines: [3, 5],
+              file: `src/${diff}.ts`,
+              class: "C1",
+              severity: "blocker",
+              title: "planted",
+              reason: "the test plant",
+              witness: "witness",
+              weight: 5,
+            },
+          ];
+      writeFileSync(
+        join(keysDir, `${diff}.json`),
+        `${JSON.stringify(
+          { schema: "model-guide-key/1", set_id: fixture.setId, diff_id: diff, plants },
+          null,
+          2,
+        )}\n`,
+      );
+    }
+  }
+
+  /** The pass records of a run. They live under `passes/`; a probe record
+   * lives under `probes/` and is not one. */
+  function passRecordsOf(fixture: Fixture): Array<Record<string, unknown>> {
+    return passRecords(join(fixture.privateDir, "passes"));
+  }
+
+  const okCalls = () => [
+    { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+    { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+    { value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+  ];
+
+  it("M5 a pass refuses a message file with a second line, with exit 2, one named line, no call, and no pass record", async () => {
+    const fixture = await buildFixture({ calls: okCalls() });
+    writeFileSync(
+      join(fixture.privateDir, "sets", fixture.setId, "messages", "d-01.txt"),
+      "MSG-LINE-d-01 the commit message of the diff\nA second line reaches the model\n",
+    );
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(named[0], "the refusal names the diff").toContain("d-01");
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("M6 a pass refuses a message file with a control character, with exit 2, one named line, no call, and no pass record", async () => {
+    const fixture = await buildFixture({ calls: okCalls() });
+    writeFileSync(
+      join(fixture.privateDir, "sets", fixture.setId, "messages", "d-01.txt"),
+      "MSG-LINE-d-01 with \u0001 control\n",
+    );
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(named[0], "the refusal names the diff").toContain("d-01");
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("M7 a pass refuses a message file with a line over 1000 bytes, with exit 2, one named line, no call, and no pass record", async () => {
+    const fixture = await buildFixture({ calls: okCalls() });
+    writeFileSync(
+      join(fixture.privateDir, "sets", fixture.setId, "messages", "d-01.txt"),
+      `${"M".repeat(1200)}\n`,
+    );
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(named[0], "the refusal names the diff").toContain("d-01");
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("M8 a pass refuses a symlinked message file, with exit 2, one named line, no call, and no pass record", async () => {
+    const fixture = await buildFixture({ calls: okCalls() });
+    const msgPath = join(fixture.privateDir, "sets", fixture.setId, "messages", "d-01.txt");
+    const target = join(fixture.tmp, "linked-message.txt");
+    writeFileSync(target, "MSG-LINE-d-01 the linked commit message\n");
+    rmSync(msgPath);
+    symlinkSync(target, msgPath);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(named[0], "the refusal names the diff").toContain("d-01");
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("M9 a pass refuses a symlinked seeded diff, with exit 2, one named line, no call, and no pass record", async () => {
+    const fixture = await buildFixture({ calls: okCalls() });
+    const link = join(fixture.privateDir, "sets", fixture.setId, "diffs", "d-01.diff");
+    const target = join(fixture.privateDir, "sets", fixture.setId, "diffs", "d-02.diff");
+    rmSync(link);
+    symlinkSync(target, link);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(named[0], "the refusal names the diff").toContain("d-01");
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("P2b the probe makes exactly 3 calls on a persistent transport error (guard: holds at HEAD)", async () => {
+    const fixture = await buildFixture({
+      calls: [
+        { exit: 1, stderr: "provider: transport error" },
+        { exit: 1, stderr: "provider: transport error" },
+        { exit: 1, stderr: "provider: transport error" },
+      ],
+    });
+    writeControlKeys(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the probe retry ceiling is 3 calls (spec D14)",
+      ).toHaveLength(3);
+      expect(passRecordsOf(fixture), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});

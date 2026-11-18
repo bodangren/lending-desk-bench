@@ -535,12 +535,16 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
   it("DS12: the marks not-for-verdicts and not-allowed sit on the model rows as attributes", () => {
     const page = basePage();
     const checker = checkerSection(page);
-    for (const key of ["t1/gate-five", "t1/gate-eight", "t1/gate-six"]) {
+    for (const key of ["t1/gate-five", "t1/gate-eight"]) {
       expect(
         rowIn(checker, key).html,
         `${key} carries data-mark="not-for-verdicts"`,
       ).toContain('data-mark="not-for-verdicts"');
     }
+    expect(
+      rowIn(checker, "t1/gate-six").html,
+      "a net score of 19.9 is above 0, so gate-six carries no mark (PM 2026-11-18)",
+    ).not.toContain("data-mark=");
     expect(
       rowIn(checker, "t1/gate-seven").html,
       "a net score of exactly 20 is not marked",
@@ -584,7 +588,10 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
         text: "Review A: gate-one 90 % pass in this role, 10 runs, net 41.5",
         key: "t1/gate-one",
       },
-      "review-b": { text: "Review B: no pick yet", key: null },
+      "review-b": {
+        text: "Review B: gate-one 60 % pass in this role, 5 runs, net 18.5",
+        key: "t1/gate-one",
+      },
       "review-c": {
         text: "Review C: gate-seven 100 % pass in this role, 5 runs, net 20",
         key: "t1/gate-seven",
@@ -622,13 +629,14 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
     const page = basePage();
     const checker = checkerSection(page);
     // The counterfactual rows exist and rank: gate-five passes 100 % but is
-    // not rated, and gate-six passes 100 % with net 19.9 under the limit.
+    // not rated, and gate-six passes 100 % with net 19.9, now rated
+    // (PM 2026-11-18: the gate is a net score above 0).
     const five = rowIn(checker, "t1/gate-five");
     expect(five.rank, "gate-five ranks in the checker table").not.toBeNull();
     expect(five.cells[2], "gate-five passes 100 %").toBe("100 %");
     const six = rowIn(checker, "t1/gate-six");
     expect(six.cells[2], "gate-six passes 100 %").toBe("100 %");
-    expect(six.cells[5], "gate-six net score is under 20").toBe("19.9");
+    expect(six.cells[5], "gate-six net score is 19.9").toBe("19.9");
     const picks = picksOf(page);
     const reviewA = picks.find((pick) => pick.role === "review-a")!;
     expect(
@@ -642,6 +650,55 @@ describe("DS4 to DS13: the page built from the page B fixture", () => {
       "review-c picks net 20 over the 100 % row with net 19.9",
     ).toBe("Review C: gate-seven 100 % pass in this role, 5 runs, net 20");
     expect(reviewC.key).toBe("t1/gate-seven");
+  });
+});
+
+describe("DS26 the footer row count and the zero net gate (task 4.13e)", () => {
+  it("DS26: the footer row count equals the outcomes array length, even with a malformed row", () => {
+    const root = repoFixture("row-count", {
+      outcomes: (rows) => {
+        rows.push({ route: "t1/ghost", role: "green" });
+      },
+    });
+    const page = buildPage(root);
+    expect(footerNumber(page, "footer-rows"), "the footer row count is the outcomes length").toBe(
+      42,
+    );
+  });
+
+  it("DS26: a net score of 0 carries the verdict mark and gives no pick (guard: holds at HEAD)", () => {
+    const root = repoFixture("net-zero");
+    const staged = join(root, "fixture-b");
+    const aaPath = join(staged, AA_NAME);
+    const aa = JSON.parse(readFileSync(aaPath, "utf8"));
+    for (const key of ["gate-six", "gate-seven"]) {
+      expect(aa.models[key], `the AA fixture holds ${key}`).toBeTruthy();
+      aa.models[key] = { rated: true, aliases: [], netScore: 0 };
+    }
+    writeFileSync(aaPath, `${JSON.stringify(aa, null, 2)}\n`);
+    writeFileSync(
+      join(staged, MANIFEST_NAME),
+      [
+        manifestLine(join(staged, OUTCOMES_NAME), OUTCOMES_NAME),
+        manifestLine(join(staged, AA_NAME), AA_NAME),
+        manifestLine(join(staged, ALLOWED_NAME), ALLOWED_NAME),
+        "",
+      ].join("\n"),
+    );
+    const page = buildPage(root);
+    const checker = checkerSection(page);
+    for (const key of ["t1/gate-six", "t1/gate-seven"]) {
+      expect(
+        rowIn(checker, key).html,
+        `${key} with net 0 is not for verdicts (PM 2026-11-18)`,
+      ).toContain('data-mark="not-for-verdicts"');
+    }
+    const picks = picksOf(page);
+    const reviewC = picks.find((pick) => pick.role === "review-c")!;
+    expect(reviewC.text, "review-c has no pick with only net-0 rows").toBe(
+      "Review C: no pick yet",
+    );
+    expect(reviewC.key, "the no-pick line carries no model key").toBeNull();
   });
 });
 

@@ -1919,3 +1919,144 @@ describe("P4 the judge route list (task 4.13c)", () => {
     }
   });
 });
+
+// --- task 4.13e: the judge row quota fields (spec D11, review B2) ---------------
+//
+// `judge-run.sh` refuses a `judges.json` row with an empty `quota_provider`
+// or `quota_source`, or a tab in a field: exit 2, one `judge-run:` line on
+// stdout, no call, and no judge file.
+describe("P4 the judge row quota fields (task 4.13e)", () => {
+  const JUDGE = "opencode-go/muse-spark-1.3-contributor#high";
+
+  /** Two answered groups, so a run that is not refused makes two calls. */
+  function okCalls(): CallSpec[] {
+    return [
+      {
+        tokens: TOKENS_A,
+        value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+      },
+      {
+        tokens: TOKENS_B,
+        value: answer([jsonBlock(JSON.stringify({ "d-02#C2a3b4c5d6e7f": "false-claim" }))]),
+      },
+    ];
+  }
+
+  it("J18 refuses a judge row with an empty quota_provider, with exit 2, one named line, no call, and no file", async () => {
+    const fixture = await buildFixture({
+      route: JUDGE,
+      judgesRoutes: [{ route: JUDGE, quota_provider: "", quota_source: "opencode-go" }],
+      calls: okCalls(),
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(judgeFile(fixture, "a"), "the runner wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the runner wrote a run record").toBeNull();
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("J18b refuses a judge row with an empty quota_source, with exit 2, one named line, no call, and no file", async () => {
+    const fixture = await buildFixture({
+      route: JUDGE,
+      judgesRoutes: [{ route: JUDGE, quota_provider: "opencode-go", quota_source: "" }],
+      calls: okCalls(),
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(judgeFile(fixture, "a"), "the runner wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the runner wrote a run record").toBeNull();
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("J18c refuses a judge row with a tab in a field, with exit 2, one named line, no call, and no file", async () => {
+    const fixture = await buildFixture({
+      route: JUDGE,
+      judgesRoutes: [{ route: JUDGE, quota_provider: "opencode-go", quota_source: "opencode\t-go" }],
+      calls: okCalls(),
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(judgeFile(fixture, "a"), "the runner wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the runner wrote a run record").toBeNull();
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("J18d the committed judges.json holds the three judge routes with both quota fields and no tab (guard: holds at HEAD)", () => {
+    const file = join(REPO_ROOT, "harness", "model-guide", "judges.json");
+    expect(existsSync(file), `judges.json is missing: ${file}`).toBe(true);
+    const doc = JSON.parse(readFileSync(file, "utf8"));
+    const rows = Array.isArray(doc) ? doc : (doc.routes ?? []);
+    expect(
+      rows.map((row: { route?: unknown }) => row.route).sort(),
+      "judges.json holds the three judge routes of spec D11",
+    ).toEqual(
+      [
+        "claude-code/claude-sonnet-5-5#max",
+        "kimi-code-plan-cn/k3.1-pro#high",
+        "opencode-go/muse-spark-1.3-contributor#high",
+      ].sort(),
+    );
+    for (const row of rows) {
+      for (const field of ["quota_provider", "quota_source"]) {
+        const value = row[field];
+        expect(typeof value, `${row.route} holds a ${field} string`).toBe("string");
+        expect(value.length, `${row.route} holds a non-empty ${field}`).toBeGreaterThan(0);
+        expect(value, `${row.route} holds no tab in ${field}`).not.toContain("\t");
+      }
+    }
+  });
+});
+
+// --- task 4.13e: judged_by holds only verdicts (review C7) ----------------------
+//
+// `judged_by` holds only the finding ids that hold a verdict. A complete
+// group whose answer drops an id leaves that id out of `judged_by`.
+describe("P4 judged_by holds only verdicts (task 4.13e)", () => {
+  it("J19 judged_by holds only the finding ids that hold a verdict", async () => {
+    const fixture = await buildFixture({
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+        {
+          tokens: TOKENS_B,
+          value: answer([jsonBlock(JSON.stringify({ "d-02#C2a3b4c5d6e7f": "false-claim" }))]),
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const record = runRecord(fixture, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      // The first group holds two finding ids, but its answer gives a
+      // verdict to one of them only.
+      expect(record?.judged_by, "judged_by holds only the ids that hold a verdict").toEqual({
+        "d-01#C0a1b2c3d4e5f": ROUTE,
+        "d-02#C2a3b4c5d6e7f": ROUTE,
+      });
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});

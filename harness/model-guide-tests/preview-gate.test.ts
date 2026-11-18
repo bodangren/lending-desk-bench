@@ -1942,7 +1942,7 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
       green: "Green: prod-one 62 % in this role, 15 tasks",
       coder: "Coder: no pick yet",
       "review-a": "Review A: gate-one 90 % pass in this role, 10 runs, net 41.5",
-      "review-b": "Review B: no pick yet",
+      "review-b": "Review B: gate-one 60 % pass in this role, 5 runs, net 18.5",
       "review-c": "Review C: gate-seven 100 % pass in this role, 5 runs, net 20",
       adversarial: "Adversarial: no pick yet",
       acceptance: "Acceptance: no pick yet",
@@ -1957,13 +1957,15 @@ describe("the print-audit block and the PA2-1 page guards of task 2.1", () => {
     const none = picks.filter((pick) => pick.none);
     expect(
       none.map((pick) => pick.role),
-      "five lines say no pick yet",
-    ).toEqual(["coder", "review-b", "adversarial", "acceptance", "final-acceptance"]);
+      "four lines say no pick yet",
+    ).toEqual(["coder", "adversarial", "acceptance", "final-acceptance"]);
     for (const pick of none) {
       expect(pick.key, `${pick.role} line carries no model key`).toBeNull();
     }
     // The causes in the fixture: not allowed and not for verdicts rank in
-    // the table but never pick, and a below-minimum net score stops Review B.
+    // the table but never pick. Review B picks the only qualifying row of
+    // its role, gate-one with net 18.5, now above the gate of 0
+    // (PM 2026-11-18).
     const checker = probesOf(mainSection(page, "Checker roles"));
     expect(
       checker.some((row) => row.key === "t1/gate-nine" && row.rank !== null),

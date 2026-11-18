@@ -1,5 +1,15 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -315,5 +325,124 @@ describe("SM3 the set boundary", () => {
       expect(readFileSync(join(setDir, file), "utf8"), `the tool changed ${file}`).toBe(before.get(file));
     }
     expect(after.filter((file) => file.startsWith("messages/")).sort()).toEqual(["messages/forge-01.txt", "messages/mono-01.txt"]);
+  });
+});
+
+describe("SM4 the arg-level refusals (task 4.13e; guards: hold at HEAD)", () => {
+  /** Runs the tool with an explicit set id and extra args. */
+  function runWithId(fx: SeedFixture, setId: string, args: string[] = []) {
+    requireProduction();
+    return spawnSync(
+      "npx",
+      ["tsx", "model-guide/seed-messages.ts", setId, "--private", fx.privateDir, "--gh", fx.ghPath, ...args],
+      {
+        cwd: HARNESS,
+        env: {
+          ...process.env,
+          FAKE_GH_LOG: fx.ghLog,
+          FAKE_GH_MSGS: fx.msgsDir,
+          NO_COLOR: "1",
+          TZ: "UTC",
+        } as NodeJS.ProcessEnv,
+        encoding: "utf8",
+        timeout: 60_000,
+      },
+    );
+  }
+
+  /** A fixture with gh messages for every commit. */
+  function ready(tag: string): SeedFixture {
+    return setup(`sm4-${tag}`, {
+      messages: { [COMMIT_A]: "First A\nBody.", [COMMIT_B]: "First B\nBody." },
+    });
+  }
+
+  it("SM4 refuses the set id ../x with exit 2, no gh call, and no file", () => {
+    const fx = ready("parent");
+    const before = readdirSync(fx.privateDir).sort();
+    const result = runWithId(fx, "../x");
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(stdoutLines(result), "the tool printed no single refusal line").toHaveLength(1);
+    expect(stdoutLines(result)[0], "the refusal names the set id").toMatch(/set-id/);
+    expect(existsSync(fx.ghLog), "the tool called gh").toBe(false);
+    expect(readdirSync(fx.privateDir).sort(), "the tool wrote a file").toEqual(before);
+  });
+
+  it("SM4 refuses the set id a/b with exit 2, no gh call, and no file", () => {
+    const fx = ready("slash");
+    const result = runWithId(fx, "a/b");
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(stdoutLines(result), "the tool printed no single refusal line").toHaveLength(1);
+    expect(stdoutLines(result)[0], "the refusal names the set id").toMatch(/set-id/);
+    expect(existsSync(fx.ghLog), "the tool called gh").toBe(false);
+  });
+
+  it("SM4 refuses a linked messages/ folder with exit 2 and no write", () => {
+    const fx = ready("link");
+    const outside = join(fx.privateDir, "outside");
+    mkdirSync(outside, { recursive: true });
+    symlinkSync(outside, join(fx.privateDir, "sets", fx.setId, "messages"));
+    const result = runSeed(fx);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(stdoutLines(result), "the tool printed no single refusal line").toHaveLength(1);
+    expect(stdoutLines(result)[0], "the refusal names the link").toMatch(/link/);
+    expect(readdirSync(outside), "the tool wrote through the link").toEqual([]);
+  });
+
+  it("SM4 refuses the set id given twice with exit 2, no gh call, and no file", () => {
+    const fx = ready("twice");
+    const result = runSeed(fx, [fx.setId]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(stdoutLines(result), "the tool printed no single refusal line").toHaveLength(1);
+    expect(stdoutLines(result)[0], "the refusal names the double set id").toMatch(/twice/);
+    expect(existsSync(fx.ghLog), "the tool called gh").toBe(false);
+    expect(
+      filesUnder(join(fx.privateDir, "sets", fx.setId)),
+      "the tool wrote a message file",
+    ).not.toContain(`messages/${fx.diffs[0]}.txt`);
+  });
+
+  it("SM4 refuses an unknown flag with exit 2, no gh call, and no file", () => {
+    const fx = ready("unknown");
+    const result = runSeed(fx, ["--bogus", "x"]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(stdoutLines(result), "the tool printed no single refusal line").toHaveLength(1);
+    expect(stdoutLines(result)[0], "the refusal names the flag").toMatch(/unknown flag/);
+    expect(existsSync(fx.ghLog), "the tool called gh").toBe(false);
+  });
+
+  it("SM4 refuses a flag with no value with exit 2, no gh call, and no file", () => {
+    const fx = ready("novalue");
+    const result = runSeed(fx, ["--private"]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(stdoutLines(result), "the tool printed no single refusal line").toHaveLength(1);
+    expect(stdoutLines(result)[0], "the refusal names the flag").toMatch(/needs a value/);
+    expect(existsSync(fx.ghLog), "the tool called gh").toBe(false);
+  });
+
+  it("SM4 refuses a missing set folder with exit 2, no gh call, and no file", () => {
+    const fx = ready("missing");
+    const before = readdirSync(fx.privateDir).sort();
+    const result = runWithId(fx, "mg-no-such-set");
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(stdoutLines(result), "the tool printed no single refusal line").toHaveLength(1);
+    expect(stdoutLines(result)[0], "the refusal names the missing folder").toMatch(/set folder is missing/);
+    expect(existsSync(fx.ghLog), "the tool called gh").toBe(false);
+    expect(readdirSync(fx.privateDir).sort(), "the tool wrote a file").toEqual(before);
+  });
+
+  it("SM4 refuses a set with no diff with exit 2, no gh call, and no file", () => {
+    const fx = ready("nodiff");
+    const diffDir = join(fx.privateDir, "sets", fx.setId, "diffs");
+    for (const name of readdirSync(diffDir)) rmSync(join(diffDir, name));
+    const result = runSeed(fx);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(stdoutLines(result), "the tool printed no single refusal line").toHaveLength(1);
+    expect(stdoutLines(result)[0], "the refusal names the empty set").toMatch(/no diff/);
+    expect(existsSync(fx.ghLog), "the tool called gh").toBe(false);
+    expect(
+      filesUnder(join(fx.privateDir, "sets", fx.setId)),
+      "the tool wrote a message file",
+    ).not.toContain(`messages/${fx.diffs[0]}.txt`);
   });
 });

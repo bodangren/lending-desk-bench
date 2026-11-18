@@ -610,7 +610,7 @@ describe("ADV4 AA lookup (D16 Data source, AA net score)", () => {
     expect(rows.map((row) => row.key)).toEqual(["p1/protov"]);
     const row = rowIn(rows, "p1/protov");
     expect(row.cells[5], "the primary net score of 32").toBe("32");
-    expect(row.html, "32 is at or above 20, so no verdict mark").not.toContain('data-mark="not-for-verdicts"');
+    expect(row.html, "32 is above 0, so no verdict mark").not.toContain('data-mark="not-for-verdicts"');
   });
 });
 
@@ -648,7 +648,7 @@ describe("ADV4 allowed list and the pick filters (D16 Data source, Allowed list,
     expectTopBlock(emptyBuild.page, {});
   });
 
-  it("ADV4-7: the pick skips a not-allowed, unrated, and under-20 row, and takes the first row that passes", () => {
+  it("ADV4-7: the pick skips a not-allowed, unrated, and net-0 row, and takes the first row that passes", () => {
     const outcomes = [
       gate("p1/ra-na", "review-a", 10, 10, 0, 0),
       gate("p1/ra-un", "review-a", 9, 9, 0, 0),
@@ -670,7 +670,8 @@ describe("ADV4 allowed list and the pick filters (D16 Data source, Allowed list,
         "ra-ok": { rated: true, netScore: 20 },
         "rb-na": { rated: true, netScore: 40 },
         "rc-un": { rated: false },
-        "ad-lo": { rated: true, netScore: 19.99 },
+        // A net score of 0 or less never picks (PM 2026-11-18).
+        "ad-lo": { rated: true, netScore: 0 },
         "ad-ok": { rated: true, netScore: 25 },
       },
       allowed: ["p1/ra-un", "p1/ra-lo", "p1/ra-ok", "p1/rc-un", "p1/ad-lo", "p1/ad-ok", "p1/rd-nr"],
@@ -680,17 +681,19 @@ describe("ADV4 allowed list and the pick filters (D16 Data source, Allowed list,
     const un = rowIn(checker, "p1/ra-un");
     expect(un.cells[5], "rated false gives not rated even with a score").toBe("not rated");
     expect(un.html).toContain('data-mark="not-for-verdicts"');
-    expect(rowIn(checker, "p1/ra-lo").html, "19.99 is under 20").toContain('data-mark="not-for-verdicts"');
-    expect(rowIn(checker, "p1/ra-ok").html, "20 is not under 20").not.toContain("data-mark=");
+    expect(rowIn(checker, "p1/ra-lo").html, "19.99 is above 0").not.toContain("data-mark=");
+    expect(rowIn(checker, "p1/ad-lo").html, "0 is not above 0").toContain('data-mark="not-for-verdicts"');
+    expect(rowIn(checker, "p1/ra-ok").html, "20 is above 0").not.toContain("data-mark=");
     expect(rowIn(checker, "p1/ra-na").html).toContain('data-mark="not-allowed"');
     expectTopBlock(page, {
-      // Not allowed, unrated, and 19.99 rank above ra-ok and never pick.
+      // Not allowed and unrated rows rank but never pick. ra-lo at 19.99
+      // now rates (PM 2026-11-18) but ranks below ra-ok, so ra-ok picks.
       red: ["p1/rd-nr", "50 %", "6"],
       "review-a": ["p1/ra-ok", "100 %", "7"],
       // A role with only a not-allowed row, and a role with only an unrated row.
       "review-b": null,
       "review-c": null,
-      // The 100 % row has net 19.99, so the 80 % row picks.
+      // The 100 % row has net 0, so the 80 % row picks.
       adversarial: ["p1/ad-ok", "80 %", "5"],
     });
   });
@@ -1256,7 +1259,7 @@ describe("ADV4 checker rank of the PM 2026-11-18 rules (D16 Data source, FR-3)",
     expectTopBlock(page, { "review-a": ["p1/fb", "80 %", "10"] });
   });
 
-  it("ADV4-20: a rated row ranks before a not-rated row whatever the findings per run, and neither picks under 20", () => {
+  it("ADV4-20: a rated row ranks before a not-rated row whatever the findings per run, and neither picks at or below 0", () => {
     const { page } = pageOf("adv4-20", {
       outcomes: [
         gate("p1/rneg", "review-a", 10, 10, 0, 0),
@@ -1283,11 +1286,11 @@ describe("ADV4 checker rank of the PM 2026-11-18 rules (D16 Data source, FR-3)",
         'data-mark="not-for-verdicts"',
       );
     }
-    // -50 is under 20 and not rated never picks.
+    // -50 is at or below 0 and not rated never picks.
     expectTopBlock(page, {});
   });
 
-  it("ADV4-21: the gate pick takes the checker order and the 20 boundary, not the pass %", () => {
+  it("ADV4-21: the gate pick takes the checker order and the above-0 gate, not the pass %", () => {
     const { page } = pageOf("adv4-21", {
       outcomes: [
         gate("p1/hipass", "review-a", 10, 10, 0, 0),
@@ -1309,17 +1312,15 @@ describe("ADV4 checker rank of the PM 2026-11-18 rules (D16 Data source, FR-3)",
     expect(rankedKeys(rows)).toHaveLength(4);
     // Nets 40, 20, then the 19.99 tie: findings per run 0.83 beats 0.00.
     expect(rankedKeys(rows)).toEqual(["p1/lopass", "p1/ok20", "p1/lo1999", "p1/hipass"]);
-    expect(rowIn(rows, "p1/ok20").html, "20 is not under 20").not.toContain("data-mark=");
-    expect(rowIn(rows, "p1/lo1999").html, "19.99 is under 20").toContain(
-      'data-mark="not-for-verdicts"',
-    );
+    expect(rowIn(rows, "p1/ok20").html, "20 is above 0").not.toContain("data-mark=");
+    expect(rowIn(rows, "p1/lo1999").html, "19.99 is above 0").not.toContain("data-mark=");
     expectTopBlock(page, {
       // The 100 % row holds net 19.99, so the 50 % row with net 40 picks.
       "review-a": ["p1/lopass", "50 %", "10"],
       // The only allowed row of the role holds exactly 20 and picks.
       "review-b": ["p1/ok20", "100 %", "6"],
-      // The only allowed row of the role holds 19.99 and never picks.
-      "review-c": null,
+      // The only allowed row of the role holds 19.99, now above the gate, and picks.
+      "review-c": ["p1/lo1999", "100 %", "6"],
     });
   });
 
@@ -1345,7 +1346,7 @@ describe("ADV4 checker rank of the PM 2026-11-18 rules (D16 Data source, FR-3)",
     expect(rowIn(rows, "p1/neg3").cells[5]).toBe("-3");
     expect(rowIn(rows, "p1/neg30").cells[5]).toBe("-30");
     for (const key of ["p1/neg3", "p1/neg30"]) {
-      expect(rowIn(rows, key).html, `${key} is under 20`).toContain(
+      expect(rowIn(rows, key).html, `${key} is at or below 0`).toContain(
         'data-mark="not-for-verdicts"',
       );
     }
