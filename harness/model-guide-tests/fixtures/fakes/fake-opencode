@@ -227,10 +227,13 @@ spawn_daemon_child() {
   # /proc/<pid>/cmdline holds NUL separators, so a matcher on the raw
   # string never sees the joined text; only a matcher that normalizes the
   # split selects this child. The child writes its own pid, so the pid is
-  # right even when setsid forks.
-  script='require("node:fs").appendFileSync(process.env.FAKE_DAEMON_PIDFILE,process.pid+"\n");setTimeout(function(){},120000);'
+  # right even when setsid forks. The child also writes its own raw
+  # /proc/self/cmdline entries to `<pidfile>.argv.json` at spawn (Option B,
+  # task 4.13q): the Red tests read that file after the run instead of the
+  # reaped pid, so a stopped daemon and the argv proof hold together.
+  script='require("node:fs").appendFileSync(process.env.FAKE_DAEMON_PIDFILE,process.pid+"\n");require("node:fs").writeFileSync(process.env.FAKE_DAEMON_PIDFILE+".argv.json",JSON.stringify(require("node:fs").readFileSync("/proc/self/cmdline","utf8").split("\0").filter(function(s){return s!=="";})));setTimeout(function(){},120000);'
   if [ "$mode" = "ignore-term" ]; then
-    script='require("node:fs").appendFileSync(process.env.FAKE_DAEMON_PIDFILE,process.pid+"\n");process.on("SIGTERM",function(){});setTimeout(function(){},120000);'
+    script='require("node:fs").appendFileSync(process.env.FAKE_DAEMON_PIDFILE,process.pid+"\n");require("node:fs").writeFileSync(process.env.FAKE_DAEMON_PIDFILE+".argv.json",JSON.stringify(require("node:fs").readFileSync("/proc/self/cmdline","utf8").split("\0").filter(function(s){return s!=="";})));process.on("SIGTERM",function(){});setTimeout(function(){},120000);'
   fi
   FAKE_DAEMON_PIDFILE="$pidfile" setsid env HOME="$HOME" node -e "$script" fake-opencode serve --service "$tag" </dev/null >/dev/null 2>&1 &
   disown 2>/dev/null || true

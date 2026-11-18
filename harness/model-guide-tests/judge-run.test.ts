@@ -236,6 +236,25 @@ async function daemonPids(fixture: Fixture, timeoutMs = 5000): Promise<number[]>
   }
 }
 
+/** The raw argv entries that the fake daemon wrote at spawn to
+ * `<daemonPath>.argv.json` (Option B, task 4.13q). The file holds the JSON
+ * array of the raw /proc/self/cmdline entries of the daemon child. The
+ * read polls, because the file appears after the daemon starts. */
+async function spawnArgvEntries(fixture: Fixture, timeoutMs = 5000): Promise<string[]> {
+  const argvPath = `${fixture.daemonPath}.argv.json`;
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      const parsed: unknown = JSON.parse(readFileSync(argvPath, "utf8"));
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      // The daemon has not written the file yet.
+    }
+    if (Date.now() >= deadline) return [];
+    await sleep(50);
+  }
+}
+
 /** The command line of a process. */
 function procCmdline(pid: number): string {
   try {
@@ -2491,9 +2510,11 @@ describe("P4 the daemon guard of the judge runner (task 4.13o)", () => {
       const daemons = await daemonPids(fixture);
       expect(daemons, "the fake left no daemon child").toHaveLength(1);
       daemonPid = daemons[0];
-      // The Red pin on the real daemon shape (task 4.13q F1): the raw
-      // buffer holds the split entries, never the joined text.
-      const jd1Entries = rawCmdlineEntries(daemonPid);
+      // The Red pin on the real daemon shape (task 4.13q F1, Option B):
+      // the fake wrote its own raw /proc/self/cmdline entries at spawn,
+      // so the proof survives the stop of the daemon.
+      const jd1Entries = await spawnArgvEntries(fixture);
+      expect(jd1Entries.length, "the spawn argv file holds at least 3 entries").toBeGreaterThanOrEqual(3);
       expect(jd1Entries, "the fake daemon must use a real argv split").toContain("serve");
       expect(
         jd1Entries.indexOf("--service") - jd1Entries.indexOf("serve"),
