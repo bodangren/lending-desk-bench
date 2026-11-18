@@ -1026,7 +1026,10 @@ Spec D4 to D11, D13, FR-8 to FR-10, FR-12.
   - The pilot set is separate from `mg-2026-11a`. A reseed makes
     `mg-2026-11p2`, and then `mg-2026-11p3`. Each reseed keeps the same 6
     source commits and seeds them again by the harder rule, unless the
-    test-only rule of spec D4 fires.
+    test-only rule of spec D4 fires. Each reseed then runs
+    `npx tsx model-guide/seed-messages.ts <set_id> --private <dir>` from
+    `harness/`, right after the seeding step: a set with no message file
+    makes each pass and probe refuse.
   - Verify: `review-set.ts lint mg-2026-11p` passes.
   - Evidence: the lint exited 0 through `heavy-run.sh`. The set holds 6
     diffs, 20 plants, and 11 blockers. All 6 seeded copies match their twins
@@ -1814,8 +1817,9 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   routes are `opencode-go/deepseek-v4.1-flash`, `opencode/hy4-flash-free`,
   and `opencode-go/mimo-v2.6-flash`, in that D12 order. No non-pilot route
   gets a probe until the PM approves after the pilot token report (Q1, PM
-  2026-11-18). The probe of 2026-11-19 runs before 4.9f and tests
-  reachability only.
+  2026-11-18). The probe of 2026-11-19 runs after 4.9f and before 4.11;
+  its control diff `forge-07` has a message file. It tests reachability
+  only.
   - Command for each route:
     `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --probe --route <route>`.
   - The probe writes no pass record and no stored raw output beyond the
@@ -1845,6 +1849,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     change and sends it to the PM before the ranked runs. Each repo then
     gives at most 2 test-only diffs in its 7, and the ranked set gets the id
     `mg-2026-11b` (spec D4, D8).
+  - Each reseed (`mg-2026-11p2`, then `mg-2026-11p3`) and the `mg-2026-11b`
+    set run `npx tsx model-guide/seed-messages.ts <set_id> --private <dir>`
+    from `harness/` right after the seeding step: a set with no message
+    file makes each pass and probe refuse.
   - A pilot pass counts as a main pass of the route when the ranked set
     `mg-2026-11a` holds the same diffs (spec D13). Each pilot route then
     needs 1 more pass, on the night of 2026-11-22.
@@ -2040,6 +2048,47 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     07418d21f073a3201055832dd5fbd82fa0e8a880; final Green HEAD 75f7419
     before this row, and the plan-evidence commit after it.
+- [ ] 4.13e Red: hardening after Reviews A, B, C (edee50b). Change only
+  test files under `harness/model-guide-tests/`. Touch no production file.
+  One bullet pins each test:
+  - (B2) `judge-run.sh` refuses a `judges.json` row with an empty
+    `quota_provider` or `quota_source`, or a tab in a field. A test reads
+    the committed `harness/model-guide/judges.json`.
+  - (B3) `review-run.sh` refuses a message file with a second line, a
+    control character, or a line over 1000 bytes. The call sends only the
+    checked line.
+  - (B4) `review-run.sh` refuses a message file or a seeded diff that is a
+    symlink.
+  - (B5, R3) `seed-messages.ts` refusals: a set id with `/` or `..`, a
+    linked `messages/` folder, the set id given twice, an unknown flag, a
+    flag with no value, a missing set folder, a set with no diff.
+  - (C7) `judged_by` holds only ids with a verdict.
+  - (R1) Test P2 pins the probe transport-retry ceiling at 3 calls.
+  - (N3) The footer row count of `real-work.ts` equals the outcomes array
+    length (Q-S5).
+  - (N8) The gate of the decision-role picks is an AA net score above 0
+    (PM 2026-11-18), in `real-work.ts` (`NET_SCORE_GATE`), `guide.ts`, and
+    `preview-gate.test.ts`.
+  - Verify: each new case fails on the phase base HEAD, and the earlier
+    cases stay green. Record the failed test names in
+    `measure/runs/model_guide/red-4.13e.txt`.
+- [ ] 4.13f Green: hardening after Reviews A, B, C (edee50b). Implement row
+  4.13e in `harness/model-guide/` (`judge-run.sh`, `review-run.sh`,
+  `seed-messages.ts`, `real-work.ts`, `guide.ts`). Fix the `review-run.sh`
+  header so `--date` says local date (R4). This Green runs after the probe
+  of 2026-11-19 ends (after 06:00 +07), because the probe reads
+  `review-run.sh` from this worktree.
+  - Verify: each gate runs one at a time, and each exits 0.
+    - `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
+    - `cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
+    - `cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
+    - `bun test harness/model-guide-tests/review-run.test.ts`
+    - `bun test harness/model-guide-tests/seed-messages.test.ts`
+    - `bun test harness/model-guide-tests/real-work.test.ts`
+    - `bun test harness/model-guide-tests/guide.test.ts`
+    - `bun test harness/model-guide-tests/preview-gate.test.ts`
+    - After each gate, `pgrep -af "fake-opencod[e]"` and `pgrep -af
+      "quota-serve[r]"` print no line.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.

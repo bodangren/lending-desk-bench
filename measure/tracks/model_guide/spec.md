@@ -468,11 +468,17 @@ questions".
     - **Message line (ruling 2026-11-18).** The first line of the
       commit message of each diff lives in
       `<private>/sets/<set_id>/messages/<diff_id>.txt`. The file holds one
-      line and no key data. The seeder `pick-diffs.ts` writes it from the
-      source commit. A backfill writes it for the seeded sets `mg-2026-11a`
-      and `mg-2026-11p` before night 1 (2026-11-20 02:00 +07). The runner
-      reads `diffs/` and `messages/` only. It never reads `keys/` and never
-      reads `src/`. The prompt holds three parts in this order:
+      line and no key data. The tool
+      `harness/model-guide/seed-messages.ts` writes it from the source
+      commit: `npx tsx model-guide/seed-messages.ts <set_id> --private
+      <dir>` from `harness/`. A backfill writes it for the seeded sets
+      `mg-2026-11a` and `mg-2026-11p` before night 1 (2026-11-20 02:00
+      +07). Each reseed runs the same step right after the seeding step:
+      a set with no message file makes each pass and probe refuse. The
+      call input holds no key data, no `src/` text, and no route name.
+      The probe reads `keys/<diff_id>.json` only to choose the control
+      diff (the diff with no plant). The prompt holds three parts in this
+      order:
       `review-prompt.md`, the message line, the seeded diff. A pass or a
       probe with a missing or empty message file is a refusal. It exits 2
       with one `review-run:` line and no call. The judge prompt of
