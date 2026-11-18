@@ -1730,15 +1730,22 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     one comment says that `diffs/` is the review input (spec D7). The pass
     list and the probe list come from the same glob, so both modes read the
     seeded diff. Rows 4.9c and 4.9d are `[x]`.
-- [ ] 4.9e Red: the message line in the prompt (spec D10 ruling 2026-11-18).
+- [~] 4.9e Red: the message line in the prompt (spec D10 ruling 2026-11-18).
   Change only `harness/model-guide-tests/review-run.test.ts`. Touch no
-  production file.
+  production file. (Red role base 154eb7d.)
   - The cases pin that the call stdin holds the prompt, the message line,
     and the seeded diff in that order (pass and probe), and the refusal for
     a missing or empty message file.
   - Verify: the new cases fail on the phase base HEAD, and the earlier cases
     stay green. Record the failed test names in
     `measure/runs/model_guide/red-4.9e.txt`.
+  - Evidence (Red 154eb7d, 2026-11-18): `bun test
+    harness/model-guide-tests/review-run.test.ts` exits 1 with `39 pass`
+    and `4 fail` (43 tests). The failures are M1, M2 (no MSG-LINE marker in
+    the call stdin), M3, M4 (exit 0, expected the exit-2 refusal). The 39
+    earlier cases pass with the fixture-written message files. The record is
+    `measure/runs/model_guide/red-4.9e.txt` (not staged). pgrep scans print
+    no line. Row stays `[~]` until Green 4.9f flips it.
 - [ ] 4.9f Green: the message line in the prompt, the seeder, and the backfill
   (spec D10 ruling 2026-11-18).
   - Change `harness/model-guide/review-run.sh` to read the message file and
@@ -1919,8 +1926,8 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     80869bdc6bd546da446d2c86312e0076d70cbe1e; final Green HEAD 61449ae
     before this row, and the plan-evidence commit after it.
-- [ ] 4.13c Red: the judge route list (spec D11, PM 2026-11-18). Change only
-  `harness/model-guide-tests/judge-run.test.ts`. Touch no production file.
+- [~] 4.13c Red: the judge route list (spec D11, PM 2026-11-18). Change only
+  `harness/model-guide-tests/judge-run.test.ts`. Touch no production file. (Red role base 154eb7d.)
   - The cases pin the accept/refuse rule: `judge-run.sh` accepts each route
     of `judges.json` (the two named judges and the Claude seat); it refuses
     a review-only route of `routes.json` and a route that neither file
@@ -1931,6 +1938,16 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     --maxWorkers=1 --reporter=dot` fails on the new cases and passes the 18
     earlier cases. Record the failed test names in
     `measure/runs/model_guide/red-4.13c.txt`.
+  - Evidence (Red 154eb7d, 2026-11-18): the Red command exits 1 with
+    `Tests  2 failed | 19 passed (21)`. The failures are J15 (judge route
+    refused: "judge-run: the route is not in routes.json") and J16
+    (review-only route accepted at HEAD). J16b (unknown route refused)
+    passes at HEAD and stays as a guard. The 18 earlier cases pass; the
+    builder gained the opt-in `judgesRoutes` field with no assertion
+    change. The record is `measure/runs/model_guide/red-4.13c.txt` (not
+    staged). pgrep scans print no line. Row stays `[~]` until Green 4.13d
+    flips it. No pick-diffs case: its design has no diff_id mapping (see
+    the handoff).
 - [ ] 4.13d Green: the judge route list (spec D11, PM 2026-11-18).
   - Write `harness/model-guide/judges.json` with the three judge routes,
     each with a `quota_provider` and a `quota_source`. Change `judge-run.sh`
