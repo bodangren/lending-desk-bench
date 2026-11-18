@@ -1784,7 +1784,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: each reachable route has 3 complete passes, or the file
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
     stop, region block, or open pass).
-- [~] 4.13a Red: the judge runner (spec D11).
+- [x] 71adc88 4.13a Red: the judge runner (spec D11).
   - The new tool is `harness/model-guide/judge-run.sh`. The test file is
     `harness/model-guide-tests/judge-run.test.ts`. Touch no other file.
   - Usage: `judge-run.sh --set <set_id> --route <route> --judge a|b
@@ -1825,6 +1825,27 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     model-guide-tests/judge-run.test.ts --configLoader native
     --maxWorkers=1 --reporter=dot` fails on the Phase 4 code. Record the
     failed test names in `measure/runs/model_guide/red-4.13a.txt`.
+  - Evidence: commit 71adc88 holds the test file and this plan row. The Red
+    command `cd harness && npx vitest run
+    model-guide-tests/judge-run.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot` exits 1 with `Tests  18 failed (18)` and
+    `Test Files  1 failed (1)`. Every case fails with the same reason: "the
+    judge runner is missing:
+    /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/judge-run.sh".
+    No case passes at the role base, so no claim rests on a vacuous pass (A4).
+    The 18 failed names are J1, J1b, J2, J3, J4, J5, J6, J7, J8, J9, J10, J11
+    (two cases), J12, J13, J13b, J14, and J14b. The record is
+    `measure/runs/model_guide/red-4.13a.log` (not staged).
+  - The test-bug check: a scratch runner, written outside the repository and
+    deleted before the commit, made all 18 cases pass. The scratch proved that
+    the failures come from the missing tool and not from a test bug. The
+    scratch file is not part of the track.
+  - The orphan check: `pgrep -af "fake-opencod[e]"` and `pgrep -af
+    "quota-serve[r]"` print no line, and no `mg-judge-*` folder stays under
+    `/tmp`.
+  - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (the Phase 4
+    strategy commit, test-strategy section 11); role_base_sha
+    4bdbd3f5f145f1cfe5a817766b162cf8da51dbd4 (the HEAD before this Red role).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
