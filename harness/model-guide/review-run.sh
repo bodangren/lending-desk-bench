@@ -17,6 +17,11 @@
 # set with no diff. A refusal starts no job, makes no call, and writes no
 # pass record.
 #
+# It holds one exclusive lock for one route, one set, and one date, before the
+# pass number and before any call (ADV-R-8). A second run that finds the lock
+# held exits 2 with one line on stderr that names the lock. It makes no call
+# and writes no pass record. The trap releases the lock on every exit path.
+#
 # Every other run writes one pass record in the private folder. Its `state`
 # is `complete`, `open`, `wait`, or `region-blocked`. The record holds
 # `set_id`, `route`, `pass`, `date`, `state`, `diffs`, `outputs`, and
@@ -165,6 +170,47 @@ shopt -u nullglob
 [ "${#DIFF_PATHS[@]}" -gt 0 ] || refuse "the set has no diff"
 
 RUN_SLUG="$(printf '%s' "$ROUTE" | tr -cs 'A-Za-z0-9._-' '-')"
+
+JOB=""
+JOB_CONFIG=""
+DIFF_LIST=""
+OUTPUT_LIST=""
+ERROR_LIST=""
+OUT_DIR=""
+STATE="complete"
+STOP=0
+LOCKED=0
+
+on_exit() {
+  if [ "${BENCH_OPENCODE_HOST_OWNER:-0}" = "1" ]; then
+    opencode_host_cleanup >&2 || true
+  fi
+  if [ "$LOCKED" = "1" ]; then
+    flock -u 9 2>/dev/null || true
+    exec 9>&-
+  fi
+  rm -f "${TMP_VALUES:-}" "${TMP_QUOTA_ERR:-}" "${TMP_QUOTA_ERR:-}.line" 2>/dev/null || true
+}
+trap on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+# The exclusive lock of one route, one set, and one date (ADV-R-8). It comes
+# before the pass number and before any call. A second run that finds the
+# lock held exits 2 with one line on stderr and writes no pass record.
+LOCK_DIR="$PRIVATE/.locks"
+mkdir -p "$LOCK_DIR" || refuse "the lock folder could not be made"
+LOCK_FILE="$LOCK_DIR/review-${SET_ID}-${RUN_SLUG}-${DATE}.lock"
+if ! : >> "$LOCK_FILE" 2>/dev/null; then
+  refuse "the lock file could not be made"
+fi
+exec 9>>"$LOCK_FILE"
+if ! flock -n 9; then
+  echo "review-run: the lock for route $ROUTE, set $SET_ID, date $DATE is held" >&2
+  exit 2
+fi
+LOCKED=1
+
 PASS_DIR="$PRIVATE/passes/$SET_ID"
 PASS_NO=1
 if [ -d "$PASS_DIR" ]; then
@@ -184,25 +230,6 @@ mkdir -p "$TMP_ROOT" 2>/dev/null || true
 TMP_VALUES="$TMP_ROOT/mg-review-values.$$"
 TMP_QUOTA_ERR="$TMP_ROOT/mg-review-quota-err.$$"
 ( umask 077; : > "$TMP_VALUES"; : > "$TMP_QUOTA_ERR" )
-
-JOB=""
-JOB_CONFIG=""
-DIFF_LIST=""
-OUTPUT_LIST=""
-ERROR_LIST=""
-OUT_DIR=""
-STATE="complete"
-STOP=0
-
-on_exit() {
-  if [ "${BENCH_OPENCODE_HOST_OWNER:-0}" = "1" ]; then
-    opencode_host_cleanup >&2 || true
-  fi
-  rm -f "$TMP_VALUES" "$TMP_QUOTA_ERR" "$TMP_QUOTA_ERR.line" 2>/dev/null || true
-}
-trap on_exit EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
 
 # Prints the state, the cap, and the highest window of the quota read.
 read_quota() {
