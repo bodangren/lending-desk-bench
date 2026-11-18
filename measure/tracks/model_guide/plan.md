@@ -2340,15 +2340,38 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   38919fdf9a57d41a588de1bf3cab15ad554af25b. The log is
   `measure/runs/model_guide/green-4.13n.log` (not staged).
-- [~] 28543bd 4.13o Red: the daemon guard of the runners (PM decision 2026-11-19, point 3).
+- [x] 8fca0e3 4.13o Red: the daemon guard of the runners (PM decision 2026-11-19, point 3).
   The contract applies to review-run.sh, judge-run.sh, and the probe mode.
   1. After each pass, each probe, and each judge run, and on every exit path (trap), the runner finds every process whose args hold `serve --service` and whose HOME or cwd is under the job root of this run (BENCH_OPENCODE_HOME or the folder of opencode_host_begin). It stops each one with TERM, then KILL after 5 s. It writes one line to stderr, `<runner>: INFRA stopped daemon <pid>`. It writes the same text to the run record or pass record in an `infra` field, as an array of strings.
   2. The runner never touches a process outside the job root.
   3. Guard point 3 (seed HOME; live seed proof 02:4x; `measure/runs/model_guide/proof-real-home-export.txt`): before each opencode call, the runner or helper refuses any call whose HOME is outside the job root, except one export form. The seed makes exactly one real-HOME call, `auth export <provider> --standalone`, with the HOME of the test process and no other subcommand. The import call has the job HOME and `--standalone`. `scan-values` exports from the job HOME. Any other real-HOME call is refused. That one export runs with timeout 60 and with its cwd in an empty folder outside any git repo (for example a folder under the job root tmp that holds no .git). The fake records HOME, cwd, the parent timeout argv, and argv for each call. Seed succeeds when the fake's real-HOME store holds the provider entry.
   Tests: the failing cases live in `harness/model-guide-tests/review-run.test.ts` and `harness/model-guide-tests/judge-run.test.ts` (daemon kill, INFRA stderr and record, decoy survival, seed export HOME/argv/cwd/timeout, single-exempt inventory, empty-shared refusal). The fake gains a daemon-spawn mode, HOME/cwd/parent logging, and shared/job export stores.
   - Evidence (Red fix 28543bd, 2026-11-19, after the Green 4.13p block, Option A; four test-only fixes, no production file changed): D1 and JD1 drop the `procCmdline` and `procHome` assertions on the stopped daemon and keep `isAlive` false, the one INFRA stderr line with the fake daemon pid, the `infra` record field, and the decoy check; D3 gets a per-test timeout of `25_000`; S1 and JS1 count only exports whose HOME is the real fixture HOME; S2 seeds the job store as S3 and S4 do. Gates at HEAD, one file at a time: `bun test harness/model-guide-tests/review-run.test.ts` exits 1 with `56 pass` and `6 fail` (D1, probe D2, D3, S1, S5, R1; each fails only on the missing 4.13o behavior: no INFRA line, no real-HOME seed export, exit 0 instead of the empty-store refusal; S2 passes at HEAD because no guard trips yet, and it pins the success path Green must keep); `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exits 1 with `Tests 4 failed | 30 passed (34)` (JD1, JS1, JS2, JR1, same missing-behavior reasons). After each run no `fake-opencode`, no `quota-server`, and no `serve --service` process stays. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha 5697381bb049e08da66932a23366d2e4f764cacd. Row stays `[~]` until Green 4.13p flips it.
-- [ ] 4.13p Green: the daemon guard of the runners (PM decision 2026-11-19, point 3).
+- [x] 62a805b 4.13p Green: the daemon guard of the runners (PM decision 2026-11-19, point 3).
   Implements the 4.13o contract in `harness/model-guide/review-run.sh`, `harness/model-guide/judge-run.sh`, and `harness/model-guide/provider-credential.sh`: the `serve --service` guard with TERM then KILL after 5 s on every exit path, the `<runner>: INFRA stopped daemon <pid>` stderr line and the `infra` record field, the job-root scoping that never touches an outside process, the single real-HOME `auth export <provider> --standalone` seed export (timeout 60, cwd in an empty folder outside any git repo), job-HOME import/run/scan-values, and the refusal (exit 2, one `<runner>:` line, no call, no record) of any other outside-HOME call and of a seed whose shared store holds no entry. Touch no test file.
+  `provider-credential.sh` makes the one real-HOME seed export through
+  `run_seed_export`: `timeout 60 env -u OPENCODE_DB
+  OPENCODE_DISABLE_AUTOUPDATE=1 "$OPENCODE_BIN" auth export <provider>
+  --standalone`, with its cwd in an empty `mktemp -d` folder that it removes
+  after the call. The import and the `scan-values` export keep the job HOME,
+  and `check_job_home` refuses a call HOME outside the job root. The seed
+  reads the shared store, so an empty shared store refuses the run.
+  `review-run.sh` and `judge-run.sh` add `stop_daemons`: it selects every
+  `serve --service` process whose HOME or cwd is under the job root, sends
+  TERM, then KILL after 5 s, writes `<runner>: INFRA stopped daemon <pid>` on
+  stderr, and writes the same text in the `infra` array of the pass, probe,
+  or run record. The guard runs before each record is written and in the EXIT
+  trap, so every exit path stops the daemons of the run. It never touches a
+  process outside the job root. No test file changed. Gates, one at a time:
+  `bun test harness/model-guide-tests/review-run.test.ts` 62 pass (62);
+  `judge-run.test.ts` 34 passed (34); `credential-provider.test.ts` 16 passed
+  (16); `adversarial-p4-runner.test.ts` 14 passed (14); `quota.test.ts` 26
+  passed (26). Each run left no `fake-opencode`, no `quota-server`, and no
+  `serve --service` process. Red before the fix was 56 pass and 6 fail (D1,
+  D2, D3, S1, S5, R1) and 4 failed and 30 passed (JD1, JS1, JS2, JR1).
+  phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  e35ccf6b966a10bf8fd87f69793ee8c47e5c4ae7. The log is
+  `measure/runs/model_guide/green-4.13p.log` (not staged).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
