@@ -698,7 +698,7 @@ describe("ADV-R runner block: the trap, the value scan, and the region error", (
 });
 
 describe("ADV-R runner block: concurrency, hostile review data, and filter words", () => {
-  it("ADV-R-8: two runs at the same time with the same job name leave two pass records", async () => {
+  it("ADV-R-8: two runs at the same time with the same job name leave one pass record under the lock", async () => {
     const fx = await buildRunner({
       diffs: ["a"],
       calls: [
@@ -731,12 +731,31 @@ describe("ADV-R runner block: concurrency, hostile review data, and filter words
           child.on("close", (status: number | null) => done({ status, stdout, stderr }));
         });
       const [first, second] = await Promise.all([runOne(), runOne()]);
-      expect(first.status, `first run ends: ${first.stdout}${first.stderr}`).toBe(0);
-      expect(second.status, `second run ends: ${second.stdout}${second.stderr}`).toBe(0);
+      const byStatus = [first, second].sort((a, b) => (a.status ?? 99) - (b.status ?? 99));
+      const winner = byStatus[0];
+      const loser = byStatus[1];
+      expect(winner.status, `one run proceeds: ${winner.stdout}${winner.stderr}`).toBe(0);
+      expect(loser.status, `the other run refuses: ${loser.stdout}${loser.stderr}`).toBe(2);
+      const lockLines = String(loser.stderr ?? "")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+      expect(lockLines, "one stderr line names the lock").toHaveLength(1);
+      expect(lockLines[0], "the refusal names the lock").toMatch(/lock/i);
       const records = passRecords(fx.privateDir);
-      expect(records.length, "A4: two pass records exist").toBe(2);
-      const passes = records.map((r) => r.pass).sort();
-      expect(passes, "the pass numbers stay apart").toEqual([1, 2]);
+      expect(records.length, "A4: one pass record exists").toBe(1);
+      expect(records[0].pass, "the winner leaves pass 1").toBe(1);
+      expect(records[0].state, "the winner completes").toBe("complete");
+      expect(modelCallCount(fx.logPath), "one run worth of model calls").toBe(1);
+      expect(
+        filesUnder(fx.privateDir).filter((file) => file.includes("-p2")),
+        "the refused run writes no pass-2 file",
+      ).toEqual([]);
+      const third = runReview(fx, [...args]);
+      expect(third.status, `the lock is released: ${third.stdout}${third.stderr}`).toBe(0);
+      const after = passRecords(fx.privateDir);
+      expect(after.map((record) => record.pass).sort(), "the third run gets pass 2").toEqual([1, 2]);
+      expect(modelCallCount(fx.logPath), "the third run adds its own call").toBe(2);
       expect(liveFakeOpencode(), "no fake child stays alive").toEqual([]);
     } finally {
       await closeFixture(fx);
