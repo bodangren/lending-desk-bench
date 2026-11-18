@@ -2142,7 +2142,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     242fe529b26f9d1a4e132f407a2036567c7e3011; final Green HEAD 9ae4e51
     before this row, and the plan-evidence commit after it.
-- [~] 0861c05 4.13g Red: the Go plan thresholds (PM order 2026-11-19, spec D15).
+- [x] 0861c05 4.13g Red: the Go plan thresholds (PM order 2026-11-19, spec D15).
   Change only `harness/model-guide-tests/quota.test.ts`,
   `harness/model-guide-tests/review-run.test.ts`, and
   `harness/model-guide-tests/judge-run.test.ts`. Touch no production file.
@@ -2173,11 +2173,11 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     failed | 27 passed (30)`. The failed names are Q9 and Q10, G1, G2,
     and G3 of the review runner, and G1, G2, and G3 of the judge runner.
     The record is `measure/runs/model_guide/red-4.13g.txt` (not staged).
-    The two pgrep scans print no line at the end of each run. Row stays
-    `[~]` until Green 4.13h flips it. ADV-R-2 commit bae1884: the huge
+    The two pgrep scans print no line at the end of each run. Green 4.13h
+    (94fef2f) flipped the row on 2026-11-19. ADV-R-2 commit bae1884: the huge
     w199 85 case runs on kimi-code-plan-cn; adversarial-p4-runner.test.ts
     exits 0 with `Tests 14 passed (14)` at HEAD.
-- [ ] 4.13h Green: the Go plan thresholds (PM order 2026-11-19, spec D15).
+- [x] 94fef2f 4.13h Green: the Go plan thresholds (PM order 2026-11-19, spec D15).
   Change `harness/model-guide/quota.ts`,
   `harness/model-guide/review-run.sh`, and
   `harness/model-guide/judge-run.sh`. Touch no test file.
@@ -2188,7 +2188,33 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     thresholds, but not at 80 %. Other sources keep 70 % and 80 %.
   - Verify: the three Red commands exit 0, one file at a time. The two
     pgrep scans print no line.
-  - Then re-probe the 2 Go pilot routes in the 02:00-06:00 window.
+  - Then re-probe the 2 Go pilot routes in the 02:00-06:00 window. This
+    step runs after this commit, at 02:00 +07 on 2026-11-19. The
+    orchestrator owns it.
+  - Evidence (Green 94fef2f, 2026-11-19): each gate ran alone, and each
+    exited 0.
+    - `cd harness && npx vitest run model-guide-tests/quota.test.ts
+      --configLoader native --maxWorkers=1 --reporter=dot` gives
+      `Tests 17 passed (17)`.
+    - `bun test harness/model-guide-tests/review-run.test.ts` gives 52 pass
+      and 0 fail.
+    - `cd harness && npx vitest run model-guide-tests/judge-run.test.ts
+      --configLoader native --maxWorkers=1 --reporter=dot` gives
+      `Tests 30 passed (30)`.
+    - `cd harness && npx vitest run
+      model-guide-tests/adversarial-p4-runner.test.ts --configLoader native
+      --maxWorkers=1 --reporter=dot` gives `Tests 14 passed (14)`.
+    - After each gate, the two pgrep scans print no line. The scan
+      `ps -eo pid,args | grep '[f]ake-opencode'` prints no line too, and
+      `git status --short docs/` prints nothing.
+  - Changes: the files `harness/model-guide/quota.ts`,
+    `harness/model-guide/review-run.sh`, and
+    `harness/model-guide/judge-run.sh` (commit 94fef2f), and this plan row.
+    The Red test files under `harness/model-guide-tests/` are unchanged. The
+    log is `measure/runs/model_guide/green-4.13h.log` (not staged).
+  - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+    3c4e4623c67f1e14c8ab75b2e6b007b5183f2eae; final Green HEAD 94fef2f
+    before this row, and the plan-evidence commit after it.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
