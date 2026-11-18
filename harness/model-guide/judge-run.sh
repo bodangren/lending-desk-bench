@@ -20,6 +20,10 @@
 # A judge row that holds a `kind` keeps the check of `routes.json` (a kind of
 # `plan` or `free`).
 #
+# A judge row with an empty `quota_provider` or `quota_source`, or a tab in
+# a field, is a refusal: exit 2, one `judge-run:` line on stdout, no call,
+# and no judge file (task 4.13f, review B2).
+#
 # The input is `<private>/sets/<set_id>/adjudication/queue.json`, the queue of
 # `adjudicate.ts queue`. One model call runs per group. A group is one diff,
 # one file, one 3-line window, and the claims of every route. The prompt holds
@@ -41,6 +45,10 @@
 # `groups` (each with an `id`, a `state`, and a `tokens` object), `judged_by`
 # (the finding id to the route that judged it), `tokens` (the five flat sums
 # and their `total`), and `tokens_complete`.
+#
+# The map `judged_by` holds the finding ids that hold a verdict only. A
+# complete group whose answer drops an id leaves that id out of the map
+# (task 4.13f, review C7).
 #
 # A missing queue, an empty queue, a queue that does not parse, and a bad
 # `--judge` value are refusals: exit 2, one `judge-run:` line on stdout, no
@@ -182,7 +190,8 @@ DATE="$(date -u +%F)"
 
 # The route row of the list: kind, quota provider, quota source. A field that
 # the row does not hold is the placeholder `-`, so the three fields keep
-# their place in the row.
+# their place in the row. A row with an empty quota field, or a tab in a
+# field, exits 5 and is a refusal.
 route_rc=0
 route_row="$(node -e '
 const fs = require("node:fs");
@@ -192,12 +201,21 @@ try { doc = JSON.parse(fs.readFileSync(file, "utf8")); } catch { process.exit(4)
 const list = Array.isArray(doc) ? doc : (doc && Array.isArray(doc.routes) ? doc.routes : []);
 const row = list.find((entry) => entry && entry.route === route);
 if (!row) process.exit(3);
+for (const key of ["quota_provider", "quota_source"]) {
+  const value = row[key];
+  if (typeof value !== "string" || value === "") process.exit(5);
+}
+for (const key of Object.keys(row)) {
+  const value = row[key];
+  if (typeof value === "string" && value.includes("\t")) process.exit(5);
+}
 const field = (value) => (typeof value === "string" && value !== "" ? value : "-");
 process.stdout.write([field(row.kind), field(row.quota_provider), field(row.quota_source)].join("\t"));
 ' "$JUDGES_FILE" "$ROUTE")" || route_rc=$?
 case "$route_rc" in
   0) ;;
   3) refuse "the route is not in judges.json" ;;
+  5) refuse "the judge row holds an empty quota field or a tab" ;;
   *) refuse "judges.json is unreadable" ;;
 esac
 IFS=$'\t' read -r ROUTE_KIND QUOTA_PROVIDER QUOTA_SOURCE <<< "$route_row"
@@ -597,7 +615,12 @@ for (const row of rowsText.split("\n")) {
   try { map = JSON.parse(fs.readFileSync(verdictDir + "/v-" + parts[0] + ".json", "utf8")); } catch { map = {}; }
   if (!map || typeof map !== "object" || Array.isArray(map)) map = {};
   for (const key of Object.keys(map)) verdicts[key] = map[key];
-  if (parts[2] === "complete") { for (const id of ids) judged[id] = route; }
+  // The map `judged_by` holds the finding ids that hold a verdict only.
+  if (parts[2] === "complete") {
+    for (const id of ids) {
+      if (Object.hasOwn(map, id)) judged[id] = route;
+    }
+  }
 }
 totals.total = totals.input + totals.output + totals.reasoning + totals.cache_read + totals.cache_write;
 fs.writeFileSync(judgeFile, JSON.stringify(verdicts, null, 2) + "\n");

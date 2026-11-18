@@ -31,6 +31,10 @@
  * The output holds the producer table, the checker table, the ten role lines
  * of the top block, the per-role rows of D18, the coverage of the footer, and
  * the three source files. It never copies an input file.
+ *
+ * The footer row count is the length of the outcomes array, so a malformed
+ * row still counts (task 4.13f, review N3). A decision role picks a model
+ * with an AA net score above 0 (PM 2026-11-18).
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
@@ -39,7 +43,8 @@ import { basename, dirname, join } from "node:path";
 const OUTPUT_NAME = "real-work.json";
 const SCHEMA = "model-guide-real-work/2";
 const MIN_COUNT = 5;
-const NET_SCORE_GATE = 20;
+// The gate of the decision roles (PM 2026-11-18): an AA net score above 0.
+const NET_SCORE_GATE = 0;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MANIFEST_RE = /^MANIFEST-(\d{4}-\d{2}-\d{2})\.txt$/;
 const SUM_LINE_RE = /^([0-9a-f]{64}) {2}(\d+) {2}(.+)$/;
@@ -471,6 +476,13 @@ function rateOf(pass: number, denominator: number): { value: number | null; n: n
   return { value: denominator > 0 ? pass / denominator : null, n: denominator };
 }
 
+/** True when the AA net score passes the gate of the decision roles: the
+ * score is above 0 (PM 2026-11-18). A row that is not rated has no score,
+ * so it fails the gate. */
+function passesNetGate(net: number | null): boolean {
+  return net !== null && net > NET_SCORE_GATE;
+}
+
 function producerRow(acc: ProducerAccum, index: Map<string, AaEntry>, allowed: Set<string>): RowLike {
   const notAllowed = !allowed.has(acc.model);
   const net = netScoreOf(acc, index);
@@ -495,7 +507,7 @@ function producerRow(acc: ProducerAccum, index: Map<string, AaEntry>, allowed: S
     pass_rate: rateOf(acc.pass, acc.pass + acc.fail + acc.error),
     net_score: net,
     allowed: !notAllowed,
-    not_for_verdicts: net === null || net < NET_SCORE_GATE,
+    not_for_verdicts: !passesNetGate(net),
     rank: null,
     rate_count: acc.tasks,
   };
@@ -520,7 +532,7 @@ function gateRow(acc: GateAccum, index: Map<string, AaEntry>, allowed: Set<strin
     pass_rate: rateOf(acc.pass, acc.decided),
     net_score: net,
     allowed: allowed.has(acc.model),
-    not_for_verdicts: net === null || net < NET_SCORE_GATE,
+    not_for_verdicts: !passesNetGate(net),
     rank: null,
     rate_count: acc.decided,
   };
@@ -606,7 +618,7 @@ function pickOf(rows: RowLike[], kind: "producer" | "gate"): TopPick | null {
   for (const row of rows) {
     if (!qualifies(row)) continue;
     if (!row.allowed) continue;
-    if (kind === "gate" && (row.net_score === null || row.net_score < NET_SCORE_GATE)) continue;
+    if (kind === "gate" && !passesNetGate(row.net_score)) continue;
     return {
       model: row.model,
       rate: rateValue(row) ?? 0,
@@ -669,7 +681,9 @@ function main(): void {
   const roleAccums = new Map<string, Map<string, Accum>>();
   for (const role of ROLES) roleAccums.set(role.id, new Map());
 
-  let rows = 0;
+  // The footer row count is the length of the outcomes array, so a
+  // malformed row still counts (task 4.13f, review N3).
+  const rows = outcomes.length;
   const routes = new Set<string>();
   let unknownRows = 0;
   let escapesTotal = 0;
@@ -681,7 +695,6 @@ function main(): void {
     if (route === "") continue;
     if (raw.kind !== "producer" && raw.kind !== "gate") continue;
     if (typeof raw.role !== "string") continue;
-    rows += 1;
     routes.add(route);
     // Escapes take no part in a rank. The page shows "no data" when the
     // outcomes file holds no escape at all (PM 2026-11-18).

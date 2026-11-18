@@ -55,9 +55,11 @@
  * and the per-role rows; it has no work-type split (spec D16 "Data
  * source"). A page B producer row qualifies with 5 tasks or more and a
  * first-round rate (ruling Q1: the test writing row reads the producer role
- * `red`). A track A route qualifies with state "complete" and 3 complete
- * passes; a provisional pass counts (spec D13). When the first source has
- * no qualified model the second source picks.
+ * `red`). A page B gate row qualifies with 5 runs or more, an allowed
+ * model, and an AA net score above 0 (PM 2026-11-18). A track A route
+ * qualifies with state "complete" and 3 complete passes; a provisional pass
+ * counts (spec D13). When the first source has no qualified model the second
+ * source picks.
  *
  * Ruling Q2 (PM, 2026-11-15): with no complete track A rank the code review
  * pick is the exact no-pick words, even when the page B checker table holds
