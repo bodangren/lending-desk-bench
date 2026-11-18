@@ -48,7 +48,7 @@ Gate commands:
     id again.
 - [x] 1.2 Recost every stored score with `harness/recost.sh`. Verify that no
   stored score lost its cost and that the retired ids resolve as unmapped.
-  - `recost.sh` rewrote 230 score files and exited 0. deferred:pm, proof outside git, file not found (PM 2026-11-18)
+  - `recost.sh` rewrote 230 score files and exited 0. deferred:pm, proof outside git: reports/weekly-cron-2026w43.log line 19 "recosted 230 score.json files from harness/go-pricing.json" sha256 9cd56743fad8959258cc90fb97891854b49af5e5640d25f7252418736843b231 (PM 2026-11-18)
 
 ## Phase 2: Enable the OpenCode executor
 
