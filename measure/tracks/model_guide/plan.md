@@ -2340,7 +2340,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   38919fdf9a57d41a588de1bf3cab15ad554af25b. The log is
   `measure/runs/model_guide/green-4.13n.log` (not staged).
-- [~] 4.13o Red: the daemon guard of the runners (PM decision 2026-11-19, point 3).
+- [~] 8fca0e3 4.13o Red: the daemon guard of the runners (PM decision 2026-11-19, point 3).
   The contract applies to review-run.sh, judge-run.sh, and the probe mode.
   1. After each pass, each probe, and each judge run, and on every exit path (trap), the runner finds every process whose args hold `serve --service` and whose HOME or cwd is under the job root of this run (BENCH_OPENCODE_HOME or the folder of opencode_host_begin). It stops each one with TERM, then KILL after 5 s. It writes one line to stderr, `<runner>: INFRA stopped daemon <pid>`. It writes the same text to the run record or pass record in an `infra` field, as an array of strings.
   2. The runner never touches a process outside the job root.
