@@ -84,6 +84,7 @@ File map (every new file of this track):
 | `harness/model-guide/leak-check.ts` | leak check (FR-10) |
 | `harness/model-guide/quota.ts` | quota read and rule (spec D15, FR-15) |
 | `harness/model-guide/review-run.sh` | review runner (FR-11) |
+| `harness/model-guide/judge-run.sh` | judge runner (spec D11) |
 | `harness/model-guide/provider-credential.sh` | provider seed and value scan (spec D14) |
 | `harness/model-guide/routes.json` | route list (spec D12) |
 | `harness/model-guide/review-prompt.md` | reviewer instruction (spec D10) |
@@ -1783,6 +1784,47 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - Verify: each reachable route has 3 complete passes, or the file
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
     stop, region block, or open pass).
+- [~] 4.13a Red: the judge runner (spec D11).
+  - The new tool is `harness/model-guide/judge-run.sh`. The test file is
+    `harness/model-guide-tests/judge-run.test.ts`. Touch no other file.
+  - Usage: `judge-run.sh --set <set_id> --route <route> --judge a|b
+    [--private <dir>] [--start-test]`. The default private folder is the one
+    of `review-run.sh`.
+  - Input: `<private>/sets/<set_id>/adjudication/queue.json`. The tool makes
+    one model call per group. A group is one diff, one file, one 3-line
+    window, and the claims of every route. The prompt holds the seeded diff
+    `<private>/sets/<set_id>/diffs/<diff_id>.diff` and the items of the group
+    (id, line, claim fields). The prompt holds no route name, no slug, and no
+    text of any judge file. The second judge never reads the verdicts of the
+    first judge, and neither judge sees a route name.
+  - The answer: the tool takes the last fenced ```json block that is a flat
+    object. It keeps only the ids of that group with a value of
+    `real-defect`, `false-claim`, or `unclear`. It drops any other id and any
+    other value. A group with no valid block adds no verdict, so `apply`
+    treats it as `unclear`.
+  - Output: `<private>/sets/<set_id>/adjudication/judge-<a|b>.json`, the flat
+    map that `adjudicate.ts apply` reads, and the run record
+    `<private>/sets/<set_id>/adjudication/judge-<a|b>-run.json`. The run
+    record holds `set_id`, `judge`, `route`, `date`, `state` (`complete` or
+    `open`), `groups` (each with an `id`, a `state`, and a `tokens` object),
+    `judged_by` (the finding id to the route that judged it), `tokens`
+    (`input`, `output`, `reasoning`, `cache_read`, `cache_write`, `total`),
+    and `tokens_complete`.
+  - The safety rules of `review-run.sh` hold: the job folder of
+    `opencode_host_begin` with its own `OPENCODE_HOME`, the call
+    `run --standalone --format json --model <route>`, the job config that
+    denies every tool, the credential value scan, the flock lock of one set,
+    one judge, and one date, the quota rules of spec D15, the watcher of the
+    call, and the token log of the `step-finish` events.
+  - A missing queue, an empty queue, and a bad `--judge` value give exit 2,
+    one `judge-run:` line on stdout, no call, and no file.
+  - `--start-test` makes exactly one call on a fixed built-in sample group and
+    no set data. It prints `<route> ready|not-ready <error line or ->`, exits
+    0 for ready and 3 for not-ready, and writes no judge file.
+  - Verify: `cd harness && npx vitest run
+    model-guide-tests/judge-run.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot` fails on the Phase 4 code. Record the
+    failed test names in `measure/runs/model_guide/red-4.13a.txt`.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
