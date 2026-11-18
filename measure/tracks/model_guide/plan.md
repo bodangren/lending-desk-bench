@@ -2142,7 +2142,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     242fe529b26f9d1a4e132f407a2036567c7e3011; final Green HEAD 9ae4e51
     before this row, and the plan-evidence commit after it.
-- [~] 4.13g Red: the Go plan thresholds (PM order 2026-11-19, spec D15).
+- [~] 0861c05 4.13g Red: the Go plan thresholds (PM order 2026-11-19, spec D15).
   Change only `harness/model-guide-tests/quota.test.ts`,
   `harness/model-guide-tests/review-run.test.ts`, and
   `harness/model-guide-tests/judge-run.test.ts`. Touch no production file.
@@ -2167,6 +2167,14 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     vitest run model-guide-tests/judge-run.test.ts --configLoader native
     --maxWorkers=1 --reporter=dot`. After each run, `pgrep -af
     "fake-opencod[e]"` and `pgrep -af "quota-serve[r]"` print no line.
+  - Evidence: Red test commit 0861c05. `quota.test.ts` exits 1 with
+    `Tests 2 failed | 15 passed (17)`; `review-run.test.ts` exits 1 with
+    `49 pass` and `3 fail`; `judge-run.test.ts` exits 1 with `Tests 3
+    failed | 27 passed (30)`. The failed names are Q9 and Q10, G1, G2,
+    and G3 of the review runner, and G1, G2, and G3 of the judge runner.
+    The record is `measure/runs/model_guide/red-4.13g.txt` (not staged).
+    The two pgrep scans print no line at the end of each run. Row stays
+    `[~]` until Green 4.13h flips it.
 - [ ] 4.13h Green: the Go plan thresholds (PM order 2026-11-19, spec D15).
   Change `harness/model-guide/quota.ts`,
   `harness/model-guide/review-run.sh`, and
