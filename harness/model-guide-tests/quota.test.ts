@@ -219,6 +219,9 @@ function makeSandbox(): Sandbox {
   };
   delete env.BENCH_TRACK;
   delete env.BENCH_QUOTA_BASE;
+  delete env.BENCH_RA_QUOTA;
+  delete env.RA_QUOTA_LASTGOOD;
+  delete env.RA_QUOTA_API_PORT;
   delete env.OPENCODE_CONFIG;
   return {
     root,
@@ -1068,6 +1071,165 @@ describe("Q8 bad port output", () => {
       expect(server.requests, "bad port output sent a request").toEqual([]);
     } finally {
       await server.close();
+      sandbox.close();
+    }
+  });
+});
+
+describe("Q16 the Go quota through ra-quota (task 4.13q point 8, PM order 2026-11-19)", () => {
+  /** The fake `ra-quota` double of a case. It attempts the hanging API
+   * with a short timeout, then falls back to the last-good file at
+   * `$RA_QUOTA_LASTGOOD`: a fresh reading (< 6 h) prints the opencode-go
+   * entry with those windows, a stale or missing reading prints `{}`. */
+  const FAKE_RA_QUOTA_SOURCE = `#!/usr/bin/env node
+const http = require("node:http");
+const fs = require("node:fs");
+const SIX_H = 6 * 3600;
+function fetchApi(port) {
+  return new Promise((done) => {
+    const req = http.get(
+      \`http://127.0.0.1:\${port}/api/quota/opencode-go\`,
+      { timeout: 1500 },
+      (res) => {
+        res.resume();
+        res.on("end", () => done(true));
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      done(false);
+    });
+    req.on("error", () => done(false));
+  });
+}
+async function main() {
+  const port = Number(process.env.RA_QUOTA_API_PORT || "0");
+  await fetchApi(port);
+  let entry = null;
+  try {
+    const doc = JSON.parse(fs.readFileSync(process.env.RA_QUOTA_LASTGOOD || "", "utf8"));
+    if (doc && typeof doc.fetchedAt === "number" && doc.windows && typeof doc.windows === "object") {
+      entry = doc;
+    }
+  } catch {
+    entry = null;
+  }
+  const nowSec = Date.now() / 1000;
+  if (entry && nowSec - entry.fetchedAt < SIX_H && Object.keys(entry.windows).length > 0) {
+    const label = new Date(entry.fetchedAt * 1000).toISOString();
+    process.stdout.write(
+      JSON.stringify({
+        "opencode-go": {
+          state: "GO",
+          windows: entry.windows,
+          reason: \`last good reading \${label} (fetch failed: timeout)\`,
+        },
+      }) + "\\n",
+    );
+  } else {
+    process.stdout.write("{}\\n");
+  }
+}
+void main();
+`;
+
+  /** Writes the last-good file of a case: the fetched epoch seconds and
+   * the window percents in the ra-quota windows shape. */
+  function writeLastgood(path: string, fetchedAtSec: number, windows: Record<string, number>): void {
+    const shaped: Record<string, { percent: number }> = {};
+    for (const [name, percent] of Object.entries(windows)) shaped[name] = { percent };
+    writeFileSync(path, `${JSON.stringify({ fetchedAt: fetchedAtSec, windows: shaped })}\n`);
+  }
+
+  /** Points the sandbox at the fake ra-quota double and its last-good. */
+  function pointAtFakeRaQuota(
+    sandbox: Sandbox,
+    api: QuotaServer,
+    lastgoodPath: string,
+  ): string {
+    const fakePath = join(sandbox.bin, "ra-quota");
+    writeFileSync(fakePath, FAKE_RA_QUOTA_SOURCE, { mode: 0o755 });
+    chmodSync(fakePath, 0o755);
+    sandbox.env.BENCH_RA_QUOTA = fakePath;
+    sandbox.env.RA_QUOTA_LASTGOOD = lastgoodPath;
+    sandbox.env.RA_QUOTA_API_PORT = String(api.port);
+    return fakePath;
+  }
+
+  it("Q16a a fetch timeout with a fresh last-good reading gives the state of that reading", async () => {
+    const sandbox = makeSandbox();
+    const api = await startQuotaServer(neverAnswer());
+    try {
+      const lastgoodPath = join(sandbox.root, "lastgood.json");
+      writeLastgood(lastgoodPath, Date.now() / 1000 - 3600, { "5h": 50, weekly: 40 });
+      pointAtFakeRaQuota(sandbox, api, lastgoodPath);
+      const result = await runQuota(sandbox, ["--provider", "opencode-go"]);
+      expect(api.requests, "the fake ra-quota never attempted the hanging API").toEqual([
+        "/api/quota/opencode-go",
+      ]);
+      const doc = expectState(result, "ready", "fresh last-good 5h 50, weekly 40");
+      expect(doc.cap, "the cap of the Go provider is the N of spec D13").toBe(3);
+      expect(doc.windows?.["5h"], "the 5h value is not labeled").toBe(50);
+      expect(doc.windows?.["weekly"], "the weekly value is not labeled").toBe(40);
+    } finally {
+      await api.close();
+      sandbox.close();
+    }
+  });
+
+  it("Q16b a fetch timeout with a fresh last-good reading at 5h 96 gives wait", async () => {
+    const sandbox = makeSandbox();
+    const api = await startQuotaServer(neverAnswer());
+    try {
+      const lastgoodPath = join(sandbox.root, "lastgood.json");
+      writeLastgood(lastgoodPath, Date.now() / 1000 - 60, { "5h": 96, weekly: 40 });
+      pointAtFakeRaQuota(sandbox, api, lastgoodPath);
+      const result = await runQuota(sandbox, ["--provider", "opencode-go"]);
+      expect(api.requests, "the fake ra-quota never attempted the hanging API").toEqual([
+        "/api/quota/opencode-go",
+      ]);
+      const doc = expectState(result, "wait", "fresh last-good 5h 96");
+      expect(doc.windows?.["5h"], "the 5h value is not labeled").toBe(96);
+      expect(doc.windows?.["weekly"], "the weekly value is not labeled").toBe(40);
+    } finally {
+      await api.close();
+      sandbox.close();
+    }
+  });
+
+  it("Q16c a stale last-good reading gives stopped naming the stale reading", async () => {
+    const sandbox = makeSandbox();
+    const api = await startQuotaServer(neverAnswer());
+    try {
+      const lastgoodPath = join(sandbox.root, "lastgood.json");
+      writeLastgood(lastgoodPath, Date.now() / 1000 - 7 * 3600, { "5h": 10, weekly: 10 });
+      pointAtFakeRaQuota(sandbox, api, lastgoodPath);
+      const result = await runQuota(sandbox, ["--provider", "opencode-go"]);
+      expect(api.requests, "the fake ra-quota never attempted the hanging API").toEqual([
+        "/api/quota/opencode-go",
+      ]);
+      expectStopped(result, "stale last-good");
+      expect(result.stderr, "the stop must name the stale reading").toMatch(/stale/i);
+    } finally {
+      await api.close();
+      sandbox.close();
+    }
+  });
+
+  it("Q16d a missing last-good reading gives stopped naming the missing reading", async () => {
+    const sandbox = makeSandbox();
+    const api = await startQuotaServer(neverAnswer());
+    try {
+      const lastgoodPath = join(sandbox.root, "lastgood-missing.json");
+      pointAtFakeRaQuota(sandbox, api, lastgoodPath);
+      const result = await runQuota(sandbox, ["--provider", "opencode-go"]);
+      expect(api.requests, "the fake ra-quota never attempted the hanging API").toEqual([
+        "/api/quota/opencode-go",
+      ]);
+      expectStopped(result, "missing last-good");
+      expect(result.stderr, "the stop must name the missing reading").toMatch(/last-?good|missing/i);
+    } finally {
+      await api.close();
       sandbox.close();
     }
   });

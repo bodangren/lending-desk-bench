@@ -201,10 +201,10 @@ function sweepHelpers(): void {
 /** Spawns a decoy process whose argv holds `serve --service <tag>`, with
  * its HOME and cwd outside the job root. The guard must never touch it.
  * The caller owns the pid: it kills it in a finally block. */
-function spawnDecoy(tag: string, home: string): number {
+function spawnDecoy(tag: string, home: string, cwd = "/tmp"): number {
   const child = spawn("bash", ["-c", 'exec -a "$0" sleep 120', `fake-opencode serve --service ${tag}`], {
     env: { HOME: home, PATH: "/usr/bin:/bin" },
-    cwd: "/tmp",
+    cwd,
     stdio: "ignore",
     detached: true,
   });
@@ -255,6 +255,30 @@ function procHome(pid: number): string {
   }
   const match = /HOME=([^\0]*)/.exec(environ);
   return match ? match[1] : "";
+}
+
+/** The raw argv entries of a process, with no NUL normalization. The
+ * production guard reads the raw buffer, so a Red pin on the real daemon
+ * shape must read it raw too (task 4.13q F1). */
+function rawCmdlineEntries(pid: number): string[] {
+  try {
+    return readFileSync(`/proc/${pid}/cmdline`, "utf8")
+      .split("\0")
+      .filter((entry) => entry !== "");
+  } catch {
+    return [];
+  }
+}
+
+/** The text of one shell function of the runner, extracted verbatim, so the
+ * test pins the production helper instead of a copy (task 4.13q N3). */
+function shellFunc(sourcePath: string, name: string): string {
+  const lines = readFileSync(sourcePath, "utf8").split("\n");
+  const start = lines.findIndex((line) => line === `${name}() {`);
+  expect(start, `${name} is missing in ${sourcePath}`).toBeGreaterThanOrEqual(0);
+  const end = lines.findIndex((line, index) => index > start && line === "}");
+  expect(end, `${name} has no closing brace in ${sourcePath}`).toBeGreaterThan(start);
+  return lines.slice(start, end + 1).join("\n");
 }
 
 /** The auth export calls of the fake log. */
@@ -2429,12 +2453,16 @@ describe("P4 the daemon guard of the judge runner (task 4.13o)", () => {
   const SEED_ARGV = `auth export ${SEED_PROVIDER} --standalone`;
   const NO_DELAYS = { BENCH_CREDENTIAL_SEED_DELAYS: "0" };
 
-  /** One entry of the fake shared or job store for the real helper. */
+  /** One entry of the fake shared or job store for the real helper. The
+   * entry uses the live `auth export` shape (task 4.13q point 7):
+   * `integrationID`, `active`, and a value, with no `provider` field. */
   function storeEntry(): unknown {
     return {
-      provider: SEED_PROVIDER,
+      integrationID: SEED_PROVIDER,
       active: true,
       value: {
+        type: "oauth",
+        key: "FAKE-KEY-OPENCODIGO-0001",
         access: SECRET,
         refresh: "inert",
         expires: 9999999999999,
@@ -2463,6 +2491,18 @@ describe("P4 the daemon guard of the judge runner (task 4.13o)", () => {
       const daemons = await daemonPids(fixture);
       expect(daemons, "the fake left no daemon child").toHaveLength(1);
       daemonPid = daemons[0];
+      // The Red pin on the real daemon shape (task 4.13q F1): the raw
+      // buffer holds the split entries, never the joined text.
+      const jd1Entries = rawCmdlineEntries(daemonPid);
+      expect(jd1Entries, "the fake daemon must use a real argv split").toContain("serve");
+      expect(
+        jd1Entries.indexOf("--service") - jd1Entries.indexOf("serve"),
+        "serve and --service must be adjacent argv entries",
+      ).toBe(1);
+      expect(
+        jd1Entries.some((entry) => entry.includes("serve --service")),
+        "no single argv entry holds the joined text",
+      ).toBe(false);
       expect(isAlive(daemonPid), "the runner stopped the daemon child").toBe(false);
       const infra = stderrLines(result).filter((line) => line.includes("INFRA stopped daemon"));
       expect(infra, "the runner writes one INFRA line to stderr").toHaveLength(1);
@@ -2474,6 +2514,54 @@ describe("P4 the daemon guard of the judge runner (task 4.13o)", () => {
     } finally {
       if (daemonPid !== 0) await killHelper(daemonPid);
       await killHelper(decoyPid);
+      dropFixture(fixture);
+    }
+  });
+
+  it("JD2 a process whose HOME resolves outside the job root survives, and the sibling folder survives", async () => {
+    // The job folder is preset, so the decoy paths are known before the
+    // run: opencode_host_begin keeps an existing BENCH_OPENCODE_HOME.
+    const fixture = await buildFixture({
+      groups: [GROUP_ONE],
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+      ],
+    });
+    const jobDir = join(fixture.root, "preset-job");
+    mkdirSync(jobDir, { recursive: true });
+    const outsideDir = join(fixture.root, "outside");
+    mkdirSync(outsideDir, { recursive: true });
+    // The HOME string starts with the job root but resolves outside it.
+    const outsideHome = `${jobDir}/../outside/home`;
+    // A cwd reached through a symlink inside the job root resolves
+    // outside it; readlink already resolves, so this decoy survives at
+    // HEAD and pins the Green behavior too.
+    const linkDir = join(jobDir, "link");
+    symlinkSync(outsideDir, linkDir);
+    const siblingHome = `${jobDir}-other/home`;
+    // The decoys keep the joined argv shape, so the guard selects them on
+    // argv at HEAD; only the scoping decides. After Green the resolved
+    // paths decide instead.
+    const homePid = spawnDecoy("mg-jdecoy-D4-home", outsideHome);
+    const linkPid = spawnDecoy("mg-jdecoy-D4-link", fixture.home, linkDir);
+    const siblingPid = spawnDecoy("mg-jdecoy-D4-sib", siblingHome);
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture), { BENCH_OPENCODE_HOME: jobDir });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(isAlive(homePid), "a HOME that resolves outside the job root survives").toBe(true);
+      expect(isAlive(linkPid), "a cwd reached through a symlink outside the job root survives").toBe(true);
+      expect(isAlive(siblingPid), "a sibling of the job root survives").toBe(true);
+      const infra = stderrLines(result).filter((line) => line.includes("INFRA stopped daemon"));
+      expect(infra, "the guard stopped a process outside the job root").toEqual([]);
+    } finally {
+      await killHelper(homePid);
+      await killHelper(linkPid);
+      await killHelper(siblingPid);
       dropFixture(fixture);
     }
   });
@@ -2565,6 +2653,76 @@ describe("P4 the daemon guard of the judge runner (task 4.13o)", () => {
       expect(judgeFile(fixture, "a"), "the runner wrote a judge file").toBeNull();
     } finally {
       dropFixture(fixture);
+    }
+  });
+
+  it("JS3 the seed export cwd sits outside any git repo when TMPDIR points inside one", async () => {
+    const fixture = await buildFixture({
+      realCredential: true,
+      groups: [GROUP_ONE],
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+      ],
+      authExportShared: [storeEntry()],
+      authExportJob: [],
+    });
+    const gitDir = join(fixture.root, "git-tmp");
+    mkdirSync(gitDir, { recursive: true });
+    const init = spawnSync("git", ["init", "-q", gitDir], { encoding: "utf8", timeout: 20_000 });
+    expect(init.status, `git init failed:\n${init.stdout}\n${init.stderr}`).toBe(0);
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture), { ...NO_DELAYS, TMPDIR: gitDir });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const top = spawnSync("git", ["-C", gitDir, "rev-parse", "--show-toplevel"], {
+        encoding: "utf8",
+        timeout: 20_000,
+      });
+      expect(top.status, "TMPDIR is not inside a git repo").toBe(0);
+      const root = top.stdout.trim();
+      const cwds = exportCalls(logEntries(fixture.logPath))
+        .filter((entry) => entry.home === fixture.home)
+        .map((entry) => entry.cwd);
+      expect(cwds, "the seed made no real-HOME export call").toHaveLength(1);
+      const under = cwds[0] === root || cwds[0].startsWith(`${root}/`);
+      expect(under, `the seed export cwd sits inside the git repo: ${cwds[0]}`).toBe(false);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+
+describe("P4 the proc table seam of the guards (task 4.13q N3)", () => {
+  it("N3 daemon_pid_alive honors BENCH_OPENCODE_PROC like daemon_pids does", () => {
+    const proc = mkdtempSync(join(tmpdir(), "mg-judge-proc-"));
+    tempRoots.add(proc);
+    try {
+      // A live pid of the fake table. The real /proc holds no 424242, so
+      // only a helper that honors the seam can see it alive.
+      const pidDir = join(proc, "424242");
+      mkdirSync(pidDir, { recursive: true });
+      const statText = (state: string): string =>
+        `424242 (fake-opencode) ${state} 1 1 1 0 -1 4194304 0 0 0 0 0 0 0 0 20 0 1 0 123456 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n`;
+      writeFileSync(join(pidDir, "stat"), statText("R"));
+      const helper = shellFunc(RUNNER_SOURCE, "daemon_pid_alive");
+      const alive = spawnSync("bash", ["-c", `${helper}\nBENCH_OPENCODE_PROC="${proc}" daemon_pid_alive 424242`], {
+        encoding: "utf8",
+        timeout: 20_000,
+      });
+      expect(alive.status, `daemon_pid_alive missed a running pid of the fake table:\n${alive.stdout}\n${alive.stderr}`).toBe(0);
+      // A zombie of the fake table reads dead, as on the real table.
+      writeFileSync(join(pidDir, "stat"), statText("Z"));
+      const dead = spawnSync("bash", ["-c", `${helper}\nBENCH_OPENCODE_PROC="${proc}" daemon_pid_alive 424242`], {
+        encoding: "utf8",
+        timeout: 20_000,
+      });
+      expect(dead.status, "daemon_pid_alive treats a zombie of the fake table as alive").not.toBe(0);
+    } finally {
+      rmSync(proc, { recursive: true, force: true });
+      tempRoots.delete(proc);
     }
   });
 });

@@ -16,14 +16,17 @@
  *   - `seed <p>` reads the shared store with one `opencode auth export`
  *     call, retried on a transient failure with the waits of
  *     `BENCH_CREDENTIAL_SEED_DELAYS` (default `5 15 30 60`). It selects the
- *     active entry whose `provider` field is `<p>` and imports exactly that
+ *     active entry whose `integrationID` field is `<p>` (the live
+ *     `auth export` shape, task 4.13q point 7) and imports exactly that
  *     one entry into the job store with `opencode auth import`. stdout is
- *     empty. exit 0.
+ *     empty. exit 0. Two active entries of one integrationID refuse as
+ *     ambiguous, as the daily helper does.
  *   - `scan-values <p>` reads the job store, selects the entry of `<p>`,
  *     and prints its values, one per line, in this order: the access value,
  *     then the orgID. The refresh value `inert` is not printed. exit 0.
  *   - A provider with no entry gives exit 2, one named line, no value on
- *     stdout, and no new entry in the job store.
+ *     stdout, and no new entry in the job store. An entry with only a
+ *     `provider` field is never selected.
  *   - `BENCH_CREDENTIAL_SEED_DELAYS` must be a list of whole seconds and
  *     `AGENT_TIMEOUT` must be a non-negative integer. A bad value gives exit
  *     2 and one named line before any `opencode` call.
@@ -33,9 +36,9 @@
  * The shared export of the fake holds three entries: two providers and one
  * entry of another kind. The entry of a provider has these fields:
  *
- *   {"integrationID":"opencode","active":true,"provider":"<id>",
- *    "value":{"access":"...","refresh":"inert","expires":4102444800000,
- *             "metadata":{"orgID":"..."}}}
+ *   {"integrationID":"<id>","active":true,
+ *    "value":{"type":"oauth","key":"...","access":"...","refresh":"inert",
+ *             "expires":4102444800000,"metadata":{"orgID":"..."}}}
  *
  * The fake `opencode` is a temp script that the test writes:
  *
@@ -69,6 +72,7 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -154,6 +158,7 @@ SHARED_FILE="$FAKE_OPENCODE_SHARED"
 STORE_FILE="$FAKE_OPENCODE_STORE"
 COUNTER_FILE="$FAKE_OPENCODE_COUNTER"
 ARGV_FILE="$FAKE_OPENCODE_ARGV"
+CWD_FILE="$FAKE_OPENCODE_CWD"
 if [ -n "$ARGV_FILE" ]; then
   printf '%s\n' "$*" >> "$ARGV_FILE"
 fi
@@ -163,6 +168,9 @@ if [ "$1" != "auth" ]; then
 fi
 case "$2" in
   export)
+    if [ -n "$CWD_FILE" ]; then
+      pwd >> "$CWD_FILE"
+    fi
     if [ -s "$STORE_FILE" ]; then
       cat "$STORE_FILE"
       exit 0
@@ -208,18 +216,23 @@ interface Fixture {
   store: string;
   counter: string;
   argvLog: string;
+  cwdLog: string;
   env: Record<string, string>;
   close(): void;
 }
 
-/** The shared export of the fake: two providers and one other kind. */
+/** The shared export of the fake: two providers and one other kind. Every
+ * entry uses the live `auth export` shape (task 4.13q point 7):
+ * `integrationID`, `active`, and a value with type/key/access/refresh,
+ * and no `provider` field. */
 function sharedExport(pad = 0): string {
   const entries: Array<Record<string, unknown>> = [
     {
-      integrationID: "opencode",
+      integrationID: PROVIDER_A,
       active: true,
-      provider: PROVIDER_A,
       value: {
+        type: "oauth",
+        key: "FAKE-KEY-OPENCODIGO-0001",
         access: ACCESS_A,
         refresh: "inert",
         expires: 4102444800000,
@@ -227,10 +240,11 @@ function sharedExport(pad = 0): string {
       },
     },
     {
-      integrationID: "opencode",
+      integrationID: PROVIDER_B,
       active: true,
-      provider: PROVIDER_B,
       value: {
+        type: "oauth",
+        key: "FAKE-KEY-KIMICODECN-0002",
         access: ACCESS_B,
         refresh: "inert",
         expires: 4102444800000,
@@ -241,6 +255,8 @@ function sharedExport(pad = 0): string {
       integrationID: "anthropic",
       active: true,
       value: {
+        type: "oauth",
+        key: "FAKE-KEY-OTHERKIND-0003",
         access: ACCESS_C,
         refresh: "inert",
         expires: 4102444800000,
@@ -268,6 +284,7 @@ function buildFixture(options: { failFirst?: number; pad?: number } = {}): Fixtu
   const store = join(root, "job-store.json");
   const counter = join(root, "export-calls.txt");
   const argvLog = join(root, "opencode-argv.log");
+  const cwdLog = join(root, "opencode-cwd.log");
 
   for (const dir of [guide, fakeDir, home, tmp, raw]) mkdirSync(dir, { recursive: true });
   for (const sub of ["home", "config", "data", "state", "cache", "runtime", "tmp"]) {
@@ -306,6 +323,7 @@ function buildFixture(options: { failFirst?: number; pad?: number } = {}): Fixtu
     FAKE_OPENCODE_STORE: store,
     FAKE_OPENCODE_COUNTER: counter,
     FAKE_OPENCODE_ARGV: argvLog,
+    FAKE_OPENCODE_CWD: cwdLog,
     FAKE_OPENCODE_FAIL_FIRST: String(options.failFirst ?? 0),
     BENCH_CREDENTIAL_SEED_DELAYS: "5 15 30 60",
     AGENT_TIMEOUT: "3600",
@@ -323,6 +341,7 @@ function buildFixture(options: { failFirst?: number; pad?: number } = {}): Fixtu
     store,
     counter,
     argvLog,
+    cwdLog,
     env,
     close: () => {
       rmSync(root, { recursive: true, force: true });
@@ -422,6 +441,15 @@ function argvTokens(line: string): string[] {
   return line.split(/\s+/).filter((part) => part !== "");
 }
 
+/** The working folders the fake recorded, one per `auth export` call. */
+function cwdLines(fixture: Fixture): string[] {
+  if (!existsSync(fixture.cwdLog)) return [];
+  return readFileSync(fixture.cwdLog, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
 /** The files of one tree. */
 function filesUnder(dir: string): string[] {
   const out: string[] = [];
@@ -488,7 +516,7 @@ describe("C1 the seed", () => {
       ).toEqual([]);
       const entries = storeEntries(fixture);
       expect(entries, "the job store does not hold one entry").toHaveLength(1);
-      expect(entries[0].provider, "the stored entry is not the entry of the provider").toBe(PROVIDER_A);
+      expect(entries[0].integrationID, "the stored entry is not the entry of the provider").toBe(PROVIDER_A);
       expect(entries[0].value?.access, "the stored access value is wrong").toBe(ACCESS_A);
       const stored = JSON.stringify(entries);
       expect(stored.includes(ACCESS_B), "the entry of the second provider stayed in").toBe(false);
@@ -584,7 +612,7 @@ describe("C4 the transient export retry", () => {
       expect(exportCalls(fixture), "the helper did not retry the export").toBe(2);
       const entries = storeEntries(fixture);
       expect(entries).toHaveLength(1);
-      expect(entries[0].provider).toBe(PROVIDER_A);
+      expect(entries[0].integrationID).toBe(PROVIDER_A);
     } finally {
       fixture.close();
     }
@@ -645,9 +673,163 @@ describe("C7 a large export", () => {
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
       const entries = storeEntries(fixture);
       expect(entries, "the job store does not hold one entry").toHaveLength(1);
-      expect(entries[0].provider).toBe(PROVIDER_A);
+      expect(entries[0].integrationID).toBe(PROVIDER_A);
       expect(entries[0].value?.access).toBe(ACCESS_A);
       expect(result.stdout, "seed printed a value").toBe("");
+    } finally {
+      fixture.close();
+    }
+  });
+});
+
+describe("C8 an entry with only a provider field is never selected (task 4.13q point 7)", () => {
+  it("C8 a seed for a provider whose entry holds only a provider field gives exit 2 and no store entry", () => {
+    const fixture = buildFixture();
+    try {
+      // The old shape names the provider in a `provider` field. The live
+      // shape names it in `integrationID`, so this entry must not match.
+      writeFileSync(
+        fixture.shared,
+        `${JSON.stringify([{ provider: PROVIDER_A, active: true, value: { type: "oauth", key: "k", access: ACCESS_A, refresh: "inert", expires: 4102444800000, metadata: { orgID: ORG_A } } }])}\n`,
+      );
+      const result = runHelper(fixture, ["seed", PROVIDER_A], { BENCH_CREDENTIAL_SEED_DELAYS: "0" });
+      expectRefusal(result, "seed with a provider-only entry");
+      expect(existsSync(fixture.store), "the run wrote a job store").toBe(false);
+      expect(storeEntries(fixture), "the run wrote a store entry").toHaveLength(0);
+    } finally {
+      fixture.close();
+    }
+  });
+});
+
+describe("C9 two active entries of one integrationID are ambiguous (task 4.13q point 7)", () => {
+  it("C9 a seed with two active entries of one integrationID refuses as ambiguous", () => {
+    const fixture = buildFixture();
+    try {
+      const entry = (key: string, access: string): Record<string, unknown> => ({
+        integrationID: PROVIDER_A,
+        active: true,
+        value: {
+          type: "oauth",
+          key,
+          access,
+          refresh: "inert",
+          expires: 4102444800000,
+          metadata: { orgID: ORG_A },
+        },
+      });
+      writeFileSync(fixture.shared, `${JSON.stringify([entry("k1", ACCESS_A), entry("k2", ACCESS_B)])}\n`);
+      const result = runHelper(fixture, ["seed", PROVIDER_A], { BENCH_CREDENTIAL_SEED_DELAYS: "0" });
+      expectRefusal(result, "seed with two active entries");
+      expect(result.stderr, "the refusal must name the ambiguity").toMatch(/ambiguous/);
+      expect(existsSync(fixture.store), "the run wrote a job store").toBe(false);
+    } finally {
+      fixture.close();
+    }
+  });
+});
+
+describe("C10 two active entries of one integrationID in the job store (task 4.13q point 7)", () => {
+  it("C10 scan-values with two active entries of one integrationID refuses as ambiguous", () => {
+    const fixture = buildFixture();
+    try {
+      const entry = (key: string, access: string): Record<string, unknown> => ({
+        integrationID: PROVIDER_A,
+        active: true,
+        value: {
+          type: "oauth",
+          key,
+          access,
+          refresh: "inert",
+          expires: 4102444800000,
+          metadata: { orgID: ORG_A },
+        },
+      });
+      writeFileSync(fixture.store, `${JSON.stringify([entry("k1", ACCESS_A), entry("k2", ACCESS_B)])}\n`);
+      const result = runHelper(fixture, ["scan-values", PROVIDER_A]);
+      expectRefusal(result, "scan-values with two active entries");
+      expect(result.stderr, "the refusal must name the ambiguity").toMatch(/ambiguous/);
+    } finally {
+      fixture.close();
+    }
+  });
+});
+
+describe("C11 the seed export cwd sits outside any git repo (task 4.13q F4)", () => {
+  it("C11 the seed export cwd is outside the git repo when TMPDIR points inside one", () => {
+    const fixture = buildFixture();
+    try {
+      const gitDir = join(fixture.root, "git-tmp");
+      mkdirSync(gitDir, { recursive: true });
+      const init = spawnSync("git", ["init", "-q", gitDir], { encoding: "utf8", timeout: 20_000 });
+      expect(init.status, `git init failed:\n${init.stdout}\n${init.stderr}`).toBe(0);
+      const result = runHelper(
+        fixture,
+        ["seed", PROVIDER_A],
+        { BENCH_CREDENTIAL_SEED_DELAYS: "0", TMPDIR: gitDir },
+      );
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const top = spawnSync("git", ["-C", gitDir, "rev-parse", "--show-toplevel"], {
+        encoding: "utf8",
+        timeout: 20_000,
+      });
+      expect(top.status, "TMPDIR is not inside a git repo").toBe(0);
+      const root = top.stdout.trim();
+      const cwds = cwdLines(fixture);
+      expect(cwds.length, "the seed made no export call").toBeGreaterThan(0);
+      for (const cwd of cwds) {
+        const under = cwd === root || cwd.startsWith(`${root}/`);
+        expect(under, `the seed export cwd sits inside the git repo: ${cwd}`).toBe(false);
+      }
+    } finally {
+      fixture.close();
+    }
+  });
+});
+
+describe("H1 the job HOME resolves inside the job root (task 4.13q F5)", () => {
+  it("H1 scan-values whose job home is a symlink outside the job root refuses", () => {
+    const fixture = buildFixture();
+    try {
+      // scan-values reads the job store with no seed, so the HOME guard is
+      // the only refusal on this path. The entry carries both keys so the
+      // scan reaches the HOME guard at HEAD: the provider key matches the
+      // old selection, and the integrationID key matches the live shape
+      // after Green (C8 pins that a provider-only entry never matches).
+      writeFileSync(
+        fixture.store,
+        `${JSON.stringify([{ integrationID: PROVIDER_A, provider: PROVIDER_A, active: true, value: { type: "oauth", key: "k", access: ACCESS_A, refresh: "inert", expires: 4102444800000, metadata: { orgID: ORG_A } } }])}\n`,
+      );
+      const outsideHome = join(fixture.root, "outside-home");
+      mkdirSync(outsideHome, { recursive: true });
+      rmSync(join(fixture.job, "home"), { recursive: true, force: true });
+      symlinkSync(outsideHome, join(fixture.job, "home"));
+      const result = runHelper(fixture, ["scan-values", PROVIDER_A]);
+      expectRefusal(result, "scan-values with a job home outside the job root");
+      expect(result.stderr, "the refusal must name the job root").toMatch(/job root/);
+    } finally {
+      fixture.close();
+    }
+  });
+});
+
+describe("H2 a relative job folder is refused (task 4.13q F5)", () => {
+  it("H2 scan-values with a relative BENCH_OPENCODE_HOME refuses", () => {
+    const fixture = buildFixture();
+    try {
+      // Both keys, as in H1: the provider key reaches the scan at HEAD so
+      // the HOME guard is the only refusal on this path.
+      writeFileSync(
+        fixture.store,
+        `${JSON.stringify([{ integrationID: PROVIDER_A, provider: PROVIDER_A, active: true, value: { type: "oauth", key: "k", access: ACCESS_A, refresh: "inert", expires: 4102444800000, metadata: { orgID: ORG_A } } }])}\n`,
+      );
+      const relJob = join(".tmp", "rel-job");
+      mkdirSync(join(fixture.repo, relJob), { recursive: true });
+      const result = runHelper(fixture, ["scan-values", PROVIDER_A], {
+        BENCH_OPENCODE_HOME: relJob,
+      });
+      expectRefusal(result, "scan-values with a relative job folder");
+      expect(result.stderr, "the refusal must name the path rule").toMatch(/absolute|job root/);
     } finally {
       fixture.close();
     }
