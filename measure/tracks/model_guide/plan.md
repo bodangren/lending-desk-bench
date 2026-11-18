@@ -1695,6 +1695,14 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     f21bec211ab482ef0d721b7f1a3b0affbec52dee (the HEAD before this Red
     role). The task message named only the role base; the phase base came
     from the repository.
+  - Fixture fix (Red, 2026-11-18, commit 193c4c2): the fixture of
+    `adversarial-p4-runner.test.ts` wrote the diff into `sets/<set_id>/src`,
+    so the runner that reads `diffs/` refused the set and 9 of the 14 cases
+    failed. The fixture writes the seeded diff into `diffs/` now, and no
+    assertion changed. With the uncommitted production fix of the Green role
+    in place, that file gives `Tests  14 passed (14)`, and `bun test
+    harness/model-guide-tests/review-run.test.ts` gives `39 pass` and
+    `0 fail`.
 - [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
   per route of `routes.json` on the first control diff of `mg-2026-11a`,
   through `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19.
