@@ -63,8 +63,10 @@
 # `run --standalone --format json --model <route>`, the job config that
 # denies every tool, the credential value scan before an answer is used, the
 # flock lock of one set, one judge, and one date, the quota rules of spec D15
-# (no start at 70 %, stop at 80 % of a window), the watcher of the call, and
-# the token log of the `step-finish` events (spec D13).
+# (no start at 70 %, stop at 80 % of a window; the Go plan waits at 95 % of
+# the 5h window or 100 % of the week window and stops at those thresholds,
+# PM 2026-11-19), the watcher of the call, and the token log of the
+# `step-finish` events (spec D13).
 #
 # Environment seams: `BENCH_QUOTA_BASE` (quota.ts) and `MG_CALL_TIMEOUT_S`
 # (default 600). The runner reads no real home folder, sends no packet off the
@@ -229,6 +231,20 @@ if [ -n "$ROUTE_KIND" ]; then
     plan|free) ;;
     *) refuse "the route kind is not plan or free: $ROUTE_KIND" ;;
   esac
+fi
+
+# The quota rule of the route (spec D15, PM 2026-11-19). The Go plan holds
+# the source `opencode-go`. It waits at 95 % of the 5h window or 100 % of
+# the week window, and a run stops at those same thresholds. Every other
+# source waits at 70 % of any window, and a run stops at 80 %.
+GO_QUOTA_SOURCE="opencode-go"
+IS_GO_ROUTE=0
+QUOTA_WAIT_TEXT="a window is 70 % or more"
+QUOTA_STOP_TEXT="a window reached 80 %"
+if [ "$QUOTA_SOURCE" = "$GO_QUOTA_SOURCE" ]; then
+  IS_GO_ROUTE=1
+  QUOTA_WAIT_TEXT="the 5h window reached 95 % or the week window reached 100 %"
+  QUOTA_STOP_TEXT="the 5h window reached 95 % or the week window reached 100 %"
 fi
 
 # The tools of the run.
@@ -435,7 +451,7 @@ run_start_test() {
   local error_line="" rc=0
   read_quota
   if [ "$QUOTA_STATE" = "wait" ]; then
-    echo "$ROUTE not-ready a quota window is 70 % or more"
+    echo "$ROUTE not-ready $QUOTA_WAIT_TEXT"
     return 3
   fi
   if [ "$QUOTA_STATE" = "stopped" ]; then
@@ -653,7 +669,8 @@ while [ "$GROUP_INDEX" -lt "$TOTAL_GROUPS" ]; do
 
   # The quota read before each group (spec D15). A window of 70 % or more
   # stops the run before the call, and a window of 80 % or more stops it
-  # after the previous group.
+  # after the previous group. The Go plan waits at 95 % of the 5h window or
+  # 100 % of the week window, and it stops at those thresholds, never at 80 %.
   read_quota
   if [ "$QUOTA_STATE" = "stopped" ]; then
     ERRORS="${ERRORS}${ERRORS:+$'\n'}quota: $QUOTA_REASON"
@@ -664,15 +681,15 @@ while [ "$GROUP_INDEX" -lt "$TOTAL_GROUPS" ]; do
     continue
   fi
   if [ "$QUOTA_STATE" = "wait" ]; then
-    ERRORS="${ERRORS}${ERRORS:+$'\n'}quota: a window is 70 % or more"
+    ERRORS="${ERRORS}${ERRORS:+$'\n'}quota: $QUOTA_WAIT_TEXT"
     STATE="open"
     STOP=1
     add_row "$GROUP_INDEX" "$group_id" "open" 0 0 0 0 0 "$group_ids"
     GROUP_INDEX=$(( GROUP_INDEX + 1 ))
     continue
   fi
-  if [ -n "$QUOTA_MAX" ] && [ "$(printf '%s\n' "$QUOTA_MAX" | awk '{ print ($1 >= 80) ? 1 : 0 }')" = "1" ]; then
-    ERRORS="${ERRORS}${ERRORS:+$'\n'}quota: a window reached 80 %"
+  if [ "$IS_GO_ROUTE" != "1" ] && [ -n "$QUOTA_MAX" ] && [ "$(printf '%s\n' "$QUOTA_MAX" | awk '{ print ($1 >= 80) ? 1 : 0 }')" = "1" ]; then
+    ERRORS="${ERRORS}${ERRORS:+$'\n'}quota: $QUOTA_STOP_TEXT"
     STATE="open"
     STOP=1
     add_row "$GROUP_INDEX" "$group_id" "open" 0 0 0 0 0 "$group_ids"

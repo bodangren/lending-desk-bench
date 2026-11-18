@@ -57,17 +57,21 @@
 # `<private>/probes/<set_id>/` and no pass record and no raw output. It
 # prints one line `<route> reachable|unreachable|region-blocked <error line
 # or ->` on stdout and exits 0 for `reachable` and 3 for the two error
-# states. A probe blocked by the 70 % quota rule or by the credential scan is
+# states. A probe blocked by the quota rule or by the credential scan is
 # a refusal: exit 2 with one `review-run:` line on stdout, no call, and no
 # record. A held lock follows the lock refusal: exit 2 with one line on
 # stderr.
 #
 # The rules of spec D15: the pass starts only when the quota state is
-# `ready` (every window below 70 %). The pass stops when a window reaches
-# 80 %. A route with no quota source runs at most 1 pass per night, and it
-# stops at the first quota or limit error. The refusal of a second pass of
-# the same date prints one line on stderr that starts `review-run:` and exits
-# 2, with no call and no pass record.
+# `ready`. For every source but the Go plan, `ready` means every window is
+# below 70 %, and the pass stops when a window reaches 80 %. For the Go plan
+# (`quota_source` `opencode-go`, PM 2026-11-19), `ready` means the 5h window
+# is below 95 % and the week window is below 100 %. The pass stops at those
+# same thresholds, and it never stops at 80 %. A route with no quota source
+# runs at most 1 pass per night, and it stops at the first quota or limit
+# error. The refusal of a second pass of the same date prints one line on
+# stderr that starts `review-run:` and exits 2, with no call and no pass
+# record.
 #
 # The rules of spec D14: the job folder comes from `opencode_host_begin`, and
 # the trap of `opencode_host_cleanup` removes it. The seed copies the
@@ -244,6 +248,20 @@ case "$ROUTE_KIND" in
   plan|free) ;;
   *) refuse "the route kind is not plan or free: $ROUTE_KIND" ;;
 esac
+
+# The quota rule of the route (spec D15, PM 2026-11-19). The Go plan holds
+# the source `opencode-go`. It waits at 95 % of the 5h window or 100 % of
+# the week window, and a pass stops at those same thresholds. Every other
+# source waits at 70 % of any window, and a pass stops at 80 %.
+GO_QUOTA_SOURCE="opencode-go"
+IS_GO_ROUTE=0
+QUOTA_WAIT_TEXT="a window is 70 % or more"
+QUOTA_STOP_TEXT="a window reached 80 %"
+if [ "$QUOTA_SOURCE" = "$GO_QUOTA_SOURCE" ]; then
+  IS_GO_ROUTE=1
+  QUOTA_WAIT_TEXT="the 5h window reached 95 % or the week window reached 100 %"
+  QUOTA_STOP_TEXT="the 5h window reached 95 % or the week window reached 100 %"
+fi
 
 # The tools of the run.
 TSX=""
@@ -520,7 +538,7 @@ fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
 read_quota
 if [ "$PROBE" = "1" ]; then
   if [ "$QUOTA_STATE" = "wait" ]; then
-    probe_refuse "the quota state is wait: a window is 70 % or more"
+    probe_refuse "the quota state is wait: $QUOTA_WAIT_TEXT"
   fi
   if [ "$QUOTA_STATE" = "stopped" ]; then
     probe_refuse "the quota state is stopped: ${QUOTA_REASON}"
@@ -747,7 +765,9 @@ for diff_path in "${DIFF_PATHS[@]}"; do
   diff_id="${diff_id%.diff}"
   message_path="$MESSAGE_STAGE_DIR/${diff_id}.txt"
 
-  # The quota read before each diff (spec D15). The pass stops at 80 %.
+  # The quota read before each diff (spec D15). A pass with another plan
+  # stops at 80 % of a window. A pass with the Go plan stops at 95 % of the
+  # 5h window or 100 % of the week window, and it never stops at 80 %.
   read_quota
   if [ "$QUOTA_STATE" = "stopped" ]; then
     ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}quota: $QUOTA_REASON"
@@ -755,8 +775,15 @@ for diff_path in "${DIFF_PATHS[@]}"; do
     STOP=1
     break
   fi
-  if [ -n "$QUOTA_MAX" ] && [ "$(printf '%s\n' "$QUOTA_MAX" | awk '{ print ($1 >= 80) ? 1 : 0 }')" = "1" ]; then
-    ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}quota: a window reached 80 %"
+  if [ "$IS_GO_ROUTE" = "1" ]; then
+    if [ "$QUOTA_STATE" = "wait" ]; then
+      ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}quota: $QUOTA_STOP_TEXT"
+      STATE="open"
+      STOP=1
+      break
+    fi
+  elif [ -n "$QUOTA_MAX" ] && [ "$(printf '%s\n' "$QUOTA_MAX" | awk '{ print ($1 >= 80) ? 1 : 0 }')" = "1" ]; then
+    ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}quota: $QUOTA_STOP_TEXT"
     STATE="open"
     STOP=1
     break

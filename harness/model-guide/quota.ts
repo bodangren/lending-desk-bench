@@ -28,9 +28,12 @@
  *    "windows":{"5h":V,"day":V,"week":V}}
  *
  * `state` is `ready`, `wait`, or `stopped`. `ready` means every window is
- * below 70. `wait` means a window is 70 or more. On `stopped`, stderr holds
- * exactly one line `quota: <reason>`. The tool exits 0 for every state. Exit
- * 2 is for a bad flag.
+ * below 70. `wait` means a window is 70 or more. The Go plan (`opencode-go`)
+ * uses the thresholds of the PM order of 2026-11-19: `ready` means the 5h
+ * window is below 95 and the week window is below 100. `wait` means the 5h
+ * window is 95 or more or the week window is 100 or more. On `stopped`,
+ * stderr holds exactly one line `quota: <reason>`. The tool exits 0 for
+ * every state. Exit 2 is for a bad flag.
  *
  * The read has a timeout of 5 s, below the 10 s bound of the contract. The
  * whole answer is parsed, so a 2 MiB body with 200 windows works.
@@ -44,6 +47,15 @@ import { request } from "node:http";
 
 /** The window value that moves a route to `wait` (spec D15). */
 const WAIT_PERCENT = 70;
+
+/** The provider of the Go plan (spec D15, PM 2026-11-19). */
+const GO_PROVIDER = "opencode-go";
+
+/** The 5h window value that moves a Go route to `wait` (spec D15, PM 2026-11-19). */
+const GO_FIVEH_PERCENT = 95;
+
+/** The week window value that moves a Go route to `wait` (spec D15, PM 2026-11-19). */
+const GO_WEEK_PERCENT = 100;
 
 /** The bound of one quota read, in milliseconds. */
 const READ_TIMEOUT_MS = 5_000;
@@ -252,8 +264,17 @@ function parseAnswer(body: string): QuotaRead {
   return { ok: true, windows };
 }
 
-/** The state of one set of windows (spec D15). */
-function stateOf(windows: Record<string, number>): "ready" | "wait" {
+/** The state of one set of windows (spec D15). The Go plan uses the 5h and
+ * the week thresholds of the PM order of 2026-11-19. Every other source uses
+ * the 70 % rule of every window. */
+function stateOf(provider: string, windows: Record<string, number>): "ready" | "wait" {
+  if (provider === GO_PROVIDER) {
+    const fiveH = windows["5h"];
+    const week = windows["week"];
+    if (fiveH !== undefined && fiveH >= GO_FIVEH_PERCENT) return "wait";
+    if (week !== undefined && week >= GO_WEEK_PERCENT) return "wait";
+    return "ready";
+  }
   return Object.values(windows).some((value) => value >= WAIT_PERCENT) ? "wait" : "ready";
 }
 
@@ -277,7 +298,7 @@ async function main(): Promise<void> {
   const root = resolved.replace(/\/+$/, "");
   const answer = await readQuota(`${root}/api/quota/${id}`);
   if (!answer.ok) stop(provider, id, answer.reason);
-  emit({ provider, source: id, state: stateOf(answer.windows), cap: SOURCED_CAP, windows: answer.windows });
+  emit({ provider, source: id, state: stateOf(provider, answer.windows), cap: SOURCED_CAP, windows: answer.windows });
 }
 
 // No top-level await: the runner copies this file into a temp repo that holds
