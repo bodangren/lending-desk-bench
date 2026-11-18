@@ -212,6 +212,11 @@ interface Scenario {
   quotaPercent?: number;
   quotaStopPercent?: number;
   quotaStopAfter?: number;
+  /** The week value of the fake quota server. It defaults to quotaPercent. */
+  quotaWeek?: number;
+  /** The week value after quotaStopAfter model calls. It defaults to
+   * quotaStopPercent. It lets the week rise while 5h stays low. */
+  quotaStopWeek?: number;
   /** The groups of the queue. An empty list writes an empty queue. */
   groups?: GroupSpec[];
   /** When true, the case holds no queue file at all. */
@@ -500,6 +505,9 @@ const stopText = process.env.QUOTA_STOP_PERCENT || "";
 const stopPercent = stopText === "" ? null : Number(stopText);
 const stopAfter = Number(process.env.QUOTA_STOP_AFTER || "2");
 const requestLog = process.env.QUOTA_REQUEST_LOG || "";
+const weekText = process.env.QUOTA_WEEK || "";
+const weekStart = weekText === "" ? percent : Number(weekText);
+const stopWeekText = process.env.QUOTA_STOP_WEEK || "";
 
 // The number of the model calls of the fake log.
 const modelCalls = () => {
@@ -520,14 +528,23 @@ const modelCalls = () => {
 const server = http.createServer((req, res) => {
   const url = req.url || "";
   if (requestLog !== "") fs.appendFileSync(requestLog, url + "\\n");
-  let value = percent;
-  if (stopPercent !== null && modelCalls() >= stopAfter) value = stopPercent;
+  let fiveH = percent;
+  let day = percent;
+  let week = weekStart;
+  if (modelCalls() >= stopAfter && (stopPercent !== null || stopWeekText !== "")) {
+    if (stopPercent !== null) {
+      fiveH = stopPercent;
+      day = stopPercent;
+      week = stopPercent;
+    }
+    if (stopWeekText !== "") week = Number(stopWeekText);
+  }
   const body = JSON.stringify({
     usage: {
       windows: {
-        "5h": { usedPercent: value },
-        day: { usedPercent: value },
-        week: { usedPercent: value },
+        "5h": { usedPercent: fiveH },
+        day: { usedPercent: day },
+        week: { usedPercent: week },
       },
     },
   });
@@ -706,6 +723,8 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   const percent = scenario.quotaPercent ?? 10;
   const stopPercent = scenario.quotaStopPercent;
   const stopAfter = scenario.quotaStopAfter ?? 2;
+  const week = scenario.quotaWeek;
+  const stopWeek = scenario.quotaStopWeek;
   const server = spawn(process.execPath, [serverPath], {
     env: {
       ...process.env,
@@ -713,6 +732,8 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
       QUOTA_PERCENT: String(percent),
       QUOTA_STOP_PERCENT: stopPercent === undefined ? "" : String(stopPercent),
       QUOTA_STOP_AFTER: String(stopAfter),
+      QUOTA_WEEK: week === undefined ? "" : String(week),
+      QUOTA_STOP_WEEK: stopWeek === undefined ? "" : String(stopWeek),
       QUOTA_REQUEST_LOG: requestPath,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -1522,9 +1543,11 @@ describe("P4 J10 the lock of the judge runner", () => {
   });
 });
 
-describe("P4 J11 the quota rules of the judge runner", () => {
+describe("P4 J11 the quota rules of the judge runner on a non-Go source", () => {
   it("J11 makes no call at a window of 70 %", async () => {
     const fixture = await buildFixture({
+      quotaProvider: "kimi-code-plan-cn",
+      quotaSource: "kimi-for-coding",
       quotaPercent: 70,
       calls: [
         {
@@ -1553,6 +1576,8 @@ describe("P4 J11 the quota rules of the judge runner", () => {
 
   it("J11 stops the run at 80 % and leaves the run open with the verdict of the first group", async () => {
     const fixture = await buildFixture({
+      quotaProvider: "kimi-code-plan-cn",
+      quotaSource: "kimi-for-coding",
       quotaPercent: 69.9,
       quotaStopPercent: 80,
       quotaStopAfter: 1,
@@ -1582,6 +1607,183 @@ describe("P4 J11 the quota rules of the judge runner", () => {
       expect(record?.state, "the state of the stopped run").toBe("open");
     } finally {
       dropFixture(fixture);
+    }
+  });
+});
+
+describe("P4 the Go plan thresholds of the judge runner (task 4.13g)", () => {
+  it("G1 the judge starts on a Go route at week 97 % with a low 5h and refuses at week 100 %", async () => {
+    const ready = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 97,
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+        {
+          tokens: TOKENS_B,
+          value: answer([jsonBlock(JSON.stringify({ "d-02#C2a3b4c5d6e7f": "false-claim" }))]),
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(ready, judgeArgs(ready));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(ready.logPath)), "the runner made no call at week 97 %").toHaveLength(2);
+      const record = runRecord(ready, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      expect(record?.state, "the state of the run record").toBe("complete");
+    } finally {
+      dropFixture(ready);
+    }
+
+    const wait = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 100,
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(wait, judgeArgs(wait));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(wait.logPath)), "the runner called the model at week 100 %").toEqual([]);
+      const record = runRecord(wait, "a");
+      if (record !== null) {
+        expect(record.state, "the run record of a stopped run").not.toBe("complete");
+      }
+    } finally {
+      dropFixture(wait);
+    }
+  });
+
+  it("G2 the judge stops before the next group at the Go thresholds but not at 80 %", async () => {
+    const through = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 10,
+      quotaStopWeek: 80,
+      quotaStopAfter: 1,
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+        {
+          tokens: TOKENS_B,
+          value: answer([jsonBlock(JSON.stringify({ "d-02#C2a3b4c5d6e7f": "false-claim" }))]),
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(through, judgeArgs(through));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(through.logPath)), "the runner stopped the Go run at 80 %").toHaveLength(2);
+      const judge = judgeFile(through, "a");
+      expect(judge, "the runner wrote no judge file").not.toBeNull();
+      expect(Object.keys(judge ?? {}), "the judge file holds no verdict of the second group").toEqual([
+        "d-01#C0a1b2c3d4e5f",
+        "d-02#C2a3b4c5d6e7f",
+      ]);
+      const record = runRecord(through, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      expect(record?.state, "the state of the run record").toBe("complete");
+    } finally {
+      dropFixture(through);
+    }
+
+    const stopped = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 10,
+      quotaStopWeek: 100,
+      quotaStopAfter: 1,
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+        {
+          tokens: TOKENS_B,
+          value: answer([jsonBlock(JSON.stringify({ "d-02#C2a3b4c5d6e7f": "false-claim" }))]),
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(stopped, judgeArgs(stopped));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(stopped.logPath)), "the runner called the model after week 100 %").toHaveLength(1);
+      const judge = judgeFile(stopped, "a");
+      expect(judge, "the runner wrote no judge file").not.toBeNull();
+      expect(Object.keys(judge ?? {}), "the judge file holds a verdict of the second group").toEqual([
+        "d-01#C0a1b2c3d4e5f",
+      ]);
+      const record = runRecord(stopped, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      expect(record?.state, "the state of the stopped run").toBe("open");
+    } finally {
+      dropFixture(stopped);
+    }
+  });
+
+  it("G3 the start test is ready on a Go route at week 97 % and not-ready at week 100 %", async () => {
+    const ready = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 97,
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "sample#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(ready, [...judgeArgs(ready), "--start-test"]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = stdoutLines(result);
+      expect(lines, `the start test prints one line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "the start test line").toBe(`${ROUTE} ready -`);
+      expect(
+        modelCalls(logEntries(ready.logPath)),
+        "the start test made no call at week 97 %",
+      ).toHaveLength(1);
+    } finally {
+      dropFixture(ready);
+    }
+
+    const wait = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 100,
+      calls: [
+        {
+          tokens: TOKENS_A,
+          value: answer([jsonBlock(JSON.stringify({ "sample#C0a1b2c3d4e5f": "real-defect" }))]),
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(wait, [...judgeArgs(wait), "--start-test"]);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      const lines = stdoutLines(result);
+      expect(lines, `the start test prints one line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "the start test line must start with the route and not-ready").toMatch(
+        new RegExp(`^${ROUTE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} not-ready `),
+      );
+      expect(
+        modelCalls(logEntries(wait.logPath)),
+        "the start test called the model at week 100 %",
+      ).toEqual([]);
+    } finally {
+      dropFixture(wait);
     }
   });
 });

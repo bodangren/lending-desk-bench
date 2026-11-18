@@ -35,7 +35,9 @@
  *
  *     `state` is `ready`, `wait`, or `stopped`. `ready` means every window is
  *     below 70. `wait` means a window is 70 or more. `windows` holds the
- *     labeled numbers of the answer.
+ *     labeled numbers of the answer. For `opencode-go` the PM order of
+  *     2026-11-19 moves the thresholds: `ready` means 5h below 95 % and
+  *     week below 100 % (Q9, Q10 of task 4.13g).
  *   - On `stopped`, stderr holds exactly one line `quota: <reason>`.
  *   - The tool exits 0 for every state. Exit 2 is for a bad flag.
  *   - The read has a timeout of at most 10 s.
@@ -279,6 +281,19 @@ async function startQuotaServer(handler: QuotaHandler): Promise<QuotaServer> {
   };
 }
 
+/** The body of a source whose windows hold the three given values. */
+function goBody(fiveH: number, day: number, week: number): string {
+  return JSON.stringify({
+    usage: {
+      windows: {
+        "5h": { usedPercent: fiveH },
+        day: { usedPercent: day },
+        week: { usedPercent: week },
+      },
+    },
+  });
+}
+
 /** An answer with a JSON body and a status code. */
 function jsonResponse(body: string, status = 200): QuotaHandler {
   return (_req, res) => {
@@ -442,14 +457,14 @@ describe("Q1 the source path of each provider", () => {
   });
 });
 
-describe("Q2 the 70 % rule", () => {
-  it("Q2 gives ready below 70 and wait at 70, 70.1, and 100, with each window labeled", async () => {
+describe("Q2 the 70 % rule of a non-Go source", () => {
+  it("Q2 gives ready below 70 and wait at 70, 70.1, and 100 for kimi-code-plan-cn, with each window labeled", async () => {
     const sandbox = makeSandbox();
     const server = await startQuotaServer(jsonResponse(windowsBody(0)));
     try {
       for (const value of [0, 40, 69.9]) {
         server.setHandler(jsonResponse(windowsBody(value)));
-        const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+        const result = await runQuota(sandbox, ["--provider", "kimi-code-plan-cn", "--base", server.base]);
         const doc = expectState(result, "ready", `window ${value}`);
         expect(doc.windows?.["5h"], `window ${value}: the value is not labeled`).toBe(value);
         expect(doc.windows?.["day"], `window ${value}: the day value is not labeled`).toBe(value);
@@ -457,11 +472,61 @@ describe("Q2 the 70 % rule", () => {
       }
       for (const value of [70, 70.1, 100]) {
         server.setHandler(jsonResponse(windowsBody(value)));
-        const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+        const result = await runQuota(sandbox, ["--provider", "kimi-code-plan-cn", "--base", server.base]);
         const doc = expectState(result, "wait", `window ${value}`);
         expect(doc.windows?.["5h"], `window ${value}: the value is not labeled`).toBe(value);
       }
       expect(server.requests.length, "the tool sent no request").toBe(6);
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+});
+
+describe("Q9 the Go 5h threshold", () => {
+  it("Q9 gives ready for opencode-go at 5h 94 % and wait at 5h 95 %", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(jsonResponse(goBody(80, 10, 10)));
+    try {
+      // A window of 80 % is still ready on a Go route (PM order
+      // 2026-11-19: the Go 5h threshold is 95 %, not 70 %).
+      for (const fiveH of [80, 94]) {
+        server.setHandler(jsonResponse(goBody(fiveH, 10, 10)));
+        const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+        const doc = expectState(result, "ready", `5h ${fiveH}`);
+        expect(doc.windows?.["5h"], `5h ${fiveH}: the value is not labeled`).toBe(fiveH);
+        expect(doc.windows?.["week"], `5h ${fiveH}: the week value is not labeled`).toBe(10);
+      }
+      server.setHandler(jsonResponse(goBody(95, 10, 10)));
+      const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const doc = expectState(result, "wait", "5h 95");
+      expect(doc.windows?.["5h"], "5h 95: the value is not labeled").toBe(95);
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+});
+
+describe("Q10 the Go week threshold", () => {
+  it("Q10 gives ready for opencode-go at week 99 % and wait at week 100 %", async () => {
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(jsonResponse(goBody(10, 10, 90)));
+    try {
+      // A week of 90 % is still ready on a Go route (PM order
+      // 2026-11-19: the Go week threshold is 100 %, not 70 %).
+      for (const week of [90, 99]) {
+        server.setHandler(jsonResponse(goBody(10, 10, week)));
+        const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+        const doc = expectState(result, "ready", `week ${week}`);
+        expect(doc.windows?.["week"], `week ${week}: the value is not labeled`).toBe(week);
+        expect(doc.windows?.["5h"], `week ${week}: the 5h value is not labeled`).toBe(10);
+      }
+      server.setHandler(jsonResponse(goBody(10, 10, 100)));
+      const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const doc = expectState(result, "wait", "week 100");
+      expect(doc.windows?.["week"], "week 100: the value is not labeled").toBe(100);
     } finally {
       await server.close();
       sandbox.close();
@@ -592,7 +657,7 @@ describe("Q5 the read timeout", () => {
   });
 });
 
-describe("Q6 a large body", () => {
+describe("Q6 a large body on a non-Go source", () => {
   it("Q6 parses a 2 MiB body with 200 windows and follows the highest window", async () => {
     const sandbox = makeSandbox();
     const windows: Record<string, { usedPercent: number }> = {};
@@ -607,7 +672,7 @@ describe("Q6 a large body", () => {
     expect(Buffer.byteLength(body, "utf8"), "the body is not 2 MiB").toBeGreaterThanOrEqual(2 * 1024 * 1024);
     const server = await startQuotaServer(jsonResponse(body));
     try {
-      const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const result = await runQuota(sandbox, ["--provider", "kimi-code-plan-cn", "--base", server.base]);
       const doc = expectState(result, "wait", "2 MiB body");
       expect(doc.windows?.["w0"], "the first window is not labeled").toBe(10);
       expect(doc.windows?.["w199"], "the highest window is not labeled").toBe(75);

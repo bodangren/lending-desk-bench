@@ -2142,6 +2142,43 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     242fe529b26f9d1a4e132f407a2036567c7e3011; final Green HEAD 9ae4e51
     before this row, and the plan-evidence commit after it.
+- [~] 4.13g Red: the Go plan thresholds (PM order 2026-11-19, spec D15).
+  Change only `harness/model-guide-tests/quota.test.ts`,
+  `harness/model-guide-tests/review-run.test.ts`, and
+  `harness/model-guide-tests/judge-run.test.ts`. Touch no production file.
+  - `quota.ts` must give `ready` for `opencode-go` at 5h 94 % and week
+    99 %, and `wait` at 5h 95 % or week 100 %. Another source still gives
+    `wait` at 70 %.
+  - `review-run.sh` must start a pass and a probe on a Go route at week
+    97 % with a low 5h, and refuse both at week 100 %. The pass must stop
+    before the next diff at the Go thresholds, but not at 80 %. Another
+    source still stops at 80 %.
+  - `judge-run.sh` must follow the same start, probe, and stop rules.
+  - The earlier cases that pin 70/80 on a Go route move to a non-Go
+    source: Q2 and Q6 (`kimi-code-plan-cn`), R5, R6, and P6
+    (`kimi-code-plan-cn`), and J11 (`kimi-code-plan-cn`).
+  - The tests use the existing fake quota server with per-window values.
+  - Verify: each Red command fails on the new cases, and the other cases
+    stay green. Record the failed test names in
+    `measure/runs/model_guide/red-4.13g.txt`. Run one file at a time:
+    `cd harness && npx vitest run model-guide-tests/quota.test.ts
+    --configLoader native --maxWorkers=1 --reporter=dot`; `bun test
+    harness/model-guide-tests/review-run.test.ts`; `cd harness && npx
+    vitest run model-guide-tests/judge-run.test.ts --configLoader native
+    --maxWorkers=1 --reporter=dot`. After each run, `pgrep -af
+    "fake-opencod[e]"` and `pgrep -af "quota-serve[r]"` print no line.
+- [ ] 4.13h Green: the Go plan thresholds (PM order 2026-11-19, spec D15).
+  Change `harness/model-guide/quota.ts`,
+  `harness/model-guide/review-run.sh`, and
+  `harness/model-guide/judge-run.sh`. Touch no test file.
+  - `quota.ts` gives `ready` for `opencode-go` below 5h 95 % and week
+    100 %, and `wait` at or above them. Other sources keep 70 % and 80 %.
+  - The runners start no pass, probe, or judge call on a Go route at 5h
+    95 % or more or week 100 % or more. They stop a pass at the same
+    thresholds, but not at 80 %. Other sources keep 70 % and 80 %.
+  - Verify: the three Red commands exit 0, one file at a time. The two
+    pgrep scans print no line.
+  - Then re-probe the 2 Go pilot routes in the 02:00-06:00 window.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.

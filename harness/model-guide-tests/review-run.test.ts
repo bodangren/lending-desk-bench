@@ -203,6 +203,11 @@ interface Scenario {
   quotaPercent?: number;
   quotaStopPercent?: number;
   quotaStopAfter?: number;
+  /** The week value of the fake quota server. It defaults to quotaPercent. */
+  quotaWeek?: number;
+  /** The week value after quotaStopAfter model calls. It defaults to
+   * quotaStopPercent. It lets the week rise while 5h stays low. */
+  quotaStopWeek?: number;
   setId?: string;
   routes?: unknown[];
 }
@@ -440,6 +445,9 @@ const stopText = process.env.QUOTA_STOP_PERCENT || "";
 const stopPercent = stopText === "" ? null : Number(stopText);
 const stopAfter = Number(process.env.QUOTA_STOP_AFTER || "2");
 const requestLog = process.env.QUOTA_REQUEST_LOG || "";
+const weekText = process.env.QUOTA_WEEK || "";
+const weekStart = weekText === "" ? percent : Number(weekText);
+const stopWeekText = process.env.QUOTA_STOP_WEEK || "";
 
 // The number of the model calls of the fake log.
 const modelCalls = () => {
@@ -460,14 +468,23 @@ const modelCalls = () => {
 const server = http.createServer((req, res) => {
   const url = req.url || "";
   if (requestLog !== "") fs.appendFileSync(requestLog, url + "\\n");
-  let value = percent;
-  if (stopPercent !== null && modelCalls() >= stopAfter) value = stopPercent;
+  let fiveH = percent;
+  let day = percent;
+  let week = weekStart;
+  if (modelCalls() >= stopAfter && (stopPercent !== null || stopWeekText !== "")) {
+    if (stopPercent !== null) {
+      fiveH = stopPercent;
+      day = stopPercent;
+      week = stopPercent;
+    }
+    if (stopWeekText !== "") week = Number(stopWeekText);
+  }
   const body = JSON.stringify({
     usage: {
       windows: {
-        "5h": { usedPercent: value },
-        day: { usedPercent: value },
-        week: { usedPercent: value },
+        "5h": { usedPercent: fiveH },
+        day: { usedPercent: day },
+        week: { usedPercent: week },
       },
     },
   });
@@ -640,6 +657,8 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
   const percent = scenario.quotaPercent ?? 10;
   const stopPercent = scenario.quotaStopPercent;
   const stopAfter = scenario.quotaStopAfter ?? 2;
+  const week = scenario.quotaWeek;
+  const stopWeek = scenario.quotaStopWeek;
   const server = spawn(process.execPath, [serverPath], {
     env: {
       ...process.env,
@@ -647,6 +666,8 @@ async function buildFixture(scenario: Scenario = {}): Promise<Fixture> {
       QUOTA_PERCENT: String(percent),
       QUOTA_STOP_PERCENT: stopPercent === undefined ? "" : String(stopPercent),
       QUOTA_STOP_AFTER: String(stopAfter),
+      QUOTA_WEEK: week === undefined ? "" : String(week),
+      QUOTA_STOP_WEEK: stopWeek === undefined ? "" : String(stopWeek),
       QUOTA_REQUEST_LOG: requestPath,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -956,9 +977,11 @@ describe("P4 R4 the route refusal", () => {
   });
 });
 
-describe("P4 R5 the quota start rule", () => {
+describe("P4 R5 the quota start rule of a non-Go source", () => {
   it("R5 starts no pass at a window of 70 % and starts the pass at 69.9 %", async () => {
     const wait = await buildFixture({
+      quotaProvider: "kimi-code-plan-cn",
+      quotaSource: "kimi-for-coding",
       quotaPercent: 70,
       calls: [{ value: JSON.stringify({ type: "result", text: "RAW-d-01" }) }],
     });
@@ -980,6 +1003,8 @@ describe("P4 R5 the quota start rule", () => {
     }
 
     const ready = await buildFixture({
+      quotaProvider: "kimi-code-plan-cn",
+      quotaSource: "kimi-for-coding",
       quotaPercent: 69.9,
       calls: [
         { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
@@ -997,9 +1022,11 @@ describe("P4 R5 the quota start rule", () => {
   });
 });
 
-describe("P4 R6 the quota stop rule", () => {
+describe("P4 R6 the quota stop rule of a non-Go source", () => {
   it("R6 stops the pass at 80 % and leaves the pass open with the two stored outputs", async () => {
     const fixture = await buildFixture({
+      quotaProvider: "kimi-code-plan-cn",
+      quotaSource: "kimi-for-coding",
       quotaStopPercent: 80,
       quotaStopAfter: 2,
       calls: [
@@ -1029,6 +1056,8 @@ describe("P4 R6 the quota stop rule", () => {
     // diff, and the pass still runs to the end: the stop rule fires at
     // 80 % only.
     const fixture = await buildFixture({
+      quotaProvider: "kimi-code-plan-cn",
+      quotaSource: "kimi-for-coding",
       quotaPercent: 69.9,
       quotaStopPercent: 79,
       quotaStopAfter: 2,
@@ -1048,6 +1077,100 @@ describe("P4 R6 the quota stop rule", () => {
       expect(filesHolding(fixture.privateDir, "RAW-")).toHaveLength(3);
     } finally {
       dropFixture(fixture);
+    }
+  });
+});
+
+describe("P4 the Go plan thresholds of the review runner (task 4.13g)", () => {
+  it("G1 the pass starts on a Go route at week 97 % with a low 5h and refuses at week 100 %", async () => {
+    const ready = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 97,
+      calls: [
+        { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(ready, runArgs(ready));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(modelCalls(logEntries(ready.logPath)), "the runner started no pass at week 97 %").toHaveLength(3);
+      const records = passRecords(ready.privateDir);
+      expect(records, "the runner wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("complete");
+    } finally {
+      dropFixture(ready);
+    }
+
+    const wait = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 100,
+      calls: [{ value: JSON.stringify({ type: "result", text: "RAW-d-01" }) }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(wait, runArgs(wait));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(wait.logPath)), "the runner called the model at week 100 %").toEqual([]);
+      expect(filesHolding(wait.privateDir, "RAW-"), "the runner stored a raw output at week 100 %").toEqual([]);
+      const records = passRecords(wait.privateDir);
+      expect(records, "the runner wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("wait");
+    } finally {
+      dropFixture(wait);
+    }
+  });
+
+  it("G2 the pass stops before the next diff at the Go thresholds but not at 80 %", async () => {
+    const through = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 10,
+      quotaStopWeek: 80,
+      quotaStopAfter: 2,
+      calls: [
+        { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(through, runArgs(through));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(through.logPath)), "the runner stopped the Go pass at 80 %").toHaveLength(3);
+      const records = passRecords(through.privateDir);
+      expect(records, "the runner wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("complete");
+      expect(filesHolding(through.privateDir, "RAW-"), "the runner stored three raw outputs").toHaveLength(3);
+    } finally {
+      dropFixture(through);
+    }
+
+    const stopped = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 10,
+      quotaStopWeek: 100,
+      quotaStopAfter: 2,
+      calls: [
+        { value: JSON.stringify({ type: "result", text: "RAW-d-01" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-02" }) },
+        { value: JSON.stringify({ type: "result", text: "RAW-d-03" }) },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(stopped, runArgs(stopped));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(stopped.logPath)), "the runner called the model after week 100 %").toHaveLength(2);
+      const records = passRecords(stopped.privateDir);
+      expect(records, "the runner wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("open");
+      expect(records[0].outputs ?? [], "the pass record holds no stored output").toHaveLength(2);
+      expect(completionMarkers(records[0]), "the pass record holds a complete marker").toEqual([]);
+    } finally {
+      dropFixture(stopped);
     }
   });
 });
@@ -1787,8 +1910,10 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
     }
   });
 
-  it("P6 the probe obeys the 70 % quota rule and makes no call", async () => {
+  it("P6 the probe obeys the 70 % quota rule of a non-Go source and makes no call", async () => {
     const fixture = await buildFixture({
+      quotaProvider: "kimi-code-plan-cn",
+      quotaSource: "kimi-for-coding",
       quotaPercent: 70,
       calls: [{ tokens: TOKENS_A, value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
     });
@@ -1841,6 +1966,55 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
       expect(passRecordsOf(fixture), "the probe wrote a pass record").toEqual([]);
     } finally {
       dropFixture(fixture);
+    }
+  });
+
+  it("G3 the probe starts on a Go route at week 97 % and refuses at week 100 %", async () => {
+    const ready = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 97,
+      calls: [{ tokens: TOKENS_A, value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
+    });
+    writeControlKeys(ready);
+    try {
+      assertRunnerExists();
+      const result = runRunner(ready, probeArgs(ready));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(result.stdout, "the probe prints one line").toBe(`${ROUTE} reachable -\n`);
+      expect(
+        modelCalls(logEntries(ready.logPath)),
+        "the probe made no call at week 97 %",
+      ).toHaveLength(1);
+      expect(passRecordsOf(ready), "the probe wrote a pass record").toEqual([]);
+      const records = probeRecords(ready);
+      expect(records, "the probe wrote no probe record").toHaveLength(1);
+      expect(records[0].state, "the state of the probe record").toBe("reachable");
+    } finally {
+      dropFixture(ready);
+    }
+
+    const wait = await buildFixture({
+      quotaPercent: 10,
+      quotaWeek: 100,
+      calls: [{ tokens: TOKENS_A, value: JSON.stringify({ type: "result", text: "PROBE-d-02" }) }],
+    });
+    writeControlKeys(wait);
+    try {
+      assertRunnerExists();
+      const result = runRunner(wait, probeArgs(wait));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const lines = stdoutLines(result);
+      expect(lines, `the probe must print one refusal line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "the line must start with review-run:").toMatch(/^review-run:/);
+      expect(lines[0], "the line must name the quota rule").toMatch(/quota/i);
+      expect(
+        modelCalls(logEntries(wait.logPath)),
+        "the probe called the model at week 100 %",
+      ).toEqual([]);
+      expect(passRecordsOf(wait), "the probe wrote a pass record").toEqual([]);
+    } finally {
+      dropFixture(wait);
     }
   });
 
