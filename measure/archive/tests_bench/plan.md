@@ -24,10 +24,7 @@ Depends on `bench_v2` phases 2, 4, and 5 (fixture r2, contract classes, and
 
 - [x] e9fb565 3.1 `harness/tests-track/oracle-overlay/tests/*.test.ts`: HTTP and unit tests
       that kill every mutant in `m1`. (archive evidence from git, PM 2026-11-18)
-- [x] 3.2 Admission: the oracle, graded as a tests-track candidate (the canary),
-      passes twice on the clean app and once on the variant app, and kills each
-      mutant. `tests-results.json` records the outcome per app. No separate
-      verifier is needed: the canary runs every week. deferred:pm, proof outside git: runs/canary-tests-2026w41-1791692210/artifacts/tests-results.json sha256 10dc775ca5067e3e96ea7ba939717b2b1c3fbb55bed545af05aae1f95abb6e25 (PM 2026-11-18)
+- [x] 3.2 Admission: the oracle, graded as a tests-track candidate (the canary), passes twice on the clean app and once on the variant app, and kills each mutant. `tests-results.json` records the outcome per app. No separate verifier is needed: the canary runs every week. deferred:pm, proof outside git: runs/canary-tests-2026w41-1791692210/artifacts/tests-results.json sha256 10dc775ca5067e3e96ea7ba939717b2b1c3fbb55bed545af05aae1f95abb6e25 (PM 2026-11-18)
 
 ## Phase 4: Grading and scoring
 

@@ -10,8 +10,8 @@
 | Track metadata (bugfix_bench) | measure/tracks/bugfix_bench/metadata.json |
 | Specification (bench_v2) | measure/tracks/bench_v2/spec.md |
 | Implementation Plan (bench_v2) | measure/tracks/bench_v2/plan.md |
-| Specification (tests_bench) | measure/tracks/tests_bench/spec.md |
-| Implementation Plan (tests_bench) | measure/tracks/tests_bench/plan.md |
+| Specification (tests_bench) | measure/archive/tests_bench/spec.md |
+| Implementation Plan (tests_bench) | measure/archive/tests_bench/plan.md |
 | Specification (change_bench) | measure/archive/change_bench/spec.md |
 | Implementation Plan (change_bench) | measure/archive/change_bench/plan.md |
 | Specification (bench_incremental) | measure/tracks/bench_incremental/spec.md |

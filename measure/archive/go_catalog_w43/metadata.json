@@ -1,6 +1,7 @@
 {
   "id": "go_catalog_w43",
   "title": "Refresh the OpenCode Go catalog and benchmark the new models",
+  "description": "Refresh of the OpenCode Go catalog and benchmark of the new models: pricing table, recost of 230 stored scores, OpenCode executor, three new models, and the published results. Sources committed at f61a422, 8b6bf37, and 3ae55c6. One task line carries PM-deferred proof outside git. Completed 2026-10-25 and archived 2026-11-18 on a passing archive check (mechanical); no quality acceptance ran.",
   "type": "Feature",
   "status": "done",
   "created": "2026-10-24",

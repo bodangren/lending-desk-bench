@@ -5,9 +5,6 @@
 - [~] **Track: Migrate the benchmark executor from Pi to OpenCode 2 with Console login**
   - *Link: [opencode_executor](tracks/opencode_executor/)*
 
-- [x] **Track: Refresh the OpenCode Go catalog and benchmark the new models**
-  - *Link: [go_catalog_w43](tracks/go_catalog_w43/)*
-
 - [~] **Track: Domain trust matrix: safe and risk domains for each model, with failure modes**
   - *Link: [domain_trust](tracks/domain_trust/)*
 
@@ -27,10 +24,8 @@
 | harness_audit | Harness audit — verified grading defects | Bug | pending | 2026-08-30 |
 | bugfix_bench | Bug-fixing benchmark — lending_desk_bugfix | Feature | in-progress — sources committed at e9fb565; task 6.5 is open and no [x] task carries a SHA | 2026-09-11 |
 | bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | in-progress | 2026-09-24 |
-| tests_bench | Test-writing benchmark — lending_desk_tests | Feature | sources committed at e9fb565 — the plan marks all tasks [x], but no task carries a SHA | 2026-09-24 |
 | bench_incremental | Incremental benchmark runs — new models and failures only | Feature | paused — superseded in part by opencode_executor (Pi executor staging in plan-work.ts) | 2026-10-17 |
 | opencode_executor | Migrate the benchmark executor from Pi to OpenCode 2 with Console login | Feature | in-progress | 2026-10-18 |
-| go_catalog_w43 | Refresh the OpenCode Go catalog and benchmark the new models | Feature | complete | 2026-10-24 |
 | rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | paused — PM 2026-11-14: no new difficulty work on the build track | 2026-10-25 |
 | domain_trust | Domain trust matrix: safe and risk domains for each model, with failure modes | Feature | pending — strategy done; Phase 1 worktree next; owner decisions O1 and O2 open | 2026-10-25 |
 | daily_model_schedule | Daily model schedule: one model per day, untested first, then the stalest | Feature | pending — O1 approved with 3 conditions 2026-10-31 (spec D11–D14); Phase 4b reviews next (task 4b.4); Phase 4 Review C and acceptance run with Phase 4b | 2026-10-25 |
@@ -49,3 +44,11 @@ These items have no date and no track yet.
 - [x] **Track: Change-request benchmark — lending_desk_change**
   *Link: [change_bench](./archive/change_bench/)*
   *Change-request benchmark for lending_desk_change: change set c1, the X.* criteria, the variant tree, provenance, and calibration. Sources at e9fb565 and 2346ef0. Archived 2026-11-18 on a passing archive check (mechanical); no quality acceptance ran.*
+
+- [x] **Track: Test-writing benchmark — lending_desk_tests**
+  *Link: [tests_bench](./archive/tests_bench/)*
+  *Test-writing benchmark for lending_desk_tests: mutant and set contracts, the tests candidate mode, the model-visible tree, oracle admission, grading, scoring, and calibration. Sources committed at e9fb565 and 2346ef0. Two task lines carry PM-deferred proof outside git. Archived 2026-11-18 on a passing archive check (mechanical); no quality acceptance ran.*
+
+- [x] **Track: Refresh the OpenCode Go catalog and benchmark the new models**
+  *Link: [go_catalog_w43](./archive/go_catalog_w43/)*
+  *Refresh of the OpenCode Go catalog and benchmark of the new models: pricing table, recost of 230 stored scores, OpenCode executor, three new models, and the published results. Sources committed at f61a422, 8b6bf37, and 3ae55c6. One task line carries PM-deferred proof outside git. Completed 2026-10-25 and archived 2026-11-18 on a passing archive check (mechanical); no quality acceptance ran.*

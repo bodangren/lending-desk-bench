@@ -1,0 +1,19 @@
+{
+  "id": "tests_bench",
+  "title": "Test-writing benchmark \u2014 lending_desk_tests",
+  "description": "Test-writing benchmark for lending_desk_tests: mutant and set contracts, the tests candidate mode, the model-visible tree, oracle admission, grading, scoring, and calibration. Sources committed at e9fb565 and 2346ef0. Two task lines carry PM-deferred proof outside git. Archived 2026-11-18 on a passing archive check (mechanical); no quality acceptance ran.",
+  "type": "Feature",
+  "status": "done",
+  "created": "2026-09-24",
+  "completed": "2026-11-18",
+  "estimated_tasks": 14,
+  "actual_tasks": 15,
+  "source": {
+    "method": "design over the bug registry, sensitivity controls, and reference-variant",
+    "dependencies": [
+      "bench_v2 phase 2",
+      "bench_v2 phase 4",
+      "bench_v2 phase 5"
+    ]
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "track": "go_catalog_w43",
+  "title": "Refresh the OpenCode Go catalog and benchmark the new models",
+  "status": "done",
+  "closed_out": "2026-11-18",
+  "closed_by": "measure-closeout",
+  "pre_closeout_head": "a3c7976f069f8315edd68a70eaf6e99fdc1ecd0b",
+  "post_audit_change": "wrap-only change after the archive check: the PM deferred text moved onto the task line so the closeout checker reads it (orchestrator 2026-11-18)",
+  "archive_move": {
+    "from": "measure/tracks/go_catalog_w43",
+    "to": "measure/archive/go_catalog_w43",
+    "method": "git mv"
+  },
+  "audits": [
+    {
+      "role": "measure-final-acceptance",
+      "kind": "archive check (mechanical)",
+      "path": "measure/runs/go_catalog_w43/final-acceptance-archive-a3c7976.json",
+      "status": "pass",
+      "audited_head": "a3c7976f069f8315edd68a70eaf6e99fdc1ecd0b",
+      "provenance_match": true,
+      "scope_note": "The final-acceptance result is an archive check. It proves task markers and commit SHAs only. No quality, adversarial, or browser acceptance ran for this track.",
+      "superseded": [
+        {
+          "path": "measure/runs/go_catalog_w43/final-acceptance-archive-15479e4.json",
+          "status": "fail",
+          "reason": "line 49 carried no SHA at 15479e4"
+        },
+        {
+          "path": "measure/runs/go_catalog_w43/final-acceptance-archive-2091d16.json",
+          "status": "fail",
+          "reason": "no top-level task line carried a commit SHA at 2091d16"
+        }
+      ]
+    },
+    {
+      "role": "measure-closeout",
+      "kind": "closeout gate",
+      "command": "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track go_catalog_w43",
+      "status": "pass"
+    }
+  ],
+  "plan_evidence": {
+    "task_lines": 7,
+    "all_complete": true,
+    "in_progress_markers": 0,
+    "space_markers": 0,
+    "blocked_markers": 0,
+    "commit_shas": [
+      "f61a422",
+      "8b6bf37",
+      "3ae55c6"
+    ],
+    "sha_notes": "Full SHAs are f61a422, 8b6bf37, and 3ae55c6; each resolves on main and is an ancestor of the pre-closeout HEAD."
+  },
+  "deferred_evidence": [
+    {
+      "task": "1.2",
+      "ruler": "PM ruling 2026-11-18",
+      "status": "accepted, not superseded",
+      "line_text": "deferred:pm, proof outside git: reports/weekly-cron-2026w43.log line 19 \"recosted 230 score.json files from harness/go-pricing.json\" sha256 9cd56743fad8959258cc90fb97891854b49af5e5640d25f7252418736843b231 (PM 2026-11-18)",
+      "note": "No commit SHA was added. The line stays as the PM ruled."
+    }
+  ],
+  "gates": [
+    {
+      "name": "plan markers",
+      "command": "grep -cE '^- \\[[~ ]\\]' measure/archive/go_catalog_w43/plan.md",
+      "result": "0"
+    },
+    {
+      "name": "blocked markers",
+      "command": "grep -cE '^- \\[b\\]' measure/archive/go_catalog_w43/plan.md",
+      "result": "0"
+    },
+    {
+      "name": "A5 false-claim text",
+      "command": "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass|all tests pass|completely fixed' measure/archive/go_catalog_w43/plan.md measure/tracks.md",
+      "result": "no match"
+    },
+    {
+      "name": "A6 registry note",
+      "command": "grep -n 'go_catalog_w43' measure/tracks.md",
+      "result": "one archived entry only; the active bullet and the All tracks row are gone"
+    },
+    {
+      "name": "A9 archived-track path",
+      "command": "grep -rnE 'measure/tracks/(tests_bench|go_catalog_w43)' --include='*.sh' --include='*.ts' --include='*.js' --include='*.py' .",
+      "result": "no test hardcodes the track path; no fix needed"
+    },
+    {
+      "name": "closeout interphase check",
+      "command": "measure_interphase_checks.py closeout --track go_catalog_w43",
+      "result": "PASS"
+    }
+  ],
+  "retained_evidence": [
+    "measure/runs/go_catalog_w43/final-acceptance-archive-a3c7976.json",
+    "measure/runs/go_catalog_w43/final-acceptance-archive-a3c7976.log",
+    "measure/archive/go_catalog_w43/plan.md",
+    "measure/archive/go_catalog_w43/spec.md",
+    "measure/archive/go_catalog_w43/metadata.json"
+  ],
+  "unstaged_evidence": [
+    "measure/runs/go_catalog_w43/final-acceptance-archive-15479e4.json",
+    "measure/runs/go_catalog_w43/final-acceptance-archive-15479e4.log",
+    "measure/runs/go_catalog_w43/final-acceptance-archive-2091d16.json",
+    "measure/runs/go_catalog_w43/final-acceptance-archive-2091d16.log",
+    "measure/runs/go_catalog_w43/final-acceptance-archive-4969399.json",
+    "measure/runs/go_catalog_w43/final-acceptance-archive-4969399.log"
+  ],
+  "artifact_cleanup": {
+    "deleted": [],
+    "note": "The orchestrator named no bulky run artifacts. All run evidence is retained. Superseded audit files stay on disk and were not staged by order."
+  },
+  "registry": {
+    "moved_from_active": true,
+    "archived_section_entry": true,
+    "description_source": "metadata.json description",
+    "description_matches": true
+  },
+  "staged_paths": [
+    "measure/archive/go_catalog_w43/metadata.json",
+    "measure/archive/go_catalog_w43/plan.md",
+    "measure/archive/go_catalog_w43/spec.md",
+    "measure/archive/go_catalog_w43/automation-supervisor-closeout-manifest.json",
+    "measure/runs/go_catalog_w43/final-acceptance-archive-a3c7976.json",
+    "measure/runs/go_catalog_w43/final-acceptance-archive-a3c7976.log",
+    "measure/tracks.md"
+  ],
+  "unstaged_by_order": [
+    ".opencode/",
+    "tech-debt.md",
+    "harness/wt.txt",
+    "harness/model-guide/data/sets/"
+  ]
+}
