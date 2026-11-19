@@ -2406,8 +2406,10 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   Implements the 4.13s findings in `harness/model-guide/judge-run.sh`,
   `harness/model-guide/review-run.sh`, `harness/model-guide/quota.ts`, and
   `harness/model-guide/review-score.ts`. Touch no test file.
-  ADV-P4B-1: the judge verdict parse and `readFindings` of the scorer decode
-  the `--format json` event stream before the fence logic. A real `opencode
+  ADV-P4B-1: three readers read a raw output: `judge-run.sh` reads the judge
+  verdict, `review-score.ts` reads the findings in `readFindings`, and
+  `adjudicate.ts` reads the findings in `readFindings`. Each one decodes the
+  `--format json` event stream before the fence logic. A real `opencode
   run` event is `{"type":"text",...,"part":{"type":"text","text":"..."}}`,
   and the answer is the joined text blocks; a plain answer passes through
   unchanged. The AJ1 `{"type":"result","text":...}` fixture shape is
@@ -2469,10 +2471,34 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     decoder guard.
   - Evidence: commit 05bb618. The record is
     `measure/runs/model_guide/red-4.13u.log` (not staged). Row stays `[x]`
-    for Red; Green task 4.13v follows.
+    for Red; Green task 4.13v follows. Deviation: Red marked this row `[x]`,
+    not `[~]`; the row keeps `[x]` with the Red commit SHA.
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41.
-- [ ] 4.13v Green: the queue and the scorer read the real event stream (Review C 2fdb8f8).
+- [x] bc0391f 4.13v Green: the queue and the scorer read the real event stream (Review C 2fdb8f8).
+  `harness/model-guide/adjudicate.ts` gains `decodeAnswerText`, a copy of
+  `review-score.ts:233-266`, and `readFindings` of `adjudicate.ts:216-232`
+  calls it before the fence parse. `review-score.ts` changes only its
+  decoder comment, which now names the three readers. The copy stays, not a
+  shared module, because the committed adversarial fixture copies only
+  `judge-run.sh` and `quota.ts` into its temp repo. A plain-text raw output
+  still queues. No test file changed.
+  Gates at the implementation commit bc0391f, one file at a time:
+  `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts
+  --configLoader native --maxWorkers=1 --reporter=dot` 23 passed (23);
+  `review-score.test.ts` 27 passed (27); `adversarial-p4b.test.ts` 12 passed
+  (12); `bun test harness/model-guide-tests/review-run.test.ts` 65 pass / 0
+  fail; `judge-run.test.ts` 37 passed (37). Before the fix the adjudicate
+  file gave 2 failed | 21 passed (23). A `bun test review-run.test.ts` of
+  another session ran at the same time; its transient `quota-server`
+  processes sat under that session's parent, and no `fake-opencode` or
+  `quota-server` of this role remained after each gate. The log is
+  `measure/runs/model_guide/green-4.13v.log` (not staged).
+  Review C N2 of row 4.13t is fixed in this plan commit: the row names the
+  three readers of a raw output. Red marked row 4.13u `[x]`, not `[~]`; the
+  row keeps `[x] 05bb618` and records the deviation.
+  phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  0f426b171ae319955e3c4c3270c988dc05c97605.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
