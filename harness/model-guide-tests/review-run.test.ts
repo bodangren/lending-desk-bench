@@ -4139,3 +4139,396 @@ esac
     }
   });
 });
+
+// === Phase 4b row 4.15: the backlog of nonblocking findings ================
+// Sources: measure/runs/model_guide/review-b-c0a26d7.json, test strategy
+// section 14.5, and the carried Review A and Review C findings. Every case
+// below either fails at the accepted HEAD for the missing fix, or is marked
+// as a guard in measure/runs/model_guide/red-4.15.txt with its falsification.
+describe("P4b task 4.15 backlog (Review B c0a26d7, Review A F1/F2)", () => {
+  const P4B_DATE = "2026-11-20";
+  const KEY_FIXED = "the error output held a credential value";
+  /** N31: a failed scan must have its own fixed text, different from the
+   * text of a found key. Red pins the contract; Green implements it. */
+  const SCAN_FAIL_TEXT = "the error output could not be scanned";
+
+  const SCAN_FAIL_STUB = `#!/usr/bin/env bash
+set -uo pipefail
+case "\${1:-}" in
+  seed) exit 0 ;;
+  scan-values) echo "provider-credential: the job store read failed" >&2; exit 2 ;;
+  *) echo "provider-credential: unknown mode" >&2; exit 2 ;;
+esac
+`;
+
+  /** Extracts a function from the runner source up to the next top-level
+   * function. Unlike shellFunc, this keeps a brace at column 0 inside an
+   * embedded `node -e` script (daemon_pids has one). */
+  function shellBlock(name: string, nextName: string): string {
+    const lines = readFileSync(RUNNER_SOURCE, "utf8").split("\n");
+    const start = lines.findIndex((line) => line === `${name}() {`);
+    expect(start, `${name} is missing in the runner`).toBeGreaterThanOrEqual(0);
+    const end = lines.findIndex((line, index) => index > start && line === `${nextName}() {`);
+    expect(end, `${nextName} is missing in the runner`).toBeGreaterThan(start);
+    return lines.slice(start, end).join("\n");
+  }
+
+  function probeArgs4b(fixture: Fixture): string[] {
+    return [...runArgs(fixture), "--probe", "--date", P4B_DATE];
+  }
+
+  function writeControlKey4b(fixture: Fixture): void {
+    const keysDir = join(fixture.privateDir, "sets", fixture.setId, "keys");
+    mkdirSync(keysDir, { recursive: true });
+    for (const diff of fixture.diffs) {
+      writeFileSync(
+        join(keysDir, `${diff}.json`),
+        `${JSON.stringify(
+          {
+            schema: "model-guide-key/1",
+            set_id: fixture.setId,
+            diff_id: diff,
+            plants: [],
+          },
+          null,
+          2,
+        )}\n`,
+      );
+    }
+  }
+
+  function probeRecords4b(fixture: Fixture): Array<Record<string, unknown>> {
+    return filesUnder(join(fixture.privateDir, "probes"))
+      .filter((file) => file.endsWith(".json"))
+      .map((file) => JSON.parse(readFileSync(file, "utf8")));
+  }
+
+  function breakScan4b(fixture: Fixture): void {
+    writeFileSync(
+      join(fixture.repo, "harness", "model-guide", "provider-credential.sh"),
+      SCAN_FAIL_STUB,
+    );
+    chmodSync(join(fixture.repo, "harness", "model-guide", "provider-credential.sh"), 0o755);
+  }
+
+  // N21: the message rule is ASCII-only under LC_ALL=C. A Unicode control
+  // character must be refused as well. Falsification: keep [[:cntrl:]] only.
+  it("N21 the message rule refuses U+202E, U+0085, and U+200B", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mg-review-msg-"));
+    tempRoots.add(dir);
+    try {
+      const helper = shellFunc(RUNNER_SOURCE, "read_message_line");
+      const cases: Array<[string, string]> = [
+        ["rlo", "\u202e"],
+        ["nel", "\u0085"],
+        ["zwsp", "\u200b"],
+      ];
+      for (const [tag, control] of cases) {
+        writeFileSync(join(dir, `${tag}.txt`), `line ${control} with a Unicode control\n`);
+        const script = `${helper}\nMESSAGE_DIR="${dir}"\nMESSAGE_MAX_BYTES=1000\nread_message_line "${tag}"`;
+        const result = spawnSync("bash", ["-c", script], {
+          encoding: "utf8",
+          env: { ...process.env, LC_ALL: "C" },
+          timeout: 10_000,
+        });
+        expect(
+          result.status,
+          `${tag}: the message rule accepted a Unicode control character`,
+        ).not.toBe(0);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      tempRoots.delete(dir);
+    }
+  });
+
+  // N10: the XDG guard checks every level of each call path. A link at
+  // `data/opencode` must be refused as well as a link at `data` itself.
+  it("N10 the XDG guard refuses a symlink below the first level of a call path", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mg-review-xdg-"));
+    tempRoots.add(dir);
+    try {
+      const job = join(dir, "job");
+      const outside = join(dir, "outside");
+      mkdirSync(outside, { recursive: true });
+      for (const sub of ["home", "config", "data", "state", "cache", "runtime", "tmp"]) {
+        mkdirSync(join(job, sub), { recursive: true });
+      }
+      symlinkSync(outside, join(job, "data", "opencode"));
+      const lines = readFileSync(RUNNER_SOURCE, "utf8").split("\n");
+      const start = lines.findIndex((line) => line.includes("The call paths of the job folder"));
+      expect(start, "the XDG guard block is missing").toBeGreaterThanOrEqual(0);
+      const end = lines.findIndex((line, index) => index > start && line === "done");
+      expect(end, "the XDG guard block has no closing done").toBeGreaterThan(start);
+      const block = lines.slice(start, end + 1).join("\n");
+      const script = [
+        'refuse() { printf "%s\\n" "$1"; exit 2; }',
+        `JOB="${job}"`,
+        block,
+        'printf "%s\\n" "ACCEPTED"',
+      ].join("\n");
+      const result = spawnSync("bash", ["-c", script], { encoding: "utf8", timeout: 10_000 });
+      expect(result.stdout, "the guard accepted a link below the first level").not.toContain("ACCEPTED");
+      expect(result.status, "the guard accepted a second-level XDG link").toBe(2);
+      expect(result.stdout, "the refusal must name the data folder").toContain("data");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      tempRoots.delete(dir);
+    }
+  });
+
+  // N11: the daemon matcher selects a process only when `serve` and
+  // `--service` are adjacent in that order. Falsification: accept the
+  // tokens at a distance or in reverse order.
+  it("N11 the daemon matcher needs serve and --service adjacent in that order", () => {
+    const proc = mkdtempSync(join(tmpdir(), "mg-review-proc-"));
+    const root = mkdtempSync(join(tmpdir(), "mg-review-jobroot-"));
+    tempRoots.add(proc);
+    tempRoots.add(root);
+    try {
+      mkdirSync(join(root, "home"), { recursive: true });
+      const pid = "700011";
+      const pidDir = join(proc, pid);
+      mkdirSync(pidDir, { recursive: true });
+      writeFileSync(
+        join(pidDir, "cmdline"),
+        `${["opencode", "serve", "decoy", "--service", "x"].join("\0")}\0`,
+      );
+      writeFileSync(join(pidDir, "environ"), `HOME=${join(root, "home")}\0PATH=/x\0`);
+      symlinkSync(root, join(pidDir, "cwd"));
+      const helper = shellBlock("daemon_pids", "stop_daemons");
+      const call = (cmdline: string): string => {
+        writeFileSync(join(pidDir, "cmdline"), cmdline);
+        const out = spawnSync(
+          "bash",
+          ["-c", `${helper}\nBENCH_OPENCODE_PROC="${proc}" daemon_pids "${root}"`],
+          { encoding: "utf8", timeout: 10_000 },
+        );
+        expect(out.status, "daemon_pids failed").toBe(0);
+        return out.stdout.trim();
+      };
+      const adjacent = call(`opencode\0serve\0--service\0x\0`);
+      expect(adjacent, "the positive control saw no adjacent daemon").toBe(pid);
+      const distant = call(`opencode\0serve\0decoy\0--service\0x\0`);
+      expect(distant, "the matcher selected non-adjacent serve and --service tokens").toBe("");
+    } finally {
+      rmSync(proc, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true });
+      tempRoots.delete(proc);
+      tempRoots.delete(root);
+    }
+  });
+
+  // N9: stop_daemons logs a stopped daemon only when its start time still
+  // matches the value recorded at TERM. A reused pid must not be logged.
+  it("N9 stop_daemons logs no INFRA line when the start time changed", async () => {
+    const proc = mkdtempSync(join(tmpdir(), "mg-review-proc-"));
+    tempRoots.add(proc);
+    try {
+      mkdirSync(join(proc, "home"), { recursive: true });
+      const pid = "700009";
+      const pidDir = join(proc, pid);
+      mkdirSync(pidDir, { recursive: true });
+      const stat = (start: string): string =>
+        `${pid} (fake-opencode) R 1 1 1 0 -1 4194304 0 0 0 0 0 0 0 0 20 0 1 0 ${start} 0 0\n`;
+      writeFileSync(join(pidDir, "stat"), stat("111111"));
+      writeFileSync(join(pidDir, "cmdline"), `opencode\0serve\0--service\0n9\0`);
+      writeFileSync(join(pidDir, "environ"), `HOME=${join(proc, "home")}\0PATH=/x\0`);
+      symlinkSync(proc, join(pidDir, "cwd"));
+      const helpers = [
+        shellBlock("daemon_pids", "stop_daemons"),
+        shellBlock("daemon_pid_alive", "daemon_starttime"),
+        shellBlock("daemon_starttime", "daemon_pids"),
+        shellBlock("stop_daemons", "on_exit"),
+      ].join("\n");
+      const statPath = join(pidDir, "stat");
+      const runGuard = (): { stdout: string; stderr: string; status: number | null } =>
+        spawnSync(
+          "bash",
+          ["-c", `${helpers}\nINFRA_LIST=""\nBENCH_OPENCODE_PROC="${proc}" stop_daemons "${proc}"`],
+          { encoding: "utf8", timeout: 20_000 },
+        );
+      // Positive control: with a stable start time the stopped daemon is
+      // logged. Falsification: no INFRA line even for a stable pid.
+      writeFileSync(statPath, stat("111111"));
+      const stable = runGuard();
+      expect(stable.stderr, "a stable daemon was not logged").toContain("INFRA stopped daemon");
+      writeFileSync(statPath, stat("111111"));
+      const mutator = spawn(
+        "bash",
+        ["-c", `sleep 0.3; printf '%s' '${stat("999999")}' > '${statPath}'`],
+        { stdio: "ignore" },
+      );
+      let result: { stdout: string; stderr: string; status: number | null };
+      try {
+        result = runGuard();
+      } finally {
+        mutator.kill("SIGKILL");
+      }
+      expect(result.stderr, "an INFRA line was logged for a reused pid").not.toContain(
+        "INFRA stopped daemon",
+      );
+    } finally {
+      rmSync(proc, { recursive: true, force: true });
+      tempRoots.delete(proc);
+    }
+  }, 40_000);
+
+  // N26: an error line over 500 bytes is cut before the record write. A
+  // 300 KB line must still give a probe record and a bounded error field.
+  it("N26 error_line_of cuts an error line over 500 bytes before the record write", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mg-review-errline-"));
+    tempRoots.add(dir);
+    try {
+      const outPath = join(dir, "out.txt");
+      const errPath = join(dir, "err.txt");
+      const valuesPath = join(dir, "values.txt");
+      writeFileSync(outPath, "");
+      writeFileSync(errPath, `${"x".repeat(300 * 1024)}\n`);
+      writeFileSync(valuesPath, "");
+      const helper = shellFunc(RUNNER_SOURCE, "error_line_of");
+      const script = [
+        helper,
+        'ERROR_KEY_TEXT="the error output held a credential value"',
+        `TMP_VALUES="${valuesPath}"`,
+        "scan_output() { return 1; }",
+        `error_line_of "${outPath}" "${errPath}" "the model call failed"`,
+      ].join("\n");
+      const result = spawnSync("bash", ["-c", script], {
+        encoding: "utf8",
+        maxBuffer: 2 * 1024 * 1024,
+        timeout: 20_000,
+      });
+      expect(result.status, "error_line_of failed").toBe(0);
+      expect(result.stdout.length, "error_line_of kept the full 300 KB line").toBeLessThanOrEqual(500);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      tempRoots.delete(dir);
+    }
+  });
+
+  // N27: read_tokens clears tokens_complete when a sum passes 2^53.
+  it("N27 a token sum above 2^53 clears tokens_complete", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        {
+          token_stream: {
+            texts: ["```json\n{\"findings\": []}\n```"],
+            tokens: {
+              input: 5_000_000_000_000_000,
+              output: 5_000_000_000_000_000,
+              reasoning: 0,
+              cache: { read: 0, write: 0 },
+            },
+          },
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens_complete, "an unsafe sum kept tokens_complete true").toBe(false);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  // N28: a probe that fails once and then succeeds holds no error line when
+  // the state is reachable.
+  it("N28 a probe that fails once then succeeds stores no error line", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: "a transient transport failure" },
+        { tokens: { input: 1, output: 2, reasoning: 0, cache: { read: 0, write: 0 } }, value: "answer" },
+      ],
+    });
+    writeControlKey4b(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs4b(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = probeRecords4b(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(records[0].state).toBe("reachable");
+      expect(records[0].error, "a reachable probe stored the first error line").toBeUndefined();
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  // N31 AA1: a failed scan prints its own fixed text, not the found-key text.
+  it("N31 a failed scan prints a distinct text on a failed probe", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [{ exit: 1, stderr: SECRET }, { exit: 1, stderr: SECRET }, { exit: 1, stderr: SECRET }],
+    });
+    writeControlKey4b(fixture);
+    breakScan4b(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs4b(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.stdout, "a failed scan printed the found-key text").not.toContain(KEY_FIXED);
+      expect(result.stdout, "the failed-scan text is missing").toContain(SCAN_FAIL_TEXT);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  // N31 AA2: the same distinct text in a region-blocked pass record.
+  it("N31 a failed scan stores a distinct text in a region-blocked pass record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [{ exit: 1, stderr: `${REGION_ERROR} (key ${SECRET} rejected)` }],
+    });
+    breakScan4b(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      const errors = (records[0].errors ?? []) as unknown[];
+      expect(errors, "the pass record holds no error line").toHaveLength(1);
+      expect(String(errors[0]), "a failed scan stored the found-key text").not.toContain(KEY_FIXED);
+      expect(String(errors[0]), "the failed-scan text is missing").toContain(SCAN_FAIL_TEXT);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  // N30 probe part and F1: a key in a stdout error event on the probe region
+  // branch never reaches stdout or the probe record. Guard at HEAD; its
+  // breakage proof is mutation r6 of review-b-c0a26d7.json.
+  it("N30/F1 a key in a probe region stdout error event never reaches the record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        {
+          exit: 1,
+          stderr: "",
+          error_event: { type: "region", message: `${REGION_ERROR} (key ${SECRET} rejected)` },
+        },
+      ],
+    });
+    writeControlKey4b(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs4b(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.stdout, "the probe line held the key").not.toContain(SECRET);
+      const records = probeRecords4b(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(String(records[0].error ?? ""), "the probe record held the key").not.toContain(SECRET);
+      expect(String(records[0].error ?? ""), "the record must hold the fixed text").toContain(KEY_FIXED);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});

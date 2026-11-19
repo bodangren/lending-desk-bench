@@ -886,6 +886,28 @@ describe("Q3 the stopped cases", () => {
     }
   });
 
+  it("N32 a loopback error reason never reaches the quota reason line (Review B c0a26d7 N32)", async () => {
+    // The quota reason is not a credential edge. A provider's loopback answer
+    // can carry an `error` string. The tool must print a fixed text from a
+    // closed list, never that string (test strategy section 14.5, N32).
+    // Falsification: print the raw reason; this case must fail.
+    const RAW = "mg-n32-raw-quota-reason-0123456789";
+    const sandbox = makeSandbox();
+    const server = await startQuotaServer(jsonResponse(JSON.stringify({ error: RAW })));
+    try {
+      const result = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      expectStopped(result, "N32 raw reason");
+      const lines = stderrLines(result);
+      expect(lines[0], "the raw quota reason reached stderr").not.toContain(RAW);
+      expect(lines[0], "the fixed quota reason text is missing").toContain(
+        "the quota source reported an error",
+      );
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+
   it("Q3 a read failure on a closed port gives stopped with one named line", async () => {
     const sandbox = makeSandbox();
     try {

@@ -3126,3 +3126,77 @@ esac
     }
   });
 });
+
+// === Phase 4b row 4.15: judge backlog (Review B c0a26d7 N30, N31) ========
+describe("P4b task 4.15 judge backlog (Review B c0a26d7)", () => {
+  const KEY_FIXED = "the error output held a credential value";
+  const SCAN_FAIL_TEXT = "the error output could not be scanned";
+
+  const SCAN_FAIL_STUB = `#!/usr/bin/env bash
+set -uo pipefail
+case "\${1:-}" in
+  seed) exit 0 ;;
+  scan-values) echo "provider-credential: the job store read failed" >&2; exit 2 ;;
+  *) echo "provider-credential: unknown mode" >&2; exit 2 ;;
+esac
+`;
+
+  function breakScan4b(fixture: Fixture): void {
+    writeFileSync(
+      join(fixture.repo, "harness", "model-guide", "provider-credential.sh"),
+      SCAN_FAIL_STUB,
+    );
+    chmodSync(join(fixture.repo, "harness", "model-guide", "provider-credential.sh"), 0o755);
+  }
+
+  it("N31 JA1 a failed scan prints a distinct text on a failed judge call", async () => {
+    const fixture = await buildFixture({ calls: [{ exit: 1, stderr: SECRET }] });
+    breakScan4b(fixture);
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.stdout, "a failed scan printed the found-key text").not.toContain(KEY_FIXED);
+      expect(result.stdout, "the failed-scan text is missing").toContain(SCAN_FAIL_TEXT);
+      expect(result.stdout, "the runner output held the key").not.toContain(SECRET);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("N31 JA2 a failed scan prints a distinct text on a failed start test", async () => {
+    const fixture = await buildFixture({ calls: [{ exit: 1, stderr: SECRET }] });
+    breakScan4b(fixture);
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, [...judgeArgs(fixture), "--start-test"]);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const lines = stdoutLines(result);
+      expect(lines, `the start test prints one line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "a failed scan printed the found-key text").not.toContain(KEY_FIXED);
+      expect(lines[0], "the failed-scan text is missing").toContain(SCAN_FAIL_TEXT);
+      expect(lines[0], "the start test line held the key").not.toContain(SECRET);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  // Guard at HEAD. Breakage proof: mutation j7 of review-b-c0a26d7.json
+  // prints the unscanned stdout error event of the start-test line.
+  it("N30 a key in a start-test stdout error event never reaches the line", async () => {
+    const fixture = await buildFixture({
+      calls: [{ exit: 1, stderr: "", error_event: { message: `boom ${SECRET} rejected` } }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, [...judgeArgs(fixture), "--start-test"]);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const lines = stdoutLines(result);
+      expect(lines, `the start test prints one line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "the start test line held the key").not.toContain(SECRET);
+      expect(lines[0], "the start test line must hold the fixed text").toContain(KEY_FIXED);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});

@@ -907,7 +907,7 @@ describe("ADV-P4C E the key scan of error lines and the region detection", () =>
   // nonblocking. The scan must read every error event of the output,
   // not only the last one. The pin stays skipped until the backlog row
   // fixes it.
-  it.skip("E1 a value split across two stdout error events never reaches the record (ADV-P4C-1)", async () => {
+  it("E1 a value split across two stdout error events never reaches the record (ADV-P4C-1)", async () => {
     // A hostile call prints two stdout error events: the first holds the
     // head of the credential value, the second holds its tail. The byte
     // scan of the file holds no full value, and the error line is the

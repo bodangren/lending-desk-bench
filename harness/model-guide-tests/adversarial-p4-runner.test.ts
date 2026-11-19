@@ -918,6 +918,46 @@ describe("ADV-R runner block: concurrency, hostile review data, and filter words
   });
 });
 
+describe("P4b row 4.15: the process-table guard scopes to its own run (Review C, F2, N15)", () => {
+  it("P4B-C1 a fake process of another session does not fail this run's guard", async () => {
+    // The guard must scope to this run's own temp root. A planted process
+    // whose path sits outside that root belongs to another session and is
+    // not a signal for this run (test strategy section 14.5, Review C and
+    // F2 and N15). Falsification: an unscoped guard fails on the plant.
+    const foreign = spawn(
+      "bash",
+      ["-c", "exec -a '/tmp/mg-foreign-session-4b15/fake-opencode serve --service foreign' sleep 20"],
+      { stdio: "ignore", detached: true },
+    );
+    foreign.unref();
+    try {
+      let seen = false;
+      for (let i = 0; i < 100; i += 1) {
+        if (liveFakeOpencode().some((line) => line.includes("mg-foreign-session-4b15"))) {
+          seen = true;
+          break;
+        }
+        await new Promise((done) => setTimeout(done, 20));
+      }
+      expect(seen, "the planted foreign fake never appeared in the process table").toBe(true);
+      expect(
+        liveFakeOpencode().filter((line) => line.includes("mg-foreign-session-4b15")),
+        "a fake of another session failed this run's process-table guard",
+      ).toEqual([]);
+    } finally {
+      try {
+        process.kill(-(foreign.pid as number), "SIGKILL");
+      } catch {
+        try {
+          foreign.kill("SIGKILL");
+        } catch {
+          // The child is already gone.
+        }
+      }
+    }
+  });
+});
+
 describe("ADV-R runner block: lock isolation between routes", () => {
   function slugOf(route: string): string {
     return route.replace(/[^A-Za-z0-9._-]+/g, "-");
