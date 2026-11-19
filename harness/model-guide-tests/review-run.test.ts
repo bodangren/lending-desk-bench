@@ -3936,8 +3936,10 @@ describe("P4 task 4.13y error-line scan, strict tokens, stdout error events (Rev
 // must keep.
 describe("P4 task 4.13aa failed scan and decoded-text scan (Review B f26965d N22 N23 N25, Review A NA2, Review C N1)", () => {
   const AA_PROBE_DATE = "2026-11-20";
-  /** The fixed text that replaces an error line holding a key. */
+  /** The fixed text that replaces an error line holding a found key. */
   const AA_FIXED = "the error output held a credential value";
+  /** The distinct fixed text of a failed scan (review finding N31). */
+  const AA_SCAN_FAIL_TEXT = "the error output could not be scanned";
   /** A key with a quote, a backslash, and a control character (tab). The
    * JSON stdout event escapes all three, so a byte scan of the file misses
    * it while the decoded line holds it raw (Review B N23). */
@@ -4022,12 +4024,12 @@ esac
       expect(result.error, "the spawn hit the timeout").toBeUndefined();
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
       expect(result.stdout, "the probe line held the key").not.toContain(SECRET);
-      expect(result.stdout, "the probe line must hold the fixed text").toContain(AA_FIXED);
+      expect(result.stdout, "the probe line must hold the failed-scan text").toContain(AA_SCAN_FAIL_TEXT);
       expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
       expect(filesHolding(fixture.repo, SECRET), "the key stayed in the repository").toEqual([]);
       const records = aaProbeRecordsOf(fixture);
       expect(records, "the run wrote no probe record").toHaveLength(1);
-      expect(String(records[0].error ?? ""), "the probe record must hold the fixed text").toBe(AA_FIXED);
+      expect(String(records[0].error ?? ""), "the probe record must hold the failed-scan text").toBe(AA_SCAN_FAIL_TEXT);
     } finally {
       dropFixture(fixture);
     }
@@ -4050,7 +4052,7 @@ esac
       expect(records[0].state).toBe("region-blocked");
       const errors = (records[0].errors ?? []) as unknown[];
       expect(errors, "the pass record holds no stored error line").toHaveLength(1);
-      expect(String(errors[0]), "the pass record must hold the fixed text").toBe(AA_FIXED);
+      expect(String(errors[0]), "the pass record must hold the failed-scan text").toBe(AA_SCAN_FAIL_TEXT);
       expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
       expect(filesHolding(fixture.repo, SECRET), "the key stayed in the repository").toEqual([]);
     } finally {

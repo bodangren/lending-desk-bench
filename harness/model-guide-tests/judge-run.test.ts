@@ -2950,8 +2950,10 @@ describe("P4 task 4.13y the error-line key scan of the judge runner (Review B ff
 // redaction line have no failing test. Cases JA4 and JA5 pin them; they pass
 // at HEAD and guard the behavior Green must keep.
 describe("P4 task 4.13aa failed scan, decoded text, and start-test pins (Review B f26965d N22 N23 N25, Review A NA1 NA2)", () => {
-  /** The fixed text that replaces an error line holding a key. */
+  /** The fixed text that replaces an error line holding a found key. */
   const JA_FIXED = "the error output held a credential value";
+  /** The distinct fixed text of a failed scan (review finding N31). */
+  const JA_SCAN_FAIL_TEXT = "the error output could not be scanned";
   /** A key with a quote, a backslash, and a control character (tab). The
    * JSON stdout event escapes all three, so a byte scan of the file misses
    * it while the decoded line holds it raw (Review B N23). */
@@ -2993,7 +2995,7 @@ esac
         "the runner called the model more than once",
       ).toHaveLength(1);
       expect(result.stdout, "the runner output held the key").not.toContain(SECRET);
-      expect(result.stdout, "the runner output must hold the fixed text").toContain(JA_FIXED);
+      expect(result.stdout, "the runner output must hold the failed-scan text").toContain(JA_SCAN_FAIL_TEXT);
       expect(
         filesHolding(fixture.privateDir, SECRET),
         "the key stayed in the private folder",
@@ -3011,8 +3013,8 @@ esac
         expect(String(line), "an error line held the key").not.toContain(SECRET);
       }
       expect(
-        errors.some((line) => String(line).includes(JA_FIXED)),
-        "the run record must hold the fixed text",
+        errors.some((line) => String(line).includes(JA_SCAN_FAIL_TEXT)),
+        "the run record must hold the failed-scan text",
       ).toBe(true);
     } finally {
       dropFixture(fixture);
@@ -3032,7 +3034,7 @@ esac
       const lines = stdoutLines(result);
       expect(lines, `the start test prints one line: ${result.stdout}`).toHaveLength(1);
       expect(lines[0], "the start test line held the key").not.toContain(SECRET);
-      expect(lines[0], "the start test line must hold the fixed text").toContain(JA_FIXED);
+      expect(lines[0], "the start test line must hold the failed-scan text").toContain(JA_SCAN_FAIL_TEXT);
       expect(judgeFile(fixture, "a"), "the start test wrote a judge file").toBeNull();
       expect(runRecord(fixture, "a"), "the start test wrote a run record").toBeNull();
     } finally {
