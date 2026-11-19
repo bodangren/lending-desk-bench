@@ -2565,8 +2565,31 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   `measure/runs/model_guide/green-4.13z.log` (not staged).
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   6f6628526508cb2f2014ed794f2b239d023031f1.
-- [~] 62126e2 4.13aa Red: no raw error line on a failed scan, scan the decoded text, pin the stdout and start-test scan paths (Review B f26965d N22 N23 N25, Review A NA1 NA2, Review C N1).
-- [ ] 4.13ab Green: the same text.
+- [x] 62126e2 4.13aa Red: no raw error line on a failed scan, scan the decoded text, pin the stdout and start-test scan paths (Review B f26965d N22 N23 N25, Review A NA1 NA2, Review C N1).
+- [x] b795f32 4.13ab Green: no raw error line on a failed scan, scan the decoded text, pin the stdout and start-test scan paths (Review B f26965d N22 N23 N25, Review A NA1 NA2, Review C N1).
+  Implements the 4.13aa contract in `harness/model-guide/review-run.sh` and
+  `harness/model-guide/judge-run.sh`. `error_line_of` prints the fixed text
+  "the error output held a credential value" when `scan_output` exits 2, so
+  a failed scan never prints the raw error line (Review B N22, Review A NA2,
+  Review C N1). When the byte scan of the source finds no value, it scans
+  the decoded error-event text too, so a JSON-escaped key with a quote, a
+  backslash, or a control character still gives the fixed text (Review B
+  N23). The probe line, the probe record `error`, the pass record `errors`,
+  the judge output line, the judge run record `errors`, and the
+  `--start-test` line all carry the fixed text. No test file changed, and no
+  test was wrong.
+  Gates at the implementation commit b795f32, one file at a time: `bun test
+  harness/model-guide-tests/review-run.test.ts` 86 pass, 0 fail;
+  `model-guide-tests/judge-run.test.ts` 45 passed (45);
+  `model-guide-tests/decode-parity.test.ts` 3 passed (3);
+  `model-guide-tests/adversarial-p4-runner.test.ts` 14 passed (14);
+  `model-guide-tests/adversarial-p4b.test.ts` 12 passed (12). Before the fix
+  the review-run file gave 82 pass, 4 fail (AA1, AA2, AA3, AA5), and the
+  judge file gave 42 passed, 3 failed (JA1, JA2, JA3). After each run, pgrep
+  for fake-opencod[e] and quota-serve[r] showed nothing. The log is
+  `measure/runs/model_guide/green-4.13ab.log` (not staged).
+  phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  9e7672f4d79b1b6b2e799d111f862d7e47e46dd1.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
