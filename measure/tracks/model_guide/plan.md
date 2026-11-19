@@ -2439,6 +2439,40 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   log is `measure/runs/model_guide/green-4.13t.log` (not staged).
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   56ab786658576437cf4f373252be2a76f5951130.
+- [x] 05bb618 4.13u Red: the queue and the scorer read the real event stream (Review C 2fdb8f8).
+  - `harness/model-guide-tests/adjudicate.test.ts` gains a `4.13u` block with
+    three cases: an event-stream raw output gives the same queue items as the
+    same answer in plain text, JSON-escaped newlines and quotes read the same
+    as plain text, and a plain-text raw output still queues. The stream helper
+    splits the fenced answer over 2 `{"type":"text",...,"part":{"type":"text",
+    "text":"..."}}` events with step and tool events mixed in, which is the
+    real shape that `review-run.sh` stores. The first two cases fail at HEAD
+    because `readFindings` of `adjudicate.ts:216-232` parses the raw text, so
+    the queue holds no item for a real stream; the plain-text case passes.
+  - `harness/model-guide-tests/review-score.test.ts` gains a `4.13u` block with
+    two cases: an event-stream input scores the same as the same answer in
+    plain text, and a plain-text output still scores. Both pass at HEAD: this
+    is a guard that pins the `decodeAnswerText` decoder of
+    `review-score.ts:233-266`. By reasoning (no production file changed): if
+    the decoder is removed, the raw stream keeps its JSON escapes around the
+    fenced block, the fence slice fails `JSON.parse`, the review turns
+    `invalid`, and `invalid_reviews` becomes 1 instead of 0, so the equality
+    case fails.
+  - Verify, one file at a time:
+    `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts
+    --configLoader native --maxWorkers=1 --reporter=dot` exits 1 with
+    `Tests  2 failed | 21 passed (23)`; the 2 failures are the `4.13u`
+    event-stream cases, and every earlier case stays green.
+    `cd harness && npx vitest run model-guide-tests/review-score.test.ts
+    --configLoader native --maxWorkers=1 --reporter=dot` exits 0 with
+    `Tests  27 passed (27)`; the 2 new `4.13u` cases pass at HEAD as the
+    decoder guard.
+  - Evidence: commit 05bb618. The record is
+    `measure/runs/model_guide/red-4.13u.log` (not staged). Row stays `[x]`
+    for Red; Green task 4.13v follows.
+  phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41.
+- [ ] 4.13v Green: the queue and the scorer read the real event stream (Review C 2fdb8f8).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
