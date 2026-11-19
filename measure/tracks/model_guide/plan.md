@@ -2631,12 +2631,13 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     worst pass, and the code review row of the table has a pick or "no pick
     yet" (spec acceptance 10 and 11).
 
-- [ ] 4.15 The backlog of nonblocking findings (PM round cap 2026-11-19). Work it after the night run of 2026-11-22, through Red and Green.
+- [~] 4.15 The backlog of nonblocking findings (PM round cap 2026-11-19). Work it after the night run of 2026-11-22, through Red and Green.
   - Review B c0a26d7: N30 (the probe region branch and the judge --start-test stdout-event paths have no failing test), N31 (a failed scan and a found key print the same text), N32 (the quota reason line is printed unscanned), and the carried N5, N9 to N13, N15, N20, N21, N24, N26 to N29.
   - Review A c0a26d7: F1 (the probe region branch stdout-event scan path has no failing test), F2 (the orphan-scan flake under concurrent load).
   - Review C c0a26d7: the process-table guard cannot tell another session's fake from its own.
   - Adversarial c0a26d7 (bd967a7): ADV-P4C-1 (a value split across two stdout error events leaks its tail into the runner stdout and the private judge record; pinned as it.skip in adversarial-p4c.test.ts).
   - Verify: each finding has a failing-first test or a recorded PM ruling.
+  - Red evidence (2026-11-19, measure/runs/model_guide/red-4.15.txt): phase_base_sha and role_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5. Six Red lines, one file at a time. Line 1 `bun test harness/model-guide-tests/review-run.test.ts` exit 1, `87 pass` / `9 fail` (N21, N10, N11, N9, N26, N27, N28, N31 x2; N30/F1 is a guard whose breakage proof is mutation r6 of review-b-c0a26d7.json). Line 2 `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests 2 failed | 46 passed (48)` (N31 JA1, JA2; N30 is a guard, breakage proof mutation j7). Line 3 same form on quota.test.ts exit 1, `1 failed | 30 passed (31)` (N32 raw reason reached stderr). Line 4 same form on adversarial-p4-runner.test.ts exit 1, `1 failed | 14 passed (15)` (P4B-C1 foreign process). Line 5 same form on adversarial-p4c.test.ts exit 1, `1 failed | 12 passed (13)` (E1 un-skipped, tail `dential-value-0123456789`). Line 6 `bun test harness/model-guide-tests/decode-parity.test.ts` exit 1, `3 pass` / `1 fail` (N13 forged result branch). pgrep printed nothing of mine. Red changes test files only; no production path and no frozen path changed. Row stays `[~]` until Green flips it.
 Verify (Phase 4b): the track A first results are in the preview folder by Sun 2026-11-22.
 
 ## Phase 5: The publish gate and the weekly update
