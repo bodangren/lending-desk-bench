@@ -2932,3 +2932,197 @@ describe("P4 task 4.13y the error-line key scan of the judge runner (Review B ff
     }
   });
 });
+// --- task 4.13aa: no raw error line on a failed scan, the decoded-text scan,
+// and the pinned start-test scan path ---
+//
+// Sources: Review B f26965d N22, N23, N25; Review A f26965d NA1, NA2.
+// These must land before the live probe on 2026-11-20 at 01:45.
+//
+// N22/NA2: `error_line_of` prints the raw error line when `scan_output`
+// itself fails (exit 2). The Red pins: the fixed text replaces the line on
+// the judge stdout line, in the judge run record, and in the `--start-test`
+// line. Cases JA1 (judge call) and JA2 (start test).
+// N23: the scan reads the bytes of the output file, but the error line is
+// the decoded text of a JSON stdout event. A key with a quote, a backslash,
+// or a control character is escaped in the file, so the byte scan misses it
+// and the decoded line leaks. Case JA3 pins the judge call.
+// N25/NA1: the judge stdout error event path and the `--start-test`
+// redaction line have no failing test. Cases JA4 and JA5 pin them; they pass
+// at HEAD and guard the behavior Green must keep.
+describe("P4 task 4.13aa failed scan, decoded text, and start-test pins (Review B f26965d N22 N23 N25, Review A NA1 NA2)", () => {
+  /** The fixed text that replaces an error line holding a key. */
+  const JA_FIXED = "the error output held a credential value";
+  /** A key with a quote, a backslash, and a control character (tab). The
+   * JSON stdout event escapes all three, so a byte scan of the file misses
+   * it while the decoded line holds it raw (Review B N23). */
+  const JA_WEIRD = "sk-test-\"quoted\"\\back\tail";
+
+  /** A helper that seeds fine but whose value scan always fails (exit 2),
+   * so the run reaches the N22 path: a good seed, then a failed scan. */
+  const JA_SCAN_FAIL_STUB = `#!/usr/bin/env bash
+set -uo pipefail
+case "\${1:-}" in
+  seed) exit 0 ;;
+  scan-values) echo "provider-credential: the job store read failed" >&2; exit 2 ;;
+  *) echo "provider-credential: unknown mode" >&2; exit 2 ;;
+esac
+`;
+
+  /** The temp helper whose scan always fails replaces the stub copy, so
+   * the seed passes and the value scan of the error line fails. */
+  function jaBreakScan(fixture: Fixture): void {
+    writeFileSync(
+      join(fixture.repo, "harness", "model-guide", "provider-credential.sh"),
+      JA_SCAN_FAIL_STUB,
+    );
+    chmodSync(join(fixture.repo, "harness", "model-guide", "provider-credential.sh"), 0o755);
+  }
+
+  it("JA1 a failed value scan prints the fixed text on a failed judge call instead of the raw line", async () => {
+    const fixture = await buildFixture({
+      calls: [{ exit: 1, stderr: SECRET }],
+    });
+    jaBreakScan(fixture);
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the runner called the model more than once",
+      ).toHaveLength(1);
+      expect(result.stdout, "the runner output held the key").not.toContain(SECRET);
+      expect(result.stdout, "the runner output must hold the fixed text").toContain(JA_FIXED);
+      expect(
+        filesHolding(fixture.privateDir, SECRET),
+        "the key stayed in the private folder",
+      ).toEqual([]);
+      expect(
+        readFileSync(fixture.logPath, "utf8").includes(SECRET),
+        "the key stayed in the log",
+      ).toBe(false);
+      const record = runRecord(fixture, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      expect(record?.state, "the state of the stopped run").toBe("open");
+      const errors = Array.isArray(record?.errors) ? (record?.errors as unknown[]) : [];
+      expect(errors.length, "the run record holds no stored error line").toBeGreaterThan(0);
+      for (const line of errors) {
+        expect(String(line), "an error line held the key").not.toContain(SECRET);
+      }
+      expect(
+        errors.some((line) => String(line).includes(JA_FIXED)),
+        "the run record must hold the fixed text",
+      ).toBe(true);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("JA2 a failed value scan prints the fixed text on a failed start test", async () => {
+    const fixture = await buildFixture({
+      calls: [{ exit: 1, stderr: SECRET }],
+    });
+    jaBreakScan(fixture);
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, [...judgeArgs(fixture), "--start-test"]);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      const lines = stdoutLines(result);
+      expect(lines, `the start test prints one line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "the start test line held the key").not.toContain(SECRET);
+      expect(lines[0], "the start test line must hold the fixed text").toContain(JA_FIXED);
+      expect(judgeFile(fixture, "a"), "the start test wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the start test wrote a run record").toBeNull();
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("JA3 a key with a quote, a backslash, and a tab in a stdout error event never reaches the judge output or record", async () => {
+    const fixture = await buildFixture({
+      calls: [{ exit: 1, stderr: "", error_event: { message: `boom ${JA_WEIRD} fail` } }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture), { MG_TEST_SECRET_VALUE: JA_WEIRD });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the runner called the model more than once",
+      ).toHaveLength(1);
+      expect(result.stdout, "the runner output held the key").not.toContain(JA_WEIRD);
+      expect(result.stdout, "the runner output must hold the fixed text").toContain(JA_FIXED);
+      expect(
+        filesHolding(fixture.privateDir, JA_WEIRD),
+        "the key stayed in the private folder",
+      ).toEqual([]);
+      expect(
+        filesHolding(fixture.repo, JA_WEIRD),
+        "the key stayed in the repository",
+      ).toEqual([]);
+      const record = runRecord(fixture, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      const errors = Array.isArray(record?.errors) ? (record?.errors as unknown[]) : [];
+      expect(errors.length, "the run record holds no stored error line").toBeGreaterThan(0);
+      for (const line of errors) {
+        expect(String(line), "an error line held the key").not.toContain(JA_WEIRD);
+      }
+      expect(
+        errors.some((line) => String(line).includes(JA_FIXED)),
+        "the run record must hold the fixed text",
+      ).toBe(true);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("JA4 guard: a key in a stdout error event of a judge call never reaches the judge output or record", async () => {
+    const fixture = await buildFixture({
+      calls: [{ exit: 1, stderr: "", error_event: { message: `boom ${SECRET} rejected` } }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(result.stdout, "the runner output held the key").not.toContain(SECRET);
+      expect(result.stdout, "the runner output must hold the fixed text").toContain(JA_FIXED);
+      expect(
+        filesHolding(fixture.privateDir, SECRET),
+        "the key stayed in the private folder",
+      ).toEqual([]);
+      const record = runRecord(fixture, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      const errors = Array.isArray(record?.errors) ? (record?.errors as unknown[]) : [];
+      expect(
+        errors.some((line) => String(line).includes(JA_FIXED)),
+        "the run record must hold the fixed text",
+      ).toBe(true);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("JA5 guard: a key on the stderr line of a failed start test never reaches the start-test line", async () => {
+    const fixture = await buildFixture({
+      calls: [{ exit: 1, stderr: `transport ${SECRET} down` }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, [...judgeArgs(fixture), "--start-test"]);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      const lines = stdoutLines(result);
+      expect(lines, `the start test prints one line: ${result.stdout}`).toHaveLength(1);
+      expect(lines[0], "the start test line held the key").not.toContain(SECRET);
+      expect(lines[0], "the start test line must hold the fixed text").toContain(JA_FIXED);
+      expect(judgeFile(fixture, "a"), "the start test wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the start test wrote a run record").toBeNull();
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});

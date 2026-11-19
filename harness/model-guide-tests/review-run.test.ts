@@ -3915,3 +3915,227 @@ describe("P4 task 4.13y error-line scan, strict tokens, stdout error events (Rev
     }
   });
 });
+// --- task 4.13aa: no raw error line on a failed scan, the decoded-text scan,
+// and the pinned stdout scan path ---
+//
+// Sources: Review B f26965d N22, N23, N25; Review A f26965d NA2;
+// Review C f26965d N1. These must land before the live probe on 2026-11-20
+// at 01:45.
+//
+// N22/NA2/N1: `error_line_of` prints the raw error line when `scan_output`
+// itself fails (exit 2). The Red pins: the fixed text replaces the line on
+// the probe stdout line, in the probe record, and in the pass record of the
+// region branch. Cases AA1 (probe) and AA2 (pass region branch).
+// N23: the scan reads the bytes of the output file, but the error line is
+// the decoded text of a JSON stdout event. A key with a quote, a backslash,
+// or a control character is escaped in the file, so the byte scan misses it
+// and the decoded line leaks. The Red pins: the scan reads the decoded
+// text. Cases AA3 (probe) and AA5 (pass region branch).
+// N25: the probe path with a key in a stdout error event has no failing
+// test. Case AA4 pins it; it passes at HEAD and guards the behavior Green
+// must keep.
+describe("P4 task 4.13aa failed scan and decoded-text scan (Review B f26965d N22 N23 N25, Review A NA2, Review C N1)", () => {
+  const AA_PROBE_DATE = "2026-11-20";
+  /** The fixed text that replaces an error line holding a key. */
+  const AA_FIXED = "the error output held a credential value";
+  /** A key with a quote, a backslash, and a control character (tab). The
+   * JSON stdout event escapes all three, so a byte scan of the file misses
+   * it while the decoded line holds it raw (Review B N23). */
+  const AA_WEIRD = "sk-test-\"quoted\"\\back\tail";
+
+  /** A helper that seeds fine but whose value scan always fails (exit 2),
+   * so the run reaches the N22 path: a good seed, then a failed scan. */
+  const AA_SCAN_FAIL_STUB = `#!/usr/bin/env bash
+set -uo pipefail
+case "\${1:-}" in
+  seed) exit 0 ;;
+  scan-values) echo "provider-credential: the job store read failed" >&2; exit 2 ;;
+  *) echo "provider-credential: unknown mode" >&2; exit 2 ;;
+esac
+`;
+
+  function aaProbeArgs(fixture: Fixture): string[] {
+    return [...runArgs(fixture), "--probe", "--date", AA_PROBE_DATE];
+  }
+
+  function aaWriteControlKey(fixture: Fixture, controlId: string): void {
+    const keysDir = join(fixture.privateDir, "sets", fixture.setId, "keys");
+    mkdirSync(keysDir, { recursive: true });
+    for (const diff of fixture.diffs) {
+      const plants =
+        diff === controlId
+          ? []
+          : [
+              {
+                id: `P-${diff}`,
+                new_lines: [3, 5],
+                file: `src/${diff}.ts`,
+                class: "C1",
+                severity: "blocker",
+                title: "planted",
+                reason: "the test plant",
+                witness: "witness",
+                weight: 5,
+              },
+            ];
+      writeFileSync(
+        join(keysDir, `${diff}.json`),
+        `${JSON.stringify(
+          { schema: "model-guide-key/1", set_id: fixture.setId, diff_id: diff, plants },
+          null,
+          2,
+        )}\n`,
+      );
+    }
+  }
+
+  function aaProbeRecordsOf(fixture: Fixture): Array<Record<string, unknown>> {
+    return filesUnder(join(fixture.privateDir, "probes"))
+      .filter((file) => file.endsWith(".json"))
+      .map((file) => JSON.parse(readFileSync(file, "utf8")));
+  }
+
+  /** The temp helper whose scan always fails replaces the stub copy, so
+   * the seed passes and the value scan of the error line fails. */
+  function aaBreakScan(fixture: Fixture): void {
+    writeFileSync(
+      join(fixture.repo, "harness", "model-guide", "provider-credential.sh"),
+      AA_SCAN_FAIL_STUB,
+    );
+    chmodSync(join(fixture.repo, "harness", "model-guide", "provider-credential.sh"), 0o755);
+  }
+
+  it("AA1 a failed value scan prints the fixed text on a failed probe instead of the raw line", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: SECRET },
+        { exit: 1, stderr: SECRET },
+        { exit: 1, stderr: SECRET },
+      ],
+    });
+    aaWriteControlKey(fixture, "d-01");
+    aaBreakScan(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, aaProbeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      expect(result.stdout, "the probe line held the key").not.toContain(SECRET);
+      expect(result.stdout, "the probe line must hold the fixed text").toContain(AA_FIXED);
+      expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
+      expect(filesHolding(fixture.repo, SECRET), "the key stayed in the repository").toEqual([]);
+      const records = aaProbeRecordsOf(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(String(records[0].error ?? ""), "the probe record must hold the fixed text").toBe(AA_FIXED);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("AA2 a failed value scan stores the fixed text in a region-blocked pass record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [{ exit: 1, stderr: `${REGION_ERROR} (key ${SECRET} rejected)` }],
+    });
+    aaBreakScan(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner retried the region error").toHaveLength(1);
+      expect(result.stdout, "the runner output held the key").not.toContain(SECRET);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("region-blocked");
+      const errors = (records[0].errors ?? []) as unknown[];
+      expect(errors, "the pass record holds no stored error line").toHaveLength(1);
+      expect(String(errors[0]), "the pass record must hold the fixed text").toBe(AA_FIXED);
+      expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
+      expect(filesHolding(fixture.repo, SECRET), "the key stayed in the repository").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("AA3 a key with a quote, a backslash, and a tab never reaches the probe line or record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: "", error_event: { message: `boom ${AA_WEIRD} fail` } },
+        { exit: 1, stderr: "", error_event: { message: `boom ${AA_WEIRD} fail` } },
+        { exit: 1, stderr: "", error_event: { message: `boom ${AA_WEIRD} fail` } },
+      ],
+    });
+    aaWriteControlKey(fixture, "d-01");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, aaProbeArgs(fixture), { MG_TEST_SECRET_VALUE: AA_WEIRD });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      expect(result.stdout, "the probe line held the key").not.toContain(AA_WEIRD);
+      expect(result.stdout, "the probe line must hold the fixed text").toContain(AA_FIXED);
+      expect(filesHolding(fixture.privateDir, AA_WEIRD), "the key stayed in the private folder").toEqual([]);
+      expect(filesHolding(fixture.repo, AA_WEIRD), "the key stayed in the repository").toEqual([]);
+      const records = aaProbeRecordsOf(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(String(records[0].error ?? ""), "the probe record must hold the fixed text").toBe(AA_FIXED);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("AA4 guard: a key in a stdout error event of a probe never reaches the probe line or record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: "", error_event: { message: `boom ${SECRET} rejected` } },
+        { exit: 1, stderr: "", error_event: { message: `boom ${SECRET} rejected` } },
+        { exit: 1, stderr: "", error_event: { message: `boom ${SECRET} rejected` } },
+      ],
+    });
+    aaWriteControlKey(fixture, "d-01");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, aaProbeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      expect(result.stdout, "the probe line held the key").not.toContain(SECRET);
+      expect(result.stdout, "the probe line must hold the fixed text").toContain(AA_FIXED);
+      expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
+      expect(filesHolding(fixture.repo, SECRET), "the key stayed in the repository").toEqual([]);
+      const records = aaProbeRecordsOf(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(String(records[0].error ?? ""), "the probe record must hold the fixed text").toBe(AA_FIXED);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("AA5 a region error event with an escaped key never reaches the pass record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: "", error_event: { message: `${REGION_ERROR} (${AA_WEIRD})` } },
+        { exit: 1, stderr: "", error_event: { message: `${REGION_ERROR} (${AA_WEIRD})` } },
+        { exit: 1, stderr: "", error_event: { message: `${REGION_ERROR} (${AA_WEIRD})` } },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture), { MG_TEST_SECRET_VALUE: AA_WEIRD });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.stdout, "the runner output held the key").not.toContain(AA_WEIRD);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("region-blocked");
+      const errors = (records[0].errors ?? []) as unknown[];
+      expect(errors, "the pass record holds no stored error line").toHaveLength(1);
+      expect(String(errors[0]), "the pass record must hold the fixed text").toBe(AA_FIXED);
+      expect(filesHolding(fixture.privateDir, AA_WEIRD), "the key stayed in the private folder").toEqual([]);
+      expect(filesHolding(fixture.repo, AA_WEIRD), "the key stayed in the repository").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
