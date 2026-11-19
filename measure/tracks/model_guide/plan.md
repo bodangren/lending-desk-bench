@@ -2499,7 +2499,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   row keeps `[x] 05bb618` and records the deviation.
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   0f426b171ae319955e3c4c3270c988dc05c97605.
-- [~] 4.13w Red: the token log reads the real step_finish event (Review A 2fdb8f8).
+- [~] 943f9f7 4.13w Red: the token log reads the real step_finish event (Review A 2fdb8f8).
   - The defect (Review A 2fdb8f8): `read_tokens` of both runners matches the
     fake event shape `step-finish` with top-level `event.tokens`, but the
     installed bundle prints `step_finish` with the tokens in `part.tokens`
