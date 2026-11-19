@@ -919,42 +919,46 @@ describe("ADV-R runner block: concurrency, hostile review data, and filter words
 });
 
 describe("P4b row 4.15: the process-table guard scopes to its own run (Review C, F2, N15)", () => {
-  it("P4B-C1 a fake process of another session does not fail this run's guard", async () => {
-    // The guard must scope to this run's own temp root. A planted process
-    // whose path sits outside that root belongs to another session and is
-    // not a signal for this run (test strategy section 14.5, Review C and
-    // F2 and N15). Falsification: an unscoped guard fails on the plant.
-    const foreign = spawn(
-      "bash",
-      ["-c", "exec -a '/tmp/mg-foreign-session-4b15/fake-opencode serve --service foreign' sleep 20"],
-      { stdio: "ignore", detached: true },
-    );
-    foreign.unref();
-    try {
-      let seen = false;
-      for (let i = 0; i < 100; i += 1) {
-        if (liveFakeOpencode().some((line) => line.includes("mg-foreign-session-4b15"))) {
-          seen = true;
-          break;
-        }
-        await new Promise((done) => setTimeout(done, 20));
-      }
-      expect(seen, "the planted foreign fake never appeared in the process table").toBe(true);
-      expect(
-        liveFakeOpencode().filter((line) => line.includes("mg-foreign-session-4b15")),
-        "a fake of another session failed this run's process-table guard",
-      ).toEqual([]);
-    } finally {
-      try {
-        process.kill(-(foreign.pid as number), "SIGKILL");
-      } catch {
-        try {
-          foreign.kill("SIGKILL");
-        } catch {
-          // The child is already gone.
-        }
-      }
+  it("P4B-C1 the daemon guard ignores a fake of another session", () => {
+    // Option B of the Green handoff. Option A cannot fail at this HEAD:
+    // daemon_pids already excludes a process whose HOME and cwd sit outside
+    // the job root, so a full clean run with a foreign sleep is green. The
+    // remaining gap is a fake of another session that runs with the same
+    // HOME and cwd but whose executable comes from another temp root. The
+    // guard must key on its own job root, not on a bare `serve --service`
+    // match (test strategy section 14.5, Review C, F2, N15).
+    const proc = tempDir("proc");
+    const base = tempDir("jobroot");
+    const foreignRoot = tempDir("foreign-root");
+    mkdirSync(join(base, "home"), { recursive: true });
+    const localPid = "810001";
+    const foreignPid = "810002";
+    const foreignBin = join(foreignRoot, "fake-opencode");
+    for (const [pid, cmdline] of [
+      [localPid, `node\0serve\0--service\0local\0`],
+      [foreignPid, `${foreignBin}\0serve\0--service\0foreign\0`],
+    ]) {
+      const pidDir = join(proc, pid);
+      mkdirSync(pidDir, { recursive: true });
+      writeFileSync(join(pidDir, "cmdline"), cmdline);
+      writeFileSync(join(pidDir, "environ"), `HOME=${join(base, "home")}\0PATH=/x\0`);
+      symlinkSync(base, join(pidDir, "cwd"));
     }
+    const lines = readFileSync(RUNNER_SOURCE, "utf8").split("\n");
+    const start = lines.findIndex((line) => line === "daemon_pids() {");
+    expect(start, "the daemon matcher is missing").toBeGreaterThanOrEqual(0);
+    const end = lines.findIndex((line, index) => index > start && line === "stop_daemons() {");
+    expect(end, "the daemon guard is missing").toBeGreaterThan(start);
+    const helper = lines.slice(start, end).join("\n");
+    const result = spawnSync(
+      "bash",
+      ["-c", `${helper}\nBENCH_OPENCODE_PROC="${proc}" daemon_pids "${base}"`],
+      { encoding: "utf8", timeout: 10_000 },
+    );
+    expect(result.status, `daemon_pids failed: ${result.stderr}`).toBe(0);
+    const selected = result.stdout.trim().split("\n").filter((line) => line !== "");
+    expect(selected, "the local daemon of this job was not selected").toContain(localPid);
+    expect(selected, "a fake of another session was selected").not.toContain(foreignPid);
   });
 });
 
