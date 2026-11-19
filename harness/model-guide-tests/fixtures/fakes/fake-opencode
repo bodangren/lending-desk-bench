@@ -42,6 +42,15 @@
 #                 The nested tokens use the bundle names `input`, `output`,
 #                 `reasoning`, and `cache: {read, write}`. The old `tokens`
 #                 shape stays, so the earlier cases keep passing.
+#   error_event   when it is an object, the call prints the stdout error
+#                 event of `opencode run --format json` (task 4.13y,
+#                 Review B ff4e009 N20): the installed bundle writes errors
+#                 to stdout as
+#                 `{"type":"error","timestamp":...,"sessionID":...,
+#                 "error":<the object>}` and skips the stderr printer.
+#   raw_lines     when it is an array of strings, the call prints each
+#                 entry on its own stdout line (task 4.13y: hostile token
+#                 numbers and multi-event calls).
 #   daemon        when it is a tag, the call leaves a child process behind
 #                 whose argv holds the real split `<bin> serve --service
 #                 <tag>` as NUL-separated entries (task 4.13q F1: a node -e
@@ -191,13 +200,22 @@ if (stream !== null) {
   }
   streamText = lines.join("\n");
 }
+// The stdout error event of the installed bundle (task 4.13y,
+// Review B ff4e009 N20): `{"type":"error",...,"error":<the object>}`.
+const errorEvent = (entry.error_event && typeof entry.error_event === "object" && !Array.isArray(entry.error_event))
+  ? JSON.stringify(entry.error_event)
+  : "";
+// Extra stdout lines of the call (task 4.13y): hand-built events.
+const rawLines = Array.isArray(entry.raw_lines)
+  ? entry.raw_lines.filter((line) => typeof line === "string").join("\n")
+  : "";
 const valueBytes = Buffer.byteLength(value, "utf8");
 let total = stdoutBytes > 0 ? stdoutBytes : valueBytes + padBytes;
 if (total < valueBytes) total = valueBytes;
 const fields = [
   String(exitCode), stderrText, String(stdoutBytes), String(padBytes),
   String(sleepSeconds), value, String(total - valueBytes), String(total),
-  tokens, daemonTag, daemonTermTag, streamText,
+  tokens, daemonTag, daemonTermTag, streamText, errorEvent, rawLines,
 ];
 process.stdout.write(fields.map((field) => field + "\0").join(""));
 ' "$SPEC_FILE" "$1" "${2:-0}"
@@ -258,6 +276,8 @@ VALUE="${FIELDS[5]:-}"
 PAD_LENGTH="${FIELDS[6]:-0}"
 TOKENS_JSON="${FIELDS[8]:-}"
 STREAM_TEXT="${FIELDS[11]:-}"
+ERROR_EVENT_JSON="${FIELDS[12]:-}"
+RAW_LINES="${FIELDS[13]:-}"
 DAEMON_TAG="${FIELDS[9]:-}"
 DAEMON_TERM_TAG="${FIELDS[10]:-}"
 
@@ -305,6 +325,21 @@ fi
 # `part.tokens` (task 4.13w, Review A 2fdb8f8).
 if [ -n "$STREAM_TEXT" ]; then
   printf '%s\n' "$STREAM_TEXT"
+fi
+
+# A call with an error event prints the stdout error event of the
+# installed bundle: `{"type":"error",...,"error":<the object>}`. The
+# bundle writes `JSON.stringify({type, timestamp, sessionID, ...data})`
+# to stdout when the format is json, and each error site prints through
+# it (task 4.13y, Review B ff4e009 N20).
+if [ -n "$ERROR_EVENT_JSON" ]; then
+  printf '{"type":"error","timestamp":1795048839999,"sessionID":"ses_4_13y","error":%s}\n' "$ERROR_EVENT_JSON"
+fi
+
+# A call with raw lines prints each entry on its own stdout line
+# (task 4.13y: hand-built `step_finish` events).
+if [ -n "$RAW_LINES" ]; then
+  printf '%s\n' "$RAW_LINES"
 fi
 
 if [ -n "$STDERR_TEXT" ]; then

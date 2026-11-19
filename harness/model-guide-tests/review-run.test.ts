@@ -379,6 +379,13 @@ interface CallSpec {
    * `texts` prints one `text` event each, and `tokens` prints one
    * `step_finish` event with the nested bundle object in `part.tokens`. */
   token_stream?: { texts?: string[]; tokens?: Record<string, unknown> };
+  /** The stdout error event of the installed bundle (task 4.13y,
+   * Review B ff4e009 N20): the call prints
+   * `{"type":"error",...,"error":<the object>}` on stdout. */
+  error_event?: Record<string, unknown>;
+  /** Extra stdout lines of the call (task 4.13y): each entry is printed
+   * on its own line, e.g. hand-built `step_finish` events. */
+  raw_lines?: string[];
   /** When set, the call leaves a daemon child behind whose argv holds
    * `serve --service <tag>` and whose HOME is the HOME of the call
    * (task 4.13o). */
@@ -3451,6 +3458,458 @@ describe("P4 the real step_finish token event (task 4.13w, Review A 2fdb8f8)", (
         total: 157,
       });
       expect(records[0].tokens_complete, "both calls held a token event").toBe(true);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+
+// --- task 4.13y: error-line key scan, strict token numbers, stdout error events ---
+//
+// Sources: Review B ff4e009 N16, N17, N18, N20 and Review C ff4e009 N3.
+// These must be fixed before the first live probe on 2026-11-20.
+//
+// N16: a credential value on the first stderr line of a failed call reaches
+// stdout and the records, because `scan_output` reads the stdout file only.
+// The Red pins: no runner output and no record holds the value; a fixed
+// text appears instead. Cases Y1 (probe unreachable), Y2 (probe region
+// branch), Y3 (pass region branch).
+// N17: `read_tokens` counts a number that cannot be a token count, and
+// `tokens_complete` stays true. A token field counts only when it is a
+// non-negative safe integer. Cases Y4 (1e20 and 2^53+1), Y5 (two-event
+// negative and fractional sums), Y6 (a single hostile field must not erase
+// the valid fields of the call).
+// N18: three pins. N18a (a non-number field sets the flag false) and N18b
+// (the sums add several events of one call) are guards: they pass at HEAD
+// and pin the behavior Green must keep. N18c (a hostile number keeps the
+// record valid JSON and sets the flag false) fails at HEAD.
+// Review C N3: a `step_finish` event with no tokens field marks the call
+// incomplete. Case Y7 fails at HEAD, where the event is skipped.
+// N20: in `--format json` the real binary writes an error as a stdout
+// event. The envelope below is the exact shape of the installed
+// `@opencode/cli` bundle, read only:
+// `u=(r,t,n)=>{if(e.format!=="json")return!1;return
+// process.stdout.write(JSON.stringify({type:r,timestamp:t,
+// sessionID:e.sessionID,...n})+H),!0}` with the call sites
+// `u("error",n,{error:t.data.error})`, `u("error",n,{error:t.error})`, and
+// `u("error",Date.now(),{error:m})`. The fake prints that event on stdout
+// when a call holds `error_event`. Cases Y11 (pass), Y12 (pass with a key
+// in the event), Y13 (probe).
+//
+// Every case uses the fake `opencode` only, keeps the orphan nets of the PM
+// load watch, and never runs the real `opencode` CLI.
+describe("P4 task 4.13y error-line scan, strict tokens, stdout error events (Review B ff4e009 N16 N17 N18 N20, Review C N3)", () => {
+  const PROBE_DATE = "2026-11-20";
+  /** The fixed text that replaces an error line holding a key (N16, N20). */
+  const FIXED = "the error output held a credential value";
+
+  function probeArgs(fixture: Fixture): string[] {
+    return [...runArgs(fixture), "--probe", "--date", PROBE_DATE];
+  }
+
+  /** The keys of the temp set. The diff with the id `controlId` holds no
+   * plant, so it is the control diff of the probe mode (spec D14). */
+  function writeControlKey(fixture: Fixture, controlId: string): void {
+    const keysDir = join(fixture.privateDir, "sets", fixture.setId, "keys");
+    mkdirSync(keysDir, { recursive: true });
+    for (const diff of fixture.diffs) {
+      const plants = diff === controlId
+        ? []
+        : [
+            {
+              id: `P-${diff}`,
+              new_lines: [3, 5],
+              file: `src/${diff}.ts`,
+              class: "C1",
+              severity: "blocker",
+              title: "planted",
+              reason: "the test plant",
+              witness: "witness",
+              weight: 5,
+            },
+          ];
+      writeFileSync(
+        join(keysDir, `${diff}.json`),
+        `${JSON.stringify(
+          { schema: "model-guide-key/1", set_id: fixture.setId, diff_id: diff, plants },
+          null,
+          2,
+        )}\n`,
+      );
+    }
+  }
+
+  /** The probe records of a run: one json file under `probes/`. */
+  function probeRecordsOf(fixture: Fixture): Array<Record<string, unknown>> {
+    return filesUnder(join(fixture.privateDir, "probes"))
+      .filter((file) => file.endsWith(".json"))
+      .map((file) => JSON.parse(readFileSync(file, "utf8")));
+  }
+
+  /** One `step_finish` event line of the installed bundle with the given
+   * raw `tokens` text (exact digits survive, unlike a JSON round trip). */
+  function stepFinishLine(tokensText: string): string {
+    return `{"type":"step_finish","timestamp":1795048839000,"sessionID":"ses_4_13y","part":{"type":"step-finish","timestamp":1795048839000,"tokens":${tokensText}}}`;
+  }
+
+  /** The `step_finish` event line with no tokens field (Review C N3). */
+  const TOKENS_LESS_LINE =
+    '{"type":"step_finish","timestamp":1795048839000,"sessionID":"ses_4_13y","part":{"type":"step-finish","timestamp":1795048839000}}';
+
+  /** The fenced empty-findings answer of one call. */
+  const FENCED = "```json\n{\"findings\": []}\n```";
+
+  /** One call that answers on the real stream with the given tokens. */
+  function yRealCall(tokens: Record<string, unknown>): CallSpec {
+    return { token_stream: { texts: [FENCED], tokens } };
+  }
+
+  it("Y1 a key on the first stderr line of a failed probe call never reaches stdout or the probe record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: SECRET },
+        { exit: 1, stderr: SECRET },
+        { exit: 1, stderr: SECRET },
+      ],
+    });
+    writeControlKey(fixture, "d-01");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      expect(result.stdout, "the probe line held the key").not.toContain(SECRET);
+      expect(result.stdout, "the probe line must hold the fixed text").toContain(FIXED);
+      expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
+      expect(filesHolding(fixture.repo, SECRET), "the key stayed in the repository").toEqual([]);
+      const records = probeRecordsOf(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(String(records[0].error ?? ""), "the probe record must hold the fixed text").toBe(FIXED);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y2 a key on the stderr line of a region probe call never reaches stdout or the probe record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [{ exit: 1, stderr: `${REGION_ERROR} (key ${SECRET} rejected)` }],
+    });
+    writeControlKey(fixture, "d-01");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      expect(modelCalls(logEntries(fixture.logPath)), "the region probe retried").toHaveLength(1);
+      const lines = stdoutLines(result);
+      expect(lines, "the probe prints one line").toHaveLength(1);
+      expect(lines[0].startsWith(`${ROUTE} region-blocked `), `wrong probe line: ${lines[0]}`).toBe(true);
+      expect(lines[0], "the probe line held the key").not.toContain(SECRET);
+      expect(lines[0], "the probe line must hold the fixed text").toContain(FIXED);
+      expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
+      const records = probeRecordsOf(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(String(records[0].error ?? ""), "the probe record must hold the fixed text").toBe(FIXED);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y3 a key on the stderr line of a region-blocked pass never reaches the pass record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [{ exit: 1, stderr: `${REGION_ERROR} (key ${SECRET} rejected)` }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner retried the region error").toHaveLength(1);
+      expect(result.stdout, "the runner output held the key").not.toContain(SECRET);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].state).toBe("region-blocked");
+      const errors = (records[0].errors ?? []) as unknown[];
+      expect(errors, "the pass record holds no stored error line").toHaveLength(1);
+      expect(String(errors[0]), "the pass record must hold the fixed text").toBe(FIXED);
+      expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
+      expect(filesHolding(fixture.repo, SECRET), "the key stayed in the repository").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y4 a hostile token number is not counted and sets tokens_complete false", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01", "d-02"],
+      calls: [
+        yRealCall({ input: 1e20, output: 20, reasoning: 5, cache: { read: 100, write: 7 } }),
+        {
+          raw_lines: [
+            stepFinishLine('{"input":9007199254740993,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}'),
+          ],
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens_complete, "a hostile number kept the flag true").toBe(false);
+      const diffs = records[0].diffs as any[];
+      expect(Array.isArray(diffs), "the record must hold diff entries").toBe(true);
+      expect(diffs[0].tokens.input, "1e20 was counted").toBe(0);
+      expect(diffs[1].tokens.input, "2^53+1 was counted").toBe(0);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y5 two events of one call add the valid numbers only and set tokens_complete false", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01", "d-02"],
+      calls: [
+        {
+          raw_lines: [
+            stepFinishLine('{"input":-5,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}'),
+            stepFinishLine('{"input":10,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}'),
+          ],
+        },
+        {
+          raw_lines: [
+            stepFinishLine('{"input":0.5,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}'),
+            stepFinishLine('{"input":0.5,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}'),
+          ],
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens_complete, "a hostile number kept the flag true").toBe(false);
+      const diffs = records[0].diffs as any[];
+      expect(Array.isArray(diffs), "the record must hold diff entries").toBe(true);
+      expect(diffs[0].tokens.input, "the negative value was counted").toBe(10);
+      expect(diffs[1].tokens.input, "a fractional value was counted").toBe(0);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y6 a single hostile field keeps the valid fields of the call and sets tokens_complete false", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [yRealCall({ input: -5, output: 20, reasoning: 5, cache: { read: 1, write: 2 } })],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens_complete, "a hostile number kept the flag true").toBe(false);
+      const diffs = records[0].diffs as any[];
+      expect(Array.isArray(diffs), "the record must hold diff entries").toBe(true);
+      expect(diffs[0].tokens, "the valid fields of the call were erased").toEqual({
+        input: 0,
+        output: 20,
+        reasoning: 5,
+        cache_read: 1,
+        cache_write: 2,
+        total: 28,
+      });
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y7 a step_finish event with no tokens field marks the call incomplete", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        {
+          raw_lines: [
+            stepFinishLine('{"input":10,"output":20,"reasoning":5,"cache":{"read":100,"write":7}}'),
+            TOKENS_LESS_LINE,
+          ],
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens_complete, "the tokens-less event was skipped").toBe(false);
+      const diffs = records[0].diffs as any[];
+      expect(Array.isArray(diffs), "the record must hold diff entries").toBe(true);
+      expect(diffs[0].tokens, "the valid event of the call was erased").toEqual({
+        input: 10,
+        output: 20,
+        reasoning: 5,
+        cache_read: 100,
+        cache_write: 7,
+        total: 142,
+      });
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y8 guard: a non-number token field sets tokens_complete false", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [yRealCall({ input: "10", output: 20, reasoning: 5, cache: { read: 100, write: 7 } })],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens_complete, "a non-number field kept the flag true").toBe(false);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y9 guard: the sums add several step_finish events of one call", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        {
+          raw_lines: [
+            stepFinishLine('{"input":10,"output":20,"reasoning":5,"cache":{"read":100,"write":7}}'),
+            stepFinishLine('{"input":1,"output":2,"reasoning":3,"cache":{"read":4,"write":5}}'),
+          ],
+        },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens_complete, "two valid events set the flag false").toBe(true);
+      const diffs = records[0].diffs as any[];
+      expect(Array.isArray(diffs), "the record must hold diff entries").toBe(true);
+      expect(diffs[0].tokens, "the two events were not summed").toEqual({
+        input: 11,
+        output: 22,
+        reasoning: 8,
+        cache_read: 104,
+        cache_write: 12,
+        total: 157,
+      });
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y10 a hostile number keeps the record valid JSON and sets tokens_complete false", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [yRealCall({ input: 1152921504606846976, output: 20, reasoning: 5, cache: { read: 100, write: 7 } })],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(JSON.parse(JSON.stringify(records[0])), "the record is not valid JSON").toEqual(records[0]);
+      expect(typeof (records[0].tokens as any).input, "the hostile sum is not a number").toBe("number");
+      expect(records[0].tokens_complete, "a hostile number kept the flag true").toBe(false);
+      const diffs = records[0].diffs as any[];
+      expect(Array.isArray(diffs), "the record must hold diff entries").toBe(true);
+      expect(diffs[0].tokens.input, "the unsafe integer was counted").toBe(0);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y11 a region error event on stdout gives the region-blocked state", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: "", error_event: { type: "region", message: REGION_ERROR } },
+        { exit: 1, stderr: "", error_event: { type: "region", message: REGION_ERROR } },
+        { exit: 1, stderr: "", error_event: { type: "region", message: REGION_ERROR } },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].state, "the stdout error event gave no region-blocked state").toBe("region-blocked");
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y12 a key in a stdout error event never reaches the pass record", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: "", error_event: { type: "region", message: `${REGION_ERROR} (key ${SECRET} rejected)` } },
+        { exit: 1, stderr: "", error_event: { type: "region", message: `${REGION_ERROR} (key ${SECRET} rejected)` } },
+        { exit: 1, stderr: "", error_event: { type: "region", message: `${REGION_ERROR} (key ${SECRET} rejected)` } },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.stdout, "the runner output held the key").not.toContain(SECRET);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].state, "the stdout error event gave no region-blocked state").toBe("region-blocked");
+      const errors = (records[0].errors ?? []) as unknown[];
+      expect(errors, "the pass record holds no stored error line").toHaveLength(1);
+      expect(String(errors[0]), "the pass record must hold the fixed text").toBe(FIXED);
+      expect(filesHolding(fixture.privateDir, SECRET), "the key stayed in the private folder").toEqual([]);
+      expect(filesHolding(fixture.repo, SECRET), "the key stayed in the repository").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("Y13 a region error event on stdout gives the region-blocked probe state", async () => {
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [{ exit: 1, stderr: "", error_event: { type: "region", message: REGION_ERROR } }],
+    });
+    writeControlKey(fixture, "d-01");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, probeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      const lines = stdoutLines(result);
+      expect(lines, "the probe prints one line").toHaveLength(1);
+      expect(lines[0].startsWith(`${ROUTE} region-blocked `), `wrong probe line: ${lines[0]}`).toBe(true);
+      expect(lines[0], "the probe line must hold the region error").toContain("not available in your region");
+      const records = probeRecordsOf(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(records[0].state).toBe("region-blocked");
     } finally {
       dropFixture(fixture);
     }

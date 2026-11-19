@@ -329,6 +329,13 @@ interface CallSpec {
    * `texts` prints one `text` event each, and `tokens` prints one
    * `step_finish` event with the nested bundle object in `part.tokens`. */
   token_stream?: { texts?: string[]; tokens?: Record<string, unknown> };
+  /** The stdout error event of the installed bundle (task 4.13y,
+   * Review B ff4e009 N20): the call prints
+   * `{"type":"error",...,"error":<the object>}` on stdout. */
+  error_event?: Record<string, unknown>;
+  /** Extra stdout lines of the call (task 4.13y): each entry is printed
+   * on its own line, e.g. hand-built `step_finish` events. */
+  raw_lines?: string[];
   /** When set, the call leaves a daemon child behind whose argv holds
    * `serve --service <tag>` and whose HOME is the HOME of the call
    * (task 4.13o). */
@@ -2865,6 +2872,61 @@ describe("P4 the real step_finish event and the real text shape (task 4.13w, Rev
       const second = groups.find((group: any) => group.id === "d-02#G2");
       expect(first?.tokens, "the group d-01#G1 holds no real tokens").toEqual(FLAT_REAL_A);
       expect(second?.tokens, "the group d-02#G2 holds no real tokens").toEqual(FLAT_REAL_B);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+
+// --- task 4.13y: the error-line key scan of the judge runner ---
+//
+// Source: Review B ff4e009 N16. A credential value on the first stderr
+// line of a failed judge call reaches stdout and the run record, because
+// `scan_output` reads the stdout file only. The Red pin: no runner output
+// and no record holds the value; the fixed text
+// "the error output held a credential value" appears instead.
+//
+// Every case uses the fake `opencode` only, keeps the orphan nets of the PM
+// load watch, and never runs the real `opencode` CLI.
+describe("P4 task 4.13y the error-line key scan of the judge runner (Review B ff4e009 N16)", () => {
+  /** The fixed text that replaces an error line holding a key. */
+  const FIXED = "the error output held a credential value";
+
+  it("JY1 a key on the first stderr line of a failed judge call never reaches stdout or the run record", async () => {
+    const fixture = await buildFixture({
+      calls: [{ exit: 1, stderr: SECRET }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the runner called the model more than once",
+      ).toHaveLength(1);
+      expect(result.stdout, "the runner output held the key").not.toContain(SECRET);
+      expect(result.stdout, "the runner output must hold the fixed text").toContain(FIXED);
+      expect(
+        filesHolding(fixture.privateDir, SECRET),
+        "the key stayed in the private folder",
+      ).toEqual([]);
+      expect(
+        readFileSync(fixture.logPath, "utf8").includes(SECRET),
+        "the key stayed in the log",
+      ).toBe(false);
+      const record = runRecord(fixture, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      expect(record?.state, "the state of the stopped run").toBe("open");
+      const errors = Array.isArray(record?.errors) ? (record?.errors as unknown[]) : [];
+      expect(errors.length, "the run record holds no stored error line").toBeGreaterThan(0);
+      for (const line of errors) {
+        expect(String(line), "an error line held the key").not.toContain(SECRET);
+      }
+      expect(
+        errors.some((line) => String(line).includes(FIXED)),
+        "the run record must hold the fixed text",
+      ).toBe(true);
     } finally {
       dropFixture(fixture);
     }
