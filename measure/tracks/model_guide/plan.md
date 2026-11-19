@@ -2538,8 +2538,33 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   `measure/runs/model_guide/green-4.13x.log` (not staged).
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   c5942e67d23944eb4e386c54fc9e6017c5e29c34.
-- [~] c294988 4.13y Red: error-line key scan, strict token numbers, stdout error events (Review B ff4e009 N16 N17 N18 N20, Review C N3).
-- [ ] 4.13z Green: error-line key scan, strict token numbers, stdout error events (Review B ff4e009 N16 N17 N18 N20, Review C N3).
+- [x] c294988 4.13y Red: error-line key scan, strict token numbers, stdout error events (Review B ff4e009 N16 N17 N18 N20, Review C N3).
+- [x] 6e50a2b 4.13z Green: error-line key scan, strict token numbers, stdout error events (Review B ff4e009 N16 N17 N18 N20, Review C N3).
+  Implements the 4.13y contract in `harness/model-guide/review-run.sh` and
+  `harness/model-guide/judge-run.sh`. The new `error_line_of` reads the
+  stdout `{"type":"error",...}` event of the installed bundle first and the
+  first stderr line second (Review B N20). It scans that source with
+  `scan_output` and prints the fixed text "the error output held a
+  credential value" on a hit (Review B N16). The probe line, the probe
+  record `error`, the pass record `errors`, the judge `--start-test` line,
+  and the judge run record `errors` all carry the fixed text.
+  `is_region_error` reads the same error event. `read_tokens` counts only a
+  non-negative safe integer (Review B N17), and a `step_finish` event with
+  no tokens object clears `tokens_complete` (Review C N3). The judge run
+  record now holds the `errors` array. No test file changed, and no test was
+  wrong.
+  Gates at the implementation commit 6e50a2b, one file at a time: `bun test
+  harness/model-guide-tests/review-run.test.ts` 81 pass, 0 fail;
+  `model-guide-tests/judge-run.test.ts` 40 passed (40);
+  `model-guide-tests/decode-parity.test.ts` 3 passed (3);
+  `model-guide-tests/adversarial-p4-runner.test.ts` 14 passed (14);
+  `model-guide-tests/adversarial-p4b.test.ts` 12 passed (12). Before the fix
+  the review-run file gave 70 pass, 11 fail (Y1 to Y7 and Y10 to Y13), and
+  the judge file gave 39 passed, 1 failed (JY1). After each run, pgrep for
+  fake-opencod[e] and quota-serve[r] showed nothing. The log is
+  `measure/runs/model_guide/green-4.13z.log` (not staged).
+  phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  6f6628526508cb2f2014ed794f2b239d023031f1.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
