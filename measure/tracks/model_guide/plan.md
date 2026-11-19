@@ -1811,74 +1811,6 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   - phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
     07418d21f073a3201055832dd5fbd82fa0e8a880; final Green HEAD 75f7419
     before this row, and the plan-evidence commit after it.
-- [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
-  per pilot route on the first control diff of `mg-2026-11a`, through
-  `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19. The pilot
-  routes are `opencode-go/deepseek-v4.1-flash`, `opencode/hy4-flash-free`,
-  and `opencode-go/mimo-v2.6-flash`, in that D12 order. No non-pilot route
-  gets a probe until the PM approves after the pilot token report (Q1, PM
-  2026-11-18). The probe of 2026-11-19 runs after 4.9f and before 4.11;
-  its control diff `forge-07` has a message file. It tests reachability
-  only.
-  - Command for each route:
-    `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --probe --route <route>`.
-  - The probe writes no pass record and no stored raw output beyond the
-    probe record. It prints `<route> reachable|unreachable|region-blocked
-    <error line or ->`.
-  - Record each line in `measure/runs/model_guide/probe-4.10.txt`.
-  - The orchestrator sends each `unreachable` route to the PM (owner
-    question Q8).
-  - Verify: each of the 3 pilot routes has one line in the file.
-- [ ] 4.11 The pilot gate (spec D13, OD7). The pilot set `mg-2026-11p` runs
-  on the three pilot routes with 2 passes each, on the nights of 2026-11-20 and
-  2026-11-21.
-  - The pilot set holds the first 3 qualified commits of each repo in the
-    D4 order, newest first (task 3.16).
-  - The pilot routes are `opencode/hy4-flash-free`,
-    `opencode-go/deepseek-v4.1-flash`, and
-    `opencode-go/mimo-v2.6-flash` (PM 2026-11-18). No Claude route and no
-    MiniMax route is in the pilot (PM 2026-11-18).
-  - The pilot runs through `heavy-run.sh`, in the window of spec D15.
-  - The worst-of-2 score of each pilot route goes into the score file.
-  - The report gives, for each pilot route, the found, missed, and
-    false-claim counts and the worst-of-2 score of each diff kind: the
-    test-only diffs and the code diffs. The test-only diffs show no spread
-    when the best worst-of-2 score of the kind minus the lowest worst-of-2
-    score of the kind is below 20 points (spec D13).
-  - When the test-only diffs show no spread, the orchestrator applies the D4
-    change and sends it to the PM before the ranked runs. Each repo then
-    gives at most 2 test-only diffs in its 7, and the ranked set gets the id
-    `mg-2026-11b` (spec D4, D8).
-  - Each reseed (`mg-2026-11p2`, then `mg-2026-11p3`) and the `mg-2026-11b`
-    set run `npx tsx model-guide/seed-messages.ts <set_id> --private <dir>`
-    from `harness/` right after the seeding step: a set with no message
-    file makes each pass and probe refuse.
-  - A pilot pass counts as a main pass of the route when the ranked set
-    `mg-2026-11a` holds the same diffs (spec D13). Each pilot route then
-    needs 1 more pass, on the night of 2026-11-22.
-  - Verify: the best worst-of-2 score minus the lowest worst-of-2 score is 20
-    points or more, and the best worst-of-2 score is below 90. When a rule
-    fails, the orchestrator seeds a harder set as `mg-2026-11p2` (task 3.16)
-    and runs the pilot again. After 2 reseeds the orchestrator sends the set
-    to the PM.
-- [ ] 4.12 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
-  (02:00 to 06:00 +07). One pass per reachable pilot route per night.
-  Nights 1 and 2 run `mg-2026-11p` (the pilot pass of task 4.11); night 3
-  runs `mg-2026-11a`. No non-pilot route gets a pass until the PM approves
-  after the pilot token report (Q1, PM 2026-11-18).
-  - Command for each route:
-    `heavy-run.sh harness/model-guide/review-run.sh --set <set_id> --route <route>`.
-  - The pass of a pilot route on 11-20 and 11-21 is the pilot pass of task
-    4.11 (spec D13).
-  - Night limits (spec D15, PM 2026-11-19): the night limit for Go routes
-    is 5h 95 % / week 100 %. The orchestrator stops the night's Go runs when
-    the 5-hour window is at 95 % or more or the weekly window is at 100 %.
-    The runner's own rules (no start at 70 %, stop at 80 % of a window) stay
-    and are stricter for one route; the night limit covers the whole night.
-  - Verify: each reachable pilot route has 3 complete passes, or the file
-    `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
-    stop, region block, or open pass). Each line of the file names
-    `exit=<rc>` and `state=<state>` of the pass record.
 - [x] 71adc88 4.13a Red: the judge runner (spec D11).
   - The new tool is `harness/model-guide/judge-run.sh`. The test file is
     `harness/model-guide-tests/judge-run.test.ts`. Touch no other file.
@@ -2590,6 +2522,80 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   `measure/runs/model_guide/green-4.13ab.log` (not staged).
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   9e7672f4d79b1b6b2e799d111f862d7e47e46dd1.
+Verify (Phase 4): the runner, the judge runner, and the page pass their tests, Reviews A, B, and C, and the adversarial tests. The live runs moved to Phase 4b (PM 2026-11-19).
+
+## Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+
+Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers the runner code only.
+
+- [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
+  per pilot route on the first control diff of `mg-2026-11a`, through
+  `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19. The pilot
+  routes are `opencode-go/deepseek-v4.1-flash`, `opencode/hy4-flash-free`,
+  and `opencode-go/mimo-v2.6-flash`, in that D12 order. No non-pilot route
+  gets a probe until the PM approves after the pilot token report (Q1, PM
+  2026-11-18). The probe of 2026-11-19 runs after 4.9f and before 4.11;
+  its control diff `forge-07` has a message file. It tests reachability
+  only.
+  - Command for each route:
+    `heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --probe --route <route>`.
+  - The probe writes no pass record and no stored raw output beyond the
+    probe record. It prints `<route> reachable|unreachable|region-blocked
+    <error line or ->`.
+  - Record each line in `measure/runs/model_guide/probe-4.10.txt`.
+  - The orchestrator sends each `unreachable` route to the PM (owner
+    question Q8).
+  - Verify: each of the 3 pilot routes has one line in the file.
+- [ ] 4.11 The pilot gate (spec D13, OD7). The pilot set `mg-2026-11p` runs
+  on the three pilot routes with 2 passes each, on the nights of 2026-11-20 and
+  2026-11-21.
+  - The pilot set holds the first 3 qualified commits of each repo in the
+    D4 order, newest first (task 3.16).
+  - The pilot routes are `opencode/hy4-flash-free`,
+    `opencode-go/deepseek-v4.1-flash`, and
+    `opencode-go/mimo-v2.6-flash` (PM 2026-11-18). No Claude route and no
+    MiniMax route is in the pilot (PM 2026-11-18).
+  - The pilot runs through `heavy-run.sh`, in the window of spec D15.
+  - The worst-of-2 score of each pilot route goes into the score file.
+  - The report gives, for each pilot route, the found, missed, and
+    false-claim counts and the worst-of-2 score of each diff kind: the
+    test-only diffs and the code diffs. The test-only diffs show no spread
+    when the best worst-of-2 score of the kind minus the lowest worst-of-2
+    score of the kind is below 20 points (spec D13).
+  - When the test-only diffs show no spread, the orchestrator applies the D4
+    change and sends it to the PM before the ranked runs. Each repo then
+    gives at most 2 test-only diffs in its 7, and the ranked set gets the id
+    `mg-2026-11b` (spec D4, D8).
+  - Each reseed (`mg-2026-11p2`, then `mg-2026-11p3`) and the `mg-2026-11b`
+    set run `npx tsx model-guide/seed-messages.ts <set_id> --private <dir>`
+    from `harness/` right after the seeding step: a set with no message
+    file makes each pass and probe refuse.
+  - A pilot pass counts as a main pass of the route when the ranked set
+    `mg-2026-11a` holds the same diffs (spec D13). Each pilot route then
+    needs 1 more pass, on the night of 2026-11-22.
+  - Verify: the best worst-of-2 score minus the lowest worst-of-2 score is 20
+    points or more, and the best worst-of-2 score is below 90. When a rule
+    fails, the orchestrator seeds a harder set as `mg-2026-11p2` (task 3.16)
+    and runs the pilot again. After 2 reseeds the orchestrator sends the set
+    to the PM.
+- [ ] 4.12 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
+  (02:00 to 06:00 +07). One pass per reachable pilot route per night.
+  Nights 1 and 2 run `mg-2026-11p` (the pilot pass of task 4.11); night 3
+  runs `mg-2026-11a`. No non-pilot route gets a pass until the PM approves
+  after the pilot token report (Q1, PM 2026-11-18).
+  - Command for each route:
+    `heavy-run.sh harness/model-guide/review-run.sh --set <set_id> --route <route>`.
+  - The pass of a pilot route on 11-20 and 11-21 is the pilot pass of task
+    4.11 (spec D13).
+  - Night limits (spec D15, PM 2026-11-19): the night limit for Go routes
+    is 5h 95 % / week 100 %. The orchestrator stops the night's Go runs when
+    the 5-hour window is at 95 % or more or the weekly window is at 100 %.
+    The runner's own rules (no start at 70 %, stop at 80 % of a window) stay
+    and are stricter for one route; the night limit covers the whole night.
+  - Verify: each reachable pilot route has 3 complete passes, or the file
+    `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
+    stop, region block, or open pass). Each line of the file names
+    `exit=<rc>` and `state=<state>` of the pass record.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
@@ -2625,8 +2631,13 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     worst pass, and the code review row of the table has a pick or "no pick
     yet" (spec acceptance 10 and 11).
 
-Verify (Phase 4): the track A first results are in the preview folder by Sun
-2026-11-22.
+- [ ] 4.15 The backlog of nonblocking findings (PM round cap 2026-11-19). Work it after the night run of 2026-11-22, through Red and Green.
+  - Review B c0a26d7: N30 (the probe region branch and the judge --start-test stdout-event paths have no failing test), N31 (a failed scan and a found key print the same text), N32 (the quota reason line is printed unscanned), and the carried N5, N9 to N13, N15, N20, N21, N24, N26 to N29.
+  - Review A c0a26d7: F1 (the probe region branch stdout-event scan path has no failing test), F2 (the orphan-scan flake under concurrent load).
+  - Review C c0a26d7: the process-table guard cannot tell another session's fake from its own.
+  - Adversarial c0a26d7 (bd967a7): ADV-P4C-1 (a value split across two stdout error events leaks its tail into the runner stdout and the private judge record; pinned as it.skip in adversarial-p4c.test.ts).
+  - Verify: each finding has a failing-first test or a recorded PM ruling.
+Verify (Phase 4b): the track A first results are in the preview folder by Sun 2026-11-22.
 
 ## Phase 5: The publish gate and the weekly update
 
