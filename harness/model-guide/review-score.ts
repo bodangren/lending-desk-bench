@@ -227,9 +227,9 @@ function readPlants(key: any): SetPlant[] {
  * `{"type":"text",...,"part":{"type":"text","text":"..."}}` event holds
  * one text block, and the answer is the joined text blocks. A plain answer
  * holds no event line and is returned unchanged. The same decoder lives in
- * `judge-run.sh`: the committed adversarial fixture copies only the runner
- * and `quota.ts` into its temp repo, so a separate shared module cannot
- * reach the judge runner there. */
+ * `judge-run.sh` and `adjudicate.ts`: the committed adversarial fixture
+ * copies only the runner and `quota.ts` into its temp repo, so a separate
+ * shared module cannot reach the judge runner there. */
 function decodeAnswerText(raw: string): string {
   const parts: string[] = [];
   for (const line of raw.split(/\r?\n/)) {
