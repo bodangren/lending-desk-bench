@@ -2565,7 +2565,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   `measure/runs/model_guide/green-4.13z.log` (not staged).
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   6f6628526508cb2f2014ed794f2b239d023031f1.
-- [~] 4.13aa Red: no raw error line on a failed scan, scan the decoded text, pin the stdout and start-test scan paths (Review B f26965d N22 N23 N25, Review A NA1 NA2, Review C N1).
+- [~] 62126e2 4.13aa Red: no raw error line on a failed scan, scan the decoded text, pin the stdout and start-test scan paths (Review B f26965d N22 N23 N25, Review A NA1 NA2, Review C N1).
 - [ ] 4.13ab Green: the same text.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
