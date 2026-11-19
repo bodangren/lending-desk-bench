@@ -865,7 +865,19 @@ error_line_of() {
   fi
   if [ -s "$source" ]; then
     scan_output "$source" || scan_rc=$?
+    # A scan that fails must not fall back to the raw line (task 4.13ab,
+    # Review B f26965d N22, Review A NA2, Review C N1). Fail closed.
+    if [ "$scan_rc" -eq 2 ]; then
+      printf '%s\n' "$ERROR_KEY_TEXT"
+      return 0
+    fi
     if [ "$scan_rc" -eq 0 ]; then
+      printf '%s\n' "$ERROR_KEY_TEXT"
+      return 0
+    fi
+    # The file bytes hold a JSON-escaped key, so scan the decoded error
+    # text too (task 4.13ab, Review B f26965d N23).
+    if [ -s "$TMP_VALUES" ] && printf '%s\n' "$line" | grep -F -q -f "$TMP_VALUES"; then
       printf '%s\n' "$ERROR_KEY_TEXT"
       return 0
     fi
