@@ -2397,6 +2397,48 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   Point 8: `quota.ts --provider opencode-go` reads ra-quota only when BENCH_RA_QUOTA names it (quota.ts:407-421). quota.ts keeps no default path. The production drivers `probe-4.10.sh` and `night-4.11.sh` set the production source (outside the repo, since 2026-11-19 06:2x). They export `BENCH_RA_QUOTA=/home/daniebo/Desktop/advantage-pr/scripts/jobs/ra-quota` and `RA_QUOTA_LASTGOOD=/tmp/ra-quota-lastgood.json`. They read the Go quota with `timeout 90 ra-quota status --json`. The read is read-only and prints every plan. The tool reads `.["opencode-go"].windows` percents. The tool requires usable 5h and weekly values. Else it gives stopped and names the gap. It applies the 95/100 thresholds. It gives stopped and names a stale (>= 6 h) or missing last-good reading. When BENCH_RA_QUOTA is unset, the tool uses the API path through BENCH_QUOTA_BASE or the `openchamber status` port. The production drivers (outside the repo) set BENCH_QUOTA_BASE and BENCH_RA_QUOTA.
   Gates, one file at a time: review-run.test.ts, judge-run.test.ts, credential-provider.test.ts, quota.test.ts exit 0; each pgrep scan prints nothing of mine. The log is `measure/runs/model_guide/green-4.13r.log` (not staged).
   Evidence (Green): commit 427098d applies the candidate patch to `review-run.sh`, `judge-run.sh`, `provider-credential.sh` and `quota.ts` only (no test file, no plan edit in that commit). Pre-fix run of the targeted Red command at role_base_sha 42bdece: `bun test harness/model-guide-tests/review-run.test.ts` exits 1 with 56 pass / 9 fail (D1, D2, D3, D4, N3, S2, S3, S4, S6). Gates at HEAD, one at a time: `bun test harness/model-guide-tests/review-run.test.ts` 65 pass (65); `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot` 37 passed (37); `credential-provider.test.ts` 22 passed (22); `quota.test.ts` 30 passed (30); `adversarial-p4-runner.test.ts` 14 passed (14). Each run left no `fake-opencode`, no `quota-server`, and no `serve --service` process. F3 has no test; the pre-KILL starttime check lands in both runners, with the reason in the task text above. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha 42bdece8953ce3b25e230fd234e4698c30044d60.
+- [x] 56ab786 4.13s Adversarial tests after ee48a25 (adversarial-p4b.test.ts).
+  The file runs 7 failing and 5 passing at the audited HEAD ee48a25. The
+  seven DEFECT pins are AJ1, AQ1, AQ2, AD1, AD2, AH1, and AM1; the five
+  guard pins are AQ3, AQ4, AQ5, AD3, and AD4. The audit result is
+  `measure/runs/model_guide/adversarial-ee48a25.json` (not staged).
+- [x] 8b34bbd 4.13t Green: fixes for ADV-P4B-1..6.
+  Implements the 4.13s findings in `harness/model-guide/judge-run.sh`,
+  `harness/model-guide/review-run.sh`, `harness/model-guide/quota.ts`, and
+  `harness/model-guide/review-score.ts`. Touch no test file.
+  ADV-P4B-1: the judge verdict parse and `readFindings` of the scorer decode
+  the `--format json` event stream before the fence logic. A real `opencode
+  run` event is `{"type":"text",...,"part":{"type":"text","text":"..."}}`,
+  and the answer is the joined text blocks; a plain answer passes through
+  unchanged. The AJ1 `{"type":"result","text":...}` fixture shape is
+  supported too. The event-shape source is the `opencode run` JSON writer in
+  the installed `@opencode/cli` bundle (`bin/opencode.exe`, the
+  `JSON.stringify({type, timestamp, sessionID, ...n})` writer of the text and
+  step events), confirmed by the committed session exports under
+  `runs/*/artifacts/session.json` (`part.type` holds `step-finish`). No
+  separate shared module: the committed adversarial fixture copies only
+  `judge-run.sh` and `quota.ts` into its temp repo, so the decoder lives in
+  both the runner and the scorer.
+  ADV-P4B-2: a last-good `fetchedAt` more than 60 s in the future counts as
+  missing, so a future-dated or millisecond-scale reading gives `stopped`.
+  ADV-P4B-3: `daemon_pids` splits the cmdline on NUL and requires a `serve`
+  token and a `--service` token; `observe --service` no longer matches.
+  ADV-P4B-4: the guard sends no KILL when no starttime was recorded.
+  ADV-P4B-5: the HOME guard covers home, config, data, state, cache, runtime,
+  and tmp; each path must resolve inside the resolved job root.
+  ADV-P4B-6: a diff id must match `^[A-Za-z0-9._-]+$`; a hostile name refuses
+  before the lock, any call, and any record.
+  Gates at the implementation commit 8b34bbd, one file at a time:
+  `cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts
+  --configLoader native --maxWorkers=1 --reporter=dot` 12 passed (12);
+  `bun test harness/model-guide-tests/review-run.test.ts` 65 pass / 0 fail;
+  `judge-run.test.ts` 37 passed (37); `credential-provider.test.ts` 22 passed
+  (22); `quota.test.ts` 30 passed (30); `adversarial-p4-runner.test.ts` 14
+  passed (14); `review-score.test.ts` 25 passed (25). Each run left no
+  `fake-opencode`, no `quota-server`, and no `serve --service` process. The
+  log is `measure/runs/model_guide/green-4.13t.log` (not staged).
+  phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  56ab786658576437cf4f373252be2a76f5951130.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
