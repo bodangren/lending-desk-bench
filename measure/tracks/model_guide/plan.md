@@ -2538,7 +2538,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   `measure/runs/model_guide/green-4.13x.log` (not staged).
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   c5942e67d23944eb4e386c54fc9e6017c5e29c34.
-- [~] 4.13y Red: error-line key scan, strict token numbers, stdout error events (Review B ff4e009 N16 N17 N18 N20, Review C N3).
+- [~] c294988 4.13y Red: error-line key scan, strict token numbers, stdout error events (Review B ff4e009 N16 N17 N18 N20, Review C N3).
 - [ ] 4.13z Green: error-line key scan, strict token numbers, stdout error events (Review B ff4e009 N16 N17 N18 N20, Review C N3).
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
