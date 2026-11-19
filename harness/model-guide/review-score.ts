@@ -222,8 +222,48 @@ function readPlants(key: any): SetPlant[] {
   return plants;
 }
 
-/** The findings of one output text, or null when the review is invalid. */
-function readFindings(text: string): any[] | null {
+/** The answer text of one raw output (plan task 4.13t, ADV-P4B-1). A real
+ * `opencode run --format json` call prints one JSON event per line: a
+ * `{"type":"text",...,"part":{"type":"text","text":"..."}}` event holds
+ * one text block, and the answer is the joined text blocks. A plain answer
+ * holds no event line and is returned unchanged. The same decoder lives in
+ * `judge-run.sh`: the committed adversarial fixture copies only the runner
+ * and `quota.ts` into its temp repo, so a separate shared module cannot
+ * reach the judge runner there. */
+function decodeAnswerText(raw: string): string {
+  const parts: string[] = [];
+  for (const line of raw.split(/\r?\n/)) {
+    const text = line.trim();
+    if (!text.startsWith("{")) continue;
+    let event: any;
+    try {
+      event = JSON.parse(text);
+    } catch {
+      continue;
+    }
+    if (event === null || typeof event !== "object" || Array.isArray(event)) continue;
+    const part = event.part;
+    if (
+      event.type === "text" &&
+      part !== null &&
+      typeof part === "object" &&
+      !Array.isArray(part) &&
+      typeof part.text === "string"
+    ) {
+      parts.push(part.text);
+      continue;
+    }
+    // The result-event shape of the ADV-P4B AJ1 fixture.
+    if (event.type === "result" && typeof event.text === "string") parts.push(event.text);
+  }
+  return parts.length === 0 ? raw : parts.join("\n");
+}
+
+/** The findings of one output text, or null when the review is invalid.
+ * The raw output of a real call is a `--format json` event stream, so the
+ * answer text is decoded first (plan task 4.13t, ADV-P4B-1). */
+function readFindings(raw: string): any[] | null {
+  const text = decodeAnswerText(raw);
   const marked = text.indexOf("```json");
   const fence = marked >= 0 ? "```json" : "```";
   const open = text.indexOf(fence);

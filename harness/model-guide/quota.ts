@@ -90,6 +90,11 @@ const RA_QUOTA_TIMEOUT_MS = 90_000;
 /** The age of a last-good reading that still counts (6 h). */
 const LASTGOOD_TTL_SECONDS = 6 * 3600;
 
+/** The clock skew that a last-good reading may lead the clock by (60 s). A
+ * reading further in the future is a forged or broken timestamp and counts
+ * as missing (plan task 4.13t, ADV-P4B-2). */
+const LASTGOOD_FUTURE_SKEW_SECONDS = 60;
+
 /** The cap of a provider with a quota source: N of spec D13. */
 const SOURCED_CAP = 3;
 
@@ -366,7 +371,15 @@ function readRaQuota(command: string): QuotaRead {
   }
   const lastgood = readLastgood();
   if (lastgood === null) return { ok: false, reason: "the last-good reading is missing" };
-  if (Date.now() / 1000 - lastgood.fetchedAt >= LASTGOOD_TTL_SECONDS) {
+  // A reading dated in the future counts as missing (task 4.13t, ADV-P4B-2).
+  // A negative age never trips the stale check, so a forged future-dated
+  // reading, or a fetchedAt in milliseconds, would otherwise give `ready`.
+  // The 60 s allowance absorbs ordinary clock skew between writers.
+  const ageSeconds = Date.now() / 1000 - lastgood.fetchedAt;
+  if (ageSeconds < -LASTGOOD_FUTURE_SKEW_SECONDS) {
+    return { ok: false, reason: "the last-good reading is dated in the future" };
+  }
+  if (ageSeconds >= LASTGOOD_TTL_SECONDS) {
     return { ok: false, reason: "the last-good reading is stale (older than 6 h)" };
   }
   return { ok: true, windows: lastgood.windows };

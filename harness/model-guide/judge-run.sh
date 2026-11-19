@@ -308,12 +308,13 @@ daemon_starttime() {
   printf '%s\n' "${fields[19]:-}"
 }
 
-# The pids of the processes whose argv holds the token pair `serve --service`
-# and whose HOME or cwd resolves under the job root. The cmdline is NUL
-# separated, so it is joined before the match (task 4.13r F1). Resolved paths
-# and a path-boundary compare keep a `..` decoy and a sibling folder safe
-# (task 4.13r F2). A process outside the job root never matches, so the
-# guard never stops a process of another run.
+# The pids of the processes whose argv holds a `serve` token and a
+# `--service` token, and whose HOME or cwd resolves under the job root. The
+# cmdline is NUL separated, so the tokens are compared one by one; a joined
+# substring would match a decoy such as `observe --service` (task 4.13t,
+# ADV-P4B-3). Resolved paths and a path-boundary compare keep a `..` decoy
+# and a sibling folder safe (task 4.13r F2). A process outside the job root
+# never matches, so the guard never stops a process of another run.
 daemon_pids() {
   local root="$1"
   node -e '
@@ -331,9 +332,9 @@ let names = [];
 try { names = fs.readdirSync(proc); } catch { names = []; }
 for (const name of names) {
   if (!/^[0-9]+$/.test(name)) continue;
-  let argv = "";
-  try { argv = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8").split("\0").join(" "); } catch { continue; }
-  if (!argv.includes("serve --service")) continue;
+  let tokens = [];
+  try { tokens = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8").split("\0"); } catch { continue; }
+  if (!tokens.includes("serve") || !tokens.includes("--service")) continue;
   let home = "";
   try {
     for (const line of fs.readFileSync(proc + "/" + name + "/environ", "utf8").split("\0")) {
@@ -374,11 +375,14 @@ stop_daemons() {
     waited=$(( waited + 1 ))
   done
   # F3: a pid can be reused inside the TERM-to-KILL window. KILL only when the
-  # starttime is still the one recorded at TERM.
+  # starttime is still the one recorded at TERM. With no recorded starttime
+  # the identity is unknown, so the guard sends no KILL (task 4.13t,
+  # ADV-P4B-4).
   for pid in $pids; do
     if daemon_pid_alive "$pid"; then
+      [ -n "${started_at[$pid]:-}" ] || continue
       now="$(daemon_starttime "$pid" 2>/dev/null || true)"
-      if [ -n "${started_at[$pid]:-}" ] && [ "$now" != "${started_at[$pid]}" ]; then continue; fi
+      if [ "$now" != "${started_at[$pid]}" ]; then continue; fi
       kill -KILL "$pid" 2>/dev/null || true
     fi
   done
@@ -482,11 +486,22 @@ start_job() {
   esac
   JOB_REAL="$(realpath "$JOB" 2>/dev/null || true)"
   [ -n "$JOB_REAL" ] || refuse "the job root could not be resolved"
-  JOB_HOME_REAL="$(realpath -m "$JOB/home" 2>/dev/null || true)"
-  case "$JOB_HOME_REAL" in
-    "$JOB_REAL"|"$JOB_REAL"/*) ;;
-    *) refuse "the job HOME is outside the job root" ;;
-  esac
+  # The call paths of the job folder: HOME, and the XDG folders of the call
+  # (task 4.13t, ADV-P4B-5). Each path must resolve inside the job root, so
+  # a preset folder with a symlink out of the root refuses the run.
+  local sub sub_real
+  for sub in home config data state cache runtime tmp; do
+    sub_real="$(realpath -m "$JOB/$sub" 2>/dev/null || true)"
+    case "$sub_real" in
+      "$JOB_REAL"|"$JOB_REAL"/*) ;;
+      *)
+        if [ "$sub" = "home" ]; then
+          refuse "the job HOME is outside the job root"
+        fi
+        refuse "the job $sub folder is outside the job root"
+        ;;
+    esac
+  done
   if [ -n "$QUOTA_PROVIDER" ]; then
     if ! "$CREDENTIAL_HELPER" seed "$QUOTA_PROVIDER" > /dev/null; then
       refuse "the provider credential seed failed"
@@ -893,18 +908,40 @@ while [ "$GROUP_INDEX" -lt "$TOTAL_GROUPS" ]; do
   if [ "$tok_ok" != "1" ]; then TOKENS_ALL=0; fi
 
   # The verdicts: the last fenced json block that is a flat object, and only
-  # the ids of this group with one of the three verdict values.
+  # the ids of this group with one of the three verdict values. The answer
+  # text is decoded from the `--format json` event stream first (task 4.13t,
+  # ADV-P4B-1): a real `opencode run` prints one JSON event per line, so the
+  # fenced block is a JSON string inside a text event and holds no real
+  # newline. A plain answer passes through unchanged. The same decoder lives
+  # in `review-score.ts`; the committed adversarial fixture copies only this
+  # runner and `quota.ts` into its temp repo, so a separate shared module
+  # cannot reach both.
   node -e '
 const fs = require("node:fs");
 const [rawPath, idsText, outPath] = process.argv.slice(1);
 let raw = "";
 try { raw = fs.readFileSync(rawPath, "utf8"); } catch { raw = ""; }
+const parts = [];
+for (const line of raw.split(/\r?\n/)) {
+  const text = line.trim();
+  if (!text.startsWith("{")) continue;
+  let event;
+  try { event = JSON.parse(text); } catch { continue; }
+  if (!event || typeof event !== "object" || Array.isArray(event)) continue;
+  const part = event.part;
+  if (event.type === "text" && part && typeof part === "object" && typeof part.text === "string") {
+    parts.push(part.text);
+    continue;
+  }
+  if (event.type === "result" && typeof event.text === "string") parts.push(event.text);
+}
+const answer = parts.length === 0 ? raw : parts.join("\n");
 const ids = idsText.split(",").filter((id) => id !== "");
 const allowed = ["real-defect", "false-claim", "unclear"];
 let chosen = null;
 const pattern = /```json[^\n]*\n([\s\S]*?)```/g;
 let match;
-while ((match = pattern.exec(raw)) !== null) {
+while ((match = pattern.exec(answer)) !== null) {
   let doc = null;
   try { doc = JSON.parse(match[1].trim()); } catch { continue; }
   if (!doc || typeof doc !== "object" || Array.isArray(doc)) continue;

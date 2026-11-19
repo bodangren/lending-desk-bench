@@ -356,6 +356,17 @@ read_message_line() {
 for diff_path in "${DIFF_PATHS[@]}"; do
   diff_id="${diff_path##*/}"
   diff_id="${diff_id%.diff}"
+  # A diff id must be a plain id, like the set id. A newline in the name
+  # reaches the tab-and-newline pass record and splits the row, so the
+  # runner refuses it before the lock and before any call (task 4.13t,
+  # ADV-P4B-6). The message names no id, so a hostile name cannot add a
+  # second line.
+  case "$diff_id" in
+    *..*) refuse "a diff id holds a parent segment" ;;
+  esac
+  if ! [[ "$diff_id" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    refuse "a diff id is not a plain id"
+  fi
   if [ -L "$diff_path" ]; then
     refuse "the seeded diff of ${diff_id} is a symlink"
   fi
@@ -413,12 +424,13 @@ daemon_starttime() {
   printf '%s\n' "${fields[19]:-}"
 }
 
-# The pids of the processes whose argv holds the token pair `serve --service`
-# and whose HOME or cwd resolves under the job root. The cmdline is NUL
-# separated, so it is joined before the match (task 4.13r F1). Resolved paths
-# and a path-boundary compare keep a `..` decoy and a sibling folder safe
-# (task 4.13r F2). A process outside the job root never matches, so the
-# guard never stops a process of another run.
+# The pids of the processes whose argv holds a `serve` token and a
+# `--service` token, and whose HOME or cwd resolves under the job root. The
+# cmdline is NUL separated, so the tokens are compared one by one; a joined
+# substring would match a decoy such as `observe --service` (task 4.13t,
+# ADV-P4B-3). Resolved paths and a path-boundary compare keep a `..` decoy
+# and a sibling folder safe (task 4.13r F2). A process outside the job root
+# never matches, so the guard never stops a process of another run.
 daemon_pids() {
   local root="$1"
   node -e '
@@ -436,9 +448,9 @@ let names = [];
 try { names = fs.readdirSync(proc); } catch { names = []; }
 for (const name of names) {
   if (!/^[0-9]+$/.test(name)) continue;
-  let argv = "";
-  try { argv = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8").split("\0").join(" "); } catch { continue; }
-  if (!argv.includes("serve --service")) continue;
+  let tokens = [];
+  try { tokens = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8").split("\0"); } catch { continue; }
+  if (!tokens.includes("serve") || !tokens.includes("--service")) continue;
   let home = "";
   try {
     for (const line of fs.readFileSync(proc + "/" + name + "/environ", "utf8").split("\0")) {
@@ -479,11 +491,14 @@ stop_daemons() {
     waited=$(( waited + 1 ))
   done
   # F3: a pid can be reused inside the TERM-to-KILL window. KILL only when the
-  # starttime is still the one recorded at TERM.
+  # starttime is still the one recorded at TERM. With no recorded starttime
+  # the identity is unknown, so the guard sends no KILL (task 4.13t,
+  # ADV-P4B-4).
   for pid in $pids; do
     if daemon_pid_alive "$pid"; then
+      [ -n "${started_at[$pid]:-}" ] || continue
       now="$(daemon_starttime "$pid" 2>/dev/null || true)"
-      if [ -n "${started_at[$pid]:-}" ] && [ "$now" != "${started_at[$pid]}" ]; then continue; fi
+      if [ "$now" != "${started_at[$pid]}" ]; then continue; fi
       kill -KILL "$pid" 2>/dev/null || true
     fi
   done
@@ -698,11 +713,21 @@ case "$JOB" in
 esac
 JOB_REAL="$(realpath "$JOB" 2>/dev/null || true)"
 [ -n "$JOB_REAL" ] || refuse "the job root could not be resolved"
-JOB_HOME_REAL="$(realpath -m "$JOB/home" 2>/dev/null || true)"
-case "$JOB_HOME_REAL" in
-  "$JOB_REAL"|"$JOB_REAL"/*) ;;
-  *) refuse "the job HOME is outside the job root" ;;
-esac
+# The call paths of the job folder: HOME, and the XDG folders of the call
+# (task 4.13t, ADV-P4B-5). Each path must resolve inside the job root, so a
+# preset folder with a symlink out of the root refuses the run.
+for CALL_SUB in home config data state cache runtime tmp; do
+  CALL_SUB_REAL="$(realpath -m "$JOB/$CALL_SUB" 2>/dev/null || true)"
+  case "$CALL_SUB_REAL" in
+    "$JOB_REAL"|"$JOB_REAL"/*) ;;
+    *)
+      if [ "$CALL_SUB" = "home" ]; then
+        refuse "the job HOME is outside the job root"
+      fi
+      refuse "the job $CALL_SUB folder is outside the job root"
+      ;;
+  esac
+done
 
 # The seed of the route provider only. A failure stops the run before any
 # model call (spec D14).
