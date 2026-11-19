@@ -2499,7 +2499,7 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
   row keeps `[x] 05bb618` and records the deviation.
   phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
   0f426b171ae319955e3c4c3270c988dc05c97605.
-- [~] 943f9f7 4.13w Red: the token log reads the real step_finish event (Review A 2fdb8f8).
+- [x] 943f9f7 4.13w Red: the token log reads the real step_finish event (Review A 2fdb8f8).
   - The defect (Review A 2fdb8f8): `read_tokens` of both runners matches the
     fake event shape `step-finish` with top-level `event.tokens`, but the
     installed bundle prints `step_finish` with the tokens in `part.tokens`
@@ -2516,9 +2516,28 @@ Spec D12 to D15, D22, FR-11, FR-14, FR-15.
     --maxWorkers=1 --reporter=dot`; the parity file. After each run, pgrep
     for fake-opencod[e] and quota-serve[r] shows nothing of mine.
   - Evidence: the Red commit holds the test files and this plan row. The
-    record is `measure/runs/model_guide/red-4.13w.log` (not staged). Row
-    stays `[~]` until Green 4.13x flips it.
-- [ ] 4.13x Green: the token log reads the real step_finish event (Review A 2fdb8f8).
+    record is `measure/runs/model_guide/red-4.13w.log` (not staged). Green
+    4.13x flipped this row to `[x]`.
+- [x] f88f9b6 4.13x Green: the token log reads the real step_finish event (Review A 2fdb8f8).
+  `read_tokens` in `harness/model-guide/review-run.sh` and in
+  `harness/model-guide/judge-run.sh` reads two event shapes: the old
+  `{"type":"step-finish","tokens":{...}}` event and the real
+  `{"type":"step_finish",...,"part":{...,"tokens":{...}}}` event of the
+  installed bundle. The sums cover every matched event. `tokens_complete` is
+  true only when all five fields of every matched event are numbers. No test
+  file changed, and no test was wrong. Gates at the implementation commit
+  f88f9b6, one file at a time: `bun test
+  harness/model-guide-tests/review-run.test.ts` 68 pass, 0 fail;
+  `model-guide-tests/judge-run.test.ts` 39 passed (39);
+  `model-guide-tests/decode-parity.test.ts` 3 passed (3);
+  `model-guide-tests/adjudicate.test.ts` 23 passed (23);
+  `model-guide-tests/review-score.test.ts` 27 passed (27);
+  `model-guide-tests/adversarial-p4b.test.ts` 12 passed (12). Before the
+  fix the review-run file gave 65 pass, 3 fail (W1, W2, W3). After each run,
+  pgrep for fake-opencod[e] and quota-serve[r] showed nothing. The log is
+  `measure/runs/model_guide/green-4.13x.log` (not staged).
+  phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha
+  c5942e67d23944eb4e386c54fc9e6017c5e29c34.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
