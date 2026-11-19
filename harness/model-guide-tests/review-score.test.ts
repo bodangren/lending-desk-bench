@@ -758,3 +758,61 @@ describe("R6 the score file shape and the write flags", () => {
     expect(existsSync(join(scoresDir, `${SET}.json`))).toBe(false);
   });
 });
+
+describe("4.13u the scorer reads the real event stream (Review C 2fdb8f8)", () => {
+  /** One --format json text event in the real opencode shape. */
+  function textEvent(text: string): string {
+    return JSON.stringify({
+      type: "text",
+      timestamp: 1795048839000,
+      sessionID: "ses_4_13u",
+      part: { type: "text", text },
+    });
+  }
+
+  /** The same answer as a real stored raw output: the fenced block split
+   * over 2 text events, with step and tool events mixed in. */
+  function streamOf(findings: Finding[]): string {
+    const lines = fenced(findings).split("\n");
+    const half = Math.ceil(lines.length / 2);
+    return [
+      JSON.stringify({ type: "step-start", timestamp: 1, sessionID: "ses_4_13u", part: { type: "step-start" } }),
+      textEvent(lines.slice(0, half).join("\n")),
+      JSON.stringify({ type: "tool", timestamp: 2, sessionID: "ses_4_13u", part: { type: "tool", state: { status: "running" } } }),
+      textEvent(lines.slice(half).join("\n")),
+      JSON.stringify({ type: "step-finish", timestamp: 3, sessionID: "ses_4_13u", part: { type: "step-finish" } }),
+    ].join("\n") + "\n";
+  }
+
+  /** Score one verbatim raw text for forge-01, EMPTY elsewhere. */
+  function scoreText(tag: string, text: string): any {
+    const scoresDir = tempDir(`scores-413u-${tag}`);
+    const outputsDir = tempDir(`outputs-413u-${tag}`);
+    for (const diffId of DIFF_IDS) {
+      writeFileSync(join(outputsDir, `${diffId}.txt`), diffId === "forge-01" ? text : EMPTY);
+    }
+    const result = runScore(scoresDir, outputsDir, { route: "route/stream", pass: 1 });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    return readScore(scoresDir).passes[0];
+  }
+
+  const UNMATCHED: Finding = {
+    file: P1.file, line: 60, severity: "major", class: "C2",
+    title: 'says "ok" when the write is lost',
+    reason: 'first line\nsecond line with "quotes"',
+  };
+
+  it("scores an event-stream output the same as the same answer in plain text", () => {
+    const plain = scoreText("plain", fenced([UNMATCHED]));
+    expect(plain.invalid_reviews).toBe(0);
+    const streamed = scoreText("stream", streamOf([UNMATCHED]));
+    expect(streamed).toEqual(plain);
+  });
+
+  it("still scores a plain-text output", () => {
+    const record = scoreText("still-plain", fenced([UNMATCHED]));
+    expect(record.invalid_reviews).toBe(0);
+    expect(record.found).toBe(0);
+    expect(record.false_claims).toBe(0);
+  });
+});

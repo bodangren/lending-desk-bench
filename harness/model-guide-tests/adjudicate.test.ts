@@ -655,3 +655,63 @@ describe("the write flags", () => {
     expect(existsSync(verdictsFile(privateDir))).toBe(false);
   });
 });
+
+describe("4.13u the queue reads the real event stream (Review C 2fdb8f8)", () => {
+  /** One --format json text event in the real opencode shape. */
+  function textEvent(text: string): string {
+    return JSON.stringify({
+      type: "text",
+      timestamp: 1795048839000,
+      sessionID: "ses_4_13u",
+      part: { type: "text", text },
+    });
+  }
+
+  /** The same answer as a real stored raw output: the fenced block split
+   * over 2 text events, with step and tool events mixed in. */
+  function streamOf(findings: Finding[]): string {
+    const lines = fenced(findings).split("\n");
+    const half = Math.ceil(lines.length / 2);
+    return [
+      JSON.stringify({ type: "step-start", timestamp: 1, sessionID: "ses_4_13u", part: { type: "step-start" } }),
+      textEvent(lines.slice(0, half).join("\n")),
+      JSON.stringify({ type: "tool", timestamp: 2, sessionID: "ses_4_13u", part: { type: "tool", state: { status: "running" } } }),
+      textEvent(lines.slice(half).join("\n")),
+      JSON.stringify({ type: "step-finish", timestamp: 3, sessionID: "ses_4_13u", part: { type: "step-finish" } }),
+    ].join("\n") + "\n";
+  }
+
+  function queuedIds(privateDir: string, rawDir: string): string[] {
+    const result = queue(privateDir, rawDir);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    return items(readJson(queueFile(privateDir))).map((item: any) => item.id).sort();
+  }
+
+  it("gives an event-stream raw output the same queue items as the same answer in plain text", () => {
+    const plain = queuedIds(staged("413u-plain"), buildRaw("413u-plain", { route_a: { "forge-01": [A, B] } }));
+    expect(plain).toEqual([ID_A, ID_B].sort());
+    const streamed = queuedIds(staged("413u-stream"), buildRaw("413u-stream", { route_a: { "forge-01": streamOf([A, B]) } }));
+    expect(streamed).toEqual(plain);
+  });
+
+  it("reads JSON-escaped newlines and quotes in the stream", () => {
+    const tricky: Finding = {
+      file: FILE,
+      line: 60,
+      severity: "major",
+      class: "C2",
+      title: 'says "ok" when the write is lost',
+      reason: 'first line\nsecond line with "quotes"',
+    };
+    const id = claimId("forge-01", tricky);
+    const plain = queuedIds(staged("413u-esc-plain"), buildRaw("413u-esc-plain", { route_a: { "forge-01": [tricky] } }));
+    expect(plain).toEqual([id]);
+    const streamed = queuedIds(staged("413u-esc-stream"), buildRaw("413u-esc-stream", { route_a: { "forge-01": streamOf([tricky]) } }));
+    expect(streamed).toEqual(plain);
+  });
+
+  it("still queues a plain-text raw output", () => {
+    const ids = queuedIds(staged("413u-still-plain"), buildRaw("413u-still-plain", { route_a: { "forge-01": [A] } }));
+    expect(ids).toEqual([ID_A]);
+  });
+});
