@@ -34,6 +34,7 @@ that it changes or retires.
 | 2 Print audit and table | `print-audit-2026-11.json`, `guide.ts`, `update.sh`, `guide-section.html` | high | The table names a model to the owner, and `update.sh` gains the first path that writes `docs/` after an approval. The print-audit file comes from a hand-off. |
 | 3 Review set and scorer | `pick-diffs.ts`, `review-set.ts`, `review-score.ts`, `adjudicate.ts`, `leak-check.ts` | high | A wrong match or a wrong weight gives a wrong rank. A leaked key (spec D9) cannot be withdrawn. The phase also writes the first public facts of track A. |
 | 4 Runner and first results | `review-run.sh`, `quota.ts`, `provider-credential.sh`, `routes.json`, `pages/review.html` | critical | The phase starts live model calls, reads the host credential store, and spends plan quota. A metered call costs money. A value in a raw output cannot be withdrawn. A wrong quota read wastes a night of the only three nights before the date. |
+| 4b Live runs and backlog | `probe-4.10.txt`, `pilot-4.11.txt`, `passes-4.12.txt`, `adjudicate-4.13.txt`, the score file, and the row 4.15 tests | critical | The phase spends live quota and prints redacted error text. It commits a public score file. A wrong redaction can print a credential tail. Section 14 holds the gate. |
 | 5 Publish | `publish-approval.md`, `publish.ts` run, weekly update | critical | A write under `docs/` reaches the public site on the next timer start (spec EV8). |
 
 ## 2. Gate commands
@@ -321,8 +322,10 @@ Each Red role records the failed test names in
 - Task 4.8 owns line 4, and the three page files of Phases 1 and 2:
   `real-work.test.ts`, `guide.test.ts`, and `update.test.ts`.
 - Task 4.9 owns no line. It is the checker.
-- Tasks 4.10 to 4.14 own no line. They read the network or start a model,
-  and they run through `heavy-run.sh`.
+- Tasks 4.10 to 4.14 left Phase 4. The PM moved them to Phase 4b on
+  2026-11-19. They read the network or start a model, and they run through
+  `heavy-run.sh`. Section 14 holds their gate and their evidence. They own
+  no Phase 4 line.
 
 **Green gate.** Each cited line exits 0 on the task HEAD, with a labeled
 `Tests  N passed` line (A3). Task 4.7 and task 4.8 also run
@@ -358,9 +361,10 @@ has a checker status of pass, or each blocking finding has a fix commit.
    `harness/model-guide/data/review-scores/mg-2026-11a.json`, each in its
    own commit with an explicit path, and each commit comes after the
    adjudication apply of task 4.13 (spec D9).
-10. The records of tasks 4.10 to 4.14 exist: `probe-4.10.txt`,
-    `passes-4.12.txt`, `pilot-4.11.txt`, `adjudicate-4.13.txt`, and the
-    preview facts of task 4.14.
+10. Tasks 4.10 to 4.14 moved to Phase 4b (PM 2026-11-19). Their records
+    are Phase 4b evidence, not a Phase 4 closeout item. Section 14 gates
+    them: `probe-4.10.txt`, `pilot-4.11.txt`, `passes-4.12.txt`,
+    `adjudicate-4.13.txt`, the score file commit, and the preview facts.
 
 No Phase 4 test calls a model, reads the real shared store, or sends a
 packet off the loopback interface. The closeout gate names explicit paths,
@@ -1969,3 +1973,290 @@ Red role pins the default in a test only where section 13.4 says so.
   plain names, and the data file `print-audit-2026-11.json` keeps its raw route
   keys. D17 can also read as "the file holds plain names". That reading changes
   `print-audit.ts` and `print-audit.test.ts`.
+
+## 14. Phase 4b: the live runs and the backlog
+
+Revision 6 (2026-11-19). The PM moved the live runs out of Phase 4. Phase 4b
+covers rows 4.10 to 4.15 of `plan.md`. Section 2.4 gates the runner code of
+Phase 4. This section gates Phase 4b. No test runs while this revision is
+written.
+
+### 14.1 Risk of each row
+
+Overall risk: critical. The phase spends live quota and prints redacted error
+text. It commits a public score file.
+
+| Row | Product or record | Risk | Reason |
+|---|---|---|---|
+| 4.10 Probe | `probe-4.10.txt` | medium | One live call per pilot route. A wrong state line sends the night to a dead route. The probe writes no pass record. |
+| 4.11 Pilot gate | `pilot-4.11.txt` | high | The spread decides the ranked set. A wrong spread reseeds a good set or advances a bad one. |
+| 4.12 Passes | `passes-4.12.txt` | critical | The passes spend plan quota and handle live credentials. A missed stop wastes a night. |
+| 4.13 Adjudication | `adjudicate-4.13.txt`, key apply, manifest commit | high | Two judges write `real_defects` into private keys. A wrong verdict moves a public rank. |
+| 4.14 Score and page | `harness/model-guide/data/review-scores/mg-2026-11a.json` | high | The file becomes a page input. A wrong rank reaches the owner. |
+| 4.15 Backlog | Red and Green test and fix commits | high | The fixes touch the paths that redact credentials and print quota reasons. A regression prints a value. |
+
+Rows 4.10 to 4.14 are live runs and a score write. They need the night data.
+No new test covers them. Section 14.4 lists their evidence. Row 4.15 is a
+test-and-fix row. Section 14.5 lists its test groups.
+
+### 14.2 Runner rules
+
+PM rule A-23 holds. Run one test file at a time. Use `--maxWorkers=1` on each
+vitest line. Full suites run only from 22:00 to 07:00. No phase gate is a full
+suite.
+
+The runner by file:
+
+- Use vitest for `judge-run`, `quota`, `adversarial-p4-runner`,
+  `adversarial-p4b`, and `adversarial-p4c`.
+- Use bun for `review-run`, `seed-messages`, `real-work`, `guide`,
+  `preview-gate`, `adjudicate`, and `decode-parity`.
+
+The vitest form is one line:
+
+```bash
+cd harness && npx vitest run model-guide-tests/<file>.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+```
+
+The bun form is one line:
+
+```bash
+bun test harness/model-guide-tests/<file>.test.ts
+```
+
+Bun has no `--maxWorkers` flag. One file at a time gives the same isolation.
+
+### 14.3 Red command, Green gate, closeout gate
+
+The Red command owns row 4.15 only. Run one line at a time. Each line fails on
+the accepted HEAD for the new case. Record the failed names and the exit codes
+in `measure/runs/model_guide/red-4.15.txt`.
+
+```bash
+bun test harness/model-guide-tests/review-run.test.ts
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+bun test harness/model-guide-tests/decode-parity.test.ts
+```
+
+Owners of the Red lines:
+
+- Line 1 (bun, `review-run.test.ts`) owns N30 probe case, N31 AA cases, N32
+  reason text, N9, N10, N11, N15 runner part, N21, N26, N27, N28, F1, and
+  F2 runner part.
+- Line 2 (vitest, `judge-run.test.ts`) owns N30 start-test case, N31 JA cases,
+  N32 reason text, N15 judge part, and F2 judge part.
+- Line 3 (vitest, `quota.test.ts`) owns the quota reason source of N32.
+- Line 4 (vitest, `adversarial-p4-runner.test.ts`) owns the Review C
+  process-table case, F2, and N15 adversarial part.
+- Line 5 (vitest, `adversarial-p4c.test.ts`) owns ADV-P4C-1. Red un-skips E1.
+  E1 fails at the accepted HEAD with the split-value tail.
+- Line 6 (bun, `decode-parity.test.ts`) owns N13.
+
+N5, N12, N20, N24, and N29 are document only (section 14.5). No Red line owns
+them.
+
+Rows 4.10 to 4.14 have no Red owner. The orchestrator runs them through
+`heavy-run.sh`. The acceptance role checks the pilot report of row 4.11 and
+the phase closeout.
+
+**Green gate.** Each cited line exits 0. Parse the labeled line (A3): `Tests
+N passed` for vitest, and `N pass` with `0 fail` for bun. The E1 case runs and
+passes, with no skip. Each pgrep scan prints nothing of mine. `git status
+--short docs/` prints nothing. `bash -n` passes on both runners. `leak-check.ts`
+exits 0. Green changes no test file after Red.
+
+**Closeout gate.** On the final row 4.15 HEAD:
+
+1. Each Red line exits 0, with its labeled line (A3).
+2. The E1 case runs and passes. No skip covers ADV-P4C-1.
+3. `pgrep -af 'fake-opencod[e]|quota-serve[r]'` prints nothing of mine.
+4. `git status --short docs/` prints nothing, and the `docs/` range check of
+   section 2.2 item 3 prints nothing.
+5. The frozen-path diff of section 2.4 item 5 prints nothing.
+6. `leak-check.ts` exits 0.
+7. The Phase 4b evidence records of section 14.4 exist and hold their facts.
+8. The phase acceptance record under `measure/runs/model_guide/` has status
+   pass, or each blocking finding has a fix commit.
+9. The registry note names the first open Phase 4b task (A14).
+
+**Intentionally-red aggregate suite.** E1 stays `it.skip` until Red row 4.15.
+While it is skipped, the aggregate suite is green with one skip. That state is
+intended. No role reads it as a pass for ADV-P4C-1. Red adds the cases, and
+they fail at the accepted HEAD until Green lands. Between Red and Green, the
+six Red lines stay red by design. No role edits a test to reach a green
+aggregate run. The aggregate suite is not a gate for Phase 4b. The six
+targeted lines are the gate. A full-suite run after 22:00 that fails outside
+these files is recorded under `measure/runs/model_guide/` and sent to the
+orchestrator. It does not block the phase. A failure inside these files blocks
+the phase.
+
+### 14.4 Evidence for rows 4.10 to 4.14
+
+These rows are live runs and a score write. They need the night data. Each row
+gives evidence, not a test command. A fake cannot prove a live route state, a
+live quota answer, a judge verdict, or the night boundary (section 14.8).
+
+| Row | Evidence to record | Live-behavior proof |
+|---|---|---|
+| 4.10 | `probe-4.10.txt`: one line for each of the three pilot routes. Each line holds the route, the state, the error line, the quota state, and the date. | The probe writes no pass record and no raw output beyond the probe record. The orchestrator sends each `unreachable` route to the PM. |
+| 4.11 | `pilot-4.11.txt`: the found, missed, and false-claim counts, and the worst-of-2 score of each diff kind. It holds both spreads, both gate rules, and the verdict. | The acceptance role recomputes both spreads from the score file and the private diffs with a one-off script. The script starts no model. |
+| 4.12 | `passes-4.12.txt`: one line per route and night. Each line holds the pass number, `exit=<rc>`, `state=<state>`, the score, or a reason. | The night stops Go routes at 5h 95 % and week 100 %. The runner keeps its 70 % and 80 % rules. |
+| 4.13 | `adjudicate-4.13.txt`: the queue count, both judge routes and families, the agreed verdict counts, the left-out count, the apply exit code, the second lint line, the leak-check exit code, and the manifest commit SHA. | The two judges read no shared verdict. The apply writes `real_defects` before the manifest commit (spec D9). |
+| 4.14 | The score file path, the leak-check exit code, its commit SHA, and the preview facts: the rank order, the worst score, the `incomplete` rows, and the Code review row. | The preview writes the preview folder only. `git status --short docs/` prints nothing. |
+
+### 14.5 Row 4.15: test groups and falsification
+
+Each group names one finding and one file. Each group has a falsification
+condition. A group that passes without the fix is vacuous (A4). The source of
+each N item is `measure/runs/model_guide/review-b-c0a26d7.json`. The carried
+items also appear in `review-b-f26965d.json`, `review-b-ff4e009.json`,
+`review-b-2fdb8f8.json`, and `review-b-ee48a25.json`. I read those records. I
+changed none of them.
+
+| Item | Group and file | What it proves | Falsification condition |
+|---|---|---|---|
+| N30 | P4B-N30. `review-run.test.ts` (bun) and `judge-run.test.ts` (vitest). | Case 1 is a probe on the region branch with a key in a stdout error event. Case 2 is a judge `--start-test` with a key in a stdout error event. Both print the fixed text and hold no key. | Apply mutation r6 to the probe region branch, or j7 to the judge start-test line. The matching case must fail. |
+| N31 | P4B-N31. `review-run.test.ts` (bun) and `judge-run.test.ts` (vitest). | A failed scan prints a text that differs from the found-key text. AA1, AA2, JA1, and JA2 hold the new text. A clean error line stays readable. | Print the found-key text on a failed scan. The four cases must fail. |
+| N32 | P4B-N32. `review-run.test.ts` (bun), `judge-run.test.ts` (vitest), and `quota.test.ts` (vitest). | The quota reason line maps to a fixed list of texts. The runner prints only a fixed text. No loopback quota `error` string reaches stdout or a record. | Print the raw quota reason. The case must fail. A grep for the reason string finds no line. |
+| N9 | P4B-N9. `review-run.test.ts` (bun). | `stop_daemons` logs `INFRA stopped daemon <pid>` only when the start time matches. The mismatch branch has a case. | Log every selected pid. The mismatch case must fail. |
+| N10 | P4B-N10. `review-run.test.ts` (bun). | The XDG guard checks every level of each call path. A link at `data/opencode` and a link at `data/opencode/auth.json` are both refused. | Check only the first level. The second-level case must fail. |
+| N11 | P4B-N11. `review-run.test.ts` (bun). | The daemon matcher selects a process only when `serve` and `--service` are adjacent in that order. | Accept the pair in reverse order or at a distance. The case must fail. |
+| N13 | P4B-N13. `decode-parity.test.ts` (bun). | The three readers give the same verdict on a hostile stream with a `result` branch and a forged event. | Change one decoder guard or fence rule. Parity must fail. |
+| N15 | P4B-N15. `review-run.test.ts` (bun), `judge-run.test.ts` (vitest), and `adversarial-p4-runner.test.ts` (vitest). | Each orphan scan ignores processes outside its own temp root. A planted foreign fake does not fail the file. | Drop the temp-root scope. The planted-foreign case must fail. |
+| N21 | P4B-N21. `review-run.test.ts` (bun). | The message rule refuses U+202E, U+0085, and U+200B, as well as ASCII controls. | Keep the `[[:cntrl:]]` ASCII rule. The Unicode case must fail. |
+| N26 | P4B-N26. `review-run.test.ts` (bun). | An error line over 500 bytes is cut before the record write. A 300 KB line gives a record and exit 0. | Keep the full line. `write_probe_record` fails and the case fails. |
+| N27 | P4B-N27. `review-run.test.ts` (bun). | `read_tokens` clears `tokens_complete` when a sum passes 2^53 or the last `step_finish` line is cut. | Keep the flag true. The case must fail. |
+| N28 | P4B-N28. `review-run.test.ts` (bun). | A probe that fails once and then succeeds holds no error line when the state is `reachable`. | Keep the first error line. The case must fail. |
+| F1 | P4B-F1. `review-run.test.ts` (bun). | A probe region-error event that holds a key fails the precise m8 mutation. | Apply m8, which prints the raw event text on the region branch. This case must fail. The N30 probe case and this case are one test. The two findings name two mutations of one path. |
+| F2 | P4B-F2. `review-run.test.ts` (bun) and `judge-run.test.ts` (vitest). | The orphan scans pass under a planted foreign process. | Plant a `fake-opencode serve --service` process with a temp path outside the test root. The unscoped guard fails. The fix is shared with N15 and Review C. |
+| Review C | P4B-C1. `adversarial-p4-runner.test.ts` (vitest). | The process-table guard ADV-R-12 ignores a fake of another session. | Plant a foreign fake with a path outside the test temp root. ADV-R-12 must stay green. |
+| ADV-P4C-1 | P4B-ADV1. `adversarial-p4c.test.ts` (vitest). | Un-skip E1. A value split across two stdout error events sends no tail to stdout or to the judge record. | At the accepted HEAD, E1 fails with the tail `dential-value-0123456789` in stdout and in the record. After the fix, E1 passes. A new skip is a false claim (A5). |
+
+The document-only items have no Red line. A reason is recorded for each one.
+
+| Item | Disposition | Reason |
+|---|---|---|
+| N5 | Document only, no test | The finding sits in the seed cwd fallback of `provider-credential.sh`. The Phase 4b runner list names no credential-provider file. The fix is a documented guard on the seed step. The 4.10 live record holds the seed path. |
+| N12 | Document only, no test | A timing assertion for the fence regex is fragile under the A-23 load rule. The call output cap bounds the cost. Record the bound in the plan. |
+| N20 | Document only, no test | Only the live Go region error shows the real text. A fake cannot reproduce it. The item is implemented. Record the observed text in `probe-4.10.txt`. The live check is pending. |
+| N24 | Document only, no test | The fix accepts the 14-character prefix limit. No code changes. Record the limit in the plan. |
+| N29 | Document only, no test | The leftover file appears only after a SIGKILL of the runner. No safe Phase 4b seam injects that kill. Record the limit in the plan. |
+
+### 14.6 Architecture guardrails and changed contracts
+
+- **The redaction text is a driver contract.** `probe-4.10.sh` and
+  `night-4.11.sh` parse the probe line by its refused tag and its exit code.
+  A new fixed text must stay on one line and hold no pipe. N31 changes the
+  text. The drivers must still parse it.
+- **The scan runs before the store.** A failed scan prints a fixed text and no
+  raw line. N30, N31, F1, and ADV-P4C-1 must not move a print before the scan.
+- **The quota reason is not a credential edge.** N32 prints a fixed text from
+  a closed list. No loopback `error` string reaches stdout or a record.
+- **The two `error_line_of` copies stay identical.** Review A proved byte
+  identity. A fix in one runner lands in both. Route parity holds.
+- **Frozen paths.** `harness/opencode-credential.sh`,
+  `harness/opencode-host.sh`, `harness/provenance.ts`, and `harness/tests` do
+  not change (spec D14, `harness/provenance.ts:71`). The `test:meta:logic`
+  exclude list of `harness/package.json` does not grow (A7).
+- **The private folder stays outside the repository.** The score file holds no
+  key field. The manifest commits after the adjudication apply (spec D9).
+- **No metered route, and no paid spend.** `routes.json` holds `kind` `plan`
+  or `free` only (spec D12).
+- **No write under `docs/` before Phase 5** (spec D21). `git status --short
+  docs/` prints nothing.
+- **The process-table guard scopes to its own temp root.** A foreign process
+  is not a signal for this run (Review C F1, F2, N15).
+
+### 14.7 Green production constraint
+
+Green production changes for row 4.15 land only after both live events finish.
+The events are the probe at 2026-11-20 01:45 +07 and the night 1 run at
+2026-11-20 02:00 +07. Green lands after 06:00 +07 on 2026-11-20. The probe and
+night 1 run on the accepted HEAD `0ab805f22e654dd780016d6a74664686d265181c`
+product code. Red test-only commits may land before both events. A Green
+production commit before 06:00 +07 on 2026-11-20 fails this gate. The
+orchestrator records both end times in
+`measure/runs/model_guide/strategy-4b-0ab805f.log`.
+
+### 14.8 Fixtures, mocks, artifact tests, and live-behavior proof
+
+- **Fixtures.** Row 4.15 adds no committed fixture. Each case writes its temp
+  repo, its fake binaries, and its records in a `mkdtemp` folder. No fixture
+  holds a real key, a real credential value, or a real quota answer.
+- **Mocks.** The fake `opencode` of section 3.4 serves the runners. The
+  loopback quota server of section 3.4 serves `quota.ts`. A temp `openchamber`
+  stub serves the port source. No mock starts a model or reads the real
+  shared store.
+- **Live behavior, offline.** Each row 4.15 group starts a product file with
+  a fake. It reads stdout, the exit code, and the written record. No case
+  calls a model or reads a real home.
+- **Live artifact checks.** Rows 4.10 to 4.14 read the real records and the
+  preview. They are checks, not tests. No fake proves a live route state, a
+  live quota answer, a judge verdict, or the night boundary.
+- **Artifact assertions.** The fixed texts are stdout and page bytes. A byte
+  check proves that the generator ran. It does not prove that a browser
+  renders the page (section 14.9).
+- **Documentation only.** N5, N12, N20, N24, and N29 change a plan note or a
+  live record. A test that reads `spec.md`, `plan.md`, or a record file proves
+  no product behavior (A4). None of these items has a Red line.
+
+### 14.9 Review applicability
+
+| Row | Review B security | Review C UX/API | Adversarial testing | Browser review |
+|---|---|---|---|---|
+| 4.10 | yes: probe error text, region state, no pass record | yes: exit codes and the three state words | no: live run only | no |
+| 4.11 | no: report only, no new code | yes: score fields and the gate verdict | no: live run only | no |
+| 4.12 | yes: credentials, quota stop, value scan, private outputs | yes: pass states and exit codes | no: live run only | no |
+| 4.13 | yes: judge routes, no subagent, key apply, commit order | yes: adjudicate queue and apply CLI | no: live run only | no |
+| 4.14 | yes: leak check, no private field in the score file | yes: score fields and the review page | no: live run only | yes: `review.html` at 390 px and 1280 px |
+| 4.15 | yes: all redaction and reason-text changes | yes: fixed texts, state words, and exit codes | yes: hostile stdout events, split values, foreign processes | no: no page change |
+
+The browser proof of row 4.14 uses the server of section 9.4. Check 1280 px
+and 390 px. Check that a route with fewer than 3 passes shows `incomplete` and
+no rank. Check that the Code review row shows a pick or the words `no pick
+yet`. A missing 390 px check blocks the row.
+
+The secrecy rule of section 9.4 holds for every audit role in Phase 4b. A role
+that reads a private file runs on a family outside D12. The probes and reports
+hold route names and error lines. They hold no key, no plant, and no credential
+value.
+
+### 14.10 Anti-pattern coverage
+
+A1 and A8 are retired. A2 does not apply: Phase 4b flips no draft to
+published. A9 and A10 do not apply: no track is archived, and the repo has no
+generator and no pre-commit hook.
+
+| Anti-pattern | Defense | Falsification |
+|---|---|---|
+| A3 digit-only count | Gates parse `Tests  N passed` (vitest) and `N pass` with `0 fail` (bun). The fixed texts are words. | Replace a state check with a digit search. The case must pass on an empty record. |
+| A4 vacuous pass | E1 fails first at the accepted HEAD. Each row 4.15 group names a mutation or a removed branch. Document-only items have no test. | Leave E1 skipped and claim a pass. That is a false claim. Remove a scan branch. Its case must fail. |
+| A5 false plan claim | Each Red and Green record cites its file, its command, and its labeled line. The live rows cite their records. | Run the cited line. A non-zero exit with an `[x]` mark is a false claim. An empty `probe-4.10.txt` line is a false claim. |
+| A6 registry overstatement | No "complete" status before the score file commit and the acceptance status pass. | Compare the registry note with the first open Phase 4b task. |
+| A7 over-broad filter | The quota reason uses a closed fixed-text list. The process-table guard scopes to its own temp root. It does not match a foreign process by a bare word. | Plant a foreign process whose argv holds `fake-opencode`. The guard must stay green. Print a raw quota reason. N32 must fail. |
+| A11 inherited environment | Each row 4.15 test pins `HOME`, the `XDG_*` paths, `TMPDIR`, and `TZ`, and clears `BENCH_TRACK`. | Set `BENCH_TRACK=change`. No verdict moves. Leave `TMPDIR` unpinned. N29's note must name that gap. |
+| A12 checker and `[b]` task | Row 4.15 is open (`[ ]`), not `[b]`. The orchestrator counts `[b]` tasks before a closeout reading. | Read the status command. A closeout candidate with one `[b]` task is not ready. |
+| A13 ignored artifact | `TMPDIR` and `.tmp/` are ignored. The guards read the process table and hash the temp tree inside the test, not with `git diff`. | Leave one fake child. Review C must fail. Write one values file into `TMPDIR`. N29's note must name it. |
+| A14 stale registry note | The orchestrator moves the registry note after the row 4.15 commit. | Compare the note with the first open Phase 4b task. |
+
+### 14.11 `phase_base_sha` capture point
+
+The orchestrator captures the value directly after the commit
+`measure(model_guide): test strategy for Phase 4b`, and before Red row 4.15
+starts. Run one command on that commit:
+
+```bash
+git rev-parse HEAD            # -> phase_base_sha for Phase 4b
+```
+
+This file names no base value. The value does not exist before the strategy
+commit. The accepted HEAD of this revision is
+`0ab805f22e654dd780016d6a74664686d265181c`. That value predates the strategy
+commit. It is the product HEAD for the probe and night 1 run (section 14.7).
+It is not the Phase 4b base. A value that predates the strategy commit fails
+closeout, because the diff would hold the strategy commit itself. The Phase 4
+base `57baaaa364f968a2f44c6e14eb96f8a9d68beebf` stays for Phase 4. It is not
+the Phase 4b base.
