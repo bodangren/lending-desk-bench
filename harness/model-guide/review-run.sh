@@ -44,12 +44,15 @@
 # `tokens`, and `tokens_complete`; it holds no `complete` field and no `rank`
 # field. Each entry of `diffs` holds its `id` and its own `tokens` object.
 #
-# The token log of spec D13 (PM 2026-11-18): the runner reads each
-# `{"type":"step-finish","tokens":...}` event of the json output. The tokens
-# object holds `input`, `output`, `reasoning`, `cache.read`, and
-# `cache.write`. The record holds the flat sums with `total` equal to the sum
-# of the five parts. A call with no token field adds 0 and sets
-# `tokens_complete` false.
+# The token log of spec D13 (PM 2026-11-18, task 4.13w): the runner reads
+# each token event of the json output. It reads the real
+# `{"type":"step_finish",...,"part":{...,"tokens":...}}` event of the
+# installed bundle, and it keeps the old
+# `{"type":"step-finish","tokens":...}` event working. The tokens object
+# holds `input`, `output`, `reasoning`, `cache.read`, and `cache.write`. The
+# record holds the flat sums of every event with `total` equal to the sum of
+# the five parts. A call with no token field adds 0 and sets
+# `tokens_complete` false, and so does a token field that is not a number.
 #
 # Probe mode of spec D14 (PM 2026-11-18): `--probe` makes exactly one call on
 # the first control diff of the set. A control diff is the first diff whose
@@ -133,7 +136,11 @@ probe_refuse() {
 
 # Prints the flat token sums of one raw output and a completeness flag:
 # input<TAB>output<TAB>reasoning<TAB>cache_read<TAB>cache_write<TAB>0|1.
-# It reads the `step-finish` json events of the output (spec D13, Tokens).
+# It reads the token events of the output (spec D13, Tokens). Two shapes
+# count: the old `{"type":"step-finish","tokens":{...}}` event, and the real
+# `{"type":"step_finish",...,"part":{...,"tokens":{...}}}` event of the
+# installed bundle (task 4.13w, Review A 2fdb8f8). The sums cover every
+# matched event, and the flag is 1 only when all five fields are numbers.
 read_tokens() {
   local file="$1" out
   out="$(node -e '
@@ -142,26 +149,37 @@ let raw = "";
 try { raw = fs.readFileSync(process.argv[1], "utf8"); } catch { raw = ""; }
 const sum = { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 };
 let seen = 0;
-const num = (value) => (typeof value === "number" && Number.isFinite(value)) ? value : 0;
+let complete = 1;
+const isNum = (value) => (typeof value === "number" && Number.isFinite(value));
+const num = (value) => isNum(value) ? value : 0;
+const object = (value) => (value && typeof value === "object" && !Array.isArray(value)) ? value : null;
 for (const line of raw.split(/\r?\n/)) {
   const text = line.trim();
   if (!text.startsWith("{")) continue;
   let event;
   try { event = JSON.parse(text); } catch { continue; }
-  if (!event || event.type !== "step-finish") continue;
-  const tokens = event.tokens;
-  if (!tokens || typeof tokens !== "object" || Array.isArray(tokens)) continue;
+  if (!event) continue;
+  let tokens = null;
+  if (event.type === "step-finish") {
+    tokens = object(event.tokens);
+  } else if (event.type === "step_finish") {
+    const part = object(event.part);
+    tokens = part ? object(part.tokens) : null;
+  }
+  if (!tokens) continue;
   seen += 1;
+  const cache = object(tokens.cache);
+  if (!isNum(tokens.input) || !isNum(tokens.output) || !isNum(tokens.reasoning)) complete = 0;
+  if (!cache || !isNum(cache.read) || !isNum(cache.write)) complete = 0;
   sum.input += num(tokens.input);
   sum.output += num(tokens.output);
   sum.reasoning += num(tokens.reasoning);
-  const cache = tokens.cache;
-  if (cache && typeof cache === "object" && !Array.isArray(cache)) {
+  if (cache) {
     sum.cache_read += num(cache.read);
     sum.cache_write += num(cache.write);
   }
 }
-process.stdout.write([sum.input, sum.output, sum.reasoning, sum.cache_read, sum.cache_write, seen > 0 ? 1 : 0].join("\t"));
+process.stdout.write([sum.input, sum.output, sum.reasoning, sum.cache_read, sum.cache_write, (seen > 0 && complete === 1) ? 1 : 0].join("\t"));
 ' "$file" 2>/dev/null)" || out=""
   if [[ "$out" =~ ^[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[01]$ ]]; then
     printf '%s\n' "$out"
