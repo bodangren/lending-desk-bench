@@ -375,6 +375,10 @@ interface CallSpec {
   sleep?: number;
   value?: string;
   tokens?: Record<string, unknown>;
+  /** The real event shapes of one call (task 4.13w, Review A 2fdb8f8):
+   * `texts` prints one `text` event each, and `tokens` prints one
+   * `step_finish` event with the nested bundle object in `part.tokens`. */
+  token_stream?: { texts?: string[]; tokens?: Record<string, unknown> };
   /** When set, the call leaves a daemon child behind whose argv holds
    * `serve --service <tag>` and whose HOME is the HOME of the call
    * (task 4.13o). */
@@ -3320,6 +3324,133 @@ describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
       expect(cwds, "the seed made no real-HOME export call").toHaveLength(1);
       const under = cwds[0] === root || cwds[0].startsWith(`${root}/`);
       expect(under, `the seed export cwd sits inside the git repo: ${cwds[0]}`).toBe(false);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+
+// --- task 4.13w: the token log reads the real step_finish event -----------
+//
+// The defect (Review A 2fdb8f8). `read_tokens` of `review-run.sh` matches
+// the fake event shape `{"type":"step-finish","tokens":{...}}`, but the
+// installed `@opencode/cli` bundle prints the token event as
+// `{"type":"step_finish",...,"part":{...,"tokens":{"input","output",
+// "reasoning","cache":{"read","write"}}}}`. Every live call would record
+// zero tokens and `tokens_complete` false. The fake prints the real shapes
+// when a call holds `token_stream`: one `text` event per entry of `texts`
+// and one `step_finish` event with `part.tokens`.
+//
+// The contract of the cases:
+//   - The pass record holds the summed real tokens, each diff entry holds
+//     its own real tokens, and `tokens_complete` is true.
+//   - The probe record holds the real tokens of its one call with
+//     `tokens_complete` true.
+//   - A pass that mixes the old shape and the real shape sums both (the
+//     old shape keeps working: the earlier T1 and T2 cases stay green).
+//
+// Every case uses the fake `opencode` only, keeps the orphan nets of the PM
+// load watch, and never runs the real `opencode` CLI.
+describe("P4 the real step_finish token event (task 4.13w, Review A 2fdb8f8)", () => {
+  /** The nested token shape of the installed bundle (Review A 2fdb8f8):
+   * `part.tokens` of a `step_finish` event holds `input`, `output`,
+   * `reasoning`, and `cache: {read, write}`. */
+  const REAL_A = { input: 10, output: 20, reasoning: 5, cache: { read: 100, write: 7 } };
+  const REAL_B = { input: 1, output: 2, reasoning: 3, cache: { read: 4, write: 5 } };
+  const REAL_C = { input: 11, output: 12, reasoning: 13, cache: { read: 14, write: 15 } };
+  const FLAT_REAL_A = { input: 10, output: 20, reasoning: 5, cache_read: 100, cache_write: 7, total: 142 };
+  const FLAT_REAL_B = { input: 1, output: 2, reasoning: 3, cache_read: 4, cache_write: 5, total: 15 };
+  const FLAT_REAL_C = { input: 11, output: 12, reasoning: 13, cache_read: 14, cache_write: 15, total: 65 };
+
+  /** One call that answers on the real stream: a fenced empty-findings
+   * block as one `text` event, and the nested tokens as `part.tokens` of
+   * one `step_finish` event. */
+  function realCall(tokens: Record<string, unknown>): CallSpec {
+    return {
+      token_stream: {
+        texts: ["```json\n{\"findings\": []}\n```"],
+        tokens,
+      },
+    };
+  }
+
+  /** The probe records of a run: one json file under `probes/`. */
+  function probeRecordsOf(fixture: Fixture): Array<Record<string, any>> {
+    return filesUnder(join(fixture.privateDir, "probes"))
+      .filter((file) => file.endsWith(".json"))
+      .map((file) => JSON.parse(readFileSync(file, "utf8")));
+  }
+
+  it("W1 the pass record holds the summed tokens of the real step_finish events", async () => {
+    const fixture = await buildFixture({
+      calls: [realCall(REAL_A), realCall(REAL_B), realCall(REAL_C)],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens, "the token sums of the real events").toEqual({
+        input: 22,
+        output: 34,
+        reasoning: 21,
+        cache_read: 118,
+        cache_write: 27,
+        total: 222,
+      });
+      expect(records[0].tokens_complete, "every call held a real token event").toBe(true);
+      const diffs = records[0].diffs as any[];
+      expect(Array.isArray(diffs), "the record must hold diff entries").toBe(true);
+      expect(diffs.map((entry) => entry.id)).toEqual(["d-01", "d-02", "d-03"]);
+      expect(diffs[0].tokens, "the tokens of d-01").toEqual(FLAT_REAL_A);
+      expect(diffs[1].tokens, "the tokens of d-02").toEqual(FLAT_REAL_B);
+      expect(diffs[2].tokens, "the tokens of d-03").toEqual(FLAT_REAL_C);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("W2 the probe record holds the tokens of the real step_finish event", async () => {
+    const fixture = await buildFixture({ calls: [realCall(REAL_A)] });
+    writeSeededControlKey(fixture, "d-01");
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture), "--probe", "--date", "2026-11-20"]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(result.stdout, "the probe prints one line").toBe(`${ROUTE} reachable -\n`);
+      const records = probeRecordsOf(fixture);
+      expect(records, "the run wrote no probe record").toHaveLength(1);
+      expect(records[0].tokens, "the token sums of the real event").toEqual(FLAT_REAL_A);
+      expect(records[0].tokens_complete, "the call held a real token event").toBe(true);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("W3 a pass that mixes the old shape and the real shape sums both", async () => {
+    const fixture = await buildFixture({
+      calls: [
+        { tokens: { input: 10, output: 20, reasoning: 5, cache: { read: 100, write: 7 } }, value: "" },
+        realCall(REAL_B),
+      ],
+      diffs: ["d-01", "d-02"],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens, "the token sums of the mixed shapes").toEqual({
+        input: 11,
+        output: 22,
+        reasoning: 8,
+        cache_read: 104,
+        cache_write: 12,
+        total: 157,
+      });
+      expect(records[0].tokens_complete, "both calls held a token event").toBe(true);
     } finally {
       dropFixture(fixture);
     }

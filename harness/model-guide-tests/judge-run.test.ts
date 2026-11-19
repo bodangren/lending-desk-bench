@@ -325,6 +325,10 @@ interface CallSpec {
   sleep?: number;
   value?: string;
   tokens?: Record<string, unknown>;
+  /** The real event shapes of one call (task 4.13w, Review A 2fdb8f8):
+   * `texts` prints one `text` event each, and `tokens` prints one
+   * `step_finish` event with the nested bundle object in `part.tokens`. */
+  token_stream?: { texts?: string[]; tokens?: Record<string, unknown> };
   /** When set, the call leaves a daemon child behind whose argv holds
    * `serve --service <tag>` and whose HOME is the HOME of the call
    * (task 4.13o). */
@@ -2744,6 +2748,125 @@ describe("P4 the proc table seam of the guards (task 4.13q N3)", () => {
     } finally {
       rmSync(proc, { recursive: true, force: true });
       tempRoots.delete(proc);
+    }
+  });
+});
+
+// --- task 4.13w: the token log and the real text shape of the judge ------
+//
+// The defect (Review A 2fdb8f8). `read_tokens` of `judge-run.sh` matches
+// the fake event shape `{"type":"step-finish","tokens":{...}}`, but the
+// installed `@opencode/cli` bundle prints the token event as
+// `{"type":"step_finish",...,"part":{...,"tokens":{"input","output",
+// "reasoning","cache":{"read","write"}}}}`. Every live judge call would
+// record zero tokens and `tokens_complete` false. The fake prints the real
+// shapes when a call holds `token_stream`: one `text` event per entry of
+// `texts` and one `step_finish` event with `part.tokens`.
+//
+// The coverage gap (Review A nonblocking 1): no committed test feeds the
+// real `text` event shape through the judge runner; the AJ1 pin uses the
+// `result` event shape that the installed bundle never prints. WJ1 pins
+// that the verdict is read from real `text` events (a guard: it passes at
+// the Red base because the 4.13t decoder already joins them).
+//
+// The contract of the cases:
+//   - The judge file holds the verdicts read from the real `text` events.
+//   - The run record holds the summed real tokens, each group holds its own
+//     real tokens, and `tokens_complete` is true.
+//   - The old `tokens` shape keeps working: J7 and J8 stay green.
+//
+// Every case uses the fake `opencode` only, keeps the orphan nets of the PM
+// load watch, and never runs the real `opencode` CLI.
+describe("P4 the real step_finish event and the real text shape (task 4.13w, Review A 2fdb8f8)", () => {
+  /** The nested token shape of the installed bundle (Review A 2fdb8f8):
+   * `part.tokens` of a `step_finish` event holds `input`, `output`,
+   * `reasoning`, and `cache: {read, write}`. */
+  const REAL_A = { input: 10, output: 20, reasoning: 5, cache: { read: 100, write: 7 } };
+  const REAL_B = { input: 1, output: 2, reasoning: 3, cache: { read: 4, write: 5 } };
+  const FLAT_REAL_A = { input: 10, output: 20, reasoning: 5, cache_read: 100, cache_write: 7, total: 142 };
+  const FLAT_REAL_B = { input: 1, output: 2, reasoning: 3, cache_read: 4, cache_write: 5, total: 15 };
+
+  /** One call that answers on the real stream: the fenced verdict blocks
+   * as `text` events, and the nested tokens as `part.tokens` of one
+   * `step_finish` event. */
+  function realCall(blocks: string[], tokens: Record<string, unknown>): CallSpec {
+    return { token_stream: { texts: blocks, tokens } };
+  }
+
+  /** The same fenced verdict block split over two `text` events at a line
+   * boundary, the way a real multi-part answer arrives. */
+  function splitBlock(body: string): string[] {
+    const block = jsonBlock(body);
+    const lines = block.split("\n");
+    const half = Math.ceil(lines.length / 2);
+    return [lines.slice(0, half).join("\n"), lines.slice(half).join("\n")];
+  }
+
+  it("WJ1 the verdict is read from the real text events and the run record holds the real token sums", async () => {
+    const verdict = JSON.stringify({
+      "d-01#C0a1b2c3d4e5f": "real-defect",
+      "d-01#C1f2e3d4c5b6a": "unclear",
+    });
+    const fixture = await buildFixture({
+      groups: [GROUP_ONE],
+      calls: [realCall(splitBlock(verdict), REAL_A)],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(judgeFile(fixture, "a"), "the verdict of the real text events was not read").toEqual({
+        "d-01#C0a1b2c3d4e5f": "real-defect",
+        "d-01#C1f2e3d4c5b6a": "unclear",
+      });
+      const record = runRecord(fixture, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      expect(record?.tokens, "the token sums of the real event").toEqual(FLAT_REAL_A);
+      expect(record?.tokens_complete, "the call held a real token event").toBe(true);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("WJ2 the run record holds the summed real tokens of both groups", async () => {
+    const fixture = await buildFixture({
+      calls: [
+        realCall(
+          [jsonBlock(JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }))],
+          REAL_A,
+        ),
+        realCall(
+          [jsonBlock(JSON.stringify({ "d-02#C2a3b4c5d6e7f": "false-claim" }))],
+          REAL_B,
+        ),
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture));
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(judgeFile(fixture, "a"), "the verdicts of the real text events were not read").toEqual({
+        "d-01#C0a1b2c3d4e5f": "real-defect",
+        "d-02#C2a3b4c5d6e7f": "false-claim",
+      });
+      const record = runRecord(fixture, "a");
+      expect(record, "the runner wrote no run record").not.toBeNull();
+      expect(record?.tokens, "the token sums of the real events").toEqual({
+        input: 11,
+        output: 22,
+        reasoning: 8,
+        cache_read: 104,
+        cache_write: 12,
+        total: 157,
+      });
+      expect(record?.tokens_complete, "every call held a real token event").toBe(true);
+      const groups = record?.groups ?? [];
+      const first = groups.find((group: any) => group.id === "d-01#G1");
+      const second = groups.find((group: any) => group.id === "d-02#G2");
+      expect(first?.tokens, "the group d-01#G1 holds no real tokens").toEqual(FLAT_REAL_A);
+      expect(second?.tokens, "the group d-02#G2 holds no real tokens").toEqual(FLAT_REAL_B);
+    } finally {
+      dropFixture(fixture);
     }
   });
 });

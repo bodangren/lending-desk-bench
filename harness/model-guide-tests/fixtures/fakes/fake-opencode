@@ -32,6 +32,16 @@
 #   tokens        when it is an object, the call prints one json event
 #                 before the value:
 #                 {"type":"step-finish","tokens":<the object>}.
+#   token_stream  when it is an object {"texts": [...], "tokens": {...}},
+#                 the call prints the real event shapes of
+#                 `opencode run --format json` (Review A 2fdb8f8): one
+#                 `text` event per entry of `texts`, then one `step_finish`
+#                 event whose `part.tokens` holds the `tokens` object:
+#                 {"type":"text",...,"part":{"type":"text","text":<text>}}
+#                 {"type":"step_finish",...,"part":{...,"tokens":<the object>}}.
+#                 The nested tokens use the bundle names `input`, `output`,
+#                 `reasoning`, and `cache: {read, write}`. The old `tokens`
+#                 shape stays, so the earlier cases keep passing.
 #   daemon        when it is a tag, the call leaves a child process behind
 #                 whose argv holds the real split `<bin> serve --service
 #                 <tag>` as NUL-separated entries (task 4.13q F1: a node -e
@@ -151,13 +161,43 @@ const daemonTermTag = text(entry.daemon_term);
 const tokens = (entry.tokens && typeof entry.tokens === "object" && !Array.isArray(entry.tokens))
   ? JSON.stringify(entry.tokens)
   : "";
+// The real event shapes of one call (task 4.13w, Review A 2fdb8f8): one
+// `text` event per entry of `texts`, then one `step_finish` event whose
+// `part.tokens` holds the nested bundle object. The runners read no other
+// shape from these lines.
+const stream = (entry.token_stream && typeof entry.token_stream === "object" && !Array.isArray(entry.token_stream))
+  ? entry.token_stream
+  : null;
+let streamText = "";
+if (stream !== null) {
+  const lines = [];
+  const texts = Array.isArray(stream.texts) ? stream.texts : [];
+  texts.forEach((text, index) => {
+    lines.push(JSON.stringify({
+      type: "text",
+      timestamp: 1795048839000 + index,
+      sessionID: "ses_4_13w",
+      part: { type: "text", text: String(text) },
+    }));
+  });
+  const nested = stream.tokens;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    lines.push(JSON.stringify({
+      type: "step_finish",
+      timestamp: 1795048839999,
+      sessionID: "ses_4_13w",
+      part: { type: "step-finish", timestamp: 1795048839999, tokens: nested },
+    }));
+  }
+  streamText = lines.join("\n");
+}
 const valueBytes = Buffer.byteLength(value, "utf8");
 let total = stdoutBytes > 0 ? stdoutBytes : valueBytes + padBytes;
 if (total < valueBytes) total = valueBytes;
 const fields = [
   String(exitCode), stderrText, String(stdoutBytes), String(padBytes),
   String(sleepSeconds), value, String(total - valueBytes), String(total),
-  tokens, daemonTag, daemonTermTag,
+  tokens, daemonTag, daemonTermTag, streamText,
 ];
 process.stdout.write(fields.map((field) => field + "\0").join(""));
 ' "$SPEC_FILE" "$1" "${2:-0}"
@@ -217,6 +257,7 @@ SLEEP_SECONDS="${FIELDS[4]:-0}"
 VALUE="${FIELDS[5]:-}"
 PAD_LENGTH="${FIELDS[6]:-0}"
 TOKENS_JSON="${FIELDS[8]:-}"
+STREAM_TEXT="${FIELDS[11]:-}"
 DAEMON_TAG="${FIELDS[9]:-}"
 DAEMON_TERM_TAG="${FIELDS[10]:-}"
 
@@ -257,6 +298,13 @@ fi
 # `opencode run --format json` step-finish event (spec D13, Tokens).
 if [ -n "$TOKENS_JSON" ]; then
   printf '{"type":"step-finish","tokens":%s}\n' "$TOKENS_JSON"
+fi
+
+# A call with a token stream emits the real event shapes: the `text`
+# events with `part.text`, then the `step_finish` event with
+# `part.tokens` (task 4.13w, Review A 2fdb8f8).
+if [ -n "$STREAM_TEXT" ]; then
+  printf '%s\n' "$STREAM_TEXT"
 fi
 
 if [ -n "$STDERR_TEXT" ]; then
