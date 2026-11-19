@@ -139,8 +139,11 @@ probe_refuse() {
 # It reads the token events of the output (spec D13, Tokens). Two shapes
 # count: the old `{"type":"step-finish","tokens":{...}}` event, and the real
 # `{"type":"step_finish",...,"part":{...,"tokens":{...}}}` event of the
-# installed bundle (task 4.13w, Review A 2fdb8f8). The sums cover every
-# matched event, and the flag is 1 only when all five fields are numbers.
+# installed bundle (task 4.13w, Review A 2fdb8f8). A token field counts only
+# when it is a non-negative safe integer, and any other value clears the flag
+# (task 4.13y, Review B N17). A `step_finish` event with no tokens object
+# clears the flag too (Review C N3). The sums cover every valid field of
+# every matched event, and the flag is 1 only when all five fields count.
 read_tokens() {
   local file="$1" out
   out="$(node -e '
@@ -150,8 +153,8 @@ try { raw = fs.readFileSync(process.argv[1], "utf8"); } catch { raw = ""; }
 const sum = { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 };
 let seen = 0;
 let complete = 1;
-const isNum = (value) => (typeof value === "number" && Number.isFinite(value));
-const num = (value) => isNum(value) ? value : 0;
+const isToken = (value) => (typeof value === "number" && Number.isSafeInteger(value) && value >= 0);
+const num = (value) => isToken(value) ? value : 0;
 const object = (value) => (value && typeof value === "object" && !Array.isArray(value)) ? value : null;
 for (const line of raw.split(/\r?\n/)) {
   const text = line.trim();
@@ -159,18 +162,24 @@ for (const line of raw.split(/\r?\n/)) {
   let event;
   try { event = JSON.parse(text); } catch { continue; }
   if (!event) continue;
+  let tokenEvent = false;
   let tokens = null;
   if (event.type === "step-finish") {
+    tokenEvent = true;
     tokens = object(event.tokens);
   } else if (event.type === "step_finish") {
+    tokenEvent = true;
     const part = object(event.part);
     tokens = part ? object(part.tokens) : null;
   }
-  if (!tokens) continue;
+  if (!tokenEvent) continue;
+  if (!tokens) { complete = 0; continue; }
   seen += 1;
   const cache = object(tokens.cache);
-  if (!isNum(tokens.input) || !isNum(tokens.output) || !isNum(tokens.reasoning)) complete = 0;
-  if (!cache || !isNum(cache.read) || !isNum(cache.write)) complete = 0;
+  if (!isToken(tokens.input)) complete = 0;
+  if (!isToken(tokens.output)) complete = 0;
+  if (!isToken(tokens.reasoning)) complete = 0;
+  if (!cache || !isToken(cache.read) || !isToken(cache.write)) complete = 0;
   sum.input += num(tokens.input);
   sum.output += num(tokens.output);
   sum.reasoning += num(tokens.reasoning);
@@ -801,13 +810,84 @@ scan_output() {
   return 1
 }
 
-# The region error of spec D22. It applies to a Go route only.
+# The text that replaces an error line holding a credential value
+# (task 4.13y, Review B ff4e009 N16, N20).
+ERROR_KEY_TEXT="the error output held a credential value"
+
+# The first line of the last stdout `{"type":"error",...}` event of one call
+# (task 4.13y, Review B ff4e009 N20). In `--format json` the installed
+# bundle writes every error as this event on stdout and skips the stderr
+# printer. Prints no line when the output holds no error event.
+error_event_text() {
+  local out_path="$1"
+  [ -s "$out_path" ] || return 0
+  node -e '
+const fs = require("node:fs");
+let raw = "";
+try { raw = fs.readFileSync(process.argv[1], "utf8"); } catch { raw = ""; }
+const first = (value) => String(value).split(/\r?\n/)[0];
+let text = "";
+for (const line of raw.split(/\r?\n/)) {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("{")) continue;
+  let event;
+  try { event = JSON.parse(trimmed); } catch { continue; }
+  if (!event || typeof event !== "object" || Array.isArray(event)) continue;
+  if (event.type !== "error") continue;
+  const err = event.error;
+  if (err && typeof err === "object" && !Array.isArray(err)) {
+    if (typeof err.message === "string") text = first(err.message);
+    else if (err.data && typeof err.data === "object" && typeof err.data.message === "string") text = first(err.data.message);
+  } else if (typeof err === "string") {
+    text = first(err);
+  }
+}
+process.stdout.write(text);
+' "$out_path" 2>/dev/null || true
+}
+
+# The error line of one failed call (task 4.13y, Review B ff4e009 N16, N20).
+# It reads the stdout error event of the installed bundle first and the
+# first stderr line second. A credential value in that source gives the
+# fixed text, so no private folder or output holds the value.
+error_line_of() {
+  local out_path="$1" err_path="$2" fallback="$3" line="" source="" scan_rc=0
+  line="$(error_event_text "$out_path")"
+  if [ -n "$line" ]; then
+    source="$out_path"
+  else
+    line="$(head -n 1 "$err_path" 2>/dev/null || true)"
+    source="$err_path"
+  fi
+  if [ -z "$line" ]; then
+    printf '%s\n' "$fallback"
+    return 0
+  fi
+  if [ -s "$source" ]; then
+    scan_output "$source" || scan_rc=$?
+    if [ "$scan_rc" -eq 0 ]; then
+      printf '%s\n' "$ERROR_KEY_TEXT"
+      return 0
+    fi
+  fi
+  printf '%s\n' "$line"
+}
+
+# The region error of spec D22. It applies to a Go route only. It reads the
+# stdout error event of the installed bundle first (task 4.13y, Review B
+# ff4e009 N20) and the error file second.
 is_region_error() {
-  local err_path="$1"
+  local err_path="$1" out_path="${2:-}" text=""
   case "$ROUTE" in
     opencode-go/*) ;;
     *) return 1 ;;
   esac
+  if [ -n "$out_path" ] && [ -s "$out_path" ]; then
+    text="$(error_event_text "$out_path")"
+    if [ -n "$text" ] && printf '%s\n' "$text" | grep -qiE 'not available in your region|not supported in your region'; then
+      return 0
+    fi
+  fi
   grep -qiE 'not available in your region|not supported in your region' "$err_path" 2>/dev/null
 }
 
@@ -894,13 +974,12 @@ process.stdout.write(String(plants.length));
       state="reachable"
       break
     fi
-    error_line="$(head -n 1 "$err_file" 2>/dev/null || true)"
-    if is_region_error "$err_file"; then
-      [ -n "$error_line" ] || error_line="the model is not available in your region"
+    if is_region_error "$err_file" "$staging"; then
+      error_line="$(error_line_of "$staging" "$err_file" "the model is not available in your region")"
       state="region-blocked"
       break
     fi
-    [ -n "$error_line" ] || error_line="the model call failed"
+    error_line="$(error_line_of "$staging" "$err_file" "the model call failed")"
     rm -f "$staging" "$err_file"
     if [ "$attempt" -lt 3 ]; then
       sleep "$RETRY_WAIT_SECONDS"
@@ -998,9 +1077,8 @@ for diff_path in "${DIFF_PATHS[@]}"; do
     if [ "$call_rc" -eq 0 ]; then
       break
     fi
-    if is_region_error "$ERR_FILE"; then
-      error_line="$(head -n 1 "$ERR_FILE" 2>/dev/null || true)"
-      [ -n "$error_line" ] || error_line="the model is not available in your region"
+    if is_region_error "$ERR_FILE" "$STAGING"; then
+      error_line="$(error_line_of "$STAGING" "$ERR_FILE" "the model is not available in your region")"
       rm -f "$STAGING" "$ERR_FILE"
       TOKENS_ALL=0
       ERROR_LIST="${ERROR_LIST}${ERROR_LIST:+$'\n'}${error_line}"
