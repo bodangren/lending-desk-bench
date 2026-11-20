@@ -1058,27 +1058,30 @@ LIVE_HTTP_CODE=""
 LIVE_DEADLINE=0
 LIVE_TIMEOUT=1
 
-# Sets LIVE_TIMEOUT to the whole seconds left before LIVE_DEADLINE, at
-# least 1. A request may then overrun the deadline by under one second.
+# Sets LIVE_TIMEOUT to the whole seconds left before LIVE_DEADLINE. Returns
+# 1, with no timeout, when the deadline has passed, so no request starts
+# after it (task 4.16 r6, Review A F13).
 live_remaining() {
   local now left
   now="$(date +%s)"
   left=$(( LIVE_DEADLINE - now ))
-  if [ "$left" -lt 1 ]; then left=1; fi
+  if [ "$left" -lt 1 ]; then return 1; fi
   LIVE_TIMEOUT="$left"
+  return 0
 }
 
 # One live request with the time left. $1 takes the body file, $2 the
 # curl error file, and the rest takes the curl arguments. Sets
-# LIVE_HTTP_CODE to the HTTP code. Returns 124 on a timeout (curl exit
-# 28), 0 when the request ran, and 1 when curl could not run at all.
+# LIVE_HTTP_CODE to the HTTP code. Returns 126 when the deadline has passed
+# and no request runs, 124 on a timeout (curl exit 28), 0 when the request
+# ran, and 1 when curl could not run at all.
 live_curl() {
   local out="$1" err="$2"
   shift 2
   : > "$out" 2>/dev/null || return 1
   : > "$err" 2>/dev/null || return 1
   local rc=0 code="000"
-  live_remaining
+  live_remaining || return 126
   code="$(curl -sS --max-time "$LIVE_TIMEOUT" "$@" -o "$out" -w '%{http_code}' 2>"$err")" || rc=$?
   if [ "$rc" -eq 28 ]; then
     return 124
@@ -1187,15 +1190,15 @@ live_get_messages() {
 
 # Decodes one message list body ($1) into the synthesis event stream ($2),
 # with the native model error text in the file $3. The page is newest
-# first, so the first terminal assistant message is the newest answer. A
-# terminal message holds `time.completed` or `finish`, or an `error`. It
-# carries its text in `content[]` and its token use in the top-level
-# `tokens` field; an older partial or complete message never wins (task
-# 4.16 r4, Review A F20). Prints one status line
-# `<empty|partial|complete|error>\t<count>`; only a complete record with
-# text or a result writes the synthesis. Text fragments rejoin with the
-# empty string, because the API splits streamed text at an arbitrary
-# character (task 4.16 r3, Review A F13, F14, F17).
+# first. The newest assistant message governs the answer: a newest partial
+# message blocks every older completed message and every older tool-calls
+# step until it reaches a terminal state (`time.completed`, or a `finish`
+# other than `tool-calls`). The message carries its text in `content[]` and
+# its token use in the top-level `tokens` field (task 4.16 r6, Review A
+# F20). Prints one status line `<empty|partial|complete|error>\t<count>`;
+# only a complete record with text or a result writes the synthesis. Text
+# fragments rejoin with the empty string, because the API splits streamed
+# text at an arbitrary character (task 4.16 r3, Review A F13, F14, F17).
 live_synthesize() {
   node -e '
 const fs = require("node:fs");
@@ -1203,23 +1206,14 @@ let doc;
 try { doc = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch { process.exit(1); }
 const list = Array.isArray(doc) ? doc : (doc && typeof doc === "object" && Array.isArray(doc.data) ? doc.data : null);
 if (!list) process.exit(1);
-let chosen = null;
-let partial = null;
+let newest = null;
 for (const message of list) {
   if (!message || typeof message !== "object" || Array.isArray(message)) continue;
   const assistant = (message.info && typeof message.info === "object" && message.info.role === "assistant") || message.type === "assistant";
-  if (!assistant) continue;
-  const error = message.error && typeof message.error === "object" && !Array.isArray(message.error) ? message.error : null;
-  const time = message.time && typeof message.time === "object" && !Array.isArray(message.time) ? message.time : null;
-  const completed = (time && typeof time.completed === "number" && Number.isFinite(time.completed)) || (typeof message.finish === "string" && message.finish !== "");
-  if (error || completed) { chosen = message; break; }
-  if (!partial) partial = message;
+  if (assistant) { newest = message; break; }
 }
-if (!chosen) {
-  process.stdout.write((partial ? "partial" : "empty") + "\t0\n");
-  process.exit(0);
-}
-const error = chosen.error && typeof chosen.error === "object" && !Array.isArray(chosen.error) ? chosen.error : null;
+if (!newest) { process.stdout.write("empty\t0\n"); process.exit(0); }
+const error = newest.error && typeof newest.error === "object" && !Array.isArray(newest.error) ? newest.error : null;
 if (error) {
   const data = error.data && typeof error.data === "object" && !Array.isArray(error.data) ? error.data : null;
   const text = typeof error.message === "string" ? error.message
@@ -1228,7 +1222,11 @@ if (error) {
   process.stdout.write("error\t0\n");
   process.exit(0);
 }
-const collection = Array.isArray(chosen.parts) ? chosen.parts : (Array.isArray(chosen.content) ? chosen.content : []);
+const time = newest.time && typeof newest.time === "object" && !Array.isArray(newest.time) ? newest.time : null;
+const finished = typeof newest.finish === "string" && newest.finish !== "" && newest.finish !== "tool-calls";
+const terminal = (time && typeof time.completed === "number" && Number.isFinite(time.completed)) || finished;
+if (!terminal) { process.stdout.write("partial\t0\n"); process.exit(0); }
+const collection = Array.isArray(newest.parts) ? newest.parts : (Array.isArray(newest.content) ? newest.content : []);
 const lines = [];
 const texts = [];
 const results = [];
@@ -1237,7 +1235,7 @@ for (const entry of collection) {
   if (entry.type === "text" && typeof entry.text === "string") texts.push(entry.text);
   else if (entry.type === "result" && typeof entry.text === "string") results.push(entry.text);
 }
-const tokens = chosen.tokens && typeof chosen.tokens === "object" && !Array.isArray(chosen.tokens) ? chosen.tokens : null;
+const tokens = newest.tokens && typeof newest.tokens === "object" && !Array.isArray(newest.tokens) ? newest.tokens : null;
 if (tokens) lines.push(JSON.stringify({ type: "step_finish", part: { tokens } }));
 if (texts.length > 0) lines.unshift(JSON.stringify({ type: "text", part: { type: "text", text: texts.join("") } }));
 if (results.length > 0) lines.push(JSON.stringify({ type: "result", text: results.join("") }));
@@ -1261,8 +1259,21 @@ live_wait_answer() {
   resp="${staging}.msgs"
   err="${staging}.merr"
   while true; do
+    # No request starts after the deadline, and no completion is accepted
+    # after it (task 4.16 r6, Review A F13).
+    now="$(date +%s)"
+    if [ "$now" -ge "$LIVE_DEADLINE" ]; then
+      : > "$staging"
+      rm -f "${staging}.error" "$resp" "$err"
+      return 4
+    fi
     rc=0
     live_get_messages "$session" "$resp" "$err" || rc=$?
+    if [ "$rc" -eq 126 ]; then
+      : > "$staging"
+      rm -f "${staging}.error" "$resp" "$err"
+      return 4
+    fi
     if [ "$rc" -ne 0 ]; then
       # A failed read is a failure, not a success: the real status of the
       # read stays and the call stops here (task 4.16 r3, Review A F16).
@@ -1280,7 +1291,16 @@ live_wait_answer() {
     esac
     rm -f "$resp" "$err"
     case "$state" in
-      complete) rm -f "${staging}.error"; return 0 ;;
+      complete)
+        now="$(date +%s)"
+        if [ "$now" -ge "$LIVE_DEADLINE" ]; then
+          : > "$staging"
+          rm -f "${staging}.error"
+          return 4
+        fi
+        rm -f "${staging}.error"
+        return 0
+        ;;
       error)
         cat "${staging}.error" >> "$err_path" 2>/dev/null || true
         rm -f "$staging" "${staging}.error"
@@ -1291,12 +1311,6 @@ live_wait_answer() {
         return 1
         ;;
       empty|partial)
-        now="$(date +%s)"
-        if [ "$now" -ge "$LIVE_DEADLINE" ]; then
-          : > "$staging"
-          rm -f "${staging}.error"
-          return 4
-        fi
         ;;
     esac
     sleep 2
@@ -1321,6 +1335,10 @@ live_model_call() {
   cat "$PROMPT_FILE" "$message_path" "$diff_path" > "$prompt" 2>/dev/null || return 1
   LIVE_SESSION=""
   live_session_create "$s_body" "$s_resp" "$s_err" || rc=$?
+  if [ "$rc" -eq 126 ]; then
+    rm -f "$prompt" "$s_body" "$s_resp" "$s_err" "$send_resp"
+    return 4
+  fi
   if [ "$rc" -ne 0 ]; then
     if [ "$rc" -ne 124 ] && is_live_region_error "$s_resp" "$s_err"; then
       cat "$s_err" >> "$err_path" 2>/dev/null || true
@@ -1331,7 +1349,12 @@ live_model_call() {
     rm -f "$prompt" "$s_body" "$s_resp" "$s_err" "$send_resp"
     return "$rc"
   fi
+  rc=0
   live_send_prompt "$LIVE_SESSION" "$prompt" "$s_body" "$send_resp" "$s_err" || rc=$?
+  if [ "$rc" -eq 126 ]; then
+    rm -f "$prompt" "$s_body" "$s_resp" "$s_err" "$send_resp"
+    return 4
+  fi
   if [ "$rc" -ne 0 ]; then
     if [ "$rc" -ne 124 ] && is_live_region_error "$s_resp" "$s_err"; then
       cat "$s_err" >> "$err_path" 2>/dev/null || true
@@ -1810,11 +1833,12 @@ for diff_path in "${DIFF_PATHS[@]}"; do
   DIFF_ROWS[$row_index]="${diff_id}"$'\t'"${tok_in}"$'\t'"${tok_out}"$'\t'"${tok_re}"$'\t'"${tok_cr}"$'\t'"${tok_cw}"$'\t'"${tok_ok}"
   if [ "$tok_ok" != "1" ]; then TOKENS_ALL=0; fi
   stored="$OUT_DIR/${diff_id}.txt"
-  # The stored output is the plain answer text, decoded from the synthesis
-  # event stream: the private folder holds the answer, not the transport
-  # shape (task 4.16 r4, Review A F20). The scorer reads a plain answer
-  # unchanged.
-  node -e '
+  if [ "$LIVE_PATH" = "1" ]; then
+    # The live path stores the plain answer text, decoded from the synthesis
+    # event stream: the private folder holds the answer, not the transport
+    # shape (task 4.16 r4, Review A F20). The scorer reads a plain answer
+    # unchanged.
+    node -e '
 const fs = require("node:fs");
 let raw = "";
 try { raw = fs.readFileSync(process.argv[1], "utf8"); } catch { process.exit(1); }
@@ -1831,8 +1855,15 @@ for (const line of raw.split(/\r?\n/)) {
 }
 process.stdout.write(texts.length > 0 ? texts.join("\n") : results.join("\n"));
 ' "$STAGING" > "$STAGING.plain" || cp "$STAGING" "$STAGING.plain"
-  mv "$STAGING.plain" "$stored"
-  rm -f "$STAGING" "$ERR_FILE"
+    mv "$STAGING.plain" "$stored"
+    rm -f "$STAGING"
+  else
+    # The isolated path stores the raw output whole, byte for byte: the
+    # decode above drops plain text with no text or result event (task 4.16
+    # r6, Review A F21). The scorer decodes the raw stream itself.
+    mv "$STAGING" "$stored"
+  fi
+  rm -f "$ERR_FILE"
   OUTPUT_LIST="${OUTPUT_LIST}${OUTPUT_LIST:+$'\n'}${stored}"
 done
 
