@@ -2260,3 +2260,249 @@ It is not the Phase 4b base. A value that predates the strategy commit fails
 closeout, because the diff would hold the strategy commit itself. The Phase 4
 base `57baaaa364f968a2f44c6e14eb96f8a9d68beebf` stays for Phase 4. It is not
 the Phase 4b base.
+
+### 14.12 Row 4.16: the live-server path
+
+Revision 7 (2026-11-20). Section 14.11 gates row 4.15. This section gates row
+4.16. Row 4.16 moves every pilot route off the isolated credential path. The
+runner reaches the model through one bench session on the OpenChamber API. No
+test in this section calls the live server.
+
+#### 14.12.1 Risk and the change of contract
+
+Risk: critical. The path sends a real prompt to a real model. It removes the
+credential seed. A wrong directory, a wrong model, or a missing deny check
+reaches a live session. The tests stay offline behind a fake HTTP server.
+
+The old contract stays for routes that are not pilot routes. The old path
+seeds one credential with `auth export` and `auth import`. It calls
+`opencode run --standalone --format json --model <route>` with the job store.
+
+The new contract holds for pilot routes. The pilot routes are the Go plan rows
+of `routes.json` (`opencode-go/hy4-flash-free#high`,
+`opencode-go/deepseek-v4.1-flash`, `opencode-go/mimo-v2.6-flash`, and
+`opencode-go/muse-spark-1.3-contributor#high`) and the opencode free routes.
+The change of contract is this list:
+
+- The runner uses one base URL. It reads `BENCH_SERVER_BASE`. The value is
+  `http://127.0.0.1:<port>`. No other env value carries a server address.
+- The runner creates one bench session per call. Session create carries the
+  job root in `directory`. The job root is an absolute folder outside every
+  git repo. Session create or a model-set call carries the provider, the
+  model, and the variant of the route.
+- The job root holds a project config. The config denies `read`, `edit`,
+  `bash`, `webfetch`, `websearch`, `question`, `subagent`, and `skill`. The
+  runner confirms all eight denies before the first call. It refuses when a
+  config is missing, unreadable, or missing one deny.
+- The runner sends the D10 prompt in a message. It waits for the answer up to
+  `MG_CALL_TIMEOUT_S`. It reads the answer text and the token use from the
+  session message parts. It applies the decode rule of group L4 and the token
+  sums of `review-run.sh` `read_tokens`.
+- The runner makes no DELETE request. It deletes no session and no message.
+- The runner makes no seed and no auth call. It runs no `auth export` and no
+  `auth import`. It reads no credential value.
+- The stored-text scan stays. It scans for known key shapes. No value list
+  exists on this path. The runner calls no `scan-values` seam.
+
+The unchanged contract is this list: the job root, no write under `docs/` or
+inside a git repo, the flock lock, the quota rules of D15, the probe state
+line and exit codes, the pass and probe record shapes, the token sums, the
+daemon guard, and the scan before the store. The isolated path stays in the
+code. It keeps the seed and `opencode run --standalone`. No pilot route uses
+it.
+
+#### 14.12.2 Test groups and falsification
+
+All groups use one fake HTTP server. The test file starts the server on port
+0. Port 0 gives a random port. The test file passes the base URL to the runner
+in `BENCH_SERVER_BASE`. The test file stops the server in `afterEach` and in a
+`finally` block. No test names port 38307. No test calls the live server.
+
+The fake server answers session create, message send, message read, and the
+model-set call. It records each method, path, and body. It has no DELETE
+handler. A DELETE request reaches the record and fails the test. The quota
+server of section 3.4 stays separate behind `BENCH_QUOTA_BASE`.
+
+| Group | File | What it proves | Falsification |
+|---|---|---|---|
+| L1 | `review-run.test.ts` (bun) | A pilot-route pass sends session create with `directory` equal to the job root and with the provider, model, and variant of the route. | Send an empty directory or a model without a variant. L1 must fail. |
+| L2 | `review-run.test.ts` (bun) | A project config with all eight denies lets the pass run. A missing config, an unreadable config, or one allowed tool gives exit 2 and one `review-run:` line. No session is created. | Remove the deny check. L2 must fail on the three refused shapes. |
+| L3 | `review-run.test.ts` (bun) | The fake `opencode` call log is empty for a pilot-route pass and probe. No `auth export`, no `auth import`, and no `run` call appears. | Add one seed call to the live path. L3 must fail. |
+| L4 | `decode-parity.test.ts` (bun), `review-run.test.ts` (bun) | The answer text and token sums from message parts match `decode-parity.test.ts`. A text part wins over a result event when both exist. A result-only stream still decodes. Both token event shapes count. | Change one decoder or fence rule. Parity must fail. |
+| L5 | `review-run.test.ts` (bun) | A message send that exceeds `MG_CALL_TIMEOUT_S` stops the call. The runner prints the fixed text and writes no pass record. | Remove the timeout. L5 must hang or fail. |
+| L6 | `review-run.test.ts` (bun) | The probe retries a transport error up to 3 calls. Three failures give `unreachable` and exit 3. A failure followed by success gives `reachable` and exit 0, with no error line. | Remove the retry. L6 must fail on the first transient error. |
+| L7 | `review-run.test.ts` (bun) | No DELETE request reaches the fake server on a pass, a probe, or a judge run. | Add one session delete. L7 must fail. |
+| L8 | `review-run.test.ts` (bun) | Stored text with a known key shape is refused and not stored. The runner calls no value-list seam on the live path. | Store the text or call `scan-values`. L8 must fail. |
+| L9 | `review-run.test.ts` (bun), `quota.test.ts` (vitest) | The quota rules stay. `wait` gives no call. A pass stops at 80 %, or at 95 % and 100 % for a Go route. A route with no source runs one pass a night. | Skip the quota read before the live call. L9 must fail with a call made. |
+| L10 | `review-run.test.ts` (bun) | The probe prints `<route> reachable|unreachable|region-blocked <error line or ->` and exits 0 or 3. A refusal exits 2 with one `review-run:` line. | Change one state word or exit code. L10 must fail. |
+| L11 | `judge-run.test.ts` (vitest) | A judge route on the live server uses the same path. Session create carries the job root and the judge model. No seed or auth call appears. No DELETE appears. The judge file and run record keep their shapes. | Point the judge runner at the isolated path. L11 must fail. |
+
+Judge-run uses this path for a judge route on the live server. The Go judge
+route `opencode-go/muse-spark-1.3-contributor#high` is a pilot route. Judge-run
+reads `judges.json` and never reads `routes.json`. The handoff asks whether the
+two non-pilot judge routes also move. The default is no. Only the live-server
+judge route uses this path in row 4.16.
+
+#### 14.12.3 Old tests that change
+
+Red changes these cases. Red changes test files only.
+
+- `review-run.test.ts`: the cases that pin a seed or an auth import for a pilot
+  route. The fake helper spec holds `auth_export` and `auth_import_exit: 0`.
+  The pass and probe cases assert a seed call. For a pilot route, flip these
+  to L3: the call log holds no auth verb. Keep one case on a non-pilot route
+  so the isolated seed path stays covered.
+- `judge-run.test.ts`: the cases that pin a seed for the Go judge route. Flip
+  them to L11. Keep the other judge routes on the isolated seed path.
+- `credential-provider.test.ts`: C1 to C11 test `provider-credential.sh`. The
+  helper does not change. Keep these cases green. Do not delete them to reach
+  a green row.
+- `adversarial-p4d.test.ts`: the seed-reason case must name a non-pilot route.
+  If it names a pilot route, move it to a non-pilot route. The isolated seed
+  refusal then stays covered.
+
+#### 14.12.4 Red command, gates, and time rules
+
+Targeted Red command. Run one line at a time. Each line fails on the accepted
+HEAD for the new live-server cases. Record the failed names and the exit codes
+in `measure/runs/model_guide/red-4.16.txt`.
+
+```bash
+bun test harness/model-guide-tests/review-run.test.ts
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+bun test harness/model-guide-tests/decode-parity.test.ts
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+```
+
+**Green gate.** Each cited line exits 0. Parse the labeled line (A3): `N pass`
+with `0 fail` for bun, and `Tests N passed` for vitest. The fake server stops
+in every `afterEach` and `finally`. No DELETE reached the server. No seed verb
+reached the fake `opencode`. `git status --short docs/` prints nothing.
+`bash -n` passes on both runners. `leak-check.ts` exits 0. Green changes no
+test file after Red.
+
+**Closeout gate.** On the final row 4.16 HEAD:
+
+1. Each Red line exits 0 with its labeled line (A3).
+2. L1 to L11 each hold a passing case. No case is skipped.
+3. No fake child and no fake HTTP port stay open. `pgrep -af 'fake-opencod[e]'`
+   prints nothing of mine.
+4. `git status --short docs/` prints nothing. The `docs/` range check of
+   section 2.2 item 3 prints nothing.
+5. The frozen-path diff of section 2.4 item 5 prints nothing.
+6. `leak-check.ts` exits 0.
+7. `measure/runs/model_guide/strategy-4.16-f749b47.log` holds this result block.
+8. The phase acceptance record holds status pass, or each blocking finding has
+   a fix commit.
+9. The registry note names the first open Phase 4b task (A14).
+
+**Daytime rule.** A-23 holds. Run each gate line one file at a time. Run full
+suites only from 22:00 to 07:00 +07. No gate is a full suite. No role calls the
+live server. The only live checks are the probe at 2026-11-21 01:45 +07 and the
+night run at 2026-11-22 02:00 +07. No role makes any other live call.
+
+**Timing.** Green production code may land any time before 23:00 +07 on
+2026-11-21. The 11-22 01:45 probe and the 11-22 night run (night 3) then use
+the new code. A Green production commit after 23:00 +07 on 2026-11-21 fails
+this gate. The orchestrator records both live end times in
+`measure/runs/model_guide/strategy-4.16-f749b47.log`.
+
+**Intentionally-red aggregate suite.** The L cases fail at the accepted HEAD
+until Green lands. Between the Red commit and the Green commit, the four Red
+lines stay red by design. The aggregate suite is not a gate. No role edits a
+test to reach a green aggregate run. A full-suite failure outside these files
+is recorded and sent to the orchestrator. It does not block the row. A failure
+inside these files blocks the row.
+
+#### 14.12.5 Fixtures, mocks, and proof kinds
+
+- **Fixtures.** Row 4.16 adds no committed fixture. Each case builds its temp
+  job root, its fake server, and its records in a `mkdtemp` folder. No fixture
+  holds a real key, a real credential value, or a real server answer.
+- **Mocks.** The fake HTTP server serves the session routes. The fake
+  `opencode` of section 3.4 stays for the isolated path and for the L3 call
+  log. The loopback quota server of section 3.4 serves `quota.ts`. A temp stub
+  serves the port source. No mock starts a model or reads the shared store.
+- **Live behavior, offline.** Each L group starts a product file with the fake
+  server. It reads the request record, stdout, the exit code, and the record.
+- **Live artifact checks.** The 11-21 probe and the 11-22 night run read the
+  real records. They are checks, not tests. A fake cannot prove a live session,
+  a live quota answer, or the night boundary.
+- **Artifact assertions.** A byte check on a record proves that the runner
+  wrote the record. It does not prove that a browser renders a page (section
+  9.4).
+- **Documentation only.** A test that reads `spec.md`, `plan.md`, or a record
+  file proves no product behavior (A4). None of the L groups reads a document.
+
+#### 14.12.6 Architecture guardrails and changed contracts
+
+- The base URL has one seam. Only `BENCH_SERVER_BASE` carries a server address.
+  A second seam for the same address is a contract break.
+- The session directory is the job root. The job root is absolute and outside
+  every git repo. A case with a relative path or a repo path must refuse.
+- The deny check runs before the first call. No session is created on a
+  refused deny. L2 pins this order.
+- No seed and no auth call runs on this path. The fake `opencode` call log
+  proves the absence. L3 pins it.
+- No DELETE request is made. The fake server records every method. L7 pins it.
+- The scan runs before the store. L8 must not move a print before the scan.
+- The two `error_line_of` copies stay byte-identical. Fix one runner and land
+  the fix in both. Route parity holds.
+- The record shapes stay. A pass record holds `set_id`, `route`, `pass`,
+  `date`, `state`, `diffs`, `outputs`, `errors`, `tokens`, and
+  `tokens_complete`. A probe record holds its state, tokens, and no raw output.
+- Frozen paths. `harness/opencode-credential.sh`, `harness/opencode-host.sh`,
+  `harness/provenance.ts`, and `harness/tests` do not change. The
+  `test:meta:logic` exclude list of `harness/package.json` does not grow (A7).
+- No write under `docs/` before Phase 5 (spec D21). `git status --short docs/`
+  prints nothing.
+- No metered route. `routes.json` and `judges.json` hold plan or free routes
+  only.
+
+#### 14.12.7 Review applicability
+
+| Review | Applies | What it checks |
+|---|---|---|
+| Review B security | yes | No seed or auth call; deny check; no DELETE; key-shape scan; no value in stdout or a record. |
+| Review C UX/API | yes | Session create fields; the fixed texts; the state words; the exit codes; the record shapes. |
+| Adversarial testing | yes | A fake server that refuses the deny, delays a send, returns transport errors, and records method shapes. |
+| Browser review | no | Row 4.16 adds no page and no render change. |
+
+The secrecy rule of section 9.4 holds. Any audit role that reads a private file
+runs on a family outside D12. The records hold route names and error lines.
+They hold no key, no plant, and no credential value.
+
+#### 14.12.8 Anti-pattern coverage
+
+A1 and A8 are retired. A2 does not apply. Row 4.16 flips no draft to published.
+A9 and A10 do not apply. No track is archived here and the repo has no
+generator and no pre-commit hook.
+
+| Anti-pattern | Defense | Falsification |
+|---|---|---|
+| A3 digit-only count | Gates parse `N pass` with `0 fail` and `Tests N passed`. The exit codes are labeled integers. | Replace a state check with a digit search. L10 must pass on an empty record. |
+| A4 vacuous pass | Each L group fails at the accepted HEAD. Each group names a removed guard. | Leave L1 out of Red and claim a pass. That is a false claim. Remove the deny check. L2 must fail. |
+| A5 false plan claim | Each Red and Green record cites its file, its command, and its labeled line. | Run the cited line. A non-zero exit with an `[x]` mark is a false claim. |
+| A6 registry overstatement | No "complete" status before the score file and the acceptance pass. | Compare the registry note with the first open Phase 4b task. |
+| A7 over-broad filter | The key scan matches known shapes, not a bare word. The process guard scopes to its own temp root. | Plant a foreign fake with the text `fake-opencode`. The guard must stay green. |
+| A11 inherited environment | Each L test pins `HOME`, the `XDG_*` paths, `TMPDIR`, and `TZ`, and clears `BENCH_TRACK` and `BENCH_SERVER_BASE` at the start. | Set `BENCH_TRACK=change`. No verdict moves. Leave `BENCH_SERVER_BASE` unset. L1 must fail. |
+| A12 checker and `[b]` task | Row 4.16 is open (`[ ]`), not `[b]`. The orchestrator counts `[b]` tasks before a closeout reading. | Read the status command. A closeout candidate with one `[b]` task is not ready. |
+| A13 ignored artifact | `TMPDIR` and `.tmp/` are ignored. The tests inspect the request record inside the temp tree, not with `git diff`. | Leave one fake child or one open fake port. The closeout gate must fail. |
+| A14 stale registry note | The orchestrator moves the registry note after the row 4.16 commit. | Compare the note with the first open Phase 4b task. |
+
+#### 14.12.9 `phase_base_sha` capture point
+
+The orchestrator captures the value directly after the commit
+`measure(model_guide): test strategy for row 4.16`, and before Red row 4.16
+starts. Run one command on that commit:
+
+```bash
+git rev-parse HEAD            # -> phase_base_sha for row 4.16
+```
+
+This section names no base value. The value does not exist before the
+strategy commit. Any SHA named elsewhere in this file that predates that
+commit is a role base or a product HEAD. It is not the row 4.16 base. A value
+that predates the strategy commit fails closeout. The diff would hold the
+strategy commit itself. The Phase 4b base of section 14.11 stays for row 4.15.
+It is not the row 4.16 base.
