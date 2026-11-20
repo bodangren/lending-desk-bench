@@ -565,8 +565,19 @@ start_job() {
     fi
   done
   if [ -n "$QUOTA_PROVIDER" ]; then
-    if ! "$CREDENTIAL_HELPER" seed "$QUOTA_PROVIDER" > /dev/null; then
-      refuse "the provider credential seed failed"
+    # The refusal carries the closed-list seed reason of the helper
+    # (task 4.15); any other helper text keeps the bare refusal.
+    if ! seed_out="$("$CREDENTIAL_HELPER" seed "$QUOTA_PROVIDER" 2>&1 > /dev/null)"; then
+      seed_line="${seed_out%%$'\n'*}"
+      case "$seed_line" in
+        "provider-credential: the store holds no active entry of provider "*|\
+        "provider-credential: the store holds two active entries of provider "*": ambiguous")
+          refuse "the provider credential seed failed: ${seed_line#provider-credential: }"
+          ;;
+        *)
+          refuse "the provider credential seed failed"
+          ;;
+      esac
     fi
   fi
 }

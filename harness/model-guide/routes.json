@@ -22,10 +22,10 @@
   },
   {
     "family": "Hy",
-    "route": "opencode/hy4-flash-free",
-    "kind": "free",
-    "quota_provider": "opencode",
-    "quota_source": null
+    "route": "opencode-go/hy4-flash-free#high",
+    "kind": "plan",
+    "quota_provider": "opencode-go",
+    "quota_source": "opencode-go"
   },
   {
     "family": "Go",

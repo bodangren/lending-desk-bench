@@ -239,6 +239,13 @@ if [ "$MODE" = "seed" ]; then
     if grep -qi "ambiguous" "$SEL_FILE" 2>/dev/null; then
       refuse "the store holds two active entries of provider $PROVIDER: ambiguous"
     fi
+    # A fixed store state names its reason: no active entry, or an entry
+    # with no value (task 4.15, Review B SR1/SR2). The export made one call
+    # and is not retried. Never print export text: the reason is fixed text
+    # plus the provider name.
+    if grep -qi "holds no active entry of provider\|holds no value" "$SEL_FILE" 2>/dev/null; then
+      refuse "the store holds no active entry of provider $PROVIDER"
+    fi
     refuse "the credential seed failed"
   fi
   if ! printf '%s\n' "$payload" | run_opencode auth import --standalone > /dev/null 2>"$IMPORT_ERR_FILE"; then
