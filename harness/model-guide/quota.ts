@@ -272,8 +272,9 @@ function parseAnswer(body: string): QuotaRead {
   }
   const root = doc as { error?: unknown; usage?: unknown };
   if (root.error !== undefined && root.error !== null) {
-    const text = typeof root.error === "string" ? root.error : "quota error";
-    return { ok: false, reason: `the quota source reported an error: ${text}` };
+    // The quota reason never carries the loopback error string (task
+    // 4.15, Review B N32). The line holds a fixed closed-list text only.
+    return { ok: false, reason: "the quota source reported an error" };
   }
   const usage = root.usage;
   if (usage === null || typeof usage !== "object" || Array.isArray(usage)) {

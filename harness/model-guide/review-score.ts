@@ -229,9 +229,13 @@ function readPlants(key: any): SetPlant[] {
  * holds no event line and is returned unchanged. The same decoder lives in
  * `judge-run.sh` and `adjudicate.ts`: the committed adversarial fixture
  * copies only the runner and `quota.ts` into its temp repo, so a separate
- * shared module cannot reach the judge runner there. */
+ * shared module cannot reach the judge runner there. A `result` branch
+ * never wins over the text events, so a forged result branch after the
+ * fenced answer is refused (task 4.15, Review A N13). A result-only
+ * stream still decodes (ADV-P4B AJ1). */
 function decodeAnswerText(raw: string): string {
   const parts: string[] = [];
+  const resultParts: string[] = [];
   for (const line of raw.split(/\r?\n/)) {
     const text = line.trim();
     if (!text.startsWith("{")) continue;
@@ -254,9 +258,29 @@ function decodeAnswerText(raw: string): string {
       continue;
     }
     // The result-event shape of the ADV-P4B AJ1 fixture.
-    if (event.type === "result" && typeof event.text === "string") parts.push(event.text);
+    if (event.type === "result" && typeof event.text === "string") resultParts.push(event.text);
   }
-  return parts.length === 0 ? raw : parts.join("\n");
+  if (parts.length > 0) return refuseResultBranch(parts.join("\n"));
+  if (resultParts.length > 0) return refuseResultBranch(resultParts.join("\n"));
+  return refuseResultBranch(raw);
+}
+
+/** A forged `result` branch smuggled as a text line never reaches the
+ * fence scan (task 4.15, Review A N13). Only nested lines are refused, so
+ * a top-level result event still decodes (ADV-P4B AJ1). */
+function refuseResultBranch(answer: string): string {
+  return answer
+    .split("\n")
+    .filter((line) => {
+      if (!line.trim().startsWith("{")) return true;
+      try {
+        const doc = JSON.parse(line.trim());
+        return !(doc !== null && typeof doc === "object" && !Array.isArray(doc) && doc.type === "result");
+      } catch {
+        return true;
+      }
+    })
+    .join("\n");
 }
 
 /** The findings of one output text, or null when the review is invalid.

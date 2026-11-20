@@ -146,6 +146,12 @@ for (const line of raw.split(/\r?\n/)) {
     sum.cache_write += num(cache.write);
   }
 }
+// A field sum above 2^53 is no longer exact, so the flag clears even when
+// every added field counted (task 4.15, Review B N27). A sum of exactly
+// 2^53 - 1 still counts (ADV-P4C T1).
+for (const key of ["input", "output", "reasoning", "cache_read", "cache_write"]) {
+  if (!Number.isSafeInteger(sum[key])) complete = 0;
+}
 process.stdout.write([sum.input, sum.output, sum.reasoning, sum.cache_read, sum.cache_write, (seen > 0 && complete === 1) ? 1 : 0].join("\t"));
 ' "$file" 2>/dev/null)" || out=""
   if [[ "$out" =~ ^[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[0-9]+$'\t'[01]$ ]]; then
@@ -333,11 +339,15 @@ daemon_starttime() {
 }
 
 # The pids of the processes whose argv holds a `serve` token and a
-# `--service` token, and whose HOME or cwd resolves under the job root. The
-# cmdline is NUL separated, so the tokens are compared one by one; a joined
-# substring would match a decoy such as `observe --service` (task 4.13t,
-# ADV-P4B-3). Resolved paths and a path-boundary compare keep a `..` decoy
-# and a sibling folder safe (task 4.13r F2). A process outside the job root
+# `--service` token adjacent in that order, whose executable path sits
+# inside the job root when it names a path, and whose HOME or cwd resolves
+# under the job root. The cmdline is NUL separated, so the tokens are
+# compared one by one; a joined substring would match a decoy such as
+# `observe --service` (task 4.13t, ADV-P4B-3). A bare executable name holds
+# no path, so it passes the path check and the HOME and cwd check decides.
+# A path outside the root belongs to another run (task 4.15, P4B-C1).
+# Resolved paths and a path-boundary compare keep a `..` decoy and a
+# sibling folder safe (task 4.13r F2). A process outside the job root
 # never matches, so the guard never stops a process of another run.
 daemon_pids() {
   local root="$1"
@@ -358,7 +368,13 @@ for (const name of names) {
   if (!/^[0-9]+$/.test(name)) continue;
   let tokens = [];
   try { tokens = fs.readFileSync(proc + "/" + name + "/cmdline", "utf8").split("\0"); } catch { continue; }
-  if (!tokens.includes("serve") || !tokens.includes("--service")) continue;
+  let adjacent = false;
+  for (let i = 0; i + 1 < tokens.length; i += 1) {
+    if (tokens[i] === "serve" && tokens[i + 1] === "--service") { adjacent = true; break; }
+  }
+  if (!adjacent) continue;
+  const exe = tokens[0] || "";
+  if (exe.includes("/") && !under(real(exe), baseReal)) continue;
   let home = "";
   try {
     for (const line of fs.readFileSync(proc + "/" + name + "/environ", "utf8").split("\0")) {
@@ -421,6 +437,14 @@ stop_daemons() {
     waited=$(( waited + 1 ))
   done
   for pid in $pids; do
+    # A pid whose start time changed since TERM is a reused pid of another
+    # process, so the guard logs no INFRA line for it (task 4.15, Review B
+    # N9). A pid with no readable start time keeps its line: a stopped
+    # daemon has no stat entry, and that is the expected outcome.
+    now="$(daemon_starttime "$pid" 2>/dev/null || true)"
+    if [ -n "${started_at[$pid]:-}" ] && [ -n "$now" ] && [ "$now" != "${started_at[$pid]}" ]; then
+      continue
+    fi
     line="judge-run: INFRA stopped daemon $pid"
     echo "$line" >&2
     INFRA_LIST="${INFRA_LIST}${INFRA_LIST:+$'\n'}${line}"
@@ -513,7 +537,7 @@ start_job() {
   # The call paths of the job folder: HOME, and the XDG folders of the call
   # (task 4.13t, ADV-P4B-5). Each path must resolve inside the job root, so
   # a preset folder with a symlink out of the root refuses the run.
-  local sub sub_real
+  local sub sub_real link_hit
   for sub in home config data state cache runtime tmp; do
     sub_real="$(realpath -m "$JOB/$sub" 2>/dev/null || true)"
     case "$sub_real" in
@@ -525,6 +549,15 @@ start_job() {
         refuse "the job $sub folder is outside the job root"
         ;;
     esac
+    # A symlink at or below a call path leaves the job too (task 4.15,
+    # Review B N10). The realpath check above covers the top level only, so
+    # every level at and below the call path is walked for a link.
+    if [ -e "$JOB/$sub" ] || [ -L "$JOB/$sub" ]; then
+      link_hit="$(find "$JOB/$sub" -mindepth 0 -type l -print 2>/dev/null | head -n 1)"
+      if [ -n "$link_hit" ]; then
+        refuse "the job $sub folder holds a symlink out of the job root"
+      fi
+    fi
   done
   if [ -n "$QUOTA_PROVIDER" ]; then
     if ! "$CREDENTIAL_HELPER" seed "$QUOTA_PROVIDER" > /dev/null; then
@@ -585,6 +618,10 @@ scan_output() {
 # (task 4.13y, Review B ff4e009 N16, N20).
 ERROR_KEY_TEXT="the error output held a credential value"
 
+# The text of an error line whose value scan failed. It differs from the
+# found-key text (task 4.15, Review B N31).
+ERROR_SCAN_TEXT="the error output could not be scanned"
+
 # The first line of the last stdout `{"type":"error",...}` event of one call
 # (task 4.13y, Review B ff4e009 N20). In `--format json` the installed
 # bundle writes every error as this event on stdout and skips the stderr
@@ -617,12 +654,43 @@ process.stdout.write(text);
 ' "$out_path" 2>/dev/null || true
 }
 
+# The joined messages of every stdout `{"type":"error",...}` event of one
+# call (task 4.15, ADV-P4C-1). A credential value split across two error
+# events forms no single file line, so the joined text is scanned too.
+error_all_events_text() {
+  local out_path="$1"
+  [ -s "$out_path" ] || return 0
+  node -e '
+const fs = require("node:fs");
+let raw = "";
+try { raw = fs.readFileSync(process.argv[1], "utf8"); } catch { raw = ""; }
+const first = (value) => String(value).split(/\r?\n/)[0];
+const texts = [];
+for (const line of raw.split(/\r?\n/)) {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("{")) continue;
+  let event;
+  try { event = JSON.parse(trimmed); } catch { continue; }
+  if (!event || typeof event !== "object" || Array.isArray(event)) continue;
+  if (event.type !== "error") continue;
+  const err = event.error;
+  if (err && typeof err === "object" && !Array.isArray(err)) {
+    if (typeof err.message === "string") texts.push(first(err.message));
+    else if (err.data && typeof err.data === "object" && typeof err.data.message === "string") texts.push(first(err.data.message));
+  } else if (typeof err === "string") {
+    texts.push(first(err));
+  }
+}
+process.stdout.write(texts.join(""));
+' "$out_path" 2>/dev/null || true
+}
+
 # The error line of one failed call (task 4.13y, Review B ff4e009 N16, N20).
 # It reads the stdout error event of the installed bundle first and the
 # first stderr line second. A credential value in that source gives the
 # fixed text, so no private folder or output holds the value.
 error_line_of() {
-  local out_path="$1" err_path="$2" fallback="$3" line="" source="" scan_rc=0
+  local out_path="$1" err_path="$2" fallback="$3" line="" source="" scan_rc=0 all_events=""
   line="$(error_event_text "$out_path")"
   if [ -n "$line" ]; then
     source="$out_path"
@@ -634,12 +702,17 @@ error_line_of() {
     printf '%s\n' "$fallback"
     return 0
   fi
+  # An error line over 500 bytes never reaches a record whole (task 4.15,
+  # N26). The cap is 499 content bytes, so the printed line with its
+  # newline stays within 500 bytes.
+  line="$(printf '%s' "$line" | head -c 499)"
   if [ -s "$source" ]; then
     scan_output "$source" || scan_rc=$?
     # A scan that fails must not fall back to the raw line (task 4.13ab,
-    # Review B f26965d N22, Review A NA2, Review C N1). Fail closed.
+    # Review B f26965d N22, Review A NA2, Review C N1). Fail closed, with a
+    # text of its own that differs from the found-key text (task 4.15, N31).
     if [ "$scan_rc" -eq 2 ]; then
-      printf '%s\n' "$ERROR_KEY_TEXT"
+      printf '%s\n' "$ERROR_SCAN_TEXT"
       return 0
     fi
     if [ "$scan_rc" -eq 0 ]; then
@@ -651,6 +724,15 @@ error_line_of() {
     if [ -s "$TMP_VALUES" ] && printf '%s\n' "$line" | grep -F -q -f "$TMP_VALUES"; then
       printf '%s\n' "$ERROR_KEY_TEXT"
       return 0
+    fi
+    # A value split across two stdout error events forms no file line, so
+    # scan the joined messages of every error event too (task 4.15, ADV-P4C-1).
+    if [ -s "$TMP_VALUES" ]; then
+      all_events="$(error_all_events_text "$out_path" 2>/dev/null || true)"
+      if [ -n "$all_events" ] && printf '%s' "$all_events" | grep -F -q -f "$TMP_VALUES"; then
+        printf '%s\n' "$ERROR_KEY_TEXT"
+        return 0
+      fi
     fi
   fi
   printf '%s\n' "$line"
@@ -1037,7 +1119,20 @@ for (const line of raw.split(/\r?\n/)) {
   }
   if (event.type === "result" && typeof event.text === "string") parts.push(event.text);
 }
-const answer = parts.length === 0 ? raw : parts.join("\n");
+const joined = parts.length === 0 ? raw : parts.join("\n");
+// A forged `result` branch smuggled as a text line never reaches the
+// verdict scan: the fence pattern would swallow the rest of that line and
+// poison the first block (task 4.15, Review A N13). Only nested lines are
+// refused, so a top-level result event still decodes.
+const answer = joined.split("\n").filter((line) => {
+  if (!line.trim().startsWith("{")) return true;
+  try {
+    const doc = JSON.parse(line.trim());
+    return !(doc && typeof doc === "object" && !Array.isArray(doc) && doc.type === "result");
+  } catch {
+    return true;
+  }
+}).join("\n");
 const ids = idsText.split(",").filter((id) => id !== "");
 const allowed = ["real-defect", "false-claim", "unclear"];
 let chosen = null;
