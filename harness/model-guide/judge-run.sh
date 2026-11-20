@@ -130,6 +130,13 @@ for (const line of raw.split(/\r?\n/)) {
     const part = object(event.part);
     tokens = part ? object(part.tokens) : null;
   }
+  // The native assistant message of the live path (task 4.16 r3, Review A
+  // F14): the token use sits beside the content in the top-level `tokens`
+  // field. Both token event shapes count, the same rule as above.
+  if (event.type === "assistant" && object(event.tokens)) {
+    tokenEvent = true;
+    tokens = object(event.tokens);
+  }
   // The session message shape of the live-server path (task 4.16, spec
   // D14): one line holds a `parts` array with text, result, and
   // step_finish entries. Both token event shapes count, the same rule
@@ -290,12 +297,12 @@ if [ -n "$ROUTE_KIND" ]; then
   esac
 fi
 
-# The live-server path of spec D14 (PM 2026-11-20, task 4.16). The pilot
-# routes reach the model through one bench session on the OpenChamber API,
-# with the base URL from BENCH_SERVER_BASE only. The base must stay on the
-# loopback interface. A pilot route without a base, and any non-pilot
-# route, keeps the isolated path below: the seed and `opencode run`.
-# The runner never reads `routes.json`.
+# The live-server path of spec D14 (PM 2026-11-20, task 4.16). A pilot
+# route reaches the model through one bench session on the OpenChamber API.
+# The caller names the base in BENCH_SERVER_BASE; an explicitly empty value
+# takes the local default http://127.0.0.1:38307. An unset value keeps the
+# isolated path below: the seed and `opencode run`. The runner never reads
+# `routes.json`.
 is_pilot_route() {
   case "$ROUTE" in
     opencode-go/deepseek-v4.1-flash|opencode-go/hy4-flash-free#high|opencode-go/mimo-v2.6-flash|opencode-go/muse-spark-1.3-contributor#high)
@@ -307,23 +314,33 @@ is_pilot_route() {
   return 1
 }
 LIVE_PATH=0
-LIVE_BASE="${BENCH_SERVER_BASE:-}"
-case "$LIVE_BASE" in
-  *[![:space:]]*) ;;
-  *) LIVE_BASE="" ;;
-esac
-LIVE_BASE="${LIVE_BASE%/}"
-if [ -n "$LIVE_BASE" ]; then
-  case "$LIVE_BASE" in
-    http://127.0.0.1:*|http://localhost:*) ;;
-    *) refuse "BENCH_SERVER_BASE must stay on the loopback interface" ;;
+LIVE_BASE=""
+if is_pilot_route && [ "${BENCH_SERVER_BASE+set}" = "set" ]; then
+  LIVE_PATH=1
+  LIVE_RAW_BASE="${BENCH_SERVER_BASE:-http://127.0.0.1:38307}"
+  case "$LIVE_RAW_BASE" in
+    *[![:space:]]*) ;;
+    *) LIVE_RAW_BASE="http://127.0.0.1:38307" ;;
   esac
-  if is_pilot_route; then
-    LIVE_PATH=1
-  fi
+  # The base is one http origin on the loopback interface, with no userinfo
+  # and an explicit port. A URL with a userinfo part names another host, so
+  # the parse refuses it before any request (task 4.16 r3, Review A F18).
+  LIVE_BASE="$(node -e '
+const raw = process.argv[1];
+let url;
+try { url = new URL(raw); } catch { process.exit(2); }
+if (url.protocol !== "http:") process.exit(2);
+if (url.username !== "" || url.password !== "") process.exit(2);
+if (url.hostname !== "127.0.0.1" && url.hostname !== "localhost") process.exit(2);
+if (url.pathname !== "/" && url.pathname !== "") process.exit(2);
+const port = url.port === "" ? 80 : Number(url.port);
+if (!Number.isInteger(port) || port < 1 || port > 65535) process.exit(2);
+process.stdout.write("http://" + url.hostname + ":" + port);
+' "$LIVE_RAW_BASE" 2>/dev/null)" || refuse "BENCH_SERVER_BASE must be a loopback http URL"
+  [ -n "$LIVE_BASE" ] || refuse "BENCH_SERVER_BASE must be a loopback http URL"
 fi
-# The provider, model, and variant of the route. The session create or the
-# model-set call of the live path carries all three (spec D14).
+# The provider, model, and variant of the route. The session create of the
+# live path carries all three (spec D14).
 ROUTE_PROVIDER="${ROUTE%%/*}"
 ROUTE_REST="${ROUTE#*/}"
 ROUTE_MODEL="$ROUTE_REST"
@@ -382,6 +399,9 @@ JOB_CONFIG=""
 CALL_PID=""
 WATCHDOG_PID=""
 LOCKED=0
+# The job root that the live path made itself. A preset root keeps this
+# empty, so a missing project config is a refusal (task 4.16 r3 F19).
+LIVE_JOB_CREATED=""
 
 # The INFRA lines of the daemon guard (plan task 4.13o): one line per
 # `serve --service` process that the guard stopped under the job root.
@@ -606,6 +626,7 @@ start_job() {
     fi
     BENCH_OPENCODE_HOME="$LIVE_JOB_NEW"
     export BENCH_OPENCODE_HOME
+    LIVE_JOB_CREATED="$LIVE_JOB_NEW"
   fi
   # shellcheck source=../opencode-host.sh
   source "$ROOT/harness/opencode-host.sh"
@@ -732,23 +753,28 @@ run_model_call() {
 # --- The live-server path (task 4.16, spec D14) ---------------------------
 # The pilot routes reach the model through one bench session on the
 # OpenChamber API at BENCH_SERVER_BASE. One bench session per call: the
-# runner creates the session with the job root in `directory` and the
-# provider, model, and variant of the route, sets the model, sends the
-# judge prompt in a message, and reads the answer text and the token use
-# from the session message parts. It makes no DELETE request, no seed
-# call, and no auth call. The stored text is scanned for known key shapes
-# before it is stored. The quota rules of D15, the lines and exit codes,
-# and the record shapes stay unchanged.
+# runner creates the session with `location.directory` set to the job root
+# and the route model, checks the returned location, sends the judge prompt
+# in a message, waits for the native assistant message to complete, and
+# reads the answer text and the top-level token field from that message. It
+# makes no DELETE request, no seed call, and no auth call. The stored text
+# is scanned for known key shapes before it is stored. The quota rules of
+# D15, the lines and exit codes, and the record shapes stay unchanged.
 
 # The project config of the live-server path: the job root holds a project
-# config that denies every tool. A missing config is written with the deny
-# list of the isolated job config. A config that is missing, unreadable,
-# or missing one deny is a refusal before the first call (spec D14).
+# config that denies every tool. The runner writes the config only in a job
+# root that it made itself. A preset root must already hold the config: a
+# missing config, an unreadable config, or one allowed tool is a refusal
+# before the first call (spec D14, task 4.16 r3 F19).
 live_ensure_config() {
   local file="$JOB/opencode.json" missing="" rc=0
   if [ ! -f "$file" ] && [ ! -L "$file" ]; then
-    printf '%s\n' '{"permission":{"read":"deny","edit":"deny","bash":"deny","webfetch":"deny","websearch":"deny","question":"deny","subagent":"deny","skill":"deny"}}' > "$file" \
-      || refuse "the project config could not be written"
+    if [ -n "${LIVE_JOB_CREATED:-}" ]; then
+      printf '%s\n' '{"permission":{"read":"deny","edit":"deny","bash":"deny","webfetch":"deny","websearch":"deny","question":"deny","subagent":"deny","skill":"deny"}}' > "$file" \
+        || refuse "the project config could not be written"
+    else
+      refuse "the project config is missing or unreadable"
+    fi
   fi
   missing="$(node -e '
 const fs = require("node:fs");
@@ -772,6 +798,12 @@ if (missing.length > 0) { process.stdout.write(missing.join(",")); process.exit(
 # The HTTP code of the last live call.
 LIVE_HTTP_CODE=""
 
+# The seconds that an empty message list may stay empty before the start
+# test stops as not ready. It stays below the spawn budget of the tests. A
+# partial assistant message waits for the full MG_CALL_TIMEOUT instead
+# (task 4.16 r3 F13).
+LIVE_EMPTY_WAIT_S=10
+
 # One live request with the call timeout. $1 takes the body file, $2 the
 # curl error file, and the rest takes the curl arguments. Sets
 # LIVE_HTTP_CODE to the HTTP code. Returns 124 on a timeout (curl exit
@@ -793,52 +825,45 @@ live_curl() {
   return 0
 }
 
-# Creates one bench session for one call: the directory is the job root,
-# and the body carries the provider, model, and variant of the route.
-# Sets LIVE_SESSION to the session id. Returns 124 on a timeout and 1 on
-# any other failure.
+# Creates one bench session for one call. The body carries the job root in
+# `location.directory` and the provider, model, and variant of the route.
+# The returned session must name the job root as its location, else the run
+# refuses before the first message (task 4.16 r3, Review A F12). Sets
+# LIVE_SESSION to the session id. Returns 124 on a timeout and 1 on any
+# other failure.
 live_session_create() {
-  local body="$1" out="$2" err="$3" rc=0
+  local body="$1" out="$2" err="$3" rc=0 record="" shown=""
   node -e '
 const fs = require("node:fs");
-const [file, directory, provider, model, variant] = process.argv.slice(1);
-fs.writeFileSync(file, JSON.stringify({ directory, provider, model, variant }) + "\n");
+const [file, directory, provider, id, variant] = process.argv.slice(1);
+const record = { location: { directory }, model: { providerID: provider, id } };
+if (variant !== "") record.model.variant = variant;
+fs.writeFileSync(file, JSON.stringify(record) + "\n");
 ' "$body" "$JOB_REAL" "$ROUTE_PROVIDER" "$ROUTE_MODEL" "$ROUTE_VARIANT" 2>/dev/null || return 1
   live_curl "$out" "$err" -X POST -H 'content-type: application/json' -H "x-opencode-directory: $JOB_REAL" --data @"$body" "$LIVE_BASE/api/session" || return $?
   case "$LIVE_HTTP_CODE" in
     2*) ;;
     *) return 1 ;;
   esac
-  LIVE_SESSION=""
-  LIVE_SESSION="$(node -e '
+  record="$(node -e '
 const fs = require("node:fs");
 let doc;
 try { doc = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch { process.exit(1); }
 const data = doc && typeof doc === "object" && doc.data && typeof doc.data === "object" && !Array.isArray(doc.data) ? doc.data : doc;
 const id = data && typeof data.id === "string" ? data.id : "";
+const location = data && typeof data.location === "object" && !Array.isArray(data.location) ? data.location : null;
+const shown = location && typeof location.directory === "string" ? location.directory : "";
 if (id === "") process.exit(1);
-process.stdout.write(id);
+process.stdout.write(id + "\t" + shown);
 ' "$out" 2>/dev/null)" || return 1
+  LIVE_SESSION=""
+  IFS=$'\t' read -r LIVE_SESSION shown <<< "$record"
   [ -n "$LIVE_SESSION" ] || return 1
+  shown="${shown%/}"
+  if [ "$shown" != "$JOB_REAL" ]; then
+    refuse "the session location is not the job root"
+  fi
   return 0
-}
-
-# Sets the model of one bench session to the provider, model, and variant
-# of the route. Returns 124 on a timeout and 1 on any other failure.
-live_session_model() {
-  local session="$1" body="$2" out="$3" err="$4"
-  node -e '
-const fs = require("node:fs");
-const [file, provider, id, variant] = process.argv.slice(1);
-const model = { providerID: provider, id };
-if (variant !== "") model.variant = variant;
-fs.writeFileSync(file, JSON.stringify({ model }) + "\n");
-' "$body" "$ROUTE_PROVIDER" "$ROUTE_MODEL" "$ROUTE_VARIANT" 2>/dev/null || return 1
-  live_curl "$out" "$err" -X POST -H 'content-type: application/json' -H "x-opencode-directory: $JOB_REAL" --data @"$body" "$LIVE_BASE/api/session/$session/model" || return $?
-  case "$LIVE_HTTP_CODE" in
-    2*) return 0 ;;
-    *) return 1 ;;
-  esac
 }
 
 # The region error of spec D22 on the live path. It applies to a Go route
@@ -895,16 +920,16 @@ live_get_messages() {
   esac
 }
 
-# Decodes one message list body ($1) into the synthesis event stream ($2):
-# one text event with the whole answer, one result event with the whole
-# result branch, and one step_finish event per token bundle. Only an
-# assistant message counts, by its role or its type. The fragments of one
-# answer rejoin with the empty string: the API splits streamed text at an
-# arbitrary character, so one event per fragment would corrupt the JSON
-# when the decoders join event texts with a newline (task 4.16, group L4).
-# Prints the count of text and result parts. A forged result branch never
-# wins over the text parts: the synthesis keeps both shapes apart, and the
-# readers apply the text-wins rule (task 4.15, Review A N13).
+# Decodes one message list body ($1) into the synthesis event stream ($2),
+# with the native model error text in the file $3. It reads the last
+# assistant message of the list: the native assistant record holds its text
+# in `content[]`, its token use in the top-level `tokens` field, and its
+# completion in `time.completed` or `finish`. An `error` record before the
+# completion stops the answer and keeps its text apart. Prints one status
+# line `<empty|partial|complete|error>\t<count>`; only a complete record
+# with text or a result writes the synthesis. Text fragments rejoin with the
+# empty string, because the API splits streamed text at an arbitrary
+# character (task 4.16 r3, Review A F13, F14, F17).
 live_synthesize() {
   node -e '
 const fs = require("node:fs");
@@ -912,153 +937,155 @@ let doc;
 try { doc = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch { process.exit(1); }
 const list = Array.isArray(doc) ? doc : (doc && typeof doc === "object" && Array.isArray(doc.data) ? doc.data : null);
 if (!list) process.exit(1);
-const lines = [];
-const texts = [];
-const results = [];
-let textsCount = 0;
+let last = null;
 for (const message of list) {
   if (!message || typeof message !== "object" || Array.isArray(message)) continue;
   const assistant = (message.info && typeof message.info === "object" && message.info.role === "assistant") || message.type === "assistant";
-  if (!assistant) continue;
-  const collection = Array.isArray(message.parts) ? message.parts : (Array.isArray(message.content) ? message.content : []);
-  for (const entry of collection) {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
-    if (entry.type === "text" && typeof entry.text === "string") {
-      texts.push(entry.text);
-      textsCount += 1;
-    } else if (entry.type === "result" && typeof entry.text === "string") {
-      results.push(entry.text);
-      textsCount += 1;
-    } else if ((entry.type === "step_finish" || entry.type === "step-finish") && entry.tokens && typeof entry.tokens === "object" && !Array.isArray(entry.tokens)) {
-      lines.push(JSON.stringify({ type: "step_finish", part: { tokens: entry.tokens } }));
-    }
-  }
+  if (assistant) last = message;
 }
+if (!last) { process.stdout.write("empty\t0\n"); process.exit(0); }
+const error = last.error && typeof last.error === "object" && !Array.isArray(last.error) ? last.error : null;
+if (error) {
+  const data = error.data && typeof error.data === "object" && !Array.isArray(error.data) ? error.data : null;
+  const text = typeof error.message === "string" ? error.message
+    : data && typeof data.message === "string" ? data.message : "the model returned an error";
+  try { fs.writeFileSync(process.argv[3], text.split(/\r?\n/)[0] + "\n"); } catch {}
+  process.stdout.write("error\t0\n");
+  process.exit(0);
+}
+const collection = Array.isArray(last.parts) ? last.parts : (Array.isArray(last.content) ? last.content : []);
+const lines = [];
+const texts = [];
+const results = [];
+for (const entry of collection) {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+  if (entry.type === "text" && typeof entry.text === "string") texts.push(entry.text);
+  else if (entry.type === "result" && typeof entry.text === "string") results.push(entry.text);
+}
+const tokens = last.tokens && typeof last.tokens === "object" && !Array.isArray(last.tokens) ? last.tokens : null;
+if (tokens) lines.push(JSON.stringify({ type: "step_finish", part: { tokens } }));
 if (texts.length > 0) lines.unshift(JSON.stringify({ type: "text", part: { type: "text", text: texts.join("") } }));
 if (results.length > 0) lines.push(JSON.stringify({ type: "result", text: results.join("") }));
-fs.writeFileSync(process.argv[2], lines.length > 0 ? lines.join("\n") + "\n" : "");
-process.stdout.write(String(textsCount));
-' "$1" "$2" 2>/dev/null
+const time = last.time && typeof last.time === "object" && !Array.isArray(last.time) ? last.time : null;
+const completed = (time && typeof time.completed === "number" && Number.isFinite(time.completed)) || (typeof last.finish === "string" && last.finish !== "");
+const count = texts.length + results.length;
+const status = completed && count > 0 ? "complete" : "partial";
+try { fs.writeFileSync(process.argv[2], lines.length > 0 ? lines.join("\n") + "\n" : ""); } catch {}
+process.stdout.write(status + "\t" + String(count) + "\n");
+' "$1" "$2" "$3" 2>/dev/null
 }
 
-# Waits for the answer of one bench session: it polls the message list
-# until an assistant text arrives or the wait ends. $1 takes the session
-# id, $2 the staging file, and $3 the wait in seconds (0 reads once).
-# Returns 0 with the synthesis in $2, 125 with an empty file when no text
-# arrived on a single read, 124 when the wait ran out, and 1 on a
-# transport failure.
+# Waits for the native answer of one bench session. $1 takes the session
+# id, $2 the staging file, and $3 the error file. It polls the message list
+# until the last assistant message is complete, an error appears, or the
+# call deadline ends. A partial message waits for MG_CALL_TIMEOUT_S; an
+# empty list waits LIVE_EMPTY_WAIT_S. Returns 0 with the synthesis in $2,
+# 3 with the model error text in $3, 125 on an empty list, 4 on a partial
+# message at the deadline, and 1 on a failed read (task 4.16 r3, Review A
+# F13, F16, F17).
 live_wait_answer() {
-  local session="$1" staging="$2" wait_secs="$3" resp err count deadline now rc=0
+  local session="$1" staging="$2" err_path="$3" resp err state deadline empty_deadline now rc=0
   resp="${staging}.msgs"
   err="${staging}.merr"
-  deadline=$(( $(date +%s) + wait_secs ))
+  deadline=$(( $(date +%s) + MG_CALL_TIMEOUT ))
+  empty_deadline=$(( $(date +%s) + LIVE_EMPTY_WAIT_S ))
+  if [ "$empty_deadline" -gt "$deadline" ]; then empty_deadline="$deadline"; fi
   while true; do
-    count=0
-    if ! live_get_messages "$session" "$resp" "$err"; then
-      rc=$?
-      # A failed poll inside a wait is transient: the API answered the
-      # send, so the loop keeps polling until the wait ends.
-      if [ "$wait_secs" -gt 0 ]; then
-        now="$(date +%s)"
-        if [ "$now" -ge "$deadline" ]; then
-          rm -f "$resp" "$err"
-          : > "$staging" 2>/dev/null || true
-          return 124
-        fi
-        sleep 2
-        continue
-      fi
-      rm -f "$resp" "$err"
-      return "$rc"
+    rc=0
+    live_get_messages "$session" "$resp" "$err" || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      # A failed read is a failure, not a success: the real status of the
+      # read stays and the call stops here (task 4.16 r3, Review A F16).
+      cat "$err" >> "$err_path" 2>/dev/null || true
+      rm -f "$resp" "$err" "$staging" "${staging}.error"
+      return 1
     fi
-    count="$(live_synthesize "$resp" "$staging" 2>/dev/null || echo 0)"
-    case "$count" in
-      ''|*[!0-9]*) count=0 ;;
+    state="$(live_synthesize "$resp" "$staging" "${staging}.error" 2>/dev/null | head -n 1)" || state=""
+    case "$state" in
+      complete*) state="complete" ;;
+      error*) state="error" ;;
+      partial*) state="partial" ;;
+      empty*) state="empty" ;;
+      *) state="fail" ;;
     esac
     rm -f "$resp" "$err"
-    if [ "$count" -gt 0 ]; then
-      return 0
-    fi
-    if [ "$wait_secs" -le 0 ]; then
-      return 125
-    fi
-    now="$(date +%s)"
-    if [ "$now" -ge "$deadline" ]; then
-      return 124
-    fi
+    case "$state" in
+      complete) rm -f "${staging}.error"; return 0 ;;
+      error)
+        cat "${staging}.error" >> "$err_path" 2>/dev/null || true
+        rm -f "$staging" "${staging}.error"
+        return 3
+        ;;
+      fail)
+        rm -f "$staging" "${staging}.error"
+        return 1
+        ;;
+      empty)
+        now="$(date +%s)"
+        if [ "$now" -ge "$empty_deadline" ]; then
+          : > "$staging"
+          rm -f "${staging}.error"
+          return 125
+        fi
+        ;;
+      partial)
+        now="$(date +%s)"
+        if [ "$now" -ge "$deadline" ]; then
+          : > "$staging"
+          rm -f "${staging}.error"
+          return 4
+        fi
+        ;;
+    esac
     sleep 2
   done
 }
 
 # One model call on the live-server path: one bench session per call with
-# the job root and the route model, one prompt in a message, and the
+# the job root and the route model, one prompt in a message, and the native
 # answer from the session messages. $1 takes the prompt file, $2 the
-# staging file, $3 the error file, and $4 the wait in seconds for the
-# answer. Writes the synthesis stream to $2. Returns 0 with the answer, 3
-# for the region error of a Go route, 124 on a timeout, and 1 on any other
-# failure. The caller keeps the single-attempt rule of the isolated path:
-# the judge makes one call per group.
+# staging file, and $3 the error file. Writes the synthesis stream to $2.
+# Returns 0 with the answer, 3 for a native model error of a Go route (the
+# region error), 124 on a send timeout, 125 on an empty list, 4 on a partial
+# message at the deadline, and 1 on any other failure. The caller keeps the
+# single-attempt rule of the isolated path: the judge makes one call per
+# group.
 live_model_call() {
-  local prompt="$1" staging="$2" err_path="$3" wait_secs="$4"
+  local prompt="$1" staging="$2" err_path="$3"
   local s_body="$staging.sbody" s_resp="$staging.sresp" s_err="$staging.serr" send_resp="$staging.send" rc=0
   : > "$err_path" 2>/dev/null || return 1
   LIVE_SESSION=""
   live_session_create "$s_body" "$s_resp" "$s_err" || rc=$?
-  if [ "$rc" -eq 124 ]; then
-    rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-    return 124
-  fi
-  if [ "$rc" -eq 0 ]; then
-    live_session_model "$LIVE_SESSION" "$s_body" "$s_resp" "$s_err" || rc=$?
-    if [ "$rc" -eq 124 ]; then
-      rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-      return 124
-    fi
-  fi
-  if [ "$rc" -eq 0 ]; then
-    live_send_prompt "$LIVE_SESSION" "$prompt" "$s_body" "$send_resp" "$s_err" || rc=$?
-    if [ "$rc" -eq 124 ]; then
-      rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-      return 124
-    fi
-  fi
   if [ "$rc" -ne 0 ]; then
-    if is_live_region_error "$s_resp" "$s_err"; then
+    if [ "$rc" -ne 124 ] && is_live_region_error "$s_resp" "$s_err"; then
       cat "$s_err" >> "$err_path" 2>/dev/null || true
       rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
       return 3
     fi
     cat "$s_err" >> "$err_path" 2>/dev/null || true
     rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-    return 1
+    return "$rc"
   fi
-  # The answer: the session messages up to the wait.
-  rc=0
-  live_wait_answer "$LIVE_SESSION" "$staging" "$wait_secs" || rc=$?
-  if [ "$rc" -eq 124 ]; then
-    rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-    return 124
-  fi
-  if [ "$rc" -eq 1 ]; then
+  live_send_prompt "$LIVE_SESSION" "$prompt" "$s_body" "$send_resp" "$s_err" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    if [ "$rc" -ne 124 ] && is_live_region_error "$s_resp" "$s_err"; then
+      cat "$s_err" >> "$err_path" 2>/dev/null || true
+      rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
+      return 3
+    fi
     cat "$s_err" >> "$err_path" 2>/dev/null || true
     rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-    return 1
+    return "$rc"
   fi
-  if [ "$rc" -eq 125 ]; then
-    # No text on a single read: an empty synthesis settles the call. The
-    # judge waits, so it never settles here.
-    : > "$staging" 2>/dev/null || true
-    rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-    return 0
-  fi
-  if is_live_region_error "$staging" "$err_path"; then
-    rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-    return 3
-  fi
+  # The answer: the native assistant message up to the call deadline.
+  rc=0
+  live_wait_answer "$LIVE_SESSION" "$staging" "$err_path" || rc=$?
   rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
-  return 0
+  case "$rc" in
+    0|3|4|125|124) return "$rc" ;;
+    *) return 1 ;;
+  esac
 }
-
 # The known credential key shapes of the live-server path (task 4.16, spec
 # D14). No value list exists on this path, so the scan matches shapes, not
 # values. The runner calls no `scan-values` seam on the live path.
@@ -1276,7 +1303,7 @@ run_start_test() {
   if [ "$LIVE_PATH" = "1" ]; then
     # One bench session for the sample, with the answer read from the
     # session messages. A timeout stops the start test with no file.
-    live_model_call "$prompt" "$raw" "$err" "$MG_CALL_TIMEOUT" || rc=$?
+    live_model_call "$prompt" "$raw" "$err" || rc=$?
     if [ "$rc" -eq 124 ]; then
       rm -f "$raw" "$err"
       echo "judge-run: the message send timed out"
@@ -1462,7 +1489,10 @@ for (const row of rowsText.split("\n")) {
   }
 }
 totals.total = totals.input + totals.output + totals.reasoning + totals.cache_read + totals.cache_write;
-fs.writeFileSync(judgeFile, JSON.stringify(verdicts, null, 2) + "\n");
+// A run with no verdict writes no judge file: a failed read or a native
+// error must not publish an empty verdict file (task 4.16 r3, F16, F17).
+// A stopped run that already read a verdict keeps its file (J11).
+if (Object.keys(verdicts).length > 0) fs.writeFileSync(judgeFile, JSON.stringify(verdicts, null, 2) + "\n");
 const doc = {
   set_id: set,
   judge,
@@ -1539,7 +1569,7 @@ while [ "$GROUP_INDEX" -lt "$TOTAL_GROUPS" ]; do
     # One bench session per group, with the answer read from the session
     # messages up to the call timeout. A timeout stops the run with no
     # judge file (spec D14).
-    live_model_call "$PROMPT" "$RAW" "$ERR_FILE" "$MG_CALL_TIMEOUT" || call_rc=$?
+    live_model_call "$PROMPT" "$RAW" "$ERR_FILE" || call_rc=$?
     if [ "$call_rc" -eq 124 ]; then
       rm -f "$RAW" "$ERR_FILE"
       echo "judge-run: the message send timed out"
