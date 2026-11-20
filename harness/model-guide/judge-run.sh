@@ -338,17 +338,18 @@ daemon_starttime() {
   printf '%s\n' "${fields[19]:-}"
 }
 
-# The pids of the processes whose argv holds a `serve` token and a
-# `--service` token adjacent in that order, whose executable path sits
-# inside the job root when it names a path, and whose HOME or cwd resolves
-# under the job root. The cmdline is NUL separated, so the tokens are
-# compared one by one; a joined substring would match a decoy such as
-# `observe --service` (task 4.13t, ADV-P4B-3). A bare executable name holds
-# no path, so it passes the path check and the HOME and cwd check decides.
-# A path outside the root belongs to another run (task 4.15, P4B-C1).
+# The pids of the daemons of this run: the argv holds a `serve` token and a
+# `--service` token adjacent in that order, and the process belongs to the
+# job root. The `BENCH_OPENCODE_JOB` marker in the process environ names the
+# owning job: when it is present it must resolve to the job root (task 4.15,
+# Review A F1). A process with no marker falls back to the HOME and cwd
+# check below. The cmdline is NUL separated, so the tokens are compared one
+# by one; a joined substring would match a decoy such as `observe --service`
+# (task 4.13t, ADV-P4B-3). The executable path never decides: the live
+# daemon prints argv[0] as an absolute path outside every job root.
 # Resolved paths and a path-boundary compare keep a `..` decoy and a
-# sibling folder safe (task 4.13r F2). A process outside the job root
-# never matches, so the guard never stops a process of another run.
+# sibling folder safe (task 4.13r F2). A process of another run never
+# matches, so the guard never stops a process of another run.
 daemon_pids() {
   local root="$1"
   node -e '
@@ -373,14 +374,18 @@ for (const name of names) {
     if (tokens[i] === "serve" && tokens[i + 1] === "--service") { adjacent = true; break; }
   }
   if (!adjacent) continue;
-  const exe = tokens[0] || "";
-  if (exe.includes("/") && !under(real(exe), baseReal)) continue;
   let home = "";
+  let job = "";
   try {
     for (const line of fs.readFileSync(proc + "/" + name + "/environ", "utf8").split("\0")) {
-      if (line.startsWith("HOME=")) { home = line.slice(5); break; }
+      const at = line.indexOf("=");
+      const key = at === -1 ? line : line.slice(0, at);
+      const value = at === -1 ? "" : line.slice(at + 1);
+      if (key === "HOME") home = value;
+      else if (key === "BENCH_OPENCODE_JOB") job = value;
     }
-  } catch { home = ""; }
+  } catch { home = ""; job = ""; }
+  if (job !== "" && real(job) !== baseReal) continue;
   let cwd = "";
   try { cwd = fs.readlinkSync(proc + "/" + name + "/cwd"); } catch { cwd = ""; }
   if (!under(real(home), baseReal) && !under(real(cwd), baseReal)) continue;
