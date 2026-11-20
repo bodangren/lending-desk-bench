@@ -5148,11 +5148,14 @@ describe("P4b row 4.16 the live-server path of the review runner", () => {
   }, 60_000);
 
   it("L9 the quota rules stay: wait makes no live call, ready makes one session", async () => {
+    // Spec D15 (PM 2026-11-19): a Go route waits at 5h >= 95 % or weekly >=
+    // 100 %. The non-Go 70 % boundary does not apply. L9-G of quota.test.ts
+    // pins the Go rule, so the wait half of this case uses 95 %.
     const waited = await buildFixture({
       route: PILOT_ROUTE,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
-      quotaPercent: 70,
+      quotaPercent: 95,
     });
     const liveWait = await startLiveServer(waited.fakeRoot);
     try {
