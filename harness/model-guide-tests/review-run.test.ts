@@ -2397,6 +2397,8 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
       "kimi-code-plan-cn/kimi-for-coding#high",
       "bailian-token-plan/glm-5.3#high",
       "nvidia/stepfun-ai/step-5-preview#high",
+      // PM 2026-11-20: the hy4 pilot route moved to the Go plan family.
+      "opencode/hy4-flash-free",
     ];
     for (const route of gone) {
       expect(routes, `${route} must leave routes.json (spec D12, PM 2026-11-18)`).not.toContain(
@@ -2404,13 +2406,21 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
       );
     }
     const kept = [
-      "opencode/hy4-flash-free",
+      "opencode-go/hy4-flash-free#high",
       "opencode-go/deepseek-v4.1-flash",
       "opencode-go/mimo-v2.6-flash",
     ];
     for (const route of kept) {
       expect(routes, `${route} must stay in routes.json`).toContain(route);
     }
+    const hy4 = rows.find((row: { route?: unknown }) => row.route === "opencode-go/hy4-flash-free#high") as
+      | Record<string, unknown>
+      | undefined;
+    expect(hy4, "the new hy4 route row is missing").toBeDefined();
+    expect(hy4?.family, "the hy4 family").toBe("Hy");
+    expect(hy4?.kind, "the hy4 kind").toBe("plan");
+    expect(hy4?.quota_provider, "the hy4 quota provider").toBe("opencode-go");
+    expect(hy4?.quota_source, "the hy4 quota source").toBe("opencode-go");
   });
 });
 
@@ -4529,6 +4539,55 @@ esac
       expect(records, "the run wrote no probe record").toHaveLength(1);
       expect(String(records[0].error ?? ""), "the probe record held the key").not.toContain(SECRET);
       expect(String(records[0].error ?? ""), "the record must hold the fixed text").toContain(KEY_FIXED);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+});
+
+// === Phase 4b r6: the runner carries the no-entry seed reason ============
+// The 2026-11-20 probe refused both Go routes with the generic seed text.
+// The PM diagnostic found an empty `auth export` array. The runner must name
+// the fixed no-entry reason in its one refusal line (task 4.15).
+describe("P4b row 4.15 r6: the runner carries the seed reason", () => {
+  const NO_DELAYS = { BENCH_CREDENTIAL_SEED_DELAYS: "0" };
+  const SEED_REASON =
+    "review-run: the provider credential seed failed: the store holds no active entry of provider opencode-go";
+
+  function storeEntry(): unknown {
+    return {
+      integrationID: "opencode-go",
+      active: true,
+      value: {
+        type: "oauth",
+        key: "FAKE-KEY-OPENCODIGO-0001",
+        access: SECRET,
+        refresh: "inert",
+        expires: 9999999999999,
+        metadata: { orgID: "org-test-0123456789" },
+      },
+    };
+  }
+
+  it("R-SR1 an empty shared store refuses the pass and names the no-entry reason", async () => {
+    const fixture = await buildFixture({
+      realCredential: true,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      authExportShared: [],
+      authExportJob: [storeEntry()],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture), NO_DELAYS);
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, `the runner printed no named line: ${result.stdout}`).toHaveLength(1);
+      expect(named[0], "the runner hid the no-entry seed reason").toBe(SEED_REASON);
+      expect(named[0], "the runner printed a raw value").not.toContain(SECRET);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner called the model").toEqual([]);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
     } finally {
       dropFixture(fixture);
     }

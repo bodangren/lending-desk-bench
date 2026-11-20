@@ -940,3 +940,67 @@ describe("ST standalone credential calls (PM stop order 2026-11-19)", () => {
     expect(text.includes(" serve"), "judge-run.sh holds a serve call").toBe(false);
   });
 });
+
+// === Phase 4b r6: the no-entry seed reason (2026-11-20 probe) ============
+// The Go routes refuse with the generic `the credential seed failed`. A PM
+// diagnostic showed exit 0 and an empty `auth export` array: the selector
+// knows the real reason but the seed wrapper hides it. These two cases pin
+// the reason on the named stderr line. The ambiguous case C9 keeps its own
+// text and is not changed here.
+describe("SR the seed reason of an empty or foreign store", () => {
+  const REASON = (provider: string): string =>
+    `provider-credential: the store holds no active entry of provider ${provider}`;
+  const GENERIC = "the credential seed failed";
+
+  it("SR1 an empty shared export names the missing entry and makes one export call", () => {
+    const fixture = buildFixture();
+    try {
+      writeFileSync(fixture.shared, "[]\n");
+      const result = runHelper(fixture, ["seed", PROVIDER_A]);
+      expectRefusal(result, "empty store seed");
+      expect(stderrLines(result), "the refusal hid the store reason").toEqual([REASON(PROVIDER_A)]);
+      expect(stderrLines(result)[0], "the refusal used the generic text").not.toContain(GENERIC);
+      expect(exportCalls(fixture), "a fixed empty store must not be retried").toBe(1);
+      expect(storeEntries(fixture), "the run wrote a store entry").toHaveLength(0);
+      for (const value of VALUES) {
+        expect(result.stdout, `stdout held a fake value ${value}`).not.toContain(value);
+        expect(result.stderr, `stderr held a fake value ${value}`).not.toContain(value);
+      }
+    } finally {
+      fixture.close();
+    }
+  });
+
+  it("SR2 an export with only another integrationID names the missing entry", () => {
+    const fixture = buildFixture();
+    try {
+      const foreign = [
+        {
+          integrationID: "anthropic",
+          active: true,
+          value: {
+            type: "oauth",
+            key: "FAKE-KEY-OTHERKIND-0003",
+            access: ACCESS_C,
+            refresh: "inert",
+            expires: 4102444800000,
+            metadata: { orgID: ORG_C },
+          },
+        },
+      ];
+      writeFileSync(fixture.shared, `${JSON.stringify(foreign, null, 2)}\n`);
+      const result = runHelper(fixture, ["seed", PROVIDER_A]);
+      expectRefusal(result, "foreign store seed");
+      expect(stderrLines(result), "the refusal hid the store reason").toEqual([REASON(PROVIDER_A)]);
+      expect(stderrLines(result)[0], "the refusal used the generic text").not.toContain(GENERIC);
+      expect(exportCalls(fixture), "a fixed foreign store must not be retried").toBe(1);
+      expect(storeEntries(fixture), "the run wrote a store entry").toHaveLength(0);
+      for (const value of [ACCESS_C, ORG_C]) {
+        expect(result.stdout, `stdout held a foreign value ${value}`).not.toContain(value);
+        expect(result.stderr, `stderr held a foreign value ${value}`).not.toContain(value);
+      }
+    } finally {
+      fixture.close();
+    }
+  });
+});
