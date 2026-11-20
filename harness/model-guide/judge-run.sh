@@ -537,11 +537,12 @@ start_job() {
     /*) ;;
     *) refuse "the job root must be an absolute path" ;;
   esac
+  # The call paths of the job folder: HOME, and the XDG folders of the call
+  # (task 4.13t, ADV-P4B-5). The root resolves first, so the extracted guard
+  # block carries its own root. Each path must resolve inside the job root,
+  # so a preset folder with a symlink out of the root refuses the run.
   JOB_REAL="$(realpath "$JOB" 2>/dev/null || true)"
   [ -n "$JOB_REAL" ] || refuse "the job root could not be resolved"
-  # The call paths of the job folder: HOME, and the XDG folders of the call
-  # (task 4.13t, ADV-P4B-5). Each path must resolve inside the job root, so
-  # a preset folder with a symlink out of the root refuses the run.
   local sub sub_real link_hit
   for sub in home config data state cache runtime tmp; do
     sub_real="$(realpath -m "$JOB/$sub" 2>/dev/null || true)"
@@ -556,9 +557,11 @@ start_job() {
     esac
     # A symlink at or below a call path leaves the job too (task 4.15,
     # Review B N10). The realpath check above covers the top level only, so
-    # every level at and below the call path is walked for a link.
+    # every level at and below the call path is walked for a link. The walk
+    # stops at the first hit, so no pipe can raise SIGPIPE 141 under
+    # `set -euo pipefail` (task 4.15, Review B G2).
     if [ -e "$JOB/$sub" ] || [ -L "$JOB/$sub" ]; then
-      link_hit="$(find "$JOB/$sub" -mindepth 0 -type l -print 2>/dev/null | head -n 1)"
+      link_hit="$(find "$JOB/$sub" -mindepth 0 -type l -print -quit 2>/dev/null)"
       if [ -n "$link_hit" ]; then
         refuse "the job $sub folder holds a symlink out of the job root"
       fi
@@ -720,8 +723,10 @@ error_line_of() {
   fi
   # An error line over 500 bytes never reaches a record whole (task 4.15,
   # N26). The cap is 499 content bytes, so the printed line with its
-  # newline stays within 500 bytes.
-  line="$(printf '%s' "$line" | head -c 499)"
+  # newline stays within 500 bytes. A bounded substring keeps the function
+  # total under `set -euo pipefail`: a pipe into head can raise SIGPIPE 141
+  # (task 4.15, Review B N26b).
+  line="${line:0:499}"
   if [ -s "$source" ]; then
     scan_output "$source" || scan_rc=$?
     # A scan that fails must not fall back to the raw line (task 4.13ab,
