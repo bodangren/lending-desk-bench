@@ -1127,6 +1127,7 @@ const [rawPath, idsText, outPath] = process.argv.slice(1);
 let raw = "";
 try { raw = fs.readFileSync(rawPath, "utf8"); } catch { raw = ""; }
 const parts = [];
+const resultParts = [];
 for (const line of raw.split(/\r?\n/)) {
   const text = line.trim();
   if (!text.startsWith("{")) continue;
@@ -1138,9 +1139,14 @@ for (const line of raw.split(/\r?\n/)) {
     parts.push(part.text);
     continue;
   }
-  if (event.type === "result" && typeof event.text === "string") parts.push(event.text);
+  if (event.type === "result" && typeof event.text === "string") resultParts.push(event.text);
 }
-const joined = parts.length === 0 ? raw : parts.join("\n");
+// A `result` branch never wins over the text events: the joined text
+// events already hold the answer, so a forged result event after the text
+// answer is refused (task 4.15, Review A N13, P5). A result-only stream
+// still decodes from the result event (ADV-P4B AJ1). One answer for all
+// three decoders: review-score.ts and adjudicate.ts read the same way.
+const joined = parts.length > 0 ? parts.join("\n") : (resultParts.length > 0 ? resultParts.join("\n") : raw);
 // A forged `result` branch smuggled as a text line never reaches the
 // verdict scan: the fence pattern would swallow the rest of that line and
 // poison the first block (task 4.15, Review A N13). Only nested lines are
