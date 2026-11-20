@@ -1030,6 +1030,7 @@ function spawnEnv(fixture: Fixture, extra: Record<string, string> = {}): NodeJS.
   };
   delete env.BENCH_TRACK;
   delete env.OPENCODE_CONFIG;
+  if (extra.MG_UNSET_SERVER_BASE === "1") delete env.BENCH_SERVER_BASE;
   return env;
 }
 
@@ -3388,18 +3389,23 @@ function nativeJudgeAssistant(text: string, opts: {
   complete?: boolean;
   tokens?: unknown;
   error?: Record<string, unknown>;
+  id?: string;
+  created?: number;
+  completed?: number;
 } = {}): Record<string, unknown> {
   const half = Math.ceil(text.length / 2);
   const complete = opts.complete !== false;
   const record: Record<string, unknown> = {
-    id: "msg_live_judge",
+    id: opts.id ?? "msg_live_judge",
     type: "assistant",
     model: { providerID: "opencode-go", id: "muse-spark-1.3-contributor", variant: "high" },
     content: [
       { type: "text", text: text.slice(0, half) },
       { type: "text", text: text.slice(half) },
     ],
-    time: complete ? { created: 1795048839000, completed: 1795048839001 } : { created: 1795048839000 },
+    time: complete
+      ? { created: opts.created ?? 1795048839000, completed: opts.completed ?? 1795048839001 }
+      : { created: opts.created ?? 1795048839000 },
     tokens: opts.tokens ?? { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } },
   };
   if (complete) record.finish = "stop";
@@ -3532,6 +3538,140 @@ describe("P4b row 4.16r3 the real API contract of the judge runner", () => {
     } finally {
       live.close();
       dropFixture(fixture);
+    }
+  }, 60_000);
+});
+
+// ---------------------------------------------------------------------------
+// Row 4.16 r4 (Review A 5f01ef9): one deadline from call entry, a fail-closed
+// unset base, and the newest terminal answer of a newest-first page. Each case
+// fails at the role base because judge-run.sh uses a short empty window,
+// falls back to the isolated seed on an unset base, and picks the oldest
+// assistant of the page.
+// ---------------------------------------------------------------------------
+describe("P4b row 4.16r4 deadline, unset base, and newest answer in the judge", () => {
+  const FINAL_VERDICT = "```json\n" + JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }, null, 2) + "\n```\n";
+  const EARLY_VERDICT = "```json\n" + JSON.stringify({ "d-01#C0a1b2c3d4e5f": "false-claim" }, null, 2) + "\n```\n";
+  const BIG_TOKENS = { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } };
+  const SMALL_TOKENS = { input: 1, output: 2, reasoning: 0, cache: { read: 0, write: 0 } };
+
+  function fixture(): Promise<Fixture> {
+    return buildFixture({
+      route: LIVE_JUDGE,
+      groups: [GROUP_ONE],
+      judgesRoutes: [{ route: LIVE_JUDGE, quota_provider: "opencode-go", quota_source: "opencode-go" }],
+      calls: [{ tokens: TOKENS_A, value: answer([jsonBlock(`{"d-01#C0a1b2c3d4e5f":"real-defect"}`)]) }],
+    });
+  }
+
+  it("F13 a queued judge answer at 11 s is accepted inside a 30 s deadline", async () => {
+    const f = await fixture();
+    const live = await startLiveServer(f.fakeRoot, {
+      messages: [nativeJudgeAssistant(FINAL_VERDICT)], queue_delay_ms: 11_000,
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(f, judgeArgs(f), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "30",
+      });
+      expect(result.error, "the spawn hit the outer timeout").toBeUndefined();
+      expect(judgeFile(f, "a"), "the verdict inside the deadline was not written").toEqual({
+        "d-01#C0a1b2c3d4e5f": "real-defect",
+      });
+    } finally {
+      live.close();
+      dropFixture(f);
+    }
+  }, 90_000);
+
+  it("F13 a judge completion after the deadline is refused with the deadline text", async () => {
+    const f = await fixture();
+    const live = await startLiveServer(f.fakeRoot, {
+      messages: [nativeJudgeAssistant(FINAL_VERDICT)], queue_delay_ms: 6000,
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(f, judgeArgs(f), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the outer timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(result.stdout, "the deadline text is absent").toMatch(/timed out|deadline|did not complete/);
+      expect(judgeFile(f, "a"), "a late verdict was written").toBeNull();
+    } finally {
+      live.close();
+      dropFixture(f);
+    }
+  }, 60_000);
+
+  it("F15 an unset base on a pilot judge route refuses, with one named line and no seed call", async () => {
+    const f = await fixture();
+    try {
+      assertRunnerExists();
+      const result = runJudge(f, judgeArgs(f), { MG_UNSET_SERVER_BASE: "1" });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, "the runner printed no named line").toHaveLength(1);
+      expect(named[0], "the refusal is not a judge-run line").toMatch(/^judge-run:/);
+      const auth = logEntries(f.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the unset pilot used the isolated seed").toEqual([]);
+      expect(modelCalls(logEntries(f.logPath)), "the runner made a model call").toEqual([]);
+    } finally {
+      dropFixture(f);
+    }
+  }, 60_000);
+
+  it("F20 the newest terminal judge answer and its tokens win on a newest-first page", async () => {
+    const f = await fixture();
+    const live = await startLiveServer(f.fakeRoot, {
+      messages: [
+        nativeJudgeAssistant(FINAL_VERDICT, { id: "msg_final", tokens: BIG_TOKENS, created: 2000, completed: 2001 }),
+        nativeJudgeAssistant(EARLY_VERDICT, { id: "msg_early", tokens: SMALL_TOKENS, created: 1000, completed: 1001 }),
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(f, judgeArgs(f), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(judgeFile(f, "a"), "the older verdict was selected").toEqual({
+        "d-01#C0a1b2c3d4e5f": "real-defect",
+      });
+      const record = runRecord(f, "a");
+      expect(record?.tokens, "the older token bundle was recorded").toEqual({
+        input: 7, output: 8, reasoning: 9, cache_read: 10, cache_write: 11, total: 45,
+      });
+    } finally {
+      live.close();
+      dropFixture(f);
+    }
+  }, 60_000);
+
+  it("F20 an older partial judge answer does not hide a newer final answer", async () => {
+    const f = await fixture();
+    const live = await startLiveServer(f.fakeRoot, {
+      messages: [
+        nativeJudgeAssistant(FINAL_VERDICT, { id: "msg_final", tokens: BIG_TOKENS, created: 2000, completed: 2001 }),
+        nativeJudgeAssistant("partial without completion", {
+          id: "msg_partial", complete: false, tokens: SMALL_TOKENS, created: 1000,
+        }),
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(f, judgeArgs(f), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "3",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(judgeFile(f, "a"), "the newer final verdict was not selected").toEqual({
+        "d-01#C0a1b2c3d4e5f": "real-defect",
+      });
+    } finally {
+      live.close();
+      dropFixture(f);
     }
   }, 60_000);
 });

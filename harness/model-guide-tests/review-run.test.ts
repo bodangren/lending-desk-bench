@@ -1025,6 +1025,7 @@ function spawnEnv(fixture: Fixture, extra: Record<string, string> = {}): NodeJS.
   };
   delete env.BENCH_TRACK;
   delete env.OPENCODE_CONFIG;
+  if (extra.MG_UNSET_SERVER_BASE === "1") delete env.BENCH_SERVER_BASE;
   return env;
 }
 
@@ -4854,18 +4855,23 @@ function nativeAssistant(text: string, opts: {
   complete?: boolean;
   tokens?: unknown;
   error?: Record<string, unknown>;
+  id?: string;
+  created?: number;
+  completed?: number;
 } = {}): Record<string, unknown> {
   const half = Math.ceil(text.length / 2);
   const complete = opts.complete !== false;
   const record: Record<string, unknown> = {
-    id: "msg_live_1",
+    id: opts.id ?? "msg_live_1",
     type: "assistant",
     model: { providerID: "opencode-go", id: "hy4-flash-free", variant: "high" },
     content: [
       { type: "text", text: text.slice(0, half) },
       { type: "text", text: text.slice(half) },
     ],
-    time: complete ? { created: 1795048839000, completed: 1795048839001 } : { created: 1795048839000 },
+    time: complete
+      ? { created: opts.created ?? 1795048839000, completed: opts.completed ?? 1795048839001 }
+      : { created: opts.created ?? 1795048839000 },
     tokens: opts.tokens ?? { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } },
   };
   if (complete) record.finish = "stop";
@@ -5542,6 +5548,170 @@ describe("P4b row 4.16r3 the real API contract of the review runner", () => {
         "the probe created no session",
       ).toHaveLength(1);
       expect(live.requests().filter((line) => line.startsWith("DELETE ")), "the probe made a DELETE").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+});
+
+// ---------------------------------------------------------------------------
+// Row 4.16 r4 (Review A 5f01ef9): one deadline from call entry, a fail-closed
+// unset base, and the newest terminal answer of a newest-first page. Each case
+// fails at the role base because review-run.sh uses a short empty window,
+// falls back to the isolated seed on an unset base, and picks the oldest
+// assistant of the page.
+// ---------------------------------------------------------------------------
+describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
+  const FINAL = "```json\n{\"findings\":[]}\n```\n";
+  const EARLY = "```json\n{\"findings\":[{\"early\":true}]}\n```\n";
+  const BIG_TOKENS = { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } };
+  const SMALL_TOKENS = { input: 1, output: 2, reasoning: 0, cache: { read: 0, write: 0 } };
+
+  it("F13 a queued answer that completes at 11 s is accepted inside a 30 s deadline", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeAssistant(FINAL)], queue_delay_ms: 11_000,
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "30",
+      });
+      expect(result.error, "the spawn hit the outer timeout").toBeUndefined();
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the pass inside the deadline wrote no record").toHaveLength(1);
+      expect(records[0].state, "the answer inside the deadline was not complete").toBe("complete");
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 90_000);
+
+  it("F13 a completion after the deadline is refused with the timeout text", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeAssistant(FINAL)], queue_delay_ms: 6000,
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the outer timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(result.stdout, "the deadline text is absent").toMatch(/timed out|deadline|did not complete/);
+      expect(passRecords(fixture.privateDir), "a late answer wrote a pass record").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F13 an empty probe answer is not reachable", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    writeProbeControl(fixture);
+    const live = await startLiveServer(fixture.fakeRoot, { messages: [] });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture, PILOT_ROUTE), "--probe"], {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "2",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(stdoutLines(result).join("\n"), "an empty answer was reachable").toContain("unreachable");
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F15 an unset base on a pilot route refuses with exit 2, one named line, and no seed call", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        MG_UNSET_SERVER_BASE: "1",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, "the runner printed no named line").toHaveLength(1);
+      expect(named[0], "the refusal is not a review-run line").toMatch(/^review-run:/);
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the unset pilot used the isolated seed").toEqual([]);
+      expect(modelCalls(logEntries(fixture.logPath)), "the runner made a model call").toEqual([]);
+    } finally {
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F20 the newest terminal answer and its tokens win on a newest-first page", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [
+        nativeAssistant(FINAL, { id: "msg_final", tokens: BIG_TOKENS, created: 2000, completed: 2001 }),
+        nativeAssistant(EARLY, { id: "msg_early", tokens: SMALL_TOKENS, created: 1000, completed: 1001 }),
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the pass wrote no record").toHaveLength(1);
+      const outputsDir = join(fixture.privateDir, "outputs");
+      const stored = filesUnder(outputsDir).filter((file) => file.endsWith(".txt") || file.endsWith(".out"));
+      const allStored = stored.map((file) => readFileSync(file, "utf8")).join("\n");
+      expect(allStored, "the stored answer is the older one").toContain('"findings":[]');
+      expect(allStored, "the stored answer is the older one").not.toContain('"early":true');
+      expect(records[0].tokens, "the older token bundle was recorded").toEqual({
+        input: 7, output: 8, reasoning: 9, cache_read: 10, cache_write: 11, total: 45,
+      });
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F20 an older partial answer does not hide a newer final answer", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [
+        nativeAssistant(FINAL, { id: "msg_final", tokens: BIG_TOKENS, created: 2000, completed: 2001 }),
+        nativeAssistant("partial without completion", {
+          id: "msg_partial", complete: false, tokens: SMALL_TOKENS, created: 1000,
+        }),
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "2",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the newer final answer did not complete the pass").toHaveLength(1);
+      expect(records.length > 0 && records[0].state === "complete", "the newer final answer was not complete").toBe(true);
+      expect(records[0].tokens, "the older partial token bundle was recorded").toEqual({
+        input: 7, output: 8, reasoning: 9, cache_read: 10, cache_write: 11, total: 45,
+      });
     } finally {
       live.close();
       dropFixture(fixture);
