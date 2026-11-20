@@ -402,9 +402,11 @@ describe.each<Kind>(["review", "judge"])("P4E %s live runner", (kind) => {
     expect(f.published()).toEqual([]);
   }, 40_000);
 
-  // P4E-1 to P4E-3 failed in both real runners on 2bdf5cb. The PM cap
-  // keeps these cases skipped until Green fixes the corresponding findings.
-  it.skip("P4E-1 rejects a completed message of another session", async () => {
+  // P4E-1 to P4E-3 failed in both real runners on 2bdf5cb. Red r7 enables
+  // them so the Red gate fails until Green rejects the foreign session, the
+  // stale answer, and the tool-calls step. The asserts stay unchanged.
+  // P4E-2 binds freshness to time.created, a field of the native message.
+  it("P4E-1 rejects a completed message of another session", async () => {
     const f = await fixture(kind, { messages: [assistant(answer(kind), { sessionID: "ses_foreign" })] });
     await f.run();
     expect(f.requests.some((request) => request.path.endsWith("/message"))).toBe(true);
@@ -412,7 +414,7 @@ describe.each<Kind>(["review", "judge"])("P4E %s live runner", (kind) => {
     expect(f.published()).toEqual([]);
   }, 40_000);
 
-  it.skip("P4E-2 rejects an old terminal answer that predates this prompt", async () => {
+  it("P4E-2 rejects an old terminal answer that predates this prompt", async () => {
     const f = await fixture(kind, { timeout: 3, messages: [assistant(answer(kind), { time: { created: 1, completed: 2 } })] });
     await f.run();
     expect(f.requests.some((request) => request.path.endsWith("/message"))).toBe(true);
@@ -420,7 +422,7 @@ describe.each<Kind>(["review", "judge"])("P4E %s live runner", (kind) => {
     expect(f.published()).toEqual([]);
   }, 40_000);
 
-  it.skip("P4E-3 waits after a completed tool-calls step", async () => {
+  it("P4E-3 waits after a completed tool-calls step", async () => {
     const f = await fixture(kind, { timeout: 3, messages: [assistant(answer(kind), { finish: "tool-calls" })] });
     await f.run();
     expect(f.requests.some((request) => request.path.endsWith("/message"))).toBe(true);
