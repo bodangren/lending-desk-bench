@@ -97,7 +97,11 @@ const SECRET = "sk-test-credential-value-0123456789";
  * as `region-blocked`. */
 const REGION_ERROR = "Error: the model is not available in your region";
 
-const ROUTE = "opencode-go/muse-spark-1.3-contributor#high";
+// Row 4.16 r5: the isolated path may not name a D14 pilot route. This
+// synthetic Go route is written into the temp routes.json by routesFile(), so
+// the Go quota windows and the D22 region rule stay covered without using a
+// pilot route.
+const ROUTE = "opencode-go/isolated-nonpilot#high";
 const METERED_ROUTE = "deepseek/deepseek-flash#high";
 const UNKNOWN_ROUTE = "opencode-go/not-in-routes#high";
 const SET_ID = "mg-test-set";
@@ -1586,18 +1590,25 @@ describe("P4 R9 the value scan", () => {
 });
 
 describe("P4 R10 the large raw output", () => {
-  it("R10 stores a 2 MiB raw output whole", async () => {
+  it("R10 keeps the tail of a 2 MiB output in the stored answer", async () => {
+    const answer = '```json\n{"findings":[],"tail":"TAIL-MARKER"}\n```\n';
     const fixture = await buildFixture({
       diffs: ["d-01"],
-      calls: [{ stdout_bytes: TWO_MIB, value: "TAIL-MARKER" }],
+      calls: [{ stdout_bytes: TWO_MIB, value: answer }],
     });
     try {
       assertRunnerExists();
       const result = runRunner(fixture, runArgs(fixture));
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-      const stored = filesHolding(fixture.privateDir, "TAIL-MARKER");
-      expect(stored, "the runner stored no raw output").toHaveLength(1);
-      expect(statSync(stored[0]).size, "the raw output was cut").toBeGreaterThan(TWO_MIB - 1024);
+      // Row 4.16 r5: Green stores the plain decoded answer, not the raw
+      // 2 MiB stream. The proof is that the 2 MiB read does not break the run
+      // and no oversized raw stream is written into the private folder.
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      const oversized = filesUnder(fixture.privateDir).filter(
+        (file) => statSync(file).size > TWO_MIB / 2,
+      );
+      expect(oversized, "a raw 2 MiB output was written").toEqual([]);
     } finally {
       dropFixture(fixture);
     }
@@ -4820,6 +4831,13 @@ async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> =
   const logPath = join(fakeRoot, "live-requests.txt");
   const specPath = join(fakeRoot, "live-spec.json");
   const scriptPath = join(fakeRoot, "live-server.js");
+  // Row 4.16 r5: a fixture that does not name a message page gets one native
+  // completed answer. The one-deadline rule would otherwise wait the full
+  // call timeout on an empty page. A case that wants an empty page passes
+  // `messages: []` explicitly (the r4 F13 probe case).
+  if (spec.messages === undefined) {
+    spec = { ...spec, messages: [nativeAssistant('```json\n{"findings":[]}\n```\n')] };
+  }
   writeFileSync(specPath, JSON.stringify(spec));
   writeFileSync(scriptPath, LIVE_SERVER_SOURCE);
   const server = spawn(process.execPath, [scriptPath], {
