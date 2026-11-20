@@ -717,12 +717,19 @@ describe("4.13w the three readers decode the same real event stream (Review A no
  * is forged. The step_finish part holds the nested token bundle. */
 function messagePartsText(text: string): string {
   const half = Math.ceil(text.length / 2);
+  // The native v2 assistant record: answer text in `content[]`, token use in
+  // the top-level `tokens` field, completion in `time.completed` and `finish`.
+  // There is no `parts` array and no `step_finish` content entry.
   return JSON.stringify({
-    parts: [
+    id: "msg_native_1",
+    type: "assistant",
+    content: [
       { type: "text", text: text.slice(0, half) },
       { type: "text", text: text.slice(half) },
-      { type: "step_finish", tokens: REAL_TOKENS },
     ],
+    time: { created: 1795048839000, completed: 1795048839001 },
+    finish: "stop",
+    tokens: REAL_TOKENS,
   }) + "\n";
 }
 
@@ -766,11 +773,15 @@ describe("4.16 L4 the three readers decode session message parts", () => {
       const half = Math.ceil(verdict.length / 2);
       spec.calls[0].token_stream = undefined;
       spec.calls[0].raw_lines = [JSON.stringify({
-        parts: [
+        id: "msg_native_judge",
+        type: "assistant",
+        content: [
           { type: "text", text: verdict.slice(0, half) },
           { type: "text", text: verdict.slice(half) },
-          { type: "step_finish", tokens: REAL_TOKENS },
         ],
+        time: { created: 1795048839000, completed: 1795048839001 },
+        finish: "stop",
+        tokens: REAL_TOKENS,
       })];
       writeFileSync(fixture.specPath, `${JSON.stringify(spec, null, 2)}\n`);
       const result = runJudge(fixture);

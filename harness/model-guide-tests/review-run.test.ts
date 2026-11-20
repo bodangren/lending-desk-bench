@@ -4762,6 +4762,7 @@ const LIVE_SERVER_SOURCE = [
   'const logPath = process.env.LIVE_LOG || "";',
   'const specPath = process.env.LIVE_SPEC || "";',
   'let spec = {};',
+  'let queuedAt = 0;',
   'try { spec = JSON.parse(fs.readFileSync(specPath, "utf8")); } catch (e) {}',
   'const server = http.createServer((req, res) => {',
   '  let body = "";',
@@ -4785,12 +4786,17 @@ const LIVE_SERVER_SOURCE = [
   '      if (req.method === "DELETE") { send({ error: "no delete" }, 405); return; }',
   '      if (req.method === "POST" && url.indexOf("/api/session") === 0 && url.indexOf("/model") < 0 && url.indexOf("/message") < 0 && url.indexOf("/prompt") < 0) {',
   '        let directory = "";',
-  '        try { directory = JSON.parse(body || "{}").directory || ""; } catch (e) {}',
-  '        send({ id: "ses_live_1", location: { directory } }); return;',
+  '        try { const parsed = JSON.parse(body || "{}"); directory = (parsed.location && parsed.location.directory) || ""; } catch (e) {}',
+  '        const shown = spec.session_location !== undefined ? spec.session_location : directory;',
+  '        send({ id: "ses_live_1", location: { directory: shown } }); return;',
   '      }',
   '      if (req.method === "POST" && url.indexOf("/model") >= 0) { send({ ok: true }); return; }',
-  '      if (isMessage) { send({ ok: true, messageID: "msg_live_1" }); return; }',
-  '      if (req.method === "GET" && url.indexOf("/message") >= 0) { send({ data: spec.messages || [], cursor: {} }); return; }',
+  '      if (isMessage) { queuedAt = Date.now(); send({ messageID: "msg_live_1" }); return; }',
+  '      if (req.method === "GET" && url.indexOf("/message") >= 0) {',
+  '        if (spec.get_fail) { send({ error: "message read failed" }, 500); return; }',
+  '        if (spec.queue_delay_ms && Date.now() - queuedAt < Number(spec.queue_delay_ms)) { send({ data: [], cursor: {} }); return; }',
+  '        send({ data: spec.messages || [], cursor: {} }); return;',
+  '      }',
   '      if (req.method === "GET" && url.indexOf("/provider") >= 0) { send({ data: [] }); return; }',
   '      if (req.method === "GET" && url.indexOf("/api/session") === 0) { send({ id: "ses_live_1", location: { directory: spec.directory || "" } }); return; }',
   '      send({ ok: true });',
@@ -4840,15 +4846,31 @@ async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> =
   };
 }
 
-/** The message parts of one assistant answer on the live path. The answer text
- * is a fenced D10 block, split over two text parts. A step_finish part holds
- * the nested token bundle. */
-function liveMessageParts(text: string): unknown[] {
-  return [
-    { type: "text", text: text.slice(0, Math.ceil(text.length / 2)) },
-    { type: "text", text: text.slice(Math.ceil(text.length / 2)) },
-    { type: "step_finish", tokens: { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } } },
-  ];
+/** One native assistant message of the OpenChamber message list (v2 shape).
+ * The answer text sits in `content[]`. The token use sits beside it in the
+ * top-level `tokens` field. Completion is `time.completed` and `finish`.
+ * An optional `error` is the native structured model error (D22). */
+function nativeAssistant(text: string, opts: {
+  complete?: boolean;
+  tokens?: unknown;
+  error?: Record<string, unknown>;
+} = {}): Record<string, unknown> {
+  const half = Math.ceil(text.length / 2);
+  const complete = opts.complete !== false;
+  const record: Record<string, unknown> = {
+    id: "msg_live_1",
+    type: "assistant",
+    model: { providerID: "opencode-go", id: "hy4-flash-free", variant: "high" },
+    content: [
+      { type: "text", text: text.slice(0, half) },
+      { type: "text", text: text.slice(half) },
+    ],
+    time: complete ? { created: 1795048839000, completed: 1795048839001 } : { created: 1795048839000 },
+    tokens: opts.tokens ?? { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } },
+  };
+  if (complete) record.finish = "stop";
+  if (opts.error) record.error = opts.error;
+  return record;
 }
 
 const PILOT_ROUTE = "opencode-go/hy4-flash-free#high";
@@ -4886,14 +4908,15 @@ describe("P4b row 4.16 the live-server path of the review runner", () => {
       const creates = live.requests().filter((line) => line.startsWith("POST /api/session "));
       expect(creates, "the live path created no session").toHaveLength(1);
       const body = JSON.parse(creates[0].slice("POST /api/session ".length));
-      expect(typeof body.directory, "the session carries no directory").toBe("string");
-      expect(body.directory.startsWith("/"), "the session directory is not absolute").toBe(true);
-      expect(body.directory.startsWith(fixture.repo), "the session directory is inside the git repo").toBe(false);
-      expect(existsSync(body.directory), "the session directory is not a real folder").toBe(true);
-      const all = live.requests().join("\n");
-      expect(all, "the session carries no provider").toContain("opencode-go");
-      expect(all, "the session carries no model").toContain("hy4-flash-free");
-      expect(all, "the session carries no variant").toContain("high");
+      const directory = body.location && body.location.directory;
+      expect(typeof directory, "the create carries no location.directory").toBe("string");
+      expect(directory.startsWith("/"), "the session directory is not absolute").toBe(true);
+      expect(directory.startsWith(fixture.repo), "the session directory is inside the git repo").toBe(false);
+      expect(existsSync(directory), "the session directory is not a real folder").toBe(true);
+      const model = body.model || {};
+      expect(model.providerID, "the create carries no model providerID").toBe("opencode-go");
+      expect(model.id, "the create carries no model id").toBe("hy4-flash-free");
+      expect(model.variant, "the create carries no model variant").toBe("high");
     } finally {
       live.close();
       dropFixture(fixture);
@@ -4984,7 +5007,7 @@ describe("P4b row 4.16 the live-server path of the review runner", () => {
     }
   }, 60_000);
 
-  it("L4 the runner reads the answer text and token sums from the session message parts", async () => {
+  it("L4 the runner reads the answer text and native token fields of the assistant message", async () => {
     const answer = "```json\n{\"findings\":[]}\n```\n";
     const fixture = await buildFixture({
       route: PILOT_ROUTE,
@@ -4992,7 +5015,7 @@ describe("P4b row 4.16 the live-server path of the review runner", () => {
       calls: [{ value: '{"findings":[]}' }],
     });
     const live = await startLiveServer(fixture.fakeRoot, {
-      messages: [{ info: { role: "assistant" }, parts: liveMessageParts(answer) }],
+      messages: [nativeAssistant(answer)],
     });
     try {
       assertRunnerExists();
@@ -5126,7 +5149,7 @@ describe("P4b row 4.16 the live-server path of the review runner", () => {
       calls: [{ value: '{"findings":[]}' }],
     });
     const live = await startLiveServer(fixture.fakeRoot, {
-      messages: [{ info: { role: "assistant" }, parts: liveMessageParts(answer) }],
+      messages: [nativeAssistant(answer)],
     });
     try {
       assertRunnerExists();
@@ -5237,4 +5260,291 @@ describe("P4b row 4.16 the live-server path of the review runner", () => {
     }
   }, 60_000);
 
+});
+
+// ---------------------------------------------------------------------------
+// Row 4.16 r3: the real OpenChamber API shapes (Review A 31fe9a0, F12 to F19).
+// The fake now creates sessions with location.directory, returns a native
+// assistant message with top-level tokens and time.completed, and can queue
+// an answer, fail a message GET, or return a native model error. Every case
+// below fails at the role base because review-run.sh uses the old shapes.
+// ---------------------------------------------------------------------------
+describe("P4b row 4.16r3 the real API contract of the review runner", () => {
+  const ANSWER = "```json\n{\"findings\":[]}\n```\n";
+
+  /** A curl stub for the no-base case. It records each URL and returns a
+   * synthetic session. No request leaves the test folder. */
+  function writeCurlStub(fixture: Fixture): { dir: string; log: string } {
+    const dir = join(fixture.fakeRoot, "curlbin");
+    const log = join(fixture.fakeRoot, "curl-log.txt");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "curl"), [
+      "#!/usr/bin/env bash",
+      `printf '%s\\n' "$*" >> '${log}'`,
+      "out=\"\"; prev=\"\"",
+      "for a in \"$@\"; do if [ \"$prev\" = \"-o\" ]; then out=\"$a\"; fi; prev=\"$a\"; done",
+      "[ -n \"$out\" ] && printf '%s\\n' '{\"id\":\"ses_default\",\"location\":{\"directory\":\"/tmp/opencode-live-default\"}}' > \"$out\"",
+      "printf '200\\n'",
+    ].join("\n"), { mode: 0o755 });
+    return { dir, log };
+  }
+
+  it("F12 a session whose returned location is not the job root is refused before the pass", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeAssistant(ANSWER)],
+      session_location: "/tmp/foreign-job-root",
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), "the runner printed no named line").toHaveLength(1);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F13 a queued answer that completes later passes and a partial answer at the deadline does not", async () => {
+    const queued = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const liveQueued = await startLiveServer(queued.fakeRoot, {
+      messages: [nativeAssistant(ANSWER)], queue_delay_ms: 3000,
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(queued, runArgs(queued, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: liveQueued.base,
+        MG_CALL_TIMEOUT_S: "12",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(queued.privateDir);
+      expect(records, "the queued pass wrote no record").toHaveLength(1);
+      expect(records[0].state, "the completed answer was not complete").toBe("complete");
+    } finally {
+      liveQueued.close();
+      dropFixture(queued);
+    }
+
+    const partial = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const livePartial = await startLiveServer(partial.fakeRoot, {
+      messages: [nativeAssistant("partial without completion", { complete: false })],
+    });
+    try {
+      const result = runRunner(partial, runArgs(partial, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: livePartial.base,
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(namedLines(result).join("\n"), "the partial answer got no timeout text").toMatch(/timed out|not complete|incomplete/);
+      const records = passRecords(partial.privateDir);
+      expect(records.length > 0 && records[0].state === "complete", "the partial answer was complete").toBe(false);
+    } finally {
+      livePartial.close();
+      dropFixture(partial);
+    }
+  }, 120_000);
+
+  it("F15 a pilot route with no base uses the default loopback base and never the isolated seed", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const stub = writeCurlStub(fixture);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: "",
+        PATH: `${stub.dir}:${fixture.fakeDir}:${join(HARNESS, "node_modules", ".bin")}:${process.env.PATH ?? ""}`,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the no-base pilot used the isolated seed").toEqual([]);
+      const urls = existsSync(stub.log) ? readFileSync(stub.log, "utf8") : "";
+      expect(urls, "the default loopback base was not used").toContain("http://127.0.0.1:38307");
+    } finally {
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F16 a failed message GET leaves the pass not complete", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeAssistant(ANSWER)], get_fail: true,
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const records = passRecords(fixture.privateDir);
+      expect(records.length > 0 && records[0].state === "complete", "a failed GET became a complete pass").toBe(false);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F16 a failed message GET makes the probe unreachable", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    writeProbeControl(fixture);
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeAssistant(ANSWER)], get_fail: true,
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture, PILOT_ROUTE), "--probe"], { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(stdoutLines(result).join("\n"), "a failed GET was reachable").toContain("unreachable");
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F17 a native region error on a Go probe is region-blocked, not reachable", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    writeProbeControl(fixture);
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeAssistant("", {
+        complete: false,
+        tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+        error: { type: "ProviderAuthError", message: REGION_ERROR },
+      })],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture, PILOT_ROUTE), "--probe"], { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(stdoutLines(result).join("\n"), "the native region error was not classified").toContain("region-blocked");
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F18 a server base with userinfo for an external host is refused with no request", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeAssistant(ANSWER)],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: "http://127.0.0.1:38307@example.invalid",
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), "the runner printed no named line").toHaveLength(1);
+      expect(live.requests(), "a request reached the fake server").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F19 L2 a missing config is refused, an unreadable config is refused, and no session is created", async () => {
+    const missing = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const missingLive = await startLiveServer(missing.fakeRoot, { messages: [nativeAssistant(ANSWER)] });
+    const missingJob = join(missing.tmp, "missing-job");
+    mkdirSync(missingJob, { recursive: true });
+    try {
+      assertRunnerExists();
+      const result = runRunner(missing, runArgs(missing, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: missingLive.base,
+        BENCH_OPENCODE_HOME: missingJob,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), "the runner printed no named line").toHaveLength(1);
+      expect(
+        missingLive.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "a session was created on a missing config",
+      ).toEqual([]);
+    } finally {
+      missingLive.close();
+      dropFixture(missing);
+    }
+
+    const unreadable = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const unreadableLive = await startLiveServer(unreadable.fakeRoot, { messages: [nativeAssistant(ANSWER)] });
+    const unreadableJob = join(unreadable.tmp, "unreadable-job");
+    mkdirSync(unreadableJob, { recursive: true });
+    writeFileSync(join(unreadableJob, "opencode.json"), "{}\n", { mode: 0o000 });
+    try {
+      const result = runRunner(unreadable, runArgs(unreadable, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: unreadableLive.base,
+        BENCH_OPENCODE_HOME: unreadableJob,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), "the runner printed no named line").toHaveLength(1);
+    } finally {
+      unreadableLive.close();
+      dropFixture(unreadable);
+    }
+  }, 120_000);
+
+  it("F19 L5 a send timeout prints the exact fixed text and exits 2", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, { send_delay_ms: 30_000 });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(result.stdout, "the exact timeout text is absent").toBe("review-run: the message send timed out\n");
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F19 L7 a pilot probe makes no DELETE request", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    writeProbeControl(fixture);
+    const live = await startLiveServer(fixture.fakeRoot, { messages: [nativeAssistant(ANSWER)] });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture, PILOT_ROUTE), "--probe"], { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(
+        live.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "the probe created no session",
+      ).toHaveLength(1);
+      expect(live.requests().filter((line) => line.startsWith("DELETE ")), "the probe made a DELETE").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
 });

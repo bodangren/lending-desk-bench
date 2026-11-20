@@ -3307,6 +3307,7 @@ const LIVE_SERVER_SOURCE = [
   'const logPath = process.env.LIVE_LOG || "";',
   'const specPath = process.env.LIVE_SPEC || "";',
   'let spec = {};',
+  'let queuedAt = 0;',
   'try { spec = JSON.parse(fs.readFileSync(specPath, "utf8")); } catch (e) {}',
   'const server = http.createServer((req, res) => {',
   '  let body = "";',
@@ -3322,12 +3323,17 @@ const LIVE_SERVER_SOURCE = [
   '      if (req.method === "DELETE") { send({ error: "no delete" }, 405); return; }',
   '      if (req.method === "POST" && url.indexOf("/api/session") === 0 && url.indexOf("/model") < 0 && url.indexOf("/message") < 0 && url.indexOf("/prompt") < 0) {',
   '        let directory = "";',
-  '        try { directory = JSON.parse(body || "{}").directory || ""; } catch (e) {}',
-  '        send({ id: "ses_live_judge", location: { directory } }); return;',
+  '        try { const parsed = JSON.parse(body || "{}"); directory = (parsed.location && parsed.location.directory) || ""; } catch (e) {}',
+  '        const shown = spec.session_location !== undefined ? spec.session_location : directory;',
+  '        send({ id: "ses_live_judge", location: { directory: shown } }); return;',
   '      }',
   '      if (req.method === "POST" && url.indexOf("/model") >= 0) { send({ ok: true }); return; }',
-  '      if (req.method === "POST" && (url.indexOf("/message") >= 0 || url.indexOf("/prompt") >= 0)) { send({ ok: true, messageID: "msg_live_judge" }); return; }',
-  '      if (req.method === "GET" && url.indexOf("/message") >= 0) { send({ data: spec.messages || [], cursor: {} }); return; }',
+  '      if (req.method === "POST" && (url.indexOf("/message") >= 0 || url.indexOf("/prompt") >= 0)) { queuedAt = Date.now(); send({ messageID: "msg_live_judge" }); return; }',
+  '      if (req.method === "GET" && url.indexOf("/message") >= 0) {',
+  '        if (spec.get_fail) { send({ error: "message read failed" }, 500); return; }',
+  '        if (spec.queue_delay_ms && Date.now() - queuedAt < Number(spec.queue_delay_ms)) { send({ data: [], cursor: {} }); return; }',
+  '        send({ data: spec.messages || [], cursor: {} }); return;',
+  '      }',
   '      if (req.method === "GET" && url.indexOf("/provider") >= 0) { send({ data: [] }); return; }',
   '      if (req.method === "GET" && url.indexOf("/api/session") === 0) { send({ id: "ses_live_judge", location: { directory: spec.directory || "" } }); return; }',
   '      send({ ok: true });',
@@ -3375,6 +3381,32 @@ async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> =
   };
 }
 
+/** One native assistant message of the OpenChamber message list (v2 shape).
+ * The verdict text sits in `content[]`; the token use sits in the top-level
+ * `tokens` field; completion is `time.completed` and `finish`. */
+function nativeJudgeAssistant(text: string, opts: {
+  complete?: boolean;
+  tokens?: unknown;
+  error?: Record<string, unknown>;
+} = {}): Record<string, unknown> {
+  const half = Math.ceil(text.length / 2);
+  const complete = opts.complete !== false;
+  const record: Record<string, unknown> = {
+    id: "msg_live_judge",
+    type: "assistant",
+    model: { providerID: "opencode-go", id: "muse-spark-1.3-contributor", variant: "high" },
+    content: [
+      { type: "text", text: text.slice(0, half) },
+      { type: "text", text: text.slice(half) },
+    ],
+    time: complete ? { created: 1795048839000, completed: 1795048839001 } : { created: 1795048839000 },
+    tokens: opts.tokens ?? { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } },
+  };
+  if (complete) record.finish = "stop";
+  if (opts.error) record.error = opts.error;
+  return record;
+}
+
 const LIVE_JUDGE = "opencode-go/muse-spark-1.3-contributor#high";
 
 describe("P4b row 4.16 L11 the live-server path of the judge runner", () => {
@@ -3389,10 +3421,7 @@ describe("P4b row 4.16 L11 the live-server path of the judge runner", () => {
       ],
     });
     const live = await startLiveServer(fixture.fakeRoot, {
-      messages: [{ info: { role: "assistant" }, parts: [
-        { type: "text", text: verdict.slice(0, Math.ceil(verdict.length / 2)) },
-        { type: "text", text: verdict.slice(Math.ceil(verdict.length / 2)) },
-      ] }],
+      messages: [nativeJudgeAssistant(verdict)],
     });
     try {
       assertRunnerExists();
@@ -3401,16 +3430,105 @@ describe("P4b row 4.16 L11 the live-server path of the judge runner", () => {
       const creates = live.requests().filter((line) => line.startsWith("POST /api/session "));
       expect(creates, "the live judge created no session").toHaveLength(1);
       const body = JSON.parse(creates[0].slice("POST /api/session ".length));
-      expect(typeof body.directory, "the session carries no directory").toBe("string");
-      expect(body.directory.startsWith("/"), "the session directory is not absolute").toBe(true);
-      expect(body.directory.startsWith(fixture.repo), "the session directory is inside the git repo").toBe(false);
-      expect(existsSync(body.directory), "the session directory is not a real folder").toBe(true);
-      expect(live.requests().join("\n"), "the session carries no judge model").toContain("muse-spark-1.3-contributor");
+      const directory = body.location && body.location.directory;
+      expect(typeof directory, "the create carries no location.directory").toBe("string");
+      expect(directory.startsWith("/"), "the session directory is not absolute").toBe(true);
+      expect(directory.startsWith(fixture.repo), "the session directory is inside the git repo").toBe(false);
+      expect(existsSync(directory), "the session directory is not a real folder").toBe(true);
+      const model = body.model || {};
+      expect(model.id, "the create carries no model id").toBe("muse-spark-1.3-contributor");
+      expect(model.providerID, "the create carries no model providerID").toBe("opencode-go");
+      const record = runRecord(fixture, "a");
+      expect(record?.tokens, "the native token fields were discarded").toEqual({
+        input: 7, output: 8, reasoning: 9, cache_read: 10, cache_write: 11, total: 45,
+      });
+      expect(record?.tokens_complete, "the native token fields were not complete").toBe(true);
       const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
       expect(auth.map((entry) => entry.argv), "the live judge made a seed or auth call").toEqual([]);
       expect(live.requests().filter((line) => line.startsWith("DELETE ")), "the live judge made a DELETE").toEqual([]);
       expect(judgeFile(fixture, "a"), "the judge wrote no judge file").not.toBeNull();
       expect(runRecord(fixture, "a"), "the judge wrote no run record").not.toBeNull();
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+});
+
+// ---------------------------------------------------------------------------
+// Row 4.16 r3: the real OpenChamber API shapes in the judge runner (Review A
+// 31fe9a0, F14, F16, F17, F18). The fake uses native assistant messages with
+// top-level tokens, completion, and errors. Each case fails at the role base.
+// ---------------------------------------------------------------------------
+describe("P4b row 4.16r3 the real API contract of the judge runner", () => {
+  const VERDICT = "```json\n" + JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }, null, 2) + "\n```\n";
+
+  function judgeFixture(): Promise<Fixture> {
+    return buildFixture({
+      route: LIVE_JUDGE,
+      groups: [GROUP_ONE],
+      judgesRoutes: [{ route: LIVE_JUDGE, quota_provider: "opencode-go", quota_source: "opencode-go" }],
+      calls: [
+        { tokens: TOKENS_A, value: answer([jsonBlock(`{"d-01#C0a1b2c3d4e5f":"real-defect"}`)]) },
+      ],
+    });
+  }
+
+  it("F16 a failed message GET leaves the judge run incomplete", async () => {
+    const fixture = await judgeFixture();
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeJudgeAssistant(VERDICT)], get_fail: true,
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const record = runRecord(fixture, "a");
+      expect(record === null || record.state !== "complete", "a failed GET became a complete judge run").toBe(true);
+      expect(judgeFile(fixture, "a"), "a failed GET wrote verdicts").toBeNull();
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F17 a native region error on a Go judge route is not a complete empty run", async () => {
+    const fixture = await judgeFixture();
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeJudgeAssistant("", {
+        complete: false,
+        tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+        error: { type: "ProviderAuthError", message: "Error: the model is not available in your region" },
+      })],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const record = runRecord(fixture, "a");
+      expect(record === null || record.state !== "complete", "the native region error became a complete run").toBe(true);
+      expect(judgeFile(fixture, "a"), "the native region error wrote verdicts").toBeNull();
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F18 a server base with userinfo for an external host is refused with no request", async () => {
+    const fixture = await judgeFixture();
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeJudgeAssistant(VERDICT)],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture), {
+        BENCH_SERVER_BASE: "http://127.0.0.1:38307@example.invalid",
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), "the runner printed no named line").toHaveLength(1);
+      expect(live.requests(), "a request reached the fake server").toEqual([]);
     } finally {
       live.close();
       dropFixture(fixture);
