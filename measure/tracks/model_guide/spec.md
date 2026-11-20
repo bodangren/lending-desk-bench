@@ -7,6 +7,7 @@ Revision 3, 2026-11-14: the findings F13 to F23 of the spec review round 2.
 Revision 4, 2026-11-18: the PM ruling on the route blocker: the D12 route
 list, the D13 pilot routes, the D14 probe mode, the D15 night limits, and the
 token log (PM 2026-11-18).
+Revision 5, 2026-11-20: the PM moved the pilot routes to the live-server path of D14 (Console sign-in, no copied credential).
 
 ## Summary
 
@@ -695,6 +696,8 @@ questions".
 
 14. **D14. How a run reaches a route.** All routes use one path: the host
     OpenCode with the host isolation of `harness/opencode-host.sh` (EV11).
+    The bullets below are superseded for the pilot routes (PM 2026-11-20).
+    They stay as history.
     - The runner `harness/model-guide/review-run.sh` starts a job folder with
       `opencode_host_begin model-guide`. It removes the folder with the trap
       of `opencode_host_cleanup`.
@@ -730,6 +733,38 @@ questions".
       lock, quota rules, job isolation, credential scan, and trap as a pass.
       The probe runs 02:00 to 06:00 +07 on 2026-11-19 through
       `heavy-run.sh`, with one call per pilot route (spec D13).
+    - **Live-server path (PM 2026-11-20).** The pilot routes use this path.
+      The pilot routes are the opencode-go Go routes,
+      `opencode-go/hy4-flash-free#high`, and the opencode free routes.
+      Reason (PM 2026-11-20): "OpenCode Go has no API key. Go binds to the active OpenCode Console sign-in (an account login with refresh tokens), and a PM timer switches that account between Personal and Workspace1. So `auth export opencode-go` is empty by design (the server shows provider opencode-go with integrationID "opencode"), and the old auth.json key is ignored. Do NOT copy the Console sign-in into the bench HOME: a copied refresh token can rotate and sign the main server out, which stops Go for every session. The pilot runs reach models through the live local server, not an isolated credential store."
+      The runner reaches the model through the live local server.
+      The live local server is the OpenChamber API on
+      http://127.0.0.1:38307. It proxies the OpenCode server API.
+      For example GET /api/provider and GET /api/session answer there.
+      The runner creates one bench session per call with the server API.
+      Its directory is the bench job root. The job root is a folder
+      outside every git repo. Each run sets the model of the route.
+      The model is the provider, model, and variant of the route.
+      The job root holds a project config. It denies every tool:
+      `read`, `edit`, `bash`, `webfetch`, `websearch`, `question`,
+      `subagent`, and `skill`. The runner checks the deny before the
+      first call. It refuses when it cannot confirm the deny.
+      The runner reads the answer text from the session messages.
+      It reads the token use from the session messages. It applies the
+      same decode and token rules as before to the message parts.
+      It deletes nothing. It makes no session delete.
+      The runner never copies a credential on this path. It never
+      exports a credential. It never reads a credential. There is no
+      seed, no auth export, and no auth import on this path. The
+      credential scan of outputs stays. It scans for known key shapes.
+      No value list exists on this path.
+      Every other rule stays. The job root stays. No repo write stays.
+      The lock stays. The quota rules of D15 stay. The probe mode lines
+      and exit codes stay. The key scan of stored text stays. The daemon
+      guard stays.
+      The old isolated path stays in the code. It keeps the seed and
+      `opencode run --standalone`. It serves routes that need it. No
+      pilot route uses it.
 
 15. **D15. The quota budget.** The runner reads the quota of the route
     provider before each pass and before each call.
@@ -1465,7 +1500,7 @@ Q6 was answered on 2026-11-16. The answers are in "Owner decisions".
   hand-off file of OD6. The page always shows them.
 - **Q8 (D14).** Can the Claude route run in an isolated job store? Default:
   the probe decides. An unreachable route waits for a PM rule and has no
-  rank.
+  rank. PM 2026-11-20: the pilot uses the live-server path; Q8 is closed for the pilot.
 - **Q9 (D5, D11).** Is Opus the fixture author and the first judge?
   Default: no (PM 2026-11-17). The PM changed the fixture author on
   2026-11-16 (D5). The first judge is `kimi-code-plan-cn/k3.1-pro#high`
