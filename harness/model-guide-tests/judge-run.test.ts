@@ -3202,3 +3202,87 @@ esac
     }
   });
 });
+
+// === Phase 4b r5: pin the judge copy of daemon_pids (Review A F1) =========
+// Review A proved the two daemon_pids copies are byte-identical. Before this
+// round only review-run.sh was pinned on the live shape and the foreign
+// marker. A drift in judge-run.sh would go unseen, so the same two cases run
+// against the judge source here. RUNNER_SOURCE in this file is judge-run.sh.
+describe("P4b row 4.15 r5: the judge daemon guard shape", () => {
+  const LIVE_EXE =
+    "/home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe";
+
+  function tempRoot(tag: string): string {
+    const dir = mkdtempSync(join(tmpdir(), `mg-judge-${tag}-`));
+    tempRoots.add(dir);
+    return dir;
+  }
+
+  function daemonBlock(): string {
+    const lines = readFileSync(RUNNER_SOURCE, "utf8").split("\n");
+    const start = lines.findIndex((line) => line === "daemon_pids() {");
+    expect(start, "the judge daemon matcher is missing").toBeGreaterThanOrEqual(0);
+    const end = lines.findIndex((line, index) => index > start && line === "stop_daemons() {");
+    expect(end, "the judge daemon guard is missing").toBeGreaterThan(start);
+    return lines.slice(start, end).join("\n");
+  }
+
+  function writeEntry(proc: string, pid: string, exe: string, job: string, root: string): void {
+    mkdirSync(join(root, "home"), { recursive: true });
+    const pidDir = join(proc, pid);
+    mkdirSync(pidDir, { recursive: true });
+    writeFileSync(join(pidDir, "cmdline"), `${exe}\0serve\0--service\0daemon\0`);
+    writeFileSync(
+      join(pidDir, "environ"),
+      `HOME=${join(root, "home")}\0BENCH_OPENCODE_JOB=${job}\0PATH=/x\0`,
+    );
+    symlinkSync(root, join(pidDir, "cwd"));
+  }
+
+  function selectPids(proc: string, base: string): string[] {
+    const result = spawnSync(
+      "bash",
+      ["-c", `${daemonBlock()}\nBENCH_OPENCODE_PROC="${proc}" daemon_pids "${base}"`],
+      { encoding: "utf8", timeout: 10_000 },
+    );
+    expect(result.status, `judge daemon_pids failed: ${result.stderr}`).toBe(0);
+    return result.stdout.trim().split("\n").filter((line) => line !== "");
+  }
+
+  it("P4B-J1 the judge daemon guard selects the live opencode.exe shape", () => {
+    const proc = tempRoot("proc-live");
+    const base = tempRoot("jobroot-live");
+    try {
+      writeEntry(proc, "900124", LIVE_EXE, base, base);
+      expect(
+        selectPids(proc, base),
+        "the judge guard skipped the live opencode.exe daemon of this job",
+      ).toContain("900124");
+    } finally {
+      rmSync(proc, { recursive: true, force: true });
+      rmSync(base, { recursive: true, force: true });
+      tempRoots.delete(proc);
+      tempRoots.delete(base);
+    }
+  });
+
+  it("P4B-J2 the judge daemon guard ignores a fake of another session", () => {
+    const proc = tempRoot("proc");
+    const base = tempRoot("jobroot");
+    const foreignRoot = tempRoot("foreign-root");
+    try {
+      writeEntry(proc, "810003", LIVE_EXE, base, base);
+      writeEntry(proc, "810004", LIVE_EXE, foreignRoot, foreignRoot);
+      const selected = selectPids(proc, base);
+      expect(selected, "the local judge daemon was not selected").toContain("810003");
+      expect(selected, "a foreign fake was selected by the judge guard").not.toContain("810004");
+    } finally {
+      rmSync(proc, { recursive: true, force: true });
+      rmSync(base, { recursive: true, force: true });
+      rmSync(foreignRoot, { recursive: true, force: true });
+      tempRoots.delete(proc);
+      tempRoots.delete(base);
+      tempRoots.delete(foreignRoot);
+    }
+  });
+});

@@ -918,47 +918,73 @@ describe("ADV-R runner block: concurrency, hostile review data, and filter words
   });
 });
 
-describe("P4b row 4.15: the process-table guard scopes to its own run (Review C, F2, N15)", () => {
-  it("P4B-C1 the daemon guard ignores a fake of another session", () => {
-    // Option B of the Green handoff. Option A cannot fail at this HEAD:
-    // daemon_pids already excludes a process whose HOME and cwd sit outside
-    // the job root, so a full clean run with a foreign sleep is green. The
-    // remaining gap is a fake of another session that runs with the same
-    // HOME and cwd but whose executable comes from another temp root. The
-    // guard must key on its own job root, not on a bare `serve --service`
-    // match (test strategy section 14.5, Review C, F2, N15).
-    const proc = tempDir("proc");
-    const base = tempDir("jobroot");
-    const foreignRoot = tempDir("foreign-root");
-    mkdirSync(join(base, "home"), { recursive: true });
-    const localPid = "810001";
-    const foreignPid = "810002";
-    const foreignBin = join(foreignRoot, "fake-opencode");
-    for (const [pid, cmdline] of [
-      [localPid, `node\0serve\0--service\0local\0`],
-      [foreignPid, `${foreignBin}\0serve\0--service\0foreign\0`],
-    ]) {
-      const pidDir = join(proc, pid);
-      mkdirSync(pidDir, { recursive: true });
-      writeFileSync(join(pidDir, "cmdline"), cmdline);
-      writeFileSync(join(pidDir, "environ"), `HOME=${join(base, "home")}\0PATH=/x\0`);
-      symlinkSync(base, join(pidDir, "cwd"));
-    }
+describe("P4b row 4.15: the process-table guard scopes to its own run (Review C, F2, N15, Review A F1)", () => {
+  /** The live daemon argv[0] of the opencode host isolation record. Both
+   * cases below use it, so the executable path cannot separate them. */
+  const LIVE_EXE =
+    "/home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe";
+
+  function daemonBlock(): string {
     const lines = readFileSync(RUNNER_SOURCE, "utf8").split("\n");
     const start = lines.findIndex((line) => line === "daemon_pids() {");
     expect(start, "the daemon matcher is missing").toBeGreaterThanOrEqual(0);
     const end = lines.findIndex((line, index) => index > start && line === "stop_daemons() {");
     expect(end, "the daemon guard is missing").toBeGreaterThan(start);
-    const helper = lines.slice(start, end).join("\n");
+    return lines.slice(start, end).join("\n");
+  }
+
+  /** One synthetic /proc entry. `job` is the BENCH_OPENCODE_JOB marker that
+   * the runner sets on every call. Review C is pinned on that marker: a
+   * process marked with another job root is not this run's daemon. */
+  function writeEntry(proc: string, pid: string, exe: string, job: string, root: string): void {
+    mkdirSync(join(root, "home"), { recursive: true });
+    const pidDir = join(proc, pid);
+    mkdirSync(pidDir, { recursive: true });
+    writeFileSync(join(pidDir, "cmdline"), `${exe}\0serve\0--service\0daemon\0`);
+    writeFileSync(
+      join(pidDir, "environ"),
+      `HOME=${join(root, "home")}\0BENCH_OPENCODE_JOB=${job}\0PATH=/x\0`,
+    );
+    symlinkSync(root, join(pidDir, "cwd"));
+  }
+
+  function selectPids(proc: string, base: string): string[] {
     const result = spawnSync(
       "bash",
-      ["-c", `${helper}\nBENCH_OPENCODE_PROC="${proc}" daemon_pids "${base}"`],
+      ["-c", `${daemonBlock()}\nBENCH_OPENCODE_PROC="${proc}" daemon_pids "${base}"`],
       { encoding: "utf8", timeout: 10_000 },
     );
     expect(result.status, `daemon_pids failed: ${result.stderr}`).toBe(0);
-    const selected = result.stdout.trim().split("\n").filter((line) => line !== "");
-    expect(selected, "the local daemon of this job was not selected").toContain(localPid);
-    expect(selected, "a fake of another session was selected").not.toContain(foreignPid);
+    return result.stdout.trim().split("\n").filter((line) => line !== "");
+  }
+
+  it("P4B-L1 the daemon guard selects the live opencode.exe shape", () => {
+    // Review A F1. The installed CLI prints argv[0] as an absolute path
+    // outside every job root. A guard that drops a path-form exe misses the
+    // live daemon, so the per-pass guard and its INFRA record go blind.
+    const proc = tempDir("proc-live");
+    const base = tempDir("jobroot-live");
+    writeEntry(proc, "900123", LIVE_EXE, base, base);
+    expect(
+      selectPids(proc, base),
+      "the guard skipped the live opencode.exe daemon of this job",
+    ).toContain("900123");
+  });
+
+  it("P4B-C1 the daemon guard ignores a fake of another session", () => {
+    // Property chosen: BENCH_OPENCODE_JOB in /proc/<pid>/environ, with the
+    // foreign entry also rooted in its own temp folder. Not the executable
+    // path: both entries use the live opencode.exe path, so a path filter
+    // cannot separate them and instead drops both. The runner sets the
+    // marker on every call, so the guard can read which job owns a daemon.
+    const proc = tempDir("proc");
+    const base = tempDir("jobroot");
+    const foreignRoot = tempDir("foreign-root");
+    writeEntry(proc, "810001", LIVE_EXE, base, base);
+    writeEntry(proc, "810002", LIVE_EXE, foreignRoot, foreignRoot);
+    const selected = selectPids(proc, base);
+    expect(selected, "the local daemon of this job was not selected").toContain("810001");
+    expect(selected, "a fake of another session was selected").not.toContain("810002");
   });
 });
 
