@@ -4425,15 +4425,11 @@ esac
       diffs: ["d-01"],
       calls: [
         {
-          token_stream: {
-            texts: ["```json\n{\"findings\": []}\n```"],
-            tokens: {
-              input: 10_000_000_000_000_000,
-              output: 10_000_000_000_000_000,
-              reasoning: 0,
-              cache: { read: 0, write: 0 },
-            },
-          },
+          raw_lines: [
+            '{"type":"step_finish","part":{"type":"step-finish","tokens":{"input":9007199254740991,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}}}',
+            '{"type":"step_finish","part":{"type":"step-finish","tokens":{"input":9007199254740991,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}}}',
+          ],
+          value: '{"findings":[]}',
         },
       ],
     });
@@ -4443,6 +4439,8 @@ esac
       expect(result.error, "the spawn hit the timeout").toBeUndefined();
       const records = passRecords(fixture.privateDir);
       expect(records, "the run wrote no pass record").toHaveLength(1);
+      // Each field is a safe integer, but their sum is above 2^53 and no
+      // longer exact. This fails when the per-key sum check is removed.
       expect(records[0].tokens_complete, "an unsafe sum kept tokens_complete true").toBe(false);
     } finally {
       dropFixture(fixture);
@@ -4592,4 +4590,126 @@ describe("P4b row 4.15 r6: the runner carries the seed reason", () => {
       dropFixture(fixture);
     }
   });
+});
+
+// === Phase 4b r7: review B contract cases =================================
+describe("P4b row 4.15 r7: the N26 and G2 runner paths", () => {
+  it("N26 a 300 KB error line gives a record and exit 0 with a bounded line", async () => {
+    // Review B G1. The cap in error_line_of uses `printf | head -c 499`
+    // under the runner's `set -euo pipefail`. SIGPIPE makes the pipeline
+    // return 141, so no line and no record reach the pass file. The case
+    // drives the full runner path, not the bare function.
+    const big = "x".repeat(300 * 1024);
+    const fixture = await buildFixture({
+      diffs: ["d-01"],
+      calls: [
+        { exit: 1, stderr: big },
+        { exit: 1, stderr: big },
+        { exit: 1, stderr: big },
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture));
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `the runner aborted: ${result.stdout}\n${result.stderr}`).toBe(0);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the run wrote no pass record").toHaveLength(1);
+      const errors = (records[0].errors ?? []) as unknown[];
+      expect(errors, "the pass record holds no error line").toHaveLength(1);
+      const line = String(errors[0]);
+      expect(line.length, "the stored error line is empty").toBeGreaterThan(0);
+      expect(line.length, "the stored error line exceeds 500 bytes").toBeLessThanOrEqual(500);
+    } finally {
+      dropFixture(fixture);
+    }
+  });
+
+  it("N26b error_line_of under pipefail returns a bounded line for a 300 KB error", () => {
+    // Review B G1 proof. The runner calls error_line_of in a command
+    // substitution, which suppresses errexit inside the function. Running
+    // the same function under the runner's own `set -euo pipefail` shows the
+    // SIGPIPE of `printf | head -c 499`: the function returns 141 and no
+    // line. This case pins the function itself, not only its caller.
+    const dir = mkdtempSync(join(tmpdir(), "mg-review-n26b-"));
+    tempRoots.add(dir);
+    try {
+      const outPath = join(dir, "out.txt");
+      const errPath = join(dir, "err.txt");
+      const valuesPath = join(dir, "values.txt");
+      writeFileSync(outPath, "");
+      writeFileSync(errPath, `${"x".repeat(300 * 1024)}\n`);
+      writeFileSync(valuesPath, "");
+      const source = readFileSync(RUNNER_SOURCE, "utf8").split("\n");
+      const block = (name: string, next: string): string => {
+        const start = source.findIndex((line) => line === `${name}() {`);
+        expect(start, `${name} is missing`).toBeGreaterThanOrEqual(0);
+        const end = source.findIndex((line, index) => index > start && line === `${next}() {`);
+        expect(end, `${next} is missing`).toBeGreaterThan(start);
+        return source.slice(start, end).join("\n");
+      };
+      const script = [
+        "set -euo pipefail",
+        block("error_event_text", "error_all_events_text"),
+        block("error_all_events_text", "error_line_of"),
+        block("error_line_of", "is_region_error"),
+        'ERROR_KEY_TEXT="the error output held a credential value"',
+        'ERROR_SCAN_TEXT="the error output could not be scanned"',
+        `TMP_VALUES="${valuesPath}"`,
+        "scan_output() { return 1; }",
+        `error_line_of "${outPath}" "${errPath}" "the model call failed"`,
+      ].join("\n");
+      const result = spawnSync("bash", ["-c", script], {
+        encoding: "utf8",
+        maxBuffer: 2 * 1024 * 1024,
+        timeout: 20_000,
+      });
+      expect(result.status, `error_line_of aborted: ${result.stderr}`).toBe(0);
+      expect(result.stdout.length, "the bounded line is empty").toBeGreaterThan(0);
+      expect(result.stdout.length, "the bounded line exceeds 500 bytes").toBeLessThanOrEqual(500);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      tempRoots.delete(dir);
+    }
+  });
+
+  it("G2 the symlink walk does not abort when find meets many links", () => {
+    // Review B G2. `find ... | head -n 1` under `set -euo pipefail` returns
+    // 141 once find writes more than the pipe buffer after head exits. A
+    // fresh job tree is small, so the case presets a large tree with many
+    // links under one call path. The walk must still refuse with exit 2.
+    const root = mkdtempSync(join(tmpdir(), "mg-review-g2-"));
+    tempRoots.add(root);
+    try {
+      const job = join(root, "job");
+      for (const sub of ["home", "config", "data", "state", "cache", "runtime", "tmp"]) {
+        mkdirSync(join(job, sub), { recursive: true });
+      }
+      const target = join(job, "data", "target");
+      writeFileSync(target, "target\n");
+      for (let i = 0; i < 20_000; i += 1) {
+        symlinkSync(target, join(job, "data", `link-${i}`));
+      }
+      const lines = readFileSync(RUNNER_SOURCE, "utf8").split("\n");
+      const start = lines.findIndex((line) => line.includes("The call paths of the job folder"));
+      expect(start, "the XDG guard block is missing").toBeGreaterThanOrEqual(0);
+      const end = lines.findIndex((line, index) => index > start && line === "done");
+      expect(end, "the guard block has no closing done").toBeGreaterThan(start);
+      const block = lines.slice(start, end + 1).join("\n");
+      const script = [
+        "set -euo pipefail",
+        'refuse() { printf "%s\\n" "$1"; exit 2; }',
+        `JOB="${job}"`,
+        block,
+        'printf "%s\\n" "ACCEPTED"',
+      ].join("\n");
+      const result = spawnSync("bash", ["-c", script], { encoding: "utf8", timeout: 30_000 });
+      expect(result.status, `the guard aborted: ${result.stderr}`).toBe(2);
+      expect(result.stdout, "the guard printed ACCEPTED despite a link").not.toContain("ACCEPTED");
+      expect(result.stdout, "the guard did not name the data folder").toContain("data");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      tempRoots.delete(root);
+    }
+  }, 40_000);
 });

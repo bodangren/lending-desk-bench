@@ -980,8 +980,11 @@ describe("P4b row 4.15: the process-table guard scopes to its own run (Review C,
     const proc = tempDir("proc");
     const base = tempDir("jobroot");
     const foreignRoot = tempDir("foreign-root");
+    // Review A F7: the foreign entry shares HOME, cwd, and argv with the
+    // local one. Only BENCH_OPENCODE_JOB differs. A guard that drops the
+    // marker filter must select both and fail this case.
     writeEntry(proc, "810001", LIVE_EXE, base, base);
-    writeEntry(proc, "810002", LIVE_EXE, foreignRoot, foreignRoot);
+    writeEntry(proc, "810002", LIVE_EXE, foreignRoot, base);
     const selected = selectPids(proc, base);
     expect(selected, "the local daemon of this job was not selected").toContain("810001");
     expect(selected, "a fake of another session was selected").not.toContain("810002");

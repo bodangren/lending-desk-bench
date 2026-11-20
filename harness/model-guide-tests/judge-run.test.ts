@@ -3271,8 +3271,10 @@ describe("P4b row 4.15 r5: the judge daemon guard shape", () => {
     const base = tempRoot("jobroot");
     const foreignRoot = tempRoot("foreign-root");
     try {
+      // Review A F7: same HOME, cwd, and argv as the local entry; only the
+      // BENCH_OPENCODE_JOB marker differs.
       writeEntry(proc, "810003", LIVE_EXE, base, base);
-      writeEntry(proc, "810004", LIVE_EXE, foreignRoot, foreignRoot);
+      writeEntry(proc, "810004", LIVE_EXE, foreignRoot, base);
       const selected = selectPids(proc, base);
       expect(selected, "the local judge daemon was not selected").toContain("810003");
       expect(selected, "a foreign fake was selected by the judge guard").not.toContain("810004");
