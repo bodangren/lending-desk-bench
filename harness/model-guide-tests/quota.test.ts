@@ -1256,3 +1256,33 @@ void main();
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Row 4.16 L9 (quota part): the quota rules are unchanged by the live-server
+// path. BENCH_SERVER_BASE carries the session address and BENCH_QUOTA_BASE
+// carries the quota address. This is a GUARD. It passes at the role base,
+// because quota.ts already reads only BENCH_QUOTA_BASE. Its proof is the
+// falsification below: change the Go 5h boundary in quota.ts and the case
+// fails. The review-run L9 case is the Red case of this group; it fails at the
+// base because no live session is created.
+// ---------------------------------------------------------------------------
+describe("4.16 L9 guard the quota rules stay off the live-server seam", () => {
+  it("L9-G a pilot opencode-go route reads quota at 94 ready and 95 wait while BENCH_SERVER_BASE is set", async () => {
+    const sandbox = makeSandbox();
+    sandbox.env.BENCH_SERVER_BASE = "http://127.0.0.1:1";
+    const server = await startQuotaServer(jsonResponse(liveGoBody(94, 10, 10)));
+    try {
+      const ready = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const readyDoc = expectState(ready, "ready", "L9-G 5h 94 with a server seam set");
+      expect(readyDoc.windows?.["5h"], "L9-G 5h is not labeled").toBe(94);
+      server.setHandler(jsonResponse(liveGoBody(95, 10, 10)));
+      const waited = await runQuota(sandbox, ["--provider", "opencode-go", "--base", server.base]);
+      const waitDoc = expectState(waited, "wait", "L9-G 5h 95 with a server seam set");
+      expect(waitDoc.windows?.["5h"], "L9-G 5h is not labeled").toBe(95);
+      expect(server.requests.length, "L9-G read no quota through BENCH_QUOTA_BASE").toBeGreaterThan(0);
+    } finally {
+      await server.close();
+      sandbox.close();
+    }
+  });
+});

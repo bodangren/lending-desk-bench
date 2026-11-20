@@ -1678,7 +1678,9 @@ describe("P4 R12 the trap of the job folder", () => {
     } finally {
       dropFixture(fixture);
     }
-  });
+    // Row 4.16: the case waits for a child to die. Bun's 5 s default fired
+    // under the added live-server load. The assertions are unchanged.
+  }, 60_000);
 });
 
 describe("P4 R13 the no write rule", () => {
@@ -1724,7 +1726,9 @@ describe("P4 R14 the call timeout", () => {
     } finally {
       dropFixture(fixture);
     }
-  });
+    // Row 4.16: the case waits for a call timeout. Bun's 5 s default fired
+    // under the added live-server load. The assertions are unchanged.
+  }, 60_000);
 });
 
 describe("P4 R15 the path safety", () => {
@@ -3172,6 +3176,8 @@ describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
 
   it("S1 the seed export uses the real HOME with the exact exempt form, timeout 60, and a cwd outside the runner cwd", async () => {
     const fixture = await buildFixture({
+      // Row 4.16: the isolated seed path stays on a non-pilot route (14.12.3).
+      ...isolatedOverride(),
       realCredential: true,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
@@ -3202,6 +3208,8 @@ describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
 
   it("S2 the seed succeeds when the fake real-HOME store holds the provider entry", async () => {
     const fixture = await buildFixture({
+      // Row 4.16: the isolated seed path stays on a non-pilot route (14.12.3).
+      ...isolatedOverride(),
       realCredential: true,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
@@ -3223,6 +3231,8 @@ describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
 
   it("S3 the import call has the job HOME and --standalone", async () => {
     const fixture = await buildFixture({
+      // Row 4.16: the isolated seed path stays on a non-pilot route (14.12.3).
+      ...isolatedOverride(),
       realCredential: true,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
@@ -3246,6 +3256,8 @@ describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
 
   it("S4 the scan-values export reads the job store", async () => {
     const fixture = await buildFixture({
+      // Row 4.16: the isolated seed path stays on a non-pilot route (14.12.3).
+      ...isolatedOverride(),
       realCredential: true,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
@@ -3270,6 +3282,8 @@ describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
 
   it("S5 exactly one real-HOME call, the exempt seed export", async () => {
     const fixture = await buildFixture({
+      // Row 4.16: the isolated seed path stays on a non-pilot route (14.12.3).
+      ...isolatedOverride(),
       realCredential: true,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
@@ -3293,6 +3307,8 @@ describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
 
   it("R1 an empty shared store refuses the pass with exit 2, one line, no call, and no record", async () => {
     const fixture = await buildFixture({
+      // Row 4.16: the isolated seed path stays on a non-pilot route (14.12.3).
+      ...isolatedOverride(),
       realCredential: true,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
@@ -3315,6 +3331,8 @@ describe("P4 the seed HOME of the review runner (task 4.13o)", () => {
 
   it("S6 the seed export cwd sits outside any git repo when TMPDIR points inside one", async () => {
     const fixture = await buildFixture({
+      // Row 4.16: the isolated seed path stays on a non-pilot route (14.12.3).
+      ...isolatedOverride(),
       realCredential: true,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
@@ -4569,6 +4587,8 @@ describe("P4b row 4.15 r6: the runner carries the seed reason", () => {
 
   it("R-SR1 an empty shared store refuses the pass and names the no-entry reason", async () => {
     const fixture = await buildFixture({
+      // Row 4.16: the isolated seed path stays on a non-pilot route (14.12.3).
+      ...isolatedOverride(),
       realCredential: true,
       diffs: ["d-01"],
       calls: [{ value: '{"findings":[]}' }],
@@ -4712,4 +4732,506 @@ describe("P4b row 4.15 r7: the N26 and G2 runner paths", () => {
       tempRoots.delete(root);
     }
   }, 40_000);
+});
+
+// ---------------------------------------------------------------------------
+// Row 4.16: the live-server path (spec D14 "Live-server path (PM 2026-11-20)").
+//
+// The pilot routes reach a model through one bench session on the OpenChamber
+// API. The base URL comes from BENCH_SERVER_BASE and from no other env value.
+// These cases start a loopback fake on port 0. The fake records each method,
+// path, and body. It has no DELETE handler. No case names port 38307 and no
+// case calls the live server. The fake stops in afterEach (the shared watch
+// above) and in a finally block of each case.
+// ---------------------------------------------------------------------------
+
+/** A synthetic non-pilot opencode-go route. The old seed cases of the isolated
+ * path use it, so those cases keep covering the seed and stay green after row
+ * 4.16. It is not one of the four Go pilot routes of D14. */
+const ISOLATED_ROUTE = "opencode-go/isolated-nonpilot#high";
+function isolatedOverride(): Partial<Scenario> {
+  return { route: ISOLATED_ROUTE, routes: routesFile(ISOLATED_ROUTE) };
+}
+
+/** The fake OpenChamber HTTP server. It runs in its own process, because the
+ * runner is a spawnSync child and a server in this process cannot answer while
+ * this process blocks. Port 0 gives a random free port. */
+const LIVE_SERVER_SOURCE = [
+  'const fs = require("node:fs");',
+  'const http = require("node:http");',
+  'const logPath = process.env.LIVE_LOG || "";',
+  'const specPath = process.env.LIVE_SPEC || "";',
+  'let spec = {};',
+  'try { spec = JSON.parse(fs.readFileSync(specPath, "utf8")); } catch (e) {}',
+  'const server = http.createServer((req, res) => {',
+  '  let body = "";',
+  '  req.on("data", (c) => { body += c; });',
+  '  req.on("end", () => {',
+  '    try { if (logPath) fs.appendFileSync(logPath, req.method + " " + req.url + " " + body + "\\n"); } catch (e) {}',
+  '    const url = req.url || "";',
+  '    const send = (obj, status) => {',
+  '      res.writeHead(status || 200, { "content-type": "application/json", connection: "close" });',
+  '      res.end(typeof obj === "string" ? obj : JSON.stringify(obj));',
+  '    };',
+  '    const isMessage = req.method === "POST" && (url.indexOf("/message") >= 0 || url.indexOf("/prompt") >= 0);',
+  '    if (isMessage && spec.fail_sends) {',
+  '      const errorText = spec.send_error || "transport failure";',
+  '      spec.fail_sends = Number(spec.fail_sends) - 1;',
+  '      if (spec.fail_sends <= 0) { delete spec.fail_sends; delete spec.send_error; }',
+  '      fs.writeFileSync(specPath, JSON.stringify(spec));',
+  '      send({ error: errorText }, 500); return;',
+  '    }',
+  '    const finish = () => {',
+  '      if (req.method === "DELETE") { send({ error: "no delete" }, 405); return; }',
+  '      if (req.method === "POST" && url.indexOf("/api/session") === 0 && url.indexOf("/model") < 0 && url.indexOf("/message") < 0 && url.indexOf("/prompt") < 0) {',
+  '        let directory = "";',
+  '        try { directory = JSON.parse(body || "{}").directory || ""; } catch (e) {}',
+  '        send({ id: "ses_live_1", location: { directory } }); return;',
+  '      }',
+  '      if (req.method === "POST" && url.indexOf("/model") >= 0) { send({ ok: true }); return; }',
+  '      if (isMessage) { send({ ok: true, messageID: "msg_live_1" }); return; }',
+  '      if (req.method === "GET" && url.indexOf("/message") >= 0) { send({ data: spec.messages || [], cursor: {} }); return; }',
+  '      if (req.method === "GET" && url.indexOf("/provider") >= 0) { send({ data: [] }); return; }',
+  '      if (req.method === "GET" && url.indexOf("/api/session") === 0) { send({ id: "ses_live_1", location: { directory: spec.directory || "" } }); return; }',
+  '      send({ ok: true });',
+  '    };',
+  '    if (isMessage && spec.send_error) { send({ error: spec.send_error }, 500); return; }',
+  '    if (isMessage && spec.send_delay_ms) { setTimeout(finish, Number(spec.send_delay_ms)); return; }',
+  '    finish();',
+  '  });',
+  '});',
+  'server.listen(0, "127.0.0.1", () => { process.stdout.write("PORT " + server.address().port + "\\n"); });',
+].join("\n");
+
+interface LiveServer {
+  base: string;
+  requests: () => string[];
+  close: () => void;
+}
+
+async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> = {}): Promise<LiveServer> {
+  const logPath = join(fakeRoot, "live-requests.txt");
+  const specPath = join(fakeRoot, "live-spec.json");
+  const scriptPath = join(fakeRoot, "live-server.js");
+  writeFileSync(specPath, JSON.stringify(spec));
+  writeFileSync(scriptPath, LIVE_SERVER_SOURCE);
+  const server = spawn(process.execPath, [scriptPath], {
+    env: { ...process.env, LIVE_LOG: logPath, LIVE_SPEC: specPath },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  startedServers.add(server);
+  serverExits.add(new Promise<void>((done) => { server.once("close", () => done()); }));
+  const port = await new Promise<number>((done, failed) => {
+    let buffer = "";
+    const timer = setTimeout(() => failed(new Error("the live server did not start")), 10_000);
+    server.stdout.on("data", (chunk: Buffer) => {
+      buffer += String(chunk);
+      const m = /PORT (\d+)/.exec(buffer);
+      if (m) { clearTimeout(timer); done(Number(m[1])); }
+    });
+    server.on("error", (e) => { clearTimeout(timer); failed(e); });
+  });
+  return {
+    base: `http://127.0.0.1:${port}`,
+    requests: () => existsSync(logPath)
+      ? readFileSync(logPath, "utf8").split("\n").map((line) => line.trim()).filter((line) => line !== "")
+      : [],
+    close: () => { try { server.kill("SIGKILL"); } catch { /* already gone */ } },
+  };
+}
+
+/** The message parts of one assistant answer on the live path. The answer text
+ * is a fenced D10 block, split over two text parts. A step_finish part holds
+ * the nested token bundle. */
+function liveMessageParts(text: string): unknown[] {
+  return [
+    { type: "text", text: text.slice(0, Math.ceil(text.length / 2)) },
+    { type: "text", text: text.slice(Math.ceil(text.length / 2)) },
+    { type: "step_finish", tokens: { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } } },
+  ];
+}
+
+const PILOT_ROUTE = "opencode-go/hy4-flash-free#high";
+
+/** A key with no plant makes one diff the control of a probe run. The runner
+ * refuses a probe when the set holds no control diff. */
+function writeProbeControl(fixture: Fixture): void {
+  const keysDir = join(fixture.privateDir, "sets", fixture.setId, "keys");
+  mkdirSync(keysDir, { recursive: true });
+  for (const diff of fixture.diffs) {
+    writeFileSync(
+      join(keysDir, `${diff}.json`),
+      `${JSON.stringify({
+        schema: "model-guide-key/1",
+        set_id: fixture.setId,
+        diff_id: diff,
+        plants: [],
+      }, null, 2)}\n`,
+    );
+  }
+}
+
+describe("P4b row 4.16 the live-server path of the review runner", () => {
+  it("L1 a pilot pass creates one session with the job root and the route provider, model, and variant", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const creates = live.requests().filter((line) => line.startsWith("POST /api/session "));
+      expect(creates, "the live path created no session").toHaveLength(1);
+      const body = JSON.parse(creates[0].slice("POST /api/session ".length));
+      expect(typeof body.directory, "the session carries no directory").toBe("string");
+      expect(body.directory.startsWith("/"), "the session directory is not absolute").toBe(true);
+      expect(body.directory.startsWith(fixture.repo), "the session directory is inside the git repo").toBe(false);
+      expect(existsSync(body.directory), "the session directory is not a real folder").toBe(true);
+      const all = live.requests().join("\n");
+      expect(all, "the session carries no provider").toContain("opencode-go");
+      expect(all, "the session carries no model").toContain("hy4-flash-free");
+      expect(all, "the session carries no variant").toContain("high");
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L2 a project config missing one deny refuses with exit 2 before any session create", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot);
+    const job = join(fixture.tmp, "preset-job");
+    mkdirSync(job, { recursive: true });
+    writeFileSync(
+      join(job, "opencode.json"),
+      JSON.stringify({ permission: {
+        read: "deny", edit: "deny", bash: "deny", webfetch: "deny",
+        websearch: "deny", question: "deny", subagent: "allow", skill: "deny",
+      } }),
+    );
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+        BENCH_OPENCODE_HOME: job,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), "the runner printed no named line").toHaveLength(1);
+      expect(
+        live.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "a session was created on a refused deny",
+      ).toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L3 a pilot pass makes no auth export, no auth import, and no seed call", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the live path made a seed or auth call").toEqual([]);
+      expect(
+        live.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "the live path created no session",
+      ).toHaveLength(1);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L3 a pilot probe makes no auth export, no auth import, and no seed call", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    writeProbeControl(fixture);
+    const live = await startLiveServer(fixture.fakeRoot);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture, PILOT_ROUTE), "--probe"], {
+        BENCH_SERVER_BASE: live.base,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the live probe made a seed or auth call").toEqual([]);
+      expect(
+        live.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "the live probe created no session",
+      ).toHaveLength(1);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L4 the runner reads the answer text and token sums from the session message parts", async () => {
+    const answer = "```json\n{\"findings\":[]}\n```\n";
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [{ info: { role: "assistant" }, parts: liveMessageParts(answer) }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(
+        live.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "the live path created no session",
+      ).toHaveLength(1);
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the runner wrote no pass record").toHaveLength(1);
+      expect(records[0].tokens, "the token sums of the message parts").toEqual({
+        input: 7, output: 8, reasoning: 9, cache_read: 10, cache_write: 11, total: 45,
+      });
+      expect(records[0].tokens_complete, "the call held a token part").toBe(true);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L5 a message send past MG_CALL_TIMEOUT_S stops the call and writes no pass record", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, { send_delay_ms: 30_000 });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the outer timeout").toBeUndefined();
+      expect(
+        namedLines(result).some((line) => line.startsWith("review-run:")),
+        `the runner printed no fixed timeout text: ${result.stdout}`,
+      ).toBe(true);
+      expect(passRecords(fixture.privateDir), "the runner wrote a pass record after the timeout").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L6 a probe retries a transport error up to 3 calls and reports unreachable", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    writeProbeControl(fixture);
+    const live = await startLiveServer(fixture.fakeRoot, { send_error: "transport failure" });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture, PILOT_ROUTE), "--probe"], {
+        BENCH_SERVER_BASE: live.base,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(3);
+      const lines = stdoutLines(result);
+      expect(lines, "the probe printed no line").toHaveLength(1);
+      expect(lines[0], "the probe state is not unreachable").toContain("unreachable");
+      const sends = live.requests().filter((line) => /^POST .*\/(message|prompt)/.test(line));
+      expect(sends, "the probe did not make 3 send calls").toHaveLength(3);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L6 a probe that fails once and then succeeds reports reachable with no error line", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    writeProbeControl(fixture);
+    // The fake answers the first send with a transport error and the next one
+    // normally. The spec counter lives in the server script below.
+    const live = await startLiveServer(fixture.fakeRoot, { send_error: "transport failure", fail_sends: 1 });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, [...runArgs(fixture, PILOT_ROUTE), "--probe"], {
+        BENCH_SERVER_BASE: live.base,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = stdoutLines(result);
+      expect(lines, "the probe printed no line").toHaveLength(1);
+      expect(lines[0], "the probe state is not reachable").toContain("reachable");
+      const sends = live.requests().filter((line) => /^POST .*\/(message|prompt)/.test(line));
+      expect(sends, "the probe did not retry on the live server").toHaveLength(2);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L7 a pilot pass, probe, and judge path make no DELETE request", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(
+        live.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "the live path created no session",
+      ).toHaveLength(1);
+      expect(
+        live.requests().filter((line) => line.startsWith("DELETE ")),
+        "the live path made a DELETE request",
+      ).toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L8 a known key shape in a message part is refused and no value-list seam is called", async () => {
+    const answer = `the answer holds ${SECRET}\n\`\`\`json\n{"findings":[]}\n\`\`\`\n`;
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [{ info: { role: "assistant" }, parts: liveMessageParts(answer) }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(
+        live.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "the live path created no session",
+      ).toHaveLength(1);
+      expect(result.stdout, "the found key reached stdout").not.toContain(SECRET);
+      const stored = filesHolding(fixture.privateDir, SECRET);
+      expect(stored, "the found key was stored").toEqual([]);
+      const scanValues = logEntries(fixture.logPath).filter((entry) => entry.argv.startsWith("scan-values"));
+      expect(scanValues.map((entry) => entry.argv), "the live path called scan-values").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("L9 the quota rules stay: wait makes no live call, ready makes one session", async () => {
+    const waited = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      quotaPercent: 70,
+    });
+    const liveWait = await startLiveServer(waited.fakeRoot);
+    try {
+      assertRunnerExists();
+      const result = runRunner(waited, runArgs(waited, PILOT_ROUTE), { BENCH_SERVER_BASE: liveWait.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(quotaRequests(waited).length, "the runner read no quota before the wait").toBeGreaterThan(0);
+      expect(
+        liveWait.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "a wait state made a live session",
+      ).toEqual([]);
+    } finally {
+      liveWait.close();
+      dropFixture(waited);
+    }
+
+    const ready = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+      quotaPercent: 10,
+    });
+    const liveReady = await startLiveServer(ready.fakeRoot);
+    try {
+      const result = runRunner(ready, runArgs(ready, PILOT_ROUTE), { BENCH_SERVER_BASE: liveReady.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(quotaRequests(ready).length, "the runner read no quota through BENCH_QUOTA_BASE").toBeGreaterThan(0);
+      expect(
+        liveReady.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "a ready state made no live session",
+      ).toHaveLength(1);
+    } finally {
+      liveReady.close();
+      dropFixture(ready);
+    }
+  }, 60_000);
+
+  it("L10 the probe prints the state line and keeps the exit codes on the live path", async () => {
+    const ok = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    writeProbeControl(ok);
+    const liveOk = await startLiveServer(ok.fakeRoot);
+    try {
+      assertRunnerExists();
+      const result = runRunner(ok, [...runArgs(ok, PILOT_ROUTE), "--probe"], { BENCH_SERVER_BASE: liveOk.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = stdoutLines(result);
+      expect(lines, "the probe printed no line").toHaveLength(1);
+      expect(lines[0], `${PILOT_ROUTE} does not head the probe line`).toContain(`${PILOT_ROUTE} reachable`);
+      expect(
+        liveOk.requests().filter((line) => line.startsWith("POST /api/session ")),
+        "the reachable probe created no live session",
+      ).toHaveLength(1);
+    } finally {
+      liveOk.close();
+      dropFixture(ok);
+    }
+
+    const refused = await buildFixture({
+      route: PILOT_ROUTE,
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const liveRefused = await startLiveServer(refused.fakeRoot);
+    try {
+      const result = runRunner(refused, ["--route", METERED_ROUTE, "--set", refused.setId, "--private", refused.privateDir, "--probe"], {
+        BENCH_SERVER_BASE: liveRefused.base,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(namedLines(result), "the refusal printed no named line").toHaveLength(1);
+    } finally {
+      liveRefused.close();
+      dropFixture(refused);
+    }
+  }, 60_000);
+
 });

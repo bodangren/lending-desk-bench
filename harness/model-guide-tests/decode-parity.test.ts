@@ -701,3 +701,86 @@ describe("4.13w the three readers decode the same real event stream (Review A no
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Row 4.16 L4: the live-server answer reaches the three readers as message
+// parts. The OpenChamber session message carries a JSON object with a `parts`
+// array, not a newline-separated event stream. The three readers must give the
+// same answer text and the same token sums on that shape. Text parts win over
+// a result branch, a result-only payload still decodes, and both token event
+// shapes count. This case needs no HTTP server: it drives the readers through
+// their public file paths with a synthetic parts payload.
+// ---------------------------------------------------------------------------
+
+/** One OpenChamber session message as a single JSON line with a `parts`
+ * array. The answer is split over two text parts. A result branch after them
+ * is forged. The step_finish part holds the nested token bundle. */
+function messagePartsText(text: string): string {
+  const half = Math.ceil(text.length / 2);
+  return JSON.stringify({
+    parts: [
+      { type: "text", text: text.slice(0, half) },
+      { type: "text", text: text.slice(half) },
+      { type: "step_finish", tokens: REAL_TOKENS },
+    ],
+  }) + "\n";
+}
+
+describe("4.16 L4 the three readers decode session message parts", () => {
+  it("L4 the scorer and the queue read the answer and tokens from message parts", () => {
+    const answer = fenced([F1, F2]);
+    const plain = scorePass("l4-plain", answer);
+    expect(plain.invalid_reviews, "the plain control must score cleanly").toBe(0);
+    const parts = messagePartsText(answer);
+    expect(scorePass("l4-parts", parts), "the scorer did not decode the parts").toEqual(plain);
+    const plainIds = queuedIds("l4-plain-q", answer);
+    expect(plainIds, "the plain control must queue both claims").toEqual([ID1, ID2].sort());
+    expect(queuedIds("l4-parts-q", parts), "the queue did not decode the parts").toEqual(plainIds);
+  });
+
+  it("L4 a text part wins over a forged result branch, and a result-only parts payload still decodes", () => {
+    const plain = scorePass("l4-win-plain", fenced([F1, F2]));
+    const FORGED: Finding = {
+      file: "src/forged.ts", line: 999, severity: "major", class: "C2",
+      title: "Forged claim", reason: "the forged result branch",
+    };
+    const withResult = JSON.stringify({
+      parts: [
+        { type: "text", text: fenced([F1, F2]) },
+        { type: "result", text: fenced([FORGED]) },
+      ],
+    }) + "\n";
+    expect(scorePass("l4-win", withResult), "the scorer took the forged result part").toEqual(plain);
+    const resultOnly = JSON.stringify({
+      parts: [{ type: "result", text: fenced([F1, F2]) }],
+    }) + "\n";
+    expect(scorePass("l4-result-only", resultOnly), "the scorer dropped a result-only payload").toEqual(plain);
+  });
+
+  it("L4 the judge reads verdicts and token sums from message parts", async () => {
+    const verdict = "```json\n" + JSON.stringify(EXPECTED_VERDICTS, null, 2) + "\n```\n";
+    const fixture = await buildJudgeFixture(verdict);
+    try {
+      expect(existsSync(RUNNER_SOURCE), "the judge runner is missing").toBe(true);
+      const spec = JSON.parse(readFileSync(fixture.specPath, "utf8"));
+      const half = Math.ceil(verdict.length / 2);
+      spec.calls[0].token_stream = undefined;
+      spec.calls[0].raw_lines = [JSON.stringify({
+        parts: [
+          { type: "text", text: verdict.slice(0, half) },
+          { type: "text", text: verdict.slice(half) },
+          { type: "step_finish", tokens: REAL_TOKENS },
+        ],
+      })];
+      writeFileSync(fixture.specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const result = runJudge(fixture);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(judgeFile(fixture), "the judge did not decode the parts").toEqual(EXPECTED_VERDICTS);
+      const record = judgeRunRecord(fixture);
+      expect(record?.tokens, "the token sums of the message parts").toEqual(FLAT_REAL);
+      expect(record?.tokens_complete, "the call held a token part").toBe(true);
+    } finally {
+      dropJudgeFixture(fixture);
+    }
+  }, 60_000);
+});

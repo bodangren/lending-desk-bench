@@ -2217,7 +2217,10 @@ describe("P4 the judge route list (task 4.13c)", () => {
       readFileSync(REVIEW_RUNNER_SOURCE, "utf8"),
       "review-run.sh reads judges.json",
     ).not.toContain("judges.json");
-    for (const judge of JUDGE_ROUTES) {
+    // Row 4.16: the Go judge route uses the live-server path and is covered by
+    // L11 below. The other two judge routes stay on the isolated seed path.
+    const ISOLATED_JUDGES = JUDGE_ROUTES.filter((j) => !j.route.startsWith("opencode-go/"));
+    for (const judge of ISOLATED_JUDGES) {
       const fixture = await buildFixture({
         route: REVIEW_ONLY_ROUTE,
         quotaProvider: "opencode-go",
@@ -3287,4 +3290,130 @@ describe("P4b row 4.15 r5: the judge daemon guard shape", () => {
       tempRoots.delete(foreignRoot);
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// Row 4.16 L11: the Go judge route on the live-server path (spec D14).
+// The judge runner reads judges.json, never routes.json. A judge route on the
+// live server uses one bench session with the job root and the judge model.
+// It makes no seed or auth call and no DELETE request. The fake HTTP server
+// runs in its own process on port 0 and stops in afterEach and in a finally
+// block. No case names port 38307.
+// ---------------------------------------------------------------------------
+
+const LIVE_SERVER_SOURCE = [
+  'const fs = require("node:fs");',
+  'const http = require("node:http");',
+  'const logPath = process.env.LIVE_LOG || "";',
+  'const specPath = process.env.LIVE_SPEC || "";',
+  'let spec = {};',
+  'try { spec = JSON.parse(fs.readFileSync(specPath, "utf8")); } catch (e) {}',
+  'const server = http.createServer((req, res) => {',
+  '  let body = "";',
+  '  req.on("data", (c) => { body += c; });',
+  '  req.on("end", () => {',
+  '    try { if (logPath) fs.appendFileSync(logPath, req.method + " " + req.url + " " + body + "\\n"); } catch (e) {}',
+  '    const url = req.url || "";',
+  '    const send = (obj, status) => {',
+  '      res.writeHead(status || 200, { "content-type": "application/json", connection: "close" });',
+  '      res.end(typeof obj === "string" ? obj : JSON.stringify(obj));',
+  '    };',
+  '    const finish = () => {',
+  '      if (req.method === "DELETE") { send({ error: "no delete" }, 405); return; }',
+  '      if (req.method === "POST" && url.indexOf("/api/session") === 0 && url.indexOf("/model") < 0 && url.indexOf("/message") < 0 && url.indexOf("/prompt") < 0) {',
+  '        let directory = "";',
+  '        try { directory = JSON.parse(body || "{}").directory || ""; } catch (e) {}',
+  '        send({ id: "ses_live_judge", location: { directory } }); return;',
+  '      }',
+  '      if (req.method === "POST" && url.indexOf("/model") >= 0) { send({ ok: true }); return; }',
+  '      if (req.method === "POST" && (url.indexOf("/message") >= 0 || url.indexOf("/prompt") >= 0)) { send({ ok: true, messageID: "msg_live_judge" }); return; }',
+  '      if (req.method === "GET" && url.indexOf("/message") >= 0) { send({ data: spec.messages || [], cursor: {} }); return; }',
+  '      if (req.method === "GET" && url.indexOf("/provider") >= 0) { send({ data: [] }); return; }',
+  '      if (req.method === "GET" && url.indexOf("/api/session") === 0) { send({ id: "ses_live_judge", location: { directory: spec.directory || "" } }); return; }',
+  '      send({ ok: true });',
+  '    };',
+  '    finish();',
+  '  });',
+  '});',
+  'server.listen(0, "127.0.0.1", () => { process.stdout.write("PORT " + server.address().port + "\\n"); });',
+].join("\n");
+
+interface LiveServer {
+  base: string;
+  requests: () => string[];
+  close: () => void;
+}
+
+async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> = {}): Promise<LiveServer> {
+  const logPath = join(fakeRoot, "live-requests.txt");
+  const specPath = join(fakeRoot, "live-spec.json");
+  const scriptPath = join(fakeRoot, "live-server.js");
+  writeFileSync(specPath, JSON.stringify(spec));
+  writeFileSync(scriptPath, LIVE_SERVER_SOURCE);
+  const server = spawn(process.execPath, [scriptPath], {
+    env: { ...process.env, LIVE_LOG: logPath, LIVE_SPEC: specPath },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  startedServers.add(server);
+  serverExits.add(new Promise<void>((done) => { server.once("close", () => done()); }));
+  const port = await new Promise<number>((done, failed) => {
+    let buffer = "";
+    const timer = setTimeout(() => failed(new Error("the live server did not start")), 10_000);
+    server.stdout.on("data", (chunk: Buffer) => {
+      buffer += String(chunk);
+      const m = /PORT (\d+)/.exec(buffer);
+      if (m) { clearTimeout(timer); done(Number(m[1])); }
+    });
+    server.on("error", (e) => { clearTimeout(timer); failed(e); });
+  });
+  return {
+    base: `http://127.0.0.1:${port}`,
+    requests: () => existsSync(logPath)
+      ? readFileSync(logPath, "utf8").split("\n").map((line) => line.trim()).filter((line) => line !== "")
+      : [],
+    close: () => { try { server.kill("SIGKILL"); } catch { /* already gone */ } },
+  };
+}
+
+const LIVE_JUDGE = "opencode-go/muse-spark-1.3-contributor#high";
+
+describe("P4b row 4.16 L11 the live-server path of the judge runner", () => {
+  it("L11 a Go judge route uses one session with the job root and the judge model, with no seed, auth, or DELETE", async () => {
+    const verdict = "```json\n" + JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }, null, 2) + "\n```\n";
+    const fixture = await buildFixture({
+      route: LIVE_JUDGE,
+      groups: [GROUP_ONE],
+      judgesRoutes: [{ route: LIVE_JUDGE, quota_provider: "opencode-go", quota_source: "opencode-go" }],
+      calls: [
+        { tokens: TOKENS_A, value: answer([jsonBlock(`{"d-01#C0a1b2c3d4e5f":"real-defect"}`)]) },
+      ],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [{ info: { role: "assistant" }, parts: [
+        { type: "text", text: verdict.slice(0, Math.ceil(verdict.length / 2)) },
+        { type: "text", text: verdict.slice(Math.ceil(verdict.length / 2)) },
+      ] }],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, judgeArgs(fixture), { BENCH_SERVER_BASE: live.base });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const creates = live.requests().filter((line) => line.startsWith("POST /api/session "));
+      expect(creates, "the live judge created no session").toHaveLength(1);
+      const body = JSON.parse(creates[0].slice("POST /api/session ".length));
+      expect(typeof body.directory, "the session carries no directory").toBe("string");
+      expect(body.directory.startsWith("/"), "the session directory is not absolute").toBe(true);
+      expect(body.directory.startsWith(fixture.repo), "the session directory is inside the git repo").toBe(false);
+      expect(existsSync(body.directory), "the session directory is not a real folder").toBe(true);
+      expect(live.requests().join("\n"), "the session carries no judge model").toContain("muse-spark-1.3-contributor");
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the live judge made a seed or auth call").toEqual([]);
+      expect(live.requests().filter((line) => line.startsWith("DELETE ")), "the live judge made a DELETE").toEqual([]);
+      expect(judgeFile(fixture, "a"), "the judge wrote no judge file").not.toBeNull();
+      expect(runRecord(fixture, "a"), "the judge wrote no run record").not.toBeNull();
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
 });
