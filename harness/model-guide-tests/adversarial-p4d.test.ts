@@ -18,7 +18,11 @@ const TSX = join(HARNESS, "node_modules", ".bin", "tsx");
 const SECRET = "SYNTHETIC-415-ONLY-0123456789";
 const KEY_TEXT = "the error output held a credential value";
 const SCAN_TEXT = "the error output could not be scanned";
-const ROUTE = "opencode-go/hy4-flash-free#high";
+// Row 4.16 r5: a synthetic Go route written into the temp routes.json. It is
+// not a D14 pilot route, so the isolated path stays available, and its quota
+// provider stays opencode-go, which the ra-quota stub serves.
+const ROUTE = "opencode-go/isolated-nonpilot#high";
+const QUOTA_PROVIDER = "opencode-go";
 const SET = "mg-p4d";
 const SUBS = ["home", "config", "data", "state", "cache", "runtime", "tmp"];
 const roots = new Set<string>();
@@ -114,7 +118,7 @@ function errorLine(runner: string, raw: string, stderr = "", scanFail = false, s
   const text = source(runner);
   const block = between(text, "scan_output() {", runner === "review-run.sh" ? "is_region_error() {" : "write_sample_prompt() {");
   return bash(root, `${block}\nline="$(error_line_of "$1/out" "$1/err" fallback)"\nprintf '%s\\n' "$line"`, {
-    CREDENTIAL_HELPER: join(root, "helper"), QUOTA_PROVIDER: "opencode-go",
+    CREDENTIAL_HELPER: join(root, "helper"), QUOTA_PROVIDER,
     TMP_VALUES: join(root, "values"), MG_SECRET: secret, MG_SCAN_FAIL: scanFail ? "1" : "0",
   });
 }
@@ -150,9 +154,13 @@ function fixture(calls: unknown[] = [], diffs = ["d-01"]) {
   }
   put(join(repo, "harness", "opencode-host.sh"), readFileSync(join(HARNESS, "opencode-host.sh"), "utf8"), true);
   put(join(guide, "provider-credential.sh"), HELPER, true);
-  put(join(guide, "judges.json"), JSON.stringify([{ route: ROUTE, quota_provider: "opencode-go", quota_source: "opencode-go" }]));
+  put(join(guide, "judges.json"), JSON.stringify([{ route: ROUTE, quota_provider: QUOTA_PROVIDER, quota_source: QUOTA_PROVIDER }]));
   put(join(root, "fake-opencode"), readFileSync(join(HARNESS, "model-guide-tests", "fixtures", "fakes", "fake-opencode"), "utf8"), true);
   put(join(root, "quota-stub"), '#!/bin/sh\nprintf \'%s\\n\' \'{"opencode-go":{"windows":{"5h":{"percent":10},"weekly":{"percent":10}}}}\'\n', true);
+  put(join(guide, "routes.json"), JSON.stringify([{
+    family: "T", route: ROUTE, kind: "plan",
+    quota_provider: QUOTA_PROVIDER, quota_source: QUOTA_PROVIDER, ranked: true,
+  }]));
   put(join(root, "spec.json"), JSON.stringify({ calls }));
   mkdirSync(join(repo, "node_modules", ".bin"), { recursive: true });
   symlinkSync(TSX, join(repo, "node_modules", ".bin", "tsx"));
@@ -194,7 +202,7 @@ for (const runner of ["review-run.sh", "judge-run.sh"]) {
   describe(`ADV-P4D ${runner}`, () => {
     it("carries an exact seed reason before any model call", () => {
       const f = fixture();
-      const reason = "the store holds no active entry of provider opencode-go";
+      const reason = `the store holds no active entry of provider ${QUOTA_PROVIDER}`;
       const result = f.run(runner, { MG_SEED_TEXT: `provider-credential: ${reason}` });
       expect(result.status, result.stderr).toBe(2);
       expect(result.stdout).toBe(`${runner.replace(".sh", "")}: the provider credential seed failed: ${reason}\n`);
@@ -215,7 +223,7 @@ for (const runner of ["review-run.sh", "judge-run.sh"]) {
 
     it.skip("ADV-P4D-1 drops credential text appended to an allowed seed prefix", () => {
       const f = fixture();
-      const result = f.run(runner, { MG_SEED_TEXT: `provider-credential: the store holds no active entry of provider opencode-go ${SECRET}` });
+      const result = f.run(runner, { MG_SEED_TEXT: `provider-credential: the store holds no active entry of provider ${QUOTA_PROVIDER} ${SECRET}` });
       expect(result.status).toBe(2);
       expect(result.stdout + result.stderr).not.toContain(SECRET);
       expect(f.calls()).toBe("");
