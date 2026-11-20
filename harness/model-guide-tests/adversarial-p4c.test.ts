@@ -72,7 +72,9 @@ const TSX_BIN = join(HARNESS, "node_modules", ".bin", "tsx");
 
 /** The review route of the cases. It is a Go route, so the region rule
  * applies and the fake quota server serves it the live window set. */
-const ROUTE = "opencode-go/muse-spark-1.3-contributor#high";
+// Row 4.16 r5: a synthetic Go route written into the temp routes.json. It is
+// not a D14 pilot route, so the isolated path stays available.
+const ROUTE = "opencode-go/isolated-nonpilot#high";
 /** The judge route of the cases. It is outside the ranked families. */
 const JUDGE_ROUTE = "bailian-token-plan/qwen3.8-max#high";
 const SET_ID = "mg-advc-set";
