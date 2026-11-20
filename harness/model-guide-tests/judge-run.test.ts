@@ -3307,6 +3307,7 @@ const LIVE_SERVER_SOURCE = [
   'const http = require("node:http");',
   'const logPath = process.env.LIVE_LOG || "";',
   'const specPath = process.env.LIVE_SPEC || "";',
+  'const timeLog = process.env.LIVE_TIME_LOG || "";',
   'let spec = {};',
   'let queuedAt = 0;',
   'try { spec = JSON.parse(fs.readFileSync(specPath, "utf8")); } catch (e) {}',
@@ -3315,6 +3316,7 @@ const LIVE_SERVER_SOURCE = [
   '  req.on("data", (c) => { body += c; });',
   '  req.on("end", () => {',
   '    try { if (logPath) fs.appendFileSync(logPath, req.method + " " + req.url + " " + body + "\\n"); } catch (e) {}',
+  '    try { if (timeLog) fs.appendFileSync(timeLog, String(Date.now()) + " " + req.method + " " + req.url + "\\n"); } catch (e) {}',
   '    const url = req.url || "";',
   '    const send = (obj, status) => {',
   '      res.writeHead(status || 200, { "content-type": "application/json", connection: "close" });',
@@ -3348,17 +3350,19 @@ const LIVE_SERVER_SOURCE = [
 interface LiveServer {
   base: string;
   requests: () => string[];
+  times: () => number[];
   close: () => void;
 }
 
 async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> = {}): Promise<LiveServer> {
   const logPath = join(fakeRoot, "live-requests.txt");
+  const timePath = join(fakeRoot, "live-times.txt");
   const specPath = join(fakeRoot, "live-spec.json");
   const scriptPath = join(fakeRoot, "live-server.js");
   writeFileSync(specPath, JSON.stringify(spec));
   writeFileSync(scriptPath, LIVE_SERVER_SOURCE);
   const server = spawn(process.execPath, [scriptPath], {
-    env: { ...process.env, LIVE_LOG: logPath, LIVE_SPEC: specPath },
+    env: { ...process.env, LIVE_LOG: logPath, LIVE_SPEC: specPath, LIVE_TIME_LOG: timePath },
     stdio: ["ignore", "pipe", "pipe"],
   });
   startedServers.add(server);
@@ -3378,6 +3382,9 @@ async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> =
     requests: () => existsSync(logPath)
       ? readFileSync(logPath, "utf8").split("\n").map((line) => line.trim()).filter((line) => line !== "")
       : [],
+    times: () => !existsSync(timePath) ? [] : readFileSync(timePath, "utf8")
+      .split("\n").map((line) => Number(line.trim().split(" ")[0]))
+      .filter((value) => Number.isFinite(value) && value > 0),
     close: () => { try { server.kill("SIGKILL"); } catch { /* already gone */ } },
   };
 }
@@ -3669,6 +3676,73 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer in the judge", 
       expect(judgeFile(f, "a"), "the newer final verdict was not selected").toEqual({
         "d-01#C0a1b2c3d4e5f": "real-defect",
       });
+    } finally {
+      live.close();
+      dropFixture(f);
+    }
+  }, 60_000);
+});
+
+// ---------------------------------------------------------------------------
+// Row 4.16 r6 (Review A a87c29c): expiry at the first GET after the deadline,
+// and a newest partial that must block an older terminal answer. Each case
+// fails at the role base.
+// ---------------------------------------------------------------------------
+describe("P4b row 4.16r6 deadline expiry and newest partial in the judge runner", () => {
+  const FINAL_VERDICT = "```json\n" + JSON.stringify({ "d-01#C0a1b2c3d4e5f": "real-defect" }, null, 2) + "\n```\n";
+  const EARLY_VERDICT = "```json\n" + JSON.stringify({ "d-01#C0a1b2c3d4e5f": "false-claim" }, null, 2) + "\n```\n";
+
+  function fixture(): Promise<Fixture> {
+    return buildFixture({
+      route: LIVE_JUDGE,
+      groups: [GROUP_ONE],
+      judgesRoutes: [{ route: LIVE_JUDGE, quota_provider: "opencode-go", quota_source: "opencode-go" }],
+      calls: [{ tokens: TOKENS_A, value: answer([jsonBlock(`{"d-01#C0a1b2c3d4e5f":"real-defect"}`)]) }],
+    });
+  }
+
+  it("F13 a verdict due at 1.5 s is refused under a 1 s deadline, with no request after expiry", async () => {
+    const f = await fixture();
+    const live = await startLiveServer(f.fakeRoot, {
+      messages: [nativeJudgeAssistant(FINAL_VERDICT)], queue_delay_ms: 1500,
+    });
+    try {
+      assertRunnerExists();
+      const started = Date.now();
+      const result = runJudge(f, judgeArgs(f), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the outer timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(result.stdout, "the deadline text is absent").toMatch(/timed out|did not complete|deadline/);
+      expect(judgeFile(f, "a"), "a late verdict was written").toBeNull();
+      const late = live.times().filter((time) => time > started + 1500);
+      expect(late, "a request started after the deadline").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(f);
+    }
+  }, 60_000);
+
+  it("F20 a newest partial verdict blocks an older completed verdict", async () => {
+    const f = await fixture();
+    const live = await startLiveServer(f.fakeRoot, {
+      messages: [
+        nativeJudgeAssistant("partial without completion", {
+          id: "msg_new_partial", complete: false, created: 2000,
+        }),
+        nativeJudgeAssistant(EARLY_VERDICT, { id: "msg_early", created: 1000, completed: 1001 }),
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(f, judgeArgs(f), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "2",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(judgeFile(f, "a"), "the older verdict was accepted behind a newer partial").toBeNull();
     } finally {
       live.close();
       dropFixture(f);

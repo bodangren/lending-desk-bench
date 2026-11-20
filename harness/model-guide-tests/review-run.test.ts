@@ -1590,25 +1590,20 @@ describe("P4 R9 the value scan", () => {
 });
 
 describe("P4 R10 the large raw output", () => {
-  it("R10 keeps the tail of a 2 MiB output in the stored answer", async () => {
-    const answer = '```json\n{"findings":[],"tail":"TAIL-MARKER"}\n```\n';
+  it("R10 stores a 2 MiB raw output whole on the isolated path", async () => {
+    // Row 4.16 r6: restore the r4 contract (test-strategy.md:695). The
+    // non-pilot route of this fixture keeps the isolated seed path.
     const fixture = await buildFixture({
       diffs: ["d-01"],
-      calls: [{ stdout_bytes: TWO_MIB, value: answer }],
+      calls: [{ stdout_bytes: TWO_MIB, value: "TAIL-MARKER" }],
     });
     try {
       assertRunnerExists();
       const result = runRunner(fixture, runArgs(fixture));
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-      // Row 4.16 r5: Green stores the plain decoded answer, not the raw
-      // 2 MiB stream. The proof is that the 2 MiB read does not break the run
-      // and no oversized raw stream is written into the private folder.
-      const records = passRecords(fixture.privateDir);
-      expect(records, "the run wrote no pass record").toHaveLength(1);
-      const oversized = filesUnder(fixture.privateDir).filter(
-        (file) => statSync(file).size > TWO_MIB / 2,
-      );
-      expect(oversized, "a raw 2 MiB output was written").toEqual([]);
+      const stored = filesHolding(fixture.privateDir, "TAIL-MARKER");
+      expect(stored, "the runner stored no raw output with the tail").toHaveLength(1);
+      expect(statSync(stored[0]).size, "the raw output was cut").toBeGreaterThan(TWO_MIB - 1024);
     } finally {
       dropFixture(fixture);
     }
@@ -4773,6 +4768,7 @@ const LIVE_SERVER_SOURCE = [
   'const http = require("node:http");',
   'const logPath = process.env.LIVE_LOG || "";',
   'const specPath = process.env.LIVE_SPEC || "";',
+  'const timeLog = process.env.LIVE_TIME_LOG || "";',
   'let spec = {};',
   'let queuedAt = 0;',
   'try { spec = JSON.parse(fs.readFileSync(specPath, "utf8")); } catch (e) {}',
@@ -4781,6 +4777,7 @@ const LIVE_SERVER_SOURCE = [
   '  req.on("data", (c) => { body += c; });',
   '  req.on("end", () => {',
   '    try { if (logPath) fs.appendFileSync(logPath, req.method + " " + req.url + " " + body + "\\n"); } catch (e) {}',
+  '    try { if (timeLog) fs.appendFileSync(timeLog, String(Date.now()) + " " + req.method + " " + req.url + "\\n"); } catch (e) {}',
   '    const url = req.url || "";',
   '    const send = (obj, status) => {',
   '      res.writeHead(status || 200, { "content-type": "application/json", connection: "close" });',
@@ -4824,11 +4821,13 @@ const LIVE_SERVER_SOURCE = [
 interface LiveServer {
   base: string;
   requests: () => string[];
+  times: () => number[];
   close: () => void;
 }
 
 async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> = {}): Promise<LiveServer> {
   const logPath = join(fakeRoot, "live-requests.txt");
+  const timePath = join(fakeRoot, "live-times.txt");
   const specPath = join(fakeRoot, "live-spec.json");
   const scriptPath = join(fakeRoot, "live-server.js");
   // Row 4.16 r5: a fixture that does not name a message page gets one native
@@ -4841,7 +4840,7 @@ async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> =
   writeFileSync(specPath, JSON.stringify(spec));
   writeFileSync(scriptPath, LIVE_SERVER_SOURCE);
   const server = spawn(process.execPath, [scriptPath], {
-    env: { ...process.env, LIVE_LOG: logPath, LIVE_SPEC: specPath },
+    env: { ...process.env, LIVE_LOG: logPath, LIVE_SPEC: specPath, LIVE_TIME_LOG: timePath },
     stdio: ["ignore", "pipe", "pipe"],
   });
   startedServers.add(server);
@@ -4861,6 +4860,9 @@ async function startLiveServer(fakeRoot: string, spec: Record<string, unknown> =
     requests: () => existsSync(logPath)
       ? readFileSync(logPath, "utf8").split("\n").map((line) => line.trim()).filter((line) => line !== "")
       : [],
+    times: () => !existsSync(timePath) ? [] : readFileSync(timePath, "utf8")
+      .split("\n").map((line) => Number(line.trim().split(" ")[0]))
+      .filter((value) => Number.isFinite(value) && value > 0),
     close: () => { try { server.kill("SIGKILL"); } catch { /* already gone */ } },
   };
 }
@@ -5730,6 +5732,72 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
       expect(records[0].tokens, "the older partial token bundle was recorded").toEqual({
         input: 7, output: 8, reasoning: 9, cache_read: 10, cache_write: 11, total: 45,
       });
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+});
+
+// ---------------------------------------------------------------------------
+// Row 4.16 r6 (Review A a87c29c): expiry at the first GET after the deadline,
+// and a newest partial that must block an older terminal answer. Both runners
+// share the live selector. Each case fails at the role base.
+// ---------------------------------------------------------------------------
+describe("P4b row 4.16r6 deadline expiry and newest partial in the review runner", () => {
+  const FINAL = "```json\n{\"findings\":[]}\n```\n";
+  const EARLY = "```json\n{\"findings\":[{\"early\":true}]}\n```\n";
+
+  it("F13 an answer due at 1.5 s is refused under a 1 s deadline, with no request after expiry", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeAssistant(FINAL)], queue_delay_ms: 1500,
+    });
+    try {
+      assertRunnerExists();
+      const started = Date.now();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the outer timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      expect(result.stdout, "the deadline text is absent").toMatch(/timed out|did not complete|deadline/);
+      expect(passRecords(fixture.privateDir), "a late answer wrote a pass record").toEqual([]);
+      const late = live.times().filter((time) => time > started + 1500);
+      expect(late, "a request started after the deadline").toEqual([]);
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F20 a newest partial answer blocks an older completed answer", async () => {
+    const fixture = await buildFixture({
+      route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [
+        nativeAssistant("partial without completion", {
+          id: "msg_new_partial", complete: false, created: 2000,
+        }),
+        nativeAssistant(EARLY, { id: "msg_early", created: 1000, completed: 1001 }),
+      ],
+    });
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+        MG_CALL_TIMEOUT_S: "1",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      const records = passRecords(fixture.privateDir);
+      expect(
+        records.length > 0 && records[0].state === "complete",
+        "the older completed answer was accepted behind a newer partial",
+      ).toBe(false);
     } finally {
       live.close();
       dropFixture(fixture);
