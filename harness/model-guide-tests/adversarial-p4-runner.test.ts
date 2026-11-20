@@ -45,7 +45,9 @@ const SECRET_A = "sk-adv-runner-secret-aaaaaaaa-0123456789";
 /** The secret of another provider. The stub scan never prints this value. */
 const SECRET_B = "sk-adv-runner-other-bbbbbbbb-9876543210";
 
-const GO_ROUTE = "opencode-go/muse-spark-1.3-contributor#high";
+// Row 4.16 r5: a synthetic Go route written into the temp routes.json. It is
+// not a D14 pilot route, so the isolated path stays available.
+const GO_ROUTE = "opencode-go/isolated-nonpilot#high";
 const SET_ID = "mg-adv-runner";
 
 const roots: string[] = [];
