@@ -4418,8 +4418,8 @@ esac
           token_stream: {
             texts: ["```json\n{\"findings\": []}\n```"],
             tokens: {
-              input: 5_000_000_000_000_000,
-              output: 5_000_000_000_000_000,
+              input: 10_000_000_000_000_000,
+              output: 10_000_000_000_000_000,
               reasoning: 0,
               cache: { read: 0, write: 0 },
             },
