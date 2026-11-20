@@ -236,6 +236,12 @@ function readPlants(key: any): SetPlant[] {
 function decodeAnswerText(raw: string): string {
   const parts: string[] = [];
   const resultParts: string[] = [];
+  // The fragments of one session message (task 4.16): the server splits
+  // streamed text at an arbitrary character, so the fragments rejoin
+  // exactly only with the empty string. Event-stream texts hold whole
+  // lines and keep the newline join below.
+  const msgParts: string[] = [];
+  const msgResults: string[] = [];
   for (const line of raw.split(/\r?\n/)) {
     const text = line.trim();
     if (!text.startsWith("{")) continue;
@@ -259,8 +265,30 @@ function decodeAnswerText(raw: string): string {
     }
     // The result-event shape of the ADV-P4B AJ1 fixture.
     if (event.type === "result" && typeof event.text === "string") resultParts.push(event.text);
+    // The session message shape of the live-server path (task 4.16, spec
+    // D14): one message line holds a `parts` array (the OpenChamber session
+    // message read), and the real assistant message holds a `content`
+    // array. A text entry wins over a result entry, and a result-only
+    // payload still decodes, the same rule as the event stream above.
+    const collection = Array.isArray(event.parts)
+      ? event.parts
+      : Array.isArray(event.content)
+        ? event.content
+        : null;
+    if (collection !== null) {
+      for (const entry of collection) {
+        if (entry === null || typeof entry !== "object" || Array.isArray(entry)) continue;
+        if (entry.type === "text" && typeof entry.text === "string") msgParts.push(entry.text);
+        else if (entry.type === "result" && typeof entry.text === "string") {
+          msgResults.push(entry.text);
+        }
+      }
+      continue;
+    }
   }
+  if (msgParts.length > 0) return refuseResultBranch(msgParts.join(""));
   if (parts.length > 0) return refuseResultBranch(parts.join("\n"));
+  if (msgResults.length > 0) return refuseResultBranch(msgResults.join(""));
   if (resultParts.length > 0) return refuseResultBranch(resultParts.join("\n"));
   return refuseResultBranch(raw);
 }
