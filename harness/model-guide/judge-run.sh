@@ -299,10 +299,11 @@ fi
 
 # The live-server path of spec D14 (PM 2026-11-20, task 4.16). A pilot
 # route reaches the model through one bench session on the OpenChamber API.
-# The caller names the base in BENCH_SERVER_BASE; an explicitly empty value
-# takes the local default http://127.0.0.1:38307. An unset value keeps the
-# isolated path below: the seed and `opencode run`. The runner never reads
-# `routes.json`.
+# A pilot route needs BENCH_SERVER_BASE: an unset value refuses before any
+# seed call, so a pilot route never enters isolated seeding. An explicitly
+# empty value takes the local default http://127.0.0.1:38307 (task 4.16 r4,
+# Review A F15). A non-pilot route keeps the isolated path below. The
+# runner never reads `routes.json`.
 is_pilot_route() {
   case "$ROUTE" in
     opencode-go/deepseek-v4.1-flash|opencode-go/hy4-flash-free#high|opencode-go/mimo-v2.6-flash|opencode-go/muse-spark-1.3-contributor#high)
@@ -315,7 +316,10 @@ is_pilot_route() {
 }
 LIVE_PATH=0
 LIVE_BASE=""
-if is_pilot_route && [ "${BENCH_SERVER_BASE+set}" = "set" ]; then
+if is_pilot_route; then
+  if [ "${BENCH_SERVER_BASE+set}" != "set" ]; then
+    refuse "a pilot route needs BENCH_SERVER_BASE"
+  fi
   LIVE_PATH=1
   LIVE_RAW_BASE="${BENCH_SERVER_BASE:-http://127.0.0.1:38307}"
   case "$LIVE_RAW_BASE" in
@@ -798,13 +802,23 @@ if (missing.length > 0) { process.stdout.write(missing.join(",")); process.exit(
 # The HTTP code of the last live call.
 LIVE_HTTP_CODE=""
 
-# The seconds that an empty message list may stay empty before the start
-# test stops as not ready. It stays below the spawn budget of the tests. A
-# partial assistant message waits for the full MG_CALL_TIMEOUT instead
-# (task 4.16 r3 F13).
-LIVE_EMPTY_WAIT_S=10
+# The one deadline of a live call, in seconds since the epoch, set at call
+# entry. Every request of the call uses the time that is left (task 4.16 r4,
+# Review A F13). Live calls run one at a time, so the shell globals hold.
+LIVE_DEADLINE=0
+LIVE_TIMEOUT=1
 
-# One live request with the call timeout. $1 takes the body file, $2 the
+# Sets LIVE_TIMEOUT to the whole seconds left before LIVE_DEADLINE, at
+# least 1. A request may then overrun the deadline by under one second.
+live_remaining() {
+  local now left
+  now="$(date +%s)"
+  left=$(( LIVE_DEADLINE - now ))
+  if [ "$left" -lt 1 ]; then left=1; fi
+  LIVE_TIMEOUT="$left"
+}
+
+# One live request with the time left. $1 takes the body file, $2 the
 # curl error file, and the rest takes the curl arguments. Sets
 # LIVE_HTTP_CODE to the HTTP code. Returns 124 on a timeout (curl exit
 # 28), 0 when the request ran, and 1 when curl could not run at all.
@@ -814,7 +828,8 @@ live_curl() {
   : > "$out" 2>/dev/null || return 1
   : > "$err" 2>/dev/null || return 1
   local rc=0 code="000"
-  code="$(curl -sS --max-time "$MG_CALL_TIMEOUT" "$@" -o "$out" -w '%{http_code}' 2>"$err")" || rc=$?
+  live_remaining
+  code="$(curl -sS --max-time "$LIVE_TIMEOUT" "$@" -o "$out" -w '%{http_code}' 2>"$err")" || rc=$?
   if [ "$rc" -eq 28 ]; then
     return 124
   fi
@@ -921,13 +936,14 @@ live_get_messages() {
 }
 
 # Decodes one message list body ($1) into the synthesis event stream ($2),
-# with the native model error text in the file $3. It reads the last
-# assistant message of the list: the native assistant record holds its text
-# in `content[]`, its token use in the top-level `tokens` field, and its
-# completion in `time.completed` or `finish`. An `error` record before the
-# completion stops the answer and keeps its text apart. Prints one status
-# line `<empty|partial|complete|error>\t<count>`; only a complete record
-# with text or a result writes the synthesis. Text fragments rejoin with the
+# with the native model error text in the file $3. The page is newest
+# first, so the first terminal assistant message is the newest answer. A
+# terminal message holds `time.completed` or `finish`, or an `error`. It
+# carries its text in `content[]` and its token use in the top-level
+# `tokens` field; an older partial or complete message never wins (task
+# 4.16 r4, Review A F20). Prints one status line
+# `<empty|partial|complete|error>\t<count>`; only a complete record with
+# text or a result writes the synthesis. Text fragments rejoin with the
 # empty string, because the API splits streamed text at an arbitrary
 # character (task 4.16 r3, Review A F13, F14, F17).
 live_synthesize() {
@@ -937,14 +953,23 @@ let doc;
 try { doc = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch { process.exit(1); }
 const list = Array.isArray(doc) ? doc : (doc && typeof doc === "object" && Array.isArray(doc.data) ? doc.data : null);
 if (!list) process.exit(1);
-let last = null;
+let chosen = null;
+let partial = null;
 for (const message of list) {
   if (!message || typeof message !== "object" || Array.isArray(message)) continue;
   const assistant = (message.info && typeof message.info === "object" && message.info.role === "assistant") || message.type === "assistant";
-  if (assistant) last = message;
+  if (!assistant) continue;
+  const error = message.error && typeof message.error === "object" && !Array.isArray(message.error) ? message.error : null;
+  const time = message.time && typeof message.time === "object" && !Array.isArray(message.time) ? message.time : null;
+  const completed = (time && typeof time.completed === "number" && Number.isFinite(time.completed)) || (typeof message.finish === "string" && message.finish !== "");
+  if (error || completed) { chosen = message; break; }
+  if (!partial) partial = message;
 }
-if (!last) { process.stdout.write("empty\t0\n"); process.exit(0); }
-const error = last.error && typeof last.error === "object" && !Array.isArray(last.error) ? last.error : null;
+if (!chosen) {
+  process.stdout.write((partial ? "partial" : "empty") + "\t0\n");
+  process.exit(0);
+}
+const error = chosen.error && typeof chosen.error === "object" && !Array.isArray(chosen.error) ? chosen.error : null;
 if (error) {
   const data = error.data && typeof error.data === "object" && !Array.isArray(error.data) ? error.data : null;
   const text = typeof error.message === "string" ? error.message
@@ -953,7 +978,7 @@ if (error) {
   process.stdout.write("error\t0\n");
   process.exit(0);
 }
-const collection = Array.isArray(last.parts) ? last.parts : (Array.isArray(last.content) ? last.content : []);
+const collection = Array.isArray(chosen.parts) ? chosen.parts : (Array.isArray(chosen.content) ? chosen.content : []);
 const lines = [];
 const texts = [];
 const results = [];
@@ -962,14 +987,12 @@ for (const entry of collection) {
   if (entry.type === "text" && typeof entry.text === "string") texts.push(entry.text);
   else if (entry.type === "result" && typeof entry.text === "string") results.push(entry.text);
 }
-const tokens = last.tokens && typeof last.tokens === "object" && !Array.isArray(last.tokens) ? last.tokens : null;
+const tokens = chosen.tokens && typeof chosen.tokens === "object" && !Array.isArray(chosen.tokens) ? chosen.tokens : null;
 if (tokens) lines.push(JSON.stringify({ type: "step_finish", part: { tokens } }));
 if (texts.length > 0) lines.unshift(JSON.stringify({ type: "text", part: { type: "text", text: texts.join("") } }));
 if (results.length > 0) lines.push(JSON.stringify({ type: "result", text: results.join("") }));
-const time = last.time && typeof last.time === "object" && !Array.isArray(last.time) ? last.time : null;
-const completed = (time && typeof time.completed === "number" && Number.isFinite(time.completed)) || (typeof last.finish === "string" && last.finish !== "");
 const count = texts.length + results.length;
-const status = completed && count > 0 ? "complete" : "partial";
+const status = count > 0 ? "complete" : "partial";
 try { fs.writeFileSync(process.argv[2], lines.length > 0 ? lines.join("\n") + "\n" : ""); } catch {}
 process.stdout.write(status + "\t" + String(count) + "\n");
 ' "$1" "$2" "$3" 2>/dev/null
@@ -977,19 +1000,16 @@ process.stdout.write(status + "\t" + String(count) + "\n");
 
 # Waits for the native answer of one bench session. $1 takes the session
 # id, $2 the staging file, and $3 the error file. It polls the message list
-# until the last assistant message is complete, an error appears, or the
-# call deadline ends. A partial message waits for MG_CALL_TIMEOUT_S; an
-# empty list waits LIVE_EMPTY_WAIT_S. Returns 0 with the synthesis in $2,
-# 3 with the model error text in $3, 125 on an empty list, 4 on a partial
-# message at the deadline, and 1 on a failed read (task 4.16 r3, Review A
-# F13, F16, F17).
+# until the newest terminal answer appears, an error appears, or the one
+# deadline of the call (LIVE_DEADLINE, set at call entry) ends. An empty
+# list and a partial answer get no shorter window (task 4.16 r4, Review A
+# F13). Returns 0 with the synthesis in $2, 3 with the model error text in
+# $3, 4 when the deadline ends without a terminal answer, and 1 on a failed
+# read (Review A F16, F17).
 live_wait_answer() {
-  local session="$1" staging="$2" err_path="$3" resp err state deadline empty_deadline now rc=0
+  local session="$1" staging="$2" err_path="$3" resp err state now rc=0
   resp="${staging}.msgs"
   err="${staging}.merr"
-  deadline=$(( $(date +%s) + MG_CALL_TIMEOUT ))
-  empty_deadline=$(( $(date +%s) + LIVE_EMPTY_WAIT_S ))
-  if [ "$empty_deadline" -gt "$deadline" ]; then empty_deadline="$deadline"; fi
   while true; do
     rc=0
     live_get_messages "$session" "$resp" "$err" || rc=$?
@@ -1020,17 +1040,9 @@ live_wait_answer() {
         rm -f "$staging" "${staging}.error"
         return 1
         ;;
-      empty)
+      empty|partial)
         now="$(date +%s)"
-        if [ "$now" -ge "$empty_deadline" ]; then
-          : > "$staging"
-          rm -f "${staging}.error"
-          return 125
-        fi
-        ;;
-      partial)
-        now="$(date +%s)"
-        if [ "$now" -ge "$deadline" ]; then
+        if [ "$now" -ge "$LIVE_DEADLINE" ]; then
           : > "$staging"
           rm -f "${staging}.error"
           return 4
@@ -1044,15 +1056,17 @@ live_wait_answer() {
 # One model call on the live-server path: one bench session per call with
 # the job root and the route model, one prompt in a message, and the native
 # answer from the session messages. $1 takes the prompt file, $2 the
-# staging file, and $3 the error file. Writes the synthesis stream to $2.
-# Returns 0 with the answer, 3 for a native model error of a Go route (the
-# region error), 124 on a send timeout, 125 on an empty list, 4 on a partial
-# message at the deadline, and 1 on any other failure. The caller keeps the
-# single-attempt rule of the isolated path: the judge makes one call per
-# group.
+# staging file, and $3 the error file. The one deadline is set here, at
+# call entry, and every request uses the time that is left. Writes the
+# synthesis stream to $2. Returns 0 with the answer, 3 for a native model
+# error of a Go route (the region error), 124 on a send timeout, 4 when the
+# deadline ends without a terminal answer, and 1 on any other failure. The
+# caller keeps the single-attempt rule of the isolated path: the judge
+# makes one call per group.
 live_model_call() {
   local prompt="$1" staging="$2" err_path="$3"
   local s_body="$staging.sbody" s_resp="$staging.sresp" s_err="$staging.serr" send_resp="$staging.send" rc=0
+  LIVE_DEADLINE=$(( $(date +%s) + MG_CALL_TIMEOUT ))
   : > "$err_path" 2>/dev/null || return 1
   LIVE_SESSION=""
   live_session_create "$s_body" "$s_resp" "$s_err" || rc=$?
@@ -1077,12 +1091,12 @@ live_model_call() {
     rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
     return "$rc"
   fi
-  # The answer: the native assistant message up to the call deadline.
+  # The answer: the newest terminal assistant message up to the deadline.
   rc=0
   live_wait_answer "$LIVE_SESSION" "$staging" "$err_path" || rc=$?
   rm -f "$s_body" "$s_resp" "$s_err" "$send_resp"
   case "$rc" in
-    0|3|4|125|124) return "$rc" ;;
+    0|3|4|124) return "$rc" ;;
     *) return 1 ;;
   esac
 }
@@ -1573,6 +1587,13 @@ while [ "$GROUP_INDEX" -lt "$TOTAL_GROUPS" ]; do
     if [ "$call_rc" -eq 124 ]; then
       rm -f "$RAW" "$ERR_FILE"
       echo "judge-run: the message send timed out"
+      exit 2
+    fi
+    if [ "$call_rc" -eq 4 ]; then
+      # The deadline ended without a terminal answer. The run stops with no
+      # judge file (task 4.16 r4, Review A F13).
+      rm -f "$RAW" "$ERR_FILE"
+      echo "judge-run: the model answer did not complete"
       exit 2
     fi
   else
