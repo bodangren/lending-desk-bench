@@ -570,7 +570,7 @@ questions".
     | Claude Sonnet | `claude-code/claude-sonnet-5-5#high` | plan |
     | MiniMax M3.1 Flash | `minimax-cn-coding-plan/MiniMax-M3.1-Flash` | plan |
     | DeepSeek Flash | `opencode-go/deepseek-v4.1-flash` | plan (Go) |
-    | Hy | `opencode/hy4-flash-free` | free |
+    | Hy | `opencode-go/hy4-flash-free#high` | plan (Go) |
     | Go | `opencode-go/mimo-v2.6-flash` | plan (Go) |
     | Go | `opencode-go/muse-spark-1.3-contributor#high` | plan (Go) |
 
@@ -580,8 +580,11 @@ questions".
     `nvidia/stepfun-ai/step-5-preview#high`. They are not on the allowed
     list (Daniel 11-16) (PM 2026-11-18).
 
-    The PM added the Hy row on 2026-11-16. The route is free until about
-    2026-11-30. It gets no build-task or tests-task run.
+    The PM added the Hy row on 2026-11-16. The PM moved it on
+    2026-11-20 to `opencode-go/hy4-flash-free#high` (PM 2026-11-20: was
+    `opencode/hy4-flash-free`, unavailable at the 11-20 probe). The new
+    route has kind `plan` and takes the Go check. It gets no build-task
+    or tests-task run.
 
     The file `harness/model-guide/routes.json` holds this list with the
     fields `family`, `route`, `kind`, `quota_provider`, and `quota_source`.
@@ -628,7 +631,7 @@ questions".
       source commits.
       The pilot runs 3 routes with 2 passes each (PM 2026-11-16), so each
       route has a worst-of-2 score. The pilot routes are
-      `opencode-go/deepseek-v4.1-flash`, `opencode/hy4-flash-free`, and
+      `opencode-go/deepseek-v4.1-flash`, `opencode-go/hy4-flash-free#high`, and
       `opencode-go/mimo-v2.6-flash` (PM 2026-11-18). No Claude route and no
       MiniMax route is in the pilot (PM 2026-11-18). A pilot route that is
       unreachable or region-blocked is replaced by the next route of D12.
@@ -780,8 +783,9 @@ questions".
       ra-quota thresholds of the Go rule of Daniel (2026-11-15). The
       active Go account runs to 100 %. OpenChamber then switches to the
       second Go account. The night limit for Go routes is the same
-      95 % / 100 %. It stops only the Go routes. A free route such as
-      `opencode/hy4-flash-free` has no Go check. The runner logs a Go
+      95 % / 100 %. It stops only the Go routes. The Hy route
+      `opencode-go/hy4-flash-free#high` is a Go route and takes the Go
+      check (PM 2026-11-20). The runner logs a Go
       call that fails with a quota error after the switch. That route
       shows `incomplete` for the night.
     - **The window.** The track A window is 02:00 to 06:00 +07. One night

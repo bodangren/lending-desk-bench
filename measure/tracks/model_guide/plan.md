@@ -2531,8 +2531,9 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
 - [ ] 4.10 The route probe (spec D14 "Probe mode (PM 2026-11-18)"). One call
   per pilot route on the first control diff of `mg-2026-11a`, through
   `heavy-run.sh`, in the window 02:00 to 06:00 +07 on 2026-11-19. The pilot
-  routes are `opencode-go/deepseek-v4.1-flash`, `opencode/hy4-flash-free`,
-  and `opencode-go/mimo-v2.6-flash`, in that D12 order. No non-pilot route
+  routes are `opencode-go/deepseek-v4.1-flash`,
+  `opencode-go/hy4-flash-free#high` (PM 2026-11-20), and
+  `opencode-go/mimo-v2.6-flash`, in that D12 order. No non-pilot route
   gets a probe until the PM approves after the pilot token report (Q1, PM
   2026-11-18). The probe of 2026-11-19 runs after 4.9f and before 4.11;
   its control diff `forge-07` has a message file. It tests reachability
@@ -2551,8 +2552,8 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
   2026-11-21.
   - The pilot set holds the first 3 qualified commits of each repo in the
     D4 order, newest first (task 3.16).
-  - The pilot routes are `opencode/hy4-flash-free`,
-    `opencode-go/deepseek-v4.1-flash`, and
+  - The pilot routes are `opencode-go/hy4-flash-free#high`
+    (PM 2026-11-20), `opencode-go/deepseek-v4.1-flash`, and
     `opencode-go/mimo-v2.6-flash` (PM 2026-11-18). No Claude route and no
     MiniMax route is in the pilot (PM 2026-11-18).
   - The pilot runs through `heavy-run.sh`, in the window of spec D15.
