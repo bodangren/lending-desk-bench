@@ -1056,6 +1056,7 @@ LIVE_HTTP_CODE=""
 # entry. Every request of the call uses the time that is left (task 4.16 r4,
 # Review A F13). Live calls run one at a time, so the shell globals hold.
 LIVE_DEADLINE=0
+LIVE_CALL_START=0
 LIVE_TIMEOUT=1
 
 # Sets LIVE_TIMEOUT to the whole seconds left before LIVE_DEADLINE. Returns
@@ -1207,10 +1208,18 @@ try { doc = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch { proc
 const list = Array.isArray(doc) ? doc : (doc && typeof doc === "object" && Array.isArray(doc.data) ? doc.data : null);
 if (!list) process.exit(1);
 let newest = null;
+const session = process.argv[4] || "";
+const start = Number(process.argv[5]);
 for (const message of list) {
   if (!message || typeof message !== "object" || Array.isArray(message)) continue;
   const assistant = (message.info && typeof message.info === "object" && message.info.role === "assistant") || message.type === "assistant";
-  if (assistant) { newest = message; break; }
+  if (!assistant) continue;
+  const info = message.info && typeof message.info === "object" ? message.info : null;
+  const owner = message.sessionID !== undefined ? message.sessionID : (info ? info.sessionID : undefined);
+  if (session !== "" && owner !== undefined && owner !== session) continue;
+  const stamp = message.time && typeof message.time === "object" ? message.time : (info && info.time && typeof info.time === "object" ? info.time : null);
+  if (start > 0 && !(stamp && typeof stamp.created === "number" && stamp.created >= start)) continue;
+  newest = message; break;
 }
 if (!newest) { process.stdout.write("empty\t0\n"); process.exit(0); }
 const error = newest.error && typeof newest.error === "object" && !Array.isArray(newest.error) ? newest.error : null;
@@ -1223,8 +1232,9 @@ if (error) {
   process.exit(0);
 }
 const time = newest.time && typeof newest.time === "object" && !Array.isArray(newest.time) ? newest.time : null;
-const finished = typeof newest.finish === "string" && newest.finish !== "" && newest.finish !== "tool-calls";
-const terminal = (time && typeof time.completed === "number" && Number.isFinite(time.completed)) || finished;
+const toolCalls = newest.finish === "tool-calls";
+const finished = typeof newest.finish === "string" && newest.finish !== "";
+const terminal = !toolCalls && ((time && typeof time.completed === "number" && Number.isFinite(time.completed)) || finished);
 if (!terminal) { process.stdout.write("partial\t0\n"); process.exit(0); }
 const collection = Array.isArray(newest.parts) ? newest.parts : (Array.isArray(newest.content) ? newest.content : []);
 const lines = [];
@@ -1243,7 +1253,7 @@ const count = texts.length + results.length;
 const status = count > 0 ? "complete" : "partial";
 try { fs.writeFileSync(process.argv[2], lines.length > 0 ? lines.join("\n") + "\n" : ""); } catch {}
 process.stdout.write(status + "\t" + String(count) + "\n");
-' "$1" "$2" "$3" 2>/dev/null
+' "$1" "$2" "$3" "$4" "$5" 2>/dev/null
 }
 
 # Waits for the native answer of one bench session. $1 takes the session
@@ -1281,7 +1291,7 @@ live_wait_answer() {
       rm -f "$resp" "$err" "$staging" "${staging}.error"
       return 1
     fi
-    state="$(live_synthesize "$resp" "$staging" "${staging}.error" 2>/dev/null | head -n 1)" || state=""
+    state="$(live_synthesize "$resp" "$staging" "${staging}.error" "$session" "$(( LIVE_CALL_START * 1000 ))" 2>/dev/null | head -n 1)" || state=""
     case "$state" in
       complete*) state="complete" ;;
       error*) state="error" ;;
@@ -1330,7 +1340,8 @@ live_wait_answer() {
 live_model_call() {
   local message_path="$1" diff_path="$2" staging="$3" err_path="$4"
   local prompt="$staging.prompt" s_body="$staging.sbody" s_resp="$staging.sresp" s_err="$staging.serr" send_resp="$staging.send" rc=0
-  LIVE_DEADLINE=$(( $(date +%s) + MG_CALL_TIMEOUT ))
+  LIVE_CALL_START="$(date +%s)"
+  LIVE_DEADLINE=$(( LIVE_CALL_START + MG_CALL_TIMEOUT ))
   : > "$err_path" 2>/dev/null || return 1
   cat "$PROMPT_FILE" "$message_path" "$diff_path" > "$prompt" 2>/dev/null || return 1
   LIVE_SESSION=""
