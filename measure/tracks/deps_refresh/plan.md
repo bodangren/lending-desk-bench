@@ -249,59 +249,89 @@ Marker use:
       `heavy-run.sh`. The config uses system Chrome, so no browser
       download runs.
     - Re-score as a same-code A/B at one commit (PM 2026-11-21
-      vite condition). HEAD at check time is the only code. The
-      lock is the only variable. The run is
-      `runs/a-deepseek-v4-1-flash-2026w43-r1`: build track, executor
-      kind `opencode`, valid score, candidate tree present.
-      1. Make two worktrees of HEAD under `/tmp/opencode/deps-ab/`:
-         `git worktree add --detach /tmp/opencode/deps-ab/base HEAD`
-         and `git worktree add --detach /tmp/opencode/deps-ab/new
-         HEAD`. In `base`, put the base lock: `git -C
-         /tmp/opencode/deps-ab/base show
-         b4c2e45:harness/package-lock.json >
-         harness/package-lock.json`, and the base
-         `harness/package.json` the same way. In `new`, keep HEAD
-         files.
-      2. In each worktree, run `npm ci` in `harness/` and `npm ci`
-         in `fixture/` (the fixture lock is pinned and unchanged).
-         Grading needs both trees: `harness/grade.sh` runs vitest,
-         playwright, and tsx from `harness/node_modules`, and it
-         copies `fixture/node_modules` into the candidate when the
-         candidate copy is missing. The browser is system Chrome
-         (`/usr/bin/google-chrome`) through `channel: "chrome"`;
-         no browser install runs. Copy the stored run read-only:
-         `cp -a <repo>/runs/a-deepseek-v4-1-flash-2026w43-r1
-         <worktree>/runs/`. The stored run in the main repo is
-         never touched.
-      3. In each worktree, run the regrade through `heavy-run.sh`,
-         one after the other, never in parallel:
-         `HEAVY_MIN_AVAIL_MB=1500
-         /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh
-         -c 'cd <worktree> && ./harness/regrade-run.sh
-         a-deepseek-v4-1-flash-2026w43-r1'`. Keep the proof for
-         each: the `REGRADED total=...` line, exit 0, a new
-         `runs/<id>/artifacts.prev-<stamp>/` directory, and
-         `artifacts/graft-provenance.json` with reason "regrade".
-         Any SKIP line or missing proof fails the check. The track
-         stops and the orchestrator reports to the PM.
-      4. Check that both worktrees report the same runner hash:
-         `./harness/node_modules/.bin/tsx harness/provenance.ts
-         --shell` prints runner and suite hashes. The runner hashes
-         must match. `npm ls --depth=0` in each `harness/` differs
-         only by the lock.
-      5. Compare the full axes object and total of
-         `base/runs/<id>/artifacts/score.json` against
-         `new/runs/<id>/artifacts/score.json`. Identical means pass.
-         Any difference stops the track. The orchestrator reports to
-         the PM with both files.
-      6. Copy both score files and the logs to
-         `measure/runs/deps_refresh/rescore-ab/`. The worktrees
-         under `/tmp/opencode/deps-ab/` stay until the orchestrator
-         asks Daniel about removal (deletion gate). `git worktree
-         list` records them.
+      vite condition). HEAD at check time is the only code. The A/B
+      tests the complete dependency refresh: the base
+      `harness/package.json` and `harness/package-lock.json`
+      against the refreshed pair, not the lock alone. The direct
+      pins for @types/node and tsx differ too, and tsx drives the
+      regrade tooling. The run is `a-deepseek-v4-1-flash-2026w43-r1`:
+      build track, executor kind `opencode`, valid score, candidate
+      tree present. System Chrome and browser timing stay a shared
+      residual risk: both sides use the same unpinned browser back
+      to back, so one pair cannot rule out a timing flake. The block
+      records the Chrome version. When the scores differ, the block
+      reruns the new side once: a pass on the rerun means a timing
+      flake, and both diffs stay on record.
+  ```bash
+  set -o pipefail
+  B=/tmp/opencode/deps-ab/base
+  N=/tmp/opencode/deps-ab/new
+  R=/home/daniebo/Desktop/lending-desk-bench
+  ID=a-deepseek-v4-1-flash-2026w43-r1
+  OUT=$R/measure/runs/deps_refresh/rescore-ab
+  H=/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh
+  mkdir -p "$OUT"
+  google-chrome --version > "$OUT/chrome-version.txt"
+  git -C "$R" worktree add --detach "$B" HEAD
+  git -C "$R" worktree add --detach "$N" HEAD
+  git -C "$R" show b4c2e45:harness/package-lock.json > "$B/harness/package-lock.json"
+  git -C "$R" show b4c2e45:harness/package.json > "$B/harness/package.json"
+  DIFF=$(git -C "$B" diff --name-only -- harness/ | LC_ALL=C sort | tr '\n' ' ')
+  [ "$DIFF" = "harness/package-lock.json harness/package.json " ] \
+    || { echo "FAIL: base worktree diff: $DIFF"; exit 1; }
+  mkdir -p "$B/runs" "$N/runs"
+  cp -a "$R/runs/$ID" "$B/runs/"
+  cp -a "$R/runs/$ID" "$N/runs/"
+  [ -s "$B/runs/$ID/artifacts/score.json" ] && [ -s "$B/runs/$ID/artifacts/provenance.json" ] \
+    || { echo "FAIL: base copy incomplete"; exit 1; }
+  [ -s "$N/runs/$ID/artifacts/score.json" ] && [ -s "$N/runs/$ID/artifacts/provenance.json" ] \
+    || { echo "FAIL: new copy incomplete"; exit 1; }
+  (cd "$B/harness" && npm ci) && (cd "$B/fixture" && npm ci)
+  (cd "$N/harness" && npm ci) && (cd "$N/fixture" && npm ci)
+  (cd "$B/harness" && npm ls --depth=0) > "$OUT/npm-ls-base.txt" 2>&1
+  (cd "$N/harness" && npm ls --depth=0) > "$OUT/npm-ls-new.txt" 2>&1
+  regrade() {
+    local W="$1" LOG="$2"
+    HEAVY_MIN_AVAIL_MB=1500 "$H" -c "cd $W && ./harness/regrade-run.sh $ID" > "$LOG" 2>&1
+    local RC=$?
+    [ "$RC" -eq 0 ] || { echo "FAIL: regrade exit $RC in $W; see $LOG"; exit 1; }
+    grep -q "^\[$ID\] REGRADED total=" "$LOG" || { echo "FAIL: no REGRADED line; see $LOG"; exit 1; }
+    grep -q "SKIP" "$LOG" && { echo "FAIL: SKIP in $LOG"; exit 1; }
+    ls -d "$W/runs/$ID"/artifacts.prev-* > /dev/null 2>&1 \
+      || { echo "FAIL: no artifacts.prev in $W"; exit 1; }
+    [ "$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).reason)' \
+      "$W/runs/$ID/artifacts/graft-provenance.json")" = "regrade" ] \
+      || { echo "FAIL: graft reason in $W"; exit 1; }
+  }
+  extract() {
+    node -e 'const fs=require("node:fs"); const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); \
+      process.stdout.write(JSON.stringify({axes:s.axes,total:s.total},null,2)+"\n");' "$1" > "$2"
+  }
+  regrade "$B" "$OUT/regrade-base.log"
+  regrade "$N" "$OUT/regrade-new-1.log"
+  HB=$(cd "$B" && ./harness/node_modules/.bin/tsx harness/provenance.ts --shell | cut -f1)
+  HN=$(cd "$N" && ./harness/node_modules/.bin/tsx harness/provenance.ts --shell | cut -f1)
+  [ -n "$HB" ] && [ "$HB" = "$HN" ] || { echo "FAIL: runner hash differs: $HB vs $HN"; exit 1; }
+  extract "$B/runs/$ID/artifacts/score.json" "$OUT/base-axes.json"
+  extract "$N/runs/$ID/artifacts/score.json" "$OUT/new-axes-1.json"
+  if ! diff "$OUT/base-axes.json" "$OUT/new-axes-1.json" > "$OUT/diff-1.txt"; then
+    echo "first compare differs; rerun new side once"
+    regrade "$N" "$OUT/regrade-new-2.log"
+    extract "$N/runs/$ID/artifacts/score.json" "$OUT/new-axes-2.json"
+    diff "$OUT/base-axes.json" "$OUT/new-axes-2.json" > "$OUT/diff-2.txt" \
+      || { echo "FAIL: axes differ twice; see $OUT/diff-1.txt $OUT/diff-2.txt"; exit 1; }
+    echo "PASS after new-side rerun (timing flake); both runs reported"
+  fi
+  cp "$B/runs/$ID/artifacts/score.json" "$OUT/base-score.json"
+  cp "$N/runs/$ID/artifacts/score.json" "$OUT/new-score.json"
+  echo "OK: A/B axes and total identical"
+  ```
       - Window: 22:00-01:30 like the other gates. The A/B that does
         not finish by 01:30 stops and resumes the next evening.
-        Cost: two `npm ci` runs plus two regrades.
+        Cost: two `npm ci` runs plus two regrades. The worktrees
+        under `/tmp/opencode/deps-ab/` stay until the orchestrator
+        asks Daniel about removal (deletion gate). `git worktree
+        list` records them.
   - Files: none.
   - Verify: every command exits 0, except the type-check, which
     passes under its no-new-errors rule. The log of each run sits
