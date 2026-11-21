@@ -18,16 +18,20 @@ The reviewer (openai/gpt-6-luna#high) failed head `2fb569f` on
 The author amends spec and plan as follows. No other file changes.
 
 - **F1 (blocker).** Review r2 keeps F1 open: the count rule can
-  hide a new error behind a removed one. Spec D6 now uses a strict
-  subset rule: each diagnostic is `<file>:<line>:<col> TS<code>`,
-  and the after-Green set must sit inside the base set, so no new
-  identity appears and fewer errors stay allowed. The compare is
-  `comm -13` of the base identity file against the after file, and
-  it must print nothing. When Green names a source change first,
-  the identity drops line and col and keeps file, code, and message
-  text. Plan task 1.1 records the base set file (210 lines) with
-  the exact make command. Plan task 3.1 runs the after-Green make
-  command and the `comm -13` check in the day.
+  hide a new error behind a removed one. Review r3 keeps it open
+  again: a bare pipe can hide a tsc failure behind an empty set.
+  The plan now holds one bash block (task 3.1) with
+  `set -o pipefail`. It runs tsc once into a raw file and keeps the
+  exit code. Exit 0 needs an empty identity set and no `error TS`
+  text in the raw file. Exit 2 needs the raw error-line count to
+  equal the identity count before dedup, and a non-empty set. Any
+  other exit fails the check. Then `comm -13` of the base file
+  against the after file must print nothing. Sort and compare run
+  under `LC_ALL=C`, since locale sort order disagrees with `comm`.
+  Task 1.1 runs the same block for the base and records exit 2,
+  210 raw error lines, and 210 identities. The r3 source-change
+  fallback is gone: Green makes no source edit, and an update that
+  needs one stops and defers with its reason in task 2.1.
 - **F2 (blocker).** The "Daniel says push first" gate is gone. Plan
   task 3.3 sends the push through safe-push, dry run first, run
   alone, never chained (`plan.md` lines 120-133). Exit 2 stops the

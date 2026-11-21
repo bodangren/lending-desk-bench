@@ -95,17 +95,17 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
      $(git ls-files 'harness/*.ts')`.
      At the base commit `7319344` this command exits 2 with 210
      unique diagnostics (file: `measure/runs/deps_refresh/`
-     `tsc-base-ids-7319344.txt`). Green passes only when the
-     diagnostic set after Green is a subset of the base set: no new
-     identity appears. Fewer errors are allowed. Each identity is
-     `<file>:<line>:<col> TS<code>`, made with:
-     `tsc ... 2>&1 | grep -oE
-     '^[^(]+\([0-9]+,[0-9]+\): error TS[0-9]+' | sort -u > file`.
-     The compare is `comm -13` of the base file against the after
-     file; it must print nothing. Green touches no source file, so
-     lines do not move. When Green names a source change first, the
-     identity drops line and col and keeps file, code, and message
-     text instead.
+     `tsc-base-ids-7319344.txt`, raw log:
+     `measure/runs/deps_refresh/tsc-base-raw.txt`). Green passes only
+     when the diagnostic set after Green is a subset of the base set:
+     no new identity appears. Fewer errors are allowed. Each identity
+     is `<file>:<line>:<col> TS<code>` only. The plan holds the one
+     check script: it keeps the tsc exit code, rejects unparsed
+     error lines, and ends with `comm -13` of the base file against
+     the after file, which must print nothing. Green touches no
+     source file, so lines do not move. When an update needs a source
+     change, Green stops and defers that update with its reason in
+     plan task 2.1. No source edit lands in this chore.
    - Build: none exists. The harness is TypeScript source run with
      `tsx`. The meta suite through `heavy-run.sh` stands in for it.
    - Unit tests: `npm run test:unit` (`vitest run tests/unit`).
@@ -147,10 +147,10 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 ### FR-2 — Only the harness scope changes
 
 - Green touches `harness/package.json` and `harness/package-lock.json`
-  only. No fixture file changes. No source file changes except what a
-  major bump forces, and then the plan names each file.
+  only. No fixture file changes. No source file changes: an update
+  that needs one stops and defers with its reason in the plan.
 - **Check.** `git status --short` after Green shows changes only in
-  the two lock-scope files, plus any plan-named source file.
+  the two lock-scope files.
 
 ### FR-3 — The gates pass through heavy-run.sh
 
@@ -202,8 +202,7 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 
 1. **AC-1** `npm audit --audit-level=high` exits 0 in `harness/`, or
    each leftover names its reason (FR-1).
-2. **AC-2** Green changes only the two lock-scope files, plus any
-   plan-named source file (FR-2).
+2. **AC-2** Green changes only the two lock-scope files (FR-2).
 3. **AC-3** All gate commands of FR-3 exit 0 through `heavy-run.sh`.
 4. **AC-4** Each residual advisory has its reason (FR-4).
 5. **AC-5** No track commit touches `fixture/` (FR-5).
