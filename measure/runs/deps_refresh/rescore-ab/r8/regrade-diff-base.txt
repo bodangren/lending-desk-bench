@@ -1,0 +1,11 @@
+--- /home/daniebo/.cache/opencode/deps-ab-r8/base/harness/regrade-run.sh	2026-11-21 18:38:50.382072301 +0700
++++ /home/daniebo/.cache/opencode/deps-ab-r8/base/harness/regrade-run.ab.sh	2026-11-21 18:39:35.561737920 +0700
+@@ -89,7 +89,7 @@
+ PREV="$WORK/artifacts.prev-$STAMP"
+ mv "$OUT" "$PREV"
+ mkdir -p "$OUT"
+-for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent; do
++for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent executor; do
+   [ -e "$PREV/$keep" ] && cp -a "$PREV/$keep" "$OUT/$keep"
+ done
+ [ -s "$WORK/.regrade-violation.json" ] && mv "$WORK/.regrade-violation.json" "$OUT/contract-violation.json"

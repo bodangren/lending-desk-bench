@@ -1,0 +1,19 @@
+START 2026-11-21 19:17:43 +0700 CMD: two more regrades per side, alternating
+START base run2 2026-11-21 19:17:43 +0700
+END base run2 rc=1 2026-11-21 19:18:59 +0700
+graft_reason=regrade
+score valid=false total=null E.return-submits=true
+START new run2 2026-11-21 19:19:00 +0700
+END new run2 rc=1 2026-11-21 19:21:15 +0700
+graft_reason=regrade
+score valid=false total=null E.return-submits=true
+START base run3 2026-11-21 19:21:15 +0700
+END base run3 rc=1 2026-11-21 19:22:37 +0700
+graft_reason=regrade
+score valid=false total=null E.return-submits=true
+START new run3 2026-11-21 19:22:37 +0700
+END new run3 rc=1 2026-11-21 19:24:01 +0700
+graft_reason=regrade
+score valid=false total=null E.return-submits=true
+FLAKE_RUNS_OK
+FLAKE_SCRIPT_EXIT=0 END 2026-11-21 19:24:01 +0700

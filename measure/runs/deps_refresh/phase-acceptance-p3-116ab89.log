@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: deps_refresh
+phase: Phase 3: Verify — gates, counts, residuals, push
+commits: none
+tests_run: Read-only checks at 116ab89. Gate logs re-read: unit Tests 1 failed | 16 passed (17); meta Tests 6 failed | 232 passed (238), six path-only failures; bun 130 pass, 0 fail; tsc OK with 210 identities identical to base. Independent re-diff of the six A/B score files matches the plan (three-field difference in new run 1 only). cd harness && npm audit --audit-level=high exit 0; npm audit --json critical 0, high 0, moderate 5. One quick check: decode-parity.test.ts exit 0, Tests 8 passed (8). No suite and no heavy gate ran.
+files_changed: measure/runs/deps_refresh/phase-acceptance-p3-116ab89.json, measure/runs/deps_refresh/phase-acceptance-p3-116ab89.log
+plan_updates: none (gate-only role)
+known_failures: F2 blocker: no adversarial testing result (test-strategy.md:196). F3 blocker: Review A (bf96724) and Review B (8437779) do not target 116ab89. F4 blocker: gate 2 exits 1 with six failures and no written pass rule, while AC-3 and the plan Verify line need exit 0. Nonblocking: F5 stale time-window text, F6 gate 5 compares total=null and doctor.ran=false, F7 superseded A/B block, F9 SHA anchor rule.
+handoff: Phase 3 fails at 116ab89a9c9f614c2507985c7d79c0f34ceddc66 (phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6). The gates and records are true in substance. Fix F4 and Phase 1 F1 in one plan commit. Then run adversarial testing, Review A, and Review B on that HEAD. Then run the three phase acceptances again. Adversarial testing must run first. Its absence blocks Phase 2 and Phase 3. F6 needs a PM choice. The PM can accept that gate 5 did not test Axis 3, or order a doctor-only scan.
+verdict: fail
+audited_head_sha: 116ab89a9c9f614c2507985c7d79c0f34ceddc66
+result_file: measure/runs/deps_refresh/phase-acceptance-p3-116ab89.json
+retry_recommendation: retry_implementation
+summary: Phase 3 fails on three blockers (F2 adversarial result missing, F3 stale Review A and Review B HEADs, F4 gate 2 pass rule not written). The gate evidence is true in substance.
+END_MEASURE_AGENT_RESULT

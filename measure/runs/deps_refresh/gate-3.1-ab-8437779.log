@@ -1,0 +1,36 @@
+START 2026-11-21 17:47:58 +0700 CMD: plan task 3.1 same-code A/B re-score block
+Preparing worktree (detached HEAD 8437779)
+HEAD is now at 8437779 measure(deps_refresh): unit gate on a stored candidate
+Preparing worktree (detached HEAD 8437779)
+HEAD is now at 8437779 measure(deps_refresh): unit gate on a stored candidate
+
+added 303 packages, and audited 304 packages in 2m
+
+83 packages are looking for funding
+  run `npm fund` for details
+
+13 vulnerabilities (7 moderate, 6 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues, run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   esbuild@0.28.1 (postinstall: node install.js)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+npm error code ECONNRESET
+npm error syscall read
+npm error errno -104
+npm error network read ECONNRESET
+npm error network This is a problem related to network connectivity.
+npm error network In most cases you are behind a proxy or have bad network settings.
+npm error network
+npm error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'
+npm error A complete log of this run can be found in: /home/daniebo/.npm/_logs/2026-11-21T10_50_28_578Z-debug-0.log
+FAIL: npm ci base fixture
+EXIT=1
+END 2026-11-21 17:52:02 +0700

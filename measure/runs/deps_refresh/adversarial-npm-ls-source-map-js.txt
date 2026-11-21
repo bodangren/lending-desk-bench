@@ -1,0 +1,9 @@
+lending-desk-harness@ /home/daniebo/Desktop/lending-desk-bench/harness
+├─┬ react-doctor@0.9.2
+│ └─┬ magicast@0.5.4
+│   └── source-map-js@1.2.4
+└─┬ vitest@4.1.10
+  └─┬ vite@8.3.8
+    └─┬ postcss@8.5.33
+      └── source-map-js@1.2.4 deduped
+

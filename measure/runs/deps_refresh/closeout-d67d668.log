@@ -1,0 +1,21 @@
+measure-closeout result for deps_refresh
+Pre-closeout HEAD: d67d66899c9b3a1d14f0d79c1d8f36bb34179376
+Final acceptance: pass at d67d668; provenance match with HEAD and origin/main
+Archive move: git mv measure/tracks/deps_refresh -> measure/archive/deps_refresh
+Plan tasks: 5 of 5 [x]; 0 [~]; 0 [ ]; 0 [b]
+Closeout interphase check: PASS: closeout checks passed
+Post-move heavy-run gate: bun test harness/model-guide-tests/review-run.test.ts; EXIT=0; 130 pass, 0 fail, 922 expect() calls
+Open nonblocking nits: F6, F10, F11 (plan text only; recorded in the closeout manifest)
+
+MEASURE_AGENT_RESULT
+role: measure-closeout
+status: pass
+track: deps_refresh
+phase: closeout
+commits: pre-closeout HEAD d67d66899c9b3a1d14f0d79c1d8f36bb34179376; track anchors 1fcfd03 fc9ec99 8437779 6fdea72; closeout commit measure(deps_refresh): closeout
+tests_run: heavy-run.sh bun test harness/model-guide-tests/review-run.test.ts EXIT=0 130 pass 0 fail 922 expect() calls; closeout interphase check PASS; marker A5 A6 A9 static checks PASS
+files_changed: measure/archive/deps_refresh/{metadata.json,plan.md,spec.md,spec-review.md,test-strategy.md,automation-supervisor-closeout-manifest.json}; measure/runs/deps_refresh/{closeout-d67d668.json,closeout-d67d668.log,closeout-gate-summary.log} plus retained run evidence; measure/tracks.md
+plan_updates: none to plan text; archive move only; metadata complete with actual_tasks 5 and completed 2026-11-21; registry entry moved to Archived Tracks
+known_failures: F6 F10 F11 open nonblocking plan-text nits; no blocking failure
+handoff: deps_refresh archived and complete; no push; status literal done required by the closeout checker; all evidence committed with the archive; facts changed: track path, metadata, registry
+END_MEASURE_AGENT_RESULT

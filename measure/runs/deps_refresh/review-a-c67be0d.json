@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "task": "2.1 r7",
+  "status": "fail",
+  "summary": "The r6 score-difference and stale-worktree concerns are resolved. Two shell checks remain unsafe: an early npm ci failure can be ignored, and the SKIP check masks its own failure.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "c67be0deaf540db54938d073a24a84543c7c6d23",
+  "audited_head_sha": "c67be0deaf540db54938d073a24a84543c7c6d23",
+  "blocking_findings": [
+    "The two npm-ci chains do not reliably stop when the first install fails. Under `set -e`, a failing command before the final command in an `&&` list is exempt from errexit; the enclosing `&&` list can return nonzero without ending the script. A shell probe confirmed that `set -euo pipefail; (false && true) && (true && true); printf continued` prints `continued` and exits 0. If `npm ci` fails in a harness worktree, later commands can still proceed. Check each `npm ci` command with an explicit failure handler or a separately tested command. Evidence: measure/tracks/deps_refresh/plan.md:293-294.",
+    "The SKIP guard always succeeds because `|| true` catches both the expected no-match from grep and the failure from the error handler. When grep finds `SKIP`, the block executes `exit 1`, then the trailing `|| true` runs and masks that status. Replace this with a guard that fails only when grep finds a match. Evidence: measure/tracks/deps_refresh/plan.md:312."
+  ],
+  "nonblocking_findings": [
+    "The A/B still uses one unpinned system Chrome version and one sequential pair. The plan records this timing risk and records the Chrome version. A single pair cannot measure score variance across runs."
+  ],
+  "evidence": [
+    "F1 withdrawn: task 3.1 now says any score difference stops and returns to the PM; it no longer retries only the new side. Evidence: plan.md:261-263 and 332-334.",
+    "F2 withdrawn: task 3.1 now uses `set -euo pipefail`, rejects an existing A/B directory, verifies both worktree HEADs, checks npm ls results, and checks the Vite and Vitest versions. The stale-worktree risk from r6 is addressed, though the two specific shell-control defects are recorded as new findings.",
+    "git rev-parse HEAD returned c67be0deaf540db54938d073a24a84543c7c6d23, matching the supplied audited HEAD.",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd c67be0deaf540db54938d073a24a84543c7c6d23 lists only measure/tracks/deps_refresh/plan.md. Package files did not change since r2.",
+    "The phase-base diff lists harness/package.json, harness/package-lock.json, and measure/tracks/deps_refresh/plan.md. No source or fixture changed.",
+    "The early-failure behavior was checked with a `set -euo pipefail` Bash probe of the chained-command form; it printed `continued` and exited 0.",
+    "Under the SKIP guard, a matching grep runs a block that exits 1, then `|| true` masks that status. A non-match also reaches `true`, so both outcomes succeed.",
+    "The score difference handler at plan.md:332-333 correctly stops on a nonzero diff. The REGRADED grep and regrade exit-code capture also have explicit handlers.",
+    "The regrade was not run, as the assignment requires."
+  ],
+  "commands": [
+    "git rev-parse HEAD — c67be0deaf540db54938d073a24a84543c7c6d23",
+    "git diff --name-only b4c2e450067ca65b4282d0178ec087d00fa7a8e6..c67be0deaf540db54938d073a24a84543c7c6d23 — package.json, package-lock.json, and plan.md",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd c67be0deaf540db54938d073a24a84543c7c6d23 — plan.md only",
+    "bash -c 'set -euo pipefail; (false && true) && (true && true); printf continued' — continued; exit 0",
+    "Read measure/tracks/deps_refresh/plan.md:261-334 — reviewed retry, setup guards, npm ci chains, regrade handlers, SKIP check, and diff handler",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..c67be0deaf540db54938d073a24a84543c7c6d23 — exit 0"
+  ],
+  "changed_files": [
+    "harness/package.json",
+    "harness/package-lock.json",
+    "measure/tracks/deps_refresh/plan.md"
+  ],
+  "test_strategy_violations": [
+    "The comparison can proceed after an early `npm ci` failure because of Bash errexit semantics in the chained install command.",
+    "The SKIP check masks a match-triggered failure with `|| true`, so the script does not enforce its no-SKIP condition."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_implementation",
+  "handoff": "Green: add explicit failure checks for each npm ci invocation. Rewrite the SKIP check so a matching SKIP line fails and no match passes. Keep the no-retry PM stop condition.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "measure/tracks/deps_refresh/plan.md:272-307 adds stale-state and version checks, but the npm ci chain can continue after an early failure."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 2,
+      "evidence": "measure/tracks/deps_refresh/plan.md:312 masks a matching SKIP result with `|| true`."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff between r2 and r7 lists only measure/tracks/deps_refresh/plan.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The Bash probe printed `continued` after a failing command in the npm ci chain pattern."
+    }
+  ]
+}

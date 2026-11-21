@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: adversarial-testing
+status: complete
+track: deps_refresh
+phase: Phase 2: Green — the updates and the lock file; Phase 3: Verify — gates, counts, residuals, push
+commits: none
+tests_run: PASS: all six vulnerable-range probes; audit mutation; exact identity comparison mutation; residual reason mutation; A4 and A7 probes; live type-check block; sequential doctor A/B.
+files_changed: measure/runs/deps_refresh/adversarial-*; measure/runs/deps_refresh/doctor-ab/
+plan_updates: none
+known_failures: none within the bounded gate. The residual gate is a written review rule, not a repository executable.
+handoff: The doctor findings and scored fields match. The Axis 3 gap is closed for this candidate. Both worktrees are removed. HEAD remains d67d668. Facts changed: none.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "role": "final-acceptance",
+  "track": "deps_refresh",
+  "phase": "track review",
+  "status": "pass",
+  "summary": "Final acceptance passes at d67d668. The dependency work satisfies AC-1 through AC-7, origin/main contains it, and all three supplied PROJECT_* gates exit 0. The orchestrator's live-gate ruling resolves the doctor setup gap. Three plan-only nits remain nonblocking.",
+  "track_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "baseline_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "audited_head_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F6 [Nit] phase-acceptance: The doctor-only A/B closes the Axis 3 gap, but plan.md does not cite doctor-ab/comparison.txt or name the degenerate regrade fields. Rationale: The proof exists, but plan-only readers cannot locate it.",
+    "F10 [Nit] review-a: plan.md:415-417 says two runs per side preceded two more runs per side, which describes eight runs. The six saved score files and PM rule establish one earlier run per side plus two more per side. Rationale: The flake verdict remains correct; only the narrative count is wrong.",
+    "F11 [Nit] phase-acceptance: The gate 2 rule quotes one path-diff form, while the arm-comparison failure shows two different cache temp names. Rationale: All six failures share the accepted symlink cause, but the quoted form is imprecise."
+  ],
+  "evidence": [
+    "HEAD and push: `git rev-parse HEAD` prints d67d66899c9b3a1d14f0d79c1d8f36bb34179376. `git rev-parse origin/main` and `git ls-remote origin refs/heads/main` print the same SHA. `git branch -r --contains d67d66899c9b3a1d14f0d79c1d8f36bb34179376` lists origin/main. Every track commit is pushed.",
+    "HEAD coverage: `git diff --name-only d67d66899c9b3a1d14f0d79c1d8f36bb34179376 HEAD` prints no path. The audited HEAD equals current HEAD. `git merge-base --is-ancestor d67d66899c9b3a1d14f0d79c1d8f36bb34179376 HEAD` exits 0.",
+    "Track paths: `git diff --name-only b4c2e450067ca65b4282d0178ec087d00fa7a8e6 d67d66899c9b3a1d14f0d79c1d8f36bb34179376` prints harness/package-lock.json, harness/package.json, measure/tracks/deps_refresh/plan.md, spec.md, and test-strategy.md. The name-status diff marks all five paths M. The phase base is an ancestor of the audited HEAD.",
+    "Protected paths: `git diff --name-only 7319344e28e04c5557be32676d20983a2559d1ef d67d66899c9b3a1d14f0d79c1d8f36bb34179376 -- fixture/ reference/ reference-variant/ reference-change/` prints no path. No fixture or scoring file changed.",
+    "Prior results: phase-acceptance-p1-d67d668.json, phase-acceptance-p2-d67d668.json, and phase-acceptance-p3-d67d668.json are the three passing results at the audited HEAD. Each names phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6 and has empty blocker and violation lists. Exactly one current passing result covers each plan phase.",
+    "Other prior results: adversarial-d67d668.json, review-a-d67d668.json, and review-b-d67d668.json pass at d67d668. spec-review-04239eb.json passes track setup. Review C and UX review are not applicable under test-strategy.md:191-203.",
+    "Plan tasks: grep finds five [x] tasks and no [~], [b], or open-box task. Their anchors are 1fcfd03, fc9ec99, 8437779, 8437779, and 6fdea72. Each unique anchor is an ancestor of d67d668. The package commits occurred at 14:17:53 and 14:25:03 +07, outside 02:00-07:00.",
+    "AC-1 and AC-4: `cd harness && npm audit --audit-level=high` exits 0. `cd harness && npm audit --json` exits 1 for moderates and reports info 0, low 0, moderate 5, high 0, critical 0, total 5. The names are @vitest/mocker, deslop-js, minimatch, react-doctor, and vitest.",
+    "Residual reasons: plan.md:492-505 has one row for each live moderate advisory. Vitest and @vitest/mocker stay pinned for cohort comparability. deslop-js, minimatch, and react-doctor stay pinned under spec D9 because react-doctor 0.9.23 changes Axis 3 scores mid-cohort. No low advisory remains.",
+    "Fixture advisories: the live fixture audit reports 1 critical, 4 high, 2 moderate, and 0 low. The seven rows are next, postcss, sharp, source-map-js, vite, vitest, and @vitest/mocker. spec.md:57-69 names each row and gives the cohort-comparability pin reason.",
+    "Latest-version policy: `cd harness && npm outdated` lists @playwright/test 1.65.1, axe-core 4.14.1, react-doctor 0.9.23, typescript 7.0.2, and vitest 5.1.1 as later versions. plan.md:93-151 records the scoring or major-version deferral for each. No other direct package is behind latest.",
+    "AC-2 and NFR-4: the package.json diff changes only @types/node 26.1.2 to 26.6.6 and tsx 4.23.1 to 4.23.15. `npm ls --depth=0` matches the recorded direct pins. The scripts and frozen meta exclude list are unchanged.",
+    "Lock integrity: a read-only Node inspection finds 423 lock entries, 422 non-root entries, registry.npmjs.org as the only resolved host, and no resolved entry without integrity. Three hasInstallScript entries remain: esbuild and two fsevents entries.",
+    "Gate 1 record: gate-3.1-unit-8437779.log starts through heavy-run.sh at 16:36:35 +07. It reports Test Files 1 failed | 2 passed (3), Tests 1 failed | 16 passed (17), and only the accepted M.closeout pending/complete fault. EXIT=1 meets the written rule.",
+    "Gate 2 record: gate-3.1-meta-8437779.log starts through heavy-run.sh at 16:44:21 +07. It reports Test Files 2 failed | 28 passed (30), Tests 6 failed | 232 passed (238), and six executor-path assertions. EXIT=1 meets the accepted count and symlink ruling, subject to F11.",
+    "Gate 3 record: gate-3.1-bun-8437779.log starts through heavy-run.sh at 17:15:57 +07. It reports 130 pass, 0 fail, 922 expect() calls, and EXIT=0. All recorded heavy gates ran outside 02:00-06:00.",
+    "Gate 4 record: gate-3.1-tsc-8437779.log reports OK with tsc exit 2, 210 error lines, 210 identities, and block EXIT=0. Base and after identity files both hash to 68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e. adversarial-tsc-live.txt independently reports the same result.",
+    "Gate 5 record: rescore-ab/r8/verdict.txt reports E.PASS base=3/3 new=2/3, OTHER_FIELDS_DIFF_RUNS=[], and VERDICT=FLAKE. Both runner hashes equal 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0. This satisfies the quoted PM flake rule.",
+    "Axis 3 proof: doctor-ab/comparison.txt reports RAW_COMPARE=PASS, REPORT_COMPARE=PASS, SCORED_COMPARE=PASS, and NONVACUOUS with 23 analyzed files and two doctor findings. The comparison is bounded to the stored candidate and the two harness locks.",
+    "Test quality: adversarial-mutations.txt records TSC_CLEAN_EXIT=0 and TSC_MUTATION_EXIT=1 for a synthetic TS9999 identity. It also records a failing residual-reason removal probe. The residual gate is explicitly a written review rule, not an executable repository gate.",
+    "A5: grep finds no `PASS=N...FAIL=0` or `all checks pass` text in plan.md. The gate claims match the saved logs and live audit. F10 remains a nonblocking narrative miscount; F6 and F11 remain documentation nits.",
+    "A6: measure/tracks.md:33 lists deps_refresh as pending and makes no completion or adversarial-test claim. This pre-closeout registry state is accurate. Closeout must later archive the track and update the registry and metadata.",
+    "A9: the repository has no root tests directory. A search of shell and TypeScript/JavaScript files finds no measure/tracks path for change_bench, tests_bench, or go_catalog_w43. No test references those archived track paths.",
+    "Closeout state: metadata.json remains pending with deadline 2026-11-25, which is valid before closeout. The plan is complete, and the work is pushed. Closeout still needs status done, a completion date, the archive move, registry update, and closeout manifest.",
+    "Setup ruling: the orchestrator supplies the final gates and applies measure/tracks/opencode_executor/test-strategy.md:205-215. The repository has no lint script or tsconfig; the strategy's live gates are the doctor equivalent. FA1 and FA2 are withdrawn.",
+    "PROJECT_LINT: `git ls-files -z 'harness/*.sh' | xargs -0 -r -n1 bash -n` exited 0 during r2. Summary: every tracked harness shell file passed `bash -n`; the command printed no diagnostics.",
+    "PROJECT_CHECKS: `cd harness && npm audit --audit-level=high` exited 0 during r2. Summary: `5 moderate severity vulnerabilities`; no critical or high advisory remains.",
+    "PROJECT_TESTS: `bun test harness/model-guide-tests/review-run.test.ts` ran through heavy-run.sh and exited 0 during r2. Summary: 130 pass, 0 fail, 922 expect() calls across one file in 210.91 seconds. No timing flake occurred, so no rerun was needed.",
+    "Scope of this role: no install, push, or commit ran. The r2 lint and audit commands ran directly as lightweight checks; the bun test ran through heavy-run.sh. The four original untracked user paths remain preserved.",
+    "Routing: this final-acceptance route is kimi-code-plan-cn/k3.1-pro#high. It differs from Review A on OpenAI and phase acceptance on Claude. Facts changed: none."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short --branch; git rev-parse origin/main; git ls-remote origin refs/heads/main; git branch -r --contains d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+    "git merge-base --is-ancestor b4c2e450067ca65b4282d0178ec087d00fa7a8e6 d67d66899c9b3a1d14f0d79c1d8f36bb34179376; git merge-base --is-ancestor d67d66899c9b3a1d14f0d79c1d8f36bb34179376 HEAD",
+    "git diff --name-only d67d66899c9b3a1d14f0d79c1d8f36bb34179376 HEAD — no output",
+    "git diff --name-only b4c2e450067ca65b4282d0178ec087d00fa7a8e6 d67d66899c9b3a1d14f0d79c1d8f36bb34179376 — five paths: two harness package files and three deps_refresh track documents",
+    "git diff --name-status b4c2e450067ca65b4282d0178ec087d00fa7a8e6..d67d66899c9b3a1d14f0d79c1d8f36bb34179376 — M for each of the same five paths",
+    "git diff --name-only 7319344e28e04c5557be32676d20983a2559d1ef d67d66899c9b3a1d14f0d79c1d8f36bb34179376 -- fixture/ reference/ reference-variant/ reference-change/ — no output",
+    "git diff b4c2e450067ca65b4282d0178ec087d00fa7a8e6 d67d66899c9b3a1d14f0d79c1d8f36bb34179376 -- harness/package.json; read the saved exact lock, plan, spec, and strategy diffs",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6 d67d66899c9b3a1d14f0d79c1d8f36bb34179376 — exit 0",
+    "git log --format='%H %cI %s' b4c2e450067ca65b4282d0178ec087d00fa7a8e6..d67d66899c9b3a1d14f0d79c1d8f36bb34179376; git show -s for both Green package commits",
+    "git merge-base --is-ancestor for each unique completed-task SHA — all exits 0",
+    "python3 read-only phase-result check — three current passing results, one per plan phase, all bound to d67d668 and b4c2e45",
+    "cd harness && npm audit --json — exit 1; info 0, low 0, moderate 5, high 0, critical 0, total 5",
+    "cd harness && npm audit --audit-level=high — exit 0; five moderate advisories only",
+    "cd fixture && npm audit --json — exit 1; critical 1, high 4, moderate 2, low 0, total 7; all seven rows match spec D1",
+    "cd harness && npm outdated — exit 1; five direct packages behind latest, each with a recorded deferral",
+    "cd harness && npm run; cd harness && npm ls --depth=0 — no lint or build script; all seven direct versions match the plan",
+    "node -e read-only lock and identity-hash inspection — 423 entries, one registry host, no missing integrity, three install-script entries, matching base/after hashes",
+    "grep plan tasks and A5 claim patterns; grep deps_refresh in measure/tracks.md; search tests for archived track paths",
+    "Read gate-3.1-unit/meta/bun/tsc-8437779.log, rescore-ab/r8 verdict and hashes, doctor-ab comparison and integrity, adversarial mutations and live tsc output",
+    "PROJECT_LINT = git ls-files -z 'harness/*.sh' | xargs -0 -r -n1 bash -n — exit 0; no diagnostics",
+    "PROJECT_CHECKS = cd harness && npm audit --audit-level=high — exit 0; 5 moderate severity vulnerabilities",
+    "PROJECT_TESTS = bun test harness/model-guide-tests/review-run.test.ts through heavy-run.sh — exit 0; 130 pass, 0 fail, 922 expect() calls",
+    "An initial lightweight lint wrapper waited in the heavy-run queue and was terminated before execution. The supplied lint command then ran directly and exited 0."
+  ],
+  "changed_files": [
+    "measure/runs/deps_refresh/final-acceptance-d67d668.json",
+    "measure/runs/deps_refresh/final-acceptance-d67d668.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "Final acceptance passes at d67d668. Proceed to measure-closeout for the archive move, metadata completion, registry update, and closeout manifest. Carry F6, F10, and F11 as open plan-only nits. Facts changed: none.",
+  "route": "kimi-code-plan-cn/k3.1-pro#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The live harness audit reports 0 critical and 0 high, all five moderates have reasons, and origin/main contains d67d668."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "adversarial-mutations.txt shows the clean type-check comparison exiting 0 and a synthetic TS9999 identity exiting 1."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The exact b4c2e45-to-d67d668 diff contains only two package files and three deps_refresh documents; the fixture diff is empty."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every substantive claim has a command, log, or artifact, but plan.md:415-417 keeps the F10 miscount and omits the F6 citation."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "openai/gpt-6.1-sol#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I re-checked its audit counts, identity hashes, mutation outcomes, and non-vacuous doctor comparison."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.1-sol#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its correctness pass and F10 nit match the live audit, package pins, gate logs, and six saved score files."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "kimi-code-plan-cn/kimi-for-coding (from `ra-quota pick review-b --not-family hy --not-family openai`; Review A used openai/gpt-6.1-sol#high; Green used opencode-go/hy4-flash-free#high).",
+      "agreed": true,
+      "score": 5,
+      "evidence": "My lock inspection repeats its 422 non-root entries, single registry host, zero missing integrity hashes, and three install-script entries."
+    }
+  ]
+}

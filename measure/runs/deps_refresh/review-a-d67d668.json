@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file; Phase 3: Verify — gates, counts, residuals, push",
+  "task": "2.1; 3.1; 3.2; 3.3",
+  "status": "pass",
+  "summary": "No correctness blocker remains. The package refresh and gate records meet their written rules. One nonblocking sentence misstates the earlier regrade count.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "audited_head_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F10 [Nit] review-a: plan.md:416 says two runs per side preceded two more runs per side. That describes eight runs, not six. green-3.1-8437779-r11.log:11 describes one completed run per side. flake-runs.log:1-15 records two more per side. Change the earlier count to one run per side. Rationale: the six saved scores and the PM flake verdict remain correct."
+  ],
+  "evidence": [
+    "git rev-parse HEAD returned d67d66899c9b3a1d14f0d79c1d8f36bb34179376 before and after the review. It matches both supplied audit anchors.",
+    "The exact phase-base diff changes two package files and three Measure documents. No source, fixture, contract test, registry, or orchestration script changes.",
+    "git diff --name-only bf96724 d67d668 lists only plan.md, spec.md, and test-strategy.md. The harness is unchanged since fc9ec99.",
+    "I read the selected phases, spec.md, test-strategy.md, measure/index.md, and measure/anti-patterns.md. measure/workflow.md is absent.",
+    "The global Measure routing table selects Review A through ra-quota. The supplied OpenAI route differs from the Green HY family.",
+    "measure_status reports domain_trust as active. This audit follows the explicitly assigned deps_refresh phases and changes no active-track marker.",
+    "The package diff updates only @types/node 26.1.2 to 26.6.6 and tsx 4.23.1 to 4.23.15 directly. All scored-tool pins remain unchanged.",
+    "The package scripts equal the base scripts, including the frozen meta exclusions. The lock root matches package.json. Every resolved host is registry.npmjs.org.",
+    "npm ls --depth=0 exits 0 and shows all seven direct packages at the recorded versions.",
+    "The live npm audit --json exits 1 because five moderate advisories remain. Its labeled metadata reports critical 0, high 0, moderate 5, low 0.",
+    "The separate live npm audit --audit-level=high exits 0. Its five residual names match plan.md:492-505, with a reason for each.",
+    "The lock resolves brace-expansion 5.0.13, fast-uri 3.1.9, nanoid 3.3.20, source-map-js 1.2.4, vite 8.3.8, and zod 4.6.7.",
+    "Gate 1 logs one failed and sixteen passed tests, exit 1. The named M.closeout failure matches spec AC-3 and plan.md:390-398.",
+    "Gate 2 logs six failed and 232 passed tests across two failed files, exit 1. Its six diffs concern temporary executor paths.",
+    "The gate 2 rule in spec.md:236-241, plan.md:374-379, and test-strategy.md:83-87 explicitly accepts only that recorded failure class and those counts.",
+    "Gate 3 logs 130 pass, zero fail, and exit 0. Gate 4 logs block exit 0 with tsc exit 2 and 210 diagnostic identities.",
+    "The base and after identity files each contain 210 lines. Both SHA-256 hashes equal 68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e. No new identity appears.",
+    "Independent comparison of all twelve listed A/B fields matches plan.md:427-438. Only new run 1 differs, at the three recorded leaf paths.",
+    "The new side passes E.return-submits twice. The recorded PM flake rule therefore accepts gate 5. The one-word script diff and both runner hashes match the record.",
+    "All six full regrades have valid=false, total=null, doctor.ran=false, and axes.quality=0. Their equality alone provides no Axis 3 proof.",
+    "The separate doctor-only evidence closes that bounded gap. Both scans analyze 23 files, produce two doctor findings, and yield three merged warnings.",
+    "Independent normalization of the two raw doctor reports gives equality. The merged reports and scored fields are byte-identical, with quality 0.8833333333333333.",
+    "doctor-ab/scan.mjs calls the real runDoctor export. doctor.ts:85-89 invokes the installed analyzer. score.ts:258-274 explains why invalid full regrades skip that call.",
+    "build-graph reports 4181 nodes and 4345 edges. Its runDoctor profile has no call edges; direct source reads supply the missing caller evidence.",
+    "No exported symbol changes in the phase diff. The stored-candidate regrades and the separate doctor comparison cover the relevant dependency behavior.",
+    "Every completed task anchor resolves to an ancestor of HEAD. The package commits occurred at 14:17:53 and 14:25:03 +07, outside the protected window.",
+    "The gate logs record daytime execution through heavy-run.sh, except the documented lightweight type-check block. This review runs no suite, install, or regrade.",
+    "The push range contains 21 commits, matching the saved safe-push record. The local origin/main reference is 116ab89, which includes the pushed package changes.",
+    "The As-run paragraph explicitly supersedes the original A/B block. The gate claims distinguish accepted nonzero exits from zero exits.",
+    "No literal all-checks-pass or PASS=N, FAIL=0 claim appears in the plan. The unrelated four untracked paths remain unchanged.",
+    "Framework-wide A3 and A4 mutation checks do not apply to this diff. No framework check, contract test, or registry changed.",
+    "git diff --check on the exact phase range exits 0. This role writes only its supplied JSON result and log. Facts changed: none."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short; date --iso-8601=seconds",
+    "git diff --name-only bf96724 d67d668; git diff --quiet fc9ec99 d67d668 -- harness",
+    "git diff b4c2e450067ca65b4282d0178ec087d00fa7a8e6..d67d66899c9b3a1d14f0d79c1d8f36bb34179376 -- harness/package.json harness/package-lock.json",
+    "git diff bf96724..d67d668 -- measure/tracks/deps_refresh; read all three current track documents",
+    "measure_status; read measure/index.md and measure/anti-patterns.md",
+    "read global Measure routing table and contracts.md; read previous Review A and phase-acceptance artifacts",
+    "build-graph stats measure/runs/deps_refresh/adversarial-graph.db; build-graph callers measure/runs/deps_refresh/adversarial-graph.db runDoctor; build-graph inspect measure/runs/deps_refresh/adversarial-graph.db runDoctor",
+    "cd harness && npm audit --json — exit 1; metadata: 0 critical, 0 high, 5 moderate",
+    "cd harness && npm audit --audit-level=high — exit 0",
+    "cd harness && npm ls --depth=0 — exit 0",
+    "Read gate-3.1-{unit,meta,bun,tsc}-8437779.log and the six rescore-ab/r8 score files",
+    "Python read-only inspection: package scripts, lock consistency, resolved hosts, fixed package versions, identity hashes, and six-run field comparison",
+    "Python read-only inspection: normalized doctor raw reports, merged reports, scored fields, and analyzed-file counts",
+    "git merge-base --is-ancestor for each completed-task anchor; git show -s --format='%h %cI' 161b856 fc9ec99",
+    "git rev-list --count 7319344..6fdea72; git rev-parse origin/main",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..d67d66899c9b3a1d14f0d79c1d8f36bb34179376 — exit 0"
+  ],
+  "changed_files": [
+    "harness/package.json",
+    "harness/package-lock.json",
+    "measure/tracks/deps_refresh/plan.md",
+    "measure/tracks/deps_refresh/spec.md",
+    "measure/tracks/deps_refresh/test-strategy.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "Proceed to the remaining reviews and phase acceptance at d67d668. F10 is a nonblocking record correction. Cite doctor-ab/comparison.txt for Axis 3 proof. Facts changed: none.",
+  "route": "openai/gpt-6.1-sol#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The live high-level audit exits 0, and the independently compared score fields satisfy the recorded PM rule."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The six full regrades skip doctor, but doctor-ab/base-raw.json and new-raw.json provide a nonempty, matching comparison."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The exact phase diff contains only two package files and three Measure documents, with no source or fixture change."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "The raw logs and six score files support the gate claims, but plan.md:416 misstates the earlier regrade count."
+    }
+  ]
+}

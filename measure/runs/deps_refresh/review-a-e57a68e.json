@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "task": "2.1 r6",
+  "status": "fail",
+  "summary": "The r5 path defects are fixed, and the A/B scope is now described accurately. The script can still continue after failed setup steps, and its one-sided rerun can pass after an unexplained score difference.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "e57a68e8b0d9b23dee90e32698fd50c65708467b",
+  "audited_head_sha": "e57a68e8b0d9b23dee90e32698fd50c65708467b",
+  "blocking_findings": [
+    "On a first score difference, the script reruns only the new side. If that run matches the base score, it reports `PASS after new-side rerun (timing flake)` and accepts the A/B. One new-side rerun cannot prove the first difference was a timing flake. It can hide a package-dependent or intermittent score change, and it conflicts with the recorded PM condition that any score difference stops and returns to the PM. Keep any difference as a stop, or obtain an explicit PM decision for a statistical retry rule. Evidence: measure/tracks/deps_refresh/plan.md:261-264, 317-327.",
+    "The Bash block has no fail-fast mode. `git worktree add`, both `git show` writes, `google-chrome --version`, `npm ci`, and `npm ls` can fail while the script continues. The plan also preserves worktrees for later cleanup, so a stopped run can leave B/N paths in place. A later `git worktree add` then fails, but the script can continue using those paths. It does not assert both worktree HEADs equal R's HEAD or clear/reject prior run state. Stale code, dependencies, or copied artifacts could therefore reach the comparison. Add checked commands, verify both worktree commits and expected package files, and define a safe resume path. Evidence: measure/tracks/deps_refresh/plan.md:266-314; `set -o pipefail` does not enable `errexit`."
+  ],
+  "nonblocking_findings": [],
+  "evidence": [
+    "F1 withdrawn: the baseline package redirections now use `$B/harness/...`, so they target the base worktree rather than caller-relative package paths.",
+    "F2 withdrawn: the block creates `$B/runs` and `$N/runs`, then asserts both copied score and provenance files before regrading.",
+    "F3 withdrawn: task 3.1 now describes the A/B as comparing the complete dependency refresh, including package manifest changes, rather than claiming the lock alone changes.",
+    "git rev-parse HEAD returned e57a68e8b0d9b23dee90e32698fd50c65708467b, matching the supplied audited HEAD.",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd e57a68e8b0d9b23dee90e32698fd50c65708467b lists only measure/tracks/deps_refresh/plan.md. Package files did not change since r2.",
+    "The worktree roots, redirects, `mkdir -p`, copy steps, and artifact assertions are quoted and ordered correctly for a fresh run. `regrade-run.sh` derives ROOT from the worktree script path, and the copied run path matches its `ROOT/runs/$RUN_ID` lookup.",
+    "Task 3.1 compares the complete axes object and total. It records Chrome and timing as shared residual risks, but a one-sided rerun does not establish that a score difference was a timing flake.",
+    "The script sets `set -o pipefail` but not `set -e`; its setup commands at plan.md lines 274-292 have no explicit failure checks. The comparison block's later checks do not verify the worktree commit identities or the `npm ci` and `npm ls` exit statuses.",
+    "The regrade was not run, as required by the review assignment."
+  ],
+  "commands": [
+    "git rev-parse HEAD — e57a68e8b0d9b23dee90e32698fd50c65708467b",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd e57a68e8b0d9b23dee90e32698fd50c65708467b — measure/tracks/deps_refresh/plan.md only",
+    "Read measure/tracks/deps_refresh/plan.md:251-328 — checked setup, regrade, retry, and full-score compare steps",
+    "Read harness/regrade-run.sh:22-27 — worktree-derived ROOT and runs/<id>/artifacts lookup",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..e57a68e8b0d9b23dee90e32698fd50c65708467b — exit 0"
+  ],
+  "changed_files": [
+    "harness/package.json",
+    "harness/package-lock.json",
+    "measure/tracks/deps_refresh/plan.md"
+  ],
+  "test_strategy_violations": [
+    "The re-score can accept after a one-sided retry despite a recorded PM rule that any score difference stops. The setup also ignores failures and can reuse stale persistent worktrees without verifying their HEAD commits or package installs."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_implementation",
+  "handoff": "Green: make setup failures stop the script, assert both worktree commits and package installs, and reject stale worktree state. Do not convert a first score difference into a pass after only rerunning the new side without PM approval.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "measure/tracks/deps_refresh/plan.md:277-288 fixes the r5 path issues, but later steps can reuse failed setup state."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 2,
+      "evidence": "measure/tracks/deps_refresh/plan.md:317-324 treats a new-side retry match as proof of timing flake without rerunning the base side."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff between r2 and r6 lists only the Measure plan record."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The plan's Bash block and harness/regrade-run.sh:22-27 support the setup and path findings."
+    }
+  ]
+}

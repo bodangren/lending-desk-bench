@@ -1,0 +1,9 @@
+command: HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'bun test harness/model-guide-tests/review-run.test.ts'
+bun test v1.3.14 (0d9b296a)
+ 130 pass
+ 0 fail
+ 922 expect() calls
+Ran 130 tests across 1 file. [211.16s]
+EXIT=0
+GATE_RC=0
+note: run after the archive move; no failure is caused by the archived-track path

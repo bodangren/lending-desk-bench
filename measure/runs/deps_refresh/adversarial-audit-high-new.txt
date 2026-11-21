@@ -1,0 +1,31 @@
+# npm audit report
+
+@vitest/mocker  <=4.1.11
+Severity: moderate
+Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock - https://github.com/advisories/GHSA-82fw-gwwq-j7x9
+Vitest: Code injection via unauthenticated manual mock registration - https://github.com/advisories/GHSA-qxg6-89mg-rqv8
+fix available via `npm audit fix --force`
+Will install vitest@4.1.12, which is outside the stated dependency range
+node_modules/@vitest/mocker
+  vitest  2.1.0-beta.1 - 4.1.10
+  Depends on vulnerable versions of @vitest/mocker
+  node_modules/vitest
+
+minimatch  7.0.0 - 11.0.0
+Severity: moderate
+minimatch has potential denial of service via globparts amplification - https://github.com/advisories/GHSA-g3hv-75wg-m249
+fix available via `npm audit fix --force`
+Will install react-doctor@0.9.23, which is outside the stated dependency range
+node_modules/minimatch
+  deslop-js  *
+  Depends on vulnerable versions of minimatch
+  node_modules/deslop-js
+    react-doctor  0.2.3 - 0.9.12
+    Depends on vulnerable versions of deslop-js
+    node_modules/react-doctor
+
+
+5 moderate severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix --force

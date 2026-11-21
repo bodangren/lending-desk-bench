@@ -1,0 +1,17 @@
+{
+  "id": "deps_refresh",
+  "title": "Dependency refresh: update the harness packages and clear the audit",
+  "description": "Dependency refresh: update the harness packages and clear the audit. The harness lock refresh fixed all six high advisories and left five moderate advisories with recorded reasons. All gates and the same-code A/B passed. The work was pushed at 6fdea72 and final acceptance passed at d67d668. Three plan-only nits (F6, F10, F11) stay open.",
+  "type": "Chore",
+  "status": "done",
+  "created": "2026-11-21",
+  "completed": "2026-11-21",
+  "estimated_tasks": 5,
+  "actual_tasks": 5,
+  "source": {
+    "method": "PM P2 assignment 2026-11-21; Daniel 2026-11-21 07:52: keep packages up to date after hundreds of vulnerabilities in the past 2 weeks",
+    "evidence": "spec.md EV1-EV3, measured 2026-11-21 ~08:0x: harness/ 0 critical, 6 high, 7 moderate, 0 low; fixture/ 1 critical, 4 high, 2 moderate",
+    "dependencies": [],
+    "related_tracks": []
+  }
+}

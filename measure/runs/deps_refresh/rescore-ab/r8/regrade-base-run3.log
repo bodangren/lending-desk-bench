@@ -1,0 +1,21 @@
+[a-deepseek-v4-1-flash-2026w43-r1] regrade track=build model=opencode-go/deepseek-v4.1-flash arm=a revision=2 contract=none
+[a-deepseek-v4-1-flash-2026w43-r1] candidate dependencies are missing; restoring a private copy
+[a-deepseek-v4-1-flash-2026w43-r1] HOST NOT READY
+  load        2.33 on 12 cpu = 0.19/cpu   (budget <= 1.0)
+  available   22351MB                    (budget >= 2500MB)
+  swap used   2868MB                    (budget <= 2000MB)
+  top consumers:
+      RSS %CPU COMMAND
+    717360 5.6 opencode
+    452552 3.7 MainThread
+    300508 0.3 chrome
+    192488 0.5 chrome
+    164024 0.1 chrome
+[a-deepseek-v4-1-flash-2026w43-r1] host busy — proceeding under always-publish policy; timing-sensitive assertions are advisory
+[a-deepseek-v4-1-flash-2026w43-r1] grading on a contended host — timing assertions are advisory
+[a-deepseek-v4-1-flash-2026w43-r1] gate typecheck=true build=true
+[a-deepseek-v4-1-flash-2026w43-r1] TOTAL None  gate=True  T0=100% T1=100% T2=100%
+[a-deepseek-v4-1-flash-2026w43-r1] doctor ran=False err=0 warn=0 penalty=0 | quality=0.00
+[a-deepseek-v4-1-flash-2026w43-r1] 509s on task | in 170562 out 51684 cacheR 2253952 cacheW 0 | $0.0633 | 54 turns
+[a-deepseek-v4-1-flash-2026w43-r1] SUSPECT: graded under load 2.33 on 12 cpu, 22351MB avail — timing-sensitive failures are advisory under the always-publish policy
+[a-deepseek-v4-1-flash-2026w43-r1] REGRADED total=null valid=false adherence=1 orphan collected criteria: ranks a fresh, repeated row, marks an old row provisional, marks a single run provisional, marks a row without repeats provisional, marks a bad week text provisional, handles the ISO year boundary, marks the four frozen rows of the published board, keeps the frozen note exact, is imported by both pages

@@ -1,0 +1,205 @@
+diff --git a/measure/tracks/deps_refresh/spec.md b/measure/tracks/deps_refresh/spec.md
+index 9f0c24f..d3c98a8 100644
+--- a/measure/tracks/deps_refresh/spec.md
++++ b/measure/tracks/deps_refresh/spec.md
+@@ -49,8 +49,8 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
+ - **Heavy run.** A job that starts a browser or runs a full suite. It
+   runs only through
+   `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh`.
+-  Full suites run only 22:00-07:00, one file or suite at a time with
+-  `--maxWorkers=1`.
++  Full suites run at any time except 02:00-06:00, one file or
++  suite at a time with `--maxWorkers=1` (D7 as amended).
+ 
+ ## Design decisions
+ 
+@@ -108,17 +108,40 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
+      plan task 2.1. No source edit lands in this chore.
+    - Build: none exists. The harness is TypeScript source run with
+      `tsx`. The meta suite through `heavy-run.sh` stands in for it.
+-   - Unit tests: `npm run test:unit` (`vitest run tests/unit`).
++   - Unit tests: `CANDIDATE=<stored-candidate> npx vitest run
++     tests/unit --maxWorkers=1` through `heavy-run.sh`.
++     `tests/unit` scores a candidate tree. The default CANDIDATE
++     is the unsolved `fixture/`. The gate uses
++     `runs/a-deepseek-v4-1-flash-2026w43-r1/candidate` read-only.
++     The gate passes only with exactly 16 passed and 1 failed.
++     The one failure is the M.closeout status fault ("expected
++     'pending' to be 'complete'").
+    - Meta suite: `npm run test:meta:logic` through `heavy-run.sh`.
++     The gate passes only with exactly 6 failed in 2 files and
++     232 passed of 238. Every failure is the host path mismatch
++     "expected /tmp/opencode/executor-red-* received
++     /home/daniebo/.cache/opencode/executor-red-*". Cause:
++     `/tmp/opencode` is a symlink to
++     `/home/daniebo/.cache/opencode` since 2026-11-20 08:13
++     (orchestrator ruling 2026-11-21).
+    - Model-guide gate: `bun test
+      harness/model-guide-tests/review-run.test.ts`, because that file
+      runs with bun.
+-7. **D7. Night rule.** The bench uses `harness/` 02:00-06:00. The
+-   lock-file commit lands outside 02:00-07:00. The heavy gates run
+-   only 22:00-01:30, never 02:00-06:00. The order is: Green commit
+-   in the day (outside 02:00-07:00), then gates 22:00-01:30, then
+-   the push. A gate that is not done by 01:30 stops and resumes
+-   the next evening.
++7. **D7. Night rule (amended by the PM 2026-11-21 16:3x).**
++   The bench uses `harness/` 02:00-06:00. The lock-file commit
++   lands outside 02:00-07:00. The heavy gates may run at any
++   time except 02:00-06:00, one at a time through `heavy-run.sh`
++   with `--maxWorkers=1`. A gate that reaches 02:00 stops and
++   resumes after 06:00. The order is: Green commit, then gates,
++   then the push. The PM decision states: "PM decision (spec D7
++   change, smallest step): the machine is idle now (load 1.6, 20
++   GB free, 3 of 14 slots). Run task 3.1 gates now, in the day,
++   one at a time through heavy-run.sh with --maxWorkers=1;
++   heavy-run queues them behind any other heavy job. The only
++   window that stays closed is 02:00-06:00 (bench night run).
++   Include the same-code re-score check (identical axis scores)
++   from my vite decision. Record D7 as amended by the PM
++   2026-11-21 16:3x."
+ 8. **D8. Dates.** Critical and high done by 2026-11-23. The rest done
+    by 2026-11-25.
+ 9. **D9. Behavior drivers.** Two harness versions drive grading
+@@ -155,16 +178,23 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
+ ### FR-3 — The gates pass through heavy-run.sh
+ 
+ - The unit suite, the meta logic suite, and the bun review-run test
+-  pass. Each full-suite command runs through `heavy-run.sh`, only
+-  22:00-01:30, one suite at a time with `--maxWorkers=1`.
+-- **Check.** Each command below exits 0 inside the wrapper:
+-  - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness && npm run test:unit'`
+-  - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness && npm run test:meta:logic'`
++  pass under their written rules. Each full-suite command runs
++  through `heavy-run.sh`, at any time except 02:00-06:00, one
++  suite at a time with `--maxWorkers=1` (D7 as amended).
++- **Check.** Each command below meets its rule inside the wrapper:
++  - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness &&
++    CANDIDATE=<stored-w43-candidate> npx vitest run tests/unit
++    --maxWorkers=1'`: exactly 16 passed and 1 failed, the
++    failure being the known M.closeout status fault.
++  - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness &&
++    npm run test:meta:logic'`: exactly 6 failed in 2 files and
++    232 passed of 238, every failure the host path mismatch.
+   - `bun test harness/model-guide-tests/review-run.test.ts` through
+-    the wrapper.
+-  - The D6 `tsc` command over the full harness tree. The
+-    after-Green identity set is a subset of the base set: `comm -13`
+-    of the base file against the after file prints nothing.
++    the wrapper: exit 0.
++  - The D6 `tsc` command over the full harness tree: the block
++    exits 0. The after-Green identity set is a subset of the
++    base set: `comm -13` of the base file against the after
++    file prints nothing.
+ 
+ ### FR-4 — The residual list is complete
+ 
+@@ -183,19 +213,19 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
+ ### FR-6 — The work lands outside the night run
+ 
+ - The lock-file commit lands outside 02:00-07:00 local time. The
+-  heavy gates run only 22:00-01:30 and never 02:00-06:00. The plan
+-  records the commit time and each gate time. A gate that is not
+-  done by 01:30 stops and resumes the next evening.
++  heavy gates run at any time except 02:00-06:00 (D7 as
++  amended). The plan records the commit time and each gate
++  time. A gate that reaches 02:00 stops and resumes after 06:00.
+ - **Check.** The commit timestamp sits outside the night window.
+-  Each heavy gate timestamp sits inside 22:00-01:30.
++  Each heavy gate timestamp sits outside 02:00-06:00.
+ 
+ ## Non-functional requirements
+ 
+ - **NFR-1 No fixture churn.** Score comparability of the cohort holds.
+ - **NFR-2 No deploy.** The fixture never deploys. The harness change
+   needs no deploy.
+-- **NFR-3 The machine stays usable.** Full suites run only
+-  22:00-01:30 through `heavy-run.sh`, never 02:00-06:00.
++- **NFR-3 The machine stays usable.** Full suites run at any time
++  except 02:00-06:00 through `heavy-run.sh` (D7 as amended).
+ - **NFR-4 No new tool.** The track adds no dependency and no script.
+ 
+ ## Acceptance criteria
+@@ -203,7 +233,12 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
+ 1. **AC-1** `npm audit --audit-level=high` exits 0 in `harness/`, or
+    each leftover names its reason (FR-1).
+ 2. **AC-2** Green changes only the two lock-scope files (FR-2).
+-3. **AC-3** All gate commands of FR-3 exit 0 through `heavy-run.sh`.
++3. **AC-3** The unit gate passes with exactly 16 passed and 1
++    failed (the known M.closeout status fault, CANDIDATE = the
++    stored w43 candidate). The meta gate passes with exactly 6
++    failed in 2 files and 232 passed of 238 (every failure the
++    host path mismatch). The bun gate exits 0 through
++    `heavy-run.sh`. The type-check block exits 0 (FR-3).
+ 4. **AC-4** Each residual advisory has its reason (FR-4).
+ 5. **AC-5** No track commit touches `fixture/` (FR-5).
+ 6. **AC-6** The lock-file commit timestamp sits outside 02:00-07:00
+@@ -226,5 +261,5 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
+   (D7, FR-6).
+ - **R3 `npm audit` flaps with the registry.** The plan records the
+   command output and its date. A rerun settles a flap.
+-- **R4 The meta suite is slow.** It runs once at the end, through
+-  `heavy-run.sh`, inside the night window.
++- **R4 The meta suite is slow.** It runs once, through
++  `heavy-run.sh`, at any time except 02:00-06:00 (D7 as amended).
+diff --git a/measure/tracks/deps_refresh/test-strategy.md b/measure/tracks/deps_refresh/test-strategy.md
+index af1cabf..8ebce91 100644
+--- a/measure/tracks/deps_refresh/test-strategy.md
++++ b/measure/tracks/deps_refresh/test-strategy.md
+@@ -20,7 +20,7 @@ breaks the grading harness. The fixture stays pinned for cohort comparability
+ | `@playwright/test` runner drifts | Browser grading breaks | The version check and one named e2e spec (spec D9, task 3.1) |
+ | The meta exclude list grows to reach green | Tests vanish and the suite lies | Frozen exclude list; scope guard (A7) |
+ | The fixture hash changes | w36-w39 scores lose comparability | `git diff --name-only` scope guard (FR-5); the protected hash in `candidate-contract.ts` stays |
+-| A change lands in the night run | A bench reads a half-written tree | Commit outside 02:00-07:00; gates only 22:00-01:30 (D7, FR-6) |
++| A change lands in the night run | A bench reads a half-written tree | Commit outside 02:00-07:00; gates at any time except 02:00-06:00 (D7, FR-6) |
+ | `npm audit` flaps with the registry | A false red or false green | Dated command output; one rerun settles a flap (R3) |
+ 
+ Phase risk classification:
+@@ -58,7 +58,7 @@ echo PHASE_BASE=ok
+ ## 3. Gate commands
+ 
+ Run every command from the repository root unless the line says `cd harness`.
+-The wide gates run only 22:00-01:30 through `heavy-run.sh`, one at a time.
++The wide gates run at any time except 02:00-06:00 through `heavy-run.sh`, one at a time.
+ 
+ - `AUDIT_RED` / `AUDIT_GREEN`:
+   `cd harness && npm audit --audit-level=high`. The Red phase records a
+@@ -77,9 +77,14 @@ The wide gates run only 22:00-01:30 through `heavy-run.sh`, one at a time.
+   `comm --check-order -13` of the base file against the after file. The
+   command passes only when `comm` prints nothing.
+ - `UNIT_GATE`:
+-  `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:unit'`
++  `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && CANDIDATE=<stored-w43-candidate> npx vitest run tests/unit --maxWorkers=1'`.
++  It passes only with exactly 16 passed and 1 failed, the
++  failure being the known M.closeout status fault.
+ - `META_GATE`:
+-  `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:meta:logic'`
++  `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:meta:logic'`.
++  It passes only with exactly 6 failed in 2 files and 232
++  passed of 238, every failure the host path mismatch
++  (spec D6).
+ - `BUN_GATE`: `bun test harness/model-guide-tests/review-run.test.ts` through
+   the same wrapper.
+ - `SCOPE_GATE` (Green and Verify): `git status --short` and
+@@ -138,8 +143,8 @@ gate. The closeout gate is the evidence that ends the phase.
+   base set. A synthetic identity added to a copy of the after file must make
+   `comm -13` print it and the block exit 1. That probe is the falsification
+   of the tsc gate. It runs on a copy, never on the tracked file.
+-- **Green gate:** `UNIT_GATE`, `META_GATE`, and `BUN_GATE` each exit 0 inside
+-  `heavy-run.sh`. `TSC_AFTER` passes under its no-new-identity rule. When
++- **Green gate:** `UNIT_GATE`, `META_GATE`, and `BUN_GATE` each meet
++  their pass rule inside `heavy-run.sh` (spec D6, FR-3). `TSC_AFTER` passes under its no-new-identity rule. When
+   `@playwright/test` moved in Green, run `./node_modules/.bin/playwright
+   --version` from `harness/` and one named e2e spec
+   (`tests/e2e/probes.spec.ts`) through the wrapper. Read the labeled Vitest
+@@ -164,8 +169,8 @@ red at the base. The gate never lowers the bar to reach exit 0. It compares
+ identity sets instead, so a fixed diagnostic reduces the count and a new
+ diagnostic fails the gate. The Red audit gate stays red until Green fixes the
+ advisories. No role edits the audit level, the diagnostic filter, or the
+-exclude list to hide a failure. A gate that is not done by 01:30 stops and
+-resumes the next evening (D7).
++exclude list to hide a failure. A gate that reaches 02:00 stops and
++resumes after 06:00 (D7).
+ 
+ ### Architecture guardrails and changed-contract risks
+ 

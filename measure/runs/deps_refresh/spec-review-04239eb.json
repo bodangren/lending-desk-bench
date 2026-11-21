@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "role": "spec-review",
+  "track": "deps_refresh",
+  "phase": "track setup",
+  "baseline_sha": "7319344",
+  "audited_head_sha": "04239eb7622725034a459faf428074c1328897dc",
+  "status": "pass",
+  "summary": "F1 is closed. The comparison checks input files, captures comm failures, and rejects unsorted inputs. Task 1.1 generates the base identities with the same C-locale sort.",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "paraphrase": {
+    "proposes": "This track refreshes harness dependencies, clears critical and high advisories, and records reasons for residual advisories. It pins fixture dependencies for benchmark comparability. It compares post-refresh type-check identities with the base set and defers any update that requires a source edit.",
+    "current_system": "The harness has no tsconfig or type-check script, and the base TypeScript command reports 210 diagnostics. The gate captures raw output, validates the TypeScript exit code and parsed diagnostic count, sorts identities with the C locale, and checks the after set against the base set. The Playwright configuration uses system Chrome, and scoring pins react-doctor 0.9.2."
+  },
+  "evidence": [
+    "HEAD is 04239eb7622725034a459faf428074c1328897dc, the requested revision.",
+    "git diff --name-only 0144caf..HEAD lists only measure/tracks/deps_refresh/plan.md and spec-review.md.",
+    "F1 withdrawn: task 3.1 now checks that the base file is non-empty and the after file exists, uses `comm --check-order`, and exits on comm failure. It also validates the TypeScript exit code and parsed error-line counts before comparison.",
+    "Task 1.1 runs the same block with IDS set to the base identity path. The sort step runs with LC_ALL=C before the comm comparison, so the generated base file uses the same order as the after file.",
+    "The grep matcher accepts spaces in source paths before the opening parenthesis. It captures each primary TypeScript diagnostic line and ignores continuation lines, which carry no additional location-and-code identity.",
+    "F2 remains closed: spec D6 and plan task 2.1 prohibit source edits and defer any package update that needs one."
+  ],
+  "commands": [
+    {"command":"git rev-parse HEAD","result":"pass; 04239eb7622725034a459faf428074c1328897dc"},
+    {"command":"git diff --name-only 0144caf..HEAD","result":"pass; only plan.md and spec-review.md changed"},
+    {"command":"Review amended comparison and base generation logic","result":"pass; F1 and F2 closed; no new defect found"}
+  ],
+  "changed_files": ["measure/runs/deps_refresh/spec-review-04239eb.json", "measure/runs/deps_refresh/spec-review-04239eb.log"],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high"
+}

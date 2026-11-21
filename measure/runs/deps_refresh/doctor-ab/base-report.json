@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "errors": 0,
+  "warnings": 3,
+  "byCategory": {
+    "Bugs": 2,
+    "Maintainability": 1
+  },
+  "byRule": {
+    "server-sequential-independent-await": 1,
+    "nextjs-no-img-element": 1,
+    "eslint-disable": 1
+  },
+  "diagnostics": [
+    {
+      "rule": "server-sequential-independent-await",
+      "severity": "warning",
+      "category": "Bugs",
+      "filePath": "app/items/page.tsx",
+      "line": 19
+    },
+    {
+      "rule": "nextjs-no-img-element",
+      "severity": "warning",
+      "category": "Bugs",
+      "filePath": "src/components/item-card.tsx",
+      "line": 22
+    },
+    {
+      "rule": "eslint-disable",
+      "severity": "warning",
+      "category": "Maintainability",
+      "filePath": "src/components/item-card.tsx",
+      "line": 21
+    }
+  ]
+}

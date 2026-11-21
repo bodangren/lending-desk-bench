@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "role": "spec-review",
+  "track": "deps_refresh",
+  "phase": "track setup",
+  "baseline_sha": "7319344",
+  "audited_head_sha": "0144caf4a3ae5845ec0e03d8a85788e9c60d30b0",
+  "status": "fail",
+  "summary": "F2 is closed. F1 remains open because the script does not check the comm exit status; a missing or invalid base file can look like an empty difference.",
+  "blocking_findings": [
+    "F1 [Blocker] spec D6 and plan tasks 1.1 and 3.1: The diagnostic-set gate can still pass when the comparison command fails. Rationale: The script captures `comm -13` in `NEW` but does not check comm's exit status. If the base or after file is missing or unsorted, comm writes an error to stderr and can leave NEW empty; the following empty-string test then passes. Check comm's status and verify both files exist and are sorted before accepting the subset result."
+  ],
+  "nonblocking_findings": [],
+  "paraphrase": {
+    "proposes": "This track refreshes harness dependencies, clears critical and high advisories, and records reasons for residual advisories. It pins fixture dependencies for benchmark comparability. It blocks new type-check diagnostics by comparing sorted identities against a baseline and defers package updates that require source changes.",
+    "current_system": "The harness has no tsconfig or type-check script, and the base TypeScript command reports 210 diagnostics. The new gate captures raw output, validates the TypeScript exit code and diagnostic counts, sorts identities under the C locale, and checks the after set against the base set. The Playwright configuration uses system Chrome, and scoring pins react-doctor 0.9.2."
+  },
+  "evidence": [
+    "HEAD is 0144caf4a3ae5845ec0e03d8a85788e9c60d30b0, the requested revision.",
+    "git diff --name-only 1fe0d9c..HEAD lists only measure/tracks/deps_refresh/spec.md, plan.md, and spec-review.md.",
+    "F1 remains: task 3.1 sets `NEW=$(LC_ALL=C comm -13 \"$BASE\" \"$IDS\")` and tests only whether NEW is empty. It does not check comm's exit code or verify the input files before the comparison.",
+    "The new script captures tsc's exit code, requires exit 0 with no diagnostics or exit 2 with a non-empty parsed diagnostic set, and checks the count of error lines against parsed identities. This closes the earlier masked-tsc-failure gap.",
+    "The grep pattern matches TypeScript's primary `file(line,col): error TScode` lines. Its `^[^(]+` prefix accepts spaces in a file path. Continuation lines lack the primary error form and do not add identities.",
+    "Task 1.1 runs the same block with IDS set to the base identity file. The block sorts with `LC_ALL=C sort -u` before comm, so base and after files use the same order.",
+    "F2 withdrawn: spec D6, FR-2, and plan task 2.1 now prohibit source edits and defer any update that requires one. The source-change fallback has been removed."
+  ],
+  "commands": [
+    {"command":"git rev-parse HEAD","result":"pass; 0144caf4a3ae5845ec0e03d8a85788e9c60d30b0"},
+    {"command":"git diff --name-only 1fe0d9c..HEAD","result":"pass; only spec.md, plan.md, and spec-review.md changed"},
+    {"command":"Read amended type-check block and base-generation instructions","result":"pass; F2 withdrawn; F1 remains because comm failures are unchecked"}
+  ],
+  "changed_files": ["measure/runs/deps_refresh/spec-review-0144caf.json", "measure/runs/deps_refresh/spec-review-0144caf.log"],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high"
+}

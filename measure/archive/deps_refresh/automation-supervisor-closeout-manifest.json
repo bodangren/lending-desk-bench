@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "track": "deps_refresh",
+  "title": "Dependency refresh: update the harness packages and clear the audit",
+  "status": "complete",
+  "closed_out": "2026-11-21",
+  "closed_by": "measure-closeout",
+  "pre_closeout_head": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "archive_move": {
+    "from": "measure/tracks/deps_refresh",
+    "to": "measure/archive/deps_refresh",
+    "method": "git mv"
+  },
+  "audits": [
+    {
+      "role": "measure-final-acceptance",
+      "kind": "quality acceptance",
+      "path": "measure/runs/deps_refresh/final-acceptance-d67d668.json",
+      "status": "pass",
+      "audited_head": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+      "provenance_match": true,
+      "scope_note": "audited_head_sha equals the pre-closeout HEAD and origin/main. AC-1 to AC-7 pass. Three plan-only nits stay open."
+    },
+    {
+      "role": "measure-phase-acceptance",
+      "kind": "phase acceptance",
+      "paths": [
+        "measure/runs/deps_refresh/phase-acceptance-p1-d67d668.json",
+        "measure/runs/deps_refresh/phase-acceptance-p2-d67d668.json",
+        "measure/runs/deps_refresh/phase-acceptance-p3-d67d668.json"
+      ],
+      "status": "pass",
+      "audited_head": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+      "provenance_match": true
+    },
+    {
+      "role": "measure-adversarial-testing",
+      "path": "measure/runs/deps_refresh/adversarial-d67d668.json",
+      "status": "pass",
+      "audited_head": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376"
+    },
+    {
+      "role": "measure-review-a",
+      "path": "measure/runs/deps_refresh/review-a-d67d668.json",
+      "status": "pass",
+      "audited_head": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376"
+    },
+    {
+      "role": "measure-review-b",
+      "path": "measure/runs/deps_refresh/review-b-d67d668.json",
+      "status": "pass",
+      "audited_head": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376"
+    },
+    {
+      "role": "measure-closeout",
+      "kind": "closeout gate",
+      "command": "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track deps_refresh",
+      "status": "pass",
+      "result": "PASS: closeout checks passed"
+    }
+  ],
+  "plan_evidence": {
+    "task_lines": 5,
+    "all_complete": true,
+    "in_progress_markers": 0,
+    "space_markers": 0,
+    "blocked_markers": 0,
+    "commit_shas": [
+      "1fcfd03",
+      "fc9ec99",
+      "8437779",
+      "8437779",
+      "6fdea72"
+    ],
+    "sha_notes": "Five [x] task lines carry these anchors. Every unique anchor resolves on main and is an ancestor of the pre-closeout HEAD. The package commits at 14:17:53 and 14:25:03 +07 sit outside 02:00-07:00."
+  },
+  "gates": [
+    {
+      "name": "plan markers",
+      "command": "grep -cE '^- \\[[~ ]\\]' measure/archive/deps_refresh/plan.md; grep -cE '^- \\[b\\]' measure/archive/deps_refresh/plan.md",
+      "result": "0 in-progress, 0 space, 0 blocked, 5 [x]"
+    },
+    {
+      "name": "A5 false-claim text",
+      "command": "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass|all tests pass|completely fixed' measure/archive/deps_refresh/plan.md measure/tracks.md",
+      "result": "no match"
+    },
+    {
+      "name": "A6 registry note",
+      "command": "grep -n deps_refresh measure/tracks.md",
+      "result": "one entry in the Archived Tracks section only; no entry before that heading; the description matches metadata.json"
+    },
+    {
+      "name": "A9 archived-track path, before the move",
+      "command": "grep -rn 'measure/tracks/deps_refresh' --include='*.sh' --include='*.ts' --include='*.js' --include='*.py' --include='*.cjs' --include='*.mjs' .",
+      "result": "one hit in a retained audit artifact; no test gate hardcodes the path; no fix needed",
+      "hits": [
+        {
+          "path": "measure/runs/deps_refresh/adversarial-mutations.py",
+          "line": 11,
+          "text": "PLAN = (ROOT / \"measure/tracks/deps_refresh/plan.md\").read_text()",
+          "disposition": "Historical, provenance-bound artifact of the adversarial audit at d67d668. It is not a test gate and will not be re-run. Editing it would rewrite retained evidence. Left unchanged."
+        }
+      ],
+      "additional_retained_references": [
+        {
+          "path": "measure/archive/deps_refresh/test-strategy.md",
+          "lines": "52, 54",
+          "disposition": "Phase-contract commands recorded in the moved track document. They moved with the track and are not run by the closeout gate. Left unchanged."
+        },
+        {
+          "path": "measure/runs/deps_refresh/*.json, *.log, *.diff",
+          "disposition": "Historical audit records that quote the pre-archive path. Retained unchanged as evidence."
+        }
+      ]
+    },
+    {
+      "name": "A9 post-move project test gate",
+      "command": "HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'bun test harness/model-guide-tests/review-run.test.ts'",
+      "result": "EXIT=0; 130 pass, 0 fail, 922 expect() calls; no failure caused by the archive move",
+      "summary_file": "measure/runs/deps_refresh/closeout-gate-summary.log"
+    },
+    {
+      "name": "closeout interphase check",
+      "command": "measure_interphase_checks.py closeout --track deps_refresh",
+      "result": "PASS: closeout checks passed"
+    }
+  ],
+  "open_nonblocking_findings": [
+    {
+      "id": "F6",
+      "source": "measure/runs/deps_refresh/phase-acceptance-p3-d67d668.json",
+      "text": "The doctor-only A/B closes the Axis 3 gap, but plan.md does not cite doctor-ab/comparison.txt or name the degenerate regrade fields.",
+      "disposition": "Open. Plan text only. Recorded here at closeout; no plan edit made, because that would move HEAD away from the provenance-bound d67d668."
+    },
+    {
+      "id": "F10",
+      "source": "measure/runs/deps_refresh/phase-acceptance-p3-d67d668.json",
+      "text": "plan.md:415-417 says two runs per side preceded two more runs per side, which describes eight runs. Six saved score files establish one earlier run per side plus two more per side.",
+      "disposition": "Open. Plan text only. The flake verdict stays correct; only the narrative count is imprecise."
+    },
+    {
+      "id": "F11",
+      "source": "measure/runs/deps_refresh/phase-acceptance-p3-d67d668.json",
+      "text": "The gate 2 rule quotes one path-diff form, while the arm-comparison failure shows two different cache temp names.",
+      "disposition": "Open. Plan text only. All six failures share the accepted symlink cause; only the quoted form is imprecise."
+    }
+  ],
+  "metadata_status_note": "The closeout checker requires the literal value done (measure_interphase_checks.py:1120), and all archived tracks in this repo use done. metadata.json therefore holds status done and completed 2026-11-21. This manifest and the closeout result record the track as complete.",
+  "retained_evidence": [
+    "measure/runs/deps_refresh/final-acceptance-d67d668.json",
+    "measure/runs/deps_refresh/final-acceptance-d67d668.log",
+    "measure/runs/deps_refresh/phase-acceptance-p1-d67d668.json",
+    "measure/runs/deps_refresh/phase-acceptance-p2-d67d668.json",
+    "measure/runs/deps_refresh/phase-acceptance-p3-d67d668.json",
+    "measure/runs/deps_refresh/adversarial-d67d668.json",
+    "measure/runs/deps_refresh/review-a-d67d668.json",
+    "measure/runs/deps_refresh/review-b-d67d668.json",
+    "measure/runs/deps_refresh/doctor-ab/comparison.txt",
+    "measure/runs/deps_refresh/rescore-ab/r8/verdict.txt",
+    "measure/runs/deps_refresh/gate-3.1-unit-8437779.log",
+    "measure/runs/deps_refresh/gate-3.1-meta-8437779.log",
+    "measure/runs/deps_refresh/gate-3.1-bun-8437779.log",
+    "measure/runs/deps_refresh/gate-3.1-tsc-8437779.log",
+    "measure/runs/deps_refresh/closeout-d67d668.json",
+    "measure/runs/deps_refresh/closeout-d67d668.log",
+    "measure/runs/deps_refresh/closeout-gate-summary.log",
+    "measure/archive/deps_refresh/plan.md",
+    "measure/archive/deps_refresh/spec.md",
+    "measure/archive/deps_refresh/test-strategy.md",
+    "measure/archive/deps_refresh/metadata.json"
+  ],
+  "artifact_cleanup": {
+    "deleted": [],
+    "note": "The orchestrator named no bulky run artifacts. All evidence under measure/runs/deps_refresh/ is retained and committed with the archive."
+  },
+  "registry": {
+    "moved_from_active": true,
+    "archived_section_entry": true,
+    "description_source": "metadata.json description",
+    "description_matches": true
+  },
+  "staged_paths": [
+    "measure/archive/deps_refresh/metadata.json",
+    "measure/archive/deps_refresh/plan.md",
+    "measure/archive/deps_refresh/spec.md",
+    "measure/archive/deps_refresh/spec-review.md",
+    "measure/archive/deps_refresh/test-strategy.md",
+    "measure/archive/deps_refresh/automation-supervisor-closeout-manifest.json",
+    "measure/runs/deps_refresh/",
+    "measure/tracks.md"
+  ],
+  "unstaged_by_order": [
+    ".opencode/",
+    "tech-debt.md",
+    "harness/wt.txt",
+    "harness/model-guide/data/sets/",
+    "every other measure/runs/<track>/ folder"
+  ]
+}

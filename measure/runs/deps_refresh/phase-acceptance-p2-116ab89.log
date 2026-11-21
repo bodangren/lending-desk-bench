@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: deps_refresh
+phase: Phase 2: Green — the updates and the lock file
+commits: none
+tests_run: Read-only checks at 116ab89. cd harness && npm audit --audit-level=high exit 0 (critical 0, high 0, moderate 5, low 0, total 5; pass). cd harness && npm outdated lists five direct packages with recorded deferrals (pass). cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot exit 0, Test Files 1 passed (1), Tests 8 passed (8) (pass). git diff --name-only b4c2e45 HEAD -- fixture/ prints nothing (pass). No full suite ran.
+files_changed: measure/runs/deps_refresh/phase-acceptance-p2-116ab89.json, measure/runs/deps_refresh/phase-acceptance-p2-116ab89.log
+plan_updates: none (gate-only role)
+known_failures: F2 blocker: no adversarial testing result (test-strategy.md:196 assigns yes, bounded). F3 blocker: Review A (bf96724) and Review B (8437779) do not target 116ab89. F8 nit: stale deferral reasons for typescript 7.0.2 and vitest 5.1.1.
+handoff: Phase 2 fails at 116ab89a9c9f614c2507985c7d79c0f34ceddc66 (phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6) on two prerequisite blockers only. The code and lock content pass every re-check. Adversarial testing must run first for Phase 2 and Phase 3. It does not block Phase 1. Do the work in this order. First, make one plan commit for F1 and F4. Second, run bounded adversarial testing, Review A, and Review B on that HEAD. Third, run Phase 1, 2, and 3 acceptance again on that HEAD. The audits write only measure/runs/, so they do not move HEAD.
+verdict: fail
+audited_head_sha: 116ab89a9c9f614c2507985c7d79c0f34ceddc66
+result_file: measure/runs/deps_refresh/phase-acceptance-p2-116ab89.json
+retry_recommendation: retry_audit
+summary: Phase 2 fails on two prerequisite blockers (F2 adversarial result missing, F3 stale Review A and Review B HEADs). Every Phase 2 claim in plan.md task 2.1 is true at HEAD.
+END_MEASURE_AGENT_RESULT

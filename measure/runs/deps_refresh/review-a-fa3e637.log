@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: deps_refresh
+phase: Phase 2: Green — the updates and the lock file
+role: review-a
+task: 2.1 r4
+status: fail
+phase_base_sha: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+role_base_sha: fa3e63713f4f7e6a3fbfe5827fa271943be575c5
+audited_head_sha: fa3e63713f4f7e6a3fbfe5827fa271943be575c5
+blocking_findings: The w43 run is eligible and the fresh-regrade proof is falsifiable, but its stored runner hash differs from HEAD. The comparison cannot isolate lock effects from scoring-code changes.
+nonblocking_findings: none
+evidence: Target score is valid build track, total 95, with opencode executor and clean contract. Stored runner hash 3e5a4c64c9bcd0b30d6143389c8e96b9a80d955681df7b072c394db937ab29ea differs from current runner hash 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0. Package files are unchanged since r2.
+commands: git rev-parse HEAD; git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd fa3e63713f4f7e6a3fbfe5827fa271943be575c5; ./harness/node_modules/.bin/tsx harness/provenance.ts --shell; inspect target run artifacts; inspect harness/regrade-run.sh; git diff --check
+retry_recommendation: retry_implementation
+handoff: Green should compare the same candidate and fixture with the same scoring code under the baseline lock and refreshed lock. The stored w43 runner hash does not match HEAD.
+route: openai/gpt-6-luna#high
+END_MEASURE_AGENT_RESULT

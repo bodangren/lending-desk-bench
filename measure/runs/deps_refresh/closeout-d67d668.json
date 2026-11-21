@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "role": "measure-closeout",
+  "track": "deps_refresh",
+  "phase": "closeout",
+  "baseline_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "audited_head_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "status": "pass",
+  "summary": "deps_refresh is archived. All five plan tasks are [x] with commit anchors. The track directory moved to measure/archive/deps_refresh. metadata.json is complete with actual_tasks 5 and a completion date. The registry lists the track only in the Archived Tracks section. The closeout interphase check and the post-move heavy-run project test gate pass. Three plan-only nits F6, F10, F11 stay open and are recorded in the closeout manifest.",
+  "final_acceptance": {
+    "path": "measure/runs/deps_refresh/final-acceptance-d67d668.json",
+    "status": "pass",
+    "audited_head": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+    "provenance_match": true,
+    "scope_note": "Final acceptance at d67d668 passes AC-1 to AC-7. The pre-closeout HEAD and origin/main equal its audited_head_sha."
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F6 [Nit] The doctor-only A/B closes the Axis 3 gap, but plan.md does not cite doctor-ab/comparison.txt or name the degenerate regrade fields. Plan text only. Open.",
+    "F10 [Nit] plan.md:415-417 counts eight regrades, while six saved score files establish one earlier run per side plus two more per side. Plan text only. Open.",
+    "F11 [Nit] The gate 2 rule quotes one path-diff form, while the arm-comparison failure shows two different cache temp names. Plan text only. Open."
+  ],
+  "evidence": [
+    "git rev-parse HEAD and git rev-parse origin/main both print d67d66899c9b3a1d14f0d79c1d8f36bb34179376 before closeout; this equals the final-acceptance audited_head_sha.",
+    "All three phase acceptances at d67d668 have status pass and audited_head_sha d67d66899c9b3a1d14f0d79c1d8f36bb34179376.",
+    "The archived plan holds five [x] tasks and zero [~], [ ], and [b] tasks. Anchors are 1fcfd03, fc9ec99, 8437779, 8437779, and 6fdea72. Each is an ancestor of the pre-closeout HEAD.",
+    "A5 grep of plan.md and measure/tracks.md finds no PASS=N FAIL=0 or all checks pass claim.",
+    "A6: deps_refresh appears only in the Archived Tracks section of measure/tracks.md; the description matches metadata.json.",
+    "A9: before the move, one code hit exists in measure/runs/deps_refresh/adversarial-mutations.py. It is a historical audit artifact, not a test gate, and stays unchanged. No tests/*.sh or harness test hardcodes the archived path.",
+    "The post-move project test gate ran through heavy-run.sh: bun test harness/model-guide-tests/review-run.test.ts, EXIT=0, 130 pass, 0 fail, 922 expect() calls. Summary in measure/runs/deps_refresh/closeout-gate-summary.log.",
+    "The closeout interphase check prints PASS: closeout checks passed.",
+    "metadata.json holds status done, completed 2026-11-21, estimated_tasks 5, and actual_tasks 5. The closeout checker requires the literal done; see the metadata_status_note in the closeout manifest.",
+    "No bulky run artifact was deleted. Every file under measure/runs/deps_refresh/ is retained and committed with the archive.",
+    "Untracked user paths .opencode/, tech-debt.md, harness/wt.txt, and harness/model-guide/data/sets/ were not staged. No other measure/runs/<track>/ folder was staged. No push ran."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git rev-parse origin/main; git status --short",
+    "git mv measure/tracks/deps_refresh measure/archive/deps_refresh",
+    "grep -cE '^- \\[[~ ]\\]' measure/archive/deps_refresh/plan.md; grep -cE '^- \\[b\\]' measure/archive/deps_refresh/plan.md",
+    "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass|all tests pass|completely fixed' measure/archive/deps_refresh/plan.md measure/tracks.md",
+    "grep -rn 'measure/tracks/deps_refresh' --include='*.sh' --include='*.ts' --include='*.js' --include='*.py' .",
+    "HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'bun test harness/model-guide-tests/review-run.test.ts'",
+    "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track deps_refresh",
+    "git add -- measure/archive/deps_refresh measure/tracks.md; git add -f -- measure/runs/deps_refresh/",
+    "git commit -m 'measure(deps_refresh): closeout'"
+  ],
+  "changed_files": [
+    "measure/archive/deps_refresh/metadata.json",
+    "measure/archive/deps_refresh/plan.md",
+    "measure/archive/deps_refresh/spec.md",
+    "measure/archive/deps_refresh/spec-review.md",
+    "measure/archive/deps_refresh/test-strategy.md",
+    "measure/archive/deps_refresh/automation-supervisor-closeout-manifest.json",
+    "measure/runs/deps_refresh/closeout-d67d668.json",
+    "measure/runs/deps_refresh/closeout-d67d668.log",
+    "measure/runs/deps_refresh/closeout-gate-summary.log",
+    "measure/tracks.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "deps_refresh is closed out and archived. F6, F10, and F11 stay open as plan-only nits and are recorded in the closeout manifest. facts changed: the track moved from measure/tracks/deps_refresh to measure/archive/deps_refresh; metadata is complete; the registry moved the entry to Archived Tracks. No push ran."
+}

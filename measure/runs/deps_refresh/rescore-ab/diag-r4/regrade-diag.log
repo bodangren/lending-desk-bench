@@ -1,0 +1,101 @@
+START 2026-11-21 18:01:47 +0700 CMD: heavy-run.sh -c 'cd /tmp/opencode/deps-ab-r4/base && bash ./harness/regrade-run.diag.sh a-deepseek-v4-1-flash-2026w43-r1'
++ RUN_ID=a-deepseek-v4-1-flash-2026w43-r1
++ [[ a-deepseek-v4-1-flash-2026w43-r1 =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$ ]]
++++ dirname ./harness/regrade-run.diag.sh
+++ cd ./harness/..
+++ pwd
++ ROOT=/tmp/opencode/deps-ab-r4/base
++ H=/tmp/opencode/deps-ab-r4/base/harness
++ source /tmp/opencode/deps-ab-r4/base/harness/env.sh
+++ '[' -z '' ']'
+++++ dirname /tmp/opencode/deps-ab-r4/base/harness/env.sh
++++ cd /tmp/opencode/deps-ab-r4/base/harness/..
++++ pwd
+++ _BENCH_ENV_ROOT=/tmp/opencode/deps-ab-r4/base
+++ _bench_load_env_file /tmp/opencode/deps-ab-r4/base/.env
+++ local file=/tmp/opencode/deps-ab-r4/base/.env line key val
+++ '[' -f /tmp/opencode/deps-ab-r4/base/.env ']'
+++ return 0
+++ _bench_load_env_file /tmp/opencode/deps-ab-r4/base/.env.local
+++ local file=/tmp/opencode/deps-ab-r4/base/.env.local line key val
+++ '[' -f /tmp/opencode/deps-ab-r4/base/.env.local ']'
+++ return 0
+++ '[' -z '' ']'
+++ '[' -d /home/daniebo/.agents/skills ']'
+++ export BENCH_SKILL_ROOT=/home/daniebo/.agents/skills
+++ BENCH_SKILL_ROOT=/home/daniebo/.agents/skills
+++ export _BENCH_ENV_LOADED=1
+++ _BENCH_ENV_LOADED=1
++ TSX=/tmp/opencode/deps-ab-r4/base/harness/node_modules/.bin/tsx
++ WORK=/tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1
++ OUT=/tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts
++ '[' -d /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts ']'
+++ node -e $'\nconst fs=require("node:fs");\nlet p; try { p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); } catch { process.stdout.write("unknown"); process.exit(0); }\nconst ex=p.executor||{};\nif (typeof ex.kind==="string" && ex.kind) { process.stdout.write(ex.kind); process.exit(0); }\nif (ex.pi) { process.stdout.write("pi"); process.exit(0); }\nprocess.stdout.write("unknown");' /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/provenance.json
++ EXECUTOR=opencode
++ '[' opencode = pi ']'
++ case "$RUN_ID" in
++ TRACK=build
++ SET_FILE=
++ SET_DEFAULT=
++ GENERATOR=
++ ORIGINAL=/tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate
++ '[' -d /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate-original ']'
++ '[' -d /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate ']'
++ IFS=$'\t'
++ read -r MODEL ARM MODE REVISION AGENT_EXIT WALL THINKING SKIP_REASON
+++ node -e $'\nconst fs=require("node:fs"), dir=process.argv[1];\nconst read=(name)=>{ try { return JSON.parse(fs.readFileSync(dir+"/"+name,"utf8")); } catch { return {}; } };\nconst p=read("provenance.json"), s=read("score.json");\nconst reasons=[...(s.invalid_reasons||[]), s.invalid||""].join(" ");\nconst skip=/no changes|no output tokens|provenance could not|variant generation/.test(reasons) ? reasons.replace(/\\s+/g," ").slice(0,80) : "";\nconst model=p.model||s.model||"", arm=p.arm||s.arm||"";\nprocess.stdout.write([model, arm, p.mode||"agent", Number.isInteger(p.fixture_revision)?p.fixture_revision:1,\n  Number.isInteger(s.agent_exit)?s.agent_exit:0, Number.isFinite(s.time_on_task_seconds)?s.time_on_task_seconds:0,\n  s.thinking_requested||"max", skip||"-"].join("\\t")+"\\n");' /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts
++ '[' - = - ']'
++ '[' -n opencode-go/deepseek-v4.1-flash ']'
++ [[ a =~ ^[ab]$ ]]
++ '[' -s /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/execution-identity.json ']'
++ '[' -s /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/executor-cohort.json ']'
+++ node -e $'\nconst fs=require("node:fs");\nlet c; try { c=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); } catch { process.stdout.write("none"); process.exit(0); }\nif (c.valid===true) { process.stdout.write("none"); process.exit(0); }\nconst reasons=c.reasons||[];\nconst hard=reasons.some((r)=>/symlink|unsupported filesystem entry|nested runtime directory|contains \\.git|root must be|directory is missing/.test(r));\nif (hard) { process.stdout.write("hard"); process.exit(0); }\nconst soft=new Set(c.soft||[]);\nfor (const r of reasons) {\n  if (/adds file/.test(r)) soft.add("files_added");\n  if (/missing fixture file/.test(r)) soft.add("files_missing");\n  if (/modified protected/.test(r)) soft.add("protected_modified");\n  if (/public export|public API inspection/.test(r)) soft.add("surface_changed");\n  if (/compiler suppression/.test(r)) soft.add("ts_suppression");\n  if (/test files exceed/.test(r)) soft.add("test_limits");\n}\nfs.writeFileSync(process.argv[2], JSON.stringify({ schema: 1, source: "original-verdict", fixture_revision: Number(process.argv[3]), reasons, soft: [...soft].sort(), hard: [] }, null, 2)+"\\n");\nprocess.stdout.write("soft");' /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/candidate-contract.json /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/.regrade-violation.json 2
++ VIOLATION_CLASS=none
++ '[' none = hard ']'
+++ date +%Y%m%d%H%M%S
++ STAMP=20261121180148
++ PREV=/tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148
++ mv /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148
++ mkdir -p /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts
++ for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent
++ '[' -e /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/session.json.gz ']'
++ cp -a /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/session.json.gz /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/session.json.gz
++ for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent
++ '[' -e /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/session.json ']'
++ for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent
++ '[' -e /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/session.err ']'
++ cp -a /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/session.err /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/session.err
++ for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent
++ '[' -e /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/execution-identity.json ']'
++ cp -a /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/execution-identity.json /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/execution-identity.json
++ for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent
++ '[' -e /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/executor-cohort.json ']'
++ cp -a /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/executor-cohort.json /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/executor-cohort.json
++ for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent
++ '[' -e /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/candidate.diff ']'
++ cp -a /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/candidate.diff /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/candidate.diff
++ for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent
++ '[' -e /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148/pi-agent ']'
++ '[' -s /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/.regrade-violation.json ']'
++ ROOT_TREE=/tmp/opencode/deps-ab-r4/base/fixture
++ '[' build '!=' build ']'
++ '[' /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate = /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate ']'
++ rm -rf /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate-original
++ mv /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate-original
++ ORIGINAL=/tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate-original
++ rm -rf /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate
++ /tmp/opencode/deps-ab-r4/base/harness/node_modules/.bin/tsx /tmp/opencode/deps-ab-r4/base/harness/candidate-contract.ts --graft /tmp/opencode/deps-ab-r4/base/fixture /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate-original /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate --track build
+++ /tmp/opencode/deps-ab-r4/base/harness/node_modules/.bin/tsx /tmp/opencode/deps-ab-r4/base/harness/candidate-contract.ts /tmp/opencode/deps-ab-r4/base/fixture /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate-original --track build
+++ tee /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/hash.out
+++ node -e 'let s="";process.stdin.on("data",(d)=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).candidate_sha256||"")}catch{}})'
++ FROM_SHA=
++ [[ '' =~ ^[a-f0-9]{64}$ ]]
++ restore_previous 'original tree could not be hashed'
++ echo '[a-deepseek-v4-1-flash-2026w43-r1] original tree could not be hashed; restoring the previous artifacts'
+[a-deepseek-v4-1-flash-2026w43-r1] original tree could not be hashed; restoring the previous artifacts
++ rm -rf /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts
++ mv /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-20261121180148 /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts
++ rm -rf /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate/node_modules /tmp/opencode/deps-ab-r4/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate/.next
++ exit 4
+EXIT=4
+END 2026-11-21 18:01:50 +0700

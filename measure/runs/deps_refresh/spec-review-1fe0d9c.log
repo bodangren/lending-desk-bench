@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: spec-review
+status: complete
+track: deps_refresh
+phase: track setup
+commits: none
+tests_run: git rev-parse HEAD and git diff --name-only a64e681..HEAD; inspected the 210-line baseline identity file and TypeScript diagnostic output
+files_changed: measure/runs/deps_refresh/spec-review-1fe0d9c.json; measure/runs/deps_refresh/spec-review-1fe0d9c.log
+plan_updates: none; report-only confirmation review
+known_failures: F1 remains blocking; F2 is a new major finding
+handoff: The matcher handles primary TypeScript diagnostic lines, multi-line diagnostics, and paths with spaces. F1 remains open because the pipeline masks tsc failures and can compare an empty set. Specify exit-status and unmatched-output checks. F2 identifies the unspecified source-change comparison branch. HEAD and the changed-file scope match the request.
+END_MEASURE_AGENT_RESULT

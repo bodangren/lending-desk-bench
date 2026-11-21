@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "deps_refresh",
+  "phase": "Phase 1: Red — record the failing audit",
+  "status": "fail",
+  "summary": "Phase 1 fails acceptance at 116ab89 on one blocker. The Red evidence is true at HEAD: the audit record, the counts, the six high names, and the base type-check hash all match. The task 1.1 line cites f420571, and that commit is not in the history of main. One plan token needs a fix. No gate needs a rerun.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "audited_head_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "baseline_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "blocking_findings": [
+    "F1 [Blocker] phase-acceptance: Task 1.1 (plan.md:45) carries `[x] f420571`, and `f420571` is not in the history of `main`. `git merge-base --is-ancestor f420571 HEAD` exits 1. No branch contains it. The reflog holds it as `commit (amend)` at 14:12:45. The commit in history is `1fcfd03`. After garbage collection, or on a fresh clone, `git show f420571` fails. Fix: replace the token with a reachable SHA (`1fcfd03` or `b4c2e45`). Change no evidence text. Rationale: plan.md:41 needs a commit SHA on the task line, and the closeout check does not test that the SHA is reachable."
+  ],
+  "nonblocking_findings": [],
+  "evidence": [
+    "HEAD: `git rev-parse HEAD`, `git rev-parse origin/main`, and `git ls-remote origin refs/heads/main` all print 116ab89a9c9f614c2507985c7d79c0f34ceddc66. The audited HEAD is current.",
+    "Red audit record: `measure/runs/deps_refresh/audit-before-b4c2e45.json` has metadata.vulnerabilities critical 0, high 6, moderate 7, low 0, info 0, total 13. High names: brace-expansion, fast-uri, nanoid, source-map-js, vite, zod. Moderate names: @eslint/config-array, @vitest/mocker, deslop-js, eslint, minimatch, react-doctor, vitest. This matches plan.md task 1.1 and spec EV1.",
+    "Command equality: the Red command is `cd harness && npm audit --audit-level=high`. Task 2.1 and spec D5 use the same command and the same level. No role weakened the gate.",
+    "Base type-check record: `tsc-base-ids-7319344.txt` has 210 lines. `tsc-base-raw.txt` has 210 lines that match `: error TS[0-9]+`. `sha256sum` of the identity file prints 68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e, equal to plan.md task 1.1. `tsc-after-ids.txt` has the same hash, so the base file is unchanged at HEAD. `git check-ignore -v` confirms that both artifacts are ignored.",
+    "Red scope: `git show --stat 1fcfd03` lists only `measure/tracks/deps_refresh/plan.md`. `git diff --name-only b4c2e45 HEAD -- fixture/` prints nothing. Red changed no package, source, or fixture file and ran no install.",
+    "SHA anchor: `git cat-file -t f420571` prints commit. `git merge-base --is-ancestor f420571 HEAD` exits 1. `git branch -a --contains f420571` prints nothing. `git reflog` shows `f420571 HEAD@{2026-11-21 14:12:45 +0700}: commit (amend)`. `git merge-base --is-ancestor 1fcfd03 HEAD` exits 0. `git diff f420571 1fcfd03` changes one line: the task 1.1 token (3d99983 to f420571). The Red log handoff names the token.",
+    "Night window: `1fcfd03` was committed at 2026-11-21T14:13:07+07:00. No Red work ran in 02:00-06:00.",
+    "A5: every claim in plan.md task 1.1 matches the saved output, except the SHA anchor (F1). A3, A4, A6, and A7 do not apply. The exact phase diff `b4c2e45..1fcfd03` changes only plan.md. It changes no contract test, no filter, and no registry row.",
+    "Done-when: spec D5 asks for a recorded failing audit gate and the base type-check identity set. Both exist and are true. Red made no package change.",
+    "Prerequisites: the Red role log `red-1.1-b4c2e45.log` exists. Review A, Review B, Review C, adversarial testing, and UX review do not apply to the read-only Red phase (test-strategy.md section 5).",
+    "Limit: this acceptance did not run the audit at the base lock. The exit code 1 at Red rests on the saved JSON (high 6) and on the Red record."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git rev-parse origin/main; git ls-remote origin refs/heads/main; git worktree list",
+    "git cat-file -t f420571; git merge-base --is-ancestor f420571 HEAD; git merge-base --is-ancestor 1fcfd03 HEAD; git branch -a --contains f420571; git reflog --date=iso",
+    "git diff f420571 1fcfd03; git show --stat 1fcfd03; git diff --name-only b4c2e45 HEAD -- fixture/",
+    "node -e (read metadata.vulnerabilities and severity names from measure/runs/deps_refresh/audit-before-b4c2e45.json)",
+    "sha256sum measure/runs/deps_refresh/tsc-base-ids-7319344.txt measure/runs/deps_refresh/tsc-after-ids.txt",
+    "grep -c '' measure/runs/deps_refresh/tsc-base-ids-7319344.txt; grep -cE ': error TS[0-9]+' measure/runs/deps_refresh/tsc-base-raw.txt; git check-ignore -v measure/runs/deps_refresh/tsc-base-ids-7319344.txt"
+  ],
+  "changed_files": [
+    "measure/runs/deps_refresh/phase-acceptance-p1-116ab89.json",
+    "measure/runs/deps_refresh/phase-acceptance-p1-116ab89.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_implementation",
+  "handoff": "Fix F1 in one plan commit. Replace f420571 with 1fcfd03 (or b4c2e45) on the task 1.1 line. Then run Phase 1 acceptance again on the new HEAD. No gate needs a rerun for this fix. Review A, Review B, adversarial testing, and UX review do not apply to the read-only Red phase. Make the Phase 3 text fixes (F4 and the nonblocking items) in the same commit. Then HEAD moves only once. Run the audits of Phase 2 and Phase 3 on that HEAD.",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "audit-before-b4c2e45.json metadata.vulnerabilities (critical 0, high 6, moderate 7, low 0, total 13) matches plan.md task 1.1; the task SHA anchor is wrong (F1)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "Spec D5 sets no checked-in test; the dated audit command and the real tsc run are the falsifiable form, and the base identity hash 68dbc06c is unchanged at HEAD."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat 1fcfd03 lists only measure/tracks/deps_refresh/plan.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 3,
+      "evidence": "Counts, names, and hashes re-verify, but git merge-base --is-ancestor f420571 HEAD exits 1, so the task anchor cannot be resolved in the shared history."
+    }
+  ],
+  "reviewer_ratings": []
+}

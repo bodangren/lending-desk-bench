@@ -1,0 +1,6 @@
+harness/node_modules/source-map-js/package.json
+harness/node_modules/zod/package.json
+harness/node_modules/fast-uri/package.json
+harness/node_modules/nanoid/package.json
+harness/node_modules/vite/package.json
+harness/node_modules/brace-expansion/package.json

@@ -1,0 +1,313 @@
+START 2026-11-21 16:44:21 +0700 CMD: heavy-run.sh -c 'cd harness && npm run test:meta:logic'
+heavy-run: lock wait over 600 s — priority p2 — holder PID 383696: flock -w 1800 -E 201 /home/daniebo/Desktop/primary-parity-progress/heavy.lock /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh --locked -c set -o pipefail; cd dashboard && CI=true npx vitest run --exclude __tests__/storytime-unit2-sound-stage.test.ts --exclude __tests__/constants.test.ts --exclude __tests__/origins-thai-support.test.ts --exclude __tests__/default-look-new-editions.test.ts 
+RETRY 2026-11-21 17:00:03 +0700 after tool timeout on lock wait; first attempt left no process
+heavy-run: lock wait over 600 s — priority p2 — holder PID 525647: flock -w 1800 -E 201 /home/daniebo/Desktop/primary-parity-progress/heavy.lock /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh --locked -c set -o pipefail; cd dashboard && CI=true npx vitest run --exclude __tests__/storytime-unit2-sound-stage.test.ts --exclude __tests__/constants.test.ts --exclude __tests__/origins-thai-support.test.ts --exclude __tests__/default-look-new-editions.test.ts 
+
+> test:meta:logic
+> BENCH_META=1 vitest run tests/meta --maxWorkers=1 --exclude 'tests/meta/runtime-isolation*.ts' --exclude 'tests/meta/run-executor-provenance.test.ts'
+
+
+ RUN  v4.1.10 /home/daniebo/Desktop/lending-desk-bench/harness
+
+ ✓ tests/meta/opencode-credential.test.ts (21 tests) 63052ms
+     ✓ streams only the selected Console access payload to Podman stdin, with an inert refresh  3933ms
+     ✓ keeps Console canaries out of argv, environment, artifacts, logs, provenance, score, and the session export  3803ms
+     ✓ removes credential staging after agent success  3830ms
+     ✓ removes credential staging after agent failure  3702ms
+     ✓ removes credential staging after agent timeout  3700ms
+     ✓ removes credential staging after SIGINT during the fake agent  2546ms
+     ✓ removes credential staging after SIGTERM during the fake agent  2546ms
+     ✓ rejects a missing expires value before Podman or an OpenCode run  2130ms
+     ✓ rejects a null expires value before Podman or an OpenCode run  2130ms
+     ✓ rejects a string expires value before Podman or an OpenCode run  2119ms
+     ✓ rejects a negative expires value before Podman or an OpenCode run  2137ms
+     ✓ rejects a fractional expires value before Podman or an OpenCode run  2110ms
+     ✓ rejects a non-finite expires value before Podman or an OpenCode run  2102ms
+     ✓ rejects two active Console connections before credential delivery  2159ms
+     ✓ keeps every other integration on the host and delivers only the active Console connection  3811ms
+     ✓ batch preflight rejects a short credential before the first run directory  1944ms
+     ✓ a serial batch checks the run window again before a later agent  5424ms
+     ✓ the weekly near-side expiry warning preserves a covered batch  4623ms
+     ✓ the weekly far-side expiry warning preserves a covered batch  4643ms
+     ✓ redacts a canary from session output and the export and records an invalid credential-leak reason  3655ms
+ ❯ tests/meta/opencode-recorded.test.ts (24 tests | 1 failed) 30109ms
+     ✓ the provenance writer emits schema 7 and preserves the complete recorded identity 2ms
+     × the runner records identity schema 2, all OpenCode evidence, and only the credential descriptor 3844ms
+     ✓ the recorded snapshot control has new, failing, and current rows and trusted freshness 1ms
+     ✓ an OpenCode upgrade at the recorded path preserves attestation and freshness  1150ms
+     ✓ a changed config snapshot makes the recorded run invalid  1145ms
+     ✓ a changed skill snapshot makes the recorded run invalid  1212ms
+     ✓ O5 keeps exactly five snapshot skills and ignores later changes to their source folders  1168ms
+     ✓ the matrix sensitivity control changes classification after snapshot corruption  1196ms
+     ✓ classification and freshness ignore BENCH_SKILL_ROOT missing  1173ms
+     ✓ classification and freshness ignore BENCH_SKILL_ROOT changed  1180ms
+     ✓ classification and freshness ignore BENCH_AGENT_IMAGE another digest  1186ms
+     ✓ classification and freshness ignore BENCH_EXECUTOR_RUNTIME_FLAGS empty  1193ms
+     ✓ classification and freshness ignore BENCH_EXECUTOR_RUNTIME_FLAGS privileged  1174ms
+     ✓ classification and freshness ignore BENCH_EXECUTOR_RUNTIME_FLAGS invalid JSON  1212ms
+     ✓ classification and freshness ignore BENCH_EXECUTOR_CLI_FLAGS empty  1167ms
+     ✓ classification and freshness ignore BENCH_EXECUTOR_CLI_FLAGS thinking max  1194ms
+     ✓ classification and freshness ignore BENCH_EXECUTOR_CLI_FLAGS invalid JSON  1174ms
+     ✓ classification and freshness ignore BENCH_OPENCODE_BIN missing  1189ms
+     ✓ classification and freshness ignore BENCH_OPENCODE_BIN other version  1192ms
+     ✓ classification and freshness ignore BENCH_PI_ROOT missing  1172ms
+     ✓ classification and freshness ignore BENCH_PI_ROOT fake Pi  1212ms
+     ✓ classification and freshness ignore HOME missing  1189ms
+     ✓ classification and freshness ignore HOME ambient skills  1210ms
+     ✓ classification and freshness ignore PATH fake executors first  1169ms
+ ✓ tests/meta/grade-exit.test.ts (2 tests) 9679ms
+     ✓ exits nonzero when score.ts produces an invalid record  4972ms
+     ✓ keeps a structurally valid gate-blocked record nonpublishable and nonrankable  4705ms
+ ❯ tests/meta/opencode-executor.test.ts (21 tests | 5 failed) 7587ms
+     × Arm a: the whole Podman argv equals design 1.2, in order, including -i 9ms
+     × Arm a: the mount set equals FR-4 without any extra host mount 1ms
+     ✓ Arm a: the container uses private HOME and XDG paths and the confirmed disable flags 0ms
+     ✓ Arm a: the container never receives OPENCODE_API_KEY 1ms
+     ✓ Arm a: the runner resolves OpenCode from BENCH_OPENCODE_BIN, never from a PATH tripwire, including its version command 0ms
+     ✓ Arm a: the whole run argv uses standalone JSON auto mode and the default model variant 0ms
+     ✓ Arm a: score.json records thinking_requested as default 0ms
+     ✓ Arm a: config denies question, websearch, and subagent but not webfetch 0ms
+     ✓ Arm a: config contains exactly the arm rules, skill paths, and instruction entry 0ms
+     ✓ Arm a: AGENTS.md presence and the five skill snapshots match the arm 0ms
+     × Arm b: the whole Podman argv equals design 1.2, in order, including -i 1ms
+     × Arm b: the mount set equals FR-4 without any extra host mount 1ms
+     ✓ Arm b: the container uses private HOME and XDG paths and the confirmed disable flags 0ms
+     ✓ Arm b: the container never receives OPENCODE_API_KEY 0ms
+     ✓ Arm b: the runner resolves OpenCode from BENCH_OPENCODE_BIN, never from a PATH tripwire, including its version command 0ms
+     ✓ Arm b: the whole run argv uses standalone JSON auto mode and the default model variant 0ms
+     ✓ Arm b: score.json records thinking_requested as default 0ms
+     ✓ Arm b: config denies question, websearch, and subagent but not webfetch 0ms
+     ✓ Arm b: config contains exactly the arm rules, skill paths, and instruction entry 0ms
+     ✓ Arm b: AGENTS.md presence and the five skill snapshots match the arm 0ms
+     × the arms differ only in the skill rules, skills.paths, instructions, and skill mount 2ms
+ ✓ tests/meta/bench-incremental.test.ts (5 tests) 8450ms
+     ✓ classifies new, failing, and current models per track and arm  1434ms
+     ✓ uses provenance identity instead of run-ID shape for diagnostic runs  733ms
+     ✓ keeps selector output byte-identical when BENCH_TRACK leaks  2057ms
+     ✓ schedules only work-list rows in dry-run and restores the full matrix with FORCE=1  4188ms
+ ✓ tests/meta/opencode-fixture.test.ts (2 tests) 4089ms
+     ✓ the runner invokes the fake OpenCode and creates its capture file  3883ms
+ ✓ tests/meta/runner-safety.test.ts (8 tests) 1497ms
+     ✓ rejects a protected-file mutation through the executable candidate contract  559ms
+     ✓ standalone grade rejects a protected candidate mutation before gate or suites  616ms
+ ✓ tests/meta/score-attestation.test.ts (13 tests) 803ms
+ ✓ tests/meta/publication-freshness.test.ts (4 tests) 792ms
+     ✓ summary rejects a forged trusted record when its live provenance is stale  680ms
+ ✓ tests/meta/executor-attestation.test.ts (10 tests) 501ms
+ ✓ tests/meta/executor-provenance.test.ts (3 tests) 348ms
+ ✓ tests/meta/semantic-public-api.test.ts (34 tests) 277ms
+ ✓ tests/meta/bugfix-provenance.test.ts (3 tests) 189ms
+ ✓ tests/meta/bench-v2.test.ts (16 tests) 152ms
+ ✓ tests/meta/candidate-api-contract.test.ts (11 tests) 137ms
+ ✓ tests/meta/provenance-validation.test.ts (1 test) 112ms
+stdout | tests/meta/selfcheck-env.test.ts > self-check environment hermeticity > runs the batch self-check with BENCH_TRACK unset
+=== batch self-check invocation removes BENCH_TRACK ===
+
+stdout | tests/meta/selfcheck-env.test.ts > self-check environment hermeticity > keeps a build score trusted when ambient BENCH_TRACK is poisoned
+=== build score remains trusted with BENCH_TRACK=change ===
+
+stdout | tests/meta/selfcheck-env.test.ts
+PASS: batch self-check invocation removes BENCH_TRACK
+PASS: build score remains trusted with BENCH_TRACK=change
+=== Total: 2 checks (PASS=2, FAIL=0) ===
+
+ ✓ tests/meta/selfcheck-env.test.ts (2 tests) 107ms
+ ✓ tests/meta/bugfix-variant.test.ts (6 tests) 93ms
+ ✓ tests/meta/execution-identity.test.ts (1 test) 99ms
+ ✓ tests/meta/verify-controls-integrity.test.ts (5 tests) 24ms
+ ✓ tests/meta/sensitivity-controls.test.ts (5 tests) 21ms
+ ✓ tests/meta/spec-matrix.test.ts (5 tests) 16ms
+ ✓ tests/meta/go-cost.test.ts (9 tests) 12ms
+ ✓ tests/meta/bugfix-score.test.ts (6 tests) 6ms
+ ✓ tests/meta/score-calculation.test.ts (5 tests) 5ms
+ ✓ tests/meta/bugfix-registry.test.ts (6 tests) 5ms
+ ✓ tests/meta/bugfix-set.test.ts (4 tests) 5ms
+ ✓ tests/meta/control-calibration-status.test.ts (3 tests) 4ms
+ ✓ tests/meta/negative-controls.test.ts (1 test) 4ms
+ ✓ tests/meta/multi-anchor-controls.test.ts (2 tests) 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/meta/opencode-executor.test.ts > OpenCode executor and isolation contract > Arm a: the whole Podman argv equals design 1.2, in order, including -i
+AssertionError: the Podman argv must match the exact OpenCode contract: expected [ 'run', '--rm', '-i', …(51) ] to deeply equal [ 'run', '--rm', '-i', …(51) ]
+
+- Expected
++ Received
+
+@@ -18,11 +18,11 @@
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-a-802927-1795255998263/candidate,dst=/workspace,rw",
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/fixture/node_modules,dst=/workspace/node_modules,ro",
+    "--mount",
+-   "type=bind,src=/tmp/opencode/executor-red-SQr6n2/bin/opencode,dst=/usr/local/bin/opencode,ro",
++   "type=bind,src=/home/daniebo/.cache/opencode/executor-red-SQr6n2/bin/opencode,dst=/usr/local/bin/opencode,ro",
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-a-802927-1795255998263/artifacts/rg,dst=/usr/local/bin/rg,ro",
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/harness/opencode-entry.sh,dst=/entry/opencode-entry.sh,ro",
+    "--mount",
+
+ ❯ tests/meta/opencode-executor.test.ts:79:89
+     77|     it(`Arm ${arm}: the whole Podman argv equals design 1.2, in order,…
+     78|       const run = current();
+     79|       expect(invocation(run), "the Podman argv must match the exact Op…
+       |                                                                                         ^
+     80|     });
+     81|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  tests/meta/opencode-executor.test.ts > OpenCode executor and isolation contract > Arm a: the mount set equals FR-4 without any extra host mount
+AssertionError: only the FR-4 host paths may enter the container: expected [ …(6) ] to deeply equal [ …(6) ]
+
+- Expected
++ Received
+
+  [
++   "type=bind,src=/home/daniebo/.cache/opencode/executor-red-SQr6n2/bin/opencode,dst=/usr/local/bin/opencode,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/fixture/node_modules,dst=/workspace/node_modules,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/harness/opencode-entry.sh,dst=/entry/opencode-entry.sh,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-a-802927-1795255998263/artifacts/executor/opencode.json,dst=/config/opencode.json,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-a-802927-1795255998263/artifacts/rg,dst=/usr/local/bin/rg,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-a-802927-1795255998263/candidate,dst=/workspace,rw",
+-   "type=bind,src=/tmp/opencode/executor-red-SQr6n2/bin/opencode,dst=/usr/local/bin/opencode,ro",
+  ]
+
+ ❯ tests/meta/opencode-executor.test.ts:84:109
+     82|     it(`Arm ${arm}: the mount set equals FR-4 without any extra host m…
+     83|       const run = current();
+     84|       expect(values(invocation(run), "--mount").sort(), "only the FR-4…
+       |                                                                                                             ^
+     85|     });
+     86|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  tests/meta/opencode-executor.test.ts > OpenCode executor and isolation contract > Arm b: the whole Podman argv equals design 1.2, in order, including -i
+AssertionError: the Podman argv must match the exact OpenCode contract: expected [ 'run', '--rm', '-i', …(53) ] to deeply equal [ 'run', '--rm', '-i', …(53) ]
+
+- Expected
++ Received
+
+@@ -18,11 +18,11 @@
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-b-802927-1795256002039/candidate,dst=/workspace,rw",
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/fixture/node_modules,dst=/workspace/node_modules,ro",
+    "--mount",
+-   "type=bind,src=/tmp/opencode/executor-red-K33PfH/bin/opencode,dst=/usr/local/bin/opencode,ro",
++   "type=bind,src=/home/daniebo/.cache/opencode/executor-red-K33PfH/bin/opencode,dst=/usr/local/bin/opencode,ro",
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-b-802927-1795256002039/artifacts/rg,dst=/usr/local/bin/rg,ro",
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/harness/opencode-entry.sh,dst=/entry/opencode-entry.sh,ro",
+    "--mount",
+
+ ❯ tests/meta/opencode-executor.test.ts:79:89
+     77|     it(`Arm ${arm}: the whole Podman argv equals design 1.2, in order,…
+     78|       const run = current();
+     79|       expect(invocation(run), "the Podman argv must match the exact Op…
+       |                                                                                         ^
+     80|     });
+     81|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  tests/meta/opencode-executor.test.ts > OpenCode executor and isolation contract > Arm b: the mount set equals FR-4 without any extra host mount
+AssertionError: only the FR-4 host paths may enter the container: expected [ …(7) ] to deeply equal [ …(7) ]
+
+- Expected
++ Received
+
+  [
++   "type=bind,src=/home/daniebo/.cache/opencode/executor-red-K33PfH/bin/opencode,dst=/usr/local/bin/opencode,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/fixture/node_modules,dst=/workspace/node_modules,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/harness/opencode-entry.sh,dst=/entry/opencode-entry.sh,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-b-802927-1795256002039/artifacts/executor/opencode.json,dst=/config/opencode.json,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-b-802927-1795256002039/artifacts/executor/skills,dst=/opt/skills,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-b-802927-1795256002039/artifacts/rg,dst=/usr/local/bin/rg,ro",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/runs/meta-opencode-b-802927-1795256002039/candidate,dst=/workspace,rw",
+-   "type=bind,src=/tmp/opencode/executor-red-K33PfH/bin/opencode,dst=/usr/local/bin/opencode,ro",
+  ]
+
+ ❯ tests/meta/opencode-executor.test.ts:84:109
+     82|     it(`Arm ${arm}: the mount set equals FR-4 without any extra host m…
+     83|       const run = current();
+     84|       expect(values(invocation(run), "--mount").sort(), "only the FR-4…
+       |                                                                                                             ^
+     85|     });
+     86|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  tests/meta/opencode-executor.test.ts > OpenCode executor and isolation contract > the arms differ only in the skill rules, skills.paths, instructions, and skill mount
+AssertionError: the arms must share all other runtime arguments: expected [ 'run', '--rm', '-i', …(51) ] to deeply equal [ 'run', '--rm', '-i', …(51) ]
+
+- Expected
++ Received
+
+@@ -18,11 +18,11 @@
+    "--mount",
+    "type=bind,src=<run>/candidate,dst=/workspace,rw",
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/fixture/node_modules,dst=/workspace/node_modules,ro",
+    "--mount",
+-   "type=bind,src=/home/daniebo/.cache/opencode/executor-red-SQr6n2/bin/opencode,dst=/usr/local/bin/opencode,ro",
++   "type=bind,src=/home/daniebo/.cache/opencode/executor-red-K33PfH/bin/opencode,dst=/usr/local/bin/opencode,ro",
+    "--mount",
+    "type=bind,src=<run>/artifacts/rg,dst=/usr/local/bin/rg,ro",
+    "--mount",
+    "type=bind,src=/home/daniebo/Desktop/lending-desk-bench/harness/opencode-entry.sh,dst=/entry/opencode-entry.sh,ro",
+    "--mount",
+
+ ❯ tests/meta/opencode-executor.test.ts:166:77
+    164|         arg.endsWith("dst=/opt/skills,ro") ? [] : [arg])
+    165|       .map(arg => arg.replaceAll(run.work, "<run>").replaceAll(run.tem…
+    166|     expect(normalize(b), "the arms must share all other runtime argume…
+       |                                                                             ^
+    167|   });
+    168| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  tests/meta/opencode-recorded.test.ts > OpenCode recorded executor and environment matrix > the runner records identity schema 2, all OpenCode evidence, and only the credential descriptor
+AssertionError: the runner must record the OpenCode identity and the access-only credential descriptor: expected { schema: 2, kind: 'opencode', …(17) } to match object { schema: 2, kind: 'opencode', …(9) }
+(13 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -15,11 +15,11 @@
+      },
+    },
+    "kind": "opencode",
+    "model_ref": "opencode-go/beam-free",
+    "opencode": {
+-     "path": "/tmp/opencode/executor-red-7vkbTB/bin/opencode",
++     "path": "/home/daniebo/.cache/opencode/executor-red-7vkbTB/bin/opencode",
+      "sha256": "b4a0b082ba7cfdccca6c765c18fd18ba290811e71ebe6ca3a5efc40169a80d3d",
+      "version": "opencode v2.0.32",
+    },
+    "run_id": "meta-opencode-b-794650-1795255959282",
+    "schema": 2,
+
+ ❯ tests/meta/opencode-recorded.test.ts:66:131
+     64|       const provenance = jsonIfPresent(resolve(run.out,"provenance.jso…
+     65|       expect.soft(provenance?.schema, "a new agent run must record sch…
+     66|       expect.soft(provenance?.executor, "the runner must record the Op…
+       |                                                                                                                                   ^
+     67|         schema:2,kind:"opencode",run_id:run.id,arm:"b",opencode:{path:…
+     68|         model_ref:"opencode-go/beam-free",variant:null,config_sha256:e…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  2 failed | 28 passed (30)
+      Tests  6 failed | 232 passed (238)
+   Start at  17:11:34
+   Duration  135.27s (transform 399ms, setup 0ms, import 4.46s, tests 128.18s, environment 2ms)
+
+JSON report written to /home/daniebo/Desktop/lending-desk-bench/harness/results.json
+EXIT=1
+END 2026-11-21 17:13:50 +0700

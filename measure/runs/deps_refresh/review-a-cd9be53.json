@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "task": "2.1 r5",
+  "status": "fail",
+  "summary": "The same-HEAD worktrees address the scoring-code drift, but the documented setup writes the baseline manifests to the wrong working directory and does not create the copied run's parent directory.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "cd9be53112802664fdae6fab2409805eed64bbdb",
+  "audited_head_sha": "cd9be53112802664fdae6fab2409805eed64bbdb",
+  "blocking_findings": [
+    "Task 3.1's baseline manifest commands redirect to relative paths such as `harness/package-lock.json`, but `git -C /tmp/opencode/deps-ab/base show ...` does not change the calling shell's directory. From the repository root, these commands overwrite the primary worktree's package files and leave the base worktree unchanged. Use absolute output paths under `/tmp/opencode/deps-ab/base/harness/` or explicitly `cd` into the base worktree before redirecting. Evidence: measure/tracks/deps_refresh/plan.md:259-264.",
+    "The plan copies the run to `<worktree>/runs/` but never creates that parent. `runs/` is ignored and absent from tracked HEAD (`git ls-tree HEAD runs` is empty; `.gitignore:11` ignores it). The copy therefore does not reliably create `<worktree>/runs/<run-id>`, which `regrade-run.sh` requires at lines 26-27. It can instead create a directory at the wrong level or fail; the next regrade then exits 0 with SKIP. Add `mkdir -p <worktree>/runs` before copying and verify `<worktree>/runs/<run-id>/artifacts/score.json` exists. Evidence: measure/tracks/deps_refresh/plan.md:272-275, harness/regrade-run.sh:26-27."
+  ],
+  "nonblocking_findings": [
+    "The A/B compares the full baseline package manifest and lock against the refreshed manifest and lock, not the lock alone. The direct pins for @types/node and tsx differ. `tsx` is used by regrade-run.sh and score tooling, so a score change cannot be attributed to Vite alone. This still tests the score effect of the complete dependency refresh, but task 3.1 should state that scope instead of claiming the lock is the only variable. `npm ls --depth=0` will show these direct version differences."
+  ],
+  "evidence": [
+    "F1 withdrawn: the same-HEAD A/B design addresses the r4 scoring-code mismatch by running both worktrees from the same source commit and requiring matching runner hashes.",
+    "git rev-parse HEAD returned cd9be53112802664fdae6fab2409805eed64bbdb, matching the supplied audited HEAD.",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd cd9be53112802664fdae6fab2409805eed64bbdb lists only measure/tracks/deps_refresh/plan.md; package files did not change since r2.",
+    "The A/B plan uses detached worktrees of HEAD. `harness/regrade-run.sh:22-26` derives ROOT and WORK from its own script location, while `harness/env.sh:2-20` derives its environment root from the sourced file. These resolve to each worktree when invoked there.",
+    "The selected run is a valid build run with executor kind opencode, a candidate tree, valid score, non-empty identity and cohort files, and a clean contract verdict. The regrade script's Pi and missing-candidate skips do not apply once the run is correctly copied.",
+    "`git ls-tree HEAD runs` returned no tracked runs tree. `git check-ignore -v` identifies `.gitignore:11` as ignoring runs/.",
+    "`harness/regrade-run.sh:26-27` resolves the run under `<worktree>/runs/<run-id>` and returns a successful SKIP if its artifacts directory is missing.",
+    "Task 3.1's REGRADED line, exit-0, new artifacts.prev directory, graft reason, no-SKIP condition, and full axes-plus-total comparison provide useful freshness evidence after the run is found.",
+    "The plan compares the entire axes object and total. The score axes include completion, adversarial, adherence, quality, and weights.",
+    "Both worktrees use the same system Chrome and host in a sequential run. However, Chrome is not pinned, and browser timing or concurrent probes can vary between runs. Record the Chrome version and keep this as a residual single-pair risk.",
+    "Absolute worktree paths affect provenance context, but the compared axes and total are score values. The collector maps test titles to outcomes, and provenance hashes use relative repository paths."
+  ],
+  "commands": [
+    "git rev-parse HEAD — cd9be53112802664fdae6fab2409805eed64bbdb",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd cd9be53112802664fdae6fab2409805eed64bbdb — measure/tracks/deps_refresh/plan.md only",
+    "git ls-tree HEAD runs — no tracked runs directory",
+    "git check-ignore -v runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/score.json — .gitignore:11 ignores runs/",
+    "Read harness/regrade-run.sh:22-27 and harness/env.sh:2-20 — ROOT resolves from worktree script paths; regrade expects runs/<run-id>/artifacts",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..cd9be53112802664fdae6fab2409805eed64bbdb — exit 0"
+  ],
+  "changed_files": [
+    "harness/package.json",
+    "harness/package-lock.json",
+    "measure/tracks/deps_refresh/plan.md"
+  ],
+  "test_strategy_violations": [
+    "The worktree setup can overwrite the primary package files, and the copied run is not placed reliably at the path required by regrade-run.sh. The A/B gate cannot execute safely until both paths are explicit."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_implementation",
+  "handoff": "Green: make both baseline manifest redirections target the base worktree explicitly. Create each worktree's runs/ directory before copying the target run, then assert the expected artifacts path exists before regrading. Describe the A/B as comparing the full package manifest-and-lock refresh, not the lock alone.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "measure/tracks/deps_refresh/plan.md:259-264 redirects baseline files to the caller's relative path instead of the base worktree."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 2,
+      "evidence": "The selected run path is absent in a fresh worktree unless the plan creates runs/ first; harness/regrade-run.sh:26-27 otherwise skips."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff between r2 and r5 lists only the plan record."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Plan command paths, `.gitignore:11`, and harness/regrade-run.sh:22-27 establish the setup defects."
+    }
+  ]
+}

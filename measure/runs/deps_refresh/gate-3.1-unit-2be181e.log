@@ -1,0 +1,180 @@
+START 2026-11-21 16:32:51 +0700 CMD: heavy-run.sh -c 'cd harness && npm run test:unit'
+
+> test:unit
+> vitest run tests/unit
+
+
+ RUN  v4.1.10 /home/daniebo/Desktop/lending-desk-bench/harness
+
+ ✓ tests/unit/board-standing.test.ts (9 tests) 9ms
+ ❯ tests/unit/track-plan.test.ts (3 tests | 2 failed) 9ms
+     ✓ M.metadata-valid 2ms
+     × M.plan-complete 5ms
+     × M.closeout 1ms
+ ❯ tests/unit/loans.test.ts (5 tests | 5 failed) 5ms
+     × A.returned 3ms
+     × A.overdue 0ms
+     × A.due-soon 0ms
+     × A.ok 0ms
+     × A.boundary 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/loans.test.ts > computeLoanStatus > A.returned
+Error: computeLoanStatus is not implemented
+ ❯ computeLoanStatus ../fixture/src/lib/loans.ts:9:9
+      7| export function computeLoanStatus(loan: Loan, now: Date): LoanStatus {
+      8|   // TODO: implement (spec A)
+      9|   throw new Error("computeLoanStatus is not implemented");
+       |         ^
+     10| }
+     11|
+ ❯ tests/unit/loans.test.ts:17:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  tests/unit/loans.test.ts > computeLoanStatus > A.overdue
+Error: computeLoanStatus is not implemented
+ ❯ computeLoanStatus ../fixture/src/lib/loans.ts:9:9
+      7| export function computeLoanStatus(loan: Loan, now: Date): LoanStatus {
+      8|   // TODO: implement (spec A)
+      9|   throw new Error("computeLoanStatus is not implemented");
+       |         ^
+     10| }
+     11|
+ ❯ tests/unit/loans.test.ts:23:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  tests/unit/loans.test.ts > computeLoanStatus > A.due-soon
+Error: computeLoanStatus is not implemented
+ ❯ computeLoanStatus ../fixture/src/lib/loans.ts:9:9
+      7| export function computeLoanStatus(loan: Loan, now: Date): LoanStatus {
+      8|   // TODO: implement (spec A)
+      9|   throw new Error("computeLoanStatus is not implemented");
+       |         ^
+     10| }
+     11|
+ ❯ tests/unit/loans.test.ts:28:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  tests/unit/loans.test.ts > computeLoanStatus > A.ok
+Error: computeLoanStatus is not implemented
+ ❯ computeLoanStatus ../fixture/src/lib/loans.ts:9:9
+      7| export function computeLoanStatus(loan: Loan, now: Date): LoanStatus {
+      8|   // TODO: implement (spec A)
+      9|   throw new Error("computeLoanStatus is not implemented");
+       |         ^
+     10| }
+     11|
+ ❯ tests/unit/loans.test.ts:33:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  tests/unit/loans.test.ts > computeLoanStatus > A.boundary
+Error: computeLoanStatus is not implemented
+ ❯ computeLoanStatus ../fixture/src/lib/loans.ts:9:9
+      7| export function computeLoanStatus(loan: Loan, now: Date): LoanStatus {
+      8|   // TODO: implement (spec A)
+      9|   throw new Error("computeLoanStatus is not implemented");
+       |         ^
+     10| }
+     11|
+ ❯ tests/unit/loans.test.ts:39:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  tests/unit/track-plan.test.ts > Measure track closeout > M.plan-complete
+AssertionError: uncompleted track tasks:
+Implement `computeLoanStatus` in `src/lib/loans.ts` (spec A)
+Verify all five A criteria by inspection against `src/db/seed.ts`
+Implement `ItemCard` in `src/components/item-card.tsx` (spec B)
+Implement the catalogue in `app/items/page.tsx` (spec C)
+Confirm `/items` lists all 29 seeded items
+Add `?q=` and `?category=` handling to `app/items/page.tsx` (spec C)
+Add the empty-result message (spec C)
+Implement `app/items/[id]/page.tsx` including loan history and not-found (spec D)
+Implement `generateMetadata` (spec D)
+Implement `checkoutItem` and `returnItem` in `src/actions/loans.ts` (spec F)
+Ensure `/items` and the detail page reflect a mutation on the next visit (spec F)
+Implement `GET` in `app/api/loans/route.ts` with both filters (spec G)
+Implement `POST` with its status codes (spec G)
+Implement `PATCH` with its status codes (spec G)
+Implement `CheckoutForm` in `app/items/[id]/checkout-form.tsx` (spec E)
+Wire it into the detail page, hidden when the item is on loan (spec D)
+Implement `ReturnButton` in `app/items/[id]/checkout-form.tsx` (spec E)
+Wire it into the detail page, shown only when the item is on loan (spec D)
+Confirm returning an item makes the checkout form available again (spec F)
+Implement `app/items/loading.tsx` (spec H)
+Implement `app/items/error.tsx` (spec H)
+`npm run typecheck` passes
+`npm run build` passes
+Every checkbox in `spec.md` is satisfied: expected [ …(24) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "Implement `computeLoanStatus` in `src/lib/loans.ts` (spec A)",
++   "Verify all five A criteria by inspection against `src/db/seed.ts`",
++   "Implement `ItemCard` in `src/components/item-card.tsx` (spec B)",
++   "Implement the catalogue in `app/items/page.tsx` (spec C)",
++   "Confirm `/items` lists all 29 seeded items",
++   "Add `?q=` and `?category=` handling to `app/items/page.tsx` (spec C)",
++   "Add the empty-result message (spec C)",
++   "Implement `app/items/[id]/page.tsx` including loan history and not-found (spec D)",
++   "Implement `generateMetadata` (spec D)",
++   "Implement `checkoutItem` and `returnItem` in `src/actions/loans.ts` (spec F)",
++   "Ensure `/items` and the detail page reflect a mutation on the next visit (spec F)",
++   "Implement `GET` in `app/api/loans/route.ts` with both filters (spec G)",
++   "Implement `POST` with its status codes (spec G)",
++   "Implement `PATCH` with its status codes (spec G)",
++   "Implement `CheckoutForm` in `app/items/[id]/checkout-form.tsx` (spec E)",
++   "Wire it into the detail page, hidden when the item is on loan (spec D)",
++   "Implement `ReturnButton` in `app/items/[id]/checkout-form.tsx` (spec E)",
++   "Wire it into the detail page, shown only when the item is on loan (spec D)",
++   "Confirm returning an item makes the checkout form available again (spec F)",
++   "Implement `app/items/loading.tsx` (spec H)",
++   "Implement `app/items/error.tsx` (spec H)",
++   "`npm run typecheck` passes",
++   "`npm run build` passes",
++   "Every checkbox in `spec.md` is satisfied",
++ ]
+
+ ❯ tests/unit/track-plan.test.ts:77:76
+     75|     expect(tasks, "plan.md holds no checklist tasks at all").toHaveLen…
+     76|     const unchecked = tasks.filter((task) => !task.done).map((task) =>…
+     77|     expect(unchecked, `uncompleted track tasks:\n${unchecked.join("\n"…
+       |                                                                            ^
+     78|   });
+     79|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  tests/unit/track-plan.test.ts > Measure track closeout > M.closeout
+AssertionError: expected 'pending' to be 'complete' // Object.is equality
+
+Expected: "complete"
+Received: "pending"
+
+ ❯ tests/unit/track-plan.test.ts:86:29
+     84|
+     85|     const metadata = JSON.parse(track("metadata.json"));
+     86|     expect(metadata.status).toBe("complete");
+       |                             ^
+     87|     expect(metadata.actual_tasks).toBe(24);
+     88|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  2 failed | 1 passed (3)
+      Tests  7 failed | 10 passed (17)
+   Start at  16:33:39
+   Duration  363ms (transform 41ms, setup 0ms, import 66ms, tests 23ms, environment 0ms)
+
+JSON report written to /home/daniebo/Desktop/lending-desk-bench/harness/results.json
+EXIT=1
+END 2026-11-21 16:33:41 +0700

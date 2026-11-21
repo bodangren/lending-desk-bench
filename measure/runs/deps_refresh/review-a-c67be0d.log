@@ -1,0 +1,24 @@
+MEASURE_AGENT_RESULT
+track: deps_refresh
+phase: Phase 2: Green — the updates and the lock file
+role: review-a
+task: 2.1 r7
+status: fail
+summary: The r6 score-difference and stale-worktree concerns are resolved. Two shell checks remain unsafe: an early npm ci failure can be ignored, and the SKIP check masks its own failure.
+phase_base_sha: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+role_base_sha: c67be0deaf540db54938d073a24a84543c7c6d23
+audited_head_sha: c67be0deaf540db54938d073a24a84543c7c6d23
+blocking_findings: The npm ci chains can continue after an early install failure. The SKIP grep's trailing `|| true` masks its failure handler.
+nonblocking_findings: A single sequential A/B pair uses unpinned system Chrome and cannot measure timing variance. The plan records this residual risk.
+evidence: F1 withdrawn: any score difference now stops and goes to the PM. F2 withdrawn: stale persistent worktrees are rejected and HEAD/version checks were added. A Bash probe confirmed the npm-ci chain pattern continues after an early failure. The SKIP check masks a match-triggered failure.
+commands: git rev-parse HEAD; git diff --name-only b4c2e450067ca65b4282d0178ec087d00fa7a8e6..c67be0deaf540db54938d073a24a84543c7c6d23; git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd c67be0deaf540db54938d073a24a84543c7c6d23; Bash errexit probe; inspect plan.md:261-334; git diff --check
+changed_files: harness/package.json; harness/package-lock.json; measure/tracks/deps_refresh/plan.md
+test_strategy_violations: npm ci may fail without stopping the script; SKIP match is not rejected.
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+confidence: high
+retry_recommendation: retry_implementation
+handoff: Green should add explicit npm ci failure handlers and make the SKIP guard fail only when it finds a match.
+route: openai/gpt-6-luna#high
+END_MEASURE_AGENT_RESULT

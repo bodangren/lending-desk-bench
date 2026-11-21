@@ -1,0 +1,21 @@
+[a-deepseek-v4-1-flash-2026w43-r1] regrade track=build model=opencode-go/deepseek-v4.1-flash arm=a revision=2 contract=none
+[a-deepseek-v4-1-flash-2026w43-r1] candidate dependencies are missing; restoring a private copy
+[a-deepseek-v4-1-flash-2026w43-r1] HOST NOT READY
+  load        2.25 on 12 cpu = 0.19/cpu   (budget <= 1.0)
+  available   20710MB                    (budget >= 2500MB)
+  swap used   3492MB                    (budget <= 2000MB)
+  top consumers:
+      RSS %CPU COMMAND
+    1188292 6.7 opencode
+    477296 5.2 MainThread
+    315488 0.8 claude
+    302180 0.3 chrome
+    278248 0.5 claude
+[a-deepseek-v4-1-flash-2026w43-r1] host busy — proceeding under always-publish policy; timing-sensitive assertions are advisory
+[a-deepseek-v4-1-flash-2026w43-r1] grading on a contended host — timing assertions are advisory
+[a-deepseek-v4-1-flash-2026w43-r1] gate typecheck=true build=true
+[a-deepseek-v4-1-flash-2026w43-r1] TOTAL None  gate=True  T0=100% T1=100% T2=100%
+[a-deepseek-v4-1-flash-2026w43-r1] doctor ran=False err=0 warn=0 penalty=0 | quality=0.00
+[a-deepseek-v4-1-flash-2026w43-r1] 509s on task | in 0 out 0 cacheR 0 cacheW 0 | $0.0000 | 0 turns
+[a-deepseek-v4-1-flash-2026w43-r1] SUSPECT: graded under load 2.25 on 12 cpu, 20709MB avail — timing-sensitive failures are advisory under the always-publish policy
+[a-deepseek-v4-1-flash-2026w43-r1] REGRADED total=null valid=false adherence=1 executor attestation: executor config snapshot is missing from the run artifacts; session export is unusable: the session export is missing: /home/daniebo/.cache/opencode/deps-ab-r7/base/runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/executor/session-export.json

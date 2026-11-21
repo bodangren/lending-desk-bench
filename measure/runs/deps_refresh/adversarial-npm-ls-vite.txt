@@ -1,0 +1,6 @@
+lending-desk-harness@ /home/daniebo/Desktop/lending-desk-bench/harness
+└─┬ vitest@4.1.10
+  ├─┬ @vitest/mocker@4.1.10
+  │ └── vite@8.3.8 deduped
+  └── vite@8.3.8
+

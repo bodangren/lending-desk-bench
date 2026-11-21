@@ -1,0 +1,10 @@
+E.PASS base=3/3 new=2/3
+E.FAIL base=0/3 new=1/3
+OTHER_FIELDS_DIFF_RUNS=[]
+base-run1 E.return-submits=true axes.completion=1 tiers1.rate=1
+base-run2 E.return-submits=true axes.completion=1 tiers1.rate=1
+base-run3 E.return-submits=true axes.completion=1 tiers1.rate=1
+new-run1 E.return-submits=false axes.completion=0.9788359788359788 tiers1.rate=0.972972972972973
+new-run2 E.return-submits=true axes.completion=1 tiers1.rate=1
+new-run3 E.return-submits=true axes.completion=1 tiers1.rate=1
+VERDICT=FLAKE

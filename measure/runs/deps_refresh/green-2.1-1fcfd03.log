@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+track: deps_refresh
+phase: Phase 2: Green — the updates and the lock file
+role: measure-jr-green
+task: 2.1
+status: done
+baseline_sha: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+role_base_sha: 1fcfd037505bc2f1981590655ec4b26347b74885
+resulting_head: 618eb0a647b9d1eb319cafc4fad010834ccb878c
+commits: 161b856adb40bdb42998449f7c6b6dc559d28175 chore(deps_refresh): Green task 2.1 harness package updates; 618eb0a647b9d1eb319cafc4fad010834ccb878c measure(deps_refresh): record Green task 2.1
+tests: Targeted Red `cd harness && npm audit --audit-level=high` before updates exited 1: critical 0, high 6 (brace-expansion, fast-uri, nanoid, source-map-js, vite, zod), moderate 7, low 0. After updates the same command exited 0: critical 0, high 0, moderate 3 (deslop-js, minimatch, react-doctor, all via deferred react-doctor 0.9.2), low 0, info 0, total 3. The plan task 3.1 type-check block ran once with default paths: block exit 0, printed `OK: tsc exit 2, 210 error lines, 210 identities`, no new identity versus base tsc-base-ids-7319344.txt. Quick runner `cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exited 0: one test file passed, eight tests passed. No full suite ran. Unit, meta, bun, and Playwright gates stay in task 3.1 at night. No benchmark ran.
+files: Committed files: harness/package.json and harness/package-lock.json in 161b856; measure/tracks/deps_refresh/plan.md in 618eb0a. New file: measure/runs/deps_refresh/green-2.1-1fcfd03.log (this provisional log, ignored). Ignored after artifacts, not staged: measure/runs/deps_refresh/tsc-after-raw.txt and measure/runs/deps_refresh/tsc-after-ids.txt. Unrelated untracked paths preserved and never staged: .opencode/, tech-debt.md, harness/wt.txt, harness/model-guide/data/sets/.
+checkpoint: Task 2.1 marked [x] with implementation SHA 161b856; no task marked [b]; no human-gated action in this task, so no deferred owner.
+handoff: Review roles receive task 2.1 as [x] with SHA evidence 161b856 in the plan and 618eb0a for the plan record. No [b] task and no deferred owner were created. The targeted Red command failed before the updates and exited 0 after them; full output is in plan task 2.1 and this log. Files added by Green: this log only (an ignored artifact); the two package files and the plan already existed. Immutable phase_base_sha is b4c2e450067ca65b4282d0178ec087d00fa7a8e6; final Green HEAD is 618eb0a647b9d1eb319cafc4fad010834ccb878c. Six high advisories now resolve to fixed versions. Three moderate advisories remain via react-doctor 0.9.2, deferred under spec D9. New majors TypeScript 7.0.2 and Vitest 5.1.1 are deferred because the task 3.1 gates have not run. @playwright/test moved to 1.65.1; the version check plus one e2e spec are recorded for task 3.1. Commit timestamps 14:17 and 14:18 +0700 sit outside 02:00-07:00. No push ran; push stays with the orchestrator. This record is provisional pending task 3.1 gates and review.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "role": "spec-review",
+  "track": "deps_refresh",
+  "phase": "track setup",
+  "baseline_sha": "7319344",
+  "audited_head_sha": "2fb569f4b8d89d56bdbb1f1d7fed3d4d163f3f24",
+  "status": "fail",
+  "summary": "The track proposes a scoped harness dependency refresh and leaves the fixture pinned. The type-check gate, runtime coverage, night-run schedule, and push gate need correction before Red.",
+  "blocking_findings": [
+    "F1 [Blocker] spec D6 and plan task 3.1: The type-check command has no effective input when Green changes only package files. Rationale: The plan explicitly passes source paths that were touched, and says this set is empty for package-only changes; the command then checks no project source and cannot catch a breaking @types/node or test-runner type change. Name a repository-wide check that works without a tsconfig, or define a complete explicit source set and confirm it type-checks.",
+    "F2 [Blocker] plan task 3.3 and Human gates: Remove the extra “Daniel says push first” gate and require the requested push through safe-push. Rationale: The PM assignment already asks for a push, and safe-push permits non-deploy pushes; it refuses deploy, secret/size, or non-fast-forward cases with defined codes. The plan adds a second approval that conflicts with the assignment and can prevent completion."
+  ],
+  "nonblocking_findings": [
+    "F3 [Major] spec D6 and plan task 3.1: Define how dependency versions that drive harness behavior are validated, including Playwright and react-doctor. Rationale: The listed gates omit the Playwright E2E suite, and the config uses system Chrome without installing Playwright browsers; record that constraint and add an appropriate compatibility check when @playwright/test changes. A react-doctor bump also conflicts with the hard-coded 0.9.2 version in harness/doctor.ts and assumptions in harness/source-signals.ts; name the required source updates and regression checks, or explicitly defer that bump with its advisory reason.",
+    "F4 [Major] spec D7 and plan task 3.1: Exclude the 02:00-06:00 night bench window from heavy gate runs and record the available sequence. Rationale: The gates may run anywhere from 22:00-07:00, while the night benchmark uses harness/ from 02:00-06:00. The plan therefore permits heavy checks to contend with the benchmark, even though a feasible sequence exists before 02:00, followed by the commit and push outside 02:00-07:00."
+  ],
+  "paraphrase": {
+    "proposes": "This track updates the harness package manifest and lock file to the latest versions that pass its gates. It aims to clear all critical and high harness advisories and list every remaining moderate or low advisory with a reason. It keeps fixture dependencies pinned to protect benchmark comparability.",
+    "current_system": "The harness has no lint, type-check, or build script and no tsconfig. It runs TypeScript through tsx, has unit and meta suites, and uses a Bun test for model-guide review. Its Playwright config targets installed system Chrome and does not install browser binaries; harness scoring calls a locally pinned react-doctor 0.9.2. The fixture is a protected benchmark input with pinned dependencies."
+  },
+  "evidence": [
+    "HEAD matched audited_head_sha: git rev-parse HEAD returned 2fb569f4b8d89d56bdbb1f1d7fed3d4d163f3f24.",
+    "spec.md D6 lines 85-98 and plan.md task 3.1 lines 74-76 limit tsc inputs to touched source files and explicitly permit an empty set.",
+    "harness/package.json defines test:unit, test:meta:logic, and test:e2e; the plan runs the first two and the Bun review test, but not test:e2e.",
+    "harness/playwright.config.ts lines 26-28 selects channel chrome and states that the track does not run playwright install.",
+    "harness/doctor.ts lines 4-5 and 16 pin react-doctor 0.9.2; harness/source-signals.ts lines 4-6 also describes that version's behavior.",
+    "plan.md lines 22-25 and task 3.1 permit heavy suites during the 02:00-06:00 bench window; task 3.3 separately requires the commit outside 02:00-07:00.",
+    "safe-push refuses deploy pushes with exit 2, secret or oversized added files with exit 3, and repo/branch/non-fast-forward cases with exit 4; it does not require Daniel's extra approval for a normal non-deploy push."
+  ],
+  "commands": [
+    {"command":"git rev-parse HEAD","result":"pass; matched audited_head_sha"},
+    {"command":"Read spec.md, plan.md, package metadata, Playwright configuration, scorer code, and safe-push policy","result":"pass; findings recorded"}
+  ],
+  "changed_files": ["measure/runs/deps_refresh/spec-review-2fb569f.json", "measure/runs/deps_refresh/spec-review-2fb569f.log"],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high"
+}

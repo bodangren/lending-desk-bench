@@ -1,0 +1,5 @@
+RAW_COMPARE=PASS; normalized temporary scan roots; ignored elapsedMilliseconds only.
+REPORT_COMPARE=PASS; byte-identical merged findings and counters.
+SCORED_COMPARE=PASS; byte-identical doctor fields and quality factor.
+NONVACUOUS=23 analyzed files; 2 doctor findings; 3 merged warnings; quality=0.8833333333333333.
+AXIS_3_GAP=CLOSED for the stored candidate and the two harness locks.

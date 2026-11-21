@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: deps_refresh
+phase: Phase 3: Verify — gates, counts, residuals, push
+commits: none
+tests_run: Read-only checks at d67d668. Gate logs re-read: unit Tests 1 failed | 16 passed (17), the M.closeout fault only (meets the rule); meta Tests 6 failed | 232 passed (238), six path failures (meets the rule); bun 130 pass, 0 fail; tsc OK with 210 identities identical to base. Independent re-diff of the six A/B score files matches the plan. The doctor-only A/B is non-vacuous and matches the original stored doctor output. cd harness && npm audit --audit-level=high exit 0; npm audit --json critical 0, high 0, moderate 5. One quick check: decode-parity.test.ts exit 0, Tests 8 passed (8). No suite and no heavy gate ran.
+files_changed: measure/runs/deps_refresh/phase-acceptance-p3-d67d668.json, measure/runs/deps_refresh/phase-acceptance-p3-d67d668.log
+plan_updates: none (gate-only role)
+known_failures: none blocking. Nonblocking nits: F6 (plan does not cite doctor-ab or the degenerate regrade fields), F10 (plan.md:415-417 counts eight regrades), F11 (the gate 2 rule quotes one diff form; one of six failures shows the arm comparison form).
+handoff: Phase 3 passes at d67d66899c9b3a1d14f0d79c1d8f36bb34179376 (phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6). r1 blockers F2, F3, and F4 are closed. Three nits remain. A fix needs one plan-only commit, which moves HEAD. Push d67d668 through safe-push before closeout, because the remote main holds 116ab89.
+verdict: pass
+audited_head_sha: d67d66899c9b3a1d14f0d79c1d8f36bb34179376
+result_file: measure/runs/deps_refresh/phase-acceptance-p3-d67d668.json
+retry_recommendation: none
+summary: Phase 3 passes. The gate evidence meets the written rules at HEAD, and the Axis 3 gap is closed for the stored candidate. Three nonblocking nits remain.
+END_MEASURE_AGENT_RESULT

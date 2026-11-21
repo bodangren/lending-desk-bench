@@ -1,0 +1,38 @@
+START 2026-11-21 16:36:35 +0700 CMD: heavy-run.sh -c 'cd harness && CANDIDATE=/home/daniebo/Desktop/lending-desk-bench/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate npx vitest run tests/unit --maxWorkers=1'
+
+ RUN  v4.1.10 /home/daniebo/Desktop/lending-desk-bench/harness
+
+ ❯ tests/unit/track-plan.test.ts (3 tests | 1 failed) 8ms
+     ✓ M.metadata-valid 2ms
+     ✓ M.plan-complete 1ms
+     × M.closeout 4ms
+ ✓ tests/unit/board-standing.test.ts (9 tests) 6ms
+ ✓ tests/unit/loans.test.ts (5 tests) 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/track-plan.test.ts > Measure track closeout > M.closeout
+AssertionError: expected 'pending' to be 'complete' // Object.is equality
+
+Expected: "complete"
+Received: "pending"
+
+ ❯ tests/unit/track-plan.test.ts:86:29
+     84|
+     85|     const metadata = JSON.parse(track("metadata.json"));
+     86|     expect(metadata.status).toBe("complete");
+       |                             ^
+     87|     expect(metadata.actual_tasks).toBe(24);
+     88|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 16 passed (17)
+   Start at  16:44:06
+   Duration  344ms (transform 42ms, setup 0ms, import 68ms, tests 17ms, environment 0ms)
+
+JSON report written to /home/daniebo/Desktop/lending-desk-bench/harness/results.json
+EXIT=1
+END 2026-11-21 16:44:07 +0700

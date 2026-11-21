@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "deps_refresh",
+  "phase": "Phase 1: Red — record the failing audit",
+  "status": "pass",
+  "summary": "Phase 1 passes acceptance at d67d668. Task 1.1 now carries 1fcfd03, an ancestor of HEAD, so r1 finding F1 is closed. The Red record is true at HEAD: the audit counts, the six high names, and the base type-check hash all match. The Red commit changed only plan.md.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "audited_head_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "baseline_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "HEAD: `git rev-parse HEAD` prints d67d66899c9b3a1d14f0d79c1d8f36bb34179376, equal to the audited HEAD. `git ls-remote origin refs/heads/main` prints 116ab89, so d67d668 is not on the remote yet. `git worktree list` shows three entries: lending-desk-bench (main), lending-desk-bench-daily, and lending-desk-bench-p7green.",
+    "r1 F1 closed: plan.md:45 now reads `[x] 1fcfd03 1.1`. `git merge-base --is-ancestor 1fcfd03 HEAD` exits 0. `git show --stat 1fcfd03` lists only `measure/tracks/deps_refresh/plan.md`, and that commit holds the Red record (committed 2026-11-21T14:13:07+07:00). All five `[x]` task SHAs (1fcfd03, fc9ec99, 8437779, 8437779, 6fdea72) are ancestors of HEAD. Every commit-like token in plan.md that resolves to a commit is an ancestor of HEAD.",
+    "Change since r1: `git diff 116ab89 d67d668` changes one line of the Phase 1 section, the task 1.1 token. It changes no Red evidence text.",
+    "Red audit record: `measure/runs/deps_refresh/audit-before-b4c2e45.json` has critical 0, high 6, moderate 7, low 0, info 0, total 13. High names: brace-expansion, fast-uri, nanoid, source-map-js, vite, zod. Moderate names: @eslint/config-array, @vitest/mocker, deslop-js, eslint, minimatch, react-doctor, vitest. The values match plan.md task 1.1 and spec EV1.",
+    "Live confirmation of the Red state: the adversarial role ran the same audit gate on the base lock at 20:47 +07, and it exited 1. `adversarial-audit-base.json` is byte-identical to `audit-before-b4c2e45.json` (`cmp` prints nothing). The text report `adversarial-audit-high-base.txt` lists 6 high advisories.",
+    "Command equality: the Red command is `cd harness && npm audit --audit-level=high`. Task 2.1 and spec D5 use the same command and the same level.",
+    "Base type-check record: `tsc-base-ids-7319344.txt` has 210 lines. `tsc-base-raw.txt` has 210 lines that match `: error TS[0-9]+`. `sha256sum` prints 68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e for that file and for `tsc-after-ids.txt`. The hash equals plan.md task 1.1.",
+    "Red scope: `git diff --name-only b4c2e45 1fcfd03` prints only `measure/tracks/deps_refresh/plan.md`. `git diff --name-only b4c2e45 HEAD -- fixture/` prints nothing. Red changed no package, source, or fixture file and ran no install.",
+    "Night window: 1fcfd03 was committed at 2026-11-21T14:13:07+07:00. No Red work ran in 02:00-06:00.",
+    "A5: every claim in plan.md task 1.1 matches the saved output and the live confirmation. A3, A4, A6, and A7 do not apply, because the exact phase diff changes no contract test, no filter, and no registry row.",
+    "Done-when: spec D5 asks for a recorded failing audit gate and the base type-check identity set. Both exist, both are true at HEAD, and the record is anchored to a reachable commit.",
+    "Prerequisites: the Red role log `red-1.1-b4c2e45.log` exists. Review A, Review B, Review C, adversarial testing, and UX review do not apply to the read-only Red phase (test-strategy.md section 5).",
+    "Limit: this acceptance did not run the audit at the base lock. The adversarial run did (see the live confirmation above)."
+  ],
+  "commands": [
+    "date; git rev-parse HEAD; git ls-remote origin refs/heads/main; git status --short; git worktree list",
+    "git log --format='%h %H %cI %s' 116ab89..HEAD; git diff --name-only 116ab89 HEAD; git diff 116ab89 d67d668 -- measure/tracks/deps_refresh/plan.md",
+    "git merge-base --is-ancestor <sha> HEAD for each [x] SHA and each commit-like token in plan.md; git show --stat 1fcfd03; git diff --name-only b4c2e45 1fcfd03; git diff --name-only b4c2e45 HEAD -- fixture/",
+    "node -e (read metadata.vulnerabilities and severity names from audit-before-b4c2e45.json); cmp adversarial-audit-base.json audit-before-b4c2e45.json",
+    "sha256sum tsc-base-ids-7319344.txt tsc-after-ids.txt; grep -c '' tsc-base-ids-7319344.txt; grep -cE ': error TS[0-9]+' tsc-base-raw.txt"
+  ],
+  "changed_files": [
+    "measure/runs/deps_refresh/phase-acceptance-p1-d67d668.json",
+    "measure/runs/deps_refresh/phase-acceptance-p1-d67d668.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "Phase 1 passes at d67d668. r1 finding F1 is closed. Push d67d668 through safe-push before closeout, because the remote main holds 116ab89. The Phase 2 and Phase 3 results use the same HEAD.",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "audit-before-b4c2e45.json (critical 0, high 6, moderate 7, low 0, total 13) matches plan.md task 1.1, and plan.md:45 anchors it to 1fcfd03."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Spec D5 sets no checked-in test, and the adversarial run showed the same audit gate failing on the base lock (adversarial-audit-base.json, 6 high), so the Red state reproduces live."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only b4c2e45 1fcfd03 prints only measure/tracks/deps_refresh/plan.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Counts, names, hashes, and the anchor all re-verify by command; git merge-base --is-ancestor 1fcfd03 HEAD exits 0."
+    }
+  ],
+  "reviewer_ratings": []
+}

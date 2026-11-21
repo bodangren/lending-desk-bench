@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "status": "fail",
+  "summary": "Phase 2 fails acceptance at 116ab89 on two prerequisite blockers. The code and lock content pass every re-check. The audit gate exits 0 with 0 critical, 0 high, and 5 moderate. The pins match the record. The Green commits touch only the two package files. No fixture file changed. The adversarial result is missing. Review A and Review B bind to older HEADs. Adversarial testing must run first. It needs no new commit.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "audited_head_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "baseline_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "blocking_findings": [
+    "F2 [Blocker] phase-acceptance: The adversarial testing result is missing. test-strategy.md:196 assigns adversarial testing as `yes, bounded`. `measure/runs/deps_refresh/` holds no `adversarial-*` file. The role contract needs this result before acceptance. The strategy names three probes. Probe 1: a fixed high advisory resolves outside its vulnerable range. Probe 2: a synthetic identity added to a copy of the after file makes `TSC_AFTER` fail. Probe 3: a residual row without its reason makes `RESIDUAL_GATE` fail. Probe 1 holds at HEAD, because this acceptance checked all six versions. Probes 2 and 3 did not run. Fix: run `measure-adversarial-testing` on the final HEAD. It writes only `measure/runs/`, so HEAD does not move. Rationale: the strategy marks the role as required, so the absence blocks acceptance.",
+    "F3 [Blocker] phase-acceptance: Review A and Review B do not target the audited HEAD. Review A passed at `bf96724`. Review B passed at `8437779`. The audited HEAD is `116ab89`. The commits `2be181e`, `8437779`, `9f4c6ca`, `6fdea72`, and `116ab89` change `plan.md` and `spec.md`. These files are not test files and not `measure/runs/`, so the contract exception does not apply. `git diff --name-only fc9ec99 HEAD -- harness/` prints nothing, so the reviewed lock content is unchanged. Fix: run bounded Review A and Review B on the final HEAD. These runs write only `measure/runs/`, so HEAD does not move. Rationale: the role contract needs every prerequisite result on the accepted HEAD."
+  ],
+  "nonblocking_findings": [
+    "F8 [Nit] phase-acceptance: The deferral reasons for typescript 7.0.2 and vitest 5.1.1 (plan.md:144-151) say `The task 3.1 gates have not run`. The gates have run since then, on typescript 5.9.3 and vitest 4.1.10. Neither major was tried. Spec D3 defers a major when the gates fail with it. Fix: state the real reason for each deferral in task 2.1 (not tried; cohort comparability for vitest)."
+  ],
+  "evidence": [
+    "HEAD: `git rev-parse HEAD`, `git rev-parse origin/main`, and `git ls-remote origin refs/heads/main` all print 116ab89a9c9f614c2507985c7d79c0f34ceddc66. The audited HEAD is current. `git worktree list` shows only lending-desk-bench (main), lending-desk-bench-daily, and lending-desk-bench-p7green.",
+    "Audit gate: `cd harness && npm audit --audit-level=high` exits 0 at about 20:20 +07. `npm audit --json` metadata: critical 0, high 0, moderate 5, low 0, info 0, total 5. Names: @vitest/mocker, deslop-js, minimatch, react-doctor, vitest. This matches plan.md task 2.1 and task 3.2. The Red command and the Green command are the same.",
+    "Pins: `git diff b4c2e45 HEAD -- harness/package.json` changes only `@types/node` (26.1.2 to 26.6.6) and `tsx` (4.23.1 to 4.23.15). The pins @playwright/test 1.62.1, axe-core 4.13.0, react-doctor 0.9.2, typescript 5.9.3, and vitest 4.1.10 equal the base. The root block of the lock file lists the same seven versions. No new direct dependency and no new script exist (NFR-4).",
+    "Six former high advisories, read from `harness/package-lock.json`: brace-expansion 5.0.13, fast-uri 3.1.9, nanoid 3.3.20, source-map-js 1.2.4, vite 8.3.8, zod 4.6.7. Each is outside its vulnerable range in plan.md task 2.1. Installed `node_modules` show vitest 4.1.10 and vite 8.3.8.",
+    "Scope: `git diff --name-only b4c2e45 HEAD` lists `harness/package-lock.json`, `harness/package.json`, `measure/tracks/deps_refresh/plan.md`, and `measure/tracks/deps_refresh/spec.md`. `git log --name-only 7319344..HEAD` shows no `fixture/`, `reference*`, or `docs/` path. `git diff --name-only fc9ec99 HEAD -- harness/` prints nothing. `git show --name-only 161b856 fc9ec99` lists only the two package files. The `test:meta:logic` exclude list is unchanged.",
+    "Lock integrity (`git show b4c2e45:harness/package-lock.json` against HEAD): 423 entries, 422 below the root. Every resolved host is `registry.npmjs.org`. 0 entries lack an integrity hash. The lock adds 14 transitive packages, mostly the cacheable and keyv chain below eslint, and removes 3 (json-buffer and two nested fsevents). The `hasInstallScript` count goes from 4 to 3. The one new entry, `playwright/node_modules/fsevents`, moves an existing optional macOS package. Review B reads it the same way.",
+    "Commit window: `161b856` was committed at 2026-11-21T14:17:53+07:00. `fc9ec99` was committed at 2026-11-21T14:25:03+07:00. Both sit outside 02:00-07:00 (FR-6, AC-6).",
+    "Outdated check: `cd harness && npm outdated` lists five direct packages behind latest: @playwright/test 1.65.1, axe-core 4.14.1, react-doctor 0.9.23, typescript 7.0.2, vitest 5.1.1. Each has a recorded deferral in plan.md task 2.1 (Review A r1 ruling, spec D9, or a new major). No other direct package is behind.",
+    "Quick runner check: `cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot` at 20:27 +07 exits 0 with `Test Files 1 passed (1)` and `Tests 8 passed (8)`. Installed versions: vitest 4.1.10, vite 8.3.8. This equals the claim in plan.md task 2.1.",
+    "Type-check claim: plan.md task 2.1 reports `OK: tsc exit 2, 210 error lines, 210 identities`. `gate-3.1-tsc-8437779.log` prints that line. `cmp` shows `tsc-after-raw.txt` byte-identical to `tsc-base-raw.txt`. `tsc-after-ids.txt` has the base hash. This acceptance did not re-run tsc: the shell rules of this role deny the redirection that the block uses, and the brief allows one quick check.",
+    "Earlier Review A blockers: r1 (`review-a-618eb0a.json`) demanded reverts of axe-core, @playwright/test, and vitest. The package.json diff shows all three at the base pins. Review A r2 (`review-a-284ca2a.json`) escalated vite 8.3.8. The PM accepted it (plan.md:139-143) with the task 3.1 re-score condition.",
+    "A-patterns: A5 holds. Every claim in plan.md task 2.1 matches a re-run command (audit, counts, names, versions, scope, commit times, runner check). A3, A4, A6, and A7 do not apply, because the exact phase diff changes no contract test, no filter, and no registry row. `measure/tracks.md` lists deps_refresh as pending, so no overstatement exists.",
+    "Prerequisites: Review A final pass `review-a-bf96724.json` (HEAD bf96724). Review B pass `review-b-8437779.json` (HEAD 8437779). Spec review pass `spec-review-04239eb.json`. Adversarial result: none. Review C and UX review: not applicable (test-strategy.md:195 and :197). The commits since Review A change only `plan.md` and `spec.md`.",
+    "Done-when: the PM assignment done-when for this phase holds. `npm audit` in `harness/` shows 0 critical and 0 high, and the change touches only the two lock-scope files."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git rev-parse origin/main; git ls-remote origin refs/heads/main; git worktree list",
+    "cd harness && npm audit --audit-level=high; cd harness && npm audit --json | node -e (read metadata.vulnerabilities and names)",
+    "git diff b4c2e45 HEAD -- harness/package.json; node -e (read versions from harness/package-lock.json)",
+    "git diff --name-only b4c2e45 HEAD; git diff --name-only b4c2e45 HEAD -- fixture/; git diff --name-only fc9ec99 HEAD -- harness/; git log --name-only --format= 7319344..HEAD",
+    "node -e (compare git show b4c2e45:harness/package-lock.json with HEAD: added, removed, changed, hosts, integrity, hasInstallScript)",
+    "git show --name-only 161b856 fc9ec99; git log --format='%h %cd %s' --date=format:'%Y-%m-%d %H:%M' 7319344..HEAD",
+    "cd harness && npm outdated",
+    "cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cmp measure/runs/deps_refresh/tsc-base-raw.txt measure/runs/deps_refresh/tsc-after-raw.txt; sha256sum measure/runs/deps_refresh/tsc-base-ids-7319344.txt measure/runs/deps_refresh/tsc-after-ids.txt",
+    "node -e (read status and blocking findings of every review-a-*.json and spec-review-04239eb.json); git diff --name-only bf96724 HEAD; git show --name-only 2be181e 8437779 9f4c6ca 6fdea72 116ab89"
+  ],
+  "changed_files": [
+    "measure/runs/deps_refresh/phase-acceptance-p2-116ab89.json",
+    "measure/runs/deps_refresh/phase-acceptance-p2-116ab89.log"
+  ],
+  "test_strategy_violations": [
+    "Adversarial testing (test-strategy.md:196, `yes, bounded`) has no result file in measure/runs/deps_refresh/ (F2)."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_audit",
+  "handoff": "Phase 2 code and lock content pass every re-check. Two prerequisites block acceptance. Answer to the orchestrator question: test-strategy.md:196 requires adversarial testing, so it must run first for Phase 2 and Phase 3. It does not block Phase 1. Do the work in this order. First, make one plan commit for the Phase 1 and Phase 3 findings (F1, F4, and the nonblocking items). Second, run bounded adversarial testing, Review A, and Review B on that HEAD. These audits write only measure/runs/, so they do not move HEAD. Third, run Phase 1, Phase 2, and Phase 3 acceptance again on that HEAD. The user can accept Review A and Review B at bf96724 and 8437779 for a docs-only delta, because harness/ is identical since fc9ec99. Record that deviation in the next brief. Acceptance then treats F3 as met.",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "cd harness && npm audit --audit-level=high exits 0 (critical 0, high 0, moderate 5) and the six former high advisories sit at fixed versions in package-lock.json; two deferral reasons are stale (F8)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "The chore adds no test by design; the proof is the live audit, the tsc identity compare, and one quick vitest file (8 passed), while the three adversarial probes of test-strategy.md:196 did not run."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --name-only 161b856 fc9ec99 lists only harness/package.json and harness/package-lock.json."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every Green claim in plan.md task 2.1 matched a re-run command, but Review A and Review B bind to bf96724 and 8437779, not to 116ab89 (F3)."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 4,
+      "evidence": "Its claim that the package files are unchanged since r2 holds (git diff --name-only fc9ec99 HEAD -- harness/ prints nothing), but it checked the A/B block only with bash -n and the block stopped at its first regrade (rescore-ab/r8/block.log)."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its r1 fail (review-a-618eb0a.json) demanded reverts of axe-core, @playwright/test, and vitest, and git diff b4c2e45 HEAD -- harness/package.json shows all three at the base pins."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its r2 escalation of vite 8.3.8 (review-a-284ca2a.json) led to the PM decision in plan.md:139-143 with the re-score condition."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "opencode/beam-free",
+      "agreed": true,
+      "score": 4,
+      "evidence": "My lock comparison matches its claims (six fixed versions, registry.npmjs.org only, fsevents relocation), but the lock holds 422 entries below the root, not the 423 it states."
+    }
+  ]
+}

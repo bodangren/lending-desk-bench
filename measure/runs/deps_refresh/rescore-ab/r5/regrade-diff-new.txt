@@ -1,0 +1,12 @@
+--- /tmp/opencode/deps-ab-r5/new/harness/regrade-run.sh	2026-11-21 18:16:55.855788807 +0700
++++ /tmp/opencode/deps-ab-r5/new/harness/regrade-run.ab.sh	2026-11-21 18:17:57.984330304 +0700
+@@ -124,8 +124,7 @@
+ rm -rf "$WORK/candidate"
+ "$TSX" "$H/candidate-contract.ts" --graft "$ROOT_TREE" "$ORIGINAL" "$WORK/candidate" --track "$TRACK" > "$OUT/graft.json" \
+   || restore_previous "graft failed"
+-FROM_SHA=$("$TSX" "$H/candidate-contract.ts" "$ROOT_TREE" "$ORIGINAL" --track "$TRACK" 2>/dev/null \
+-  | node -e 'let s="";process.stdin.on("data",(d)=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).candidate_sha256||"")}catch{}})')
++FROM_SHA="${AB_FROM_SHA:?}"
+ [[ "$FROM_SHA" =~ ^[a-f0-9]{64}$ ]] || restore_previous "original tree could not be hashed"
+ printf '{"reason":"regrade","from_candidate_sha256":"%s","from_fixture_revision":%s}\n' "$FROM_SHA" "$REVISION" > "$OUT/graft-provenance.json"
+ 

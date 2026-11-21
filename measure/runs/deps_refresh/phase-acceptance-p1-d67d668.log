@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: deps_refresh
+phase: Phase 1: Red — record the failing audit
+commits: none
+tests_run: Read-only checks at d67d668. git merge-base --is-ancestor 1fcfd03 HEAD exits 0 (pass). The saved audit-before-b4c2e45.json shows critical 0, high 6, moderate 7, low 0, total 13 (pass). tsc-base-ids-7319344.txt has 210 lines and sha256 68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e (pass). git diff --name-only b4c2e45 HEAD -- fixture/ prints nothing (pass). No suite ran.
+files_changed: measure/runs/deps_refresh/phase-acceptance-p1-d67d668.json, measure/runs/deps_refresh/phase-acceptance-p1-d67d668.log
+plan_updates: none (gate-only role)
+known_failures: none
+handoff: Phase 1 passes at d67d66899c9b3a1d14f0d79c1d8f36bb34179376 (phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6). r1 finding F1 is closed: task 1.1 carries 1fcfd03, an ancestor of HEAD. Push d67d668 through safe-push before closeout, because the remote main holds 116ab89.
+verdict: pass
+audited_head_sha: d67d66899c9b3a1d14f0d79c1d8f36bb34179376
+result_file: measure/runs/deps_refresh/phase-acceptance-p1-d67d668.json
+retry_recommendation: none
+summary: Phase 1 passes. The Red record is true at HEAD, and the task 1.1 anchor now resolves in the history of main.
+END_MEASURE_AGENT_RESULT

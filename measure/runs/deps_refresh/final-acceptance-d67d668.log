@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: final-acceptance
+status: complete
+track: deps_refresh
+phase: track review
+commits: none
+tests_run: PROJECT_LINT exit 0; every tracked harness shell file passed bash -n with no diagnostics. PROJECT_CHECKS exit 0; 5 moderate severity vulnerabilities and no critical or high advisory. PROJECT_TESTS through heavy-run.sh exit 0; 130 pass, 0 fail, 922 expect() calls across one file in 210.91 seconds. No timing flake occurred. The live fixture audit and all earlier recorded gates remain verified.
+files_changed: measure/runs/deps_refresh/final-acceptance-d67d668.json, measure/runs/deps_refresh/final-acceptance-d67d668.log
+plan_updates: none (gate-only role)
+known_failures: none blocking. Nonblocking plan nits F6, F10, and F11 remain open.
+handoff: Final acceptance passes at d67d66899c9b3a1d14f0d79c1d8f36bb34179376. All supplied PROJECT_* gates exit 0. Proceed to measure-closeout for the archive move, metadata completion, registry update, and closeout manifest. Facts changed: none.
+verdict: pass
+audited_head_sha: d67d66899c9b3a1d14f0d79c1d8f36bb34179376
+result_file: measure/runs/deps_refresh/final-acceptance-d67d668.json
+retry_recommendation: none
+summary: Final acceptance passes. The dependency work meets AC-1 through AC-7, origin/main contains it, and three plan-only nits remain nonblocking.
+END_MEASURE_AGENT_RESULT

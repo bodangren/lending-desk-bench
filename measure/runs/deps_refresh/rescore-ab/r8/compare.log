@@ -1,0 +1,313 @@
+START 2026-11-21 18:45:29 +0700
+runner_hash_base=8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0
+runner_hash_new=8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0
+=== base fields ===
+{
+  "axes": {
+    "completion": 1,
+    "adversarial": 0.9333333333333333,
+    "adherence": 0.8333333333333333,
+    "quality": 0,
+    "weights": {
+      "completion": 0.55,
+      "adversarial": 0.2,
+      "adherence": 0.15,
+      "quality": 0.1
+    }
+  },
+  "total": null,
+  "valid": false,
+  "invalid_reasons": [
+    "orphan collected criteria: ranks a fresh, repeated row, marks an old row provisional, marks a single run provisional, marks a row without repeats provisional, marks a bad week text provisional, handles the ISO year boundary, marks the four frozen rows of the published board, keeps the frozen note exact, is imported by both pages"
+  ],
+  "criteria": {
+    "A.returned": true,
+    "A.overdue": true,
+    "A.due-soon": true,
+    "A.ok": true,
+    "A.boundary": true,
+    "C.renders": true,
+    "C.renders-all": true,
+    "D.renders": true,
+    "F.auth-checkout": true,
+    "F.auth-return": true,
+    "F.checkout-record": true,
+    "F.return-record": true,
+    "G.get200": true,
+    "G.401": true,
+    "B.name-category": true,
+    "B.badge": true,
+    "B.link": true,
+    "B.image-alt": true,
+    "B.image-response": true,
+    "C.filter-q": true,
+    "C.filter-case": true,
+    "C.filter-category": true,
+    "C.filter-both": true,
+    "C.empty": true,
+    "D.history-order": true,
+    "D.history-status": true,
+    "D.notfound": true,
+    "D.form-hidden": true,
+    "D.return-visible": true,
+    "E.submits": true,
+    "E.error-shown": true,
+    "E.member-options": true,
+    "E.return-submits": true,
+    "E.return-error": true,
+    "E.labels": true,
+    "F.checkout-conflict": true,
+    "F.return-not-on-loan": true,
+    "F.future-due-date": true,
+    "F.post-mutation-state": true,
+    "F.lifecycle": true,
+    "G.filter-item": true,
+    "G.filter-overdue": true,
+    "G.filter-both": true,
+    "G.post201": true,
+    "G.post-fields": true,
+    "G.400": true,
+    "G.409": true,
+    "G.fresh": true,
+    "G.patch200": true,
+    "G.patch409": true,
+    "G.patch400": true,
+    "D.metadata": true,
+    "E.pending": true,
+    "E.optimistic": true,
+    "E.return-pending": true,
+    "E.return-optimistic": true,
+    "E.error-announced": true,
+    "C.parallel-reads": true,
+    "H.loading": true,
+    "H.error": true,
+    "M.plan-complete": true,
+    "M.metadata-valid": true,
+    "M.closeout": false
+  },
+  "probes": {
+    "P.searchparams-async": true,
+    "P.no-key-leak": true,
+    "P.stale-after-mutate": true,
+    "P.concurrent-checkout": true,
+    "P.concurrent-return": true,
+    "P.hydration-clean": true,
+    "P.filter-literal": true,
+    "P.validate-before-io": true,
+    "P.n-plus-one": true,
+    "P.dedup-item": false,
+    "P.auth-before-parse": true,
+    "P.malformed-json": true,
+    "P.action-race": true,
+    "P.retry-after-error": true,
+    "P.axe-clean": true
+  },
+  "missing_criteria": [],
+  "orphan_results": [
+    "ranks a fresh, repeated row",
+    "marks an old row provisional",
+    "marks a single run provisional",
+    "marks a row without repeats provisional",
+    "marks a bad week text provisional",
+    "handles the ISO year boundary",
+    "marks the four frozen rows of the published board",
+    "keeps the frozen note exact",
+    "is imported by both pages"
+  ],
+  "adherence": {
+    "contract": 1,
+    "classes": []
+  },
+  "gate": {
+    "typecheck": true,
+    "build": true,
+    "passed": true
+  },
+  "tiers": {
+    "0": {
+      "rate": 1,
+      "unlocked": true,
+      "counted": true,
+      "scale": 1
+    },
+    "1": {
+      "rate": 1,
+      "unlocked": true,
+      "counted": true,
+      "scale": 1
+    },
+    "2": {
+      "rate": 1,
+      "unlocked": true,
+      "counted": true,
+      "scale": 1
+    }
+  },
+  "doctor": {
+    "version": "0.9.2",
+    "ran": false,
+    "errors": 0,
+    "warnings": 0,
+    "by_category": {},
+    "penalty_over_reference": 0,
+    "penalty_full": 30,
+    "reference_errors": 0,
+    "reference_warnings": 0
+  }
+}
+=== new fields ===
+{
+  "axes": {
+    "completion": 0.9788359788359788,
+    "adversarial": 0.9333333333333333,
+    "adherence": 0.8333333333333333,
+    "quality": 0,
+    "weights": {
+      "completion": 0.55,
+      "adversarial": 0.2,
+      "adherence": 0.15,
+      "quality": 0.1
+    }
+  },
+  "total": null,
+  "valid": false,
+  "invalid_reasons": [
+    "orphan collected criteria: ranks a fresh, repeated row, marks an old row provisional, marks a single run provisional, marks a row without repeats provisional, marks a bad week text provisional, handles the ISO year boundary, marks the four frozen rows of the published board, keeps the frozen note exact, is imported by both pages"
+  ],
+  "criteria": {
+    "A.returned": true,
+    "A.overdue": true,
+    "A.due-soon": true,
+    "A.ok": true,
+    "A.boundary": true,
+    "C.renders": true,
+    "C.renders-all": true,
+    "D.renders": true,
+    "F.auth-checkout": true,
+    "F.auth-return": true,
+    "F.checkout-record": true,
+    "F.return-record": true,
+    "G.get200": true,
+    "G.401": true,
+    "B.name-category": true,
+    "B.badge": true,
+    "B.link": true,
+    "B.image-alt": true,
+    "B.image-response": true,
+    "C.filter-q": true,
+    "C.filter-case": true,
+    "C.filter-category": true,
+    "C.filter-both": true,
+    "C.empty": true,
+    "D.history-order": true,
+    "D.history-status": true,
+    "D.notfound": true,
+    "D.form-hidden": true,
+    "D.return-visible": true,
+    "E.submits": true,
+    "E.error-shown": true,
+    "E.member-options": true,
+    "E.return-submits": false,
+    "E.return-error": true,
+    "E.labels": true,
+    "F.checkout-conflict": true,
+    "F.return-not-on-loan": true,
+    "F.future-due-date": true,
+    "F.post-mutation-state": true,
+    "F.lifecycle": true,
+    "G.filter-item": true,
+    "G.filter-overdue": true,
+    "G.filter-both": true,
+    "G.post201": true,
+    "G.post-fields": true,
+    "G.400": true,
+    "G.409": true,
+    "G.fresh": true,
+    "G.patch200": true,
+    "G.patch409": true,
+    "G.patch400": true,
+    "D.metadata": true,
+    "E.pending": true,
+    "E.optimistic": true,
+    "E.return-pending": true,
+    "E.return-optimistic": true,
+    "E.error-announced": true,
+    "C.parallel-reads": true,
+    "H.loading": true,
+    "H.error": true,
+    "M.plan-complete": true,
+    "M.metadata-valid": true,
+    "M.closeout": false
+  },
+  "probes": {
+    "P.searchparams-async": true,
+    "P.no-key-leak": true,
+    "P.stale-after-mutate": true,
+    "P.concurrent-checkout": true,
+    "P.concurrent-return": true,
+    "P.hydration-clean": true,
+    "P.filter-literal": true,
+    "P.validate-before-io": true,
+    "P.n-plus-one": true,
+    "P.dedup-item": false,
+    "P.auth-before-parse": true,
+    "P.malformed-json": true,
+    "P.action-race": true,
+    "P.retry-after-error": true,
+    "P.axe-clean": true
+  },
+  "missing_criteria": [],
+  "orphan_results": [
+    "ranks a fresh, repeated row",
+    "marks an old row provisional",
+    "marks a single run provisional",
+    "marks a row without repeats provisional",
+    "marks a bad week text provisional",
+    "handles the ISO year boundary",
+    "marks the four frozen rows of the published board",
+    "keeps the frozen note exact",
+    "is imported by both pages"
+  ],
+  "adherence": {
+    "contract": 1,
+    "classes": []
+  },
+  "gate": {
+    "typecheck": true,
+    "build": true,
+    "passed": true
+  },
+  "tiers": {
+    "0": {
+      "rate": 1,
+      "unlocked": true,
+      "counted": true,
+      "scale": 1
+    },
+    "1": {
+      "rate": 0.972972972972973,
+      "unlocked": true,
+      "counted": true,
+      "scale": 1
+    },
+    "2": {
+      "rate": 1,
+      "unlocked": true,
+      "counted": true,
+      "scale": 1
+    }
+  },
+  "doctor": {
+    "version": "0.9.2",
+    "ran": false,
+    "errors": 0,
+    "warnings": 0,
+    "by_category": {},
+    "penalty_over_reference": 0,
+    "penalty_full": 30,
+    "reference_errors": 0,
+    "reference_warnings": 0
+  }
+}
+FAIL: compared fields differ; see /home/daniebo/Desktop/lending-desk-bench/measure/runs/deps_refresh/rescore-ab/r8/field-diff.txt
+COMPARE_EXIT=1 END 2026-11-21 18:45:29 +0700

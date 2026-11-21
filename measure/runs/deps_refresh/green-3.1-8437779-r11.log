@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+track: deps_refresh
+phase: Phase 3: Verify — gates, counts, residuals, push
+role: measure-jr-green
+task: 3.1
+status: blocked
+baseline_sha: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+role_base_sha: 84377792bfeac18196807336156cddc252aadaff
+resulting_head: 84377792bfeac18196807336156cddc252aadaff
+commits: none (a compared field differs; no task marked and no commit)
+tests: Gates 1-4 stayed reused and passed. The r8 base regrade was already done. The new-side regrade ran in the untouched r8 new worktree with regrade-run.ab.sh and exited 1 with invalid=false and total=null, the same as base; its REGRADED line, artifacts.prev stamp, graft-provenance reason regrade, and score file all checked out. Runner hashes match: 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0 on both sides. The listed-field comparison exited 1: three fields differ.
+files: Both score files, both regrade logs, both extracted field files, the field diff, the runner-hash file, the compare log and the regrade-run logs are in measure/runs/deps_refresh/rescore-ab/r8/. No tracked file or task marker changed. All deps-ab* worktrees remain; no cleanup was done.
+handoff: SCORE DIFFERENCE — stop and report to the PM. Differing fields with base and new values: (1) axes.completion: base 1, new 0.9788359788359788. (2) criteria["E.return-submits"]: base true, new false. (3) tiers["1"].rate: base 1, new 0.972972972972973. All other compared fields are identical: total null, valid false, invalid_reasons identical (the orphan collected criteria reason), criteria otherwise identical, probes identical, missing_criteria empty, orphan_results identical, adherence identical, gate identical, doctor identical. Fields ignored by the ruling, because they hold time, host, usage, provenance or run timing: grading_seconds, host, usage, provenance, provenance_valid, time_on_task_seconds. The three differing fields point to the same lost criterion E.return-submits on the new side, which lowers axes.completion and tier 1 rate. This is a real score difference between the base and refreshed dependency sets; the PM order says such a difference stops the track and goes to the PM with the numbers. No score file was altered and no further root or workaround was used. No task was marked and no commit was made; cleanup of the deps-ab* worktrees was ruled only for a passing gate, so all remain: main (8437779); deps-ab base/new, r2 base/new, r3 base/new, r4 base, r5 base/new, r6 base/new, r7 base/new, r8 base/new, all detached at 8437779; plus daily (46a7f06) and p7green (102289e). Task 3.1 stays `[~]`; task 3.2 was not started. Immutable phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6; role_base_sha and final HEAD 84377792bfeac18196807336156cddc252aadaff.
+END_MEASURE_AGENT_RESULT

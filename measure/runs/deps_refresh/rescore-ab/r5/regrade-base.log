@@ -1,0 +1,3 @@
+[a-deepseek-v4-1-flash-2026w43-r1] regrade track=build model=opencode-go/deepseek-v4.1-flash arm=a revision=2 contract=none
+[a-deepseek-v4-1-flash-2026w43-r1] no candidate at /tmp/opencode/deps-ab-r5/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate
+[a-deepseek-v4-1-flash-2026w43-r1] grade.sh stopped with exit 2; restoring the previous artifacts

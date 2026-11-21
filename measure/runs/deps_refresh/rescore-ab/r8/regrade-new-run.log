@@ -1,0 +1,8 @@
+START 2026-11-21 18:43:48 +0700
+START new 2026-11-21 18:43:48 +0700
+NEW_REGRADE_EXIT=1 END 2026-11-21 18:45:05 +0700
+[a-deepseek-v4-1-flash-2026w43-r1] REGRADED total=null valid=false adherence=1 orphan collected criteria: ranks a fresh, repeated row, marks an old row provisional, marks a single run provisional, marks a row without repeats provisional, marks a bad week text provisional, handles the ISO year boundary, marks the four frozen rows of the published board, keeps the frozen note exact, is imported by both pages
+GRAFT_REASON=regrade
+NEW_SCORE valid=false total=null reasons=["orphan collected criteria: ranks a fresh, repeated row, marks an old row provisional, marks a single run provisional, marks a row without repeats provisional, marks a bad week text provisional, handles the ISO year boundary, marks the four frozen rows of the published board, keeps the frozen note exact, is imported by both pages"]
+NEW_REGRADE_PROOF_OK
+SCRIPT_EXIT=0 END 2026-11-21 18:45:05 +0700

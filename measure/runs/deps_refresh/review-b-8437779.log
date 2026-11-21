@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+status: pass
+summary: Security review pass: npm audit --audit-level=high exits 0 (0 critical, 0 high); six high advisories fixed; lock fully registry-sourced with integrity; no new dependency, install script, or secret; fixture unchanged.
+phase_base_sha: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+role_base_sha: 84377792bfeac18196807336156cddc252aadaff
+audited_head_sha: 84377792bfeac18196807336156cddc252aadaff
+security_applicability: applicable
+blocking_findings: []
+nonblocking_findings: []
+evidence: npm audit --audit-level=high exit 0 (0 critical, 0 high, 5 moderate); six advisories at fixed versions; 423 lock entries all registry.npmjs.org with integrity; no git/tarball source; no new direct dep or lifecycle script; Playwright channel chrome; fixture diff empty.
+commands: git rev-parse HEAD; git diff --name-only b4c2e45 84377792; git diff --name-only b4c2e45 84377792 -- fixture/; cd harness && npm audit --audit-level=high; cd harness && npm audit --json; python3 lock audit
+changed_files: ["harness/package-lock.json", "harness/package.json", "measure/tracks/deps_refresh/plan.md", "measure/tracks/deps_refresh/spec.md"]
+test_strategy_violations: []
+live_contract_violations: []
+prod_wiring_violations: []
+route_parity_violations: []
+confidence: high
+retry_recommendation: none
+handoff:
+route: opencode/beam-free
+END_MEASURE_AGENT_RESULT

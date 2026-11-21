@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "deps_refresh",
+  "phase": "Phase 3: Verify — gates, counts, residuals, push",
+  "status": "fail",
+  "summary": "Phase 3 fails acceptance at 116ab89 on three blockers. The gate logs, the counts, the residual list, and the push record match the plan. An independent re-diff of the six A/B score files matches plan.md. The first blocker is the missing adversarial result (F2). The second blocker is that Review A and Review B bind to older HEADs (F3). The third blocker is gate 2 (F4). It exited 1 with no written pass rule, while AC-3 and the Verify line need exit 0. Four nonblocking items follow (F5, F6, F7, F9). Adversarial testing must run first.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "audited_head_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "baseline_sha": "116ab89a9c9f614c2507985c7d79c0f34ceddc66",
+  "blocking_findings": [
+    "F2 [Blocker] phase-acceptance: The adversarial testing result is missing. test-strategy.md:196 assigns adversarial testing as `yes, bounded`. `measure/runs/deps_refresh/` holds no `adversarial-*` file. The role contract needs this result before acceptance. The strategy names three probes. Probe 1: a fixed high advisory resolves outside its vulnerable range. Probe 2: a synthetic identity added to a copy of the after file makes `TSC_AFTER` fail. Probe 3: a residual row without its reason makes `RESIDUAL_GATE` fail. Probes 2 and 3 test the Phase 3 gates, and neither ran. Fix: run `measure-adversarial-testing` on the final HEAD. It writes only `measure/runs/`, so HEAD does not move. Rationale: the strategy marks the role as required, so the absence blocks acceptance.",
+    "F3 [Blocker] phase-acceptance: Review A and Review B do not target the audited HEAD. Review A passed at `bf96724`. Review B passed at `8437779`. The audited HEAD is `116ab89`. The commits `2be181e`, `8437779`, `9f4c6ca`, `6fdea72`, and `116ab89` change `plan.md` and `spec.md`. These files are not test files and not `measure/runs/`, so the contract exception does not apply. Review A also never saw the Phase 3 record. The residual list is a Review A focus (test-strategy.md:193), and it came at `6fdea72`, after the last Review A run. Fix: run bounded Review A and Review B on the final HEAD. These runs write only `measure/runs/`, so HEAD does not move. Rationale: the role contract needs every prerequisite result on the accepted HEAD.",
+    "F4 [Blocker] phase-acceptance: AC-3 and the plan Verify line need exit 0 for each gate command, and gates 1 and 2 exited 1. Spec D6 (spec.md:111-118) and plan.md:212-216 write a pass rule for gate 1 only. No text writes a pass rule for gate 2. The plan says only `Exit 1 as expected` under an orchestrator ruling (plan.md:376-381). The plan Verify line (plan.md:357-359), spec FR-3 and AC-3 (spec.md:171-183 and :222), and test-strategy.md (lines 79-84 and 141) still need exit 0. The spec FR-3 list and the strategy still name `npm run test:unit` for gate 1. The substance holds: all six failures differ from the expectation only by `/tmp/opencode/...` against `/home/daniebo/.cache/opencode/...`, and `/tmp/opencode` is a symlink since 2026-11-20 08:13. Fix: write the gate 2 rule as labeled counts (`Tests 6 failed | 232 passed (238)`; five named assertions in `opencode-executor.test.ts` and one in `opencode-recorded.test.ts`; all path-only). Put the rule in spec D6, FR-3, and AC-3, in plan task 3.1 and its Verify line, and in test-strategy.md. State the amended gate 1 command in the same places. Rationale: a gate that exits 1 and counts as a pass needs a written rule. Without it, the pass condition changes after the run."
+  ],
+  "nonblocking_findings": [
+    "F5 [Major] phase-acceptance: The spec text for the heavy-run window still reads as before the PM amendment of D7. spec.md:52 says `22:00-07:00`. spec.md:175, :202-206, and :214 and test-strategy.md:23, :61, and :167 say `22:00-01:30`. R4 (spec.md:245-246) says the meta suite runs inside the night window. The FR-6 Check (spec.md:206) says each gate timestamp sits inside 22:00-01:30. The gates ran from 16:32 to 19:24 under D7 as amended (spec.md:123-137). Read literally, the FR-6 Check fails. Fix: align the Heavy run definition, FR-3, FR-6, NFR-3, R4, and the strategy with D7. Rationale: D7 carries the PM decision and governs, but the older lines make the spec contradict itself.",
+    "F6 [Major] phase-acceptance: Gate 5 compares two fields that carry no signal, and the plan does not say so. All six regrades have `valid=false`, `total=null`, `doctor.ran=false`, and `axes.quality=0`. Each extra regrade ended with rc=1 (`rescore-ab/r8/flake-runs.log`). The original stored score of the run has `valid=true`, `total=95`, `doctor.ran=true` (3 warnings), and `quality=0.8833`. The plan lists `total` and `doctor` as compared fields (plan.md:409-412) and does not state these values. The A/B therefore does not test Axis 3. The refresh moved the react-doctor dependency tree: zod 4.4.3 to 4.6.7, eslint 10.8.0 to 10.15.0, brace-expansion, and source-map-js. Spec D9 protects Axis 3 against a react-doctor version bump only. No file records why `doctor.ran` is false. Fix: state these values in plan task 3.1 and in the tech-debt entry. Then ask the PM to accept the gap or to order one doctor-only scan of the stored candidate on each lock. Rationale: NFR-1 asks that score comparability holds, and the A/B proves it for the completion, adversarial, and adherence axes only.",
+    "F7 [Nit] phase-acceptance: The A/B block in plan task 3.1 (plan.md:275-348) is not the procedure that ran. The block names `/tmp/opencode/deps-ab/`, `regrade-run.sh`, and a stop on any difference. The runs used `/home/daniebo/.cache/opencode/deps-ab-r8`, a patched copy `regrade-run.ab.sh`, hand-driven steps, and six regrades. The block would stop at its first regrade, because that regrade exits 1 (`rescore-ab/r8/block.log`). The record explains the changes (plan.md:391-415 and :438-442). Fix: mark the block as superseded by the gate 5 record.",
+    "F9 [Nit] phase-acceptance: Tasks 3.1 and 3.2 carry the same SHA, `8437779`. It is the audited HEAD at gate time and it is reachable. The commits that hold the records are `9f4c6ca` and `6fdea72`. Task 3.3 carries `6fdea72`, the pushed HEAD, not the commit that records the push (`116ab89`). Only plan.md:363-366 states the anchor rule, and it covers task 3.1. Fix: add one sentence with the anchor rule to tasks 3.2 and 3.3."
+  ],
+  "evidence": [
+    "HEAD: `git rev-parse HEAD`, `git rev-parse origin/main`, and `git ls-remote origin refs/heads/main` all print 116ab89a9c9f614c2507985c7d79c0f34ceddc66. The audited HEAD is current.",
+    "Gate 1: `gate-3.1-unit-8437779.log` shows `Test Files 1 failed | 2 passed (3)` and `Tests 1 failed | 16 passed (17)`. The one failure is `Measure track closeout > M.closeout` with `expected 'pending' to be 'complete'`. EXIT=1, 16:36:35-16:44:07 +07. This equals plan.md:367-375 and the rule in plan.md:212-216. The first try on the raw fixture (`gate-3.1-unit-2be181e.log`, 16:32:51-16:33:41) gave `Tests 7 failed | 10 passed (17)`, because the fixture is unsolved. That result explains the stored-candidate ruling.",
+    "Gate 2: `gate-3.1-meta-8437779.log` shows `Test Files 2 failed | 28 passed (30)` and `Tests 6 failed | 232 passed (238)`, EXIT=1, vitest run 17:11:34-17:13:50 +07 (lock waits 16:44-17:11). Five failures sit in `opencode-executor.test.ts` and one sits in `opencode-recorded.test.ts`. Each diff differs only by `/tmp/opencode/executor-red-*` against `/home/daniebo/.cache/opencode/executor-red-*`. `readlink -f /tmp/opencode` prints `/home/daniebo/.cache/opencode`, and the symlink time is 2026-11-20 08:13:10. `tech-debt.md:219-230` records the cause. This acceptance did not rerun gate 2 at the base lock.",
+    "Gate 3: `gate-3.1-bun-8437779.log` shows `130 pass`, `0 fail`, and `922 expect() calls`, EXIT=0, 17:15:57-17:47:06 +07, through `heavy-run.sh`. This equals plan.md:382-385.",
+    "Gate 4: `gate-3.1-tsc-8437779.log` prints `OK: tsc exit 2, 210 error lines, 210 identities` and EXIT=0 at 17:47:26-17:47:29 +07. `cmp` shows `tsc-after-ids.txt` identical to `tsc-base-ids-7319344.txt`, and `tsc-after-raw.txt` identical to `tsc-base-raw.txt`. The hash 68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e is unchanged since Red. This acceptance did not re-run tsc, because the shell rules of this role deny the redirection that the block uses.",
+    "Gate 5 re-diff: an independent comparison of the six files `rescore-ab/r8/{base,new}-run{1,2,3}-score.json` (all leaf paths except grading_seconds, host, usage, provenance, provenance_valid, time_on_task_seconds) shows base runs 1-3 and new runs 2-3 identical. New run 1 differs in exactly three leaf paths: `criteria.E.return-submits` true to false, `axes.completion` 1 to 0.9788359788359788, and `tiers.1.rate` 1 to 0.972972972972973. This matches plan.md:404-415. `runner-hashes.txt` shows one runner hash (8985c00f…a2a0) on both sides. `regrade-ab-copy.sha256` shows one hash on both sides. `regrade-diff-base.txt` and `regrade-diff-new.txt` show the one-word change (`executor`) at line 92.",
+    "Gate 5 caveats: all six score files have `valid=false`, `total=null`, `doctor.ran=false`, `axes.quality=0`, and the same `invalid_reasons` (orphan collected criteria). `flake-runs.log` shows rc=1 for every extra regrade. The original stored score (`runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/score.json`) has `valid=true`, `total=95`, and `doctor.ran=true` with `quality=0.8833`.",
+    "Flake rule: the new side passed `E.return-submits` in runs 2 and 3, so the PM flake rule quoted in plan.md:416-426 passes gate 5. `tech-debt.md` (untracked) holds the flake entry at lines 255-267 and four related entries at lines 188-253.",
+    "Task 3.2: `npm audit --json` at HEAD gives critical 0, high 0, moderate 5, low 0, info 0, total 5, with the names @vitest/mocker, deslop-js, minimatch, react-doctor, vitest. The five residual rows in plan.md:469-482 match these names one to one. Each row carries a reason (vitest chain: cohort comparability; react-doctor chain: spec D9). No low advisory and no unlisted advisory exists. `cd harness && npm audit --audit-level=high` exits 0.",
+    "Task 3.3: `git rev-list --count 7319344..6fdea72` prints 21, which equals `safe-push: ahead 21 behind 0`. `git ls-remote origin refs/heads/main` prints 116ab89, so the later record commits are on the remote. `git merge-base --is-ancestor fc9ec99 origin/main` exits 0. A scan of the lines added since 7319344 (lock file excluded) for key patterns finds 0 matches. `161b856` (14:17:53) and `fc9ec99` (14:25:03) sit outside 02:00-07:00.",
+    "Night window: `git log` lists 22 track commits since 7319344, committed 13:44-19:30 +07. None sits in 02:00-07:00. Every gate log and A/B log sits between 16:32 and 19:24 +07, so no gate ran in 02:00-06:00.",
+    "Cleanup: `git worktree list` shows three entries (lending-desk-bench main, lending-desk-bench-daily, lending-desk-bench-p7green). No `deps-ab*` folder exists under `/tmp/opencode` or `/home/daniebo/.cache/opencode`. The result files stay under `measure/runs/deps_refresh/`.",
+    "Scope: `git diff --name-only b4c2e45 HEAD` lists four paths: the two package files, plan.md, and spec.md. `git diff --name-only 8437779 HEAD` lists only plan.md. `git diff --name-only b4c2e45 HEAD -- fixture/` prints nothing, and no track commit touches `fixture/`. The `test:meta:logic` exclude list is unchanged. `npm audit --audit-level=high` exits 0 and `npm audit --json` gives 0 critical, 0 high, 5 moderate.",
+    "Basis of F4: plan.md:357-359 says every command exits 0 except the type-check. The record shows exit 1 for gate 1 and for gate 2.",
+    "A-patterns: A5 holds for the gate records, the residual rows, the push record, and the cleanup. The Verify line does not match reality (F4). A3, A4, A6, and A7 do not apply, because the exact phase diff changes no contract test, no filter, and no `measure/tracks.md` row. `measure/tracks.md` lists deps_refresh as pending. The vacuous gate 5 fields are in F6.",
+    "Prerequisites: Review A final pass `review-a-bf96724.json` (HEAD bf96724). Review B pass `review-b-8437779.json` (HEAD 8437779). Adversarial result: none. Review C and UX review: not applicable (test-strategy.md:195 and :197).",
+    "Quick check: `cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot` at 20:27 +07 gave exit 0 and `Tests 8 passed (8)`, with vitest 4.1.10 and vite 8.3.8. This acceptance ran no suite and no heavy gate.",
+    "Done-when: the PM done-when for this phase holds in substance. The gates ran, the counts are recorded, the residual list is complete, and the work is on the remote (AC-7, pushed 2026-11-21). F4 and the two prerequisite findings block the record."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git rev-parse origin/main; git ls-remote origin refs/heads/main; git worktree list",
+    "read measure/runs/deps_refresh/gate-3.1-unit-8437779.log, gate-3.1-meta-8437779.log, gate-3.1-bun-8437779.log, gate-3.1-tsc-8437779.log, gate-3.1-unit-2be181e.log",
+    "readlink -f /tmp/opencode; stat -c '%n %y' /tmp/opencode; ls /tmp/opencode and /home/daniebo/.cache/opencode (filter deps-ab)",
+    "node -e (compare the six rescore-ab/r8 score files leaf by leaf, ignoring six fields); cmp and sha256sum on tsc-base and tsc-after files",
+    "read rescore-ab/r8/verdict.txt, table-summary.md, flake-runs.log, runner-hashes.txt, regrade-ab-copy.sha256, regrade-diff-base.txt, regrade-diff-new.txt, regrade-base.log",
+    "node -e (read runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/score.json: valid, total, doctor, axes)",
+    "cd harness && npm audit --audit-level=high; cd harness && npm audit --json | node -e (read metadata.vulnerabilities and names)",
+    "git rev-list --count 7319344..6fdea72; git merge-base --is-ancestor fc9ec99 origin/main; git log --format='%h %cd %s' --date=format:'%Y-%m-%d %H:%M' 7319344..HEAD",
+    "git diff --name-only b4c2e45 HEAD; git diff --name-only 8437779 HEAD; git diff --name-only b4c2e45 HEAD -- fixture/; git log --name-only --format= 7319344..HEAD",
+    "git diff added lines 7319344..HEAD (lock file excluded) piped to grep -cE for key patterns",
+    "grep -n for 22:00, 01:30, exit 0, and Verify lines in spec.md, test-strategy.md, and plan.md; grep -n in tech-debt.md",
+    "cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot"
+  ],
+  "changed_files": [
+    "measure/runs/deps_refresh/phase-acceptance-p3-116ab89.json",
+    "measure/runs/deps_refresh/phase-acceptance-p3-116ab89.log"
+  ],
+  "test_strategy_violations": [
+    "Adversarial testing (test-strategy.md:196, `yes, bounded`) has no result file in measure/runs/deps_refresh/ (F2).",
+    "META_GATE needs exit 0 (test-strategy.md:141). The gate exited 1 with six failures and no written pass rule (F4).",
+    "UNIT_GATE differs from test-strategy.md:80 and :141 in its command and its exit code. Spec D6 and plan task 3.1 hold the amended rule, and the strategy does not (F4)."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_implementation",
+  "handoff": "Phase 3 fails at 116ab89 on three blockers. The gates and the records are true in substance. Fix F4 first. Put it in one plan commit together with F1 of Phase 1. Add the optional items F5, F6, F7, and F9 to that commit. Then run adversarial testing, Review A, and Review B on that HEAD. Then run the three phase acceptances again on that HEAD. F6 needs a PM choice. The PM can accept that gate 5 did not test Axis 3, or order one doctor-only scan of the stored candidate on each lock. Answer to the orchestrator question: adversarial testing must run first. Its absence blocks Phase 2 and Phase 3.",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The gate logs, the five residual rows (plan.md:469-482), and the push facts match reality, and gate 5 passes only under the PM flake rule (plan.md:416-426)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "Gate 2 exits 1 with no written pass rule, and gate 5 compares total=null and doctor.ran=false in all six regrades (rescore-ab/r8/table-summary.md)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only 8437779 HEAD lists only plan.md, and no track commit touches fixture/."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Each gate has a log with START, EXIT, and END lines, and my re-diff of the six score files matches plan.md:404-415; the gate 5 caveats are missing from the plan (F6)."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 4,
+      "evidence": "Its pass at bf96724 holds for the unchanged package files (git diff --name-only fc9ec99 HEAD -- harness/ prints nothing), but it checked the A/B block only with bash -n and the block stopped at its first regrade (rescore-ab/r8/block.log)."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its r1 fail (review-a-618eb0a.json) demanded reverts of axe-core, @playwright/test, and vitest, and git diff b4c2e45 HEAD -- harness/package.json shows all three at the base pins."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its r2 escalation of vite 8.3.8 (review-a-284ca2a.json) led to the PM decision in plan.md:139-143 with the re-score condition."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "opencode/beam-free",
+      "agreed": true,
+      "score": 4,
+      "evidence": "My lock comparison matches its claims (six fixed versions, registry.npmjs.org only, fsevents relocation), but the lock holds 422 entries below the root, not the 423 it states."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+START base 2026-11-21 18:32:01 +0700
+2026-11-21T18:32:01 STEP read_identity rc=0
+2026-11-21T18:32:01 STEP violation_class rc=0
+2026-11-21T18:32:01 STEP artifacts_moved rc=0
+2026-11-21T18:32:01 STEP candidate_moved rc=0
+2026-11-21T18:32:02 STEP graft rc=0
+FAIL: no candidate tree after graft
+BASE_DRIVER_EXIT=1 END 2026-11-21 18:32:02 +0700

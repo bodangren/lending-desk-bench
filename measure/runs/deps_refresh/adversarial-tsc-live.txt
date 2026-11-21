@@ -1,0 +1,3 @@
+OK: tsc exit 2, 210 error lines, 210 identities
+
+LIVE_TSC_BLOCK_EXIT=0

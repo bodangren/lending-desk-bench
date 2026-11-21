@@ -1,0 +1,18 @@
+START=2026-11-21T20:49:21+07:00
+{
+  "side": "base",
+  "version": "0.9.2",
+  "ran": true,
+  "errors": 0,
+  "warnings": 3,
+  "by_category": {
+    "Bugs": 2,
+    "Maintainability": 1
+  },
+  "penalty_over_reference": 3.5,
+  "penalty_full": 30,
+  "reference_errors": 0,
+  "reference_warnings": 0,
+  "quality_at_full_completion": 0.8833333333333333
+}
+END=2026-11-21T20:49:31+07:00

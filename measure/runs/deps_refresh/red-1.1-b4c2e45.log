@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: deps_refresh
+phase: Phase 1: Red — record the failing audit
+role: measure-mid-red
+task: 1.1
+status: done
+baseline_sha: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+role_base_sha: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+red_commit_sha: 1fcfd037505bc2f1981590655ec4b26347b74885
+resulting_head: 1fcfd037505bc2f1981590655ec4b26347b74885
+commits: 1fcfd03 measure(deps_refresh): Red task 1.1 record the failing audit (one commit ahead of b4c2e45)
+tests: none (spec D5: no checked-in test asserts the live-registry audit gate; Red phase is read-only)
+files: measure/tracks/deps_refresh/plan.md (committed, +24/-1). Ignored artifacts written but not staged or committed: measure/runs/deps_refresh/audit-before-b4c2e45.json, measure/runs/deps_refresh/tsc-base-raw.txt, measure/runs/deps_refresh/tsc-base-ids-7319344.txt (regenerated; hash unchanged).
+red_command_results: audit `cd harness && npm audit --audit-level=high` exit 1; critical 0, high 6, moderate 7, low 0, total 13; high advisories: brace-expansion, fast-uri, nanoid, source-map-js, vite, zod. tsc block (RAW=tsc-base-raw.txt, IDS=tsc-base-ids-7319344.txt) exit 2, 210 error lines, 210 identities; identity file LC_ALL=C sorted and unique; sha256 68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e, unchanged from pre-rerun.
+remaining_failures: audit gate still red (exit 1 with 6 high advisories); this is the expected Red state for Green task 2.1 to clear. tsc exit 2 is the expected-red aggregate; the Green criterion is the no-new-identity subset compare, not exit 0.
+handoff: Green task 2.1 is next. No npm install ran. No package file changed. The task line records sha f420571 (the evidence commit object; it resolves via git show and holds identical evidence; the final HEAD 1fcfd03 adds only the sha token). Unrelated untracked paths (.opencode/, tech-debt.md, harness/wt.txt, harness/model-guide/data/sets/) were preserved and never staged. No push ran; push stays with the orchestrator.
+END_MEASURE_AGENT_RESULT

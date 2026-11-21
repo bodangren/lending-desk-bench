@@ -1,0 +1,17 @@
+A7_DIAGNOSTIC_FILTER_PRESERVES_NEVER_AND_DO_NOT=PASS
+TSC_CLEAN_EXIT=0
+TSC_MUTATION_EXIT=1
+FAIL: new diagnostics:
+harness/zz-never-do-not.ts(999,1): error TS9999
+A4_ALL_TILDE_FIXTURE=INCOMPLETE
+repo: /home/daniebo/.cache/opencode/deps-gate-_puko75h
+head: 
+worktree: clean
+incomplete_phases: 1
+[1] probe -- Phase 1: Probe (2/2 remaining)
+next_phase: probe -- Phase 1: Probe
+closeout_candidates: 0
+RESIDUAL_WRITTEN_RULE_CLEAN=PASS
+RESIDUAL_REASON_REMOVAL=FAIL deslop-js
+RESIDUAL_NOTE=This probe evaluates the written rule. The repository has no executable residual gate.
+A5_LITERAL_FALSE_CLAIM_PATTERNS=0

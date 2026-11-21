@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "task": "2.1",
+  "status": "pass",
+  "summary": "Security and supply-chain review of the harness lock-file refresh passes. npm audit --audit-level=high exits 0 with 0 critical and 0 high; the six Red high advisories resolve to their fixed versions; all 423 lock entries resolve to registry.npmjs.org with integrity hashes; no new direct dependency, no new lifecycle script package, and no git or tarball source; Playwright stays on system Chrome; the fixture is unchanged. The five residual moderates each carry a recorded reason (vitest and @vitest/mocker for score comparability, react-doctor 0.9.2 under spec D9).",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "84377792bfeac18196807336156cddc252aadaff",
+  "audited_head_sha": "84377792bfeac18196807336156cddc252aadaff",
+  "reviewer_model": "opencode/beam-free",
+  "route": "opencode/beam-free (PM fallback for review-b, 2026-11-21; the pick `ra-quota pick review-b --not-family kimi --not-family hy --not-family openai` gave opencode/deepseek-v4.1-flash-free#high, which hit its free limit; OpenAI excluded because Review A used openai/gpt-6-luna#high; Hy excluded because Green used opencode-go/hy4-flash-free#high).",
+  "security_applicability": "applicable",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "Provenance: git rev-parse HEAD printed 84377792bfeac18196807336156cddc252aadaff before and after the audit; it equals role_base_sha and audited_head_sha. phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6 exists as a commit.",
+    "Audit gate: `cd harness && npm audit --audit-level=high` exited 0. `npm audit --json` metadata shows critical 0, high 0, moderate 5, low 0, info 0, total 5.",
+    "Six Red high advisories resolved to fixed versions in harness/package-lock.json: brace-expansion 5.0.13 (vulnerable 4.0.0-5.0.11), fast-uri 3.1.9 (3.0.0-3.1.8), nanoid 3.3.20 (below 3.3.18), source-map-js 1.2.4 (1.0.0-1.2.1), vite 8.3.8 (8.2.0-8.2.2), zod 4.6.7 (below 4.6.6).",
+    "Lock provenance: all 423 entries under packages have a resolved URL containing registry.npmjs.org (0 non-registry resolved) and every resolved entry carries an integrity hash (0 missing). No git or tarball source outside the registry.",
+    "Lifecycle scripts: package.json holds no preinstall, install, or postinstall script. hasInstallScript appears only on node_modules/esbuild, node_modules/fsevents, and node_modules/playwright/node_modules/fsevents. The fsevents entries are hoisting rearrangements of the base lock (base had top-level 2.3.2 plus nested under tsx and vite at 2.3.3; head has top-level 2.3.3 plus nested under playwright at 2.3.2); no genuinely new install-script package was added. No lock package carries a scripts field with a lifecycle hook.",
+    "New transitive package names versus base (bigmap, cacheable, hashery, hookified, memory, nonrecursive-glob-match, qified, serialize) come from flat-cache/keyv and carry no install script or bin; removed name json-buffer. No new direct dependency: package.json changed only @types/node 26.1.2 to 26.6.6 and tsx 4.23.1 to 4.23.15.",
+    "Residual moderates, each with a recorded reason: @vitest/mocker and vitest stay at 4.1.10 for score comparability within the cohort (Review A, orchestrator 2026-11-21); deslop-js, minimatch, and react-doctor stay at 0.9.2 under spec D9 because the 0.9.23 bump changes Axis 3 scores mid-cohort. No critical or high item remains.",
+    "Fixture scope: `git diff --name-only b4c2e45 84377792 -- fixture/` printed nothing. Playwright uses system Chrome: harness/playwright.config.ts:28 sets channel: \"chrome\", so no browser download runs. @playwright/test stays at the base 1.62.1 pin.",
+    "A2 not applicable: no test or tool in the audited range flips a draft to a published state; the publish gate (publish.ts, preview.sh) is untouched in the range. A6 clean: measure/tracks.md lists deps_refresh as pending and claims no resolved security state; the six high advisories are verified fixed rather than merely claimed.",
+    "Meta exclude list unchanged: harness/package.json test:meta:logic keeps the same two --exclude entries as the base commit."
+  ],
+  "commands": [
+    "git rev-parse HEAD (84377792bfeac18196807336156cddc252aadaff, before and after)",
+    "git diff --name-only b4c2e45 84377792",
+    "git diff --name-only b4c2e45 84377792 -- fixture/",
+    "cd harness && npm audit --audit-level=high (exit 0)",
+    "cd harness && npm audit --json (metadata: critical 0, high 0, moderate 5, low 0)",
+    "python3 lock-file audit: 423 packages, 0 non-registry resolved, 0 missing integrity, 3 hasInstallScript",
+    "python3 base-vs-head package-name diff and fsevents hoisting comparison",
+    "python3 six-advisory version check against harness/package-lock.json",
+    "grep channel harness/playwright.config.ts",
+    "grep for secret patterns in the diff (no match)"
+  ],
+  "changed_files": [
+    "harness/package-lock.json",
+    "harness/package.json",
+    "measure/tracks/deps_refresh/plan.md",
+    "measure/tracks/deps_refresh/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "npm audit --audit-level=high exits 0 (0 critical, 0 high) and all six Red high advisories resolve to their fixed versions in harness/package-lock.json."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The after audit, scope diff, and version checks are live, but the mutation probes of test-strategy.md (synthetic identity, removed residual reason) were not rerun by this review."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only b4c2e45 84377792 lists only harness/package.json, harness/package-lock.json, and the two track records; no fixture or source file changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim cites a command result (npm audit exit 0, 423 entries, 0 non-registry resolved) or a file and line (playwright.config.ts:28)."
+    }
+  ]
+}

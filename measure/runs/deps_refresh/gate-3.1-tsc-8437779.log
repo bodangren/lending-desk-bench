@@ -1,0 +1,4 @@
+START 2026-11-21 17:47:26 +0700 CMD: plan task 3.1 type-check block (in the day, not through heavy-run.sh per plan)
+OK: tsc exit 2, 210 error lines, 210 identities
+EXIT=0
+END 2026-11-21 17:47:29 +0700

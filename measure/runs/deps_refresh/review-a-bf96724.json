@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "task": "2.1 r8",
+  "status": "pass",
+  "summary": "The r7 findings are closed. Each npm ci command has a failure handler, the SKIP check no longer masks a match, and bash -n passes for the A/B block.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "bf967243e12aa6a03aba2d37a8a3c5019317f750",
+  "audited_head_sha": "bf967243e12aa6a03aba2d37a8a3c5019317f750",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "The A/B uses one unpinned system Chrome version and one sequential pair. The plan records the Chrome version and notes that one pair cannot rule out timing variation."
+  ],
+  "evidence": [
+    "F1 withdrawn: each of the four npm ci commands now has an explicit `||` failure handler at plan.md:293-296.",
+    "F2 withdrawn: the SKIP check now uses an `if grep` condition and exits only when grep finds a match at plan.md:314. It has no trailing `|| true`.",
+    "The r6 score-difference concern remains closed: any difference stops the track and goes to the PM at plan.md:262-263; the diff handler exits nonzero at lines 334-335.",
+    "The r6 stale-state concern remains closed: the block rejects an existing A/B directory, verifies both worktree HEADs against the source HEAD, checks npm ls, and validates Vite and Vitest versions at plan.md:272-308.",
+    "`bash -n` on the extracted A/B block exited 0. The block was not run.",
+    "git rev-parse HEAD returned bf967243e12aa6a03aba2d37a8a3c5019317f750, matching the supplied audited HEAD.",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd bf967243e12aa6a03aba2d37a8a3c5019317f750 lists only measure/tracks/deps_refresh/plan.md. Package files did not change since r2.",
+    "The phase-base diff lists harness/package.json, harness/package-lock.json, and measure/tracks/deps_refresh/plan.md. No source or fixture changed.",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..bf967243e12aa6a03aba2d37a8a3c5019317f750 exited 0."
+  ],
+  "commands": [
+    "git rev-parse HEAD — bf967243e12aa6a03aba2d37a8a3c5019317f750",
+    "git diff --name-only b4c2e450067ca65b4282d0178ec087d00fa7a8e6..bf967243e12aa6a03aba2d37a8a3c5019317f750 — package.json, package-lock.json, and plan.md",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd bf967243e12aa6a03aba2d37a8a3c5019317f750 — plan.md only",
+    "Extracted task 3.1 A/B block and ran `bash -n` — exit 0",
+    "Read measure/tracks/deps_refresh/plan.md:262-335 — reviewed retry condition, setup guards, npm ci handlers, SKIP check, and diff handler",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..bf967243e12aa6a03aba2d37a8a3c5019317f750 — exit 0"
+  ],
+  "changed_files": [
+    "harness/package.json",
+    "harness/package-lock.json",
+    "measure/tracks/deps_refresh/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "No implementation changes are required for the r7 findings. The A/B block was syntax-checked but not run.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "measure/tracks/deps_refresh/plan.md:293-319 handles each npm ci failure and rejects a matching SKIP line."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Extracted task 3.1 A/B block passed `bash -n`; the A/B itself remains unrun as requested."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff between r2 and r8 lists only measure/tracks/deps_refresh/plan.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "HEAD, phase diff, package-file history, and the Bash syntax check were verified with commands."
+    }
+  ]
+}

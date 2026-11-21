@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: test-strategy
+track: deps_refresh
+audited_head_sha: 04239eb7622725034a459faf428074c1328897dc
+strategy_commit: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+strategy_path: measure/tracks/deps_refresh/test-strategy.md
+commit_message: measure(deps_refresh): test strategy
+phase_base_sha: not embedded; orchestrator captures git rev-parse HEAD immediately after this strategy commit, with no other commit in between
+risk: Red low; Green high; Verify medium
+review_a: yes, bounded; audit clearance, tsc compare, residual list, scope guard, no source or fixture change
+review_b: yes; supply chain, advisory handling, lock integrity, no new lifecycle script or tool, Playwright system Chrome, fixture advisories pinned
+review_c: no; no product route, page, endpoint, or input change; only two harness package files
+adversarial: yes, bounded; known-vulnerable version range check and gate mutation probes on copies, no model runs
+ux_browser: no; no user-facing change; conditional e2e spec is a grader smoke gate
+phase_acceptance: yes; Red on task 1.1 evidence, Green on clean audit and two-file scope and commit window, Verify on task 3.1 gates and residual list and safe-push record
+anti_patterns: defended A3 A4 A5 A6 A7 A11 A12 A13 A14 per phase; A1 A8 retired; A2 no publish gate; A9 no archived paths; A10 no generated facts
+falsification: every gate has a named condition that makes it fail; base tsc exit 2 is the expected red aggregate, not a pass
+constraints: no npm install; no package file change; no push; no opencode or openchamber CLI; only test-strategy.md staged and committed; measure/runs/ ignored and not staged
+summary: committed a short risk-based strategy for Red audit and base tsc, Green updates, and Verify gates through heavy-run.sh and safe-push; review gates assigned proportionate to a lock-file chore
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,10 @@
+START 2026-11-21 17:15:57 +0700 CMD: heavy-run.sh -c 'bun test harness/model-guide-tests/review-run.test.ts'
+heavy-run: lock wait over 600 s — priority p2 — holder PID 850651: flock -w 1800 -E 201 /home/daniebo/Desktop/primary-parity-progress/heavy.lock /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh --locked -c set -o pipefail; cd dashboard && CI=true npx vitest run --exclude __tests__/storytime-unit2-sound-stage.test.ts --exclude __tests__/constants.test.ts --exclude __tests__/origins-thai-support.test.ts --exclude __tests__/default-look-new-editions.test.ts 
+bun test v1.3.14 (0d9b296a)
+
+ 130 pass
+ 0 fail
+ 922 expect() calls
+Ran 130 tests across 1 file. [211.06s]
+EXIT=0
+END 2026-11-21 17:47:06 +0700

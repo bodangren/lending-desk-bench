@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "role": "spec-review",
+  "track": "deps_refresh",
+  "phase": "track setup",
+  "baseline_sha": "7319344",
+  "audited_head_sha": "a64e68186883534b8ee6a4ff9136dea5f053e128",
+  "status": "fail",
+  "summary": "F2-F4 are closed. F1 remains open: the baseline type-check rule is measurable but can accept new type errors in files that already had errors.",
+  "blocking_findings": [
+    "F1 [Blocker] spec D6 and plan tasks 1.1 and 3.1: The baseline-error allowance does not prove the dependency refresh introduced no new type errors. Rationale: The check allows any current diagnostics in base-dirty files while their aggregate count stays at or below 210; a new error can replace a removed error and pass. Compare diagnostics by file and error identity against the baseline, or define a narrower explicit acceptance rule that detects new errors in already-dirty files. The current rule is falsifiable but not sufficient as a regression gate."
+  ],
+  "nonblocking_findings": [],
+  "paraphrase": {
+    "proposes": "This track refreshes harness dependencies, clears critical and high advisories, and records reasons for residual advisories. It keeps fixture dependencies pinned to protect benchmark comparability. It adds explicit compatibility checks for Playwright and defers react-doctor 0.9.23 to avoid changing Axis 3 scores mid-cohort.",
+    "current_system": "The harness has no tsconfig or type-check script, and its existing TypeScript check reports 210 baseline errors. Its Playwright configuration uses system Chrome, while harness scoring pins react-doctor 0.9.2. Heavy benchmark gates use harness/ from 02:00 to 06:00."
+  },
+  "evidence": [
+    "HEAD is a64e68186883534b8ee6a4ff9136dea5f053e128, which is the requested revision.",
+    "git diff --name-only 2fb569f..HEAD lists only measure/tracks/deps_refresh/spec.md, plan.md, and spec-review.md.",
+    "F1 remains: spec D6 and plan tasks 1.1 and 3.1 accept an aggregate count up to 210 plus no new diagnostics in base-clean files, but place no per-diagnostic constraint on files already dirty at base.",
+    "The baseline log measure/runs/deps_refresh/tsc-base-7319344.txt records individual TypeScript diagnostics, so an exact diagnostic comparison is available to define a stronger rule.",
+    "F2 withdrawn: plan task 3.3 now assigns push to the orchestrator through safe-push, has no extra approval, and names exception handling for exit codes 2, 3, and 4.",
+    "F3 withdrawn: spec D9 and plan task 3.1 defer react-doctor 0.9.23 with the cohort score reason and specify a Playwright version check plus tests/e2e/probes.spec.ts when @playwright/test moves; they state that system Chrome avoids browser installation.",
+    "F4 withdrawn: spec D7 and plan task 3.1 constrain heavy suites to 22:00-01:30, with late gates resuming the next evening."
+  ],
+  "commands": [
+    {"command":"git rev-parse HEAD","result":"pass; a64e68186883534b8ee6a4ff9136dea5f053e128"},
+    {"command":"git diff --name-only 2fb569f..HEAD","result":"pass; only spec.md, plan.md, and spec-review.md changed"},
+    {"command":"Read baseline type-check diagnostics and amended spec.md and plan.md","result":"pass; F1 rule remains insufficient; F2-F4 withdrawn"}
+  ],
+  "changed_files": ["measure/runs/deps_refresh/spec-review-a64e681.json", "measure/runs/deps_refresh/spec-review-a64e681.log"],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high"
+}

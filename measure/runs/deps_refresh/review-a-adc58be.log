@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: deps_refresh
+phase: Phase 2: Green — the updates and the lock file
+role: review-a
+task: 2.1 r3
+status: fail
+phase_base_sha: b4c2e450067ca65b4282d0178ec087d00fa7a8e6
+role_base_sha: adc58be6b711bd3e2b348a506b5b5539973e538b
+audited_head_sha: adc58be6b711bd3e2b348a506b5b5539973e538b
+blocking_findings: The selected build-track run has a legacy Pi executor. regrade-run.sh exits 0 with SKIP and leaves its score unchanged, so the axes comparison can pass without a regrade.
+nonblocking_findings: none
+evidence: The stored run score and provenance identify track build and executor.pi. regrade-run.sh:29-38 skips Pi runs. The r2 Vite concern is withdrawn because the PM decision and re-score condition are recorded.
+commands: git rev-parse HEAD; git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd adc58be6b711bd3e2b348a506b5b5539973e538b; inspect target provenance and score; inspect harness/regrade-run.sh:29-38; git diff --check
+retry_recommendation: retry_implementation
+handoff: Green: choose a supported stored build run and require proof of a fresh regrade before comparing axes and total.
+route: openai/gpt-6-luna#high
+END_MEASURE_AGENT_RESULT

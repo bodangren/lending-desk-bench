@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "task": "2.1 r4",
+  "status": "fail",
+  "summary": "The prior skip risk is fixed. The new run is eligible and the freshness proof is falsifiable. However, its stored scoring-code hash differs from HEAD, so the score comparison does not isolate the lock update.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "fa3e63713f4f7e6a3fbfe5827fa271943be575c5",
+  "audited_head_sha": "fa3e63713f4f7e6a3fbfe5827fa271943be575c5",
+  "blocking_findings": [
+    "The chosen w43 run is a valid build run with executor kind `opencode`, but its stored `runner_sha256` is 3e5a4c64c9bcd0b30d6143389c8e96b9a80d955681df7b072c394db937ab29ea. Current `harness/provenance.ts --shell` reports runner hash 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0. The stored score was therefore not produced with the same scoring code as HEAD. Regrading also uses the current harness and fixture. A difference cannot be attributed to Vite alone, and equal scores do not prove the lock change had no effect if scoring code changed. Add a same-source, same-fixture baseline-lock versus refreshed-lock comparison, or another method that isolates the lock as the variable, before treating this as the PM's score-comparability condition. Evidence: target artifacts/provenance.json; current `tsx harness/provenance.ts --shell`; plan.md task 3.1 lines 251-288."
+  ],
+  "nonblocking_findings": [],
+  "evidence": [
+    "F1 withdrawn: the selected run is a build-track run with executor kind `opencode`, and regrade-run.sh does not take the legacy Pi skip path for it.",
+    "git rev-parse HEAD returned fa3e63713f4f7e6a3fbfe5827fa271943be575c5, matching the supplied audited HEAD.",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd fa3e63713f4f7e6a3fbfe5827fa271943be575c5 lists only measure/tracks/deps_refresh/plan.md. The package files did not change since r2.",
+    "The target score is valid and rankable, has total 95, and has completion, adversarial, adherence, and quality axes. The score and provenance both identify track build.",
+    "The target provenance has executor.kind `opencode`, fixture revision 2, and non-empty runner and suite hashes. execution-identity.json and executor-cohort.json are non-empty. The candidate directory exists, and candidate-contract.json is valid with no reasons.",
+    "harness/regrade-run.sh:27-50 skips missing-artifact, Pi-executor, and missing-candidate cases. The target has artifacts and a candidate, and its executor kind is opencode, so these skip branches do not apply.",
+    "Plan task 3.1 lines 267-287 requires a REGRADED line, exit 0, a new artifacts.prev directory, graft provenance reason `regrade`, and a no-SKIP check before extracting and diffing the full axes object plus total. These steps address the r3 vacuous-skip risk.",
+    "The target provenance fixture_revision is 2, matching harness/revisions.ts:20. The target score was saved on 2026-11-16, while the provenance runner hash differs from the current runner hash.",
+    "Current runner and suite hashes from `./harness/node_modules/.bin/tsx harness/provenance.ts --shell` are 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0 and cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7. Stored runner and suite hashes are 3e5a4c64c9bcd0b30d6143389c8e96b9a80d955681df7b072c394db937ab29ea and 451652e5e03ee1d3030014c527bff7714740b96a38756853d5fc68276c522ae6.",
+    "The PM's Vite acceptance and re-score condition are recorded under task 2.1 and task 3.1. The re-score was not run."
+  ],
+  "commands": [
+    "git rev-parse HEAD — fa3e63713f4f7e6a3fbfe5827fa271943be575c5",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd fa3e63713f4f7e6a3fbfe5827fa271943be575c5 — measure/tracks/deps_refresh/plan.md only",
+    "./harness/node_modules/.bin/tsx harness/provenance.ts --shell — current runner and suite hashes printed",
+    "Read target run score, provenance, identity, cohort, and contract artifacts — valid build track, opencode executor, total 95, clean contract, candidate present",
+    "Read harness/regrade-run.sh:27-130 — target does not match skip branches; fresh regrade moves old artifacts and writes regrade graft provenance",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..fa3e63713f4f7e6a3fbfe5827fa271943be575c5 — exit 0"
+  ],
+  "changed_files": [
+    "harness/package.json",
+    "harness/package-lock.json",
+    "measure/tracks/deps_refresh/plan.md"
+  ],
+  "test_strategy_violations": [
+    "The re-score compares a stored score from a different runner hash against a score from the current harness. It cannot separate lock effects from scoring-code changes. The plan needs a same-code, same-fixture baseline-lock control or another isolation method."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_implementation",
+  "handoff": "Green: keep the valid no-skip target and freshness checks, but add a comparison that runs the same candidate with the same scoring code and fixture under the baseline lock and refreshed lock. Report the full axes and total for both. The stored w43 runner hash does not match HEAD's scoring code.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/provenance.json identifies a valid build run, but its stored runner hash differs from the current hash."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "measure/tracks/deps_refresh/plan.md:267-287 requires fresh-regrade proof and compares the full axes object, but it does not isolate lock changes from runner changes."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only between r2 and r4 shows only the plan record changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Stored and current runner hashes come from provenance.json and `tsx harness/provenance.ts --shell`."
+    }
+  ]
+}

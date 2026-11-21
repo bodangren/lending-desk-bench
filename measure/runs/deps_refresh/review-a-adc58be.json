@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "task": "2.1 r3",
+  "status": "fail",
+  "summary": "The PM decision is recorded, but the specified re-score target is a legacy Pi run. regrade-run.sh skips it, so the score comparison can pass without regrading.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "adc58be6b711bd3e2b348a506b5b5539973e538b",
+  "audited_head_sha": "adc58be6b711bd3e2b348a506b5b5539973e538b",
+  "blocking_findings": [
+    "The task 3.1 re-score uses `a-deepseek-v4-1-flash-2026w38`, which is a build-track run but has a legacy Pi executor. `harness/regrade-run.sh` detects `executor.pi` and exits 0 with `SKIP` at lines 29-38. The later axes/total comparison can therefore compare the unchanged stored score to its saved copy and pass without regrading. Use a supported non-Pi build run and require evidence that the regrade ran and wrote a fresh score before comparing. Evidence: runs/a-deepseek-v4-1-flash-2026w38/artifacts/provenance.json contains `executor.pi`; the target score says `track: build`; harness/regrade-run.sh:29-38 skips Pi runs."
+  ],
+  "nonblocking_findings": [],
+  "evidence": [
+    "F1 withdrawn: the PM accepted Vite 8.3.8 and recorded a score-comparability condition in plan task 3.1; the r2 objection to the unapproved Vite update no longer applies.",
+    "git rev-parse HEAD returned adc58be6b711bd3e2b348a506b5b5539973e538b, matching the supplied audited HEAD.",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd adc58be6b711bd3e2b348a506b5b5539973e538b lists only measure/tracks/deps_refresh/plan.md; the package files did not change since r2.",
+    "Plan task 2.1 lines 139-143 records the PM decision as `deferred:pm resolved`, quotes the reason, and requires an axis-and-total comparison after regrading.",
+    "Plan task 3.1 lines 251-272 saves the stored score, runs regrade-run.sh, extracts `{axes,total}`, and stops if the diff is non-empty.",
+    "The target provenance at runs/a-deepseek-v4-1-flash-2026w38/artifacts/provenance.json has `track: build` and an `executor.pi` object. The score artifact also records `track: build`.",
+    "harness/regrade-run.sh:29-38 reads the executor and exits 0 with `SKIP ... (legacy Pi executor; artifacts left unchanged)` when provenance has `executor.pi`.",
+    "The plan compares axes and total, covering the target score's completion, adversarial, adherence, and quality axes. However, it does not reject a skipped regrade or require fresh score provenance.",
+    "The planned regrade was not run, as required by the review assignment."
+  ],
+  "commands": [
+    "git rev-parse HEAD — adc58be6b711bd3e2b348a506b5b5539973e538b",
+    "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd adc58be6b711bd3e2b348a506b5b5539973e538b — measure/tracks/deps_refresh/plan.md only",
+    "git diff --name-status b4c2e450067ca65b4282d0178ec087d00fa7a8e6..adc58be6b711bd3e2b348a506b5b5539973e538b — harness package files and plan record",
+    "Read runs/a-deepseek-v4-1-flash-2026w38/artifacts/provenance.json — track build; executor has pi",
+    "Read harness/regrade-run.sh:29-38 — Pi executor exits 0 with SKIP and leaves artifacts unchanged",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..adc58be6b711bd3e2b348a506b5b5539973e538b — exit 0"
+  ],
+  "changed_files": [
+    "harness/package.json",
+    "harness/package-lock.json",
+    "measure/tracks/deps_refresh/plan.md"
+  ],
+  "test_strategy_violations": [
+    "The re-score procedure does not fail on a skipped regrade and can compare stale values. Add a supported build-track run and require fresh score provenance or an explicit no-SKIP result before comparing axes."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_implementation",
+  "handoff": "Green: replace the Pi-backed target with a stored build-track run that regrade-run.sh does not skip. Make task 3.1 fail if regrade prints SKIP or does not write score provenance for the current lock before comparing axes and total.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "harness/regrade-run.sh:37-38 skips the specified target because provenance.json includes executor.pi."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 2,
+      "evidence": "measure/tracks/deps_refresh/plan.md:251-272 compares saved scores but does not detect the regrade-run.sh skip."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only 284ca2a8f6caccd1d1d521e1d0e486266d7dd2cd adc58be6b711bd3e2b348a506b5b5539973e538b lists only the plan update."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The target provenance shows executor.pi, and regrade-run.sh:29-38 defines the skip path."
+    }
+  ]
+}

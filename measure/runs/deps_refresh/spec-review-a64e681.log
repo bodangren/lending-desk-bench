@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: spec-review
+status: complete
+track: deps_refresh
+phase: track setup
+commits: none
+tests_run: git rev-parse HEAD and git diff --name-only 2fb569f..HEAD; reviewed amendments and baseline type-check diagnostic log
+files_changed: measure/runs/deps_refresh/spec-review-a64e681.json; measure/runs/deps_refresh/spec-review-a64e681.log
+plan_updates: none; report-only confirmation review
+known_failures: F1 remains blocking; F2-F4 are closed
+handoff: F1's count cap and base-clean-file check are falsifiable but insufficient. They can accept a new error in a base-dirty file when another diagnostic disappears. Compare baseline diagnostics with current diagnostics by file and error identity, or specify a stricter regression rule. F2-F4 are withdrawn with evidence in the JSON. No other amendment defect or open decision found. This report-only role did not edit spec-review.md or create a commit.
+END_MEASURE_AGENT_RESULT

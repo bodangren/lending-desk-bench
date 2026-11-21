@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: deps_refresh
+phase: Phase 1: Red — record the failing audit
+commits: none
+tests_run: Read-only checks at 116ab89. The saved audit-before-b4c2e45.json shows critical 0, high 6, moderate 7, low 0, total 13 (pass). tsc-base-ids-7319344.txt has 210 lines and sha256 68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e (pass). git merge-base --is-ancestor f420571 HEAD exits 1 (fail). git merge-base --is-ancestor 1fcfd03 HEAD exits 0. No suite ran.
+files_changed: measure/runs/deps_refresh/phase-acceptance-p1-116ab89.json, measure/runs/deps_refresh/phase-acceptance-p1-116ab89.log
+plan_updates: none (gate-only role)
+known_failures: F1 blocker: task 1.1 (plan.md:45) carries f420571, and f420571 is not in the history of main. The commit in history is 1fcfd03.
+handoff: Phase 1 fails at 116ab89a9c9f614c2507985c7d79c0f34ceddc66 (phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6). The Red evidence is true. Replace the task 1.1 token f420571 with 1fcfd03 (or b4c2e45) in one plan commit. Then run Phase 1 acceptance again on the new HEAD. Adversarial testing, Review A, and Review B do not apply to the read-only Red phase. Make the Phase 3 text fixes in the same commit. Then HEAD moves only once.
+verdict: fail
+audited_head_sha: 116ab89a9c9f614c2507985c7d79c0f34ceddc66
+result_file: measure/runs/deps_refresh/phase-acceptance-p1-116ab89.json
+retry_recommendation: retry_implementation
+summary: Phase 1 fails on one blocker (F1, the unreachable task SHA f420571). Every other Phase 1 claim is true at HEAD.
+END_MEASURE_AGENT_RESULT

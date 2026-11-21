@@ -1,0 +1,9 @@
+START 2026-11-21 18:18:34 +0700 CMD: r5 base then new regrade via heavy-run.sh
+START base 2026-11-21 18:18:34 +0700
+base EXIT=4 END 2026-11-21 18:26:35 +0700
+FAIL: base regrade exit 4; tail:
+[a-deepseek-v4-1-flash-2026w43-r1] regrade track=build model=opencode-go/deepseek-v4.1-flash arm=a revision=2 contract=none
+[a-deepseek-v4-1-flash-2026w43-r1] no candidate at /tmp/opencode/deps-ab-r5/base/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate
+[a-deepseek-v4-1-flash-2026w43-r1] grade.sh stopped with exit 2; restoring the previous artifacts
+R5_SCRIPT_EXIT=1
+END 2026-11-21 18:26:35 +0700

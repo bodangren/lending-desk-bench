@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: deps_refresh
+phase: Phase 2: Green — the updates and the lock file
+commits: none
+tests_run: Read-only checks at d67d668. cd harness && npm audit --audit-level=high exit 0 (critical 0, high 0, moderate 5, low 0, total 5; pass). cd harness && npm outdated lists five direct packages with recorded deferrals (pass). cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot exit 0, Test Files 1 passed (1), Tests 8 passed (8) (pass). git diff --name-only fc9ec99 HEAD -- harness/ prints nothing (pass). git diff --name-only 7319344 HEAD -- fixture/ prints nothing (pass). No full suite ran.
+files_changed: measure/runs/deps_refresh/phase-acceptance-p2-d67d668.json, measure/runs/deps_refresh/phase-acceptance-p2-d67d668.log
+plan_updates: none (gate-only role)
+known_failures: none
+handoff: Phase 2 passes at d67d66899c9b3a1d14f0d79c1d8f36bb34179376 (phase_base_sha b4c2e450067ca65b4282d0178ec087d00fa7a8e6). r1 findings F2, F3, and F8 are closed: adversarial testing, Review A, and Review B passed at d67d668. Push d67d668 through safe-push before closeout, because the remote main holds 116ab89.
+verdict: pass
+audited_head_sha: d67d66899c9b3a1d14f0d79c1d8f36bb34179376
+result_file: measure/runs/deps_refresh/phase-acceptance-p2-d67d668.json
+retry_recommendation: none
+summary: Phase 2 passes. The code and lock content pass every re-check, and all three audit results bind to d67d668.
+END_MEASURE_AGENT_RESULT

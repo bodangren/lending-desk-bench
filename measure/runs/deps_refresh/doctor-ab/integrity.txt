@@ -1,0 +1,1 @@
+Candidate hashes and main package hashes stayed unchanged.

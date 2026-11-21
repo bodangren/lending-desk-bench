@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "status": "pass",
+  "summary": "Phase 2 passes acceptance at d67d668. Both r1 blockers are closed: adversarial testing, Review A, and Review B all passed at d67d668. The code and lock content pass every re-check. The audit gate exits 0 with 0 critical, 0 high, and 5 moderate. The pins match the record. The Green commits touch only the two package files. No fixture file changed.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "audited_head_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "baseline_sha": "d67d66899c9b3a1d14f0d79c1d8f36bb34179376",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "HEAD: `git rev-parse HEAD` prints d67d66899c9b3a1d14f0d79c1d8f36bb34179376, equal to the audited HEAD. `git ls-remote origin refs/heads/main` prints 116ab89, so d67d668 is not on the remote yet. `git worktree list` shows three entries (main, lending-desk-bench-daily, lending-desk-bench-p7green). `git status --short` shows only the four original untracked paths.",
+    "r1 closures: F2 is closed, because `adversarial-d67d668.json` has status pass at d67d668. F3 is closed, because `review-a-d67d668.json` and `review-b-d67d668.json` have status pass at d67d668. F8 is closed, because plan.md:147-151 now give the reason for each major: typescript 7.0.2 and vitest 5.1.1 are new majors outside this chore scope, and vitest also stays at 4.1.10 for cohort comparability.",
+    "Audit gate: `cd harness && npm audit --audit-level=high` exits 0 at about 21:06 +07. `npm audit --json` metadata: critical 0, high 0, moderate 5, low 0, info 0, total 5. Names: @vitest/mocker, deslop-js, minimatch, react-doctor, vitest. This matches plan.md task 2.1 and task 3.2. The Red command and the Green command are the same.",
+    "Pins: `git diff b4c2e45 HEAD -- harness/package.json` changes only `@types/node` (26.1.2 to 26.6.6) and `tsx` (4.23.1 to 4.23.15). The pins @playwright/test 1.62.1, axe-core 4.13.0, react-doctor 0.9.2, typescript 5.9.3, and vitest 4.1.10 equal the base. The `test:meta:logic` exclude list is unchanged. No new direct dependency and no new script exist (NFR-4).",
+    "Six former high advisories: `find harness/node_modules` shows one installed copy of each package: brace-expansion 5.0.13, fast-uri 3.1.9, nanoid 3.3.20, source-map-js 1.2.4, vite 8.3.8, and zod 4.6.7. These equal the lock. `adversarial-ranges.json` checks each copy against the original aggregate range and each advisory range. It also shows that the base lock held a vulnerable copy of each package.",
+    "Scope: `git diff --name-only b4c2e45 HEAD` lists the two package files, plan.md, spec.md, and test-strategy.md. `git diff --name-only fc9ec99 HEAD -- harness/` prints nothing. `git diff --name-only 7319344 HEAD -- fixture/` prints nothing. `git show --name-only 161b856 fc9ec99` lists only the two package files for each commit. `git diff --check b4c2e45 HEAD` exits 0.",
+    "Lock integrity: the lock has 423 entries, 422 below the root. Every resolved host is registry.npmjs.org. 0 entries lack an integrity hash or a resolved URL. The `hasInstallScript` count is 3 (esbuild, fsevents, playwright/node_modules/fsevents), down from 4 at the base. The working-tree lock equals the HEAD lock.",
+    "Commit window: 161b856 was committed at 2026-11-21T14:17:53+07:00, and fc9ec99 was committed at 2026-11-21T14:25:03+07:00. All 23 track commits since 7319344 sit outside 02:00-07:00 (FR-6, AC-6).",
+    "Outdated check: `cd harness && npm outdated` lists five direct packages behind latest: @playwright/test 1.65.1, axe-core 4.14.1, react-doctor 0.9.23, typescript 7.0.2, and vitest 5.1.1. Each has a recorded deferral in plan.md task 2.1. No other direct package is behind.",
+    "Quick runner check: `cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot` at 21:07 +07 exits 0 with `Test Files 1 passed (1)` and `Tests 8 passed (8)`. Installed versions: vitest 4.1.10, vite 8.3.8, react-doctor 0.9.2.",
+    "Type-check: plan.md task 2.1 reports `OK: tsc exit 2, 210 error lines, 210 identities`. `gate-3.1-tsc-8437779.log` prints that line with EXIT=0. The adversarial run executed the exact plan block live at 20:48 +07 and printed the same line with block exit 0 (`adversarial-tsc-live.txt`). This acceptance did not re-run tsc, because the shell rules of this role deny the redirection that the block uses.",
+    "Adversarial probes (`adversarial-d67d668.json`, status pass): the base-lock audit gate exits 1 with 6 high and 7 moderate advisories, and the refreshed audit gate exits 0. One synthetic identity makes the exact comparison block exit 1 and print the identity (`adversarial-mutations.txt`). Removing the deslop-js reason fails the written residual rule. The result states that the residual gate is a written review rule and not a repository executable.",
+    "Earlier Review A blockers still hold: package.json keeps axe-core, @playwright/test, and vitest at the base pins (r1 `review-a-618eb0a.json`). The PM accepted vite 8.3.8 with the re-score condition (plan.md:139-143).",
+    "A-patterns: A5 holds for every claim in plan.md task 2.1 (versions, counts, names, scope, commit times, runner check). `grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass'` finds no hit in plan.md. A3, A4, A6, and A7 do not apply, because the exact phase diff changes no contract test, no filter, and no registry row. `measure/tracks.md` lists deps_refresh as pending.",
+    "Prerequisites at d67d668: adversarial `adversarial-d67d668.json` (openai/gpt-6.1-sol#high, pass). Review A `review-a-d67d668.json` (openai/gpt-6.1-sol#high, pass, one nit). Review B `review-b-d67d668.json` (kimi-code-plan-cn/kimi-for-coding, pass, no finding). Each result names audited_head_sha d67d668, and each passes the `audit-result` check. Review C and UX review do not apply (test-strategy.md section 5). Review A and Review B use different families, and this acceptance (claude) differs from Red (muse) and Green (hy).",
+    "Isolation: the adversarial doctor A/B ran `npm ci` only in two isolated worktrees, and that role removed them. `doctor-ab/main-packages-before.sha256` equals `doctor-ab/main-packages-after.sha256`, and the main package hashes equal the HEAD files. The installed versions in the main repository equal the lock. I found no sign of an install in the main repository. No `deps-ab*`, `doctor-ab*`, or `deps-gate*` folder remains in `/home/daniebo/.cache/opencode`.",
+    "Done-when: the PM assignment done-when for this phase holds. `npm audit` in `harness/` shows 0 critical and 0 high. The change touches only the two lock-scope files. The Green commits are on the remote (`git merge-base --is-ancestor fc9ec99 116ab89` exits 0, and the remote main is 116ab89)."
+  ],
+  "commands": [
+    "date; git rev-parse HEAD; git ls-remote origin refs/heads/main; git status --short; git worktree list",
+    "git log --format='%h %H %cI %s' 116ab89..HEAD; git diff --name-only 116ab89 HEAD; git diff 116ab89 d67d668 -- measure/tracks/deps_refresh/{plan.md,spec.md,test-strategy.md}",
+    "cd harness && npm audit --audit-level=high; cd harness && npm audit --json | node -e (read metadata.vulnerabilities and severity names); cd harness && npm outdated",
+    "git diff b4c2e45 HEAD -- harness/package.json; node -e (read devDependencies and the test:meta:logic exclude list from harness/package.json)",
+    "find harness/node_modules (six package.json paths) with node -p (read each version); read adversarial-ranges.json and adversarial-range-probe.cjs",
+    "git diff --name-only b4c2e45 HEAD; git diff --name-only fc9ec99 HEAD -- harness/; git diff --name-only 7319344 HEAD -- fixture/; git log --name-only --format= 7319344..HEAD; git diff --check b4c2e45 HEAD",
+    "node -e (compare git show b4c2e45:harness/package-lock.json with HEAD: hosts, integrity, hasInstallScript, working-tree lock)",
+    "git show --name-only 161b856 fc9ec99; git log --format='%h %cd' --date=format:'%Y-%m-%d %H:%M' 7319344..HEAD",
+    "cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "grep -nE for A5 patterns in plan.md; grep -n deps_refresh measure/tracks.md; git merge-base --is-ancestor fc9ec99 116ab89",
+    "read adversarial-d67d668.json and .log, adversarial-mutations.txt and .py, adversarial-tsc-live.txt, doctor-ab/integrity.txt; cmp doctor-ab/main-packages-before.sha256 main-packages-after.sha256; audit-result check on adversarial-d67d668.json, review-a-d67d668.json, review-b-d67d668.json",
+    "ls -d /home/daniebo/.cache/opencode/{deps-gate,doctor-ab,deps-ab}*"
+  ],
+  "changed_files": [
+    "measure/runs/deps_refresh/phase-acceptance-p2-d67d668.json",
+    "measure/runs/deps_refresh/phase-acceptance-p2-d67d668.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "Phase 2 passes at d67d668. r1 findings F2, F3, and F8 are closed. No nonblocking item remains for this phase. Push d67d668 through safe-push before closeout, because the remote main holds 116ab89. The Phase 3 result at the same HEAD lists three nit items for a record fix.",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "cd harness && npm audit --audit-level=high exits 0 (critical 0, high 0, moderate 5), and one fixed installed copy of each of the six packages exists (adversarial-ranges.json)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The adversarial run shows the base-lock audit exiting 1 and a synthetic identity failing the comparison block (adversarial-mutations.txt), while the residual gate is a written rule only."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --name-only 161b856 fc9ec99 lists only harness/package.json and harness/package-lock.json for each commit."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every Green claim in plan.md task 2.1 matched a re-run command, and all three audit results bind to d67d668."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "openai/gpt-6.1-sol#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "My find over harness/node_modules shows one fixed copy of each of the six packages, and the base-lock audit JSON it saved is byte-identical to audit-before-b4c2e45.json."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.1-sol#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its pass holds on my re-checks (audit exit 0, pins, scope), and its nit F10 is real because plan.md:415-417 counts eight regrades."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "kimi-code-plan-cn/kimi-for-coding",
+      "agreed": true,
+      "score": 5,
+      "evidence": "My lock check gives 422 entries below the root, one host (registry.npmjs.org), 0 missing integrity hashes, and 3 hasInstallScript entries, equal to its figures."
+    }
+  ]
+}

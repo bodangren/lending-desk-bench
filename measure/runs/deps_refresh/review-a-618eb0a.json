@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "deps_refresh",
+  "phase": "Phase 2: Green — the updates and the lock file",
+  "task": "2.1",
+  "status": "fail",
+  "summary": "The package and lock updates pass scope and dependency checks, but axe-core, Playwright, and Vitest updates can change scored probe or suite outcomes within the active cohort.",
+  "phase_base_sha": "b4c2e450067ca65b4282d0178ec087d00fa7a8e6",
+  "role_base_sha": "618eb0a647b9d1eb319cafc4fad010834ccb878c",
+  "audited_head_sha": "618eb0a647b9d1eb319cafc4fad010834ccb878c",
+  "blocking_findings": [
+    "Revert axe-core 4.14.1 to 4.13.0 for score comparability. probes.spec.ts loads axe-core and P.axe-clean is a tier-2 scored probe; axe-core 4.14.0 enables label-content-name-mismatch by default, and later releases fix aria-valid-attr-value behavior. These changes can change which candidate violations are reported. Evidence: harness/tests/e2e/probes.spec.ts:163-192, harness/tests/criteria.ts:129, SCORING.md:87-97, axe-core v4.14.0/v4.14.1 changelog. | CONTEST kept: the pinned checker is part of the scored probe, and the upstream changelog documents score-affecting rule behavior changes.",
+    "Revert @playwright/test 1.65.1 to 1.62.1 for score comparability. Playwright runs scored browser probes and its JSON report is collected into benchmark results; the version check and smoke spec proposed for task 3.1 do not establish equivalent probe outcomes across versions. Evidence: harness/playwright.config.ts:23, harness/tests/e2e/probes.spec.ts:1-3 and 185-193, SCORING.md:38-48. | CONTEST kept: this is a score-driving runner, and no equivalent-results evidence covers the version change.",
+    "Revert Vitest 4.1.12 to 4.1.10 for score comparability. The grading pipeline consumes Vitest JSON outcomes; changing the runner can change candidate suite results and therefore scores. Evidence: harness/tests-track/grade-tests.ts:82-129, harness/tests-track/grade-tests.ts:215-260, harness/vitest.config.ts:26. The targeted meta test proves the refreshed runner starts, not that scored outcomes remain equivalent. | CONTEST kept: the test runner is an input to score calculation, and the recorded quick runner test does not compare outcomes with the old pin."
+  ],
+  "nonblocking_findings": [],
+  "evidence": [
+    "git rev-parse HEAD returned 618eb0a647b9d1eb319cafc4fad010834ccb878c, equal to the supplied role_base_sha and audited_head_sha.",
+    "git diff --name-status b4c2e450067ca65b4282d0178ec087d00fa7a8e6..618eb0a647b9d1eb319cafc4fad010834ccb878c showed harness/package.json, harness/package-lock.json, and the plan record only; Green commit 161b856 changes only the two harness package files.",
+    "The package.json diff keeps exact version pins and does not change scripts or the meta exclude list. No fixture path changed.",
+    "cd harness && npm ls --depth=0 exited 0 and reported all seven direct dependencies at package.json pins.",
+    "cd harness && npm audit --json reported critical 0, high 0, moderate 3, low 0; its exit code was 1 because the default audit threshold includes moderate findings. The three rows are deslop-js, minimatch, and react-doctor, matching the deferred react-doctor chain recorded in plan task 2.1.",
+    "Plan task 2.1 records TypeScript 7.0.2 and Vitest 5.1.1 as deferred new majors because task 3.1 gates have not run; it records react-doctor 0.9.23 deferred due to Axis 3 score changes.",
+    "The Green log records the quick Vitest decode-parity test as one file and eight tests passing; full suites and Playwright gates remain assigned to task 3.1.",
+    "axe-core v4.14.0 changelog states label-content-name-mismatch was enabled by default; axe-core v4.14.1 includes an aria-valid-attr-value fix. Both concern the axe rules or behavior used in the scored probe.",
+    "build-graph blast-radius inspection was not applicable: this diff changes package metadata and the plan, with no TypeScript exported symbols or callers changed."
+  ],
+  "commands": [
+    "git rev-parse HEAD — 618eb0a647b9d1eb319cafc4fad010834ccb878c",
+    "git diff --name-status b4c2e450067ca65b4282d0178ec087d00fa7a8e6..618eb0a647b9d1eb319cafc4fad010834ccb878c — two package files and measure/tracks/deps_refresh/plan.md",
+    "cd harness && npm ls --depth=0 — exit 0",
+    "cd harness && npm audit --json — exit 1; labeled metadata reports 0 critical, 0 high, 3 moderate, 0 low",
+    "git diff --check b4c2e450067ca65b4282d0178ec087d00fa7a8e6..618eb0a647b9d1eb319cafc4fad010834ccb878c — exit 0"
+  ],
+  "changed_files": [
+    "harness/package.json",
+    "harness/package-lock.json",
+    "measure/tracks/deps_refresh/plan.md"
+  ],
+  "test_strategy_violations": [
+    "Task 2.1 refreshes three score-driving tools without establishing score comparability: axe-core changes the scored accessibility probe, while Playwright and Vitest supply browser and candidate-suite outcomes."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "retry_implementation",
+  "handoff": "Green: revert axe-core to 4.13.0, @playwright/test to 1.62.1, and Vitest to 4.1.10, or obtain explicit cohort approval for changed score behavior before proceeding.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "harness/tests/e2e/probes.spec.ts:169-192 uses the updated axe package in the scored P.axe-clean probe."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "measure/tracks/deps_refresh/plan.md:147-155 records a quick Vitest pass, while the score-comparability behavior is untested."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-status shows only the two package files and the planned Measure plan record."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "npm ls exited 0, npm audit --json returned labeled advisory counts, and the axe changelog identifies behavior changes."
+    }
+  ]
+}
