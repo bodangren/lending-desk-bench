@@ -84,7 +84,7 @@ Marker use:
 
 ## Phase 2: Green — the updates and the lock file
 
-- [x] 161b856 2.1 The updates. Update every harness package to the latest
+- [x] fc9ec99 2.1 The updates. Update every harness package to the latest
   version that works. Take minor and patch first. Take a new major
   only when the gates of task 3.1 pass with it. Else keep the old
   major and record its reason in this task. Green makes no source
@@ -100,30 +100,52 @@ Marker use:
   - Verify: `git status --short` shows changes only in the two
     files above.
   - Runs outside 02:00-06:00 (spec D7).
-  - Green record 2026-11-21 14:18 +07. The commit lands in the day.
-    Time is outside 02:00-07:00 (spec D7, FR-6).
-  - Commands run: `npm install`, then `npm audit fix` (no `--force`),
-    then `npm audit --audit-level=high`, then the plan task 3.1
-    type-check block, then one quick vitest file.
-  - Changed direct packages, before to after (exact pins kept):
-    - @playwright/test 1.62.1 to 1.65.1 (minor).
-    - @types/node 26.1.2 to 26.6.6 (minor).
-    - axe-core 4.13.0 to 4.14.1 (minor).
-    - tsx 4.23.1 to 4.23.15 (patch).
-    - vitest 4.1.10 to 4.1.12 (patch).
-  - Unchanged direct packages and reasons:
-    - react-doctor stays 0.9.2. Deferred under spec D9. The 0.9.23
-      bump changes Axis 3 scores mid-cohort. Its moderate advisory
-      stays listed in task 3.2.
+  - Green r2 record 2026-11-21 14:25 +07. The commit lands in the
+    day. Time is outside 02:00-07:00 (spec D7, FR-6). This record
+    supersedes the r1 record after Review A.
+  - Review A failed r1. Source: Review A
+    (openai/gpt-6-luna, `review-a-618eb0a.json`). Finding: axe-core,
+    @playwright/test, and vitest can change scored probe or suite
+    outcomes inside the cohort. The orchestrator ruled on
+    2026-11-21 to restore the three pins.
+  - Commands run in r2: `npm install`, then `npm audit fix` (no
+    `--force`), then `npm audit --audit-level=high`, then `npm audit
+    --json`, then the plan task 3.1 type-check block, then one quick
+    vitest file.
+  - Direct package versions after r2 (exact pins kept):
+    - @playwright/test 1.62.1 (restored from 1.65.1).
+    - @types/node 26.6.6 (kept from 26.1.2 in r1).
+    - axe-core 4.13.0 (restored from 4.14.1).
+    - react-doctor 0.9.2 (unchanged).
+    - tsx 4.23.15 (kept from 4.23.1 in r1).
+    - typescript 5.9.3 (unchanged).
+    - vitest 4.1.10 (restored from 4.1.12).
+  - Reverts and reasons:
+    - axe-core back to 4.13.0. Reason: score comparability within
+      the cohort (Review A, orchestrator 2026-11-21). Neither 4.13.0
+      nor 4.14.1 carries an advisory.
+    - @playwright/test back to 1.62.1. Reason: score comparability
+      within the cohort (Review A, orchestrator 2026-11-21). Neither
+      1.62.1 nor 1.65.1 carries an advisory.
+    - vitest back to 4.1.10. Reason: score comparability within the
+      cohort (Review A, orchestrator 2026-11-21). The high advisories
+      stay fixed through transitive lock updates inside the range
+      that vitest 4.1.10 allows. Ruling 2 did not need vitest 4.1.12
+      for a high advisory. The vitest and @vitest/mocker moderate
+      advisories stay listed below with this reason.
+  - Kept updates and reasons (orchestrator ruling 3): @types/node
+    26.6.6 and tsx 4.23.15 do not touch scored output. Both checks
+    passed, so both stay.
+  - Deferred updates and reasons:
+    - react-doctor stays 0.9.2. Deferred under spec D9. Its 0.9.23
+      bump changes Axis 3 scores mid-cohort.
     - typescript stays 5.9.3. It is the latest 5.x. The 7.0.2 bump
       is a new major. The task 3.1 gates have not run, so 7.0.2 is
       deferred with that reason.
-    - vitest major 5.1.1 is deferred. It is a new major. The patch
-      4.1.12 is taken first. The task 3.1 gates have not run, so
-      5.1.1 is deferred with that reason.
-  - No source edit was needed. Each taken update stayed inside its
-    current major. No package needed a source change.
-  - The six Red high advisories now resolve to fixed versions:
+    - vitest major 5.1.1 is deferred. It is a new major. The task
+      3.1 gates have not run, so 5.1.1 is deferred with that reason.
+  - No source edit was needed. No package needed a source change.
+  - The six Red high advisories still resolve to fixed versions:
     - brace-expansion 5.0.13 (vulnerable 4.0.0-5.0.11).
     - fast-uri 3.1.9 (vulnerable 3.0.0-3.1.8).
     - nanoid 3.3.20 (vulnerable below 3.3.18).
@@ -132,11 +154,16 @@ Marker use:
     - zod 4.6.7 (vulnerable below 4.6.6).
   - Green audit gate. Command: `cd harness && npm audit
     --audit-level=high`. This is the same command as Red. Exit 0.
-    Counts by level from `npm audit --json`: critical 0, high 0,
-    moderate 3, low 0, info 0, total 3. Advisory names: deslop-js,
-    minimatch, react-doctor. All three moderate advisories trace to
-    react-doctor 0.9.2 through deslop-js and minimatch. They are the
-    deferred D9 bump. No critical or high item remains.
+    Counts from `npm audit --json`: critical 0, high 0, moderate 5,
+    low 0, info 0, total 5. Advisory names: @vitest/mocker,
+    deslop-js, minimatch, react-doctor, vitest.
+    - @vitest/mocker and vitest (moderate): vitest stays at 4.1.10
+      for score comparability within the cohort (Review A,
+      orchestrator 2026-11-21). The fix needs vitest 4.1.12.
+    - deslop-js, minimatch, and react-doctor (moderate): react-doctor
+      stays at 0.9.2 under spec D9. The bump to 0.9.23 would change
+      Axis 3 scores mid-cohort.
+    No critical or high item remains.
   - Type-check. The task 3.1 block ran once in the day with default
     paths. Output: `OK: tsc exit 2, 210 error lines, 210 identities`.
     Block exit 0. No new identity versus the base file
@@ -146,16 +173,13 @@ Marker use:
     `measure/runs/deps_refresh/tsc-after-ids.txt`.
   - Quick runner check. Command: `cd harness && npx vitest run
     model-guide-tests/decode-parity.test.ts --configLoader native
-    --maxWorkers=1 --reporter=dot`. Exit 0. Vitest 4.1.12 starts.
-    One test file passed; eight tests passed. No full suite ran.
-    The unit, meta, and bun gates stay in task 3.1 at night.
-  - Playwright. @playwright/test moved 1.62.1 to 1.65.1. Per spec D9
-    the version check and one named e2e spec
-    (`tests/e2e/probes.spec.ts`) through `heavy-run.sh` run in task
-    3.1. The plan does not allow that check in the day, so it is
-    recorded for task 3.1 here. The config uses system Chrome, so no
-    browser download runs.
-  - Scope. Commit 161b856 changes only `harness/package.json` and
+    --maxWorkers=1 --reporter=dot`. Exit 0 with vitest 4.1.10. One
+    test file passed; eight tests passed. No full suite ran. The
+    unit, meta, and bun gates stay in task 3.1 at night.
+  - Playwright. @playwright/test is back at 1.62.1, the base version.
+    The task 3.1 Playwright version check and e2e spec are not
+    needed. No runner move remains to verify.
+  - Scope. Commit fc9ec99 changes only `harness/package.json` and
     `harness/package-lock.json`. No source file, no fixture file, no
     new script, and no new dependency changed. The frozen meta
     exclude list is unchanged. Lock file resolved hosts are only
@@ -163,7 +187,8 @@ Marker use:
     `tech-debt.md`, `harness/wt.txt`,
     `harness/model-guide/data/sets/`) were preserved and never
     staged. This plan record lands in a separate commit, so the SHA
-    on this line is the implementation commit, not its own commit.
+    on the task line is the implementation commit, not its own
+    commit.
 
 ## Phase 3: Verify — gates, counts, residuals, push
 
