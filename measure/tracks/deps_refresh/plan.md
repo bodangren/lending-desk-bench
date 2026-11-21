@@ -451,7 +451,7 @@ Marker use:
     `/home/daniebo/.cache/opencode/` or `/tmp/opencode/`. All
     result files stay under `measure/runs/deps_refresh/`, including
     `rescore-ab/r8/` with the six score files.
-- [ ] 3.2 The after-audit counts and the residual list. Run
+- [x] 8437779 3.2 The after-audit counts and the residual list. Run
   `npm audit` in `harness/` and record the counts by level. List
   each remaining moderate or low advisory with its reason: no
   upstream fix, a deferred breaking major from task 2.1, or the
@@ -461,6 +461,29 @@ Marker use:
     matching row here with a reason.
   - Verify: `git diff --name-only` of the Green commit shows no
     `fixture/` path.
+  - Verify record 2026-11-21 19:24 +07. Command: `cd harness &&
+    npm audit --json`. Counts by level: critical 0, high 0,
+    moderate 5, low 0, info 0, total 5. Advisory names:
+    @vitest/mocker, deslop-js, minimatch, react-doctor, vitest.
+    `cd harness && npm audit --audit-level=high` exits 0.
+  - Residual list, one row per moderate advisory:
+    - @vitest/mocker (moderate, range <=4.1.11): vitest stays at
+      4.1.10 for score comparability within the cohort (Review A
+      r1, orchestrator 2026-11-21). The fix needs vitest 4.1.12.
+    - vitest (moderate, range 2.1.0-beta.1-4.1.10): same reason.
+      The patch to 4.1.12 stays deferred during the active
+      cohort.
+    - deslop-js (moderate, range all versions): react-doctor stays
+      at 0.9.2 under spec D9. The fix needs react-doctor 0.9.23.
+    - minimatch (moderate, range 7.0.0-11.0.0): same reason. The
+      0.9.23 bump changes Axis 3 scores mid-cohort.
+    - react-doctor (moderate, range 0.2.3-0.9.12): same reason
+      under spec D9.
+    No low advisory remains. No critical or high advisory remains.
+  - Scope. `git diff --name-only b4c2e45 HEAD` lists only
+    `harness/package.json`, `harness/package-lock.json`, and the
+    two Measure plan files. No `fixture/` path appears. No source
+    file changed in this track.
 - [ ] 3.3 The push. Commit the Green change and push it. The commit
   lands outside 02:00-07:00 local time. This task records the commit
   SHA, the commit timestamp, and the push date.
