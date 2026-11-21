@@ -20,6 +20,11 @@ const SESSION = "ses_p4f";
 const SET = "mg-synthetic-p4f";
 const FINDING = "d-01#C0a1b2c3d4e5f";
 const TOKENS = { input: 3, output: 5, reasoning: 7, cache: { read: 11, write: 13 } };
+const ZERO_TOKENS = { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } };
+const LARGE_TOKENS = {
+  input: 1000000000000000, output: 1000000000000000, reasoning: 500000000000,
+  cache: { read: 500000000000, write: 500000000000 },
+};
 type Kind = "review" | "judge";
 type Message = Record<string, any>;
 type Request = { method: string; path: string; body: any; at: number };
@@ -424,5 +429,101 @@ describe.each<Kind>(["review", "judge"])("P4F %s live runner", (kind) => {
     expect(result.stdout + result.stderr).not.toContain(key);
     refused(f);
     expect(files(f.root).filter((file) => readFileSync(file, "utf8").includes(key))).toEqual([]);
+  }, 40_000);
+
+  // Risk cases for the Green r9 token sum (remediation a05a0f4). Each case
+  // runs the real shell entry point against a synthetic message page.
+  it("P4G-1 counts a repeated message id in one page once", async () => {
+    const first = tool(kind, 1), second = tool(kind, 2), final = assistant(answer(kind));
+    const f = await fixture(kind, { pages: [{ messages: [final, first, first, second] }] });
+    expect((await f.run()).status).toBe(0);
+    accepted(f, kind);
+    expect(f.records()[0].tokens, "A repeated id doubled the token sum.").toEqual({
+      input: 9, output: 15, reasoning: 21, cache_read: 33, cache_write: 39, total: 117,
+    });
+    expect(f.records()[0].tokens_complete).toBe(true);
+  }, 40_000);
+
+  it("P4G-2 counts tokens from the final page when an id repeats across pages", async () => {
+    const early = tool(kind, 1);
+    early.tokens = { input: 1, output: 1, reasoning: 1, cache: { read: 1, write: 1 } };
+    const f = await fixture(kind, { pages: [
+      { messages: [early] },
+      { messages: [assistant(answer(kind)), tool(kind, 1), tool(kind, 2)] },
+    ] });
+    expect((await f.run()).status).toBe(0);
+    expect(f.served).toHaveLength(2);
+    accepted(f, kind);
+    expect(f.records()[0].tokens, "An earlier page leaked token use into the sum.").toEqual({
+      input: 9, output: 15, reasoning: 21, cache_read: 33, cache_write: 39, total: 117,
+    });
+    expect(f.records()[0].tokens_complete).toBe(true);
+  }, 40_000);
+
+  it("P4G-3 counts a finishless step with tokens beside the terminal step", async () => {
+    const terminal = assistant(answer(kind), { id: "msg_terminal" });
+    const finishless = assistant(answer(kind, true), {
+      id: "msg_finishless", finish: undefined,
+      time: { created: START + 5, completed: START + 6 },
+      tokens: { input: 2, output: 4, reasoning: 6, cache: { read: 8, write: 10 } },
+    });
+    const f = await fixture(kind, { pages: [{ messages: [terminal, finishless] }] });
+    expect((await f.run()).status).toBe(0);
+    accepted(f, kind);
+    expect(f.records()[0].tokens, "A step without finish lost its token use.").toEqual({
+      input: 5, output: 9, reasoning: 13, cache_read: 19, cache_write: 23, total: 69,
+    });
+    expect(f.records()[0].tokens_complete).toBe(true);
+  }, 40_000);
+
+  it("P4G-4 zeroes partial token keys and clears tokens_complete", async () => {
+    const partial = tool(kind, 1);
+    partial.tokens = { input: 4, output: 6 };
+    const f = await fixture(kind, { pages: [{ messages: [assistant(answer(kind)), partial] }] });
+    expect((await f.run()).status).toBe(0);
+    accepted(f, kind);
+    expect(f.records()[0].tokens, "A partial token bundle was summed incorrectly.").toEqual({
+      input: 7, output: 11, reasoning: 7, cache_read: 11, cache_write: 13, total: 49,
+    });
+    expect(f.records()[0].tokens_complete, "Partial keys were reported as complete.").toBe(false);
+  }, 40_000);
+
+  it("P4G-5 keeps complete telemetry for an all-zero token bundle", async () => {
+    const f = await fixture(kind, { pages: [{ messages: [assistant(answer(kind), { tokens: ZERO_TOKENS })] }] });
+    expect((await f.run()).status).toBe(0);
+    accepted(f, kind);
+    expect(f.records()[0].tokens).toEqual({
+      input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0, total: 0,
+    });
+    expect(f.records()[0].tokens_complete, "A valid zero bundle was marked incomplete.").toBe(true);
+  }, 40_000);
+
+  it("P4G-6 sums large safe integers exactly", async () => {
+    const first = tool(kind, 1), second = tool(kind, 2);
+    first.tokens = LARGE_TOKENS;
+    second.tokens = LARGE_TOKENS;
+    const final = assistant(answer(kind), { tokens: LARGE_TOKENS });
+    const f = await fixture(kind, { pages: [{ messages: [final, first, second] }] });
+    expect((await f.run()).status).toBe(0);
+    accepted(f, kind);
+    expect(f.records()[0].tokens, "Large safe integers lost precision.").toEqual({
+      input: 3000000000000000, output: 3000000000000000,
+      reasoning: 1500000000000, cache_read: 1500000000000, cache_write: 1500000000000,
+      total: 6004500000000000,
+    });
+    expect(f.records()[0].tokens_complete).toBe(true);
+  }, 40_000);
+
+  it("P4G-7 clears tokens_complete for an unsafe integer field", async () => {
+    const final = assistant(answer(kind), { tokens: {
+      input: 1e20, output: 5, reasoning: 7, cache: { read: 11, write: 13 },
+    } });
+    const f = await fixture(kind, { pages: [{ messages: [final] }] });
+    expect((await f.run()).status).toBe(0);
+    accepted(f, kind);
+    expect(f.records()[0].tokens, "An unsafe integer corrupted the sum.").toEqual({
+      input: 0, output: 5, reasoning: 7, cache_read: 11, cache_write: 13, total: 36,
+    });
+    expect(f.records()[0].tokens_complete, "An unsafe integer was reported as complete.").toBe(false);
   }, 40_000);
 });
