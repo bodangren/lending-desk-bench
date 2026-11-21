@@ -248,45 +248,60 @@ Marker use:
       plus one named e2e spec (`tests/e2e/probes.spec.ts`) through
       `heavy-run.sh`. The config uses system Chrome, so no browser
       download runs.
-    - Re-score one stored run with the new lock (PM 2026-11-21
-      vite condition). The run is
-      `runs/a-deepseek-v4-1-flash-2026w43-r1`. It qualifies: build
-      track, executor kind `opencode` (no Pi skip), valid score with
-      model and arm on record, non-empty execution identity and
-      executor cohort, clean contract, and a candidate tree. Every
-      frozen-cohort run is Pi-backed, so no frozen run qualifies.
-      Run it through `heavy-run.sh` in the 22:00-01:30 window, one
-      at a time like the other gates:
-      - Save the stored score first: `cp
-        runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/score.json
-        measure/runs/deps_refresh/rescore-before.json`.
-      - Re-score: `HEAVY_MIN_AVAIL_MB=1500
-        /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh
-        -c './harness/regrade-run.sh
-        a-deepseek-v4-1-flash-2026w43-r1'`.
-      - Prove a fresh regrade before the compare. The regrade output
-        holds the line `[a-deepseek-v4-1-flash-2026w43-r1] REGRADED
-        total=...` and exits 0. A new
-        `runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-<stamp>/`
-        directory exists after the run. The new
-        `artifacts/graft-provenance.json` has reason "regrade". Any
-        SKIP line or missing proof fails the check. The track stops
-        and the orchestrator reports to the PM.
-      - Extract the full axes object plus total from the stored score
-        (`artifacts.prev-<stamp>/score.json` or
-        `rescore-before.json`) and from the new
-        `runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/score.json`:
-        `node -e 'const fs=require("node:fs"); const
-        s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
-        process.stdout.write(JSON.stringify({axes:s.axes,
-        total:s.total},null,2)+"\n");' <in> > <out>`.
-        The extract covers every axis key, not a chosen subset. Write
-        the two extracts to
-        `measure/runs/deps_refresh/rescore-before-axes.json` and
-        `measure/runs/deps_refresh/rescore-after-axes.json`, then
-        `diff` them. The diff must print nothing.
-      - A difference in any axis score or in total stops the track.
-        The orchestrator reports to the PM.
+    - Re-score as a same-code A/B at one commit (PM 2026-11-21
+      vite condition). HEAD at check time is the only code. The
+      lock is the only variable. The run is
+      `runs/a-deepseek-v4-1-flash-2026w43-r1`: build track, executor
+      kind `opencode`, valid score, candidate tree present.
+      1. Make two worktrees of HEAD under `/tmp/opencode/deps-ab/`:
+         `git worktree add --detach /tmp/opencode/deps-ab/base HEAD`
+         and `git worktree add --detach /tmp/opencode/deps-ab/new
+         HEAD`. In `base`, put the base lock: `git -C
+         /tmp/opencode/deps-ab/base show
+         b4c2e45:harness/package-lock.json >
+         harness/package-lock.json`, and the base
+         `harness/package.json` the same way. In `new`, keep HEAD
+         files.
+      2. In each worktree, run `npm ci` in `harness/` and `npm ci`
+         in `fixture/` (the fixture lock is pinned and unchanged).
+         Grading needs both trees: `harness/grade.sh` runs vitest,
+         playwright, and tsx from `harness/node_modules`, and it
+         copies `fixture/node_modules` into the candidate when the
+         candidate copy is missing. The browser is system Chrome
+         (`/usr/bin/google-chrome`) through `channel: "chrome"`;
+         no browser install runs. Copy the stored run read-only:
+         `cp -a <repo>/runs/a-deepseek-v4-1-flash-2026w43-r1
+         <worktree>/runs/`. The stored run in the main repo is
+         never touched.
+      3. In each worktree, run the regrade through `heavy-run.sh`,
+         one after the other, never in parallel:
+         `HEAVY_MIN_AVAIL_MB=1500
+         /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh
+         -c 'cd <worktree> && ./harness/regrade-run.sh
+         a-deepseek-v4-1-flash-2026w43-r1'`. Keep the proof for
+         each: the `REGRADED total=...` line, exit 0, a new
+         `runs/<id>/artifacts.prev-<stamp>/` directory, and
+         `artifacts/graft-provenance.json` with reason "regrade".
+         Any SKIP line or missing proof fails the check. The track
+         stops and the orchestrator reports to the PM.
+      4. Check that both worktrees report the same runner hash:
+         `./harness/node_modules/.bin/tsx harness/provenance.ts
+         --shell` prints runner and suite hashes. The runner hashes
+         must match. `npm ls --depth=0` in each `harness/` differs
+         only by the lock.
+      5. Compare the full axes object and total of
+         `base/runs/<id>/artifacts/score.json` against
+         `new/runs/<id>/artifacts/score.json`. Identical means pass.
+         Any difference stops the track. The orchestrator reports to
+         the PM with both files.
+      6. Copy both score files and the logs to
+         `measure/runs/deps_refresh/rescore-ab/`. The worktrees
+         under `/tmp/opencode/deps-ab/` stay until the orchestrator
+         asks Daniel about removal (deletion gate). `git worktree
+         list` records them.
+      - Window: 22:00-01:30 like the other gates. The A/B that does
+        not finish by 01:30 stops and resumes the next evening.
+        Cost: two `npm ci` runs plus two regrades.
   - Files: none.
   - Verify: every command exits 0, except the type-check, which
     passes under its no-new-errors rule. The log of each run sits
