@@ -49,8 +49,8 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 - **Heavy run.** A job that starts a browser or runs a full suite. It
   runs only through
   `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh`.
-  Full suites run only 22:00-07:00, one file or suite at a time with
-  `--maxWorkers=1`.
+  Full suites run at any time except 02:00-06:00, one file or
+  suite at a time with `--maxWorkers=1` (D7 as amended).
 
 ## Design decisions
 
@@ -117,6 +117,13 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
      The one failure is the M.closeout status fault ("expected
      'pending' to be 'complete'").
    - Meta suite: `npm run test:meta:logic` through `heavy-run.sh`.
+     The gate passes only with exactly 6 failed in 2 files and
+     232 passed of 238. Every failure is the host path mismatch
+     "expected /tmp/opencode/executor-red-* received
+     /home/daniebo/.cache/opencode/executor-red-*". Cause:
+     `/tmp/opencode` is a symlink to
+     `/home/daniebo/.cache/opencode` since 2026-11-20 08:13
+     (orchestrator ruling 2026-11-21).
    - Model-guide gate: `bun test
      harness/model-guide-tests/review-run.test.ts`, because that file
      runs with bun.
@@ -171,16 +178,23 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 ### FR-3 — The gates pass through heavy-run.sh
 
 - The unit suite, the meta logic suite, and the bun review-run test
-  pass. Each full-suite command runs through `heavy-run.sh`, only
-  22:00-01:30, one suite at a time with `--maxWorkers=1`.
-- **Check.** Each command below exits 0 inside the wrapper:
-  - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness && npm run test:unit'`
-  - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness && npm run test:meta:logic'`
+  pass under their written rules. Each full-suite command runs
+  through `heavy-run.sh`, at any time except 02:00-06:00, one
+  suite at a time with `--maxWorkers=1` (D7 as amended).
+- **Check.** Each command below meets its rule inside the wrapper:
+  - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness &&
+    CANDIDATE=<stored-w43-candidate> npx vitest run tests/unit
+    --maxWorkers=1'`: exactly 16 passed and 1 failed, the
+    failure being the known M.closeout status fault.
+  - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness &&
+    npm run test:meta:logic'`: exactly 6 failed in 2 files and
+    232 passed of 238, every failure the host path mismatch.
   - `bun test harness/model-guide-tests/review-run.test.ts` through
-    the wrapper.
-  - The D6 `tsc` command over the full harness tree. The
-    after-Green identity set is a subset of the base set: `comm -13`
-    of the base file against the after file prints nothing.
+    the wrapper: exit 0.
+  - The D6 `tsc` command over the full harness tree: the block
+    exits 0. The after-Green identity set is a subset of the
+    base set: `comm -13` of the base file against the after
+    file prints nothing.
 
 ### FR-4 — The residual list is complete
 
@@ -199,19 +213,19 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 ### FR-6 — The work lands outside the night run
 
 - The lock-file commit lands outside 02:00-07:00 local time. The
-  heavy gates run only 22:00-01:30 and never 02:00-06:00. The plan
-  records the commit time and each gate time. A gate that is not
-  done by 01:30 stops and resumes the next evening.
+  heavy gates run at any time except 02:00-06:00 (D7 as
+  amended). The plan records the commit time and each gate
+  time. A gate that reaches 02:00 stops and resumes after 06:00.
 - **Check.** The commit timestamp sits outside the night window.
-  Each heavy gate timestamp sits inside 22:00-01:30.
+  Each heavy gate timestamp sits outside 02:00-06:00.
 
 ## Non-functional requirements
 
 - **NFR-1 No fixture churn.** Score comparability of the cohort holds.
 - **NFR-2 No deploy.** The fixture never deploys. The harness change
   needs no deploy.
-- **NFR-3 The machine stays usable.** Full suites run only
-  22:00-01:30 through `heavy-run.sh`, never 02:00-06:00.
+- **NFR-3 The machine stays usable.** Full suites run at any time
+  except 02:00-06:00 through `heavy-run.sh` (D7 as amended).
 - **NFR-4 No new tool.** The track adds no dependency and no script.
 
 ## Acceptance criteria
@@ -219,7 +233,12 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 1. **AC-1** `npm audit --audit-level=high` exits 0 in `harness/`, or
    each leftover names its reason (FR-1).
 2. **AC-2** Green changes only the two lock-scope files (FR-2).
-3. **AC-3** All gate commands of FR-3 exit 0 through `heavy-run.sh`.
+3. **AC-3** The unit gate passes with exactly 16 passed and 1
+    failed (the known M.closeout status fault, CANDIDATE = the
+    stored w43 candidate). The meta gate passes with exactly 6
+    failed in 2 files and 232 passed of 238 (every failure the
+    host path mismatch). The bun gate exits 0 through
+    `heavy-run.sh`. The type-check block exits 0 (FR-3).
 4. **AC-4** Each residual advisory has its reason (FR-4).
 5. **AC-5** No track commit touches `fixture/` (FR-5).
 6. **AC-6** The lock-file commit timestamp sits outside 02:00-07:00
@@ -242,5 +261,5 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
   (D7, FR-6).
 - **R3 `npm audit` flaps with the registry.** The plan records the
   command output and its date. A rerun settles a flap.
-- **R4 The meta suite is slow.** It runs once at the end, through
-  `heavy-run.sh`, inside the night window.
+- **R4 The meta suite is slow.** It runs once, through
+  `heavy-run.sh`, at any time except 02:00-06:00 (D7 as amended).

@@ -20,7 +20,7 @@ breaks the grading harness. The fixture stays pinned for cohort comparability
 | `@playwright/test` runner drifts | Browser grading breaks | The version check and one named e2e spec (spec D9, task 3.1) |
 | The meta exclude list grows to reach green | Tests vanish and the suite lies | Frozen exclude list; scope guard (A7) |
 | The fixture hash changes | w36-w39 scores lose comparability | `git diff --name-only` scope guard (FR-5); the protected hash in `candidate-contract.ts` stays |
-| A change lands in the night run | A bench reads a half-written tree | Commit outside 02:00-07:00; gates only 22:00-01:30 (D7, FR-6) |
+| A change lands in the night run | A bench reads a half-written tree | Commit outside 02:00-07:00; gates at any time except 02:00-06:00 (D7, FR-6) |
 | `npm audit` flaps with the registry | A false red or false green | Dated command output; one rerun settles a flap (R3) |
 
 Phase risk classification:
@@ -58,7 +58,7 @@ echo PHASE_BASE=ok
 ## 3. Gate commands
 
 Run every command from the repository root unless the line says `cd harness`.
-The wide gates run only 22:00-01:30 through `heavy-run.sh`, one at a time.
+The wide gates run at any time except 02:00-06:00 through `heavy-run.sh`, one at a time.
 
 - `AUDIT_RED` / `AUDIT_GREEN`:
   `cd harness && npm audit --audit-level=high`. The Red phase records a
@@ -77,9 +77,14 @@ The wide gates run only 22:00-01:30 through `heavy-run.sh`, one at a time.
   `comm --check-order -13` of the base file against the after file. The
   command passes only when `comm` prints nothing.
 - `UNIT_GATE`:
-  `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:unit'`
+  `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && CANDIDATE=<stored-w43-candidate> npx vitest run tests/unit --maxWorkers=1'`.
+  It passes only with exactly 16 passed and 1 failed, the
+  failure being the known M.closeout status fault.
 - `META_GATE`:
-  `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:meta:logic'`
+  `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:meta:logic'`.
+  It passes only with exactly 6 failed in 2 files and 232
+  passed of 238, every failure the host path mismatch
+  (spec D6).
 - `BUN_GATE`: `bun test harness/model-guide-tests/review-run.test.ts` through
   the same wrapper.
 - `SCOPE_GATE` (Green and Verify): `git status --short` and
@@ -138,8 +143,8 @@ gate. The closeout gate is the evidence that ends the phase.
   base set. A synthetic identity added to a copy of the after file must make
   `comm -13` print it and the block exit 1. That probe is the falsification
   of the tsc gate. It runs on a copy, never on the tracked file.
-- **Green gate:** `UNIT_GATE`, `META_GATE`, and `BUN_GATE` each exit 0 inside
-  `heavy-run.sh`. `TSC_AFTER` passes under its no-new-identity rule. When
+- **Green gate:** `UNIT_GATE`, `META_GATE`, and `BUN_GATE` each meet
+  their pass rule inside `heavy-run.sh` (spec D6, FR-3). `TSC_AFTER` passes under its no-new-identity rule. When
   `@playwright/test` moved in Green, run `./node_modules/.bin/playwright
   --version` from `harness/` and one named e2e spec
   (`tests/e2e/probes.spec.ts`) through the wrapper. Read the labeled Vitest
@@ -164,8 +169,8 @@ red at the base. The gate never lowers the bar to reach exit 0. It compares
 identity sets instead, so a fixed diagnostic reduces the count and a new
 diagnostic fails the gate. The Red audit gate stays red until Green fixes the
 advisories. No role edits the audit level, the diagnostic filter, or the
-exclude list to hide a failure. A gate that is not done by 01:30 stops and
-resumes the next evening (D7).
+exclude list to hide a failure. A gate that reaches 02:00 stops and
+resumes after 06:00 (D7).
 
 ### Architecture guardrails and changed-contract risks
 

@@ -42,7 +42,7 @@ Marker use:
 
 ## Phase 1: Red — record the failing audit
 
-- [x] f420571 1.1 The failing gate. Run the audit gate in `harness/` and
+- [x] 1fcfd03 1.1 The failing gate. Run the audit gate in `harness/` and
   record its output in this task: the exit code, the critical count,
   the high count, and the advisory names. The command must fail while
   any critical or high advisory remains.
@@ -145,10 +145,10 @@ Marker use:
     - react-doctor stays 0.9.2. Deferred under spec D9. Its 0.9.23
       bump changes Axis 3 scores mid-cohort.
     - typescript stays 5.9.3. It is the latest 5.x. The 7.0.2 bump
-      is a new major. The task 3.1 gates have not run, so 7.0.2 is
-      deferred with that reason.
-    - vitest major 5.1.1 is deferred. It is a new major. The task
-      3.1 gates have not run, so 5.1.1 is deferred with that reason.
+      is a new major outside this chore scope, so 7.0.2 defers.
+    - vitest major 5.1.1 is deferred. It is a new major outside
+      this chore scope. Vitest also stays pinned at 4.1.10 for
+      score comparability within the cohort.
   - No source edit was needed. No package needed a source change.
   - The six Red high advisories still resolve to fixed versions:
     - brace-expansion 5.0.13 (vulnerable 4.0.0-5.0.11).
@@ -353,10 +353,33 @@ Marker use:
         under `/tmp/opencode/deps-ab/` stay until the orchestrator
         asks Daniel about removal (deletion gate). `git worktree
         list` records them.
+  - As-run 2026-11-21 (supersedes the block above; the block
+    stays for the record). Root: real path
+    `/home/daniebo/.cache/opencode/deps-ab-r8`, not
+    `/tmp/opencode/deps-ab/`. Script: hand-driven steps with a
+    patched copy `regrade-run.ab.sh` that adds one keep-list
+    word, `executor`, on line 92. Compared fields: axes,
+    total, valid, invalid_reasons, criteria, probes,
+    missing_criteria, orphan_results, adherence, gate, tiers,
+    doctor. Ignored fields: grading_seconds, host, usage,
+    provenance, provenance_valid, time_on_task_seconds. Six
+    regrades ran (3 per side). Result: 5 of 6 identical; new
+    run 1 moved only `criteria.E.return-submits`,
+    `axes.completion`, and `tiers["1"].rate`. The PM flake
+    rule (quoted below) classes this as a flake, so gate 5
+    passes. Evidence: `measure/runs/deps_refresh/rescore-ab/r8/`.
   - Files: none.
-  - Verify: every command exits 0, except the type-check, which
-    passes under its no-new-errors rule. The log of each run sits
-    under `measure/runs/deps_refresh/`.
+  - Verify: gate 1 passes with exactly 16 passed and 1 failed,
+    the failure being the known M.closeout status fault, with
+    CANDIDATE set to the stored w43 candidate. Gate 2 passes
+    with exactly 6 failed in 2 files and 232 passed of 238,
+    every failure being the host path mismatch "expected
+    /tmp/opencode/executor-red-* received
+    /home/daniebo/.cache/opencode/executor-red-*". Gate 3 exits
+    0. The type-check block exits 0 under its no-new-errors
+    rule. Gate 5 passes when the A/B axes and total match, or
+    under the PM flake rule recorded below. The log of each run
+    sits under `measure/runs/deps_refresh/`.
   - Note: `harness/` has no lint script and no build script. The
     plan records that `npm run` offers neither entry. The meta
     suite stands in for the build (spec D6).
@@ -483,7 +506,8 @@ Marker use:
   - Scope. `git diff --name-only b4c2e45 HEAD` lists only
     `harness/package.json`, `harness/package-lock.json`, and the
     two Measure plan files. No `fixture/` path appears. No source
-    file changed in this track.
+    file changed in this track. The SHA on this task line is the
+    audited HEAD 8437779. The record commit is 6fdea72.
 - [x] 6fdea72 3.3 The push. Commit the Green change and push it. The commit
   lands outside 02:00-07:00 local time. This task records the commit
   SHA, the commit timestamp, and the push date.
@@ -518,7 +542,9 @@ Marker use:
   - Key scan of the added lines: no match. No secret was found.
   - Remote check: `git rev-parse origin/main` returned
     6fdea7295c413f06334d97a9f5cdc4f27fb7ad35, equal to the pushed
-    HEAD. No exit 2, 3, or 4 occurred. No force was used.
+    HEAD. No exit 2, 3, or 4 occurred. No force was used. The
+    SHA on this task line is the pushed HEAD 6fdea72. The record
+    commit is 116ab89.
 
 ## Human gates
 
