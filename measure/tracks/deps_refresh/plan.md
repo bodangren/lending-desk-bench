@@ -136,6 +136,11 @@ Marker use:
   - Kept updates and reasons (orchestrator ruling 3): @types/node
     26.6.6 and tsx 4.23.15 do not touch scored output. Both checks
     passed, so both stay.
+  - Decision deferred:pm resolved (PM 2026-11-21): vite 8.3.8
+    accepted in the vitest scoring path; condition in task 3.1. PM
+    reason: "it fixes a high advisory, it is a minor bump inside
+    the range vitest 4.1.10 allows, and the board is frozen since
+    11-16, so no live cohort moves."
   - Deferred updates and reasons:
     - react-doctor stays 0.9.2. Deferred under spec D9. Its 0.9.23
       bump changes Axis 3 scores mid-cohort.
@@ -243,6 +248,28 @@ Marker use:
       plus one named e2e spec (`tests/e2e/probes.spec.ts`) through
       `heavy-run.sh`. The config uses system Chrome, so no browser
       download runs.
+    - Re-score one stored cohort run with the new lock (PM 2026-11-21
+      vite condition). Run it through `heavy-run.sh` in the
+      22:00-01:30 window, one at a time like the other gates:
+      - Save the stored score first: `cp
+        runs/a-deepseek-v4-1-flash-2026w38/artifacts/score.json
+        measure/runs/deps_refresh/rescore-before.json`.
+      - Re-score: `HEAVY_MIN_AVAIL_MB=1500
+        /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh
+        -c './harness/regrade-run.sh
+        a-deepseek-v4-1-flash-2026w38'`.
+      - Extract axes plus total from the before file and from the new
+        `runs/a-deepseek-v4-1-flash-2026w38/artifacts/score.json`:
+        `node -e 'const fs=require("node:fs"); const
+        s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+        process.stdout.write(JSON.stringify({axes:s.axes,
+        total:s.total},null,2)+"\n");' <in> > <out>`.
+        Write the two extracts to
+        `measure/runs/deps_refresh/rescore-before-axes.json` and
+        `measure/runs/deps_refresh/rescore-after-axes.json`, then
+        `diff` them. The diff must print nothing.
+      - A difference in any axis score or in total stops the track.
+        The orchestrator reports to the PM.
   - Files: none.
   - Verify: every command exits 0, except the type-check, which
     passes under its no-new-errors rule. The log of each run sits
