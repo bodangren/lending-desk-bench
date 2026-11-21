@@ -94,10 +94,18 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
      nodenext --moduleResolution nodenext --target es2022 --strict
      $(git ls-files 'harness/*.ts')`.
      At the base commit `7319344` this command exits 2 with 210
-     errors across the 157 tracked harness files (log:
-     `measure/runs/deps_refresh/tsc-base-7319344.txt`). Green passes
-     when the error count does not rise above 210 and no file that
-     was clean at base shows a new error.
+     unique diagnostics (file: `measure/runs/deps_refresh/`
+     `tsc-base-ids-7319344.txt`). Green passes only when the
+     diagnostic set after Green is a subset of the base set: no new
+     identity appears. Fewer errors are allowed. Each identity is
+     `<file>:<line>:<col> TS<code>`, made with:
+     `tsc ... 2>&1 | grep -oE
+     '^[^(]+\([0-9]+,[0-9]+\): error TS[0-9]+' | sort -u > file`.
+     The compare is `comm -13` of the base file against the after
+     file; it must print nothing. Green touches no source file, so
+     lines do not move. When Green names a source change first, the
+     identity drops line and col and keeps file, code, and message
+     text instead.
    - Build: none exists. The harness is TypeScript source run with
      `tsx`. The meta suite through `heavy-run.sh` stands in for it.
    - Unit tests: `npm run test:unit` (`vitest run tests/unit`).
@@ -154,9 +162,9 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
   - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness && npm run test:meta:logic'`
   - `bun test harness/model-guide-tests/review-run.test.ts` through
     the wrapper.
-  - The D6 `tsc` command over the full harness tree. The error
-    count stays at or below the base count of 210, with no new
-    error in a file that was clean at base.
+  - The D6 `tsc` command over the full harness tree. The
+    after-Green identity set is a subset of the base set: `comm -13`
+    of the base file against the after file prints nothing.
 
 ### FR-4 — The residual list is complete
 

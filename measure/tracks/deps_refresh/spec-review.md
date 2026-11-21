@@ -17,14 +17,17 @@ The reviewer (openai/gpt-6-luna#high) failed head `2fb569f` on
 2026-11-21. Report: `measure/runs/deps_refresh/spec-review-2fb569f.json`.
 The author amends spec and plan as follows. No other file changes.
 
-- **F1 (blocker).** The empty-input type check is gone. Spec D6 now
-  names one harness-wide command that needs no tsconfig (`spec.md`
-  lines 85-100), with its base result at `7319344` (exit 2, 210
-  errors, log `measure/runs/deps_refresh/tsc-base-7319344.txt`) and
-  a no-new-errors rule for Green. FR-3 repeats the rule (`spec.md`
-  lines 157-159). Plan task 1.1 records the base result (`plan.md`
-  lines 53-62). Plan task 3.1 runs the same command in the day, not
-  through `heavy-run.sh` (`plan.md` lines 91-99).
+- **F1 (blocker).** Review r2 keeps F1 open: the count rule can
+  hide a new error behind a removed one. Spec D6 now uses a strict
+  subset rule: each diagnostic is `<file>:<line>:<col> TS<code>`,
+  and the after-Green set must sit inside the base set, so no new
+  identity appears and fewer errors stay allowed. The compare is
+  `comm -13` of the base identity file against the after file, and
+  it must print nothing. When Green names a source change first,
+  the identity drops line and col and keeps file, code, and message
+  text. Plan task 1.1 records the base set file (210 lines) with
+  the exact make command. Plan task 3.1 runs the after-Green make
+  command and the `comm -13` check in the day.
 - **F2 (blocker).** The "Daniel says push first" gate is gone. Plan
   task 3.3 sends the push through safe-push, dry run first, run
   alone, never chained (`plan.md` lines 120-133). Exit 2 stops the

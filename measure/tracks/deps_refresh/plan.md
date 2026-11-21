@@ -57,9 +57,19 @@ Marker use:
     nodenext --moduleResolution nodenext --target es2022 --strict
     $(git ls-files 'harness/*.ts')`.
     At base `7319344` it exits 2 with 210 errors across 157 files
-    (log: `measure/runs/deps_refresh/tsc-base-7319344.txt`). Green
-    passes when the count does not rise above 210 and no file that
-    was clean at base shows a new error.
+    (log: `measure/runs/deps_refresh/tsc-base-7319344.txt`). The
+    strict rule compares diagnostic identities, not counts. Each
+    identity is `<file>:<line>:<col> TS<code>`, made with:
+    `./harness/node_modules/.bin/tsc --noEmit --skipLibCheck --module
+    nodenext --moduleResolution nodenext --target es2022 --strict
+    $(git ls-files 'harness/*.ts') 2>&1 | grep -oE
+    '^[^(]+\([0-9]+,[0-9]+\): error TS[0-9]+' | sort -u >
+    measure/runs/deps_refresh/tsc-base-ids-7319344.txt`.
+    The base set file holds 210 lines. Green passes only when the
+    after-Green set is a subset of this base set: `comm -13`
+    base-file after-file prints nothing. When Green names a source
+    change first, the identity drops line and col and keeps file,
+    code, and message text instead.
 
 ## Phase 2: Green — the updates and the lock file
 
@@ -92,11 +102,16 @@ Marker use:
     - The full-tree type-check from the repo root:
       `./harness/node_modules/.bin/tsc --noEmit --skipLibCheck
       --module nodenext --moduleResolution nodenext --target es2022
-      --strict $(git ls-files 'harness/*.ts')`.
-      Green passes when the error count does not rise above the base
-      count of 210 and no file that was clean at base shows a new
-      error. This command runs in the day, not through
-      `heavy-run.sh`; it needs no browser and no suite.
+      --strict $(git ls-files 'harness/*.ts') 2>&1 | grep -oE
+      '^[^(]+\([0-9]+,[0-9]+\): error TS[0-9]+' | sort -u >
+      measure/runs/deps_refresh/tsc-after-ids.txt`.
+      Then `comm -13
+      measure/runs/deps_refresh/tsc-base-ids-7319344.txt
+      measure/runs/deps_refresh/tsc-after-ids.txt` must print
+      nothing: the after-Green identity set is a subset of the base
+      set, so no new diagnostic appears. Fewer errors are allowed.
+      This command runs in the day, not through `heavy-run.sh`; it
+      needs no browser and no suite.
     - Only when `@playwright/test` moved in task 2.1 (spec D9):
       `./node_modules/.bin/playwright --version` from `harness/`,
       plus one named e2e spec (`tests/e2e/probes.spec.ts`) through
