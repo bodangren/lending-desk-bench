@@ -86,9 +86,18 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
    no build script, and no tsconfig. The spec names the stand-ins:
    - Lint: none exists. The plan records that `npm run` offers no
      lint entry.
-   - Type-check: `tsc --noEmit` on the touched files only, via the
-     local binary (`./node_modules/.bin/tsc --noEmit --skipLibCheck`
-     with explicit file paths).
+   - Type-check: the full harness tree, with no tsconfig. The repo
+     has no harness tsconfig (the only tsconfig sits in `fixture/`),
+     and no CI or script type-checks `harness/`. The command runs
+     from the repo root:
+     `./harness/node_modules/.bin/tsc --noEmit --skipLibCheck --module
+     nodenext --moduleResolution nodenext --target es2022 --strict
+     $(git ls-files 'harness/*.ts')`.
+     At the base commit `7319344` this command exits 2 with 210
+     errors across the 157 tracked harness files (log:
+     `measure/runs/deps_refresh/tsc-base-7319344.txt`). Green passes
+     when the error count does not rise above 210 and no file that
+     was clean at base shows a new error.
    - Build: none exists. The harness is TypeScript source run with
      `tsx`. The meta suite through `heavy-run.sh` stands in for it.
    - Unit tests: `npm run test:unit` (`vitest run tests/unit`).
@@ -96,10 +105,27 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
    - Model-guide gate: `bun test
      harness/model-guide-tests/review-run.test.ts`, because that file
      runs with bun.
-7. **D7. Night rule.** The lock-file commit lands outside 02:00-06:00.
-   The plan records the lock check and the time of the commit.
+7. **D7. Night rule.** The bench uses `harness/` 02:00-06:00. The
+   lock-file commit lands outside 02:00-07:00. The heavy gates run
+   only 22:00-01:30, never 02:00-06:00. The order is: Green commit
+   in the day (outside 02:00-07:00), then gates 22:00-01:30, then
+   the push. A gate that is not done by 01:30 stops and resumes
+   the next evening.
 8. **D8. Dates.** Critical and high done by 2026-11-23. The rest done
    by 2026-11-25.
+9. **D9. Behavior drivers.** Two harness versions drive grading
+   behavior, not just build health. Playwright: the config uses
+   system Chrome (`channel: "chrome"` in
+   `harness/playwright.config.ts`), so no browser download ever
+   runs. When `@playwright/test` moves, the plan adds a version
+   check plus one named e2e spec through `heavy-run.sh` in the
+   evening window, because runner drift breaks grading runs.
+   react-doctor: the bump to 0.9.23 defers. `harness/doctor.ts`
+   hard-codes `DOCTOR_VERSION = "0.9.2"`, and
+   `harness/source-signals.ts` assumes that version's blind spots.
+   A bump changes Axis 3 scores mid-cohort, so the moderate
+   advisory stays listed with this reason until a new cohort
+   decision.
 
 ## Functional requirements
 
@@ -122,13 +148,15 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 
 - The unit suite, the meta logic suite, and the bun review-run test
   pass. Each full-suite command runs through `heavy-run.sh`, only
-  22:00-07:00, one suite at a time with `--maxWorkers=1`.
+  22:00-01:30, one suite at a time with `--maxWorkers=1`.
 - **Check.** Each command below exits 0 inside the wrapper:
   - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness && npm run test:unit'`
   - `HEAVY_MIN_AVAIL_MB=1500 .../heavy-run.sh -c 'cd harness && npm run test:meta:logic'`
   - `bun test harness/model-guide-tests/review-run.test.ts` through
     the wrapper.
-  - `tsc --noEmit` on each touched source file.
+  - The D6 `tsc` command over the full harness tree. The error
+    count stays at or below the base count of 210, with no new
+    error in a file that was clean at base.
 
 ### FR-4 — The residual list is complete
 
@@ -146,17 +174,20 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 
 ### FR-6 — The work lands outside the night run
 
-- The lock-file commit lands outside 02:00-07:00 local time. The plan
-  records the commit time.
+- The lock-file commit lands outside 02:00-07:00 local time. The
+  heavy gates run only 22:00-01:30 and never 02:00-06:00. The plan
+  records the commit time and each gate time. A gate that is not
+  done by 01:30 stops and resumes the next evening.
 - **Check.** The commit timestamp sits outside the night window.
+  Each heavy gate timestamp sits inside 22:00-01:30.
 
 ## Non-functional requirements
 
 - **NFR-1 No fixture churn.** Score comparability of the cohort holds.
 - **NFR-2 No deploy.** The fixture never deploys. The harness change
   needs no deploy.
-- **NFR-3 The machine stays usable.** Full suites run only in the
-  night window through `heavy-run.sh`.
+- **NFR-3 The machine stays usable.** Full suites run only
+  22:00-01:30 through `heavy-run.sh`, never 02:00-06:00.
 - **NFR-4 No new tool.** The track adds no dependency and no script.
 
 ## Acceptance criteria
@@ -184,7 +215,8 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
 - **R1 A major breaks the harness.** The gates catch it. The plan
   defers the major with its reason.
 - **R2 A night run reads a half-written tree.** The install and the
-  commit run outside 02:00-06:00 (D7, FR-6).
+  commit run outside 02:00-06:00, and the gates never run 02:00-06:00
+  (D7, FR-6).
 - **R3 `npm audit` flaps with the registry.** The plan records the
   command output and its date. A rerun settles a flap.
 - **R4 The meta suite is slow.** It runs once at the end, through
