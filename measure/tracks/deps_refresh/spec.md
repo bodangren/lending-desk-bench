@@ -113,12 +113,21 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
    - Model-guide gate: `bun test
      harness/model-guide-tests/review-run.test.ts`, because that file
      runs with bun.
-7. **D7. Night rule.** The bench uses `harness/` 02:00-06:00. The
-   lock-file commit lands outside 02:00-07:00. The heavy gates run
-   only 22:00-01:30, never 02:00-06:00. The order is: Green commit
-   in the day (outside 02:00-07:00), then gates 22:00-01:30, then
-   the push. A gate that is not done by 01:30 stops and resumes
-   the next evening.
+7. **D7. Night rule (amended by the PM 2026-11-21 16:3x).**
+   The bench uses `harness/` 02:00-06:00. The lock-file commit
+   lands outside 02:00-07:00. The heavy gates may run at any
+   time except 02:00-06:00, one at a time through `heavy-run.sh`
+   with `--maxWorkers=1`. A gate that reaches 02:00 stops and
+   resumes after 06:00. The order is: Green commit, then gates,
+   then the push. The PM decision states: "PM decision (spec D7
+   change, smallest step): the machine is idle now (load 1.6, 20
+   GB free, 3 of 14 slots). Run task 3.1 gates now, in the day,
+   one at a time through heavy-run.sh with --maxWorkers=1;
+   heavy-run queues them behind any other heavy job. The only
+   window that stays closed is 02:00-06:00 (bench night run).
+   Include the same-code re-score check (identical axis scores)
+   from my vite decision. Record D7 as amended by the PM
+   2026-11-21 16:3x."
 8. **D8. Dates.** Critical and high done by 2026-11-23. The rest done
    by 2026-11-25.
 9. **D9. Behavior drivers.** Two harness versions drive grading

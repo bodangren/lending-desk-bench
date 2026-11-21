@@ -20,13 +20,13 @@ Constraints for every role:
   or `measure/runs/`.
 - Never run `npm install` outside the Green task. Never change a
   package file outside Green.
-- Full suites run only 22:00-01:30, one suite at a time with
-  `--maxWorkers=1`, always through
+- Full suites may run at any time except 02:00-06:00, one suite
+  at a time with `--maxWorkers=1`, always through
   `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh`.
-  Never run a heavy gate 02:00-06:00. A gate not done by 01:30
-  stops and resumes the next evening.
+  Never run a heavy gate 02:00-06:00. A gate that reaches 02:00
+  stops and resumes after 06:00.
 - The lock-file commit lands outside 02:00-07:00 local time. Order:
-  Green commit in the day, gates 22:00-01:30, then the push.
+  Green commit, then gates, then the push.
 - The lock-file commit lands outside 02:00-07:00 local time.
 - Stage files by explicit path. Never stage `.opencode/`,
   `tech-debt.md`, `harness/wt.txt`, `harness/model-guide/data/sets/`,
@@ -197,10 +197,11 @@ Marker use:
 
 ## Phase 3: Verify — gates, counts, residuals, push
 
-- [ ] 3.1 The gates. Run each command through `heavy-run.sh`, only
-  22:00-01:30, one at a time with `--maxWorkers=1`. Record each exit
+- [ ] 3.1 The gates. Run each command through `heavy-run.sh`, at
+  any time except 02:00-06:00, one at a time with
+  `--maxWorkers=1`. Record each exit
   code, each gate timestamp, and the test counts in this task. A
-  gate not done by 01:30 stops and resumes the next evening.
+  gate that reaches 02:00 stops and resumes after 06:00.
   - Commands:
     - `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:unit'`
     - `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:meta:logic'`
@@ -335,8 +336,9 @@ Marker use:
     || { echo "FAIL: axes or total differ; see $OUT/diff.txt $OUT/base-score.json $OUT/new-score.json"; exit 1; }
   echo "OK: A/B axes and total identical"
   ```
-      - Window: 22:00-01:30 like the other gates. The A/B that does
-        not finish by 01:30 stops and resumes the next evening.
+      - Window: at any time except 02:00-06:00 like the other
+        gates. The A/B that reaches 02:00 stops and resumes after
+        06:00.
         Cost: two `npm ci` runs plus two regrades. The worktrees
         under `/tmp/opencode/deps-ab/` stay until the orchestrator
         asks Daniel about removal (deletion gate). `git worktree
@@ -381,8 +383,9 @@ Marker use:
 - **A major breaks the harness.** Task 3.1 catches it. Task 2.1
   defers the major with its reason.
 - **A night run reads a half-written tree.** Tasks 2.1 and 3.3 run
-  outside 02:00-06:00. Task 3.1 gates run only 22:00-01:30.
+  outside 02:00-06:00. Task 3.1 gates run at any time except
+  02:00-06:00.
 - **The registry flaps.** Task 1.1 and task 3.2 record dated output.
   A rerun settles a flap.
-- **The meta suite is slow.** It runs once, at night, through
+- **The meta suite is slow.** It runs once through
   `heavy-run.sh`.
