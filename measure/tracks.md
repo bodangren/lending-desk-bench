@@ -30,6 +30,7 @@
 | domain_trust | Domain trust matrix: safe and risk domains for each model, with failure modes | Feature | pending — strategy done; Phase 1 worktree next; owner decisions O1 and O2 open | 2026-10-25 |
 | daily_model_schedule | Daily model schedule: one model per day, untested first, then the stalest | Feature | pending — O1 approved with 3 conditions 2026-10-31 (spec D11–D14); Phase 4b reviews next (task 4b.4); Phase 4 Review C and acceptance run with Phase 4b | 2026-10-25 |
 | grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | pending | 2026-11-04 |
+| deps_refresh | Dependency refresh: update the harness packages and clear the audit | Chore | pending | 2026-11-21 |
 | opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | pending — spec check 1.0 next; deadline Sat 2026-11-07 23:00 +07; owner question O1 open | 2026-11-06 |
 | model_guide | Model guide: seeded-defect review, real-work outcomes, and the use-this-model table | Feature | pending — spec review round 1 revised 2026-11-14 (F1 to F12); the re-review (task 0.3) and then Red task 1.1 come next; page B preview due Wed 2026-11-18; track A first results due Sun 2026-11-22 | 2026-11-14 |
 
