@@ -42,7 +42,7 @@ Marker use:
 
 ## Phase 1: Red — record the failing audit
 
-- [ ] 1.1 The failing gate. Run the audit gate in `harness/` and
+- [x] f420571 1.1 The failing gate. Run the audit gate in `harness/` and
   record its output in this task: the exit code, the critical count,
   the high count, and the advisory names. The command must fail while
   any critical or high advisory remains.
@@ -58,6 +58,29 @@ Marker use:
     `IDS=measure/runs/deps_refresh/tsc-base-ids-7319344.txt`, then
     record in this task the tsc exit code (2), the raw error-line
     count (210), and the identity count (210 lines).
+  - Red record 2026-11-21 14:12 +07. The audit gate failed as
+    required. Command: `cd harness && npm audit --audit-level=high`.
+    Exit code: 1.
+  - Audit counts by level: critical 0, high 6, moderate 7, low 0,
+    total 13. The counts come from `npm audit --json` metadata.
+  - High advisory names (6): brace-expansion, fast-uri, nanoid,
+    source-map-js, vite, zod. Each name comes from the audit
+    report section headers.
+  - Full JSON saved to
+    `measure/runs/deps_refresh/audit-before-b4c2e45.json`. That
+    file is an ignored artifact. It is not staged or committed.
+  - Base type-check rerun at this base with
+    `RAW=measure/runs/deps_refresh/tsc-base-raw.txt` and
+    `IDS=measure/runs/deps_refresh/tsc-base-ids-7319344.txt`:
+    tsc exit 2, 210 error lines, 210 identities. The identity
+    file is LC_ALL=C sorted and unique. SHA-256:
+    `68dbc06cb7e2e131cf461472b89b9bcbb5537a012d1c7bf2b779bb5d92ad4e2e`.
+    The rerun hash matches the pre-rerun hash, so the rerun
+    changed nothing.
+  - Unrelated dirty paths at Red time (preserved, never staged):
+    `.opencode/`, `harness/model-guide/data/sets/`,
+    `harness/wt.txt`, `tech-debt.md`. All were untracked user
+    work. No package file changed. No install ran.
 
 ## Phase 2: Green — the updates and the lock file
 
