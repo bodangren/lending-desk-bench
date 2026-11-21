@@ -197,7 +197,7 @@ Marker use:
 
 ## Phase 3: Verify — gates, counts, residuals, push
 
-- [~] 3.1 The gates. Run each command through `heavy-run.sh`, at
+- [x] 8437779 3.1 The gates. Run each command through `heavy-run.sh`, at
   any time except 02:00-06:00, one at a time with
   `--maxWorkers=1`. Record each exit
   code, each gate timestamp, and the test counts in this task. A
@@ -360,6 +360,97 @@ Marker use:
   - Note: `harness/` has no lint script and no build script. The
     plan records that `npm run` offers neither entry. The meta
     suite stands in for the build (spec D6).
+  - Verify record 2026-11-21 19:24 +07. All gates ran in the day.
+    No gate ran 02:00-06:00. The gates ran at the audited HEAD
+    8437779. The SHA on this task line is that audited HEAD. This
+    plan commit holds the evidence below.
+  - Gate 1, unit. Command: `HEAVY_MIN_AVAIL_MB=1500
+    /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c
+    'cd harness && CANDIDATE=/home/daniebo/Desktop/lending-desk-bench/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate
+    npx vitest run tests/unit --maxWorkers=1'`. Exit 1 as expected.
+    `Test Files 1 failed | 2 passed (3)`. `Tests 1 failed | 16
+    passed (17)`. The one failure is `Measure track closeout >
+    M.closeout` with `expected 'pending' to be 'complete'`.
+    Timestamp 16:36:35-16:44:07 +07. Log:
+    `measure/runs/deps_refresh/gate-3.1-unit-8437779.log`.
+  - Gate 2, meta logic. Rerun reused from 8437779 under the
+    orchestrator ruling. Exit 1 as expected. `Test Files 2 failed
+    | 28 passed (30)`. `Tests 6 failed | 232 passed (238)`. All
+    six failures are the host path mismatch. Timestamp
+    17:11:34-17:13:50 +07. Log:
+    `measure/runs/deps_refresh/gate-3.1-meta-8437779.log`.
+  - Gate 3, bun review-run. Exit 0. 130 pass, 0 fail, 922
+    expect() calls. No timing flake. Timestamp
+    17:15:57-17:47:06 +07. Log:
+    `measure/runs/deps_refresh/gate-3.1-bun-8437779.log`.
+  - Gate 4, type-check. The task 3.1 block printed
+    `OK: tsc exit 2, 210 error lines, 210 identities`. Block exit
+    0. No new identity versus the base file. Timestamp
+    17:47:26-17:47:29 +07. Log:
+    `measure/runs/deps_refresh/gate-3.1-tsc-8437779.log`.
+  - Gate 5, same-code A/B re-score. Passed on the real-path root
+    `/home/daniebo/.cache/opencode/deps-ab-r8`. Six regrades in
+    total: two runs per side from r11, then two more per side on
+    2026-11-21 19:17-19:24 +07. Each run used `heavy-run.sh` with
+    `regrade-run.ab.sh`. That copy differs from `regrade-run.sh`
+    by one keep-list word, `executor`, on line 92. The copy sha256
+    is
+    `8a17325a1e8fca723446af3a335885ca3db1dca4fe8238300b71efb04203237c`
+    on both sides. Every run printed the REGRADED line, left a
+    new `artifacts.prev-<stamp>/`, and recorded graft reason
+    `regrade`. Runner hash
+    `8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0`
+    on both sides.
+  - Six-run table for `E.return-submits`: base run1 true, base
+    run2 true, base run3 true; new run1 false, new run2 true, new
+    run3 true. `axes.completion` and `tiers["1"].rate` are 1 on
+    every base run and on new runs 2 and 3. They are
+    0.9788359788359788 and 0.972972972972973 on new run 1. Every
+    other compared field is identical in all six runs. The
+    compared fields are axes, total, valid, invalid_reasons,
+    criteria, probes, missing_criteria, orphan_results,
+    adherence, gate, tiers, doctor. Ignored fields:
+    grading_seconds, host, usage, provenance, provenance_valid,
+    time_on_task_seconds. Artifacts:
+    `measure/runs/deps_refresh/rescore-ab/r8/`.
+  - PM flake rule quoted: "option A, with two more runs per side
+    (3 per side in total, same r8 worktrees, heavy-run, not
+    02:00-06:00). Rule: if the new side passes E.return-submits
+    at least once, or the base side fails it at least once, it is
+    a flake: gate 5 passes with all six runs recorded, and the
+    flake goes to tech-debt. If the new side fails 3 of 3 while
+    the base side passes 3 of 3, run option C next (revert tsx
+    and @types/node only, keep vite 8.3.8) and report the
+    numbers. Every other field must stay identical in all runs."
+    The new side passed twice, so gate 5 passes. The flake goes
+    to tech-debt. This task does not edit `tech-debt.md`.
+  - Ruling reasons. Gate 1: the default CANDIDATE is the unsolved
+    `fixture/`, so the stored candidate sets the score baseline.
+    Gate 2: `/tmp/opencode` is a symlink to
+    `/home/daniebo/.cache/opencode` since 2026-11-20 08:13, so the
+    six path assertions fail on the host, not on the refresh.
+    Gate 5: the PM accepted option B; root causes were the
+    `/tmp/opencode` symlink against the
+    `candidate-contract.ts:309` CLI guard, the `regrade-run.sh:92`
+    keep list that drops `executor/`, and the orphan collected
+    criteria at HEAD that make every regrade invalid. The final
+    run used a real-path root and the one-word keep-list copy.
+  - Roots used: r2 (network reset at npm ci), r3 (regrade hash
+    silent no-op), r4 (diagnostic), r5 (option B hash bypass), r6
+    (hand-driven steps), r7 (real path, executor drop), r8 (final
+    keep-list copy and six runs). All roots sit under
+    `/tmp/opencode/` or `/home/daniebo/.cache/opencode/`.
+  - Cleanup 2026-11-21 19:26 +07. The PM decided that these A/B
+    worktrees are this role's temp outputs, not a Daniel deletion
+    gate. `git worktree remove --force` removed all 15 deps-ab
+    worktrees under `/home/daniebo/.cache/opencode/`. Then `git
+    worktree prune` ran. `git worktree list` now shows only
+    `lending-desk-bench` (main), `lending-desk-bench-daily`, and
+    `lending-desk-bench-p7green`. `rmdir` removed the eight empty
+    `deps-ab*` folders. No `deps-ab*` folder remains under
+    `/home/daniebo/.cache/opencode/` or `/tmp/opencode/`. All
+    result files stay under `measure/runs/deps_refresh/`, including
+    `rescore-ab/r8/` with the six score files.
 - [ ] 3.2 The after-audit counts and the residual list. Run
   `npm audit` in `harness/` and record the counts by level. List
   each remaining moderate or low advisory with its reason: no
