@@ -248,23 +248,40 @@ Marker use:
       plus one named e2e spec (`tests/e2e/probes.spec.ts`) through
       `heavy-run.sh`. The config uses system Chrome, so no browser
       download runs.
-    - Re-score one stored cohort run with the new lock (PM 2026-11-21
-      vite condition). Run it through `heavy-run.sh` in the
-      22:00-01:30 window, one at a time like the other gates:
+    - Re-score one stored run with the new lock (PM 2026-11-21
+      vite condition). The run is
+      `runs/a-deepseek-v4-1-flash-2026w43-r1`. It qualifies: build
+      track, executor kind `opencode` (no Pi skip), valid score with
+      model and arm on record, non-empty execution identity and
+      executor cohort, clean contract, and a candidate tree. Every
+      frozen-cohort run is Pi-backed, so no frozen run qualifies.
+      Run it through `heavy-run.sh` in the 22:00-01:30 window, one
+      at a time like the other gates:
       - Save the stored score first: `cp
-        runs/a-deepseek-v4-1-flash-2026w38/artifacts/score.json
+        runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/score.json
         measure/runs/deps_refresh/rescore-before.json`.
       - Re-score: `HEAVY_MIN_AVAIL_MB=1500
         /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh
         -c './harness/regrade-run.sh
-        a-deepseek-v4-1-flash-2026w38'`.
-      - Extract axes plus total from the before file and from the new
-        `runs/a-deepseek-v4-1-flash-2026w38/artifacts/score.json`:
+        a-deepseek-v4-1-flash-2026w43-r1'`.
+      - Prove a fresh regrade before the compare. The regrade output
+        holds the line `[a-deepseek-v4-1-flash-2026w43-r1] REGRADED
+        total=...` and exits 0. A new
+        `runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts.prev-<stamp>/`
+        directory exists after the run. The new
+        `artifacts/graft-provenance.json` has reason "regrade". Any
+        SKIP line or missing proof fails the check. The track stops
+        and the orchestrator reports to the PM.
+      - Extract the full axes object plus total from the stored score
+        (`artifacts.prev-<stamp>/score.json` or
+        `rescore-before.json`) and from the new
+        `runs/a-deepseek-v4-1-flash-2026w43-r1/artifacts/score.json`:
         `node -e 'const fs=require("node:fs"); const
         s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
         process.stdout.write(JSON.stringify({axes:s.axes,
         total:s.total},null,2)+"\n");' <in> > <out>`.
-        Write the two extracts to
+        The extract covers every axis key, not a chosen subset. Write
+        the two extracts to
         `measure/runs/deps_refresh/rescore-before-axes.json` and
         `measure/runs/deps_refresh/rescore-after-axes.json`, then
         `diff` them. The diff must print nothing.
