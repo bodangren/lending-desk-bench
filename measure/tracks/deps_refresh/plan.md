@@ -484,7 +484,7 @@ Marker use:
     `harness/package.json`, `harness/package-lock.json`, and the
     two Measure plan files. No `fixture/` path appears. No source
     file changed in this track.
-- [ ] 3.3 The push. Commit the Green change and push it. The commit
+- [x] 6fdea72 3.3 The push. Commit the Green change and push it. The commit
   lands outside 02:00-07:00 local time. This task records the commit
   SHA, the commit timestamp, and the push date.
   - Files: the two lock-scope files.
@@ -496,6 +496,29 @@ Marker use:
   - Exit 2 (deploy push): stop and report the range and the app
     list to the PM. Exit 3 (secret or file over 50 MB) or exit 4
     (not fast-forward): stop and report to the PM. Never force.
+  - Verify record 2026-11-21 19:29 +07. The orchestrator ran
+    safe-push under the PM assignment and the spec F2 amendment.
+    No role in this track pushed.
+  - Green package commits and timestamps from `git log -1
+    --format=%cI`:
+    - 161b856adb40bdb42998449f7c6b6dc559d28175, committed
+      2026-11-21T14:17:53+07:00. Message: chore(deps_refresh):
+      Green task 2.1 harness package updates.
+    - fc9ec998369c670635decf53097691834064f759, committed
+      2026-11-21T14:25:03+07:00. Message: chore(deps_refresh):
+      Green task 2.1 r2 keep scored tools pinned.
+    Both timestamps sit outside 02:00-07:00 (FR-6, spec D7).
+  - Push range: 7319344e28e04c5557be32676d20983a2559d1ef to
+    6fdea7295c413f06334d97a9f5cdc4f27fb7ad35. Short form
+    7319344..6fdea72. Push date 2026-11-21 about 19:28 +07.
+  - safe-push lines from the orchestrator:
+    - `safe-push: ahead 21 behind 0`
+    - `safe-push: dry-run OK: 7319344e28e0..6fdea7295c41`
+    - `safe-push: pushed 6fdea7295c41 to origin/main`
+  - Key scan of the added lines: no match. No secret was found.
+  - Remote check: `git rev-parse origin/main` returned
+    6fdea7295c413f06334d97a9f5cdc4f27fb7ad35, equal to the pushed
+    HEAD. No exit 2, 3, or 4 occurred. No force was used.
 
 ## Human gates
 
