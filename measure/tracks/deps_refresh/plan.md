@@ -197,13 +197,23 @@ Marker use:
 
 ## Phase 3: Verify — gates, counts, residuals, push
 
-- [ ] 3.1 The gates. Run each command through `heavy-run.sh`, at
+- [~] 3.1 The gates. Run each command through `heavy-run.sh`, at
   any time except 02:00-06:00, one at a time with
   `--maxWorkers=1`. Record each exit
   code, each gate timestamp, and the test counts in this task. A
   gate that reaches 02:00 stops and resumes after 06:00.
   - Commands:
-    - `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:unit'`
+    - `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && CANDIDATE=/home/daniebo/Desktop/lending-desk-bench/runs/a-deepseek-v4-1-flash-2026w43-r1/candidate npx vitest run tests/unit --maxWorkers=1'`
+    - Gate 1 uses a stored candidate. `tests/unit` scores a
+      candidate tree. The default CANDIDATE is the unsolved
+      `fixture/`. `reference/` holds only writable files, so it
+      cannot serve. The candidate tree stays read-only for the
+      gate.
+    - Gate 1 passes only with exactly 16 passed and 1 failed. The
+      one failure is "Measure track closeout > M.closeout" with
+      "expected 'pending' to be 'complete'". Any other failure, or
+      a different count, fails the gate. The 16:35 check sets this
+      rule.
     - `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npm run test:meta:logic'`
     - `bun test harness/model-guide-tests/review-run.test.ts`
       through the wrapper (that file runs with bun).

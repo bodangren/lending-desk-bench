@@ -108,7 +108,14 @@ The audit ran before this track, on 2026-11-21 at about 08:0x, with
      plan task 2.1. No source edit lands in this chore.
    - Build: none exists. The harness is TypeScript source run with
      `tsx`. The meta suite through `heavy-run.sh` stands in for it.
-   - Unit tests: `npm run test:unit` (`vitest run tests/unit`).
+   - Unit tests: `CANDIDATE=<stored-candidate> npx vitest run
+     tests/unit --maxWorkers=1` through `heavy-run.sh`.
+     `tests/unit` scores a candidate tree. The default CANDIDATE
+     is the unsolved `fixture/`. The gate uses
+     `runs/a-deepseek-v4-1-flash-2026w43-r1/candidate` read-only.
+     The gate passes only with exactly 16 passed and 1 failed.
+     The one failure is the M.closeout status fault ("expected
+     'pending' to be 'complete'").
    - Meta suite: `npm run test:meta:logic` through `heavy-run.sh`.
    - Model-guide gate: `bun test
      harness/model-guide-tests/review-run.test.ts`, because that file
