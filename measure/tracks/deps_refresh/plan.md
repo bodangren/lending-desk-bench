@@ -290,8 +290,10 @@ Marker use:
     || { echo "FAIL: base copy incomplete"; exit 1; }
   [ -s "$N/runs/$ID/artifacts/score.json" ] && [ -s "$N/runs/$ID/artifacts/provenance.json" ] \
     || { echo "FAIL: new copy incomplete"; exit 1; }
-  (cd "$B/harness" && npm ci) && (cd "$B/fixture" && npm ci)
-  (cd "$N/harness" && npm ci) && (cd "$N/fixture" && npm ci)
+  (cd "$B/harness" && npm ci) || { echo "FAIL: npm ci base harness"; exit 1; }
+  (cd "$B/fixture" && npm ci) || { echo "FAIL: npm ci base fixture"; exit 1; }
+  (cd "$N/harness" && npm ci) || { echo "FAIL: npm ci new harness"; exit 1; }
+  (cd "$N/fixture" && npm ci) || { echo "FAIL: npm ci new fixture"; exit 1; }
   (cd "$B/harness" && npm ls --depth=0) > "$OUT/npm-ls-base.txt" 2>&1 \
     || { echo "FAIL: npm ls base"; exit 1; }
   (cd "$N/harness" && npm ls --depth=0) > "$OUT/npm-ls-new.txt" 2>&1 \
@@ -309,7 +311,7 @@ Marker use:
     HEAVY_MIN_AVAIL_MB=1500 "$H" -c "cd $W && ./harness/regrade-run.sh $ID" > "$LOG" 2>&1 || RC=$?
     [ "$RC" -eq 0 ] || { echo "FAIL: regrade exit $RC in $W; see $LOG"; exit 1; }
     grep -q "^\[$ID\] REGRADED total=" "$LOG" || { echo "FAIL: no REGRADED line; see $LOG"; exit 1; }
-    grep -q "SKIP" "$LOG" && { echo "FAIL: SKIP in $LOG"; exit 1; } || true
+    if grep -q "SKIP" "$LOG"; then echo "FAIL: SKIP in $LOG"; exit 1; fi
     ls -d "$W/runs/$ID"/artifacts.prev-* > /dev/null 2>&1 \
       || { echo "FAIL: no artifacts.prev in $W"; exit 1; }
     [ "$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).reason)' \
