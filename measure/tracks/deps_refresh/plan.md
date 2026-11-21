@@ -259,21 +259,25 @@ Marker use:
       tree present. System Chrome and browser timing stay a shared
       residual risk: both sides use the same unpinned browser back
       to back, so one pair cannot rule out a timing flake. The block
-      records the Chrome version. When the scores differ, the block
-      reruns the new side once: a pass on the rerun means a timing
-      flake, and both diffs stay on record.
+      records the Chrome version. Any difference stops the track,
+      and the orchestrator reports both score files to the PM.
   ```bash
-  set -o pipefail
+  set -euo pipefail
   B=/tmp/opencode/deps-ab/base
   N=/tmp/opencode/deps-ab/new
   R=/home/daniebo/Desktop/lending-desk-bench
   ID=a-deepseek-v4-1-flash-2026w43-r1
   OUT=$R/measure/runs/deps_refresh/rescore-ab
   H=/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh
+  [ ! -e /tmp/opencode/deps-ab ] || { echo "FAIL: old A/B state exists; ask the orchestrator"; exit 1; }
   mkdir -p "$OUT"
   google-chrome --version > "$OUT/chrome-version.txt"
   git -C "$R" worktree add --detach "$B" HEAD
   git -C "$R" worktree add --detach "$N" HEAD
+  [ "$(git -C "$B" rev-parse HEAD)" = "$(git -C "$R" rev-parse HEAD)" ] \
+    || { echo "FAIL: base worktree HEAD"; exit 1; }
+  [ "$(git -C "$N" rev-parse HEAD)" = "$(git -C "$R" rev-parse HEAD)" ] \
+    || { echo "FAIL: new worktree HEAD"; exit 1; }
   git -C "$R" show b4c2e45:harness/package-lock.json > "$B/harness/package-lock.json"
   git -C "$R" show b4c2e45:harness/package.json > "$B/harness/package.json"
   DIFF=$(git -C "$B" diff --name-only -- harness/ | LC_ALL=C sort | tr '\n' ' ')
@@ -288,15 +292,24 @@ Marker use:
     || { echo "FAIL: new copy incomplete"; exit 1; }
   (cd "$B/harness" && npm ci) && (cd "$B/fixture" && npm ci)
   (cd "$N/harness" && npm ci) && (cd "$N/fixture" && npm ci)
-  (cd "$B/harness" && npm ls --depth=0) > "$OUT/npm-ls-base.txt" 2>&1
-  (cd "$N/harness" && npm ls --depth=0) > "$OUT/npm-ls-new.txt" 2>&1
+  (cd "$B/harness" && npm ls --depth=0) > "$OUT/npm-ls-base.txt" 2>&1 \
+    || { echo "FAIL: npm ls base"; exit 1; }
+  (cd "$N/harness" && npm ls --depth=0) > "$OUT/npm-ls-new.txt" 2>&1 \
+    || { echo "FAIL: npm ls new"; exit 1; }
+  [ "$(node -p "require('$B/harness/node_modules/vite/package.json').version")" = "8.2.0" ] \
+    || { echo "FAIL: base vite version"; exit 1; }
+  [ "$(node -p "require('$N/harness/node_modules/vite/package.json').version")" = "8.3.8" ] \
+    || { echo "FAIL: new vite version"; exit 1; }
+  [ "$(node -p "require('$B/harness/node_modules/vitest/package.json').version")" = "4.1.10" ] \
+    || { echo "FAIL: base vitest version"; exit 1; }
+  [ "$(node -p "require('$N/harness/node_modules/vitest/package.json').version")" = "4.1.10" ] \
+    || { echo "FAIL: new vitest version"; exit 1; }
   regrade() {
-    local W="$1" LOG="$2"
-    HEAVY_MIN_AVAIL_MB=1500 "$H" -c "cd $W && ./harness/regrade-run.sh $ID" > "$LOG" 2>&1
-    local RC=$?
+    local W="$1" LOG="$2" RC=0
+    HEAVY_MIN_AVAIL_MB=1500 "$H" -c "cd $W && ./harness/regrade-run.sh $ID" > "$LOG" 2>&1 || RC=$?
     [ "$RC" -eq 0 ] || { echo "FAIL: regrade exit $RC in $W; see $LOG"; exit 1; }
     grep -q "^\[$ID\] REGRADED total=" "$LOG" || { echo "FAIL: no REGRADED line; see $LOG"; exit 1; }
-    grep -q "SKIP" "$LOG" && { echo "FAIL: SKIP in $LOG"; exit 1; }
+    grep -q "SKIP" "$LOG" && { echo "FAIL: SKIP in $LOG"; exit 1; } || true
     ls -d "$W/runs/$ID"/artifacts.prev-* > /dev/null 2>&1 \
       || { echo "FAIL: no artifacts.prev in $W"; exit 1; }
     [ "$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).reason)' \
@@ -313,17 +326,11 @@ Marker use:
   HN=$(cd "$N" && ./harness/node_modules/.bin/tsx harness/provenance.ts --shell | cut -f1)
   [ -n "$HB" ] && [ "$HB" = "$HN" ] || { echo "FAIL: runner hash differs: $HB vs $HN"; exit 1; }
   extract "$B/runs/$ID/artifacts/score.json" "$OUT/base-axes.json"
-  extract "$N/runs/$ID/artifacts/score.json" "$OUT/new-axes-1.json"
-  if ! diff "$OUT/base-axes.json" "$OUT/new-axes-1.json" > "$OUT/diff-1.txt"; then
-    echo "first compare differs; rerun new side once"
-    regrade "$N" "$OUT/regrade-new-2.log"
-    extract "$N/runs/$ID/artifacts/score.json" "$OUT/new-axes-2.json"
-    diff "$OUT/base-axes.json" "$OUT/new-axes-2.json" > "$OUT/diff-2.txt" \
-      || { echo "FAIL: axes differ twice; see $OUT/diff-1.txt $OUT/diff-2.txt"; exit 1; }
-    echo "PASS after new-side rerun (timing flake); both runs reported"
-  fi
+  extract "$N/runs/$ID/artifacts/score.json" "$OUT/new-axes.json"
   cp "$B/runs/$ID/artifacts/score.json" "$OUT/base-score.json"
   cp "$N/runs/$ID/artifacts/score.json" "$OUT/new-score.json"
+  diff "$OUT/base-axes.json" "$OUT/new-axes.json" > "$OUT/diff.txt" \
+    || { echo "FAIL: axes or total differ; see $OUT/diff.txt $OUT/base-score.json $OUT/new-score.json"; exit 1; }
   echo "OK: A/B axes and total identical"
   ```
       - Window: 22:00-01:30 like the other gates. The A/B that does
