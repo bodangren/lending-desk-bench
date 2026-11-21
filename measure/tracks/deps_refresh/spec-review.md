@@ -25,8 +25,11 @@ The author amends spec and plan as follows. No other file changes.
   exit code. Exit 0 needs an empty identity set and no `error TS`
   text in the raw file. Exit 2 needs the raw error-line count to
   equal the identity count before dedup, and a non-empty set. Any
-  other exit fails the check. Then `comm -13` of the base file
-  against the after file must print nothing. Sort and compare run
+  other exit fails the check. Then the block checks that the base
+  file is non-empty and the after file exists, and runs
+  `comm --check-order -13` of the base file against the after file,
+  which must print nothing. A failed `comm` fails the check instead
+  of passing as an empty difference. Sort and compare run
   under `LC_ALL=C`, since locale sort order disagrees with `comm`.
   Task 1.1 runs the same block for the base and records exit 2,
   210 raw error lines, and 210 identities. The r3 source-change

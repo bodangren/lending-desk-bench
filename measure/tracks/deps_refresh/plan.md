@@ -119,7 +119,9 @@ Marker use:
     echo "FAIL: tsc exited $TSC_EXIT"; exit 1
   fi
   LC_ALL=C sort -u "$IDS.tmp" > "$IDS"; rm -f "$IDS.tmp"
-  NEW=$(LC_ALL=C comm -13 "$BASE" "$IDS")
+  [ -s "$BASE" ] || { echo "FAIL: base identity file missing or empty"; exit 1; }
+  [ -f "$IDS" ] || { echo "FAIL: after identity file missing"; exit 1; }
+  NEW=$(LC_ALL=C comm --check-order -13 "$BASE" "$IDS") || { echo "FAIL: comm exited $?"; exit 1; }
   [ -z "$NEW" ] \
     || { echo "FAIL: new diagnostics:"; echo "$NEW"; exit 1; }
   echo "OK: tsc exit $TSC_EXIT, $ERR_COUNT error lines, $(wc -l < "$IDS") identities"
