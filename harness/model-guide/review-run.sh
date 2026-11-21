@@ -1207,7 +1207,7 @@ let doc;
 try { doc = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch { process.exit(1); }
 const list = Array.isArray(doc) ? doc : (doc && typeof doc === "object" && Array.isArray(doc.data) ? doc.data : null);
 if (!list) process.exit(1);
-let newest = null;
+const calls = [];
 const session = process.argv[4] || "";
 const start = Number(process.argv[5]);
 for (const message of list) {
@@ -1219,8 +1219,11 @@ for (const message of list) {
   if (session !== "" && owner !== undefined && owner !== session) continue;
   const stamp = message.time && typeof message.time === "object" ? message.time : (info && info.time && typeof info.time === "object" ? info.time : null);
   if (start > 0 && !(stamp && typeof stamp.created === "number" && stamp.created >= start)) continue;
-  newest = message; break;
+  calls.push(message);
 }
+// The newest current-call message governs the answer. Every current-call
+// message counts for the token use (task 4.16 r9, Review A P4F-1).
+const newest = calls[0];
 if (!newest) { process.stdout.write("empty\t0\n"); process.exit(0); }
 const error = newest.error && typeof newest.error === "object" && !Array.isArray(newest.error) ? newest.error : null;
 if (error) {
@@ -1245,8 +1248,14 @@ for (const entry of collection) {
   if (entry.type === "text" && typeof entry.text === "string") texts.push(entry.text);
   else if (entry.type === "result" && typeof entry.text === "string") results.push(entry.text);
 }
-const tokens = newest.tokens && typeof newest.tokens === "object" && !Array.isArray(newest.tokens) ? newest.tokens : null;
-if (tokens) lines.push(JSON.stringify({ type: "step_finish", part: { tokens } }));
+const ids = new Set();
+for (const call of calls) {
+  const info = call.info && typeof call.info === "object" ? call.info : null;
+  const id = call.id !== undefined ? call.id : (info ? info.id : undefined);
+  if (id !== undefined) { if (ids.has(id)) continue; ids.add(id); }
+  const tokens = call.tokens && typeof call.tokens === "object" && !Array.isArray(call.tokens) ? call.tokens : null;
+  lines.push(JSON.stringify({ type: "step_finish", part: tokens ? { tokens } : {} }));
+}
 if (texts.length > 0) lines.unshift(JSON.stringify({ type: "text", part: { type: "text", text: texts.join("") } }));
 if (results.length > 0) lines.push(JSON.stringify({ type: "result", text: results.join("") }));
 const count = texts.length + results.length;
