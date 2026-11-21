@@ -3335,7 +3335,17 @@ const LIVE_SERVER_SOURCE = [
   '      if (req.method === "GET" && url.indexOf("/message") >= 0) {',
   '        if (spec.get_fail) { send({ error: "message read failed" }, 500); return; }',
   '        if (spec.queue_delay_ms && Date.now() - queuedAt < Number(spec.queue_delay_ms)) { send({ data: [], cursor: {} }); return; }',
-  '        send({ data: spec.messages || [], cursor: {} }); return;',
+  '        const now = Date.now();',
+  '        const page = (spec.messages || []).map((m) => {',
+  '          if (!m || !m._stampAtRead) return m;',
+  '          const copy = { ...m }; delete copy._stampAtRead;',
+  '          const offset = Number(copy._stampOffset || 0); delete copy._stampOffset;',
+  '          const stamped = now + offset;',
+  '          const done = copy.time && typeof copy.time.completed === "number";',
+  '          copy.time = done ? { created: stamped, completed: stamped + 1 } : { created: stamped };',
+  '          return copy;',
+  '        });',
+  '        send({ data: page, cursor: {} }); return;',
   '      }',
   '      if (req.method === "GET" && url.indexOf("/provider") >= 0) { send({ data: [] }); return; }',
   '      if (req.method === "GET" && url.indexOf("/api/session") === 0) { send({ id: "ses_live_judge", location: { directory: spec.directory || "" } }); return; }',
@@ -3399,10 +3409,16 @@ function nativeJudgeAssistant(text: string, opts: {
   id?: string;
   created?: number;
   completed?: number;
+  stampOffsetMs?: number;
 } = {}): Record<string, unknown> {
   const half = Math.ceil(text.length / 2);
   const complete = opts.complete !== false;
+  // Orchestrator 2026-11-21, option 1: stamp a live message of the current
+  // call at fixture build time. Explicit created is kept, so P4E-2 stays old.
+  const created = opts.created ?? Date.now();
   const record: Record<string, unknown> = {
+    _stampAtRead: opts.created === undefined,
+    _stampOffset: opts.stampOffsetMs ?? 0,
     id: opts.id ?? "msg_live_judge",
     type: "assistant",
     model: { providerID: "opencode-go", id: "muse-spark-1.3-contributor", variant: "high" },
@@ -3411,8 +3427,8 @@ function nativeJudgeAssistant(text: string, opts: {
       { type: "text", text: text.slice(half) },
     ],
     time: complete
-      ? { created: opts.created ?? 1795048839000, completed: opts.completed ?? 1795048839001 }
-      : { created: opts.created ?? 1795048839000 },
+      ? { created, completed: opts.completed ?? created + 1 }
+      : { created },
     tokens: opts.tokens ?? { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } },
   };
   if (complete) record.finish = "stop";
@@ -3635,8 +3651,8 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer in the judge", 
     const f = await fixture();
     const live = await startLiveServer(f.fakeRoot, {
       messages: [
-        nativeJudgeAssistant(FINAL_VERDICT, { id: "msg_final", tokens: BIG_TOKENS, created: 2000, completed: 2001 }),
-        nativeJudgeAssistant(EARLY_VERDICT, { id: "msg_early", tokens: SMALL_TOKENS, created: 1000, completed: 1001 }),
+        nativeJudgeAssistant(FINAL_VERDICT, { id: "msg_final", tokens: BIG_TOKENS }),
+        nativeJudgeAssistant(EARLY_VERDICT, { id: "msg_early", tokens: SMALL_TOKENS, stampOffsetMs: -1000 }),
       ],
     });
     try {
@@ -3660,9 +3676,9 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer in the judge", 
     const f = await fixture();
     const live = await startLiveServer(f.fakeRoot, {
       messages: [
-        nativeJudgeAssistant(FINAL_VERDICT, { id: "msg_final", tokens: BIG_TOKENS, created: 2000, completed: 2001 }),
+        nativeJudgeAssistant(FINAL_VERDICT, { id: "msg_final", tokens: BIG_TOKENS }),
         nativeJudgeAssistant("partial without completion", {
-          id: "msg_partial", complete: false, tokens: SMALL_TOKENS, created: 1000,
+          id: "msg_partial", complete: false, tokens: SMALL_TOKENS, stampOffsetMs: -1000,
         }),
       ],
     });
@@ -3730,9 +3746,9 @@ describe("P4b row 4.16r6 deadline expiry and newest partial in the judge runner"
     const live = await startLiveServer(f.fakeRoot, {
       messages: [
         nativeJudgeAssistant("partial without completion", {
-          id: "msg_new_partial", complete: false, created: 2000,
+          id: "msg_new_partial", complete: false,
         }),
-        nativeJudgeAssistant(EARLY_VERDICT, { id: "msg_early", created: 1000, completed: 1001 }),
+        nativeJudgeAssistant(EARLY_VERDICT, { id: "msg_early", stampOffsetMs: -1000 }),
       ],
     });
     try {

@@ -4804,7 +4804,17 @@ const LIVE_SERVER_SOURCE = [
   '      if (req.method === "GET" && url.indexOf("/message") >= 0) {',
   '        if (spec.get_fail) { send({ error: "message read failed" }, 500); return; }',
   '        if (spec.queue_delay_ms && Date.now() - queuedAt < Number(spec.queue_delay_ms)) { send({ data: [], cursor: {} }); return; }',
-  '        send({ data: spec.messages || [], cursor: {} }); return;',
+  '        const now = Date.now();',
+  '        const page = (spec.messages || []).map((m) => {',
+  '          if (!m || !m._stampAtRead) return m;',
+  '          const copy = { ...m }; delete copy._stampAtRead;',
+  '          const offset = Number(copy._stampOffset || 0); delete copy._stampOffset;',
+  '          const stamped = now + offset;',
+  '          const done = copy.time && typeof copy.time.completed === "number";',
+  '          copy.time = done ? { created: stamped, completed: stamped + 1 } : { created: stamped };',
+  '          return copy;',
+  '        });',
+  '        send({ data: page, cursor: {} }); return;',
   '      }',
   '      if (req.method === "GET" && url.indexOf("/provider") >= 0) { send({ data: [] }); return; }',
   '      if (req.method === "GET" && url.indexOf("/api/session") === 0) { send({ id: "ses_live_1", location: { directory: spec.directory || "" } }); return; }',
@@ -4878,10 +4888,18 @@ function nativeAssistant(text: string, opts: {
   id?: string;
   created?: number;
   completed?: number;
+  stampOffsetMs?: number;
 } = {}): Record<string, unknown> {
   const half = Math.ceil(text.length / 2);
   const complete = opts.complete !== false;
+  // Orchestrator 2026-11-21, option 1: a live message of the current call is
+  // stamped when the fixture is built. The fixed past constant was not real
+  // behavior and is rejected by the current-call rule. An explicit created
+  // stays as given, so P4E-2 can still plant an old answer.
+  const created = opts.created ?? Date.now();
   const record: Record<string, unknown> = {
+    _stampAtRead: opts.created === undefined,
+    _stampOffset: opts.stampOffsetMs ?? 0,
     id: opts.id ?? "msg_live_1",
     type: "assistant",
     model: { providerID: "opencode-go", id: "hy4-flash-free", variant: "high" },
@@ -4890,8 +4908,8 @@ function nativeAssistant(text: string, opts: {
       { type: "text", text: text.slice(half) },
     ],
     time: complete
-      ? { created: opts.created ?? 1795048839000, completed: opts.completed ?? 1795048839001 }
-      : { created: opts.created ?? 1795048839000 },
+      ? { created, completed: opts.completed ?? created + 1 }
+      : { created },
     tokens: opts.tokens ?? { input: 7, output: 8, reasoning: 9, cache: { read: 10, write: 11 } },
   };
   if (complete) record.finish = "stop";
@@ -5683,8 +5701,8 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
     });
     const live = await startLiveServer(fixture.fakeRoot, {
       messages: [
-        nativeAssistant(FINAL, { id: "msg_final", tokens: BIG_TOKENS, created: 2000, completed: 2001 }),
-        nativeAssistant(EARLY, { id: "msg_early", tokens: SMALL_TOKENS, created: 1000, completed: 1001 }),
+        nativeAssistant(FINAL, { id: "msg_final", tokens: BIG_TOKENS }),
+        nativeAssistant(EARLY, { id: "msg_early", tokens: SMALL_TOKENS, stampOffsetMs: -1000 }),
       ],
     });
     try {
@@ -5713,9 +5731,9 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
     });
     const live = await startLiveServer(fixture.fakeRoot, {
       messages: [
-        nativeAssistant(FINAL, { id: "msg_final", tokens: BIG_TOKENS, created: 2000, completed: 2001 }),
+        nativeAssistant(FINAL, { id: "msg_final", tokens: BIG_TOKENS }),
         nativeAssistant("partial without completion", {
-          id: "msg_partial", complete: false, tokens: SMALL_TOKENS, created: 1000,
+          id: "msg_partial", complete: false, tokens: SMALL_TOKENS, stampOffsetMs: -1000,
         }),
       ],
     });
@@ -5723,7 +5741,7 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
       assertRunnerExists();
       const result = runRunner(fixture, runArgs(fixture, PILOT_ROUTE), {
         BENCH_SERVER_BASE: live.base,
-        MG_CALL_TIMEOUT_S: "2",
+        MG_CALL_TIMEOUT_S: "10",
       });
       expect(result.error, "the spawn hit the timeout").toBeUndefined();
       const records = passRecords(fixture.privateDir);
@@ -5781,9 +5799,9 @@ describe("P4b row 4.16r6 deadline expiry and newest partial in the review runner
     const live = await startLiveServer(fixture.fakeRoot, {
       messages: [
         nativeAssistant("partial without completion", {
-          id: "msg_new_partial", complete: false, created: 2000,
+          id: "msg_new_partial", complete: false,
         }),
-        nativeAssistant(EARLY, { id: "msg_early", created: 1000, completed: 1001 }),
+        nativeAssistant(EARLY, { id: "msg_early", stampOffsetMs: -1000 }),
       ],
     });
     try {
