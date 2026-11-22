@@ -36,7 +36,7 @@ File map (every new file of this track):
 
 Spec FR-1 to FR-5, EV1 to EV4.
 
-- [~] 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
+- [x] 53510bb184ef9575ebf833509560021d0820d61a 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
   - Red: write `harness/model-guide-tests/update-approval.test.ts` and no other file.
     Pin that `update.sh` and `publish.ts` read `harness/model-guide/publish-approval.md`,
     that the old `measure/tracks/model_guide/` path appears in neither tool, and that
@@ -49,6 +49,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, and `rg -n "measure/tracks/model_guide/publish-approval" harness/model-guide/`
     prints no line.
+  - Green (2026-11-22, commit 53510bb): `update-approval.test.ts` exit 0, Tests 5 passed. The path `rg` prints no line. The stable record is byte-identical to the archived record and parses under the publish.ts fields.
   - Red (2026-11-22): wrote `update-approval.test.ts` (A1-A5). The red command
     exits non-zero: A1, A2, A3, A5 fail and A4 passes. Both tools still name
     the old track path, `--docs` is unrecognized, and the stable record is
@@ -66,7 +67,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     approval record from every tool-folder fixture copy, so no-record cases
     still see no record once Green adds the real record; consent cases keep
     writing their own fixture record.
-- [~] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
+- [x] 53510bb184ef9575ebf833509560021d0820d61a 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
     through `preview.sh` and `guide.ts`, that the commit holds the two data files plus
@@ -77,6 +78,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     files. Touch no test file.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, and `git status --short docs/` prints nothing.
+  - Green (2026-11-22, commit 53510bb): `update-pages.test.ts` exit 0, Tests 6 passed. `git status --short docs/` prints nothing.
   - Red (2026-11-22): wrote `update-pages.test.ts` (P1, P2a, P2b, P3, P4, P5).
     The red command exits non-zero: all six fail because `update.sh` rejects
     `--docs` with the usage error. Also refreshed `update.test.ts` U2 to the
@@ -87,7 +89,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     fixture of adversarial-p2.test.ts to the stable path as well, and
     P2ADV-3 now passes `--docs` for its docs write. P2ADV-3 fails at HEAD
     until Green wires `--docs`, while every other case of the file passes.
-- [~] 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
+- [x] 53510bb184ef9575ebf833509560021d0820d61a 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
   - Red: write `harness/model-guide-tests/update-leak.test.ts` and no other file.
     Pin that `update.sh` runs `leak-check.ts` over the files it is about to commit and
     that a leak hit refuses with one line, exit 2, and no commit. Record the failed
@@ -96,12 +98,13 @@ Spec FR-1 to FR-5, EV1 to EV4.
     Touch no test file.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, and `git status --short docs/` prints nothing.
+  - Green (2026-11-22, commit 53510bb): `update-leak.test.ts` exit 0, Tests 4 passed. `git status --short docs/` prints nothing.
   - Red (2026-11-22): wrote `update-leak.test.ts` (L1-L4). The red command
     exits non-zero: all four fail. L1, L2, and L4 see no `update: leak`
     refusal, and L3 sees no commit, because `update.sh` has no `--docs`
     flag and no leak-check wiring. The plants use key fields only, so no
     private folder is needed.
-- [~] 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
+- [x] 53510bb184ef9575ebf833509560021d0820d61a 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
   Review C 5 F1, Review A 5 F3).
   - Red: write `harness/model-guide-tests/update-exec.test.ts` and no other file.
     Pin that `harness/model-guide/update.sh` carries the execute bit, that the README
@@ -114,6 +117,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, `git ls-files -s harness/model-guide/update.sh` shows `100755`,
     and `rg -n "only those two paths" README.md` prints no line.
+  - Green (2026-11-22, commit 53510bb): `update-exec.test.ts` exit 0, Tests 5 passed. `git ls-files -s harness/model-guide/update.sh` shows `100755`. `rg -n "only those two paths" README.md` prints no line.
   - Red (2026-11-22): wrote `update-exec.test.ts` (E1-E5). The red command
     exits non-zero: E1, E2, E3, E4 fail and E5 passes. The index mode is
     `100644`, the direct exec fails, and the README still claims only those
@@ -121,6 +125,8 @@ Spec FR-1 to FR-5, EV1 to EV4.
     `bash` prefix.
 
 Verify (Phase 1): spec FR-1 to FR-5 hold, each with its targeted test file green.
+
+Green evidence (2026-11-22, implementation commit 53510bb184ef9575ebf833509560021d0820d61a): every file below exited 0 with `--maxWorkers=1 --reporter=dot`. `update-approval` 5 passed, `update-pages` 6 passed, `update-leak` 4 passed, `update-exec` 5 passed, `update` 9 passed, `preview-gate` 122 passed, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed, `adversarial-p4-runner` 16 passed, `adversarial-p4` 24 passed, `adversarial-p4g` 4 passed, `guide` 18 passed, `real-work` 16 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. The `preview-gate` case P2B2-2 preview is a pre-existing mtime-tie flake: it failed in 3 runs and passed in 2 runs on this tree, and it also failed in 1 of 3 runs at the untouched role base 8fdbcf1. The final `preview-gate` run exited 0.
 
 ## Phase 2: The first weekly update and the deferred pilot gate
 
