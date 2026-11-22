@@ -2647,6 +2647,32 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     path calls no `scan-values` seam (`judge-run.sh` near line 1148
     and 1165), so no scan test was added. No production path changed.
     Row stays `[~]` until Green flips it.
+  - Green (2026-11-22, phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5,
+    role_base_sha 78bcba8e24327b108b9d7bb7e1db1ce6ca3be210): implementation
+    commit `fb00647`. The Red paragraph above holds a mistyped phase base
+    SHA; the phase base is `7d7d218d00a95d9d619d2856173b8136b6ace4a5`.
+  - Green code (2026-11-22, commit `fb00647`): `harness/model-guide/judges.json`
+    gains the row `{"family": "OpenAI Sol", "route": "openai/gpt-6.1-sol#high",
+    "quota_provider": "openai", "quota_source": "codex"}`. The route
+    `openai/gpt-6.1-sol#high` joins the case list of `is_pilot_route` in
+    `judge-run.sh` and in `review-run.sh`. The two blocks stay byte-identical,
+    and `review-run.sh` reads no `judges.json`. `quota.ts` maps the provider
+    `openai` to the quota id `codex` and reads `GET /api/quota/codex`.
+  - Green gates (2026-11-22, commit `fb00647`, one file at a time):
+    `judge-run.test.ts` exits 0 with `Tests 63 passed (63)`;
+    `review-run.test.ts` exits 0 with `130 pass` and `0 fail`;
+    `quota.test.ts` exits 0 with `Tests 32 passed (32)`. The first run of
+    `judge-run.test.ts` failed only on the F20 timing flake and passed on one
+    rerun. `bash -n` exits 0 on both runners. `npx tsx model-guide/quota.ts
+    --provider openai` exits 0 and names the source `codex`. The pgrep scans
+    for `fake-opencode`, `quota-server`, and `serve --service` print no line.
+    `git status --short docs/` prints nothing.
+  - Start tests (2026-11-22, through `heavy-run.sh`, one judge after the other,
+    with `BENCH_SERVER_BASE` and `BENCH_QUOTA_BASE` on
+    `http://127.0.0.1:38307`): the Sol judge exits 0 with
+    `openai/gpt-6.1-sol#high ready -`; the Muse judge exits 0 with
+    `opencode-go/muse-spark-1.3-contributor#high ready -`. No judge call ran
+    and no queue was built. Row stays `[~]` for the queue and the apply.
   - The apply writes the key `real_defects` first. Then run
     `review-set.ts lint mg-2026-11a` again, so the manifest holds the key
     SHA-256 values. Run `leak-check.ts`. Commit
