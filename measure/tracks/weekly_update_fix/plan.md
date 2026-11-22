@@ -75,7 +75,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     (2026-11-22): added F1 to pin the flag-selected branch in both record
     states and switched U2 to `--docs`; F1 fails because a flagless
     approved run still writes docs, while A1-A4 and U2 pass.
-- [~] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
+- [x] 60e24f163ec4bcd393c6415d0424a0d978dc6fee 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
     through `preview.sh` and `guide.ts`, that the commit holds the two data files plus
@@ -88,6 +88,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     exits 0, and `git status --short docs/` prints nothing.
   - Green (2026-11-22, commit 53510bb): `update-pages.test.ts` exit 0, Tests 6 passed. `git status --short docs/` prints nothing.
   - Green r6 (2026-11-23, commit 00d9013): `update-pages.test.ts` exit 0, Tests 11 passed with F2a, F2b, F7, F9a and F9b. The commit holds exactly the files whose bytes changed. A changed score rebuilds review.html and review.json; an unchanged score leaves both alone. A missing overview template refuses before any write. A commit prints one `update: committed <path>` line per path; a no-op prints `update: no change`.
+  - Green r7 (2026-11-23, commit 60e24f1): `update-pages.test.ts` exit 0, Tests 12 passed with F15. A missing review template with a changed score refuses before any write or commit. The guard sits beside the overview-template guard and shares the early score-decision result.
   - Red (2026-11-22): wrote `update-pages.test.ts` (P1, P2a, P2b, P3, P4, P5).
     The red command exits non-zero: all six fail because `update.sh` rejects
     `--docs` with the usage error. Also refreshed `update.test.ts` U2 to the
@@ -161,6 +162,8 @@ Green evidence (2026-11-22, implementation commit 53510bb184ef9575ebf83350956002
 Green r4 evidence (2026-11-22, commit c4d70a19f655817b6cf8aecf25a6f304b4a8f262): the nine files of the r5 Green line each exited 0 with `--maxWorkers=1 --reporter=dot`. `update-approval` 5 passed, `update-exec` 6 passed, `update` 9 passed, `update-pages` 6 passed, `update-leak` 4 passed, `preview-gate` 122 passed, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. No `docs/` change and no push.
 
 Green r6 evidence (2026-11-23, implementation commit 00d9013c8f7ae1b9b29db9dfd5053bb1a62db432): the nine files of the review-fix Green line each exited 0 with `--maxWorkers=1 --reporter=dot`. `update-approval` 6 passed, `update-pages` 11 passed, `update-leak` 6 passed, `update-exec` 6 passed, `update` 9 passed, `preview-gate` 122 passed on its first run, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. The index still shows mode `100755`. No `docs/` change and no push. `preview.sh` changed only to read passes held inside a route when the score file has no top-level `passes` array; F2a's incomplete score fixture needs that path.
+
+Green r7 evidence (2026-11-23, implementation commit 60e24f163ec4bcd393c6415d0424a0d978dc6fee): the nine files of the Green line each exited 0 with `--maxWorkers=1 --reporter=dot`. `update-pages` 12 passed, `update-approval` 6 passed, `update-leak` 6 passed, `update-exec` 6 passed, `update` 9 passed, `preview-gate` 122 passed on its first run, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. The index still shows mode `100755`. `preview.sh` did not change in this round. No `docs/` change and no push.
 
 ## Phase 2: The first weekly update and the deferred pilot gate
 
