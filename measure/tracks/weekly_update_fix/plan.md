@@ -121,6 +121,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     exits 0, and `git status --short docs/` prints nothing.
   - Green (2026-11-22, commit 53510bb): `update-leak.test.ts` exit 0, Tests 4 passed. `git status --short docs/` prints nothing.
   - Green r6 (2026-11-23, commit 00d9013): `update-leak.test.ts` exit 0, Tests 6 passed with L1, L2, L4, F4a and F4b. The scan covers exactly the candidate files in a throwaway repo and uses `MODEL_GUIDE_PRIVATE_DIR` with the real default. A missing private input on `--docs` prints `update: no private input`. A refusal leaves docs/ byte-identical. An unrelated staged file does not refuse.
+  - Green r9 (2026-11-23, commit dbed5ee): `adversarial-wuf.test.ts` exit 0, 17 passed, including the F1 empty, file and missing private-input cases and the default seeded-input scan. The guard on `--docs` now requires `<private>/sets/<set>/diffs/*.diff` to hold a seeded line of at least 20 characters absent from its `src` diff, and prints `update: no private input` before any write or commit. Red r9 gave every docs fixture a synthetic private input of that shape.
   - Red (2026-11-22): wrote `update-leak.test.ts` (L1-L4). The red command
     exits non-zero: all four fail. L1, L2, and L4 see no `update: leak`
     refusal, and L3 sees no commit, because `update.sh` has no `--docs`
