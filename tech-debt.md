@@ -265,3 +265,30 @@ Evidence lives in `measure/runs/deps_refresh/rescore-ab/r8/`.
 ### Pay-down options
 
 1. Find the timing cause in the e2e probe for return submit, or rerun-and-majority for e2e criteria.
+
+## 2026-11-22 — model_guide Phase 4b nonblocking findings (carried 2026-11-22, PM round cap 2026-11-19)
+
+Phase 4b reviews left these items nonblocking under the PM round cap. None is a key leak into a committed file or a public page.
+
+- Review A F3: both selectors treat any non-empty finish except exact tool-calls as terminal and accept any finite completed time (`review-a-4.16-23f16f1.json`).
+- Review A F5: source text not found.
+- Review A F8: source text not found.
+- Review A F9: source text not found.
+- Review A F10: source text not found.
+- Review A F11: source text not found.
+- Review C F1: source text not found.
+- Review C F3: source text not found.
+- Review C F4: source text not found.
+- ADV-P4D-1: seed reason patterns accept trailing credential text; both probes printed the synthetic value (`adversarial-4.15-7773823.json`).
+- ADV-P4D-2: the 499-byte cut can split a UTF-8 code point and emit invalid UTF-8 (`adversarial-4.15-7773823.json`).
+- ADV-P4D-3: a cut final step_finish event leaves tokens_complete true after a valid event (`adversarial-4.15-7773823.json`).
+- A-F1 (skipped): a same-second answer that predates call entry is accepted (`adversarial-p4f.test.ts:343`, it.skip).
+- P4F-2 (skipped): a matching top sessionID hides a foreign info.sessionID (`adversarial-p4f.test.ts:374`, it.skip).
+- P4F-3 (skipped): negative or reversed completed times and unknown, whitespace, or padded finish strings are accepted (`adversarial-p4f.test.ts:404`, it.skip.each).
+- Review B F-B1: the L5 send-timeout test is timing sensitive and failed once under load, then passed (`review-b-4.16-2bdf5cb.json`).
+- Review B F-B3: the live LIVE_KEY_SHAPE scan omits PEM private key blocks (`review-b-4.16-2bdf5cb.json`).
+- Review B F-B4: the owner check passes a foreign message with no sessionID; freshness and server scoping still apply (`review-b-4.16-3337418.json`).
+- Review B F-B5: the F20 token expectation is a fixture timing artifact under r9 sum semantics (`review-b-4.16-23f16f1.json`).
+- Review C F-C4: the F20 token assertion failed twice from read-time stamps, then passed unchanged (`review-c-4.16-23f16f1.json`).
+- Night driver nit: `reachable()` greps the whole probe file, not the last block (`~/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh`).
+- Judge-run nit: the live quota endpoint answered slower than the 5 s quota read timeout twice during the 4.13 judge runs; the runner stops with groups open and needs a rerun (`measure/runs/model_guide/adjudicate-judge-a.log`).
