@@ -36,7 +36,7 @@ File map (every new file of this track):
 
 Spec FR-1 to FR-5, EV1 to EV4.
 
-- [~] 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
+- [x] 00d9013c8f7ae1b9b29db9dfd5053bb1a62db432 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
   - Red: write `harness/model-guide-tests/update-approval.test.ts` and no other file.
     Pin that `update.sh` and `publish.ts` read `harness/model-guide/publish-approval.md`,
     that the old `measure/tracks/model_guide/` path appears in neither tool, and that
@@ -51,6 +51,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     prints no line.
   - Green (2026-11-22, commit 53510bb): `update-approval.test.ts` exit 0, Tests 5 passed. The path `rg` prints no line. The stable record is byte-identical to the archived record and parses under the publish.ts fields.
   - Green r4 (2026-11-22, commit c4d70a1): `update-approval.test.ts` exit 0, Tests 5 passed, A5 included. The stable record keeps the archived `approved_by`, `date` and six `files:` rows and carries the PM weekly rule plus provenance above `files:`. A read-only check confirms the publish.ts fields still parse.
+  - Green r6 (2026-11-23, commit 00d9013): `update-approval.test.ts` exit 0, Tests 6 passed with F1. A flagless run with the record present stays preview-only.
   - Red (2026-11-22): wrote `update-approval.test.ts` (A1-A5). The red command
     exits non-zero: A1, A2, A3, A5 fail and A4 passes. Both tools still name
     the old track path, `--docs` is unrecognized, and the stable record is
@@ -74,7 +75,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     (2026-11-22): added F1 to pin the flag-selected branch in both record
     states and switched U2 to `--docs`; F1 fails because a flagless
     approved run still writes docs, while A1-A4 and U2 pass.
-- [~] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
+- [x] 00d9013c8f7ae1b9b29db9dfd5053bb1a62db432 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
     through `preview.sh` and `guide.ts`, that the commit holds the two data files plus
@@ -86,6 +87,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, and `git status --short docs/` prints nothing.
   - Green (2026-11-22, commit 53510bb): `update-pages.test.ts` exit 0, Tests 6 passed. `git status --short docs/` prints nothing.
+  - Green r6 (2026-11-23, commit 00d9013): `update-pages.test.ts` exit 0, Tests 11 passed with F2a, F2b, F7, F9a and F9b. The commit holds exactly the files whose bytes changed. A changed score rebuilds review.html and review.json; an unchanged score leaves both alone. A missing overview template refuses before any write. A commit prints one `update: committed <path>` line per path; a no-op prints `update: no change`.
   - Red (2026-11-22): wrote `update-pages.test.ts` (P1, P2a, P2b, P3, P4, P5).
     The red command exits non-zero: all six fail because `update.sh` rejects
     `--docs` with the usage error. Also refreshed `update.test.ts` U2 to the
@@ -104,7 +106,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     assert the second commit as the byte-measured changed files including
     the rebuilt review outputs, and F2b to commit the score input in
     setup; both still fail for the stale review rendering.
-- [~] 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
+- [x] 00d9013c8f7ae1b9b29db9dfd5053bb1a62db432 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
   - Red: write `harness/model-guide-tests/update-leak.test.ts` and no other file.
     Pin that `update.sh` runs `leak-check.ts` over the files it is about to commit and
     that a leak hit refuses with one line, exit 2, and no commit. Record the failed
@@ -114,6 +116,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, and `git status --short docs/` prints nothing.
   - Green (2026-11-22, commit 53510bb): `update-leak.test.ts` exit 0, Tests 4 passed. `git status --short docs/` prints nothing.
+  - Green r6 (2026-11-23, commit 00d9013): `update-leak.test.ts` exit 0, Tests 6 passed with L1, L2, L4, F4a and F4b. The scan covers exactly the candidate files in a throwaway repo and uses `MODEL_GUIDE_PRIVATE_DIR` with the real default. A missing private input on `--docs` prints `update: no private input`. A refusal leaves docs/ byte-identical. An unrelated staged file does not refuse.
   - Red (2026-11-22): wrote `update-leak.test.ts` (L1-L4). The red command
     exits non-zero: all four fail. L1, L2, and L4 see no `update: leak`
     refusal, and L3 sees no commit, because `update.sh` has no `--docs`
@@ -153,6 +156,8 @@ Verify (Phase 1): spec FR-1 to FR-5 hold, each with its targeted test file green
 Green evidence (2026-11-22, implementation commit 53510bb184ef9575ebf833509560021d0820d61a): every file below exited 0 with `--maxWorkers=1 --reporter=dot`. `update-approval` 5 passed, `update-pages` 6 passed, `update-leak` 4 passed, `update-exec` 5 passed, `update` 9 passed, `preview-gate` 122 passed, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed, `adversarial-p4-runner` 16 passed, `adversarial-p4` 24 passed, `adversarial-p4g` 4 passed, `guide` 18 passed, `real-work` 16 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. The `preview-gate` case P2B2-2 preview is a pre-existing mtime-tie flake: it failed in 3 runs and passed in 2 runs on this tree, and it also failed in 1 of 3 runs at the untouched role base 8fdbcf1. The final `preview-gate` run exited 0.
 
 Green r4 evidence (2026-11-22, commit c4d70a19f655817b6cf8aecf25a6f304b4a8f262): the nine files of the r5 Green line each exited 0 with `--maxWorkers=1 --reporter=dot`. `update-approval` 5 passed, `update-exec` 6 passed, `update` 9 passed, `update-pages` 6 passed, `update-leak` 4 passed, `preview-gate` 122 passed, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. No `docs/` change and no push.
+
+Green r6 evidence (2026-11-23, implementation commit 00d9013c8f7ae1b9b29db9dfd5053bb1a62db432): the nine files of the review-fix Green line each exited 0 with `--maxWorkers=1 --reporter=dot`. `update-approval` 6 passed, `update-pages` 11 passed, `update-leak` 6 passed, `update-exec` 6 passed, `update` 9 passed, `preview-gate` 122 passed on its first run, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. The index still shows mode `100755`. No `docs/` change and no push. `preview.sh` changed only to read passes held inside a route when the score file has no top-level `passes` array; F2a's incomplete score fixture needs that path.
 
 ## Phase 2: The first weekly update and the deferred pilot gate
 
