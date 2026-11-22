@@ -2407,18 +2407,19 @@ describe("P4 the judge row quota fields (task 4.13e)", () => {
     }
   });
 
-  it("J18d the committed judges.json holds the three judge routes with both quota fields and no tab (guard: holds at HEAD)", () => {
+  it("J18d the committed judges.json holds the four judge routes with both quota fields and no tab (Sol seat, PM 2026-11-22)", () => {
     const file = join(REPO_ROOT, "harness", "model-guide", "judges.json");
     expect(existsSync(file), `judges.json is missing: ${file}`).toBe(true);
     const doc = JSON.parse(readFileSync(file, "utf8"));
     const rows = Array.isArray(doc) ? doc : (doc.routes ?? []);
     expect(
       rows.map((row: { route?: unknown }) => row.route).sort(),
-      "judges.json holds the three judge routes of spec D11",
+      "judges.json holds the four judge routes of spec D11",
     ).toEqual(
       [
         "claude-code/claude-sonnet-5-5#max",
         "kimi-code-plan-cn/k3.1-pro#high",
+        "openai/gpt-6.1-sol#high",
         "opencode-go/muse-spark-1.3-contributor#high",
       ].sort(),
     );
@@ -2430,6 +2431,10 @@ describe("P4 the judge row quota fields (task 4.13e)", () => {
         expect(value, `${row.route} holds no tab in ${field}`).not.toContain("\t");
       }
     }
+    const sol = rows.find((row: { route?: unknown }) => row.route === "openai/gpt-6.1-sol#high");
+    expect(sol, "judges.json holds the Sol row").toBeDefined();
+    expect(sol.quota_provider, "the Sol row reads the openai quota provider").toBe("openai");
+    expect(sol.quota_source, "the Sol row reads the codex quota source").toBe("codex");
   });
 });
 
@@ -3479,6 +3484,99 @@ describe("P4b row 4.16 L11 the live-server path of the judge runner", () => {
       expect(runRecord(fixture, "a"), "the judge wrote no run record").not.toBeNull();
     } finally {
       live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+});
+
+// ---------------------------------------------------------------------------
+// P4b row 4.13-sol the Sol judge seat (PM 2026-11-22, spec D11 and D14).
+// The first judge for set mg-2026-11a is openai/gpt-6.1-sol#high; it reaches
+// the model through the judge-run.sh live-server path, as the Muse judge
+// does. Each case fails at the role base: Sol is not in judges.json and not
+// in is_pilot_route, and quota.ts refuses the openai provider.
+// ---------------------------------------------------------------------------
+describe("P4b row 4.13-sol the Sol judge seat (PM 2026-11-22)", () => {
+  const SOL = "openai/gpt-6.1-sol#high";
+  const SOL_ROW = { route: SOL, quota_provider: "openai", quota_source: "codex" };
+  const SOL_VERDICT =
+    "```json\n" + JSON.stringify({ "sample#C0a1b2c3d4e5f": "real-defect" }, null, 2) + "\n```\n";
+
+  it("S1 the Sol start test uses one live session with the Sol model, the deny config, no seed, and the codex quota read", async () => {
+    const fixture = await buildFixture({
+      route: SOL,
+      groups: [GROUP_ONE],
+      judgesRoutes: [SOL_ROW],
+    });
+    const live = await startLiveServer(fixture.fakeRoot, {
+      messages: [nativeJudgeAssistant(SOL_VERDICT)],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, [...judgeArgs(fixture), "--start-test"], {
+        BENCH_SERVER_BASE: live.base,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = stdoutLines(result);
+      expect(lines, `the start test prints one line: ${result.stdout}`).toEqual([`${SOL} ready -`]);
+      const creates = live.requests().filter((line) => line.startsWith("POST /api/session "));
+      expect(creates, "the Sol start test created no live session").toHaveLength(1);
+      const body = JSON.parse(creates[0].slice("POST /api/session ".length));
+      const directory = body.location && body.location.directory;
+      expect(typeof directory, "the create carries no location.directory").toBe("string");
+      const model = body.model || {};
+      expect(model.providerID, "the create carries no model providerID").toBe("openai");
+      expect(model.id, "the create carries no model id").toBe("gpt-6.1-sol");
+      const config = JSON.parse(readFileSync(join(directory, "opencode.json"), "utf8"));
+      for (const tool of DENY_TOOLS) {
+        expect(config.permission?.[tool], `the live job config does not deny ${tool}`).toBe("deny");
+      }
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the Sol start test made a seed or auth call").toEqual([]);
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the Sol start test used the isolated opencode run",
+      ).toEqual([]);
+      expect(
+        quotaRequests(fixture).filter((path) => path === "/api/quota/codex"),
+        "the Sol quota read did not use the codex provider id",
+      ).not.toEqual([]);
+      expect(judgeFile(fixture, "a"), "the start test wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the start test wrote a run record").toBeNull();
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("S2 the Sol route without BENCH_SERVER_BASE refuses with the pilot-route line before any seed", async () => {
+    const fixture = await buildFixture({
+      route: SOL,
+      groups: [GROUP_ONE],
+      judgesRoutes: [SOL_ROW],
+    });
+    try {
+      assertRunnerExists();
+      const result = runJudge(fixture, [...judgeArgs(fixture), "--start-test"], {
+        MG_UNSET_SERVER_BASE: "1",
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+      const named = namedLines(result);
+      expect(named, "the runner printed no named line").toHaveLength(1);
+      expect(named[0], "the refusal is not the shared pilot-route line").toBe(
+        "judge-run: a pilot route needs BENCH_SERVER_BASE",
+      );
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the unset-base Sol run used the isolated seed").toEqual([]);
+      expect(
+        modelCalls(logEntries(fixture.logPath)),
+        "the unset-base Sol run made a model call",
+      ).toEqual([]);
+      expect(judgeFile(fixture, "a"), "the refused run wrote a judge file").toBeNull();
+      expect(runRecord(fixture, "a"), "the refused run wrote a run record").toBeNull();
+    } finally {
       dropFixture(fixture);
     }
   }, 60_000);

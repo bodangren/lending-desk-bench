@@ -2611,7 +2611,7 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     nights run. One pass per route shows if a route is far off. Each
     rank carries the note `one pass`. Evidence:
     `measure/runs/model_guide/passes-4.12.txt`.
-- [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
+- [~] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
   - The first judge is `kimi-code-plan-cn/k3.1-pro#high` and the second
@@ -2628,6 +2628,25 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
   - Code (PM 2026-11-22): add the Sol row to `judges.json` and put
     `openai/gpt-6.1-sol#high` on the `judge-run.sh` live path. Update
     test J18d. Work it through Red and Green.
+  - Red (2026-11-22, phase_base_sha 7d7d218d00a95d9d2856173b8136b6ace4a5,
+    role_base_sha 7f92b17e4bd1d9ac96eada7b833e3d4b0247aa78): test-only
+    changes in `harness/model-guide-tests/judge-run.test.ts`. J18d now
+    expects the four judge routes and pins the Sol row quota fields
+    (`openai` / `codex`). New S1 pins the Sol live start test (one
+    session create with the Sol model, the deny config, no seed call,
+    no isolated `opencode run`, and the `/api/quota/codex` read) and
+    new S2 pins the unset-base refusal (exit 2 with
+    `judge-run: a pilot route needs BENCH_SERVER_BASE`). Red line
+    `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
+    exits 1 with `Tests 3 failed | 60 passed (63)`; the failures are
+    J18d, S1, and S2 only, each for the missing Sol seat (no Sol row
+    in `judges.json`, no live path, and `quota.ts` refuses the
+    `openai` provider). Quota item: `npx tsx model-guide/quota.ts
+    --provider openai` exits 2 with `the provider openai is not in the
+    spec D15 table`, so S1 names the `codex` read. Scan item: the live
+    path calls no `scan-values` seam (`judge-run.sh` near line 1148
+    and 1165), so no scan test was added. No production path changed.
+    Row stays `[~]` until Green flips it.
   - The apply writes the key `real_defects` first. Then run
     `review-set.ts lint mg-2026-11a` again, so the manifest holds the key
     SHA-256 values. Run `leak-check.ts`. Commit
