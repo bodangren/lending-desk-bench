@@ -520,7 +520,15 @@ questions".
       judge call of each judge. When Kimi is unreachable or out of quota at
       judge time, `claude-code/claude-sonnet-5-5#max` takes its seat, but
       only when Claude is under pace. Else the D11 fallback holds for that
-      finding: each disputed finding is left out. The orchestrator logs the
+      finding: each disputed finding is left out. For set `mg-2026-11a`
+      the PM seats `openai/gpt-6.1-sol#high` (Codex, on pace) in the
+      first seat (PM 2026-11-22). Kimi runs over its weekly pace (29.9
+      vs 13.5). The second seat stays
+      `opencode-go/muse-spark-1.3-contributor#high`. A start test runs
+      first for each judge. Sol sits outside the pilot families (Hy4,
+      DeepSeek, MiMo) and differs from Muse. Sol reaches the model
+      through the D14 live-server path, as the Muse judge does. The Kimi
+      and Claude text above stays the standing rule. The orchestrator logs the
       route that judged each finding. The second judge never reads the
       verdicts of the first judge. Neither judge sees the route name of a
       finding. The PM replaced the former second judge, the ByteDance Doubao
@@ -532,7 +540,12 @@ questions".
       `claude-code/claude-sonnet-5-5#max`. Each entry holds a
       `quota_provider` and a `quota_source`: `kimi-code-plan-cn` reads
       `kimi-for-coding`, `opencode-go` reads `opencode-go`, and
-      `claude-code` reads `claude`. `judge-run.sh` accepts a route only
+      `claude-code` reads `claude`. PM 2026-11-22 adds the seat for set
+      `mg-2026-11a`: `judges.json` gains the row `{"family": "OpenAI
+      Sol", "route": "openai/gpt-6.1-sol#high", "quota_provider":
+      "openai", "quota_source": "codex"}`. `openai` reads `codex`. The
+      Kimi, Muse, and Claude rows stay the standing rule.
+      `judge-run.sh` accepts a route only
       from `judges.json`. `review-run.sh` never reads `judges.json`.
     - **The verdicts.** Each judge gives one verdict to each finding:
       - `real-defect`: the defect was in the source diff before the seeding.

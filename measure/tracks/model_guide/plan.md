@@ -2579,7 +2579,7 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     fails, the orchestrator seeds a harder set as `mg-2026-11p2` (task 3.16)
     and runs the pilot again. After 2 reseeds the orchestrator sends the set
     to the PM.
-- [ ] 4.12 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
+- [x] 4.12 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
   (02:00 to 06:00 +07). One pass per reachable pilot route per night.
   Nights 1 and 2 run `mg-2026-11p` (the pilot pass of task 4.11); night 3
   runs `mg-2026-11a`. No non-pilot route gets a pass until the PM approves
@@ -2597,6 +2597,20 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     `measure/runs/model_guide/passes-4.12.txt` names the reason (quota
     stop, region block, or open pass). Each line of the file names
     `exit=<rc>` and `state=<state>` of the pass record.
+  - Night 3 result (2026-11-22, set `mg-2026-11a`, HEAD 6306874, PM
+    2026-11-22). `opencode-go/deepseek-v4.1-flash`: state complete, 14 of
+    14 answers, 553,085 tokens. Its exit 2 came from `heavy-run.sh`.
+    A PM coder edited that file in place at 02:29-02:41 while the job
+    ran. The PM holds the pass valid.
+    `opencode-go/hy4-flash-free#high`: exit 0, state complete, 14 of
+    14 answers, 320,193 tokens. `opencode-go/mimo-v2.6-flash`: exit 2
+    (`the model answer did not complete`), no record, 1 of 14 answers.
+    Night 1 was not reachable in probe-4.10. Night 2 refused with `a
+    pilot route needs BENCH_SERVER_BASE`. The driver fixed that refusal
+    on 2026-11-21. Night 3 gave an incomplete MiMo answer. No extra
+    nights run. One pass per route shows if a route is far off. Each
+    rank carries the note `one pass`. Evidence:
+    `measure/runs/model_guide/passes-4.12.txt`.
 - [ ] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
@@ -2611,6 +2625,9 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     Claude is under pace. Else the D11 fallback holds for that finding: the
     finding is left out. The second judge never reads the verdicts of the
     first judge.
+  - Code (PM 2026-11-22): add the Sol row to `judges.json` and put
+    `openai/gpt-6.1-sol#high` on the `judge-run.sh` live path. Update
+    test J18d. Work it through Red and Green.
   - The apply writes the key `real_defects` first. Then run
     `review-set.ts lint mg-2026-11a` again, so the manifest holds the key
     SHA-256 values. Run `leak-check.ts`. Commit
@@ -2628,6 +2645,9 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
   - The orchestrator records the scope ruling of the D18 second source for
     the Code review row: `guide.ts` `fromTrackA` gives no pick when the
     track A rank is empty.
+  - Scope (PM 2026-11-22): each rank carries the note `one pass`. Row
+    4.14 builds the score file and the local preview only. The board
+    stays frozen. Nothing is published without a PM word.
   - Verify: `.tmp/model-guide-preview/review.html` shows the rank by the
     worst pass, and the code review row of the table has a pick or "no pick
     yet" (spec acceptance 10 and 11).
