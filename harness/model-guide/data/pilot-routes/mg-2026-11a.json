@@ -1,0 +1,23 @@
+[
+  {
+    "family": "DeepSeek Flash",
+    "route": "opencode-go/deepseek-v4.1-flash",
+    "kind": "plan",
+    "quota_provider": "opencode-go",
+    "quota_source": "opencode-go"
+  },
+  {
+    "family": "Hy",
+    "route": "opencode-go/hy4-flash-free#high",
+    "kind": "plan",
+    "quota_provider": "opencode-go",
+    "quota_source": "opencode-go"
+  },
+  {
+    "family": "Go",
+    "route": "opencode-go/mimo-v2.6-flash",
+    "kind": "plan",
+    "quota_provider": "opencode-go",
+    "quota_source": "opencode-go"
+  }
+]
