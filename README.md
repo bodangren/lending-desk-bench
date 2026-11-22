@@ -281,3 +281,7 @@ Other known limits:
 - A run day is skipped with `DAILY SKIP lock held` when the daily or weekly lock is held.
 - The job skips a push when `origin/main` has moved or the fetch fails.
 - A host fault inside a track batch can stop that batch after the quota check.
+
+## Model guide weekly update
+
+The PM sends a new export when fresh model data arrives, and the export manifest is `MANIFEST-<date>.txt`. An operator runs `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>` by hand when the export arrives; the job is not scheduled. The script writes `docs/assets/data/real-work.json` and `docs/assets/data/model-guide.json`, with preview copies under `.tmp/model-guide-preview`. The commit holds only those two paths, and the script never pushes.
