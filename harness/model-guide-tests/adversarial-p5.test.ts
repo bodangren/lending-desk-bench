@@ -87,10 +87,15 @@ function emptyPass(route: string): any {
 }
 
 function approval(root: string, rows: Array<[string, string]>): void {
-  writeFileSync(join(root, "measure", "tracks", "model_guide", "publish-approval.md"), [
+  const text = [
     "approved_by: synthetic owner", "date: 2026-11-22", "files:",
     ...rows.map(([hash, path]) => `${hash}  ${path}`), "",
-  ].join("\n"));
+  ].join("\n");
+  // Both paths: the stable path the tools read (after the harness copy, so
+  // the fixture rows win over any copied real record) and the old track
+  // path the previous contract used.
+  writeFileSync(join(root, "harness", "model-guide", "publish-approval.md"), text);
+  writeFileSync(join(root, "measure", "tracks", "model_guide", "publish-approval.md"), text);
 }
 
 function runPublish(root: string) {

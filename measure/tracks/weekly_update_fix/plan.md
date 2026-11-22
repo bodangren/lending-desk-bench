@@ -55,7 +55,11 @@ Spec FR-1 to FR-5, EV1 to EV4.
     missing. Also refreshed `update.test.ts` to the new contract: `APPROVAL`
     and `approve()` now point at `harness/model-guide/publish-approval.md`,
     since the old path contradicts FR-1. U1, U3, UP1 stay unchanged, and the
-    refreshed U2 fails while the rest passes.
+    refreshed U2 fails while the rest passes. Red r2 (2026-11-22): moved
+    the publish fixtures of preview-gate.test.ts and adversarial-p5.test.ts
+    to write the stable path as well as the old path, so both files pass at
+    HEAD and the breakage run with the stable-reading tool fails without
+    the stable write, as Green's proof showed.
 - [~] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`

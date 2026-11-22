@@ -69,7 +69,7 @@ import { afterAll, describe, expect, it } from "vitest";
  *
  * publish.ts
  *   cd <repo>/harness && npx tsx model-guide/publish.ts --preview <folder>
- *   The approval record is `<repo>/measure/tracks/model_guide/publish-approval.md`:
+ *   The approval record is `<repo>/harness/model-guide/publish-approval.md`:
  *     approved_by: <name>
  *     date: <YYYY-MM-DD>
  *     files:
@@ -358,6 +358,18 @@ function runPublish(root: string, preview = previewFolder(root)) {
   return runPublishArgs(root, ["--preview", preview]);
 }
 
+/** The fixture approval record, written at both paths: the stable path the
+ * tools read, and the old track path the previous contract used. Both
+ * writers run after the harness copy, so the fixture rows win over any
+ * copied real record. */
+const STABLE_APPROVAL = join("harness", "model-guide", "publish-approval.md");
+const OLD_APPROVAL = join("measure", "tracks", "model_guide", "publish-approval.md");
+
+function writeApprovalRecord(root: string, text: string): void {
+  writeFileSync(join(root, STABLE_APPROVAL), text);
+  writeFileSync(join(root, OLD_APPROVAL), text);
+}
+
 function writeApproval(root: string, rows: Array<[string, string]>): void {
   const text = [
     "approved_by: Daniel",
@@ -366,11 +378,11 @@ function writeApproval(root: string, rows: Array<[string, string]>): void {
     ...rows.map(([sha, path]) => `${sha}  ${path}`),
     "",
   ].join("\n");
-  writeFileSync(join(root, "measure", "tracks", "model_guide", "publish-approval.md"), text);
+  writeApprovalRecord(root, text);
 }
 
 function writeApprovalText(root: string, text: string): void {
-  writeFileSync(join(root, "measure", "tracks", "model_guide", "publish-approval.md"), text);
+  writeApprovalRecord(root, text);
 }
 
 function approvedHashes(root: string, paths: string[]): Array<[string, string]> {
