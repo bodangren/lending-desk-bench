@@ -36,7 +36,7 @@ File map (every new file of this track):
 
 Spec FR-1 to FR-5, EV1 to EV4.
 
-- [x] 53510bb184ef9575ebf833509560021d0820d61a 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
+- [~] 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
   - Red: write `harness/model-guide-tests/update-approval.test.ts` and no other file.
     Pin that `update.sh` and `publish.ts` read `harness/model-guide/publish-approval.md`,
     that the old `measure/tracks/model_guide/` path appears in neither tool, and that
@@ -66,7 +66,10 @@ Spec FR-1 to FR-5, EV1 to EV4.
     shadowing sha256 refusal. Red r4 (2026-11-22): excluded the real
     approval record from every tool-folder fixture copy, so no-record cases
     still see no record once Green adds the real record; consent cases keep
-    writing their own fixture record.
+    writing their own fixture record. Red r5 (2026-11-22): changed A5 to
+    the PM weekly refresh contract, so the stable record keeps the archived
+    consent lines and rows and carries the rule text with its provenance;
+    A5 fails for the missing rule text while A1-A4 pass.
 - [x] 53510bb184ef9575ebf833509560021d0820d61a 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
@@ -104,7 +107,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     refusal, and L3 sees no commit, because `update.sh` has no `--docs`
     flag and no leak-check wiring. The plants use key fields only, so no
     private folder is needed.
-- [x] 53510bb184ef9575ebf833509560021d0820d61a 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
+- [~] 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
   Review C 5 F1, Review A 5 F3).
   - Red: write `harness/model-guide-tests/update-exec.test.ts` and no other file.
     Pin that `harness/model-guide/update.sh` carries the execute bit, that the README
@@ -122,7 +125,9 @@ Spec FR-1 to FR-5, EV1 to EV4.
     exits non-zero: E1, E2, E3, E4 fail and E5 passes. The index mode is
     `100644`, the direct exec fails, and the README still claims only those
     two paths with no `--docs` branch. The README command already has no
-    `bash` prefix.
+    `bash` prefix. Red r5 (2026-11-22): added E6 to pin the PM weekly
+    refresh rule in the README section; E6 fails for the missing rule text
+    while E1-E5 pass.
 
 Verify (Phase 1): spec FR-1 to FR-5 hold, each with its targeted test file green.
 

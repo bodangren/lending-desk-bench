@@ -22,6 +22,8 @@ import { afterAll, describe, expect, it } from "vitest";
  *     the docs branch (`--docs`) separately.
  *   - The README commit claim names the two data files plus the rebuilt
  *     pages. The old "only those two paths" claim is gone.
+ *   - The README weekly-update section holds the PM weekly refresh rule:
+ *     its three conditions and the page-look sentence.
  *
  * No case runs a tool against the real repo. E2 executes a temp copy of
  * the script with no argument, which stops at the usage line.
@@ -98,6 +100,20 @@ describe("the weekly update executable bit and README wording (spec FR-5)", () =
     ]) {
       expect(section, `the claim names ${path}`).toContain(path);
     }
+  });
+
+  it("E6: the README holds the PM weekly refresh rule", () => {
+    const section = weeklySection();
+    for (const condition of [
+      "leak check passes",
+      "only data and generated pages change",
+      "run log names the files pushed",
+    ]) {
+      expect(section, `the rule holds: ${condition}`).toContain(condition);
+    }
+    expect(section, "the page-look sentence").toContain(
+      "needs one PM page look (page-check) before the push",
+    );
   });
 
   it("E5: the README names the command without a bash prefix", () => {

@@ -30,8 +30,10 @@ import { afterAll, describe, expect, it } from "vitest";
  *     `update: no approval record` on stdout, exits 2, and writes no file
  *     and makes no commit. A plain run without `--docs` keeps the
  *     preview-only branch.
- *   - The stable record holds the same six rows as
- *     `measure/archive/model_guide/publish-approval.md`.
+ *   - The stable record parses under the `publish.ts` rules. Its
+ *     `approved_by` line, `date` line, and every `files:` row equal the
+ *     archived record's. The text above `files:` holds the PM weekly
+ *     refresh rule and names the archived record and PM 2026-11-22.
  *
  * Every git action runs in a temp repo under the system temp folder. No
  * case reads or writes the real repo history, the real `docs/`, the real
@@ -209,6 +211,14 @@ function runPublish(root: string, preview: string) {
   );
 }
 
+/** The first line that starts with `key:`. The parser reads the first
+ * match, so the test does the same. */
+function recordLine(text: string, key: string): string {
+  const line = text.split("\n").find((entry) => entry.startsWith(`${key}:`));
+  expect(line, `the record holds an ${key} line`).toBeDefined();
+  return line as string;
+}
+
 /** The `sha path` rows of an approval record, in file order. */
 function approvalRows(text: string): string[] {
   return text
@@ -287,12 +297,42 @@ describe("the weekly update approval path (spec FR-1, FR-2)", () => {
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
   });
 
-  it("A5: the stable record holds the same six rows as the archived record", () => {
-    const stable = join(ROOT, STABLE_REL);
-    expect(existsSync(stable), `missing ${STABLE_REL}`).toBe(true);
-    expect(approvalRows(readFileSync(stable, "utf8"))).toEqual(
-      approvalRows(readFileSync(ARCHIVED_APPROVAL, "utf8")),
+  it("A5: the stable record carries the archived consent plus the PM weekly rule", () => {
+    const stableText = readFileSync(join(ROOT, STABLE_REL), "utf8");
+    const archivedText = readFileSync(ARCHIVED_APPROVAL, "utf8");
+    // The record parses under the publish.ts rules: a non-empty
+    // approved_by line, a non-empty date line, and a files: section last.
+    expect(stableText.match(/^approved_by: (.+)$/m)?.[1].trim(), "a non-empty approved_by line").toBeTruthy();
+    expect(stableText.match(/^date: (.+)$/m)?.[1].trim(), "a non-empty date line").toBeTruthy();
+    const lines = stableText.split("\n");
+    const start = lines.findIndex((line) => line.trim() === "files:");
+    expect(start, "a files: section").toBeGreaterThanOrEqual(0);
+    const tail = lines.slice(start + 1).filter((line) => line.trim() !== "");
+    expect(tail.length, "the files section holds rows").toBeGreaterThan(0);
+    for (const line of tail) {
+      expect(line, `the row parses: ${line}`).toMatch(/^[0-9a-f]{64}\s+\S/);
+    }
+    // The consent lines and every files: row equal the archived record's.
+    expect(recordLine(stableText, "approved_by")).toBe(recordLine(archivedText, "approved_by"));
+    expect(recordLine(stableText, "date")).toBe(recordLine(archivedText, "date"));
+    expect(approvalRows(stableText)).toEqual(approvalRows(archivedText));
+    expect(approvalRows(stableText)).toHaveLength(6);
+    // The text above files: holds the PM weekly rule and its provenance.
+    const head = lines.slice(0, start).join("\n");
+    for (const condition of [
+      "leak check passes",
+      "only data and generated pages change",
+      "same page set and layout",
+      "run log names the files pushed",
+    ]) {
+      expect(head, `the rule holds: ${condition}`).toContain(condition);
+    }
+    expect(head, "the page-look sentence").toContain(
+      "needs one PM page look (page-check) before the push",
     );
-    expect(approvalRows(readFileSync(stable, "utf8"))).toHaveLength(6);
+    expect(head, "the provenance names the archived record").toContain(
+      "measure/archive/model_guide/publish-approval.md",
+    );
+    expect(head, "the provenance names the PM ruling").toContain("PM 2026-11-22");
   });
 });
