@@ -122,6 +122,54 @@ if [ -n "$SCORES" ]; then
   fi
 fi
 
+# A real private input holds seeded-line data. Replicate the folder rule of
+# leak-check.ts: <private>/sets/<set>/diffs/*.diff must carry a line of at
+# least 20 characters that its src/ counterpart does not carry.
+private_has_seeded_input() {
+  local dir="$1"
+  [ -d "$dir" ] || return 1
+  python3 - "$dir" <<'PY'
+import os
+import re
+import sys
+
+root = sys.argv[1]
+sets_dir = os.path.join(root, "sets")
+if not os.path.isdir(sets_dir):
+    raise SystemExit(1)
+
+
+def body(path):
+    out = []
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for line in handle:
+                match = re.match(r"^L(?:\d+|---) [-+](.*)$", line.rstrip("\n"))
+                if match:
+                    out.append(match.group(1))
+    except OSError:
+        pass
+    return out
+
+
+for name in sorted(os.listdir(sets_dir)):
+    set_dir = os.path.join(sets_dir, name)
+    if not os.path.isdir(set_dir):
+        continue
+    diffs_dir = os.path.join(set_dir, "diffs")
+    if not os.path.isdir(diffs_dir):
+        continue
+    for diff in sorted(os.listdir(diffs_dir)):
+        if not diff.endswith(".diff"):
+            continue
+        source = set(body(os.path.join(set_dir, "src", diff)))
+        for text in body(os.path.join(diffs_dir, diff)):
+            if len(text) >= 20 and text not in source:
+                raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
 # A docs write needs the consent record, a real private input, the guide
 # section template and, when a review page will be built, the review template.
 # Refuse before any write.
@@ -129,7 +177,7 @@ if [ "$DOCS" -eq 1 ] && [ ! -f "$APPROVAL" ]; then
   echo "update: no approval record"
   exit 2
 fi
-if [ "$DOCS" -eq 1 ] && [ ! -d "$PRIVATE_DIR" ]; then
+if [ "$DOCS" -eq 1 ] && ! private_has_seeded_input "$PRIVATE_DIR"; then
   echo "update: no private input"
   exit 2
 fi
