@@ -1076,3 +1076,16 @@ if [ -n "$SCORES" ] && [ -f "$PREVIEW_ABS/review.html" ]; then
 else
   rm -f "$PREVIEW_ABS/review.html" "$PREVIEW_ABS/review.json"
 fi
+
+# Option A (PM 2026-11-22): the three public data files also sit under
+# <preview>/assets/data/, the publish target of spec EV12/D19. The root copies
+# stay for the other readers. The docs files copied into assets/data stay
+# unchanged. A stale mirror goes away when its root copy goes away.
+mkdir -p "$PREVIEW_ABS/assets/data"
+for name in real-work.json model-guide.json review.json; do
+  if [ -f "$PREVIEW_ABS/$name" ]; then
+    cp "$PREVIEW_ABS/$name" "$PREVIEW_ABS/assets/data/$name"
+  else
+    rm -f "$PREVIEW_ABS/assets/data/$name"
+  fi
+done
