@@ -11,7 +11,9 @@
  * `--private`, `--set`, `--route`, `--pass`, `--date`, and `--outputs` are
  * required. `--scores` names the public folder of the score files; the
  * default is `harness/model-guide/data/review-scores`. `--verdicts` names the
- * agreed verdicts of the two judges; it is optional.
+ * agreed verdicts of the two judges; it is optional. `--incomplete-reason`
+ * names the reason shown on each incomplete route; it is optional. A reason
+ * with a credential key shape is refused, and the value is never printed.
  *
  * The private set holds the keys of D7:
  *   <private>/sets/<set_id>/keys/<diff_id>.json
@@ -63,6 +65,8 @@
  *   real_defects, by_class, by_severity
  * A route record holds exactly:
  *   route, state, passes, worst, median, best, worst_blocker_recall, rank
+ * An incomplete route also holds `incomplete_reason` when `--incomplete-reason`
+ * was given. A complete route and a pass record never hold it.
  * The `passes` of a route record holds the pass records of that route, in
  * pass order. The Phase 2 reader `guide.ts` reads the state, the date, the
  * score, and the recall of each one.
@@ -85,6 +89,9 @@ const MAX_FINDINGS = 30;
 const WINDOW = 3;
 const COMPLETE_PASSES = 3;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** The credential key shapes of the live runner guard. */
+const KEY_SHAPE_RE =
+  /sk-[A-Za-z0-9_-]{20,}|xox[bap]-[A-Za-z0-9-]{10,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}/;
 
 /** One refusal line on stdout and exit 2. The tool writes no score file. */
 function refuse(check: string): never {
@@ -136,6 +143,7 @@ interface Args {
   outputsDir: string;
   scoresDir: string;
   verdictsFile: string | null;
+  incompleteReason: string | null;
 }
 
 /** The command line. Each flag takes the next token as its value. */
@@ -153,7 +161,8 @@ function parseArgs(argv: string[]): Args {
       flag !== "--date" &&
       flag !== "--outputs" &&
       flag !== "--scores" &&
-      flag !== "--verdicts"
+      flag !== "--verdicts" &&
+      flag !== "--incomplete-reason"
     ) {
       refuse(`unknown flag ${flag}`);
     }
@@ -178,6 +187,7 @@ function parseArgs(argv: string[]): Args {
     outputsDir: values["--outputs"],
     scoresDir: values["--scores"] ?? DEFAULT_SCORES,
     verdictsFile: values["--verdicts"] ?? null,
+    incompleteReason: values["--incomplete-reason"] ?? null,
   };
 }
 
@@ -485,10 +495,11 @@ interface RouteRecord {
   best: number;
   worst_blocker_recall: number;
   rank: number | null;
+  incomplete_reason?: string;
 }
 
 /** The route records of every route of the score file. */
-function routeRecords(passes: any[]): RouteRecord[] {
+function routeRecords(passes: any[], incompleteReason: string | null): RouteRecord[] {
   const routes = new Map<string, any[]>();
   for (const pass of passes) {
     if (!isObject(pass) || typeof pass.route !== "string") continue;
@@ -512,7 +523,7 @@ function routeRecords(passes: any[]): RouteRecord[] {
       const right = typeof b.pass === "number" ? b.pass : 0;
       return left - right;
     });
-    records.push({
+    const record: RouteRecord = {
       route,
       state: list.length >= COMPLETE_PASSES ? "complete" : "incomplete",
       passes: ordered,
@@ -521,7 +532,11 @@ function routeRecords(passes: any[]): RouteRecord[] {
       best: scores.length === 0 ? 0 : Math.max(...scores),
       worst_blocker_recall: recalls.length === 0 ? 0 : Math.min(...recalls),
       rank: null,
-    });
+    };
+    if (record.state === "incomplete" && incompleteReason !== null) {
+      record.incomplete_reason = incompleteReason;
+    }
+    records.push(record);
   }
   const complete = records.filter((record) => record.state === "complete");
   complete.sort(
@@ -539,6 +554,9 @@ function routeRecords(passes: any[]): RouteRecord[] {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
+  if (args.incompleteReason !== null && KEY_SHAPE_RE.test(args.incompleteReason)) {
+    refuse("incomplete-reason");
+  }
   const scorePath = join(args.scoresDir, `${args.setId}.json`);
   refuseSymlink(writePath(scorePath, args.scoresDir));
   const keysDir = join(args.privateDir, "sets", args.setId, "keys");
@@ -619,7 +637,7 @@ function main(): void {
   const manifest = {
     set_id: args.setId,
     passes: next,
-    routes: routeRecords(next),
+    routes: routeRecords(next, args.incompleteReason),
   };
 
   mkdirSync(args.scoresDir, { recursive: true });
