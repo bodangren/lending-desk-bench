@@ -2741,12 +2741,14 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
 //     count in that order. The heads are Class, Found, Missed and Severity,
 //     Found, Missed.
 //   - A route with fewer than 3 complete passes has `rank: null` in the
-//     score document. Its row holds the mark `incomplete: <n> of 3 passes`
-//     with the count of its complete passes (a provisional pass is
-//     complete), and `incomplete: <n> of 3 passes (<reason>)` when the
-//     route record carries `incomplete_reason`. The reason is HTML-escaped.
+//     score document. Its row holds the bare mark `incomplete: <n> of 3
+//     passes` with the count of its complete passes (a provisional pass is
+//     complete). The page never renders `incomplete_reason`, even when the
+//     route record carries one (PM 2026-11-22: the reason is internal text).
 //     The row holds no rank number. Its worst cell holds the worst pass
 //     score of its passes; its median, best, and recall cells stay "–".
+//     A route with 0 complete passes shows "–" in every count cell of its
+//     class table and its severity table.
 //   - Each pass carries `data-mg="review-pass"` with `data-route`,
 //     `data-pass`, and `data-state` (`complete` or `provisional`).
 //   - The set counts carry `data-mg="review-set-diffs"`,
@@ -3379,7 +3381,10 @@ describe("the review page cases V1 to V9 of task 4.8a", () => {
     expect(existsSync(join(previewFolder(root), "review.html")), "review.html is missing").toBe(true);
   });
 
-  it("V10: an incomplete route with a reason shows the reason and its pass count, and a one-pass route shows its score", () => {
+  // PM 2026-11-22 page look: the public mark is only the bare pass count.
+  // The old "(quota stop)" expectation is retired: preview.sh must never
+  // render incomplete_reason, even when the score file holds one.
+  it("V10: an incomplete route shows the bare pass count with no reason text, and a one-pass route shows its score", () => {
     const solo = "opencode-go/deepseek-v4.1-flash";
     const doc = vScoreDoc();
     const soloPass = vSoloPass(solo, 78.6);
@@ -3402,9 +3407,10 @@ describe("the review page cases V1 to V9 of task 4.8a", () => {
 
     const soloRow = vRouteRow(page, solo);
     expect(soloRow, `the page holds a row for ${solo}`).not.toBeNull();
-    expect(vText(soloRow as string), "the mark holds the reason").toContain(
-      "incomplete: 1 of 3 passes (quota stop)",
+    expect(vText(soloRow as string), "the mark holds only the bare count").toContain(
+      "incomplete: 1 of 3 passes",
     );
+    expect(page, "the page never renders the internal reason").not.toContain("quota stop");
     expect(vRowCell(soloRow as string, "review-rank"), "the rank cell stays without a number").toBe(
       "–",
     );
@@ -3423,7 +3429,9 @@ describe("the review page cases V1 to V9 of task 4.8a", () => {
     expect(vRowCell(fewRow as string, "review-worst"), "the two-pass worst cell").toBe("55.0");
   });
 
-  it("V11: the page HTML-escapes the incomplete reason", () => {
+  // PM 2026-11-22 page look: the reason never reaches the public page, raw
+  // or escaped. The old escape expectation is retired with the render.
+  it("V11: the page renders no incomplete reason text, raw or escaped", () => {
     const doc = vScoreDoc();
     const few = doc.routes.find((entry: any) => entry.route === V_FEW);
     few.incomplete_reason = '<quota & "stop">';
@@ -3433,10 +3441,11 @@ describe("the review page cases V1 to V9 of task 4.8a", () => {
     const page = reviewPage(root);
     const row = vRouteRow(page, V_FEW);
     expect(row, `the page holds a row for ${V_FEW}`).not.toBeNull();
-    expect(row as string, "the mark escapes the reason").toContain(
-      "incomplete: 2 of 3 passes (&lt;quota &amp; &quot;stop&quot;&gt;)",
+    expect(vText(row as string), "the mark holds only the bare count").toContain(
+      "incomplete: 2 of 3 passes",
     );
     expect(page, "the page holds no raw reason").not.toContain('<quota & "stop">');
+    expect(page, "the page holds no escaped reason either").not.toContain("&lt;quota");
   });
 });
 
@@ -3495,9 +3504,10 @@ describe("C2-route the pass item shows its route name (Review C C2 route part, P
 
 describe("F1-preview the zero-pass route row (Review A F1, PM 2026-11-22 fix round)", () => {
   // A pilot route with 0 complete passes renders as
-  // `incomplete: 0 of 3 passes (<reason>)`, with `–` in the rank cell and in
-  // every score cell. The scorer writes the row (null scores); the page
-  // shows dashes even when the stored score fields hold 0.
+  // `incomplete: 0 of 3 passes` with no reason text (PM 2026-11-22 page
+  // look: the old "(<reason>)" part is retired), with `–` in the rank cell
+  // and in every score cell. The scorer writes the row (null scores); the
+  // page shows dashes even when the stored score fields hold 0.
   it("F1-preview: a zero-pass row shows 0 of 3 passes with dashes in every score cell", () => {
     const zero = "route/zero";
     const doc = vScoreDoc();
@@ -3519,13 +3529,152 @@ describe("F1-preview the zero-pass route row (Review A F1, PM 2026-11-22 fix rou
     const page = reviewPage(root);
     const row = vRouteRow(page, zero);
     expect(row, `the page holds a row for ${zero}`).not.toBeNull();
-    expect(vText(row as string), "the mark holds 0 of 3 passes with the reason").toContain(
-      "incomplete: 0 of 3 passes (nights 1 and 2 gave no pass)",
+    expect(vText(row as string), "the mark holds 0 of 3 passes with no reason").toContain(
+      "incomplete: 0 of 3 passes",
+    );
+    expect(page, "the page never renders the internal reason").not.toContain(
+      "nights 1 and 2 gave no pass",
     );
     expect(vRowCell(row as string, "review-rank"), "the rank cell stays without a number").toBe("–");
     expect(vRowCell(row as string, "review-worst"), "the worst cell stays without a number").toBe("–");
     expect(vRowCell(row as string, "review-median"), "the median cell stays without a number").toBe("–");
     expect(vRowCell(row as string, "review-best"), "the best cell stays without a number").toBe("–");
     expect(vRowCell(row as string, "review-recall"), "the recall cell stays without a number").toBe("–");
+  });
+});
+
+describe("PM page look 2026-11-22 (NO GO fix round, task 5.3)", () => {
+  // Item 1: a route with 0 complete passes (all score fields null) shows
+  // "–", not 0, in every count cell of its class table and its severity
+  // table. Routes with passes keep their numbers.
+  it("PM1: a zero-pass route shows dashes in every count cell of its class and severity tables", () => {
+    const zero = "route/pm-zero";
+    const doc = vScoreDoc();
+    doc.routes.push({
+      route: zero,
+      state: "incomplete",
+      passes: [],
+      worst: null,
+      median: null,
+      best: null,
+      worst_blocker_recall: null,
+      rank: null,
+    });
+    const root = buildVRepo("pm1", doc);
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    for (const name of V_CLASSES) {
+      const cells = vCells(
+        vFirstFragment(page, [
+          ["data-mg", "review-class"],
+          ["data-route", zero],
+          ["data-class", name],
+        ]) ?? "",
+      );
+      expect(cells, `zero-pass counts by class ${name}`).toEqual([name, "–", "–"]);
+    }
+    for (const name of V_SEVERITIES) {
+      const cells = vCells(
+        vFirstFragment(page, [
+          ["data-mg", "review-severity"],
+          ["data-route", zero],
+          ["data-severity", name],
+        ]) ?? "",
+      );
+      expect(cells, `zero-pass counts by severity ${name}`).toEqual([name, "–", "–"]);
+    }
+    const ranked = vCells(
+      vFirstFragment(page, [
+        ["data-mg", "review-class"],
+        ["data-route", V_RANKED],
+        ["data-class", "C1"],
+      ]) ?? "",
+    );
+    const expected = vCountSum(doc, V_RANKED, "by_class", "C1");
+    expect(ranked, "a route with passes keeps its class counts").toEqual([
+      "C1",
+      String(expected.found),
+      String(expected.missed),
+    ]);
+  });
+
+  // Item 2: the route cell holds the route name, then the mark on its own
+  // short line as a separate element. The route column carries min-width
+  // 10rem in the page CSS. The table keeps its own sideways scroll box.
+  it("PM2: the route cell puts the mark on its own line, the route column has min-width 10rem, and the table keeps its scroll box", () => {
+    const root = buildVRepo("pm2");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const row = vRouteRow(page, V_FEW);
+    expect(row, `the page holds a row for ${V_FEW}`).not.toBeNull();
+    const cell = vFirstFragment(row as string, [["class", "routes"]]);
+    expect(cell, "the route cell keeps its column class").not.toBeNull();
+    expect(cell as string, "the mark is its own element with the bare count").toContain(
+      '<span class="mark">incomplete: 2 of 3 passes</span>',
+    );
+    const ownLine =
+      /<br\s*\/?>/.test(cell as string) || /\.mark\s*\{[^}]*display\s*:\s*block/.test(page);
+    expect(ownLine, "the mark sits on its own line or block").toBe(true);
+    expect(page, "the route column has min-width 10rem").toMatch(
+      /\.routes[^}]*min-width\s*:\s*10rem/,
+    );
+    expect(page, "the table keeps its own sideways scroll box").toMatch(
+      /\.table-wrap\s*\{[^}]*overflow-x\s*:\s*auto/,
+    );
+  });
+
+  // Item 3: the public mark is only `incomplete: N of 3 passes`. The page
+  // never renders incomplete_reason, even when the score file holds one.
+  it("PM3: a score file with an incomplete_reason renders no reason text in review.html", () => {
+    const reason = "pm3 internal hold for extra nights";
+    const doc = vScoreDoc();
+    for (const entry of doc.routes) {
+      if (entry.state === "incomplete") entry.incomplete_reason = reason;
+    }
+    const solo = "route/pm3-solo";
+    const soloPass = vSoloPass(solo, 78.6);
+    doc.passes.push(soloPass);
+    doc.routes.push({
+      route: solo,
+      state: "incomplete",
+      passes: [soloPass],
+      worst: 78.6,
+      median: 78.6,
+      best: 78.6,
+      worst_blocker_recall: 1,
+      rank: null,
+      incomplete_reason: reason,
+    });
+    const root = buildVRepo("pm3", doc);
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    expect(page, "no internal reason text reaches the public page").not.toContain(reason);
+    const soloRow = vRouteRow(page, solo);
+    expect(vText(soloRow as string), "the one-pass mark holds only the bare count").toContain(
+      "incomplete: 1 of 3 passes",
+    );
+    const fewRow = vRouteRow(page, V_FEW);
+    expect(vText(fewRow as string), "the two-pass mark holds only the bare count").toContain(
+      "incomplete: 2 of 3 passes",
+    );
+  });
+
+  // Guard for the Green data step: a reason-free score file copies to a
+  // reason-free review.json. It passes at HEAD; its falsification is a
+  // score file with a reason, which must then appear in review.json.
+  it("PM3-guard: a score file without a reason copies to a review.json without one", () => {
+    const root = buildVRepo("pm3-guard");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const doc = reviewJson(root);
+    const keys: string[] = [];
+    collectKeys(doc, keys);
+    expect(
+      keys.filter((key) => key === "incomplete_reason"),
+      "review.json holds a reason",
+    ).toEqual([]);
   });
 });

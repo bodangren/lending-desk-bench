@@ -2815,7 +2815,7 @@ Spec D19, D21.
   - The orchestrator writes `measure/tracks/model_guide/publish-approval.md`
     with his words, the date, and the SHA-256 values. Commit it with an
     explicit path.
-- [ ] 5.3 The first publish. Run `harness/model-guide/publish.ts`.
+- [~] 5.3 The first publish. Run `harness/model-guide/publish.ts`.
   - The tool compares the current files of `docs/` with `preview-base.json`.
     On a drift it gives exit 2 and names each drifted file. The orchestrator
     builds the preview again and asks Daniel again.
@@ -2823,6 +2823,12 @@ Spec D19, D21.
   - The standing push rule applies from this task on.
   - Verify: `docs/real-work.html`, `docs/review.html`, the three data files,
     and the table in `docs/index.html` match the approved SHA-256 values.
+  - Red (2026-11-22, phase_base_sha 8fd8882a8539d051129eb106e46974a934df5223, role_base_sha de62147b18cac62026f9dfd928949f948e9c3965). PM page look 2026-11-22 (NO GO; one fix round, because these can mislead a reader of the public result). No production file changed. Files: `harness/model-guide-tests/preview-gate.test.ts` only. `review-score.test.ts` stays unchanged: the scorer keeps its schema and Green owns the data re-score.
+  - PM1: a route with 0 complete passes (all score fields null) shows "–" in every count cell of its class table and its severity table (found, missed, and any other count). Routes with passes keep their numbers.
+  - PM2: the route cell holds the route name, then the mark on its own short line as a separate element (`<span class="mark">incomplete: N of 3 passes</span>` on a new line or block). The route column carries `min-width: 10rem` in the page CSS. The table keeps its own sideways scroll box.
+  - PM3: the public mark is only `incomplete: N of 3 passes`. `preview.sh` never renders `incomplete_reason`, even when the score file holds one. A guard pins that a reason-free score file copies to a reason-free `review.json` (Green data step).
+  - The reason-drop changes the Red r1/r2 cases of row 4.14, because the PM forbids the internal text on the public page. V10 now expects the bare count mark and no reason text (the old "(quota stop)" expectation is retired). V11 now expects no reason text at all, raw or escaped (the old escape expectation is retired). F1-preview now expects `incomplete: 0 of 3 passes` with no reason part. Every other assertion stays.
+  - Red command: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot`. Exit 1 with `Tests 6 failed | 114 passed (120)`. The 6 failures are V10, V11, F1-preview, PM1, PM2, and PM3, each for the missing PM behavior. The other 114 pass. PM3-guard passes at HEAD with a stated falsification. The first run showed one extra transient failure in an existing test; two reruns hold the stable 6.
 - [ ] 5.4 The first weekly update. When the PM sends the next export, run
   `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>`.
   - Verify: `docs/assets/data/real-work.json` and
