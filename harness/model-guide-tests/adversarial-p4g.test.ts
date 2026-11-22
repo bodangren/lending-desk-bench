@@ -125,7 +125,7 @@ describe("Phase 4b adversarial score and quota edges", () => {
     expect(row.rank).toBe(1);
   });
 
-  it("renders hostile route and incomplete-reason text as escaped text", () => {
+  it("renders hostile route as escaped text and omits the incomplete reason", () => {
     const root = temp("preview");
     const repo = join(root, "repo");
     mkdirSync(join(repo, "harness"), { recursive: true });
@@ -154,10 +154,12 @@ describe("Phase 4b adversarial score and quota edges", () => {
     expect(html).toContain("hostile");
     expect(html).toContain("&quot;&gt;");
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
-    expect(html).toContain("&lt;svg onload=alert(1)&gt;");
     expect(html).toContain("incomplete: 0 of 3 passes");
     expect(html).not.toContain("<script>alert(1)</script>");
     expect(html).not.toContain("<svg onload=alert(1)>");
+    // PM page look 2026-11-22 (task 5.3 Red r2): the public page never
+    // renders incomplete_reason, raw or escaped.
+    expect(html).not.toContain("&lt;svg onload=alert(1)&gt;");
   });
 
   it("refuses an unknown quota provider before any network request", () => {
