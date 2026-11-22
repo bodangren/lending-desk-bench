@@ -910,9 +910,9 @@ def review_route_rows(scores, pilot_gate):
     best score. An incomplete route shows the bare count of its passes as a
     mark on its own line. The page never renders an internal reason. It shows
     its worst score when it holds passes, and the rank, median, best, and
-    recall cells stay dashed. A route with no pass dashes every score cell. A
-    provisional pass keeps the route complete. The false claims and the real
-    defects are sums over the passes.
+    recall cells stay dashed. A route with no pass dashes every score cell and
+    both sum cells. A provisional pass keeps the route complete. The false
+    claims and the real defects are sums over the passes.
     """
     passes = scores.get("passes") or []
     by_route = {}
@@ -941,6 +941,11 @@ def review_route_rows(scores, pilot_gate):
         else:
             mark = f"incomplete: {len(route_passes)} of 3 passes"
             state_mark = f'<br><span class="mark">{esc(mark)}</span>'
+        if route_passes:
+            false_claims = str(pass_total(route_passes, "false_claims"))
+            real_defects = str(pass_total(route_passes, "real_defects"))
+        else:
+            false_claims = real_defects = DASH
         rows.append(
             f'<tr data-mg="review-route" data-route="{esc(route)}">'
             f'<td class="routes">{esc(route)}{state_mark}</td>'
@@ -949,10 +954,8 @@ def review_route_rows(scores, pilot_gate):
             f'<td class="num" data-mg="review-median">{esc(median)}</td>'
             f'<td class="num" data-mg="review-best">{esc(best)}</td>'
             f'<td class="num" data-mg="review-recall">{esc(recall)}</td>'
-            f'<td class="num" data-mg="review-false-claims">'
-            f'{pass_total(route_passes, "false_claims")}</td>'
-            f'<td class="num" data-mg="review-real-defects">'
-            f'{pass_total(route_passes, "real_defects")}</td>'
+            f'<td class="num" data-mg="review-false-claims">{false_claims}</td>'
+            f'<td class="num" data-mg="review-real-defects">{real_defects}</td>'
             "</tr>"
         )
     return rows
