@@ -907,3 +907,90 @@ describe("4.13u the scorer reads the real event stream (Review C 2fdb8f8)", () =
     expect(record.false_claims).toBe(0);
   });
 });
+
+describe("F1 the zero-pass pilot route (Review A F1, PM 2026-11-22 fix round)", () => {
+  // The scorer accepts the pilot route list of the set from its existing
+  // input. The smallest source that already names a route with no pass is
+  // `harness/model-guide/routes.json`: it lists the pilot route
+  // `opencode-go/mimo-v2.6-flash`, which ran on night 3 with 0 complete
+  // passes (`passes-4.12.txt:19`, exit 2, state none). The flag below takes
+  // that file shape (an array whose items hold a `route` string).
+  // Every pilot route with no complete pass gets a route row with 0 passes,
+  // null scores, rank null, and `incomplete_reason` when the flag is set.
+  // Routes with passes are unchanged.
+  const ZERO = "route/zero";
+
+  function pilotRoutesFile(tag: string): string {
+    const dir = tempDir(`pilot-${tag}`);
+    const file = join(dir, "pilot-routes.json");
+    writeFileSync(
+      file,
+      JSON.stringify([{ route: "route/a" }, { route: ZERO }], null, 2) + "\n",
+    );
+    return file;
+  }
+
+  function scoreWithPilot(
+    tag: string,
+    pilotFile: string,
+    reason?: string,
+  ): { status: number | null; stdout: string; stderr: string; doc: any | null; scoresDir: string } {
+    const scoresDir = tempDir(`scores-f1-${tag}`);
+    const outputsDir = buildOutputs(`f1-${tag}`, { "forge-01": "match-01" });
+    const args = [
+      "model-guide/review-score.ts", "score",
+      "--private", privateDir(), "--set", SET,
+      "--route", "route/a", "--pass", "1",
+      "--date", "2026-11-20",
+      "--outputs", outputsDir, "--scores", scoresDir,
+      "--pilot-routes", pilotFile,
+    ];
+    if (reason !== undefined) args.push("--incomplete-reason", reason);
+    const result = spawnSync(join(HARNESS, "node_modules", ".bin", "tsx"), args, {
+      cwd: HARNESS,
+      env: env(tempDir(`home-f1-${tag}`)),
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    let doc: any | null = null;
+    try {
+      doc = readScore(scoresDir);
+    } catch {
+      doc = null;
+    }
+    return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "", doc, scoresDir };
+  }
+
+  it("F1 creates a zero-pass route row with null scores and the reason", () => {
+    const run = scoreWithPilot("reason", pilotRoutesFile("reason"), "nights 1 and 2 gave no pass");
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    expect(run.doc, "the score file is written").not.toBeNull();
+    const zero = run.doc.routes.find((entry: any) => entry.route === ZERO);
+    expect(zero, `the score file holds a row for ${ZERO}`).toBeTruthy();
+    expect(zero.state).toBe("incomplete");
+    expect(zero.passes).toEqual([]);
+    expect(zero.worst).toBeNull();
+    expect(zero.median).toBeNull();
+    expect(zero.best).toBeNull();
+    expect(zero.worst_blocker_recall).toBeNull();
+    expect(zero.rank).toBeNull();
+    expect(zero.incomplete_reason).toBe("nights 1 and 2 gave no pass");
+    const withPass = run.doc.routes.find((entry: any) => entry.route === "route/a");
+    expect(withPass.passes).toHaveLength(1);
+  });
+
+  it("F1 creates a zero-pass route row with no reason field when the flag is absent", () => {
+    const run = scoreWithPilot("no-reason", pilotRoutesFile("no-reason"));
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    expect(run.doc, "the score file is written").not.toBeNull();
+    const zero = run.doc.routes.find((entry: any) => entry.route === ZERO);
+    expect(zero, `the score file holds a row for ${ZERO}`).toBeTruthy();
+    expect(zero.state).toBe("incomplete");
+    expect(zero.passes).toEqual([]);
+    expect(zero.worst).toBeNull();
+    expect(zero.rank).toBeNull();
+    expect(Object.keys(zero).sort()).toEqual(
+      ["best", "median", "passes", "rank", "route", "state", "worst", "worst_blocker_recall"].sort(),
+    );
+  });
+});

@@ -3439,3 +3439,93 @@ describe("the review page cases V1 to V9 of task 4.8a", () => {
     expect(page, "the page holds no raw reason").not.toContain('<quota & "stop">');
   });
 });
+
+describe("C2-route the pass item shows its route name (Review C C2 route part, PM 2026-11-22 fix round)", () => {
+  // Each item of the pass list shows the route name visibly next to the
+  // pass, HTML-escaped, not only in `data-route`. The class legend and the
+  // "PM" expansion stay out of scope (tech-debt).
+  it("C2-route: every pass item names its route in visible text", () => {
+    const root = buildVRepo("c2-route");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const doc = vScoreDoc();
+    for (const item of doc.passes) {
+      const route = String(item.route);
+      const frags = vAllFragments(page, [
+        ["data-mg", "review-pass"],
+        ["data-route", route],
+        ["data-state", String(item.state)],
+      ]);
+      expect(frags.length, `the page lists a pass item for ${route} pass ${item.pass}`).toBeGreaterThan(0);
+      const match = frags.find((frag) => vText(frag).includes(`pass ${item.pass}`));
+      expect(match, `a pass-${item.pass} item of ${route} is visible`).toBeTruthy();
+      expect(vText(match as string), `the pass-${item.pass} item of ${route} names its route`).toContain(route);
+    }
+  });
+
+  it("C2-route: the visible route name is HTML-escaped", () => {
+    const hostile = 'x/<b>&"q"';
+    const escaped = "x/&lt;b&gt;&amp;&quot;q&quot;";
+    const doc = vScoreDoc();
+    const solo = vSoloPass(hostile, 61.0);
+    doc.passes.push(solo);
+    doc.routes.push({
+      route: hostile,
+      state: "incomplete",
+      passes: [solo],
+      worst: 61.0,
+      median: 61.0,
+      best: 61.0,
+      worst_blocker_recall: 1,
+      rank: null,
+    });
+    const root = buildVRepo("c2-route-esc", doc);
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const frags = vAllFragments(page, [["data-mg", "review-pass"], ["data-route", escaped]]);
+    expect(frags.length, "the page lists the hostile pass item").toBeGreaterThan(0);
+    const text = vText(frags[0]);
+    expect(text, "the visible pass item escapes the route").toContain(escaped);
+    expect(text, "the visible pass item names the hostile route").toContain("x/");
+    expect(text, "the visible pass item shows no raw angle bracket").not.toContain("<b>");
+  });
+});
+
+describe("F1-preview the zero-pass route row (Review A F1, PM 2026-11-22 fix round)", () => {
+  // A pilot route with 0 complete passes renders as
+  // `incomplete: 0 of 3 passes (<reason>)`, with `–` in the rank cell and in
+  // every score cell. The scorer writes the row (null scores); the page
+  // shows dashes even when the stored score fields hold 0.
+  it("F1-preview: a zero-pass row shows 0 of 3 passes with dashes in every score cell", () => {
+    const zero = "route/zero";
+    const doc = vScoreDoc();
+    doc.passes = doc.passes.filter((item: any) => item.route !== zero);
+    doc.routes.push({
+      route: zero,
+      state: "incomplete",
+      passes: [],
+      worst: 0,
+      median: 0,
+      best: 0,
+      worst_blocker_recall: 0,
+      rank: null,
+      incomplete_reason: "nights 1 and 2 gave no pass",
+    });
+    const root = buildVRepo("f1-zero", doc);
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const row = vRouteRow(page, zero);
+    expect(row, `the page holds a row for ${zero}`).not.toBeNull();
+    expect(vText(row as string), "the mark holds 0 of 3 passes with the reason").toContain(
+      "incomplete: 0 of 3 passes (nights 1 and 2 gave no pass)",
+    );
+    expect(vRowCell(row as string, "review-rank"), "the rank cell stays without a number").toBe("–");
+    expect(vRowCell(row as string, "review-worst"), "the worst cell stays without a number").toBe("–");
+    expect(vRowCell(row as string, "review-median"), "the median cell stays without a number").toBe("–");
+    expect(vRowCell(row as string, "review-best"), "the best cell stays without a number").toBe("–");
+    expect(vRowCell(row as string, "review-recall"), "the recall cell stays without a number").toBe("–");
+  });
+});
