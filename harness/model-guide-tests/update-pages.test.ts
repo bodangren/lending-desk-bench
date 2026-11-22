@@ -24,7 +24,9 @@ import { afterAll, describe, expect, it } from "vitest";
  * the affected pages (`docs/index.html` and `docs/real-work.html`) through
  * `preview.sh` and `guide.ts`. The commit holds the two data files plus
  * those pages, staged by explicit path only. `docs/review.html` joins the
- * commit only when the score file changed. A rerun with unchanged data
+ * commit only when the score file changed. A missing review template
+ * with a changed score refuses before any write or commit. A rerun with
+ * unchanged data
  * exits 0 and makes no commit. An unrelated dirty file that is not an
  * affected page stays uncommitted.
  *
@@ -171,6 +173,29 @@ function scoreComplete(): string {
           route: "s1-model",
           state: "complete",
           passes: [90.0, 91.0, 92.0].map((score, index) => ({
+            date: `2026-11-1${index + 1}`,
+            score,
+            state: "complete",
+          })),
+        },
+      ],
+    },
+    null,
+    2,
+  )}\n`;
+}
+
+/** A second complete-route score with a different route. */
+function scoreCompleteTwo(): string {
+  return `${JSON.stringify(
+    {
+      schema: "model-guide-review-scores/1",
+      set_id: "mg-2026-11a",
+      routes: [
+        {
+          route: "s2-model",
+          state: "complete",
+          passes: [88.0, 89.0, 90.0].map((score, index) => ({
             date: `2026-11-1${index + 1}`,
             score,
             state: "complete",
@@ -503,6 +528,35 @@ describe("the weekly update page refresh (spec FR-3)", () => {
     const { root, manifest } = updateRepo("pages-no-overview", false);
     approve(root);
     rmSync(join(root, "harness", "model-guide", "pages", "guide-section.html"));
+    const before = treeHashes(root);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+    const result = runDocsUpdate(root, manifest);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(treeHashes(root), "no file of the repo changes").toEqual(before);
+    expect(git(root, ["rev-list", "--count", "HEAD"]), "no commit").toBe(commits);
+  });
+
+  it("F15: a missing review template with a changed score refuses before any commit", () => {
+    const { root, manifest } = updateRepo("pages-no-review-template", false);
+    approve(root);
+    const scoreFile = join(scoresDirOf(root), "mg-2026-11a.json");
+    writeFileSync(scoreFile, scoreComplete());
+    const first = runDocsUpdate(root, manifest);
+    expect(first.status, `${first.stdout}\n${first.stderr}`).toBe(0);
+    // The published baseline: the rendered page from the first run plus
+    // the score data the fixed weekly job commits beside it.
+    copyFileSync(scoreFile, join(root, DATA_DIR, "review.json"));
+    git(root, ["add", join(DATA_DIR, "review.json")]);
+    if (git(root, ["status", "--short"]) !== "") {
+      git(root, ["commit", "-q", "-m", "published score baseline"]);
+    }
+    // The score changes to a second complete route set, and the review
+    // template goes missing: the preview keeps the stale page, so the
+    // weekly job must refuse instead of publishing fresh score data
+    // beside a stale public page.
+    writeFileSync(scoreFile, scoreCompleteTwo());
+    rmSync(join(root, "harness", "model-guide", "pages", "review.html"));
     const before = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 

@@ -75,7 +75,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     (2026-11-22): added F1 to pin the flag-selected branch in both record
     states and switched U2 to `--docs`; F1 fails because a flagless
     approved run still writes docs, while A1-A4 and U2 pass.
-- [x] 00d9013c8f7ae1b9b29db9dfd5053bb1a62db432 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
+- [~] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
     through `preview.sh` and `guide.ts`, that the commit holds the two data files plus
@@ -105,7 +105,10 @@ Spec FR-1 to FR-5, EV1 to EV4.
     behavior while P1-P5 pass. Red r7 (2026-11-22): corrected F2a to
     assert the second commit as the byte-measured changed files including
     the rebuilt review outputs, and F2b to commit the score input in
-    setup; both still fail for the stale review rendering.
+    setup; both still fail for the stale review rendering. Red r8
+    (2026-11-23): added F15 beside F7 for the missing review template
+    with a changed score, which refuses before any write or commit; F15
+    fails with a stale commit while every other case passes.
 - [x] 00d9013c8f7ae1b9b29db9dfd5053bb1a62db432 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
   - Red: write `harness/model-guide-tests/update-leak.test.ts` and no other file.
     Pin that `update.sh` runs `leak-check.ts` over the files it is about to commit and
