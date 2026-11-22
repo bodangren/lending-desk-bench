@@ -6,9 +6,9 @@
  *     [--base <http://127.0.0.1:port>]
  *
  * `--provider` takes the `quota_provider` value of one row of
- * `harness/model-guide/routes.json`. The base is `--base`, else
- * `BENCH_QUOTA_BASE`, else the port of `openchamber status --json`
- * (`instances[0].port`).
+ * `harness/model-guide/routes.json` or of `harness/model-guide/judges.json`.
+ * The base is `--base`, else `BENCH_QUOTA_BASE`, else the port of
+ * `openchamber status --json` (`instances[0].port`).
  *
  * The Go plan (`opencode-go`) reads through ra-quota (plan task 4.13r point
  * 8): `${BENCH_RA_QUOTA} status --json` when that seam is set. The tool reads
@@ -22,6 +22,9 @@
  *   kimi-code-plan-cn      -> kimi-for-coding
  *   minimax-cn-coding-plan -> minimax-cn-coding-plan
  *   opencode-go            -> opencode-go
+ *
+ * The judge provider `openai` reads `GET /api/quota/codex` (spec D11, the
+ * Sol seat of PM 2026-11-22).
  *
  * `nvidia`, `bailian-token-plan`, `volcengine-agent-plan`, and `opencode`
  * have no quota source. The tool sends no request, gives `ready`, and gives
@@ -107,6 +110,7 @@ const SOURCE_IDS: Record<string, string> = {
   "kimi-code-plan-cn": "kimi-for-coding",
   "minimax-cn-coding-plan": "minimax-cn-coding-plan",
   "opencode-go": "opencode-go",
+  "openai": "codex",
 };
 
 /** The providers with no quota source (spec D15). */

@@ -306,7 +306,7 @@ fi
 # runner never reads `routes.json`.
 is_pilot_route() {
   case "$ROUTE" in
-    opencode-go/deepseek-v4.1-flash|opencode-go/hy4-flash-free#high|opencode-go/mimo-v2.6-flash|opencode-go/muse-spark-1.3-contributor#high)
+    opencode-go/deepseek-v4.1-flash|opencode-go/hy4-flash-free#high|opencode-go/mimo-v2.6-flash|opencode-go/muse-spark-1.3-contributor#high|openai/gpt-6.1-sol#high)
       return 0 ;;
   esac
   case "$ROUTE" in

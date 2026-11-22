@@ -16,5 +16,11 @@
     "route": "claude-code/claude-sonnet-5-5#max",
     "quota_provider": "claude-code",
     "quota_source": "claude"
+  },
+  {
+    "family": "OpenAI Sol",
+    "route": "openai/gpt-6.1-sol#high",
+    "quota_provider": "openai",
+    "quota_source": "codex"
   }
 ]
