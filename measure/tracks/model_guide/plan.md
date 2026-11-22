@@ -2716,7 +2716,7 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     counts against no route. Each pass with an `unclear` verdict shows
     `provisional`, and its route keeps its rank. Each key SHA-256 in the
     manifest matches its private key file.
-- [ ] 4.14 The score file and the review page.
+- [~] 4.14 The score file and the review page.
   - Write `harness/model-guide/data/review-scores/mg-2026-11a.json`. Run
     `leak-check.ts`. Commit the file with an explicit path.
   - Run `preview.sh` again.
@@ -2729,6 +2729,9 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
   - Verify: `.tmp/model-guide-preview/review.html` shows the rank by the
     worst pass, and the code review row of the table has a pick or "no pick
     yet" (spec acceptance 10 and 11).
+  - Green evidence (2026-11-22, phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5, role_base_sha 028afcb1a1fbbc79c59c5a23778b9af2df9be34a, implementation commit 9b44176). The scorer wrote the file from two complete passes with the applied verdicts. Tool output: deepseek p1 score 78.6, hy4 p1 score 75.4, both provisional, both 1 pass of 3, rank null. The values match the row 4.13 dry run. leak-check exit 0. preview.sh exit 0 into .tmp/model-guide-preview/. No hand edit changed a score, a rank, or a count.
+  - Verify (2026-11-22): review.html shows the no-rank state for both routes. Line 82 gives the reason: a route with fewer than three complete passes shows incomplete and takes no rank. Both route rows carry the incomplete mark and a dash in the rank cell. The pass items show 78.6 and 75.4. The Code review row says "no pick yet: not enough evidence" with the source "track A: no complete rank (n=0)". D18 fact: guide.ts fromTrackA at line 387 returns the no-pick words when rank.length is 0.
+  - Block (2026-11-22): the scope note "one pass" is missing. The scorer holds a fixed schema at review-score.ts lines 59-74 and carries no note field. The page renders the rank cell at preview.sh line 934 and carries no note. A code change is needed in review-score.ts and preview.sh. That change goes through Red first. The row stays [~].
 
 - [~] 4.15 The backlog of nonblocking findings (PM round cap 2026-11-19). Work it after the night run of 2026-11-22, through Red and Green.
   - Review B c0a26d7: N30 (the probe region branch and the judge --start-test stdout-event paths have no failing test), N31 (a failed scan and a found key print the same text), N32 (the quota reason line is printed unscanned), and the carried N5, N9 to N13, N15, N20, N21, N24, N26 to N29.
