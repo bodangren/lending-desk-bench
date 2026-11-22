@@ -1,0 +1,136 @@
+{
+  "set_id": "mg-2026-11a",
+  "created": "2026-11-16",
+  "diffs": [
+    {
+      "id": "forge-01",
+      "repo": "bodangren/advantage-forge",
+      "commit": "b2a02238a8f217b175b70fd38c737f0593eed16a",
+      "parent": "425f5a94f9b87875b08fe503199f34ded8b97e2d",
+      "seeded_sha256": "81947872b168b5cb764a70b5a4314f77fe46d68c4502daa9f06ba870600c8709",
+      "key_sha256": "2d282df8cfe4cc92fa0a7d0b5dbb41b8ce927ef509291f220584a76cb14df217"
+    },
+    {
+      "id": "forge-02",
+      "repo": "bodangren/advantage-forge",
+      "commit": "5a46415eb0b25db2d4fb9e76b9224bcae7fb40fa",
+      "parent": "01f784a81cfefa0da0cb24870d0473a0a0eab106",
+      "seeded_sha256": "870695e4926af00625ee1916ca082c4cccd091fa608f76f100003115334d1f9c",
+      "key_sha256": "52e2588c88b0e0fec9fd9577090f65e32bd01a37b219a31a3e56973d2aaa9708"
+    },
+    {
+      "id": "forge-03",
+      "repo": "bodangren/advantage-forge",
+      "commit": "e9d8132b0fafc05dc817a4bb9cc1986e32a08b56",
+      "parent": "d1d58dcd38d8d0d6105a3d33e75ac803b37fa428",
+      "seeded_sha256": "79e1ffc25fb717c2fc4c393746d9265bfdf52b8c0d9a6dbbfde6144243c5ff4b",
+      "key_sha256": "88256b66f7451bcfa8004c64a50c72088cdd6448fba8a903b5b7f99386b40321"
+    },
+    {
+      "id": "forge-04",
+      "repo": "bodangren/advantage-forge",
+      "commit": "a190019472ef25313e19e201f7fc574dacf2cfc0",
+      "parent": "2d789e4897b4cb83c6e983fc45793292f0d34ff3",
+      "seeded_sha256": "b4c4897816c60c1a03aed85a766b3c47efeb7bd72154fe076e05c271b788bf2a",
+      "key_sha256": "040f0cc3f56487550c7e3b44f26d803d2998506f1d41892207c367fd1e21dd20"
+    },
+    {
+      "id": "forge-05",
+      "repo": "bodangren/advantage-forge",
+      "commit": "c166c8e1d95849fdebcc885e0b9676686243bbac",
+      "parent": "77a7ace917eaa9bf020d9aa6943d128215a73710",
+      "seeded_sha256": "981e98d61e421e61a73e4bee24c103d30e920888b05c425b7edfcaf9ccb52e71",
+      "key_sha256": "8d87d33753c8aa8f8055e1ed48b81cbcafdf2c01c4ab1a1861cc45b533198063"
+    },
+    {
+      "id": "forge-06",
+      "repo": "bodangren/advantage-forge",
+      "commit": "c33e0b9b59de32036ae66f4725bf89112527dce1",
+      "parent": "a50254fed4684098a7abc52cd6ef077966e4fa1e",
+      "seeded_sha256": "92bff3fde6f204a61b1dc55f57fb1fa754ae5b29cc34969a93b7cf6afdbba0b9",
+      "key_sha256": "8c93b63191cc6ae44efa97b403f75ecee3ae5d061f74901ad72a8ffa818bdda1"
+    },
+    {
+      "id": "forge-07",
+      "repo": "bodangren/advantage-forge",
+      "commit": "c9ae988b9b00d22c6cfbe5782bc3cba3a7832ed5",
+      "parent": "597013bdabb0f52e51ffa7e13061c4aaf3fdc6db",
+      "seeded_sha256": "de064b0964b426306f8fb462417b22da8c6f6fa3985f60598ccf8062f1318f72",
+      "key_sha256": "8719eb9e445dd6da9eb1cf9376077ada5ffd8c90760c7ca4c934de88571409ba"
+    },
+    {
+      "id": "mono-01",
+      "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+      "commit": "687e448cea6cf6a7e83034c2f37fc05e746881d1",
+      "parent": "76be270f4af0b6d3250ec1defac8769ff21943fb",
+      "seeded_sha256": "4718707908c7fe44f542c8ad2c3ebf5e540a4d3aadb999762ad1e4e9e626987e",
+      "key_sha256": "7a9a4ff6c2fc26858f22e7afa0d830c6ee437ed0effb5a1852ac83ee2d9a1691"
+    },
+    {
+      "id": "mono-02",
+      "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+      "commit": "adc18f160d7cfd133cebf9ac073b04c3e870d3ab",
+      "parent": "be528a025b4de42bdc79edae6c010b7d07c8d1a1",
+      "seeded_sha256": "4adddb5a35515460759c4988daf2f5c548a7aa7d65db5d058dd69c5f973b757a",
+      "key_sha256": "df0add29789599774117488c1a9ecc970a8a2510352f43e9a73fe071c8001699"
+    },
+    {
+      "id": "mono-03",
+      "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+      "commit": "0424ed3f38b452a8cc7d928539f25bd8e69fc1e8",
+      "parent": "1e4a3a50debbe97cca2c01126c6e91019508e174",
+      "seeded_sha256": "663aab53e306354b31339b0dd2e44c28a81eb6ec254a1495577aaf2359192fdc",
+      "key_sha256": "2203e0cde64536ba66ebb1d9bee5d2753eba68eaac5bc141a6d44ee26cb019b1"
+    },
+    {
+      "id": "mono-04",
+      "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+      "commit": "1e4a3a50debbe97cca2c01126c6e91019508e174",
+      "parent": "ebf3e4dedc4b2e3efbb6d6c743ec452383ac256c",
+      "seeded_sha256": "be4d050f3986623c5e56e42a74eb64d83184189100012e1778341980bc6623bd",
+      "key_sha256": "34a77422c49e7c93a70a82e587103f7ea30c4dcc351a90db46cf24643be0743e"
+    },
+    {
+      "id": "mono-05",
+      "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+      "commit": "ebf3e4dedc4b2e3efbb6d6c743ec452383ac256c",
+      "parent": "453abc8b769025c41d8009a74aae28e7a307a0a6",
+      "seeded_sha256": "886dac4bfb4b1b7dd2aa3be72b4587f7da392eec822d036bd2c467fca09c4bb0",
+      "key_sha256": "3eb1a4dd5661780f1069bb12e2c26e0900d76e851d7372d5ae1ce3d4ba8500f4"
+    },
+    {
+      "id": "mono-06",
+      "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+      "commit": "9445beb63942eddd1fadb6019e7b8f2e7d17d2ed",
+      "parent": "a1af9f93d030543d4fff596bcf81e443b19dfbaa",
+      "seeded_sha256": "6c4cfc7b67b2ff772cd850a4a3c84ed89343499a68e68714c22cfede1a7e7c66",
+      "key_sha256": "1bb824d6ba6f610ae83bc844badadca9ea2a0b7203da49099cb69690d3019b03"
+    },
+    {
+      "id": "mono-07",
+      "repo": "Reading-Advantage-Thailand/reading-advantage-monorepo",
+      "commit": "a284de0b0cd16da8b05340235793f815888ba37b",
+      "parent": "991b02852476449663f8da4f63f3f136ee1c69a1",
+      "seeded_sha256": "9c1e6ba2bdf4afce1acf2109a39c41af295eb9a736871790a158f571fbb7a077",
+      "key_sha256": "239229ac6658c8c204f76cc49d66b0b1a8b16bcb365ea5cb7be461d6fddc6a79"
+    }
+  ],
+  "plant_counts": {
+    "by_class": {
+      "C1": 3,
+      "C2": 3,
+      "C3": 4,
+      "C4": 4,
+      "C5": 3,
+      "C6": 5,
+      "C7": 3,
+      "C8": 18,
+      "C9": 1
+    },
+    "by_severity": {
+      "blocker": 19,
+      "major": 6,
+      "minor": 19
+    }
+  }
+}
