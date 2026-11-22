@@ -271,14 +271,17 @@ Evidence lives in `measure/runs/deps_refresh/rescore-ab/r8/`.
 Phase 4b reviews left these items nonblocking under the PM round cap. None is a key leak into a committed file or a public page.
 
 - Review A F3: both selectors treat any non-empty finish except exact tool-calls as terminal and accept any finite completed time (`review-a-4.16-23f16f1.json`).
-- Review A F5: source text not found.
-- Review A F8: source text not found.
-- Review A F9: source text not found.
-- Review A F10: source text not found.
-- Review A F11: source text not found.
-- Review C F1: source text not found.
-- Review C F3: source text not found.
-- Review C F4: source text not found.
+- Review A F5: the judge N10 and N27 copies lack direct cases, and two guard messages misstate the link position (`review-a-4.15-7773823.json`).
+- Review A F8: the truncated-token case stays open; both readers keep tokens_complete true after a cut final step_finish (`review-a-4.15-7773823.json`).
+- Review A F9: the judge seed refusal lacks a direct case at judge-run.sh:569-584 (`review-a-4.15-7773823.json`).
+- Review A F10: pilot instructions still name the removed free route opencode/hy4-flash-free (`review-a-4.15-7773823.json`).
+- Review A F11: R12 and R14 still use the 5000 ms test budget against 15000 and 10000 ms assertions (`review-a-4.15-7773823.json`).
+- Review C F1: ADV-R-12 still calls the unscoped fake, so the orphan check can include foreign fakes (`review-c-4.15-7773823.json`).
+- Review C F3: stopped quota reasons repeat the quota prefix in records (`review-c-4.15-7773823.json`).
+- Review C F4: runner tests lack direct N32 cases and judge tests lack seed-refusal cases (the same as Review A F3 and F9) (`review-c-4.15-7773823.json`).
+- Review B 4b N1: KEY_SHAPE_RE omits PEM blocks and other token shapes, also for --incomplete-reason (`review-b-4b-dc31a0a.json`).
+- Review B 4b N2: the private folder path sits in eight ignored run records (`review-b-4b-dc31a0a.json`).
+- Review C 4b C2 legend part: no C1-C9 legend, no "provisional" definition, "PM" not expanded (`review-c-4b-dc31a0a.json`).
 - ADV-P4D-1: seed reason patterns accept trailing credential text; both probes printed the synthetic value (`adversarial-4.15-7773823.json`).
 - ADV-P4D-2: the 499-byte cut can split a UTF-8 code point and emit invalid UTF-8 (`adversarial-4.15-7773823.json`).
 - ADV-P4D-3: a cut final step_finish event leaves tokens_complete true after a valid event (`adversarial-4.15-7773823.json`).
