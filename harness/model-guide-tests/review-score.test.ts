@@ -214,7 +214,7 @@ function buildOutputs(tag: string, overrides: Outputs = {}): string {
 function runScore(
   scoresDir: string,
   outputsDir: string,
-  opts: { route: string; pass: number; date?: string; verdicts?: Record<string, string>; privateDir?: string },
+  opts: { route: string; pass: number; date?: string; verdicts?: Record<string, string>; privateDir?: string; reason?: string },
 ) {
   requireProduction();
   const args = [
@@ -231,6 +231,9 @@ function runScore(
     const file = join(tempDir(`verdicts-${opts.route.replace(/\W+/g, "-")}-${opts.pass}`), "verdicts.json");
     writeFileSync(file, JSON.stringify(opts.verdicts));
     args.push("--verdicts", file);
+  }
+  if (opts.reason !== undefined) {
+    args.push("--incomplete-reason", opts.reason);
   }
   return spawnSync(join(HARNESS, "node_modules", ".bin", "tsx"), args, {
     cwd: HARNESS,
@@ -755,6 +758,94 @@ describe("R6 the score file shape and the write flags", () => {
     );
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
     expect(result.stdout.trim()).toBe("score: --private needs a value");
+    expect(existsSync(join(scoresDir, `${SET}.json`))).toBe(false);
+  });
+});
+
+describe("R7 the incomplete reason of task 4.14 (PM ruling 2026-11-22)", () => {
+  // The scorer accepts `--incomplete-reason <text>` and writes the string
+  // field `incomplete_reason` on every route record whose state is
+  // incomplete. A complete route carries no such field, and no route
+  // carries it when the flag is absent. Every other score-file field and
+  // value stays byte-identical. A reason with a credential key shape
+  // refuses with one named line and no write, and the line never prints
+  // the value. The refusal style follows the file: `score: <check>` on
+  // stdout, exit 2, no score file.
+  const REASON = "quota stop";
+  const KEY_REASON = "quota stop sk-ABCDEFGHIJ0123456789";
+
+  function scoreFour(tag: string, reason?: string): { doc: any; scoresDir: string } {
+    const scoresDir = tempDir(`scores-${tag}`);
+    const runs: PassRun[] = [
+      { route: "route/a", pass: 1, outputs: { "forge-01": "match-01" } },
+      { route: "route/a", pass: 2, outputs: { "forge-01": "match-01" } },
+      { route: "route/a", pass: 3, outputs: { "forge-01": "accepted-alt" } },
+      { route: "route/b", pass: 1, outputs: { "forge-01": "match-01" } },
+    ];
+    for (const run of runs) {
+      const outputsDir = buildOutputs(
+        `${tag}-${run.route.replace(/\W+/g, "-")}-${run.pass}`,
+        run.outputs,
+      );
+      const result = runScore(scoresDir, outputsDir, { ...run, reason });
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    }
+    return { doc: readScore(scoresDir), scoresDir };
+  }
+
+  it("R7 writes incomplete_reason on every incomplete route and keeps every other field", () => {
+    const { doc } = scoreFour("reason", REASON);
+    const { doc: reference } = scoreFour("reason-ref");
+    const complete = doc.routes.find((entry: any) => entry.route === "route/a");
+    expect(complete.state, "three passes stay complete").toBe("complete");
+    expect(Object.keys(complete).sort(), "a complete route carries no reason").toEqual(ROUTE_KEYS);
+    const incomplete = doc.routes.find((entry: any) => entry.route === "route/b");
+    expect(incomplete.state, "one pass stays incomplete").toBe("incomplete");
+    expect(incomplete.incomplete_reason, "the incomplete route carries the reason").toBe(REASON);
+    expect(Object.keys(incomplete).sort(), "the reason is the only new route key").toEqual(
+      [...ROUTE_KEYS, "incomplete_reason"].sort(),
+    );
+    for (const entry of doc.passes) {
+      expect(Object.keys(entry).sort(), "a pass record carries no reason").toEqual(PASS_KEYS);
+    }
+    const stripped = JSON.parse(JSON.stringify(doc));
+    for (const entry of stripped.routes) delete entry.incomplete_reason;
+    expect(stripped, "every other field stays byte-identical").toEqual(reference);
+  });
+
+  it("R7 writes no incomplete_reason when the flag is absent (guard)", () => {
+    const { doc } = scoreFour("no-reason");
+    for (const entry of doc.routes) {
+      expect(Object.keys(entry).sort(), "no route carries a reason").toEqual(ROUTE_KEYS);
+    }
+  });
+
+  it("R7 refuses a reason with a key shape without printing the value", () => {
+    const scoresDir = tempDir("scores-key-reason");
+    const outputsDir = buildOutputs("key-reason", { "forge-01": "match-01" });
+    const result = runScore(scoresDir, outputsDir, { route: "route/a", pass: 1, reason: KEY_REASON });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim(), "the refusal names the check").toBe("score: incomplete-reason");
+    expect(result.stdout, "the refusal never prints the value").not.toContain("sk-ABCDEFGHIJ0123456789");
+    expect(existsSync(join(scoresDir, `${SET}.json`)), "the refusal writes no score file").toBe(false);
+  });
+
+  it("R7 needs a value for --incomplete-reason", () => {
+    requireProduction();
+    const scoresDir = tempDir("scores-reason-flag");
+    const outputsDir = buildOutputs("reason-flag");
+    const result = spawnSync(
+      join(HARNESS, "node_modules", ".bin", "tsx"),
+      [
+        "model-guide/review-score.ts", "score",
+        "--private", privateDir(), "--set", SET, "--route", "route/a", "--pass", "1",
+        "--date", "2026-11-20", "--outputs", outputsDir, "--scores", scoresDir,
+        "--incomplete-reason",
+      ],
+      { cwd: HARNESS, env: env(tempDir("home-reason-flag")), encoding: "utf8", timeout: 60_000 },
+    );
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout.trim()).toBe("score: --incomplete-reason needs a value");
     expect(existsSync(join(scoresDir, `${SET}.json`))).toBe(false);
   });
 });

@@ -2741,8 +2741,12 @@ describe("the Data source page groups DS14 to DS21 and FX2", () => {
 //     count in that order. The heads are Class, Found, Missed and Severity,
 //     Found, Missed.
 //   - A route with fewer than 3 complete passes has `rank: null` in the
-//     score document. Its row holds the word `incomplete`, no rank number,
-//     and no worst score.
+//     score document. Its row holds the mark `incomplete: <n> of 3 passes`
+//     with the count of its complete passes (a provisional pass is
+//     complete), and `incomplete: <n> of 3 passes (<reason>)` when the
+//     route record carries `incomplete_reason`. The reason is HTML-escaped.
+//     The row holds no rank number. Its worst cell holds the worst pass
+//     score of its passes; its median, best, and recall cells stay "–".
 //   - Each pass carries `data-mg="review-pass"` with `data-route`,
 //     `data-pass`, and `data-state` (`complete` or `provisional`).
 //   - The set counts carry `data-mg="review-set-diffs"`,
@@ -3025,14 +3029,40 @@ function writeVSet(root: string): void {
 
 /** A temp repo with the score document and the set manifest of the V
  * cases, written inline (section 4.4: no new fixture file). */
-function buildVRepo(tag: string): string {
+function buildVRepo(tag: string, doc: any = vScoreDoc()): string {
   const root = repoFixture(tag);
   const scores = join(root, "harness", "model-guide", "data", "review-scores");
   mkdirSync(scores, { recursive: true });
-  const doc = vScoreDoc();
   writeFileSync(join(scores, `${V_SET_ID}.json`), `${JSON.stringify(doc, null, 2)}\n`);
   writeVSet(root);
   return root;
+}
+
+/** One complete pass of a solo incomplete route, with zeroed counts. */
+function vSoloPass(route: string, score: number): any {
+  const byClass: Record<string, { found: number; missed: number }> = {};
+  const bySeverity: Record<string, { found: number; missed: number }> = {};
+  for (const name of V_CLASSES) byClass[name] = { found: 0, missed: 0 };
+  for (const name of V_SEVERITIES) bySeverity[name] = { found: 0, missed: 0 };
+  return {
+    route,
+    pass: 1,
+    date: "2026-11-22",
+    state: "complete",
+    score,
+    weight: 40,
+    found_weight: 31,
+    found: 0,
+    missed: 0,
+    false_claims: 0,
+    blockers: 4,
+    blockers_found: 4,
+    blocker_recall: 1,
+    invalid_reviews: 0,
+    real_defects: 0,
+    by_class: byClass,
+    by_severity: bySeverity,
+  };
 }
 
 function vPreview(root: string, extra: string[] = []) {
@@ -3156,20 +3186,24 @@ describe("the review page cases V1 to V9 of task 4.8a", () => {
     }
   });
 
-  it("V2: a route with two complete passes shows incomplete, no rank number, and no worst score", () => {
+  it("V2: a route with two complete passes shows incomplete with its pass count, no rank number, and its worst score", () => {
     const root = buildVRepo("v2");
     const run = vPreview(root);
     expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
     const page = reviewPage(root);
     const row = vRouteRow(page, V_FEW);
     expect(row, `the page holds a row for ${V_FEW}`).not.toBeNull();
-    expect(vText(row as string), "the row of an unranked route").toContain("incomplete");
-    const rank = vRowCell(row as string, "review-rank") ?? "";
-    expect(/\d/.test(rank), `the rank cell of an unranked route holds a number: ${rank}`).toBe(false);
-    const worst = vRowCell(row as string, "review-worst") ?? "";
-    expect(/\d/.test(worst), `the worst cell of an unranked route holds a number: ${worst}`).toBe(
-      false,
+    expect(vText(row as string), "the mark holds the count of complete passes").toContain(
+      "incomplete: 2 of 3 passes",
     );
+    const rank = vRowCell(row as string, "review-rank") ?? "";
+    expect(rank, "the rank cell stays without a number").toBe("–");
+    expect(vRowCell(row as string, "review-worst"), "the worst cell holds the worst pass score").toBe(
+      "55.0",
+    );
+    for (const name of ["review-median", "review-best", "review-recall"] as const) {
+      expect(vRowCell(row as string, name), `the ${name} cell stays without a number`).toBe("–");
+    }
     const ranked = vRouteRow(page, V_RANKED);
     expect(vRowCell(ranked as string, "review-rank"), "the ranked route keeps its rank").toBe("1");
   });
@@ -3343,5 +3377,65 @@ describe("the review page cases V1 to V9 of task 4.8a", () => {
     );
     // The review page itself is the missing piece at the phase base.
     expect(existsSync(join(previewFolder(root), "review.html")), "review.html is missing").toBe(true);
+  });
+
+  it("V10: an incomplete route with a reason shows the reason and its pass count, and a one-pass route shows its score", () => {
+    const solo = "opencode-go/deepseek-v4.1-flash";
+    const doc = vScoreDoc();
+    const soloPass = vSoloPass(solo, 78.6);
+    doc.passes.push(soloPass);
+    doc.routes.push({
+      route: solo,
+      state: "incomplete",
+      passes: [soloPass],
+      worst: 78.6,
+      median: 78.6,
+      best: 78.6,
+      worst_blocker_recall: 1,
+      rank: null,
+      incomplete_reason: "quota stop",
+    });
+    const root = buildVRepo("v10", doc);
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+
+    const soloRow = vRouteRow(page, solo);
+    expect(soloRow, `the page holds a row for ${solo}`).not.toBeNull();
+    expect(vText(soloRow as string), "the mark holds the reason").toContain(
+      "incomplete: 1 of 3 passes (quota stop)",
+    );
+    expect(vRowCell(soloRow as string, "review-rank"), "the rank cell stays without a number").toBe(
+      "–",
+    );
+    expect(
+      vRowCell(soloRow as string, "review-worst"),
+      "the one-pass worst cell holds that score",
+    ).toBe("78.6");
+
+    const fewRow = vRouteRow(page, V_FEW);
+    expect(vText(fewRow as string), "the mark without a reason holds only the count").toContain(
+      "incomplete: 2 of 3 passes",
+    );
+    expect(vText(fewRow as string), "the row without a reason names none").not.toContain(
+      "quota stop",
+    );
+    expect(vRowCell(fewRow as string, "review-worst"), "the two-pass worst cell").toBe("55.0");
+  });
+
+  it("V11: the page HTML-escapes the incomplete reason", () => {
+    const doc = vScoreDoc();
+    const few = doc.routes.find((entry: any) => entry.route === V_FEW);
+    few.incomplete_reason = '<quota & "stop">';
+    const root = buildVRepo("v11", doc);
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const page = reviewPage(root);
+    const row = vRouteRow(page, V_FEW);
+    expect(row, `the page holds a row for ${V_FEW}`).not.toBeNull();
+    expect(row as string, "the mark escapes the reason").toContain(
+      "incomplete: 2 of 3 passes (&lt;quota &amp; &quot;stop&quot;&gt;)",
+    );
+    expect(page, "the page holds no raw reason").not.toContain('<quota & "stop">');
   });
 });
