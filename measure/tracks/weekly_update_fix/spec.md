@@ -60,8 +60,9 @@ The author measured each item on 2026-11-22 at HEAD `0b75b9c`.
 
 ## Definitions
 
-- **Stable record.** `harness/model-guide/publish-approval.md`: a copy of the archived
-  approval record with the same six rows. It lives with the tools that read it.
+- **Stable record.** `harness/model-guide/publish-approval.md`: a copy of
+  `measure/archive/model_guide/publish-approval.md`, the first-publish consent
+  artifact. It holds the same six rows. It lives with the tools that read it.
 - **Docs update request.** An explicit operator request for the docs write: `update.sh`
   run with the `--docs` flag. Without the flag the script keeps the preview-only branch.
 - **Affected pages.** The public pages that show the refreshed data: `docs/index.html`
@@ -85,7 +86,9 @@ The author measured each item on 2026-11-22 at HEAD `0b75b9c`.
 3. **D3. The pages rebuild through the existing tools.** After the approval, `update.sh`
    rebuilds the affected pages through `preview.sh` and `guide.ts`, the same path the
    first publish used. The commit then holds the two data files plus those pages, with
-   explicit paths only.
+   explicit paths only. The weekly update runs under the standing site-push word from
+   the first publish (Daniel 2026-11-06; archived model_guide D19/D21). It needs no new
+   PM approval. `update.sh` never pushes. The orchestrator pushes with safe-push.
 4. **D4. The leak check runs over the commit set.** `update.sh` runs `leak-check.ts`
    over the files it is about to commit, after the copy and before `git add`. On a leak
    hit it refuses with one line, exit 2, and no commit: `update: leak <path>`.

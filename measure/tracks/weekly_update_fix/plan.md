@@ -53,7 +53,8 @@ Spec FR-1 to FR-5, EV1 to EV4.
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
     through `preview.sh` and `guide.ts`, that the commit holds the two data files plus
-    those pages by explicit path, and that a rerun with unchanged data exits 0 with no
+    those pages by explicit path, that `docs/review.html` rebuilds only when the score
+    file changed, and that a rerun with unchanged data exits 0 with no
     commit. Record the failed test names in `measure/runs/weekly_update_fix/red-1.2.txt`.
   - Green: rebuild the affected pages in `update.sh` and commit them with the data
     files. Touch no test file.
@@ -71,14 +72,16 @@ Spec FR-1 to FR-5, EV1 to EV4.
 - [ ] 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
   Review C 5 F1, Review A 5 F3).
   - Red: write `harness/model-guide-tests/update-exec.test.ts` and no other file.
-    Pin that `harness/model-guide/update.sh` carries the execute bit and that the README
-    weekly-update section states the preview-only branch and the docs branch separately.
+    Pin that `harness/model-guide/update.sh` carries the execute bit, that the README
+    weekly-update section states the preview-only branch and the docs branch separately,
+    and that the README commit claim names the two data files plus the rebuilt pages.
     Record the failed test names in `measure/runs/weekly_update_fix/red-1.4.txt`.
   - Green: run `git update-index --chmod=+x -- harness/model-guide/update.sh` and fix
-    the README wording. Touch no test file. The README change is the Review A 5 F3
+    the README wording, including the commit-path claim. Touch no test file. The README change is the Review A 5 F3
     wording fix owned by this item, not a docs content change.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
-    exits 0, and `git ls-files -s harness/model-guide/update.sh` shows `100755`.
+    exits 0, `git ls-files -s harness/model-guide/update.sh` shows `100755`,
+    and `rg -n "only those two paths" README.md` prints no line.
 
 Verify (Phase 1): spec FR-1 to FR-5 hold, each with its targeted test file green.
 
@@ -87,8 +90,8 @@ Verify (Phase 1): spec FR-1 to FR-5 hold, each with its targeted test file green
 Moved rows 4.11 and 5.4 of `measure/archive/model_guide/plan.md` (PM 2026-11-22).
 
 - [b] 2.1 The first weekly update (row 5.4). When the PM sends the next export, run
-  `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>`.
-  - PM 2026-11-22: the track does not wait for a recurring task. The weekly update job runs `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>` when the PM sends an export; README.md section 'Model guide weekly update' records the job.
+  `harness/model-guide/update.sh --docs <path of MANIFEST-<date>.txt>`.
+  - PM 2026-11-22: the track does not wait for a recurring task. The weekly update job runs `harness/model-guide/update.sh --docs <path of MANIFEST-<date>.txt>` when the PM sends an export; README.md section 'Model guide weekly update' records the job.
   - Row 5.4 is the closing task of this track: the first weekly update run with the
     fixed `update.sh` when the PM sends the export.
   - Verify: `docs/assets/data/real-work.json` and `docs/assets/data/model-guide.json`
