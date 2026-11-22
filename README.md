@@ -284,4 +284,8 @@ Other known limits:
 
 ## Model guide weekly update
 
-The PM sends a new export when fresh model data arrives, and the export manifest is `MANIFEST-<date>.txt`. An operator runs `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>` by hand when the export arrives; the job is not scheduled. The script writes `docs/assets/data/real-work.json` and `docs/assets/data/model-guide.json`, with preview copies under `.tmp/model-guide-preview`. The commit holds only those two paths, and the script never pushes.
+The PM sends a new export when fresh model data arrives, and the export manifest is `MANIFEST-<date>.txt`. An operator runs `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>` by hand when the export arrives; the job is not scheduled.
+
+A plain run is the preview-only branch. It writes `docs/assets/data/real-work.json` and `docs/assets/data/model-guide.json` into `.tmp/model-guide-preview` only. It writes no file under `docs/` and makes no commit.
+
+The docs branch needs the stable approval record `harness/model-guide/publish-approval.md`. The operator runs `harness/model-guide/update.sh --docs <path of MANIFEST-<date>.txt>`. Without the record, this command refuses with `update: no approval record` and exit 2. With the record, it writes `docs/assets/data/real-work.json` and `docs/assets/data/model-guide.json`, then rebuilds `docs/index.html` and `docs/real-work.html` through `preview.sh` and `guide.ts`. `docs/review.html` joins them only when the score file changed. The commit holds the two data files plus the rebuilt pages by explicit path. The script never pushes.

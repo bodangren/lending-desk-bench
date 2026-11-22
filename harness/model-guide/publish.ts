@@ -3,7 +3,7 @@
  * Usage:
  *   cd harness && npx tsx model-guide/publish.ts --preview <folder>
  *
- * The approval record is `<repo>/measure/tracks/model_guide/publish-approval.md`:
+ * The approval record is `<repo>/harness/model-guide/publish-approval.md`:
  *   approved_by: <name>
  *   date: <YYYY-MM-DD>
  *   files:
@@ -59,7 +59,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
-const APPROVAL = join(ROOT, "measure", "tracks", "model_guide", "publish-approval.md");
+const APPROVAL = join(ROOT, "harness", "model-guide", "publish-approval.md");
 const USAGE = "usage: publish.ts --preview <folder>\n";
 
 function refuse(line: string): never {
