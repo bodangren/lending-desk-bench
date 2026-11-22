@@ -36,7 +36,7 @@ File map (every new file of this track):
 
 Spec FR-1 to FR-5, EV1 to EV4.
 
-- [~] 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
+- [x] c4d70a19f655817b6cf8aecf25a6f304b4a8f262 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
   - Red: write `harness/model-guide-tests/update-approval.test.ts` and no other file.
     Pin that `update.sh` and `publish.ts` read `harness/model-guide/publish-approval.md`,
     that the old `measure/tracks/model_guide/` path appears in neither tool, and that
@@ -50,6 +50,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     exits 0, and `rg -n "measure/tracks/model_guide/publish-approval" harness/model-guide/`
     prints no line.
   - Green (2026-11-22, commit 53510bb): `update-approval.test.ts` exit 0, Tests 5 passed. The path `rg` prints no line. The stable record is byte-identical to the archived record and parses under the publish.ts fields.
+  - Green r4 (2026-11-22, commit c4d70a1): `update-approval.test.ts` exit 0, Tests 5 passed, A5 included. The stable record keeps the archived `approved_by`, `date` and six `files:` rows and carries the PM weekly rule plus provenance above `files:`. A read-only check confirms the publish.ts fields still parse.
   - Red (2026-11-22): wrote `update-approval.test.ts` (A1-A5). The red command
     exits non-zero: A1, A2, A3, A5 fail and A4 passes. Both tools still name
     the old track path, `--docs` is unrecognized, and the stable record is
@@ -107,7 +108,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     refusal, and L3 sees no commit, because `update.sh` has no `--docs`
     flag and no leak-check wiring. The plants use key fields only, so no
     private folder is needed.
-- [~] 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
+- [x] c4d70a19f655817b6cf8aecf25a6f304b4a8f262 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
   Review C 5 F1, Review A 5 F3).
   - Red: write `harness/model-guide-tests/update-exec.test.ts` and no other file.
     Pin that `harness/model-guide/update.sh` carries the execute bit, that the README
@@ -121,6 +122,7 @@ Spec FR-1 to FR-5, EV1 to EV4.
     exits 0, `git ls-files -s harness/model-guide/update.sh` shows `100755`,
     and `rg -n "only those two paths" README.md` prints no line.
   - Green (2026-11-22, commit 53510bb): `update-exec.test.ts` exit 0, Tests 5 passed. `git ls-files -s harness/model-guide/update.sh` shows `100755`. `rg -n "only those two paths" README.md` prints no line.
+  - Green r4 (2026-11-22, commit c4d70a1): `update-exec.test.ts` exit 0, Tests 6 passed with E6. The README weekly-update section holds the PM weekly refresh rule and the page-look sentence.
   - Red (2026-11-22): wrote `update-exec.test.ts` (E1-E5). The red command
     exits non-zero: E1, E2, E3, E4 fail and E5 passes. The index mode is
     `100644`, the direct exec fails, and the README still claims only those
@@ -132,6 +134,8 @@ Spec FR-1 to FR-5, EV1 to EV4.
 Verify (Phase 1): spec FR-1 to FR-5 hold, each with its targeted test file green.
 
 Green evidence (2026-11-22, implementation commit 53510bb184ef9575ebf833509560021d0820d61a): every file below exited 0 with `--maxWorkers=1 --reporter=dot`. `update-approval` 5 passed, `update-pages` 6 passed, `update-leak` 4 passed, `update-exec` 5 passed, `update` 9 passed, `preview-gate` 122 passed, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed, `adversarial-p4-runner` 16 passed, `adversarial-p4` 24 passed, `adversarial-p4g` 4 passed, `guide` 18 passed, `real-work` 16 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. The `preview-gate` case P2B2-2 preview is a pre-existing mtime-tie flake: it failed in 3 runs and passed in 2 runs on this tree, and it also failed in 1 of 3 runs at the untouched role base 8fdbcf1. The final `preview-gate` run exited 0.
+
+Green r4 evidence (2026-11-22, commit c4d70a19f655817b6cf8aecf25a6f304b4a8f262): the nine files of the r5 Green line each exited 0 with `--maxWorkers=1 --reporter=dot`. `update-approval` 5 passed, `update-exec` 6 passed, `update` 9 passed, `update-pages` 6 passed, `update-leak` 4 passed, `preview-gate` 122 passed, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. No `docs/` change and no push.
 
 ## Phase 2: The first weekly update and the deferred pilot gate
 
