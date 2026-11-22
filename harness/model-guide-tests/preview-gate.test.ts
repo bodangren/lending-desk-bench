@@ -3719,3 +3719,65 @@ describe("PM page look 2026-11-22 (NO GO fix round, task 5.3)", () => {
     ).toEqual([]);
   });
 });
+
+describe("the data files under assets/data (task 5.3 Red r4)", () => {
+  const GUIDE_FIXTURES = join(import.meta.dirname, "fixtures", "guide");
+
+  // Option A (PM 2026-11-22): publish.ts copies <preview>/<path> to
+  // docs/<path>, while spec EV12/D19 and update.sh (DATA_ABS) place the
+  // data in docs/assets/data/. The preview must therefore also hold the
+  // three data files under <preview>/assets/data/, byte-identical to the
+  // root copies. The root copies stay: other tests and update.sh read
+  // them. The copied docs files under preview/assets/data stay unchanged.
+  function dataRepo(tag: string, doc: any = vScoreDoc()): string {
+    const root = buildVRepo(tag, doc);
+    copyFileSync(
+      join(GUIDE_FIXTURES, "benchmark-mini.json"),
+      join(root, "docs", "assets", "data", "benchmark.json"),
+    );
+    copyFileSync(
+      join(GUIDE_FIXTURES, "tracks-mini.json"),
+      join(root, "docs", "assets", "data", "tracks.json"),
+    );
+    return root;
+  }
+
+  it("R4: the preview holds the three data files under assets/data, byte-identical to the root copies", () => {
+    const root = dataRepo("r4-data");
+    const run = vPreview(root);
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const preview = previewFolder(root);
+    for (const name of ["real-work.json", "model-guide.json", "review.json"]) {
+      const atRoot = join(preview, name);
+      const under = join(preview, "assets", "data", name);
+      expect(existsSync(atRoot), `the root copy ${name} stays`).toBe(true);
+      expect(existsSync(under), `${name} under assets/data is missing`).toBe(true);
+      expect(readFileSync(under, "utf8"), `${name} under assets/data matches the root copy`).toBe(
+        readFileSync(atRoot, "utf8"),
+      );
+    }
+    for (const name of ["benchmark.json", "tracks.json"]) {
+      expect(
+        readFileSync(join(preview, "assets", "data", name), "utf8"),
+        `the copied docs file ${name} stays unchanged`,
+      ).toBe(readFileSync(join(root, "docs", "assets", "data", name), "utf8"));
+    }
+  });
+
+  it("R4-publish: an approval row for assets/data/model-guide.json copies the preview file into docs/assets/data", () => {
+    const root = dataRepo("r4-publish");
+    expect(runPreview(root).status).toBe(0);
+    const preview = previewFolder(root);
+    const want = "assets/data/model-guide.json";
+    expect(existsSync(join(preview, "model-guide.json")), "the root model-guide.json stays").toBe(
+      true,
+    );
+    writeApproval(root, [[sha256(join(preview, "model-guide.json")), want]]);
+    const result = runPublish(root);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(existsSync(join(root, "docs", want)), `published ${want}`).toBe(true);
+    expect(sha256(join(root, "docs", want)), `published ${want} matches the preview file`).toBe(
+      sha256(join(preview, "model-guide.json")),
+    );
+  });
+});
