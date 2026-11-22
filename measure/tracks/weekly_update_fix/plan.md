@@ -100,7 +100,10 @@ Spec FR-1 to FR-5, EV1 to EV4.
     rule with exact commit sets and the rendered score, F7 for the
     missing-overview refusal that also pins the F5 renderer half, and F9a
     and F9b for the commit log lines; all five fail for the missing
-    behavior while P1-P5 pass.
+    behavior while P1-P5 pass. Red r7 (2026-11-22): corrected F2a to
+    assert the second commit as the byte-measured changed files including
+    the rebuilt review outputs, and F2b to commit the score input in
+    setup; both still fail for the stale review rendering.
 - [~] 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
   - Red: write `harness/model-guide-tests/update-leak.test.ts` and no other file.
     Pin that `update.sh` runs `leak-check.ts` over the files it is about to commit and

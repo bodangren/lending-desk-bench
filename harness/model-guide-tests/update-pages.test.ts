@@ -234,6 +234,25 @@ function treeHashes(root: string): Record<string, string> {
   walk(root, "");
   return out;
 }
+/** The six docs files a weekly run may change. */
+const SIX_DOCS_FILES = [
+  join(DATA_DIR, "real-work.json"),
+  join(DATA_DIR, "model-guide.json"),
+  join(DATA_DIR, "review.json"),
+  join("docs", "index.html"),
+  join("docs", "real-work.html"),
+  join("docs", "review.html"),
+];
+
+/** The current bytes of the six docs files, null when a file is absent. */
+function docsBytes(root: string): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const rel of SIX_DOCS_FILES) {
+    const full = join(root, rel);
+    out[rel] = existsSync(full) ? readFileSync(full, "utf8") : null;
+  }
+  return out;
+}
 /** A temp repo with docs pages, data files, and the export pair. */
 function updateRepo(tag: string, withScores: boolean): { root: string; manifest: string } {
   const root = tempDir(tag);
@@ -414,6 +433,7 @@ describe("the weekly update page refresh (spec FR-3)", () => {
     // The score changes to an incomplete route set.
     writeFileSync(scoreFile, scoreIncomplete());
     const changed = scoreIncomplete();
+    const beforeBytes = docsBytes(root);
 
     const result = runDocsUpdate(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
@@ -429,15 +449,16 @@ describe("the weekly update page refresh (spec FR-3)", () => {
       readFileSync(join(root, DATA_DIR, "review.json"), "utf8"),
       "review.json is byte-equal to the consumed score",
     ).toBe(changed);
-    expect(commitPaths(root), "the commit holds data, pages, and the score data").toEqual(
-      [
-        join(DATA_DIR, "real-work.json"),
-        join(DATA_DIR, "model-guide.json"),
-        join(DATA_DIR, "review.json"),
-        join("docs", "index.html"),
-        join("docs", "real-work.html"),
-        join("docs", "review.html"),
-      ].sort(),
+    // The commit holds exactly the files whose bytes changed, measured
+    // from the six docs files instead of a hard-coded set: git never
+    // lists unchanged paths, and a no-op rerun must commit nothing.
+    const afterBytes = docsBytes(root);
+    const changedPaths = SIX_DOCS_FILES.filter((path) => beforeBytes[path] !== afterBytes[path]);
+    expect(changedPaths, "the changed review outputs rebuilt").toEqual(
+      expect.arrayContaining([join("docs", "review.html"), join(DATA_DIR, "review.json")]),
+    );
+    expect(commitPaths(root), "the commit holds exactly the changed files").toEqual(
+      [...changedPaths].sort(),
     );
   });
 
@@ -458,7 +479,7 @@ describe("the weekly update page refresh (spec FR-3)", () => {
     const published = `${readFileSync(join(previewTmp, "review.html"), "utf8")}<!-- published-baseline -->\n`;
     writeFileSync(join(root, "docs", "review.html"), published);
     copyFileSync(scoreFile, join(root, DATA_DIR, "review.json"));
-    git(root, ["add", join("docs", "review.html"), join(DATA_DIR, "review.json")]);
+    git(root, ["add", scoreFile, join("docs", "review.html"), join(DATA_DIR, "review.json")]);
     git(root, ["commit", "-q", "-m", "published baseline"]);
 
     const result = runDocsUpdate(root, manifest);
