@@ -219,8 +219,7 @@
       "median": 78.6,
       "best": 78.6,
       "worst_blocker_recall": 0.7368,
-      "rank": null,
-      "incomplete_reason": "nights 1 and 2 gave no pass; no extra nights (PM 2026-11-22)"
+      "rank": null
     },
     {
       "route": "opencode-go/hy4-flash-free#high",
@@ -300,8 +299,7 @@
       "median": 75.4,
       "best": 75.4,
       "worst_blocker_recall": 0.7368,
-      "rank": null,
-      "incomplete_reason": "nights 1 and 2 gave no pass; no extra nights (PM 2026-11-22)"
+      "rank": null
     },
     {
       "route": "opencode-go/mimo-v2.6-flash",
@@ -311,8 +309,7 @@
       "median": null,
       "best": null,
       "worst_blocker_recall": null,
-      "rank": null,
-      "incomplete_reason": "nights 1 and 2 gave no pass; no extra nights (PM 2026-11-22)"
+      "rank": null
     }
   ]
 }
