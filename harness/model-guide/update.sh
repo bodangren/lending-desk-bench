@@ -70,52 +70,6 @@ REAL_WORK_PAGE="$ROOT/docs/real-work.html"
 REVIEW_PAGE="$ROOT/docs/review.html"
 PRIVATE_DIR="${MODEL_GUIDE_PRIVATE_DIR:-$HOME/.local/share/lending-desk-bench/model-guide}"
 
-# A docs write needs the consent record, a real private input, and the guide
-# section template. Refuse before any write.
-if [ "$DOCS" -eq 1 ] && [ ! -f "$APPROVAL" ]; then
-  echo "update: no approval record"
-  exit 2
-fi
-if [ "$DOCS" -eq 1 ] && [ ! -d "$PRIVATE_DIR" ]; then
-  echo "update: no private input"
-  exit 2
-fi
-if [ "$DOCS" -eq 1 ] && [ ! -f "$SCRIPT_DIR/pages/guide-section.html" ]; then
-  echo "update: no overview template"
-  exit 2
-fi
-
-# Refuse a symlink on any path this script writes through, before any write.
-PREVIEW_CHAIN=()
-NEXT="$PREVIEW_ABS"
-while [ "$NEXT" != "$ROOT" ] && [ "$NEXT" != "/" ] && [ "$NEXT" != "." ]; do
-  PREVIEW_CHAIN=("$NEXT" "${PREVIEW_CHAIN[@]}")
-  NEXT="${NEXT%/*}"
-done
-for path in "$ROOT/docs" "$ROOT/docs/assets" "$DATA_ABS" "$REAL_WORK_OUT" \
-  "$MODEL_GUIDE_OUT" "$REVIEW_JSON_OUT" "$INDEX_OUT" "$REAL_WORK_PAGE" \
-  "$REVIEW_PAGE" "${PREVIEW_CHAIN[@]}" "$PREVIEW_ABS/real-work.json" \
-  "$PREVIEW_ABS/model-guide.json"; do
-  if [ -L "$path" ]; then
-    echo "update: refused path $path"
-    exit 2
-  fi
-done
-
-# The input check and both tools write here first. A refused run leaves the
-# repo byte-identical.
-STAGING="$(mktemp -d)"
-trap 'rm -rf "$STAGING"' EXIT
-
-cd "$ROOT/harness"
-set +e
-npx tsx model-guide/real-work.ts --manifest "$MANIFEST_ABS" --out "$STAGING"
-STATUS=$?
-set -e
-if [ "$STATUS" -ne 0 ]; then
-  exit "$STATUS"
-fi
-
 # The newest review score file wins. The whole-path comparison keeps a name
 # with a newline from splitting the choice.
 newest_score_file() {
@@ -152,6 +106,74 @@ raise SystemExit(0 if any(
 PY
 }
 
+# The review outputs join the candidate set when the consumed score differs
+# from the published baseline. Without a published score, a complete route is
+# the new result worth publishing.
+PUBLISH_REVIEW=0
+PUBLISH_SCORE=0
+if [ -n "$SCORES" ]; then
+  if [ -f "$REVIEW_JSON_OUT" ]; then
+    if ! cmp -s "$SCORES" "$REVIEW_JSON_OUT"; then
+      PUBLISH_REVIEW=1
+      PUBLISH_SCORE=1
+    fi
+  elif score_has_complete_route "$SCORES"; then
+    PUBLISH_REVIEW=1
+  fi
+fi
+
+# A docs write needs the consent record, a real private input, the guide
+# section template and, when a review page will be built, the review template.
+# Refuse before any write.
+if [ "$DOCS" -eq 1 ] && [ ! -f "$APPROVAL" ]; then
+  echo "update: no approval record"
+  exit 2
+fi
+if [ "$DOCS" -eq 1 ] && [ ! -d "$PRIVATE_DIR" ]; then
+  echo "update: no private input"
+  exit 2
+fi
+if [ "$DOCS" -eq 1 ] && [ ! -f "$SCRIPT_DIR/pages/guide-section.html" ]; then
+  echo "update: no overview template"
+  exit 2
+fi
+if [ "$DOCS" -eq 1 ] && [ "$PUBLISH_REVIEW" -eq 1 ] \
+  && [ ! -f "$SCRIPT_DIR/pages/review.html" ]; then
+  echo "update: no review template"
+  exit 2
+fi
+
+# Refuse a symlink on any path this script writes through, before any write.
+PREVIEW_CHAIN=()
+NEXT="$PREVIEW_ABS"
+while [ "$NEXT" != "$ROOT" ] && [ "$NEXT" != "/" ] && [ "$NEXT" != "." ]; do
+  PREVIEW_CHAIN=("$NEXT" "${PREVIEW_CHAIN[@]}")
+  NEXT="${NEXT%/*}"
+done
+for path in "$ROOT/docs" "$ROOT/docs/assets" "$DATA_ABS" "$REAL_WORK_OUT" \
+  "$MODEL_GUIDE_OUT" "$REVIEW_JSON_OUT" "$INDEX_OUT" "$REAL_WORK_PAGE" \
+  "$REVIEW_PAGE" "${PREVIEW_CHAIN[@]}" "$PREVIEW_ABS/real-work.json" \
+  "$PREVIEW_ABS/model-guide.json"; do
+  if [ -L "$path" ]; then
+    echo "update: refused path $path"
+    exit 2
+  fi
+done
+
+# The input check and both tools write here first. A refused run leaves the
+# repo byte-identical.
+STAGING="$(mktemp -d)"
+trap 'rm -rf "$STAGING"' EXIT
+
+cd "$ROOT/harness"
+set +e
+npx tsx model-guide/real-work.ts --manifest "$MANIFEST_ABS" --out "$STAGING"
+STATUS=$?
+set -e
+if [ "$STATUS" -ne 0 ]; then
+  exit "$STATUS"
+fi
+
 GUIDE_ARGS=(--real-work "$STAGING/real-work.json"
   --print-audit "$GUIDE_DATA/print-audit-2026-11.json"
   --benchmark "$DATA_ABS/benchmark.json"
@@ -175,22 +197,6 @@ if [ "$DOCS" -eq 0 ]; then
   cp "$STAGING/real-work.json" "$PREVIEW_ABS/real-work.json"
   cp "$STAGING/model-guide.json" "$PREVIEW_ABS/model-guide.json"
   exit 0
-fi
-
-# The review outputs join the candidate set when the consumed score differs
-# from the published baseline. Without a published score, a complete route is
-# the new result worth publishing.
-PUBLISH_REVIEW=0
-PUBLISH_SCORE=0
-if [ -n "$SCORES" ]; then
-  if [ -f "$REVIEW_JSON_OUT" ]; then
-    if ! cmp -s "$SCORES" "$REVIEW_JSON_OUT"; then
-      PUBLISH_REVIEW=1
-      PUBLISH_SCORE=1
-    fi
-  elif score_has_complete_route "$SCORES"; then
-    PUBLISH_REVIEW=1
-  fi
 fi
 
 # Render the full candidate set in staging. preview.sh writes only there.
