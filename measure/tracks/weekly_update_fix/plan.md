@@ -36,7 +36,7 @@ File map (every new file of this track):
 
 Spec FR-1 to FR-5, EV1 to EV4.
 
-- [ ] 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
+- [~] 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
   - Red: write `harness/model-guide-tests/update-approval.test.ts` and no other file.
     Pin that `update.sh` and `publish.ts` read `harness/model-guide/publish-approval.md`,
     that the old `measure/tracks/model_guide/` path appears in neither tool, and that
@@ -49,7 +49,14 @@ Spec FR-1 to FR-5, EV1 to EV4.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, and `rg -n "measure/tracks/model_guide/publish-approval" harness/model-guide/`
     prints no line.
-- [ ] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
+  - Red (2026-11-22): wrote `update-approval.test.ts` (A1-A5). The red command
+    exits non-zero: A1, A2, A3, A5 fail and A4 passes. Both tools still name
+    the old track path, `--docs` is unrecognized, and the stable record is
+    missing. Also refreshed `update.test.ts` to the new contract: `APPROVAL`
+    and `approve()` now point at `harness/model-guide/publish-approval.md`,
+    since the old path contradicts FR-1. U1, U3, UP1 stay unchanged, and the
+    refreshed U2 fails while the rest passes.
+- [~] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
     through `preview.sh` and `guide.ts`, that the commit holds the two data files plus
@@ -60,7 +67,14 @@ Spec FR-1 to FR-5, EV1 to EV4.
     files. Touch no test file.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, and `git status --short docs/` prints nothing.
-- [ ] 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
+  - Red (2026-11-22): wrote `update-pages.test.ts` (P1, P2a, P2b, P3, P4, P5).
+    The red command exits non-zero: all six fail because `update.sh` rejects
+    `--docs` with the usage error. Also refreshed `update.test.ts` U2 to the
+    new contract: the commit set is the two data files plus `index.html` and
+    `real-work.html`, and the unrelated dirty file is `methodology.html`,
+    since Green rebuilds `index.html`. The old two-path set and the dirty
+    `index.html` contradict FR-3.
+- [~] 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
   - Red: write `harness/model-guide-tests/update-leak.test.ts` and no other file.
     Pin that `update.sh` runs `leak-check.ts` over the files it is about to commit and
     that a leak hit refuses with one line, exit 2, and no commit. Record the failed
@@ -69,7 +83,12 @@ Spec FR-1 to FR-5, EV1 to EV4.
     Touch no test file.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, and `git status --short docs/` prints nothing.
-- [ ] 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
+  - Red (2026-11-22): wrote `update-leak.test.ts` (L1-L4). The red command
+    exits non-zero: all four fail. L1, L2, and L4 see no `update: leak`
+    refusal, and L3 sees no commit, because `update.sh` has no `--docs`
+    flag and no leak-check wiring. The plants use key fields only, so no
+    private folder is needed.
+- [~] 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
   Review C 5 F1, Review A 5 F3).
   - Red: write `harness/model-guide-tests/update-exec.test.ts` and no other file.
     Pin that `harness/model-guide/update.sh` carries the execute bit, that the README
@@ -82,6 +101,11 @@ Spec FR-1 to FR-5, EV1 to EV4.
   - Verify: `cd harness && npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
     exits 0, `git ls-files -s harness/model-guide/update.sh` shows `100755`,
     and `rg -n "only those two paths" README.md` prints no line.
+  - Red (2026-11-22): wrote `update-exec.test.ts` (E1-E5). The red command
+    exits non-zero: E1, E2, E3, E4 fail and E5 passes. The index mode is
+    `100644`, the direct exec fails, and the README still claims only those
+    two paths with no `--docs` branch. The README command already has no
+    `bash` prefix.
 
 Verify (Phase 1): spec FR-1 to FR-5 hold, each with its targeted test file green.
 

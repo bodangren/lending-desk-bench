@@ -35,22 +35,26 @@ import { afterAll, describe, expect, it } from "vitest";
  * preview folder and outside `docs/assets/data/`, and it writes no file
  * under `docs/` before the approval (spec D21).
  *
- * Approval gate: the file `<repo>/measure/tracks/model_guide/publish-approval.md`
- * (the record of spec D21). The gate is the existence of that file. The
- * script reads no field of the record.
+ * Approval gate: the file `<repo>/harness/model-guide/publish-approval.md`
+ * (the stable copy of the record of spec D21). The gate is the existence of
+ * that file. The script reads no field of the record.
  *
  * Before the approval (exit 0):
  *   - `real-work.json` and `model-guide.json` are written into the preview
  *     folder only. Every other file of the repo keeps its SHA-256, no file
  *     appears under `docs/`, and no commit runs.
  * After the approval (exit 0):
- *   - the same two data files are written into `<repo>/docs/assets/data/`.
- *   - one `git commit` runs and holds exactly these two paths:
+ *   - the same two data files are written into `<repo>/docs/assets/data/`,
+ *     and the affected pages are rebuilt through `preview.sh` and
+ *     `guide.ts`.
+ *   - one `git commit` runs and holds exactly these paths:
  *       docs/assets/data/real-work.json
  *       docs/assets/data/model-guide.json
- *     It holds no other path. An unrelated dirty file of `docs/` stays
- *     uncommitted and stays dirty. The temp repo of this test has no
- *     remote, so a `git push` would fail the run.
+ *       docs/index.html
+ *       docs/real-work.html
+ *     It holds no other path. An unrelated dirty file of `docs/` that is
+ *     not an affected page stays uncommitted and stays dirty. The temp repo
+ *     of this test has no remote, so a `git push` would fail the run.
  * A failed input check (exit 2):
  *   - one named `input-check:` line on stdout, and no file of the repo
  *     changes: no `docs/` write, no new preview folder, no commit.
@@ -99,7 +103,7 @@ const KINDS = [
 const DATA_DIR = join("docs", "assets", "data");
 const REAL_WORK_JSON = "real-work.json";
 const MODEL_GUIDE_JSON = "model-guide.json";
-const APPROVAL = join("measure", "tracks", "model_guide", "publish-approval.md");
+const APPROVAL = join("harness", "model-guide", "publish-approval.md");
 const PREVIEW_DIR = join(".tmp", "model-guide-preview");
 const EXPORT_COPY = join("fixture-b", `ra-outcomes-${DATE}.json`);
 const MANIFEST_COPY = join("fixture-b", `MANIFEST-${DATE}.txt`);
@@ -112,6 +116,10 @@ const INDEX_HTML = `<!doctype html>
 <a href="./results.html">Results</a><a href="./models/">Models</a>
 <a href="./tracks.html">Tracks</a></nav>
 <main><h1>Overview</h1></main></body></html>
+`;
+const METHODOLOGY_HTML = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Method</title></head>
+<body><main><h1>Method</h1></main></body></html>
 `;
 const SITE_CSS = "body { font-family: sans-serif; }\n";
 
@@ -227,6 +235,7 @@ function updateRepo(tag: string): { root: string; manifest: string } {
   mkdirSync(join(root, "docs", "assets", "css"), { recursive: true });
   mkdirSync(join(root, "docs", "assets", "data"), { recursive: true });
   writeFileSync(join(root, "docs", "index.html"), INDEX_HTML);
+  writeFileSync(join(root, "docs", "methodology.html"), METHODOLOGY_HTML);
   writeFileSync(join(root, "docs", "assets", "css", "site.css"), SITE_CSS);
   copyFileSync(BENCHMARK, join(root, DATA_DIR, "benchmark.json"));
   copyFileSync(TRACKS, join(root, DATA_DIR, "tracks.json"));
@@ -235,7 +244,6 @@ function updateRepo(tag: string): { root: string; manifest: string } {
     printAuditData(tag),
     join(root, "harness", "model-guide", "data", "print-audit-2026-11.json"),
   );
-  mkdirSync(join(root, "measure", "tracks", "model_guide"), { recursive: true });
   mkdirSync(join(root, "fixture-b"), { recursive: true });
   for (const name of [OUTCOMES_NAME, AA_NAME, ALLOWED_NAME, MANIFEST_NAME]) {
     copyFileSync(join(PAGE_B, name), join(root, "fixture-b", name));
@@ -306,12 +314,14 @@ describe("the weekly update (spec D19, D21)", () => {
     expect(git(root, ["status", "--short"]), "no file changed under docs/").toBe("");
   });
 
-  it("U2: after the approval update.sh writes the two data files into docs/assets/data and commits exactly those two paths", () => {
+  it("U2: after the approval update.sh writes the two data files into docs/assets/data, rebuilds the affected pages, and commits exactly those paths", () => {
     const { root, manifest } = updateRepo("after-approval");
     approve(root);
-    // One unrelated dirty file: the run must leave it out of the commit.
-    writeFileSync(join(root, "docs", "index.html"), `${INDEX_HTML}<!-- dirty, not for this commit -->\n`);
-    expect(git(root, ["status", "--short"])).toContain("docs/index.html");
+    // One unrelated dirty file that is not an affected page: the run must
+    // leave it out of the commit. Green rebuilds docs/index.html, so the
+    // dirty file lives in methodology.html instead.
+    writeFileSync(join(root, "docs", "methodology.html"), `${METHODOLOGY_HTML}<!-- dirty, not for this commit -->\n`);
+    expect(git(root, ["status", "--short"])).toContain("docs/methodology.html");
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
     const result = runUpdate(root, manifest);
@@ -325,15 +335,17 @@ describe("the weekly update (spec D19, D21)", () => {
 
     const committed = git(root, ["show", "--name-only", "--format=", "HEAD"])
       .split("\n").filter(Boolean).sort();
-    expect(committed, "the commit holds the two data files and nothing else").toEqual(
+    expect(committed, "the commit holds the two data files plus the rebuilt pages and nothing else").toEqual(
       [
         join(DATA_DIR, MODEL_GUIDE_JSON),
         join(DATA_DIR, REAL_WORK_JSON),
+        join("docs", "index.html"),
+        join("docs", "real-work.html"),
       ].sort(),
     );
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(String(Number(commits) + 1));
     // The unrelated dirty file stays uncommitted and stays dirty.
-    expect(git(root, ["status", "--short"])).toBe(" M docs/index.html");
+    expect(git(root, ["status", "--short"])).toBe(" M docs/methodology.html");
     expect(git(root, ["remote"]), "no push in the run").toBe("");
   });
 
