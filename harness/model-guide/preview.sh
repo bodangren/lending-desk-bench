@@ -879,14 +879,21 @@ def count_total(items, group, key):
 
 
 def review_counts_table(items, route, group, key_attr, keys, head):
-    """One counts table of a route, with the name, found, and missed cells."""
+    """One counts table of a route, with the name, found, and missed cells.
+
+    A route with no passes shows a dash in each count cell.
+    """
     cells = []
     for name in keys:
-        found, missed = count_total(items, group, name)
+        if items:
+            found, missed = count_total(items, group, name)
+            found_text, missed_text = str(found), str(missed)
+        else:
+            found_text, missed_text = DASH, DASH
         cells.append(
             f'<tr data-mg="{key_attr}" data-route="{esc(route)}" '
             f'data-{head.lower()}="{esc(name)}"><td>{esc(name)}</td>'
-            f'<td class="num">{found}</td><td class="num">{missed}</td></tr>'
+            f'<td class="num">{found_text}</td><td class="num">{missed_text}</td></tr>'
         )
     return (
         f'<table class="data" data-mg="review-defaults" data-route="{esc(route)}">'
@@ -900,12 +907,12 @@ def review_route_rows(scores, pilot_gate):
     """The route rows of the review table.
 
     A complete route with a rank shows the rank and the worst, median, and
-    best score. An incomplete route shows the count of its passes and, when
-    the record carries one, its escaped reason. It shows its worst score when
-    it holds passes, and the rank, median, best, and recall cells stay dashed.
-    A route with no pass dashes every score cell. A provisional pass keeps the
-    route complete. The false claims and the real defects are sums over the
-    passes.
+    best score. An incomplete route shows the bare count of its passes as a
+    mark on its own line. The page never renders an internal reason. It shows
+    its worst score when it holds passes, and the rank, median, best, and
+    recall cells stay dashed. A route with no pass dashes every score cell. A
+    provisional pass keeps the route complete. The false claims and the real
+    defects are sums over the passes.
     """
     passes = scores.get("passes") or []
     by_route = {}
@@ -933,10 +940,7 @@ def review_route_rows(scores, pilot_gate):
             state_mark = ""
         else:
             mark = f"incomplete: {len(route_passes)} of 3 passes"
-            reason = record.get("incomplete_reason")
-            if reason is not None and reason != "":
-                mark += f" ({reason})"
-            state_mark = f' <span class="mark">{esc(mark)}</span>'
+            state_mark = f'<br><span class="mark">{esc(mark)}</span>'
         rows.append(
             f'<tr data-mg="review-route" data-route="{esc(route)}">'
             f'<td class="routes">{esc(route)}{state_mark}</td>'
@@ -1045,6 +1049,7 @@ def write_review(scores_path):
             f'<li data-mg="review-set-blockers">{counts["blockers"]} blockers</li>'
         ),
         "<!--MODEL-GUIDE:REVIEW-METHOD-->": esc(review_method(counts)),
+        "</style>": ".routes { min-width: 10rem; }\n</style>",
     }
     for token, value in replacements.items():
         if token not in review:
