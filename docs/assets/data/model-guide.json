@@ -1,0 +1,55 @@
+{
+  "schema": "model-guide-overview/1",
+  "today": "2026-11-22",
+  "stale": false,
+  "rows": [
+    {
+      "kind": "Code review",
+      "pick": "no pick yet: not enough evidence",
+      "second": null,
+      "evidence": "track A: no complete rank (n=0)",
+      "evidence_date": "2026-11-17",
+      "base_line": null
+    },
+    {
+      "kind": "app code",
+      "pick": "no pick yet: not enough evidence",
+      "second": null,
+      "evidence": "no pick yet",
+      "evidence_date": "2026-11-17",
+      "base_line": 95.2
+    },
+    {
+      "kind": "test writing",
+      "pick": "opencode-go/deepseek-v4.1-flash",
+      "second": "opencode-go/hy4-flash-free",
+      "evidence": "page B producer: accept 60 %, 13 tasks",
+      "evidence_date": "2026-11-17",
+      "base_line": 98.7
+    },
+    {
+      "kind": "docs and ops",
+      "pick": "no pick yet: not enough evidence",
+      "second": null,
+      "evidence": "no pick yet",
+      "evidence_date": "2026-11-17",
+      "base_line": null
+    },
+    {
+      "kind": "print-book audit",
+      "pick": "claude-code/claude-sonnet-5-5#high",
+      "second": "kimi-code-plan-cn/k3.1-pro",
+      "evidence": "print-audit: 13 of 13 (n=13)",
+      "evidence_date": "2026-11-17",
+      "base_line": null
+    },
+    {
+      "kind": "tooling",
+      "pick": "no pick yet: not enough evidence",
+      "second": null,
+      "evidence": "no pick yet",
+      "evidence_date": "2026-11-17",
+      "base_line": null
+    }
+  ]
+}

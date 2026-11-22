@@ -18,14 +18,41 @@
       <div class="nav-links">
         <a class="active" href="./">Overview</a>
         <a href="./methodology.html">Methodology</a>
-        <a href="./results.html">Results</a>
+        <a href="./results.html">Results</a><a href="./real-work.html">Real work</a><a href="./review.html">Review</a>
         <a href="./models/">Models</a>
         <a href="./tracks.html">Tracks</a>
       </div>
     </div>
   </nav>
 
-  <header class="hero wrap">
+  <section class="wrap" id="model-guide" aria-labelledby="model-guide-title">
+  <div class="card">
+    <h2 id="model-guide-title">For this kind of work, use this model</h2>
+    <p class="section-lede">The pick comes from our own runs. A model needs
+    5 tasks or runs or more, or a complete review rank. The base line shows beside
+    the pick as a check and never changes it.</p>
+    
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Model guide table"><table>
+      <thead><tr>
+        <th scope="col">Kind of work</th>
+        <th scope="col">Use this model</th>
+        <th scope="col">Second choice</th>
+        <th scope="col">Evidence</th>
+        <th scope="col">Evidence date</th>
+      </tr></thead>
+      <tbody>
+<tr><td>Code review</td><td>no pick yet: not enough evidence</td><td>none</td><td>track A: no complete rank (n=0)</td><td>2026-11-17</td></tr>
+<tr><td>app code</td><td>no pick yet: not enough evidence<br><span class="muted">base line 95.2</span></td><td>none</td><td>no pick yet</td><td>2026-11-17</td></tr>
+<tr><td>test writing</td><td>DeepSeek V4.1 Flash<br><span class="muted">base line 98.7</span></td><td>hy4-flash-free</td><td>page B producer: accept 60 %, 13 tasks</td><td>2026-11-17</td></tr>
+<tr><td>docs and ops</td><td>no pick yet: not enough evidence</td><td>none</td><td>no pick yet</td><td>2026-11-17</td></tr>
+<tr><td>print-book audit</td><td>Claude Sonnet 5.5</td><td>Kimi K3.1 Pro</td><td>print-audit: 13 of 13 (n=13)</td><td>2026-11-17</td></tr>
+<tr><td>tooling</td><td>no pick yet: not enough evidence</td><td>none</td><td>no pick yet</td><td>2026-11-17</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<header class="hero wrap">
     <p class="kicker">Reading Advantage · Agent evaluation</p>
     <h1 id="hero-title">Lending Desk Bench</h1>
     <p class="lede" id="hero-lede">Loading…</p>

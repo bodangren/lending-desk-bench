@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Review results</title>
+  <meta name="description" content="Seeded-defect review results of track A: the rank of each route by its worst pass, with the blocker recall, the false claims, the real defects, and the counts by class and severity." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/site.css" />
+  <style>
+    .page-head { padding: 2rem 0 0.6rem; }
+    .page-head h1 {
+      margin: 0 0 0.5rem;
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(1.9rem, 3.4vw, 2.5rem);
+      line-height: 1.05;
+    }
+    .page-head .lede { font-size: 1rem; color: var(--muted); max-width: 66ch; margin: 0 0 0.4rem; }
+    .table-wrap { margin-top: 0.6rem; overflow-x: auto; }
+    .table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    .table-wrap th, .table-wrap td {
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid var(--line-soft);
+      text-align: left; vertical-align: top;
+    }
+    .table-wrap th {
+      color: var(--muted); font-size: 0.66rem; font-weight: 650;
+      font-family: var(--mono); letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(26, 33, 48, 0.6);
+      border-bottom: 1px solid var(--line);
+    }
+    .table-wrap tr:last-child td { border-bottom: none; }
+    .table-wrap td.num {
+      text-align: right; font-family: var(--mono); font-size: 0.82rem;
+      font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    .table-wrap td.routes {
+      font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+    .scroll-hint {
+      margin: 0.35rem 0 0;
+      color: var(--muted); font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.04em;
+    }
+    .set-counts { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.25rem; }
+    .set-counts li { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+    .passes { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.3rem; }
+    .passes li { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); overflow-wrap: anywhere; }
+    .passes .state { color: var(--accent-2); }
+    .passes li[data-state="provisional"] .state { color: var(--accent); }
+    .counts-grid { display: grid; gap: 1rem; }
+    @media (min-width: 760px) { .counts-grid { grid-template-columns: 1fr 1fr; } }
+    .counts-grid table { margin-top: 0.3rem; }
+    caption { text-align: left; color: var(--text); font-size: 0.82rem; padding: 0.2rem 0 0.3rem; overflow-wrap: anywhere; }
+    .method { max-width: 70ch; }
+  .routes { min-width: 10rem; }
+</style>
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="wrap inner">
+      <a class="brand" href="./"><span class="brand-mark"></span> Lending Desk Bench</a>
+      <div class="nav-links">
+        <a href="./">Overview</a>
+        <a href="./methodology.html">Methodology</a>
+        <a href="./results.html">Results</a>
+        <a href="./real-work.html">Real work</a>
+        <a class="active" href="./review.html" aria-current="page">Review</a>
+        <a href="./models/">Models</a>
+        <a href="./tracks.html">Tracks</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="wrap page-head">
+    <p class="kicker">Track A</p>
+    <h1>Seeded-defect review results</h1>
+    <p class="lede">A route reviews seeded diffs. The rank uses its worst pass. A route with fewer than three complete passes shows incomplete and takes no rank. A provisional pass keeps its rank.</p>
+    <p class="lede" data-mg="review-set-id">Set mg-2026-11a. The counts come from the public set manifest.</p>
+  </header>
+
+  <main class="wrap stack">
+    <section class="card">
+      <h2>The routes</h2>
+      <p class="muted">Worst, median, and best are pass scores: the found plant weight over the set weight, less two points for each false claim. Blocker recall is the share of the blockers that the route found in its worst pass. False claims and real defects are sums over the passes.</p>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Review results by route">
+        <table class="data" data-mg="review-table">
+          <thead>
+            <tr>
+              <th scope="col">Route</th>
+              <th scope="col">Rank</th>
+              <th scope="col">Worst</th>
+              <th scope="col">Median</th>
+              <th scope="col">Best</th>
+              <th scope="col">Blocker recall</th>
+              <th scope="col">False claims</th>
+              <th scope="col">Real defects</th>
+            </tr>
+          </thead>
+          <tbody>
+<tr data-mg="review-route" data-route="opencode-go/deepseek-v4.1-flash"><td class="routes">opencode-go/deepseek-v4.1-flash<br><span class="mark">incomplete: 1 of 3 passes</span></td><td class="num" data-mg="review-rank">–</td><td class="num" data-mg="review-worst">78.6</td><td class="num" data-mg="review-median">–</td><td class="num" data-mg="review-best">–</td><td class="num" data-mg="review-recall">–</td><td class="num" data-mg="review-false-claims">0</td><td class="num" data-mg="review-real-defects">13</td></tr>
+<tr data-mg="review-route" data-route="opencode-go/hy4-flash-free#high"><td class="routes">opencode-go/hy4-flash-free#high<br><span class="mark">incomplete: 1 of 3 passes</span></td><td class="num" data-mg="review-rank">–</td><td class="num" data-mg="review-worst">75.4</td><td class="num" data-mg="review-median">–</td><td class="num" data-mg="review-best">–</td><td class="num" data-mg="review-recall">–</td><td class="num" data-mg="review-false-claims">0</td><td class="num" data-mg="review-real-defects">6</td></tr>
+<tr data-mg="review-route" data-route="opencode-go/mimo-v2.6-flash"><td class="routes">opencode-go/mimo-v2.6-flash<br><span class="mark">incomplete: 0 of 3 passes</span></td><td class="num" data-mg="review-rank">–</td><td class="num" data-mg="review-worst">–</td><td class="num" data-mg="review-median">–</td><td class="num" data-mg="review-best">–</td><td class="num" data-mg="review-recall">–</td><td class="num" data-mg="review-false-claims">–</td><td class="num" data-mg="review-real-defects">–</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="scroll-hint">Scroll sideways for more &#8594;</p>
+    </section>
+
+    <section class="card">
+      <h2>Counts by class and severity</h2>
+      <p class="muted">Found counts the plants that a review reached. Missed counts the plants that no finding pointed at. Both columns sum over the passes of the route.</p>
+      <div class="counts-grid">
+<table class="data" data-mg="review-defaults" data-route="opencode-go/deepseek-v4.1-flash"><caption>opencode-go/deepseek-v4.1-flash by class</caption><thead><tr><th>Class</th><th>Found</th><th>Missed</th></tr></thead><tbody><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C1"><td>C1</td><td class="num">3</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C2"><td>C2</td><td class="num">2</td><td class="num">1</td></tr><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C3"><td>C3</td><td class="num">3</td><td class="num">1</td></tr><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C4"><td>C4</td><td class="num">1</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C5"><td>C5</td><td class="num">3</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C6"><td>C6</td><td class="num">5</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C7"><td>C7</td><td class="num">2</td><td class="num">1</td></tr><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C8"><td>C8</td><td class="num">18</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/deepseek-v4.1-flash" data-class="C9"><td>C9</td><td class="num">1</td><td class="num">0</td></tr></tbody></table>
+<table class="data" data-mg="review-defaults" data-route="opencode-go/hy4-flash-free#high"><caption>opencode-go/hy4-flash-free#high by class</caption><thead><tr><th>Class</th><th>Found</th><th>Missed</th></tr></thead><tbody><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C1"><td>C1</td><td class="num">2</td><td class="num">1</td></tr><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C2"><td>C2</td><td class="num">0</td><td class="num">2</td></tr><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C3"><td>C3</td><td class="num">4</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C4"><td>C4</td><td class="num">1</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C5"><td>C5</td><td class="num">3</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C6"><td>C6</td><td class="num">5</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C7"><td>C7</td><td class="num">2</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C8"><td>C8</td><td class="num">18</td><td class="num">0</td></tr><tr data-mg="review-class" data-route="opencode-go/hy4-flash-free#high" data-class="C9"><td>C9</td><td class="num">1</td><td class="num">0</td></tr></tbody></table>
+<table class="data" data-mg="review-defaults" data-route="opencode-go/mimo-v2.6-flash"><caption>opencode-go/mimo-v2.6-flash by class</caption><thead><tr><th>Class</th><th>Found</th><th>Missed</th></tr></thead><tbody><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C1"><td>C1</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C2"><td>C2</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C3"><td>C3</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C4"><td>C4</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C5"><td>C5</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C6"><td>C6</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C7"><td>C7</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C8"><td>C8</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-class" data-route="opencode-go/mimo-v2.6-flash" data-class="C9"><td>C9</td><td class="num">–</td><td class="num">–</td></tr></tbody></table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Counts by severity</h2>
+      <div class="counts-grid">
+<table class="data" data-mg="review-defaults" data-route="opencode-go/deepseek-v4.1-flash"><caption>opencode-go/deepseek-v4.1-flash by severity</caption><thead><tr><th>Severity</th><th>Found</th><th>Missed</th></tr></thead><tbody><tr data-mg="review-severity" data-route="opencode-go/deepseek-v4.1-flash" data-severity="blocker"><td>blocker</td><td class="num">14</td><td class="num">2</td></tr><tr data-mg="review-severity" data-route="opencode-go/deepseek-v4.1-flash" data-severity="major"><td>major</td><td class="num">5</td><td class="num">1</td></tr><tr data-mg="review-severity" data-route="opencode-go/deepseek-v4.1-flash" data-severity="minor"><td>minor</td><td class="num">19</td><td class="num">0</td></tr></tbody></table>
+<table class="data" data-mg="review-defaults" data-route="opencode-go/hy4-flash-free#high"><caption>opencode-go/hy4-flash-free#high by severity</caption><thead><tr><th>Severity</th><th>Found</th><th>Missed</th></tr></thead><tbody><tr data-mg="review-severity" data-route="opencode-go/hy4-flash-free#high" data-severity="blocker"><td>blocker</td><td class="num">14</td><td class="num">1</td></tr><tr data-mg="review-severity" data-route="opencode-go/hy4-flash-free#high" data-severity="major"><td>major</td><td class="num">3</td><td class="num">2</td></tr><tr data-mg="review-severity" data-route="opencode-go/hy4-flash-free#high" data-severity="minor"><td>minor</td><td class="num">19</td><td class="num">0</td></tr></tbody></table>
+<table class="data" data-mg="review-defaults" data-route="opencode-go/mimo-v2.6-flash"><caption>opencode-go/mimo-v2.6-flash by severity</caption><thead><tr><th>Severity</th><th>Found</th><th>Missed</th></tr></thead><tbody><tr data-mg="review-severity" data-route="opencode-go/mimo-v2.6-flash" data-severity="blocker"><td>blocker</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-severity" data-route="opencode-go/mimo-v2.6-flash" data-severity="major"><td>major</td><td class="num">–</td><td class="num">–</td></tr><tr data-mg="review-severity" data-route="opencode-go/mimo-v2.6-flash" data-severity="minor"><td>minor</td><td class="num">–</td><td class="num">–</td></tr></tbody></table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>The passes</h2>
+      <p class="muted">Each route runs three passes. A pass is complete, provisional, or open. The page marks a provisional pass and keeps the rank of its route.</p>
+      <ul class="passes">
+<li data-mg="review-pass" data-route="opencode-go/deepseek-v4.1-flash" data-state="provisional"><span class="route">opencode-go/deepseek-v4.1-flash</span> <span class="state">provisional</span> pass 1, 2026-11-22, score 78.6</li>
+<li data-mg="review-pass" data-route="opencode-go/hy4-flash-free#high" data-state="provisional"><span class="route">opencode-go/hy4-flash-free#high</span> <span class="state">provisional</span> pass 1, 2026-11-22, score 75.4</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>The set</h2>
+      <ul class="set-counts">
+<li data-mg="review-set-diffs">14 diffs</li>
+<li data-mg="review-set-plants">44 plants</li>
+<li data-mg="review-set-blockers">19 blockers</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Method</h2>
+      <p class="method" data-mg="review-method">The set holds 14 diffs. The weights are 5, 2, and 1 for a blocker, a major, and a minor. A false claim costs 2 points off the pass score. N = 3 passes for each route and each set. A set reaches the rank only after the pilot gate.</p>
+      <p class="muted">The page holds no finding text, no file path, and no line. The raw outputs stay in the private folder. This page shows the public score file and the public set manifest only.</p>
+    </section>
+  </main>
+</body>
+</html>
