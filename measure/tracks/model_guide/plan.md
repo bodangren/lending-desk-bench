@@ -2611,7 +2611,7 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     nights run. One pass per route shows if a route is far off. Each
     rank carries the note `one pass`. Evidence:
     `measure/runs/model_guide/passes-4.12.txt`.
-- [~] 4.13 The adjudication (spec D11). Run `adjudicate.ts queue`, then one
+- [x] 4.13 (8ea05c3) The adjudication (spec D11). Run `adjudicate.ts queue`, then one
   call per judge per diff through `heavy-run.sh`, and then `adjudicate.ts
   apply`.
   - The first judge is `kimi-code-plan-cn/k3.1-pro#high` and the second
@@ -2671,7 +2671,41 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     `http://127.0.0.1:38307`): the Sol judge exits 0 with
     `openai/gpt-6.1-sol#high ready -`; the Muse judge exits 0 with
     `opencode-go/muse-spark-1.3-contributor#high ready -`. No judge call ran
-    and no queue was built. Row stays `[~]` for the queue and the apply.
+    in that task; the queue and the apply follow in the adjudication block
+    below.
+  - Adjudication (2026-11-22, commit `8ea05c3`): the queue holds 22 groups
+    and 27 findings over 11 diffs. It reads the two complete passes of
+    2026-11-22, `opencode-go/deepseek-v4.1-flash` p1 and
+    `opencode-go/hy4-flash-free#high` p1. MiMo has no pass record and no
+    queue entry. The queue holds no route name.
+  - Judge a (the PM seat of 2026-11-22): `openai/gpt-6.1-sol#high`, family
+    OpenAI Sol. The run is complete with 22 of 22 groups and 27 of 27
+    findings. Its verdicts: real-defect 19, false-claim 2, unclear 6. Its
+    route judged all 27 findings. Log:
+    `measure/runs/model_guide/adjudicate-judge-a.log`. The run stopped twice
+    on the quota read timeout of the live server, and each later run
+    completed the rest.
+  - Judge b: `opencode-go/muse-spark-1.3-contributor#high`, family Go. The
+    run is complete with 22 of 22 groups and 27 of 27 findings. Its
+    verdicts: real-defect 21, unclear 6. Its route judged all 27 findings.
+    Log: `measure/runs/model_guide/adjudicate-judge-b.log`. The second judge
+    never read the verdicts of the first judge.
+  - Agreed verdicts (the rule of two): real-defect 19, false-claim 0,
+    unclear 8. The 8 left-out findings count against no route. Six of them
+    carry `unclear` from both judges, and two carry a disagreement.
+  - The passes: `opencode-go/deepseek-v4.1-flash` p1 shows `provisional`
+    with score 78.6; `opencode-go/hy4-flash-free#high` p1 shows
+    `provisional` with score 75.4. Both routes keep the state `incomplete`
+    with 1 pass of 3. The public score file is task 4.14.
+  - The apply exits 0 and writes the key `real_defects` first. Then
+    `review-set.ts lint mg-2026-11a` exits 0, `leak-check.ts` exits 0, and
+    the manifest commit `8ea05c3` holds one path. The 14 key SHA-256 values
+    of the manifest match the private key files.
+  - PM hand-off: the 19 real defects with one line each are in
+    `measure/runs/model_guide/adjudicate-4.13.txt`. The claim text stays in
+    that file, outside the repository (spec D9).
+  - Row 4.13 holds: every finding has a verdict of both judges or is left
+    out, the passes show `provisional`, and the key hashes match.
   - The apply writes the key `real_defects` first. Then run
     `review-set.ts lint mg-2026-11a` again, so the manifest holds the key
     SHA-256 values. Run `leak-check.ts`. Commit
