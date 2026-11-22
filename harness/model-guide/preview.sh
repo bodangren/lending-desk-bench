@@ -901,10 +901,11 @@ def review_route_rows(scores, pilot_gate):
 
     A complete route with a rank shows the rank and the worst, median, and
     best score. An incomplete route shows the count of its passes and, when
-    the record carries one, its escaped reason. It shows its worst score,
-    and the rank, median, best, and recall cells stay dashed. A provisional
-    pass keeps the route complete. The false claims and the real defects are
-    sums over the passes.
+    the record carries one, its escaped reason. It shows its worst score when
+    it holds passes, and the rank, median, best, and recall cells stay dashed.
+    A route with no pass dashes every score cell. A provisional pass keeps the
+    route complete. The false claims and the real defects are sums over the
+    passes.
     """
     passes = scores.get("passes") or []
     by_route = {}
@@ -924,7 +925,7 @@ def review_route_rows(scores, pilot_gate):
             recall = pct(record.get("worst_blocker_recall"))
         else:
             rank_cell = DASH
-            worst = DASH if complete else one_decimal(record.get("worst"))
+            worst = DASH if complete or not route_passes else one_decimal(record.get("worst"))
             median = DASH
             best = DASH
             recall = DASH
@@ -964,7 +965,8 @@ def review_pass_items(scores):
         score = one_decimal(item.get("score"))
         items.append(
             f'<li data-mg="review-pass" data-route="{esc(route)}" '
-            f'data-state="{esc(state)}"><span class="state">{esc(state)}</span> '
+            f'data-state="{esc(state)}"><span class="route">{esc(route)}</span> '
+            f'<span class="state">{esc(state)}</span> '
             f"pass {number}, {date}, score {esc(score)}</li>"
         )
     return items

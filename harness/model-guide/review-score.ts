@@ -4,6 +4,7 @@
  *   npx tsx model-guide/review-score.ts score \
  *     --private <dir> --set <set_id> --route <route> --pass <n> \
  *     --date <YYYY-MM-DD> --outputs <dir> --scores <dir> [--verdicts <file>]
+ *     [--pilot-routes <file>] [--incomplete-reason <text>]
  *
  * Exit 0 writes the public score file `<scores>/<set_id>.json`. Exit 2 writes
  * no score file and prints one line `score: <check>` on stdout.
@@ -143,6 +144,7 @@ interface Args {
   outputsDir: string;
   scoresDir: string;
   verdictsFile: string | null;
+  pilotRoutesFile: string | null;
   incompleteReason: string | null;
 }
 
@@ -162,6 +164,7 @@ function parseArgs(argv: string[]): Args {
       flag !== "--outputs" &&
       flag !== "--scores" &&
       flag !== "--verdicts" &&
+      flag !== "--pilot-routes" &&
       flag !== "--incomplete-reason"
     ) {
       refuse(`unknown flag ${flag}`);
@@ -187,6 +190,7 @@ function parseArgs(argv: string[]): Args {
     outputsDir: values["--outputs"],
     scoresDir: values["--scores"] ?? DEFAULT_SCORES,
     verdictsFile: values["--verdicts"] ?? null,
+    pilotRoutesFile: values["--pilot-routes"] ?? null,
     incompleteReason: values["--incomplete-reason"] ?? null,
   };
 }
@@ -490,16 +494,21 @@ interface RouteRecord {
   route: string;
   state: string;
   passes: any[];
-  worst: number;
-  median: number;
-  best: number;
-  worst_blocker_recall: number;
+  worst: number | null;
+  median: number | null;
+  best: number | null;
+  worst_blocker_recall: number | null;
   rank: number | null;
   incomplete_reason?: string;
 }
 
-/** The route records of every route of the score file. */
-function routeRecords(passes: any[], incompleteReason: string | null): RouteRecord[] {
+/** The route records of every route of the score file. A pilot route with
+ * no pass gets a zero-pass row with null scores and no rank. */
+function routeRecords(
+  passes: any[],
+  incompleteReason: string | null,
+  pilotRoutes: string[] = [],
+): RouteRecord[] {
   const routes = new Map<string, any[]>();
   for (const pass of passes) {
     if (!isObject(pass) || typeof pass.route !== "string") continue;
@@ -538,6 +547,24 @@ function routeRecords(passes: any[], incompleteReason: string | null): RouteReco
     }
     records.push(record);
   }
+  const scoredRoutes = new Set(routes.keys());
+  const addedPilots = new Set<string>();
+  for (const route of pilotRoutes) {
+    if (route === "" || scoredRoutes.has(route) || addedPilots.has(route)) continue;
+    addedPilots.add(route);
+    const record: RouteRecord = {
+      route,
+      state: "incomplete",
+      passes: [],
+      worst: null,
+      median: null,
+      best: null,
+      worst_blocker_recall: null,
+      rank: null,
+    };
+    if (incompleteReason !== null) record.incomplete_reason = incompleteReason;
+    records.push(record);
+  }
   const complete = records.filter((record) => record.state === "complete");
   complete.sort(
     (a, b) =>
@@ -556,6 +583,22 @@ function main(): void {
   const args = parseArgs(process.argv.slice(2));
   if (args.incompleteReason !== null && KEY_SHAPE_RE.test(args.incompleteReason)) {
     refuse("incomplete-reason");
+  }
+  let pilotRoutes: string[] = [];
+  if (args.pilotRoutesFile !== null) {
+    if (!existsSync(args.pilotRoutesFile) || !statSync(args.pilotRoutesFile).isFile()) {
+      refuse("pilot-routes");
+    }
+    let doc: any;
+    try {
+      doc = JSON.parse(readFileSync(args.pilotRoutesFile, "utf8"));
+    } catch {
+      refuse("pilot-routes");
+    }
+    if (!Array.isArray(doc)) refuse("pilot-routes");
+    pilotRoutes = doc
+      .filter((item: any) => isObject(item) && typeof item.route === "string")
+      .map((item: any) => item.route);
   }
   const scorePath = join(args.scoresDir, `${args.setId}.json`);
   refuseSymlink(writePath(scorePath, args.scoresDir));
@@ -637,7 +680,7 @@ function main(): void {
   const manifest = {
     set_id: args.setId,
     passes: next,
-    routes: routeRecords(next, args.incompleteReason),
+    routes: routeRecords(next, args.incompleteReason, pilotRoutes),
   };
 
   mkdirSync(args.scoresDir, { recursive: true });
