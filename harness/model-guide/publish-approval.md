@@ -21,6 +21,10 @@ Push condition: no push runs until the PM GO line after the PM page look.
 
 Preview: folder `.tmp/model-guide-preview/`, rebuilt on 2026-11-22 after commit 2147dcd.
 
+Provenance: copy of measure/archive/model_guide/publish-approval.md, PM 2026-11-22.
+
+PM weekly refresh rule (PM 2026-11-22): A weekly refresh runs under Daniel's standing site-push word (2026-11-06), with no new approval each week, when all three hold: (1) the leak check passes, (2) only data and generated pages change, with the same page set and layout as the approved preview, (3) the run log names the files pushed. A new page, a layout change, or new public text needs one PM page look (page-check) before the push.
+
 files:
 52c294b30668020b25dcccbf436e92a1162b542a9af006505ba94f19b056f1f1  index.html
 e6ed8ff7c77a5dd2fdf4bf507a2faf78ac4934ceb53855132229bcd2ef08af90  review.html

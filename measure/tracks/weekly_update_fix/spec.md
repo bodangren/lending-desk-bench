@@ -89,6 +89,12 @@ The author measured each item on 2026-11-22 at HEAD `0b75b9c`.
    explicit paths only. The weekly update runs under the standing site-push word from
    the first publish (Daniel 2026-11-06; archived model_guide D19/D21). It needs no new
    PM approval. `update.sh` never pushes. The orchestrator pushes with safe-push.
+   PM weekly refresh rule (PM 2026-11-22; record text): A weekly refresh runs under
+   Daniel's standing site-push word (2026-11-06), with no new approval each week, when
+   all three hold: (1) the leak check passes, (2) only data and generated pages change,
+   with the same page set and layout as the approved preview, (3) the run log names the
+   files pushed. A new page, a layout change, or new public text needs one PM page look
+   (page-check) before the push.
 4. **D4. The leak check runs over the commit set.** `update.sh` runs `leak-check.ts`
    over the files it is about to commit, after the copy and before `git add`. On a leak
    hit it refuses with one line, exit 2, and no commit: `update: leak <path>`.
