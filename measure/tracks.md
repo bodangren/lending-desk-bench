@@ -14,6 +14,9 @@
 - [ ] **Track: Grader browser: grade with the system Chrome and regrade the stale scores**
   - *Link: [grader_system_chrome](tracks/grader_system_chrome/)*
 
+- [ ] **Track: Weekly update fix: approval path, page refresh, leak check, and executable bit**
+  - *Link: [weekly_update_fix](tracks/weekly_update_fix/)*
+
 ## All tracks
 
 | ID | Title | Type | Status | Created |
@@ -28,6 +31,7 @@
 | daily_model_schedule | Daily model schedule: one model per day, untested first, then the stalest | Feature | pending — O1 approved with 3 conditions 2026-10-31 (spec D11–D14); Phase 4b reviews next (task 4b.4); Phase 4 Review C and acceptance run with Phase 4b | 2026-10-25 |
 | grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | pending | 2026-11-04 |
 | opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | pending — spec check 1.0 next; deadline Sat 2026-11-07 23:00 +07; owner question O1 open | 2026-11-06 |
+| weekly_update_fix | Weekly update fix: approval path, page refresh, leak check, and executable bit | Bug | new — due Mon 2026-11-23, before the next weekly export (expected about 2026-11-24) | 2026-11-22 |
 
 ## Backlog
 
