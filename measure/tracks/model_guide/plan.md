@@ -2579,7 +2579,7 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     fails, the orchestrator seeds a harder set as `mg-2026-11p2` (task 3.16)
     and runs the pilot again. After 2 reseeds the orchestrator sends the set
     to the PM.
-- [x] 4.12 The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
+- [x] 4.12 (7f92b17) The passes. The nights of 2026-11-20, 2026-11-21, and 2026-11-22
   (02:00 to 06:00 +07). One pass per reachable pilot route per night.
   Nights 1 and 2 run `mg-2026-11p` (the pilot pass of task 4.11); night 3
   runs `mg-2026-11a`. No non-pilot route gets a pass until the PM approves
@@ -2628,7 +2628,7 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
   - Code (PM 2026-11-22): add the Sol row to `judges.json` and put
     `openai/gpt-6.1-sol#high` on the `judge-run.sh` live path. Update
     test J18d. Work it through Red and Green.
-  - Red (2026-11-22, phase_base_sha 7d7d218d00a95d9d2856173b8136b6ace4a5,
+  - Red (2026-11-22, phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5,
     role_base_sha 7f92b17e4bd1d9ac96eada7b833e3d4b0247aa78): test-only
     changes in `harness/model-guide-tests/judge-run.test.ts`. J18d now
     expects the four judge routes and pins the Sol row quota fields
@@ -2649,8 +2649,7 @@ Moved from Phase 4 by the PM on 2026-11-19, so that Phase 4 acceptance covers th
     Row stays `[~]` until Green flips it.
   - Green (2026-11-22, phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5,
     role_base_sha 78bcba8e24327b108b9d7bb7e1db1ce6ca3be210): implementation
-    commit `fb00647`. The Red paragraph above holds a mistyped phase base
-    SHA; the phase base is `7d7d218d00a95d9d619d2856173b8136b6ace4a5`.
+    commit `fb00647`.
   - Green code (2026-11-22, commit `fb00647`): `harness/model-guide/judges.json`
     gains the row `{"family": "OpenAI Sol", "route": "openai/gpt-6.1-sol#high",
     "quota_provider": "openai", "quota_source": "codex"}`. The route
