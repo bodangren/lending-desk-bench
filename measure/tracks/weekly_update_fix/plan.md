@@ -131,7 +131,12 @@ Spec FR-1 to FR-5, EV1 to EV4.
     unrelated staged hit must pass; added F4a and F4b for the env private
     input and its missing-input refusal; L1, L2, L4, F4a, and F4b fail for
     the missing wiring while L3 passes, and L1 also pins docs/
-    byte-identical for the F5 leak half.
+    byte-identical for the F5 leak half. Red r9 (2026-11-23): gave every
+    --docs fixture a synthetic seeded private input of the leak-check
+    shape instead of an empty folder, fixed the F1 empty case to compare
+    the commit set against the pre-run HEAD snapshot, and added a
+    default-input scan case; the new F1 empty case fails for the missing
+    seeded-input guard while every other case passes.
 - [x] c4d70a19f655817b6cf8aecf25a6f304b4a8f262 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
   Review C 5 F1, Review A 5 F3).
   - Red: write `harness/model-guide-tests/update-exec.test.ts` and no other file.

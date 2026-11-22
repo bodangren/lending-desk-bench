@@ -30,9 +30,12 @@ import { afterAll, describe, expect, it } from "vitest";
  *
  * A hit reaches a candidate through the score chain: the test plants the
  * marker in the synthetic score file, `preview.sh` copies it to
- * `review.json`, and the weekly job commits that copy. Every git action
- * runs in a temp repo under the system temp folder. No case reads the
- * network, a model, the real private folder, or the real repo history.
+ * `review.json`, and the weekly job commits that copy. Key-field plants
+ * need no private content, but every run gets a synthetic seeded private
+ * input by default; cases that exercise a missing or empty private input
+ * set their own. Every git action runs in a temp repo under the system
+ * temp folder. No case reads the network, a model, the real private
+ * folder, or the real repo history.
  */
 
 const HARNESS = resolve(import.meta.dirname, "..");
@@ -78,7 +81,7 @@ function tempDir(tag: string): string {
 function env(): NodeJS.ProcessEnv {
   const copy = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
   copy.HOME = tempDir("home");
-  copy.MODEL_GUIDE_PRIVATE_DIR = tempDir("private-empty");
+  copy.MODEL_GUIDE_PRIVATE_DIR = seededPrivateDir("default", "  synthetic default seed line one;");
   delete copy.BENCH_TRACK;
   return copy;
 }
@@ -273,8 +276,7 @@ describe("the weekly update leak check (spec FR-4)", () => {
 
   it("L2: a private-path string in a candidate file refuses without the raw finding and without a commit", () => {
     const { root, manifest } = updateRepo("leak-private-path");
-    const priv = tempDir("private-l2");
-    mkdirSync(join(priv, "sets"), { recursive: true });
+    const priv = seededPrivateDir("leak-private-path", "  synthetic private path seed line;");
     writeScore(root, scoreWith({ note: priv }));
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 

@@ -53,7 +53,7 @@ function temp(tag: string): string {
 function env(privateDir?: string): NodeJS.ProcessEnv {
   const next = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
   next.HOME = temp("home");
-  next.MODEL_GUIDE_PRIVATE_DIR = privateDir ?? temp("private-empty");
+  next.MODEL_GUIDE_PRIVATE_DIR = privateDir ?? privateSeed("default").path;
   delete next.BENCH_TRACK;
   return next;
 }
@@ -161,9 +161,13 @@ function treeHash(root: string): string {
   return hash.digest("hex");
 }
 
+function seededLine(tag: string): string {
+  return `private-seed-${tag}-must-not-ship`;
+}
+
 function privateSeed(tag: string): { path: string; line: string } {
   const path = temp(`private-${tag}`);
-  const line = `private-seed-${tag}-must-not-ship`;
+  const line = seededLine(tag);
   const set = join(path, "sets", "synthetic");
   mkdirSync(join(set, "diffs"), { recursive: true });
   mkdirSync(join(set, "src"), { recursive: true });
@@ -235,23 +239,38 @@ describe("weekly update adversarial boundary tests", () => {
     const seed = privateSeed(`private-${kind}`);
     if (kind === "empty") injectCandidate(root, "docs/index.html", seed.line);
     const before = treeHash(root);
+    const headBefore = git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean);
+    const countBefore = commits(root);
     const result = run(root, manifest, target, kind === "empty" ? "docs/index.html" : undefined);
-    const observed = {
-      status: result.status,
-      stdout: result.stdout,
-      treeUnchanged: treeHash(root) === before,
-      commitCount: commits(root),
-      publishedSeed: kind === "empty" && readFileSync(join(root, "docs", "index.html"), "utf8").includes(seed.line),
-      commitHasOverview: kind === "empty" && git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").includes("docs/index.html"),
-    };
-    expect(observed, `${kind} private input`).toEqual({
-      status: 2,
-      stdout: "update: no private input\n",
-      treeUnchanged: true,
-      commitCount: "1",
-      publishedSeed: false,
-      commitHasOverview: false,
-    });
+    // A refusal changes nothing: the commit set still matches the
+    // pre-run HEAD snapshot, and the tree is byte-identical. The fixture
+    // commits docs/index.html, so the run itself must add no commit.
+    expect(result.status, `${kind} private input`).toBe(2);
+    expect(result.stdout, `${kind} refusal line`).toBe("update: no private input\n");
+    expect(treeHash(root), `${kind} tree unchanged`).toBe(before);
+    expect(commits(root), `${kind} HEAD unchanged`).toBe(countBefore);
+    expect(
+      git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean),
+      `${kind} commit set unchanged`,
+    ).toEqual(headBefore);
+    if (kind === "empty") {
+      expect(
+        readFileSync(join(root, "docs", "index.html"), "utf8"),
+        "the planted seed never reaches docs",
+      ).not.toContain(seed.line);
+    }
+  });
+
+  it("the default synthetic private input still refuses a planted seeded line in a candidate", () => {
+    const { root, manifest } = repo("default-scan");
+    const line = seededLine("default");
+    injectCandidate(root, "docs/index.html", line);
+    const before = treeHash(root);
+    const result = run(root, manifest, undefined, "docs/index.html");
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout).toBe("update: leak docs/index.html\n");
+    expect(treeHash(root)).toBe(before);
+    expect(commits(root)).toBe("1");
   });
 
   it("publish.ts rejects an approval row that points outside docs", () => {

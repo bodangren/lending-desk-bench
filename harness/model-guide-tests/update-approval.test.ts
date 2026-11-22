@@ -91,9 +91,22 @@ function tempDir(tag: string): string {
 function env(): NodeJS.ProcessEnv {
   const copy = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
   copy.HOME = tempDir("home");
-  copy.MODEL_GUIDE_PRIVATE_DIR = tempDir("private-empty");
+  copy.MODEL_GUIDE_PRIVATE_DIR = seededPrivate("default");
   delete copy.BENCH_TRACK;
   return copy;
+}
+
+/** A synthetic private input of the shape leak-check.ts reads: one set
+ * with one seeded line of 20 characters or more that the source diff
+ * does not hold. The line is synthetic and appears in no fixture. */
+function seededPrivate(tag: string): string {
+  const dir = tempDir(`private-${tag}`);
+  const set = join(dir, "sets", "mg-2026-11a");
+  mkdirSync(join(set, "diffs"), { recursive: true });
+  mkdirSync(join(set, "src"), { recursive: true });
+  writeFileSync(join(set, "diffs", "seed-01.diff"), `@@ -1,1 +1,1 @@\nL1 +  synthetic ${tag} seed line one;\n`);
+  writeFileSync(join(set, "src", "seed-01.diff"), "@@ -1,1 +1,1 @@\nL1 -  synthetic base content only;\n");
+  return dir;
 }
 
 function sha256(file: string): string {
