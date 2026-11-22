@@ -137,7 +137,11 @@ Spec FR-1 to FR-5, EV1 to EV4.
     shape instead of an empty folder, fixed the F1 empty case to compare
     the commit set against the pre-run HEAD snapshot, and added a
     default-input scan case; the new F1 empty case fails for the missing
-    seeded-input guard while every other case passes.
+    seeded-input guard while every other case passes. Red r10
+    (2026-11-23): added a bare, dot, and dot-dot relative private dir
+    case beside the other private-input cases; all three fail because the
+    guard and the scan resolve the relative value against different
+    folders, while every other case passes.
 - [x] c4d70a19f655817b6cf8aecf25a6f304b4a8f262 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
   Review C 5 F1, Review A 5 F3).
   - Red: write `harness/model-guide-tests/update-exec.test.ts` and no other file.

@@ -176,6 +176,48 @@ function privateSeed(tag: string): { path: string; line: string } {
   return { path, line };
 }
 
+/** A seeded private folder created inside the repo at a relative path, so
+ * a relative MODEL_GUIDE_PRIVATE_DIR resolves it from the caller folder
+ * but not from harness/. A sibling path is tracked for cleanup. */
+function relativeSeed(root: string, rel: string, tag: string): { value: string; line: string } {
+  const dir = join(root, rel);
+  if (!dir.startsWith(`${root}/`)) roots.push(dir);
+  const line = seededLine(tag);
+  const set = join(dir, "sets", "synthetic");
+  mkdirSync(join(set, "diffs"), { recursive: true });
+  mkdirSync(join(set, "src"), { recursive: true });
+  writeFileSync(join(set, "diffs", "seed.diff"), `@@ -1 +1 @@\nL1 +${line}\n`);
+  writeFileSync(join(set, "src", "seed.diff"), "@@ -1 +1 @@\nL1 -baseline text only\n");
+  return { value: rel, line };
+}
+
+/** A private-input refusal changes nothing: the same exit line, the same
+ * HEAD commit set, and a byte-identical tree with the planted seeded line
+ * nowhere in docs or on stdout. */
+function expectPrivateRefusal(
+  root: string,
+  result: { status: number | null; stdout: string; stderr: string },
+  before: string,
+  headBefore: string[],
+  countBefore: string,
+  seedLine: string,
+  what: string,
+): void {
+  expect(result.status, `${what} status`).toBe(2);
+  expect(result.stdout, `${what} refusal line`).toBe("update: no private input\n");
+  expect(treeHash(root), `${what} tree unchanged`).toBe(before);
+  expect(commits(root), `${what} HEAD unchanged`).toBe(countBefore);
+  expect(
+    git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean),
+    `${what} commit set unchanged`,
+  ).toEqual(headBefore);
+  expect(
+    readFileSync(join(root, "docs", "index.html"), "utf8"),
+    `${what}: the planted seed never reaches docs`,
+  ).not.toContain(seedLine);
+  expect(result.stdout, `${what}: the seeded line is never printed`).not.toContain(seedLine);
+}
+
 function injectCandidate(root: string, rel: string, line: string): void {
   const update = join(root, "harness", "model-guide", "update.sh");
   let text = readFileSync(update, "utf8");
@@ -259,6 +301,32 @@ describe("weekly update adversarial boundary tests", () => {
         "the planted seed never reaches docs",
       ).not.toContain(seed.line);
     }
+  });
+
+  it("refuses a relative private dir that is valid under the repo root", () => {
+    const { root, manifest } = repo("relative-private");
+    expect(existsSync(join(root, "harness", "private-input")), "no shadowing folder under harness/").toBe(false);
+    const seed = relativeSeed(root, "private-input", "relative");
+    injectCandidate(root, "docs/index.html", seed.line);
+    const before = treeHash(root);
+    const headBefore = git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean);
+    const countBefore = commits(root);
+    const result = run(root, manifest, seed.value, "docs/index.html");
+    expectPrivateRefusal(root, result, before, headBefore, countBefore, seed.line, "relative private input");
+  });
+
+  it.each([
+    ["dot-private", "./private"],
+    ["dotdot-x", "../wuf-rel-x"],
+  ])("refuses a relative private dir %s", (tag, value) => {
+    const { root, manifest } = repo(`relative-${tag}`);
+    const seed = relativeSeed(root, value, tag);
+    injectCandidate(root, "docs/index.html", seed.line);
+    const before = treeHash(root);
+    const headBefore = git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean);
+    const countBefore = commits(root);
+    const result = run(root, manifest, seed.value, "docs/index.html");
+    expectPrivateRefusal(root, result, before, headBefore, countBefore, seed.line, `relative private input ${value}`);
   });
 
   it("the default synthetic private input still refuses a planted seeded line in a candidate", () => {
