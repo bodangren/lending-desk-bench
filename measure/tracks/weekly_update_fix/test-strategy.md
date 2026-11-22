@@ -101,10 +101,11 @@ owns line 4. Section 5 widens tasks 1.1 and 1.2 before Red starts.
 | Case | Pins | Falsification condition |
 |---|---|---|
 | P1 | The approved run commits the two data files plus `docs/index.html` and `docs/real-work.html`. | The commit holds only the two data files. |
-| P2 | `docs/review.html` is in the commit when the score file changed, and out when it did not. | `review.html` is always in the commit or never in the commit. |
+| P2 | `docs/review.html` and `docs/assets/data/review.json` are in the commit when the score file changed, and out when it did not. | Either file is always in the commit or never in the commit. |
 | P3 | The rebuild uses the existing `preview.sh` and `guide.ts` path. | A marker planted in fixture output is absent from the rebuilt page. |
 | P4 | A rerun with unchanged data exits 0 and makes no commit. | A second commit appears. |
 | P5 | Staging uses explicit paths only. An unrelated dirty file that is not an affected page stays uncommitted. | The commit holds the unrelated file. |
+| P6 | A missing review template with a changed score refuses with `update: no review template`, exit 2, no write, and no commit. | The run exits 0 and commits the fresh score beside the stale page. |
 
 **`update-leak.test.ts` (task 1.3, FR-4).**
 
@@ -113,7 +114,7 @@ owns line 4. Section 5 widens tasks 1.1 and 1.2 before Red starts.
 | L1 | `update.sh` runs `leak-check.ts` over the commit set after the copy and before `git add`. | Plant a `new_lines` key in the staged data. Exit 0 and a commit appear. |
 | L2 | A key-field, private-path, or seeded-line hit prints one `update: leak <path>` line, exits 2, and makes no commit. | The raw `leak-check:` finding reaches stdout, or a commit is made. |
 | L3 | A clean commit set passes the check and commits. | The clean run is refused. |
-| L4 | The check scans the preview folder when the run uses one. | Plant a seeded line in that folder. The run passes. |
+| L4 | The check scans exactly the candidate files of the commit. | Plant a seeded line in a file outside the candidate set. The run passes. |
 
 **`update-exec.test.ts` (task 1.4, FR-5).**
 
@@ -140,9 +141,12 @@ owns line 4. Section 5 widens tasks 1.1 and 1.2 before Red starts.
 2. `PROJECT_LINT` exits 0.
 3. `git diff --name-only <phase_base_sha>..HEAD -- docs/` prints nothing. Phase 1
    never writes the real `docs/`.
-4. `git diff --stat <phase_base_sha>..HEAD -- harness/tests harness/model-guide/preview.sh`
-   prints nothing. The new tests sit outside `harness/tests/`, so no suite hash
-   moves. Green rebuilds pages through `preview.sh` and does not change it.
+4. `git diff --stat <phase_base_sha>..HEAD -- harness/tests` prints nothing. The
+   new tests sit outside `harness/tests/`, so no suite hash moves. The only
+   allowed `preview.sh` change is Green commit `00d9013`, which reads passes
+   held inside a route when the top-level `passes` array is absent; a read-only
+   preview run matches `docs/review.html` and `docs/assets/data/review.json`
+   byte for byte.
 5. The plan holds one `[~]` task while two `[b]` tasks remain. A closeout
    candidate with `[b] > 0` is rejected (A12).
 6. The three review records exist: Review B, Review C, and adversarial.
