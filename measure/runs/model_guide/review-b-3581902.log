@@ -1,0 +1,23 @@
+review-b 3581902 judge runner security audit
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 80869bdc6bd546da446d2c86312e0076d70cbe1e
+audited_head_sha 3581902 (git rev-parse HEAD confirms current)
+
+Commands run (no redirection, fake opencode only, loopback quota only):
+- git rev-parse HEAD -> 3581902d06cbe616d95043d201fa2b39b445e697
+- git diff --stat 4bdbd3f..3581902 -> 3 files, 2588 insertions (judge-run.sh, judge-run.test.ts, plan.md)
+- bash -n harness/model-guide/judge-run.sh -> ok
+- npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 18 passed (18), 46.64s
+- bun test harness/model-guide-tests/review-run.test.ts -> 39 pass, 0 fail, 293 expect() calls, 68.24s
+- pgrep -af fake-opencode -> nothing (exit 1)
+- pgrep -af quota-server -> nothing (exit 1)
+
+Findings: 0 blocking, 2 low nonblocking (NB1 symlink-guard parity note at judge-run.sh:208-209,426-431; NB2 tokens_complete vacuous-true at judge-run.sh:537-539,611-634).
+A2: no trigger (no draft-to-published transition in range; tracks.md untouched).
+A6: no trigger (no resolved-state claim in tracks.md in range).
+Live contract / prod wiring / route parity: no violations (fake binary only, loopback quota only, temp dirs only, repo tree snapshot unchanged, no docs writes, no metered route, no real opencode/network).
+Writes by this role: only measure/runs/model_guide/review-b-3581902.json and .log.
+
+MEASURE_AGENT_RESULT
+{"status": "pass", "summary": "PASS: judge-run.sh satisfies the 4.13a contract. Neither judge sees a route name, slug, raw-output path, or the other judge's text; hostile answers cannot inject foreign ids or values; isolation, credential scan, lock, D15 quota, watcher/cleanup, and token logging match review-run.sh; queue path handling is constrained; judged_by/tokens record is correct. 18/18 judge tests and 39/39 review-run tests pass with no orphan processes. Two low nonblocking hardening notes only.", "blocking": 0, "nonblocking": 2}
+END_MEASURE_AGENT_RESULT

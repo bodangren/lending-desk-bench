@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+status: blocked
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 858beb73ca56c76e83aa3b45f998f12d7dbbdee9
+green_commit_sha: 6bcb0e5
+handoff: 14 of 15 Green cases landed in 6bcb0e5, recorded in 9d06c67. Evidence is in measure/runs/model_guide/green-4.15.txt. review-run.test.ts 95 pass 1 fail; judge-run 48 passed; quota 31 passed; adversarial-p4-runner 15 passed; adversarial-p4c 13 passed; decode-parity 4 passed. Regressions adjudicate 23 passed, review-score 27 passed, adversarial-p4b 12 passed. leak-check exit 0. git status docs prints nothing. pgrep prints nothing of mine. One case stays red and is a Red conflict, not a Green gap. N27 expects tokens_complete false with per-field token sums of 5e15, which sit exactly below 2^53, while T1 in adversarial-p4c.test.ts pins that per-field sums of exactly 2^53-1 keep tokens_complete true. No magnitude rule satisfies both: a total-based rule clears N27 but breaks T1; a per-field rule keeps T1 but cannot clear N27 as written. The committed fix uses the per-field rule, which matches the read_tokens output shape and the T1 pin. Request a Mid Red retry for N27 only. Default: bump the N27 token_stream values genuinely above 2^53 (for example 1e16 per field), which keeps the test title and intent and leaves T1 and every other suite green. Do not retouch the old AA or JA cases; the N31 alignment stands. Row 4.15 stays [~]. New files added: none.
+END_MEASURE_AGENT_RESULT

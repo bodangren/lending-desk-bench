@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916",
+  "audited_head_sha": "12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916",
+  "reviewer_model": "bailian-token-plan/qwen3.8-max#high",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "contract_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 3: the review-B round-2 fixes in 38d1071 verify and the Phase 2 contract still holds. update.sh now refuses a symlink at all eight write-through paths with the documented line 'update: refused path <path>', exit 2, before any write, and both scripts pick the newest score file by whole-path modification time so a newline name cannot steer the pick; nothing else in the update.sh and preview.sh CLI contracts changed. The rebuilt preview equals model-guide.json cell-for-cell, the six real rows are identical to rounds 1 and 2, and the wording still matches spec D17 to D19 with the Q1, Q2, and 2.4a rulings. P2C1-3 stays the known PM question. Two round-2 nits are unfixed and carry over: the plan marker-comment note (P2C3-1) and the unpinned blocker_recall field name behind the D13 recall tie-break (P2C3-2, related to the open review-B nit P2B2-3). Task 2.8 remains the open check task of the phase and is not counted as a finding.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2C3-1 [Nit] review-c: Carry-over of P2C2-1 (round 2), still open. The plan.md file-map note (lines 93-97) still says the overview block goes between <!-- model-guide:start --> and <!-- model-guide:end --> after </nav>, while the shipped mechanism inserts the section at the '<header class=\"hero' anchor and dedupes by id=\"model-guide\"; no marker comments exist anywhere. The placement contract holds and is pinned (adversarial-p2.test.ts P2ADV-6). Rationale: the plan note diverges from the implementation and could mislead the Phase 5 publish work; the owner of plan.md should update the note.",
+    "P2C3-2 [Nit] review-c: Carry-over of P2C2-2 (round 2), still open. The D13 first tie-breaker reads pass.blocker_recall in guide.ts readTrackARank, but no fixture or test carries that field, P2ADV-1 exercises only the median branch, and a missing or non-finite value silently defaults to 0 (the open review-B nit P2B2-3 names the same leniency). review-score.ts (Phase 4 task 3.3) does not exist yet; a different field name there would silently degrade the recall tie-break for every route. Rationale: pin blocker_recall in a guide tie-break test with recall values and in the Phase 4 score-file contract, or refuse a complete pass without a numeric recall."
+  ],
+  "evidence": [
+    "HEAD confirmed current and unchanged: git rev-parse HEAD = 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916 at the start and at the end of the audit; equals role_base_sha and audited_head_sha; phase_base_sha c22f313 is its ancestor.",
+    "Exact round-3 diff (git diff --stat 3d42bf8..12e753b): 5 files only, preview-gate.test.ts (+83), update.test.ts (+137), preview.sh (18), update.sh (34), plan.md (+31). guide.ts, print-audit.ts, print-audit-2026-11.json, and both page templates are untouched since round 2, where they were verified.",
+    "P2B2-1 fix verified: the update.sh symlink loop now checks all eight write-through paths, the three data folders ($ROOT/docs, $ROOT/docs/assets, $ROOT/docs/assets/data), the two docs target files, the preview folder, and its two target files, each with [ -L path ] before any staging or write; the refusal line is exactly 'update: refused path <path>' on stdout with exit 2, matching the documented form in the script header. Pinned by update.test.ts P2B2-1a/1b/1c, whose expectRefusal asserts exit 2, exactly one stdout line, and the form ^(update: refused .+|input-check: .+)$, plus tree-hash equality for no outside write, a byte-identical repo, and no new commit.",
+    "P2B2-2 fix verified: newest_score_file in both preview.sh and update.sh (the same rule in both) now iterates the glob with [ -f candidate ] and bash -nt whole-path modification-time comparison and prints the whole path with printf, so no line-based parsing exists and a newline in a file name cannot steer the pick; pinned by update.test.ts P2B2-2 and preview-gate.test.ts P2B2-2, and the round-2 pin P2ADV-2 (newest by date beats alphabetical) still passes on the new implementation.",
+    "CLI contracts unchanged except the two fixes: update.sh keeps the same usage line and exit 2, the same temp staging, preview-only writes before the approval, the docs/assets/data write plus one commit with exactly two explicit paths after the approval, the no-change rerun exit 0, and never pushes; preview.sh changes only the pick block and two header lines; the guide.ts flag set, refusal checks, and the model-guide-overview/1 output contract are untouched in this range.",
+    "Test runs at HEAD, each single file with --configLoader native --maxWorkers=1 --reporter=dot and no shell redirection: update.test.ts 7 passed exit 0; preview-gate.test.ts 99 passed exit 0; guide.test.ts 15 passed exit 0; adversarial-p2.test.ts 14 passed exit 0 (run because the changed pick rule is pinned by its P2ADV-2). The Green log green-p2-313ab94.log additionally records print-audit 13, input-check 15, real-work 20, leak-guard 2, adversarial 49, and bash -n on both scripts, all exit 0.",
+    "Page and JSON still agree: .tmp/model-guide-preview/index.html rows at lines 44-49 equal model-guide.json cell-for-cell (picks, seconds, evidence, dates; base_line 95 renders 'base line 95.0', 98.7 renders 'base line 98.7'); the section sits at line 28 directly after </nav> line 26 and above the hero line 55; the exact words 'no pick yet: not enough evidence' appear twice (Code review per ruling Q2, tooling); 'page B producer: pass 1.00 (n=10)' per ruling Q1; data-stale count is 0 with stale:false, correct for the 2026-11-14 export on 2026-11-15.",
+    "The six real rows did not change: model-guide.json holds today 2026-11-15, stale false, schema model-guide-overview/1, root keys rows/schema/stale/today, and all six rows identical to the round-1 and round-2 values in every cell; the Green log records rows_identical = True, count = 6 for the task 2.9 preview rerun at the new code.",
+    "No docs/ write: git log 3d42bf8..12e753b -- docs/ is empty; git status --short docs/ prints nothing; the only docs/ commit in the whole phase range remains 05acc8c, the standing daily publish job of spec EV8, external to the track.",
+    "P2C1-3 stays known: the Q6 label default versus the 2.4a route-name ruling remains the open PM question; no new finding is raised for it, per the orchestrator.",
+    "Known open items owned by other roles, recorded for visibility and not duplicated as findings: review-B nits P2B2-3 (guide.ts defaults a missing blocker_recall to 0 instead of refusing; same code path as P2C3-2) and P2B2-4 (print-audit.ts double read of the input, recorded since round 2 as adversarial nit P2ADV-7).",
+    "Plan and record consistency: plan.md marks 2.12 [x] 62b7433 with red-2.12.txt evidence and 2.13 [x] 38d1071 with green-p2-313ab94.log evidence, and adds the missing commit SHA to task 2.7; task 2.8 stays open as the phase check task and is not counted as a finding."
+  ],
+  "commands": [
+    "git rev-parse HEAD (run before and after the audit: 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916)",
+    "git log --oneline 3d42bf8..12e753b",
+    "git diff --stat 3d42bf8..12e753b",
+    "git diff 3d42bf8..12e753b -- harness/model-guide/update.sh harness/model-guide/preview.sh measure/tracks/model_guide/plan.md",
+    "git log 3d42bf8..12e753b --format='%h %s' -- docs/ (empty)",
+    "git status --short docs/ (empty)",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot (7 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (99 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot (14 passed, exit 0)",
+    "inspection of the new tests: update.test.ts lines 380-500 (expectRefusal form, P2B2-1a/1b/1c tree-hash checks, P2B2-2) and preview-gate.test.ts P2B2-2 preview",
+    "inspection of .tmp/model-guide-preview/model-guide.json (six rows identical to rounds 1 and 2) and index.html (nav line 26, section line 28, hero line 55, rows lines 44-49, no-pick count 2, data-stale count 0)",
+    "read measure/runs/model_guide/green-p2-313ab94.log and measure/runs/model_guide/review-b-3d42bf8.json"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-c-12e753b.json",
+    "measure/runs/model_guide/review-c-12e753b.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "Both review-B defects are fixed completely: the symlink guard covers all eight write-through paths (update.sh loop over $ROOT/docs, docs/assets, docs/assets/data, both docs target files, the preview folder, and its two files) and the pick is whole-path stat-based in both scripts; the six rows and the page-JSON agreement re-verify identically at HEAD."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The five new tests pin both fixes fail-first with exit 2, the exact one-line refusal form, tree-hash byte identity, and the newest-by-mtime pick against a newline name (update.test.ts:407-489, preview-gate.test.ts:1861); the only unpinned branch remains the blocker_recall tie-break, which no fixture carries (carry-over P2C3-2)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 3d42bf8..12e753b lists exactly the two test files, the two fixed scripts, and the plan record; no docs/ commit in range and git status --short docs/ prints nothing."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "green-p2-313ab94.log holds every command, exit code, Tests line, and rows_identical=True; red-2.12.txt and review-b-3d42bf8.json record the failing-first tests and the findings; I re-verified all central claims with four live single-file vitest runs and direct file inspection."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1b
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 9c1f6d1412dae9a668d1fe877f4199c395d6ee6c
+resulting_head: 7b4e97228adc69617e70d938b29fdbfb42d7db42
+commits: c8041cc3a8fb24452c6ffa214f1213492501727e c8041cc feat(model_guide): page B layout (D16, task 4.1b) [implementation]; 7b4e97228adc69617e70d938b29fdbfb42d7db42 7b4e972 measure(model_guide): record Green task 4.1b [plan evidence]
+files_changed: harness/model-guide/preview.sh; harness/model-guide/pages/real-work.html; harness/model-guide/data/model-names.json (new); measure/tracks/model_guide/plan.md (plan evidence commit only)
+tests: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 106 passed (106), exit 0. bash -n harness/model-guide/preview.sh -> exit 0. git status --short docs/ -> no line. Live preview: bash harness/model-guide/preview.sh --export /home/daniebo/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json -> exit 0; .tmp/model-guide-preview/real-work.html builds with no JS error and no page overflow at 390, 980, and 1280 px (headless Chromium); 3.6 screens at 1280 px.
+dispositions: none
+handoff: Task 4.1b is done and both commits are on main at 7b4e972. The implementation is 361 insertions and 152 deletions over three files. preview.sh replaces rate_text, main_rows, and work_tables with model_name, pct_text, rating_text, main_table, more_columns, work_tables, pick_row, and top_block; it adds import math and the seven template tokens. pages/real-work.html now holds the top block, the default tables, the Too few runs to decide group, the More columns toggle, the collapsed work-type sections, and the About this data footer, plus a local style block that uses the site.css fonts, card, and nav. data/model-names.json names all 32 keys of the 2026-11-14 preview. The print-audit rows of preview.sh sit in a details block so the page is 3.6 screens at 1280 px. G5 was a defective Red test (matching a pick line by data-model-key alone when one model wins several groups); Red fixed it with option A in 0576d2f, and Green did not touch any test file. Plan rows: 4.1a [x] 2cb7efd with "Closed by 4.1b: 106 passed; G5 fix 0576d2f"; 4.1b [x] c8041cc with one evidence line. Reviewers should scope the audit to the three implementation files and the two plan lines. The orchestrator still owns page-check at 390, 980, and 1280 px. Untracked paths that are not mine and stay unstaged: .opencode/, harness/model-guide-tests/fixtures/fakes/fake-opencode, harness/model-guide-tests/review-run.test.ts, harness/model-guide/data/sets/, harness/wt.txt, tech-debt.md.
+END_MEASURE_AGENT_RESULT

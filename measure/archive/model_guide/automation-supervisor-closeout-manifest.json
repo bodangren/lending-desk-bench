@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "track": "model_guide",
+  "title": "Model guide: seeded-defect review, real-work outcomes, and the use-this-model table",
+  "status": "complete",
+  "closed_out": "2026-11-22",
+  "closed_by": "measure-closeout",
+  "route": "opencode-go/hy4-flash-free#high",
+  "pre_closeout_head": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "archive_move": {
+    "from": "measure/tracks/model_guide",
+    "to": "measure/archive/model_guide",
+    "method": "git mv",
+    "note": "The plan.md and tech-debt.md record fixes were made before the move."
+  },
+  "audits": [
+    {
+      "role": "measure-final-acceptance",
+      "kind": "quality acceptance",
+      "path": "measure/runs/model_guide/final-acceptance-3ba285f.json",
+      "status": "pass",
+      "audited_head": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+      "provenance_match": true,
+      "scope_note": "audited_head_sha equals the pre-closeout HEAD. The route is opencode-go/glm-5.3#high. blocking_findings is empty."
+    },
+    {
+      "role": "measure-phase-acceptance",
+      "kind": "phase acceptance",
+      "paths": [
+        "measure/runs/model_guide/phase-acceptance-9cb95b6.json",
+        "measure/runs/model_guide/phase-acceptance-3d76ae8.json",
+        "measure/runs/model_guide/phase-acceptance-17c1069.json",
+        "measure/runs/model_guide/phase-acceptance-0ab805f.json",
+        "measure/runs/model_guide/phase-acceptance-4b-8fd8882.json",
+        "measure/runs/model_guide/phase-acceptance-5-3ba285f.json"
+      ],
+      "status": "pass",
+      "note": "One passing result per phase. Superseded fails at 80c17f5 and a8835be are retained as historical records."
+    },
+    {
+      "role": "measure-review-a, measure-review-b, measure-review-c, measure-adversarial-testing",
+      "kind": "Phase 4b audits",
+      "paths": [
+        "measure/runs/model_guide/review-a-4b-99ec28c.json",
+        "measure/runs/model_guide/review-b-4b-99ec28c.json",
+        "measure/runs/model_guide/review-c-4b-99ec28c.json",
+        "measure/runs/model_guide/adversarial-4b-99ec28c.json"
+      ],
+      "status": "pass",
+      "audited_head": "99ec28c28b4934a6b72c422a32de8545be7e7875"
+    },
+    {
+      "role": "measure-ux-browser",
+      "path": "measure/runs/model_guide/ux-browser-4b-8fd8882.json",
+      "status": "pass",
+      "audited_head": "8fd8882a8539d051129eb106e46974a934df5223"
+    },
+    {
+      "role": "measure-review-a, measure-review-b, measure-review-c, measure-adversarial-testing",
+      "kind": "Phase 5 audits",
+      "paths": [
+        "measure/runs/model_guide/review-a-5-a8835be.json",
+        "measure/runs/model_guide/review-b-5-a8835be.json",
+        "measure/runs/model_guide/review-c-5-a8835be.json",
+        "measure/runs/model_guide/adversarial-5-a8835be.json"
+      ],
+      "status": "pass",
+      "audited_head": "a8835be3ddc9b3e71f8965301772f97935da39d5"
+    },
+    {
+      "role": "measure-ux-browser",
+      "path": "measure/runs/model_guide/ux-browser-5-3ba285f.json",
+      "status": "pass",
+      "audited_head": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36"
+    },
+    {
+      "role": "measure-closeout",
+      "kind": "closeout gate",
+      "command": "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track model_guide",
+      "status": "pass",
+      "result": "PASS: closeout checks passed"
+    }
+  ],
+  "record_fixes": [
+    {
+      "id": "Review A 4b F4",
+      "source": "measure/runs/model_guide/review-a-4b-99ec28c.json",
+      "file": "measure/tracks/model_guide/plan.md (moved to measure/archive/model_guide/plan.md)",
+      "before": "The carried findings touch none of the scorer, the score file, or the preview render.",
+      "after": "Some carried findings touch the scorer or the preview: the scorer flag key-shape gap at tech-debt.md:282 and the preview labels at tech-debt.md:284. None can hide a wrong result in the current scores or the published page. Every call stays score-impact: no.",
+      "reason": "The shared rationale overstated the scope. The wording fix moves no score."
+    },
+    {
+      "id": "Late findings",
+      "source": "nine Phase 4b and Phase 5 review and UX JSONs",
+      "file": "tech-debt.md",
+      "after": "New section 'model_guide Phase 4b/5 late findings (carried 2026-11-22, PM late-findings rule)' with one line and one source file per finding.",
+      "reason": "The PM late-findings rule puts these items in tech debt. None is a key leak and none has score impact."
+    },
+    {
+      "id": "Deferred markers",
+      "source": "PM rulings of 2026-11-22 recorded in the plan and in final-acceptance-3ba285f.json",
+      "file": "measure/archive/model_guide/plan.md",
+      "after": "Rows 4.11 and 5.4 changed from [ ] to [b] with a trailing (deferred:PM) field.",
+      "reason": "The legacy [ ] marker is deprecated. The PM issued both deferrals and is the named owner."
+    }
+  ],
+  "plan_evidence": {
+    "task_lines_top_level": 141,
+    "all_non_deferred_complete": true,
+    "in_progress_markers": 0,
+    "space_markers": 0,
+    "blocked_markers": 2,
+    "blocked_rows": [
+      "4.11 deferred (PM 2026-11-22) The pilot gate (spec D13, OD7) (deferred:PM)",
+      "5.4 deferred: moved to the weekly update job (PM 2026-11-22) (deferred:PM)"
+    ],
+    "owner_informed": "The PM made both rulings on 2026-11-22. The plan row text and final acceptance FA-NB4 record them. This closeout lists both rows in the report.",
+    "commit_shas": "All 139 completed top-level task rows carry a SHA anchor. 128 distinct anchors. Every audited anchor is an ancestor of the pre-closeout HEAD, as the final acceptance verified.",
+    "sha_count_note": "The final acceptance counted 158 [x] boxes including nested items. The closeout checker and this manifest count 139 top-level [x] task rows."
+  },
+  "gates": [
+    {
+      "name": "plan markers",
+      "command": "python3: count top-level [x], [~], [ ], [b] in measure/archive/model_guide/plan.md",
+      "result": "139 [x], 0 [~], 0 [ ], 2 [b] with (deferred:PM) on each row"
+    },
+    {
+      "name": "A5 false-claim text",
+      "command": "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass|all tests pass|completely fixed' measure/archive/model_guide/plan.md measure/tracks.md",
+      "result": "no match"
+    },
+    {
+      "name": "A6 registry note",
+      "command": "grep -nE 'resolved|completely fixed|fully solved|all (checks |tests )?pass' measure/tracks.md; awk '/^## Archived Tracks/{exit} /model_guide/{print}' measure/tracks.md",
+      "result": "no overstatement hit; no model_guide mention in the active registry section; one Archived Tracks entry with a description that matches metadata.json"
+    },
+    {
+      "name": "A9 archived-track path, before the move",
+      "command": "grep -rn 'measure/tracks/model_guide/' --include='*.sh' --include='*.ts' --include='*.js' --include='*.py' --include='*.cjs' --include='*.mjs' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=runs --exclude-dir=.opencode .",
+      "result": "5 code hits and 0 root tests/*.sh files. All hits are listed below with dispositions."
+    },
+    {
+      "name": "A9 post-move project test gate",
+      "command": "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+      "result": "EXIT=0; Test Files 1 passed (1); Tests 122 passed (122); 0 fail; no failure caused by the archive move",
+      "summary_file": "measure/runs/model_guide/closeout-gate-summary.log",
+      "wrapper_note": "The heavy-run wrapper was invoked first with -c 'bun test harness/model-guide-tests/preview-gate.test.ts'. It waited over 600 s on the shared heavy.lock while p1 jobs held it, produced no result, and was stopped. The same gate then ran directly in real mode. The lock holder was not touched and no process is left running."
+    },
+    {
+      "name": "closeout interphase check",
+      "command": "measure_interphase_checks.py closeout --track model_guide",
+      "result": "PASS: closeout checks passed"
+    }
+  ],
+  "a9_hits": [
+    {
+      "path": "harness/model-guide/publish.ts",
+      "lines": "6, 62",
+      "text": "The approval record path is documented at line 6 and set at line 62 with join(ROOT, 'measure', 'tracks', 'model_guide', 'publish-approval.md').",
+      "disposition": "Live code. The publish gate ran once at task 5.3 and is not re-run by any closeout gate. No code change is in closeout scope. Flagged for the orchestrator."
+    },
+    {
+      "path": "harness/model-guide/update.sh",
+      "lines": "17, 51",
+      "text": "The approval gate path is documented at line 17 and set at line 51 to $ROOT/measure/tracks/model_guide/publish-approval.md.",
+      "disposition": "Live code. The weekly update is deferred under PM ruling 5.4 and is never run in closeout. No code change is in closeout scope. Flagged for the orchestrator."
+    },
+    {
+      "path": "harness/model-guide-tests/update.test.ts",
+      "lines": "38, 102",
+      "text": "The approval path appears in a comment and in a constant used to write a fixture into a temporary repo.",
+      "disposition": "The test creates its own approval file at that path in a temp repo. It does not read the archived repo path. No change needed."
+    },
+    {
+      "path": "harness/model-guide-tests/preview-gate.test.ts",
+      "lines": "72, 369, 373",
+      "text": "The approval path appears in a comment and in two fixture writes into a temporary repo.",
+      "disposition": "The test creates its own approval file. It does not read the archived repo path. No change needed."
+    },
+    {
+      "path": "harness/model-guide-tests/adversarial-p2.test.ts",
+      "line": 79,
+      "text": "The approval path is a constant used in a fixture.",
+      "disposition": "The test creates its own fixture. No change needed."
+    },
+    {
+      "path": "harness/model-guide-tests/adversarial-p5.test.ts",
+      "line": 90,
+      "text": "The approval path is used in a fixture write.",
+      "disposition": "The test creates its own fixture. No change needed."
+    },
+    {
+      "path": "harness/model-guide-tests/adversarial.test.ts",
+      "line": 204,
+      "text": "The approval path is used in a fixture write.",
+      "disposition": "The test creates its own fixture. No change needed."
+    }
+  ],
+  "a9_additional_references": [
+    {
+      "path": "measure/archive/model_guide/{plan.md,spec.md,spec-review.md,test-strategy.md}",
+      "disposition": "Track documents that quote their own old path. They moved with the track and no gate reads them by that path."
+    },
+    {
+      "path": "measure/runs/model_guide/*.json, *.log, *.txt",
+      "count": 292,
+      "disposition": "Historical audit records that quote the pre-archive path. Retained unchanged as provenance-bound evidence."
+    }
+  ],
+  "a9_scope_note": "No tests/*.sh exists at the repo root. No test reads measure/tracks/model_guide/plan.md. The post-move gate did not fail because of the archive move.",
+  "open_nonblocking_findings": [
+    {
+      "id": "4.11",
+      "source": "measure/runs/model_guide/final-acceptance-3ba285f.json (FA-NB4)",
+      "text": "The pilot gate stays deferred under the PM no-extra-nights ruling of 2026-11-22.",
+      "disposition": "Open by PM ruling. Marked [b] with (deferred:PM)."
+    },
+    {
+      "id": "5.4",
+      "source": "measure/runs/model_guide/final-acceptance-3ba285f.json (FA-NB4)",
+      "text": "The first weekly update moved to the weekly update job under the PM ruling of 2026-11-22.",
+      "disposition": "Open by PM ruling. Marked [b] with (deferred:PM)."
+    },
+    {
+      "id": "late findings",
+      "source": "nine Phase 4b and Phase 5 review and UX JSONs",
+      "text": "Review B 4b NB1-NB3, UX 4b F1-F2, Review A 5 F2-F3, Review B 5 F1, Review C 5 F1, and UX 5 F2 are carried in tech-debt.md.",
+      "disposition": "Nonblocking under the PM late-findings rule. None is a key leak and none has score impact."
+    },
+    {
+      "id": "publish and update approval path",
+      "source": "a9_hits above",
+      "text": "publish.ts and update.sh read the approval record at the pre-archive path after the move.",
+      "disposition": "The publish gate ran once and the weekly update is deferred. No gate failed because of the move. Code changes are outside closeout scope. Flagged for the orchestrator."
+    }
+  ],
+  "metadata_status_note": "The closeout checker requires the literal value done and a completed date. metadata.json holds status done, completed 2026-11-22, and actual_tasks 139 top-level completed rows.",
+  "retained_evidence": [
+    "measure/runs/model_guide/final-acceptance-3ba285f.json",
+    "measure/runs/model_guide/final-acceptance-3ba285f.log",
+    "measure/runs/model_guide/phase-acceptance-9cb95b6.json",
+    "measure/runs/model_guide/phase-acceptance-3d76ae8.json",
+    "measure/runs/model_guide/phase-acceptance-17c1069.json",
+    "measure/runs/model_guide/phase-acceptance-0ab805f.json",
+    "measure/runs/model_guide/phase-acceptance-4b-8fd8882.json",
+    "measure/runs/model_guide/phase-acceptance-5-3ba285f.json",
+    "measure/runs/model_guide/review-a-4b-99ec28c.json",
+    "measure/runs/model_guide/review-b-4b-99ec28c.json",
+    "measure/runs/model_guide/review-c-4b-99ec28c.json",
+    "measure/runs/model_guide/ux-browser-4b-8fd8882.json",
+    "measure/runs/model_guide/review-a-5-a8835be.json",
+    "measure/runs/model_guide/review-b-5-a8835be.json",
+    "measure/runs/model_guide/review-c-5-a8835be.json",
+    "measure/runs/model_guide/ux-browser-5-3ba285f.json",
+    "measure/runs/model_guide/adversarial-4b-99ec28c.json",
+    "measure/runs/model_guide/adversarial-5-a8835be.json",
+    "measure/runs/model_guide/closeout-3ba285f.json",
+    "measure/runs/model_guide/closeout-3ba285f.log",
+    "measure/runs/model_guide/closeout-gate-summary.log",
+    "measure/archive/model_guide/plan.md",
+    "measure/archive/model_guide/spec.md",
+    "measure/archive/model_guide/spec-review.md",
+    "measure/archive/model_guide/test-strategy.md",
+    "measure/archive/model_guide/publish-approval.md",
+    "measure/archive/model_guide/metadata.json"
+  ],
+  "artifact_cleanup": {
+    "deleted": [],
+    "note": "The orchestrator named no bulky run artifacts. All evidence under measure/runs/model_guide/ is retained and committed with the archive."
+  },
+  "registry": {
+    "moved_from_active": true,
+    "archived_section_entry": true,
+    "description_source": "metadata.json description",
+    "description_matches": true,
+    "index_paths_updated": true
+  },
+  "staged_paths": [
+    "measure/archive/model_guide/",
+    "measure/runs/model_guide/",
+    "measure/index.md",
+    "measure/tracks.md",
+    "tech-debt.md"
+  ],
+  "unstaged_by_order": [
+    ".opencode/",
+    "harness/wt.txt",
+    ".tmp/",
+    "docs/",
+    "harness/model-guide/data/sets/",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/update.sh",
+    "harness/model-guide-tests/",
+    "every other measure/runs/<track>/ folder"
+  ]
+}

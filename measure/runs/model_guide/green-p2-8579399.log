@@ -1,0 +1,58 @@
+Green phase 2 task 2.17: show the print-audit bias note P2U1-1.
+
+Role base: 857939971f73a6bce9979c984142c1a82cbd7c40.
+Phase base: c22f313603108585f8bb45996057627acfbc78ae.
+Finding: measure/runs/model_guide/ux-browser-b4fba01.json P2U1-1. Red
+evidence: measure/runs/model_guide/red-2.16.txt and
+measure/runs/model_guide/red-p2-b4fba01.log. Targeted Red runs failed at the
+role base: print-audit 2 failed | 13 passed; preview-gate 1 failed | 99
+passed. The orchestrator ruling: the bias note is its own output item
+`bias_note`, and `summary.bias_note` stays. This role did not edit a test
+file.
+
+Changes (no test file, nothing under docs/):
+- harness/model-guide/print-audit.ts: the output holds `bias_note` beside
+  `summary` and `note`, taken from `summary.bias_note` when it is a string,
+  else null. The input checks did not change.
+- harness/model-guide/preview.sh: print_audit_block renders the bias note
+  from `summary.bias_note`, escaped, and keeps the top-level note line.
+- harness/model-guide/data/print-audit-2026-11.json: regenerated with the
+  updated tool from the real hand-off whose SHA-256 matches MANIFEST.txt
+  (f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87). The
+  diff adds only the `bias_note` item, plus the comma on the note line.
+
+Gates, each file run alone with --configLoader native --maxWorkers=1
+--reporter=dot:
+- print-audit: exit 0, Tests 15 passed (15)
+- preview-gate: exit 0, Tests 100 passed (100)
+- update: exit 0, Tests 8 passed (8)
+- adversarial-p2: exit 0, Tests 14 passed (14)
+- guide: exit 0, Tests 15 passed (15)
+- input-check: exit 0, Tests 15 passed (15)
+- real-work: exit 0, Tests 20 passed (20)
+- leak-guard: exit 0, Tests 2 passed (2)
+- adversarial: exit 0, Tests 49 passed (49)
+- bash -n harness/model-guide/preview.sh: exit 0
+- git status --short docs/: prints nothing
+
+Task 2.9 preview rerun:
+  harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json
+Exit 0. The six overview rows are equal to the rows before the rerun
+(rows_identical = True, count = 6). grep -c 'wrote the answer key'
+.tmp/model-guide-preview/real-work.html prints 1.
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: 857939971f73a6bce9979c984142c1a82cbd7c40
+head_sha: e13413f31733defe84fb623fb85c08e332942b81
+commits: 70ebfc596cbd454caf2b0bf68e7384f91a084456, e13413f31733defe84fb623fb85c08e332942b81
+tests_run: print-audit exit 0 Tests 15; preview-gate exit 0 Tests 100; update exit 0 Tests 8; adversarial-p2 exit 0 Tests 14; guide exit 0 Tests 15; input-check exit 0 Tests 15; real-work exit 0 Tests 20; leak-guard exit 0 Tests 2; adversarial exit 0 Tests 49
+files_changed: harness/model-guide/print-audit.ts, harness/model-guide/preview.sh, harness/model-guide/data/print-audit-2026-11.json, measure/tracks/model_guide/plan.md
+plan_updates: Task 2.17 is [x] 70ebfc5 with an Evidence line to this log and a note on the `bias_note` item and the regenerated data file; task 2.8 stays [~].
+dispositions: none
+handoff: P2U1-1 is fixed in 70ebfc5, and the plan records task 2.17 in e13413f. print-audit.test.ts passes all 15 cases and preview-gate.test.ts all 100; the seven other required suites stay green. The served preview shows the bias note: grep -c 'wrote the answer key' prints 1, and the six overview rows stay equal. The data file diff adds only `bias_note`. No test file and no docs/ file changed. P2U1-2 to P2U1-6 stay open (nits, not fixed). Next: the UX re-check of the page and task 2.8.
+END_MEASURE_AGENT_RESULT

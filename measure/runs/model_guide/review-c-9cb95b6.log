@@ -1,0 +1,25 @@
+Review C round 8, track model_guide, Phase 1, audited delta 80c17f5..9cb95b6.
+Provisional verdict: pass. Refined after the final HEAD check below.
+HEAD at start: 9cb95b6643eba0cd04f0623865224f3d9ef88b3c (git rev-parse HEAD), equal to audited_head_sha and role_base_sha.
+Working tree: only untracked .opencode/, harness/wt.txt, tech-debt.md.
+Delta commits: 530c73a Red 1.22, 5993d28 record Red, 56a173b Green fix 1.23, 9cb95b6 record Green 1.23.
+Delta files: preview-gate.test.ts +33, real-work.test.ts +10, preview.sh +3, real-work.ts +5-2, plan.md +20. No docs/ line, no publish.ts line.
+Test command (single file, day rule): cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Test Files 1 passed, Tests 90 passed (90).
+Falsifier: red-1.22.txt shows the PA1-1 test failing at base 80c17f5 (exit 1, 1 failed | 89 passed); the empty-map test is a documented pin.
+Page and JSON work-type list: preview.sh:338 loads real-work.json, preview.sh:370 renders work_tables(page["work_types"]); real export JSON keys = the five page H3 names (app code, docs and ops, other, print books, tooling).
+Empty work type: preview.sh:302 one sorted loop; preview.sh:307 emits <h3>{name}</h3> and <p>no pick yet</p> with no table. Same level, sorted position, exact text.
+Real page unchanged: preview.sh run into /tmp/opencode/pv-revc9 with the 2026-11-14 export; diff of real-work.html and real-work.json against .tmp/model-guide-preview/ both empty.
+No docs/: git diff 80c17f5..9cb95b6 -- docs/ empty; git status --short docs/ empty.
+Acceptance scan: acceptance 3 (input-check.test.ts:152, :206) and acceptance 8 (preview-gate.test.ts:476, :501) have tests. Page-level gaps of acceptance 2 (generated date, coverage numbers), acceptance 4 (few runs mark), and acceptance 5 (rate run count on the page) are named as C8-1, nonblocking.
+C6-1, C6-2, C5-1 checked: carriers unchanged by the delta, stay nonblocking (C8-2, C8-3, C8-4).
+Final HEAD check: git rev-parse HEAD -> 9cb95b6643eba0cd04f0623865224f3d9ef88b3c, unchanged during the audit.
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 9cb95b6643eba0cd04f0623865224f3d9ef88b3c
+result_file: measure/runs/model_guide/review-c-9cb95b6.json
+retry_recommendation: none
+summary: The delta closes PA1-1: page and JSON share the work-type list, an empty work type gets an H3 with "no pick yet" and no table, the real export page regenerates byte-identical, no docs/ write, 90 tests pass; one nonblocking test gap C8-1 is named.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "role": "spec-review",
+  "track": "model_guide",
+  "phase": "track setup",
+  "round": 1,
+  "baseline_sha": "ea36faecc283a2c717876b4cd68fc6992f0c8f53",
+  "audited_head_sha": "bbde00d5254b72402ccf795b7e0888fecc774d6a",
+  "reviewer_model": "nvidia/minimaxai/minimax-m3.1-flash#thinking",
+  "status": "fail",
+  "summary": "The spec is not ready for Red because four Blocker findings leave core contracts or the review gate undefined. The remaining findings cover fairness, separation, safety, PM order, publish integrity, and task size.",
+  "paraphrase": {
+    "proposes": "The track adds a seeded-defect review benchmark for code review. It builds a real-work page from a weekly sanitized export, adds one print-audit calibration point, and leads the overview with a work-type model table. It also records the replay track in the backlog and gates the first publish on Daniel's approval.",
+    "current_system": "Per the spec, the current benchmark runs build, bugfix, tests, and change tracks through one hidden harness. The build and tests leaderboards cluster at high scores, so they do not guide model choice. The site publishes daily data from docs/ through a timer that commits and pushes that folder. The new page B data comes from a separate sanitized export of 1,798 role runs."
+  },
+  "blocking_findings": [
+    "F1 [Blocker] spec.md D5-D7 and plan.md 3.1-3.5: Comprehension gap: The required operator catalog does not exist, so the seeding contract has no finite valid values. Rationale: D5 requires one named operator per plant, while D6 lists only examples and the lint must validate the field.",
+    "F2 [Blocker] spec.md D10-D11 and plan.md 3.1: The adjudication unit can contain different findings, but the spec gives one verdict for the whole group. Rationale: One verdict cannot classify each member of a mixed group. A favorable verdict can forgive false claims and compress route scores.",
+    "F3 [Blocker] spec.md D16 and D18: Comprehension gap: The work-type rank and its score inputs are undefined. Rationale: The export gives work types only runs, pass, and fail, but D16 defines pass rate with error and blocking findings. The overview cannot select these rows without new rules.",
+    "F4 [Blocker] plan.md 0.2: The reviewer cannot write the required track review file under the report-only gate. Rationale: Task 0.2 assigns measure/tracks/model_guide/spec-review.md to the reviewer, but the role permits writes only under measure/runs/model_guide/. Red cannot pass the stated verification."
+  ],
+  "nonblocking_findings": [
+    "F5 [Major] spec.md D4, D5, D11, D12, R3, and Q9: The same Anthropic family selects, seeds, and adjudicates the set while Claude Sonnet is ranked. Rationale: Hiding the route name does not hide model style. No independent selection or adjudication rule protects the ranked family from family bias.",
+    "F6 [Major] spec.md D5, D6, D8, D11, D13, and R1: The track has no difficulty calibration or minimum score spread. Rationale: Common one-line mutations and the rescue of wrong-line or wrong-class claims can produce the same high scores as the build track. No gate rejects an undiscriminating set before ranking.",
+    "F7 [Major] spec.md D12, D15, EV10, and plan.md 4.1: The quota contract does not cover most plan routes. Rationale: The repository exposes only the opencode-go quota endpoint, but the route list uses five other providers. The quota_provider values and live sources are absent, so fake tests cannot prove the 70 % and 80 % rules.",
+    "F8 [Major] spec.md Owner requirement, D16, and Q4: The checker rank does not follow the PM order. Rationale: The PM order names pass rate and blocking findings, but the default checker rank uses pass rate only. The open owner choice needs an approved rule before this ranking becomes authoritative.",
+    "F9 [Major] spec.md Owner requirement, D17, and acceptance 5: The preview can omit the required print-audit error types. Rationale: The PM order requires error types, but the spec accepts \"Error types: not yet received.\" A complete page B can therefore miss one required data point.",
+    "F10 [Major] spec.md D21 and FR-7: The publish tool can overwrite newer site files with stale preview files. Rationale: The daily job can change docs/ between preview and approval. The publish check validates preview hashes, but it does not compare the current docs source.",
+    "F11 [Major] plan.md tasks 1.2, 2.2, 3.2, and 4.2: The Red and Green units bundle many independent tools and pages. Rationale: Phase 3 alone asks one Green task to write six tools. A failed component cannot have a small repair or verification boundary.",
+    "F12 [Nit] plan.md task 0.1: The completed registry task has no commit SHA. Rationale: The plan marker rules require a SHA on the first line of each completed task, and the anti-pattern catalog rejects completed tasks without evidence."
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocker",
+      "location": "spec.md D5-D7; plan.md tasks 3.1-3.5",
+      "evidence": "D5 requires one operator from a D6 catalog. D6 provides only class names and example operators. D7 requires an operator value, and the lint must check it.",
+      "finding": "F1 [Blocker] spec.md D5-D7 and plan.md 3.1-3.5: Comprehension gap: The required operator catalog does not exist, so the seeding contract has no finite valid values. Rationale: D5 requires one named operator per plant, while D6 lists only examples and the lint must validate the field."
+    },
+    {
+      "id": "F2",
+      "severity": "blocker",
+      "location": "spec.md D10-D11; plan.md task 3.1",
+      "evidence": "D11 groups unmatched findings by file and a three-line window across all routes, then defines one verdict for each group. D10 scores each unmatched finding after adjudication.",
+      "finding": "F2 [Blocker] spec.md D10-D11 and plan.md 3.1: The adjudication unit can contain different findings, but the spec gives one verdict for the whole group. Rationale: One verdict cannot classify each member of a mixed group. A favorable verdict can forgive false claims and compress route scores."
+    },
+    {
+      "id": "F3",
+      "severity": "blocker",
+      "location": "spec.md D16 and D18",
+      "evidence": "The hand-off all_time work_types rows contain only runs, pass, and fail. D16 defines pass rate with error and blocking findings, but defines ranks only for producer and checker tables. D18 selects four rows from work-type ranks.",
+      "finding": "F3 [Blocker] spec.md D16 and D18: Comprehension gap: The work-type rank and its score inputs are undefined. Rationale: The export gives work types only runs, pass, and fail, but D16 defines pass rate with error and blocking findings. The overview cannot select these rows without new rules."
+    },
+    {
+      "id": "F4",
+      "severity": "blocker",
+      "location": "plan.md task 0.2",
+      "evidence": "Task 0.2 assigns the reviewer to write measure/tracks/model_guide/spec-review.md. The review role may write only measure/runs/model_guide/. The spec-review standard assigns the track report file to the author.",
+      "finding": "F4 [Blocker] plan.md 0.2: The reviewer cannot write the required track review file under the report-only gate. Rationale: Task 0.2 assigns measure/tracks/model_guide/spec-review.md to the reviewer, but the role permits writes only under measure/runs/model_guide/. Red cannot pass the stated verification."
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "location": "spec.md D4, D5, D11, D12, R3, and Q9",
+      "evidence": "Opus selects diffs, plants defects, and adjudicates findings. Claude Sonnet is a ranked route. The adjudicator sees the finding text without its route name.",
+      "finding": "F5 [Major] spec.md D4, D5, D11, D12, R3, and Q9: The same Anthropic family selects, seeds, and adjudicates the set while Claude Sonnet is ranked. Rationale: Hiding the route name does not hide model style. No independent selection or adjudication rule protects the ranked family from family bias."
+    },
+    {
+      "id": "F6",
+      "severity": "major",
+      "location": "spec.md D5, D6, D8, D11, D13, and R1",
+      "evidence": "D5 and D6 allow common one-line mutations. D11 counts wrong-line and wrong-class claims as found. The spec has no pilot, score-spread limit, or difficulty acceptance gate.",
+      "finding": "F6 [Major] spec.md D5, D6, D8, D11, D13, and R1: The track has no difficulty calibration or minimum score spread. Rationale: Common one-line mutations and the rescue of wrong-line or wrong-class claims can produce the same high scores as the build track. No gate rejects an undiscriminating set before ranking."
+    },
+    {
+      "id": "F7",
+      "severity": "major",
+      "location": "spec.md D12, D15, EV10; plan.md task 4.1",
+      "evidence": "harness/cron-daily.sh:305-330 reads only GET /api/quota/opencode-go. D12 uses claude-code, kimi-code-plan-cn, minimax-cn-coding-plan, bailian-token-plan, and nvidia routes, but D15 gives no quota source or mapping for them.",
+      "finding": "F7 [Major] spec.md D12, D15, EV10, and plan.md 4.1: The quota contract does not cover most plan routes. Rationale: The repository exposes only the opencode-go quota endpoint, but the route list uses five other providers. The quota_provider values and live sources are absent, so fake tests cannot prove the 70 % and 80 % rules."
+    },
+    {
+      "id": "F8",
+      "severity": "major",
+      "location": "spec.md Owner requirement, D16, and Q4",
+      "evidence": "The quoted hand-off order says to rank by pass rate and blocking findings. D16 excludes blocking rate from checker rank. Q4 offers an unapproved default that uses pass rate only.",
+      "finding": "F8 [Major] spec.md Owner requirement, D16, and Q4: The checker rank does not follow the PM order. Rationale: The PM order names pass rate and blocking findings, but the default checker rank uses pass rate only. The open owner choice needs an approved rule before this ranking becomes authoritative."
+    },
+    {
+      "id": "F9",
+      "severity": "major",
+      "location": "spec.md Owner requirement, D17, and acceptance criterion 5",
+      "evidence": "The quoted PM order requires print-audit error types. D17 permits the file to omit them, and acceptance criterion 5 accepts the placeholder text.",
+      "finding": "F9 [Major] spec.md Owner requirement, D17, and acceptance 5: The preview can omit the required print-audit error types. Rationale: The PM order requires error types, but the spec accepts \"Error types: not yet received.\" A complete page B can therefore miss one required data point."
+    },
+    {
+      "id": "F10",
+      "severity": "major",
+      "location": "spec.md D21 and FR-7",
+      "evidence": "D21 copies preview files into docs/ after an approval hash check. harness/cron-daily.sh:599-657 can add, commit, and push docs/ between the preview and the approval.",
+      "finding": "F10 [Major] spec.md D21 and FR-7: The publish tool can overwrite newer site files with stale preview files. Rationale: The daily job can change docs/ between preview and approval. The publish check validates preview hashes, but it does not compare the current docs source."
+    },
+    {
+      "id": "F11",
+      "severity": "major",
+      "location": "plan.md tasks 1.2, 2.2, 3.2, and 4.2",
+      "evidence": "Task 3.1 writes five test files. Task 3.2 writes six tools and a prompt. Tasks 1.2, 2.2, and 4.2 also bundle several files with different contracts.",
+      "finding": "F11 [Major] plan.md tasks 1.2, 2.2, 3.2, and 4.2: The Red and Green units bundle many independent tools and pages. Rationale: Phase 3 alone asks one Green task to write six tools. A failed component cannot have a small repair or verification boundary."
+    },
+    {
+      "id": "F12",
+      "severity": "minor",
+      "location": "plan.md task 0.1",
+      "evidence": "Task 0.1 starts with [x] but has no commit SHA. The marker rules at plan.md:51 require that SHA on the first line.",
+      "finding": "F12 [Nit] plan.md task 0.1: The completed registry task has no commit SHA. Rationale: The plan marker rules require a SHA on the first line of each completed task, and the anti-pattern catalog rejects completed tasks without evidence."
+    }
+  ],
+  "evidence": [
+    "HEAD check: git rev-parse HEAD returned bbde00d5254b72402ccf795b7e0888fecc774d6a, which matches the audited HEAD.",
+    "Hand-off contract: sha256sum returned dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2. The file declares schema real-work-outcomes/1 and the manifest records the same hash and size.",
+    "PM order coverage: the spec names track A, page B coverage, the print-audit point, the overview table, plan and free routes, the replay backlog line, both dates, and Daniel's first-publish gate.",
+    "Track A mechanics: the spec defines source selection, seed rules, output JSON, matching, adjudication, score, worst-of-three rank, and neutral real defects.",
+    "Safety: the spec keeps keys and raw outputs outside the public repository, defines a leak check, refuses non-plan or non-free routes, sets 70 % and 80 % quota limits, uses heavy-run, and blocks docs writes before approval.",
+    "Page B: the spec defines run counts, the few-runs mark, model merging with a method note, and no rating-based rank. F3 and F8 remain open gaps.",
+    "Plan: the phases match the stated dates, each task has a verify line, and the plan has no pinned test count. F11 and F12 remain open gaps.",
+    "Review standard: /home/daniebo/.agents/skills/measure/references/spec-review.md was read before the review."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "sha256sum /home/daniebo/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json",
+    "git rev-parse ea36fae"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/spec-review-bbde00d.json",
+    "measure/runs/model_guide/spec-review-bbde00d.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high"
+}

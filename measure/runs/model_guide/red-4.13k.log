@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: pass
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13k
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: e9e7d366719e3b00ad27c299809772e72941fd70
+resulting_head: 5085d9b162a60559e4bf415fb0f33cb91a627b98
+commits: afef66e7f3b395138f0b2b3c9ac8870fe79aad41, 5085d9b162a60559e4bf415fb0f33cb91a627b98
+red_test_command: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+failing_tests: Q13 gives stopped for opencode-go when weekly is negative, a string, or null beside a usable 5h; Q13 gives stopped for opencode-go when 5h is unusable beside a usable weekly (Tests 2 failed | 24 passed (26))
+handoff: Green 4.13l implements for opencode-go usable 5h and weekly finite non-negative values else stopped; Q12 stays ready on null credits_balance; non-Go kimi-code-plan-cn keeps skip of unusable window
+END_MEASURE_AGENT_RESULT

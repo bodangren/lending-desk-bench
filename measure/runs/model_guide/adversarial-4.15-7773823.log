@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: 1c724141a1345359bd6464db8e2c18421d7cfebc
+tests_run: PASS; adversarial-p4d 21 passed and 6 defect pins skipped; adversarial-p4c 13 passed; decode-parity 5 passed; selected review-run 8 passed; adversarial-p4-runner 16 passed; one file at a time
+files_changed: harness/model-guide-tests/adversarial-p4d.test.ts; measure/runs/model_guide/adversarial-4.15-7773823.json; measure/runs/model_guide/adversarial-4.15-7773823.log
+plan_updates: none; task 4.15 already has the in-progress marker
+known_failures: ADV-P4D-1 accepts a credential suffix on the seed reason; ADV-P4D-2 splits UTF-8 at the cut; ADV-P4D-3 retains completeness after a truncated token event. All remain nonblocking under the PM cap.
+handoff: Pass under the PM round cap. Green owns the three nonblocking findings. No real-key leak into a committed file or public page was reproduced. The audited HEAD stays 7773823; the adversarial test commit stays 1c72414. Any implementation commit requires a fresh adversarial run. Facts changed: none.
+role_base_sha: 7773823d66b376065d4f4e26c01461538e720a7c
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: 7773823d66b376065d4f4e26c01461538e720a7c
+END_MEASURE_AGENT_RESULT

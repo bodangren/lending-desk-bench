@@ -1,0 +1,18 @@
+Review A round 1, track model_guide, phase P2, HEAD 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2.
+Provisional verdict: pass with three nonblocking findings (P2A1-1 Major tie-break, P2A1-2 Nit docs gate wording, P2A1-3 Nit update.sh idempotency).
+phase_base_sha c22f313603108585f8bb45996057627acfbc78ae confirmed. HEAD equals role_base_sha and audited_head_sha at start and end.
+Day-rule reruns at HEAD, each exit 0: print-audit 13 passed, guide 15 passed, update 3 passed, preview-gate 98 passed. bash -n passes on preview.sh and update.sh. git status --short docs/ prints nothing.
+Live probes: corrupt --scores gives exit 2 input-check: scores with no output; missing --scores gives exit 0 honest no-pick; empty tables give exit 0 with no-pick evidence. No vacuous pass (A4). Labeled-integer parsing only (A3). Plan counts match reruns (A5).
+Data file source SHA f52a7bbf matches OD6; 52 errors, 13 blockers, 11 of 13 and 13 of 13, severity types 21/18/13.
+Live preview re-run reproduces preview-2.9.txt: six D18 rows, table above hero, Q1/Q2 forms, base lines 95.0/98.7, no stale, no placeholder, calibration line present.
+Only docs/ delta is unrelated daily-publish 05acc8c; no Phase 2 commit touched docs/. Protected paths clean.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2
+result_file: measure/runs/model_guide/review-a-6132fb7.json
+retry_recommendation: none
+summary: Phase 2 passes: print-audit, overview table, and update.sh meet D17-D19/FR-5/FR-6 with failing-first tests and live proof; three nonblocking edge findings only.
+END_MEASURE_AGENT_RESULT

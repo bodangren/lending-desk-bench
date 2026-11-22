@@ -1,0 +1,70 @@
+Review B security audit — model_guide task 4.16 (Green r9, token sum)
+Session: Review B · 4b 4.16 · model_guide
+Route: opencode-go/hy4-flash-free#high
+
+PROVENANCE
+- git rev-parse HEAD before and after the audit: 23f16f18787da5190dc8563e0373d48233653927
+- The audited HEAD is current and equals role_base_sha and audited_head_sha.
+- phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+- Scope: git diff 3337418..23f16f1 (four files, all planned). No edit outside measure/runs/model_guide/.
+- Commits in scope: 364a39c (p4f test), a05a0f4 (Green r9), 23f16f1 (Green record).
+
+APPLICABILITY
+- test-strategy.md:2466 assigns Review B security to row 4.16. security_applicability = applicable.
+- The PM round cap allows a pass when no real key reaches a committed file or a public page.
+
+SECURITY AND DATA-INTEGRITY FINDINGS
+- Shared filter: review-run.sh builds calls[] inside the loop that applies the owner check (:1219) and created >= start freshness (:1221), then newest = calls[0] (:1226). The token loop uses that same calls array (:1252). A foreign or stale message cannot add tokens.
+- Hostile tokens: read_tokens (:168-170) requires a safe non-negative integer; negative, huge, string, and NaN values score zero and clear tokens_complete. Sums above 2^53 clear the flag (:240-242). Y4, Y5, Y6 pass.
+- Missing bundle: the new loop emits an empty step_finish part when tokens is absent (:1252-1257); read_tokens marks it incomplete (:222). P4F-1 missing-bundle case passes.
+- Id dedup: a Set of message ids prevents one step from counting twice across polls (:1250-1251).
+- No new file write of message text or keys. The token change adds only lines to the existing staging stream.
+- Deny check unchanged (:410-431), key scan unchanged (:1400, :1548), endpoint set unchanged. p4f curl guard at :105-113 refuses other URLs and redirects; :214 checks no DELETE.
+- Route parity: live_synthesize body sha256 c53b3620e48ab66cc93ef67b03c0bcb2eb82d9e838762121cf2e8e7df105da51 in both runners.
+
+F20 FLAKE ANALYSIS (Review A r6: expected 45, got 48)
+- 48 equals BIG(7,8,9,10,11) plus SMALL(1,2,0,0,0). Both bundles were summed.
+- The fake stamps _stampAtRead messages at message-read time (review-run.test.ts:4809-4814). EARLY carries stampOffsetMs -1000 (:5705, :4902), so created is read time minus 1000 ms.
+- EARLY passes created >= start (review-run.sh:1221) only when the message GET lands more than one second after the floored call entry. It then contributes tokens at :1252.
+- Answer selection stays FINAL because calls[0] is unchanged. No filter is bypassed, and a fresh per-call session holds only current-call messages.
+- Verdict: fixture timing artifact, not a real hole. The 45 expectation reflects r8 newest-only semantics and is stale under r9. It does not corrupt night-3 token data. Route to backlog row 4.15.
+
+KEY SCAN
+- git diff 7d7d218..23f16f1 grep for AKIA, ghp_, github_pat_, and PEM -> no real-key hit.
+
+TESTS (one file at a time)
+- adversarial-p4f: 48 passed | 14 skipped (62), 187.03s. Skipped A-F1, P4F-2, P4F-3 go to backlog row 4.15.
+- review-run: 130 pass / 0 fail, 922 expect calls, 210.46s.
+- judge-run: Tests 61 passed (61), 94.57s.
+- Every fixture clears detached children and servers in afterEach. No fake left running.
+
+ANTI-PATTERNS
+- A2 does not apply: test-strategy.md:2477, row 4.16 flips no draft to published.
+- A6 satisfied: measure/tracks.md:34 marks model_guide pending and names no resolved security state.
+
+NONBLOCKING FINDINGS
+- F-B5 [Low, nonblocking] Stale F20 token expectation (45) is flaky under r9 sum semantics; fixture artifact, not a production hole. Route to backlog row 4.15.
+
+MEASURE_AGENT_RESULT
+role: measure-review-b-security
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+task: 4.16
+session: Review B · 4b 4.16 · model_guide
+route: opencode-go/hy4-flash-free#high
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 23f16f18787da5190dc8563e0373d48233653927
+audited_head_sha: 23f16f18787da5190dc8563e0373d48233653927
+audited_head_current: yes
+security_applicability: applicable
+test_strategy_violations: none
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+blocking_findings: none
+nonblocking_findings: F-B5 Low stale F20 token expectation is a fixture timing artifact under r9 sum semantics; route to backlog row 4.15
+confidence: high
+retry_recommendation: none
+handoff: Pass under the PM round cap. No real-key leak and all violation arrays are empty. The r9 token sum reuses the owner and current-call filters, ignores hostile token values, and keeps both live_synthesize helpers byte-identical. The F20 45-versus-48 failure is a fixture timing artifact from the -1000 ms relative stamp, not a hole that corrupts night-3 token data; route the stale expectation to backlog row 4.15. No blocker is routed to Green. This result does not accept Phase 4b.
+END_MEASURE_AGENT_RESULT

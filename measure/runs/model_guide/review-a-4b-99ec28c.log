@@ -1,0 +1,95 @@
+Review A: correctness and architecture
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 99ec28c28b4934a6b72c422a32de8545be7e7875
+audited_head_sha: 99ec28c28b4934a6b72c422a32de8545be7e7875
+route: openai/gpt-6.1-sol#high
+
+The final result replaces the provisional blocked result.
+HEAD matches the supplied full SHA before and after the queued commands.
+The exact phase range remains provenance-bound in the JSON.
+The exception delta dc31a0a..99ec28c changes eight files.
+
+Command: heavy-run.sh npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 33 passed (33).
+Command: heavy-run.sh npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 116 passed (116).
+Command: heavy-run.sh npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 18 passed (18).
+Targeted total: 167 passed across three files.
+Each file ran separately. No full suite or real model call ran.
+
+The first auxiliary attempt exits 143 during the shared-runner wait.
+I cancel the queued bare preview invocation before execution.
+The corrected sequential command runs the presence fixtures before the preview.
+Both commands use heavy-run.sh. The preview command supplies its required manifest.
+The command completes after two shared-lock waits.
+A transient heavy-run /proc diagnostic does not prevent execution.
+
+Missing score file: rejected; the score file is written
+Missing zero-pass route: rejected; the score file holds a row for route/zero
+Missing review.html: rejected; review.html is missing from the preview folder: memory-preview/review.html
+Missing preview route row: rejected; the page holds a row for route/zero
+Missing pass item: rejected; the page lists a pass item for route/a pass 1
+Five actual presence assertions reject missing deliverables.
+The auxiliary command writes no fixture file.
+
+The pilot file copies the three source row blocks byte for byte.
+The score file contains only the three pilot routes.
+All pass records and both earlier route records equal commit 70212ae.
+DeepSeek stays at 78.6. Hy4 stays at 75.4.
+MiMo has zero passes, null score fields, null rank, and the approved shared reason.
+The numeric scorePass implementation stays byte-identical.
+
+The fresh review.json equals the committed score file.
+The fresh review.html has modification time 2026-11-22T14:05:48.568539.
+It contains exactly three pilot route rows.
+MiMo shows the complete zero-pass mark and five dashed rank/score cells.
+Its row contains no 0.0.
+Both pass items visibly name their route.
+Code review shows no pick yet: not enough evidence.
+Its source remains track A: no complete rank (n=0).
+
+F1 withdrawn: The scorer and fresh preview now preserve the zero-pass MiMo route.
+F2 withdrawn: Row 4.15 distinguishes document-only dispositions from failing-first tests.
+F2 withdrawn: Row 4.16 distinguishes the audit SHA from the adversarial test commit.
+F3 withdrawn: All eight restored descriptions have matching historical source findings.
+The cited implementation, data, and record SHAs resolve to HEAD ancestors.
+
+F4 [Nit] review-a: score-impact: no.
+plan.md:2801 incorrectly says no carried finding touches the scorer, score file, or preview render.
+tech-debt.md:282 concerns the scorer flag and score file.
+tech-debt.md:284 concerns preview labels.
+The current impact decisions remain sound. Their shared rationale needs a later wording correction.
+Route F4 to the orchestrator under the PM cap.
+
+The new tests use exact cells, array lengths, and labeled pass text.
+The actual targeted exits confirm the current Green test claims.
+No new framework orchestration script, framework contract test, or registry changes.
+The available build-graph database identifies routeRecords as internal but has no caller edges.
+Direct reads verify the CLI caller and both data consumers.
+guide.ts skips incomplete routes before reading scores.
+No changed TypeScript declaration is exported.
+
+bash -n passes on preview.sh.
+Both scoped diff checks pass.
+git status --short docs/ is empty.
+HEAD remains 99ec28c28b4934a6b72c422a32de8545be7e7875.
+Only the supplied result artifacts are edited by this role.
+The permitted preview command regenerates the ignored local preview.
+No real-key leak was found.
+Task 4.11 remains deferred. This audit approves no publish and claims no successful pilot gate.
+No CONTEST item was supplied. Facts changed: none.
+
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: review-score 33 pass; preview-gate 116 pass; guide 18 pass; five missing-deliverable fixtures rejected; fresh local preview verified
+files_changed: measure/runs/model_guide/review-a-4b-99ec28c.json; measure/runs/model_guide/review-a-4b-99ec28c.log
+plan_updates: none
+known_failures: No targeted test failed. The first auxiliary attempt timed out during the shared-runner wait; the corrected command completed.
+handoff: Pass under the PM cap. F1-F3 are withdrawn. F4 has score-impact: no and needs only a later wording correction. No implementation retry or publish is authorized.
+route: openai/gpt-6.1-sol#high
+END_MEASURE_AGENT_RESULT

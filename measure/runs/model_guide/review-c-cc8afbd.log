@@ -1,0 +1,37 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: fail
+summary: Re-review of edee50b..cc8afbd, tasks 4.13e to 4.13h plus text commits def8681 and 84e254e. The fake-tested contracts hold end to end: the new review-run.sh refusal messages (message file checks, symlinks), the judge-run.sh row refusals, the start test lines at the Go thresholds, judged_by, the seed-messages refusals, the drivers' line parsing, the net-above-0 pick rule on the page, and the footer count. All four allowed suites pass at HEAD with no orphan process. But the Go thresholds cannot work against the live source: the live answer names the week window weekly and holds a null credits_balance window, so the week-100 rule is dead live and every live Go read stops before any threshold is checked. Review A found both breaks at the same HEAD and an uncommitted task 4.13i Red already answers them.
+blocking_findings:
+- F1 (blocking, harness/model-guide/quota.ts:273-275): stateOf reads windows["week"], but the live endpoint names the week window weekly (verified with a live GET). The week-100 wait of spec D15 never fires live; the three test fakes serve the dead key. Fix: read windows["weekly"], fix the doc example and spec D15 to name the live keys, and serve the live window set in the fakes.
+- F2 (blocking, harness/model-guide/quota.ts:259-261): parseAnswer rejects the live credits_balance window with usedPercent null, so every live Go read gives state stopped (verified by running quota.ts against the live base). The Go thresholds of 4.13h can never be evaluated live. The strict check is pre-existing (task 4.4) but 4.13h made the live Go read the enforcement point. Fix: skip a window with a null or unusable usedPercent and pin the live answer in the fakes; the uncommitted task 4.13i Red (Q11 to Q15) must land and pass first.
+nonblocking_findings:
+- F3 (minor, probe-4.10.sh:60-76): the probe driver keeps the PM 2026-11-18 gate 5h over 95 or week over 90, which disagrees with the spec D15 night limit 95/100 and with night-4.11.sh. Safe direction; the re-probe of the two Go pilot routes can be stopped early. Fix: the orchestrator aligns the gate.
+- F4 (nit, measure/tracks/model_guide/plan.md:1873-1876): row 4.12 still names the week-over-90 night limit of PM 2026-11-18, contradicting spec D15 after 84e254e. Fix: update the sentence to 95 % / 100 %.
+- F5 (nit, measure/tracks/model_guide/spec.md:721): D14 says as test P2 pins, but the 3-call ceiling pin lives in P2b (review-run.test.ts:2540). Fix: change the text to as test P2b pins.
+- F6 (nit, harness/model-guide-tests/review-run.test.ts:1373 and afterAll): the first suite run failed 2 orphan-detection cases; the isolated re-run passed 52 of 52 and every pgrep scan printed no line. A heavy-run vitest job of another project and an in-flight Green Red shared the machine. Fix: add a settle wait before the process scan.
+- F7 (nit, pre-existing, harness/model-guide/judge-run.sh:691-698): the 80 % branch is dead for every sourced provider because the wait branch at line 683 fires first; the comment at 670-673 describes a stop that cannot occur. Fix: drop the dead branch and fix the comment.
+evidence:
+- phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9f68beebf; role_base_sha edee50b8e93f8cdfda51791a897d3480436923b4; audited_head_sha cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5; HEAD matches and the tracked tree was clean at audit start; the in-flight 4.13i edits landed at 01:09-01:10, after my test runs.
+- contract_applicability: applicable; the diff adds CLI refusal surface, exit codes, output schemas, consumer wiring, and a page rule.
+- F1 live proof: curl http://127.0.0.1:38307/api/quota/opencode-go gives windows 5h, weekly, monthly, credits_balance (null); no week key; the night and probe drivers and cron-daily.sh:539 all read weekly.
+- F2 live proof: npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 gives state stopped with quota: the window credits_balance holds no usable usedPercent.
+- runner contracts: read_message_line review-run.sh:313-352, linked diff refusal :359, refuse() :119 one line exit 2, probe_refuse() :129, probe line exit 0/3 (P2, G3); the call sends the staged checked line only.
+- judge contracts: row checks judge-run.sh:203-219 (J18-J18d), run_start_test :451-472 (G3), judged_by :634-640 (J19); adjudicate.ts:448-463 reads only the verdicts map, so C7 is safe.
+- seed-messages: refusals at lines 71, 76, 78, 83, 126, 140, 146; SM4 (8 cases) pins each with exit 2 and no write.
+- consumers: night-4.11.sh:63-90 gate 5h 95 / week 100 agrees with quota.ts; both drivers parse each output line (night :142-170, probe :119-125); probe-4.10.sh keeps week over 90 (F3).
+- page: real-work.html:120, real-work.ts:47+483+621, guide.ts:59 all say net above 0; footer rows = outcomes.length (real-work.ts:686), pinned by DS26 with a malformed row and a net-0 no-pick case.
+- earlier findings resolved: C7, R1 (P2b), R2 (plan.md:1820), R3 (SM4), R4 (review-run.sh:11 and :176).
+- suites: review-run 52 pass 0 fail (re-run, 91.89 s); judge-run 30 passed (61.25 s); seed-messages 17 pass (5.82 s); real-work 16 pass (2.10 s); pgrep fake-opencod[e] and quota-serve[r] printed no line after every run.
+- scope: exactly the 17 planned files; no commit touches docs/, the frozen runner paths, routes.json, judges.json, or seed-messages.ts; red-4.13e.txt and red-4.13g.txt record the failing-first counts.
+commands: git rev-parse HEAD; git log --oneline edee50b..cc8afbd; curl the live quota endpoint; npx tsx quota.ts against the live base; the four suite commands with counts; stat mtimes of the two edited test files.
+changed_files: 17 files listed in the JSON artifact.
+test_strategy_violations: none.
+live_contract_violations: F1 (week key dead live), F2 (null window stops every live Go read).
+prod_wiring_violations: none.
+route_parity_violations: none.
+retry_recommendation: retry_green
+confidence: high
+route: opencode-go/glm-5.3#high
+ratings: correctness 2 (live Go quota read broken two ways, verified live); test_meaning 3 (real failing-first tests, but the fakes serve a window set the live source never sends); scope_discipline 5 (exactly the 17 planned files); evidence_quality 5 (every claim has a live command, a suite result, or a file:line).
+END_MEASURE_AGENT_RESULT

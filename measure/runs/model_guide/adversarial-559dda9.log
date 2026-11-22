@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+scope: tasks 4.1e and 4.1f, page B data source, re-review of the Green fix cea0a90 (ADV-1 to ADV-7)
+status: pass
+audited_head_sha: 559dda9cd78754d7c4caa258c8edf4c585c22364
+test_commit: c8c5e9ecca070beeb54fec27f79542d24ccecfc1
+result_file: measure/runs/model_guide/adversarial-559dda9.json
+retry_recommendation: none
+summary: All seven earlier defects are closed. harness/model-guide-tests/adversarial-p4.test.ts gives `Tests  18 passed (18)` at 559dda9 (it gave 7 failed and 11 passed at d74cf4c). The 12 earlier mutants and 9 new mutants of the delta gave 20 kills and 1 survivor. The survivor (header nowrap restored) is an equivalent mutant under the orchestrator ruling. The five delta probes (rank rounding at 9 decimals, display rounding once, the alias rule, Object.hasOwn byEffort, audit_name) found no blocking defect. They found 3 new Nits (ADV-12 to ADV-14, spec silent); ADV-8 to ADV-11 stay as they were. The ten runs that plan.md cites re-ran with the cited counts. This role added 3 lines to case ADV4-3 to pin the ruling that a direct key wins (commit c8c5e9ecca070beeb54fec27f79542d24ccecfc1). No production code changed.
+handoff: No Green work is required. The orchestrator decides whether to fix or to accept the nonblocking items ADV-8 to ADV-14. Any implementation commit needs a new run of this gate.
+END_MEASURE_AGENT_RESULT

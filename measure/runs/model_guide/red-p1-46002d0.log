@@ -1,0 +1,20 @@
+Red task 1.16 is complete. The new tests fail for the routed review findings
+of round 4. The test commit and the plan commit are separate. The daily
+publish commit ddd320f (docs/assets/data only, the cron-daily unit) landed
+during the task; no harness/model-guide file differs from 46002d0.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 46002d0aa52f4f5a8db8d61ac76658fe1e100265
+head_sha: 6dc3b4f28a3ad846204a6515b1d2d1bcc064872f
+commits: 7682719946ae790accfd104d5966a8aed075ada7, 6dc3b4f28a3ad846204a6515b1d2d1bcc064872f
+tests_run: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 1)
+files_changed: harness/model-guide-tests/preview-gate.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-1.16.txt, measure/runs/model_guide/red-p1-46002d0.log
+plan_updates: Task 1.16 is [x] with commit 7682719 and the evidence line. Task 1.17 is [~] with its four fix items and the verify line. The C4-1 note (nav links on every page when the Review page exists) sits under task 4.8.
+remaining_failures: A4-1/C4-2 — preview.sh refuses a mode 000 docs entry with `preview: unreadable <path relative to the repo>`, exit 2, empty stderr, before any write: no half-built folder stays and an existing preview folder stays byte-identical (two tests; each skips with a named reason when the run is root). B3-1/A4-2 — preview.sh refuses each symlink under docs (a relative link to a docs file, a `../../` link to an outside file, and a directory link) with `preview: refused path <absolute link path>`, exit 2, empty stderr, before any write; publish.ts states each docs entry with lstat in the walk, so a valid approval record still gives exit 2 with `publish: drift <path relative to docs>` for each link, writes no file, and leaves each link target byte-identical (six tests; at HEAD the relative and outside cases write through the link with exit 0, and the directory case drifts on the child path `dirlink/secret.txt` instead of the link). A4-3 — publish.ts wraps the readdirSync of the docs walk and maps an unreadable directory to `publish: drift <path>`, exit 2, empty stderr, no write (one test; skipped as root). A4-4/C4-3 — the A3-3 test now asserts the exact line `preview: refused path <link path>`; it passes at HEAD because the 1.15 fix already prints it, so it pins the line text for Green and is not a false Red case.
+handoff: Green owns task 1.17, touches no test file, and fixes the four items in harness/model-guide/ (preview.sh and publish.ts only). Defaults where the review named no line text: the unreadable preview line uses the path relative to the repo (`preview: unreadable docs/<file>`, the same form as the dangling case), the docs-symlink refusal uses the absolute link path (`preview: refused path <path>`, the same form as the planted preview link), and the publish drift line for a symlink or an unreadable directory names the entry itself relative to docs (`publish: drift alias.html`, `publish: drift escape.html`, `publish: drift dirlink`, `publish: drift lockdir`). The preview refusal must run before mkdir -p and cp, and the publish walk must use lstat before any copy. The two mode 000 tests skip with a named reason when the run is root; this run was uid 1001, so they executed. The publish tests build their preview folder by hand (writeDocsBase), so they hold after Green refuses docs symlinks in preview.sh. C4-1 is a plan note under task 4.8, and C4-4 needs no action (the Print audit block is Phase 2). Green must also re-run the task 1.9 preview at the final HEAD.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-mid-red
+task: 4.16
+status: pass
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: a87c29c5ded286f9e315020ca09ed14636548d77
+red_commit_sha: d601806ee489d2c492a122cd65fdb04a534d8700
+resulting_head: b9a0fbc7477a705e8b438fae9155b39a05ab3cb7
+commits: d601806ee489d2c492a122cd65fdb04a534d8700 test(model_guide): Red task 4.16 deadline expiry, newest partial, R10 output; b9a0fbc7477a705e8b438fae9155b39a05ab3cb7 measure(model_guide): record Red task 4.16 r6
+tests: F13 near-boundary expiry case and F20 inverse newest-partial case in both runners; R10 tail and whole-size assertions restored in review-run.test.ts
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md
+red_command_results: bun review-run exit 1 (127 pass, 3 fail, 918 expect calls); vitest judge-run exit 1 (Tests 2 failed | 59 passed (61))
+remaining_failures: R10 whole output, review F13 late answer, review F20 newest partial; judge F13 late verdict and judge F20 newest partial. No unrelated case fails and no fake process remains.
+handoff: Green must check expiry before each request and before accepting completion, must wait for the newest assistant and its terminal state, and must preserve plain raw output on the isolated path so R10 keeps the tail and whole size. The scheduled callers still need BENCH_SERVER_BASE exports, an orchestrator task. No deferred task was created.
+END_MEASURE_AGENT_RESULT

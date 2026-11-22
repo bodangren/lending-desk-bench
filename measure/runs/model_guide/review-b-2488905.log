@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: 2488905cd01f717f14523d41b250346169b9c358
+result_file: measure/runs/model_guide/review-b-2488905.json
+retry_recommendation: retry_implementation
+summary: Round 5 security review, delta only, at 2488905. The change over a4894ae adds a bounded retry to one gh call of pick-diffs.ts plus its tests, the adversarial round 3 tests, and text for spec D5 and the plan. The retry count is bounded at four tries and a non-transient failure refuses at once. pick-diffs still runs only `gh api --method GET` with array arguments and no shell, and no new write path appears. The tool stderr reaches no script and no public file. The two single-file suites pass at HEAD. One Major stays open (P3B5-1: a non-number or huge PICK_DIFFS_RETRY_WAIT_MS makes the retry wait block forever; the default and the test value are bounded). The round 2 nit P3B2-1 carries open. Out-of-track commits named: 9f43f35 (site) and e9071e8 (docs/assets/data publish). A later allowed commit landed during the audit and I name it: 2e0cfff, which touches only plan.md and spec.md, so I audit 2488905.
+END_MEASURE_AGENT_RESULT

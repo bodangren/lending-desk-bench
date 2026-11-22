@@ -1,0 +1,148 @@
+Final result: PASS under the PM round cap. No blocking finding.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 7773823d66b376065d4f4e26c01461538e720a7c
+audited_head_sha: 7773823d66b376065d4f4e26c01461538e720a7c
+HEAD matched the brief at the start and after verification.
+The exact audited range is 7d7d218..7773823.
+The phase diff has 15 files, 1353 insertions, and 80 deletions.
+The remediation diff has eight files, 232 insertions, and 42 deletions.
+
+Finding dispositions
+F2 fixed: The judge now gives text parts precedence and keeps the result-only fallback.
+P5 passes. Six independent stream shapes agree across all three decoders.
+The result-push mutation changes the P5 verdict and fails the intended property.
+
+F3 open: N32 still lacks runner cases. quota.test.ts:889 pins the fixed source reason.
+Neither runner file checks the raw reason in stdout and records.
+
+F4 fixed: review-run.test.ts:4597 exercises the full pass with 300 KB error lines.
+It requires exit 0, one record, one error, and a nonempty bounded line.
+N26b at :4628 also requires nonempty output under set -euo pipefail.
+A missing-deliverable fixture fails the actual N26 presence assertion.
+An empty error line fails its positive-length assertion.
+
+F5 open: The judge N10 and N27 copies lack direct cases.
+The new G2 case exercises the review copy only.
+Both symlink messages still describe links as leaving the root, including internal links.
+
+F6 withdrawn: plan.md:2500-2524 describes historical commit b795f32.
+Its old failed-scan text is not a current behavior claim.
+
+F7 fixed: Both foreign-marker cases now share HOME, cwd, and argv with the local entry.
+Only BENCH_OPENCODE_JOB differs.
+Both files pass. Removing the marker filter selects both entries in the independent fixture.
+
+F8 open, partially fixed: N27 now supplies two safe MAX_SAFE_INTEGER values.
+The accumulated-sum check clears completeness; removing that check leaves flag 1.
+Y10 still covers unsafe individual fields, so the replacement removes no required coverage.
+A valid event followed by a cut final step_finish still leaves flag 1 in both readers.
+
+F9 open: The judge seed refusal lacks a direct case.
+The review runner and credential helper retain their cases.
+
+F10 open: Current plan and spec instructions still name opencode/hy4-flash-free.
+routes.json:25 names opencode-go/hy4-flash-free#high instead.
+
+F11 open: R12 and R14 retain the default 5000 ms test budget.
+Their assertions permit 15000 ms and 10000 ms.
+This full-file run passed 100 tests.
+Review B records load-related failures followed by a clean rerun on the same HEAD.
+No deterministic production timeout defect reproduced in this review.
+
+Test change check
+Red r8 records the PM text-wins decision before Green 0356c23.
+J1/J2 keep exact verdicts, exit checks, timeout checks, cleanup, and hostile inputs.
+Their new expectations implement that decision rather than accepting either result.
+AJ1 still checks result-only decoding.
+judge-run.test.ts:1441 still checks last-flat-block selection.
+An independent two-text-event fixture also keeps the last flat block.
+No test was weakened to conceal a failure.
+
+Tests
+Each command ran separately, without shell redirection.
+The tool results hold the actual output.
+
+bun test harness/model-guide-tests/review-run.test.ts
+exit 0; 100 pass; 0 fail; 762 expect calls; 196.94 s.
+
+bun test harness/model-guide-tests/decode-parity.test.ts
+exit 0; 5 pass; 0 fail; 31 expect calls.
+
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 50 passed (50).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 13 passed (13).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 16 passed (16).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 12 passed (12).
+
+cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 24 passed (24).
+
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 31 passed (31).
+
+bun test harness/model-guide-tests/adjudicate.test.ts
+exit 0; 23 pass; 0 fail.
+
+bun test harness/model-guide-tests/review-score.test.ts
+exit 0; 27 pass; 0 fail.
+
+Independent checks
+The actual decoder functions agree for result-last, result-first, result-only, plain, two-text-block, and nested-result streams.
+The actual error_line_of functions each emit 499 content bytes plus a newline under pipefail.
+Both exit 0 with a 307200-byte synthetic error held in a memory file.
+Both symlink guards use find -print -quit without a pipe.
+G2 creates 20000 symlinks and checks the named refusal rather than exit 141.
+The extracted guard now carries its own JOB_REAL resolution.
+
+The daemon matcher and the three error-scan functions remain byte-identical across the runners.
+No exported TypeScript symbol changed during this remediation.
+No new dependency or abstraction was added.
+build-graph exists, but graph.db remains absent. I used source searches and wrote no database.
+
+Plan and gate checks
+Green 4.15f counts match the fresh command results.
+Green 4.15e explicitly records the intermediate P5 failure.
+Red r7/r8 record the failing names and the mutation proofs.
+No false current pass claim reproduced under A5.
+No new count assertion uses bare-digit matching.
+Missing-record and empty-output fixtures fail the new N26 assertions.
+No Measure orchestration script, framework contract test, or registry changed.
+Framework-wide checks remain outside this review.
+
+Safety and scope
+git diff --check and bash -n passed.
+Frozen paths, package.json, and public pages have empty diffs.
+The committed phase patches contain zero credential-pattern matches.
+pgrep found no remaining fake or quota server from these runs.
+The four pre-existing untracked paths remained unchanged.
+I read no real private key, seeded diff, raw output, or shared credential store.
+I did not repeat the full private-data leak gate.
+Only the supplied result JSON and log were written by this audit.
+No commit, push, live model call, opencode CLI, or openchamber CLI ran.
+
+Handoff
+Six findings remain open and nonblocking: F3, F5, F8, F9, F10, and F11.
+F8 now concerns only the truncated-token case.
+No CONTEST item was supplied.
+Route code and tests to Green. Route document updates to the orchestrator.
+The live empty-store limitation remains outside these fixes.
+This review does not claim live seed success or phase acceptance.
+
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: All ten files passed separately; decoder, overflow, marker, missing-deliverable, syntax, and diff checks passed.
+files_changed: measure/runs/model_guide/review-a-4.15-7773823.json; measure/runs/model_guide/review-a-4.15-7773823.log
+plan_updates: none
+known_failures: No blocking finding. F3, F5, F8, F9, F10, and F11 remain open and nonblocking.
+handoff: F2, F4, and F7 are fixed. F6 stays withdrawn. F8 overflow coverage is fixed; the truncated-token case remains open. No test was weakened to conceal a failure. Recommend create_remediation_track. The live seed remains unresolved. This review does not accept the live phase.
+END_MEASURE_AGENT_RESULT

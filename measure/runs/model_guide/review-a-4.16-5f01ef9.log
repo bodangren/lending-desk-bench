@@ -1,0 +1,161 @@
+Final result: PASS under the PM round cap only.
+All eleven test files pass. No real-key leak was found.
+Six findings are fixed. Three Major findings remain nonblocking.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: 5f01ef93c68f7afe6b2889ea36aafb12a85ef1e5
+HEAD matched the supplied full SHA at the start and after verification.
+The exact phase diff contains 18 files, 4399 insertions, and 117 deletions.
+The 31fe9a0..5f01ef9 remediation contains six files, 911 insertions, and 413 deletions.
+
+Dispositions
+F12 fixed and withdrawn: create uses location.directory and a nested model.
+The returned location check refuses a foreign location before prompt admission.
+L1, L11, and the explicit wrong-location case pass.
+
+F13 partially fixed and open [Major]: partial and missing answers no longer produce complete passes.
+However, an empty queue stops after ten seconds, not the specified call budget.
+A 30-second fixture refused after 10.79 seconds, before its completed answer appeared at 11 seconds.
+A one-second fixture accepted completion after 2.72 seconds.
+The complete branch bypasses the deadline check. Requests also receive separate full timeout budgets.
+Empty probes still become reachable without a model answer.
+Use one deadline from call entry and wait through that deadline.
+
+F14 fixed and withdrawn: native top-level tokens reach both token readers.
+The independent completed-answer fixture records 7, 8, 9, 10, and 11, with tokens_complete true.
+The revised L4 and L11 cases use native content and top-level tokens.
+
+F15 open [Major]: an unset BENCH_SERVER_BASE still selects isolated pilot seeding.
+An explicitly empty value selects the live default. The F15 case tests empty, not unset.
+Both drivers and transient service units still omit the variable on this HEAD.
+The planned exports select the live path for those callers once verified.
+They do not make the runner fail closed for other pilot invocations.
+D14 still prohibits pilot seeding. Refuse an unset pilot base.
+Move isolated fixtures to non-pilot routes instead of preserving this production fallback.
+
+F16 fixed and withdrawn: the wait helper preserves a failed GET status.
+Failed-read pass, probe, and judge cases pass without complete results or empty judge files.
+
+F17 fixed and withdrawn: native errors are processed before completion.
+The Go probe reports region-blocked. The judge publishes no empty verdict file.
+
+F18 fixed and withdrawn: both parsed URL guards refuse userinfo before requests.
+The extracted prior external-host fixture exits 2 in both runners.
+
+F19 fixed and withdrawn: missing and unreadable preset configs now refuse.
+The new cases pin exact timeout text, exit 2, and no DELETE on a probe.
+Existing L11 covers the judge. Auto-created job roots receive the deny config.
+
+F20 new [Major]: both synthesizers select the oldest assistant from newest-first native pages.
+review-run.sh:1192-1196 and judge-run.sh:940-944 replace last on each assistant.
+OpenChamber context-obligatory/runtime.js:88 documents newest-first ordering.
+The independent full runner fixture supplied FINAL first and EARLY second.
+It stored EARLY, recorded the older three-token bundle, and marked the pass complete.
+Both extracted readers also chose an older partial record over a newer completed answer.
+Select the newest terminal answer and preserve the call's token sums.
+
+Real server permission proof
+I created no real session and made no live model call.
+I used five GET requests on port 38307. No POST or DELETE reached that server.
+The first agent-by-id request returned 404. Preliminary directory queries selected the server default.
+I discarded those results and used the native deep-object query location[directory].
+The scoped GET /api/agent returned the exact synthetic non-git job location.
+The build permission list ended with eight matching deny rules.
+The normalized shell deny represents the legacy bash deny.
+The scoped GET /api/config returned the job's opencode.json and the same eight normalized denies.
+The job's git rev-parse check exited 128, so the proof does not depend on a git repository.
+Confidence is high for project discovery and effective build permissions in a fresh non-git job.
+I did not verify a real session's agent selection.
+I printed permission projections only, without credential values or system prompts.
+
+Independent offline matrix
+The matrix reused actual test helpers through in-memory transpilation.
+It changed no repository file and used fake model endpoints only.
+- Native completed answer: exit 0; complete pass; 45 tokens; tokens_complete true.
+- Missing answer: exit 2; incomplete text; no pass record; six message GETs.
+- Eleven-second queued answer with a 30-second budget: exit 2 after 10.79 seconds; no pass record.
+- Completed answer after a one-second deadline: exit 0 after 2.72 seconds; complete pass.
+- Newest-first page: exit 0; EARLY output; older three-token bundle; complete pass.
+
+Tests
+Each file ran separately, without shell redirection. The tool results contain the actual output.
+
+bun test harness/model-guide-tests/review-run.test.ts
+exit 0; 122 pass; 0 fail; 882 expect calls; 279.08 seconds.
+
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 54 passed (54).
+
+bun test harness/model-guide-tests/decode-parity.test.ts
+exit 0; 8 pass; 0 fail; 49 expect calls.
+
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 32 passed (32).
+
+cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 24 passed (24).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 16 passed (16).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 12 passed (12).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 13 passed (13).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4d.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 21 passed | 6 skipped (27). The six skips predate this remediation.
+
+bun test harness/model-guide-tests/adjudicate.test.ts
+exit 0; 23 pass; 0 fail; 205 expect calls.
+
+bun test harness/model-guide-tests/review-score.test.ts
+exit 0; 27 pass; 0 fail; 249 expect calls.
+
+Plan, tests, and architecture
+All current plan test counts match the fresh labeled output. No false current test-exit claim reproduced under A5.
+The plan's deadline claim remains incomplete, as F13 shows.
+A3 count assertions use array lengths and structured fields, not bare digit searches.
+A4: the missing-answer fixture now writes no pass record, so a required complete-record assertion fails.
+The new fake shapes prove more behavior, but still omit ordered multi-message pages and the unset-base case.
+No formal CONTEST item was supplied. Green's unset-base rationale does not amend D14.
+The judge's conditional file write matches adjudicate.ts:539-554, which already treats a missing file as an empty map.
+No TypeScript export changed in this remediation. No new dependency or abstraction was introduced.
+build-graph exists, but graph.db remains absent. I created no database and checked callers through source searches.
+live_session_create, live_synthesize, live_wait_answer, and error_line_of remain byte-identical between the runners.
+No route-parity difference reproduced.
+
+Safety and limits
+bash -n and git diff --check pass.
+Frozen paths, docs, provenance.ts, harness/tests, and harness/package.json have empty phase diffs.
+No Measure orchestration script, framework contract test, or registry changed.
+Framework-wide anti-pattern checks remain outside this audit.
+The final process check found no fake-opencode, quota-server, or live-server child.
+HEAD remains 5f01ef93c68f7afe6b2889ea36aafb12a85ef1e5. The four pre-existing untracked paths remain.
+I copied no real key, private seeded diff, live message body, or credential value.
+I did not repeat Green's leak-check command. I found no real-key leak.
+Only the two supplied result artifacts remain from this audit.
+No production, test, plan, or registry edit remains. No commit or push ran.
+
+Handoff
+F12, F14, F16, F17, F18, and F19 are fixed and withdrawn.
+F13 and F15 remain open. New F20 affects native answer selection and token accounting.
+All three are Major but nonblocking under the PM cap.
+Add and verify the driver exports. Also refuse an unset pilot base.
+Route the deadline and ordering fixes to Green.
+Empty violation arrays express the capped disposition only.
+This audit does not establish full live readiness or accept Phase 4b.
+
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role_base_sha: 5f01ef93c68f7afe6b2889ea36aafb12a85ef1e5
+commits: none
+tests_run: All eleven files passed separately; native-message, missing-answer, deadline, ordering, URL, syntax, and GET-only permission probes completed.
+files_changed: measure/runs/model_guide/review-a-4.16-5f01ef9.json; measure/runs/model_guide/review-a-4.16-5f01ef9.log
+plan_updates: none
+known_failures: F13, F15, and new F20 remain Major and nonblocking under the PM cap.
+handoff: Six earlier findings are fixed. Refuse an unset pilot base despite the planned driver exports. Fix the ten-second empty window, the call deadline, and newest-first answer selection. The real server confirms all eight build denies in a non-git job. Recommend create_remediation_track. No real-key leak was found. This audit does not accept Phase 4b.
+END_MEASURE_AGENT_RESULT

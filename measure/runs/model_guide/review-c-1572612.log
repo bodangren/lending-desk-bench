@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: fail
+summary: Fail. The code of tasks 4.13q and 4.13r matches its contract and every gate passes at HEAD (quota 30/30, credential-provider 22/22, review-run 65/65, all exit 0, no leftover process of this audit). One blocking gap stays in the wiring: no production path reads the Go quota through ra-quota, so the 5 s direct read that timed out at 04:35 and refused route 3 is unchanged in every real run.
+blocking_findings:
+- F1: The PM order "read the Go quota through ra-quota" is not wired into any production path. quota.ts:408-420 reads ra-quota only when BENCH_RA_QUOTA is set and holds no production default; no production file sets the seam; both drivers export BENCH_QUOTA_BASE=http://127.0.0.1:38307 and curl that endpoint directly (probe-4.10.sh:15,20,54; night-4.11.sh:15,30,69). probe-4.10.txt:4 holds the 04:35 refusal "the quota state is stopped: quota: the quota read timed out" from that unchanged path. Route to Green: the quota.ts production default of the plan row, or a driver export of BENCH_RA_QUOTA.
+nonblocking_findings:
+- N1: The plan row 4.13r claims "Nothing in this repo sets BENCH_QUOTA_BASE outside tests"; the production drivers set it on every real run.
+- N2: The drivers enforce only the upper bound of the PM real-call window; a 01:45 start makes real calls before the approved 02:00 start (plan.md:1816).
+prod_wiring_violations:
+- F1: the production Go-quota path never reads through ra-quota; see blocking_findings.
+probe_answer: A probe at 01:45 on 2026-11-20 is not guaranteed a real result for each of the 3 pilot routes. Route 2 (opencode/hy4-flash-free) needs only the live store to hold one active opencode entry and the PM to approve the 01:45 start. Routes 1 and 3 (opencode-go) carry those two conditions plus the unmitigated 5 s direct quota read of F1, which refused route 3 at 04:35 and can refuse again because the ra-quota fallback never engages in production. A Go quota over the night limits (5h >= 95 or weekly >= 100) also skips both Go routes by design, and a probe without reachable lines leaves tonight's night runs skipping every route (night-4.11.sh:61-62).
+retry_recommendation: full_retry_green
+confidence: high
+END_MEASURE_AGENT_RESULT

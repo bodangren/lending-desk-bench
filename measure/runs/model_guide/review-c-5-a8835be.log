@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: review-c
+status: complete
+track: model_guide
+phase: Phase 5: The publish gate and the weekly update
+commits: none
+tests_run: heavy-run.sh python3 read-only assertions PASS; live bytes, navigation, table, approval hashes, and preview base; no Vitest replay
+files_changed: measure/runs/model_guide/review-c-5-a8835be.json; measure/runs/model_guide/review-c-5-a8835be.log
+plan_updates: none
+known_failures: no blockers; F1 documents a non-executable weekly command, score-impact: no
+handoff: Pass at a8835be3ddc9b3e71f8965301772f97935da39d5. Route F1 to tech-debt. The live review bytes equal the committed page. No publish or update ran.
+route: openai/gpt-6.1-sol#high (PM 2026-11-22 route for review and acceptance roles; substitution for `ra-quota pick review-c`).
+END_MEASURE_AGENT_RESULT

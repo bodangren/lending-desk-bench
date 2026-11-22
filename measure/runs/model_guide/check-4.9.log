@@ -1,0 +1,11 @@
+MEASURE_AGENT_RESULT
+role: task-4.9-check
+track: model_guide
+audited_head: 7ba24c2e1ea1e28fdd04ef8f320da991621adb7e
+status: fail
+summary: Suites green (quota 15, credential 11, review-run 23). Five of six items confirm against spec D12-D15 and D22. F1 blocks: the one-pass-per-night guard keys on QUOTA_PROVIDER and never fires for real no-source rows; a live probe ran the same no-source route twice in one night (two complete passes). F2 notes the untested stopped-quota runner path.
+blocking_findings: F1 (review-run.sh:230-233; live probe p1+p2 complete 2026-11-20)
+nonblocking_findings: F2 (review-run.sh:311-315,381-386 untested)
+allowed_list_observations: claude-code/claude-sonnet-5-5#high, kimi-code-plan-cn/kimi-for-coding#high, bailian-token-plan/glm-5.3#high, nvidia/stepfun-ai/step-5-preview#high, opencode-go/muse-spark-1.3-contributor#high are NOT on the allowed list; minimax-cn-coding-plan/MiniMax-M3.1-Flash, opencode-go/deepseek-v4.1-flash, opencode/hy4-flash-free, opencode-go/mimo-v2.6-flash match exactly.
+retry_recommendation: retry_implementation
+END_MEASURE_AGENT_RESULT

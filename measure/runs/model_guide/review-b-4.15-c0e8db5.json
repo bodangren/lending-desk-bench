@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-b-security",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.15",
+  "status": "pass",
+  "summary": "Pass at HEAD c0e8db5 with no blocking finding. I found no real key in a committed file or a public page. The credential controls hold on every printed path: the seed reason, the failed-scan text, the E1 event join, the 499-byte cut, and the closed quota list. Ten test files pass one at a time. The E1 case runs and passes. Two new runner aborts and the judge parity gap are nonblocking under the PM round cap and go to Green.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N26/G1 [Major, nonblocking] The 500-byte cut aborts the run on a long line. `review-run.sh:959` and `judge-run.sh:724` run `printf '%s' \"$line\" | head -c 499` under `set -euo pipefail` (`review-run.sh:96`, `judge-run.sh:75`). `head` exits after 499 bytes, `printf` gets SIGPIPE, and the pipeline returns 141. The runner exits 141 with no line and no record. My run of the extracted `error_line_of` with a 307200-byte stderr line gave exit 141 and no output. The N26 case (`review-run.test.ts:4391`) runs the function under plain `bash -c`, so it passes. The case also stubs `scan_output` and writes no record (Review A F4). Fix: use `${line:0:499}` or a pipefail exception for this line. Route to Green.",
+    "N13 [Minor, nonblocking] The judge takes a forged result branch that comes last. `judge-run.sh:1136` pushes result text into `parts` before the filter. My extracted run gave `{\"g1\":\"false-claim\"}` for a good text event then a forged result event. `review-score.ts:261` and `adjudicate.ts:250` keep result text apart and keep `real-defect`. The new case (`decode-parity.test.ts:628`) puts the forged result first, so it passes under this defect. Fix: keep result parts apart in the judge. This is also Review A F2.",
+    "N27 [Nit, nonblocking] The new sum check works, and the committed case does not exercise it. `review-run.test.ts:4431` sets two fields to 1e16. `isToken` rejects each field before the sum (`review-run.sh:156`), so the flag clears without the new check. Two fields of 2^53-1 clear the flag through the sum: my run gave `18014398509481982 2 0 0 0 0`. A cut final `step_finish` keeps the flag 1 (my run), as Review A F8 found. Fix: use two safe fields; clear the flag for a cut tail.",
+    "N10/G2 [Nit, nonblocking] The new symlink walk can abort the run. `review-run.sh:797` and `judge-run.sh:561` run `find ... | head -n 1` under `set -euo pipefail`. A tree with many links returns 141 before the refusal (my run on `/usr/lib` gave 141). A fresh job tree is empty, so the trigger is a preset `BENCH_OPENCODE_HOME`. The refusal also says the link leaves the root, but the guard refuses any link (Review A F5). Fix: add `-quit`; name the exact condition.",
+    "N15 [Nit, nonblocking] The orphan scans are still not scoped to the file's own roots. `review-run.test.ts:343` and `judge-run.test.ts:316` filter by `mg-`, the suite prefix. Another session's `mg-` fake still fails the file.",
+    "N29 [Nit, nonblocking] The values file keeps a predictable path under the ambient TMPDIR (`review-run.sh:645`, `judge-run.sh:303`). The `: > \"$TMP_VALUES\"` open follows a planted symlink, and mode 600 does not stop it. A SIGKILL leaves the file. Fix: create it with `mktemp`, or pass the values through a process substitution.",
+    "N5 [Nit, carried] The seed cwd check trusts the exit status of `git rev-parse` (`provider-credential.sh:186-191`). No test covers it. Section 14.5 records it as document only.",
+    "N12 [Nit, carried] The fence regex cost stays bounded by the call output cap (`judge-run.sh:1155`). Section 14.5 records it as document only.",
+    "N20 [Nit, carried] `error_event_text` reads `error.message`, `error.data.message`, and a string `error`. Only a live Go region error shows the real text. The live check is pending in `probe-4.10.txt`.",
+    "N24 [Nit, carried] The scan matches a whole value only. A value split over two lines leaks a prefix, now cut at 499 bytes. Section 14.5 records the limit as document only.",
+    "Seed reason [Nit, nonblocking] The runner echoes the helper's text after the prefix (`review-run.sh:809-812`, `judge-run.sh:572-575`). The no-entry pattern has no end anchor, so a trailing value in that helper line would print. The helper also calls a no-value entry 'no active entry' (`provider-credential.sh:246`). Fix: print a fixed text from a closed list; name the no-value state. The judge case is missing (Review A F9).",
+    "Quota text [Nit, nonblocking] The stopped reason doubles its prefix. `quota.ts:144` writes `quota: <reason>` to stderr. The runner stores `quota: $QUOTA_REASON` (`review-run.sh:753`, `judge-run.sh:1030`), so the record says `quota: quota: ...`. Fix: strip the prefix.",
+    "Marker test [Nit, nonblocking] The foreign-marker cases do not isolate the marker. The foreign entry also has its own HOME and cwd (`judge-run.test.ts:3277`, `adversarial-p4-runner.test.ts:983`). Removing the marker filter keeps them green (Review A F7).",
+    "Docs [Nit, nonblocking] The pilot text still names `opencode/hy4-flash-free` (`plan.md:2534`, `plan.md:2554`, `spec.md:573`, `spec.md:631`, `spec.md:784`). `routes.json:25` holds `opencode-go/hy4-flash-free#high`, so a manual run refuses (Review A F10).",
+    "TERM race [Nit, nonblocking] `stop_daemons` sends TERM to the collected pids with no start-time check (`review-run.sh:536`). A reused pid in that window gets TERM. The start-time guard covers KILL and the log only."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned c0e8db545caeeea99bfe1a61eeafff8be59c99b5 at the start and at the end. The brief names c0e8db5 as role_base_sha and 7d7d218 as phase_base_sha. The audited HEAD is current. The work tree held four untracked paths at the start and at the end: `.opencode/`, `harness/model-guide/data/sets/`, `harness/wt.txt`, `tech-debt.md`.",
+    "Security applicability: applicable. `git diff --stat 7d7d218..HEAD` names 15 files. The production files are `review-run.sh`, `judge-run.sh`, `provider-credential.sh`, `quota.ts`, `review-score.ts`, `adjudicate.ts`, and `routes.json`. They print and store the error line of a failed model call and the seed refusal line.",
+    "A2 not applicable: `git diff 7d7d218..HEAD | grep -cE '(published|publish|draft|consent|anonymi)'` returns 1, and the match is the plan heading `## Phase 5: The publish gate`. `git diff --stat 7d7d218..HEAD -- harness/model-guide/publish.ts` is empty. No test in the range flips a draft to published.",
+    "A6 not applicable: `git diff --stat 7d7d218..HEAD -- measure/tracks.md` is empty. `grep -ci resolved measure/tracks.md` returns 0. The registry makes no security-resolved claim for this phase.",
+    "Secret grep: `git log -p 7d7d218..HEAD | grep -cE 'sk-[A-Za-z0-9_-]{20,}'` returns 0, and the AKIA, ghp_, and PRIVATE KEY patterns return no hit. The only key-like string under `measure/runs/model_guide/` is the fake test value `sk-test-credential-value-0123456789`, quoted by review records and `red-4.15.txt:50`. `measure/runs/` is gitignored, so no commit holds them.",
+    "Seed export: `provider-credential.sh:193-194` runs `timeout 60 ... auth export \"$PROVIDER\" --standalone` in a `mktemp -d` folder outside every git work tree. Its stdout is captured in `out` and never printed (`:205`). Its stderr goes to the mode-600 `ERR_FILE` under the job tmp, which the trap removes. The helper refuses with fixed text only (`:239-249`). The empty and foreign cases make one export call (SR1, SR2); the no-value text also stops after one call in the code.",
+    "Seed capture: `review-run.sh:807` and `judge-run.sh:570` capture stderr only (`2>&1 > /dev/null`). The case prints only the two fixed prefixes, else the bare refusal. The seed payload never reaches stdout, a record, or a file. SR1, SR2, and R-SR1 pass (credential-provider 24, review-run 97).",
+    "Credential paths: all error lines pass `error_line_of` (`review-run.sh:1095`, `:1099`, `:1198`; `judge-run.sh:813`, `:1068`). The failed-scan text is a constant (`review-run.sh:874`). The E1 join scans `error_all_events_text` and prints the fixed text only (`review-run.sh:981-986`). A grep for a direct read of the error files finds only the quota stderr read (`review-run.sh:685`, `judge-run.sh:515`), which `quota.ts:137-145` fills with closed-list text.",
+    "Daemon guard: the `daemon_pids` and `error_line_of` texts are byte-identical in both runners (`diff` of the extracted functions returned 0). The marker check is `if (job !== \"\" && real(job) !== baseReal) continue;`. `real(\"\")` returns `\"\"`, so a process with an unreadable environ and cwd never matches the HOME and cwd fallback. The guard does not signal a process of another run.",
+    "G1 proof: `bash -c` with `set -euo pipefail` and the extracted `error_line_of` from `review-run.sh:943-993`, a 307200-byte stderr line, and stub `scan_output` gave exit 141 and no output. A 200000-byte `printf | head -c 499` pipeline returned 141. The same pipeline in the N26 case runs without `set -e`, so it passes.",
+    "G2 proof: `bash -c 'set -euo pipefail; x=\"$(find /usr/lib -type l -print 2>/dev/null | head -n 1)\"; echo after'` printed no `after` and exited 141.",
+    "N13 proof: the extracted judge verdict decoder (`judge-run.sh:1120-1170`) read a good text event then a forged result event and wrote `{\"g1\":\"false-claim\"}`. The reverse order wrote `{\"g1\":\"real-defect\"}`. `review-score.ts:263` and `adjudicate.ts:252` ignore result text when text parts exist.",
+    "N27 proof: the extracted `read_tokens` (`review-run.sh:150-197`) gave flag 1 for a valid `step_finish` then a cut `step_finish`. It gave `18014398509481982 2 0 0 0 0` for two events with input 2^53-1. The committed case uses 1e16, which `isToken` rejects before the sum.",
+    "Test runs, one file at a time. Bun: `review-run.test.ts` 97 pass, `decode-parity.test.ts` 4 pass. Vitest: `judge-run` 50, `quota` 31, `credential-provider` 24, `adversarial-p4-runner` 16, `adversarial-p4b` 12, `adversarial-p4c` 13, `review-score` 27, `adjudicate` 23, all pass. The focused E1 run shows a check mark and no skip.",
+    "Gates: `bash -n` passes on both runners and the helper. `git status --short docs/` prints nothing. The frozen-path diff of `harness/opencode-credential.sh`, `harness/opencode-host.sh`, `harness/provenance.ts`, and `harness/tests` is empty. `pgrep -af 'fake-opencod[e]|quota-serve[r]'` printed nothing of mine at the end.",
+    "N9 withdrawn: the start-time mismatch branch now skips the INFRA line, and the N9 case pins the stable pid and the reused pid (`review-run.test.ts:4336`).",
+    "N10 withdrawn: the guard walks every level of each call path, and the N10 case refuses a second-level link (`review-run.test.ts:4259`). The new abort is G2 above.",
+    "N11 withdrawn: the matcher requires `serve` next to `--service`, and the N11 case pins the positive control and the distant decoy (`review-run.test.ts:4295`).",
+    "N21 withdrawn: the message rule now refuses U+202E, U+0085, and U+200B, and the N21 case pins them (`review-run.test.ts:4228`).",
+    "N28 withdrawn: a reachable probe now clears `error_line` (`review-run.sh:1091`), and the N28 case pins it (`review-run.test.ts:4454`).",
+    "N30 withdrawn: the probe and start-test branches now have cases that plant a key in a stdout error event (`review-run.test.ts:4521`, `judge-run.test.ts:3188`). Both assert the fixed text and no key.",
+    "N31 withdrawn: the failed-scan text is distinct from the found-key text (`review-run.sh:874`), and AA1, AA2, JA1, and JA2 pin it (`review-run.test.ts:4478`, `:4497`; `judge-run.test.ts:3154`, `:3169`).",
+    "N32 withdrawn: `quota.ts:277` returns a fixed reason, and the N32 case pins it (`quota.test.ts:889`). The runner prints `quota: <fixed text>` only. The doubled prefix is a separate nit."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> c0e8db545caeeea99bfe1a61eeafff8be59c99b5 (start and end)",
+    "git diff --stat 7d7d218..HEAD; git diff 7d7d218..HEAD -- harness/model-guide/{review-run.sh,judge-run.sh,provider-credential.sh,quota.ts,review-score.ts,adjudicate.ts,routes.json}",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 97 pass, 0 fail",
+    "bun test harness/model-guide-tests/decode-parity.test.ts -> 4 pass, 0 fail",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 50 passed",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts ... -> 31 passed",
+    "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts ... -> 24 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts ... -> 16 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts ... -> 12 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts ... -> 13 passed; focused -t 'E1 a value split' -> 1 passed, 12 skipped",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts ... -> 27 passed",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts ... -> 23 passed",
+    "git log -p 7d7d218..HEAD | grep -nE '<key patterns>' -> no hit",
+    "node -e \"$(sed -n '1120,1170p' judge-run.sh)\" <(printf ...) -> false-claim for forgery last; real-defect for forgery first",
+    "node -e \"$(sed -n '150,197p' review-run.sh)\" <(printf ...) -> flag 1 for a cut tail; flag 0 for two safe fields summing past 2^53",
+    "bash -c 'set -euo pipefail; <extracted error_line_of>; error_line_of <big line>' -> exit 141, no output",
+    "bash -c 'set -euo pipefail; x=\"$(find /usr/lib -type l -print 2>/dev/null | head -n 1)\"' -> exit 141",
+    "bash -n on both runners and the helper -> 0",
+    "git status --short docs/ -> nothing; frozen-path diff -> empty; pgrep -af 'fake-opencod[e]|quota-serve[r]' -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/provider-credential.sh",
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/review-score.ts",
+    "harness/model-guide/adjudicate.ts",
+    "harness/model-guide/routes.json",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/quota.test.ts",
+    "harness/model-guide-tests/credential-provider.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4c.test.ts",
+    "harness/model-guide-tests/decode-parity.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [
+    "A4: the N27 case does not fail when the new sum check is removed, because `isToken` rejects 1e16 before the sum.",
+    "The N26 case runs `error_line_of` without the runner's `set -euo pipefail`, so it does not see the exit 141 abort.",
+    "The P4 N13 case puts the forged result first, so the judge divergence does not fail it."
+  ],
+  "live_contract_violations": [
+    "Section 14.5 N26 says a 300 KB line gives a record and exit 0. The live runner exits 141."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [
+    "The judge decoder differs from `review-score.ts` and `adjudicate.ts` for a top-level result event after the text answer."
+  ],
+  "retry_recommendation": "create_remediation_track",
+  "confidence": "high",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "c0e8db545caeeea99bfe1a61eeafff8be59c99b5",
+  "baseline_sha": "c0e8db545caeeea99bfe1a61eeafff8be59c99b5",
+  "audited_head": "c0e8db545caeeea99bfe1a61eeafff8be59c99b5",
+  "audited_head_sha": "c0e8db545caeeea99bfe1a61eeafff8be59c99b5",
+  "security_applicability": "applicable: the range changes the credential helper and both runners that print and store the error line of a failed model call, the seed refusal line, and the quota reason line",
+  "route": "opencode-go/deepseek-v4.1-flash",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The credential paths hold, but a 300 KB error line aborts the runner with exit 141 (`review-run.sh:959`), and the judge takes a forged result that comes last (`judge-run.sh:1136`)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "Ten files pass, but the N26 case omits `set -euo pipefail` (`review-run.test.ts:4391`), the N27 fixture is rejected before the sum (`:4431`), and the N13 case is order-blind (`decode-parity.test.ts:628`)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "`git diff --stat 7d7d218..HEAD` names 15 planned files and no frozen path; the symlink guard refuses more than its stated contract (`review-run.sh:800`)."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim in this record has a command result or a file:line, including the two exit 141 reproductions and the forged-last decoder run."
+    }
+  ]
+}

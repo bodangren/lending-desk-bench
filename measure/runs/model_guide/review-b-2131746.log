@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 213174652648b742af7a2adffce9ccb9e4f043b9
+result_file: measure/runs/model_guide/review-b-2131746.json
+retry_recommendation: retry_implementation
+summary: Phase 1 fails the security gate: preview.sh can write under docs/ before approval (confirms A1), publish.ts misses docs files added after the preview (confirms A2), and publish.ts accepts traversal paths from the approval record (B1).
+END_MEASURE_AGENT_RESULT

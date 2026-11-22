@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: mid-red
+task: 4.14
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: dc31a0af910bd17255dba10cb662d241fb47da1b
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+head: db298077edfeefb3e05250a26fec7c3673304341
+route: opencode-go/muse-spark-1.3-contributor#high
+commits: db29807
+tests: harness/model-guide-tests/review-score.test.ts, harness/model-guide-tests/preview-gate.test.ts
+files: harness/model-guide-tests/review-score.test.ts, harness/model-guide-tests/preview-gate.test.ts, measure/tracks/model_guide/plan.md
+red_command: cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+red_result: exit 1 both; review-score Tests 2 failed | 31 passed (33), failed F1 zero-pass with reason and F1 zero-pass without reason, each with score: unknown flag --pilot-routes; preview-gate Tests 3 failed | 113 passed (116), failed C2-route visible, C2-route escaped, F1-preview zero-pass worst, all older cases pass
+remaining_failures: F1 zero-pass pilot row missing in scorer (no --pilot-routes, route opencode-go/mimo-v2.6-flash absent); C2-route pass items lack visible escaped route name; F1-preview zero-pass worst shows 0.0 not –; no production file changed
+END_MEASURE_AGENT_RESULT

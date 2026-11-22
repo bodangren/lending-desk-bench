@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "role": "ux-browser",
+  "track": "model_guide",
+  "phase": "Phase 5: The publish gate and the weekly update",
+  "phase_base_sha": "8fd8882a8539d051129eb106e46974a934df5223",
+  "role_base_sha": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "audited_head": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "audited_head_sha": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "reviewer_model": "openai/gpt-6-luna",
+  "route": "openai/gpt-6-luna#high",
+  "status": "pass",
+  "summary": "The published pages pass the requested desktop and mobile checks. The route column meets its 10rem minimum, and the page has no horizontal overflow at 390 px. Arrow keys do not scroll the focused review table.",
+  "ux_applicability": "applicable",
+  "webbridge_status": "not_run",
+  "webbridge_evidence": {
+    "screenshots": [
+      "measure/runs/model_guide/ux-5/review-390.png (390 px)",
+      "measure/runs/model_guide/ux-5/review-1280.png (1280 px)",
+      "measure/runs/model_guide/ux-5/index-390.png (390 px)",
+      "measure/runs/model_guide/ux-5/index-1280.png (1280 px)",
+      "measure/runs/model_guide/ux-5/real-work-390.png (390 px)",
+      "measure/runs/model_guide/ux-5/review-method-390.png (390 px, method note)"
+    ],
+    "accessibility_snapshots": [
+      "measure/runs/model_guide/ux-5/layout-facts.json contains full Chrome accessibility trees for review.html, index.html, and real-work.html at 390 px and 1280 px.",
+      "review.html at 390 px: 721 AX nodes, 1 navigation, 1 main, 7 tables, 26 column headers, 1 named region, 8 links, and 0 unnamed links.",
+      "index.html at 390 px: 342 AX nodes, 1 navigation, 1 main, 2 tables, 10 column headers, 2 regions, 11 links, and 0 unnamed links.",
+      "real-work.html at 390 px: 968 AX nodes, 1 navigation, 1 main, 2 tables, 12 column headers, 2 regions, 8 links, and 0 unnamed links."
+    ],
+    "interactions": [
+      "At 390 px, review.html and index.html each have exactly one Review link and one Real work link.",
+      "At 390 px, the Code review row reads no pick yet: not enough evidence.",
+      "At 390 px, the review results region receives keyboard focus. ArrowRight and ArrowLeft leave scrollLeft at 0.",
+      "At 390 px, the review table scrolls within its own box: 309 px client width and 736 px scroll width. The route column is 160 px wide with a 160 px minimum."
+    ]
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F2 [Minor] review.html at 390 px: the focusable named table region receives focus, but ArrowRight and ArrowLeft do not move its scroll position. Pointer or touch scrolling remains available. score-impact: no | CONTEST kept: the focused region stayed at scrollLeft 0 after ArrowRight; the table remains horizontally scrollable."
+  ],
+  "evidence": [
+    "HEAD is 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36, matching role_base_sha and audited_head_sha.",
+    "phase_base_sha is 8fd8882a8539d051129eb106e46974a934df5223.",
+    "PROJECT_DEV_URL was read and is unset. The committed files were reviewed directly at file URLs, as requested.",
+    "The exact Phase 5 diff adds docs/review.html and docs/real-work.html, and changes docs/index.html.",
+    "review.html has exactly three route rows. DeepSeek shows 78.6, Hy4 shows 75.4, and MiMo shows incomplete: 0 of 3 passes with a dash in every count cell.",
+    "At 390 px, each route name precedes its short mark on a separate line. The route cell measures 160 px, equal to 10rem, and the route table scrolls only inside its own box.",
+    "review.html has no page-level horizontal overflow at 390 px or 1280 px. index.html and real-work.html also have no page-level overflow at both widths.",
+    "The mobile method note is present, readable, and 311 px wide. Its complete text appears in layout-facts.json.",
+    "The pages contain no visible PM 2026 or nights 1 and 2 text at either checked width.",
+    "The overview Code review row shows no pick yet: not enough evidence.",
+    "F1 withdrawn: At 390 px, the route cell measures 160 px with min-width 160 px; the screenshot shows route and status on separate lines.",
+    "The final layout run wrote layout-facts.json and review-method-390.png. The script returned exit 1 during temp profile removal with ENOTEMPTY; the subsequent process check found no ux5-chrome process.",
+    "The command `rm -rf /tmp/ux5-chrome-a /tmp/ux5-chrome-b /tmp/ux5-chrome-c /tmp/ux5-chrome-d /tmp/ux5-chrome-e /tmp/ux5-chrome-cdp` was refused: `Permission denied: shell`. No ux5-chrome process remained.",
+    "The index screenshot at file:// shows the static model guide table but its dynamic benchmark area remains at Loading. File URLs do not run the page's module data flow. This does not affect the published HTTP page or the requested static checks.",
+    "Chrome ran through heavy-run.sh. The layout script saved full accessibility trees and interaction facts to measure/runs/model_guide/ux-5/layout-facts.json."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+    "git diff --name-status 8fd8882a8539d051129eb106e46974a934df5223..HEAD",
+    "Read spec.md, plan.md Phase 5, test-strategy.md section 14.9, phase-acceptance-5-a8835be.json, and the exact docs diff.",
+    "PROJECT_DEV_URL environment lookup -> unset.",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh /usr/bin/google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=/tmp/ux5-chrome-a --hide-scrollbars --window-size=390,2400 --screenshot=/home/daniebo/Desktop/lending-desk-bench/measure/runs/model_guide/ux-5/review-390.png file:///home/daniebo/Desktop/lending-desk-bench/docs/review.html",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh /usr/bin/google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=/tmp/ux5-chrome-b --hide-scrollbars --window-size=1280,1600 --screenshot=/home/daniebo/Desktop/lending-desk-bench/measure/runs/model_guide/ux-5/review-1280.png file:///home/daniebo/Desktop/lending-desk-bench/docs/review.html",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh /usr/bin/google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=/tmp/ux5-chrome-c --hide-scrollbars --window-size=390,2400 --screenshot=/home/daniebo/Desktop/lending-desk-bench/measure/runs/model_guide/ux-5/index-390.png file:///home/daniebo/Desktop/lending-desk-bench/docs/index.html",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh /usr/bin/google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=/tmp/ux5-chrome-d --hide-scrollbars --window-size=1280,1600 --screenshot=/home/daniebo/Desktop/lending-desk-bench/measure/runs/model_guide/ux-5/index-1280.png file:///home/daniebo/Desktop/lending-desk-bench/docs/index.html",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh /usr/bin/google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=/tmp/ux5-chrome-e --hide-scrollbars --window-size=390,2400 --screenshot=/home/daniebo/Desktop/lending-desk-bench/measure/runs/model_guide/ux-5/real-work-390.png file:///home/daniebo/Desktop/lending-desk-bench/docs/real-work.html",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh node measure/runs/model_guide/ux-5/layout.cjs -> layout-facts.json and review-method-390.png saved; exit 1: ENOTEMPTY while removing /tmp/ux5-chrome-cdp/Default",
+    "rm -rf /tmp/ux5-chrome-a /tmp/ux5-chrome-b /tmp/ux5-chrome-c /tmp/ux5-chrome-d /tmp/ux5-chrome-e /tmp/ux5-chrome-cdp -> permission denied: shell",
+    "pgrep -af ux5-chrome -> no matching process"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/ux-browser-5-3ba285f.json",
+    "measure/runs/model_guide/ux-browser-5-3ba285f.log",
+    "measure/runs/model_guide/ux-5/layout.cjs",
+    "measure/runs/model_guide/ux-5/layout-facts.json",
+    "measure/runs/model_guide/ux-5/review-390.png",
+    "measure/runs/model_guide/ux-5/review-1280.png",
+    "measure/runs/model_guide/ux-5/index-390.png",
+    "measure/runs/model_guide/ux-5/index-1280.png",
+    "measure/runs/model_guide/ux-5/real-work-390.png",
+    "measure/runs/model_guide/ux-5/review-method-390.png"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high"
+}

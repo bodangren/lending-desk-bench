@@ -1,0 +1,11 @@
+Round 5 delta pass at 2488905: retry keeps the same refusals, one doc nit, 44 tests green.
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: 2488905cd01f717f14523d41b250346169b9c358
+result_file: measure/runs/model_guide/review-c-2488905.json
+retry_recommendation: none
+summary: Pass. The retry repeats the same GET call before the same stdout refusal lines with schema, flags, and exit codes unchanged. The env knob and stderr line are undocumented in the header (new nit P3C5-1). Plan rows 3.13b/3.13c/3.13d are true and 3.14/3.16 can run with the D5 author. Four nits carry as P3C5-2 to P3C5-5. Outside track: 9f43f35 site provisional board rows, e9071e8 daily publish. Suites: pick-diffs 26 passed, review-set 18 passed.
+END_MEASURE_AGENT_RESULT

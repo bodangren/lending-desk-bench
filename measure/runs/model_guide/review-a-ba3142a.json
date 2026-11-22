@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "audited_head": "ba3142a143f9eea87ebfa2fbc9f812f0b9127ec5",
+  "status": "pass",
+  "summary": "Verdict: pass. No blocking finding. The code closes RA-1, RA-3, RA-4, and RA-5, and the test for RA-6 is meaningful. The real preview shows plain names in the overview pick and second cells, and the old RA-3 probe now exits 2. All nine test files pass at HEAD. An independent Python oracle reproduces the new fixture values: rows 40, routes 35, share 5.0, and both rank orders. Two Major test gaps remain (RA2-1, RA2-2). The RA-2 case does not catch a wrong task minimum, and the RA-1 case does not catch a missing #variant mapping in the overview. One Nit: the plan has no record of the HEAD test counts (RA2-3). The retired E case loses no needed coverage, because RA-3 now refuses each file name that is not a dated name.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "RA2-1 [Major] review-a: harness/model-guide-tests/guide.test.ts:676-722 (RA-2 case) and harness/model-guide-tests/fixtures/page-b/allowed-routes-2026-10-20.json. Evidence: RA-2 is closed only for the allowed filter. allowedRoutes does not hold t1/prod-tiny, so real-work.json gives the 4-task red row allowed false. The allowed filter removes that row before the task minimum can matter. The executed mutant M8 (guide.ts:359 row.tasks >= 5 changed to >= 4) survives guide.test.ts with 17 passed (17). The test comment at guide.test.ts:696 says that a missing minimum picks t1/prod-tiny; this claim is false. Mutant M9 (allowed filter removed) fails 4 cases, so that half is closed. Spec D18 pick rule: a model qualifies with 5 tasks or more in a producer row. Fix scope: Red makes the 4-task red row allowed (add t1/prod-tiny to allowedRoutes and update the MANIFEST SHA-256 and size), or gives guide.ts a hand-built real-work.json with a 4-task, allowed, rate-1.0 red row above the pick. Red then confirms that M8 fails and updates each expected value that the fixture change moves.",
+    "RA2-2 [Major] review-a: harness/model-guide-tests/guide.test.ts:630-674 (RA-1 case) and harness/model-guide/preview.sh:383 and 389. Evidence: the test title says that a #variant route maps to its model key name, but the test never puts a #variant value in an overview cell. The page B pick is a model key (guide.ts:369 best.model), and real-work.ts strips #variant before guide.ts reads it. The executed mutants M3 and M3b (audit_name changed to model_name in overview_rows) survive guide.test.ts with 17 passed (17) and preview-gate.test.ts with 99 passed (99). The real data depends on this mapping: model-guide.json holds the print-book audit pick claude-code/claude-sonnet-5-5#high. The code is correct today: the real preview shows Claude Sonnet 5.5 in that cell. Spec D17 and Q-S13 map a #variant suffix to its model key at render time. Fix scope: Red adds an assertion on the print-book audit row (or a track A row) of the rendered overview with a #variant route, for the pick cell and the second cell, and confirms that M3 and M3b fail.",
+    "RA2-3 [Nit] review-a: measure/tracks/model_guide/plan.md:1187-1204. Evidence: the remediation record gives the runs at 065815b, with adversarial.test.ts at 2 failed | 45 passed (47), and says that a later Red retry retires or re-aims the E case. Commit ba3142a did that, but the plan has no record of the HEAD result. At HEAD adversarial.test.ts gives 46 passed (46). The other eight counts at HEAD equal the plan record. Fix scope: the orchestrator or Green records the ba3142a counts and the retired E case in the plan."
+  ],
+  "evidence": [
+    "HEAD check: git rev-parse HEAD returned ba3142a143f9eea87ebfa2fbc9f812f0b9127ec5. git status --short shows only the six untracked paths that existed at the start.",
+    "RA-1 closed in code: preview.sh:366-395 maps the pick and second cells with audit_name, and model-guide.json keeps the raw keys (orchestrator decision). The real preview (exit 0) shows test writing pick 'DeepSeek V4.1 Flash', second 'hy4-flash-free' (unnamed key, no plan prefix), print-book audit pick 'Claude Sonnet 5.5', second 'Kimi K3.1 Pro', and the no-pick words unchanged. Mutants M1 (raw pick), M2 (raw second), and M12 (unnamed key keeps the plan prefix) each fail 1 guide.test.ts case. The #variant half is a test gap (RA2-2).",
+    "RA-2 half closed: M9 (allowed filter removed) fails 4 of 17 guide.test.ts cases. M8 (task minimum 4) survives (RA2-1). real-work.json red rows of the fixture: t1/prod-evil 20 tasks allowed false rank 1; t1/prod-one 5 tasks allowed true rank 2; t1/prod-nine 8 tasks rate 0.25 rank 3; t1/prod-tiny 4 tasks allowed false no rank.",
+    "RA-3 closed: real-work.ts:210-218 accepts only the three exact names <prefix><D>.json and refuses a duplicate. The old probe (/tmp/ra-probe, MANIFEST-2026-11-30.txt with ra-outcomes-1999-01-01.json and zzz.json) now exits 2 with 'input-check: manifest ra-outcomes-1999-01-01.json' and writes no file. M5 (prefix match) and M6 (prefix plus any date) each fail 1 input-check.test.ts case. The RA-3 date case and prefix case fail on the old code too, because the old code gave a different check word for the missing file. The duplicate case passes on the old code, so it guards the rule but is not failing-first.",
+    "RA-4 closed: real-work.ts:321 adds every string role, and preview.sh:566 and 575 escape the Roles cell. M7 (spec-review left out) fails the RA-4 case in real-work.test.ts.",
+    "RA-5 closed: update.sh:31-34 says the input-check line goes on stderr, and real-work.ts:81 writes it on stderr.",
+    "RA-6 closed: the fixture puts t1/gate-variant#low (1 decided) before #high (3 decided), with byEffort low 12.5, high 37.5, primary 10.5. M10 (first route) fails 1 real-work.test.ts case, and M11 (primary row) fails 2 cases.",
+    "Oracle: a Python script written from spec D16 'Data source' and FR-3 read the fixture outcomes file. It gives rows 40, routes 35, unknown 2, share 5.0, producer ranked 10 in the exact order of DS9, producer few prod-five, prod-seven, prod-tiny, checker ranked 12 in the exact order of DS10, and checker few gate-eleven, gate-twelve, gate-variant. These values equal the new expected values in real-work.test.ts and preview-gate.test.ts (G2, FX2, DS16-group footer, hostile-row counts).",
+    "E case retirement: the retired case staged a hostile outcomes file name. RA-3 now refuses each name that is not <prefix><D>.json, and MANIFEST_RE and DATE_RE (real-work.ts:43-44) allow only digits and hyphens in D. So a hostile file name cannot reach the footer, and preview.sh:736-741 still escapes the name. The RA-3 prefix case covers the refusal of a misnamed line. The X case keeps its purpose: the folder path still holds spaces and a unicode character.",
+    "preview-gate G2 now compares the too-few keys as sorted lists. The spec gives no order for the Too few tasks group, so this change removes no spec rule.",
+    "New-defect check: the delta removes PRODUCER_ROLES and GATE_ROLES, and grep finds no other use. The delta changes no file outside harness/model-guide, harness/model-guide-tests, and plan.md.",
+    "Test counts at HEAD, one file at a time with --configLoader native --maxWorkers=1 --reporter=dot: input-check 23 passed (23); real-work 13 passed (13); guide 17 passed (17); update 9 passed (9); leak-check 22 passed (22); preview-gate 99 passed (99); adversarial 46 passed (46); adversarial-p2 13 passed (13); adversarial-p3 34 passed (34). Each exit code is 0.",
+    "Mutation run in the scratch copy /tmp/ra2-mut/harness (baseline guide 17, real-work 13, input-check 23, all passed): 13 mutants, 9 killed (M1, M2, M5, M6, M7, M9, M10, M11, M12), 4 survived. M3 and M3b are RA2-2, M8 is RA2-1, and M4 (no-pick guard removed) is an equivalent mutant, because the no-pick words hold no slash and no hash sign."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> ba3142a143f9eea87ebfa2fbc9f812f0b9127ec5",
+    "git diff 94af783..ba3142a -- harness/model-guide/ harness/model-guide-tests/ measure/tracks/model_guide/plan.md",
+    "cd harness && npx vitest run model-guide-tests/<file>.test.ts --configLoader native --maxWorkers=1 --reporter=dot for input-check (23), real-work (13), guide (17), update (9), leak-check (22), preview-gate (99), adversarial (46), adversarial-p2 (13), adversarial-p3 (34) -> each exit 0",
+    "bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview /tmp/ra2-pv-real -> exit 0; python3 -I read of the overview rows and model-guide.json",
+    "cd harness && npx tsx model-guide/real-work.ts --manifest /tmp/ra-probe/MANIFEST-2026-11-30.txt --out /tmp/ra2-probe-out -> exit 2, input-check: manifest ra-outcomes-1999-01-01.json, folder empty",
+    "cd harness && npx tsx model-guide/real-work.ts --manifest model-guide-tests/fixtures/page-b/MANIFEST-2026-10-20.txt --out /tmp/ra2-fx-out -> exit 0; python3 -I read of by_role.red",
+    "python3 -I oracle from spec D16 and FR-3 over fixtures/page-b/ra-outcomes-2026-10-20.json -> matches DS9, DS10, G2, and FX2 expected values",
+    "python3 -I mutation driver in /tmp/ra2-mut/harness (rsync copy of harness/, node_modules linked): 13 mutants -> 9 killed, 4 survived (M3, M3b, M8, equivalent M4)"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_tests",
+  "confidence": "high",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "audited_head_sha": "ba3142a143f9eea87ebfa2fbc9f812f0b9127ec5",
+  "prior_review": "measure/runs/model_guide/review-a-94af783.json",
+  "route": "claude-code/claude-opus-5-5[1m]#high",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "The real preview shows plain names in every overview cell, and the old RA-3 probe now exits 2 with input-check: manifest ra-outcomes-1999-01-01.json."},
+    {"axis": "test_meaning", "score": 3, "evidence": "9 of 13 mutants fail, but M8 (guide.ts:359 task minimum) and M3/M3b (preview.sh:383, 389 #variant mapping) survive tests whose comments claim to catch them."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "git diff 94af783..ba3142a touches only harness/model-guide, harness/model-guide-tests, and plan.md, and each change maps to one RA finding."},
+    {"axis": "evidence_quality", "score": 4, "evidence": "Eight of nine plan counts at plan.md:1192-1199 reproduce at HEAD, but the plan has no record of the ba3142a adversarial count of 46 passed (46)."}
+  ]
+}

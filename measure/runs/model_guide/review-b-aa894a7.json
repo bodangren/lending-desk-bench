@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "audited_head_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "reviewer_model": "opencode/glm-5.3-flash-free#high",
+  "status": "pass",
+  "summary": "Round 2 confirms every FIX item fixed and green at HEAD. The publish-gate path class holds in temp-copy probes and in the suite. One new Nit stays on uncaught statSync failures in the publish drift walk.",
+  "security_applicability": "applicable: test-strategy.md section 9, Phase 1 row assigns Review B the publish gate, no docs/ write, and no real export bytes in the repo; the diff adds that gate for a new public data path.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "B2-1 [Nit] review-b: harness/model-guide/publish.ts:92 and publish.ts:136: statSync and sha256File in the docs walk have no try/catch. A dangling symlink or an unreadable file under docs/ raises and exits 1 with a stack trace instead of a refusal line. preview.sh:107 has the same gap in sha256_file. No file is written in either case. Same family as the open C3-4 and C3-6, new location. Fix: wrap the walk and the hash read in try/catch and refuse with `publish: drift <path>`."
+  ],
+  "evidence": [
+    "HEAD equaled audited_head_sha aa894a7d18e5da6b362997c1c52f142a07168402. The audited diff 0a44cc9c417587e418899a97ac63f131a59fe2cd..aa894a7d18e5da6b362997c1c52f142a07168402 holds 11 files, all in the planned Phase 1 set. No docs/ file changed in the range.",
+    "F1 withdrawn: preview.sh:48-66 resolves EXPORT and PREVIEW with realpath -m before the cd, refuses a preview inside docs (57-61) and docs inside a preview (62-66), and refuses / (53-56). Temp-copy probes: --preview docs, a symlink to docs, ., and / each gave exit 2 with one stdout line and an unchanged docs snapshot hash 3b72efde.",
+    "F2 withdrawn: publish.ts:130-139 builds the drift list in both directions over a full walk of docs (publish.ts:86-99): a current file that the base lacks, and a base entry that is missing or changed. The suite pins it at preview-gate.test.ts:556, :564, :573, :581, :928, :936.",
+    "F3 withdrawn: input-check.test.ts:191-247 holds four PM sum-line tests (good manifest, changed sha256, wrong size, foreign file name); real-work.ts:100-105 and :169-176 read the fallback.",
+    "F4 withdrawn: plan.md:237-241 cites ef2d16f and 2131746, and git branch --all --contains lists main for each. The `Base commit: ea36fae` line at plan.md:7 is byte-identical at the baseline and outside the phase diff, so it needs no action in this phase.",
+    "F5 withdrawn: publish.ts:57-62 rejects empty, backslash, absolute, and dot or parent segments, and publish.ts:105-107 checks every row before any SHA or copy step. Eight B1 tests pass at preview-gate.test.ts:593-634.",
+    "F6 withdrawn: real-work.ts:184-185 type-checks paired_duplicates_left_out as an integer before any write, and every unescaped page interpolation is a numeric format (preview.sh:241-248). Tests B2 at preview-gate.test.ts:635 and :651 pass.",
+    "F7 withdrawn: leak-guard.test.ts:16-20 builds the hand-off and export-SHA needles in two parts and scans every file under model-guide-tests; 2 tests pass. The fixture routes are synthetic (x/m, x/m#high, x/m[1m]#high, y/m, z/m, w/m, unknown, other).",
+    "F9 and F11 to F21 and F23 verified by reruns at HEAD: preview-gate 65 passed, input-check 11 passed, real-work 19 passed, leak-guard 2 passed.",
+    "F8, F10, F22, and F24 DECLINE stand; no new evidence reopens them.",
+    "Publish copy target check: publish.ts:145-148 copies each approved row from join(preview, path) to join(ROOT, 'docs', path) under the isSafeRelPath class, so no record row names a target outside docs/. A docs-side symlink write-through is closed by the drift check: an outside target changed after the preview gives a SHA mismatch and exit 2 before the copy, and an unchanged target receives only identical bytes. A preview-time write-through through a symlink planted in docs/ or in the preview folder stays the open Minor A3-3 class.",
+    "A2 consent check: no test or tool flips a draft to published. The approval record (spec D21, the word of Daniel) is the consent gate for the publish. Page B names model routes and rates, not a named person or school. No consent gap found.",
+    "A6 registry check: tracks.md:40 lists model_guide as pending with the re-review and Red task 1.1 next. It claims no resolved security state, so no overstatement exists.",
+    "Shell safety: set -euo pipefail at preview.sh:15, every expansion quoted, no temp file, the heredoc marker is quoted, and rm -rf at preview.sh:86 removes only the leaf folder that the same run created at the validated PREVIEW_ABS after the path refusals at preview.sh:53-66.",
+    "B2-1 rests on code trace: the sandbox denied the probe writes, so the dangling-symlink probe did not run. The no-write property follows from publish.ts:101-143, where every check and the exit run before the copy loop at publish.ts:145.",
+    "Route parity: this audit ran on opencode/glm-5.3-flash-free#high. The Green fix commits 3a477f5 and d262139 came from the kimi route, so the review route differs from the fix route."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> aa894a7d18e5da6b362997c1c52f142a07168402",
+    "git diff --stat 0a44cc9c417587e418899a97ac63f131a59fe2cd..aa894a7d18e5da6b362997c1c52f142a07168402 -> 11 files, 3822 insertions",
+    "git archive HEAD into /tmp/opencode/review-b-model-guide; preview.sh --preview docs, a docs symlink, ., / -> exit 2 each; docs snapshot sha 3b72efde unchanged",
+    "preview.sh with the synthetic fixture in the temp copy -> exit 0; the preview folder holds real-work.json (source file real-work-mini.json), real-work.html, and preview-base.json",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 65 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts ... -> 11 passed",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts ... -> 19 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts ... -> 2 passed",
+    "git branch --all --contains ef2d16f and 2131746 -> main for each",
+    "grep -cE 'daniebo|Desktop|handoff' over the four product files and the fixture -> 0 hits",
+    "publish probes in the temp copy were denied by the sandbox permission layer; the drift and copy conclusions rest on the code trace and the green F16 to F23 tests"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/fixtures/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/real-work-mini.json",
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/leak-guard.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode/glm-5.3-flash-free#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "publish.ts:57-66 and preview.sh:48-66 close A1 and B1, and the drift walk closes A2, but publish.ts:92 has no try/catch for a dangling docs entry (B2-1)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "preview-gate.test.ts at HEAD passes 65 of 65, and each FIX item maps to a named test (F12 to F23, B1, B2, A2 rows at :470-651 and :709-950)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat lists the eleven planned files and nothing under docs/."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every finding cites a file:line or a command result; the B2-1 probe was denied by the sandbox and rests on code trace."
+    }
+  ]
+}

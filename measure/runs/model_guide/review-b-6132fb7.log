@@ -1,0 +1,26 @@
+review-b audit log, track model_guide, Phase 2, head 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2
+provenance: phase_base_sha c22f313603108585f8bb45996057627acfbc78ae, role_base_sha 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2, audited_head_sha 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2, HEAD confirmed current and unchanged during the audit
+security_applicability: applicable. The diff handles a private hand-off file, renders data into HTML, and adds a docs write path with a publish gate.
+step 1: read spec D17 D18 D19 D21, OD6, and the plan Phase 2 tasks. Read print-audit.ts, guide.ts, update.sh, preview.sh, guide-section.html.
+step 2: data file check. Row-by-row rebuild from the real hand-off (sha256 f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87, matches OD6 and MANIFEST.txt) gives 0 mismatches. Only extra output strings: '11 of 13', '13 of 13', the sha, the schema name. The hand-off source string does not reach the file. Pattern scan for book text, pages, file names, paths: 0 hits.
+step 3: live D17 checks. Real hand-off: exit 0, output byte-identical to the committed file (sha256 91dbaa00e0a3cbeabec1ddc47ece669aef98bcaeabc573bb1ba470da44166542 both). Tampered one-byte copy: 'input-check: sha256', exit 2, out folder not created. Code read confirms every refusal runs before any write.
+step 4: escaping and pollution. preview.sh escapes all five overview cells, base line via float, and every print-audit string (routes, results, type names, note, checklist code and text, id, severity); counts via int. Object.fromEntries and Map reads give no prototype pollution. Pinned by preview-gate T11 and B2, adversarial H tests, guide hostile-name tests.
+step 5: update.sh. Docs writes only after the approval record exists (record absent at HEAD, so no live docs write path). Explicit-path git add and git commit of exactly two files. No git push in any phase file. All expansions quoted. U1 U2 U3 pin the gate, the dirty-file isolation, and the refused-run no-change rule.
+step 6: write paths. preview.sh writes the preview folder and a mktemp staging folder only, refuses preview paths under docs and symlinks before any write. The tools write only the operator --out folder. No new write path outside the preview folder and the two approved docs paths.
+step 7: fixtures synthetic. 0 identical rows and 0 shared checklist texts versus the real OD6 hand-off. 0 identical rows versus the real 2026-11-14 export. Fixture manifests say synthetic and their sha lines match. leak-guard green.
+step 8: A2 gate holds: the draft-to-published switch requires publish-approval.md (Daniel's word, D21). A6: tracks.md holds no resolved security claim for model_guide; the status line understates progress.
+step 9: tests, single files, exit 0 each: print-audit 13/13, guide 15/15, update 3/3, preview-gate 98/98, adversarial 49/49, leak-guard 2/2. git status --short docs/ empty before and after.
+findings: no blockers. Non-blocking nits P2B1-1 (guide.ts inherited FLAGS lookup accepts bare constructor or __proto__ tokens silently; no pollution, no output impact), P2B1-2 (print-audit.ts double read of the input, TOCTOU nit), P2B1-3 (daily-publish commit 05acc8c rides in the window diff with docs/assets/data changes).
+task 2.8 code checker: this review round serves as the task 2.8 check of the diff against spec D17 to D19; the open task 2.8 is not counted as a finding.
+verdict: pass. retry_recommendation none. confidence high.
+
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2
+result_file: measure/runs/model_guide/review-b-6132fb7.json
+retry_recommendation: none
+summary: Phase 2 passes the security and data-handling audit: the committed data file is a faithful D17 derivation of the private hand-off with no book text, page, or file name; refusals, escaping, pollution guards, and the approval-gated docs write path are all pinned by green tests (180 passed); three non-blocking nits only.
+END_MEASURE_AGENT_RESULT

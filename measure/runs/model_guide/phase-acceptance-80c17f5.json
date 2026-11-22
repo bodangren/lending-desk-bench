@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "80c17f5979b632a38e2a6797ff20504b418e198c",
+  "audited_head_sha": "80c17f5979b632a38e2a6797ff20504b418e198c",
+  "reviewer_model": "claude-opus-5-5[1m]",
+  "route": "claude-code/claude-opus-5-5[1m]#medium",
+  "status": "fail",
+  "summary": "Phase 1 fails on one blocker. Acceptance 2, 3, 4, and 8 hold in the preview folder. The five test files pass at 80c17f5, and bash -n passes. Acceptance 5 is incomplete: no test asserts \"no pick yet\", and a work type that only the unknown or other route carries disappears from the page with no \"no pick yet\" line (PA1-1). All listed nonblocking items are accepted as known risks.",
+  "blocking_findings": [
+    "PA1-1 [Major] acceptance 5, last clause (spec D16 'No data' at measure/tracks/model_guide/spec.md:677 and :965-966): 'A work type with no row says \"no pick yet\"'. harness/model-guide/preview.sh:299-300 prints `<p>no pick yet</p>` only when the whole work_types map is empty. harness/model-guide/real-work.ts:409-410 skips the unknown and other rows before it collects the work-type names, so a work type that only those rows carry gets no table and no \"no pick yet\" line. Probe: the fixture with the unknown row given work_types {\"translation\": ...} (new MANIFEST.txt in a temp folder) gave exit 0 and work_types keys ['app code', 'docs and ops', 'print books', 'tooling']; 'translation' disappeared. No test in harness/model-guide-tests/ contains the text 'no pick yet' (grep), so the clause has no test, also for the empty-map branch. The plan Verify line of Phase 1 names acceptance 5. The real 2026-11-14 export has rows for all 5 work types, so the preview page shows no wrong value today. Fix route: Red adds tests in preview-gate.test.ts (or real-work.test.ts) that (a) an export with no work-type rows renders \"no pick yet\" and (b) a work type that only the unknown or other route carries renders a heading for that work type and \"no pick yet\" and no table; Green then makes real-work.ts keep the name with an empty row list and makes preview.sh render \"no pick yet\" for each work type with no row. Default reading: each work type of the export work_types keys gets a section. If the orchestrator rules that work types come only from ranked rows, Red still adds test (a), and the plan records the ruling."
+  ],
+  "nonblocking_findings": [
+    "PA1-2 [Info] accepted known risk: A6-1 / A7-1 (five refusal lines named in the publish.ts and real-work.ts headers have no exact-line assertion). The refusals and the exit codes have tests; only the line text is open.",
+    "PA1-3 [Info] accepted known risk: A6-2 / A7-2 (the ADV-11 test asserts no `publish: write <path>` line and no leftover `.publish-*.tmp`). The staged-write behavior has a test for the main case; publish is a Phase 5 gate.",
+    "PA1-4 [Info] accepted for Phase 1, carry to Phase 5: C6-1 (the approval record format in publish.ts:6-11 has no field for the words of Daniel, which spec D21 names). Acceptance 8 needs only the refusal without a record, and that holds. The Phase 5 publish task must close C6-1 before the first publish.",
+    "PA1-5 [Info] accepted known risk: C6-2 and B7-1 (the check-order line in the real-work.ts header differs from the code order). The tool fails closed; the text is a header nit.",
+    "PA1-6 [Info] accepted known risk: C5-1 and the dead Review link in the preview index.html (plan note C4-1 under task 4.8). The link is in the preview folder only, and task 4.8 writes review.html.",
+    "PA1-7 [Info] accepted known risk: B7-2 (same-user race between the docs scan and the copy) and B7-3 (a FIFO in the preview folder can stall cp). Both need a same-user write inside the user-owned folders.",
+    "PA1-8 [Info] accepted known risk: the new r7 items A7-3 (other preview pages keep class=active without aria-current; task 1.21 scopes U4 to real-work.html), C6-3 (unguarded reads throw on unreadable files), and C6-4 (the 'one line' header sentence and the multi-line drift output).",
+    "PA1-9 [Info] accepted known risk: U2 (the checker table needs 1111 px in a 1071 px wrapper at 1280 px; the scrollbar and the U3 Tab stop keep the Mark column reachable) and U5 (site-wide favicon 404, outside the Phase 1 diff).",
+    "PA1-10 [Info] accepted: the empty Print audit card is a Phase 2 item (spec D17, acceptance 6), outside the Phase 1 Verify line.",
+    "PA1-11 [Info] adversarial currency: adversarial-0acceea.json is current enough for the delta 0acceea..80c17f5. The delta holds the test-only commits f014ee8, 825182a, and b06ac41, the targeted fixes 1cc5657, f3d5843, and b7e24da, and the markup-only commit 7618b8c (html.escape of the work-type name in a quoted aria-label). adversarial.test.ts passed 49 of 49 at 80c17f5 in this audit, and Reviews A, B, and C r7 read the delta at 80c17f5. No new adversarial round is necessary."
+  ],
+  "evidence": [
+    "git rev-parse HEAD = 80c17f5979b632a38e2a6797ff20504b418e198c at the start and at the end of the audit; the working tree shows only the untracked .opencode/, harness/wt.txt, and tech-debt.md.",
+    "Review A, Review B, Review C, and UX browser results all name audited_head_sha 80c17f5979b632a38e2a6797ff20504b418e198c with status pass, so every prerequisite targets the audited HEAD; no test-only allowance was necessary for them.",
+    "preview-gate.test.ts: exit 0, Tests 88 passed (88). input-check.test.ts: exit 0, 15 passed. real-work.test.ts: exit 0, 19 passed. leak-guard.test.ts: exit 0, 2 passed. adversarial.test.ts: exit 0, 49 passed. bash -n harness/model-guide/preview.sh: exit 0.",
+    "Acceptance 2: sha256sum of ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json = dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2. .tmp/model-guide-preview/ holds real-work.html and real-work.json (2026-11-15 16:03). real-work.html contains the full SHA-256, 2026-11-14, 1,798, 2026-06-06, 2026-11-13, 50.6, and 71.7 (grep -c 1 each).",
+    "Acceptance 3: input-check.test.ts 'refuses a changed byte with exit 2 and writes no output file' (line 152) and 'A3 refuses a changed byte with the sha256 line for a PM sum-line manifest' (line 206) pass. A separate live probe with a changed byte in a temp copy was denied by the shell permission rule, so the test is the proof.",
+    "Acceptance 4: real-work.html holds the exact method note 'Route names stay as written in the record, so #high and [1m] variants are separate routes. This page merges them by model.'; 'few runs' appears 95 times; M1, M2, M3 (rank uses no rating), and M5 tests in real-work.test.ts pass.",
+    "Acceptance 5: 5 work-type tables (<h3> count 5) with pass + fail counts and few-runs marks; real-work.test.ts:283-300 pins few runs and can_pick false under 10 results. The 'no pick yet' clause is incomplete (PA1-1).",
+    "Acceptance 8: measure/tracks/model_guide/publish-approval.md does not exist; `cd harness && npx tsx model-guide/publish.ts --preview ../.tmp/model-guide-preview` printed `publish: no approval record`, exit 2; `git status --short docs/` printed nothing. The only docs/ commits in 0a44cc9..HEAD are the daily-job publishes 1a83bc9 and ddd320f (spec EV8), not this track. preview-gate drift tests (P4) pass.",
+    "A5: plan claims match the runs: task 1.19 claims preview-gate 85 passed at b7e24da, and task 1.20 adds 3 tests, which gives the 88 seen now; green-p1-d344a21.log lines 49-54 give the same five counts that this audit got.",
+    "Plan SHAs: every first-line SHA of tasks 1.1 to 1.21 and the extra SHAs f3d5843, b7e24da, f014ee8 resolve to commits whose subjects name the matching task.",
+    "No .skip, .only, or .todo in harness/model-guide-tests/; the seven ctx.skip calls fire only when the tests run as root, and this run counted no skipped test.",
+    "A3, A4, A6, A7: the phase diff touches no framework contract test, no filter, and not measure/tracks.md (git diff --name-only 0a44cc9..HEAD -- measure/tracks.md is empty), so these checks do not apply.",
+    "Phase diff scope: the daily_model_schedule and docs/assets/data changes in 0a44cc9..HEAD come from the commits 2632407, 51eab64, b48d801, 4a9cc0a, 94b5388, fbb5def, 46002d0, 1a83bc9, and ddd320f of another track and the daily job; they are not part of Phase 1 and do not count against it."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git log --format='%h %s' 0a44cc9..HEAD",
+    "git diff --stat 0a44cc9..HEAD",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bash -n harness/model-guide/preview.sh",
+    "sha256sum ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json",
+    "grep -c <value> .tmp/model-guide-preview/real-work.html (SHA-256, dates, counts, shares, 'few runs', 'no pick yet')",
+    "cd harness && npx tsx model-guide/real-work.ts --input /tmp/pa1-probe.qa9Q/real-work-outcomes-probe.json --out /tmp/pa1-probe.qa9Q/out (unknown-only work type probe)",
+    "cd harness && npx tsx model-guide/publish.ts --preview ../.tmp/model-guide-preview",
+    "git status --short docs/",
+    "grep -n 'no pick yet' harness/model-guide/* harness/model-guide-tests/*.ts"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/phase-acceptance-80c17f5.json",
+    "measure/runs/model_guide/phase-acceptance-80c17f5.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_tests",
+  "confidence": "high",
+  "ratings": [
+    {"axis": "correctness", "score": 3, "evidence": "Acceptance 2, 3, 4, and 8 hold, but the probe shows a work type on the unknown route only disappears instead of 'no pick yet' (real-work.ts:409-410, preview.sh:299-300)."},
+    {"axis": "test_meaning", "score": 3, "evidence": "173 tests pass across five files with falsifiable groups M1 to P4, but no test asserts the 'no pick yet' clause of acceptance 5."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "Every model_guide commit in 0a44cc9..HEAD touches only harness/model-guide/, harness/model-guide-tests/, or the plan, and no docs/ file."},
+    {"axis": "evidence_quality", "score": 4, "evidence": "Each task records its commit, the test counts, and a role log (for example green-p1-d344a21.log lines 49-54), and the counts match this audit's runs."}
+  ],
+  "reviewer_ratings": [
+    {"reviewer_role": "review-a", "reviewer_route": "opencode-go/mimo-v2.6-flash", "agreed": false, "score": 2, "evidence": "review-a-80c17f5.json gives pass with good carry-over evidence but does not find the untested and incomplete 'no pick yet' clause of acceptance 5 (PA1-1)."},
+    {"reviewer_role": "review-b", "reviewer_route": "claude-code/claude-sonnet-5-5#high", "agreed": false, "score": 2, "evidence": "review-b-80c17f5.json gives pass with exact line references for B7-1 to B7-3 but does not find PA1-1."},
+    {"reviewer_role": "review-c", "reviewer_route": "opencode-go/muse-spark-1.3-contributor#high", "agreed": false, "score": 2, "evidence": "review-c-80c17f5.json checks the spec text closely (C6-1) but does not find the missing 'no pick yet' behavior of spec D16 'No data' (PA1-1)."},
+    {"reviewer_role": "adversarial", "reviewer_route": "claude-code/claude-sonnet-5-5#high", "agreed": true, "score": 4, "evidence": "adversarial-0acceea.json failed with ADV-1 to ADV-13, each with a failing test; all 49 tests pass at 80c17f5 after tasks 1.18 and 1.19. ADV-14 notes the empty export but does not tie it to acceptance 5."}
+  ]
+}

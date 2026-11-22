@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "213174652648b742af7a2adffce9ccb9e4f043b9",
+  "audited_head_sha": "213174652648b742af7a2adffce9ccb9e4f043b9",
+  "reviewer_model": "kimi-code-plan-cn/kimi-for-coding#high",
+  "status": "fail",
+  "summary": "Phase 1 fails the UX/API contract gate. The D16 page data contract is clean and fully key-matched to the renderer, but the CLI gate contracts leak: preview.sh accepts a docs/ preview target (confirms A1), publish.ts misses docs files added after the preview (confirms A2) and accepts unvalidated record paths plus an empty record (confirms B1), and refusal lines go to stdout, not stderr, in two of the three tools.",
+  "contract_applicability": "applicable: test-strategy.md section 9, Phase 1 row assigns Review C the CLI exit codes of real-work.ts, preview.sh, and publish.ts, and the phase adds new user-facing pages and data files.",
+  "blocking_findings": [
+    "A1 [Blocker] review-c: harness/model-guide/preview.sh:20: `--preview` takes any folder with no containment check. preview.sh:29 then runs real-work.ts with `--out \"$PREVIEW\"`, and real-work.ts:333-334 writes real-work.json into it; preview.sh:213 writes real-work.html and preview.sh:72 writes preview-base.json into the same folder. A run with `--preview <repo>/docs` places tracked files under docs/ before any approval. Spec D21 and FR-7 forbid this write. Confirms A1.",
+    "A2 [Blocker] review-c: harness/model-guide/publish.ts:78: The drift loop iterates only the paths recorded in preview-base.json. A file added under docs/ after the preview is absent from that map, is never hashed, and publish exits 0 and copies. The next daily commit then pushes the unreviewed file. Spec D21 requires a check of each current docs/ file before any copy. Confirms A2."
+  ],
+  "nonblocking_findings": [
+    "A3 [Major] review-c: harness/model-guide-tests/input-check.test.ts:75-83: The sha256 and size refusal cases build only keyed `sha256:` and `size:` manifests. No test feeds the PM sum-line manifest form that commit ef2d16f added (readManifestSumLine at harness/model-guide/real-work.ts:79). Both cases pass if the fallback branch is removed. Confirms A3.",
+    "A4 [Minor] review-c: measure/tracks/model_guide/plan.md:234: Task 1.9 cites commit 54836d0. `git branch --all --contains 54836d0` prints nothing; no branch holds it. The reachable plan-record commit is 2131746. Confirms A4.",
+    "B1 [Major] review-c: harness/model-guide/publish.ts:66 and harness/model-guide/publish.ts:90: The approval record path is joined without validation. A record line with `../` escapes docs/ at copy time (preview read stays inside the preview folder only by accident of depth). readApproval at publish.ts:44-58 also does not verify approved_by or date, and returns an empty list when the record has no `files:` section, which reaches exit 0 while copying nothing. The D21 gate must reject non-plain relative paths and a record without the consent fields. Confirms B1.",
+    "B2 [Minor] review-c: harness/model-guide/preview.sh:191: `coverage['paired_duplicates_left_out']` comes from the raw export spread (harness/model-guide/real-work.ts:327) and lands in real-work.html without html.escape. A crafted export value injects raw HTML. The neighboring integer fields unknown_runs and other_runs are computed (real-work.ts:313-318) and safe. All other export strings pass through html.escape. Confirms B2.",
+    "B3 [Minor] review-c: harness/model-guide-tests: test-strategy.md:183-186 promises a guard case that scans the test folder for the hand-off folder name. `grep -rn 'handoff\\|Desktop' harness/model-guide-tests/*.ts` finds no guard. A fixture that carries real export bytes would fail no test. Confirms B3.",
+    "C1 [Minor] review-c: harness/model-guide/real-work.ts:35 and harness/model-guide/publish.ts:38: Refusal lines go to stdout, not stderr, in two of the three tools, while harness/model-guide/preview.sh:21 sends usage errors to stderr. The exit codes are correct everywhere, and the tests pin stdout (harness/model-guide-tests/input-check.test.ts:15, preview-gate.test.ts:52), so the choice is deliberate. It still breaks the review contract expectation of one clear stderr line per refusal, and a caller that pipes stdout loses the refusal reason. Pick one stream and align the tools, the doc comments, and the tests.",
+    "C2 [Minor] review-c: harness/model-guide/publish.ts:75: When the preview folder holds no preview-base.json, JSON.parse(readFileSync(...)) throws an uncaught ENOENT. The tool exits 1 with a stack trace instead of one clear refusal line and exit 2. A wrong --preview path deserves the same named refusal style as the other checks.",
+    "C3 [Nit] review-c: harness/model-guide/real-work.ts:222: `can_pick` is written to real-work.json but the page renderer never reads it; preview.sh expresses cannot-pick through the few_runs ordering alone (preview.sh:132 and preview.sh:152). No page field is missing; can_pick is the one dead field in the data contract. Keep it for the Phase 2 guide.ts pick rule or drop it from the page schema.",
+    "C4 [Nit] review-c: harness/model-guide/publish.ts:37-40: A missing --preview argument prints `publish: no approval record` and exits 2, so a usage error reports as a gate refusal. parseArgs in both real-work.ts:57-69 and publish.ts:32-42 also silently ignores unknown flags. A usage line with exit 2 on unknown flags would make the CLI contract exact."
+  ],
+  "evidence": [
+    "HEAD equaled audited_head_sha 213174652648b742af7a2adffce9ccb9e4f043b9. The audited diff was exactly 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9: ten files, all in the planned Phase 1 set.",
+    "Confirms A1: preview.sh:20 stores any --preview value; preview.sh:26 does mkdir -p on it; preview.sh:29 calls real-work.ts with --out \"$PREVIEW\"; real-work.ts:333-334 does mkdirSync and writeFileSync with no containment check; preview.sh:213 writes real-work.html and preview.sh:72 writes preview-base.json into the same folder. The static path is one call chain with no rejecting branch.",
+    "Confirms A2: publish.ts:76-83 builds the drift list only from Object.keys(base.docs). publish.ts:89-93 then copies the approved files. preview-gate.test.ts:246 mutates an existing docs file; no test adds a new docs file after the preview.",
+    "Confirms A3: real-work.ts:146-151 prefers keyed manifest lines and falls back to the PM sum line of commit ef2d16f. input-check.test.ts:75-83 builds only keyed manifests; no test in model-guide-tests feeds a sum-line MANIFEST.",
+    "Confirms A4: `git branch --all --contains 54836d0` printed nothing. plan.md:234 still cites it as the 1.9 commit.",
+    "Confirms B1: publish.ts:54 parses `<sha256>  <path>` and publish.ts:66/90 join the path with no plain-relative check. readApproval returns an empty list when `files:` is absent (publish.ts:52), and main then reaches the implicit exit 0 after copying nothing.",
+    "Confirms B2: preview.sh:186-194 escapes dates and shares but interpolates paired_duplicates_left_out without escape. The value is raw export data from the coverage spread at real-work.ts:327.",
+    "Confirms B3: grep for handoff and Desktop in harness/model-guide-tests/*.ts found no guard. The committed fixture uses synthetic routes (x/m, x/m#high, x/m[1m]#high, y/m, z/m, w/m, unknown, other) and input-check.test.ts:124-126 pins its SHA-256.",
+    "CLI contract of real-work.ts verified: usage text at real-work.ts:4-10, usage error exit 2 at real-work.ts:64-67, check order manifest, sha256, size, schema, run-sum at real-work.ts:141-161, each refusal one named line and exit 2 at real-work.ts:34-37, success exit 0 with the output write at real-work.ts:333-334.",
+    "CLI contract of preview.sh verified: flags and default at preview.sh:14-15, usage error exit 2 on unknown flags and a missing --export at preview.sh:21 and preview.sh:24, exit 0 on success, real-work.ts exit status propagated at preview.sh:32.",
+    "CLI contract of publish.ts verified: refusal order approval record, approved SHA-256, drift, then copy at publish.ts:62-93; each refusal prints before any write; success copies only approved files.",
+    "Wiring verified: preview.sh calls real-work.ts at preview.sh:29 and reads the template harness/model-guide/pages/real-work.html at preview.sh:38 and preview.sh:197. publish.ts reads the preview files at publish.sh equivalents publish.ts:66 and publish.ts:92. All seven template tokens have replacements at preview.sh:200-207 and the template holds all seven tokens.",
+    "Key parity verified against the real preview: every key preview.sh reads from real-work.json is written by real-work.ts (source.file, source.sha256, source.generated_on; coverage runs, first_run_date, last_run_date, share_known_route, share_with_result, paired_duplicates_left_out, unknown_runs, other_runs; row fields model, routes, runs, pass, fail, error, no_result, blocking_findings, pass_rate, blocking_rate, ratings, rater_checks, trend, few_runs, rank; work rows model, routes, runs, pass, fail, pass_rate, few_runs, rank). No missing field. The one dead field is can_pick (C3).",
+    "Page contract from data verified: each rate carries its n beside it (rate_text at preview.sh:86-89 renders `value (n=N)`); `few runs` is a word mark at preview.sh:132 and preview.sh:152; producer and checker tables are separate sections in pages/real-work.html:41-95 and separate arrays in real-work.json; the coverage block shows runs, date range, known-model share, with-result share, left-out duplicates, and unknown and other runs at preview.sh:184-195; the method note on merged route variants is present at pages/real-work.html:112-117 and pinned by preview-gate.test.ts:69-71.",
+    "The real preview .tmp/model-guide-preview/real-work.html holds SHA-256 dae855ca...64f2, generated 2026-11-14, 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, and 71.7 % (grep count on the built page). preview-1.9.txt records the exit 0 run.",
+    "Tests: real-work.test.ts asserts the real-work.json shape the page uses (header comment lines 18-30 pin every field) plus exit 0; input-check.test.ts asserts the five refusal exit codes through a subprocess; preview-gate.test.ts asserts preview.sh exit codes and the publish exit 2 cases. I ran input-check.test.ts myself: 6 passed, exit 0.",
+    "A11 defense verified: all three test files delete BENCH_TRACK in env() (real-work.test.ts:76-79, input-check.test.ts:60-63, preview-gate.test.ts:97-100).",
+    "No file under docs/ changed in the diff and `git status --short docs/` prints nothing. harness/provenance.ts, harness/tests, harness/opencode-host.sh, and harness/opencode-credential.sh have no diff.",
+    "Route parity: this audit ran on kimi-code-plan-cn/kimi-for-coding#high as dispatched; Review A used MiniMax and the audited Red and Green work used DeepSeek and Muse."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 213174652648b742af7a2adffce9ccb9e4f043b9",
+    "git diff --name-only 0a44cc9c417587e418899a97ac63f131a59fe2cd..HEAD -> the ten planned Phase 1 files",
+    "git status --short docs/ -> no output",
+    "grep -rn 'handoff\\|Desktop' harness/model-guide-tests/*.ts -> no output",
+    "grep -o of the five real values in .tmp/model-guide-preview/real-work.html -> 1,798; 50.6 %; 71.7 %; dae855ca...64f2; 2026-06-06 to 2026-11-13; 2026-11-14",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 -> exit 0, Tests 6 passed"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/fixtures/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/real-work-mini.json",
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [
+    "A3 [Major] review-c: harness/model-guide-tests/input-check.test.ts:75-83: The PM sum-line manifest form has no unit test.",
+    "B3 [Minor] review-c: harness/model-guide-tests: The promised handoff-folder guard scan is absent."
+  ],
+  "live_contract_violations": [
+    "A1 [Blocker] review-c: harness/model-guide/preview.sh:20: The preview path can target docs/ before approval.",
+    "A2 [Blocker] review-c: harness/model-guide/publish.ts:78: The drift check omits current docs files added after the preview.",
+    "B1 [Major] review-c: harness/model-guide/publish.ts:90: The approval record paths are not validated as plain relative paths inside docs/, and a record without files: exits 0.",
+    "C1 [Minor] review-c: harness/model-guide/real-work.ts:35: Refusal lines go to stdout, not stderr, in real-work.ts and publish.ts; preview.sh usage errors go to stderr."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "kimi-code-plan-cn/kimi-for-coding#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "The D16 page contract and key parity are exact, but preview.sh:20 and publish.ts:78 leave two D21 gate holes open (A1, A2) and publish.ts:90 accepts unvalidated paths (B1)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "The three targeted files prove live CLI behavior (I reran input-check.test.ts: 6 passed), but the PM manifest fallback (real-work.ts:79) and the promised leak guard have no test."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only lists exactly the ten planned Phase 1 files; docs/ and the protected harness paths have no diff."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim cites a file:line or a command result, including my own grep of the built preview page and the input-check test run."
+    }
+  ]
+}

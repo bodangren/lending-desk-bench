@@ -1,0 +1,86 @@
+Review A role log for model_guide Phase 1, task 1.8, round 2.
+
+Session: Review A · P1 · model_guide · r2
+Route: nvidia/minimaxai/minimax-m3.1-flash#thinking
+phase_base_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+audited_head_sha: 213174652648b742af7a2adffce9ccb9e4f043b9
+
+The artifact was written first with a provisional inconclusive verdict. The final verdict is fail.
+
+Provenance and scope:
+- HEAD equaled the audited SHA.
+- The audit used the exact Phase 1 range.
+- The diff contained ten planned files.
+- The diff made no change under docs/.
+- The protected provenance and runner paths had no diff.
+
+Correctness:
+- The page B rates match D16.
+- The producer rank uses blocking findings after the pass rate.
+- The checker rank does not use blocking findings.
+- No rank uses a rating.
+- The few-runs mark uses result counts.
+- The work-type tables read only runs, pass, and fail.
+- The merge removes only the variant suffix and `[1m]`.
+- The coverage block and four-week trend match D16.
+
+Blocking findings:
+- A1: `preview.sh --preview <repo>/docs` writes `real-work.json` under docs/ before approval.
+- A2: `publish.ts` does not detect a new docs file added after the preview.
+
+Nonblocking findings:
+- A3: No unit test covers the PM sum-line manifest format added by commit `ef2d16f`.
+- A4: Task 1.9 cites `54836d0`, which no branch contains. The reachable plan commit is `2131746`.
+
+Manifest branch:
+- The PM MANIFEST uses `<sha256>  <size>  <file>`.
+- The new branch reads both values.
+- A changed byte fails the SHA check.
+- A wrong manifest size fails the size check when the SHA still matches.
+- A changed file with a new size stops at the SHA check.
+- Every refusal exits 2 before the output write.
+- The Red fixture and both refusal tests use keyed manifest lines.
+- Those tests would pass if the new branch were absent or wrong.
+
+Test meaning and wiring:
+- The merge, rate, rank, small-sample, coverage, and trend tests exercise the tool.
+- The work-type test rejects extra error and blocking inputs.
+- The preview and publish tests use temp repositories.
+- The default preview path does not cover a docs target.
+- The drift test changes an existing file and does not cover an added file.
+- `preview.sh` calls `real-work.ts` and the page template.
+- `publish.ts` reads the preview files and writes approved files.
+- The build graph found no exported symbols or import callers in the scripts.
+- Shell and plan wiring provide the callers.
+
+Targeted tests:
+- `real-work.test.ts` exited 0 with 19 passing tests.
+- `input-check.test.ts` exited 0 with 6 passing tests.
+- `preview-gate.test.ts` exited 0 with 7 passing tests.
+
+Plan truth:
+- The other Phase 1 SHAs exist within the audited range.
+- Task 1.9 evidence records the real preview values in `preview-1.9.txt`.
+- The current preview shows the expected SHA, date, runs, date range, and shares.
+- O-1 remains open because the task 1.9 marker names an unreachable commit.
+
+Anti-patterns:
+- No digit-only count assertion was found.
+- No vacuous deliverable check was found.
+- The cited targeted tests exit 0, so their pass claims are true.
+- The route uses MiniMax, while Red used DeepSeek and Green used Muse.
+
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+audit_status: fail
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+audited_head: 213174652648b742af7a2adffce9ccb9e4f043b9
+result_file: measure/runs/model_guide/review-a-2131746.json
+commits: none
+tests_run: cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 (exit 0, 19 passed); cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 (exit 0, 6 passed); cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 (exit 0, 7 passed)
+retry_recommendation: retry_implementation
+handoff: Route A1 and A2 to Green. Add a test for the PM manifest form and its refusals. Correct task 1.9 to name the reachable plan commit.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-mid-red
+task: 4.16
+status: pass
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: ce3e7c0d0d38e7ff1c6231416295ef80c6775905
+red_commit_sha: a00c8b2d856fe0a004131644d15f92d6e0d76174
+resulting_head: 73e4787911e7597e83cc47259bc4dcacf84e70cd
+commits: a00c8b2d856fe0a004131644d15f92d6e0d76174 test(model_guide): Red task 4.16 live-server path; 73e4787911e7597e83cc47259bc4dcacf84e70cd measure(model_guide): record Red task 4.16
+tests: L1, L2, L3 pass, L3 probe, L4, L5, L6 unreachable, L6 transient, L7, L8, L9, L10 in review-run.test.ts; L11 in judge-run.test.ts; L4 x3 in decode-parity.test.ts; L9-G guard in quota.test.ts
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/judge-run.test.ts, harness/model-guide-tests/decode-parity.test.ts, harness/model-guide-tests/quota.test.ts, measure/tracks/model_guide/plan.md
+red_command_results: bun review-run exit 1 (100 pass, 12 fail, all new L cases); vitest judge-run exit 1 (Tests 1 failed | 50 passed (51), L11); bun decode-parity exit 1 (3 fail, 5 pass, all new L4); vitest quota exit 0 (Tests 32 passed, L9-G is a declared guard with the Go 5h boundary breakage proof)
+remaining_failures: the 16 new L cases; no unrelated case fails; no fake child or fake port remains
+handoff: Green must implement BENCH_SERVER_BASE session create, the eight-deny check, message send and read, token decode, no seed/auth, no DELETE, the call timeout, the probe retry, the quota order, and the probe state line in both runners. adversarial-p4d.test.ts still uses pilot route hy4-flash-free#high for its seed-reason cases; assign its non-pilot move to the next test-owning role. No deferred task was created.
+END_MEASURE_AGENT_RESULT

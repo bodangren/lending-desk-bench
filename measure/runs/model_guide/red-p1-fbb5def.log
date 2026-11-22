@@ -1,0 +1,121 @@
+# Role log — Red · P1 T1.14 · model_guide — review fixes, round 3
+
+Role model: `volcengine-agent-plan/glm-5.3-flash#high` (GLM family). The
+Phase 1 Green family is Kimi; Red rounds 1.10 and 1.12 were MiniMax, so the
+role-family rule holds for this round.
+
+Bases:
+- `phase_base_sha` 0a44cc9c417587e418899a97ac63f131a59fe2cd
+- `role_base_sha` fbb5def9a76b16a4e5b7f7f1029363e88d55a5f0 (verified
+  `git rev-parse HEAD` before any edit)
+
+## Scope and inputs
+
+- Read `measure/index.md`, `measure/tracks.md` (via index), the track
+  `spec.md`, `plan.md`, `test-strategy.md`, and the three round-3 review
+  files `measure/runs/model_guide/review-{a,b,c}-aa894a7.json`.
+- Task: add plan rows 1.14 (Red) and 1.15 (Green), then write failing tests
+  for the five findings A3-1/C3-1, A3-2/C3-3, A3-3, C3-2/A3-4, B2-1 in
+  `preview-gate.test.ts` and `input-check.test.ts`. No production file
+  touched, no new fixture file needed (every case mutates a temp copy of the
+  synthetic fixture with a matching manifest).
+
+## Work
+
+1. Marked task 1.14 `[~]` and added row 1.15 `[ ]` in `plan.md` before
+   editing test files. measure-guard showed the active track as
+   `domain_trust` with its own `[~]` task 1.3; it did not deny the marker
+   during this session, so no deviation was needed. (If the orchestrator
+   later reports a denial, that is a process deviation to record, not a
+   work gap.)
+2. Dirty unrelated paths `docs/assets/data/*.json`, `.opencode/`,
+   `tech-debt.md` were never staged. Commits stage explicit paths only.
+3. Wrote 11 new tests in `preview-gate.test.ts` and 4 in
+   `input-check.test.ts`. Each test name starts with its finding id.
+
+## Test findings and Red reasons
+
+- A3-1/C3-1 (preview.sh:75-93), 2 tests:
+  - "A3-1 keeps an existing preview folder byte-identical after an input
+    check refusal" — fails because the refused run overlays the existing
+    preview folder (index.html changes, docs copy stays).
+  - "A3-1 leaves no new parent folder after a refusal into a new nested
+    preview folder" — fails because the created parent
+    `.tmp/a3-1-nested-parent` stays after the leaf is removed.
+- A3-2/C3-3 (real-work.ts:178-185), 8 tests (4 per file):
+  - null `coverage.runs` → current line is `input-check: run-sum`; the
+    contract pins `input-check: schema`.
+  - number in `first_run_date`, string in `share_known_route`, missing
+    `generated_on` → tool exits 0 (input-check file) or the preview pipeline
+    exits 1 with a Python traceback; the contract pins exit 2 with
+    `input-check: schema`, no traceback, no half-built preview folder.
+- A3-3 (preview.sh:80-87), 1 test: a planted dangling symlink
+  `<preview>/real-work.json -> <repo>/docs/real-work.json` makes the second
+  preview exit 0 and create `docs/real-work.json` through the link; the
+  contract pins exit 2, no docs write, one refusal line on stdout.
+- C3-2/A3-4 (preview.sh:107-113 and :136), 1 test: a second preview over a
+  published `docs/index.html` doubles the nav links (2 instead of 1 of
+  each).
+- B2-1 (publish.ts:92, :136; preview.sh:107 sha256_file), 3 tests:
+  - dangling symlink under docs during publish → exit 1 with a statSync
+    stack; contract pins exit 2 with `publish: drift dangling.txt`, no stack.
+  - unreadable file under docs (mode 000, present at preview time) during
+    publish → exit 1 with a sha256File stack; contract pins exit 2 with
+    `publish: drift locked.txt`, no stack.
+  - dangling entry under docs during preview.sh → exit 1 with a Python
+    traceback in `sha256_file`; contract pins exit 2, no traceback.
+
+## Red runs (evidence: `measure/runs/model_guide/red-1.14.txt`)
+
+```
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  -> Tests  11 failed | 65 passed (76), exit 1
+cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  -> Tests  4 failed | 11 passed (15), exit 1
+```
+
+All 15 new tests fail on the missing behavior (not on syntax or setup).
+All 76 existing tests still pass.
+
+## Notes for the Green role
+
+- The null-`coverage.runs` case must refuse with `input-check: schema`, so
+  the type check must run before the run-sum check.
+- The A3-1 nested case expects the whole created chain to go
+  (`.tmp` absent after the refusal in a fresh repo). Both suggested fixes
+  satisfy it.
+- A3-2 in the preview-gate file pins the pipeline property too: exit 2, no
+  half-built preview folder, no traceback.
+- Vitest gotcha: do not interpolate raw child stderr into an expect
+  message when the child crashes with a stack; vitest's source-map parser
+  aborts the worker. The new tests use static status messages.
+
+## Spec gap (default applied)
+
+- A3-3 refusal line: `spec.md` names no refusal line format for a symlink
+  planted inside an existing preview folder. Default applied: assert exit 2,
+  no docs write, and exactly one non-empty refusal line on stdout, without
+  pinning its text. The Green role may reuse `preview: refused path <value>`
+  or any single-line refusal; it should document the chosen line in the
+  preview.sh header.
+
+## Commits
+
+- Test commit: 563a2639e640b75a592c6ae2c85b14ef6dff8128
+- Plan commit: see MEASURE_AGENT_RESULT below.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: fbb5def9a76b16a4e5b7f7f1029363e88d55a5f0
+head_sha: eb85c0a03b132336e6ef97ea8386358d83f8a259
+commits: 563a2639e640b75a592c6ae2c85b14ef6dff8128, 71c85ccbc9abeb858583cb2f90e9459e4ac34a96, eb85c0a03b132336e6ef97ea8386358d83f8a259
+tests_run: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 1); cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 1)
+files_changed: harness/model-guide-tests/preview-gate.test.ts, harness/model-guide-tests/input-check.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-1.14.txt, measure/runs/model_guide/red-p1-fbb5def.log
+plan_updates: Task 1.14 is [x] with commit 563a263 and the evidence line. Task 1.15 is [~].
+remaining_failures: A3-2 — A3-2 refuses a null coverage runs value with the schema line, no traceback, and no half-built preview folder; A3-2 refuses a number in coverage first_run_date with the schema line, no traceback, and no half-built preview folder; A3-2 refuses a string in coverage share_known_route with the schema line, no traceback, and no half-built preview folder; A3-2 refuses a missing generated_on with the schema line, no traceback, and no half-built preview folder; A3-2 refuses a null coverage runs value with the schema line and no output file; A3-2 refuses a number in coverage first_run_date with the schema line and no output file; A3-2 refuses a string in coverage share_known_route with the schema line and no output file; A3-2 refuses a missing generated_on with the schema line and no output file. A3-1 — A3-1 keeps an existing preview folder byte-identical after an input check refusal; A3-1 leaves no new parent folder after a refusal into a new nested preview folder. A3-3 — A3-3 refuses a symlink planted inside an existing preview folder without a docs write. C3-2 — C3-2 keeps exactly one of each nav link on a second preview over a published index. B2-1 — B2-1 refuses publish with a dangling symlink under docs and writes no file; B2-1 refuses publish with an unreadable file under docs and writes no file; B2-1 refuses preview.sh with a dangling entry under docs without a traceback.
+handoff: Green owns task 1.15 and touches no test file. A3-1/C3-1: a refused input check must leave an existing preview folder byte-identical and must remove the whole created folder chain, so no new parent folder stays. A3-2/C3-3: the coverage value type check must run before the run-sum check, so null runs refuses with "input-check: schema"; a number in first_run_date, a string in share_known_route, and a missing generated_on must give exit 2 with that line, no traceback, and no half-built preview folder. A3-3: a symlink planted inside an existing preview folder must give exit 2 and no docs write; spec.md names no refusal line, so Green picks and documents one single-line refusal on stdout. C3-2/A3-4: a second preview over a published index.html must keep exactly one of each nav link. B2-1: a dangling symlink or an unreadable file under docs must give exit 2 with "publish: drift <path>" and no stack trace in publish.ts, and exit 2 with no traceback in preview.sh. Out of scope (deferred, no tests written): C3-4, C3-5, C3-6.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,53 @@
+UX browser review, track model_guide, Phase 1.
+Head at audit time: 2a9d4213c73c2ed3fdc53ae931029f910092735d.
+Route: opencode-go/mimo-v2.6-flash. The Kimi and DeepSeek families are the Green of this phase.
+Role: audit only. No implementation file changed.
+
+Setup.
+The server ran from the repo root on port 8766.
+URL: http://127.0.0.1:8766/real-work.html.
+The css loaded from ./assets/css/site.css and returned 200.
+The browser was the Kimi WebBridge daemon v2.0.27 with extension v2.0.36, session model-guide-ux.
+Widths: 1280 px and 390 px, set with CDP Emulation.setDeviceMetricsOverride.
+
+Checklist results.
+1. Each rate shows its run count. PASS. 155 rate cells, all of them `value (n=count)` or `no rate`.
+2. The `few runs` mark is a word. PASS. 95 plain text marks, each in its own Mark cell.
+3. The producer and checker tables are separate. PASS. Two tables under two H2 headings, plus five work-type tables.
+4. No horizontal page scroll at 390 px. PASS. scrollWidth 390 equals clientWidth 390.
+5. Nav of D16. PASS. Overview, Methodology, Results, Real work (active), Review, Models, Tracks.
+6. Method note of D16. PASS. The exact merge sentence starts the Method block.
+7. Source and coverage block. PASS at 1280 px. dae855ca, 2026-11-14, 1,798, 2026-06-06 to 2026-11-13, 50.6 %, 71.7 %.
+8. No console error. PASS. The page holds no script. The error collector stayed empty.
+9. The css loads. PASS. 200 and the styles show.
+Known, not defects. The Print audit card holds only its heading. The Review link answers 404 until task 4.8.
+
+Blocking finding.
+U1. At 390 px the Source card clips the SHA-256. The paragraph scrolls 569 px in a 311 px box. The card has overflow hidden. The hash stops near `...aa16a7`. Spec D16 requires the hash on the page. Fix with `overflow-wrap: anywhere`, or drop `overflow: hidden` on that card.
+
+Minor and nit findings.
+U2. The checker table needs 1111 px in a 1071 px wrapper, so the Mark column sits outside at 1280 px and at 1600 px. A scrollbar in the card keeps it reachable.
+U3. The table scroll boxes hold no tabindex, no role, and no label. A keyboard user cannot scroll them.
+U4. The active nav link has no aria-current.
+U5. The server answers 404 for /favicon.ico on each load. The page declares no icon. This is site-wide.
+
+Evidence files.
+measure/runs/model_guide/ux-2a9d421/real-work-1280.png
+measure/runs/model_guide/ux-2a9d421/real-work-390.png
+measure/runs/model_guide/ux-2a9d421/real-work-390-viewport.png
+measure/runs/model_guide/ux-2a9d421/crop-1280-top.png
+measure/runs/model_guide/ux-2a9d421/crop-1280-tables.png
+measure/runs/model_guide/ux-2a9d421/crop-390-top.png
+measure/runs/model_guide/ux-2a9d421/crop-390-tables.png
+
+Server stopped. Port 8766 is free.
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 2a9d4213c73c2ed3fdc53ae931029f910092735d
+result_file: measure/runs/model_guide/ux-browser-2a9d421.json
+retry_recommendation: retry_implementation
+summary: The checklist passes at 1280 px. The Source card clips the SHA-256 at 390 px (U1, blocking). U2 to U5 are minor or nit. The empty Print audit card and the dead Review link stay known items.
+END_MEASURE_AGENT_RESULT

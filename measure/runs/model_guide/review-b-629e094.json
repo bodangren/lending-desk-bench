@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "phase_base_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "role_base_sha": "629e094414fe1a78f40ca59f0f71526b9b8a46d4",
+  "audited_head_sha": "629e094414fe1a78f40ca59f0f71526b9b8a46d4",
+  "reviewer_model": "Step 5 Preview",
+  "route": "nvidia/stepfun-ai/step-5-preview#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 6 of the security review, delta only. The change over 2488905 fixes my round 5 finding P3B5-1: retryWaitBase takes PICK_DIFFS_RETRY_WAIT_MS only as a finite number from 0 to 60000, and an empty, whitespace, non-number, negative, or over-60000 value gives the default 5000. The longest wait is 60000 x 24, and the retry count stays at four tries. My probes with 1e308 and -5 each exit 0 and write the candidates file after one retry. pick-diffs still holds one spawnSync and one write path, runs `gh api --method GET` only with array arguments and no shell, and opens no network call of its own. The new tests use temp folders and fakes with child timeouts. The two single-file suites pass at HEAD. The round 2 nit P3B2-1 carries open.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P3B2-1 [Nit] review-b: nothing enforces the D9 order of the key SHA-256. review-set.ts still computes key_sha256 from the key bytes at lint time, and adjudicate.ts rewrites the key files after the lint, so a lint run before the apply publishes a hash that the apply invalidates. The delta of 629e094 touches neither file. The phase plan controls the order at task 4.13: the apply runs first, then the lint runs again, then the orchestrator commits the manifest. Carries rounds 2 to 5, and round 1 P3B1-6. Non-blocking."
+  ],
+  "evidence": [
+    "Provenance: `git --no-pager rev-parse HEAD` printed 629e094414fe1a78f40ca59f0f71526b9b8a46d4 before the audit, before and after each probe, and again after the test runs; it equals audited_head_sha and role_base_sha. No commit landed after 629e094 during this audit, so I audit 629e094. The commits in the range are 2e0cfff (spec D8 and D13 text with plan text), 33e091d (Red 3.13e), 3756ca1 (record Red 3.13e), faaca63 (Green 3.13f), and 629e094 (record Green 3.13f).",
+    "Delta scope: `git --no-pager diff --stat 2488905 629e094` holds four files: pick-diffs.test.ts (33 new lines), pick-diffs.ts (24 changed lines), plan.md (35), and spec.md (25). No other harness file changed, and no docs file changed.",
+    "F11 (P3B5-1) withdrawn: retryWaitBase returns 5000 when the env value is undefined, empty, or whitespace, and returns 5000 again when the value is not finite, is below 0, or is over 60000 (pick-diffs.ts:215-224). The base therefore stays inside [0, 60000], so the longest single wait is 60000 x 24 and the retry count stays at four tries through GH_RETRY_SCALES [1, 6, 24]. The header documents the rule (pick-diffs.ts:22-34).",
+    "Probes with a temp fake gh in /tmp/opencode/p3b6 (a temp gh script that fails the commits list call once with HTTP 502 and then serves the committed fixture, with a log and a counter in temp files): with PICK_DIFFS_RETRY_WAIT_MS set to 1e308 the tool exits 0 and writes the candidates file with 6 qualified and 6 selected; with the value set to -5 the same. Each run finished inside a 60 s timeout, so no bad value hangs the tool.",
+    "No new exec, write path, or network call: pick-diffs.ts holds one spawnSync (the `gh` call at pick-diffs.ts:234, with the fixed argument array and maxBuffer, unchanged by this delta) and one write pair (mkdirSync and writeFileSync at pick-diffs.ts:439-440, the candidates file). The grep for spawnSync, execSync, fetch, and http in the tool finds no other entry point. The refuseSymlink guard at pick-diffs.ts:299 and the isPlainSetId guard at pick-diffs.ts:88-92 are unchanged.",
+    "The gh boundary holds: every try of the retry loop runs the same array-argument spawn with no shell and the method GET (pick-diffs.ts:202-205 and 234). A non-transient failure still refuses at once and a spawn error refuses at once.",
+    "The new tests use temp folders and no network: the P3T3 cases build a temp fake gh folder, put it first on PATH, copy the child environment with the bad PICK_DIFFS_RETRY_WAIT_MS, and bound each child with a 15 s timeout and each test with a 20 s limit (pick-diffs.test.ts:398-440). They assert exit 0 and a written candidates file for the values abc, Infinity, and 1e308.",
+    "Tests at HEAD, each a single file with `cd harness && timeout 300 npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`, all exit 0: pick-diffs 29/29 (26 plus the three new P3T3 cases) and leak-check 13/13.",
+    "A6: plan.md and spec.md change text only, and measure/tracks.md is not in the delta, so no new resolved-security claim appears. A2 not applicable and unchanged: the delta adds no publish, preview, or draft-status code.",
+    "P3B2-1 carries open: 629e094 changes neither the key_sha256 computation in review-set.ts nor the key write-back in adjudicate.ts."
+  ],
+  "commands": [
+    "git --no-pager rev-parse HEAD (629e094414fe1a78f40ca59f0f71526b9b8a46d4, before the audit, before and after each probe, and after the runs)",
+    "git --no-pager log --oneline 2488905..629e094",
+    "git --no-pager diff --stat 2488905 629e094",
+    "git --no-pager diff 2488905 629e094 -- harness/model-guide/pick-diffs.ts harness/model-guide-tests/pick-diffs.test.ts",
+    "grep -n spawnSync|execSync|writeFileSync|mkdirSync|fetch(|http harness/model-guide/pick-diffs.ts (one spawn, one write pair)",
+    "node -e build of a temp fake gh in /tmp/opencode/p3b6 (one transient list failure, then the committed fixture)",
+    "cd harness && timeout 60 env PATH=/tmp/opencode/p3b6/bin:$PATH FAKE_GH_LOG=... FAKE_COUNT=... PICK_DIFFS_RETRY_WAIT_MS=1e308 npx tsx model-guide/pick-diffs.ts --repo bodangren/advantage-forge --set mg-2026-11a --private /tmp/opencode/p3b6/priv-1e308 (exit 0, 6 qualified, 6 selected)",
+    "cd harness && timeout 60 env PATH=/tmp/opencode/p3b6/bin:$PATH FAKE_GH_LOG=... FAKE_COUNT=... PICK_DIFFS_RETRY_WAIT_MS=-5 npx tsx model-guide/pick-diffs.ts --repo bodangren/advantage-forge --set mg-2026-11a --private /tmp/opencode/p3b6/priv--5 (exit 0, 6 qualified, 6 selected)",
+    "cd harness && timeout 300 npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot (29 passed)",
+    "cd harness && timeout 300 npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (13 passed)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-629e094.json",
+    "measure/runs/model_guide/review-b-629e094.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "retryWaitBase clamps PICK_DIFFS_RETRY_WAIT_MS to [0, 60000] with a 5000 default (pick-diffs.ts:215-224); my probes with 1e308 and -5 each exit 0 after one retry and write the candidates file."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "P3T3 pins the values abc, Infinity, and 1e308 with a 15 s child limit and a 20 s test limit, and pick-diffs passes 29/29 at HEAD."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 2488905 629e094 holds exactly pick-diffs.ts, pick-diffs.test.ts, plan.md, and spec.md; no fixture and no docs path changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each claim has a file:line from the delta diff, a single-file test count, or the bounded probe result with the candidates file contents."
+    }
+  ]
+}

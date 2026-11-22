@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "status": "pass",
+  "summary": "Pass at HEAD f26965d. The range ff4e009..f26965d (Red c294988 + 6f66285, Green 6e50a2b + f26965d) fixes each routed finding with a real failing-first test. Review B N16 is fixed: error_line_of reads the error source and scans it with scan_output, and a hit gives the fixed text in the probe line, the probe record, the pass record errors, the judge run record, and the judge start-test line; cases Y1, Y2, Y3, and JY1 fail at the Red base for the exact defect (I re-ran the Red base in an extracted copy) and pass at HEAD. Review B N17 and Review C N3 are fixed: read_tokens counts only a non-negative safe integer, any other value adds 0 and clears the flag, a step_finish event with no tokens object clears the flag, and a call with no token event keeps the flag false, so spec D13 holds; Y4 to Y7 and Y10 fail at the Red base for that reason. Review B N18 is fixed: the sums of several events of one call and the non-number flag now have pins (Y5, Y8, Y9), and a hostile number keeps the record valid JSON (Y10). Review B N20 is fixed: error_event_text decodes the stdout error event of the installed bundle, and is_region_error and error_line_of use it, so the region-blocked state is right for a stderr error (Y2, Y3) and for a stdout error event (Y11, Y13); Y13 failed at the Red base as `unreachable the model call failed`. I read the installed @opencode/cli bundle only: the writer u=(r,t,n)=>{if(e.format!==\"json\")return!1;return process.stdout.write(JSON.stringify({type:r,timestamp:t,sessionID:e.sessionID,...n})+H),!0} and the error call sites u(\"error\",n,{error:t.data.error}), u(\"error\",n,{error:o}), u(\"error\",n,{error:t.error}), and u(\"error\",Date.now(),{error:m}) match the pinned envelope, and the error objects hold a message string. The old step-finish shape and the real step_finish shape still sum (T1, T2, W1 to W3, Y9 pass at HEAD). All ten gate files pass at HEAD one at a time, and the plan row claims match my runs exactly. Two new nonblocking findings; no blocking finding.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "NA1 [Nit] The judge --start-test redaction line has no test pin. The plan row 4.13z claims the judge --start-test line carries the fixed text, and judge-run.sh:700-703 now uses error_line_of, but the only start-test failure case, J13b (judge-run.test.ts:2069), pins a clean transport error line. No committed test feeds a key through a failed --start-test call, so a regression of that one call site would pass the gates. The shared function is covered by JY1.",
+    "NA2 [Nit] error_line_of prints the raw error line when scan_output exits 2. scan_output (review-run.sh:795-803) exits 2 when the credential helper fails. error_line_of (:858-863) treats only exit 0 as a hit, so a scan failure prints the unscanned error line to stdout and to the records. The reachable path refuses on exit 2, and the helper failure breaks every call of the night, so the exposure needs two failures at once. Use the fixed text or a refusal on exit 2.",
+    "NA3 [Nit, carried from Review B ff4e009 N15, observed again] The orphan scans of the runner tests are not scoped to the own temp folder. Three of my gate runs saw foreign quota servers under /tmp/mg-review-fake-* and /tmp/mg-judge-fake-* from a concurrent session; each died within seconds and none of mine survived the checks. A loaded night can still fail a clean gate run."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned f26965dc13381a14a5c27db16c3e4a2ce67e5a33 at the start and at the end. That equals the audited head of the brief. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45. The audited range is ff4e009..f26965d: Red c294988 (tests, the fake, plan row) and 6f66285 (plan record), Green 6e50a2b (review-run.sh and judge-run.sh only) and f26965d (plan.md only). 6 files, +766/-30.",
+    "Scope: `git show --stat` on each commit confirms the Green commit 6e50a2b touches only harness/model-guide/review-run.sh and harness/model-guide/judge-run.sh (182 insertions, 29 deletions), and f26965d touches only measure/tracks/model_guide/plan.md. No test file changed in Green, as the plan claims. The Red commit c294988 holds the two test files and the fake.",
+    "Failing-first, verified by my own run at the Red base: I extracted 6f66285 with `git archive` into /tmp/opencode/review-a-f26965d/red-6f66285 (with harness/node_modules linked, since the archive holds no packages) and ran `bun test harness/model-guide-tests/review-run.test.ts`. Result: 70 pass, 11 fail. The failures are exactly Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y10, Y11, Y12, Y13, which matches the plan claim `70 pass, 11 fail (Y1 to Y7 and Y10 to Y13)`. Targeted re-runs show the pinned reasons: Y4 failed with `a hostile number kept the flag true` (expected false, received true); Y1 failed because the probe line held the key `sk-test-credential-value-0123456789`; Y13 failed with the wrong line `unreachable the model call failed`. `npx vitest run model-guide-tests/judge-run.test.ts` at the Red base gave 1 failed | 39 passed (40), the JY1 case, which matches the plan claim.",
+    "Gates at HEAD, one file at a time, fakes only: `bun test harness/model-guide-tests/review-run.test.ts` gave 81 pass, 0 fail, 625 expect() calls, 150.56 s. `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot` gave judge-run 40 passed, decode-parity 3 passed, adjudicate 23 passed, review-score 27 passed, quota 30 passed, credential-provider 22 passed, adversarial-p4-runner 14 passed, adversarial-p4b 12 passed, seed-messages 17 passed. All match the plan row 4.13z and the green-4.13z.log record. The old-shape cases T1 and T2, the real-shape cases W1 to W3, and the sum case Y9 are inside the passing set, so no earlier behavior regressed.",
+    "Stdout error event shape, read from the installed bundle only (/home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe, read with grep -a, never run): the writer `u=(r,t,n)=>{if(e.format!==\"json\")return!1;return process.stdout.write(JSON.stringify({type:r,timestamp:t,sessionID:e.sessionID,...n})+H),!0}` and the error call sites `u(\"error\",n,{error:t.data.error}))A(t.data.error.message)`, `u(\"error\",n,{error:o}))A(o.message)`, `u(\"error\",n,{error:t.error}))A(t.error.message)`, and `u(\"error\",Date.now(),{error:m}))A(m.message)` match the envelope the test comment pins. The error payload is an object with a message string, for example `m=U??{type:\"unknown\",message:\"Prompt was not promoted\"}`, so error_event_text reads err.message first, which is the right key. The fake prints the same envelope.",
+    "Spec D13 tokens (spec.md:679-684): read_tokens now takes a field only when `typeof value === \"number\" && Number.isSafeInteger(value) && value >= 0` (review-run.sh:156, judge-run.sh:114, identical blocks). Any other value adds 0 and clears complete. A step_finish or step-finish event with no tokens object sets complete 0 (Review C N3). The flag is `seen > 0 && complete === 1`, so a call with no token event keeps tokens_complete false, as the spec line says. Y4 (1e20 and 2^53+1 counted 0, flag false), Y5 (the -5/10 and 0.5 sums: 10 and 0, flag false), Y6 (a single -5 keeps output 20, reasoning 5, cache 1 and 2, total 28, flag false), Y7 (a tokens-less event keeps the valid event sums 142, flag false), and Y10 (2^60 counted 0, record valid JSON, flag false) pin each rule and all pass at HEAD.",
+    "Region state (spec D14, D22): is_region_error takes a second out_path argument and reads the stdout error event first, then greps the error file (review-run.sh:843-855). The probe loop and the pass loop both pass the staging path and read error_line_of before the rm. Y2 (a region key on stderr, probe, one call, region-blocked, fixed text) and Y3 (a region key on stderr, pass record state region-blocked, fixed text) pass at HEAD. Y11 (a region error event on stdout, pass state region-blocked) and Y13 (the same on a probe, exit 3, one line `<route> region-blocked ...`) pass at HEAD; Y13 failed at the Red base, which is the N20 defect.",
+    "Key scan of the error source (Review B N16): error_line_of scans the stdout file or the error file with scan_output before it prints the line, and a hit gives the fixed text `the error output held a credential value` (review-run.sh:812-867, judge-run.sh:584-649). Y1, Y2, Y3, Y12, and JY1 assert that no runner stdout, no record, no log line, and no repository or private file holds the test key, and all pass at HEAD. Y1 and JY1 failed at the Red base because the raw stderr line reached stdout. The reachable path still deletes the output on a hit.",
+    "Plan claim check (A5): the plan row 4.13z names review-run 81 pass 0 fail, judge-run 40 passed, decode-parity 3, adversarial-p4-runner 14, and adversarial-p4b 12 at HEAD, and 70 pass 11 fail with judge 39 passed 1 failed before the fix. My runs at HEAD and at the Red base match every number. The green-4.13z.log and red-4.13y.log role records name the same counts and the same failing cases.",
+    "Process hygiene: after each of my runs, `pgrep -af 'fake-opencod[e]|quota-serve[r]'` showed nothing of mine. My own fixture quota servers exited within seconds of each run. Foreign quota servers of a concurrent session appeared under /tmp/mg-review-fake-* and /tmp/mg-judge-fake-* during three gates and also exited; I sent no signal to any process that I did not start, I started no server outside a test file, and I ran no opencode, no openchamber, and no heavy-run.sh.",
+    "Earlier findings of the ff4e009 ledger that this range does not touch stay open and unchanged: Review B N5, N9, N10, N11, N12, N13, and N21 name guard code with no diff in ff4e009..f26965d. N15 is carried above as NA3 because I observed it again.",
+    "Scratch files sit under /tmp/opencode/review-a-f26965d (the extracted Red base, about 90 MB), outside the repository. The repository changed only by the two result files in measure/runs/model_guide/, a folder that git ignores."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> f26965dc13381a14a5c27db16c3e4a2ce67e5a33 (start and end)",
+    "git diff --stat ff4e009..f26965d -> 6 files, +766/-30; git show --stat 6e50a2b -> review-run.sh and judge-run.sh only; git show --stat f26965d -> plan.md only",
+    "bun test harness/model-guide-tests/review-run.test.ts (at HEAD) -> 81 pass, 0 fail, 625 expect() calls",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 40 passed (40)",
+    "cd harness && npx vitest run model-guide-tests/<decode-parity|adjudicate|review-score|quota|credential-provider|adversarial-p4-runner|adversarial-p4b|seed-messages>.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 3, 23, 27, 30, 22, 14, 12, 17 passed",
+    "git archive 6f66285 harness into /tmp/opencode/review-a-f26965d/red-6f66285, node_modules linked; bun test harness/model-guide-tests/review-run.test.ts -> 70 pass, 11 fail (Y1 Y2 Y3 Y4 Y5 Y6 Y7 Y10 Y11 Y12 Y13)",
+    "bun test review-run.test.ts -t 'Y4 ' at the Red base -> `a hostile number kept the flag true`; -t 'Y1 ' -> the probe line held the key; -t 'Y13 ' -> `unreachable the model call failed`",
+    "npx vitest run model-guide-tests/judge-run.test.ts at the Red base -> 1 failed (JY1) | 39 passed (40)",
+    "grep -a on the installed @opencode/cli bundle opencode.exe -> the json writer u=(r,t,n)=>{...JSON.stringify({type:r,timestamp:t,sessionID:e.sessionID,...n})+H} and the u(\"error\",...) call sites with a message string",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' after every run -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide-tests/fixtures/fakes/fake-opencode",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45",
+  "audited_head": "f26965dc13381a14a5c27db16c3e4a2ce67e5a33",
+  "audited_head_sha": "f26965dc13381a14a5c27db16c3e4a2ce67e5a33",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "Each routed finding works per spec: the key scan covers the error source (review-run.sh:858-867), read_tokens counts only a non-negative safe integer (review-run.sh:156), and the region state reads the stdout error event for both the probe and the pass (review-run.sh:843-855, cases Y2, Y3, Y11, Y13 at HEAD)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Y1 to Y7, Y10 to Y13, and JY1 fail at the Red base with the exact defects (my run: 70 pass, 11 fail) and pass at HEAD, but the judge --start-test redaction line has no pin (NA1, judge-run.test.ts:2069 pins a clean line only)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat: the Green commit 6e50a2b touches only the two runner scripts and f26965d only plan.md; the Red commit holds the tests and the fake."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim has a command result: my Red-base run matches the plan counts exactly, the ten gate runs match the plan row, and the bundle envelope was read with grep -a from the installed opencode.exe."
+    }
+  ]
+}

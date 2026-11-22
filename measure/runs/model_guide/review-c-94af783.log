@@ -1,0 +1,21 @@
+review-c audit log, track model_guide, Phase 4: The runner and the first track A results (by Sun 2026-11-22), audited HEAD 94af783e15f6f73590a2f59ba1a27cee8159bf84.
+Provisional verdict written first: inconclusive. Refinement checks follow below.
+Step 1. git rev-parse HEAD = 94af783e15f6f73590a2f59ba1a27cee8159bf84, equals audited_head_sha. phase_base_sha 330d20fbc5611a7f0a631f699e85e7b0e55db485 from the brief diff range. No docs/ publish commit landed during the audit. The role ran no shell redirection.
+Step 2. contract_applicability = applicable. The range 330d20f..94af783 holds Red 4.1e test commits and Green 4.1f tool, page, and data commits for the page B data source. It touches real-work.ts, preview.sh, pages/real-work.html, guide.ts, update.sh, model-names.json, the three dated data files, the MANIFEST, and tests.
+Step 3. CLI contract. real-work.ts usage reads usage: real-work.ts --manifest <file> --out <folder> on stderr with exit 2. Legacy flags --input and --export exit 2 with the same usage line. preview.sh usage reads usage: preview.sh --manifest <file> [--preview <folder>] with exit 2. update.sh usage reads usage: update.sh <path of MANIFEST-<date>.txt> with exit 2. The refusal form input-check: <check> <file name> on stderr with empty stdout is pinned by input-check.test.ts, 20 passed.
+Step 4. guide.ts read contract. Live preview with the real MANIFEST exits 0 and writes model-guide.json with schema model-guide-overview/1. guide.ts reads schema model-guide-real-work/2 with producer, checker, and by_role tables and no work-type split. guide.test.ts 15 passed.
+Step 5. D18 overview rows. Six rows in spec order. Code review shows no pick yet with track A no-rank evidence per ruling Q2. Test writing picks opencode-go/deepseek-v4.1-flash with evidence page B producer: accept 60 %, 13 tasks and base line 98.7. Print-book audit picks the 13 of 13 route with evidence print-audit: 13 of 13 (n=13). App code carries base line 95.2 with no pick. Evidence dates read 2026-11-17. stale is false.
+Step 6. Page contract in /tmp/rc-preview/real-work.html. Top block holds 10 pick items in spec order with plain names. Producer and checker default tables carry the spec heads. data-rank sits on 24 rows. Too few tasks and More columns details render. Marks not-allowed and not-for-verdicts render. Same plain names disambiguate through title routes and More columns. Footer holds three file names with SHA-256 values equal to the MANIFEST, read and export dates 2026-11-17, and coverage 217 rows, 53 routes, 6 unknown rows, 2.8 %. Print-audit block shows plain names with no raw route key. work-type hook is absent. DS19 CSS rule passes inside preview-gate.test.ts, 99 passed.
+Step 7. Test runs at HEAD, each single file with --maxWorkers=1 --reporter=dot: input-check 20 passed, real-work 12 passed, guide 15 passed, preview-gate 99 passed, update 9 passed, print-audit 15 passed. git status --short docs/ prints nothing.
+Step 8. Review A items confirmed only. RA-1: overview pick cells show raw route keys in index.html. RA-5: update.sh header comment says stdout while real-work.ts writes stderr. Both stay with Review A and are not repeated here.
+Step 9. Refinement: re-ran git rev-parse HEAD after all checks, still 94af783e15f6f73590a2f59ba1a27cee8159bf84. Validated the result JSON: status pass, 0 blocking, 0 nonblocking, retry none. Verdict stands.
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+status: pass
+audited_head_sha: 94af783e15f6f73590a2f59ba1a27cee8159bf84
+result_file: measure/runs/model_guide/review-c-94af783.json
+retry_recommendation: none
+summary: Review C passes at 94af783. The CLI forms, the refusal lines, the guide read path of schema model-guide-real-work/2, the six D18 rows with sources and evidence, and the page B top block, tables, marks, footer, and hooks all match the contract. Live preview exits 0. Six suites pass with 170 tests. docs/ stays clean. RA-1 and RA-5 stay confirmed with Review A.
+END_MEASURE_AGENT_RESULT

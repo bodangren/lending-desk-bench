@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "audited_head_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 3 closes C2-1 to C2-8 for the tested cases: preview.sh resolves paths before the cd, copies docs before real-work.ts, and keeps the usage and refusal contract; no blocker remains. Six minor or nit items stay open and do not block the phase.",
+  "contract_applicability": "applicable: test-strategy.md section 9, Phase 1 row assigns Review C the CLI exit codes of real-work.ts, preview.sh, and publish.ts, and the phase adds new data files and a new page.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "C3-1 [Minor] review-c: harness/model-guide/preview.sh:75-89: The docs copy now runs before the input check. When the preview folder already exists (the default folder in the second weekly run) and real-work.ts refuses, the script keeps the folder (preview.sh:85) and the docs overlay stays in it: docs/index.html overwrites the preview index.html with its nav links, and the old preview-base.json stays. Header lines 13-14 promise only `no new preview folder`, and test F19 (preview-gate.test.ts:874) covers a new folder only. Publish stays safe (a SHA-256 or drift refusal follows), but a refused run changes an old preview. Fix: run real-work.ts into a temp folder first, then copy docs and move the files; add a test with an existing preview folder and a refused input. By code trace; my temp-copy probe was blocked by the sandbox.",
+    "C3-2 [Minor] review-c: harness/model-guide/preview.sh:136: The nav insert has no check for links that exist. After the first publish, docs/index.html holds the `Real work` and `Review` links (test p5 publishes index.html). The next preview then inserts both links a second time, and an approved index.html would publish a doubled nav. No test covers a second run on a published index. Fix: skip the insert when `./real-work.html` is in the file. By code trace.",
+    "C3-3 [Nit] review-c: harness/model-guide/real-work.ts:178-185: C2-6 is closed for a missing key (REQUIRED_COVERAGE_KEYS, real-work.ts:36-43, tests F17) but only paired_duplicates_left_out has a type check. A string in share_known_route, a number in first_run_date, or a missing source.generated_on (real-work.ts:355) passes the schema check and then raises a Python traceback in preview.sh:233-247 with exit 1. The preview then holds real-work.json and no real-work.html. The export is SHA-256 pinned, so the risk is low. Check the types, or state the limit in the header.",
+    "C3-4 [Nit] review-c: harness/model-guide/real-work.ts:167,178: An input file that is missing (with a MANIFEST.txt present), unreadable, not JSON, or the JSON value `null` raises an uncaught exception: exit 1 with a stack trace and no `input-check:` line. FR-1 names four checks (SHA-256, size, schema, run sum), so this is outside its list, but the CLI contract elsewhere is exit 0 or 2. Map a parse failure and a missing input file to `input-check: schema` and `input-check: manifest`. By code trace; probe blocked.",
+    "C3-5 [Nit] review-c: harness/model-guide/publish.ts:105-116 versus publish.ts:16-19: The header and the test header place the folder check in step 4, before every SHA-256 check. The code checks each row in turn (folder, then SHA-256). With row 1 a wrong SHA-256 and row 2 a folder, the code prints `publish: sha256 <row 1>` where the header says `publish: bad path <row 2>`. The test header (preview-gate.test.ts:62-72) also omits the folder rule and the bad line step. Both exit 2 with no write, so no user harm. Split the loops or fix the header.",
+    "C3-6 [Nit] review-c: harness/model-guide/publish.ts:120-126: A preview-base.json that holds the JSON value `null` parses without error, and `base.docs` at publish.ts:126 raises TypeError: exit 1 with a stack trace, no write. F23 covers invalid JSON only (preview-gate.test.ts:944). Add `base === null || typeof base !== \"object\"` to the `publish: bad preview base` path. By code trace."
+  ],
+  "evidence": [
+    "HEAD equaled audited_head_sha aa894a7d18e5da6b362997c1c52f142a07168402 (git rev-parse HEAD). The remediation range b7426e7..aa894a7 changed five files: preview-gate.test.ts, preview.sh, publish.ts, real-work.ts, plan.md (git diff --stat). The page template pages/real-work.html and docs/ have no change in the range.",
+    "C2-1 fixed: preview.sh:48-49 resolves EXPORT and PREVIEW with realpath -m before the guard (preview.sh:53-66) and before `cd \"$ROOT/harness\"` at preview.sh:78; real-work.ts gets absolute paths at preview.sh:80. Tests F12 (preview-gate.test.ts:709-751) run cwd=repo root with `../docs` (writes to the parent folder, docs snapshot equal), cwd=harness with `docs`, a repo-root `.tmp/rel-preview`, and a refusal from cwd=model-guide with `../../docs`.",
+    "C2-2 fixed: the docs copy runs at preview.sh:76 and real-work.ts runs at preview.sh:80, so the fresh real-work.json wins; the python step rewrites real-work.html. Test F13 (preview-gate.test.ts:794-820) plants stale published files and checks the fresh SHA-256 in the page. C2-3 fixed: F14 tests (preview-gate.test.ts:771-792) run a relative --export from the repo root and from an outside folder.",
+    "C2-4 fixed: preview.sh:31, :34, :39, :43 call usage (stderr, exit 2) for a last-argument flag, a missing export, and an empty value; F15 tests (preview-gate.test.ts:822-872) pin stdout empty, the exact stderr line, and an unchanged tree. C2-5 fixed: publish.ts:77-78 refuses a row that fails `^[0-9a-f]{64}\\s+(.*)$` with `publish: bad line <text>`; F16 tests cover one field, 63 characters, and a non-hex value. C2-7 fixed: publish.ts:110-112 and test F18 (preview-gate.test.ts:904). C2-8 fixed: the header of preview.sh:2-14 names the refusal; see C3-1 for the existing-folder gap.",
+    "C2-6 partly fixed: real-work.ts:36-43 and :181-182 require all six coverage keys that preview.sh reads and F17 pins them (it.each at preview-gate.test.ts:911). Type checks stay open for five keys and generated_on (C3-3). F20 fixed: preview.sh:53-56 refuses `/`; test F20 (preview-gate.test.ts:753) uses a fake npx that exits 97 to prove no tool starts. F21 fixed: preview-1.13.txt records exit 0 and the pinned values. F23 fixed: publish.ts:127-139 uses own-property checks and the try/catch at publish.ts:121-125; tests F23 at preview-gate.test.ts:928-950 (the JSON `null` case is C3-6).",
+    "Pinned text equals code for the CLI surface: PREVIEW_USAGE (preview-gate.test.ts:105) equals preview.sh:24; `preview: refused path <value>` (test header :43-44) equals preview.sh:54, :59, :64; PUBLISH_USAGE (preview-gate.test.ts:104) equals publish.ts:37; the lines `publish: no approval record`, `no files`, `bad line`, `bad path`, `sha256`, `no preview base`, `bad preview base`, and `drift` equal publish.ts:70, :73 and :81, :78, :106 and :111, :114, :119, :124, :141; `input-check: schema` equals real-work.ts:46 with the refusals at :164-191. The real-work.ts usage line (real-work.ts:80, :85) equals input-check.test.ts:53. The one mismatch is the order text of C3-5.",
+    "Streams and exit codes after the fix: refusals print one line on stdout with exit 2 in all three tools (preview.sh:54, real-work.ts:46, publish.ts:40); usage errors print one line on stderr, keep stdout empty, and exit 2 (preview.sh:24, real-work.ts:80 and :85, publish.ts:50). No refusal writes under docs/ or to a new file: preview.sh refuses a path before mkdir (preview.sh:75), real-work.ts refuses before mkdirSync (real-work.ts:363), publish.ts runs every check before the copy loop (publish.ts:145). The exception is an existing preview folder (C3-1).",
+    "Caller wiring: preview.sh passes `--input <abs>` and `--out <abs>` to real-work.ts (preview.sh:80); real-work.ts parseArgs (real-work.ts:68-89) accepts both and exits 2 on any other flag. The exit status of real-work.ts passes through at preview.sh:83-89. The python step receives MODEL_GUIDE_ROOT, MODEL_GUIDE_PREVIEW, and MODEL_GUIDE_TEMPLATE (preview.sh:91-93) and reads the same names. publish.ts takes `--preview <folder>` only and preview.sh never calls it.",
+    "Page data contract: every key preview.sh reads (source.file, source.sha256, source.generated_on; coverage runs, first_run_date, last_run_date, share_known_route, share_with_result, paired_duplicates_left_out, unknown_runs, other_runs; producer and checker rows: rank, model, routes, runs, pass, fail, error, no_result, blocking_findings, pass_rate, blocking_rate, ratings, rater_checks, trend, few_runs; work_types rows: rank, model, routes, runs, pass, fail, pass_rate, few_runs) is written by real-work.ts:233-255, :312-322, :350-361. unknown_runs and other_runs come from real-work.ts:343-357. The six PRODUCER, CHECKER, SOURCE, COVERAGE, WORK-TYPES and PRINT-AUDIT tokens are replaced at preview.sh:255-266 and the template is unchanged in the range.",
+    "Approval record: the checks need only the files section. No check of approved_by or date is needed (spec.md:780-783, :858); I report no finding for the consent fields.",
+    "Dispositions agreed: F22 and F24 DECLINE need no Review C action. Round 2 DECLINE items F8 and F10 stay withdrawn.",
+    "Probe limits: the sandbox allowed `git diff --stat`, the vitest runs, and a git archive of the repo into /tmp, but it denied the commands that run preview.sh and the commands that build a manifest for a bad-JSON input. One probe ran: real-work.ts with an input path that has no MANIFEST.txt printed `input-check: manifest`, exit 2. C3-1 to C3-6 therefore rest on code trace. I did not run preview.sh or publish.ts against the real docs/.",
+    "Route parity: this audit ran on claude-code/claude-sonnet-5-5#high. Kimi wrote the Green fix of the round, so the review route differs from the fix route."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> aa894a7d18e5da6b362997c1c52f142a07168402",
+    "git diff --stat b7426e7..aa894a7 -> five files, 442 insertions, 37 deletions",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 65 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 11 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 2 passed",
+    "git archive HEAD harness/model-guide harness/model-guide-tests/fixtures docs into /tmp/rvc3.5E91E1; cd harness && npx tsx model-guide/real-work.ts --input /tmp/rvc3.5E91E1/fx/nofile.json --out /tmp/rvc3.5E91E1/o1 -> `input-check: manifest`, exit 2"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "medium",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "Path resolution before the cd (preview.sh:48-49, :78), the copy order (preview.sh:76-80), and the publish refusals hold (preview-gate.test.ts 65 passed), with edge gaps in C3-1 to C3-6."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "F12 to F23 tests pin exact stdout, stderr, exit code, and tree snapshots (preview-gate.test.ts:303-329, :709-950), but no test covers an existing preview folder after a refusal or a second run on a published index."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat b7426e7..aa894a7 lists five files, all in the planned remediation set, and docs/ and the page template have no change."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every claim cites a file:line or a command result; C3-1 to C3-6 rest on code trace because the sandbox blocked the preview.sh probe."
+    }
+  ]
+}

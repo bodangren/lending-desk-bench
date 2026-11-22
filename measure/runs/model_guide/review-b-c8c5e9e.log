@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+track: model_guide
+audited_head: c8c5e9ecca070beeb54fec27f79542d24ccecfc1
+blocking_findings: 0
+nonblocking_findings: 0 (RB-1 stays an accepted risk per the brief)
+tests: 163 passed in 3 suites (adversarial-p4 18, adversarial 46, preview-gate 99)
+notes: hasOwn closes the byEffort inherited-name path; AA index stays in Maps; audit_name output stays escaped; scroll hint carries no data; raw floats cannot become NaN or Infinity.
+END_MEASURE_AGENT_RESULT

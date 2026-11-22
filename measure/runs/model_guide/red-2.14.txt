@@ -1,0 +1,51 @@
+Red evidence for plan task 2.14 — adversarial round 2 test (P2ADV2-1
+symlinked .tmp parent)
+Recorded 2026-11-16 by the mid-red role at role_base_sha 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916
+Phase base: c22f313603108585f8bb45996057627acfbc78ae
+Finding: measure/runs/model_guide/adversarial-12e753b.json (P2ADV2-1)
+
+The case: before the approval, `<repo>/.tmp` is a symlink to a folder
+outside the repo. The preview folder of `update.sh` is
+`<repo>/.tmp/model-guide-preview`, so the refusal loop at update.sh:53-59
+checks that folder but never its parent. `mkdir -p` and the two `cp` calls
+follow the link and write both data files outside the repo with exit 0,
+against the `update.sh` header ("the script writes no file outside the
+preview folder") and spec D21.
+
+Targeted Red command (day rule: one file per run, one worker):
+  cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  1 failed | 7 passed (8)
+  The seven earlier tests stay green (tasks 2.3, 2.7a, and the four
+  P2B2-1/P2B2-2 tests of task 2.12, all fixed by task 2.13). Only the new
+  test fails, and it fails for the right reason.
+
+Failed test name (update.test.ts):
+- P2B2-1d before the approval a symlinked .tmp parent gives exit 2 and no outside write
+  AssertionError: a symlinked .tmp parent must exit 2:
+  expected +0 to be 2.
+  The run followed the link, so the outside folder would hold
+  `model-guide-preview/real-work.json` and
+  `model-guide-preview/model-guide.json` after an exit-0 run. The test also
+  pins stdout to the one line `update: refused path <path>` that names the
+  planted `.tmp` parent, an outside folder that stays empty, a repo tree
+  that does not change, and no commit.
+
+The other required files, each run alone with one worker, exit 0 with a
+labeled Tests line:
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  99 passed (99)
+
+  cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  14 passed (14)
+
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+
+No production file was edited. Every git action and every `update.sh` run
+of the new test happens in a temp repo under the system temp folder; the
+outside folder is a second temp folder outside that repo.
+`git status --short docs/` prints nothing.

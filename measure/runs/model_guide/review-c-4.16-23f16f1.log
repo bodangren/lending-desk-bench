@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+status: pass
+summary: Pass under the PM cap. Native token aggregation and record fields hold. The night path gains no refusal. One test timing inconsistency remains nonblocking.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 23f16f18787da5190dc8563e0373d48233653927
+audited_head_sha: 23f16f18787da5190dc8563e0373d48233653927
+contract_applicability: applicable
+blocking_findings: []
+nonblocking_findings: ["F-C4 [Major, nonblocking] review-run.test.ts has a timing-sensitive F20 token assertion. The first full-file attempt included a message stamped relative to fake-server read time, so its tokens were summed as current-call tokens; retry passed all 130 tests without code changes. Pin fixture timestamps to the call boundary and update the assertion to match the current-call aggregation contract. Route to the orchestrator."]
+evidence: ["Required HEAD matched at entry and final check.", "Read-only GET showed 46 tool-calls and one stop message with native string ids and token fields input, output, reasoning, cache.read, and cache.write; no message text was printed.", "P4F passed 48 tests with 14 intentional skips. Judge-run passed 61 tests. Review-run failed two timing-sensitive assertions on its first run and passed all 130 tests on retry.", "Pass record keys and types remain unchanged. The night driver reads state and exit status, so this change adds no refusal path."]
+commands: ["GET-only API inspection; no POST or DELETE", "P4F vitest: 48 passed, 14 skipped", "review-run bun test: first 128 passed / 2 failed; retry 130 passed", "judge-run vitest: 61 passed", "bash -n both runners and git diff --check: exit 0"]
+changed_files: ["harness/model-guide-tests/adversarial-p4f.test.ts", "harness/model-guide/judge-run.sh", "harness/model-guide/review-run.sh", "measure/tracks/model_guide/plan.md"]
+test_strategy_violations: []
+live_contract_violations: []
+prod_wiring_violations: []
+route_parity_violations: []
+confidence: high
+retry_recommendation: none
+handoff: No blocker goes to Green under the PM cap. Native assistant token fields match the new parser. The pass record schema remains unchanged, and night 3 has no new refusal path from this change. Keep F-C4 as a nonblocking test-fixture issue. The first review-run suite attempt failed two timing-sensitive assertions; the retry passed without code changes.
+route: openai/gpt-6-luna#high
+END_MEASURE_AGENT_RESULT

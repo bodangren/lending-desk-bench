@@ -1,0 +1,49 @@
+Review B security re-audit, track model_guide, phase 4b, task 4.15.
+HEAD 7773823d66b376065d4f4e26c01461538e720a7c at the start and at the end.
+phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5.
+role_base_sha = audited_head_sha 7773823d66b376065d4f4e26c01461538e720a7c.
+
+Range c0e8db5..HEAD: 8 files. review-run.sh, judge-run.sh, five test files,
+plan.md. provider-credential.sh, quota.ts, routes.json, review-score.ts,
+and adjudicate.ts are unchanged, so the earlier seed, quota, and route
+findings keep their state.
+
+Fixed and re-proven:
+- N26/G1. The live runner never aborted on a long line: an assignment
+  command substitution suppresses errexit inside the function. My earlier
+  direct-call proof did not reproduce that path. The pipe is gone:
+  line="${line:0:499}" with LC_ALL=C gives 499 bytes under set -euo
+  pipefail. The full-runner 300 KB case gives exit 0 and one record.
+- G2. find ... -print -quit removes the SIGPIPE pipe. The 20000-link case
+  refuses with exit 2.
+- N13. The judge takes text parts first and keeps result-only streams. My
+  extracted runs gave real-defect, real-defect, false-claim. P5 passes.
+- N27 sum. Two safe 2^53-1 fields exercise the check; with the loop deleted
+  the flag flips to 1.
+- F7. The foreign marker fixtures share HOME, cwd, and argv. My synthetic
+  tree selected one pid; with the marker line deleted it selected both.
+- N26 coverage. The full-runner case asserts the record and the exit code.
+
+Open and nit-level: the N27 cut tail, N15 orphan scope, N29 values path,
+N5, N12, N20, N24, the seed text echo, the quota doubled prefix, the guard
+message, the N32 runner cases, the judge seed case, the J1 text-block
+coverage, the old route in the docs, the TERM race, and the test budget.
+
+Tests, one file at a time: review-run first 98 pass / 2 fail (R12, R14
+timeouts) then 100 pass; decode-parity 5; judge-run 50; adversarial-p4c 13;
+adversarial-p4-runner 16; adversarial-p4b 12; credential-provider 24.
+Focused R12, R14, N26, N27, and G2 pass.
+
+Secret grep over the phase range: 0. docs/ clean. Frozen paths unchanged.
+No process of mine left. The three violation lists are empty.
+
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings: none
+nonblocking_findings: N27 cut tail [Nit] a cut final step_finish keeps tokens_complete 1; N15 [Nit] orphan scans stay suite-wide; N29 [Nit] values file path is predictable; N5 N12 N20 N24 [Nit, carried]; seed reason echo [Nit]; quota doubled prefix [Nit]; guard message [Nit]; N32 runner cases [Nit]; judge seed case [Nit]; J1 text-block coverage [Nit]; docs old route [Nit]; TERM race [Nit]; test budget [Nit] (full text in review-b-4.15-7773823.json)
+retry_recommendation: create_remediation_track
+confidence: high
+role_base_sha: 7773823d66b376065d4f4e26c01461538e720a7c
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: 7773823d66b376065d4f4e26c01461538e720a7c
+END_MEASURE_AGENT_RESULT

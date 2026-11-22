@@ -1,0 +1,3 @@
+MEASURE_AGENT_RESULT
+{"role":"measure-review-c-ux-api","audited_head":"c8c5e9ecca070beeb54fec27f79542d24ccecfc1","status":"pass","summary":"Review C passes at c8c5e9e. ADV-1 to ADV-7 hold in preview and tests. No Blocker or Major finding.","blocking_findings":[],"nonblocking_findings":[],"retry_recommendation":"none"}
+END_MEASURE_AGENT_RESULT

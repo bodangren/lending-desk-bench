@@ -1,0 +1,23 @@
+review-b round 3 audit log, track model_guide, Phase 2, head 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916
+provenance: phase_base_sha c22f313603108585f8bb45996057627acfbc78ae, role_base_sha 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916, audited_head_sha 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916, HEAD confirmed current and unchanged during the audit
+security_applicability: applicable. Round 3 changes touch the symlink guard and the score-file selection in update.sh and preview.sh.
+step 1: read the round 3 diff 3d42bf8..12e753b: tests 62b7433 (update.test.ts 4 new, preview-gate.test.ts 1 new), fix 38d1071 (update.sh, preview.sh), plan records 313ab94 and 12e753b. Read red-2.12.txt and green-p2-313ab94.log. guide.ts, print-audit.ts, fixtures, and docs/ are unchanged.
+step 2: P2B2-1 closure. The -L loop at update.sh:55-62 now covers all eight components written through: docs, docs/assets, docs/assets/data, real-work.json, model-guide.json, the preview folder, and its two target files. It runs before the mktemp staging, before both tool runs, and before every mkdir and cp. One refusal line, exit 2. Tests P2B2-1a/1b/1c plant a link at each name (both docs files after approval, the preview folder, both preview files before approval) and pin exit 2, one line, byte-identical outside tree, byte-identical repo tree, no commit. Red record shows all four failed at 3d42bf8 because the run followed the link and outside bytes moved. Closed.
+step 3: check-then-write window. A few seconds sit between the guard and the cp writes (two npx runs). A persistent link is refused; a race planter needs timed concurrent write access to the same worktree, the same capability that allows rewriting the data files or the script directly, so no practical escalation. Matches the preview.sh posture accepted since round 1. Judged closed in practice; reasoning recorded in the result evidence.
+step 4: residual nit P2B3-1. The $ROOT/.tmp parent of PREVIEW_ABS is not in the loop; a link there redirects the preview writes into a chosen folder with the two fixed file names. File-level links inside the redirected folder are still refused because the -L checks resolve through the linked parent, so no arbitrary-name overwrite remains. Weaker primitive than the refused cases; nit with a fix suggestion.
+step 5: P2B2-2 closure. newest_score_file in both scripts iterates the glob word-wise, compares whole paths with -nt, and prints the winner. Empirical run in /tmp/opencode/p2b3-scores: with evil.json, mg-old.json, `evil.json-newline-mg-2026-11a.json` (newest), `with space and * star ?.json`, and `-leading-dash.json`, the function returned the whole newline path and it exists; missing folder and empty folder returned empty. The round 2 steering scenario is gone. Tests P2B2-2 update and P2B2-2 preview pin that the truly newest file picks new-model; red record shows both halves failing at 3d42bf8. Closed. Note: [-f] and [-nt] follow links inside the review-scores folder, which is tool-written and only read; guide.ts shape-validates the chosen file.
+step 6: no new write path, quoting intact. The production diff changes only the guard and the selection function; the write branches are untouched. Every expansion is quoted, including $folder, $candidate, $newest, the loop paths, and $SCORES in GUIDE_ARGS.
+step 7: tests at HEAD, single files, exit 0 each: update 7/7, preview-gate 99/99, adversarial-p2 14/14, guide 15/15. Matches the green log, which also records the other five suites green and the task 2.9 preview rows unchanged. git status --short docs/ empty.
+step 8: carried nits per the brief: P2B3-2 (guide.ts blocker_recall silent 0 default, former P2B2-3) and P2B3-3 (print-audit.ts double read, former P2B2-4 and P2ADV-7). A2 gate unchanged, approval record absent. A6: tracks.md unchanged, no resolved security claim. Task 2.8 stays open and is not a finding; this round serves as its code check of the round 3 diff.
+verdict: pass. No blockers. P2B2-1 and P2B2-2 withdrawn as fixed. Three nits: P2B3-1 new, P2B3-2 and P2B3-3 carried. retry_recommendation none. confidence high.
+
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916
+result_file: measure/runs/model_guide/review-b-12e753b.json
+retry_recommendation: none
+summary: Round 3 passes: the update.sh symlink guard now refuses all eight written-through components before any write and the stat-based newest-score pick defeats newline, space, dash, and glob names, each pinned by Red-first tests and an empirical reproduction; all four suites green (135 tests); three nits carried, no blockers.
+END_MEASURE_AGENT_RESULT

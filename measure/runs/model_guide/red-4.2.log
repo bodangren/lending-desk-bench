@@ -1,0 +1,30 @@
+MEASURE_AGENT_RESULT
+role: measure-mid-red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+task: 4.2 Red — the quota sources
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 2d4f3837a347c643bdad6220b365b36ef31f80cf
+head_sha: eddf45e4772b78af41d39c28e6dad25548506ecb
+commits:
+  60e0da3cebb7d2ffaee22b1f054c5ca694aec96b test(model_guide): Red task 4.2 quota sources
+  eddf45e4772b78af41d39c28e6dad25548506ecb measure(model_guide): record Red task 4.2
+test_command: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+test_exit: 1
+test_summary: Tests  15 failed (15); Test Files  1 failed (1)
+first_failure_line: "FAIL  model-guide-tests/quota.test.ts > Q1 the source path of each provider > Q1 reads GET /api/quota/<id> for the four providers of spec D15 and gives ready"
+first_failure_message: "AssertionError: the quota tool is missing: /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/quota.ts: expected false to be true"
+remaining_failures: 15 of 15, all with the message "the quota tool is missing: .../harness/model-guide/quota.ts" (Q1, Q2, Q3 x7, Q4, Q5, Q6, Q7 x2, Q8)
+authoring_check: "MG_QUOTA_PROTO=/tmp/opencode/quota-proto.ts (prototype outside the repository) gives Tests  15 passed (15); one authoring error was fixed first (the Q2 request count 9 -> 6)"
+files:
+  harness/model-guide-tests/quota.test.ts (new, committed; in-process node:http quota source on 127.0.0.1:0; temp openchamber stub; no fixture committed)
+  measure/tracks/model_guide/plan.md (row 4.2 marked [~], evidence added)
+  measure/runs/model_guide/red-4.2.txt (record, not staged)
+  measure/runs/model_guide/red-4.2.log (record, not staged)
+plan_change: "section 6.2 change 1 is in the row: the temp fake quota source that the test writes; no fixture, so no Mid Red gate deviation line"
+process_check: "after the run: ps -eo pid,args | grep '[f]ake-opencode' prints no line; no vitest/quota process stays alive; no mg-quota temp folder stays under /tmp"
+no_production_file_touched: true
+no_real_endpoint_or_credential_or_opencode: true
+handoff: Green task 4.4 implements harness/model-guide/quota.ts against the pinned contract in the header of quota.test.ts (--provider, --base precedence over BENCH_QUOTA_BASE over the openchamber port source, GET /api/quota/<id> ids claude / kimi-for-coding / minimax-cn-coding-plan / opencode-go, cap 1 with no source and cap 3 with a source, one JSON line on stdout, one "quota: <reason>" line on stderr for stopped, exit 0 for every state, read timeout at most 10 s). The "no pass starts" half of the 70 % rule is R5 of review-run.test.ts.
+fix_r2: dce6401923cad7df59a3a8d03e3bcc32f3da8489 no MG_QUOTA_PROTO seam
+END_MEASURE_AGENT_RESULT

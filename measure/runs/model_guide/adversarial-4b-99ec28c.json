@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "role": "measure-adversarial-testing",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.16 / adversarial p4g",
+  "status": "pass",
+  "summary": "Four adversarial tests pass. They cover hostile preview text, pilot-route deduplication and overlap, provisional pass counting, and unknown quota providers. No implementation defect was found.",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "99ec28c28b4934a6b72c422a32de8545be7e7875",
+  "audited_head_sha": "99ec28c28b4934a6b72c422a32de8545be7e7875",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "The baseline check resolved 99ec28c to 99ec28c28b4934a6b72c422a32de8545be7e7875; it matched HEAD before test work.",
+    "I read the model_guide routing context, spec, Phase 4b plan, test strategy section 14, anti-patterns, and prior adversarial result 7319344.",
+    "The exact production diff since 7319344 adds Sol to both pilot route lists, maps openai to codex, adds score reason and pilot-route fields, and renders the reason and route in preview.sh.",
+    "The new test file runs the real preview.sh in a temporary repository with hostile route and reason strings. The generated review.html contains escaped text and no executable hostile markup.",
+    "The scorer test supplies duplicate pilot entries, a route with a pass, and an unrun route. It verifies one row per route and preserves the existing pass.",
+    "The three-pass boundary test includes a provisional pass and verifies a complete route with rank 1.",
+    "The unknown-provider test verifies exit 2, empty stdout, and the fixed rejection text with an unreachable loopback base.",
+    "A4: prior audit evidence in adversarial-4.16-23f16f1.json records the all-[~] phase fixture as rejected by the acceptance gate; this run changed no plan marker.",
+    "A5: the plan scan found no PASS=N, FAIL=0 or all checks pass claim. A7: no changed production path uses a word-based exclusion filter.",
+    "The single-file command exits 0 with 4 passed and 0 skipped. git diff --check passes.",
+    "Commit 8fd8882 contains only harness/model-guide-tests/adversarial-p4g.test.ts. The only paths after 99ec28c are that test and the two audit artifacts written after the commit.",
+    "The worktree has only the pre-existing untracked .opencode/ and harness/wt.txt paths. No fake, quota server, or test process remains."
+  ],
+  "commands": [
+    "git rev-parse 99ec28c && git rev-parse HEAD -> equal: 99ec28c28b4934a6b72c422a32de8545be7e7875",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4g.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; Tests 4 passed (4)",
+    "git diff --check -- harness/model-guide-tests/adversarial-p4g.test.ts -> exit 0",
+    "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass' measure/tracks/model_guide/plan.md -> no match",
+    "git commit -m 'test(model_guide): adversarial p4g' -- harness/model-guide-tests/adversarial-p4g.test.ts -> 8fd8882a8539d051129eb106e46974a934df5223",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]|[v]itest.*adversarial-p4g' -> no process"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "measure/runs/model_guide/adversarial-4b-99ec28c.json",
+    "measure/runs/model_guide/adversarial-4b-99ec28c.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "No implementation defect was found. The four tests pass. Rerun this gate after any implementation commit. The phase is not accepted by this result. Facts changed: none.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    { "axis": "correctness", "score": 5, "evidence": "The score boundary checks verify duplicate pilot handling, pass overlap, hostile text, provisional counting, and unknown-provider refusal." },
+    { "axis": "test_meaning", "score": 4, "evidence": "The preview test runs preview.sh and checks escaped output; the score and quota tests execute their real CLIs." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "Commit 8fd8882 changes only harness/model-guide-tests/adversarial-p4g.test.ts." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "The single-file run reports 4 passed, and the test commit SHA is 8fd8882a8539d051129eb106e46974a934df5223." }
+  ]
+}

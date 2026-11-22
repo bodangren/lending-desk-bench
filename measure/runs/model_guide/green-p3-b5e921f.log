@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+phase_base_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: b5e921f7b15f1b12636421f439d7ceae1ca148d5
+head_sha: 3b84d4bb044ea3c419132b37885c4d5480688fda
+commits: 4756adcc5238824b1961614daf563150fafc2161; 3b84d4bb044ea3c419132b37885c4d5480688fda (plan evidence only; the implementation artifacts remain private)
+tests_run: Initial live lint exited 2 with lint: set-missing: mg-2026-11a. Both final lint commands exited 0 with no output. The self-check, manifest check, and leak-check exited 0. The staged-plan leak-check also exited 0. No test suite ran.
+files_changed: measure/tracks/model_guide/plan.md; new untracked manifest harness/model-guide/data/sets/mg-2026-11a.json; new untracked logs measure/runs/model_guide/seed-mg-2026-11a.log and measure/runs/model_guide/green-p3-b5e921f.log. Private artifacts: 14 raw responses, 14 source diffs, 14 seeded diffs, and 14 keys. Four scripts and two verification artifacts remain under /tmp/opencode/seed-11a/.
+plan_updates: 3.14 and 3.15 changed to [x] in the evidence commit. Task 3.16 stays [ ]. No task changed to [b].
+dispositions: none
+handoff: The set has 14 diffs, 12 seeded diffs, 2 controls, 44 plants, and 19 blockers. Class counts: C1=3 C2=3 C3=4 C4=4 C5=3 C6=5 C7=3 C8=18 C9=1. The author route was openai/gpt-6.1-sol#high. Task 3.16 copies the first three ids of each repo: 6 diffs, 20 plants, and 11 blockers. Copy each seeded diff byte-identically and copy its source diff. Change only set_id in each copied key. Invoke lint from the repository root when you omit --sets. Keep the public manifest uncommitted until task 4.13. The committed Red tests and unrelated work remain unchanged.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,42 @@
+Review B audit log, model_guide Phase 5, audited HEAD a8835be3ddc9b3e71f8965301772f97935da39d5, 2026-11-22.
+
+Role: Measure Review B, security and data handling. Route substituted by the PM; Review A ran on Sol and passed at this HEAD (review-a-5-a8835be.json), so this audit does not repeat it.
+
+Commands run (read-only git and file reads; one targeted test file):
+- git rev-parse HEAD -> a8835be3ddc9b3e71f8965301772f97935da39d5
+- git diff --stat 8fd8882..a8835be -- docs/ -> six files, 7424 insertions
+- git log --name-only 8fd8882..a8835be -- docs/ -> only commit 906a4a6, six paths
+- git show --stat 906a4a6 -> exactly the six approved docs paths
+- npx tsx model-guide/leak-check.ts --private $HOME/.local/share/lending-desk-bench/model-guide --repo .. --preview ../.tmp/model-guide-preview -> exit 0
+- sha256sum of the six docs files -> all six match publish-approval.md:25-30
+- sha256sum of the six preview copies -> the same six hashes
+- grep -c -E 'PM 2026|nights 1 and 2|incomplete_reason' over the six published files -> 0 in each
+- Key-shape and reviewed-repo-path scans over the six published files -> no key shape; only the three published input SHA-256 digests; no repo or home path
+- heavy-run.sh npx vitest run model-guide-tests/adversarial-p4g.test.ts --maxWorkers=1 -> Tests 4 passed (4), exit 0
+- git status --short docs/ -> clean
+
+Checks:
+- A2 consent gate: publish.ts:95-115 refuses a missing approved_by or date; publish.ts:156-167 refuses any hash mismatch. publish-approval.md holds approved_by, date 2026-11-22, Daniel's standing site-push quote, the PM counts-only ruling, and six sha256 rows that match the published bytes.
+- A6 registry: measure/tracks.md:34 claims no resolved security state; plan row 5.3 [x] evidence matches the actual commit and hashes; row 5.4 stays open as deferred.
+- The 19 real defects appear as counts only: 13 and 6 in review.html:106-107 and review.json; no defect detail, no finding text, no file path, no line.
+- The score-file diff removes exactly the three incomplete_reason fields.
+- The preview.sh range diff only removes reason rendering, adds zero-pass dashes, and mirrors data files into preview assets/data.
+- update.sh:82-143 commits public data without a leak-check run; plan 5.4 verify and the new README section omit the step. Nonblocking, tech-debt, score-impact: no.
+
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 5: The publish gate and the weekly update
+route: opencode-go/glm-5.3#high (PM 2026-11-22: GLM for a review where Sol is excluded; Review A ran on Sol). Substitution for `ra-quota pick review-b`.
+status: pass
+summary: Pass under the PM rules. The six published files match the approval hashes, hold counts only, and pass leak-check with docs and preview in scope. No key value, key shape, private path, finding text, reviewed-repo file path, seeded line, or internal reason text appears in any published file. The publish gate is consent-bound and the consent artifact is valid. One nonblocking finding goes to tech-debt.
+blocking_findings: none
+nonblocking_findings: F1 [Major] review-b -> tech-debt: The weekly update commits public data without a leak-check step. score-impact: no. update.sh:82-143 runs only the real-work input check and guide.ts, then copies real-work.json and model-guide.json into docs/assets/data/ and commits them; it never calls leak-check.ts. Plan row 5.4 verify steps and the README.md:285-287 section name no leak check. A future export row with private text would reach the public docs unscanned. The current published files pass leak-check, so no wrong result hides in the current scores or page. Add a leak-check.ts run to update.sh, or to the plan 5.4 verify steps and the README section.
+confidence: high
+retry_recommendation: none
+phase_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+role_base_sha: a8835be3ddc9b3e71f8965301772f97935da39d5
+audited_head_sha: a8835be3ddc9b3e71f8965301772f97935da39d5
+result_path: measure/runs/model_guide/review-b-5-a8835be.json
+handoff: none
+END_MEASURE_AGENT_RESULT

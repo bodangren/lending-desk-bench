@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 5252e8f8eb2b09a0c3a13b61b24ec5119f6a98f2
+head_sha: 6a164210a7dc16615ed89b619b0162a66e570623
+commits: d00169c894aa65df31883b895a74b696c122538e, 6a164210a7dc16615ed89b619b0162a66e570623
+tests_run: `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests  2 failed | 19 passed (21)`, duration 4.65 s; the two failures are P3T1-1 and P3T1-2, each with `pick-diffs: gh api failed`.
+files_changed: harness/model-guide-tests/pick-diffs.test.ts (two new tests); harness/model-guide-tests/fixtures/fakes/gh (the FAKE_GH_LIST_PAD and FAKE_GH_DETAIL_PAD pad modes); measure/tracks/model_guide/plan.md; untracked evidence measure/runs/model_guide/red-3.13a.txt and measure/runs/model_guide/red-p3-5252e8f.log. No large fixture committed. No production file and no docs/ path touched.
+plan_updates: added 3.13a as [~] and 3.13b as [ ] after 3.12g and before 3.13; 3.13a changed to `[x] d00169c` with an Evidence line that cites measure/runs/model_guide/red-3.13a.txt; 3.13b changed [ ] -> [~]. 3.13 stays [ ]. The plan commit is 6a16421.
+remaining_failures: P3T1-1 reads a commits list output over 1 MiB fails with `pick-diffs: gh api failed` exit 2, because the 31,000,000-byte fake list exceeds spawnSync's default 1,048,576-byte maxBuffer (the real monorepo list is 25,978,347 bytes). P3T1-2 reads a commit detail output over 1 MiB fails the same way, because each 1,500,000-byte detail call also exceeds the buffer; it proves the fix must cover every gh spawn. The other 19 pick-diffs tests are green.
+dispositions: none
+handoff: Green 3.13b: edit only `harness/model-guide/pick-diffs.ts`. Touch no test file, no fixture, and no plan line. The smallest fix is to pass a maxBuffer large enough for the 26 MB list with margin (for example 64 * 1024 * 1024) on every spawnSync of `gh` in the tool, not only the list call. Keep the existing refusal behavior for a real gh error. Verify with `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot`: expect `Tests  21 passed (21)`, under 20 s. Then rerun the other tool files that must stay green (`review-set.test.ts` 18, `review-score.test.ts` 25, `adjudicate.test.ts` 20, `leak-check.test.ts` 13, `guide.test.ts` 16) and run `git status --short docs/`; it must print nothing. Do not weaken a test.
+END_MEASURE_AGENT_RESULT

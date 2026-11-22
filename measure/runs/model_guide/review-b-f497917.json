@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "phase_base_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "role_base_sha": "f497917a3d1f387d4c3c6f8b94e6331d5fd6587a",
+  "audited_head_sha": "f497917a3d1f387d4c3c6f8b94e6331d5fd6587a",
+  "reviewer_model": "Step 5 Preview",
+  "route": "nvidia/stepfun-ai/step-5-preview#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 2 of the security review. All five round 1 findings that task 3.12d fixed are closed at f497917. leak-check reads each staged name byte-exact with `-z`, so a non-ASCII name, a name with a space, and a staged rename each give exit 2. The private-path check holds the realpath of a symlinked --private, and a broken docs symlink exits 0 with no crash. All five write paths refuse a planted symlink at the target and on an ancestor inside the named root before any write, and the outside file stays unchanged. All four write tools refuse a set id that is not a plain name. The six single-file suites pass at HEAD (13, 19, 18, 25, 20, 2 tests). One Nit stays open and no blocker or Major remains.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P3B2-1 [Nit] review-b: nothing enforces the D9 order of the key SHA-256. review-set.ts:551 still computes key_sha256 from the key bytes at lint time, and adjudicate.ts:437-444 rewrites the key files after the lint. A lint run before the apply publishes a hash that the apply invalidates. This carries round 1 finding P3B1-6; Green 3.12d changed no code here, and review A carries it as P3A2-6. The phase plan controls the order at task 4.13: the apply runs first, then the lint runs again, then the orchestrator commits the manifest. Non-blocking."
+  ],
+  "evidence": [
+    "Provenance: `git --no-pager rev-parse HEAD` printed f497917a3d1f387d4c3c6f8b94e6331d5fd6587a before the probes and again after them; it equals audited_head_sha and role_base_sha. No docs/assets/data-only publish commit landed during this audit; HEAD did not move. The untracked files are .opencode/, harness/wt.txt, and tech-debt.md, and none is staged.",
+    "Diff scope: `git diff --stat 39d50779524c1082bf72f6f64642989d38402da2..f497917a3d1f387d4c3c6f8b94e6331d5fd6587a` holds the five Phase 3 tools, their five test files, the review fixtures, plan.md, and the daily_model_schedule track work. `git diff --stat 0fb247b~1..0fb247b` shows exactly the five tools of task 3.12d and no other file. `git diff --stat 869772e~1..869772e` shows exactly the five test files of task 3.12b. No new write path appears: each tool holds one mkdirSync plus one writeFileSync, guarded by refuseSymlink.",
+    "F1 (P3B1-1) withdrawn: stagedPaths runs `git diff --cached --name-only -z` and splits on NUL, and indexText passes each raw name to `git show :<path>` (leak-check.ts:181-189). Probes in /tmp temp repos with the fixture private set: a staged caf\u00e9.txt with the 24-character seeded line exits 2 with `leak-check: seeded-line: caf\u00e9.txt`; a staged `with space.txt` exits 2; a staged rename old.txt to caf\u00e9-\u00fc.txt exits 2 and names the new file. Test K4 pins the non-ASCII case and passes in leak-check 13/13.",
+    "F2 (P3B1-2) withdrawn: every write path refuses a symlink with lstat before mkdirSync and writeFileSync. The guards are review-set.ts:511, review-score.ts:451, adjudicate.ts:283 (queue), 382 and 383 (verdicts and real-defects), 439 (key write-back), and pick-diffs.ts:299. writePath lists the target and every ancestor inside the named root. Probes: a symlink at <sets>/mg-2026-11a.json gives `lint: symlink:` exit 2 and the outside file stays `keep`; a symlink at <scores>/mg-2026-11a.json gives `score: symlink:` exit 2 and the outside file stays `keep`; a symlink planted at <private>/sets, an ancestor inside the named root, gives `queue: symlink: .../sets` exit 2 and writes no queue.json into the moved tree; a symlink at queue.json and at verdicts.json each exit 2 with the outside file unchanged and the key real_defects still [].",
+    "F3 (P3B1-3) withdrawn: leak-check.ts:224 builds privatePaths from the given string, resolve(), and realOf, which is realpathSync with a fallback. Probe: with --private as a directory symlink to the real private folder, a staged file that holds the real absolute path exits 2 with `leak-check: private-path: path.txt`. Test K3 pins the case and passes.",
+    "F4 (P3B1-4) withdrawn: filesUnder uses statOf, which returns null for a broken link and skips it (leak-check.ts:140-160). Probe: a broken symlink under docs/ exits 0 with no output. Test K5 pins the case and passes.",
+    "F5 (P3B1-5) withdrawn: the four write tools each check the set id with SET_ID_RE and refuse `set-id: <value>` before any write (review-set.ts:169-174, review-score.ts:97-101 and 168, adjudicate.ts:98-102, pick-diffs.ts:88-92). The character class holds letters, digits, `.`, `_`, and `-`, needs a letter or digit first, and bars `..`. The pinned tests pass in review-set 18/18, review-score 25/25, adjudicate 20/20, and pick-diffs 19/19.",
+    "F6 (P3B1-6) not withdrawn: task 3.12d changed no code for the key SHA-256 order, so the Nit is re-raised as P3B2-1 above. The practical risk is bounded because the plan runs the apply before the second lint and before the manifest commit (task 4.13).",
+    "Tests at HEAD, each a single file with `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`, all exit 0: leak-check 13/13, pick-diffs 19/19, review-set 18/18, review-score 25/25, adjudicate 20/20, leak-guard 2/2.",
+    "Claim ids hold no route name and no private text: adjudicate.ts:259-270 and review-score.ts:251-262 build `<diff_id>#C<12 hex>` from the SHA-256 of `JSON.stringify([diff_id, file, line, class, severity, title, reason])`, and the queue item I read in the probe queue holds only `forge-01#C37e9c118bbbc`, `line`, and the claim fields.",
+    "Pick-diffs still runs `gh api` GET only: ghApi spawns `gh` with the fixed argument array (api, --method, GET, path) and no shell (pick-diffs.ts:168-178), the path always starts with `repos/<owner>/<name>/`, and owner and name are split and validated (pick-diffs.ts:147-148). The fake gh of the test fixture exits 3 on any other verb, and the pick-diffs suite passes 19/19.",
+    "Public content: the manifest holds only set_id, created, and per diff id, repo, commit, parent, seeded_sha256, and key_sha256, plus the plant counts (review-set.ts:542-554); the score file holds set_id, passes, and routes with no finding text, file, or line (review-score.ts:527-534); queue.json, verdicts.json, real-defects.json, and the key write-back land under <private>/sets/<set_id>/adjudication or keys (adjudicate.ts:281-282, 380-381, 438); the candidates land under <private>/candidates (pick-diffs.ts:298). review-prompt.md holds no witness, new_lines, or operator word.",
+    "Every write command requires an explicit --private or --repo and refuses an empty or flag-shaped value: leak-check.ts:80-81, review-set.ts:227, review-score.ts:165-167, adjudicate.ts:160-162, pick-diffs.ts:143-145. Each suite pins the needs-a-value refusal lines.",
+    "A2 not applicable: no tool or test in 39d5077..f497917 flips a draft to a published state, and publish.ts and preview.sh are absent from the range diff. A6 clean: measure/tracks.md:40 shows model_guide as pending with the spec-review note, so no security state is claimed resolved.",
+    "Fixture secrecy: the committed fixture keys under harness/model-guide-tests/fixtures/review/sets/mg-2026-11a are synthetic, and leak-guard passes 2/2.",
+    "Out of track scope but present in the range: harness/cron-daily.sh, harness/daily-pick.ts, harness/schedule-tests/daily-publish-label.test.ts, measure/tracks/daily_model_schedule/*, and docs/assets/data/*.json changed for the daily_model_schedule track. Task 3.12d and 3.12b touched none of those files."
+  ],
+  "commands": [
+    "git --no-pager rev-parse HEAD (f497917a3d1f387d4c3c6f8b94e6331d5fd6587a, before and after the probes)",
+    "git --no-pager log --oneline 39d50779524c1082bf72f6f64642989d38402da2..f497917a3d1f387d4c3c6f8b94e6331d5fd6587a",
+    "git --no-pager diff --stat 39d50779524c1082bf72f6f64642989d38402da2..f497917a3d1f387d4c3c6f8b94e6331d5fd6587a",
+    "git --no-pager diff 0fb247b~1..0fb247b -- harness/model-guide (the five tools of task 3.12d)",
+    "git --no-pager diff 869772e~1..869772e -- harness/model-guide-tests (the five test files of task 3.12b)",
+    "cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (13 passed)",
+    "cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot (19 passed)",
+    "cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot (18 passed)",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot (25 passed)",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (20 passed)",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot (2 passed)",
+    "node -e setup of a private copy of the fixture set, temp git repos, and the 24-character seeded line",
+    "npx tsx model-guide/leak-check.ts --private /tmp/opencode/p3b2/private --repo <temp repo> for the non-ASCII name, the space name, the staged rename, the nested JSON keys, the broken docs symlink, the docs symlink to a private file, the symlinked docs folder, and the symlinked --private",
+    "npx tsx model-guide/review-set.ts lint mg-2026-11a --private ... --sets /tmp/opencode/p3b2/sets-links --created 2026-11-13 (exit 2, outside file unchanged)",
+    "npx tsx model-guide/review-score.ts score ... --scores /tmp/opencode/p3b2/scores-links (exit 2, outside file unchanged)",
+    "npx tsx model-guide/adjudicate.ts queue and apply ... with a symlink at <private>/sets, at queue.json, and at verdicts.json (each exit 2, no write outside)",
+    "read harness/model-guide/{leak-check,review-set,review-score,adjudicate,pick-diffs}.ts in full"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-f497917.json",
+    "measure/runs/model_guide/review-b-f497917.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "Each of P3B1-1 to P3B1-5 is closed with a probe or a pinned test: a staged caf\u00e9-\u00fc.txt rename exits 2 (leak-check.ts:181-189), a symlink at <scores>/mg-2026-11a.json exits 2 with the outside file unchanged (review-score.ts:451)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "Each round 1 defect has a failing-first red test in 869772e and a green run at f497917, and my probes reproduce the same exits (leak-check 13/13, review-score 25/25, adjudicate 20/20)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 0fb247b~1..0fb247b shows exactly the five tools of task 3.12d, and 869772e~1..869772e shows exactly the five test files; no fixture, docs path, or new write path changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every finding holds a file:line from the tool source and a command result from a single-file vitest run or a /tmp probe."
+    }
+  ]
+}

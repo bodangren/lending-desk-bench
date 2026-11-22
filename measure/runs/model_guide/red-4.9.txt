@@ -1,0 +1,91 @@
+Red 4.9 fix — F1 the one-pass rule, F2 the stopped quota read
+Track: model_guide. Phase 4. Role: measure-mid-red. Date: 2026-11-18.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 742926f6551f446e7ac3724782194e6c847b84d6
+Commit: e60814a0fee060e2f2358a9490b8652f7d04c029
+
+Scope
+  One file changed: `harness/model-guide-tests/review-run.test.ts`. No
+  production file, no fixture file, no plan row. The orphan nets of the PM
+  load watch stay in place and pass.
+
+The checker findings (measure/runs/model_guide/check-4.9.json)
+  F1: `review-run.sh:229-233` refuses a second same-night pass only when
+  `QUOTA_PROVIDER` is empty. Every no-source row of the committed
+  `routes.json` carries a non-empty `quota_provider` (`bailian-token-plan`,
+  `nvidia`, `opencode`), so the guard never fires. The checker's live probe
+  gave SECOND_EXIT=0 with two complete pass records.
+  F2: the "stopped quota read gives an open pass" path
+  (`review-run.sh:311-315`) had no test.
+
+The no-source shape that the test uses
+  The field that `quota.ts` reads is `quota_source`. A no-source row of the
+  committed `routes.json` is:
+
+    { "family": "StepFun", "route": "nvidia/stepfun-ai/step-5-preview#high",
+      "kind": "free", "quota_provider": "nvidia", "quota_source": null }
+
+  `quota.ts` gives that row `ready`, the cap 1, and no request (Q4). The
+  temp `routes.json` of case F1 holds exactly that shape, so the guard must
+  key on the empty source. The helper `routesFile` now distinguishes
+  `undefined` (the default source) from `null` (no source), and takes a
+  `family`.
+
+Refusal contract of F1 (stated, per the PM order)
+  Spec D15 gives no exit code and no line for the one-pass rule. The
+  runner's own refusal of a second run under the exclusive lock
+  (`review-run.sh`, ADV-R-8) is exit 2 with one line on stderr, so the
+  one-pass refusal follows it:
+    - exit 2,
+    - exactly one non-empty line on stderr, starting `review-run:` and
+      holding `one pass per night`,
+    - an empty stdout,
+    - no call, and no second pass record.
+  The test pins all five. A fix that keeps the `refuse` helper (stdout)
+  must move this line to stderr.
+
+Command
+  cd harness && npx vitest run model-guide-tests/review-run.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+
+Result
+  Exit code: 1
+  Tests  1 failed | 24 passed (25)
+  Test Files  1 failed (1)
+  Duration 36.10s
+  First failure line:
+    FAIL  model-guide-tests/review-run.test.ts > P4 the check 4.9 fixes F1
+    and F2 > F1 a route with no quota source runs at most one pass per
+    night, and the second run refuses before any call
+  First failure message:
+    AssertionError: OPENCODE_HOME CLEANUP stopped=0
+    path=/tmp/mg-review-run-YJchCs/repo/.tmp/opencode-host-model-guide-1184718
+    : expected +0 to be 2
+
+Failed test names (1)
+  F1 a route with no quota source runs at most one pass per night, and the
+    second run refuses before any call
+
+  The second run exits 0 and starts a job (the cleanup line proves it), so
+  the guard did not fire. This is the missing behavior of checker F1.
+
+Passing guard
+  F2 a stopped quota read before the pass leaves the pass open with no call
+  passes at HEAD (24 passed). It pins the path of `review-run.sh:311-315`:
+  exit 0, one pass record with the state `open`, no stored output, one
+  error line that holds `quota`, no model call, and no stored raw output.
+  It drives `quota.ts` into `stopped` with a base that has no listener
+  (`BENCH_QUOTA_BASE=http://127.0.0.1:1`).
+
+  The 23 earlier cases of the file stay green.
+
+Process checks after the run
+  `pgrep -af 'mg-.*quota-server'`: 0 line.
+  `ps -eo pid,args | grep '[f]ake-opencode'`: 0 line.
+  Orphan count: 0. No `mg-*` temp folder stays under `/tmp`.
+
+Files touched by this role
+  harness/model-guide-tests/review-run.test.ts (changed, commit e60814a)
+  measure/runs/model_guide/red-4.9.txt (this record, not staged)
+  measure/runs/model_guide/red-4.9.log (not staged)
+  No plan row marked. No production file touched. No push. No model call.

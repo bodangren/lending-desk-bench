@@ -1,0 +1,70 @@
+Green phase 2 task 2.11: adversarial fixes P2ADV-1 to P2ADV-5.
+
+Baseline for the phase: c22f313603108585f8bb45996057627acfbc78ae.
+Role base: 9dd08332dbfaa1a562f9bfe5b1c74217c2316ce1 (test commit, Red tests).
+Audited HEAD of the adversarial run: 6132fb7. The five blocking findings
+(P2ADV-1 to P2ADV-5) and the nine passing cases are in
+measure/runs/model_guide/adversarial-6132fb7.json. The test commit 9dd0833
+is inside phase_base_sha..HEAD (git diff --name-only lists
+harness/model-guide-tests/adversarial-p2.test.ts).
+
+The targeted Red command failed at the audit HEAD 6132fb7: 5 failed, 9
+passed (5 blocking defects). The test commit 9dd0833 adds only
+harness/model-guide-tests/adversarial-p2.test.ts on top of 6132fb7, so the
+same five cases failed against the role base. This role implemented the five
+fixes, then ran the command; all 14 cases pass.
+
+Changes (production only, no test file, no fixture, nothing under docs/):
+- harness/model-guide/guide.ts: the track A rank breaks a worst-score tie by
+  the higher worst blocker recall, then by the higher median score (spec
+  D13). parseArgs accepts own keys of FLAGS only, so __proto__, constructor,
+  and toString are refused with input-check: args and no output file.
+- harness/model-guide/preview.sh: the newest review score file is the newest
+  by modification time, not the alphabetically last glob match.
+- harness/model-guide/update.sh: the same newest-file rule (the same five
+  lines in both scripts); a symlink on docs, docs/assets, or
+  docs/assets/data is refused with exit 2 before any write (spec D21); a
+  rerun with unchanged data exits 0 and makes no commit (spec D19).
+
+Gates on the fix content (the tree of commit be41213), each file run alone
+with --configLoader native --maxWorkers=1 --reporter=dot:
+- adversarial-p2: exit 0, Tests 14 passed (14)
+- print-audit: exit 0, Tests 13 passed (13)
+- guide: exit 0, Tests 15 passed (15)
+- update: exit 0, Tests 3 passed (3)
+- preview-gate: exit 0, Tests 98 passed (98)
+- input-check: exit 0, Tests 15 passed (15)
+- real-work: exit 0, Tests 20 passed (20)
+- leak-guard: exit 0, Tests 2 passed (2)
+- adversarial: exit 0, Tests 49 passed (49)
+- adversarial-p2 re-run on the final HEAD 3d42bf8: exit 0, Tests 14 passed
+  (14)
+- bash -n harness/model-guide/update.sh: exit 0
+- bash -n harness/model-guide/preview.sh: exit 0
+- git status --short docs/: prints nothing
+
+Task 2.9 preview rerun (from the repo root):
+  harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json
+Exit 0. The six overview rows in .tmp/model-guide-preview/model-guide.json
+are equal to the rows before the rerun (rows_identical = True, count = 6).
+docs/ stays clean.
+
+Nonblocking items P2ADV-6, P2ADV-7, and P2ADV-8 stay open: no test change
+and no production change was made for them (a PM question or a record
+only).
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: 9dd08332dbfaa1a562f9bfe5b1c74217c2316ce1
+head_sha: 3d42bf8d84359364392f473d9ac6d9b9bef466d2
+commits: be41213cceeb7853998f6342023d8be3180009d2, 3d42bf8d84359364392f473d9ac6d9b9bef466d2
+tests_run: adversarial-p2 exit 0 Tests 14; print-audit exit 0 Tests 13; guide exit 0 Tests 15; update exit 0 Tests 3; preview-gate exit 0 Tests 98; input-check exit 0 Tests 15; real-work exit 0 Tests 20; leak-guard exit 0 Tests 2; adversarial exit 0 Tests 49; adversarial-p2 at 3d42bf8 exit 0 Tests 14
+files_changed: harness/model-guide/guide.ts, harness/model-guide/preview.sh, harness/model-guide/update.sh, measure/tracks/model_guide/plan.md
+plan_updates: Phase 2 gains [x] 9dd0833 2.10 Adversarial with adversarial-6132fb7.json evidence; [x] be41213 2.11 Green with green-p2-9dd0833.log evidence; 2.8 stays [ ].
+dispositions: none
+handoff: Five blocking defects P2ADV-1 to P2ADV-5 are fixed in be41213, and the plan records the test task 2.10 and the Green task 2.11 in 3d42bf8. adversarial-p2.test.ts passes all 14 cases; the eight required suites pass; docs/ is untouched. P2ADV-6, P2ADV-7, and P2ADV-8 stay open for the next review round or a PM question. No test file, fixture, or docs/ file changed.
+END_MEASURE_AGENT_RESULT

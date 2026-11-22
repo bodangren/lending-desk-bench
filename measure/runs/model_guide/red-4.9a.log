@@ -1,0 +1,32 @@
+MEASURE_AGENT_RESULT
+role: measure-mid-red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+task: 4.9a Red — probe mode, token log, allowed routes
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 5b6399f6a77e9e9c81f2b82a16e25edd40f7adb7
+head_sha: 0d86f2517af3797339c7bf1557b071017bb17e7e
+commits:
+  fe29d81c34b86683bde3b0251ae749c72091a882 test(model_guide): Red task 4.9a probe mode, token log, allowed routes
+  0d86f2517af3797339c7bf1557b071017bb17e7e measure(model_guide): record Red task 4.9a
+test_command: cd harness && npx vitest run model-guide-tests/review-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+test_exit: 1
+test_summary: Tests  10 failed | 25 passed (35); Test Files  1 failed (1)
+first_failure_line: "FAIL  model-guide-tests/review-run.test.ts > P4 probe mode, the token log, and routes.json (task 4.9a) > P1 the probe calls the first control diff once, prints reachable, and writes a probe record with the tokens"
+first_failure_message: "AssertionError: review-run: unknown flag --probe : expected 2 to be +0"
+remaining_failures: "10 of 35, all new: P1, P2, P3 (unknown --probe flag), P4 (the refusal line must name the route or the kind), P5 (the first probe takes no lock), P6 (the line must name the quota rule), P7 (the line must name the credential scan), T1 and T2 (no tokens in the pass record), J1 (kimi-code-plan-cn/kimi-for-coding#high still in routes.json)"
+green_rest: "25 passed: every earlier case of review-run.test.ts stays green"
+second_run: "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests  14 passed (14) (the fake changed, so its other consumer ran)"
+token_shape: "event {\"type\":\"step-finish\",\"tokens\":{\"input\",\"output\",\"reasoning\",\"cache\":{\"read\",\"write\"}}}; record tokens {\"input\",\"output\",\"reasoning\",\"cache_read\",\"cache_write\",\"total\"} with total = the sum of the five components; each diffs entry holds id and its own tokens; tokens_complete true or false"
+files:
+  harness/model-guide-tests/review-run.test.ts (changed; P1-P7, T1, T2, J1; stdin log field; pass-record contract)
+  harness/model-guide-tests/fixtures/fakes/fake-opencode (changed; reads the stdin of a run call for the log, emits the step-finish token event)
+  measure/tracks/model_guide/plan.md (row 4.9a marked [~], evidence added)
+  measure/runs/model_guide/red-4.9a.txt (record, not staged)
+  measure/runs/model_guide/red-4.9a.log (record, not staged)
+pinned_contracts: "probe record in <private>/probes/<set_id> with state, tokens, tokens_complete and the diff; a probe blocked by the 70 % rule or by the credential scan refuses with exit 2 and one review-run: line on stdout; a probe that finds the lock held follows the lock refusal on stderr; unreachable and region-blocked print the first error line after the state word"
+orphan_check: "after the runs: pgrep -af 'mg-.*quota-server' 0 line, ps -eo pid,args | grep '[f]ake-opencode' 0 line, orphan count 0, no mg-* folder under /tmp"
+no_production_file_touched: true
+no_opencode_cli: true
+handoff: Green 4.9b implements --probe, the token log, and the new routes.json in harness/model-guide/review-run.sh and harness/model-guide/routes.json against the pinned contracts in the block above the probe cases of review-run.test.ts. The fake now logs stdin and emits a step-finish token event; adversarial-p4-runner.test.ts must stay green (it ran green at this head).
+END_MEASURE_AGENT_RESULT

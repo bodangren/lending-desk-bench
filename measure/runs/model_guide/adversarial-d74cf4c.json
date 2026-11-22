@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "role": "measure-adversarial-testing",
+  "track": "model_guide",
+  "audited_head": "d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34",
+  "status": "fail",
+  "summary": "The role added 18 adversarial cases in harness/model-guide-tests/adversarial-p4.test.ts (commit d20d61100a184f5f039f08a3fd917a1241158e56). 11 pass and 7 fail: `Tests  7 failed | 11 passed (18)`. The 7 failed cases show 7 implementation defects for Green: a 390 px layout defect on the real files (model names wrap to 3 lines, ADV-1), a missing scroll hint on the More columns tables (ADV-2), a float-noise tie that picks the higher-rework model (ADV-3), a double rounding of rework and cleanup (ADV-4), a [1m] key that leaks into the print-audit block (ADV-5), an alias-or-key AA match that depends on file order (ADV-6), and a __proto__ variant that loses the net score (ADV-7). A mutation check of 12 mutants found no survivor after two cases were tightened. The real-file checks hold otherwise: the plan evidence re-ran at HEAD, the page has no sideways overflow at 390, 980, and 1280 px, and the leak check keeps real hits next to filter words. No production code was changed.",
+  "blocking_findings": [
+    "ADV-1 [Blocker] harness/model-guide/pages/real-work.html:48 and :55, harness/model-guide/preview.sh:519-527 | At 390 px on the page built from the real files, the model-name cell is 88 to 100 px wide. The name wraps to 3 lines in 3 of 4 ranked producer rows (MiMo V2.6 Flash, DeepSeek V4.1 Flash, MiniMax M3.1 Flash) and in 3 of 20 ranked checker rows (Muse Spark 1.3 Contributor, MiniMax M3.1 Flash (free), GLM-5.3 Flash (free)). The synthetic page gives 3 lines in 116 px for all three long names. Cause: the header rule at real-work.html:48 and the number rule at :55 both set white-space nowrap, so the five number columns stay wide and the model column keeps only its minimum width. Failing test: ADV4-16. | Spec D16 Data source Width (spec.md:913-915): a model name does not wrap to 3 lines at 390 px; test-strategy 13.9 sets 2 lines or fewer | Fix scope: CSS of pages/real-work.html only (let the header text wrap, or give the model-name cell a minimum width inside its scroll box). No data change.",
+    "ADV-2 [Major] harness/model-guide/preview.sh:606 and :609-626, harness/model-guide/pages/real-work.html:74 | The hint paragraph follows the default table only. The Too few tasks table and the More columns table scroll inside their box with no hint, and the hint hides above 800 px. With the details opened, the producer and checker More columns tables scroll at 390 px with no hint, and the producer More columns table scrolls at 980 px with no hint. Failing test: ADV4-18 (3 offenders). | Spec D16 Width (spec.md:835-837) and acceptance 13 (spec.md:1299-1302): a wide table scrolls inside its own box with a visible hint at 390, 980, and 1280 px | Fix scope: emit a hint for each scroll box and show it at each width where the box scrolls (preview.sh table_wrap and the page CSS).",
+    "ADV-3 [Major] harness/model-guide/real-work.ts:331, :481, and :555 | The first-round rate is rateSum / rateAccepted in floating point. Two models with the same stated rate 0.7 and accepted counts 3 and 10 hold 0.6999999999999998 and 0.7. Both show 70 %. The compare at :555 uses rateB !== rateA, so noise decides the order. The model with the lower rework (0.5 against 2.0) ranks second, and the Green pick goes to the higher-rework model (probe: pick p1/nb). Failing test: ADV4-9. | Spec D16 Producer table and FR-3: the higher first-round accept % first, then the lower rework | Fix scope: compare the rate with a tolerance or on a rounded key in compareRows (real-work.ts:555). The rank and the pick then follow the tie rule.",
+    "ADV-4 [Minor] harness/model-guide/real-work.ts:482-483 (also :485 and :517), harness/model-guide/preview.sh:460-470 | The tool rounds the rework and the cleanup share to 4 decimals, and the page rounds a second time. Rework 0.04996 shows 0.1 (one decimal gives 0.0). Cleanup 0.12496 shows 13 % (whole percent gives 12 %). Failing test: ADV4-11. | Spec D16 Numbers: a rate shows as a whole %, and rework shows one decimal | Fix scope: write the unrounded values into real-work.json, or round one time at page time (real-work.ts roundTo calls).",
+    "ADV-5 [Minor] harness/model-guide/preview.sh:360-363 | audit_name removes the #<variant> part only. A print-audit key such as p1/opus[1m]#high shows the text opus[1m] and not its plain name, so route text reaches the block. A key such as p1/sonnet#high[1m] works. Failing test: ADV4-12. | Spec D17: the rule is the same as D16 (a model key has no #<variant> and no [1m]), and the block holds no raw route key | Fix scope: remove [1m] in audit_name before the name lookup. print-audit.ts and its test stay unchanged.",
+    "ADV-6 [Minor] harness/model-guide/real-work.ts:383 and :388 | The AA index holds model keys and aliases in one map, and the first entry wins. A name that is a model key and also the alias of another model resolves by file order: with the alias holder first the name takes the holder score (51), with the key first it takes its own score (26). A wrong score can move a gate pick across the 20 rule. Failing test: ADV4-3. | Spec D16 AA net score: match the name to a model key or an alias (the spec is silent on priority); test-strategy 13.1 risk RS5 names a wrong AA match | Fix scope: index the model keys first, then the aliases that no key holds (real-work.ts:377-392). If the owner rules that the first entry wins, delete test ADV4-3.",
+    "ADV-7 [Nit] harness/model-guide/real-work.ts:413-416 | entry.byEffort[bestVariant] reads an inherited key. A route variant __proto__ gets Object.prototype, which isObject accepts, so the net score becomes null (not rated, marked not for verdicts) while the primary row holds 32. The variants constructor and toString work by accident (ADV4-4 passes). The header of real-work.ts:25-26 claims own keys only. Failing test: ADV4-5. | Spec D16 AA net score: byEffort[<variant>] when that entry is present, else the primary row | Fix scope: test the key with Object.hasOwn before the read."
+  ],
+  "nonblocking_findings": [
+    "ADV-8 [Minor] harness/model-guide/real-work.ts:407-411 | Two variants with the same counted runs: the first route in file order wins. Probe on a temp copy: t1/tie#low first gives net score 11 (not for verdicts), t1/tie#high first gives 44 (can pick). Row order of the export can flip a verdict. | Spec D16 AA net score and test-strategy Q-S7 leave a tie open, so no test | Fix scope: owner chooses one tie rule (for example the lower score, or the primary row).",
+    "ADV-9 [Nit] harness/model-guide/real-work.ts:666 | The routes unknown#high and unknown[1m] are not the route unknown. They show as the model unknown, rank, and pick when the allowed list holds unknown. The real export holds only the plain route unknown (6 rows), so this is a spec edge only. | Spec D16 Route key names the route unknown | No test. Fix scope: optional, compare the model key.",
+    "ADV-10 [Nit] harness/model-guide/real-work.ts:326-333 | A producer row with tasks 0 and accepted above 0 adds its accepted count and its rate to the merged first-round %. Probe: a row with 10 tasks and 20 % plus a tasks-0 row (accepted 5, rate 1.0) gives 60 %. The real export holds accepted at or below tasks in all 63 producer rows, so the shape cannot occur. | Spec D16 Producer table: a row with tasks 0 does not show (silent on sums) | No test. Fix scope: owner rules the sum rule.",
+    "ADV-11 [Nit] harness/model-guide/preview.sh:479-482 against :460-464 | tokens_text uses Python round (half to even), so 342500 shows 342k, and pct rounds half up. | Spec D16 Producer table shows 343k as an example only; the rounding mode is not specified | No test. Fix scope: none required."
+  ],
+  "evidence": [
+    "Command at commit d20d61100a184f5f039f08a3fd917a1241158e56: cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot gives exit 1 and `Tests  7 failed | 11 passed (18)`. The 7 failed cases are ADV4-3, ADV4-5, ADV4-9, ADV4-11, ADV4-12, ADV4-16, and ADV4-18 (findings ADV-6, ADV-7, ADV-3, ADV-4, ADV-5, ADV-1, ADV-2).",
+    "Passing cases: ADV4-1 (real shapes: [1m] with #variant, nested note, duplicate row, null cells), ADV4-2 (decided 0 rows, variant by decided), ADV4-4 (variant fallbacks), ADV4-6 (allowed forms and empty list), ADV4-7 (pick filters, 19.99 and 20, rated false), ADV4-8 (all rank ties and row order), ADV4-10 (footer with 0, 1 of 3, 2 of 3, and all unknown rows), ADV4-13 (row order shuffle on the committed fixture), ADV4-14 (two builds at the same time), ADV4-15 (A7), ADV4-17 (no overflow at 390, 980, 1280 px; number cells in one line; SHA-256 inside the card).",
+    "Mutation check on a copy of the production tree in /tmp/opencode/adv-p4/mut (the repo tree stayed unchanged): 12 mutants of real-work.ts. M1 decided->runs killed by ADV4-2. M2 allowed keeps [1m] killed by ADV4-6. M3 rate denominator with null rows killed by ADV4-1. M4 share as a fraction killed by ADV4-10. M5 gate boundary <= 20 killed by ADV4-7. M6 pick ignores allowed killed by ADV4-6 and ADV4-7. M7 no note strip killed by ADV4-1 and ADV4-10. M8 merge without [1m] strip killed by ADV4-1, ADV4-2, ADV4-6. M9 no rework tie key, M11 no task tie key, and M12 no escape tie key each killed by ADV4-8. M10 variant by runs killed by ADV4-2. M7 and M9 first survived; the role tightened ADV4-1 and ADV4-8 and reran both.",
+    "Real-data browser check (preview built from the real files into /tmp/opencode/adv-p4/preview-real, docs/ unchanged, `git status --short docs/` prints nothing): at 390 px the default tables scroll inside an 311 px box with no page overflow, and the model-name cells are 88 px (producer) and 100 px (checker) wide. Name wraps: 3 lines for MiMo V2.6 Flash, DeepSeek V4.1 Flash, MiniMax M3.1 Flash, Muse Spark 1.3 Contributor, MiniMax M3.1 Flash (free), and GLM-5.3 Flash (free).",
+    "Observation, no finding: the real page is 3646 px high at 1280x800 (4.6 screens) and 3.4 screens at 1280x1080. Acceptance 13 says about 3 screens and the PM accepted the wording on 2026-11-17. The top block is 705 px high at 390x844 and fits one screen.",
+    "A5 (plan truthfulness): the 4.1e and 4.1f evidence lines of plan.md re-ran at HEAD with exit 0: input-check.test.ts `Tests  23 passed (23)`, real-work.test.ts `Tests  13 passed (13)`, leak-check.test.ts `Tests  22 passed (22)`, update.test.ts `Tests  9 passed (9)`. Review A ran guide (17) and preview-gate (99) at d74cf4c. The claim holds. plan.md:1164 lists page-check at 390, 980, and 1280 px as a Verify item and plan.md:1207 leaves it with the orchestrator, so the 4.1f [x] has no browser run; ADV4-16 and ADV4-18 now give that proof and fail.",
+    "A4 (vacuous pass): each case checks the exact row set or the counts before it reads a value (ADV4-1, 2, 3, 4, 6, 7, 10). ADV4-10 checks that an all-unknown export gives empty tables and ten no pick yet lines. ADV4-17 requires the number cells and three SHA-256 values before the width checks. The mutation runs M3, M7, M9, M11, M12 prove the cases fail on a wrong rule.",
+    "A7 (over-broad filter): ADV4-15 passes. A route note with never, do not, operator, witness, and new_lines as prose passes leak-check (exit 0). The same words beside a real operator key give exit 2 and `leak-check: key-field: ra-outcomes-2026-10-20.json operator`. The same words beside the private folder path give exit 2 and `leak-check: private-path: ra-outcomes-2026-10-20.json`. The filter keeps each hit.",
+    "Frozen paths: `git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..HEAD -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh` prints nothing.",
+    "Scope of this role: one new file, harness/model-guide-tests/adversarial-p4.test.ts, committed by explicit path as d20d61100a184f5f039f08a3fd917a1241158e56. No production file, no other test file, and no data file changed. measure/runs/ is not staged. The file reads no real dated data file and copies only the CSS file of docs/ into a temp repo.",
+    "Known items not repeated: RB-1 (symlink, no maximum input size) stays an accepted risk. RC2-3 (a checker row with no decided run shows 0.00) is outside the assertions of ADV4-2."
+  ],
+  "commands": [
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/{input-check,real-work,leak-check,update}.test.ts --configLoader native --maxWorkers=1 --reporter=dot (one file at a time)",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview /tmp/opencode/adv-p4/preview-real",
+    "node /tmp/opencode/adv-p4/measure.mjs, measure2.mjs, measure3.mjs, measure4.mjs (Playwright, Chrome channel, scratch probes)",
+    "bash /tmp/opencode/adv-p4/mutate.sh and mutate2.sh (mutation runs on a copy of the production tree in /tmp)",
+    "node /tmp/opencode/adv-p4/probe.mjs <spec>.json (tool probes in temp folders)",
+    "git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..HEAD -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4.test.ts"
+  ],
+  "test_strategy_violations": [
+    "A5: plan.md:1164 lists page-check at 390, 980, and 1280 px as a Verify item of task 4.1f and plan.md:1207 leaves the browser proof with the orchestrator; no browser run is recorded, and ADV4-16 shows that the 390 px rule of test-strategy 13.9 fails on the real files."
+  ],
+  "live_contract_violations": [
+    "ADV-1: test-strategy 13.9 browser proof (each model-name cell in 2 lines or fewer at 390 px) fails on the page built from the real files.",
+    "ADV-2: spec D16 Width (a visible hint for each wide table) fails for the More columns tables at 390 and 980 px."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "Main cases are right (ADV4-1, 2, 4, 6, 7, 8, 10 pass), but 7 edge and layout cases fail: harness/model-guide/pages/real-work.html:48 (3-line names at 390 px), preview.sh:606, real-work.ts:555, :482, preview.sh:363, real-work.ts:383, :414."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "The existing page B tests pass (input-check 23, real-work 13, leak-check 22, update 9) but missed the 390 px wrap, the scroll hint, the float tie, and the alias order; DS19 reads CSS text only, and ADV4-16 fails where DS19 passes."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 57baaaa..HEAD on provenance.ts, harness/tests, opencode-host.sh, and opencode-credential.sh prints nothing, and the diff names only the model-guide files of test-strategy 13.1 PC-1."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "plan.md:1155-1207 cites each command with a labeled count that held on re-run at HEAD, but plan.md:1207 leaves the 390 px browser proof unrun while 4.1f is [x]."
+    }
+  ]
+}

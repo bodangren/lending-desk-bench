@@ -1,0 +1,91 @@
+Red 4.13e hardening after Reviews A, B, C (edee50b) — 2026-11-18, worktree of def8681
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha def8681105e9b343ae1a6774b1f2df70eeb804ae
+HEAD at run time: def8681105e9b343ae1a6774b1f2df70eeb804ae (plus the uncommitted test changes under test)
+
+Each file ran once, alone. Fakes only (fake-opencode, fake quota server, synthetic temp data).
+After each run, `pgrep -af "fake-opencod[e]"` and `pgrep -af "quota-serve[r]"` printed no line.
+
+1. `bun test harness/model-guide-tests/real-work.test.ts`
+   13 pass, 3 fail, 353 expect() calls.
+   Fails (all N8 / new, production still holds NET_SCORE_GATE = 20 and the
+   row-count rule):
+   - DS12: the marks not-for-verdicts and not-allowed sit on the model rows as attributes
+     (gate-six net 19.9 now carries no mark; HEAD marks it)
+   - DS13: each of the ten top lines starts with its role label and a colon, in the given order
+     (Review B now picks gate-one 60 %, 5 runs, net 18.5; HEAD says no pick yet)
+   - DS26: the footer row count equals the outcomes array length, even with a malformed row
+     (footer 42 = outcomes length; HEAD counts 41 valid rows)
+   Holds at HEAD (guard): DS26 net-0 case (net 0 carries the mark, review-c no pick).
+
+2. `bun test harness/model-guide-tests/guide.test.ts`
+   18 pass, 0 fail, 211 expect() calls.
+   No failing case: the N8 change is the pick-rule comment only
+   ("20 or more" -> "above 0 (PM 2026-11-18)"); guide.ts is decoupled from
+   real-work.ts per the test strategy, so the file stays green.
+
+3. `bun test harness/model-guide-tests/preview-gate.test.ts`
+   107 pass, 4 fail, 1902 expect() calls.
+   Fails:
+   - G6: each top line starts with its role label and a colon, and each line
+     without a pick shows one of the four causes (N8: Review B now picks
+     gate-one net 18.5; HEAD says no pick yet)
+   - A4-3 refuses publish with an unreadable directory under docs without a stack trace
+   - A4-1 refuses preview.sh with an unreadable file under docs without a traceback
+   - A4-1 keeps an existing preview folder byte-identical when a docs entry is unreadable
+   The three A4 cases are untouched by this diff and time out under `bun test`
+   because each takes `(ctx)`: bun treats the parameter as a never-called done
+   callback (5 s timeout). Pre-existing runner artifact, not a Red signal.
+
+4. `bun test harness/model-guide-tests/review-run.test.ts`
+   44 pass, 5 fail, 344 expect() calls.
+   Fails (all new B3/B4; production reads the whole message file / follows links):
+   - M5 a pass refuses a message file with a second line
+   - M6 a pass refuses a message file with a control character
+   - M7 a pass refuses a message file with a line over 1000 bytes
+   - M8 a pass refuses a symlinked message file
+   - M9 a pass refuses a symlinked seeded diff
+   Holds at HEAD (guard): P2b the probe makes exactly 3 calls on a persistent
+   transport error. All 43 earlier cases pass.
+
+5. `bun test harness/model-guide-tests/seed-messages.test.ts`
+   17 pass, 0 fail, 77 expect() calls.
+   No failing case: the 8 new SM4 cases (B5/R3: `../x`, `a/b`, linked
+   messages/ folder, set id twice, unknown flag, flag with no value, missing
+   set folder, set with no diff) all hold at HEAD; they pin guards that
+   seed-messages.ts already implements. All 9 earlier cases pass.
+
+6. `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
+   23 pass, 4 fail (27).
+   Fails (all new; production accepts the rows / marks every id):
+   - J18 refuses a judge row with an empty quota_provider
+   - J18b refuses a judge row with an empty quota_source
+   - J18c refuses a judge row with a tab in a field
+   - J19 judged_by holds only the finding ids that hold a verdict
+     (HEAD also marks d-01#C1f2e3d4c5b6a, which holds no verdict)
+   Holds at HEAD (guard): J18d the committed judges.json holds the three
+   routes with both quota fields and no tab. All 22 earlier cases pass.
+
+7. `cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot`
+   22 pass, 2 fail (24).
+   Fails (both N8 updates; production still gates at 20):
+   - ADV4-7: the pick skips a not-allowed, unrated, and net-0 row
+     (HEAD marks 19.99 not-for-verdicts and leaves review-c empty)
+   - ADV4-21: the gate pick takes the checker order and the above-0 gate, not the pass %
+     (HEAD marks 19.99 and leaves review-c empty)
+   Renamed-but-green: ADV4-20 (neither -50 nor not-rated picks at or below 0;
+   same outcome under gate 20).
+
+N8 changed assertions (old ">= 20" -> new "net above 0", PM 2026-11-18):
+- adversarial-p4.test.ts: ADV4-7 cell ad-lo 19.99 -> 0 with comment; ra-lo 19.99
+  expectation flipped to no mark; ad-lo 0 marked; top-block review-c null ->
+  ["p1/ad-ok", ...] (unchanged ad-ok) and adversarial pick comment update;
+  ADV4-20 title "under 20" -> "at or below 0"; ADV4-21 title "the 20 boundary"
+  -> "the above-0 gate", lo1999 no-mark, review-c null -> picks lo1999 100 %;
+  AA-lookup comment "at or above 20" -> "above 0".
+- guide.test.ts: pick-rule comment "20 or more" -> "above 0 (PM 2026-11-18)".
+- preview-gate.test.ts: G6 Review B "no pick yet" -> gate-one 60 % / net 18.5;
+  none-list five -> four; causes comment updated.
+- real-work.test.ts: DS12 gate-six removed from the marked set with no-mark
+  assertion; DS13 review-b no-pick -> gate-one 60 % / net 18.5; DS13 comment
+  "under the limit" -> "now rated (PM 2026-11-18)"; new DS26 block.

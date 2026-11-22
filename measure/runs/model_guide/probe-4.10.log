@@ -1,0 +1,11 @@
+provider-credential: the credential seed failed
+OPENCODE_HOME CLEANUP stopped=1 path=/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-model-guide-583264
+provider-credential: the credential seed failed
+OPENCODE_HOME CLEANUP stopped=1 path=/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-model-guide-589642
+provider-credential: the credential seed failed
+OPENCODE_HOME CLEANUP stopped=1 path=/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-model-guide-3028025
+OPENCODE_HOME CLEANUP stopped=0 path=/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-model-guide-3029143
+provider-credential: the credential seed failed
+OPENCODE_HOME CLEANUP stopped=1 path=/home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-model-guide-3031020
+heavy-run: lock wait over 600 s — priority p2 — holder PID 1784818: flock -w 1800 -E 201 /home/daniebo/Desktop/primary-parity-progress/heavy.lock /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh --locked -c ./forge all sprout-grandpa 
+/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh: line 586: /proc/1784818/cmdline: No such file or directory

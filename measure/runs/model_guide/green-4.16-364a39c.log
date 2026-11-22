@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-jr-green
+task: 4.16
+status: pass
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 364a39c959735d8ab3f047abe5b4a30ec36b6c81
+resulting_head: 23f16f1
+commits: a05a0f4 fix(model_guide): Green task 4.16 sum tool-step tokens; 23f16f1 measure(model_guide): record Green task 4.16 r9
+tests: review-run 130 pass / 0 fail (attempt 2; attempt 1 failed F19 L5 timing case at 729 ms, no code change); judge-run Tests 61 passed (61); adversarial-p4f 48 passed / 14 skipped / 0 fail; adversarial-p4e 54 pass / 0 fail; decode-parity 8 pass / 0 fail; bash -n on both runners
+files: harness/model-guide/review-run.sh, harness/model-guide/judge-run.sh, measure/tracks/model_guide/plan.md
+dispositions: P4F-1=FIX
+backlog: skipped cases A-F1, P4F-2, P4F-3 go to backlog row 4.15
+END_MEASURE_AGENT_RESULT

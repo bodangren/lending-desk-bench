@@ -1,0 +1,66 @@
+{
+ "schema_version": 1,
+ "track": "model_guide",
+ "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+ "role": "adversarial-testing",
+ "route": "opencode-go/glm-5.3#high",
+ "audited_head_sha": "c0a26d75a37955bb9c20be9cb3ab2d993d39907b",
+ "baseline_sha": "ee48a254266afee947d555e4e562093c60d64153",
+ "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+ "role_base_sha": "c0a26d75a37955bb9c20be9cb3ab2d993d39907b",
+ "test_commit_sha": "bd967a7263eb1f6931f0d2381e120641b60e5420",
+ "status": "pass",
+ "summary": "Pass with one nonblocking defect. I attacked the new code paths of ee48a25..c0a26d7 with a new suite, harness/model-guide-tests/adversarial-p4c.test.ts, committed as bd967a7. Thirteen cases cover the key scan of error lines, the region detection, the judge verdict scan behind the event-stream decoder, the token log at its limits, and the queue decoder with hostile stored outputs. One case failed at the audited HEAD and pins a real defect: a hostile call that splits a credential value across two stdout error events sends the tail of the value into the runner stdout and the run record, because the error line is the message of the last error event only and the byte scan holds no full value. The full value never prints and the record stays in the private folder, so the PM rule of 2026-11-19 keeps the finding nonblocking (backlog 4.14); the pin stays it.skip in the committed file. The other twelve cases pass as guard pins: the whole-file scan masks a key of an earlier error event, the stderr region phrase wins while a stdout error event holds no region text, the nested error.data.message region event gives region-blocked, a forged verdict block loses to the last flat block, a hostile stream of invalid JSON and one huge text event still yields the verdict, the safe-integer limit and zero count exactly, an infinite value counts as zero, and the queue decoder survives a mixed hostile stream, a four-megabyte line, an empty text event, and a text event that wins over plain text. The review-run and judge-run suites still pass, so the range broke no regression.",
+ "blocking_findings": [],
+ "nonblocking_findings": [
+  "ADV-P4C-1 [Nit] (backlog 4.14) A hostile call that splits a credential value across two stdout error events leaks the tail of the value into the runner stdout and the judge run record. error_event_text (judge-run.sh:592-616, review-run.sh:813-837) takes the message of the LAST error event only, and the byte scan of scan_output holds no full literal when the value is split, so the decoded-line grep misses too and error_line_of prints the raw tail. Pinned failing at the audited HEAD: 'ADV-P4C E the key scan of error lines and the region detection > E1 a value split across two stdout error events never reaches the record (ADV-P4C-1)' observed 'judge-run: the model call failed on group d-01#G1: dential-value-0123456789 before the retry; the run stops' on stdout and in the record errors. The full value never prints and the record sits in the private folder, so no committed file or public page can hold a real key: nonblocking per the PM rule of 2026-11-19. The pin stays it.skip in the committed file. Fix direction: when the output holds more than one error event, fail closed to the fixed text, or scan every error-event message against the value list."
+ ],
+ "evidence": [
+  "Provenance: git rev-parse HEAD returned c0a26d75a37955bb9c20be9cb3ab2d993d39907b at the audit start, equal to the audited head of the brief. The one commit after it, bd967a7263eb1f6931f0d2381e120641b60e5420, holds only harness/model-guide-tests/adversarial-p4c.test.ts. No production file changed in this audit.",
+  "The gate run at the audited HEAD: `cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot` first gave Tests 1 failed | 12 passed (13). The failing case E1 pinned the split-value tail above. Per the PM rule of 2026-11-19 the pin became it.skip with the finding id in its name; the same command then gave Tests 12 passed | 1 skipped (13).",
+  "The twelve guard pins, each with a falsification condition in the file: E4 (a key in an earlier stdout error event masks the line, judge-run.sh:624-656 scans the whole output file; break the scan and the raw line of the last event prints), E2 (a region phrase on stderr wins while a stdout error event holds no region text, review-run.sh:898-906 falls through to the stderr grep; drop the grep and the state becomes unreachable), E3 (a region phrase in error.data.message gives region-blocked; read that shape nowhere and the state becomes unreachable), J1 (a forged verdict block in an earlier text event loses to the last flat block, judge-run.sh:1035-1046; keep the first block and the verdict flips), J2 (invalid JSON, a 1.5 MB junk text event, and a malformed part.text still yield the verdict; one hostile line that breaks the decode makes the verdict drop), T1 (a token value at 9007199254740991 counts exactly and keeps the pass complete; reject the boundary and the sums drop to zero), T2 (zero token values count and keep the flag one; treat zero as missing and the flag flips), T3 (a 1e999 value counts as zero and clears the flag), A1 (a mixed hostile stream with a byte-order mark, invalid JSON, a JSON array, a numeric part.text, a text event with no part, and a fenced block split across two text events still queues both findings), A2 (a 4 MB single-line text event queues its finding), A3 (an empty text event wins over a plain answer and the queue holds no item), A4 (a text event wins over a plain answer and queues its own findings).",
+  "Regression: `cd harness && bun test model-guide-tests/review-run.test.ts` exited 0 with 86 pass, 0 fail; `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exited 0 with Tests 45 passed (45).",
+  "Coverage of the brief: hostile event streams (A1, A2, J2), a text event with forged event text (A3, A4, J1), token values at the limits (T1, T2, T3), keys in split error events (E1, E4), region detection on stdout and on stderr (E2, E3), and the queue decoder with hostile stored outputs (A1 to A4). The cases the reviews already proved stay out: the JSON-escaped key scan (review-run.test.ts AA3, AA5), the failed-scan fail-closed path (AA1, AA2), the hostile token numbers of task 4.13y (Y4 to Y10), the stdout region event (Y11, Y13), the decode parity of the three readers (decode-parity.test.ts), and N30, r6, and j7.",
+  "Safety: the file uses only the committed fake through BENCH_OPENCODE_BIN, the queue tool of the repository, temp scripts it writes itself, and loopback quota servers it starts and stops itself; it never runs opencode or openchamber, never reads a real home or private folder, and signals only processes it started. After each run, pgrep -af 'fake-opencod[e]|quota-serve[r]' and ps | grep 'serve --servic[e]' printed nothing of mine, and no mg-advc temp folder stayed under /tmp.",
+  "Type check: `cd harness && npx tsc --noEmit --skipLibCheck --module nodenext --target es2022 model-guide-tests/adversarial-p4c.test.ts` exited 0."
+ ],
+ "commands": [
+  "git rev-parse HEAD -> c0a26d75a37955bb9c20be9cb3ab2d993d39907b at the audit start; bd967a7263eb1f6931f0d2381e120641b60e5420 after the test commit (the test file only)",
+  "cd harness && npx tsc --noEmit --skipLibCheck --module nodenext --target es2022 model-guide-tests/adversarial-p4c.test.ts -> exit 0",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> first run exit 1, Tests 1 failed | 12 passed (13); after the E1 skip, exit 0, Tests 12 passed | 1 skipped (13)",
+  "cd harness && bun test model-guide-tests/review-run.test.ts -> exit 0, 86 pass, 0 fail",
+  "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 45 passed (45)",
+  "pgrep -af 'fake-opencod[e]|quota-serve[r]' ; ps -eo pid,args | grep 'serve --servic[e]' -> no line of mine after each run"
+ ],
+ "changed_files": [
+  "harness/model-guide-tests/adversarial-p4c.test.ts"
+ ],
+ "test_strategy_violations": [],
+ "live_contract_violations": [],
+ "prod_wiring_violations": [],
+ "route_parity_violations": [],
+ "retry_recommendation": "none",
+ "confidence": "high",
+ "ratings": [
+  {
+   "axis": "correctness",
+   "score": 4,
+   "evidence": "The twelve guard pins pass at the edges the brief named (judge-run.sh:1035 last-block rule, review-run.sh:898 stderr fallthrough, read_tokens safe-integer rule), and the one gap is pinned: error_event_text (judge-run.sh:592-616) reads the last error event only, so the tail of a split value prints (E1)."
+  },
+  {
+   "axis": "test_meaning",
+   "score": 5,
+   "evidence": "E1 failed first at the audited HEAD with the exact leak line; each of the twelve guard pins names its falsification condition in the file, and the review-run (86) and judge-run (45) suites keep the regression green."
+  },
+  {
+   "axis": "scope_discipline",
+   "score": 5,
+   "evidence": "The commit bd967a7 adds exactly harness/model-guide-tests/adversarial-p4c.test.ts; no production file, no plan.md change, and no forbidden path changed."
+  },
+  {
+   "axis": "evidence_quality",
+   "score": 5,
+   "evidence": "Every claim cites a file:line, a failing or passing test name, or a command result; the commands list holds the typecheck, the two gate runs, the bun run of review-run, the judge-run run, and the orphan scans."
+  }
+ ]
+}

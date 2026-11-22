@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: pass
+route: opencode-go/glm-5.3#high
+head: edee50b8e93f8cdfda51791a897d3480436923b4 (verified equal to audited_head_sha)
+range: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..edee50b (remediation focus 3581902..edee50b)
+summary: Re-review after the FAIL at 3581902. F1 is resolved: the PM 2026-11-18 ruling puts the commit-message first line in messages/<diff_id>.txt, review-run.sh sends prompt, message line, seeded diff in that order for the pass and the probe, refuses a missing or empty message file before any call, and both private sets hold one non-empty one-line message file per diff (14 and 14, 6 and 6, no content printed). All four gate claims reproduced exactly: review-run 43 pass 0 fail 329 expect() calls, seed-messages 9 pass 0 fail 41 expect() calls (bun), judge-run 22 passed, adversarial-p4-runner 14 passed (recorded vitest line), no orphan fake-opencode or quota-server process after any run. N1 fixed (closeout item 6 now six rows, no judge row), N2 recorded (plan 4.13/4.14), N4 fixed (D14 retry reword), N5 fixed (vitest gate recorded). No blocking finding. Five nonblocking findings: N3 carried (footer row count vs Q-S5, neither fixed nor recorded), N6 new (spec D10 names pick-diffs.ts as the message writer but no tool writes messages for a new or reseeded set; reseed runbook lacks the step), N7 new (spec D10 says the runner never reads keys/ but the probe reads a key for control-diff selection, review-run.sh:603), N8 new (the gate-net-above-0 ruling changed spec and strategy text but real-work.ts:42, guide.ts, and preview-gate.test.ts still hold >= 20 with no task assigned), N9 nit (plan 4.10 says the probe runs before 4.9f, which is already complete). The four violation arrays are empty. Handoff routes N8, N6, and N3 to the orchestrator before tasks 4.14, any reseed, and 5.4.
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,19 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+track: model_guide
+phase: Phase 4b task 4.13 Sol seat
+route: opencode-go/muse-spark-1.3-contributor#high
+status: red-complete
+baseline_sha: 7d7d218d00a95d9d2856173b8136b6ace4a5
+role_base_sha: 7f92b17e4bd1d9ac96eada7b833e3d4b0247aa78
+head_sha: 78bcba8
+commits: 78bcba8
+tests: harness/model-guide-tests/judge-run.test.ts (J18d updated, S1 and S2 added)
+files: harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md
+red_command: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+red_result: exit 1, Tests 3 failed | 60 passed (63); failures are J18d, S1, S2 only, each for the missing Sol seat
+remaining_failures: J18d (no Sol row in committed judges.json), S1 (Sol not on the live path; quota.ts refuses provider openai), S2 (Sol not a pilot route so no unset-base refusal)
+quota_item: npx tsx model-guide/quota.ts --provider openai exits 2 (the provider openai is not in the spec D15 table); S1 pins the /api/quota/codex read
+scan_item: no test added; the live path calls no scan-values seam (judge-run.sh near lines 1148 and 1165)
+handoff: Green implements the Sol seat: add the Sol row to harness/model-guide/judges.json, list openai/gpt-6.1-sol#high in is_pilot_route, and map provider openai to the codex quota id. Row 4.13 stays [~] until Green flips it.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,70 @@
+# Red task 1.16 — review fixes, round 4 (base 46002d0aa52f4f5a8db8d61ac76658fe1e100265)
+
+Commands (one file at a time, daytime rule):
+
+```
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+```
+
+Result line 1: `Tests  9 failed | 76 passed (85)`, exit code 1.
+Result line 2: `Tests  15 passed (15)`, exit code 0.
+Result line 3: `Tests  19 passed (19)`, exit code 0.
+Result line 4: `Tests  2 passed (2)`, exit code 0.
+
+The production files at HEAD equal the base 46002d0 tree: `git diff
+46002d0..HEAD -- harness/model-guide` prints nothing, and the only change
+under `harness/model-guide-tests` is the new test file. The daily publish
+commit ddd320f that landed during this task touches docs/assets/data only,
+so the runs prove the failures on the 46002d0 production code. The run is
+not root (uid 1001), so the mode 000 cases run; they skip with a named
+reason when root.
+
+## Failed test names — preview-gate.test.ts (9)
+
+1. B3-1 refuses preview.sh with a relative symlink under docs before any write
+   - reason: exit 0 (preview accepts a valid docs symlink and copies it),
+     expected exit 2 with `preview: refused path <link path>`
+2. B3-1 refuses preview.sh with an outside symlink under docs before any write
+   - reason: exit 0, expected exit 2 with the refusal line
+3. B3-1 refuses preview.sh with a directory symlink under docs before any write
+   - reason: exit 0, expected exit 2 with the refusal line
+4. B3-1 refuses publish with a relative docs symlink in the approval row and writes through no link
+   - reason: exit 0, and the copy writes through the docs link onto
+     docs/index.html (statSync follows links in the walk), expected exit 2
+     with `publish: drift alias.html`
+5. B3-1 refuses publish with an outside docs symlink and leaves the outside file byte-identical
+   - reason: exit 0, and the copy writes through the `../../` link and
+     replaces the outside file, expected exit 2 with `publish: drift escape.html`
+6. B3-1 refuses publish with a directory symlink under docs and writes no file
+   - reason: the walk follows the directory link and prints
+     `publish: drift dirlink/secret.txt`, expected `publish: drift dirlink`
+7. A4-3 refuses publish with an unreadable directory under docs without a stack trace
+   - reason: exit 1 with the EACCES stack trace of readdirSync
+     (publish.ts walk), expected exit 2 with `publish: drift lockdir`
+8. A4-1 refuses preview.sh with an unreadable file under docs without a traceback or a half-built folder
+   - reason: exit 1 with a `cp: cannot open ... Permission denied` line on
+     stderr and a half-built preview folder (mkdir -p ran first), expected
+     exit 2 with `preview: unreadable docs/locked.txt` and no folder
+9. A4-1 keeps an existing preview folder byte-identical when a docs entry is unreadable
+   - reason: exit 1 with the `cp:` error, expected exit 2 with
+     `preview: unreadable docs/locked.txt` and a byte-identical preview folder
+
+## Tightened test (passes at HEAD, by design)
+
+10. A3-3 refuses a symlink planted inside an existing preview folder without a
+    docs write
+    - now asserts the exact line
+      `preview: refused path <preview>/real-work.json` and empty stderr
+      (A4-4/C4-3). The 1.15 fix already prints that line, so the tightened
+      test passes at HEAD. It is a strength fix that pins the line text; it
+      is not a false Red case.
+
+Existing tests: all 76 of preview-gate.test.ts pass (the 9 failed are the new
+tests), and input-check.test.ts (15), real-work.test.ts (19), and
+leak-guard.test.ts (2) pass, each run alone with exit 0.
+
+No synthetic fixture file was added; every case builds a temp repo with the
+existing helpers. No test reads the real docs/, the real export, or a model.

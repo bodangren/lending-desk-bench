@@ -1,0 +1,95 @@
+Green task 4.1f — page B data source (spec D16 "Data source (PM 2026-11-17)")
+Track: model_guide. Phase 4.
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha cca8fad01f1d253482f55007abff7731455d3660 (HEAD after the Red 4.1e record)
+
+Command note: each test file ran one at a time from harness/, with
+`--configLoader native --maxWorkers=1 --reporter=dot`. The full suite did not
+run (PM rule A-23). The nine runs of 2026-11-18 ran at HEAD d94f549, the Mid
+Red fix that closes the three test defects; Green changed no production file
+after them.
+
+1. Commits (this Green role, full SHAs)
+
+  4930b3202c25970919f76897656cfc4c85152da5 feat(model_guide): page B data source part 1 real-work.ts (task 4.1f)
+  bc968275641f5a134abb50d0c67d70a398b7c772 feat(model_guide): page B too-few order follows the data (task 4.1f)
+  a997185b4a925f4e1e9e91c855e7a6635b1a1b61 feat(model_guide): page B data source part 2 preview render and template (task 4.1f)
+  5647f415772ce9c568228622eab41b48a7d6904f feat(model_guide): guide reads the page B data source schema (task 4.1f)
+  7a54b85ab1b230e51b35fe9e5149437f218c7fd4 feat(model_guide): update.sh takes the manifest path, names for real keys (task 4.1f)
+  d25b55690302c867cf11211001bb9486e8b32d2c feat(model_guide): page B data files 2026-11-17 (task 4.1f)
+  72a8fce8a8588c2ecddba2a90c4bd3a8fd0dda37 measure(model_guide): record Green task 4.1f (blocked record)
+  94af783e15f6f73590a2f59ba1a27cee8159bf84 measure(model_guide): record Green task 4.1f (closeout record)
+
+  Red fixes of the 4.1e test files: f205c80 (Mid Red) and
+  d94f5490b9a1bce3a2da881e54d8758508f7a4a2 (Mid Red). Green edited no test or
+  fixture file.
+
+2. Nine test result lines (HEAD d94f549, 2026-11-18)
+
+  input-check.test.ts     exit 0  Test Files  1 passed (1)  Tests  20 passed (20)
+  real-work.test.ts       exit 0  Test Files  1 passed (1)  Tests  12 passed (12)
+  preview-gate.test.ts    exit 0  Test Files  1 passed (1)  Tests  99 passed (99)
+  guide.test.ts           exit 0  Test Files  1 passed (1)  Tests  15 passed (15)
+  update.test.ts          exit 0  Test Files  1 passed (1)  Tests  9 passed (9)
+  leak-check.test.ts      exit 0  Test Files  1 passed (1)  Tests  22 passed (22)
+  adversarial.test.ts     exit 0  Test Files  1 passed (1)  Tests  47 passed (47)
+  adversarial-p2.test.ts  exit 0  Test Files  1 passed (1)  Tests  13 passed (13)
+  adversarial-p3.test.ts  exit 0  Test Files  1 passed (1)  Tests  34 passed (34)
+
+  F20 (the root preview path) passes with the new parser: the path refusal
+  keeps priority over the flag check, and no tool starts.
+
+3. Gates
+
+  bash -n harness/model-guide/preview.sh                  exit 0
+  git status --short docs/                                prints nothing
+  MANIFEST loop of test-strategy 13.2 (three files)       prints nothing
+  leak-check.ts on the staged data files (13.7)           exit 0
+  bash harness/model-guide/preview.sh \
+    --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt   exit 0
+
+  Live page facts (spec 13.9): 10 pick items; two `data-mg="default-table"`
+  tables with 24 ranked rows; six `.table-wrap` boxes with tabindex, role, and
+  aria-label; footer `2026-11-17`; rows 217, routes 53, unknown rows 6, share
+  `2.8 %`; three `footer-file` items with SHA-256 values; no
+  `data-mg="work-type"`; no raw route key in the print-audit block; the block
+  shows `Kimi K3.1 Pro 11 of 13` and `Claude Sonnet 5.5 13 of 13`.
+
+4. Design points recorded for review (no spec change)
+
+  - A checker row with 0 decided runs keeps a row with a dash pass % and
+    `0.00` findings per run. The real data holds one
+    (`opencode-go/hy4-flash-free`).
+  - A producer `first_round_rate` above 1, and a negative or non-finite count,
+    leave their average and never count as zero (spec DS6, adversarial H).
+  - A route whose stripped key is empty is left out; any role outside the ten
+    of rule 8 shows in the Roles column and takes no top line.
+  - `model-names.json` gained six names for real keys whose public name is
+    sure: `claude-sonnet-5-5`, `coding-plan/deepseek-v4-pro`,
+    `muse-spark-1.3-contributor`, `opencode-go/glm-5.3`,
+    `opencode-go/kimi-k3.1-pro`, `volcengine-agent-plan/deepseek-v4-pro`. The
+    HY4 and ark-code keys stay unnamed because their public name is not sure.
+  - U3 needs six `.table-wrap` boxes; the page holds six: the two default
+    tables, the two Too few tasks groups, and the two More columns toggles.
+    The six follow spec 13.6 and the U3 guard.
+
+5. Plan state
+
+  4.1e is [x] cca8fad, with the Mid Red fixes f205c80 and d94f549 recorded.
+  4.1f is [x] d25b556, the last implementation commit. No task is [b].
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1f
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: cca8fad01f1d253482f55007abff7731455d3660
+resulting_head: 94af783e15f6f73590a2f59ba1a27cee8159bf84
+commits: 4930b3202c25970919f76897656cfc4c85152da5, bc968275641f5a134abb50d0c67d70a398b7c772, a997185b4a925f4e1e9e91c855e7a6635b1a1b61, 5647f415772ce9c568228622eab41b48a7d6904f, 7a54b85ab1b230e51b35fe9e5149437f218c7fd4, d25b55690302c867cf11211001bb9486e8b32d2c, 72a8fce8a8588c2ecddba2a90c4bd3a8fd0dda37, 94af783e15f6f73590a2f59ba1a27cee8159bf84
+files_changed: harness/model-guide/real-work.ts, harness/model-guide/preview.sh, harness/model-guide/pages/real-work.html, harness/model-guide/guide.ts, harness/model-guide/update.sh, harness/model-guide/data/model-names.json, harness/model-guide/data/ra-outcomes-2026-11-17.json (new), harness/model-guide/data/aa-reliability-2026-11-17.json (new), harness/model-guide/data/allowed-routes-2026-11-17.json (new), harness/model-guide/data/MANIFEST-2026-11-17.txt (new), measure/tracks/model_guide/plan.md
+tests: input-check 20 passed; real-work 12 passed; preview-gate 99 passed; guide 15 passed; update 9 passed; leak-check 22 passed; adversarial 47 passed; adversarial-p2 13 passed; adversarial-p3 34 passed. Gates: bash -n preview.sh 0; docs/ clean; MANIFEST loop clean; leak-check on staged data 0; live preview exit 0.
+dispositions: none
+handoff: Task 4.1f is green at HEAD 94af783. The implementation commits are 4930b32 to d25b556; 72a8fce and 94af783 are the plan records. All nine test files of the 4.1e list exit 0 at 2026-11-18, and the live preview on the real data exits 0 with the 13.9 values. The orchestrator still owns the `page-check` browser proof at 390, 980, and 1280 px (spec 13.9, test-strategy 13.11), the Review A/B/C and adversarial audits, and the closeout of the 4.1e/4.1f pair. Open review points: a checker row with 0 decided runs shows a dash pass % and `0.00` findings per run; six model-names entries were added for sure real keys; the F20 tolerance of an unknown flag when the preview path itself is unsafe follows spec Q-S12 by refusing the flag whenever the path is safe. No file of measure/runs/, docs/, or the review-run work was staged.
+END_MEASURE_AGENT_RESULT

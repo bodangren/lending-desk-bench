@@ -1,0 +1,11 @@
+Adversarial P2 round 3 verdict on b4fba01: nine suites green (235 tests); the 2e4e641 parent walk refuses a symlinked .tmp with exit 2; P2B4-1 judged nonblocking; no blocking defect; 119b06d touches only docs/assets/data/.
+MEASURE_AGENT_RESULT
+role: adversarial
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: b4fba01b280a7ccfc4186a1de318435d0d01c034
+result_file: measure/runs/model_guide/adversarial-b4fba01.json
+retry_recommendation: none
+summary: round 3 at b4fba01: 235 tests green, PREVIEW_CHAIN refusal verified, P2B4-1 nonblocking per header and D21, no blocking defect
+END_MEASURE_AGENT_RESULT

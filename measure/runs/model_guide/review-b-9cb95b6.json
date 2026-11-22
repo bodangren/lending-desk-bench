@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "audited_head_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 8 passes with no blocker. The delta 80c17f5..9cb95b6 changes five files: real-work.ts (3 lines), preview.sh (3 lines), two test files, and plan.md. Work-type names from unknown and other rows now reach real-work.json with an empty row list. isRow validates every row first, so the names pass the same schema checks. The build stays Object.fromEntries, so __proto__ stays an own key. The H3 text goes through html.escape. No count, route text, or row value from an unknown or other row enters the public JSON or page. No new write path exists. B7-1 to B7-3 stay nonblocking and unchanged.",
+  "security_applicability": "applicable: test-strategy.md section 9 Phase 1 row assigns Review B the publish gate, the no-docs/-write rule, and the no-real-export-bytes rule. git diff --name-only 80c17f5..9cb95b6 lists harness/model-guide/real-work.ts and harness/model-guide/preview.sh, which carry export-derived text into the public JSON and the generated page.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "B8-1 [Nit] review-b: the new test 'Acceptance 5 (PA1-1)' in preview-gate.test.ts uses the plain name `translation`. No test feeds a hostile name (a quote, an angle bracket, or __proto__) through the new unknown-route path to the H3 and the no-table section. The code is correct (preview.sh:316 uses html.escape, real-work.ts:461 uses Object.fromEntries, and ADV-8 at adversarial.test.ts:553 covers __proto__ on a known route), so this is a test-gap record only. Optional: add one adversarial case with a hostile name carried only by an unknown row.",
+    "B7-1 [Nit] review-b: carried unchanged from B5-1. harness/model-guide/real-work.ts:8-9 documents the check order as `input, json, manifest, sha256, size, schema, run-sum`, but the code runs manifest, sha256, and size before the JSON parse. The tool fails closed. The delta changes only lines 408-426 of real-work.ts, not the header. Fix: align the header line with the code order.",
+    "B7-2 [Nit] review-b: carried unchanged from B5-2. A same-user race window remains between the docs scan and the copy in preview.sh, and between the docs walk and the staged write in publish.ts. publish.ts has 0 diff lines in 80c17f5..9cb95b6, and the preview.sh diff touches only work_tables. Record only. Optional hardening: pass the flag `wx` to writeFileSync.",
+    "B7-3 [Nit] review-b: carried unchanged from B5-3. preview.sh scans an existing preview folder with `find -type l`, so it refuses symlinks only; a FIFO in the preview folder stalls cp. The case is same-user only inside the user-owned .tmp folder. The preview.sh diff does not touch this code. Fix: refuse non-regular entries in the preview folder too, or write page files to temp names and rename."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD printed 9cb95b6643eba0cd04f0623865224f3d9ef88b3c before and after the audit, equal to audited_head_sha, so the audit is current. git status --short printed only the pre-existing untracked .opencode/, harness/wt.txt, and tech-debt.md.",
+    "Delta scope: git diff --name-only 80c17f5..9cb95b6 lists preview-gate.test.ts, real-work.test.ts, preview.sh, real-work.ts, and plan.md. git diff --name-only 80c17f5..9cb95b6 -- docs printed 0 lines, and publish.ts has no diff. git ls-files .tmp printed 0 lines, so no generated file entered git.",
+    "Same schema checks: real-work.ts:302-304 runs isRow on every weekly and all_time row before any row is read, with no route filter. isRow (:88-122) requires a string route, safe-integer counts, and for each work_types key a non-array object with safe-integer runs, pass, and fail. So an unknown or other row passes the ADV-6 to ADV-9 checks exactly like a known row. The delta moved no check, and the skip at :411-415 comes after validation.",
+    "Prototype handling: real-work.ts:408 builds a Map keyed by the name, and :461 builds the output with Object.fromEntries(workTypeEntries). A name `__proto__` becomes an own key and does not change a prototype. adversarial.test.ts:553-566 asserts the key stays in Object.keys(page.work_types). It passes (49 passed).",
+    "No data from skipped rows: for a skipped route, real-work.ts:411-415 sets key to the empty string, adds the name to the Map, and runs `continue` before any accumulator. No runs, pass, fail, route text, or model key from that row is read into the output. The value of the name is an empty array. real-work.test.ts 'keeps a work type carried only by the unknown route with an empty row list' asserts toEqual([]). Coverage keys are unchanged: unknown_runs and other_runs are the existing sums at :463-468.",
+    "Escaping: preview.sh:315-317 writes `<h3>{html.escape(name)}</h3>\\n<p>no pick yet</p>`, and the table path at :319-322 keeps html.escape in the H3 and the aria-label. Probe `python3 -I -c` with x\"><script>alert(1)</script>&'  <p> printed x&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;&amp;&#x27;  &lt;p&gt;. The no-pick-yet line is fixed text. A name cannot add a tag or an attribute.",
+    "Residual disclosure (accepted): a work-type name that only an unknown row carries now shows as an H3. The name is a category label, in the same class as the names already public, and the ruling under plan.md task 1.22 sets this behavior. It carries no count and no route. No person, school, or student data is in a work-type key by the export contract; the live page headings are app code, docs and ops, other, print books, tooling.",
+    "No new write path: the delta in real-work.ts adds no fs call; writeFileSync at :504 is unchanged and writes only real-work.json to --out. The preview.sh delta adds one parts.append and one continue inside work_tables, with no cp, mkdir, rm, redirect, or file open. The Python block still writes only real-work.html at :378.",
+    "Live preview: .tmp/model-guide-preview/real-work.html has 5 H3 headings and 5 matching aria-label values, no `no pick yet` section (every live type has a ranked row), and real-work.json coverage keys are the existing list plus unknown_runs 889 and other_runs 3, both unchanged from the prior export contract.",
+    "Probe note: my own probe that fed a hostile unknown-row name to real-work.ts was denied by the shell permission and was not retried. The conclusions above rest on code reading, the escape probe, and the existing tests.",
+    "A6 registry check: measure/tracks.md claims no resolved security state for model_guide, so no claim outruns the implementation. A2: the delta adds no publish path and no draft-to-published flip; publish.ts and its consent gate are unchanged.",
+    "Test confirmation (each file alone, one worker, dot reporter): preview-gate.test.ts 90 passed (90); adversarial.test.ts 49 passed (49); leak-guard.test.ts 2 passed (2); real-work.test.ts 20 passed (20). The two new Acceptance 5 tests and the new real-work test pass at 9cb95b6."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 9cb95b6643eba0cd04f0623865224f3d9ef88b3c (before and after)",
+    "git diff 80c17f5..9cb95b6 -- harness/ measure/tracks/model_guide/plan.md",
+    "git diff --name-only 80c17f5..9cb95b6 -- docs | wc -l -> 0; git ls-files .tmp | wc -l -> 0",
+    "python3 -I -c \"import html; ...\" hostile name probe -> x&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;&amp;&#x27;  &lt;p&gt;",
+    "grep -o '<h3>[^<]*</h3>' .tmp/model-guide-preview/real-work.html -> 5 headings; grep -c 'no pick yet' -> 0",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 90 passed (90)",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 49 passed (49)",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 2 passed (2)",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 20 passed (20)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-9cb95b6.json",
+    "measure/runs/model_guide/review-b-9cb95b6.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route_note": "see route field",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "real-work.ts:408-415 keeps the name and skips all numeric accumulation for unknown and other rows, and preview.sh:315-317 escapes the H3; real-work.test.ts asserts toEqual([])."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "preview-gate.test.ts 'Acceptance 5 (PA1-1)' asserts the H3, no-pick-yet, and no table (90 passed), but uses a plain name, not a hostile one."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only 80c17f5..9cb95b6 lists five planned files; docs and publish.ts have 0 diff lines."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim has a file:line or a command result, including four single-file vitest runs (90, 49, 2, and 20 passed)."
+    }
+  ]
+}

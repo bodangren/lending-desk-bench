@@ -1,0 +1,11 @@
+Task 3.12 audit at 78627f5: PASS. Seven suites green (18, 25, 20, 13, 28, 19, 16). All blockers fixed.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: 78627f5a647b6fe70c5e50f553ea3f38597a75e0
+result_file: measure/runs/model_guide/check-3.12.json
+retry_recommendation: none
+summary: Task 3.12 passes at 78627f5. No public output can hold a key field, plant line, witness, operator, or finding text; the lint enforces the D6 catalog; the two-judge rule holds. Round 1 findings fixed in 32980bc and 0fb247b; P3X1-1 and P3X1-2 fixed in 8fee6bb. Six open nits carry.
+END_MEASURE_AGENT_RESULT

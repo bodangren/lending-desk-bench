@@ -1,0 +1,100 @@
+Red task 4.1i — role labels on the top lines (spec D16 Top block,
+orchestrator 2026-11-18, commit 160696a).
+Track: model_guide. Phase 4.
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 160696a24c85cb678df81e4adbd318b6c8fd4e5d
+Red commit: 9771edb019d16329dd1d33bc8bd19400e8a258c0
+
+The contract: each of the ten top lines starts with its role label and a
+colon — Red, Green, Coder, Review A, Review B, Review C, Adversarial,
+Acceptance, Phase acceptance, Final acceptance, in that order. The three
+forms are "<role label>: <plain name> <rate> % in this role, <count>
+tasks", "<role label>: <plain name> <pass rate> % pass in this role,
+<count> runs, net <net score>", and "<role label>: no pick yet". Today the
+page writes the line without the label, so every new assertion below fails
+for missing behavior.
+
+Commands (each changed file run once, one at a time, 2026-11-18):
+
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  2 failed | 12 passed (14)
+    first failure: DS13: each of the ten top lines starts with its role
+      label and a colon, in the given order
+      AssertionError: red visible line text (spec D16 Top block,
+      orchestrator 2026-11-18): expected 'prod-one 100 % in this role,
+      5 tasks' to be 'Red: prod-one 100 % in this role, 5 tasks'
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  1 failed | 101 passed (102)
+    first failure: G6: each top line starts with its role label and a
+      colon, and each line without a pick shows one of the four causes
+      AssertionError: red visible line text: expected 'prod-one 100 % in
+      this role, 5 tasks' to be 'Red: prod-one 100 % in this role, 5 tasks'
+  cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  7 failed | 11 passed (18)
+    first failure: ADV4-1: a [1m] and #variant route, a nested note, a
+      duplicate row, and null cells merge into one correct row
+      AssertionError: red line starts with "Red: ", got "alpha 80 % in
+      this role, 20 tasks": expected false to be true
+
+No run carries a NameError, TypeError, ReferenceError, syntax error, or a
+missing helper. Every failure is the missing role label.
+
+1. Failed names
+
+real-work.test.ts:
+  DS13: each of the ten top lines starts with its role label and a colon,
+    in the given order (full visible text of all ten lines)
+  DS25: a gate pick follows the checker rank order, so a 100 % pass row
+    with a lower net score does not pick (the Review A and Review C lines
+    now carry the labels)
+
+preview-gate.test.ts:
+  G6: each top line starts with its role label and a colon, and each line
+    without a pick shows one of the four causes (full visible text of all
+    ten lines, then the no-pick causes)
+
+adversarial-p4.test.ts:
+  ADV4-1, ADV4-2, ADV4-6, ADV4-7, ADV4-8, ADV4-9, ADV4-10 — the seven
+  cases that read a top block, through expectTopBlock. Each fails on the
+  first line: the visible text must start with "<role label>: ".
+
+2. Guards (pass at the role base)
+
+  real-work.test.ts: 12 cases (DS4 to DS12, DS17 twice)
+  preview-gate.test.ts: 101 cases (FX2, DS14 to DS24, G1 to G5, G7, G8,
+    G10, U1, U3, U4, T1, T11, N4, P2U1-1, P2B2-2, and the publish and
+    path cases)
+  adversarial-p4.test.ts: 11 cases (ADV4-3, ADV4-4, ADV4-5, ADV4-11,
+    ADV4-12, ADV4-13, ADV4-14, ADV4-15, ADV4-16, ADV4-17, ADV4-18)
+
+3. Changed cases (this round)
+
+  real-work DS13: the three-form regex checks are replaced by one exact
+    visible-text expectation per role, for a pick and for "no pick yet",
+    for example "Red: prod-one 100 % in this role, 5 tasks" and
+    "Coder: no pick yet"; the role order, the data-model-key, and the
+    no-pick flag stay asserted
+  real-work picksOf: the no-pick flag now reads text that ends with
+    ": no pick yet"
+  real-work DS25: both gate lines gained their labels
+  preview-gate topPicksOf: carries the line text; the no-pick flag reads
+    the ": no pick yet" ending
+  preview-gate G6: asserts the full visible text of all ten lines against
+    a role-to-text map, then keeps the five no-pick roles, the null keys,
+    and the four-cause evidence
+  adversarial-p4: Pick carries the line text; ROLE_LABEL maps the ten ids
+    to their visible labels; expectTopBlock asserts that every line starts
+    with "<role label>: " and that a no-pick line is exactly
+    "<role label>: no pick yet"; the rate and the count keep coming from
+    the line text
+
+4. Open points (for the handoff)
+
+  - The labels come from the orchestrator message and match the spec role
+    list: Red, Green, Coder, Review A, Review B, Review C, Adversarial,
+    Acceptance, Phase acceptance, Final acceptance.
+  - adversarial-p4 asserts the label prefix plus the rate and the count
+    read from the visible text; it does not rebuild the whole sentence,
+    because its fixtures carry plain names from keys and, in some cases,
+    from the names file.
+  - No fixture changed this round.

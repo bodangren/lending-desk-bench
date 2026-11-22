@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 3756ca199a15e07087c78892122d21f5843c71a7
+head_sha: 629e094414fe1a78f40ca59f0f71526b9b8a46d4
+commits: faaca632df53b7140d049ea84a699fd1aa1707c1, 629e094414fe1a78f40ca59f0f71526b9b8a46d4
+tests_run: single files only, each with `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`: `pick-diffs.test.ts` exit 0, `Tests  29 passed (29)`; `adversarial-p3.test.ts` exit 0, `Tests  31 passed (31)`; `review-set.test.ts` exit 0, `Tests  18 passed (18)`. `git --no-pager status --short docs/` printed nothing. The tool was not run against the real gh in this task.
+files_changed: commit faaca63 holds harness/model-guide/pick-diffs.ts alone. Commit 629e094 holds measure/tracks/model_guide/plan.md alone. No test file, no fixture, and no docs/ path changed. This log is untracked evidence and is not staged.
+plan_updates: 3.13f changed [~] to `[x] faaca63` with an Evidence line that cites this log and the three suites. 3.13 stays [ ], 3.14 stays [ ]. The plan commit is 629e094.
+dispositions: none
+handoff: Audit findings fixed: P3A5-1, P3B5-1, P3C5-1. P3A5-1 and P3B5-1 are fixed: the base wait of a retry is now the env value PICK_DIFFS_RETRY_WAIT_MS only when it is a finite number from 0 to 60000, and an empty or whitespace value, a non-number, Infinity, -5, and 1e308 all give the default 5000, so no wait can hang the tool. P3C5-1 is fixed: the header now states the env value, its 0 to 60000 bound, the default 5000, the three waits base x1, x6, and x24, the 4 tries for one call, and the stderr rule. The waits, the 4-try ceiling, the transient regex, the immediate refusal for any other failure or a spawn error, the exact stdout line, and the last non-empty gh stderr line are unchanged. Monorepo run state: script /tmp/opencode/p313-run3.sh, log /tmp/opencode/p313-runs3.log, PID 2574759, still running. The log holds `guard: need=3900 remaining=2913 reset=1794814703 now=1794814389`, `guard: sleep=324`, and `guard: need=3900 remaining=5000 reset=1794818314 now=1794814714`, so attempt 0 of the monorepo run started at now=1794814714 with PID 2595638 and is still in progress; at the last read `remaining=2229 reset=1794818316`. No run line and no DONE yet. The forge list already exists at $HOME/.local/share/lending-desk-bench/model-guide/candidates/bodangren__advantage-forge.json. On DONE, write measure/runs/model_guide/candidates-3.13.txt with both commands, exit codes, output paths, and the qualified counts, then record 3.13.
+END_MEASURE_AGENT_RESULT

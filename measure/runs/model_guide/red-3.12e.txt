@@ -1,0 +1,33 @@
+Red task 3.12e — the J2 index case of 3.12a
+Base: dc5c319e47ef6ffc835a4273306219672e7c5afb, with the uncommitted
+Green 3.12c changes in adjudicate.ts, review-score.ts, and review-set.ts.
+
+The old case made route_a `[C, A]` and route_b `[A]` and expected one
+queue item `[ID_A]`. C is line 65, class C6; it matches no plant of
+forge-01 (the plant windows are [7, 18], [15, 22], [27, 34], [45, 52]), so
+C is a distinct unmatched claim and the queue correctly holds `ID_C` too.
+The old expectation was wrong, not the queue.
+
+Chosen fix: make the second finding a finding on a real plant (P1) and
+swap the order across the two routes, `[match, A]` and `[A, match]`. A sits
+at index 2 in one route and index 1 in the other, the queue still holds
+exactly one item `[ID_A]` because the match is not queued, and both routes
+find P1. The case then proves the intent directly: one claim at different
+indices gives one item, one false claim each, and the same 1.8 score on
+both routes.
+
+Why not `[ID_A, ID_C]`: that would make the case about two distinct claims
+and weaken the exact one-item check. The other two J1 cases already prove
+one item per distinct claim.
+
+Result with the Green 3.12c changes in the tree:
+  cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  Exit 1
+  Tests  3 failed | 17 passed (20)
+The J2 case passes. The only failures are the three security cases of
+task 3.12b (queue symlink, verdicts symlink, bad set id), which Green 3.12d
+owns.
+
+Only `harness/model-guide-tests/adjudicate.test.ts` changed in this task.
+The three uncommitted Green files were not touched, staged, restored, or
+stashed.

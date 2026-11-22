@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "d14becb350354103b18d43d87e94b46df8784ec8",
+  "audited_head_sha": "0acceeaaa9456f30c9f3c72f67212971e55a5d39",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 5 passes. Each round 4 finding is fixed, and a test that fails on 46002d0 pins each fix (9 failed, 76 passed). No earlier round regressed. One Minor item and two Nits remain. The Minor item is an unreadable directory under docs: preview.sh exits 1 with a find message, not the stated refusal line. No docs write is possible.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A5-1 [Minor] review-a: harness/model-guide/preview.sh:105-110 (symlink scan) with the header at preview.sh:11-14 and the comment at preview.sh:113-115: The claim that preview.sh refuses an unreadable entry under docs (mode 000 file or folder) with `preview: unreadable <path>` and exit 2 holds only for a file. An unreadable directory makes the symlink scan `LINK=\"$(find \"$ROOT/docs\" -type l -print -quit)\"` fail: find prints `find: <path>: Permission denied` on stderr and exits 1, and `set -e` ends the script. Probes in git archive copies of 0acceea: docs/e mode 000 (empty), docs/a/b mode 000 (nested), and docs/e mode 311 each gave exit 1, empty stdout, one find line on stderr, and no preview folder and no .tmp folder. A mode 000 file gave exit 2 and `preview: unreadable docs/locked.txt`. No file is written, so the failure is safe. It is the same family as round 4 A4-1 and A4-3, at a new place. The two A4-1 tests use a file only, so nothing pins the directory case. Fix: run the unreadable scan before the symlink scan, or give the symlink scan `2>/dev/null || true`; add a preview test with an unreadable directory that expects exit 2, `preview: unreadable docs/<dir>`, and empty stderr; or narrow the header and the comment to files.",
+    "A5-2 [Nit] review-a: harness/model-guide/preview.sh:105-122 and the python step at preview.sh:140-160: preview.sh refuses symlinks and unreadable entries but not other special files under docs. With a FIFO at docs/f.pipe in a temp copy, preview.sh did not end in 25 s: `cp -a` copied the FIFO, then the python `sha256_file` opened it and blocked. The preview folder was left half built (it existed after the timeout). publish.ts maps the same entry to `publish: drift f.pipe` through the lstat walk (isFile false). Git cannot track a FIFO, so the tracked docs tree cannot hold one, and no docs write is possible. Fix: add `find \"$ROOT/docs\" ! -type f ! -type d -print -quit` to the shell scans and refuse with `preview: refused path <path>`.",
+    "A5-3 [Nit] review-a: harness/model-guide-tests/preview-gate.test.ts:1128-1136 (test B2-1 preview dangling): The dangling-link case now gives `preview: refused path <abs link>` (probe: exit 2, empty stderr, no folder). The B2-1 test asserts only exit 2, no traceback, and an unchanged docs snapshot. The three B3-1 preview tests cover a relative link, an outside link, and a directory link, with exact lines, but no test pins the line for a dangling link. A change of that line would pass. Fix: assert `preview: refused path <abs link>\\n` in the B2-1 test."
+  ],
+  "evidence": [
+    "HEAD at audit time was 0acceeaaa9456f30c9f3c72f67212971e55a5d39 (git rev-parse HEAD), equal to audited_head_sha. I audited the 0acceea tree. The range d14becb..0acceea holds three docs/assets/data publish files and harness/cron-daily.sh (daily_model_schedule, outside this track), plus the track files harness/model-guide/preview.sh, harness/model-guide/publish.ts, harness/model-guide-tests/preview-gate.test.ts, and measure/tracks/model_guide/plan.md. The Green diff 6dc3b4f..0acceea changes preview.sh, publish.ts, and plan.md only: no test file.",
+    "A4-1/C4-2 fixed for a file: preview.sh:112-118 scans docs with `find ! -readable` before mkdir and cp, and the dead python `sys.exit` branch is removed (preview.sh:142-146 has no try block). Probes: a mode 000 file gave exit 2, `preview: unreadable docs/locked.txt`, empty stderr, no preview folder, no .tmp folder; a dir mode 444 with a child gave exit 2 and `preview: unreadable docs/e/x`. The two A4-1 tests fail on 46002d0 (exit 1, a `cp:` line, a half-built folder) and pass at 0acceea. Gap for a directory: A5-1.",
+    "B3-1/A4-2 fixed in preview.sh: preview.sh:105-110 refuses every symlink under docs before any write. Probes: a relative file link, a dangling link, a directory link, and docs itself as a symlink each gave exit 2, `preview: refused path <abs path>`, empty stderr, no preview folder. A link plus a locked file together gave the link refusal first. The control run (no link) gave exit 0 and a preview folder. The three B3-1 preview tests fail on 46002d0 (exit 0) and pass at 0acceea.",
+    "B3-1 fixed in publish.ts: publish.ts:99-121 walks docs with lstatSync, and a symlink or any non-file entry goes to the broken list (publish.ts:119-120), which becomes `publish: drift <path>` before the copy loop at publish.ts:169-173. Probes in temp copies: a relative link planted after the preview gave exit 2, `publish: drift alias.html`, docs unchanged; a directory link with an approved row beneath it gave exit 2, `publish: drift dl`, and the outside folder stayed empty; a mode 000 file gave exit 2, `publish: drift l.txt`; the control publish gave exit 0 and wrote only docs/real-work.html and docs/real-work.json. The three B3-1 publish tests fail on 46002d0 (two write through the link with exit 0, one names `dirlink/secret.txt`) and pass at 0acceea. They build the preview base by hand (writeDocsBase), so they pin publish.ts without preview.sh.",
+    "A4-3 fixed: publish.ts:101-107 wraps readdirSync and pushes the directory path to the broken list. Probe: a nested mode 000 directory docs/a/b gave exit 2, `publish: drift a/b`, empty stderr, and no real-work file in docs (0 matches). The A4-3 test failed on 46002d0 (EACCES stack, exit 1) and passes at 0acceea. A mode 000 root docs folder would push an empty path (`publish: drift ` with a trailing space); this case is not reachable in the repo and I did not rate it.",
+    "A4-4/C4-3 fixed: the A3-3 test (preview-gate.test.ts, diff at lines 1078-1084) asserts stdout equals `preview: refused path <preview>/real-work.json\\n` and empty stderr. It passes on 46002d0 by design (the 1.15 fix printed the line), so it pins the line text and is not a false Red case. Red 1.16 states this in red-1.16.txt item 10.",
+    "Red proof: I overlaid harness/model-guide-tests from 0acceea onto a git archive of 46002d0 and ran preview-gate.test.ts with --reporter=verbose: `Tests  9 failed | 76 passed (85)`. The 9 names match red-1.16.txt items 1 to 9. At 0acceea each file alone with --maxWorkers=1 --reporter=dot: preview-gate exit 0 (85 passed), input-check exit 0 (15 passed), real-work exit 0 (19 passed), leak-guard exit 0 (2 passed); bash -n preview.sh exit 0. These match plan task 1.17 and green-p1-6dc3b4f.log. The plan counts (9 failed, 76 passed, 85 passed) match my runs (A5 clean).",
+    "No regression of rounds 1 to 3: the 76 older preview-gate tests pass at 0acceea (staging order, planted-link refusal, nav idempotence, type checks, path matrix, stale copies, publish refusals). input-check (15), real-work (19), and leak-guard (2) pass unchanged. The staging order holds: the input check runs into mktemp -d with the EXIT trap before the new scans, and every new refusal exits through the trap (no .tmp folder left in any probe).",
+    "Live evidence: preview-1.17.txt claims match the real preview folder: .tmp/model-guide-preview/real-work.html line 33 holds the file name, the SHA dae855ca...64f2, and generated 2026-11-14; line 38 holds 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, 71.7 %, 36 left-out, 889 unknown (the line is cut at 260 characters in my view). index.html holds one link of each kind (grep counts 1 and 1). git status --short docs prints 0 lines. find docs -type l prints 0 and git ls-files -s docs shows 0 entries of mode 120000. I did not recompute the export SHA.",
+    "Header and contract check: the preview.sh header (lines 7-14) and the publish.ts header (lines 21-32) match the behavior for files and links. The directory case of the unreadable claim does not match (A5-1). The plan notes C4-1 (task 4.8) and C4-4 (Phase 2) are not in this audit.",
+    "Anti-pattern checks: A3 clean (tests assert exact lines and exit codes, no digit-only counts). A4: the missing-deliverable fixtures (unreadable file, unreadable directory, symlinks) fail with exit 2 and a named line on the new code and fail on 46002d0, so the tests are not vacuous; the one new gap is the directory case in preview.sh (A5-1). A5 clean. The scripts export no symbol, so the build-graph scan has no caller to check; the callers are the plan commands and the tests.",
+    "No probe touched the real docs/ folder. All probes ran in git archive copies under /tmp/ra5. The only files I wrote outside /tmp/ra5 are the two review-a-0acceea result files under measure/runs/model_guide/."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 0acceea; git diff 6dc3b4f..0acceea --stat; git diff 46002d0..0acceea -- harness/model-guide-tests harness/model-guide",
+    "git archive 0acceea into /tmp/ra5/p-* and /tmp/ra5/q-* copies, with a node_modules symlink; python probes of preview.sh (file 000, nested dir 000, empty dir 000, dir 444, dir 311, relative link, dangling link, directory link, link plus locked file, docs as a symlink, control, FIFO)",
+    "probes of publish.ts in temp copies (control, nested dir 000, file 000, relative link after preview, directory link with an approved row beneath)",
+    "git archive 46002d0 plus harness/model-guide-tests from 0acceea into /tmp/ra5/old; cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=verbose -> 9 failed, 76 passed (85)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 85 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts ... -> exit 0, 15 passed",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts ... -> exit 0, 19 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts ... -> exit 0, 2 passed",
+    "bash -n harness/model-guide/preview.sh -> exit 0",
+    "git status --short docs | wc -l -> 0; find docs -type l | wc -l -> 0; git ls-files -s docs | grep -c '^120000' -> 0"
+  ],
+  "changed_files": [
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "harness/model-guide/preview.sh:105-110 and publish.ts:99-121 held in every file, link, and nested-folder probe, but an unreadable directory gives exit 1 from the find scan at preview.sh:105 (A5-1)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The 9 new tests failed on 46002d0 (9 failed, 76 passed of 85) and pass at 0acceea with exact line asserts, but no preview test covers an unreadable directory (A5-1) or pins the dangling-link line (A5-3)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff 6dc3b4f..0acceea lists preview.sh, publish.ts, and plan.md only, and git status --short docs prints 0 lines."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "red-1.16.txt, green-p1-6dc3b4f.log, and plan task 1.17 match my reruns (9 failed on the old code; 85, 15, 19, and 2 passed at 0acceea)."
+    }
+  ]
+}

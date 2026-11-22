@@ -1,0 +1,18 @@
+probe-4.10 2026-11-19T04:35:00+07:00 HEAD c46161fb858de0883cf304a7dfc40f0afd486e64 dry=0
+opencode-go/deepseek-v4.1-flash refused review-run: the provider credential seed failed exit=2
+opencode/hy4-flash-free refused review-run: the provider credential seed failed exit=2
+opencode-go/mimo-v2.6-flash refused review-run: the probe refused: the quota state is stopped: quota: the quota read timed out exit=2
+done 2026-11-19T04:41:39+07:00
+left processes: 0
+probe-4.10 2026-11-20T01:45:08+07:00 HEAD 6c42e434e47a3c5458c7ff87ec5259b0df075cce dry=0
+opencode-go/deepseek-v4.1-flash refused review-run: the provider credential seed failed exit=2
+opencode/hy4-flash-free unreachable Model unavailable: opencode/hy4-flash-free exit=3
+opencode-go/mimo-v2.6-flash refused review-run: the provider credential seed failed exit=2
+done 2026-11-20T01:45:47+07:00
+left processes: 0
+probe-4.10 2026-11-21T01:45:00+07:00 HEAD 90edb7b7a136c8862ef4cc3f573efb32b3b21425 dry=0
+opencode-go/deepseek-v4.1-flash reachable - exit=0
+opencode-go/hy4-flash-free#high reachable - exit=0
+opencode-go/mimo-v2.6-flash reachable - exit=0
+done 2026-11-21T02:37:57+07:00
+left processes: 0

@@ -1,0 +1,19 @@
+Review C round 7 audit of model_guide Phase 1, delta 2a9d421..80c17f5.
+HEAD at start and end: 80c17f5979b632a38e2a6797ff20504b418e198c (no change during audit).
+Delta commits: b06ac41 Red tests 1.20, d344a21 plan 1.20/1.21, 7618b8c Green fix 1.21, 80c17f5 plan 1.21.
+Changed files: preview-gate.test.ts, pages/real-work.html, preview.sh, plan.md. docs/ empty.
+Generated page .tmp/model-guide-preview/real-work.html holds every fix: aria-current on Real work only, overflow-wrap on source p, 7 table-wraps with fitting labels.
+Spec D16 holds: nav order intact, method note present, source file plus SHA-256 plus generated_on, coverage values match preview-1.21.txt.
+Gate test alone, one worker, dot reporter: 88 passed (85 prior plus 3 new).
+Prior C6-1, C6-2, C5-1 carriers untouched in delta; all five prior findings stay nonblocking.
+No browser re-check; UX role owns it. No docs write needed or made.
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 80c17f5979b632a38e2a6797ff20504b418e198c
+result_file: measure/runs/model_guide/review-c-80c17f5.json
+retry_recommendation: none
+summary: Round 7 delta passes: U1/U3/U4 fix flows into the rebuilt preview page, D16 intact, 88 gate tests pass, priors unchanged.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: f497917a3d1f387d4c3c6f8b94e6331d5fd6587a
+result_file: measure/runs/model_guide/review-b-f497917.json
+retry_recommendation: none
+summary: Round 2 security review at f497917. All five fixed round 1 findings are closed. leak-check reads every staged name byte-exact with `-z`, so a non-ASCII name, a name with a space, and a staged rename each exit 2. The private-path check holds the realpath of a symlinked --private, and a broken docs symlink exits 0. All five write paths refuse a planted symlink at the target and on an ancestor inside the named root before any write, and the outside file stays unchanged. All four write tools refuse a set id that is not a plain name. The six single-file suites pass at HEAD. One Nit stays open (P3B2-1, the D9 key SHA-256 order, bounded by task 4.13). No blocker and no Major remains.
+END_MEASURE_AGENT_RESULT

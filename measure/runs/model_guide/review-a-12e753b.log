@@ -1,0 +1,17 @@
+Review A round 3, track model_guide, phase P2, HEAD 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916.
+Provisional verdict: pass with one kept Nit (P2A1-2); round-2 P2A2-1 verified fixed and withdrawn; no new findings.
+HEAD equals role_base_sha and audited_head_sha at start and end. phase_base_sha c22f313603108585f8bb45996057627acfbc78ae.
+Range 3d42bf8..12e753b: 62b7433 test-only, 313ab94 plan-only (2.12 record + 1cc8792 leading SHA on 2.7, fixing the round-2 known defect), 38d1071 production-only, 12e753b plan-only (2.13 record). No docs/ touch; git status --short docs/ prints nothing.
+Day-rule reruns at HEAD, each exit 0: update 7 passed, preview-gate 99 passed, adversarial-p2 14 passed, guide 15 passed.
+Live preview re-run: six rows identical to preview-2.9.txt, count 6, stale false.
+Plan rows 2.12/2.13 true against commit contents and logs. Task 2.8 stays open, not counted.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916
+result_file: measure/runs/model_guide/review-a-12e753b.json
+retry_recommendation: none
+summary: Round 3 passes: P2B2-1/P2B2-2 fixes correct, all suites green, six rows unchanged; P2A2-1 withdrawn fixed, P2A1-2 kept, no new findings.
+END_MEASURE_AGENT_RESULT

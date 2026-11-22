@@ -1,0 +1,74 @@
+Red task 1.12 evidence.
+
+Command:
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit code: 1
+
+F12 failed tests:
+- F12 resolves a relative preview path from the repo root before it changes folders
+- F12 keeps a relative preview path under the caller repo folder
+
+Reason: The script used the relative preview path after it changed folders.
+
+F13 failed tests:
+- F13 keeps fresh real-work data when docs holds stale published files
+
+Reason: The docs copy replaced the fresh real-work.json and real-work.html files.
+
+F14 failed tests:
+- F14 resolves a relative export path from the repo root
+- F14 resolves a relative export path from a folder outside the repo
+
+Reason: The script resolved the relative export path after it changed folders.
+
+F15 failed tests:
+- F15 refuses preview.sh with --export as the last argument
+- F15 refuses preview.sh with --preview as the last argument
+- F15 refuses preview.sh with an empty preview value
+
+Reason: The script exited 1 without the pinned usage line.
+
+F16 failed tests:
+- F16 refuses an approval row with one field
+- F16 refuses an approval row with a 63 character SHA-256
+- F16 refuses an approval row with a non-hex SHA-256
+
+Reason: The publish tool skipped each malformed row and returned the no-files line.
+
+F17 failed tests:
+- F17 refuses a missing coverage runs key with the schema line
+- F17 refuses a missing coverage first_run_date key with the schema line
+- F17 refuses a missing coverage last_run_date key with the schema line
+- F17 refuses a missing coverage share_known_route key with the schema line
+- F17 refuses a missing coverage share_with_result key with the schema line
+
+Reason: The tool returned another refusal or a stack trace for each missing key.
+
+F18 failed tests:
+- F18 refuses an approval row that names a folder
+
+Reason: The publish tool read the folder and returned a stack trace.
+
+F19 failed tests:
+- F19 leaves no preview folder after an input check refusal
+
+Reason: The script created the preview folder before the input check.
+
+F20 failed tests:
+- F20 refuses the root preview path before it starts a tool
+
+Reason: The script accepted the root path and started the tool.
+
+F23 failed tests:
+- F23 refuses a docs file named constructor after the preview
+- F23 refuses a docs file named toString after the preview
+- F23 refuses an invalid preview base without a stack trace
+
+Reason: The publish tool used the object prototype and did not handle invalid JSON.
+
+Already satisfied at HEAD:
+- F12 resolves a relative preview path from the harness folder
+- F12 refuses a parent-relative preview path from the model-guide folder
+- F15 refuses preview.sh with an empty export value
+- F17 refuses a missing coverage paired_duplicates_left_out key with the schema line

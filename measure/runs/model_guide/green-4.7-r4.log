@@ -1,0 +1,91 @@
+Green fix round 4 for task 4.7 — ADV-R-14, the pass record name
+Track: model_guide. Phase 4: The runner and the first track A results
+(by Sun 2026-11-22). Role: measure-jr-green. Date: 2026-11-18.
+
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha cf53cb59dba9366c3f1157207f9517826a152c20 (HEAD at the start)
+
+1. The finding and its rule
+
+  ADV-R-14 [Major] of `measure/runs/model_guide/adversarial-bdfcfbb.json`.
+  The pass record name kept the plain `RUN_SLUG`, so the routes `t/one#c`
+  and `t-one#c` wrote the same `<date>-t-one-c-p1.json`, and one record
+  overwrote the other.
+
+  The orchestrator decided on 2026-11-18: the pass record name carries the
+  same 12-hex `ROUTE_TAG` as the lock and the output folder. The name is
+  `<date>-<slug>-<tag>-p<pass>.json`. The pass-number count and the one-pass
+  "tonight" count use the slug plus tag. The record content does not change.
+
+2. Change
+
+  `harness/model-guide/review-run.sh` uses
+  `PASS_FILE="$PASS_DIR/${DATE}-${RUN_SLUG}-${ROUTE_TAG}-p${PASS_NO}.json"`.
+  The pass-number `find` pattern is `*-${RUN_SLUG}-${ROUTE_TAG}-p*.json`,
+  and the no-source "tonight" pattern is
+  `${DATE}-${RUN_SLUG}-${ROUTE_TAG}-p*.json`. The record content keeps the
+  fields `set_id`, `route`, `pass`, `date`, `state`, `diffs`, `outputs`, and
+  `errors`. The script header names the new rule.
+
+  No test file changed.
+
+3. Readers of pass record file names
+
+  Green checked each reader. None parses the pass record name.
+  - `review-score.ts` reads `<private>/sets/<set>/keys/<diff_id>.json` and
+    `<outputs>/<diff_id>.txt`. Its `basename(name, ".json")` call reads a
+    key file name, not a pass record name.
+  - `preview.sh` reads the newest score file under
+    `harness/model-guide/data/review-scores/` and the set manifest
+    `data/sets/<set_id>.json`. It reads no pass record.
+  - `guide.ts` reads the score document and its `passes` array. It reads no
+    pass record file.
+  - The two test helpers `passRecords` scan each JSON file with a `state`
+    field. They read no name.
+  - `review-run.sh` itself reads the name in the pass-number count and the
+    one-pass count. Both patterns now hold the tag.
+
+4. Commits
+
+  d82047937e165490483bfca555da815cd8633027 fix(model_guide): pass record name per full route (ADV-R-14)
+  2091d16451b2dde9198e47761e4d462809142b98 measure(model_guide): record Green fix ADV-R-14
+
+5. Test result lines (one file at a time from `harness/`, each with
+`--configLoader native --maxWorkers=1 --reporter=dot`)
+
+  adversarial-p4-runner.test.ts exit 0  Tests  14 passed (14)
+  review-run.test.ts            exit 0  Tests  23 passed (23)
+  review-score.test.ts          exit 0  Tests  25 passed (25)
+  preview-gate.test.ts          exit 0  Tests  111 passed (111)
+
+  ADV-R-14 runs the routes `t/one#c` and `t-one#c` at the same time with one
+  3 s call each. Both exit 0, and the private folder holds two pass records
+  with one `route` field each.
+
+6. Gates and orphan reads
+
+  bash -n harness/model-guide/review-run.sh                    exit 0
+  A quota server process: none stays.
+  ps -eo pid,args | grep '[f]ake-opencode'                     prints no line
+  A `/tmp/mg-adv-r-*` or `/tmp/mg-review-run-*` folder: none stays.
+
+7. Plan state
+
+  4.7 stays [x] 303f73d, and its row now names the fixes 75b3b33, 448dbf9,
+  and d820479. No task is [b].
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.7 (fix round 4, ADV-R-14)
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: cf53cb59dba9366c3f1157207f9517826a152c20
+resulting_head: 2091d16451b2dde9198e47761e4d462809142b98
+commits: d820479 (production), 2091d16 (plan record)
+files_changed: harness/model-guide/review-run.sh, measure/tracks/model_guide/plan.md
+tests: adversarial-p4-runner 14 passed; review-run 23 passed; review-score 25 passed; preview-gate 111 passed. Gates: bash -n runner 0; no quota server process; no fake-opencode process; no temp folder stays.
+dispositions: ADV-R-14 FIX(the pass record name carries the same 12-hex route tag as the lock and the output folder; the pass-number and one-pass counts use the slug plus tag; the record content does not change)
+handoff: ADV-R-14 is fixed at d820479. The record name is `<date>-<slug>-<tag>-p<pass>.json`. No reader parses that name: review-score.ts reads the key and output files, preview.sh reads the score file and the manifest, guide.ts reads the score document, and the tests scan JSON by the `state` field. A later task that reads pass record names must use the tagged pattern.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,23 @@
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+audited_head_sha: ba3142a143f9eea87ebfa2fbc9f812f0b9127ec5
+prior_review: measure/runs/model_guide/review-a-94af783.json
+status: pass
+result_json: measure/runs/model_guide/review-a-ba3142a.json
+blocking_findings: 0
+nonblocking_findings: 3 (RA2-1 Major, RA2-2 Major, RA2-3 Nit)
+prior_findings:
+  RA-1: closed in code (real preview shows plain names); test gap for the #variant half (RA2-2)
+  RA-2: half closed (allowed filter caught; task minimum mutant M8 survives) (RA2-1)
+  RA-3: closed (old probe exits 2; mutants M5 and M6 fail)
+  RA-4: closed (mutant M7 fails)
+  RA-5: closed (update.sh:31-34 says stderr)
+  RA-6: closed (mutants M10 and M11 fail)
+tests: input-check 23/23, real-work 13/13, guide 17/17, update 9/9, leak-check 22/22, preview-gate 99/99, adversarial 46/46, adversarial-p2 13/13, adversarial-p3 34/34; each exit 0
+oracle: fixture values (rows 40, routes 35, share 5.0, both rank orders, too-few groups) match the spec oracle
+mutation: 13 mutants, 9 killed, 4 survived (M3, M3b, M8, equivalent M4)
+retry_recommendation: retry_tests
+handoff: Red adds a failing case for the task minimum (RA2-1) and for the #variant overview mapping (RA2-2). The orchestrator records the ba3142a test counts in the plan (RA2-3).
+RESULT: PASS

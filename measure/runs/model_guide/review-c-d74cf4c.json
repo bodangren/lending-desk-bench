@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-c-ux-api",
+  "track": "model_guide",
+  "audited_head": "d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34",
+  "status": "pass",
+  "summary": "Review C passes at d74cf4c. The delta closes RA-1, RA-3, RA-4, and RA-5 as spec D16 and D18 require. The fresh preview shows plain names in the overview pick and second cells. The CLI usage lines and the refusal lines match spec D16 Tool details. The guide, update, and preview-gate suites pass with 17, 9, and 99 tests. Four nonblocking items remain: a stale 10-run sentence in the overview lede, a Phase 5 render gap, a 0.00 value for a row with no runs, and an AC4 wording conflict.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "RC2-1 [Major] harness/model-guide/pages/guide-section.html:4-6 | The lede of the overview says 'A model needs 10 runs or more, or a complete review rank.' Spec D18 (spec.md:1017-1024) and the header of guide.ts (guide.ts:56-58) set the minimum at 5 tasks or 5 runs, and page B says 5 (real-work.html:121). The text predates the delta (commit 61c99c1) and no test pins it. The page contradicts its own pick rule for a row with 5 to 9 tasks. | Fix scope: change one sentence in guide-section.html to the D18 rule and add one test pin. Do it before the first publish (D21).",
+    "RC2-2 [Major] harness/model-guide/update.sh:132-134, harness/model-guide/preview.sh:279-284 and :746-791 | Outside the delta. Phase 5 scope. After approval, update.sh writes docs/assets/data/real-work.json and model-guide.json. preview.sh renders real-work.html and the overview table as static HTML, and the two templates hold no script. No site script reads the two JSON files (docs/assets/js/site.js:23 and :112 fetch only tracks.json and benchmark.json). The preview folder holds both JSON files at its root, not in assets/data. A weekly update therefore changes files that no page reads, and the stale mark of D19 can never show on a published page. Found by code trace and grep, not by a run. | Fix scope: the owner of spec D19, D21, and plan tasks 5.3 and 5.4 chooses one path: pages that read the JSON at load, or a re-render step in update.sh with the page paths in the commit. No change in 4.1e or 4.1f.",
+    "RC2-3 [Nit] harness/model-guide/real-work.ts:517 | A checker row with 0 decided runs gets findings_per_run 0, so the page shows 0.00 for it (the hy4-flash-free row in the Too few tasks group of the checker table). Spec D16 says an empty value shows a dash. The line predates the delta. | Fix scope: write null when decided is 0. preview.sh:473-476 already maps a non-number to the dash. Check first that no test pins 0.00 for a zero-run row.",
+    "RC2-4 [Nit] measure/tracks/model_guide/spec.md:1271-1273 | Acceptance 4 says a row with the mark 'not for verdicts' never picks. D16 Top block (spec.md:902-910) and D18 Pick rule (spec.md:1017-1024) apply the net-score filter to gate rows only. The page follows D16 and D18: the Red pick DeepSeek V4.1 Flash (net score 0.9) and the Green pick MiMo V2.6 Flash (net score -10.83) carry the mark in the producer table and still pick. A literal reading of acceptance 4 fails the page. | Fix scope: spec wording only, for example add 'in a gate row' to acceptance 4. No code change."
+  ],
+  "evidence": [
+    "git rev-parse HEAD = d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34 at the start. role_base_sha 94af783 comes from the brief. The brief names no phase_base_sha, so I took 57baaaa364f968a2f44c6e14eb96f8a9d68beebf from test-strategy section 13.",
+    "contract_applicability = applicable. The delta changes preview.sh, real-work.ts, update.sh, and the page B and overview tests.",
+    "Fresh preview exit 0 into /tmp/rc2-preview. index.html overview rows: pick cells 'DeepSeek V4.1 Flash' (from opencode-go/deepseek-v4.1-flash) and 'Claude Sonnet 5.5' (from claude-code/claude-sonnet-5-5#high, so the #variant maps to its model key). Second cells 'hy4-flash-free' (no name in model-names.json, so the key shows without its plan prefix per D18 Names) and 'Kimi K3.1 Pro' (from kimi-code-plan-cn/k3.1-pro). Four rows say 'no pick yet: not enough evidence'. Every evidence date reads 2026-11-17. stale is false. model-guide.json keeps the raw keys and only the HTML maps them.",
+    "real-work.html top block: 10 lines in spec order, 7 picks and 3 'no pick yet' (Coder, Acceptance, Final acceptance), the block sits first in main. Producer and checker default tables carry the 6 spec heads. The marks not-allowed and not-for-verdicts render. The Too few tasks groups and the More columns tables render. The Roles cell of Muse Spark 1.3 Contributor lists spec-review (RA-4 closed). The footer comes after the tables.",
+    "Footer: three file names with SHA-256 values equal to MANIFEST-2026-11-17.txt, read date and export date 2026-11-17, rows 217, routes 53, unknown rows 6, share 2.8 %. The MANIFEST loop (sha256sum and stat per line) printed nothing.",
+    "CLI usage by python subprocess under /tmp/rc2-cli: real-work.ts with no args, --input, --export, --manifest alone, and an empty --manifest give exit 2, empty stdout, and stderr 'usage: real-work.ts --manifest <file> --out <folder>'. preview.sh with no args, --export, --input, and --manifest without a value give exit 2 and 'usage: preview.sh --manifest <file> [--preview <folder>]'. update.sh with no args and with two args give exit 2 and 'usage: update.sh <path of MANIFEST-<date>.txt>'.",
+    "RA-3 refusals, each with exit 2, empty stdout, one stderr line, and no output file: 4th line extra.json gives 'input-check: manifest extra.json'. An outcomes line that names the 11-16 file gives '... ra-outcomes-2026-11-16.json'. A missing allowed line gives '... allowed-routes-2026-11-17.json'. A duplicate aa line gives '... aa-reliability-2026-11-17.json'. MANIFEST-2026-11-18 with the 11-17 names gives '... ra-outcomes-2026-11-17.json'. A path name gives '... ../ra-outcomes-2026-11-17.json'. An uppercase-hex line gives '... ra-outcomes-2026-11-17.json'. A missing manifest gives 'input-check: manifest MANIFEST-2026-11-17.txt'. A free-text 4th line is ignored with exit 0, as test-strategy 13.3 says.",
+    "preview.sh with the 4th-line manifest and --preview /tmp/rc2-cli/prev-refused: exit 2, 'input-check: manifest extra.json' on stderr, and the preview folder does not exist. update.sh with the same manifest and with a missing manifest: exit 2 with the same stderr form, and the repo status stays equal to the start. The update.sh header (lines 31-34) now says stderr (RA-5 closed).",
+    "Test runs, one file at a time from harness/ with --maxWorkers=1 --reporter=dot: guide.test.ts 'Tests 17 passed (17)'; update.test.ts 'Tests 9 passed (9)'; preview-gate.test.ts 'Tests 99 passed (99)'; each exit 0.",
+    "git log --stat 94af783..d74cf4c: Green 065815b changes only preview.sh, real-work.ts, and update.sh, so Green touched no test file. Red commits 1ee2549, ba3142a, 9bf5b3b, and d74cf4c change only test files, fixtures, and plan.md. The RA2-1, RA2-2, RA3-1, and RA3-2 cases pass at HEAD, so no Green fix is pending.",
+    "git status --short docs/ prints nothing. No approval record exists (measure/tracks/model_guide/publish-approval.md is absent), so no docs write path is live.",
+    "No earlier Review C finding of mine is open: review-c-94af783.json holds no finding, so no CONTEST item applies.",
+    "Not run, by instruction or scope: the opencode CLI, any benchmark run, the browser page-check, and a recompute of the page numbers. The orchestrator states that review-a-94af783.json holds an independent oracle with 0 differences. I did not re-run it.",
+    "One shell call with rm -rf /tmp/rc2-preview was denied by the permission layer. The folder was absent, so I ran the preview without a delete."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git log --stat --format='--- %h %s' 94af783..d74cf4c",
+    "git show 065815b",
+    "git show 1ee2549 9bf5b3b d74cf4c ba3142a (test and plan hunks)",
+    "bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview /tmp/rc2-preview",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --maxWorkers=1 --reporter=dot",
+    "python3 -I (subprocess probes of real-work.ts, preview.sh, and update.sh under /tmp/rc2-cli, no shell redirection)",
+    "MANIFEST loop: sha256sum and stat for each line of MANIFEST-2026-11-17.txt",
+    "git status --short docs/"
+  ],
+  "changed_files": [
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/real-work.ts",
+    "harness/model-guide/update.sh",
+    "harness/model-guide-tests/adversarial.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/fixtures/page-b/MANIFEST-2026-10-20.txt",
+    "harness/model-guide-tests/fixtures/page-b/aa-reliability-2026-10-20.json",
+    "harness/model-guide-tests/fixtures/page-b/allowed-routes-2026-10-20.json",
+    "harness/model-guide-tests/fixtures/page-b/ra-outcomes-2026-10-20.json",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The preview at /tmp/rc2-preview shows plain names in the overview cells and every RA-3 probe exits 2 with 'input-check: manifest <name>', but guide-section.html:4-6 states a 10-run minimum and real-work.ts:517 gives 0.00 for a zero-run row."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The RA-3 cases in input-check.test.ts and the RA-1 and RA-2 cases in guide.test.ts pin each fix and pass (guide 17, update 9, preview-gate 99), but no test pins the overview lede text or the dash for a zero-run row."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git log --stat 94af783..d74cf4c shows Green 065815b changed only preview.sh, real-work.ts, and update.sh, and the Red commits changed only tests, fixtures, and plan.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Each delta claim has a command result in this file, but RC2-2 rests on a code trace and grep only, and the page numbers rely on the Review A oracle that I did not re-run."
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+Review B security audit — model_guide task 4.16 (live-server path)
+Session: Review B · 4b 4.16 · model_guide
+Route: opencode-go/hy4-flash-free#high
+
+PROVENANCE
+- git rev-parse HEAD before the audit: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+- git rev-parse HEAD after the audit: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+- The audited HEAD is current and equals role_base_sha and audited_head_sha.
+- phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+- Scope: f749b47..HEAD (14 files, all planned). No edit outside measure/runs/model_guide/.
+
+APPLICABILITY
+- test-strategy.md:2467 assigns Review B security to row 4.16. security_applicability = applicable.
+- The PM round cap allows a pass when no real key reaches a committed file or a public page.
+
+SECURITY FINDINGS
+- No credential is copied, exported, or read on the live path. review-run.sh:987 gates the seed on LIVE_PATH != 1. Neither runner holds an auth command. L3 passes.
+- The session directory is the job root. review-run.sh:970-974 refuses a root inside a git repo. review-run.sh:1131 checks the returned location. A fresh mktemp root is made at :905-913.
+- The eight tool denies are written and checked before the first call (review-run.sh:407-434, judge-run.sh:773-799). L2 passes.
+- No DELETE and no change to another session. Only create, prompt, and message endpoints appear. L7 passes.
+- BENCH_SERVER_BASE accepts http only, no userinfo, loopback hostname, empty path, and a valid port (review-run.sh:365-389, judge-run.sh:320-344). A userinfo URL is refused. F18 passes.
+- The prompt and answer text use $LIVE_BASE only. No answer text is printed. docs/ is clean.
+- Stored text and error lines get the LIVE_KEY_SHAPE scan before the store (review-run.sh:1380-1401, :1525-1532, :1809-1829). L8 passes.
+- The daemon guard and the HOME and XDG guards hold on the isolated path.
+- probe-4.10.sh:15 exports BENCH_SERVER_BASE. night-4.11.sh does not (F-B2, outside this HEAD).
+- Route parity holds. Eight helpers have identical sha256 in both runners.
+
+KEY SCAN
+- git log -p 7d7d218..HEAD grep for sk-, AKIA, ghp_, and PEM -> three hits.
+- All hits are synthetic test constants (review-run.test.ts:94, adversarial-p4-runner.test.ts:44,46, judge-run.test.ts:92, p4b.test.ts:125, p4c.test.ts:83). No real key was found.
+
+TESTS (one file at a time)
+- review-run: first full run 129 pass / 1 fail (L5 timing); single case 1 pass; second full run 130 pass / 0 fail, 922 expect calls.
+- judge-run: Tests 61 passed (61).
+- decode-parity: 8 pass / 0 fail.
+- adversarial-p4-runner: 16 passed. p4b: 12 passed. p4c: 13 passed. p4d: 21 passed, 6 skipped.
+- bash -n: both runners pass. git status --short docs/: empty.
+- leak-check: needs a private fixture and a temp git repo. Green recorded exit 0 in green-4.16.txt:52. I did not rebuild that fixture.
+
+NONBLOCKING FINDINGS
+- F-B1 [Low] L5 send-timeout test is timing sensitive under full-file load.
+- F-B2 [Major, nonblocking] night-4.11.sh lacks the BENCH_SERVER_BASE export. Route to the orchestrator before the 2026-11-22 night run.
+- F-B3 [Low] LIVE_KEY_SHAPE omits PEM private key blocks. Optional hardening for Green.
+
+MEASURE_AGENT_RESULT
+role: measure-review-b-security
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+task: 4.16
+session: Review B · 4b 4.16 · model_guide
+route: opencode-go/hy4-flash-free#high
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+audited_head_sha: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+audited_head_current: yes
+security_applicability: applicable
+test_strategy_violations: none
+live_contract_violations: none
+route_parity_violations: none
+blocking_findings: none
+nonblocking_findings: F-B1 Low L5 timing flake; F-B2 Major nonblocking night driver lacks BENCH_SERVER_BASE export; F-B3 Low LIVE_KEY_SHAPE omits PEM blocks
+confidence: high
+retry_recommendation: none
+handoff: Pass under the PM round cap. No real-key leak was found. F-B2 needs the orchestrator to add the export to night-4.11.sh before the 2026-11-22 night run. F-B1 routes to the orchestrator for Red. F-B3 is optional Green hardening. No blocker is routed to Green. This result does not accept Phase 4b.
+END_MEASURE_AGENT_RESULT

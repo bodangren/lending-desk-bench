@@ -1,0 +1,11 @@
+Round 3 adversarial testing of Phase 3 at a4894ae is done. The pick-diffs 64 MiB delta holds: an over-ceiling list, a mid-run detail failure, and a truncated JSON tail each fail closed with the named refusal and no partial candidates file. Three new probes (P3X3-1 to P3X3-3) all pass with no spec breach. Suites green: adversarial-p3 31, pick-diffs 21. git status --short docs/ prints nothing. Only the test file was committed as d97aa12. No plan-only or docs publish commit landed in range; audited code is a4894ae.
+MEASURE_AGENT_RESULT
+role: adversarial
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: a4894ae7cfd66c755daf014e749b61484e06fa8a
+result_file: measure/runs/model_guide/adversarial-a4894ae.json
+retry_recommendation: none
+summary: Delta-only round 3 finds no defect. Green 3.13b (maxBuffer 64 MiB) verified: over-ceiling output, mid-run gh error, and truncated JSON tail each refuse with the documented line and write no candidates file. Three new pins added, no findings, all suites green.
+END_MEASURE_AGENT_RESULT

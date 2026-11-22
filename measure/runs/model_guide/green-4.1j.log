@@ -1,0 +1,71 @@
+Green task 4.1j — role labels on the top lines (spec D16 Top block,
+orchestrator 2026-11-18)
+Track: model_guide. Phase 4.
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha a258017d6466d8e3248d9bcbff39177ca41a1da5 (HEAD after the Red 4.1i
+record; Red commit 9771edb)
+
+Command note: each test file ran one at a time from harness/, with
+`--configLoader native --maxWorkers=1 --reporter=dot`. The full suite did not
+run (PM rule A-23). Green edited no test and no fixture file.
+
+1. Change
+
+  `preview.sh` `top_block` writes each of the ten lines as
+  "<role label>: <sentence>". The labels are Red, Green, Coder, Review A,
+  Review B, Review C, Adversarial, Acceptance, Phase acceptance, and Final
+  acceptance. A producer line is "<label>: <name> <rate> % in this role,
+  <count> tasks"; a gate line is "<label>: <name> <pass rate> % pass in this
+  role, <count> runs, net <net score>"; a line with no pick is
+  "<label>: no pick yet". The role stays in the `data-role` attribute. The
+  template is unchanged.
+
+2. Commits
+
+  8805ea299ad059251af23f1cfeadb5fc5b59388e feat(model_guide): role labels on the top lines (task 4.1j)
+  aa1ec1572c794f96caba9064ed17975cb73ee91e measure(model_guide): record Green task 4.1j
+
+3. Ten test result lines (HEAD 8805ea2, the production commit)
+
+  real-work.test.ts       exit 0  Test Files  1 passed (1)  Tests  14 passed (14)
+  preview-gate.test.ts    exit 0  Test Files  1 passed (1)  Tests  102 passed (102)
+  adversarial-p4.test.ts  exit 0  Test Files  1 passed (1)  Tests  18 passed (18)
+  guide.test.ts           exit 0  Test Files  1 passed (1)  Tests  18 passed (18)
+  input-check.test.ts     exit 0  Test Files  1 passed (1)  Tests  23 passed (23)
+  update.test.ts          exit 0  Test Files  1 passed (1)  Tests  9 passed (9)
+  leak-check.test.ts      exit 0  Test Files  1 passed (1)  Tests  22 passed (22)
+  adversarial.test.ts     exit 0  Test Files  1 passed (1)  Tests  46 passed (46)
+  adversarial-p2.test.ts  exit 0  Test Files  1 passed (1)  Tests  13 passed (13)
+  adversarial-p3.test.ts  exit 0  Test Files  1 passed (1)  Tests  34 passed (34)
+
+4. Gates
+
+  bash -n harness/model-guide/preview.sh                  exit 0
+  git status --short docs/                                prints nothing
+  bash harness/model-guide/preview.sh \
+    --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt   exit 0
+  Live page facts: ten labeled lines, for example
+  "Red: DeepSeek V4.1 Flash 60 % in this role, 13 tasks",
+  "Review A: Claude Opus 5.5 55 % pass in this role, 11 runs, net 42.37",
+  and "Coder: no pick yet".
+
+5. Plan state
+
+  4.1i is [x] 9771edb. 4.1j is [x] 8805ea2. No task is [b]. The `page-check`
+  browser proof at 390, 980, and 1280 px stays with the orchestrator.
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1j
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: a258017d6466d8e3248d9bcbff39177ca41a1da5
+resulting_head: aa1ec1572c794f96caba9064ed17975cb73ee91e
+commits: 8805ea299ad059251af23f1cfeadb5fc5b59388e (production), aa1ec1572c794f96caba9064ed17975cb73ee91e (plan record)
+files_changed: harness/model-guide/preview.sh, measure/tracks/model_guide/plan.md
+tests: real-work 14 passed; preview-gate 102 passed; adversarial-p4 18 passed; guide 18 passed; input-check 23 passed; update 9 passed; leak-check 22 passed; adversarial 46 passed; adversarial-p2 13 passed; adversarial-p3 34 passed. Gates: bash -n preview.sh 0; docs/ clean; live preview exit 0.
+dispositions: none
+handoff: Task 4.1j is green at HEAD aa1ec15; the production commit is 8805ea2. Each of the ten top lines starts with its role label and a colon, a no-pick line is "<label>: no pick yet", and the role also sits in the data-role attribute. The template did not change. The orchestrator still owns the `page-check` browser proof at 390, 980, and 1280 px and the pair closeout.
+END_MEASURE_AGENT_RESULT

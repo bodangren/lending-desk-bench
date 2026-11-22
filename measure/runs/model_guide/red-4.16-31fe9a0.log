@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-mid-red
+task: 4.16
+status: pass
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 31fe9a01678d37cf27ccb3465ba895ddb6f62d91
+red_commit_sha: d1b51b2d7eb80081f28d78d1ff2cabb37668bbf9
+resulting_head: ea3b86ca05f24808ae5d7c865255d3142bcc1ef1
+commits: d1b51b2d7eb80081f28d78d1ff2cabb37668bbf9 test(model_guide): Red task 4.16 real API shapes; ea3b86ca05f24808ae5d7c865255d3142bcc1ef1 measure(model_guide): record Red task 4.16 r3
+tests: changed L1 and L4 in review-run.test.ts; new F12, F13, F15, F16 x2, F17, F18, F19 x3 in review-run.test.ts; changed L11 and new F16, F17, F18 in judge-run.test.ts; changed L4 in decode-parity.test.ts
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/judge-run.test.ts, harness/model-guide-tests/decode-parity.test.ts, measure/tracks/model_guide/plan.md
+red_command_results: bun review-run exit 1 (113 pass, 9 fail, 863 expect calls); vitest judge-run exit 1 (Tests 4 failed | 50 passed (54)); vitest decode-parity exit 1 (Tests 1 failed | 7 passed (8)); quota.test.ts not changed this round
+remaining_failures: L1, L4, F12, F13, F15, F16 probe, F17, F18, F19 L2 in review-run; L11, F16, F17, F18 in judge-run; L4 judge in decode-parity. Three new cases are declared guards that pass at the base: F16 pass-not-complete, F19 L5 exact timeout text and exit 2, F19 L7 probe has no DELETE. Each has a recorded falsification. No unrelated case fails and no fake process remains.
+handoff: Green must send session create with location.directory and a nested model, check the returned session location, wait for native completion within one call deadline, read top-level native tokens, treat a failed message GET as a failure, classify native message errors including the Go region error, validate BENCH_SERVER_BASE as a loopback URL with no userinfo, and pin the missing and unreadable config refusals. Configure BENCH_SERVER_BASE in the scheduled callers. The earlier item stands: adversarial-p4d.test.ts still uses pilot route hy4-flash-free#high for its seed-reason cases. No deferred task was created.
+END_MEASURE_AGENT_RESULT

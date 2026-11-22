@@ -1,0 +1,104 @@
+Green task 4.9b — probe mode, the token log, and the allowed routes
+Track: model_guide. Phase 4: The runner and the first track A results
+(by Sun 2026-11-22). Role: measure-jr-green. Date: 2026-11-18.
+
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 0d86f2517af3797339c7bf1557b071017bb17e7e (HEAD at the start)
+Red 4.9a: fe29d81 (the P1 to P7, T1, T2, and J1 cases and the contracts in
+`measure/runs/model_guide/red-4.9a.txt`)
+
+1. Change
+
+  `harness/model-guide/review-run.sh` gains the probe mode of spec D14 (PM
+  2026-11-18). `--probe` makes exactly one call on the first control diff,
+  the first diff of the set whose key holds no plant. It writes one record
+  under `<private>/probes/<set_id>/` and no pass record and no raw output.
+  It prints one line `<route> reachable|unreachable|region-blocked <error
+  line or ->` on stdout. It exits 0 for `reachable` and 3 for the two error
+  states. A probe blocked by the 70 % quota rule or by the credential scan
+  is a refusal: exit 2, one `review-run:` line on stdout, no call, and no
+  record. A held lock keeps the lock refusal: exit 2, one line on stderr.
+
+  The pass and probe records gain the token log of spec D13 (PM 2026-11-18).
+  The runner reads each `{"type":"step-finish","tokens":...}` event of the
+  json output. The record holds `tokens` with `input`, `output`,
+  `reasoning`, `cache_read`, `cache_write`, and `total`, where `total` is
+  the sum of the five parts. Each entry of `diffs` holds its `id` and its
+  own `tokens` object. A call with no token field adds 0 and sets
+  `tokens_complete` false.
+
+  `harness/model-guide/routes.json` holds the six rows of spec D12 and none
+  of the three removed routes: Kimi, GLM 5.3, and StepFun (nvidia).
+
+  The model call is a background job with a watcher that stops the call when
+  the runner dies without its trap, for example on SIGKILL. The load watch
+  of the committed `review-run.test.ts` (P5 kills the probe holder) requires
+  this; without it, the fake child of the killed probe stays alive and the
+  file fails its afterAll scan. No other behavior changes.
+
+  No test file changed. `harness/opencode-credential.sh` and
+  `harness/opencode-host.sh` did not change.
+
+2. Commits
+
+  2f66531b03460cef4f5189a4604629e3a7919681 feat(model_guide): probe mode, token log, allowed routes (task 4.9b)
+  f21bec211ab482ef0d721b7f1a3b0affbec52dee measure(model_guide): record Green task 4.9b
+
+3. Test result lines (one file at a time from `harness/`, each with
+`--configLoader native --maxWorkers=1 --reporter=dot`)
+
+  review-run.test.ts            exit 0  Tests  35 passed (35)
+  adversarial-p4-runner.test.ts exit 0  Tests  14 passed (14)
+  quota.test.ts                 exit 0  Tests  15 passed (15)
+  credential-provider.test.ts   exit 0  Tests  11 passed (11)
+  preview-gate.test.ts          exit 0  Tests  111 passed (111)
+  guide.test.ts                 exit 0  Tests  18 passed (18)
+
+  P1: one call on `d-02`, the only control diff; the line
+  `<route> reachable -`; one probe record with the flat tokens and
+  `tokens_complete` true; no raw output; the pass folder empty.
+  P2 and P3: `unreachable` and `region-blocked` with the first error line
+  and exit 3.
+  P4: an unknown route and a metered route refuse before any call.
+  P5: the probe holds the lock; a second probe exits 2 with one stderr line
+  that names the lock.
+  P6: a window of 70 % refuses the probe with one stdout line that names
+  the quota rule.
+  P7: the credential scan refuses the probe with one stdout line and
+  leaves no value.
+  T1: the pass record holds the sums 22, 34, 21, 118, 27, and 222, and the
+  per-diff entries hold their own tokens.
+  T2: the call with no token field adds zero and sets `tokens_complete`
+  false.
+  J1: the committed `routes.json` holds none of the three removed routes
+  and holds the pilot routes.
+
+4. Gates and orphan reads
+
+  bash -n harness/model-guide/review-run.sh                    exit 0
+  A quota server process: none stays.
+  ps -eo pid,args | grep '[f]ake-opencode'                     prints no line
+  A `/tmp/mg-adv-r-*` or `/tmp/mg-review-run-*` folder: none stays.
+  git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf -- \
+    harness/opencode-credential.sh harness/opencode-host.sh \
+    harness/provenance.ts harness/tests                     prints nothing
+
+5. Plan state
+
+  4.9a is [x] fe29d81. 4.9b is [x] 2f66531. No task is [b].
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.9b
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 0d86f2517af3797339c7bf1557b071017bb17e7e
+resulting_head: f21bec211ab482ef0d721b7f1a3b0affbec52dee
+commits: 2f66531 (production), f21bec2 (plan record)
+files_changed: harness/model-guide/review-run.sh, harness/model-guide/routes.json, measure/tracks/model_guide/plan.md
+tests: review-run 35 passed; adversarial-p4-runner 14 passed; quota 15 passed; credential-provider 11 passed; preview-gate 111 passed; guide 18 passed. Gates: bash -n runner 0; no quota server process; no fake-opencode process; no temp folder; the frozen-path check prints nothing.
+dispositions: none
+handoff: Task 4.9b is green at 2f66531. The probe record is under `<private>/probes/<set_id>/` and holds the control diff and the tokens. The pass record `diffs` field now holds entries with `id` and `tokens`, and the record holds `tokens` and `tokens_complete`; no other tool reads that field. The call watcher is the one extra mechanism: it stops a model call when the runner dies without its trap, which the load watch of the committed review-run.test.ts requires. routes.json now holds six rows. Task 4.10 owns the live probe; this round ran no opencode CLI.
+END_MEASURE_AGENT_RESULT

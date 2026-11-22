@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+task: 4.16
+status: blocked
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 363743259c6c8acf3dbc7b021db4e14b322078af
+green_commit_sha: 2a7800c
+green_record_commit: 0f62407
+final_head: 0f62407
+red_commit_sha: 1d06dbe
+handoff: The F13, F15, and F20 fixes landed in 2a7800c and are recorded in 0f62407. One deadline is set at call entry; `live_remaining` gives each request the time left; the separate empty window is gone; an empty or partial answer at the deadline is not complete, and an empty probe is unreachable. An unset BENCH_SERVER_BASE on a pilot route refuses with one named line and exit 2 before any seed call; an explicitly empty value keeps the default http://127.0.0.1:38307. The newest-first message page selects the first terminal assistant message (an error, time.completed, or finish) and its tokens, and the review pass stores the plain answer text. All six review r4 cases and all five judge r4 cases pass. Lines one file at a time: review-run 49 pass / 79 fail (247.04 s); judge-run Tests 59 passed (59); decode-parity 8 pass; quota Tests 32 passed (32); credential-provider Tests 24 passed (24); adversarial-p4-runner 6 failed / 10 passed; adversarial-p4b 2 failed / 10 passed; adversarial-p4c 5 failed / 8 passed; adversarial-p4d 6 failed / 15 passed 6 skipped; adjudicate 23 pass; review-score 27 pass. bash -n passes on both runners. No live call, no POST to port 38307, no real HOME read, no opencode or openchamber CLI, and no fake child of mine remains. Three Red conflicts block the row; Green may not edit tests. (1) The F15 refusal makes every isolated-path fixture that names a D14 pilot route fail with `review-run: a pilot route needs BENCH_SERVER_BASE` (51 review-run failures carry that line: R1, R5 to R14, the message checks, the seeded diffs, the daemon guard, probe mode, the Go thresholds, 4.13y, 4.13aa, 4.15 r7, and the one-off cases; adversarial-p4-runner ADV-R-3 to ADV-R-8, p4b 2, p4c 5, p4d 6). Default fix: move those fixtures to a non-pilot route; `opencode-go/muse-spark-1.3-contributor#high` is a pilot route, so the isolated path may not use it. (2) The one-deadline rule makes the live fixtures with an empty page wait the full 600 s and hit the 20 s spawn timeout (L1, L3 pass, L3 probe, L6 transient, L7, L9 ready, L10). Default fix: give them a native complete message or a short MG_CALL_TIMEOUT_S. (3) L10 expects an empty probe to print reachable and exit 0, while r4 F13 expects an empty probe to be unreachable and exit 3; no runner satisfies both. Default fix: give L10's ok probe a native complete answer or change its expectation. Row 4.16 stays [~]. Tasks flipped to [x]: none. Tasks flipped to [b]: none. New tracked files: none; measure/runs/model_guide/green-4.16.txt is ignored by .gitignore.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,59 @@
+MEASURE_AGENT_RESULT
+role: green
+track: model_guide
+phase: Phase 4b task 4.13 Sol seat and the adjudication of mg-2026-11a
+route: minimax-cn-coding-plan/MiniMax-M3.1-Flash
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 283d2125f1e835048e3f1a1f3a76d1ae3e957717
+head_sha: 028afcb1a1fbbc79c59c5a23778b9af2df9be34a
+implementation_commit: fb00647989842a8315db963e679de6427488b368
+plan_commit: 5d62a2a4f64674c66eeb8a4bc1f5a7bce6665b34
+plan_sha_anchor_commit: 283d2125f1e835048e3f1a1f3a76d1ae3e957717
+manifest_commit: 8ea05c398d54879937559688aa5f2fdab14fb2b8
+adjudication_plan_commit: 028afcb1a1fbbc79c59c5a23778b9af2df9be34a
+commits: fb00647 (code), 5d62a2a (plan evidence), 283d212 (plan sha anchor for row 4.12), 8ea05c3 (the manifest after the apply), 028afcb (the row 4.13 adjudication evidence)
+red_command: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+red_result: exit 1, Tests 3 failed | 60 passed (63); the failures are J18d, S1, S2
+green_command: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+green_result: exit 0, Tests 63 passed (63); the first run failed on the F20 timing flake and passed on one rerun
+neighbour_command: bun test harness/model-guide-tests/review-run.test.ts
+neighbour_result: exit 0, 130 pass, 0 fail
+neighbour_command: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+neighbour_result: exit 0, Tests 32 passed (32)
+shell_check: bash -n exits 0 on judge-run.sh and on review-run.sh
+parity_check: the is_pilot_route blocks of the two runners are byte-identical
+quota_check: npx tsx model-guide/quota.ts --provider openai exits 0 and names the source codex
+leak_check: npx tsx model-guide/leak-check.ts --private <dir> --repo <repo> --preview <preview> exits 0
+docs_check: git status --short docs/ prints nothing
+pgrep_check: the scans for fake-opencode, quota-server, and serve --service print no line
+doctor_check: measure/doctor.sh does not exist in this repository; the live gate of test-strategy section 14.3 served instead
+start_test_sol_command: BENCH_SERVER_BASE=http://127.0.0.1:38307 BENCH_QUOTA_BASE=http://127.0.0.1:38307 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh harness/model-guide/judge-run.sh --set mg-2026-11a --route openai/gpt-6.1-sol#high --judge a --start-test
+start_test_sol_result: exit 0, line "openai/gpt-6.1-sol#high ready -", 2026-11-22 08:57 to 09:14 +07
+start_test_muse_command: BENCH_SERVER_BASE=http://127.0.0.1:38307 BENCH_QUOTA_BASE=http://127.0.0.1:38307 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh harness/model-guide/judge-run.sh --set mg-2026-11a --route opencode-go/muse-spark-1.3-contributor#high --judge b --start-test
+start_test_muse_result: exit 0, line "opencode-go/muse-spark-1.3-contributor#high ready -", 2026-11-22 09:14 to 09:16 +07
+queue_command: npx tsx model-guide/adjudicate.ts queue mg-2026-11a --private <private> --raw <private>/outputs/mg-2026-11a
+queue_result: exit 0, 22 groups, 27 queued findings over 11 diffs, from the two complete passes of 2026-11-22; MiMo has no pass record and no queue entry; the queue holds no route name
+judge_a_route: openai/gpt-6.1-sol#high (family OpenAI Sol)
+judge_a_result: exit 0, state complete, 22 of 22 groups, 27 of 27 findings, real-defect 19, false-claim 2, unclear 6; its route judged all 27 findings
+judge_a_log: measure/runs/model_guide/adjudicate-judge-a.log
+judge_a_note: the run stopped twice on the 5 s quota read timeout of the live server; a later run completed the rest
+judge_b_route: opencode-go/muse-spark-1.3-contributor#high (family Go)
+judge_b_result: exit 0, state complete, 22 of 22 groups, 27 of 27 findings, real-defect 21, unclear 6; its route judged all 27 findings
+judge_b_log: measure/runs/model_guide/adjudicate-judge-b.log
+agreed_verdicts: real-defect 19, false-claim 0, unclear 8; the 8 left-out findings count against no route; 6 carry unclear from both judges and 2 carry a disagreement
+passes: opencode-go/deepseek-v4.1-flash p1 is provisional with score 78.6; opencode-go/hy4-flash-free#high p1 is provisional with score 75.4; both routes keep the state incomplete with 1 pass of 3
+passes_note: the scores come from a dry run of the scorer into a temp folder; the public score file is task 4.14
+apply_command: npx tsx model-guide/adjudicate.ts apply mg-2026-11a --private <private> --judge-a <judge-a.json> --judge-b <judge-b.json>
+apply_result: exit 0; the key real_defects are written first, then verdicts.json and real-defects.json; 10 keys changed and 4 stayed byte-identical
+lint_command: npx tsx harness/model-guide/review-set.ts lint mg-2026-11a --private <private> --created 2026-11-16
+lint_result: exit 0; the 14 key SHA-256 values of the manifest match the private key files
+leak_check_after_apply: exit 0 with the manifest staged
+tasks_flipped_to_x: 4.13 (8ea05c3)
+tasks_flipped_to_b: none
+files_changed: harness/model-guide/judges.json, harness/model-guide/judge-run.sh, harness/model-guide/review-run.sh, harness/model-guide/quota.ts, harness/model-guide/data/sets/mg-2026-11a.json, measure/tracks/model_guide/plan.md
+new_files: harness/model-guide/data/sets/mg-2026-11a.json (committed); the evidence files under measure/runs/ are not staged
+test_files_changed: none; the committed Red test file is unchanged
+evidence: measure/runs/model_guide/adjudicate-4.13.txt holds the queue, judge, verdict, apply, lint, leak-check, and PM hand-off facts
+handoff: the orchestrator runs task 4.14, which writes the score file and the preview; the PM hand-off list of 19 real defects is in measure/runs/model_guide/adjudicate-4.13.txt
+END_MEASURE_AGENT_RESULT

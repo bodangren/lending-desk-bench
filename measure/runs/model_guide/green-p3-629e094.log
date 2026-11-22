@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 629e094414fe1a78f40ca59f0f71526b9b8a46d4
+head_sha: 170b8b89ff973dd52a689a35840d09e162c43f9a
+commits: 170b8b89ff973dd52a689a35840d09e162c43f9a
+tests_run: no test run. The two real pick-diffs runs are the gate: `npx tsx model-guide/pick-diffs.ts --repo Reading-Advantage-Thailand/reading-advantage-monorepo --set mg-2026-11a --private $HOME/.local/share/lending-desk-bench/model-guide` attempt 0 exit 0 after 4840 s, empty stdout and stderr; the same command with `--repo bodangren/advantage-forge` attempt 0 exit 0 after 1634 s. Both ran under /tmp/opencode/p313-run3.sh and /tmp/opencode/p313-run2.sh. `git --no-pager status --short docs/` printed nothing.
+files_changed: commit 170b8b8 holds measure/tracks/model_guide/plan.md alone. No code, no test, and no fixture changed, and no docs/ path changed. Untracked evidence written and not staged: measure/runs/model_guide/candidates-3.13.txt and this log. Outside the repository: the two lists in the private folder $HOME/.local/share/lending-desk-bench/model-guide/candidates/.
+plan_updates: 3.13 changed [ ] to `[x] faaca63` with an Evidence line that cites measure/runs/model_guide/candidates-3.13.txt and gives the two qualified counts, 702 for Reading-Advantage-Thailand/reading-advantage-monorepo and 267 for bodangren/advantage-forge. 3.14 stays [ ]. The plan commit is 170b8b8.
+dispositions: none
+handoff: Task 3.13 is recorded. Both lists have 7 or more qualified commits, so no rule was widened and no PM answer is needed: monorepo qualified 702, selected 12, rejected 6256, at $HOME/.local/share/lending-desk-bench/model-guide/candidates/Reading-Advantage-Thailand__reading-advantage-monorepo.json; forge qualified 267, selected 12, rejected 1280, at $HOME/.local/share/lending-desk-bench/model-guide/candidates/bodangren__advantage-forge.json. Both files hold schema model-guide-candidates/1 and set_id mg-2026-11a. The evidence file holds the two commands, the exit codes and seconds, the four-attempt history (the ENOBUFS runs, the network outage, the three transient gh errors before the bounded retry), the output paths, and the counts. No commit message, no SHA, and no source file path appears in it. The next Phase 3 task is 3.14, the seeding, which stays [ ].
+END_MEASURE_AGENT_RESULT

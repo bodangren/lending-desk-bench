@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "b4fba01b280a7ccfc4186a1de318435d0d01c034",
+  "audited_head_sha": "b4fba01b280a7ccfc4186a1de318435d0d01c034",
+  "reviewer_model": "bailian-token-plan/qwen3.8-max#high",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "contract_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 4: the adversarial round-2 fix in 2e4e641 verifies and the Phase 2 contract still holds. update.sh now refuses a symlink at every parent of the preview folder inside the repo in addition to the earlier eight paths, with the same documented line 'update: refused path <path>' and exit 2 before any write, and nothing else in its CLI contract changed. The rebuilt preview equals model-guide.json cell-for-cell, the six real rows are identical to rounds 1 to 3 even though the in-range daily publish 119b06d refreshed the base-line inputs, and the wording still matches spec D17 to D19 with the Q1, Q2, and 2.4a rulings. P2C1-3 stays the known PM question. Two nits carry over unfixed: the plan marker-comment note (P2C4-1) and the unpinned blocker_recall field name behind the D13 recall tie-break (P2C4-2). Task 2.8 stays open, now marked [~], and is not counted as a finding.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2C4-1 [Nit] review-c: Carry-over of P2C2-1/P2C3-1, still open. The plan.md file-map note (lines 93-97) still says the overview block goes between <!-- model-guide:start --> and <!-- model-guide:end --> after </nav>, while the shipped mechanism inserts the section at the '<header class=\"hero' anchor and dedupes by id=\"model-guide\"; no marker comments exist anywhere. The placement contract holds and is pinned (adversarial-p2.test.ts P2ADV-6). Rationale: the plan note diverges from the implementation and could mislead the Phase 5 publish work; the owner of plan.md should update the note.",
+    "P2C4-2 [Nit] review-c: Carry-over of P2C2-2/P2C3-2, still open. The D13 first tie-breaker reads pass.blocker_recall in guide.ts readTrackARank, but no fixture or test carries that field, P2ADV-1 exercises only the median branch, and a missing or non-finite value silently defaults to 0 (the open review-B nit P2B2-3 names the same leniency). review-score.ts (Phase 4 task 3.3) does not exist yet; a different field name there would silently degrade the recall tie-break for every route. Rationale: pin blocker_recall in a guide tie-break test with recall values and in the Phase 4 score-file contract, or refuse a complete pass without a numeric recall."
+  ],
+  "evidence": [
+    "HEAD confirmed current and unchanged: git rev-parse HEAD = b4fba01b280a7ccfc4186a1de318435d0d01c034 at the start and at the end of the audit; equals role_base_sha and audited_head_sha; no daily publish commit landed above it during the audit, so no fallback naming was needed; phase_base_sha c22f313 is its ancestor.",
+    "Exact round-4 model_guide diff (git diff --stat 12e753b..b4fba01, filtered to the track): harness/model-guide/update.sh (16 lines), harness/model-guide-tests/update.test.ts (+27, the P2B2-1d test), and measure/tracks/model_guide/plan.md (+25, tasks 2.14 and 2.15 and 2.8 to [~]). guide.ts, preview.sh, print-audit.ts, the data files, and both page templates are untouched since round 3, where they were verified.",
+    "Out-of-scope commits in the range, named and not audited: 119b06d is the daily publish job of spec EV8 and changes only docs/assets/data/benchmark.json, bugfix.json, and tracks.json; 6452f29 merges daily_model_schedule Phase 7 (harness/batch.sh, cron-daily.sh, daily-pick.ts, go-cost.ts, go-pricing.json, run.sh, schedule-tests, the systemd timer, and that track's plan and spec) and 1d934da records it. None touches a model_guide production or test file.",
+    "P2ADV2-1 fix verified: update.sh builds PREVIEW_CHAIN as every folder from $PREVIEW_ABS up to but excluding $ROOT (stopping also at / and .), and the refusal loop now checks the three data folders, the two docs target files, the whole chain, and the two preview target files, each with [ -L path ] before the mktemp staging and any write; the refusal line is exactly 'update: refused path <path>' on stdout with exit 2, matching the updated header documentation. A planted symlinked <repo>/.tmp can no longer send mkdir -p and the two copies outside the repo.",
+    "The fix is pinned fail-first: update.test.ts P2B2-1d (added by 5037e77, red-2.14.txt records it failing on the previous code) plants a symlinked .tmp pointing at an empty outside folder and asserts exit 2, exactly one stdout line, the form ^update: refused path .+$, the line naming .tmp, the outside folder staying empty, the repo staying byte-identical by tree hash, and no new commit.",
+    "CLI contract unchanged except the wider refusal: update.sh keeps the same usage line and exit 2, the same temp staging and input check order, preview-only writes before the approval, the docs/assets/data write plus one commit with exactly two explicit paths after the approval, the no-change rerun exit 0, the whole-path stat-based newest score pick of round 3, and never pushes; the round-4 diff touches only the header comment, the chain build, and the refusal loop list.",
+    "Test runs at HEAD, each single file with --configLoader native --maxWorkers=1 --reporter=dot and no shell redirection: update.test.ts 8 passed exit 0; preview-gate.test.ts 99 passed exit 0; guide.test.ts 15 passed exit 0. The Green log green-p2-58811b2.log additionally records adversarial-p2 14, print-audit 13, input-check 15, real-work 20, leak-guard 2, adversarial 49, and bash -n update.sh, all exit 0.",
+    "Page and JSON still agree: .tmp/model-guide-preview/index.html rows at lines 44-49 equal model-guide.json cell-for-cell (picks, seconds, evidence, dates; base_line 95 renders 'base line 95.0', 98.7 renders 'base line 98.7'); the section sits at line 28 directly after </nav> line 26 and above the hero line 55; the exact words 'no pick yet: not enough evidence' appear twice (Code review per ruling Q2, tooling); 'page B producer: pass 1.00 (n=10)' per ruling Q1; data-stale count is 0 with stale:false, correct for the 2026-11-14 export on 2026-11-16 (2 days).",
+    "The six real rows did not change: model-guide.json holds today 2026-11-16 (the rerun date), stale false, schema model-guide-overview/1, root keys rows/schema/stale/today, and all six rows identical in every cell to rounds 1 to 3, including the base lines 95 and 98.7, although the in-range daily publish 119b06d refreshed benchmark.json and tracks.json (the highest totals did not move); the Green log records rows_identical = True, count = 6 for the task 2.9 preview rerun at the new code.",
+    "No docs/ write by the track: git log 12e753b..b4fba01 -- docs/ lists only the daily publish 119b06d, external to the track; git status --short docs/ prints nothing.",
+    "P2C1-3 stays known: the Q6 label default versus the 2.4a route-name ruling remains the open PM question, carried by the adversarial record as P2ADV2-2; no new finding is raised for it, per the orchestrator.",
+    "Known open items owned by other roles, noted for visibility and not duplicated: adversarial nits P2ADV2-3 (print-audit.ts double read, since round 2) and P2ADV2-4 (the test-strategy closeout gate wording versus daily-publish commits in range), and review-B nit P2B2-3 (the blocker_recall default to 0, the same code path as P2C4-2).",
+    "Plan and record consistency: plan.md marks 2.14 [x] 5037e77 with red-2.14.txt evidence and 2.15 [x] 2e4e641 with green-p2-58811b2.log evidence, adds the missing SHA to task 2.7, and moves 2.8 to [~]; 2.8 stays the open check task of the phase and is not counted as a finding."
+  ],
+  "commands": [
+    "git rev-parse HEAD (run before and after the audit: b4fba01b280a7ccfc4186a1de318435d0d01c034)",
+    "git log --oneline 12e753b..b4fba01",
+    "git diff --stat 12e753b..b4fba01",
+    "git show --stat 119b06d 6452f29 1d934da (out-of-scope commits named)",
+    "git diff 12e753b..b4fba01 -- harness/model-guide/update.sh harness/model-guide-tests/update.test.ts measure/tracks/model_guide/plan.md",
+    "git log 12e753b..b4fba01 --format='%h %s' -- docs/ (only 119b06d, the daily publish)",
+    "git status --short docs/ (empty)",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot (8 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (99 passed, exit 0)",
+    "inspection of .tmp/model-guide-preview/model-guide.json (six rows identical to rounds 1-3, today 2026-11-16, stale false) and index.html (nav line 26, section line 28, hero line 55, rows lines 44-49, no-pick count 2, data-stale count 0)",
+    "read measure/runs/model_guide/green-p2-58811b2.log and measure/runs/model_guide/adversarial-12e753b.json"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-c-b4fba01.json",
+    "measure/runs/model_guide/review-c-b4fba01.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The wider refusal closes the parent-symlink escape completely (update.sh PREVIEW_CHAIN covers every in-repo parent of the preview folder, checked before any write) and the whole contract surface re-verifies: the six rows and the page-JSON agreement are identical to rounds 1-3 even after the daily publish refreshed the base-line inputs."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "P2B2-1d pins the new refusal fail-first with exit 2, the exact documented line form, the planted parent named, and tree-hash byte identity inside and outside the repo (update.test.ts:462-488, red-2.14.txt); the only unpinned branch remains the blocker_recall tie-break (carry-over P2C4-2)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The model_guide footprint of 12e753b..b4fba01 is exactly update.sh, update.test.ts, and plan.md; the other in-range commits are the daily publish 119b06d (docs/assets/data only) and the daily_model_schedule merge and record, which touch no model_guide file."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "green-p2-58811b2.log holds every command, exit code, Tests line, and rows_identical=True; adversarial-12e753b.json holds the blocker P2ADV2-1 and the three carry-over nits; I re-verified all central claims with three live single-file vitest runs and direct file inspection."
+    }
+  ]
+}

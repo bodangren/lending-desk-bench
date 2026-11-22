@@ -1,0 +1,72 @@
+{
+ "schema_version": 1,
+ "track": "model_guide",
+ "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+ "role": "adversarial-testing",
+ "route": "opencode-go/glm-5.3#high",
+ "audited_head_sha": "ee48a254266afee947d555e4e562093c60d64153",
+ "baseline_sha": "8e0c441a0d026d886bf006388136e7b4e49e4286",
+ "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+ "role_base_sha": "ee48a254266afee947d555e4e562093c60d64153",
+ "test_commit_sha": "56ab786658576437cf4f373252be2a76f5951130",
+ "status": "fail",
+ "summary": "Fail. I attacked the open findings of the last reviews (review-b-ee48a25 N1 to N7, review-a-1572612 N1, review-a-ee48a25 NB1) and the judge verdict parse with a new suite, harness/model-guide-tests/adversarial-p4b.test.ts, committed as 56ab786. Seven cases fail at the audited HEAD and pin real defects; five guard pins pass. The two blockers: the judge verdict parse scans the raw stdout for a fenced json block, but the answer of a real `opencode run --format json` call is a result event whose fenced block is JSON-escaped, so every production judge verdict would silently drop to unclear (the scorer's finding parse holds the same defect on the same stored bytes); and the Go quota last-good fallback fails open on a forged future-dated or millisecond-scale fetchedAt, so a forged reading can greenlight a paid Go pass. Four nonblocking defects also stay failing and route to Green: the daemon guard substring match stops a process whose argv holds no serve token, the pre-KILL identity check is skipped when no starttime was recorded, the HOME guard lets a symlinked XDG data folder send the seeded credential store outside the job root, and a diff id with a newline corrupts the pass record instead of refusing. The guard pins prove the runner HOME guards (no test drove them before, review-b N3) and the ra-quota fallback shapes. One open item stays untested this round: N5 (GIT_CEILING_DIRECTORIES steers the seed cwd), exposure nil today because the production drivers set neither variable; and NB1 (the judge-call quota env of row 4.13) is an orchestrator step, not testable before the row runs.",
+ "blocking_findings": [
+  "ADV-P4B-1 [Blocker] The judge verdict parse cannot read the answer of a real `opencode run --format json` call. judge-run.sh:897-920 scans the raw stdout for a fenced ```json block with real newlines, but a real call prints its answer inside a {\"type\":\"result\",\"text\":...} event whose fenced block is a JSON-escaped string (backslash-n and backslash-quote bytes, no real newline), so the regex finds no usable block, the group adds no verdict, and adjudicate.ts apply reads every finding as unclear. The runner stores the raw stdout verbatim (review-run.sh:1015-1016, judge-run.sh:932), and every judge test feeds the fake a bare answer with real newlines, so no earlier case reaches the real shape. The scorer holds the same defect on the same stored bytes: review-score.ts:226-247 scans the raw output for fences, so every production review would count as invalid and score 0. Consequence: the first live judge call and the first live pass of tasks 4.11 to 4.13 produce garbage silently. Pinned failing: 'ADV-P4B AJ the judge runner > AJ1 the answer in the real --format json event shape yields its verdict' (expected judge-a.json {\"d-01#C0a1b2c3d4e5f\":\"real-defect\"} and judged_by of that id, got {} and {}). Fix direction: read the answer text out of the result event before the verdict parse, and give the scorer the same extraction."
+ ],
+ "nonblocking_findings": [
+  "ADV-P4B-2 [Major, review-b N1] The Go quota last-good fallback fails open on a forged timestamp. quota.ts:369 tests only `Date.now() / 1000 - fetchedAt >= 21600`, so a negative age never trips: a fetchedAt ten years in the future and a fetchedAt in milliseconds both give the state ready with the forged windows (both verified against a fake double that prints no usable entry). The fallback gates the paid Go runs of spec D15, and the reading lives in a file the same user can write, so a hostile writer, a clock-skewed writer, or a writer with the wrong unit can start a pass above the night limit. Pinned failing: 'AQ1 a forged last-good reading dated in the future fails closed (review-b N1)' and 'AQ2 a last-good reading in milliseconds fails closed (review-b N1)' (both expected stopped, got ready). Fix direction: a fetchedAt more than 60 s in the future counts as missing, and the missing-reading refusal fires.",
+  "ADV-P4B-3 [Minor, review-b N6] The daemon guard matches `serve --service` as a substring of the joined argv. review-run.sh:441 and judge-run.sh:336 join the NUL-split cmdline with spaces and test `argv.includes(\"serve --service\")`, so a process whose argv tokens hold `observe` and `--service`, with no `serve` token, is TERM'd and KILL'd inside the job root. Pinned failing: 'ADV-P4B AD the daemon guard and the HOME guards of the review runner > AD1 a process whose argv holds no serve token survives the guard (review-b N6)' (the decoy is dead after a full pass, and the pass record holds an INFRA line for it). Fix direction: split the cmdline on NUL and require the adjacent token pair `serve` and `--service`.",
+  "ADV-P4B-4 [Minor, review-b N4] The pre-KILL identity check is skipped when no starttime was recorded. review-run.sh:486 and judge-run.sh:381 gate the KILL on `[ -n \"${started_at[$pid]:-}\" ]`, so an empty record — the stat was unreadable or unparseable at record time, the classic pid-reuse shape — sends the KILL with no identity check. Pinned failing: 'AD2 the guard sends no KILL when no starttime was recorded (review-b N4)', which extracts the production guard block verbatim and runs it against a fake proc table whose stat is empty: the guard stopped the target (the INFRA line names the pid) and the TERM-ignoring helper child died. Fix direction: skip the KILL when no starttime was recorded.",
+  "ADV-P4B-5 [Minor, review-b N2] The HOME guard resolves the home folder only. provider-credential.sh:66-78 checks $FOLDER/home, but the import call of the seed passes XDG_DATA_HOME=$FOLDER/data (provider-credential.sh:119-131), the same env of every model call (review-run.sh:723, judge-run.sh:508), so a preset job folder with a symlinked data folder writes the store that holds the seeded credential through a path that resolves outside the job root, and the run exits 0. Pinned failing: 'ADV-P4B AH the HOME guard of the call paths of the review runner > AH1 a preset data folder symlinked out of the job root refuses the run (review-b N2)' (expected exit 2 with one named line, got exit 0 with a complete pass). Fix direction: run the resolved-path check over every call path of the job folder.",
+  "ADV-P4B-6 [Nit] The runner validates the set id and the route but no diff id. review-run.sh:356-367 reads every diffs/*.diff with no plain-id check, so a diff file whose name holds a newline, with a matching message file, passes every check, and the pass record row splits on the newline (the write_record node script at review-run.sh:623) into two bogus diff entries while the run exits 0. The exposure needs a hostile write to the private set folder. Pinned failing: 'ADV-P4B AM hostile file names of the set > AM1 a diff id that is not a plain id refuses before any call' (expected exit 2 with no call and no record, got exit 0). Fix direction: refuse a diff id that is not a plain id, before the lock."
+ ],
+ "evidence": [
+  "Provenance: git rev-parse HEAD returned ee48a254266afee947d555e4e562093c60d64153 at the audit start, equal to the audited head of the brief. The one commit after it, 56ab786658576437cf4f373252be2a76f5951130, holds only harness/model-guide-tests/adversarial-p4b.test.ts; no production file changed in this audit, and the seven failing cases name production defects that route to Green.",
+  "The gate run at the audited HEAD: `cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exits 1 with `Tests 7 failed | 5 passed (12)`. The seven failing cases and their pinned reasons: AQ1 'expected 'ready' to be 'stopped'' (forged future-dated reading); AQ2 the same for a millisecond fetchedAt; AD1 'the guard stopped a process whose argv holds no serve token'; AD2 'the guard KILLed a pid whose starttime was never recorded'; AH1 'expected +0 to be 2' (the symlinked data folder); AM1 'expected +0 to be 2' (the newline diff id); AJ1 'expected {} to deeply equal { d-01#C0a1b2c3d4e5f: real-defect }'.",
+  "The five passing guard pins, each with a falsification condition: AQ3 (a fresh plans-wrapped last-good reading stands in when the double prints no entry — break readLastgood and it fails), AQ4 (a valid answer whose opencode-go value is a string falls back instead of stopping — stop the fallback and it fails), AQ5 (a direct answer at 5h 96 gives wait, and a 5h-only answer stops naming the weekly gap — drop the usable-window rule and it fails), AD3 and AD4 (the runner HOME guards of review-run.sh:695-705 and judge-run.sh:479-489 refuse a preset symlinked job home with exit 2, one named line, no call, and no record — remove the guard and they fail). AD3 and AD4 close the review-b N3 test gap: no earlier test drove the runner guards.",
+  "AJ1 shape proof: a probe of `JSON.stringify({type:'result',text:'The answer.\\n```json\\n{\"a\":\"real-defect\"}\\n```'})` piped through `od -c` shows the fence as the two-character sequence \\ n and the quotes as \\ \\\", with no real newline inside the event line. The verdict regex /```json[^\\n]*\\n([\\s\\S]*?)```/g of judge-run.sh:905 therefore cannot close its match on the real answer bytes; the probe lives outside the repository and was deleted after the run.",
+  "AD2 proof: an extracted verbatim guard block run against a fake proc table (empty stat file, daemon cmdline, HOME under the job root) TERM'd the TERM-ignoring helper child, waited the 5 s window, and KILLed it: the child died and stderr held 'review-run: INFRA stopped daemon <pid>'. The probe ran outside the repository under /tmp/opencode and was deleted.",
+  "Extraction note: daemon_pids holds a column-0 `}` inside its node script (review-run.sh:452), so a per-function brace extraction truncates it. AD2 extracts the contiguous production block from daemon_pid_alive() { to on_exit() { verbatim (shellFuncBlock of the suite); a first run with the truncating extractor failed hollow, and the fix was verified by the outside probe before the suite run.",
+  "The open findings of the last reviews map to this round as follows: review-b N1 pinned failing by AQ1 and AQ2; N2 pinned failing by AH1; N3 closed by the passing pins AD3 and AD4; N4 pinned failing by AD2; N6 pinned failing by AD1; N7 closed by the passing pin AQ3. N5 (GIT_CEILING_DIRECTORIES steers the seed export cwd) has no test this round: the production drivers set neither GIT_CEILING_DIRECTORIES nor a TMPDIR inside a work tree, so the exposure stays nil today; the finding stays open for the hardening row. review-a-ee48a25 NB1 (the judge calls of row 4.13 need BENCH_RA_QUOTA exported by the orchestrator session) is an operator step, not testable before row 4.13 runs.",
+  "Safety: the file uses only the committed fake through BENCH_OPENCODE_BIN, temp scripts it writes itself, and loopback servers it starts and stops itself; it never runs opencode or openchamber, never reads a real home or private folder, and signals only processes it started. After every run, pgrep -af 'fake-opencod[e]', pgrep -af 'quota-serve[r]', and ps -eo pid,args | grep 'serve --servic[e]' printed nothing of mine, and no mg-advb temp folder stayed under /tmp."
+ ],
+ "commands": [
+  "git rev-parse HEAD -> ee48a254266afee947d555e4e562093c60d64153 at the audit start; 56ab786658576437cf4f373252be2a76f5951130 after the test commit (the test file only)",
+  "cd harness && npx tsc --noEmit --skipLibCheck --module nodenext --target es2022 model-guide-tests/adversarial-p4b.test.ts -> exit 0",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, Tests 7 failed | 5 passed (12) (first run: 7 failed | 5 passed with three test bugs — the env delete order cancelled the preset job root, the per-function extraction truncated daemon_pids, and kill -0 read a dead child as alive; all three fixed and re-verified)",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=verbose -> exit 1, the same 7 cases fail, each with its pinned defect message and no test-bug message",
+  "pgrep -af 'fake-opencod[e]' ; pgrep -af 'quota-serve[r]' ; ps -eo pid,args | grep 'serve --servic[e]' | grep -v grep -> no line of mine after each run"
+ ],
+ "changed_files": [
+  "harness/model-guide-tests/adversarial-p4b.test.ts"
+ ],
+ "test_strategy_violations": [],
+ "live_contract_violations": [],
+ "prod_wiring_violations": [],
+ "route_parity_violations": [],
+ "retry_recommendation": "route_to_green",
+ "confidence": "high",
+ "ratings": [
+  {
+   "axis": "correctness",
+   "score": 3,
+   "evidence": "The range works in its main cases but fails at seven pinned edges: the judge verdict parse reads no real answer (judge-run.sh:897-920, AJ1), the quota fallback fails open on a forged fetchedAt (quota.ts:369, AQ1/AQ2), and the guards and the record writer each miss a named shape (AD1, AD2, AH1, AM1)."
+  },
+  {
+   "axis": "test_meaning",
+   "score": 4,
+   "evidence": "Seven failing-first pins with exact defect messages (AJ1, AQ1, AQ2, AD1, AD2, AH1, AM1) and five passing guard pins with falsification conditions (AQ3, AQ4, AQ5, AD3, AD4); the judge answer shape had no end-to-end test before this round."
+  },
+  {
+   "axis": "scope_discipline",
+   "score": 5,
+   "evidence": "The commit 56ab786 adds exactly harness/model-guide-tests/adversarial-p4b.test.ts; no production file, no docs/ file, and no forbidden path changed."
+  },
+  {
+   "axis": "evidence_quality",
+   "score": 5,
+   "evidence": "Every finding cites a file:line, a failing test name, and the exact assertion diff; the commands list holds the typecheck, the two gate runs with their Tests lines, and the three orphan scans."
+  }
+ ]
+}

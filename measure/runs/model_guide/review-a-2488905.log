@@ -1,0 +1,11 @@
+Review A round 5 of Phase 3 at 2488905: fail. One blocker: a non-number retry-wait env value hangs the tool forever; retry is otherwise correct; suites green (26, 31); six carried nits open.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: fail
+audited_head_sha: 2488905cd01f717f14523d41b250346169b9c358
+result_file: measure/runs/model_guide/review-a-2488905.json
+retry_recommendation: retry_implementation
+summary: The 3.13d retry is bounded and correct on every checked path, but a non-number PICK_DIFFS_RETRY_WAIT_MS value hangs the tool forever on a transient failure (demonstrated NaN hang), a defect in the changed lines. One blocker sent to Green; six carried nits stay open.
+END_MEASURE_AGENT_RESULT

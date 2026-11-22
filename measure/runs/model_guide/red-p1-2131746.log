@@ -1,0 +1,17 @@
+Red task 1.10 is complete. The test commit is 25276eb754a17c9ceb302e39590b65739643797f. The plan commit is 43384eaf27818df129fa01a9d039bc69eb17e8f6. No production file changed. The evidence file is measure/runs/model_guide/red-1.10.txt.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 213174652648b742af7a2adffce9ccb9e4f043b9
+head_sha: 43384eaf27818df129fa01a9d039bc69eb17e8f6
+commits: 25276eb754a17c9ceb302e39590b65739643797f, 43384eaf27818df129fa01a9d039bc69eb17e8f6
+tests_run: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 1, 27 failed); cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 1, 2 failed); cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0, 2 passed)
+files_changed: harness/model-guide-tests/preview-gate.test.ts, harness/model-guide-tests/input-check.test.ts, harness/model-guide-tests/leak-guard.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-1.10.txt, measure/runs/model_guide/red-p1-2131746.log
+plan_updates: Task 1.10 is [x] with commit 25276eb and the evidence line. Task 1.11 is [~]. The Verify sub-bullet names preview-gate.test.ts, input-check.test.ts, and leak-guard.test.ts with one worker.
+remaining_failures: A1 — refuses the exact docs path, the trailing slash, the double slash, a missing folder, an existing folder, the relative path, the dot-relative path, the parent-relative path, a parent segment, an outside symlink, and the repo root; A2 — refuses one added file, one added file in a new subfolder, and two added files; A3 — refuses a PM sum line that names another file; B1 — refuses the parent, parent-segment, absolute, dot-relative, double-slash, backslash, and empty approval paths, an approval record without a files section, and an empty files section; B2 — refuses a script value in the numeric coverage field; C2 — refuses publish without preview-base.json and writes no file; C4 — refuses publish without --preview, an unknown publish flag, and an unknown real-work flag. B3 has no failure because the new leak guard passes.
+handoff: Green owns task 1.11 and touches no test file. The pinned preview refusal writes the line "preview: refused path <value>" to stdout, keeps stderr empty, exits 2, and runs before any mkdir or write. The pinned publish refusal writes "publish: no files", "publish: bad path <path>", "publish: no preview base", and "publish: drift <path>" to stdout and exits 2; the drift path is relative to docs and uses "/". The pinned usage errors write "usage: publish.ts --preview <folder>" and "usage: real-work.ts --input <file> --out <folder>" to stderr, keep stdout empty, and exit 2. The input check writes "input-check: manifest" for a wrong-file-name sum line and "input-check: schema" for a script value in the coverage field. The route script value stays escaped page text and holds no raw tag. Green also fixes the task 1.9 record for A4. The orchestrator gate command must fail on the role base.
+END_MEASURE_AGENT_RESULT

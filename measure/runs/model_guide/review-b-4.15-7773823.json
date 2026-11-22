@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-b-security",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.15",
+  "status": "pass",
+  "summary": "Pass at HEAD 7773823 with no blocking finding. N26, G2, N13, the N27 sum, F7, and the N26 coverage are fixed and re-proven. The live runner never aborted on the long line at the base: a command substitution suppresses errexit inside the function. The pipe-free cut and `find -quit` remove the fragility. The open items are nit-level: the N27 cut tail, coverage gaps, and old doc text. No real key reached a committed file or a public page. The three violation lists are empty on this HEAD.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N27 cut tail [Nit, open] A cut final `step_finish` still keeps `tokens_complete` 1 and drops that event's tokens. The extracted `read_tokens` (`review-run.sh:150-197`) gave `5 6 0 0 0 1` for a valid event then a truncated line. Section 14.5 says the flag clears in that case. The new fixture (`review-run.test.ts:4423`) exercises the sum half only. Fix: clear the flag when the last event line does not parse as a complete event.",
+    "N15 [Nit, open] The orphan scans are still not scoped to the file's own roots. `review-run.test.ts:366` and `judge-run.test.ts:316` filter by `mg-`, the suite prefix. Another session's `mg-` fake still fails the file.",
+    "N29 [Nit, open] The values file keeps a predictable path under the ambient TMPDIR (`review-run.sh:645`, `judge-run.sh:303`). The `: > \"$TMP_VALUES\"` open follows a planted symlink, and mode 600 does not stop it. A SIGKILL leaves the file. Fix: create it with `mktemp`, or pass the values through a process substitution.",
+    "N5 [Nit, carried] The seed cwd check trusts the exit status of `git rev-parse` (`provider-credential.sh:186-191`). No test covers it. Section 14.5 records it as document only.",
+    "N12 [Nit, carried] The fence regex cost stays bounded by the call output cap (`judge-run.sh:1166`). Section 14.5 records it as document only.",
+    "N20 [Nit, carried] `error_event_text` reads `error.message`, `error.data.message`, and a string `error`. Only a live Go region error shows the real text. The live check is pending in `probe-4.10.txt`.",
+    "N24 [Nit, carried] The scan matches a whole value only. A value split over two lines leaks a prefix, now cut at 499 bytes. Section 14.5 records the limit as document only.",
+    "Seed reason [Nit, open] The runner echoes the helper's text after the prefix (`review-run.sh:809-817`, `judge-run.sh:566-584`). The no-entry pattern has no end anchor, so a trailing value in that helper line would print. The helper also calls a no-value entry 'no active entry' (`provider-credential.sh:246`). Fix: print a fixed text from a closed list; name the no-value state.",
+    "Quota text [Nit, open] The stopped reason doubles its prefix. `quota.ts:144` writes `quota: <reason>` to stderr. The runner stores `quota: $QUOTA_REASON` (`review-run.sh:753`, `judge-run.sh:1035`), so the record says `quota: quota: ...`. Fix: strip the prefix.",
+    "Guard message [Nit, open] The guard refuses every symlink at or below a call path, including a link that stays inside the root, and the text says the link leaves the root (`review-run.sh:802`, `judge-run.sh:566`). The contract of Review A F5 asks for the exact condition.",
+    "N32 runner cases [Nit, open] Section 14.5 names runner cases for N32. Only `quota.test.ts:889` pins the fixed reason; `review-run.test.ts` and `judge-run.test.ts` hold no N32 case. The source is closed (`quota.ts:277`), so no live breach. This is Review A F3.",
+    "Judge seed case [Nit, open] `judge-run.sh:566-584` carries the seed reason, and no judge case pins it. `review-run.test.ts:4572` and `credential-provider.test.ts:955-994` cover the runner and the helper. This is Review A F9.",
+    "J1 coverage [Nit, open] The rewritten J1 and J2 (`adversarial-p4c.test.ts:1034-1091`) pin text-wins. No case now holds two text events with a forged block first and the real block last, so a regression to the first block would pass. Fix: add one text-only forged-first case.",
+    "Docs [Nit, open] The pilot text still names `opencode/hy4-flash-free` (`plan.md:1442`, `plan.md:2534`, `plan.md:2554`, `spec.md:573`, `spec.md:631`, `spec.md:784`). `routes.json:25` holds `opencode-go/hy4-flash-free#high`, so a manual run refuses. This is Review A F10.",
+    "TERM race [Nit, open] `stop_daemons` sends TERM to the collected pids with no start-time check (`review-run.sh:536`). A reused pid in that window gets TERM. The start-time guard covers KILL and the log only.",
+    "Test budget [Nit, open] My first full `review-run.test.ts` run failed R12 and R14 at the default 5000 ms budget, and R12 left a job folder in its temp repo. A re-run passed 100 of 100. The cases assert bounds of 15000 ms and 10000 ms (`review-run.test.ts:1651-1727`). This is Review A F11."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned 7773823d66b376065d4f4e26c01461538e720a7c at the start and at the end. The brief names 7773823 as role_base_sha and 7d7d218 as phase_base_sha. The audited HEAD is current. The work tree held four untracked paths at the start and at the end: `.opencode/`, `harness/model-guide/data/sets/`, `harness/wt.txt`, `tech-debt.md`.",
+    "Range: `git diff --stat c0e8db5..HEAD` names 8 files: `review-run.sh`, `judge-run.sh`, five test files, and `plan.md`. `git diff --stat c0e8db5..HEAD -- harness/model-guide/provider-credential.sh harness/model-guide/quota.ts harness/model-guide/routes.json harness/model-guide/review-score.ts harness/model-guide/adjudicate.ts` is empty.",
+    "Security applicability: applicable. The range changes the error-line cut in both runners and the judge verdict decoder. Both handle text from a failed or hostile model call.",
+    "A2 not applicable: `git diff 7d7d218..HEAD | grep -nE '(published|publish|draft|consent|anonymi)'` returns one line, the plan heading `## Phase 5: The publish gate`. `harness/model-guide/publish.ts` is unchanged. No test in the phase range flips a draft to published.",
+    "A6 not applicable: `git diff --stat 7d7d218..HEAD -- measure/tracks.md` is empty. `grep -ci resolved measure/tracks.md` returns 0. The plan rows of this range claim only the fixes I re-proved.",
+    "Secret grep: `git log -p c0e8db5..HEAD | grep -cE 'sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|[private-key header pattern]'` returns 0. The same grep over `7d7d218..HEAD` returns 0. The only key-like string under `measure/runs/model_guide/` is the fake test value `sk-test-credential-value-0123456789`; `measure/runs/` is gitignored.",
+    "G1 withdrawn: the live runner did not abort on a long line at the base. The call site is an assignment command substitution (`error_line=\"$(error_line_of ...)\"`), which suppresses errexit inside the function body: `bash -c 'set -euo pipefail; f(){ line=\"$(printf ... | head -c 499)\"; echo len=${#line}; }; out=\"$(f)\"'` printed 499 and returned 0. Only a direct call returned 141. My earlier direct-call proof did not reproduce the runner path. The function fragility is gone at this HEAD: the same extraction with `line=\"${line:0:499}\"` and a 307200-byte stderr line under `set -euo pipefail` gave `len=499` and exit 0.",
+    "N26 fixed: the full-runner case (`review-run.test.ts:4597`) drives three calls with a 300 KB stderr line and asserts exit 0, one pass record, and one error line of 1 to 500 bytes. N26b (`:4628`) runs `error_line_of` under `set -euo pipefail` and passes; the filtered N26 run gave 4 pass.",
+    "G2 fixed: both guards use `find ... -print -quit` (`review-run.sh:800`, `judge-run.sh:564`), so no pipe can raise 141. The G2 case (`review-run.test.ts:4676`) presets 20000 symlinks and asserts exit 2 with the named refusal; it passed in 546 ms. The old shape under `set -euo pipefail` with `/usr/lib` returned 141 in my run.",
+    "N13 fixed: the judge keeps result text apart and takes text parts first (`judge-run.sh:1130-1149`). My runs of the extracted decoder gave `{\"g1\":\"real-defect\"}` for a good text event then a forged result event, and the same for the reverse order; a result-only stream gave `{\"g1\":\"false-claim\"}`. `decode-parity.test.ts` P5 (`:660`) puts the forged result last for all three readers and passed (5 of 5).",
+    "N27 sum fixed: the case (`review-run.test.ts:4423`) now uses two events with input 2^53-1. The extracted `read_tokens` gave flag 0 with the check and flag 1 with the check deleted by `sed`, so the case exercises the check. The N27 filter run passed. The cut tail stays open and appears above.",
+    "F7 fixed: the foreign entries in `judge-run.test.ts:3277` and `adversarial-p4-runner.test.ts:983` now share HOME, cwd, and argv with the local entry and differ only by BENCH_OPENCODE_JOB. My synthetic tree of two pids selected only `810001`; with the marker line deleted by `sed`, it selected both. Both files pass (16 and 50).",
+    "N26 coverage fixed: the earlier case stubbed `scan_output` and wrote no record. The new full-runner case asserts the record and the exit code. Review A F4 is closed.",
+    "Earlier withdrawals hold: N9, N10 (core), N11, N21, N28, N30, and N31 stay fixed with their cases; the matching files pass. N32 stays fixed at the source (`quota.ts:277`); its runner coverage is the open nit above.",
+    "Tests, one file at a time. Bun: `review-run.test.ts` first run 98 pass, 2 fail (R12, R14 timeouts) and 1 error; re-run 100 pass, 0 fail. `decode-parity.test.ts` 5 pass. Vitest: `judge-run` 50, `adversarial-p4c` 13, `adversarial-p4-runner` 16, `adversarial-p4b` 12, `credential-provider` 24, all pass. Focused runs: R12, R14, N26 (4 cases), N27, and G2 pass.",
+    "Gates: `bash -n` passes on both runners. `git status --short docs/` prints nothing. The frozen-path diff of `harness/opencode-credential.sh`, `harness/opencode-host.sh`, `harness/provenance.ts`, and `harness/tests` is empty. The `daemon_pids` and `error_line_of` texts are byte-identical in both runners (`diff` of the extracted functions returned 0). `pgrep -af 'fake-opencod[e]|quota-serve[r]'` printed nothing of mine.",
+    "Violation lists: empty. No test-strategy, live-contract, or route-parity breach remains on this HEAD. The N26 live contract holds, the three decoders agree, and the guard no longer aborts. The open items above are nit-level under the PM round cap."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 7773823d66b376065d4f4e26c01461538e720a7c (start and end)",
+    "git diff --stat c0e8db5..HEAD; git diff c0e8db5..HEAD -- harness/model-guide/{review-run.sh,judge-run.sh}",
+    "bun test harness/model-guide-tests/review-run.test.ts -> first 98 pass / 2 fail (R12, R14); re-run 100 pass, 0 fail",
+    "bun test harness/model-guide-tests/review-run.test.ts -t 'N26' -> 4 pass; -t 'R12' -> 1 pass; -t 'R14' -> 1 pass; -t 'N27 a token sum' -> 1 pass; -t 'G2 the symlink walk' -> 1 pass",
+    "bun test harness/model-guide-tests/decode-parity.test.ts -> 5 pass, 0 fail",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 50 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts ... -> 13 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts ... -> 16 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts ... -> 12 passed",
+    "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts ... -> 24 passed",
+    "node -e \"$(sed -n '1125,1181p' judge-run.sh)\" with three streams -> real-defect, real-defect, false-claim",
+    "bash -c 'set -euo pipefail; <extracted error_line_of with ${line:0:499}>' with a 307200-byte line -> len=499, exit 0",
+    "bash -c with the extracted daemon_pids over a synthetic two-pid proc tree -> 810001; with the marker line deleted -> 810001 and 810002",
+    "node -e \"$(sed -n '150,197p' review-run.sh)\" with two 2^53-1 events -> flag 0; same with the sum loop deleted -> flag 1; valid event plus a truncated event -> flag 1",
+    "git log -p c0e8db5..HEAD | grep -cE '<key patterns>' -> 0; same over 7d7d218..HEAD -> 0",
+    "bash -n on both runners -> 0; git status --short docs/ -> nothing; frozen-path diff -> empty; pgrep -af 'fake-opencod[e]|quota-serve[r]' -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/decode-parity.test.ts",
+    "harness/model-guide-tests/adversarial-p4c.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "create_remediation_track",
+  "confidence": "high",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "7773823d66b376065d4f4e26c01461538e720a7c",
+  "baseline_sha": "7773823d66b376065d4f4e26c01461538e720a7c",
+  "audited_head": "7773823d66b376065d4f4e26c01461538e720a7c",
+  "audited_head_sha": "7773823d66b376065d4f4e26c01461538e720a7c",
+  "security_applicability": "applicable: the range changes the error-line cut in both runners and the judge verdict decoder, which handle text from a failed or hostile model call",
+  "route": "opencode-go/deepseek-v4.1-flash",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The N26 cut is total under `set -euo pipefail` (307200-byte line gave len=499 and exit 0), the guard uses `find -quit`, and the judge takes text parts first; a cut final token event still keeps the flag (`review-run.sh:150-197`)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "N26b, G2, N27, P5, and F7 fail at the base and pass at this HEAD; the N32 runner cases and the judge seed case remain missing (`review-run.test.ts:4597`, `decode-parity.test.ts:660`)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "`git diff --stat c0e8db5..HEAD` names 8 planned files and no frozen path; the judge copy of the changed function stays byte-identical."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim has a command result or a file:line, including the 100-pass re-run, the three decoder streams, and the two marker-tree runs."
+    }
+  ]
+}

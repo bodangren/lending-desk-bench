@@ -1,0 +1,20 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-mid-red
+task: 4.16
+status: pass
+red_kind: gap_closing
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 0f6240796719f11afb15f468dd06732d6e5b3da2
+red_commit_sha: e7bdf7e6439d6fb8e51cc448c45f3d8c351aa395
+resulting_head: 220be28bddb7e5af1ec15f7ab4f2dbfa2c02b06a
+commits: e7bdf7e6439d6fb8e51cc448c45f3d8c351aa395 test(model_guide): Red task 4.16 move review-run isolated fixtures off the pilot route; fd69500a254e8e8e7178ea12e83963d36ed5f18d test(model_guide): Red task 4.16 move adversarial-p4-runner isolated route; 764ffb540763de91a03da46d4fa16f9916828406 test(model_guide): Red task 4.16 move adversarial-p4b and p4c isolated routes; 9f01204c4c306f61375fbd4973265ad160a781ae test(model_guide): Red task 4.16 move adversarial-p4d isolated route; 220be28bddb7e5af1ec15f7ab4f2dbfa2c02b06a measure(model_guide): record Red task 4.16 r5
+gaps: isolated fixtures named D14 pilot routes and failed after the unset-base refusal; live fixtures with an empty page hit the 20 s spawn timeout under one deadline; L10 expected an empty probe to be reachable while r4 F13 expects unreachable.
+breakage_proof: restoring the pilot route in review-run.test.ts made R1 fail with `review-run: a pilot route needs BENCH_SERVER_BASE` (exit 1).
+breakage_proof: disabling the default native answer made L1 hit the 20 s spawn timeout (exit 1). Giving the L10 ok probe an empty page made its reachable assertion fail (exit 1). Both test files were restored and byte-compared.
+tests: review-run bun exit 0 (128 pass, 0 fail, 913 expect calls); adversarial-p4-runner 16 passed; adversarial-p4b 12 passed; adversarial-p4c 13 passed; adversarial-p4d 21 passed 6 skipped; judge-run 59 passed with no test change.
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/adversarial-p4-runner.test.ts, harness/model-guide-tests/adversarial-p4b.test.ts, harness/model-guide-tests/adversarial-p4c.test.ts, harness/model-guide-tests/adversarial-p4d.test.ts, measure/tracks/model_guide/plan.md
+remaining_failures: none; all six targeted lines exit 0 on Green's HEAD and no fake process remains.
+handoff: Row 4.16 test conflicts are closed. The scheduled callers still need BENCH_SERVER_BASE exports, which is an orchestrator task. No deferred task was created.
+END_MEASURE_AGENT_RESULT

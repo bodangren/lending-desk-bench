@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 7e52d2efe931e6f8a01a9f443959a84168be5edf
+head_sha: 35be00c93b1247c329b9e50b4e79097d6b625825
+commits: 2acd4fa5c1a705c17acbd71a23c33298316b907c, 35be00c93b1247c329b9e50b4e79097d6b625825
+tests_run: `cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  15 passed (15)`; `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  17 passed (17)`; `cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  2 passed (2)`; `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  15 passed (15)`; `git status --short docs/` printed nothing. The four runs also pass at HEAD 35be00c.
+files_changed: harness/model-guide/review-set.ts (new file, 499 lines); measure/tracks/model_guide/plan.md (task lines only). No test file changed. New files added: harness/model-guide/review-set.ts. Untracked evidence: measure/runs/model_guide/green-p3-7e52d2e.log.
+plan_updates: 3.7 changed [~] to `[x] 2acd4fa` with an Evidence line that cites measure/runs/model_guide/green-p3-7e52d2e.log and gives no test count. 3.8 changed [ ] to [~]. Both in commit 35be00c.
+tasks_flipped_x: 3.7 (SHA 2acd4fa). tasks_flipped_b: none.
+dispositions: none
+handoff: Green 3.7 wrote only harness/model-guide/review-set.ts. The Red test and the fixtures/review corpus stayed unchanged. The command is `review-set.ts lint <set_id> --private <dir> --sets <dir> --created <YYYY-MM-DD>`. A missing flag value gives exit 2 and one line `lint: --<flag> needs a value`. The lint checks the key schema, the seeded SHA-256, the hunk header, the plant length, spacing, removed lines, the operator catalog, and the count profile. The manifest holds set_id, created, diffs, and plant_counts only. The D8 profile binds mg-2026-11a, and a mg-2026-11p set uses the pilot profile. Task 3.8 is [~] for the next Green role. The next role should write harness/model-guide/review-score.ts and touch no other file.
+END_MEASURE_AGENT_RESULT

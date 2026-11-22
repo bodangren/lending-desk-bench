@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+status: fail
+role: measure-review-b-security
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+task: 4.13t
+route: claude-code/claude-sonnet-5-5#max
+audited_head_sha: 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 56ab786658576437cf4f373252be2a76f5951130
+head_at_end: 0b52f334c744922f545098c33119f4471929d089
+security_applicability: applicable
+result_path: measure/runs/model_guide/review-b-2fdb8f8.json
+blocking_findings: 1 (B1: adjudicate.ts queue reads no real event stream; fixed after the audited head by bc0391f, task 4.13v)
+nonblocking_findings: 8 (N8 to N15)
+gates: adversarial-p4b 12 passed (12); review-run 65 pass 0 fail; quota 30 passed (30)
+retry_recommendation: route_to_green
+confidence: high
+handoff: B1 is fixed after the audited head by bc0391f (task 4.13v); the orchestrator reviews that commit next, with the same hostile streams. N8 to N15 are nonblocking: send N8, N10, N11, and N14 to a hardening row, and verify N14 against one real stored stream before the first live pass.
+summary: Six fixes ADV-P4B-1 to ADV-P4B-6 hold under hostile probes; one blocker (B1) was open at the audited head.
+END_MEASURE_AGENT_RESULT

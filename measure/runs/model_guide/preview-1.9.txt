@@ -1,0 +1,26 @@
+Task 1.9: the preview with the real export.
+
+Command:
+  harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json
+Exit code: 0.
+
+Checked values in .tmp/model-guide-preview/real-work.html (line 33, 38):
+  source file: real-work-outcomes-2026-11-14.json
+  source SHA-256: dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2
+  generated_on: 2026-11-14
+  runs: 1,798
+  date range: 2026-06-06 to 2026-11-13
+  share with a known model: 50.6 %
+  share with a result: 71.7 %
+  left-out paired duplicates: 36
+  unknown runs: 889
+  other runs: 3
+
+`git status --short docs/` prints nothing (no write under docs/).
+
+Note: the first run of the command gave exit 2 (`input-check: sha256`)
+because the PM manifest uses a `sha256sum` style line
+`<sha>  <size>  <file>` (spec EV1) instead of the `sha256:` / `size:`
+lines of the Red fixture. Commit ef2d16f adds that format as a fallback in
+`harness/model-guide/real-work.ts`. The Red test files still pass without
+change (19, 6, and 7 passed). No test file and no fixture was edited.

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-b-security",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.16",
+  "session": "Review B · 4b 4.16 · model_guide",
+  "status": "pass",
+  "summary": "Pass under the PM round cap. No real-key leak was found in a committed file or a public page. The three live-contract violations arrays and prod-wiring violations are empty. The Green r8 session-owner, current-call freshness, and tool-calls checks are present in both runners and pass their failing-first tests. One residual gap in the owner check is nonblocking for backlog row 4.15.",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "33374182f4798169e8c3e2dc676f8a4a2f9327a6",
+  "audited_head_sha": "33374182f4798169e8c3e2dc676f8a4a2f9327a6",
+  "audited_head_current": true,
+  "security_applicability": "applicable",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F-B4 [Low, nonblocking] review-b: The owner check at review-run.sh:1218-1219 and the byte-identical judge-run.sh helper skips a message only when it declares an explicit sessionID that differs from the created session. A foreign message with no sessionID at the top level or in info passes this check. The freshness check at line 1220-1221 still requires a native time.created at or after the call start, and the API scopes the message list to the created session. This is defense in depth, not a trust boundary. No test plants a foreign message without a sessionID. Route to backlog row 4.15."
+  ],
+  "evidence": [
+    "HEAD: git rev-parse HEAD returned 33374182f4798169e8c3e2dc676f8a4a2f9327a6 before and after the audit. It matches role_base_sha and audited_head_sha. audited_head_current is true.",
+    "Scope: git diff --name-only 2bdf5cb 3337418 listed six files. They are the two runners, three test files (one new), and plan.md. No edit was made outside measure/runs/model_guide/.",
+    "Applicability: measure/tracks/model_guide/test-strategy.md:2466 assigns Review B security to row 4.16: no seed or auth call, deny check, no DELETE, key-shape scan, and no value in stdout or a record.",
+    "Green r8 change: live_synthesize at review-run.sh:1203-1257 and judge-run.sh rejects a message whose explicit sessionID differs from the created session (review-run.sh:1218-1219), requires a native time.created at or after LIVE_CALL_START*1000 (review-run.sh:1220-1221), and never treats finish=tool-calls as terminal (review-run.sh:1235-1237).",
+    "Route parity: the sha256 of the live_synthesize function body is 50df8d900766fd671b172cf49119127b3be1baaa7b7d1baffef5d57647a56b6c in both runners. The helpers are byte-identical.",
+    "Argument safety: LIVE_CALL_START is set from date +%s at call entry (review-run.sh:1343, judge-run.sh:1091) and passed to node as quoted argv \"$session\" and \"$(( LIVE_CALL_START * 1000 ))\". The node script uses process.argv values only in comparisons. No new file write, and no key, token, or message text is passed as an argument.",
+    "Deny check unchanged: the eight denies are written and checked before the first HTTP call (review-run.sh:411-431, judge-run.sh). adversarial-p4e.test.ts:278 confirms a missing bash deny stops every non-quota request.",
+    "Endpoints unchanged: only POST /api/session, POST /api/session/$session/prompt, and GET /api/session/$session/message appear in either runner. No DELETE. adversarial-p4e.test.ts:250-252 asserts exactly this request list.",
+    "Key scan unchanged: LIVE_KEY_SHAPE and scan_output are present in both runners (review-run.sh:1391-1394, judge-run.sh:1140-1143). adversarial-p4e.test.ts:345 and :356 confirm a planted credential shape is neither printed nor stored.",
+    "Tests, one file at a time: adversarial-p4e 54 passed / 0 failed; review-run 130 pass / 0 fail with 922 expect calls; judge-run 61 passed. P4E-1 (foreign session), P4E-2 (stale answer), and P4E-3 (tool-calls step) are green in both runners.",
+    "Test-file diff: the changes re-stamp fixture timestamps at message-read time, keep an explicit created as given so P4E-2 stays old, and raise one MG_CALL_TIMEOUT_S from 2 to 10. No assertion was removed or weakened.",
+    "Key scan of the committed diff 7d7d218..3337418 found only synthetic constants in context (sk-adv-runner-secret-aaaaaaaa-0123456789, sk-test-credential-value-0123456789). No real key reached a committed file or a public page.",
+    "A2 does not apply: test-strategy.md:2477 states row 4.16 flips no draft to published. A6 is satisfied: measure/tracks.md:34 marks model_guide pending and names no resolved security state, and row 4.16 is open. The registry does not outrun the implementation.",
+    "Runner cleanup: every adversarial fixture spawns detached children and clears them in afterEach. No fake was left running. No opencode or openchamber CLI was run, no POST or DELETE was sent to port 38307, no benchmark ran, and no session text, credential store, or real key was read."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 33374182f4798169e8c3e2dc676f8a4a2f9327a6 before and after verification",
+    "git status --short -> four untracked paths; no tracked change",
+    "git diff --name-only 2bdf5cb 3337418 -> six planned files",
+    "git diff 2bdf5cb 3337418 -- harness/model-guide/review-run.sh harness/model-guide/judge-run.sh measure/tracks/model_guide/plan.md -> three helper changes per runner plus Green r8 record",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4e.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; Tests 54 passed (54); 158.65s",
+    "bun test harness/model-guide-tests/review-run.test.ts -> exit 0; 130 pass / 0 fail; 922 expect calls; 210.75s",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; Tests 61 passed (61); 92.67s",
+    "sed -n '/^live_synthesize() {/,/^}/p' on both runners | sha256sum -> 50df8d900766fd671b172cf49119127b3be1baaa7b7d1baffef5d57647a56b6c for both",
+    "grep of both runners for /api/session -> only create, prompt, and message endpoints",
+    "grep of both runners for -X POST/-X DELETE -> two POST per runner, no DELETE",
+    "grep of both runners for LIVE_KEY_SHAPE/live_key_shape_hit/scan_output -> present in both",
+    "git diff 7d7d218d00a95d9d619d2856173b8136b6ace4a5..3337418 | grep for sk-, AKIA, ghp_, github_pat_, xox, and PEM -> three synthetic context hits, no real key",
+    "git log --oneline 2bdf5cb..3337418 -> 90edb7b, 9d0afd3, c35c381, dabc9c3, 672e85a, a1a5312, 3337418",
+    "grep -n of test-strategy.md:2466, :2477 and measure/tracks.md:34 -> Review B applies; A2 does not apply; registry pending"
+  ],
+  "changed_files": [
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/adversarial-p4e.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "Pass under the PM round cap. No real-key leak was found and all violation arrays are empty. The Green r8 foreign-session, current-call freshness, and tool-calls checks are present in both byte-identical helpers and all three failing-first adversarial cases are green. F-B4 is one low residual gap for backlog row 4.15: a foreign message without a sessionID is not rejected by the owner check, though freshness and server-side scoping still apply. No blocker is routed to Green. This result does not accept Phase 4b.",
+  "route": "opencode-go/hy4-flash-free#high",
+  "ratings": [
+    { "axis": "correctness", "score": 4, "evidence": "review-run.sh:1218-1237 rejects a foreign explicit session, a stale native answer, and a tool-calls step; a message with no sessionID still passes the owner check." },
+    { "axis": "test_meaning", "score": 4, "evidence": "P4E-1, P4E-2, and P4E-3 are failing-first tests and pass in both runners (adversarial-p4e 54 passed); the no-sessionID edge has no test." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git diff --name-only 2bdf5cb 3337418 shows only the two runners, three test files, and plan.md." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "Three one-file test runs, sha256 helper parity, a diff key scan, and endpoint greps back every claim with a command result or file:line." }
+  ]
+}

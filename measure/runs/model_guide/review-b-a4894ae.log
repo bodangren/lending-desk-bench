@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: a4894ae7cfd66c755daf014e749b61484e06fa8a
+result_file: measure/runs/model_guide/review-b-a4894ae.json
+retry_recommendation: none
+summary: Round 4 security review, delta only, at a4894ae. The change over d137057 holds the adversarial round 2 tests, the fake gh, the pick-diffs tests, pick-diffs.ts, and plan.md. pick-diffs.ts adds one fixed 64 MiB ceiling on its array-argument `gh api --method GET` spawn, and a call over the ceiling fails closed with `pick-diffs: gh api failed`. No new write path appears and the symlink and set-id refusals are untouched. The fake gh pad modes read the environment only, write only to stdout, and add only trailing whitespace after valid JSON, so they cannot run outside a test. The three single-file suites pass at HEAD. The round 2 nit P3B2-1 carries open.
+END_MEASURE_AGENT_RESULT

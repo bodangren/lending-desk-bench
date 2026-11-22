@@ -1,0 +1,184 @@
+Red task 4.9c — the runner reviews the seeded diffs
+Track: model_guide. Phase 4. Role: measure-mid-red. Date: 2026-11-18.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: f21bec211ab482ef0d721b7f1a3b0affbec52dee
+Commits: 99835259a84d7ef335c92a4172e71fa9c1be31f0 (tests and the plan row),
+         8cb3987660c6c2bede11b04cff80e20802b62608 (the plan record with the
+         commit SHA)
+
+The defect (orchestrator, 2026-11-18)
+  `harness/model-guide/review-run.sh` line 242 builds the diff list from
+  `$SET_DIR/src/*.diff`, and line 238 checks the `src` folder. The `src`
+  folder holds the source diffs (`review-set.ts` line 18, `leak-check.ts`
+  line 38). The seeded diffs are in `diffs/` (spec D7). A pass that reads
+  `src/` sends unseeded code to the model, so every plant of a diff counts
+  as missed.
+
+Scope (test files only)
+  harness/model-guide-tests/review-run.test.ts — the cases S1 to S4; the
+  helpers `sourceDiffText` and `seededDiffText`; the fixture option
+  `distinctCopies`; the key helper `writeSeededControlKey`; the header
+  comment of the set folder.
+  No production file. No other plan row. No fixture file.
+
+Command (the RED_TEST_COMMAND of this task)
+  bun test harness/model-guide-tests/review-run.test.ts
+
+Result
+  Exit code: 1
+  35 pass
+  4 fail
+  278 expect() calls
+  Ran 39 tests across 1 file. [65.23s]
+  First failure line:
+    (fail) P4 the seeded diffs of the set (task 4.9c) > S1 the pass sends
+    the seeded copy of every diff to the model and no source-only text
+  First failure message:
+    error: the call for d-01 holds no seeded diff
+    Expected to contain: "SEEDED-d-01"
+
+Command (the test command of the plan, one file)
+  cd harness && npx vitest run model-guide-tests/review-run.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+
+Result
+  Exit code: 1
+  Tests  4 failed | 35 passed (39)
+  Test Files  1 failed (1)
+  Duration 62.44s
+
+Failed test names (4) and the assertion line of each
+  S1 the pass sends the seeded copy of every diff to the model and no
+    source-only text — review-run.test.ts:2004
+    the call for d-01 holds no seeded diff; the call holds
+    `+// SRC-ONLY-d-01`, so the runner sent the source diff of `src/`.
+  S2 a diff that is only in src/ gets no call and no entry in the pass
+    record — review-run.test.ts:2032
+    the runner called the model for a diff of src/; one call was expected
+    and four came: one for `d-01` and three retries for the source-only
+    `d-99`.
+  S3 a set with an empty diffs/ folder and a filled src/ folder refuses with
+    exit 2 and makes no call — review-run.test.ts:2062
+    expected +0 to be 2; the runner called the model on the `src/` diff and
+    did not refuse.
+  S4 the probe uses the control diff of diffs/ and its call holds the seeded
+    copy — review-run.test.ts:2085
+    the probe call holds no seeded diff; the call holds `+// SRC-ONLY-d-02`.
+
+The 35 earlier cases stay green, so only the four new cases fail. No
+NameError, no TypeError, no ReferenceError, and no syntax error in the run.
+
+The contracts the new cases pin
+  1. The runner reads the diffs of `<private>/sets/<set_id>/diffs/`, in the
+     order of their names, and it sends those texts to the model.
+  2. A diff that is only in `src/` is not a diff of the set: it gets no call
+     and no entry in the pass record.
+  3. A set with no diff in `diffs/` is a refusal: exit 2, one `review-run:`
+     line on stdout, no call, and no pass record.
+  4. The probe uses the control diff of `diffs/`, so its call holds the
+     seeded copy of that diff.
+
+Process checks after the runs
+  `pgrep -af "fake-opencod[e]"`: 0 line.
+  `pgrep -af "quota-serve[r]"`: 0 line.
+  No `mg-*` temp folder stays under `/tmp`. The afterAll orphan net and the
+  afterEach stop of the quota server stay in the file.
+
+Files touched by this role
+  harness/model-guide-tests/review-run.test.ts (commit 9983525)
+  measure/tracks/model_guide/plan.md (row 4.9c, commits 9983525 and 8cb3987)
+  measure/runs/model_guide/red-4.9c.log (this record, not staged)
+  No production file touched. No push. No model call. No real opencode.
+  Never staged: `.opencode/`, `tech-debt.md`, `harness/wt.txt`,
+  `harness/model-guide/data/sets/`, `measure/runs/`, `docs/`, `reports/`.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: f21bec211ab482ef0d721b7f1a3b0affbec52dee
+resulting_head: 8cb3987660c6c2bede11b04cff80e20802b62608
+commits:
+  - 99835259a84d7ef335c92a4172e71fa9c1be31f0 — Red tests and the plan row 4.9c; two paths
+  - 8cb3987660c6c2bede11b04cff80e20802b62608 — the plan row with the commit SHA; one path
+tests_run:
+  - "bun test harness/model-guide-tests/review-run.test.ts: exit 1; 35 pass, 4 fail, 39 tests."
+  - "cd harness && npx vitest run model-guide-tests/review-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot: exit 1; Tests  4 failed | 35 passed (39)."
+files_changed:
+  - harness/model-guide-tests/review-run.test.ts
+  - measure/tracks/model_guide/plan.md
+plan_updates: "Row 4.9c is [~] with the commit SHA, the defect, the names S1 to S4, the failing output, and the two base SHAs. No other row changed."
+known_failures:
+  - "S1 the call for d-01 holds no seeded diff; the call holds +// SRC-ONLY-d-01 (review-run.test.ts:2004)."
+  - "S2 the runner called the model for a diff of src/; one call was expected and four came (review-run.test.ts:2032)."
+  - "S3 expected +0 to be 2; the runner called the model on the src/ diff and did not refuse (review-run.test.ts:2062)."
+  - "S4 the probe call holds no seeded diff; the call holds +// SRC-ONLY-d-02 (review-run.test.ts:2085)."
+handoff: "Green must make review-run.sh read the seeded diffs of <private>/sets/<set_id>/diffs/ instead of src/: line 238 checks the diffs folder and line 242 globs it. The probe takes its control diff from the same folder. A set with no diff in diffs/ is a refusal with exit 2, one review-run: line on stdout, no call, and no pass record. The 35 earlier cases must stay green. The task message named only the role base; the phase base 57baaaa came from the repository (the Phase 4 strategy commit, test-strategy section 11). The Red commit is 9983525 and the plan record is 8cb3987."
+END_MEASURE_AGENT_RESULT
+
+Red task 4.9c — the fixture fix of the adversarial runner file
+Track: model_guide. Phase 4. Role: measure-mid-red. Date: 2026-11-18.
+role_base_sha: 8cb3987660c6c2bede11b04cff80e20802b62608
+Commits: 193c4c27618bfbb35c7ae535589141cac8de7fea (the fixture),
+         e37fa6550b81fdc8750bdf7a88d6f1499fd0217e (the plan record)
+
+The stale fixture (orchestrator ruling, option A of the Green blocker)
+  `harness/model-guide-tests/adversarial-p4-runner.test.ts` line 332 built
+  the set in `<private>/sets/<set_id>/src`, so the runner that reads
+  `diffs/` refused the set and 9 of the 14 cases failed. The fixture writes
+  the seeded diff into `diffs/` now. No assertion changed. The comment above
+  the fixture names the correct folder.
+
+Commands
+  cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+  Exit code: 0. Tests  14 passed (14). Test Files  1 passed (1).
+  Duration 66.17s.
+
+  bun test harness/model-guide-tests/review-run.test.ts
+  Exit code: 0. 39 pass. 0 fail. 293 expect() calls.
+  Ran 39 tests across 1 file. [62.69s]
+
+  Both runs used the uncommitted production fix of the Green role. That fix
+  reads `<private>/sets/<set_id>/diffs/` and refuses a set with no `diffs/`
+  folder.
+
+Process checks after the runs
+  `pgrep -af "fake-opencod[e]"`: 0 line.
+  `pgrep -af "quota-serve[r]"`: 0 line.
+  No `mg-*` temp folder stays under `/tmp`.
+
+Files touched by this role
+  harness/model-guide-tests/adversarial-p4-runner.test.ts (commit 193c4c2)
+  measure/tracks/model_guide/plan.md (the evidence line of row 4.9c,
+    commit e37fa65)
+  measure/runs/model_guide/red-4.9c.log (this record, not staged)
+  `harness/model-guide/review-run.sh` stays modified and unstaged. It holds
+  the production fix of the Green role. This role did not stage, edit, or
+  revert it.
+  Never staged: `.opencode/`, `tech-debt.md`, `harness/wt.txt`,
+  `harness/model-guide/data/sets/`, `measure/runs/`, `docs/`, `reports/`.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 8cb3987660c6c2bede11b04cff80e20802b62608
+resulting_head: e37fa6550b81fdc8750bdf7a88d6f1499fd0217e
+commits:
+  - 193c4c27618bfbb35c7ae535589141cac8de7fea — the fixture of the adversarial runner file; one path
+  - e37fa6550b81fdc8750bdf7a88d6f1499fd0217e — the evidence line of plan row 4.9c; one path
+tests_run:
+  - "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot: exit 0; Tests  14 passed (14)."
+  - "bun test harness/model-guide-tests/review-run.test.ts: exit 0; 39 pass, 0 fail, 39 tests."
+files_changed:
+  - harness/model-guide-tests/adversarial-p4-runner.test.ts
+  - measure/tracks/model_guide/plan.md
+plan_updates: "One evidence line in row 4.9c names the fixture fix, the commit, and the two runs. No other row changed."
+known_failures: []
+handoff: "The stale fixture of adversarial-p4-runner.test.ts now writes the seeded diff into <private>/sets/<set_id>/diffs/. With the uncommitted production fix of the Green role in place, that file gives 14 passed and review-run.test.ts gives 39 pass. The production file harness/model-guide/review-run.sh stays modified and unstaged; the Green role still owns that commit."
+END_MEASURE_AGENT_RESULT

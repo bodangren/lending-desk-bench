@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Audit of 5b6399f..3581902 (tasks 4.9a to 4.13b, review-c UX/API contract). The CLI and file contracts hold end to end. review-run.sh --probe prints `<route> reachable|unreachable|region-blocked <error line or ->` with exit 0/3 and refusal exit 2; the night driver night-4.11.sh greps `^<route> reachable` in measure/runs/model_guide/probe-4.10.txt and the format matches. judge-run.sh writes judge-<a|b>.json and judge-<a|b>-run.json under <private>/sets/<set_id>/adjudication/, exactly the flat map that adjudicate.ts apply reads through --judge-a/--judge-b, and a missing judge file stays a safe all-unclear map. The pass record names the per-pass outputs folder that review-score.ts --outputs reads, and its fields (route, pass, date, state, tokens) line up with the score file of task 4.14. routes.json holds the six D12 rows in order and none of the three removed routes. The runner reads the seeded diffs from diffs/ (spec D7), so the src/ copies never reach the model. Both allowed test files pass at HEAD (39 and 18 tests) with no orphan fake-opencode or quota-server process. Seven nonblocking findings: one spec deviation (probe retry), driver coverage and observability gaps for tasks 4.10 to 4.12, the #max judge route parity gap, stale closeout text, and one run-record nit.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "C1 (minor, harness/model-guide/review-run.sh:581-607): the probe retries a transport error up to 3 total model calls, but spec D14 says the probe makes exactly one model call (measure/tracks/model_guide/spec.md:689-691). The success path pins one call (review-run.test.ts:1602), and no test pins the retry count on the error path (review-run.test.ts:1643 asserts only greater than 0). Fix: stop the probe after the first failed call, or ask the PM to amend D14.",
+    "C2 (major, /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/probe-4.10.sh:25-29 and night-4.11.sh:36-40): the outside-repo drivers cover only the 3 pilot routes, but task 4.10 requires one probe line per route of routes.json (plan.md:1733-1744) and task 4.12 requires one pass per reachable route per night (plan.md:1773-1786). The routes claude-code/claude-sonnet-5-5#high, minimax-cn-coding-plan/MiniMax-M3.1-Flash, and opencode-go/muse-spark-1.3-contributor#high get no probe line and no pass, so the verify lines of tasks 4.10 and 4.12 fail. Fix: extend the drivers before the night of 2026-11-19, or add a second driver for the other routes.",
+    "C3 (minor, /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh:36-40): the driver runs the pilot routes as hy4, deepseek, mimo, but spec D15 requires the D12 order, whose pilot subset is deepseek, hy4, mimo (spec.md:539-549 and 733-734). Fix: order the array deepseek, hy4, mimo.",
+    "C4 (minor, harness/model-guide/judge-run.sh:181-185 and harness/model-guide/routes.json:4): spec D11 names claude-code/claude-sonnet-5-5#max as a possible first judge (spec.md:494-496), but routes.json holds only the #high variant and judge-run.sh refuses a route that routes.json does not hold. A pick of #max stalls task 4.13 on a safe refusal (exit 2, no call). Fix: the PM adds the #max row or names #high before task 4.13.",
+    "C5 (minor, measure/tracks/model_guide/test-strategy.md section 2.4 closeout item 6, and spec.md:565-566): stale text after the PM 2026-11-18 ruling. The closeout item still requires the nine rows of spec D12 and a second-judge row with ranked false, and spec D12 keeps the ranked-false sentence, but the ruling removed three routes (six rows stay) and the second judge is the no-ready-route fallback. The code and the tests follow the ruling. Fix: update both texts before the closeout, or the closeout check fails falsely.",
+    "C6 (minor, /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh:141-147 and probe-4.10.sh:114-121): the drivers log only the stdout of a run. review-run.sh prints no line for a complete, wait, or open pass (review-run.sh:748-749), so all three log `exit=0 -` and passes-4.12.txt cannot name the reason that plan.md:1784-1786 requires. A probe refusal line (review-run: ...) carries no route name either. Fix: read the pass record state and the probe record in the driver, or append the reason by hand.",
+    "C7 (nit, harness/model-guide/judge-run.sh:576): judged_by marks every item id of a complete group as judged, also when the model answer dropped that id and it holds no verdict. Fix: keep only the ids that hold a verdict."
+  ],
+  "evidence": [
+    "phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha 8e0c441a0d026d886bf006388136e7b4e49e4286 (the parent of the range start 5b6399f); audited_head_sha 3581902d06cbe616d95043d201fa2b39b445e697",
+    "git rev-parse HEAD prints 3581902d06cbe616d95043d201fa2b39b445e697, and the working tree holds no modified tracked file, so the audited HEAD is current",
+    "contract_applicability: applicable, because the phase diff adds CLI surface (review-run.sh --probe, judge-run.sh and --start-test), output file schemas, exit codes 0/2/3, and producer-consumer wiring, the exact scope of this role",
+    "review-run.sh:629,632 print the probe line `<route> reachable -` and `<route> <state> <error line>`; probe-4.10.sh:114-121 appends them into measure/runs/model_guide/probe-4.10.txt; night-4.11.sh:53-55 greps `^$1 reachable` on that file, and the formats match",
+    "judge-run.sh:579 writes the flat verdict map to <private>/sets/<set_id>/adjudication/judge-<a|b>.json; adjudicate.ts:6-7,382-399 reads it through --judge-a/--judge-b; a missing or unreadable judge file stays an empty map, so every finding stays unclear (adjudicate.ts:448-463); judge-run.sh:701-717 keeps only the three verdict values, which apply accepts",
+    "review-run.sh:666 names the per-pass outputs folder $PRIVATE/outputs/$SET_ID/<date>-<slug>-<tag>-p<N>/ and review-score.ts:18-19,326 reads <outputs>/<diff_id>.txt; the pass record fields route, pass, date, state match the score-file pass entry that guide.ts reads (review-score.ts:59-72), the chain of task 4.14",
+    "routes.json holds the six rows of spec D12 in order, each with family, route, kind, quota_provider, quota_source, and none of the three removed routes; pinned by review-run.test.ts:1903-1927 (J1)",
+    "review-run.sh:241-247 checks and globs <set>/diffs/*.diff, so the seeded diffs are the review input (spec D7) and the src/ copies never reach the model; pinned by the S1 to S4 cases of review-run.test.ts",
+    "exit codes hold: probe 0 reachable, 3 unreachable or region-blocked, 2 refusal (review-run.sh:629-639); pass 0 with a record, 2 refusal; judge-run 2 refusal, 0 ready or run, 3 not-ready (judge-run.sh:391-420); all pinned by the two suites",
+    "bun test harness/model-guide-tests/review-run.test.ts exits 0 with 39 pass, 0 fail, 293 expect() calls, 1 file (57.06s)",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot exits 0 with Test Files 1 passed, Tests 18 passed (34.88s)",
+    "after each suite, pgrep -af \"fake-opencod[e]\" and pgrep -af \"quota-serve[r]\" print no line, and no mg-* folder stays under /tmp",
+    "git diff --name-only 5b6399f~1..3581902 lists exactly the 9 planned files, and git log 5b6399f~1..3581902 -- docs/ harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts prints no commit, so the scope is exact"
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 3581902d06cbe616d95043d201fa2b39b445e697",
+    "git diff --name-only 5b6399f~1..3581902 -> 9 files: 4 test files, judge-run.sh, review-run.sh, routes.json, plan.md, spec.md",
+    "git log 5b6399f~1..3581902 -- docs/ harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts -> no commit (scope discipline)",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 39 pass, 0 fail, 293 expect() calls, 1 file (57.06s)",
+    "pgrep -af \"fake-opencod[e]\"; pgrep -af \"quota-serve[r]\" -> no line (exit 1)",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Test Files 1 passed, Tests 18 passed (34.88s)",
+    "pgrep -af \"fake-opencod[e]\"; pgrep -af \"quota-serve[r]\" -> no line (exit 1); no mg-* folder stays under /tmp"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/fixtures/fakes/fake-opencode",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/routes.json",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [
+    "C2: the drivers probe and run only the 3 pilot routes; tasks 4.10 and 4.12 need all routes of routes.json",
+    "C6: the night driver cannot name the pass reason in passes-4.12.txt, and a probe refusal line carries no route name"
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [
+    "C3: night-4.11.sh runs the pilot routes out of the D12 order of spec D15",
+    "C4: the D11 first-judge route claude-code/claude-sonnet-5-5#max is not a row of routes.json, and judge-run.sh refuses it"
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "Both suites pass at HEAD (39 and 18 tests), but the probe retries transport errors up to 3 calls against the exactly-one-call text of spec.md:689 (review-run.sh:581-607)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The Red records show failing-first (red-4.13a.log: 18 failed at the role base), but P2 pins no retry count (review-run.test.ts:1643 asserts only greater than 0)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only 5b6399f~1..3581902 lists exactly the 9 planned files; no commit touches docs/ or the frozen runner paths."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every wiring claim has a file:line (night-4.11.sh:53-55, adjudicate.ts:382-399, review-run.sh:666) and every run claim has a command result in this artifact."
+    }
+  ]
+}

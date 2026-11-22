@@ -1,0 +1,20 @@
+Green evidence — task 4.15, Phase 4b, track model_guide
+phase_base_sha = 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha  = 1e16812697644c9ecbcb528ca240874931dd9ca3
+implementation = Green task 4.15 judge decoder parity (judge-run.sh only)
+Commands ran one file at a time, no full suite. No live model call, no real HOME.
+
+Line: bun test harness/model-guide-tests/decode-parity.test.ts
+  exit 0. Summary: `5 pass`, `0 fail`, 5 tests (P5 forged result last dropped by all three readers).
+Line: cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 0. Labeled summary: `Tests  13 passed (13)` (aligned J1/J2 text-wins, AJ1 intact).
+Line: cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 0. Labeled summary: `Tests  12 passed (12)` (AJ1 result-only decode intact).
+Line: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 0. Labeled summary: `Tests  50 passed (50)`.
+Line: bun test harness/model-guide-tests/adjudicate.test.ts
+  exit 0. Summary: `23 pass`, `0 fail`.
+Line: bun test harness/model-guide-tests/review-score.test.ts
+  exit 0. Summary: `27 pass`, `0 fail`.
+Production files changed: harness/model-guide/judge-run.sh only (text-wins precedence with result-only fallback). No test file changed. No data file changed. No frozen path changed.
+Hygiene: after each run `pgrep -af 'fake-opencod[e]|quota-serve[r]'` printed nothing of mine. `git status --short docs/` prints nothing.

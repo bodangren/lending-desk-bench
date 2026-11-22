@@ -1,0 +1,25 @@
+MEASURE_AGENT_RESULT
+role: measure-strategy
+track: model_guide
+phase: Phase 4b
+task: 4.16
+session: Strategy · 4b 4.16 · model_guide
+status: pass
+role_base_sha: f749b47f5c7723cd0b13152ed5498ccc47d80fc4
+strategy_commit: ce3e7c0d0d38e7ff1c6231416295ef80c6775905
+phase_base_sha: ce3e7c0d0d38e7ff1c6231416295ef80c6775905
+phase_base_sha_capture_point: git rev-parse HEAD on the strategy commit, directly after it lands and before Red row 4.16 starts
+strategy_file: measure/tracks/model_guide/test-strategy.md
+strategy_section: 14.12
+risk: critical
+red_lines: 4
+test_groups: L1-L11
+fake_server: node:http on port 0, base in BENCH_SERVER_BASE, stopped in afterEach and finally
+live_calls_by_role: none
+live_events: 2026-11-21 01:45 probe, 2026-11-22 02:00 night run
+green_deadline: before 23:00 +07 on 2026-11-21
+anti_patterns: A3,A4,A5,A6,A7,A11,A12,A13,A14
+reviews: security yes, ux_api yes, adversarial yes, browser no
+protected_paths_unstaged: .opencode/, tech-debt.md, harness/wt.txt, harness/model-guide/data/sets/, measure/runs/
+handoff: Does judge-run move the two non-pilot judge routes (kimi-code-plan-cn/k3.1-pro#high, claude-code/claude-sonnet-5-5#max) to the live-server path? Default: no; only the live-server Go judge route uses this path in row 4.16.
+END_MEASURE_AGENT_RESULT

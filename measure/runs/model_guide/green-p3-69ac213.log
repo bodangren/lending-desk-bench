@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 69ac2131403a4b7b744cad2ca13e89b3cad99143
+head_sha: 2488905cd01f717f14523d41b250346169b9c358
+commits: c8671173a9ce517823984c65f08471d63a7462e1, 2488905cd01f717f14523d41b250346169b9c358
+tests_run: single files only, each with `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`: `pick-diffs.test.ts` exit 0, `Tests  26 passed (26)`; `adversarial-p3.test.ts` exit 0, `Tests  31 passed (31)`; `review-set.test.ts` exit 0, `Tests  18 passed (18)`. `git --no-pager status --short docs/` printed nothing. The tool was not run against the real gh in Part 1.
+files_changed: commit c867117 holds harness/model-guide/pick-diffs.ts alone. Commit 2488905 holds measure/tracks/model_guide/plan.md alone. No test file, no fixture, and no docs/ path changed. This log is untracked evidence and is not staged.
+plan_updates: 3.13b changed [~] to `[x] a4894ae` with two Evidence lines, one for the six single-file runs at a4894ae and one for the round 4 reviews A, B, and C and the round 3 adversarial audit at a4894ae. 3.13d changed [~] to `[x] c867117` with an Evidence line that cites this log. 3.13 stays [ ], 3.14 stays [ ]. The plan commit is 2488905.
+dispositions: none
+handoff: Task 3.13d is done: ghApi now treats a non-zero gh exit as transient when its stderr matches HTTP 5xx, HTTP 429, secondary rate limit, error connecting to, connection reset, unexpected EOF, timeout, or TLS handshake, waits PICK_DIFFS_RETRY_WAIT_MS x1, x6, x24 (default 5 s, 30 s, 120 s) with a synchronous Atomics.wait, and gives four tries for one call; a spawn error or a non-transient exit refuses at once, and every refusal after a gh failure prints `pick-diffs: gh api failed` on stdout plus the last non-empty line of gh stderr on stderr. Task 3.13 monorepo rerun is running: script /tmp/opencode/p313-run3.sh, log /tmp/opencode/p313-runs3.log, PID 2574759, started with setsid nohup. The guard logged remaining=2913 reset=1794814703 now=1794814389 and sleeps 324 s until the reset plus 10 s, so the monorepo run starts after that; need is 3900, at most 2 attempts, then DONE <epoch>. The forge list already exists at $HOME/.local/share/lending-desk-bench/model-guide/candidates/bodangren__advantage-forge.json (run2 exit 0, 1634 s). On DONE, write measure/runs/model_guide/candidates-3.13.txt with both commands, exit codes, output paths, and the qualified counts, then record 3.13.
+END_MEASURE_AGENT_RESULT

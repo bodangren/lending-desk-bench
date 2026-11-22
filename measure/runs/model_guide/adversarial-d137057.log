@@ -1,0 +1,11 @@
+Round 2 adversarial testing of Phase 3 at d137057 is done. Both Green 3.12g fixes hold: the whitespace-shift claim pair now yields two queue items, and the outside-diff plant is refused with lint: plant-line. Five new near-variant pins (P3X2-1 to P3X2-5) all pass with no new spec breach. Suites green: adversarial-p3 28, adjudicate 20, review-set 18, review-score 25. git status --short docs/ prints nothing. Only the test file was committed as 78627f5. No publish commit landed; audited code is d137057.
+MEASURE_AGENT_RESULT
+role: adversarial
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: d137057f6b419ed8cda4247ac1805235ae1a2f4c
+result_file: measure/runs/model_guide/adversarial-d137057.json
+retry_recommendation: none
+summary: Both round 1 findings are withdrawn as fixed and verified: P3X1-1 (claim dedup now keys on the JSON tuple; field order gives one item, NFC/NFD give two ids) and P3X1-2 (plants need a + line in range; half-overlap passes, context-only and removed-span plants are refused). Five new pins added, no new findings, all suites green.
+END_MEASURE_AGENT_RESULT

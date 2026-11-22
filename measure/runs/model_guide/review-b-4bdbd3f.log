@@ -1,0 +1,46 @@
+provisional verdict: pass (pending final writes)
+audited HEAD: 4bdbd3f5f145f1cfe5a817766b162cf8da51dbd4 (git rev-parse HEAD matches)
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (ancestor of HEAD)
+role_base_sha: f21bec211ab482ef0d721b7f1a3b0affbec52dee (ancestor of HEAD)
+scope: harness/model-guide/review-run.sh src->diffs, adversarial fixture src->diffs, S1-S4 Red
+checks:
+- review-run.sh:241 SET_DIR/diffs check; :245 DIFF_PATHS diffs/*.diff; model feeds :461 cat PROMPT diff_path, :583 probe control, :677 pass diff_path, all from DIFF_PATHS
+- probe :553-570 diff_id basename strip, key SET_DIR/keys/id.json, plants==0 selects control
+- SET_ID guard :173-177 unchanged; staging/stored paths quoted :669-670 :742; empty set still refuses exit 2
+- old code at f21bec used src/*.diff; Red reasons in plan.md:1667-1697 match (S1 SRC-ONLY, S2 4 calls vs 1, S3 no refusal, S4 SRC-ONLY)
+- adversarial diff: only setDir path plus comment, assertions unchanged
+- A2: no draft->published transition in scope; A6: tracks.md model_guide pending, no resolved claim
+commands:
+- bun test harness/model-guide-tests/review-run.test.ts => 39 pass 0 fail
+- cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot => 14 passed
+- pgrep -af fake-opencode => no output (exit 1)
+- pgrep -af quota-server => no output (exit 1)
+- real sets mg-2026-11a: listed src/ and diffs/ names only (14 each), no content printed
+refined verdict: pass, no blockers
+MEASURE_AGENT_RESULT
+{
+  "status": "pass",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "review-run.sh:241,245 diffs/ input; :461,:583,:677 model feeds from DIFF_PATHS only",
+    "probe :553-570 matches diffs/ ids to keys/<id>.json",
+    "bun 39 pass; vitest adversarial 14 passed; pgrep fake-opencode and quota-server empty"
+  ],
+  "commands": [
+    "bun test harness/model-guide-tests/review-run.test.ts",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot"
+  ],
+  "changed_files": [
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": 0.9
+}
+END_MEASURE_AGENT_RESULT

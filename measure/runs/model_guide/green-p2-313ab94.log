@@ -1,0 +1,57 @@
+Green phase 2 task 2.13: Review B round 2 fixes P2B2-1 and P2B2-2.
+
+Role base: 313ab940ae440d0b4a8e37999fc046e211df024a.
+Phase base: c22f313603108585f8bb45996057627acfbc78ae.
+Findings: measure/runs/model_guide/review-b-3d42bf8.json (P2B2-1 blocker,
+P2B2-2 major). Red evidence: measure/runs/model_guide/red-2.12.txt and
+measure/runs/model_guide/red-p2-3d42bf8.log. The targeted Red runs failed at
+the role base: update.test.ts 4 failed | 3 passed, preview-gate.test.ts
+1 failed | 98 passed. This role did not edit a test file.
+
+Changes (production only, no test file, nothing under docs/):
+- harness/model-guide/update.sh: the -L refusal loop now covers every path
+  the script writes through: docs, docs/assets, docs/assets/data, the two
+  docs target files, the preview folder, and its two target files. The
+  refusal keeps one stdout line `update: refused path <path>` and exit 2
+  before any write.
+- harness/model-guide/update.sh and harness/model-guide/preview.sh: the
+  newest score file is chosen with a whole-path comparison (`-nt`) instead
+  of `ls -1t | head -n 1`, so the truly newest file by modification time
+  wins and a newline in a name cannot split the choice. The function body is
+  the same in both scripts.
+
+Gates, each file run alone with --configLoader native --maxWorkers=1
+--reporter=dot:
+- update: exit 0, Tests 7 passed (7)
+- preview-gate: exit 0, Tests 99 passed (99)
+- adversarial-p2: exit 0, Tests 14 passed (14)
+- guide: exit 0, Tests 15 passed (15)
+- print-audit: exit 0, Tests 13 passed (13)
+- input-check: exit 0, Tests 15 passed (15)
+- real-work: exit 0, Tests 20 passed (20)
+- leak-guard: exit 0, Tests 2 passed (2)
+- adversarial: exit 0, Tests 49 passed (49)
+- bash -n harness/model-guide/update.sh: exit 0
+- bash -n harness/model-guide/preview.sh: exit 0
+- git status --short docs/: prints nothing
+
+Task 2.9 preview rerun:
+  harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json
+Exit 0. The six overview rows are equal to the rows before the rerun
+(rows_identical = True, count = 6).
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: 313ab940ae440d0b4a8e37999fc046e211df024a
+head_sha: 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916
+commits: 38d1071bc959209410e82966f6eb6f96c00161eb, 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916
+tests_run: update exit 0 Tests 7; preview-gate exit 0 Tests 99; adversarial-p2 exit 0 Tests 14; guide exit 0 Tests 15; print-audit exit 0 Tests 13; input-check exit 0 Tests 15; real-work exit 0 Tests 20; leak-guard exit 0 Tests 2; adversarial exit 0 Tests 49
+files_changed: harness/model-guide/update.sh, harness/model-guide/preview.sh, measure/tracks/model_guide/plan.md
+plan_updates: Task 2.13 is [x] 38d1071 with an Evidence line to this log and a note on the extended symlink guard and the whole-path newest pick; 2.8 stays [ ].
+dispositions: none
+handoff: P2B2-1 and P2B2-2 are fixed in 38d1071, and the plan records task 2.13 in 12e753b. update.test.ts passes all 7 cases and preview-gate.test.ts all 99; the seven other required suites stay green. The task 2.9 preview keeps its six rows. The two scripts and plan.md are the only changed paths since the role base; no test file and no docs/ file changed. P2B2-3 and P2B2-4 stay open (nits, not fixed). Next: Review B round 2 re-check, then task 2.8.
+END_MEASURE_AGENT_RESULT

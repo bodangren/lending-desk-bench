@@ -1,0 +1,68 @@
+Red evidence for model_guide plan task 2.1 (phase 2)
+base: c22f313603108585f8bb45996057627acfbc78ae
+day rule: one test file at a time, --maxWorkers=1, reporter dot, no full suite
+
+Command 1
+cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit code: 1
+Tests  9 failed (9)
+Failed tests:
+- print-audit input check (spec D17) > N1: passes on the fixture pair and writes the D17 facts into the output file
+- print-audit input check (spec D17) > N2: a changed byte gives exit 2, one named line, and no output file
+- print-audit input check (spec D17) > N2: a wrong SHA-256 in MANIFEST.txt gives exit 2, one named line, and no output file
+- print-audit input check (spec D17) > N2: a missing top key gives exit 2, one named line, and no output file
+- print-audit input check (spec D17) > N2: 51 errors rows give exit 2, one named line, and no output file
+- print-audit input check (spec D17) > N3: the output holds no pages, text, or file key outside the checklist
+- print-audit input check (spec D17) > N3: every string value of the output comes from the fixture or from a computed label
+- print-audit input check (spec D17) > N3: each checklist item holds exactly a code and a text
+- print-audit input check (spec D17) > N4: the tool output holds every error type with its count and no placeholder line
+Reason: harness/model-guide/print-audit.ts does not exist. Every test stops at
+requireProduction with "production file is missing ... (Phase 1 has no
+print-audit tool)".
+
+Command 2
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit code: 1
+Tests  3 failed | 94 passed (97)
+Failed tests:
+- the print-audit block and the PA2-1 page guards of task 2.1 > T1: the print-audit block shows 52, 13, both results, the bias note, and the calibration line
+- the print-audit block and the PA2-1 page guards of task 2.1 > T11: the hostile name reaches the HTML escaped and __proto__ adds no route
+- the print-audit block and the PA2-1 page guards of task 2.1 > N4: the block shows every error type with its count and no placeholder line
+Reason: the Phase 1 code has no print-audit block. The block cases stop at
+stagePrintAuditData with "production file is missing ... (Phase 1 has no
+print-audit tool)". preview.sh still maps <!--MODEL-GUIDE:PRINT-AUDIT--> to "".
+
+PA2-1 reason for the guard cases G1 to G4
+G1 to G4 pass at c22f313 (94 passed includes them). That is expected.
+PA2-1 of measure/runs/model_guide/phase-acceptance-9cb95b6.json accepted a
+nonblocking gap: no test asserted the generated date, the coverage numbers,
+the few-runs mark, or the (n=...) run count in the generated real-work.html,
+because the behavior existed and the live preview proved it. Red 2.1 pins
+that behavior on the page-guard fixture as page-level regression guards.
+Their proof is the falsification condition, not a red run:
+- G1: sentinel generated_on 2026-10-20. A hardcoded date fails.
+- G2: runs 1,285 with a thousands comma, 2026-10-01 to 2026-11-01,
+  38.9 % and 77.8 %.
+- G3: few runs on each few_runs row, none on a row with 10 results.
+- G4: each rate cell ends with (n=<pass_rate.n>) from the JSON.
+Red 2.1 records G1 to G4 as pass at the base, and T1, T11, and N4 (page part)
+as fail.
+
+Plan change for PA2-1
+Plan task 2.1 said "print-audit.test.ts and no other file". Task 2.1 now
+names harness/model-guide-tests/print-audit.test.ts,
+harness/model-guide-tests/preview-gate.test.ts, and the fixture folders
+harness/model-guide-tests/fixtures/print-audit/ and
+harness/model-guide-tests/fixtures/page-guard/. The plan change cites PA2-1
+of measure/runs/model_guide/phase-acceptance-9cb95b6.json. Without it, task
+2.1 breaks its own file rule (A5).
+
+Control runs (each exits 0)
+cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 0, Tests  15 passed (15)
+cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 0, Tests  20 passed (20)
+cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 0, Tests  2 passed (2)
+cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 0, Tests  49 passed (49)

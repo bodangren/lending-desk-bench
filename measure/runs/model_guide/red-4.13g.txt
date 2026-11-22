@@ -1,0 +1,71 @@
+Red 4.13g: the Go plan thresholds (PM order 2026-11-19, spec D15).
+Role base 66fe1ac. Phase base 57baaaa364f968a2f44c6e14eb96f8a9d68beebf.
+HEAD at run time 84e254e (spec-only commit of the Build session; no
+production file differs from 66fe1ac in harness/model-guide/).
+
+Command 1 (2026-11-19, from harness/):
+  npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 1. Tests 2 failed | 15 passed (17).
+  Failed:
+  - Q9 gives ready for opencode-go at 5h 94 % and wait at 5h 95 %
+    (fails at 5h 80: quota.ts gives wait under the 70 % rule).
+  - Q10 gives ready for opencode-go at week 99 % and wait at week 100 %
+    (fails at week 90: quota.ts gives wait under the 70 % rule).
+  The 15 other cases pass, among them the changed Q2 and Q6.
+
+Command 2 (2026-11-19, repo root):
+  bun test harness/model-guide-tests/review-run.test.ts
+  exit 1. 49 pass, 3 fail, 372 expect() calls, Ran 52 tests.
+  Failed:
+  - G1 the pass starts on a Go route at week 97 % with a low 5h and refuses at week 100 %
+    (fails: week 97 gives the wait record and no call under the 70 % rule).
+  - G2 the pass stops before the next diff at the Go thresholds but not at 80 %
+    (fails: week 80 stops the pass open with two outputs under the 80 % rule).
+  - P4 probe mode > G3 the probe starts on a Go route at week 97 % and refuses at week 100 %
+    (fails: week 97 refuses with exit 2, "the quota state is wait: a window is 70 % or more").
+  The 49 other cases pass, among them the changed R5, R6 (x2), and P6.
+
+Command 3 (2026-11-19, from harness/):
+  npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit 1. Tests 3 failed | 27 passed (30).
+  Failed:
+  - G1 the judge starts on a Go route at week 97 % with a low 5h and refuses at week 100 %
+  - G2 the judge stops before the next group at the Go thresholds but not at 80 %
+  - G3 the start test is ready on a Go route at week 97 % and not-ready at week 100 %
+  Each fails because quota.ts gives wait at 97 % and the runners stop at 80 %.
+  The 27 other cases pass, among them the changed J11 (x2).
+
+Changed earlier cases (70/80 pinned on a Go route, moved to a non-Go source):
+  - quota.test.ts Q2 and Q6: provider opencode-go -> kimi-code-plan-cn.
+    Reason: with the Go thresholds 70 % and 75 % give ready on a Go route,
+    so the 70 % start rule and the 75 % large-body wait no longer hold for
+    opencode-go. kimi-code-plan-cn keeps the 70 %/80 % rule.
+  - review-run.test.ts R5, R6 (both cases), P6: fixtures add
+    quotaProvider kimi-code-plan-cn and quotaSource kimi-for-coding.
+    Reason: the default fixture provider is opencode-go; at 70 % a Go pass
+    and probe now start, and at 80 % a Go pass no longer stops.
+  - judge-run.test.ts J11 (both cases): fixtures add the same kimi provider.
+    Reason: the default judge quota provider is opencode-go with the same
+    effect as above.
+  - No assertion text changed except the provider and the describe/it titles
+    that name the non-Go source.
+
+Orphan scans:
+  - After command 1: both pgrep scans print no line.
+  - After command 2: one fake-opencode call and one quota-server.js showed
+    once, then both exited before the re-scan; the re-scan prints no line
+    and no mg-review-* folder stays under /tmp.
+  - After command 3: both scans print no line and no mg-judge-* folder
+    stays under /tmp.
+  - Note: a sibling session ran the same test files at the same time
+    (parent opencode serve 3250773). Its mg-judge-fake quota server
+    appeared in one scan. All recorded failures come from the runs above
+    in this role's own output files (/tmp/red-4.13g-*.out).
+
+Not in scope (for Green 4.13h):
+  - adversarial-p4-runner.test.ts ADV-R-2 "huge" expects wait for a 2 MiB
+    body with w199 85 on provider opencode-go. Under the Go thresholds
+    that body gives ready. That file is outside the rows of 4.13g/4.13h;
+    Green must move it to a non-Go provider or to the new thresholds.
+  - ADV-R-3 (69 to 100 on a Go route, expects open) still holds, because
+    week 100 stops the pass under both rules.

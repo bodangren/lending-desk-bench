@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: b3be524b50e54919aba7fe0d0bb7ec9e5de40cf8
+head_sha: 38b24cec0858e5b7591a20c6d43555d3fb0a4ceb
+commits: 9ecfa60df01faa73f7d28fd8b7e6a52a2f0848c3, 38b24cec0858e5b7591a20c6d43555d3fb0a4ceb
+tests_run: cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, Tests  3 failed | 12 passed (15); the three failures are the page tests that wait for task 2.6: "T5 page: the preview index shows the no-pick words for the empty row", "B8-1 page: a hostile model name reaches the overview table HTML escaped", and "D18 Q2: with no complete track A route and a qualified checker row the code review pick is the no-pick words" (part b only). The other twelve tests pass. git status --short docs/ -> no output
+files_changed: harness/model-guide/guide.ts, measure/tracks/model_guide/plan.md
+plan_updates: Task 2.5 marked [x] with fix commit 9ecfa60 and a note that the three page tests of 2.6 still fail; its Evidence line cites measure/runs/model_guide/green-p2-9813d5f.log with no test count; task 2.6 marked [~]
+dispositions: none
+handoff: Task 2.5 is complete. Commit 9ecfa60 holds harness/model-guide/guide.ts with the pinned CLI (`--real-work`, `--scores` optional, `--print-audit`, `--benchmark`, `--tracks`, `--today`, `--out`), the six D18 rows in order, the exact row keys, the evidence forms ("page B", "page B producer", "track A", "print-audit"), the evidence dates, the base lines on the app code and test writing rows only, the 10-run and complete-rank rules, rulings Q1 and Q2, and safe input reads (maps, exit 2 with one line, no stack trace). Commit 38b24ce holds the plan evidence. Task 2.6 owns the three remaining guide.test.ts tests: "T5 page: the preview index shows the no-pick words for the empty row", "B8-1 page: a hostile model name reaches the overview table HTML escaped", and the page part of "D18 Q2: with no complete track A route and a qualified checker row the code review pick is the no-pick words". They need harness/model-guide/pages/guide-section.html and the preview.sh overview edit that runs guide.ts without a score file and renders the six rows inline into .tmp/model-guide-preview/index.html with escaped model names. No file under docs/ changed, and .opencode/, tech-debt.md, and harness/wt.txt stay unstaged.
+END_MEASURE_AGENT_RESULT
+
+RESULT: PASS

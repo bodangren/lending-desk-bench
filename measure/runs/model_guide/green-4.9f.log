@@ -1,0 +1,142 @@
+# Green log of tasks 4.9f and 4.13d (the message line, the seeder, the judge route list)
+
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+tasks: 4.9f Green, 4.13d Green
+role_base_sha: 07418d21f073a3201055832dd5fbd82fa0e8a880
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+implementation_commit: 75f7419 (feat(model_guide): message line in the prompt, judge route list, seed-messages (tasks 4.9f, 4.13d))
+plan_evidence_commit: edee50b (measure(model_guide): SHA evidence on rows 4.9e and 4.13c)
+plan_evidence_commit_first: 1a2817d (measure(model_guide): record Green tasks 4.9f and 4.13d)
+final_green_head: edee50b8e93f8cdfda51791a897d3480436923b4
+
+## The state at the start of this role
+
+The worktree held the uncommitted production work of an earlier Green session:
+the message line of review-run.sh, judge-run.sh, and the new judges.json.
+The Red commits dd57da7 and 07418d2 are inside phase_base_sha..role_base_sha.
+The Red change is the committed Red test file, so it stays untouched here.
+
+## The change
+
+1. judge-run.sh reads judges.json only. The routes.json fallback is gone, and a
+   missing judges.json file is a refusal: exit 2, one judge-run: line, no call,
+   and no judge file. The judge rows hold no kind field, so the kind check runs
+   only for a row that holds one.
+2. The new tool harness/model-guide/seed-messages.ts reads the key of every
+   diff, asks gh for the commit message, and writes the first line to
+   messages/<diff_id>.txt. It writes every file only after every message is
+   known, so a refusal leaves no message file.
+3. review-run.sh reads the message file of every diff and puts the line
+   between the prompt and the seeded diff. A missing or empty message file is
+   a refusal before the lock and before any call.
+
+## Green gates, one at a time
+
+1. bun test harness/model-guide-tests/review-run.test.ts
+   -> exit 0, 43 pass, 0 fail, 329 expect() calls, 61.62s.
+2. pgrep -af "fake-opencod[e]" ; pgrep -af "quota-serve[r]" -> no line.
+3. cd harness && npx vitest run model-guide-tests/judge-run.test.ts
+     --configLoader native --maxWorkers=1 --reporter=dot
+   -> exit 0, Test Files 1 passed (1), Tests 22 passed (22), 44.36s.
+4. pgrep -af "fake-opencod[e]" ; pgrep -af "quota-serve[r]" -> no line.
+5. cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts
+     --configLoader native --maxWorkers=1 --reporter=dot
+   -> exit 0, Test Files 1 passed (1), Tests 14 passed (14), 65.77s.
+6. pgrep -af "fake-opencod[e]" ; pgrep -af "quota-serve[r]" -> no line.
+7. bun test harness/model-guide-tests/seed-messages.test.ts
+   -> exit 0, 9 pass, 0 fail, 41 expect() calls, 3.31s.
+8. pgrep -af "fake-opencod[e]" ; pgrep -af "quota-serve[r]" -> no line.
+9. bun test harness/model-guide-tests/pick-diffs.test.ts
+   -> exit 0, 29 pass, 0 fail, 220 expect() calls, 26.14s.
+10. pgrep -af "fake-opencod[e]" ; pgrep -af "quota-serve[r]" -> no line.
+
+The same gates run again at the final HEAD 1a2817d: seed-messages gives
+9 pass, judge-run gives 22 passed, and review-run gives 43 pass. The pgrep
+scans print no line.
+
+No real opencode call, no heavy-run.sh call, and no model call: the fake
+opencode fixture served every case.
+
+## The backfill, gh read only
+
+- cd harness && npx tsx model-guide/seed-messages.ts mg-2026-11a --private
+  /home/daniebo/.local/share/lending-desk-bench/model-guide
+  -> seed-messages: 14 written
+- cd harness && npx tsx model-guide/seed-messages.ts mg-2026-11p --private
+  /home/daniebo/.local/share/lending-desk-bench/model-guide
+  -> seed-messages: 6 written
+
+The set mg-2026-11a holds 14 diff files and 14 non-empty message files. The
+set mg-2026-11p holds 6 diff files and 6 non-empty message files. Every diff id
+has one message file, and every message file holds one line. No message, key,
+or diff was printed.
+
+## Tasks flipped
+
+- [x] c5ea02c 4.9e Red: the message line in the prompt (spec D10 ruling 2026-11-18).
+  (was [~])
+- [x] 75f7419 4.9f Green: the message line in the prompt, the seeder, and the
+  backfill (spec D10 ruling 2026-11-18). (new row)
+- [x] c5ea02c 4.13c Red: the judge route list (spec D11, PM 2026-11-18). (was [~])
+- [x] 75f7419 4.13d Green: the judge route list (spec D11, PM 2026-11-18).
+  (new row)
+
+No task is [b]. No task moved to the archive, and no closeout metadata changed.
+
+## Files a reviewer must scope
+
+- harness/model-guide/review-run.sh (changed: the message line)
+- harness/model-guide/judge-run.sh (changed: judges.json only)
+- harness/model-guide/judges.json (new, three judge routes)
+- harness/model-guide/seed-messages.ts (new)
+- measure/tracks/model_guide/plan.md (rows 4.9e, 4.9f, 4.13c, 4.13d only)
+
+Nothing under docs/, reports/, harness/model-guide/data/sets/, harness/wt.txt,
+tech-debt.md, .opencode/, or measure/runs/ is staged.
+
+MEASURE_AGENT_RESULT
+status: pass
+role: jr-green
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+tasks: 4.9f Green, 4.13d Green
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 07418d21f073a3201055832dd5fbd82fa0e8a880
+red_commits: dd57da7, 07418d2 (the Red change is inside phase_base_sha..role_base_sha)
+implementation_commit: 75f7419
+plan_evidence_commit: edee50b
+resulting_head: edee50b8e93f8cdfda51791a897d3480436923b4
+commits: "75f7419 feat(model_guide): message line in the prompt, judge route list, seed-messages (tasks 4.9f, 4.13d); 1a2817d measure(model_guide): record Green tasks 4.9f and 4.13d; edee50b measure(model_guide): SHA evidence on rows 4.9e and 4.13c"
+green_test_command: "bun test harness/model-guide-tests/seed-messages.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot"
+results: "seed-messages 9 pass, 0 fail, 41 expect() calls, exit 0; judge-run Tests 22 passed (22), Test Files 1 passed (1), exit 0; review-run 43 pass, 0 fail, 329 expect() calls, exit 0; adversarial-p4-runner Tests 14 passed (14), exit 0; pick-diffs 29 pass, 0 fail, 220 expect() calls, exit 0; pgrep -af fake-opencod[e] and pgrep -af quota-serve[r] print no line after each gate"
+backfill: "mg-2026-11a prints seed-messages: 14 written, 14 diffs and 14 non-empty message files; mg-2026-11p prints seed-messages: 6 written, 6 diffs and 6 non-empty message files; every diff id has one message file and every message file holds one line; gh read only"
+live_gates:
+  - "bun test harness/model-guide-tests/review-run.test.ts -> 43 pass, 0 fail (61.62s)"
+  - "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 22 passed (22) (44.36s)"
+  - "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 14 passed (14) (65.77s)"
+  - "bun test harness/model-guide-tests/seed-messages.test.ts -> 9 pass, 0 fail (3.31s)"
+  - "bun test harness/model-guide-tests/pick-diffs.test.ts -> 29 pass, 0 fail (26.14s)"
+orphan_check: "pgrep -af fake-opencod[e] and pgrep -af quota-serve[r] print no line after each gate"
+tasks_flipped:
+  - "[x] c5ea02c 4.9e Red: the message line in the prompt, from [~], with the Green commit 75f7419"
+  - "[x] 75f7419 4.9f Green: the message line in the prompt, the seeder, and the backfill"
+  - "[x] c5ea02c 4.13c Red: the judge route list, from [~], with the Green commit 75f7419"
+  - "[x] 75f7419 4.13d Green: the judge route list"
+tasks_deferred: none
+new_files:
+  - harness/model-guide/judges.json
+  - harness/model-guide/seed-messages.ts
+changed_files:
+  - harness/model-guide/review-run.sh
+  - harness/model-guide/judge-run.sh
+  - measure/tracks/model_guide/plan.md
+untouched: "the committed Red test files harness/model-guide-tests/seed-messages.test.ts and harness/model-guide-tests/judge-run.test.ts"
+notes:
+  - "judge-run.sh accepts a route only from judges.json; a missing judges.json is a refusal and the routes.json fallback is gone."
+  - "seed-messages.ts reads the keys and the diff names, writes only messages/<diff_id>.txt, and writes no file when a check fails."
+  - "review-run.sh refuses a missing or empty message file before the lock and before any call."
+  - "The message files of both sets live in the private folder and are not staged; the sets under harness/model-guide/data/sets/ stay untracked."
+  - "The probe of task 4.10 and the real judge calls of task 4.13 still need heavy-run.sh and the real opencode; this role ran the fake only."
+handoff: "The review roles audit the four files above against plan rows 4.9f and 4.13d and the 9 seed-messages cases and the 22 judge-run cases. Rows 4.9e and 4.13c are [x] with the Green commit 75f7419. The final Green HEAD is edee50b8e93f8cdfda51791a897d3480436923b4 and the phase base is 57baaaa364f968a2f44c6e14eb96f8a9d68beebf. The route probe and the real judge calls stay human-gated: they need the real opencode CLI through heavy-run.sh, and this role ran the fake only."
+END_MEASURE_AGENT_RESULT

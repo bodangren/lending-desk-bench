@@ -1,0 +1,7 @@
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings: none
+nonblocking_findings: NA1 the judge --start-test redaction line has no test pin (J13b pins a clean line only); NA2 error_line_of prints the raw error line when scan_output exits 2 on a credential helper failure; NA3 carried from Review B ff4e009 N15, the orphan scans of the runner tests are not scoped to the own temp folder and foreign fixture processes tripped three of my gates
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

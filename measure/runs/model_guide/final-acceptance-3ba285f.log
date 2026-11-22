@@ -1,0 +1,26 @@
+Final acceptance audit log — model_guide — audited HEAD 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36
+Route: opencode-go/glm-5.3#high. A provisional result was written before any gate run. The gates then ran one at a time: PROJECT_LINT exit 0; PROJECT_CHECKS exit 0 (5 moderate, no high); PROJECT_TESTS preview-gate 122 passed; review-score 33; judge-run 63; quota 32; adversarial-p4g 4; adversarial-p5 5; bun review-run 129 pass / 1 fail on the recorded F20 fixture timing flake, then 130 pass / 0 fail on the unchanged rerun; leak-check with docs and preview in scope exit 0. The six published docs hashes match publish-approval.md. The live page shows the PM-ruled incomplete state. A5, A6, and A9 hold. Result: pass, no blocking finding.
+
+MEASURE_AGENT_RESULT
+schema_version: 1
+role: final-acceptance
+track: model_guide
+phase: track review
+status: pass
+summary: Final acceptance passes at 3ba285f. One passing phase acceptance covers each phase; every baseline is an ancestor and every audited HEAD is an ancestor of HEAD; the audited HEAD equals current HEAD. Only 4.11 and 5.4 stay open, both PM-deferred 2026-11-22. All supplied gates pass one at a time; the six published docs files match publish-approval.md; the live page shows the PM-ruled incomplete state with no rank and no internal reason; the known nonblocking items do not block under the PM round cap and the late-findings rule. Closeout must update the stale registry row and metadata and push the two local-only commits.
+route: opencode-go/glm-5.3#high
+track_base_sha: ea36faecc283a2c717876b4cd68fc6992f0c8f53
+role_base_sha: 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36
+audited_head: 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36
+audited_head_sha: 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36
+confidence: high
+retry_recommendation: none
+blocking_findings: []
+nonblocking_findings: 6 — FA-NB1 stale registry row and pending metadata (closeout updates them at the archive move); FA-NB2 the recorded F20 fixture timing flake (tech-debt F-B5/F-C4, rerun passes 130/130); FA-NB3 two local-only commits a8835be and 3ba285f carry no docs or production change; FA-NB4 the known carried items are tech-debt and none is a real-key leak; FA-NB5 no measure/doctor.sh in this repository, the supplied PROJECT gates are the doctor equivalent; FA-NB6 Phase 0 is the spec-review checkpoint with spec-review results, no phase-acceptance artifact by design.
+changed_files: measure/runs/model_guide/final-acceptance-3ba285f.json, measure/runs/model_guide/final-acceptance-3ba285f.log
+live_contract_violations: []
+test_strategy_violations: []
+prod_wiring_violations: []
+route_parity_violations: []
+commands_run: git rev-parse HEAD; ancestry checks for the six passing phase acceptances; path diffs from each audited HEAD to HEAD; sha256sum of the six published docs files; grep checks for the PM marks and the A5/A6/A9 patterns; PROJECT_LINT (exit 0); cd harness && npm audit --audit-level=high (exit 0); vitest preview-gate 122, review-score 33, judge-run 63, quota 32, adversarial-p4g 4, adversarial-p5 5, each exit 0; bun test review-run (flake then 130 pass 0 fail); npx tsx model-guide/leak-check.ts --private <private> --repo .. --preview ../.tmp/model-guide-preview (exit 0); webfetch of the live review.html.
+END_MEASURE_AGENT_RESULT

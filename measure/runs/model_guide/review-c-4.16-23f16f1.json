@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-c-ux-api",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.16",
+  "status": "pass",
+  "summary": "Pass under the PM cap. Native token aggregation and record fields hold. The night path gains no refusal. One test timing inconsistency remains nonblocking.",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "23f16f18787da5190dc8563e0373d48233653927",
+  "audited_head_sha": "23f16f18787da5190dc8563e0373d48233653927",
+  "audited_head_current": true,
+  "contract_applicability": "applicable",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F-C4 [Major, nonblocking] review-run.test.ts has a timing-sensitive F20 token assertion. The first full-file attempt included a message stamped relative to fake-server read time, so its tokens were summed as current-call tokens; retry passed all 130 tests without code changes. Pin fixture timestamps to the call boundary and update the assertion to match the current-call aggregation contract. Route to the orchestrator."
+  ],
+  "evidence": [
+    "Provenance: phase_base_sha is 7d7d218d00a95d9d619d2856173b8136b6ace4a5. role_base_sha and audited_head_sha are 23f16f18787da5190dc8563e0373d48233653927. HEAD matched at entry and final check.",
+    "The exact remediation diff contains four paths: the new adversarial-p4f test, both runners, and the plan evidence line. It does not change review-score.ts, adjudicate.ts, or the external night driver.",
+    "The real API GET returned 48 assistant messages in the sampled session: 46 had finish=tool-calls, one had finish=stop, and one lacked finish. Of the 47 messages with tokens, all had numeric input, output, reasoning, cache.read, and cache.write fields and string ids. The inspection printed no message text.",
+    "review-run.sh:1210-1264 and judge-run.sh:964-1018 select the newest current-call assistant message and sum each current-call message token bundle once per id. A missing bundle emits an incomplete step_finish event, which clears tokens_complete while preserving the record shape.",
+    "review-run.sh:831-875 and judge-run.sh:1508-1572 keep pass record keys and types unchanged, including state, diffs or groups, tokens, and boolean tokens_complete. The diff does not alter consumers in review-score.ts or adjudicate.ts.",
+    "night-4.11.sh remains unchanged outside the repository diff. It reads pass state and exit status, not token fields. The new token aggregation adds no branch that refuses the night-3 call.",
+    "adversarial-p4f.test.ts passed: 48 passed, 14 skipped, 0 failed. Its enabled cases verify three tool steps, repeated polls, token totals, and incomplete telemetry when a step lacks a bundle.",
+    "The first review-run.test.ts attempt had two failures: a send-timeout text timing mismatch and F20 token totals that included the synthetic older message. A second run passed all 130 tests with 0 failures and 922 expectations.",
+    "judge-run.test.ts passed: 61 tests. Each test file ran separately. No full suite ran.",
+    "Both runners pass bash -n. git diff --check passes for the phase range. No real-key leak was found in the changed files.",
+    "Only the supplied JSON and log result files were written. No live model call, POST, DELETE, browser call, OpenCode CLI, or OpenChamber CLI ran. No fake child remained. Facts changed: none."
+  ],
+  "commands": [
+    "git rev-parse HEAD at entry and final check -> 23f16f18787da5190dc8563e0373d48233653927",
+    "git diff --stat 3337418 23f16f1 -> four paths, 455 insertions, 8 deletions",
+    "GET http://127.0.0.1:38307/api/session?limit=1 and GET /api/session/{id}/message -> printed API field names, finish counts, token keys and types only",
+    "cd harness && /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh npx vitest run model-guide-tests/adversarial-p4f.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 48 passed, 14 skipped, 0 failed",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bun test harness/model-guide-tests/review-run.test.ts -> first run 128 pass, 2 fail; retry 130 pass, 0 fail",
+    "cd harness && /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 61 passed",
+    "bash -n harness/model-guide/review-run.sh && bash -n harness/model-guide/judge-run.sh -> exit 0",
+    "git diff --check 7d7d218d00a95d9d619d2856173b8136b6ace4a5..HEAD -> exit 0",
+    "git diff --name-only 3337418 23f16f1 -> adversarial-p4f.test.ts, both runners, and plan.md"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4f.test.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "No blocker goes to Green under the PM cap. Native assistant token fields match the new parser. The pass record schema remains unchanged, and night 3 has no new refusal path from this change. Keep F-C4 as a nonblocking test-fixture issue. The first review-run suite attempt failed two timing-sensitive assertions; the retry passed without code changes.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    { "axis": "correctness", "score": 4, "evidence": "Both runner helpers sum current-call token bundles by message id, and the live GET sample showed native ids and token fields on multi-step messages." },
+    { "axis": "test_meaning", "score": 4, "evidence": "The P4F tests passed 48 cases, while review-run.test.ts showed a timing-sensitive failure before a clean 130-test retry." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "The exact diff contains only the two runner changes, their new adversarial test, and one plan evidence line." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "Real GET-only field inspection, runner lines, record consumers, separate tests, and provenance checks support the result." }
+  ]
+}

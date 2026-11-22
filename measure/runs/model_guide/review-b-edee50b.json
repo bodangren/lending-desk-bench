@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Pass. The message line reaches the prompt in the order prompt, message, diff (review-run.sh:508, tests M1 and M2 green). A missing or empty message file is a refusal before the lock and before any call (review-run.sh:266-294, tests M3 and M4 green). judge-run.sh accepts a route only from judges.json (:181-202), and the three refusal paths make no call (J16, J16b, J17 green). seed-messages.ts builds the gh argv with no shell (:100-103), bounds the set id (:54, :83), refuses links on the write path (:124-127), and writes no file when a check fails (:170-185). The backfill matches the plan counts: 14/14 and 6/6 diffs to message files, one line each, no plant hint and no control character. Five security notes are nonblocking: a false 'never reads keys/' claim (F1), a quota fail-open for a judge row with no quota_provider (F2), a runner that validates one line but sends the whole file (F3), a symlink read path (F4), and two untested guards in seed-messages (F5). One scope note on doc edits (F6).",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "B1 [Minor] harness/model-guide/review-run.sh:25-26 with measure/tracks/model_guide/spec.md:473-474 against harness/model-guide/review-run.sh:603: The new text says the runner reads `diffs/` and `messages/` only, and 'It never reads `keys/`'. run_probe reads `keys/<diff_id>.json` at line 603 to count plants and to pick the control diff. The code puts only `plants.length` into a variable, so no key text reaches a prompt, and the security property holds. The claim is false as written, and no test pins it. Fix: narrow the spec sentence and the header to 'no `keys/` text enters a prompt; the probe reads the plant count of `keys/`', or select the control diff without the key read, and add one test for the chosen rule.",
+    "B2 [Minor] harness/model-guide/judge-run.sh:195-196, 204-206, 275, 320: A judge row with no `quota_provider` maps to the empty string, `read_quota` returns at :275 with state ready and cap 1, and the credential seed at :320 is skipped. The run then makes judge calls with no D15 quota read and no 70 % or 80 % stop. judges.json holds all three providers today, so no live break exists. No test pins the content of the committed judges.json; J15 uses a fixture list. A tab or newline in a row field also shifts the tab-joined row at :203. Fix: refuse a judge row with an empty `quota_provider` or `quota_source` (exit 2, no call), reject a tab in the three fields, and add a test that reads the committed `harness/model-guide/judges.json` and asserts the three routes with both fields.",
+    "B3 [Minor] harness/model-guide/review-run.sh:274, 281, 508: `read_message_line` checks only the first line, and `MESSAGE_TEXT` is never read again. The call at :508 cats the whole message file between the prompt and the diff. A file with a second line is accepted, and its extra text reaches the model with no label. A file with one very long line is loaded whole into a shell variable and into the prompt, so a large file costs memory. A file changed after the check is not re-checked. Tests M1 to M4 cover order, missing, and empty only. Fix: refuse a second line, a control character, and a line longer than one bound (for example 512 bytes), read the file once, and pass the checked value to the call; add one case per refusal.",
+    "B4 [Minor] harness/model-guide/review-run.sh:270, 508 against harness/model-guide/seed-messages.ts:124-127: The runner tests the message file with `[ ! -f ]` and reads it with `head` and `cat`, so both follow a link. A symlinked `messages/<diff_id>.txt` (or a symlinked `.diff` under `diffs/`) makes the runner send the first line of any local file to a model provider. seed-messages.ts refuses a link on its write path, so the two paths disagree. No test covers a link in either read. Fix: refuse a link in `read_message_line` and in the diff glob with `[ -L ]`, and add one case with a linked message file (exit 2, no call).",
+    "B5 [Nit] harness/model-guide/seed-messages.ts:54, 83, 124-127 with harness/model-guide-tests/seed-messages.test.ts: The tool refuses a set id that fails the plain-id rule or holds `..`, and it refuses a link on the write path. No test exercises either guard. The 9 cases are real, but a change to the id rule or to `refuseLink` passes the suite. Fix: add a case with the set id `../x` (exit 2, no gh call, no file) and a case with `messages/` as a link to a folder outside the set (exit 2, no write).",
+    "B6 [Nit] measure/tracks/model_guide/test-strategy.md:1640-1660 with measure/tracks/model_guide/spec.md:528: Commit 154eb7d (the rulings commit of the range) also changes the DS12 mark rule, the DS13 Review B pick, and the Q-S6 net-score threshold from 20 to above 0. These edits are outside tasks 4.9e, 4.9f, 4.13c, and 4.13d. The production commit 75f7419 holds only the four production files, so the code scope is clean. Fix: none required; the orchestrator should confirm that the ranking edits belong to this ruling batch."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` = edee50b8e93f8cdfda51791a897d3480436923b4, equal to the audited HEAD, and the tree was clean for these paths at audit time. phase_base_sha 3581902d06cbe616d95043d201fa2b39b445e697. The orchestrator supplied no separate role_base_sha. I used the review-at-head convention (role_base_sha = audited HEAD), as measure/runs/model_guide/review-b-e13413f.json does (there role_base_sha equals audited_head_sha).",
+    "The range 3581902..edee50b holds 9 commits and 11 changed files: 4 production files, 4 test files, and 3 measure/tracks files. Commit 75f7419 changes only harness/model-guide/{judge-run.sh,judges.json,review-run.sh,seed-messages.ts} (git show --stat). Commit 154eb7d changes the plan, the spec, and the test strategy only.",
+    "Security applicability: applicable. The change reads private set data (keys, diffs, messages), calls an external CLI with data from a private file, writes message files, and builds the text that goes to a model provider.",
+    "Gate 1 `bun test harness/model-guide-tests/seed-messages.test.ts` exits 0 with 9 pass, 0 fail, 41 expect() calls. After it, `pgrep -af \"fake-opencod[e]\"` and `pgrep -af \"quota-serve[r]\"` printed nothing.",
+    "Gate 2 `bun test harness/model-guide-tests/review-run.test.ts` exits 0 with 43 pass, 0 fail, 329 expect() calls. After it, both pgrep scans printed nothing.",
+    "Gate 3 `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exits 0 with Test Files 1 passed, Tests 22 passed (22). After it, both pgrep scans printed nothing.",
+    "The three counts match the plan evidence for 4.9e, 4.9f, 4.13c, and 4.13d (43, 9, and 22). The Red evidence holds the failures that the fixes close: M1 to M4, J15, J16, and J17.",
+    "Process scan: after each of my three gates both pgrep scans printed nothing. A later scan saw one `/tmp/mg-review-fake-L7WkmH/quota-server.js` process, which holds a fake folder name that my runs did not use (my gates were finished). It was gone at the next scan, so it belongs to a concurrent review run. I did not start it and I did not stop it.",
+    "Data check on the private sets (names and counts only): mg-2026-11a holds 14 `.diff` files and 14 `.txt` files; mg-2026-11p holds 6 and 6. Each message file printed lines=1, and the sizes are 61 to 100 bytes. A node scan printed 0 hits for a control character, 0 hits for a line longer than 200 bytes, and 0 hits for a plant `file`, `symbol`, `title`, `new_lines` value, or `accepted_classes` value inside a message line. No message, key, or diff text was printed.",
+    "seed-messages.ts path and call review: the set id must match `^[A-Za-z0-9][A-Za-z0-9._-]*$` and must not hold `..` (:54, :83). The diff ids come from `readdirSync(diffDir)` basenames (:136-145), so they hold no separator. The gh call is `spawnSync(gh, [\"api\", \"repos/<repo>/commits/<commit>\", \"--jq\", \".commit.message\"])` with no shell (:100-103), so a value in a key cannot start a second command. `repo` and `commit` are not validated, but they stay inside one argv element. Every key is read before any call (:150-166), and every message is known before any write (:170-177). `refuseLink` guards `messages/` and each output file (:179-184). The tool reads no path under `src/`.",
+    "review-run.sh prompt order: `run_model_call` cats `$PROMPT_FILE`, the message file, and the diff (:506-508). The message check (:266-294) runs before the run slug (:296), before the lock, before the quota read, and before any call. Tests M1 and M2 assert the three marker positions in the call stdin; M3 and M4 assert exit 2, one named line, zero model calls, and zero pass records. The tests are real: each one failed on the Red HEAD per the plan record.",
+    "Hostile message file: the runner never puts the message text into a path, a lock name, a JSON value, or a command, so control characters cannot break the lock or a pass record. The gaps are the unvalidated whole-file read and the unbounded first line (B3).",
+    "judge-run.sh route list: `[ -f \"$JUDGES_FILE\" ]` and the node row read (:181-202) run before the tool resolution (:216-227), before `mkdir -p \"$PRIVATE\"` (:229), and before `start_job` (:313). A route outside judges.json gives exit 2, one `judge-run:` line, no call, and no judge file (J16, J16b, J17 green). The script does not read routes.json: the name appears in comments only (:14, :16, :20, :180). Review-run.sh does not hold the string `judges.json` (J15 asserts it).",
+    "A2 (consent-blind publish gate): not applicable. No test in this range flips a draft to a published status, and the diff holds no publish or preview gate file (`git diff --name-status 3581902..edee50b` lists no publish.ts and no preview-gate.test.ts).",
+    "A6 (registry overstatement): measure/tracks.md line 34 lists model_guide as 'pending — spec review round 1 revised 2026-11-14' and holds no security 'resolved' claim, so the rule does not trigger. The false claim I found is in the new spec text and the script header (F1), not in the registry.",
+    "Test quality: the new cases assert exact refusal text patterns, exit codes, call counts, and file absence. They do not assert digit-only counts or exit codes alone. The fixture change in adversarial-p4-runner.test.ts writes a message file per diff, so the 14 earlier adversarial cases keep their meaning."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> edee50b8e93f8cdfda51791a897d3480436923b4",
+    "git diff --stat 3581902..edee50b -> 11 files, 1195 insertions, 109 deletions",
+    "git diff --name-status 3581902..edee50b -> 4 production, 4 test, 3 track files",
+    "bun test harness/model-guide-tests/seed-messages.test.ts -> 9 pass, 0 fail, 41 expect() calls",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 43 pass, 0 fail, 329 expect() calls",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 1 file passed, 22 tests passed",
+    "pgrep -af \"fake-opencod[e]\" and pgrep -af \"quota-serve[r]\" after each gate -> no line",
+    "ls and wc/awk counts on the private sets -> 14/14 and 6/6, one line per message file",
+    "node scan of the message lines against the key plants -> 0 hint hits, 0 control characters, 0 long lines",
+    "git blame and git log -L on review-run.sh:603 -> the key read predates the range; the new spec sentence is in 154eb7d"
+  ],
+  "changed_files": [
+    "harness/model-guide/seed-messages.ts",
+    "harness/model-guide/judges.json",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/seed-messages.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md",
+    "measure/tracks/model_guide/test-strategy.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode-go/deepseek-v4.1-flash",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The main case is right (review-run.sh:508 and tests M1 to M4, J15 to J17 green), but the edges are open: the whole message file is sent (review-run.sh:508), the keys claim is false (review-run.sh:603), and a judge row with no quota_provider skips the quota read (judge-run.sh:275)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The cases are real and failed first (plan red-4.9e.txt and red-4.13c.txt), and M1 asserts marker positions in the call stdin; the set-id guard, the link guard, and a multi-line message file have no test (B3, B5)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "75f7419 touches only the four production files, and 154eb7d carries the ruling edits; those edits also move DS12, DS13, and Q-S6 outside the four named tasks (B6)."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The plan counts reproduce: `bun test .../seed-messages.test.ts` gives 9 pass, `bun test .../review-run.test.ts` gives 43 pass, and the vitest judge gate gives 22 passed, and the private set counts are 14/14 and 6/6."
+    }
+  ]
+}

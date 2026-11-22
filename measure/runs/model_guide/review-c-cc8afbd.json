@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "summary": "Re-review of edee50b..cc8afbd (tasks 4.13e to 4.13h, text commits def8681 and 84e254e). The fake-tested contracts hold end to end. review-run.sh refuses a message file with a second line, a control character, a line over 1000 bytes, or a link, and a linked seeded diff, with one review-run: line and exit 2 (M5 to M9). judge-run.sh refuses a judges.json row with an empty quota field or a tab (J18 to J18c), prints <route> ready|not-ready at the Go thresholds (G3), and judged_by holds only ids with a verdict (J19, C7 resolved). seed-messages.ts holds every listed refusal, and SM4 pins each (R3 resolved). The net-above-0 pick rule shows the same in real-work.html, real-work.ts, and guide.ts, and the footer row count equals the outcomes length (DS26). All four allowed suites pass at HEAD (52, 30, 17, 16 tests) with no orphan process. But the Go thresholds of the PM order of 2026-11-19 cannot work against the live source. I read the live OpenChamber endpoint GET /api/quota/opencode-go: the week window is named weekly, and the answer holds credits_balance with usedPercent null. quota.ts reads windows[week], so the week-100 rule is dead live (F1). parseAnswer rejects the null credits_balance window, so every live Go read stops before any threshold is checked; I ran quota.ts against the live base and got state stopped with the line quota: the window credits_balance holds no usable usedPercent (F2). Review A found both breaks at the same HEAD, and an uncommitted task 4.13i Red (working-tree edits at 01:09 and 01:10, after my test runs) already answers them. The probe driver probe-4.10.sh still stops at 5h over 95 or week over 90 (PM 2026-11-18), which disagrees with the spec D15 night limit of 95/100 (F3).",
+  "blocking_findings": [
+    "F1 (blocking, harness/model-guide/quota.ts:273-275): the Go branch of stateOf reads windows[\"week\"], but the live endpoint GET /api/quota/opencode-go names the week window weekly. I read the live answer: windows are 5h, weekly, monthly, credits_balance. There is no week key. The week-100 wait of spec D15 never fires live, so the runner never stops a Go pass at the week limit. The fakes of quota.test.ts (goBody, line 285), review-run.test.ts (line 487), and judge-run.test.ts (line 547) all serve week, so the tests confirm a dead key. Convergent with Review A cc8afbd F1. Fix: read windows[\"weekly\"] (keep week only as a documented fallback), fix the answer example at quota.ts:28 and spec D15/FR-15 to name the live keys, and serve the live window set in the three fakes.",
+    "F2 (blocking, harness/model-guide/quota.ts:259-261): parseAnswer rejects any window whose usedPercent is not a number. The live answer holds credits_balance with usedPercent null. So every live Go read returns stopped. I ran harness/model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 and got {\"state\":\"stopped\"} with the stderr line quota: the window credits_balance holds no usable usedPercent. The Go thresholds of task 4.13h can never be evaluated live: review-run.sh writes an open pass with a quota error and the probe refuses. The strict check is pre-existing (task 4.4, commit 9c1dfa6), but 4.13h made the live Go read the enforcement point. Convergent with Review A cc8afbd F2. Fix: skip a window with a null or unusable usedPercent (a missing window never moves the state), and pin the live answer with a null credits_balance in the fakes. An uncommitted task 4.13i Red (Q11 to Q15) in the working tree already covers both fixes; it must land and pass before the phase gate."
+  ],
+  "nonblocking_findings": [
+    "F3 (minor, /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/probe-4.10.sh:60-76): the probe driver keeps the PM 2026-11-18 night gate five over 95 or week over 90, but spec D15 after commit 84e254e sets the Go night limit at 95 % / 100 %, and night-4.11.sh (line 78, updated Nov 19 00:12) and quota.ts follow it. The probe is stricter, so it stops the re-probe of the two Go pilot routes (row 4.13h, 02:00 +07 tonight) at a week of 91 to 100 that the runner would allow. No spend risk; the direction is safe. The live weekly value is 1.17 % now, so tonight is not hit. Convergent with Review A cc8afbd N2. Fix: the orchestrator aligns the probe gate to five at 95 or more and week at 100 or more.",
+    "F4 (nit, measure/tracks/model_guide/plan.md:1873-1876): row 4.12 still says the night limit is the Go 5-hour window over 95 % or the Go week over 90 % (PM 2026-11-18), but spec D15 now says the night limit is the same 95 % / 100 % (PM 2026-11-19), and night-4.11.sh follows the spec. The text commits def8681 and 84e254e missed this row. Fix: update the row 4.12 sentence to 95 % / 100 %.",
+    "F5 (nit, measure/tracks/model_guide/spec.md:721): D14 says the probe retry ceiling is pinned as test P2 pins, but P2 pins only that the probe made more than 0 calls (review-run.test.ts:1775); the ceiling pin lives in P2b (review-run.test.ts:2540, exactly 3 calls). The substance of R1 is resolved; only the cross-reference is stale. Fix: change the spec text to as test P2b pins.",
+    "F6 (nit, harness/model-guide-tests/review-run.test.ts:1373 and afterAll at :179): my first review-run run failed 2 cases (R12 and the unnamed afterAll) on live-fake-process assertions that named fixture dirs mg-adv-r-run-kKpMvB and mg-adv-r-run-f4GzZO. The isolated re-run of the same suite passed 52 of 52 with the same code, and every pgrep scan before and after printed no line. A heavy-run vitest job of another project ran through the whole audit, and an in-flight Green Red (task 4.13i) began in this worktree at 01:09. I could not attribute the two orphans to a pid, and both fixture dirs were gone when I looked. The failure is an orphan-detection flake under machine load, not a contract break. Fix: give R12 and the afterAll a short settle wait before the process scan.",
+    "F7 (nit, pre-existing, harness/model-guide/judge-run.sh:691-698): the 80 % stop branch is dead for every sourced provider, because a window at 80 already gives the wait state and the wait branch at line 683 stops the run first. The comment at lines 670-673 still describes an 80 % stop that cannot occur. The 4.13h diff only added the IS_GO_ROUTE guard to the dead branch. Convergent with Review A cc8afbd N1. Fix: drop the dead branch and fix the comment, or gate the wait branch at 80 for mid-run stops."
+  ],
+  "evidence": [
+    "phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9f68beebf (plan rows 4.13e to 4.13h); role_base_sha edee50b8e93f8cdfda51791a897d3480436923b4 (my earlier audited head); audited_head_sha cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5; git rev-parse HEAD prints the head sha. The working tree held no modified tracked file when the audit began; an uncommitted task 4.13i Red touched quota.test.ts and review-run.test.ts at 01:09:49 and 01:10:10, after my four test runs, so every run tested HEAD cc8afbd.",
+    "contract_applicability: applicable, because the phase diff adds CLI refusal surface (message file checks, links, judge row checks), exit codes, output schemas (judged_by, footer count, pick lines), consumer wiring (two drivers, adjudicate.ts), and a page rule, the exact scope of this role.",
+    "F1 live proof: curl -s http://127.0.0.1:38307/api/quota/opencode-go returns windows 5h (3.11 %), weekly (1.24 %), monthly (0.62 %), credits_balance (usedPercent null). No week key. The night driver read_go_quota and the probe driver read windows[\"weekly\"][\"usedPercent\"], and cron-daily.sh:539 reads x.usage.windows.weekly, so every other consumer of the same endpoint already uses the live key.",
+    "F2 live proof: npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 prints {\"provider\":\"opencode-go\",\"source\":\"opencode-go\",\"state\":\"stopped\",\"cap\":3,\"windows\":{}} and the stderr line quota: the window credits_balance holds no usable usedPercent, exit 0. The strict check is pre-existing (git log -S: commit 9c1dfa6, task 4.4).",
+    "review-run.sh contracts: read_message_line (lines 313-352) sets a symlink, a second line, a control character, over 1000 bytes, and the loop refuses a linked seeded diff at line 359; refuse() at line 119 prints one review-run: line and exits 2; probe_refuse() at line 129 prints one review-run: line and exits 2; the probe prints <route> reachable with exit 0 and the two error states with exit 3 (P2, G3); the call cats review-prompt.md, the staged checked line, and the diff, and the model reads only the staged line (message_path now points at MESSAGE_STAGE_DIR).",
+    "judge-run.sh contracts: the row reader exits 5 on an empty quota field or a tab (lines 203-210) and the case at line 219 refuses with one judge-run: line, exit 2 (J18 to J18c; J18d pins the committed judges.json); run_start_test prints \"$ROUTE ready -\" or \"$ROUTE not-ready $QUOTA_WAIT_TEXT\" (lines 451-472), so a Go route at the thresholds prints opencode-go/... not-ready the 5h window reached 95 % or the week window reached 100 % (G3); judged_by marks only ids with Object.hasOwn(map, id) (lines 634-640, J19).",
+    "seed-messages.ts: the refusals live at lines 71 (set id given twice), 76 (unknown flag), 78 (flag needs a value), 83 (set-id pattern with / or ..), 126 (linked path), 140 (missing set folder), and 146 (set with no diff); refuse prints one seed-messages: line and exits 2; the write path refuses a linked messages folder and a linked file before any write (lines 179-184). SM4 (8 cases, seed-messages.test.ts:331-441) pins each refusal with exit 2, no gh call, and no file.",
+    "consumers: night-4.11.sh (read only) skips a Go route at five at 95 or more or week at 100 or more (read_go_quota, lines 63-90), so its thresholds agree with quota.ts numerically; it collapses the runner output into one line and appends exit=<rc> state=<state> with the state from the newest pass record (lines 142-170), and a refusal with no record gives state=none. probe-4.10.sh (read only) records each output line as <route> refused <line> exit=2, <route> no-line exit=<rc>, or the raw line (lines 119-125), so every new refusal line parses. Its Go gate stays at 5h over 95 or week over 90 (F3).",
+    "adjudicate.ts reads the judge files through readJudgeFile (lines 448-463), which reads only the flat verdicts map; judged_by takes no part, so the C7 fix is safe for the apply, and a dropped id keeps the D11 fallback (the finding is left out).",
+    "the page: pages/real-work.html:120 says a net score above 0; real-work.ts:47 sets NET_SCORE_GATE = 0 and passesNetGate (line 483) returns net above 0 for the marks and the pick (lines 510, 535, 621); guide.ts:59 states the same rule; the footer row count is outcomes.length (real-work.ts:686) and coverage.rows carries it (line 773); DS26 pins the count with a malformed row (footer-rows 42) and DS26 pins that net 0 gives no pick; test-strategy.md:1694 shows gate-six (net 19.9) unmarked, above 0.",
+    "earlier findings resolved: C7 (judge-run.sh:634-640 plus J19), R1 (P2b at review-run.test.ts:2540 pins exactly 3 calls; stale spec pointer in F5), R2 (plan.md:1820 now reads runs after 4.9f and before 4.11), R3 (SM4), R4 (review-run.sh:11 says the local date and line 176 uses local date +%F).",
+    "go thresholds in code: quota.ts:56-58 defines GO_PROVIDER opencode-go, GO_FIVEH_PERCENT 95, GO_WEEK_PERCENT 100; stateOf (lines 268-279) gives wait at 5h 95 or more or week 100 or more and ready below; review-run.sh:252-263 and judge-run.sh:236-249 set the Go wait and stop texts; the per-diff and per-group stops use the wait state for Go and never 80 % (review-run.sh:778-790, judge-run.sh:683-698); Q9 and Q10 pin 94 ready / 95 wait and 99 ready / 100 wait, and G1 to G3 pin the runner behavior, all against the fake week key (F1).",
+    "bun test harness/model-guide-tests/review-run.test.ts: first run 51 pass, 2 fail (orphan-detection flake, F6); isolated re-run 52 pass, 0 fail, 403 expect() calls, 91.89 s; pgrep -af fake-opencod[e] and pgrep -af quota-serve[r] printed no line after each run.",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot: Tests 30 passed (30), 61.25 s; pgrep scans printed no line.",
+    "bun test harness/model-guide-tests/seed-messages.test.ts: 17 pass, 0 fail, 77 expect() calls, 5.82 s; pgrep scans printed no line.",
+    "bun test harness/model-guide-tests/real-work.test.ts: 16 pass, 0 fail, 393 expect() calls, 2.10 s; pgrep scans printed no line.",
+    "scope: git log --name-only edee50b..cc8afbd lists exactly the 17 planned files (6 production, 9 test, plan.md, spec.md); no commit touches docs/, harness/opencode-credential.sh, harness/opencode-host.sh, harness/provenance.ts, routes.json, judges.json, or seed-messages.ts; the Red records red-4.13e.txt and red-4.13g.txt exist on disk and the plan rows record the failing-first counts (2, 3, and 3 failed on the new cases; 52 pass at HEAD after the G2 fix 4b4054c)."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5; git status --short -> clean tracked tree at audit start, then two modified test files from an in-flight Green Red",
+    "git log --oneline edee50b..cc8afbd -> 17 commits, def8681 to cc8afbd; git diff --stat -> 17 files, 1443 insertions, 132 deletions",
+    "curl -s --max-time 5 http://127.0.0.1:38307/api/quota/opencode-go -> windows 5h, weekly, monthly, credits_balance (usedPercent null), no week key; 5h 3.11 %, weekly 1.24 %",
+    "cd harness && npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 -> state stopped, stderr quota: the window credits_balance holds no usable usedPercent",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 51 pass 2 fail (orphan flake), re-run 52 pass 0 fail (91.89 s); pgrep scans -> no line",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 30 passed (30) (61.25 s); pgrep scans -> no line",
+    "bun test harness/model-guide-tests/seed-messages.test.ts -> 17 pass, 0 fail (5.82 s); pgrep scans -> no line",
+    "bun test harness/model-guide-tests/real-work.test.ts -> 16 pass, 0 fail (2.10 s); pgrep scans -> no line",
+    "stat on quota.test.ts and review-run.test.ts -> mtimes 01:09:49 and 01:10:10, after my last suite ended at about 01:08:20"
+  ],
+  "changed_files": [
+    "harness/model-guide/guide.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/real-work.ts",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/quota.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/seed-messages.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [
+    "F1: harness/model-guide/quota.ts:273-275 reads windows[\"week\"], but the live opencode-go answer names the week window weekly (verified by a live GET on 127.0.0.1:38307), so the week-100 Go wait and mid-pass stop of spec D15 never fire live; all three test fakes serve the dead key.",
+    "F2: harness/model-guide/quota.ts:259-261 rejects the live credits_balance window (usedPercent null), so every live Go quota read returns stopped (verified by running quota.ts against the live base), and the Go thresholds of task 4.13h can never be evaluated on a live route."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_green",
+  "confidence": "high",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "Every fake-tested contract holds (52/30/17/16 tests pass), but the core of 4.13h fails live twice: quota.ts --provider opencode-go --base http://127.0.0.1:38307 gives state stopped on the credits_balance window, and the week key week never matches the live weekly window."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "Red records exist (red-4.13e.txt, red-4.13g.txt) and M5-M9, J18-J19, G1-G3, SM4, and DS26 pin each new claim, but the three quota fakes serve a window set the live source never sends, so the central Go contract is tested against a fiction."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git log --name-only edee50b..cc8afbd lists exactly the 17 planned files of rows 4.13e to 4.13h and the two text commits; no commit touches docs/, the frozen runner paths, routes.json, judges.json, or seed-messages.ts."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Both blocking findings rest on a live command result (curl of the endpoint, quota.ts run against the live base), and every wiring claim has a file:line (judge-run.sh:634-640, night-4.11.sh:63-90, real-work.ts:686)."
+    }
+  ]
+}

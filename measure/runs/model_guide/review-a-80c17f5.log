@@ -1,0 +1,26 @@
+role: review-a
+round 7 audit of delta 2a9d421..80c17f5 (UX fixes U1, U3, U4, tasks 1.20 and 1.21)
+HEAD at start and at end of audit: 80c17f5979b632a38e2a6797ff20504b418e198c, equals audited_head_sha and role_base_sha.
+phase_base_sha 0a44cc9c417587e418899a97ac63f131a59fe2cd.
+Delta: 4 commits (b06ac41 test, d344a21 plan, 7618b8c fix, 80c17f5 plan), 4 files (preview-gate.test.ts, pages/real-work.html, preview.sh, plan.md). No docs/ file changed. Unrelated untracked files: .opencode/, harness/wt.txt, tech-debt.md.
+Day-rule run: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 88 passed (88).
+bash -n harness/model-guide/preview.sh -> exit 0.
+Red proof (A4 missing-deliverable fixture): git archive b06ac41 in /tmp/opencode/r7/red2 plus node_modules symlink, same command -> exit 1, Tests 3 failed | 85 passed (88), failures exactly U1, U3, U4. Matches red-1.20.txt.
+Control: git archive 2a9d421 in /tmp/opencode/r7/red -> exit 0, Tests 85 passed (85); the U1-U3-U4 tests do not exist there, so they are new at b06ac41.
+Generated page checks on .tmp/model-guide-preview/real-work.html: source paragraph is <p style="overflow-wrap: anywhere"> (U1); 7 .table-wrap boxes each carry tabindex="0", role="region", and a fitting aria-label (U3: Producer roles table, Checker roles table, app code table, docs and ops table, other table, print books table, tooling table; the last five from preview.sh:317-318 with html.escape(name)); exactly 1 aria-current="page", on the ./real-work.html link (U4).
+D16 content kept: real-work.json schema model-guide-real-work/1, file real-work-outcomes-2026-11-14.json, sha256 prefix dae855ca, generated_on 2026-11-14, runs 1798, range 2026-06-06 to 2026-11-13, shares 0.506 and 0.717, paired duplicates 36, unknown 889, other 3; page shows 1,798, 50.6 %, 71.7 %, and the exact method note sentence once.
+Plan rows 1.20 and 1.21 checked true; records red-1.20.txt, green-p1-d344a21.log, preview-1.21.txt exist and their numbers match my runs (3 failed | 85 passed, 88 passed, exit 0). A5 clean. A3 clean: no bare-digit parsing, only labeled integer bounds.
+A6-1 and A6-2 unchanged: the delta touches none of publish.ts, real-work.ts, adversarial.test.ts; carried as A7-1 and A7-2, nonblocking. A7-3 nit: 4 copied preview pages keep class=active with no aria-current; plan scope was the Real work link only.
+test-strategy.md mentions preview-gate 6 times, so no test-strategy violation. This delta changes no orchestration script, contract test, or registry file, so framework-wide checks stay out of range.
+This role wrote only review-a-80c17f5.json and review-a-80c17f5.log under measure/runs/model_guide/. Fixture runs ran under /tmp/opencode/r7 only.
+No blocking findings. status: pass. retry_recommendation: none. confidence: high.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 80c17f5979b632a38e2a6797ff20504b418e198c
+result_file: measure/runs/model_guide/review-a-80c17f5.json
+retry_recommendation: none
+summary: Round 7 passes; U1, U3, U4 fixes hold, red run fails 3 and green passes 88, D16 content intact, plan rows 1.20 and 1.21 true, A6-1 and A6-2 unchanged, three nonblocking findings only.
+END_MEASURE_AGENT_RESULT

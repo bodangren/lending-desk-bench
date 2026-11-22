@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 9cb95b6643eba0cd04f0623865224f3d9ef88b3c
+result_file: measure/runs/model_guide/phase-acceptance-9cb95b6.json
+retry_recommendation: none
+summary: PA1-1 closed; acceptance 2, 3, 4, 5, 8 hold and all five test files pass; A8-1/C8-1 page-test gap accepted as nonblocking PA2-1 with Phase 2 Red tests named.
+END_MEASURE_AGENT_RESULT

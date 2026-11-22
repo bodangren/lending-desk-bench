@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: pass
+summary: Re-review of 3581902..edee50b. C1 to C6 are resolved; C7 stays open as a nit. The message-line contract, seed-messages.ts, judges.json, and both outside-repo drivers hold end to end. All three allowed suites pass at HEAD (43, 9, 22) with no orphan process after the last two; the one transient line after the first suite belonged to a concurrent same-suite run in another session and was gone at a delayed check. Four nonblocking findings: the P2 retry-count pin that spec D14 names is not made, the stale 4.10 sequencing text, the untested arg-level refusals of seed-messages.ts, and C7. The four violation arrays are empty.
+blocking_findings: none
+nonblocking_findings: C7 judge-run.sh:600 judged_by marks every id of a complete group; R1 review-run.test.ts:1668-1670 P2 does not pin the 3-call ceiling that spec.md:714-715 claims; R2 plan.md:1817 stale "runs before 4.9f" text; R3 seed-messages.ts:64-86 arg-level refusals hold no test; R4 pre-existing review-run.sh:11 header says UTC but :153 uses local date
+evidence: mg-2026-11a 14 diffs and 14 non-empty message files; mg-2026-11p 6 and 6; probe control forge-07 has its 74-byte message file; judges.json matches spec.md:521-529; drivers hold deepseek, hy4, mimo in D12 order
+test_strategy_violations: none
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+retry_recommendation: none
+confidence: high
+route: opencode-go/glm-5.3#high
+END_MEASURE_AGENT_RESULT

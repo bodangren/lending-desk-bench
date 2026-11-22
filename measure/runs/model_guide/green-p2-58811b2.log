@@ -1,0 +1,53 @@
+Green phase 2 task 2.15: adversarial round 2 fix P2ADV2-1.
+
+Role base: 1d934dae7d15b529f2d9d00e87f4449b8e4370a5.
+Phase base: c22f313603108585f8bb45996057627acfbc78ae.
+Finding: measure/runs/model_guide/adversarial-12e753b.json P2ADV2-1 (a
+symlinked .tmp parent escapes the update.sh refusal and takes both preview
+files outside the repo). Red evidence: measure/runs/model_guide/red-2.14.txt
+and measure/runs/model_guide/red-p2-12e753b.log. The targeted Red run failed
+at the role base: update.test.ts 1 failed | 7 passed (8), P2B2-1d. This role
+did not edit a test file.
+
+Change (production only, no test file, nothing under docs/):
+- harness/model-guide/update.sh: the -L refusal loop also checks every
+  folder between the repo root and the preview folder, built as
+  PREVIEW_CHAIN from $PREVIEW_ABS up to (not including) $ROOT. A planted
+  <repo>/.tmp link gives one line `update: refused path <path>`, exit 2,
+  before the mktemp and the input check. A deeper preview path stays
+  covered.
+
+Gates, each file run alone with --configLoader native --maxWorkers=1
+--reporter=dot:
+- update: exit 0, Tests 8 passed (8) (P2B2-1d green)
+- preview-gate: exit 0, Tests 99 passed (99)
+- adversarial-p2: exit 0, Tests 14 passed (14)
+- guide: exit 0, Tests 15 passed (15)
+- print-audit: exit 0, Tests 13 passed (13)
+- input-check: exit 0, Tests 15 passed (15)
+- real-work: exit 0, Tests 20 passed (20)
+- leak-guard: exit 0, Tests 2 passed (2)
+- adversarial: exit 0, Tests 49 passed (49)
+- bash -n harness/model-guide/update.sh: exit 0
+- git status --short docs/: prints nothing
+
+Task 2.9 preview rerun:
+  harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json
+Exit 0. The six overview rows are equal to the rows before the rerun
+(rows_identical = True, count = 6).
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: 1d934dae7d15b529f2d9d00e87f4449b8e4370a5
+head_sha: b4fba01b280a7ccfc4186a1de318435d0d01c034
+commits: 2e4e641fa1c219efa62ea194b6d2b9764de0ba1f, b4fba01b280a7ccfc4186a1de318435d0d01c034
+tests_run: update exit 0 Tests 8; preview-gate exit 0 Tests 99; adversarial-p2 exit 0 Tests 14; guide exit 0 Tests 15; print-audit exit 0 Tests 13; input-check exit 0 Tests 15; real-work exit 0 Tests 20; leak-guard exit 0 Tests 2; adversarial exit 0 Tests 49
+files_changed: harness/model-guide/update.sh, measure/tracks/model_guide/plan.md
+plan_updates: Task 2.15 is [x] 2e4e641 with an Evidence line to this log and a note on the preview-parent chain; task 2.8 stays [~].
+dispositions: none
+handoff: P2ADV2-1 is fixed in 2e4e641, and the plan records task 2.15 in b4fba01. update.test.ts passes all 8 cases (P2B2-1d green) and the eight other required suites stay green. The task 2.9 preview keeps its six rows. update.sh and plan.md are the only changed paths since the role base; no test file and no docs/ or reports/ file changed. P2ADV2-2, P2ADV2-3, and P2ADV2-4 stay open (nits, not fixed). Next: adversarial round 2 re-check, then task 2.8.
+END_MEASURE_AGENT_RESULT

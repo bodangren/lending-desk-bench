@@ -1,0 +1,152 @@
+Red task 4.1g — checker rank by net score, pick labels, escapes "no data",
+overview text (spec D16 Data source PM 2026-11-18, D18 PM 2026-11-18, FR-3).
+Track: model_guide. Phase 4.
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 760770696225e39181e492abfa8df7059c6f24b0
+Red commit: edc7372afedb99b1a62c141bde1b714ee1773a0d
+
+Commands (each changed file run once, one at a time, 2026-11-18):
+
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  4 failed | 10 passed (14)
+    first failure: DS7: the checker merge sums decided, not runs
+      AssertionError: the escape sum over all gate rows is 0, so the cell
+      shows no data: expected '0' to be 'no data'
+    (the first run of this file failed on my stale DS4 route count 35;
+    the fixture now holds 36 routes with t1/gate-zeta. Fixed to 36 and
+    rerun; that was a Red defect of mine, not a product result)
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  6 failed | 96 passed (102)
+    first failure: G3: a row below the minimum of 5 sits in Too few tasks,
+      with no rank, never in the ranked table
+      AssertionError: Checker roles ranked rows: expected [ 't1/gate-five',
+      ...(12) ] to deeply equal [ Array(13) ]
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  1 failed | 17 passed (18)
+    first failure: DS26: the overview section text says a model needs 5
+      tasks or runs, not 10
+      AssertionError: ... to contain '5 tasks or runs'
+  cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  7 failed | 11 passed (18)
+    first failure: ADV4-1: a [1m] and #variant route, a nested note, a
+      duplicate row, and null cells merge into one correct row
+      AssertionError: red pick: expected [ 'p1/alpha', '', '' ] to deeply
+      equal [ 'p1/alpha', '80 %', '20' ]
+
+No run carries a NameError, TypeError, ReferenceError, syntax error, or a
+missing helper. Every failure is missing behavior of PM 2026-11-18: the old
+checker pass-% order, the old top-line form, the old escape cells, and the
+old overview text.
+
+1. Failed names, grouped
+
+real-work.test.ts:
+  DS7: the checker merge sums decided, not runs (Escapes must read "no data"
+    while the escape sum over all gate rows is 0)
+  DS10: the checker rank orders by AA net score with not-rated rows last,
+    then findings per run, more runs, and the model key, and the route
+    unknown never shows
+  DS13: the top block gives one line per role in the given order with the
+    in-this-role forms
+  DS25: a gate pick follows the checker rank order, so a 100 % pass row
+    with a lower net score does not pick
+
+preview-gate.test.ts:
+  G3: a row below the minimum of 5 sits in Too few tasks, with no rank,
+    never in the ranked table (checker ranked list moved to the net order)
+  G6: each top line without a pick shows one of the four causes (the line
+    text must be exactly "no pick yet" without the old role label)
+  DS16: the default columns match the pinned lists and every number cell
+    matches its format (Escapes reads "no data" while the sum is 0)
+  DS22: the checker table text says that a high pass % does not mean a
+    good checker
+  DS23: the About this data footer states the effort-level limit of the
+    net score
+  DS24: every Escapes cell shows no data when the escape sum is 0, and the
+    number otherwise
+
+guide.test.ts:
+  DS26: the overview section text says a model needs 5 tasks or runs, not 10
+
+adversarial-p4.test.ts:
+  ADV4-1, ADV4-2, ADV4-6, ADV4-7, ADV4-8, ADV4-9, ADV4-10 — all seven
+  cases that read a top-block line. The helper now parses the sentence
+  form, so the old label-and-hook lines yield empty rate and count
+  (ADV4-1 shows [ 'p1/alpha', '', '' ]). ADV4-8 also pins the new checker
+  tie order: [ p1/xa, p1/xe, p1/xb ] instead of [ p1/xe, p1/xb, p1/xa ],
+  and its review-a pick moves from p1/xe to p1/xa.
+
+2. Base-passing guards (they pass at the role base)
+
+  real-work.test.ts: DS4, DS5, DS6, DS8, DS9, DS11, DS12, DS17 (two cases)
+  preview-gate.test.ts: 96 cases — FX2, DS14, DS15, DS18, DS19, DS20,
+    DS21, G1, G2, G4, G7, G8, G10, U1, U3, U4, T1, T11, N4, P2U1-1,
+    P2B2-2, and the publish and path cases
+  guide.test.ts: 17 cases — T2 to T7, FR-6, D18 Q1, D18 Q2, B8-1,
+    RA-1, RA-2
+  adversarial-p4.test.ts: 11 cases — ADV4-3, ADV4-4, ADV4-5, ADV4-11,
+    ADV4-12, ADV4-13, ADV4-14, ADV4-15, ADV4-16, ADV4-17, ADV4-18
+  Fixture consumers that are unchanged files and stay green:
+    input-check.test.ts 23 passed, leak-check.test.ts 22 passed,
+    update.test.ts 9 passed, adversarial.test.ts 46 passed,
+    adversarial-p2.test.ts 13 passed, adversarial-p3.test.ts 34 passed,
+    every run exit 0.
+
+3. Changed expectations (old value -> new value, from the spec)
+
+  real-work DS4: footer route count 35 -> 36 (the fixture gained t1/gate-zeta)
+  real-work DS7: gate-one Escapes "3" -> "no data"; gate-two "0" -> "no data"
+  real-work DS10: checker rank pass%-order -> net order
+    [gate-nine 50.5, gate-one 41.5, gate-two 33.3, gate-four 28.4,
+    gate-three-free 22.2, gate-seven 20, gate-six 19.9, then the not-rated
+    rows: gate-five (findings 0.05), gate-fourteen (9 runs), gate-eight and
+    gate-zeta (8 runs, tie on the model key), __proto__ (6), hostile (5)]
+  real-work DS13: role/name/rate/count hooks -> the sentence forms:
+    red "prod-one 100 % in this role, 5 tasks"
+    green "prod-one 62 % in this role, 15 tasks"
+    review-a "gate-one 90 % pass in this role, 10 runs, net 41.5"
+      (was gate-two 100 %, 7 runs — the net order moves the pick)
+    review-c "gate-seven 100 % pass in this role, 5 runs, net 20"
+    phase-acceptance "gate-two 80 % pass in this role, 5 runs, net 33.3"
+    pick-none lines: exact text "no pick yet" (coder, review-b,
+    adversarial, acceptance, final-acceptance)
+  preview-gate FX2 and DS21: checker ranked 12 -> 13 (t1/gate-zeta)
+  preview-gate G2 and DS18: footer rows 40 -> 41, routes 35 -> 36,
+    unknown share 5 -> 4.9 (2/41)
+  preview-gate G3: checker ranked list -> the net order of DS10
+  preview-gate G6: the no-pick detection reads the exact line text
+  preview-gate DS16: Escapes integer -> "no data" while the sum is 0
+  adversarial-p4 ADV4-8: checker tie order [xe, xb, xa] -> [xa, xe, xb]
+    (equal net 30 and equal findings, then more runs, then the model key
+    ascending: "p1/xa" < "p1/xe"); review-a pick xe -> xa; title and
+    comments updated; escapes removed from the tie chain
+  adversarial-p4 helper: picksOf and expectTopBlock read the sentence form
+    (rate and count from the text, "no pick yet" as the exact text); the
+    ROLE_LABELS assertion and the pick-label hook read are removed, because
+    PM 2026-11-18 replaces the role label with the label "in this role"
+
+4. Fixture changes (fixtures/page-b, MANIFEST recomputed)
+
+  ra-outcomes-2026-10-20.json:
+    - every gate-row escapes value set to 0, so the base escape sum is 0 and
+      every Escapes cell must read "no data" (the number case lives in the
+      DS24 variant, which sets gate-one#high 1, gate-one 2, gate-four 1)
+    - added t1/gate-zeta (role review-b, decided 8, pass 8, findings 0,
+      escapes 0), not rated, which ties t1/gate-eight on findings per run
+      and runs so the model key decides between them
+    - now 41 rows, 36 distinct note-stripped routes, gate escape sum 0
+  MANIFEST-2026-10-20.txt recomputed for the changed outcomes file
+    (aa-reliability and allowed-routes unchanged)
+
+5. Defaults and open points (listed for the handoff)
+
+  - The model-key tie-break reads as ascending order ("p1/xa" before
+    "p1/xe"); the spec says only "then the model key".
+  - DS13 and DS25 parse the net score in a top line as a number, so "20"
+    and "20.0" both satisfy the form; the checker table cell values stay
+    pinned by DS11.
+  - DS26 reads pages/guide-section.html directly, because spec D18
+    "Overview text" names that file as the source of the sentence.
+  - The D18 Code review second source keeps ruling Q2: guide.ts has no
+    checker-table second source, so no existing expectation pinned the old
+    pass-% order there and no new one was added.

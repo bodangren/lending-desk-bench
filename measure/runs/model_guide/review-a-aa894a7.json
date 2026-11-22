@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "audited_head_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 3 passes. Each FIX item is fixed and has a test that fails on the old code. The path class of preview.sh has no gap that writes under docs. Three minor items and one nit remain.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A3-1 [Minor] review-a: harness/model-guide/preview.sh:75-93: The new order (docs copy, then real-work.ts) changes the refusal rule for an existing preview folder. An input-check refusal now leaves the docs copy inside a folder that already existed (I saw 7 entries after a `input-check: manifest` refusal; the old order left it unchanged). For a new nested folder, `rm -rf` removes only the leaf, so the parents made by `mkdir -p` remain (/tmp/ra3/pv3/deep stayed). The header text `leaves no new preview folder` is true only for the leaf. The F19 test checks only the leaf. No docs write results, and publish refuses on a SHA mismatch, so the failure is safe. Fix: run real-work.ts into a temp folder first, or record the first created parent and remove it.",
+    "A3-2 [Minor] review-a: harness/model-guide/real-work.ts:180-183: The F17 fix checks that each coverage key is present, but not its type. A coverage value that is null, a number in a date field, or a string in a share field passes the input check. preview.sh then raises a Python traceback and exits 1 (I ran three modified exports with a matching manifest: TypeError, AttributeError, and ValueError). The preview folder stays half built, with the docs copy, real-work.json, and preview-base.json but no real-work.html. This is the non-numeric part of C2-6, and the header promise of exit 0 or exit 2 does not hold for it. The risk is low because the PM export is manifest-checked. Publish refuses without an approved real-work.html. Fix: check the types of the six keys in the schema check and refuse with `input-check: schema`.",
+    "A3-3 [Minor] review-a: harness/model-guide/preview.sh:80-87: A symlink inside an existing preview folder can send a write under docs. In a temp copy of HEAD, I planted `<preview>/real-work.json -> <repo>/docs/real-work.json` (dangling), and preview.sh exited 0 and created `<repo>/docs/real-work.json` through the link. This is outside the path class of the --preview and --export values, because it needs a link planted in an existing folder, and the old code had the same gap. I rate it Minor, not Blocker, for that reason. The orchestrator may decide otherwise. Fix: refuse when `find \"$PREVIEW_ABS\" -type l` prints a line, or remove the five output names before the write.",
+    "A3-4 [Nit] review-a: harness/model-guide/preview.sh:107-113: The nav insert is not idempotent. When docs/index.html already holds the Real work and Review links (after the first publish), a new preview adds the same links again (I counted 2 links in a temp copy). Phase 1 builds the first preview only, so the gate is not affected. The update flow of D19 will meet it. Fix: skip the insert when the link text is present."
+  ],
+  "evidence": [
+    "HEAD equaled audited_head_sha aa894a7d18e5da6b362997c1c52f142a07168402. The audited range was 0a44cc9..aa894a7. The remediation range was b7426e7..aa894a7. git diff --name-only 0a44cc9 aa894a7 -- docs printed nothing, and git status --short docs/ printed nothing.",
+    "F12 (C2-1) fixed: preview.sh:49-50 resolves EXPORT and PREVIEW with `realpath -m` before the `cd`, and only absolute paths are used afterwards (preview.sh:78, 100-103). The tests F12 (2 tests) failed on the Red commit d632534 and pass at HEAD.",
+    "F13 (C2-2) fixed: preview.sh:75-77 copies docs first, then real-work.ts writes real-work.json, then the python step renders the page. I put a stale docs/real-work.json and docs/real-work.html in a temp copy of HEAD. The preview held the fresh data (source file name real-work-mini.json) and the fresh page. preview-base.json lists the docs files (34 keys equal the 34 docs files, and the stale pair in the second run). Test F13 failed on the Red commit.",
+    "F14 (C2-3), F15 (C2-4), F20 (A2-1) fixed: preview.sh:34-45 gives the usage line on stderr with exit 2 for a flag as the last argument and for an empty value. preview.sh:52-56 refuses `/`. Tests F14 (2), F15 (3), and F20 (1) failed on the Red commit. The F15 empty-export test passed on the old code, as red-1.12.txt states.",
+    "F16 (C2-5), F18 (C2-7) fixed: publish.ts:75-79 refuses a non-blank row that does not match the SHA-256 pattern with `publish: bad line <text>`. publish.ts:108-110 refuses a path that names a folder with `publish: bad path`. Tests F16 (3) and F18 (1) failed on the Red commit. The record format has the files section last, so no valid record meets the new refusal.",
+    "F17 (C2-6) fixed for missing keys: real-work.ts:34-43 and :180-183 require the six coverage keys with Object.hasOwn before any write. Five F17 tests failed on the Red commit and the sixth was already satisfied. The type part remains open (A3-2).",
+    "F19 (C2-8) fixed for the leaf folder and the header: preview.sh:7 and :15-16 state the refusal and the cleanup, and preview.sh:89-93 removes a folder that the run created. The parents and an existing folder remain (A3-1).",
+    "F23 (A2-4) fixed: publish.ts:126-132 uses Object.prototype.hasOwnProperty.call, and publish.ts:117-122 refuses invalid JSON with `publish: bad preview base`. Tests F23 (3) failed on the Red commit.",
+    "Red proof: I extracted d632534 into a temp folder (git archive) and ran preview-gate.test.ts there. It gave exit 1, 22 failed, 43 passed. The 22 names match red-1.12.txt (2+1+2+3+3+5+1+1+1+3). At HEAD the same file gives exit 0 with 65 passed.",
+    "Path class check (focus 2): I ran preview.sh in a temp copy of HEAD with the fixture export. The matrix had 7 caller folders (repo root, harness, harness/model-guide, docs, docs/existsub, a folder outside, and /) and 31 --preview values (docs, docs/, docs/., docs/existsub, docs/newsub, ../docs, ../../docs, ../../../docs, ., .., ../.., /, //, /., /.., the absolute docs path with trailing slash, double slash, and `..` segment, the repo root with and without a slash, a symlink to docs with and without a child, a dangling symlink to docs/newsub with and without a child, a symlink to the repo with docs and docs/zz, a symlink to the repo, a symlink to /, and /home through a symlink). Each refused value gave exit 2 and a docs snapshot (find list plus SHA-256 of each file) equal to the one before. No run changed the docs folder. Each allowed value resolved to a folder outside docs. `docs/newsub` was never created. Relative --export values resolve from the caller folder (test F14 and the matrix both gave exit 0).",
+    "Order check (focus 3): preview-base.json keeps the docs files only (34 keys equal the 34 tracked docs files, none of the preview-only files). A refusal by the path rule and the usage rule writes nothing and leaves docs unchanged (matrix and F15 tests). The input-check refusal leaves docs unchanged but touches an existing preview folder (A3-1).",
+    "F21 (A2-2) verified: preview-1.13.txt records exit 0 at code HEAD d262139. The mtime of .tmp/model-guide-preview/real-work.html is 22:22:53, after the commit time 22:22:46 of d262139. Lines 33 and 38 show SHA dae855ca, generated 2026-11-14, 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, and 71.7 %. The real export SHA-256 equals dae855ca. preview-base.json holds 34 docs files and the repo tracks 34 docs files. The diff d262139..aa894a7 holds plan.md only, so the code at HEAD equals the code of the re-run.",
+    "Plan record (focus 4): git branch --contains lists main for d632534, 885947e, d262139, and aa894a7. The 1.12 and 1.13 markers cite d632534 and d262139. The Evidence lines state exit codes and no PASS or FAIL count (A5 clean). My reruns match: preview-gate exit 0, input-check exit 0, real-work exit 0, leak-guard exit 0.",
+    "DECLINE F22 (A2-3) and F24 (A2-5) judged acceptable. Task 1.8 carries a fix commit for each blocker, and this review round closes the gap. The leak guard is a guard on a clean tree and its needle build reads as correct.",
+    "A3 (digit-only count) check: the tests assert labeled output lines and exit codes, with no bare-digit count. A4 (vacuous pass) check: the missing-approval, no-files, bad-line, folder-path, and missing-base fixtures each fail with exit 2 and a named line. The matrix rows for refused paths each print `preview: refused path`.",
+    "D16 regression check: the real-work.ts diff in b7426e7..aa894a7 adds only the coverage key list and its check. real-work.test.ts passes 19 tests, and input-check.test.ts passes 11 tests.",
+    "The build-graph scan finds no exported symbol in the three scripts. The callers are the shell script and the plan commands. I did not run preview.sh or publish.ts against the real docs. All path runs used a git archive copy in /tmp. A matrix value that resolved to /home failed at cp with a permission error and wrote nothing."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> aa894a7d18e5da6b362997c1c52f142a07168402",
+    "git diff b7426e7..aa894a7 --stat; git diff b7426e7..aa894a7 -- harness/model-guide/publish.ts harness/model-guide/real-work.ts measure/tracks/model_guide/plan.md",
+    "git branch --contains d632534, 885947e, d262139, aa894a7 -> main for each",
+    "git archive aa894a7 into /tmp/ra3/repo; bash preview.sh matrix (7 caller folders x 31 preview values) -> every docs-reaching value exit 2 with docs snapshot unchanged",
+    "preview.sh with stale docs real-work.json and real-work.html -> fresh data and page",
+    "preview.sh with a refused export into an existing and a new nested folder -> A3-1",
+    "preview.sh with three exports that hold null, 5, and abc in coverage values -> exit 1 with a Python traceback (A3-2)",
+    "preview.sh with a dangling symlink real-work.json in the preview folder -> exit 0 and docs/real-work.json created in the temp copy (A3-3)",
+    "git archive d632534 into /tmp/ra3/red; cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, 22 failed, 43 passed",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 65 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts ... -> exit 0, 11 passed",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts ... -> exit 0, 19 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts ... -> exit 0, 2 passed",
+    "git status --short docs/ -> no output; git diff --name-only 0a44cc9 aa894a7 -- docs -> no output",
+    "sha256sum of the real export -> dae855ca; sed -n 33p and 38p .tmp/model-guide-preview/real-work.html -> pinned values"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/fixtures/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/real-work-mini.json",
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/leak-guard.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "harness/model-guide/preview.sh:49-56 held in a 7 by 31 path matrix with no docs change, but real-work.ts:180 checks no coverage types (A3-2)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "preview-gate.test.ts at d632534 gave 22 failed and 43 passed on the old code, and each of the 22 names maps to a FIX item; no test covers an existing folder or a type error."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only 0a44cc9 aa894a7 lists eleven planned files and nothing under docs/."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "red-1.12.txt, green-p1-885947e.log, and preview-1.13.txt match my reruns (22 failed, 65 passed, SHA dae855ca)."
+    }
+  ]
+}

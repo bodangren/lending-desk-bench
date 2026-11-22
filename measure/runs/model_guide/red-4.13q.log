@@ -1,0 +1,28 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13q
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: c46161fb858de0883cf304a7dfc40f0afd486e64
+resulting_head: 0e0f4a22303748c6643434adef581d3d09411cef
+commits: 82bf1c3bad426546665fe2a71013b109e161678d (test), 0e0f4a22303748c6643434adef581d3d09411cef (record)
+red_test_command: bun test harness/model-guide-tests/review-run.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot (one file at a time; pgrep for fake-opencod[e], quota-serve[r], serve --servic[e] showed nothing of mine after each run)
+failing_tests: review-run 9 failed | 56 passed (65): D1, D2, D3 (F1, guard misses the real-split daemon), D4 (F2, guard killed the ..-HOME decoy, INFRA line present), N3 (daemon_pid_alive missed the fake-table pid), S2, S3, S4 (point 7, seed selects no integrationID entry), S6 (F4, seed cwd inside the git repo); judge-run 4 failed | 33 passed (37): JD1 (F1), JD2 (F2), JS3 (F4), N3; credential-provider 16 failed | 6 passed (22): C1, C2, C3-scan, C4, C6, C7, fake-binary, ST1, ST2, ST3 (point 7, seed exit 2), C8 (point 7, provider-only entry selected, exit 0), C9, C10 (point 7, no ambiguous line, exit 0), C11 (F4, cwd inside the git repo), H1, H2 (F5, exit 0 with values printed); quota 4 failed | 26 passed (30): Q16a, Q16b (stopped, BENCH_RA_QUOTA unread, api.requests []), Q16c (reason lacks stale), Q16d (reason lacks last-good/missing). All other cases pass at HEAD.
+handoff: Green 4.13r implements the row-4.13r contract (normalize cmdline, realpath HOME/cwd, /tmp fallback for the seed cwd, resolved-HOME refusal, integrationID selection with ambiguous refusal, BENCH_RA_QUOTA status --json path with 95/100 and stale/missing last-good stops). F3 is a Green rule with no test (pid reuse is nondeterministic). H1/H2 run scan-values with a both-keys store entry so the scan reaches the guard at HEAD; Green must keep selecting that entry by integrationID. Q16 uses a fake ra-quota double plus a hanging fake API; Green runs $BENCH_RA_QUOTA status --json with a timeout and reads .["opencode-go"].windows percents.
+END_MEASURE_AGENT_RESULT
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13q
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 0e0f4a22303748c6643434adef581d3d09411cef
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+resulting_head: 42bdece8953ce3b25e230fd234e4698c30044d60
+commits: b02169897a20676cbbc13f81fb2714253c5aebab (test: fake spawn argv file plus D1, D2, D3, JD1 Option B pins), 42bdece8953ce3b25e230fd234e4698c30044d60 (plan record)
+failing_tests: at HEAD review-run 56 pass / 9 fail (D1, D2, D3, D4, N3, S2, S3, S4, S6; D1/D2/D3 fail only on the missing guard INFRA line, spawn argv pins pass); judge-run 33 passed / 4 failed (JD1, JD2, JS3, N3; JD1 fails only on the missing guard INFRA line)
+handoff: Green 4.13r retries on this HEAD: reapply measure/runs/model_guide/green-4.13r.candidate.patch in a throwaway copy first (verified: D1, D2, D3, JD1 pass filtered; full review-run 65 pass / 0 fail; full judge-run 37 passed; pgrep scans clean; copy deleted), then apply it in the worktree and rerun the five gates plus credential-provider and quota
+END_MEASURE_AGENT_RESULT

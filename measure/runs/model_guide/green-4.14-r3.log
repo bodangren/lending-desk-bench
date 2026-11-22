@@ -1,0 +1,35 @@
+MEASURE_AGENT_RESULT
+status: green
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+task: 4.14 fix round, data and records correction
+route: opencode-go/hy4-flash-free#high
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: c7139ca0d2135d3fc670f7fd19d697073d259b8b
+red_head: db298077edfeefb3e05250a26fec7c3673304341
+implementation_commit: 50066258db9eed1adc25ac1674bd4910c6e67427 feat(model_guide): the zero-pass route row and the pass route name
+superseded_score_commit: aa1fd9c2f0bf17c09532d2630a552e3544fed505
+score_commit: 75e97a5174700fb408e0fb28d16fa479145642cb fix(model_guide): score only the three pilot routes
+first_plan_commit: c7139ca0d2135d3fc670f7fd19d697073d259b8b measure(model_guide): record row 4.14 green r3 evidence
+plan_evidence_commit: 0be990772fb65fcf3520dc0c3f0be25951695a0e measure(model_guide): correct row 4.14 green r3 evidence
+final_green_head: 0be990772fb65fcf3520dc0c3f0be25951695a0e
+tasks_flipped_to_x: none; row 4.14 stays [x] and its first line stays unchanged
+tasks_flipped_to_b_deferred: none
+dispositions: F1=FIX; C1=FIX; C2=FIX
+red_rerun_1: before code, exit 1, Tests 2 failed | 31 passed (33)
+red_rerun_2: before code, exit 1, Tests 3 failed | 113 passed (116)
+targeted_command_1: review-score.test.ts, exit 0, Tests 33 passed (33)
+targeted_command_2: preview-gate.test.ts, exit 0, Tests 116 passed (116)
+shell_gate: bash -n harness/model-guide/preview.sh, exit 0
+pilot_file: harness/model-guide/data/pilot-routes/mg-2026-11a.json holds the three D12 pilot rows copied byte-for-byte from routes.json: deepseek, hy4, MiMo; routes.json is the full six-route list and carries no pilot mark
+correction: the first score commit aa1fd9c used routes.json and added three rows for routes that never ran on this set; that run and its "marked pilot" claim are retracted; no non-pilot route gets a pass without PM approval (Q1)
+score_data: reran with the same inputs as aa1fd9c but --pilot-routes model-guide/data/pilot-routes/mg-2026-11a.json and the shared reason; no hand edit of a score, rank, or count
+score_diff: git diff 70212ae on the score file adds only the opencode-go/mimo-v2.6-flash zero-pass row
+reason: nights 1 and 2 gave no pass; no extra nights (PM 2026-11-22)
+leak_check: exit 0 on the pilot file and on the staged data files
+preview: exit 0 into .tmp/model-guide-preview; local only; nothing published; no push
+verify: review.html shows exactly three route rows; deepseek and hy4 rows unchanged at 78.6 and 75.4; MiMo shows incomplete: 0 of 3 passes with dashes in rank and every score cell; both pass items show their routes
+new_files: harness/model-guide/data/pilot-routes/mg-2026-11a.json, measure/runs/model_guide/green-4.14-r3.log
+changed_files: harness/model-guide/review-score.ts, harness/model-guide/preview.sh, harness/model-guide/data/pilot-routes/mg-2026-11a.json, harness/model-guide/data/review-scores/mg-2026-11a.json, measure/tracks/model_guide/plan.md
+handoff: code commit 5006625 stays unchanged; committed Red tests were not edited; untracked .opencode/ and harness/wt.txt untouched and unstaged; board frozen; no push; no process left running
+END_MEASURE_AGENT_RESULT

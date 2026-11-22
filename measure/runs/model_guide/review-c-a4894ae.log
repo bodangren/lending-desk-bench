@@ -1,0 +1,11 @@
+Round 4 delta pass at a4894ae: only the gh spawn ceiling changes, candidates contract intact, 39 tests green.
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: a4894ae7cfd66c755daf014e749b61484e06fa8a
+result_file: measure/runs/model_guide/review-c-a4894ae.json
+retry_recommendation: none
+summary: Pass. The delta only sets maxBuffer 64 MiB on the gh spawn, so the candidates output, flags, refusal lines, and exit codes are unchanged and 3.14/3.16 read the same output. Plan rows 3.12 and 3.13a are done, 3.13b has its fix in tree with only the record step left. Four nits carry as P3C4-1 to P3C4-4. Suites: pick-diffs 21 passed, review-set 18 passed.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+task: 4.16
+status: blocked
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 73e4787911e7597e83cc47259bc4dcacf84e70cd
+green_commit_sha: 1b0646b
+green_record_commit: da0d807
+red_commit_sha: a00c8b2
+handoff: The live-server path landed in 1b0646b and is recorded in da0d807. Both runners use BENCH_SERVER_BASE for one bench session per call: session create with the job root and the route provider, model, and variant; the eight-deny project config checked before the first call; the D10 prompt in a message; the answer and token sums from the session message parts; text fragments joined with the empty string. The live path makes no seed, no auth call, no opencode run, and no DELETE, and it scans stored text for known key shapes. The isolated path stays for non-pilot routes, and the probe retry, quota order, record shapes, state words, and exit codes stay. Targeted lines, one file at a time: review-run exit 1 with 111 pass 1 fail (112 tests); judge-run exit 0 with Tests 51 passed (51); decode-parity exit 0 with 8 pass 0 fail; quota exit 0 with Tests 32 passed (32). Other required lines exit 0: credential-provider 24 passed; adversarial-p4-runner 16; adversarial-p4b 12; adversarial-p4c 13; adversarial-p4d 21 passed 6 skipped; adjudicate 23 pass; review-score 27 pass. bash -n passes on both runners, leak-check exits 0, and git status --short docs/ prints nothing. No live call, no POST to port 38307, no real HOME read, and no opencode or openchamber CLI. One case stays red and is a Red conflict, not a Green gap. L9 in review-run.test.ts builds the Go pilot route opencode-go/hy4-flash-free#high with quotaPercent 70 and expects the quota state wait. D15 and quota.ts give ready below 95 % of the 5h window and 100 % of the weekly window for a Go route; a loopback fake at 5h 70 and weekly 70 makes quota.ts print "state":"ready". L9-G in quota.test.ts pins the 95/100 rule, so no runner change satisfies both, and Green may not edit the test. Request a Mid Red retry for the first half of L9 only. Default: set that fixture to quotaPercent 95, which gives the Go wait state, and keep the second half at 10 %. Do not retouch L1 to L8, L10, L11, decode-parity, quota, credential-provider, or the adversarial-p4 files. Row 4.16 stays [~]; the orchestrator flips it after the phase gate. Tasks flipped to [x]: none. Tasks flipped to [b]: none. New tracked files: none; the evidence file measure/runs/model_guide/green-4.16.txt is ignored by .gitignore. Hygiene: the fake HTTP servers stop in every case watch and finally block; pgrep finds no fake of mine.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,11 @@
+Round 3 delta pass at d137057: queue dedups on the claim id tuple and lint adds plant-line, both contracts intact, 86 tests green.
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: d137057f6b419ed8cda4247ac1805235ae1a2f4c
+result_file: measure/runs/model_guide/review-c-d137057.json
+retry_recommendation: none
+summary: Pass. Queue, apply, verdicts.json, and review-score --verdicts still share the claim id contract on both sides. The new lint plant-line refusal follows the lint form with exit 2. Phase 4 seeding and runner can meet the new plant rule. Plan rows 3.12f and 3.12g are true. Four nits carry as P3C3-1 to P3C3-4. Suites: adversarial-p3 23 passed, adjudicate 20 passed, review-score 25 passed, review-set 18 passed.
+END_MEASURE_AGENT_RESULT

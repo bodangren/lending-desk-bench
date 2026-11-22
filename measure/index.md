@@ -34,10 +34,10 @@
 | Test strategy (daily_model_schedule) | measure/tracks/daily_model_schedule/test-strategy.md |
 | Track metadata (daily_model_schedule) | measure/tracks/daily_model_schedule/metadata.json |
 | Selection oracle (daily_model_schedule) | measure/tracks/daily_model_schedule/pick-oracle.py |
-| Specification (model_guide) | measure/tracks/model_guide/spec.md |
-| Implementation Plan (model_guide) | measure/tracks/model_guide/plan.md |
-| Spec Review (model_guide) | measure/tracks/model_guide/spec-review.md |
-| Track metadata (model_guide) | measure/tracks/model_guide/metadata.json |
+| Specification (model_guide) | measure/archive/model_guide/spec.md |
+| Implementation Plan (model_guide) | measure/archive/model_guide/plan.md |
+| Spec Review (model_guide) | measure/archive/model_guide/spec-review.md |
+| Track metadata (model_guide) | measure/archive/model_guide/metadata.json |
 | Scoring contract | SCORING.md |
 | Model-visible spec (build) | fixture/measure/tracks/lending_desk/spec.md |
 | Model-visible spec (bugfix) | harness/bugfix/model-visible/track/spec.md |

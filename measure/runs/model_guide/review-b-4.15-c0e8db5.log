@@ -1,0 +1,44 @@
+Review B security audit, track model_guide, phase 4b, task 4.15.
+HEAD c0e8db545caeeea99bfe1a61eeafff8be59c99b5 at the start and at the end.
+phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5. role_base_sha c0e8db5.
+
+Scope: diff 7d7d218..HEAD, 15 files. Production files: review-run.sh,
+judge-run.sh, provider-credential.sh, quota.ts, review-score.ts,
+adjudicate.ts, routes.json. No frozen path changed. docs/ is clean.
+
+Applicability: applicable. The range prints and stores the error line of a
+failed model call, the seed refusal line, and the quota reason line.
+A2 and A6 are not applicable: no publish or draft path is in the range, and
+measure/tracks.md makes no security-resolved claim.
+
+Credential checks: the seed export keeps the fixed form, timeout 60, an empty
+cwd outside git, and a captured stdout. The runner captures helper stderr
+only and prints the two fixed prefixes. The failed-scan text is a constant.
+The E1 join scans and prints the fixed text. The quota reason is closed at the
+source. The value file is mode 600 and a SIGKILL leaves it (N29).
+
+Daemon guard: both copies are byte-identical. The marker must resolve to the
+job root, and an unreadable environ and cwd never match. The guard does not
+signal a process of another run. TERM has no start-time check (nit).
+
+Tests, one file at a time: review-run 97, judge-run 50, quota 31,
+credential-provider 24, adversarial-p4-runner 16, adversarial-p4b 12,
+adversarial-p4c 13 (E1 ran and passed), decode-parity 4, review-score 27,
+adjudicate 23. All pass.
+
+New defects: the 500-byte cut aborts the runner with exit 141 under
+set -euo pipefail (N26/G1). The symlink walk can abort the same way (N10/G2).
+The judge decoder takes a forged result event that comes last (N13).
+No real key reached a committed file or a public page. The status is pass
+under the PM round cap.
+
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings: none
+nonblocking_findings: N26/G1 [Major] the 499-byte cut aborts the runner with exit 141 on a line over 64 KiB; N13 [Minor] the judge takes a forged result event that comes last; N27 [Nit] the sum fixture is rejected before the sum and a cut tail keeps the flag; N10/G2 [Nit] the symlink walk can abort the runner; N15 [Nit] the orphan scans stay suite-wide; N29 [Nit] the values file path is predictable; carried N5 N12 N20 N24; seed reason echo; quota doubled prefix; marker test isolation; docs old route; TERM race (full text in review-b-4.15-c0e8db5.json)
+retry_recommendation: create_remediation_track
+confidence: high
+role_base_sha: c0e8db545caeeea99bfe1a61eeafff8be59c99b5
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: c0e8db545caeeea99bfe1a61eeafff8be59c99b5
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,7 @@
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings: none
+nonblocking_findings: N22 [Minor] error line fails open when the credential scan fails; N23 [Minor] escaped key passes the file-byte scan; N24 [Nit] masked or wrapped key passes; N25 [Minor] three scan paths have no failing test; N26 [Nit] error line has no length cap; N27 [Nit] token sum and partial line edges; N28 [Nit] stale error in a reachable probe record; N29 [Nit] credential values in a temp file; carried N20 N5 N9 N10 N11 N12 N13 N15 N21 (full text in review-b-f26965d.json)
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

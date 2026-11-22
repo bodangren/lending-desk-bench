@@ -1,0 +1,17 @@
+Review A round 2, track model_guide, phase P2, HEAD 3d42bf8d84359364392f473d9ac6d9b9bef466d2.
+Provisional verdict: pass with one kept Nit (P2A1-2) and one new Nit (P2A2-1); round-1 P2A1-1 and P2A1-3 verified fixed and withdrawn.
+HEAD equals role_base_sha and audited_head_sha at start and end. phase_base_sha c22f313603108585f8bb45996057627acfbc78ae.
+Range 6132fb7..3d42bf8: 9dd0833 test-only (adversarial-p2.test.ts), be41213 fixes guide.ts/preview.sh/update.sh, 3d42bf8 plan-only (2.10/2.11). No docs/ touch; git status --short docs/ prints nothing.
+Day-rule reruns at HEAD, each exit 0: adversarial-p2 14 passed, guide 15 passed, update 3 passed, preview-gate 98 passed.
+Live preview re-run: six rows identical to preview-2.9.txt (code review no-pick; app code kimi-for-coding base 95.0; test writing sonnet-5-5 base 98.7 page B producer; docs and ops; print-book audit; tooling no-pick), stale false.
+Plan rows 2.10/2.11 true against commit contents and logs. Known defect recorded: task 2.7 line has no leading SHA.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 3d42bf8d84359364392f473d9ac6d9b9bef466d2
+result_file: measure/runs/model_guide/review-a-3d42bf8.json
+retry_recommendation: none
+summary: Round 2 passes: P2ADV-1 to P2ADV-5 fixes meet D13/D19/D21, all suites green, six real rows unchanged; P2A1-1/P2A1-3 withdrawn fixed, P2A1-2 kept, one new file-symlink Nit.
+END_MEASURE_AGENT_RESULT

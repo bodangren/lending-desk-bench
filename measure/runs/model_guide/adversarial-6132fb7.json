@@ -1,0 +1,75 @@
+{
+ "audited_head_sha": "6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+ "baseline_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+ "blocking_findings": [
+  "P2ADV-1 [Blocker] adversarial-testing: track A tie-break in guide.ts picks the alphabetically first route on an equal worst score instead of the D13 order. Test: adversarial-p2.test.ts P2ADV-1 tie-break (spec D13). Rationale: guide.ts:241 sorts by worst score then route name, while D13 breaks a tie by the higher worst blocker recall and then the higher median score; at HEAD a-route (median 81) beats z-route (median 82) on a shared worst of 80.0.",
+  "P2ADV-2 [Blocker] adversarial-testing: the newest score file selection is the alphabetically last glob match, not the newest by date. Test: adversarial-p2.test.ts P2ADV-2 newest score file (preview.sh/update.sh header newest review score file). Rationale: preview.sh:126-130 and update.sh:61-65 keep the last glob match, so an older mg-2026-11p file wins over a newer mg-2026-11a file; at HEAD the preview picks old-model from the older pilot file.",
+  "P2ADV-3 [Blocker] adversarial-testing: update.sh after the approval exits 1 on a no-change week. Test: adversarial-p2.test.ts P2ADV-3 rerun (spec D19). Rationale: git commit with nothing to commit exits 1 under set -e, so the second identical weekly run fails; the D19 weekly update must be re-runnable.",
+  "P2ADV-4 [Blocker] adversarial-testing: guide.ts parseArgs accepts inherited Object.prototype keys as flags. Test: adversarial-p2.test.ts P2ADV-4 unknown flags (guide.ts header: a flag is unknown). Rationale: FLAGS[argv[i]] reads the prototype chain, so __proto__, constructor, and toString with a value are accepted with exit 0 instead of refused with input-check: args.",
+  "P2ADV-5 [Blocker] adversarial-testing: update.sh follows a symlinked docs/assets/data outside the repo. Test: adversarial-p2.test.ts P2ADV-5 symlinked data dir (spec D21 and the update.sh header). Rationale: cp writes real-work.json and model-guide.json through the link outside the repo, then git add exits 128; preview.sh refuses symlinks under docs/ but update.sh has no such guard."
+ ],
+ "changed_files": [
+  "harness/model-guide-tests/adversarial-p2.test.ts"
+ ],
+ "commands": [
+  "git rev-parse HEAD",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "git status --short docs/",
+  "git add harness/model-guide-tests/adversarial-p2.test.ts && git commit -m test(model_guide): phase 2 adversarial tests"
+ ],
+ "confidence": "high",
+ "evidence": [
+  "adversarial-p2.test.ts at 9dd0833: 14 tests, 5 failed | 9 passed. Failed: P2ADV-1 (picks a-route over higher-median z-route on a shared worst of 80.0), P2ADV-2 (picks old-model from the older mg-2026-11p file over new-model from the newer mg-2026-11a file), P2ADV-3 (second identical update.sh run exits 1), P2ADV-4 (__proto__/constructor/toString flags exit 0), P2ADV-5 (symlinked data dir: writes outside the repo, git add exits 128). Passed: P2ADV-6 to P2ADV-14.",
+  "Eight required suites at 6132fb7, each run alone with --configLoader native --maxWorkers=1 --reporter=dot, all exit 0: print-audit 13, guide 15, update 3, preview-gate 98, input-check 15, real-work 20, leak-guard 2, adversarial 49.",
+  "git status --short docs/ prints nothing at HEAD and after the runs; git show --name-only of 9dd0833 lists only harness/model-guide-tests/adversarial-p2.test.ts. Every git action and every update.sh run of the new tests happened in temp repos; publish-approval.md was never created in the real repo."
+ ],
+ "live_contract_violations": [],
+ "nonblocking_findings": [
+  "P2ADV-6 [Nit] adversarial-testing: spec Q6 says the page shows the PM label k3.1-pro and names no route, while the binding 2.4a ruling in plan.md names full routes and the implementation follows it. Test: adversarial-p2.test.ts P2ADV-13 pins the ruled x of y form and passes. Rationale: spec D17/Q6 was never updated to record the 2.4a ruling; no behavior change is asked for.",
+  "P2ADV-7 [Nit] adversarial-testing: print-audit.ts reads the input file twice, once for the JSON parse and once for the SHA-256, so a concurrent change could split the checked content from the parsed content. No live test: the header promises no single read. Rationale: code inspection of print-audit.ts:134-135; not exploitable in the hand-off threat model.",
+  "P2ADV-8 [Nit] adversarial-testing: the test-strategy Phase 2 closeout gate wording (git diff --name-only phase_base_sha..HEAD -- docs/ prints nothing) fails on the unrelated daily-publish commit 05acc8c in range. Rationale: no Phase 2 commit touched docs/ and the tree is clean, so D21 holds in substance; carryover of review finding P2A1-2."
+ ],
+ "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+ "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+ "prod_wiring_violations": [],
+ "ratings": [
+  {
+   "axis": "correctness",
+   "evidence": "guide.ts tie-break, newest-file selection, no-change rerun, flag validation, and symlinked data dir all deviate from the spec or the tool headers at 6132fb7 (adversarial-p2.test.ts P2ADV-1 to P2ADV-5 fail).",
+   "score": 3
+  },
+  {
+   "axis": "evidence_quality",
+   "evidence": "Every finding cites a failing or passing test name plus the exact file:line, and the commands list holds each confirmed single-file run at 6132fb7 with its Tests line.",
+   "score": 5
+  },
+  {
+   "axis": "scope_discipline",
+   "evidence": "The only new file is harness/model-guide-tests/adversarial-p2.test.ts; no production file and no docs/ file is touched.",
+   "score": 5
+  },
+  {
+   "axis": "test_meaning",
+   "evidence": "Five tests fail for the cited spec or header reason and nine pass as boundary and regression pins, all confirmed by rerun at 6132fb7 with the test commit 9dd0833.",
+   "score": 4
+  }
+ ],
+ "retry_recommendation": "retry_implementation",
+ "reviewer_model": "muse-spark-1.3-contributor",
+ "role": "adversarial-testing",
+ "role_base_sha": "6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+ "route": "opencode-go/muse-spark-1.3-contributor#high",
+ "schema_version": 1,
+ "status": "fail",
+ "summary": "Phase 2 adversarial attack exposes 5 blocking defects at 6132fb7 (D13 tie-break, newest score file, no-change rerun exit 1, inherited-key flags, symlinked data dir) with 9 passing boundary and regression pins; route the 5 blockers to Green.",
+ "test_commit_sha": "9dd0833",
+ "track": "model_guide"
+}

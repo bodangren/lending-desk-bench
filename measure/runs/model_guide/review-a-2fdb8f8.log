@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+role: measure-review-a-correctness
+route: opencode-go/glm-5.3#high
+audited_head_sha: 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 56ab786658576437cf4f373252be2a76f5951130
+status: fail
+summary: Fail. The range fixes ADV-P4B-1..6; the answer decode is correct on the real --format json stream, and ADV-P4B-2..6 are correct with real failing-first pins. One blocker stays: the token log still parses the fake event shape, so every live call would record zero tokens with tokens_complete false.
+blocking_findings: 1
+nonblocking_findings: 3
+retry_recommendation: retry_implementation
+confidence: high
+result_path: measure/runs/model_guide/review-a-2fdb8f8.json
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.16",
+  "status": "pass",
+  "verdict": "pass",
+  "summary": "Pass under the PM cap. One timing-sensitive review-run test failed on the same-second stale-message edge. F1 remains nonblocking for backlog row 4.15.",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "23f16f18787da5190dc8563e0373d48233653927",
+  "audited_head_sha": "23f16f18787da5190dc8563e0373d48233653927",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Low, nonblocking] Both runners floor LIVE_CALL_START to whole seconds with date +%s, then compare native millisecond time.created against start*1000 (review-run.sh:1212, judge-run.sh:962). A stale terminal message created after that floor but before call entry can pass the freshness filter. P4E-2 uses created=1 and does not test this sub-second boundary. Capture a millisecond call-start timestamp or use another precise current-call marker, then add a failing-first fixture. Route to backlog row 4.15 under the PM cap. | CONTEST kept: the F20 timing-sensitive failure demonstrates the edge, while the named A-F1 adversarial case remains skipped; retain the finding as backlog work.",
+    "F2 [Low, nonblocking] When message.sessionID matches the created session but info.sessionID names another session, both selectors accept the message because the top-level value wins (review-run.sh:1218-1219; judge-run.sh:968-969). P4F-2 pins this conflicting-owner case as a skip. Native messages omit these optional owner fields, and the endpoint is session-scoped. Route to backlog row 4.15 under the PM cap.",
+    "F3 [Low, nonblocking] Both selectors treat any non-empty finish string other than exact tool-calls as terminal and accept any finite completed timestamp, including negative or reversed values (review-run.sh:1235-1238; judge-run.sh:985-988). P4F-3 skips these malformed-metadata cases. Native values are expected to be valid, so this is a malformed-response edge. Route to backlog row 4.15 under the PM cap."
+  ],
+  "evidence": [
+    "git rev-parse HEAD returned 23f16f18787da5190dc8563e0373d48233653927, matching audited_head_sha and role_base_sha.",
+    "Reviewed exact phase range 7d7d218d00a95d9d619d2856173b8136b6ace4a5..23f16f18787da5190dc8563e0373d48233653927 and remediation range 3337418..23f16f1. The remediation diff has four paths, 455 insertions, and 8 deletions.",
+    "Read Measure index, model_guide metadata and routing files, Phase 4b plan, spec D13-D14, and test-strategy section 14.12.",
+    "P4F-1 sums tokens from each assistant message selected for the current call. The message id set prevents duplicate counting within the newest-first message list. Newest current-call message still controls answer selection.",
+    "P4F cases prove the final answer text comes from the terminal message, repeated message ids do not double count, and a missing token bundle makes tokens_complete false.",
+    "The pass and judge record serializers preserve the existing token field names and numeric types: input, output, reasoning, cache_read, cache_write, and total. See review-run.sh:843-870 and judge-run.sh:1519-1562.",
+    "The shared live_synthesize blocks compare identical. bash -n passes on both runners. git diff --check passes for the phase range.",
+    "My review-run.test.ts invocation exited 1 with 129 pass and 1 fail. The exact case was `P4b row 4.16r4 deadline, unset base, and newest answer > F20 an older partial answer does not hide a newer final answer` at review-run.test.ts:5750. It reported `the older partial token bundle was recorded`; expected input 7, output 8, total 45, but received input 8, output 10, total 48. The fixture stamps the older message 1000 ms before its read, so second-rounded call-start timing makes this failure intermittent. It exposes F1 but is not a stable failing-first test for that edge.",
+    "judge-run.test.ts passes 61 tests. adversarial-p4f.test.ts passes 48 tests and skips 14. adversarial-p4e.test.ts passes 54 tests.",
+    "The Green r9 plan claim matches green-4.16-364a39c.log as a historical run. The current review-run rerun fails; the claim does not state that this review rerun passed.",
+    "A3 labeled count assertions remain. The phase changed no orchestration script, contract test, or registry, so framework-wide anti-pattern checks do not apply.",
+    "build-graph is installed, but no graph database exists. I did not create one because this audit may write only its supplied result artifacts. Production changes are shell scripts, and no exported TypeScript symbol changed.",
+    "No live-server request, model call, credential read, or CLI call ran. The final process check found no owned fake or test process. Existing untracked paths remain untouched."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git diff --stat 3337418 23f16f1",
+    "git diff --name-only 3337418 23f16f1",
+    "git diff --no-ext-diff --unified=40 3337418 23f16f1 -- harness/model-guide/review-run.sh harness/model-guide/judge-run.sh harness/model-guide-tests/adversarial-p4f.test.ts measure/tracks/model_guide/plan.md",
+    "npx vitest run model-guide-tests/adversarial-p4f.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bun test harness/model-guide-tests/review-run.test.ts",
+    "npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "npx vitest run model-guide-tests/adversarial-p4e.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bash -n harness/model-guide/review-run.sh && bash -n harness/model-guide/judge-run.sh",
+    "python3 -c 'compare live_synthesize function blocks in both runners'",
+    "git diff --check 7d7d218d00a95d9d619d2856173b8136b6ace4a5..23f16f18787da5190dc8563e0373d48233653927",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]|[v]itest.*adversarial-p4f'"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4f.test.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "escalate_human",
+  "handoff": "F1 remains nonblocking under the PM cap and goes to backlog row 4.15. F1 is kept as a contested finding for human disposition. My review-run failure was timing-sensitive; the orchestrator and Green recorded passing runs. F2 and F3 also go to backlog row 4.15.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    { "axis": "correctness", "score": 3, "evidence": "P4F token sums pass, but review-run.test.ts reproduces stale-step inclusion from the second-rounded freshness filter." },
+    { "axis": "test_meaning", "score": 3, "evidence": "P4F has 48 passing tests and 14 named skips; review-run.test.ts has one failure that proves F1." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git diff --name-only 3337418 23f16f1 lists only the two runners, the P4F tests, and the plan." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "Four separate test commands, shell syntax checks, token serializers, and runner parity support the findings." }
+  ]
+}

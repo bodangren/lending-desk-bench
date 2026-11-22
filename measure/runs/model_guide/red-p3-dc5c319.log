@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: dc5c319e47ef6ffc835a4273306219672e7c5afb
+head_sha: 5906a607721f2bc6754e77c3f1d57949a553244a
+commits: 8af387400ce8b2ec4d8d4041589dd418cc6b6a82, 5906a607721f2bc6754e77c3f1d57949a553244a
+tests_run: `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests  3 failed | 17 passed (20)`, with the uncommitted Green 3.12c changes in the tree. The fixed case `J2 keeps one claim at different indices as one item and costs both routes the same` passes.
+files_changed: harness/model-guide-tests/adjudicate.test.ts (one test case); measure/tracks/model_guide/plan.md; untracked evidence measure/runs/model_guide/red-3.12e.txt and measure/runs/model_guide/red-p3-dc5c319.log. The uncommitted Green files harness/model-guide/adjudicate.ts, review-score.ts, and review-set.ts were not touched, staged, restored, or stashed; they stay modified in the work tree. No docs/ path touched.
+plan_updates: added 3.12e after 3.12b as [~], then changed to `[x] 8af3874` with an Evidence line that cites measure/runs/model_guide/red-3.12e.txt. 3.12c stays [~], 3.12d stays [ ], 3.12 stays [~]. The plan commit is 5906a60.
+remaining_failures: the only failures in adjudicate.test.ts are the three security cases of task 3.12b that Green 3.12d owns: P3B1-2 refuses a symlink at the queue target before any write; P3B1-2 refuses a symlink at the verdicts target before any write; P3B1-5 refuses a set id that is not a plain name. The J2 index case no longer fails.
+handoff: Green 3.12c can continue with the correctness findings; its adjudicate.test.ts failure list is now only the three security cases of 3.12b (Green 3.12d), so do not weaken those. The J2 case now uses `[match, A]` and `[A, match]` where `match` is a finding on P1: A is at index 2 in one route and index 1 in the other, the queue holds exactly one item `ID_A`, and both routes must show `found 1`, `false_claims 1`, and score 1.8. Green 3.12d then fixes leak-check.ts, review-set.ts, review-score.ts, adjudicate.ts, and pick-diffs.ts per the red-p3-cf114e6 handoff and must leave all five files' tests green. Do not stage the three currently modified tool files in any Red commit.
+END_MEASURE_AGENT_RESULT

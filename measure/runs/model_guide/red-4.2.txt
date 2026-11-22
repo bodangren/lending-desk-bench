@@ -1,0 +1,82 @@
+Red task 4.2 — the quota sources
+Track: model_guide. Phase 4. Role: measure-mid-red. Date: 2026-11-18.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 2d4f3837a347c643bdad6220b365b36ef31f80cf
+
+Plan change of test-strategy section 6.2, change 1
+  The row of task 4.2 carries the new wording: "and the temp fake quota
+  source that the test writes, an in-process `node:http` server on
+  `127.0.0.1:0`". The old phrase "and the fake quota scripts under
+  `harness/model-guide-tests/fixtures/fakes/`" is gone. Task 4.2 commits
+  no fixture, so its gate output holds no deviation line.
+
+Command
+  cd harness && npx vitest run model-guide-tests/quota.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+
+Result
+  Exit code: 1
+  Tests  15 failed (15)
+  Test Files  1 failed (1)
+  Duration 214ms
+  First failure line:
+    FAIL  model-guide-tests/quota.test.ts > Q1 the source path of each
+    provider > Q1 reads GET /api/quota/<id> for the four providers of spec
+    D15 and gives ready
+  First failure message:
+    AssertionError: the quota tool is missing:
+    /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/quota.ts:
+    expected false to be true
+
+Failed test names (15)
+  Q1 reads GET /api/quota/<id> for the four providers of spec D15 and gives
+    ready
+  Q2 gives ready below 70 and wait at 70, 70.1, and 100, with each window
+    labeled
+  Q3 a 500 answer gives stopped with one named line
+  Q3 a limit error body gives stopped with one named line
+  Q3 a read failure on a closed port gives stopped with one named line
+  Q3 a source with no value gives stopped with one named line
+  Q3 a window with no usedPercent gives stopped with one named line
+  Q3 a usedPercent that is a string gives stopped with one named line
+  Q3 a usedPercent of 1e999 gives stopped with one named line
+  Q4 gives ready with cap 1 and sends no request for the four providers
+    with no source
+  Q5 gives stopped with one named line inside 10 s when the source never
+    answers
+  Q6 parses a 2 MiB body with 200 windows and follows the highest window
+  Q7 reads the port from openchamber status --json when --base is absent
+  Q7 gives stopped with one named line for a port of 0, "0", and 70000
+  Q8 gives stopped with one named line and no request for bad port output
+
+Every case fails on the missing tool `harness/model-guide/quota.ts`. No
+case passes at the phase base. No NameError, no TypeError, no
+ReferenceError, and no syntax error in the run.
+
+Authoring check (the PM rule: an authoring error is fixed first)
+  The file was run against a throwaway prototype of `quota.ts` that lives
+  outside the repository at `/tmp/opencode/quota-proto.ts`, through the
+  seam `MG_QUOTA_PROTO`:
+
+    MG_QUOTA_PROTO=/tmp/opencode/quota-proto.ts npx vitest run \
+      model-guide-tests/quota.test.ts --configLoader native \
+      --maxWorkers=1 --reporter=dot
+
+  Result: exit 0, `Tests  15 passed (15)`. One authoring error was found
+  and fixed first: the Q2 request count was 9, and the correct value is 6
+  (three ready windows and three wait windows). After the fix, all 15
+  cases pass on the prototype, so the in-process quota source, the temp
+  `openchamber` stub, the spawn, and every assertion work. The recorded
+  Red run above uses no seam and fails on the missing tool.
+
+Process checks after the recorded run
+  `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+  No `vitest`, `quota-proto`, or `mg-quota` process stays alive.
+  No `mg-quota` temp folder stays under `/tmp`.
+
+Files touched by this role
+  harness/model-guide-tests/quota.test.ts (new, commit 60e0da3)
+  measure/tracks/model_guide/plan.md (row 4.2 to [~] plus evidence, commit
+    eddf45e)
+  No fixture committed. No production file touched. No network beyond the
+  loopback server of the test. No credential read. No `opencode` call.

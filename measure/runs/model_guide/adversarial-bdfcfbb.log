@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+track: model_guide
+audited_head: bdfcfbb22ab89fbb8dd6abd3b8eb35be0dfffe57
+commit: cf53cb59dba9366c3f1157207f9517826a152c20
+file: harness/model-guide-tests/adversarial-p4-runner.test.ts
+command: cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+result: exit 1, Tests 1 failed | 13 passed (14); ADV-R-8 and ADV-R-13 pass, the one failure is the new ADV-R-14 on the colliding pass-record name
+orphan_check: pgrep -af 'mg-.*quota-server' prints no test process (orphan count 0); ps fake-opencode read prints nothing; /tmp/mg-adv-r-* is gone
+frozen_paths: production code unchanged at bdfcfbb; this role touched one test file only
+blocking_findings:
+- ADV-R-14 [Major] harness/model-guide/review-run.sh:224-227 | The pass record file name keeps the plain RUN_SLUG while the lock and the output folder carry the ROUTE_TAG, so concurrent runs of `t/one#c` and `t-one#c` write the same `<date>-<slug>-p1.json` file: both exit 0 but only one pass record survives. | Kept failing in cf53cb5. | Fix scope: Green (carry the 12-hex route tag in the pass record file name and in the pass-number and tonight globs).
+nonblocking_findings: none
+status: fail
+retry_recommendation: none
+END_MEASURE_AGENT_RESULT

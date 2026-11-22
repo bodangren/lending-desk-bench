@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: pass
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13n
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 38919fdf9a57d41a588de1bf3cab15ad554af25b
+resulting_head: fddffd4
+commits: a70e410 fix(model_guide): standalone credential calls (task 4.13n); fddffd4 measure(model_guide): record Green task 4.13n
+green_test_command: cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+results: credential-provider.test.ts 16 passed (16); bun test review-run.test.ts 53 pass 0 fail; judge-run.test.ts 30 passed (30); adversarial-p4-runner.test.ts 14 passed (14); pgrep fake-opencode and quota-server empty after each gate; Red before the fix was 2 failed | 14 passed (ST1, ST2)
+handoff: Green 4.13n adds `--standalone` to the three real opencode calls of harness/model-guide/provider-credential.sh: seed `auth export` (line 147), seed `auth import` (line 179), scan-values `auth export` (line 187). Argument shape is unchanged. Left as is: review-run.sh:594 `run --standalone`, judge-run.sh:381 `run --standalone` (flag present), and harness/opencode-host.sh has only the opencode_host_run wrapper with no invocation. No test file changed; tasks 4.13m (93c0dcf) and 4.13n (a70e410) are [x] in plan.md; review should audit provider-credential.sh lines 147, 179, 187; Green HEAD is fddffd4 on phase base 57baaa
+END_MEASURE_AGENT_RESULT

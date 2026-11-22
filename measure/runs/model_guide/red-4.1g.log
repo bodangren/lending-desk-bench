@@ -1,0 +1,30 @@
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1g
+role: red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 760770696225e39181e492abfa8df7059c6f24b0
+resulting_head: 6caf40ef7d3b28d90490125a48a209678907d1c8
+commits:
+  - edc7372afedb99b1a62c141bde1b714ee1773a0d test(model_guide): Red task 4.1g checker rank by net score, pick labels, escapes (PM 2026-11-18)
+  - 6caf40ef7d3b28d90490125a48a209678907d1c8 measure(model_guide): record Red task 4.1g
+files_changed:
+  - measure/tracks/model_guide/plan.md (4.1g marked [~]; evidence recorded under 4.1g)
+  - harness/model-guide-tests/fixtures/page-b/ra-outcomes-2026-10-20.json (escapes zeroed; t1/gate-zeta added; 41 rows, 36 routes)
+  - harness/model-guide-tests/fixtures/page-b/MANIFEST-2026-10-20.txt (recomputed)
+  - harness/model-guide-tests/real-work.test.ts (DS4 count 36, DS7 escapes, DS10 net order, DS13 sentence forms, DS25 new; 14 tests)
+  - harness/model-guide-tests/preview-gate.test.ts (FX2/DS21 counts 13, G2/DS18 footer 41/36/4.9, G3 net order, G6 exact no-pick text, DS16 escapes, DS22/DS23/DS24 new; 102 tests)
+  - harness/model-guide-tests/guide.test.ts (DS26 overview 5-task text; 18 tests)
+  - harness/model-guide-tests/adversarial-p4.test.ts (top-line sentence parser, ROLE_LABELS removed, ADV4-8 net order; 18 tests)
+tests:
+  - real-work.test.ts: exit 1, Tests  4 failed | 10 passed (14); first failure DS7 `the escape sum over all gate rows is 0, so the cell shows no data: expected '0' to be 'no data'`; failed: DS7, DS10, DS13, DS25
+  - preview-gate.test.ts: exit 1, Tests  6 failed | 96 passed (102); first failure G3 `Checker roles ranked rows: expected [ 't1/gate-five', ...(12) ] to deeply equal [ Array(13) ]`; failed: G3, G6, DS16, DS22, DS23, DS24
+  - guide.test.ts: exit 1, Tests  1 failed | 17 passed (18); first failure DS26 `to contain '5 tasks or runs'`
+  - adversarial-p4.test.ts: exit 1, Tests  7 failed | 11 passed (18); first failure ADV4-1 `red pick: expected [ 'p1/alpha', '', '' ] to deeply equal [ 'p1/alpha', '80 %', '20' ]`; failed: ADV4-1, ADV4-2, ADV4-6, ADV4-7, ADV4-8, ADV4-9, ADV4-10
+  - unchanged fixture consumers, all exit 0: input-check 23 passed, leak-check 22 passed, update 9 passed, adversarial 46 passed, adversarial-p2 13 passed, adversarial-p3 34 passed
+  - No NameError, TypeError, ReferenceError, syntax error, or missing helper in any run. One Red defect of mine (stale DS4 route count 35) was fixed to 36 before the commit and the file rerun.
+dispositions: none
+handoff: Green 4.1h implements PM 2026-11-18 in real-work.ts, preview.sh, pages/real-work.html, pages/guide-section.html, and guide.ts only if the checker order reaches it (guide.ts holds no checker second source under ruling Q2, so no D18 Code review expectation changed). Defaults for review: the model-key tie-break reads as ascending order; a top-line net score is parsed as a number ("20" and "20.0" both pass); DS26 reads pages/guide-section.html because spec D18 Overview text names that file. The top line keeps data-role and data-model-key hooks (13.6) but the role label span is gone: the line is one sentence with the label "in this role". Escapes: base fixture sum is 0 (all cells "no data"), the DS24 variant restores 1+2+1 for the number case.
+END_MEASURE_AGENT_RESULT

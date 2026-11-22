@@ -1,0 +1,92 @@
+Green task 4.8 — the review page
+Track: model_guide. Phase 4: The runner and the first track A results
+(by Sun 2026-11-22). Role: measure-jr-green. Date: 2026-11-18.
+
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 63dd0ec25f213e3e907b684c0061ec63830553d4 (HEAD after the
+plan record of task 4.7)
+
+Red commit of this task: 6be3894 (the V1 to V9 cases of
+`harness/model-guide-tests/preview-gate.test.ts`). Green edited no test file
+and no fixture.
+
+1. Change
+
+  `harness/model-guide/pages/review.html` is the new page. It holds the nav
+  links `./real-work.html` and `./review.html`, the review table, the counts
+  by class and severity, the passes, the set counts, and the method note.
+
+  `harness/model-guide/preview.sh` gains `--pilot-gate <pass|fail>`. It reads
+  the newest score file under `harness/model-guide/data/review-scores/` and
+  the public set manifest `harness/model-guide/data/sets/<set_id>.json`. It
+  writes `review.html` from `pages/review.html`, and it copies the score
+  file to `review.json`. A run with no score file removes a stale review
+  page and writes none. `--pilot-gate fail` hides every rank and prints one
+  line `preview: pilot gate fail` on stdout.
+
+  The page shows the route row with the rank, the worst, median, and best
+  score, the blocker recall as a whole percent, the false claims, and the
+  real defects. The false claims, the real defects, and the counts by class
+  and severity are sums over the passes of the route. A route with fewer than
+  three complete passes shows the word incomplete with dashed score cells. A
+  provisional pass keeps its route complete and shows its own state. The
+  method note names the set size as `<n> diffs`, the weights 5, 2, and 1, the
+  false-claim cost 2, `N = 3`, and the pilot gate. The page and `review.json`
+  hold no private field and no private path.
+
+2. Commits
+
+  8f8f42d0b69e1e66ceda98e10817b27d9b07c2c1 feat(model_guide): review page (task 4.8)
+  deb8a21e27fe5c68f51bf10b35d46ec4a463be8e measure(model_guide): record Green task 4.8
+
+3. Test result lines (one file at a time from `harness/`, each with
+`--configLoader native --maxWorkers=1 --reporter=dot`, at HEAD 8f8f42d)
+
+  preview-gate.test.ts        exit 0  Tests  111 passed (111)
+  real-work.test.ts           exit 0  Tests  14 passed (14)
+  guide.test.ts               exit 0  Tests  18 passed (18)
+  update.test.ts              exit 0  Tests  9 passed (9)
+  leak-check.test.ts          exit 0  Tests  22 passed (22)
+  adversarial.test.ts         exit 0  Tests  46 passed (46)
+  adversarial-p2.test.ts      exit 0  Tests  13 passed (13)
+  adversarial-p3.test.ts      exit 0  Tests  34 passed (34)
+  adversarial-p4.test.ts      exit 0  Tests  24 passed (24)
+  input-check.test.ts         exit 0  Tests  23 passed (23)
+  quota.test.ts               exit 0  Tests  15 passed (15)
+  credential-provider.test.ts exit 0  Tests  11 passed (11)
+  review-run.test.ts          exit 0  Tests  23 passed (23)
+
+  `ps -eo pid,args | grep '[f]ake-opencode'` prints no line after the runs
+  that start the fake.
+
+4. Gates
+
+  bash -n harness/model-guide/preview.sh                    exit 0
+  git status --short docs/                                  prints nothing
+  The preview on the real files, at manifest
+  `harness/model-guide/data/MANIFEST-2026-11-17.txt` into a temp preview
+  folder, exits 0 with no stdout line and no stderr line. The real tree
+  holds no score file, so the run writes no review page. The index and the
+  real-work page each hold one Review link and one Real work link.
+
+5. Plan state
+
+  4.8a is [x] 6be3894. 4.8 is [x] 8f8f42d. No task is [b]. The `page-check`
+  browser proof at 390, 980, and 1280 px, the UX review of the page, and the
+  preview on the real files with a score file stay with the orchestrator.
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.8
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 63dd0ec25f213e3e907b684c0061ec63830553d4
+resulting_head: deb8a21e27fe5c68f51bf10b35d46ec4a463be8e
+commits: 8f8f42d (production), deb8a21 (plan record)
+files_changed: harness/model-guide/pages/review.html (new), harness/model-guide/preview.sh, measure/tracks/model_guide/plan.md
+tests: preview-gate 111 passed; real-work 14 passed; guide 18 passed; update 9 passed; leak-check 22 passed; adversarial 46 passed; adversarial-p2 13 passed; adversarial-p3 34 passed; adversarial-p4 24 passed; input-check 23 passed; quota 15 passed; credential-provider 11 passed; review-run 23 passed. Gates: bash -n preview.sh 0; docs/ clean; the real preview exits 0.
+dispositions: none
+handoff: Task 4.8 is green at HEAD deb8a21; the production commit is 8f8f42d. The review page renders only when a score file exists under harness/model-guide/data/review-scores/, so the real tree has no review.html until task 4.13 or 4.14 writes one. The orchestrator still owns the page-check at 390, 980, and 1280 px, the UX review of the page, and the publish gate of task 4.14.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "b7426e75ec7ae6e0afd88b3be828700cab6ff9b6",
+  "audited_head_sha": "b7426e75ec7ae6e0afd88b3be828700cab6ff9b6",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 2 passes. Each FIX item is fixed in the code and has a test that fails on the old code. Two minor and three nit items remain, and none blocks the phase.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A2-1 [Minor] review-a: harness/model-guide/preview.sh:30: The ancestor rule misses the path `/`. For `/`, the test `${DOCS_REAL#\"$PREVIEW_REAL\"/}` removes the prefix `//`, which never matches, so `--preview /` is allowed. The refused set is then not every ancestor of docs. No docs write results, but no test covers it. Fix: refuse when PREVIEW_REAL equals `/`.",
+    "A2-2 [Minor] review-a: measure/tracks/model_guide/plan.md:239: The evidence of task 1.9 is stale against HEAD. `preview-1.9.txt` was recorded at ef2d16f, before the round 2 edits to real-work.ts and preview.sh. I ran real-work.ts on the real export at HEAD into /tmp. It gave exit 0 and the same five values, so the claim still holds. The closeout gate must still run preview.sh on the final HEAD. The counts in tasks 1.4, 1.6, and 1.7 (6 and 7 passed) are true for their commits only. HEAD gives 11 and 39.",
+    "A2-3 [Nit] review-a: measure/tracks/model_guide/plan.md:228: Task 1.8 is marked [x] 3a477f5 before a new review passes. The Verify text allows this when each blocker has a fix commit, and A1 and A2 have 3a477f5. The file `check-1.8.json` does not exist. This round of reviews closes the gap if the gate passes.",
+    "A2-4 [Nit] review-a: harness/model-guide/publish.ts:115: The test `rel in baseDocs` reads the prototype chain of the parsed JSON object. A docs file named `constructor` or `toString` would not count as added. Use `Object.hasOwn`. A preview-base.json with invalid JSON throws a stack trace and exits 1. No file is written in that case.",
+    "A2-5 [Nit] review-a: harness/model-guide-tests/leak-guard.test.ts:44: The B3 guard test passed on the Red commit, so it has no failing-first proof. It is a guard on a clean tree. The needle build and the file walk read as correct. Judged acceptable."
+  ],
+  "evidence": [
+    "HEAD equaled audited_head_sha b7426e75ec7ae6e0afd88b3be828700cab6ff9b6. The audited range was 0a44cc9..b7426e7. The remediation range was 2131746..b7426e7.",
+    "F1 (A1) fixed: preview.sh:26-33 compares `realpath` of <repo>/docs with `realpath -m` of the preview value. It refuses an equal path, a path under docs, and docs under the path. It runs before mkdir and before real-work.ts. A shell snippet gave: `docs/`, `docs/../docs`, the repo root, /home, and /home/daniebo/Desktop are refused. `<repo>/docs-preview`, `<repo>/docsx`, and `<repo>/.tmp/x` are allowed. The path `/` is allowed (A2-1). An empty value makes realpath fail, so the script exits non-zero and writes nothing.",
+    "F1 test proof: 11 A1 refusal tests (exact, trailing slash, double slash, missing child, existing child, relative, dot-relative, parent-relative, parent segment, outside symlink, repo root) failed on the old code. Three A1 allow tests (docs-preview sibling, default folder, outside folder) pass, so the rule has no over-block. Each refusal test compares snapshots of docs, the target, and the repo root with directories.",
+    "F2 (A2) fixed: publish.ts:56-69 and :113-121 build the drift set from each current docs file plus each preview-base.json path. An added file, a removed file, and a changed file each give one `publish: drift <path>` line and exit 2 with no copy. The added-file, new-subfolder, and two-file tests failed on the old code. The removed-file test passed on the old code, as expected. preview.sh:79-86 builds the base with a walk over every docs file, so the two sets use the same rule. docs holds no symlink.",
+    "F3 (A3) fixed: input-check.test.ts has four PM sum-line tests: accept, changed byte, wrong size, and wrong file name. The accept test and the wrong-size test fail if the fallback branch is removed. The wrong-name test failed on the old code. real-work.ts:162-167 refuses a sum-line name that differs from basename(input). The real manifest line names real-work-outcomes-2026-11-14.json, which equals the input base name.",
+    "F4 (A4) fixed: the plan marker of task 1.9 cites ef2d16f. `git branch --contains` lists main for 3a477f5, 25276eb, 43384ea, ef2d16f, 563d33a, 0f0b2df, b42a234, f48787c, b38d577, f36ebb1, 520e1b7, and b7426e7. Commit 54836d0 lists no branch and appears in no plan marker now.",
+    "F5 (B1) fixed: publish.ts:46-51 and :99-104 refuse an empty path, a backslash, a leading `/`, and each `.`, `..`, or empty segment. The refusal is `publish: bad path <path>` with exit 2 and runs before any sha check or copy. A record with no `files:` section or no rows gives `publish: no files`. All 9 B1 tests failed on the old code. A row with a malformed sha is ignored, which fails closed because the file is not approved.",
+    "F6 (B2) fixed: real-work.ts:170-171 requires an integer for coverage.paired_duplicates_left_out and refuses with `input-check: schema` before any write. The real export holds the integer 36. The route-name test passed on the old code because the render already escapes route names. The test still guards that path.",
+    "F7 (B3) fixed: leak-guard.test.ts scans every file under model-guide-tests for the hand-off path context and the real export SHA-256. Both tests pass at HEAD. Each needle is built from two parts, so the file does not match itself.",
+    "F9 (C2) fixed: publish.ts:109 gives `publish: no preview base` with exit 2. The old code exited 1. F11 (C4) fixed: publish.ts:36-40 and real-work.ts:57-76 print the usage line on stderr with exit 2 and keep stdout empty. The old publish code exited 0 on an unknown flag, which the test caught.",
+    "DECLINE F8 (C1) judged correct. The spec has no stream rule (grep for stdout and stderr in spec.md found no refusal rule). The Red test headers from round 0 pin refusal lines on stdout, and the round 2 tests pin stderr empty. A move to stderr would break pinned tests.",
+    "DECLINE F10 (C3) judged correct. real-work.test.ts:28, :41, and :275-300 pin `can_pick` as `pass_rate.n >= 10`. Spec D16 says a few-runs row cannot pick. A removal would break pinned tests.",
+    "Red evidence for task 1.10 is enough. red-1.10.txt records exit 1, exit 1, and exit 0 for the three files. The Green log records the same rerun first (27 failed, 12 passed; 2 failed, 9 passed). I extracted 25276eb into a temp folder with the old production files. preview-gate.test.ts gave 27 failed and 12 passed. input-check.test.ts gave 2 failed and 9 passed. The 27 listed names match 11+3+9+1+1+2. The broken orchestrator gate command does not change this.",
+    "Regression check: real-work.test.ts passes 19 tests at HEAD. The D16 code in real-work.ts has no change in the remediation range except the usage parse, the manifest name check, and the integer check. real-work.ts on the real export gave exit 0 with SHA dae855ca, generated_on 2026-11-14, 1798 runs, 2026-06-06 to 2026-11-13, 50.6 percent, and 71.7 percent.",
+    "git status --short docs/ printed nothing. git diff --name-only 0a44cc9..b7426e7 -- docs/ printed nothing. The protected provenance, test, host, and credential paths have no diff. The phase diff holds eleven files and no unplanned file.",
+    "A3 check: the tests parse the labeled vitest summary lines. No digit-only count assertion exists. A5 check: the plan record of tasks 1.10 and 1.11 states exit codes and no PASS or FAIL count claim. A4 check: the missing-approval, missing-base, no-files, and missing-deliverable fixtures all fail with exit 2 and a named line.",
+    "The build-graph scan finds no exported symbol in the three scripts. The caller wiring is the shell script and the plan commands. I did not run preview.sh or publish.ts against the real docs."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> b7426e75ec7ae6e0afd88b3be828700cab6ff9b6",
+    "git diff 2131746..b7426e7 -- harness/model-guide/ measure/tracks/model_guide/plan.md",
+    "git diff 2131746..b7426e7 -- harness/model-guide-tests/preview-gate.test.ts harness/model-guide-tests/input-check.test.ts",
+    "git branch --contains <sha> for the twelve plan SHAs and 54836d0",
+    "shell snippet with realpath -m over nine preview values -> `/` allowed, others as listed",
+    "git archive 25276eb into a temp folder; cd <temp>/harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, 27 failed, 12 passed",
+    "same temp folder, input-check.test.ts -> exit 1, 2 failed, 9 passed",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 39 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 11 passed",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 19 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 2 passed",
+    "cd harness && npx tsx model-guide/real-work.ts --input <real export> --out <temp folder> -> exit 0, five real values match",
+    "git status --short docs/ -> no output",
+    "git diff --name-only 0a44cc9..b7426e7 -- docs/ -> no output",
+    "git diff --stat 0a44cc9..b7426e7 -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh -> no output"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/fixtures/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/real-work-mini.json",
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/leak-guard.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "harness/model-guide/preview.sh:26 and harness/model-guide/publish.ts:113 fix A1 and A2, but the path `/` still passes the ancestor rule (A2-1)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "preview-gate.test.ts at 25276eb gave 27 failed and 12 passed on the old code; only the B3 leak guard has no failing-first proof."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-status 0a44cc9..b7426e7 lists only the planned Phase 1 files and nothing under docs/."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "red-1.10.txt and green-p1-43384ea.log give exit codes and counts that match my rerun, but preview-1.9.txt predates the round 2 code (A2-2)."
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "3d42bf8d84359364392f473d9ac6d9b9bef466d2",
+  "audited_head_sha": "3d42bf8d84359364392f473d9ac6d9b9bef466d2",
+  "reviewer_model": "bailian-token-plan/qwen3.8-max#high",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "contract_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 2: the fixes in be41213 are verified and the Phase 2 contract still holds end to end. The guide.ts tie-break now follows D13 (worst score, worst blocker recall, median, route name), both scripts take the newest score file by modification time, update.sh refuses a symlinked data path and exits 0 on a no-change rerun, and guide.ts refuses inherited flag names; the CLI and data contracts are unchanged except these fixes. The rebuilt preview agrees with model-guide.json cell-for-cell, the six real rows are identical to round 1, and the wording still matches spec D17 to D19 with the Q1, Q2, and 2.4a rulings. Round-1 items: P2C1-1 and P2C1-2 are resolved by the new P2ADV-6 test, P2C1-4 and P2C1-5 are fixed and pinned, P2C1-3 is known as the open PM question, and P2C1-6 carries over as P2C2-1. Two nonblocking items: the plan marker note (carry-over) and the unpinned blocker_recall field name that the D13 recall tie-break reads. Task 2.8 remains the open check task of the phase and is not counted as a finding.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2C2-1 [Nit] review-c: Carry-over of P2C1-6, still open. The plan.md file-map note (line 93-97) still says the overview block goes between <!-- model-guide:start --> and <!-- model-guide:end --> after </nav>, while the shipped mechanism inserts the section at the '<header class=\"hero' anchor and dedupes by id=\"model-guide\" (preview.sh insert_overview); no marker comments exist anywhere. The placement contract itself holds and is now pinned (adversarial-p2.test.ts:428 above-hero assertion, :440 one-section dedupe). Rationale: the plan note diverges from the implementation and could mislead the Phase 5 publish work; the owner of plan.md should update the note.",
+    "P2C2-2 [Nit] review-c: The D13 first tie-breaker (higher worst blocker recall) reads the field name pass.blocker_recall in guide.ts (readTrackARank), but no fixture or test carries that field: grep finds blocker_recall in no test file and not in fixtures/guide/review-scores-mini.json, and P2ADV-1 exercises only the median branch (test comment: 'With no recall field the median decides'). review-score.ts (Phase 4 task 3.3) does not exist yet; if it writes another field name, the recall tie-break silently degrades to 0 for every route. Rationale: a one-sided integration contract in my wiring scope; pin blocker_recall in the Phase 4 score-file Red tests or in a guide tie-break test with recall values."
+  ],
+  "evidence": [
+    "HEAD confirmed current and unchanged: git rev-parse HEAD = 3d42bf8d84359364392f473d9ac6d9b9bef466d2 at the start and at the end of the audit; equals role_base_sha and audited_head_sha; phase_base_sha c22f313 is its ancestor.",
+    "Exact round-2 diff (git diff --stat 6132fb7..3d42bf8): 5 files only, adversarial-p2.test.ts (+761), guide.ts (58), preview.sh (21), update.sh (38), plan.md (+19). print-audit.ts, print-audit-2026-11.json, pages/guide-section.html, and the real-work template are untouched since round 1, where they were verified.",
+    "P2C1-4 fixed and verified: guide.ts rank.sort is now worst desc, worstRecall desc, median desc, route asc (D13 order); worstRecall is the min of the per-pass recalls and median averages the two middle scores for an even count; pinned by adversarial-p2.test.ts P2ADV-1 (equal worst 80.0, higher median z-route picks first).",
+    "P2C1-5 fixed and verified: preview.sh and update.sh share the same newest_score_file rule, ls -1t by modification time with head -n 1 instead of the alphabetically last glob match; pinned by P2ADV-2.",
+    "P2C1-1 resolved: P2ADV-6 (adversarial-p2.test.ts:410) renders a 45-day-old export, asserts model-guide.json stale:true and the page mark data-stale=\"true\", so the overview_stale branch of preview.sh is now exercised.",
+    "P2C1-2 resolved: P2ADV-6 asserts the overview section sits above the hero (indexOf comparison, line 428), all five D18 column headers render as th cells (lines 429-431), and a second preview over the same folder keeps exactly one id=\"model-guide\" section (line 440).",
+    "P2C1-3 known, not a new finding: the Q6 label default versus the 2.4a route-name ruling is an open PM question per the orchestrator; the adversarial role recorded the same item as its own nit P2ADV-6 in measure/runs/model_guide/adversarial-6132fb7.json.",
+    "P2C1-6 not fixed; carried over as P2C2-1: the 3d42bf8 plan.md diff adds only tasks 2.10 and 2.11; the marker-comment note is unchanged.",
+    "CLI contract unchanged except the fixes: guide.ts keeps the same seven flags, the same refusal check names and order, and the same output (schema model-guide-overview/1, root keys schema/today/stale/rows, row keys kind/pick/second/evidence/evidence_date/base_line); parseArgs now refuses inherited Object.prototype flag names via Object.hasOwn, consistent with the documented args refusal (pinned by P2ADV-4 and the P2ADV-9 flag matrix).",
+    "update.sh D19 contract unchanged except the fixes: same usage line and exit 2, same temp staging, preview-only write before the approval, docs/assets/data write plus one commit with exactly the two explicit paths after the approval, never pushes; additions are documented in the header and pinned: symlinked docs, docs/assets, or docs/assets/data refused with 'update: refused path <path>' exit 2 before any write (P2ADV-5), and a no-change rerun exits 0 with no commit via git diff --cached --quiet (P2ADV-3).",
+    "Page and JSON still agree: .tmp/model-guide-preview/index.html rows at lines 44-49 equal model-guide.json cell-for-cell (picks, seconds, evidence, dates; base_line 95 renders 'base line 95.0', 98.7 renders 'base line 98.7'); the section sits at line 28 directly after </nav> line 26 and above the hero line 55; the exact words 'no pick yet: not enough evidence' appear twice (Code review per ruling Q2, tooling); 'page B producer: pass 1.00 (n=10)' per ruling Q1; data-stale count is 0 with stale:false, correct for the 2026-11-14 export on 2026-11-15.",
+    "The six real rows did not change: today 2026-11-15, stale false, schema model-guide-overview/1, root keys rows/schema/stale/today, and all six rows (kind, pick, second, evidence, evidence_date, base_line) are identical to the round-1 values; the Green log green-p2-9dd0833.log records rows_identical = True for the task 2.9 preview rerun at the new code.",
+    "Wording still matches spec: the no-pick words, the evidence cell form 'page B: pass 0.96 (n=28)' of the D18 example shape, the Q1 prefix, and the five column headers are exact in both the JSON and the page; the print-audit block wording was verified in round 1 and its renderer and data file are untouched in this range.",
+    "Test runs at HEAD, each single file with --configLoader native --maxWorkers=1 --reporter=dot and no shell redirection: adversarial-p2.test.ts 14 passed exit 0; guide.test.ts 15 passed exit 0; update.test.ts 3 passed exit 0; preview-gate.test.ts 98 passed exit 0. print-audit.test.ts is unchanged with its tool since round 1 (13 passed at 6132fb7) and the Green log shows it passing at the be41213 tree.",
+    "No docs/ write: git log 6132fb7..3d42bf8 -- docs/ is empty; git status --short docs/ prints nothing; the only docs/ commit in the whole phase range remains 05acc8c, the standing daily publish job of spec EV8, external to the track (the adversarial role recorded the same fact as its nit P2ADV-8).",
+    "Plan and record consistency: plan.md tasks 2.10 (9dd0833) and 2.11 (be41213) are marked [x] with their evidence files; adversarial-6132fb7.json holds the 5 blocking defects P2ADV-1 to P2ADV-5 and the passing boundary pins; task 2.8 stays open as the phase check task and is not counted as a finding."
+  ],
+  "commands": [
+    "git rev-parse HEAD (run before and after the audit: 3d42bf8d84359364392f473d9ac6d9b9bef466d2)",
+    "git log --oneline 6132fb7..3d42bf8",
+    "git diff --stat 6132fb7..3d42bf8",
+    "git diff 6132fb7..3d42bf8 -- harness/model-guide/guide.ts harness/model-guide/update.sh harness/model-guide/preview.sh measure/tracks/model_guide/plan.md",
+    "git log 6132fb7..3d42bf8 --format='%h %s' -- docs/ (empty)",
+    "git status --short docs/ (empty)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot (14 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot (3 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (98 passed, exit 0)",
+    "grep -n 'blocker_recall' across harness/model-guide-tests (no hit: the recall field is unpinned)",
+    "inspection of .tmp/model-guide-preview/model-guide.json (six rows identical to round 1) and index.html (nav line 26, section line 28, hero line 55, rows lines 44-49, headers lines 37-41, no-pick count 2, data-stale count 0)",
+    "read measure/runs/model_guide/green-p2-9dd0833.log and measure/runs/model_guide/adversarial-6132fb7.json"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-c-3d42bf8.json",
+    "measure/runs/model_guide/review-c-3d42bf8.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "Both round-1 defects are fixed correctly (guide.ts D13 tie-break order worst/worstRecall/median/route; newest_score_file by ls -1t in preview.sh and update.sh) and every contract surface re-verified at HEAD: the six rows are identical to round 1 and the page equals the JSON cell-for-cell."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "adversarial-p2 adds 14 pins covering all round-1 page-test gaps (P2ADV-6 stale mark, above-hero position, five headers, one-section dedupe) and the five fixed defects; the only unpinned branch is the blocker_recall tie-break, which no fixture carries (P2ADV-1 comment: 'With no recall field the median decides')."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 6132fb7..3d42bf8 lists exactly the new test file, the three fixed production files, and the plan record; no docs/ commit in range and git status --short docs/ prints nothing."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "green-p2-9dd0833.log holds every command, exit code, Tests line, and the rows_identical=True preview rerun; adversarial-6132fb7.json holds the 5 blocking defects and 9 pins; I re-verified all central claims with live single-file vitest runs and direct file inspection."
+    }
+  ]
+}

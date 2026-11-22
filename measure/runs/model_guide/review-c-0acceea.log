@@ -1,0 +1,71 @@
+Review C, round 5, track model_guide, Phase 1.
+role: review-c
+audited_head_sha: 0acceeaaa9456f30c9f3c72f67212971e55a5d39 (equal to HEAD)
+phase_base_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: d14becb350354103b18d43d87e94b46df8784ec8
+Route: claude-code/claude-sonnet-5-5#high (substitute for the Kimi route, which is on WAIT)
+
+Verdict: pass. No blocking finding. One Minor item (C5-1) and two Nits (C5-2, C5-3).
+
+Round 4 findings
+- C4-1 (nav links on other pages): recorded as a plan note under task 4.8
+  (plan.md:633-635). The note names the owner task and matches the Phase 1 code
+  (index.html only). Two gaps remain: no failing-first test is planned for the
+  all-page nav, and the dead Review link is not named. See C5-1.
+- C4-2 (dead sys.exit branch, unreadable file): fixed. preview.sh:112-118 scans with
+  `find ! -readable` before mkdir and cp and prints `preview: unreadable docs/<file>`,
+  exit 2. The branch in the python step is gone. Tests A4-1 pin the line.
+- C4-3 (A3-3 line text): fixed. preview-gate.test.ts:1081 asserts the exact line
+  `preview: refused path <absolute link path>` and empty stderr.
+- C4-4 (empty Print audit card): stays a Phase 2 gap (FR-5). Nothing new.
+
+CLI contract at 0acceea
+- preview.sh: exit 0 on success. Exit 2 on a refusal or usage error. Lines:
+  `preview: refused path <value>`, `preview: refused path <absolute link path>`,
+  `preview: unreadable <path relative to the repo>`, or `input-check: <check>`.
+  Headers (lines 5-14) state each form. Stderr is empty on every refusal probed.
+- publish.ts: exit 2 with `publish: drift <path>` for a link, an unreadable
+  directory, or a file that differs. The walk uses lstat. Order of the checks
+  equals the header.
+- Probes (temp copy /tmp/rc5 from git archive 0acceea, never the real docs/):
+  control -> exit 0, twice, one link of each kind; relative link -> exit 2, refused
+  path line, empty stderr, no preview folder; dangling link -> exit 2, refused path line,
+  empty stderr. The sandbox blocked chmod, so the mode 000 case rests on the tests
+  and on the Review A probe.
+
+Page B (.tmp/model-guide-preview/real-work.html, rebuilt 2026-11-15 10:40)
+- Nav: Overview, Methodology, Results, Real work (active), Review, Models, Tracks.
+- Method note at line 253 equals the D16 text.
+- Source SHA-256 dae855ca...64f2, generated 2026-11-14. Coverage: 1,798 runs,
+  2026-06-06 to 2026-11-13, 50.6 %, 71.7 %, 36 left-out, 889 unknown, 3 other.
+- The preview index.html holds one link of each kind.
+
+Tests (single file)
+- preview-gate: exit 0, 85 passed (cd harness && npx vitest run
+  model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot)
+
+Findings
+- C5-1 [Minor] plan.md:633-635 and :95: no planned failing-first test for the nav on
+  every page (task 4.8 touches no test file; Red 4.1-4.3 do not cover it); the dead
+  Review link of Phases 1 to 3 is not named; line 95 still says "each page".
+- C5-2 [Nit] publish.ts:26, :106-108: the header says one line for each refusal, but
+  drift prints one line for each entry; an unreadable docs root prints an empty path.
+- C5-3 [Nit] publish.ts:124: the docs root is not checked with lstat. A docs/ link
+  would let the copy loop write through it. preview.sh refuses this case. By code
+  trace; not reachable in the tracked tree.
+
+Review A items A5-1 (unreadable directory gives exit 1 in preview.sh), A5-2, and A5-3
+stay with Review A. I did not repeat them.
+
+Real docs/: git status --short docs prints 0 lines; 0 symlinks; no write.
+
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 0acceeaaa9456f30c9f3c72f67212971e55a5d39
+result_file: measure/runs/model_guide/review-c-0acceea.json
+retry_recommendation: none
+summary: Round 5 passes with no blocker; one minor item (C5-1) and two nits (C5-2, C5-3) remain.
+END_MEASURE_AGENT_RESULT

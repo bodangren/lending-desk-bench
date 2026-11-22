@@ -1,0 +1,62 @@
+Red evidence for plan task 2.5a — fix the T4 starve cell of guide.test.ts
+Recorded 2026-11-15 by the mid-red role at role_base_sha 9813d5fd208fa6eb97a52cc26861492029e43837
+Phase base: c22f313603108585f8bb45996057627acfbc78ae
+
+The fix, one line in harness/model-guide-tests/guide.test.ts (T4 only):
+  starveWorkType(doc, "print books", { runs: 8, pass: 3, fail: 4 })
+  became
+  starveWorkType(doc, "print books", { runs: 8, pass: 1, fail: 1 })
+Reason: the cell is written per export row, and the Phase 1 tool merges the
+three print-books rows of model x/m (x/m#high, x/m[1m]#high, x/m). The old
+cell merged to pass 9 + fail 12 = n 21, so can_pick stayed true and the T4
+precondition failed before guide.ts ran. The new cell merges to x/m n 6,
+below the 10-result minimum, and y/m stays at n 2. The T4 intent is
+unchanged: the first source has no qualified model, so the print-audit
+second source picks. The docs-and-ops twin T5 keeps its cell; its models
+each sit on one export row, so it stays valid (T5 passes in this run).
+
+The uncommitted harness/model-guide/guide.ts of Green 2.5 was present in the
+worktree during this run. It was not edited, not staged, and not deleted.
+
+Single-file commands (day rule: one file per run, one worker):
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  3 failed | 12 passed (15)
+  T4 passes; the precondition now holds on the merged export.
+
+Failed test names and why they fail at HEAD (all three are the page-level
+overview-table tests that belong to Green task 2.6):
+- T5 page: the preview index shows the no-pick words for the empty row
+  AssertionError: the overview page holds the table: expected the preview
+  index.html to contain "no pick yet: not enough evidence". preview.sh has
+  no overview edit yet, so the generated index.html holds no guide table.
+- B8-1 page: a hostile model name reaches the overview table HTML escaped
+  AssertionError: the escaped hostile model reaches the page: expected the
+  preview index.html to contain the escaped y/"><img model name. Same
+  reason: no overview table is rendered yet.
+- D18 Q2: with no complete track A route and a qualified checker row the
+  code review pick is the no-pick words
+  AssertionError: the page holds the code review row: expected undefined to
+  be defined. The preview index.html holds no <tr> row of the guide table
+  yet.
+
+The other Phase 2 and Phase 1 files, each run alone with one worker, all
+exit 0 in this run:
+  cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  13 passed (13)
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  98 passed (98)
+  cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  20 passed (20)
+  cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  2 passed (2)
+  cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  49 passed (49)

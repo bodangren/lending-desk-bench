@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+task: 4.16
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 220be28bddb7e5af1ec15f7ab4f2dbfa2c02b06a
+green_commit_sha: 2a7800c
+green_record_commit: a87c29c
+final_head: a87c29c
+red_fix_commits: e7bdf7e test(model_guide): Red task 4.16 move review-run isolated fixtures off the pilot route; fd69500 test(model_guide): Red task 4.16 move adversarial-p4-runner isolated route; 764ffb5 test(model_guide): Red task 4.16 move adversarial-p4b and p4c isolated routes; 9f01204 test(model_guide): Red task 4.16 move adversarial-p4d isolated route; 220be28 measure(model_guide): record Red task 4.16 r5
+handoff: The three r4 Red conflicts are closed by Red in e7bdf7e, fd69500, 764ffb5, and 9f01204. No production file changed; the implementation stays at 2a7800c, and the record is a87c29c. Each file ran once, one at a time, all exit 0: review-run `128 pass` / `0 fail` (913 expect() calls, 222.01 s); decode-parity 8 pass; judge-run `Tests 59 passed (59)`; quota `Tests 32 passed (32)`; credential-provider `Tests 24 passed (24)`; adversarial-p4-runner 16; adversarial-p4b 12; adversarial-p4c 13; adversarial-p4d 21 passed 6 skipped; adjudicate 23 pass; review-score 27 pass. `bash -n` passes on both runners, and the tree holds only the allowed untracked paths. No live call, no POST to port 38307, no real HOME read, no opencode or openchamber CLI, and no fake child of mine remains. Counts are in measure/runs/model_guide/green-4.16.txt. Tasks flipped to [x]: none; row 4.16 stays [~] for the orchestrator phase gate. Tasks flipped to [b]: none. New tracked files: none; measure/runs/model_guide/green-4.16.txt is ignored by .gitignore.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "phase_base_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "role_base_sha": "a4894ae7cfd66c755daf014e749b61484e06fa8a",
+  "audited_head_sha": "a4894ae7cfd66c755daf014e749b61484e06fa8a",
+  "reviewer_model": "Step 5 Preview",
+  "route": "nvidia/stepfun-ai/step-5-preview#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 4 of the security review, delta only. The change over d137057 holds five files: the adversarial round 2 tests, the fake gh, the pick-diffs tests, pick-diffs.ts, and plan.md. pick-diffs.ts adds one bounded constant and one spawn option, so one `gh api --method GET` call can hold 64 MiB of output, and a call over that ceiling fails closed with `pick-diffs: gh api failed`. The spawn still uses array arguments with no shell. No new write path appears and the symlink and set-id refusals are untouched. The fake gh pad modes read the environment only, write only to stdout, and add only trailing whitespace after valid JSON, so they cannot run outside a test. The three single-file suites pass at HEAD. The round 2 nit P3B2-1 carries open.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P3B2-1 [Nit] review-b: nothing enforces the D9 order of the key SHA-256. review-set.ts still computes key_sha256 from the key bytes at lint time, and adjudicate.ts rewrites the key files after the lint, so a lint run before the apply publishes a hash that the apply invalidates. The delta of a4894ae touches neither file. The phase plan controls the order at task 4.13: the apply runs first, then the lint runs again, then the orchestrator commits the manifest. Carries rounds 2 and 3, and round 1 P3B1-6. Non-blocking."
+  ],
+  "evidence": [
+    "Provenance: `git --no-pager rev-parse HEAD` printed a4894ae7cfd66c755daf014e749b61484e06fa8a before the audit and again after the test runs and the probe; it equals audited_head_sha and role_base_sha. No commit landed after a4894ae during this audit, so I audit a4894ae. The commits in the range are 5252e8f (record checker task 3.12), 78627f5 (adversarial round 2 tests), d00169c (Red 3.13a), 6a16421 (record Red task 3.13a), and a4894ae (Green 3.13b). No docs/assets/data-only publish commit landed.",
+    "Delta scope: `git --no-pager diff --stat d137057 a4894ae` holds five files: adversarial-p3.test.ts (91 new lines), fixtures/fakes/gh (10 changed lines), pick-diffs.test.ts (14 new lines), pick-diffs.ts (5 changed lines), and measure/tracks/model_guide/plan.md (20 changed lines). No other harness file changed.",
+    "No new write path: the pick-diffs.ts delta adds the constant GH_MAX_BUFFER (64 * 1024 * 1024, a fixed 64 MiB) and the option maxBuffer on the one gh spawn (pick-diffs.ts:69-71 and 174). The write path to <private>/candidates/<owner>__<name>.json is unchanged, and the refuseSymlink guard at pick-diffs.ts:299 and the isPlainSetId guard at pick-diffs.ts:88-92 are unchanged. adjudicate.ts and review-set.ts are not in the delta, so their guards hold as in rounds 2 and 3.",
+    "The gh boundary holds: ghApi still builds the fixed argument array (api, --method, GET, path) and spawns with no shell (pick-diffs.ts:172-176). The path always starts with repos/<owner>/<name>/, and owner and name are split and validated (pick-diffs.ts:147-148). The two new tests use the fake gh, and the pick-diffs suite passes 21/21.",
+    "The 64 MiB buffer is bounded: it is one fixed constant, not a grown value. When a call exceeds it, spawnSync sets run.error and the tool refuses `pick-diffs: gh api failed` with exit 2 (pick-diffs.ts:177). The failure is closed and prints one line. I ran no tool against the real gh.",
+    "The pad modes cannot run outside a test: the fake gh reads FAKE_GH_LIST_PAD and FAKE_GH_DETAIL_PAD from the environment with a default of 0, and it applies a pad only to a list or a commit-detail path (fixtures/fakes/gh lines 58-67). pick-diffs.ts sets neither variable. Probe: the fake gh with no pad variable prints the same canned body as before (4204 bytes, status 0); with FAKE_GH_LIST_PAD set to 5000000 the body is the same JSON plus trailing spaces and stays valid after trim. The pad writes only to stdout.",
+    "The new tests use temp folders only: pick-diffs.test.ts builds each child environment from a copy of the parent environment plus the pad variables, so the pad reaches one child only, and each run uses a temp home and a 60 second timeout (pick-diffs.test.ts:140-162). The new tests are P3T1-1 (a commits list over 1 MiB) and P3T1-2 (a commit detail over 1 MiB). adversarial-p3.test.ts uses miniPrivate, miniRaw, and tempDir for its five new tests.",
+    "Tests at HEAD, each a single file with `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`, all exit 0: pick-diffs 21/21, leak-check 13/13, and adversarial-p3 28/28 (I also ran the round 4 delta file to confirm the plan claim).",
+    "A6: plan.md gains an evidence line that every Phase 3 blocking finding has its fix commit and that P3B1-1 to P3B1-5 are fixed in 0fb247b. That claim holds here: the symlink and set-id refusals are green in review-set 18/18 and adjudicate 20/20 from round 3, and the security suites stay green in this round. measure/tracks.md is not in the delta, so no new resolved-security claim appears.",
+    "A2 not applicable and unchanged: the delta adds no publish, preview, or draft-status code, and publish.ts and preview.sh are not in the range.",
+    "P3B2-1 carries open: a4894ae changes neither the key_sha256 computation in review-set.ts nor the key write-back in adjudicate.ts, so the D9 order stays a workflow control of task 4.13.",
+    "Plan note: the plan line for task 3.13b carries the marker [~] and names the fix commit a4894ae in the task heading, so the task row is in flight and not yet recorded as done. This is a workflow state, not a security defect, and it is not a finding."
+  ],
+  "commands": [
+    "git --no-pager rev-parse HEAD (a4894ae7cfd66c755daf014e749b61484e06fa8a, before the audit and after the runs)",
+    "git --no-pager log --oneline d137057..a4894ae",
+    "git --no-pager diff --stat d137057 a4894ae",
+    "git --no-pager diff d137057 a4894ae -- harness/model-guide/pick-diffs.ts harness/model-guide-tests/fixtures/fakes/gh harness/model-guide-tests/pick-diffs.test.ts",
+    "grep -n refuseSymlink|isPlainSetId|writePath harness/model-guide/pick-diffs.ts (unchanged guards)",
+    "cd harness && timeout 300 npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot (21 passed)",
+    "cd harness && timeout 300 npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (13 passed)",
+    "cd harness && timeout 300 npx vitest run model-guide-tests/adversarial-p3.test.ts --configLoader native --maxWorkers=1 --reporter=dot (28 passed)",
+    "node -e spawn of the fake gh with no pad variable (status 0, 4204 bytes) and with FAKE_GH_LIST_PAD=5000000 (valid JSON after trim, output to stdout only)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-a4894ae.json",
+    "measure/runs/model_guide/review-b-a4894ae.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "pick-diffs.ts:69-71 and 174 set one fixed 64 MiB ceiling on the array-argument `gh api --method GET` spawn, and the pad of the fake gh prints valid JSON with trailing spaces for the P3T1-1 and P3T1-2 tests."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "P3T1-1 and P3T1-2 pin the over-1-MiB list and detail reads and pass in pick-diffs 21/21, and the round 4 adversarial tests pass 28/28."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat d137057 a4894ae holds exactly the test file, the fake gh, the pick-diffs tests, pick-diffs.ts, and plan.md; no fixture and no docs path changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each claim has a file:line from the delta diff, a single-file test count, or the fake gh probe result."
+    }
+  ]
+}

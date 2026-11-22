@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 1e16812697644c9ecbcb528ca240874931dd9ca3
+green_commit_sha: 0356c23
+handoff: Judge decoder parity fixed in 0356c23, recorded in the plan r6 commit. The judge drops a top-level result branch when text parts exist and keeps result-only streams decoding; one answer for all three decoders. Six files pass one at a time: decode-parity 5 passed, adversarial-p4c 13 passed, adversarial-p4b 12 passed, judge-run 50 passed, adjudicate 23 passed, review-score 27 passed. Counts are in measure/runs/model_guide/green-4.15.txt. leak-check exit 0. Flipped to [x]: none, the row stays [~] per the PM round cap. Flipped to [b]: none. New files added: none. Hygiene: pgrep printed nothing of mine after each run; git status docs prints nothing.
+END_MEASURE_AGENT_RESULT

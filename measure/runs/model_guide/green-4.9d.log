@@ -1,0 +1,115 @@
+Green task 4.9d — the runner reviews the seeded diffs
+Track: model_guide. Phase 4. Role: measure-jr-green. Date: 2026-11-18.
+Model: opencode-go/deepseek-v4.1-flash.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: e37fa6550b81fdc8750bdf7a88d6f1499fd0217e
+Red model of this phase step: minimax-cn-coding-plan/MiniMax-M3.1-Flash.
+
+Preflight
+  `phase_base_sha` is an ancestor of HEAD.
+  The Red commits 9983525, 8cb3987, 193c4c2, and e37fa65 are inside
+  `phase_base_sha..HEAD`.
+  `git status --short` before the edit held the one tracked change of the
+  prior Green attempt and four untracked paths: `.opencode/`,
+  `harness/model-guide/data/sets/`, `harness/wt.txt`, `tech-debt.md`. This
+  role touched neither the untracked paths nor any frozen path.
+
+The change (one implementation file)
+  harness/model-guide/review-run.sh:
+
+    -if [ ! -d "$SET_DIR/src" ]; then
+    -  refuse "the set has no src folder"
+    -fi
+    -shopt -s nullglob
+    -DIFF_PATHS=("$SET_DIR/src"/*.diff)
+    +if [ ! -d "$SET_DIR/diffs" ]; then
+    +  refuse "the set has no diffs folder"
+    +fi
+    +shopt -s nullglob
+    +DIFF_PATHS=("$SET_DIR/diffs"/*.diff)
+
+  A new 3-line comment states that `diffs/` is the review input (spec D7),
+  and that `src/` holds the source copies without the plants.
+  The pass loop and the probe loop both read `DIFF_PATHS`, so one glob
+  serves both modes. The folder check and the glob sit before the lock, the
+  pass number, and every call, so a set with no seeded diff writes no pass
+  record and makes no call.
+  `grep -n "src" harness/model-guide/review-run.sh` prints the new comment
+  only. No comment names `src/` as the review input.
+
+Gate 1 — the RED_TEST_COMMAND and GREEN_TEST_COMMAND of the task
+  Command: bun test harness/model-guide-tests/review-run.test.ts
+  Exit 0. 39 pass, 0 fail, 293 expect() calls, 39 tests, 64.06s.
+  The before state of this role gave exit 1 with 35 pass and 4 fail (S1 to
+  S4). The Red tests were not edited.
+
+  Command: cd harness && npx vitest run model-guide-tests/review-run.test.ts
+           --configLoader native --maxWorkers=1 --reporter=dot
+  Exit 0. Tests 39 passed (39). Test Files 1 passed (1).
+
+Gate 2 — the adversarial file that reads review-run.sh
+  `grep -rln "review-run.sh" harness/model-guide-tests/` prints two files:
+  review-run.test.ts and adversarial-p4-runner.test.ts.
+
+  Command: cd harness && npx vitest run
+           model-guide-tests/adversarial-p4-runner.test.ts
+           --configLoader native --maxWorkers=1 --reporter=dot
+  Exit 0. Tests 14 passed (14). Test Files 1 passed (1). 67.16s.
+
+  That file runs under vitest. Its 2 MiB output case and its TERM trap case
+  exceed the 5 s default timeout of bun. `bun test` on that file gives 5
+  timeouts at the role base too, so bun is not a valid runner for it. The
+  Phase 4 gate line of test-strategy section 2.4 uses vitest.
+
+  The fixture that this file needed is Red commit 193c4c2: line 332 writes
+  the synthetic diff into `sets/<set_id>/diffs` (spec D7). The Red role made
+  that change. This role edited no test file.
+
+Process check (after both runs)
+  pgrep -af "fake-opencod[e]"  → no line (exit 1)
+  pgrep -af "quota-serve[r]"   → no line (exit 1)
+  No `/tmp/mg-*` folder stays.
+
+Commits
+  49af2be — feat(model_guide): runner reviews the seeded diffs (task 4.9d)
+            One path: harness/model-guide/review-run.sh.
+  4bdbd3f — measure(model_guide): record Green task 4.9d
+            One path: measure/tracks/model_guide/plan.md.
+
+Plan updates
+  Row 4.9c is `[x]` (the Red commit SHA 9983525 stays as its evidence).
+  Row 4.9d is `[x]` with the SHA 49af2be, the spec D7 contract, the two gate
+  results with their counts, the vitest note for the adversarial file, and
+  the process check. No other row changed. No archive move and no closeout
+  metadata change.
+
+New files: none. The commit holds no new path.
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.9d
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: e37fa6550b81fdc8750bdf7a88d6f1499fd0217e
+resulting_head: 4bdbd3f5f145f1cfe5a817766b162cf8da51dbd4
+commits:
+  - 49af2be — feat(model_guide): runner reviews the seeded diffs (task 4.9d); one path.
+  - 4bdbd3f — measure(model_guide): record Green task 4.9d; one path.
+files_changed:
+  - harness/model-guide/review-run.sh
+  - measure/tracks/model_guide/plan.md
+plan_updates: "Row 4.9c flipped from `[~]` to `[x]`. New row `- [x] 49af2be 4.9d Green: the runner reviews the seeded diffs (spec D7).` sits after 4.9c, with the gate counts, the vitest note, and the process check. No other row changed."
+tasks_flipped_to_x:
+  - "4.9c — Red evidence 9983525; the fixture fix is 193c4c2."
+  - "4.9d — implementation 49af2be; plan record 4bdbd3f."
+tasks_flipped_to_b: none
+tests_run:
+  - "bun test harness/model-guide-tests/review-run.test.ts: exit 0; 39 pass, 0 fail, 39 tests."
+  - "cd harness && npx vitest run model-guide-tests/review-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot: exit 0; Tests 39 passed (39)."
+  - "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot: exit 0; Tests 14 passed (14)."
+new_files: none
+process_check: "pgrep -af \"fake-opencod[e]\" and pgrep -af \"quota-serve[r]\" print no line; no /tmp/mg-* folder stays."
+handoff: "4.9d is complete. The review input is `<private>/sets/<set_id>/diffs/` for the pass and for the probe (spec D7), and a set with no seeded diff is a refusal with exit 2, one review-run: line, no call, and no pass record. Gate evidence: `bun test harness/model-guide-tests/review-run.test.ts` gives 39 pass and 0 fail; vitest on `adversarial-p4-runner.test.ts` gives 14 passed (14); vitest on `review-run.test.ts` gives 39 passed (39). Reviewers should scope to `harness/model-guide/review-run.sh` (the folder check, the glob, and the 3-line comment) and to the new plan row. The adversarial file must run under vitest, because bun's 5 s default times out on its 2 MiB and trap cases; the plan row states this. Task 4.10 stays `[ ]`: it needs a live probe through heavy-run.sh in the 02:00 to 06:00 +07 window, and this role made no model or network call. Immutable phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; final Green HEAD 4bdbd3f."
+END_MEASURE_AGENT_RESULT

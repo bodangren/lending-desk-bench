@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: complete
+audited_head_sha: f497917a3d1f387d4c3c6f8b94e6331d5fd6587a
+result_file: measure/runs/model_guide/review-c-f497917.json
+retry_recommendation: none
+summary: Pass. The claim id contract is shared on both sides, the match window is 3, refusal lines and exit codes stay consistent across the five tools, the score file reaches guide.ts, Phase 4 can use the contract, no page or docs changed, and plan rows 3.12a to 3.12e are true. P3C1-1 and P3C1-2 withdrawn with evidence. Four nits carry as P3C2-1 to P3C2-4. Suites: adjudicate 20 passed, review-score 25 passed, guide 16 passed, review-set 18 passed.
+END_MEASURE_AGENT_RESULT

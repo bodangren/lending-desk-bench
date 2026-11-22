@@ -1,0 +1,63 @@
+Review A, round 5, track model_guide, Phase 1.
+audited_head_sha: 0acceeaaa9456f30c9f3c72f67212971e55a5d39 (equal to HEAD)
+phase_base_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: d14becb350354103b18d43d87e94b46df8784ec8
+Route: claude-code/claude-sonnet-5-5#high
+
+Verdict: pass. No blocking finding. One Minor item (A5-1) and two Nits (A5-2, A5-3).
+
+Round 4 findings
+- A4-1/C4-2 (unreadable docs entry): fixed for a file. preview.sh:112-118 scans with
+  `find ! -readable` before mkdir and cp. A mode 000 file gives exit 2,
+  `preview: unreadable docs/locked.txt`, empty stderr, no folder. The dead sys.exit
+  branch is gone. Two tests fail on 46002d0 and pass at 0acceea. Gap for a directory: A5-1.
+- B3-1/A4-2 (docs symlink): fixed. preview.sh:105-110 refuses every symlink with
+  `preview: refused path <abs link>`, exit 2. publish.ts uses lstat; each link maps to
+  `publish: drift <path>`, exit 2, and the copy loop never runs. Six tests fail on 46002d0
+  and pass at 0acceea. Probes in temp copies agree with the tests.
+- A4-3 (unreadable directory in the publish walk): fixed. publish.ts:101-107 wraps
+  readdirSync. A nested mode 000 folder gives exit 2, `publish: drift a/b`, no stack.
+- A4-4/C4-3 (line text): fixed. The A3-3 test asserts the exact line and empty stderr.
+  It passes on 46002d0 by design.
+
+Tests (each file alone, --maxWorkers=1 --reporter=dot)
+- preview-gate: exit 0, 85 passed
+- input-check: exit 0, 15 passed
+- real-work: exit 0, 19 passed
+- leak-guard: exit 0, 2 passed
+- bash -n preview.sh: exit 0
+- Red proof (tests of 0acceea on the 46002d0 archive): 9 failed, 76 passed (85).
+  The 9 names match red-1.16.txt items 1 to 9.
+
+Probes (temp copies under /tmp/ra5, never the real docs/)
+- preview.sh: file 000 -> exit 2, refusal line; dir 444 -> exit 2, unreadable child;
+  dir 000 (empty), dir 000 (nested), dir 311 -> exit 1, find message on stderr (A5-1);
+  relative, dangling, directory link, docs as link -> exit 2, refused path line;
+  control -> exit 0; FIFO in docs -> hang after cp (A5-2).
+- publish.ts: control -> exit 0, two approved files written; relative link, directory link
+  with an approved row beneath, file 000, nested dir 000 -> exit 2, drift line, no write.
+
+Findings
+- A5-1 [Minor] preview.sh:105-110: an unreadable directory under docs makes the symlink
+  scan fail with exit 1 and a find line on stderr, not `preview: unreadable <path>`. The
+  header and the comment at :113-115 claim "file or folder". No write, so it is safe. No
+  test covers a directory.
+- A5-2 [Nit] preview.sh: a FIFO under docs blocks the python hash step; publish.ts maps
+  it to drift. Git cannot track a FIFO, so it is not reachable.
+- A5-3 [Nit] preview-gate.test.ts:1128-1136: the dangling-link test does not assert the
+  new `preview: refused path` line.
+
+Regression check, rounds 1 to 3: the 76 older tests pass. The staging order and the EXIT
+trap hold; every new refusal leaves no .tmp folder. Plan evidence matches my reruns.
+Real docs/: git status --short docs prints 0 lines; 0 symlinks; no write.
+
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 0acceeaaa9456f30c9f3c72f67212971e55a5d39
+result_file: measure/runs/model_guide/review-a-0acceea.json
+retry_recommendation: none
+summary: Round 5 passes with no blocker; one Minor item (unreadable directory in preview.sh) and two Nits remain.
+END_MEASURE_AGENT_RESULT

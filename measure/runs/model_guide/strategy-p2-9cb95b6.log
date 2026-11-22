@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: strategy
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+role_base_sha: 9cb95b6643eba0cd04f0623865224f3d9ef88b3c
+head_sha: c22f313603108585f8bb45996057627acfbc78ae
+commits: c22f313603108585f8bb45996057627acfbc78ae
+files_changed: measure/tracks/model_guide/test-strategy.md
+review_gates: review-a, review-b, review-c, adversarial, ux-browser
+handoff: (1) Before Red 2.1 starts, widen plan task 2.1 to name harness/model-guide-tests/print-audit.test.ts AND harness/model-guide-tests/preview-gate.test.ts; the current line says "and no other file". Red 2.1 then adds the four PA2-1 guard cases to preview-gate.test.ts (G1 source line `generated 2026-10-20` from the sentinel fixture; G2 coverage runs `1,285`, dates 2026-10-01 and 2026-11-01, shares 38.9 % and 77.8 %; G3 `few runs` on each few_runs row and none on the 10-result row; G4 each rate cell ends with ` (n=<pass_rate.n>)`), plus the new print-audit block cases (T1), the hostile-name case (T11, quote + angle bracket + `__proto__`), and N4's page part. Red 2.1 records the PA2-1 reason and the base result in measure/runs/model_guide/red-2.1.txt. (2) Red 2.1 creates fixtures/print-audit/ with print-audit-mini.json and MANIFEST.txt (52 rows, 13 blockers, 43 rows with 1-3 items, 9 with none, 11 of 13 and 13 of 13, hostile type name and `__proto__` key) and fixtures/page-guard/real-work-page.json with MANIFEST.txt (runs 1,285, generated_on 2026-10-20, one 9-result row, one 10-result row). (3) Red 2.2 writes guide.test.ts with `--today` pinned; Red 2.3 writes update.test.ts with a temp docs tree and a temp git repo. Day rule: one file at a time with --maxWorkers=1 before 22:00; no full suite. Task 2.9 reads the real OD6 file (SHA-256 f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87, re-checked 2026-11-15, 52 rows, 13 blockers); no test reads it.
+END_MEASURE_AGENT_RESULT

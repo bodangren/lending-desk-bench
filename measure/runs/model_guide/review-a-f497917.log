@@ -1,0 +1,11 @@
+Review A round 2 of Phase 3 at f497917: pass. All round 1 blockers and majors closed; six suites green (20, 25, 18, 16, 13, 19); six carried nits open.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: complete
+audited_head_sha: f497917a3d1f387d4c3c6f8b94e6331d5fd6587a
+result_file: measure/runs/model_guide/review-a-f497917.json
+retry_recommendation: none
+summary: All round 1 blockers and majors are closed at f497917 with failing-first tests: claim-keyed ids, plus-or-minus-3 window, missed counts at every level, D7 key schema, -z staged paths, realpath private check, broken-symlink skip, symlink refusal, plain set ids. Six suites pass at HEAD (20, 25, 18, 16, 13, 19). D4 to D13 and D22 hold, the scorer reaches guide.ts, plan rows 3.12a to 3.12e are true. Six carried nits stay open.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "0acceeaaa9456f30c9f3c72f67212971e55a5d39",
+  "audited_head_sha": "2a9d4213c73c2ed3fdc53ae931029f910092735d",
+  "reviewer_model": "opencode-go/mimo-v2.6-flash",
+  "status": "pass",
+  "summary": "Round 6 passes with no blocker. All eleven ADV fixes hold, and each is pinned by a test that fails on 8eafbc3 (20 failed, 29 passed) and passes on 2a9d421 (49 passed). The four older files pass unchanged (85, 15, 19, 2). My 65 probes on a temp archive of 2a9d421 all pass, including the ADV-11 staging with no partial set and no temp file left. The three round 5 findings are fixed. Two Minor items and three Nits remain.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A6-1 [Minor] review-a: harness/model-guide/publish.ts:12-48 and harness/model-guide/real-work.ts:8-20 with harness/model-guide-tests/adversarial.test.ts:328, 436: five new refusal lines are named in the tool headers but no test asserts them. Grep for `publish: bad docs root`, `publish: bad approval record`, `publish: write`, `input-check: input`, and `input-check: json` in harness/model-guide-tests prints 0 matches. The X tests assert only `^input-check: \\S+\\n$`, so any check name passes. Probes give the header lines today, and each fix fails on 8eafbc3, so the behavior is pinned. A line rename would pass. Fix: assert the exact line in the ADV-1, ADV-2, ADV-11, X-missing, and X-badjson tests.",
+    "A6-2 [Minor] review-a: harness/model-guide/publish.ts:227-249 with harness/model-guide-tests/adversarial.test.ts:769-793: the ADV-11 test asserts only a non-zero exit and the absence of `docs/real-work.html`. It does not assert the `publish: write <path>` line and it does not assert that no `.publish-*.tmp` file stays under `docs/`. My probe on a temp archive of 2a9d421 gives `publish: write locked/new.html`, exit 2, empty stderr, no partial set, and 0 temp files, so the behavior is right today. A cleanup regression would pass this test. Also the rename loop at publish.ts:249 is not wrapped: a rename failure would exit 1 with a stack trace and leave staged temp files. No tested fixture reaches it. Fix: assert the exact line and `find docs -name '.publish-*.tmp'` empty in the test; wrap the rename loop.",
+    "A6-3 [Nit] review-a: harness/model-guide-tests/leak-guard.test.ts:30-47: a symlink to a folder under the test folder contributes only its link line, so a leak file inside that folder passes the guard. Before the rewrite the guard threw ENOENT and failed closed. No test plants a directory symlink; harness/model-guide-tests/adversarial.test.ts:850 notes the fixture avoids one. The folder holds 0 tracked symlinks today. Fix: recurse a directory target, or add a test that pins the choice.",
+    "A6-4 [Nit] review-a: harness/model-guide-tests/adversarial.test.ts:428-439, 441-447: two tests promise `exit 2` in the name but call `expectNoCrash`, which accepts status 0 with no further assertion. A tool that accepted bad JSON or a JSON null root with exit 0 would pass. My probes give exit 2 today. Fix: assert `result.status === 2` in those two cases.",
+    "A6-5 [Nit] review-a: measure/tracks/model_guide/test-strategy.md:24-60 (Phase 1 gate commands): the new file `harness/model-guide-tests/adversarial.test.ts` is not listed, and its run command appears only in the plan. `leak-guard.test.ts` is also absent, so the gap follows the existing pattern. Fix: add the fifth line to section 2.1."
+  ],
+  "evidence": [
+    "HEAD check: `git rev-parse HEAD` printed 2a9d4213c73c2ed3fdc53ae931029f910092735d, equal to audited_head_sha. I audited the 2a9d421 tree. `git diff --name-only 0acceea..2a9d421` lists 6 files: adversarial.test.ts, leak-guard.test.ts, preview.sh, publish.ts, real-work.ts, and plan.md. No file under docs/ or spec.md changed. `git status --short docs` prints 0 lines, `git ls-files -s docs` holds 0 entries of mode 120000, and `find docs -type l` prints 0.",
+    "Red proof: I extracted a git archive of 8eafbc3 into /tmp/opencode/r6/red and added a node_modules symlink. `cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot` gave exit 1 and `Tests 20 failed | 29 passed (49)`. The count matches red-1.18.txt and green-p1-8eafbc3.log. Two names from my own output match the record: ADV-10 `P refuses a preview base that is valid JSON but not an object, with no stack trace` and ADV-11 `P writes all approved files or none when one destination cannot be written`. red-1.18.txt lists all 20 names and maps them to ADV-1 to ADV-11.",
+    "Pass proof at 2a9d421, each file alone with `--maxWorkers=1 --reporter=dot`: adversarial 49 passed exit 0, preview-gate 85 passed exit 0, input-check 15 passed exit 0, real-work 19 passed exit 0, leak-guard 2 passed exit 0, and `bash -n harness/model-guide/preview.sh` exit 0. These match plan tasks 1.18 and 1.19 and green-p1-8eafbc3.log. No test count in the plan overstates my runs.",
+    "Probes: I ran /tmp/opencode/r6/probe.py against a git archive copy of 2a9d421 under /tmp/opencode/r6/work. Result 65 pass, 0 fail. The real docs/ folder was never touched. Probes cover: control preview exit 0; ADV-3 mode 000 directory gives exit 2, `preview: unreadable docs/lockdir`, empty stderr, no .tmp; ADV-3 mode 000 docs root and a missing docs root each give exit 2, one `preview: unreadable docs` line, empty stderr, no .tmp; ADV-4 a FIFO gives exit 2, `preview: refused path <abs>`, empty stderr, no .tmp and no hang; the dangling link gives exit 2 with the exact line; a docs root symlink in preview gives exit 2, `preview: refused path <abs docs>`, and the target stays untouched.",
+    "Probes of publish.ts: a docs root symlink gives exit 2, `publish: bad docs root`, empty stderr, and no write into the link target (ADV-1); a record with no approved_by and no date gives exit 2, `publish: bad approval record`, and no file (ADV-2, spec glossary line 211); a read-only target folder gives exit 2, `publish: write locked/new.html`, empty stderr, no partial set, and 0 `.publish-*.tmp` files under docs (ADV-11); a mode 000 docs root gives exit 2 and only `publish: drift <path>` lines, with `.` for the root and no empty path (ADV-5); a preview base of `null` gives exit 2, `publish: bad preview base`, empty stderr (ADV-10).",
+    "Probes of real-work.ts: a missing path, a folder path, bad JSON, a JSON null root, and a non-string route each give exit 2, one `input-check: <check>` line, empty stderr, and no output file (ADV-6). A `private_note` coverage key stays out of the written real-work.json at exit 0 (ADV-7). A work type and a rating axis named `__proto__` both stay in the output at exit 0 (ADV-8). A negative count gives exit 2 and no output; counts of 1e308 are refused (ADV-9).",
+    "ADV-11 correctness: publish.ts:191-196 lstats the docs root before the drift walk; publish.ts:227-248 stages every approved file in its target folder, then drops all staged temp files on failure, and only publish.ts:249 renames. My probe confirms no partial set and no temp file left. The drift walk at publish.ts:198-223 runs before staging, so a temp file from a crashed run would show as drift and fail closed.",
+    "ADV-3 and ADV-4 in preview.sh: preview.sh:112-183 replaces both find calls with one Python scan. The scan lstats the docs root, walks every folder with listdir, refuses a symlink or another non-regular entry, and reports the first unreadable entry. It runs after the input check and before mkdir and cp, so no refusal writes near the preview folder. Round 5 finding A5-1 (an unreadable directory gave exit 1 and a find message) is fixed and pinned by a test that fails on 8eafbc3. Round 5 finding A5-2 (a FIFO hung the run) is fixed and pinned the same way. Round 5 finding A5-3 (the dangling-link line was unasserted) is fixed by the exact-line test at adversarial.test.ts:263-273.",
+    "ADV-6 to ADV-9 in real-work.ts: real-work.ts:75 defines isCount as a non-negative safe integer, real-work.ts:80 refuses a sum that leaves the safe range, and real-work.ts:88 validates each row before any write. real-work.ts:469-477 builds the coverage output from an explicit key list of spec EV4 plus unknown_runs and other_runs, so no extra key reaches the public file. real-work.ts:350 and real-work.ts:460 build ratings and work types with Object.fromEntries, so a `__proto__` name stays an own key. All refusals run before the mkdir at real-work.ts:502, so no write happens on a refused run.",
+    "ADV-12 and ADV-13 in leak-guard.test.ts: the walk returns {rel, text} entries, a symlink contributes its link line plus the target text when the target is a plain file, and hits() compares lower-cased text. Nested directories, regular files, and file symlink targets are all still scanned, and the match is now a superset of the old one. The one narrowing is a directory target, recorded as A6-3.",
+    "Anti-pattern checks: A3 clean. Grep for digit-only count patterns in adversarial.test.ts returns 0 matches; the tests assert exact lines, exit codes, and full snapshots. A4: each missing-deliverable fixture (unreadable folder, FIFO, docs root link, record without owner, locked destination, hostile export) fails on 8eafbc3 and passes at 2a9d421, so the checks are not vacuous. Two tests permit exit 0 where the name promises exit 2; recorded as A6-4. A5 clean: plan 1.18 and 1.19 counts match my reruns.",
+    "Callers and scope: `grep -n '^export' harness/model-guide/publish.ts harness/model-guide/real-work.ts` prints nothing, so the build-graph scan has no exported symbol to trace. Grep for these three tool names outside model-guide-tests finds no caller in harness scripts, package.json, or cron-daily.sh. The only callers are the tests and the plan commands, and both run the new code.",
+    "No probe and no test wrote a file under the real docs/. All probes ran in git archive copies under /tmp/opencode/r6. The only files I wrote in the repository are review-a-2a9d421.json and review-a-2a9d421.log under measure/runs/model_guide/."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 2a9d4213c73c2ed3fdc53ae931029f910092735d; git diff --name-only 0acceea..2a9d421; git diff 0acceea..2a9d421 --stat; git status --short docs | wc -l -> 0",
+    "git archive 8eafbc3 | tar -x -C /tmp/opencode/r6/red, plus a node_modules symlink; cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, Tests 20 failed | 29 passed (49)",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 49 passed (49)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts ... -> exit 0, 85 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts ... -> exit 0, 15 passed",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts ... -> exit 0, 19 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts ... -> exit 0, 2 passed",
+    "bash -n harness/model-guide/preview.sh -> exit 0",
+    "git archive 2a9d421 | tar -x -C /tmp/opencode/r6/head, plus a node_modules symlink; python3 /tmp/opencode/r6/probe.py -> PROBE RESULT: pass=65 fail=0",
+    "grep -rn 'bad docs root|bad approval record|publish: write|input-check: input|input-check: json' harness/model-guide-tests -> 0 matches",
+    "grep -n '^export' harness/model-guide/publish.ts harness/model-guide/real-work.ts -> no exports; grep -rln 'preview.sh|publish.ts|real-work.ts' harness --include=*.sh --include=*.ts -> no caller outside model-guide-tests",
+    "grep -c 'adversarial.test' measure/tracks/model_guide/test-strategy.md -> 0; grep -c 'leak-guard' measure/tracks/model_guide/test-strategy.md -> 0"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial.test.ts",
+    "harness/model-guide-tests/leak-guard.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "All 65 probes on a 2a9d421 archive pass and every ADV fix holds, but leak-guard.test.ts:34-47 stops scanning a directory symlink target and publish.ts:249 leaves the rename loop unwrapped."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The 20 failures at 8eafbc3 (20 failed, 29 passed) become 49 passed at 2a9d421, yet five new header lines have no assertion and adversarial.test.ts:441-447 accepts exit 0 where the name says exit 2."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "`git diff --name-only 0acceea..2a9d421` prints only the 5 harness files and plan.md, and `git status --short docs` prints 0 lines."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Plan tasks 1.18 and 1.19 and green-p1-8eafbc3.log state 20 failed then 49 passed, 85, 15, 19, and 2, and my four single-file runs and my red run match every number."
+    }
+  ]
+}

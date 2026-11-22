@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13y
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: ff4e009
+resulting_head: 6f6628526508cb2f2014ed794f2b239d023031f1
+commits: c294988 test(model_guide): Red task 4.13y error-line scan and strict token numbers; 6f66285 measure(model_guide): record Red task 4.13y
+red_test_command: bun test harness/model-guide-tests/review-run.test.ts | cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+failing_tests: review-run Y1 probe unreachable key on stderr; Y2 probe region key on stderr; Y3 pass region key on stderr; Y4 1e20 and 2^53+1 counted with flag true; Y5 two-event -5/10 and 0.5/0.5 sums with flag true; Y6 single -5 erased valid fields; Y7 tokens-less step_finish skipped with flag true; Y10 2^60 counted with flag true; Y11 stdout region error event gave open; Y12 key in stdout error event gave open; Y13 probe stdout region error event gave unreachable. Guards passing at HEAD: Y8 non-number field flag false; Y9 two-event sums. judge-run JY1 key on stderr reached stdout and run record. Earlier cases all green: review-run 70 pass 11 fail (68 old + 2 guards pass); judge-run 39 passed 1 failed.
+handoff: Green 4.13z implements in review-run.sh and judge-run.sh: scan the error file with scan_output before reading the error line and use the fixed text the error output held a credential value on a hit (probe line, probe record error, pass record errors, judge echo, judge run record errors); count a token field only when it is a non-negative safe integer (1e20, negatives, fractionals, 2^53+1, 2^60 each set tokens_complete false and contribute 0 while valid fields keep their sums); mark a step_finish event with no tokens field incomplete; decode stdout type:error events of the envelope {"type":"error","timestamp":<n>,"sessionID":<s>,"error":{...}} for the region-blocked state and the error line with the same key redaction. Fake modes added: error_event object prints the envelope on stdout; raw_lines strings print one stdout line each. Fixed text pinned by tests: the error output held a credential value.
+END_MEASURE_AGENT_RESULT

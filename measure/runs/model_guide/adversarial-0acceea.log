@@ -1,0 +1,36 @@
+# Adversarial P1 model_guide at 0acceea
+
+Audit and tests only. No production file changed. One commit: f014ee8 (tests).
+
+Result: 49 tests added in harness/model-guide-tests/adversarial.test.ts. 27 pass and 22 fail on 0acceea.
+Each failing test asserts a promise of a tool header or of the spec. None was weakened.
+
+Blocking defects for Green:
+- ADV-1: publish.ts does not lstat the docs root. A docs root symlink lets the copy write into the link target at exit 0.
+- ADV-2: publish.ts ignores approved_by and date. A record with only a files section publishes at exit 0.
+
+Nonblocking defects for Green: ADV-3 to ADV-13 (see the JSON file).
+- ADV-3 preview.sh find exits 1 on an unreadable folder, not the promised refusal line and exit 2.
+- ADV-4 a FIFO under docs hangs the preview.sh hash step.
+- ADV-5 publish prints an empty drift path for an unreadable docs root.
+- ADV-6 real-work.ts throws on a missing export, a folder export, bad JSON, a null root, a bad route, and deep nesting.
+- ADV-7 extra coverage keys of the export reach the public real-work.json.
+- ADV-8 a key named __proto__ vanishes from work types and ratings.
+- ADV-9 negative and huge counts give a rate above 1 and None cells.
+- ADV-10 a preview base of null throws a TypeError.
+- ADV-11 a failed copy leaves a half set in docs.
+- ADV-12 and ADV-13 the leak guard throws on a symlink and misses an upper-case SHA-256.
+
+Kept without a test: B4-1 (hard link, no promise) and B4-2 (race). A5-3 is closed by a passing test.
+The four existing test files pass at 0acceea: 85, 15, 19, 2.
+
+MEASURE_AGENT_RESULT
+role: adversarial
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 0acceeaaa9456f30c9f3c72f67212971e55a5d39
+result_file: measure/runs/model_guide/adversarial-0acceea.json
+retry_recommendation: route_to_green
+summary: 49 adversarial tests added (commit f014ee83940e312183ddc8eefbb4b9db845cb325); 22 fail on 0acceea and show 2 blocking defects (docs root symlink write-through, approval record without approved_by or date) and 11 nonblocking defects for Green.
+END_MEASURE_AGENT_RESULT

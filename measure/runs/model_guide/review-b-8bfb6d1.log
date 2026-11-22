@@ -1,0 +1,12 @@
+Review B (security and data handling) of Phase 3 of model_guide, run at HEAD 8bfb6d1442214a2a0a64eb058329462edfacd1c2. The six Phase 3 test suites are green (78 tests). The gh boundary is api GET only with no shell. The public manifest and score file hold no key material, and the reviewer prompt holds no plant hint. Two blockers route to Green. P3B1-1: leak-check.ts silently skips staged files with a non-ASCII path, because it parses the C-quoted output of git diff --cached --name-only; a staged seeded line under such a name exits 0 (demonstrated in /tmp). P3B1-2: no write tool checks for a planted symlink at its output target; review-set and review-score wrote through planted links to outside files (demonstrated in /tmp), the same primitive that Phase 2 rated a blocker. One major (the private-path realpath gap) and three nits. A2 is not applicable: no publish flip in the range. A6 is clean: tracks.md claims no resolved security state. Full detail, evidence, and probes: review-b-8bfb6d1.json.
+
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: fail
+audited_head_sha: 8bfb6d1442214a2a0a64eb058329462edfacd1c2
+result_file: measure/runs/model_guide/review-b-8bfb6d1.json
+retry_recommendation: retry_implementation
+summary: Phase 3 tools pass all 78 tests and hold the secrecy rules in the main cases, but two blockers route to Green: leak-check.ts silently skips staged files with a non-ASCII path (git quotepath, demonstrated exit 0 on a staged seeded line), and none of the four write tools refuses a planted symlink at its output target (review-set and review-score wrote through planted links, demonstrated). One major (private-path realpath gap in leak-check) and three nits. A2 not applicable, A6 clean.
+END_MEASURE_AGENT_RESULT

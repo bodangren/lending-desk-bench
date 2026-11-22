@@ -1,0 +1,9 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+audited_head: f21bec211ab482ef0d721b7f1a3b0affbec52dee
+tests: review-run 35 passed, adversarial-p4-runner 14 passed; fake-opencode and mg-adv-r orphan reads print nothing
+findings: none blocking, none major
+notes: watcher kills one PID never a group and leaves no process; probe honors lock quota scan isolation trap; token abuse report in json summary; routes.json holds allowed routes only
+result_path: measure/runs/model_guide/review-b-f21bec2.json
+END_MEASURE_AGENT_RESULT

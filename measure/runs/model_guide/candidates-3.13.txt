@@ -1,0 +1,51 @@
+Task 3.13 evidence — the candidate lists (spec D4, FR-8)
+
+Private folder (spec line 204): $HOME/.local/share/lending-desk-bench/model-guide/
+It has mode 700. Its candidates folder holds the two lists and nothing else.
+
+gh auth status (read-only): exit 0, logged in to github.com.
+
+All commands run from the harness folder of this checkout:
+  npx tsx model-guide/pick-diffs.ts --repo <owner/name> --set mg-2026-11a --private $HOME/.local/share/lending-desk-bench/model-guide
+
+Attempt history:
+
+1. First attempt, before the output buffer was large enough.
+   monorepo: exit 2, stdout `pick-diffs: gh api failed`. Cause: spawnSync
+   ENOBUFS, the list output is 25,978,347 bytes against the 1,048,576
+   default ceiling. No output file.
+   forge: exit 2, the same line, list output 5,468,608 bytes. No output
+   file.
+
+2. Second attempt, a network outage.
+   monorepo: exit 2 after 2047 s, `pick-diffs: gh api failed`.
+   forge: exit 2 after 10 s, the same line.
+   `gh api rate_limit` printed `error connecting to api.github.com` at
+   12:28, and api.github.com answered again at 12:31. No output file.
+
+3. Third attempt, three transient gh errors with a working network.
+   monorepo: attempt 0 exit 2 after 3137 s, attempt 1 exit 2 after 368 s,
+   attempt 2 exit 2 after 194 s, each with `pick-diffs: gh api failed` and
+   curl code 200 to api.github.com. Give up after 3 attempts. No output
+   file.
+   forge: attempt 0 exit 0 after 1634 s.
+   Output: $HOME/.local/share/lending-desk-bench/model-guide/candidates/bodangren__advantage-forge.json
+   qualified 267, selected 12, rejected 1280.
+
+4. Fourth attempt, after the bounded retry of a transient gh error.
+   The guard logged need=3900 remaining=2913, slept 324 s to a fresh
+   window, then need=3900 remaining=5000.
+   monorepo: attempt 0 exit 0 after 4840 s, empty stdout and stderr.
+   Output: $HOME/.local/share/lending-desk-bench/model-guide/candidates/Reading-Advantage-Thailand__reading-advantage-monorepo.json
+   qualified 702, selected 12, rejected 6256.
+
+Counts read from the two output files:
+
+  repo                                        qualified  selected  rejected
+  Reading-Advantage-Thailand/reading-advantage-monorepo   702      12     6256
+  bodangren/advantage-forge                                267      12     1280
+
+Verify: 702 and 267 are both 7 or more, so no rule was widened and no
+answer from the PM is needed. Both lists hold schema
+`model-guide-candidates/1` and set_id `mg-2026-11a`. No repository file
+changed, and no file of a source repo is written anywhere here.

@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "baseline_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "role_base_sha": "8bfb6d1442214a2a0a64eb058329462edfacd1c2",
+  "audited_head_sha": "8bfb6d1442214a2a0a64eb058329462edfacd1c2",
+  "status": "fail",
+  "summary": "All six Phase 3 test files pass at HEAD with the labeled counts (17, 15, 21, 13, 10, 16), and the scorer matches D10 to D13 on window, nearer plant, duplicates, the 30-finding cap, invalid reviews, provisional passes, and rank; the 3.3a end-to-end test and T7b prove the score file reaches guide.ts and a provisional pass keeps its rank. One blocker: adjudicate.ts keys findings by a per-route position, so two routes cannot each get their own verdict, and scores can change. Five nonblocking findings cover the queue match window, two missed-count defects, the D7 key schema check, and one stale strategy line.",
+  "blocking_findings": [
+    "P3A1-1 [Blocker] review-a: adjudicate.ts gives a finding the id `<diff_id>#F<n>` from its position in one route's output (line 264), but queue merges every route into one file and apply stores one verdict per id (lines 342-343). Reproduced: two routes with different claims at index 1 both emit id `forge-01#F1`, the two judge files can hold only one value for that id, and one judge `false-claim` then counts as a false claim for both routes. D11 says one finding is the unit and each finding gets its own verdict. False-claim counts, real-defect counts, and provisional flags can move between routes, which changes scores and rank. Tests J1 to J4 never run apply and the scorer for a second route with different claims; J1 dedupes identical claims only. Rationale: the track A rank depends on X in max(0, 100 F / W - 2 X), and control diffs make an index collision certain."
+  ],
+  "nonblocking_findings": [
+    "P3A1-2 [Major] review-a: adjudicate.ts matchesPlant uses WINDOW = 2 (lines 81 and 164), so a finding at exactly new_lines[0] - 3 or new_lines[1] + 3 is queued as unmatched. D10 and the tool's own doc comment (lines 24-26) define the window as plus or minus 3, and review-score.ts uses 3. Reproduced: a finding at line 7 against plant [10, 15] is queued, while the scorer counts it found. A boundary finding judged real-defect then writes real_defects into the key and the PM hand-off for a finding D10 says must never reach adjudication. No test pins the queue match boundary.",
+    "P3A1-3 [Major] review-a: review-score.ts lines 275-277 skip the class and severity missed loop for an invalid review, so the plants of that diff are not counted missed in by_class and by_severity. This contradicts review-score.ts lines 48-53, which say a plant of an invalid diff is missed, and the recorded decision that missed counts plants no counted finding pointed at. Reproduced: one invalid review gives top-level missed 48, sum(by_class.missed) 44, and by_class.C1 missed 5 of 6. Test R4 asserts invalid_reviews, found, and score only.",
+    "P3A1-4 [Nit] review-a: the top-level missed (review-score.ts line 433, setPlants.length - counts.found) uses a different definition than by_class and by_severity missed, which count plants that no finding pointed at. Reproduced with the nearer-plant fixture: one record reports top-level missed 47 and sum(by_class.missed) 46. The recorded decision text matches only the class-level fields. One definition or the other needs to change so the two levels agree.",
+    "P3A1-5 [Major] review-a: review-set.ts does not check the D7 key schema that FR-8 names. Reproduced: delete new_lines, delete file, or delete witness from one plant, or set severity to critical; each mutation gives exit 0 and writes the manifest. A plant without file or new_lines can never match, and a severity outside the D6 scale gets weight 0 in review-score.ts (WEIGHTS[severity] ?? 0). Acceptance 9 treats a lint pass as a valid set.",
+    "P3A1-6 [Nit] review-a: test-strategy.md section 7 says review-score.test.ts calls the scorer in process. The test spawns a subprocess CLI (review-score.test.ts line 224). The decision is recorded in red-p3-a6e34c5.log and is sound, but the strategy line is false."
+  ],
+  "evidence": [
+    "git rev-parse HEAD returned 8bfb6d1442214a2a0a64eb058329462edfacd1c2, equal to audited_head_sha, at the start and at the end of the audit. No publish commit landed during the audit.",
+    "Scope: the model_guide commits of 39d5077..8bfb6d1. The daily_model_schedule commits and publish commit f6c2920 were excluded per the brief.",
+    "Commands: cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot for pick-diffs, review-set, review-score, adjudicate, leak-check, guide. All six exit 0 with Tests 17, 15, 21, 13, 10, 16 passed, each labeled.",
+    "A4: red-3.1.txt, red-3.2.txt, red-3.3.txt, red-3.4.txt, and red-3.5.txt each record every test of the file failing at the base with 'production file is missing', and red-3.3a.txt records T7b failing at its base. requireProduction() throws when the tool is absent, so no Phase 3 test passes on a missing deliverable.",
+    "A3: the six Phase 3 test files assert counts with toBe and toHaveLength. No digit-only count assertion was found.",
+    "A5: plan.md holds no 'all checks pass' and no 'PASS=N, FAIL=0' text. The labeled counts in green-p3-*.log (17, 15, 21, 13, 10, 16) match the reruns at HEAD, and the plan run counts (three, four, five, six, seven, eight, 14) match the tests_run lines of the cited logs.",
+    "P3A1-1 reproduction: node script copied fixtures/review to /tmp/opencode/p3a-repro, wrote route_a with claims at index 1 and 2 and route_b with a different claim at index 1, ran adjudicate.ts queue, and read queue.json. Output: ITEM forge-01#F1 line 60 claim A; ITEM forge-01#F1 line 70 claim B; ITEM forge-01#F2 line 80; duplicate ids {forge-01#F1:2}. apply with both judges false-claim on forge-01#F1 wrote one verdict, and the scorer counted false_claims 1 for route_a and false_claims 1 for route_b from that single slot.",
+    "P3A1-2 reproduction: a queue run with one finding at line 7, class C1, against plant P1 [10, 15] queued the item, though D10's window 7 to 18 matches it and review-score.ts counts it found.",
+    "P3A1-3 reproduction: a score run with forge-01 holding no JSON block returned exit 0, invalid_reviews 1, top missed 48, sum(by_class.missed) 44, by_class.C1 {found:0,missed:5} with 6 C1 plants in the set.",
+    "P3A1-4 reproduction: a score run with the nearer-plant fixture returned top missed 47 and sum(by_class.missed) 46 in one record.",
+    "P3A1-5 reproduction: four lint mutations (delete new_lines, delete file, delete witness, severity critical) each returned exit 0 with the manifest written.",
+    "Decision accepted: review-score is a subprocess CLI. The deviation is recorded in red-p3-a6e34c5.log before implementation, FR-9 describes a command, and the tests assert exit codes, stdout, and the written file. Consequence: the stale strategy line of P3A1-6.",
+    "Decision judged partial: missed counts the plants that no counted finding pointed at, whatever the class. It holds for by_class and by_severity on valid reviews (the nearer-plant test gives C2 {found:0,missed:5} with 6 C2 plants and one pointed plant). It fails for invalid reviews (P3A1-3) and at top level (P3A1-4).",
+    "Decision accepted: the K4 19-character boundary is not covered. leak-check.ts line 52 sets MIN_SEEDED_LENGTH = 20 and line 132 tests length >= 20, so a 19-character line passes by construction. Plan line 3.5 and red-3.5.txt record the deferral: the plan forbids the fixture that would exercise it.",
+    "Decision accepted: routes[].passes holds the pass records. red-3.3a.txt shows guide.ts refused the count form with exit 2 and 'input-check: scores'. Test R6, the 3.3a end-to-end test (route named with 'track A: worst 3.8 (n=3)'), and T7b pass at HEAD.",
+    "Secrecy: S1 and S5 assert the manifest field set and forbid key names at any depth; R6 does the same for the score file and forbids paths and finding text; review-prompt.md holds no key field, plant line, witness, operator, or finding text; the queue lives in the private folder, holds no route name and no verdict (J3), and holds claim text as D11 requires.",
+    "Scope: every Phase 3 feat and test commit touches only its task's files (git show --stat for 84553cd, 2dda97b, cf3781d, 0959cc2, 5097acc, 9483f01, d095a38, 2acd4fa, f023951, fd96d3b, fd42d41, 9d7f3f2, d297316).",
+    "git diff --stat 39d5077..8bfb6d1 over harness/provenance.ts, harness/tests, harness/opencode-host.sh, harness/opencode-credential.sh, harness/model-guide/routes.json, and harness/package.json prints nothing. git status --short docs/ prints nothing. harness/model-guide/routes.json does not exist.",
+    "D4 list call checked against the real binary: gh 2.46.0 'gh api repos/bodangren/advantage-forge/commits?per_page=100 --paginate' (1547 commits) produced one JSON array that JSON.parse accepted (PARSE OK, 1547 items), so pick-diffs.ts parses multi-page lists.",
+    "Plan rows 3.1 to 3.11 name SHAs that exist in the audited range and cite evidence files that exist: red-3.1.txt to red-3.5.txt, red-3.3a.txt, green-p3-192da41.log, green-p3-7e52d2e.log, green-p3-35be00c.log, green-p3-5fc37de.log, green-p3-5eeceab.log, green-p3-6e49630.log, green-p3-17ebb29.log. Task 3.12 is [~] and tasks 3.13 to 3.16 are [ ].",
+    "Untracked files harness/wt.txt, tech-debt.md, and .opencode/ exist in the worktree. They are not part of the audited commits."
+  ],
+  "commands": [
+    "cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 17 passed (17)",
+    "cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 15 passed (15)",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 21 passed (21)",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 13 passed (13)",
+    "cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 10 passed (10)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 16 passed (16)",
+    "node repro: adjudicate queue over two route folders -> duplicate queue id forge-01#F1; apply plus two score runs -> one verdict counted for both routes",
+    "node repro: adjudicate queue with finding line 7 vs plant [10,15] -> item queued though D10 matches",
+    "node repro: review-score with one invalid review -> top missed 48, sum(by_class.missed) 44",
+    "node repro: review-set lint with four D7 key mutations -> each exit 0, manifest written",
+    "git diff --stat 39d5077..8bfb6d1 -- <protected paths> -> empty; git status --short docs/ -> empty",
+    "gh api 'repos/bodangren/advantage-forge/commits?per_page=100' --paginate | JSON.parse check -> PARSE OK, 1547 items"
+  ],
+  "changed_files": [
+    "harness/model-guide/pick-diffs.ts",
+    "harness/model-guide/review-set.ts",
+    "harness/model-guide/review-score.ts",
+    "harness/model-guide/adjudicate.ts",
+    "harness/model-guide/leak-check.ts",
+    "harness/model-guide/review-prompt.md",
+    "harness/model-guide/guide.ts (fd96d3b)",
+    "harness/model-guide-tests/pick-diffs.test.ts",
+    "harness/model-guide-tests/review-set.test.ts",
+    "harness/model-guide-tests/review-score.test.ts",
+    "harness/model-guide-tests/adjudicate.test.ts",
+    "harness/model-guide-tests/leak-check.test.ts",
+    "harness/model-guide-tests/guide.test.ts (T7b)",
+    "harness/model-guide-tests/fixtures/fakes/gh",
+    "harness/model-guide-tests/fixtures/fakes/gh-commits.json",
+    "harness/model-guide-tests/fixtures/review/",
+    "measure/tracks/model_guide/plan.md (task rows)"
+  ],
+  "test_strategy_violations": [
+    "test-strategy.md section 7 says review-score.test.ts calls the scorer in process, but the test spawns a subprocess CLI (P3A1-6, recorded decision red-p3-a6e34c5.log)."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "adjudicate.ts cannot give each finding its own verdict across routes (P3A1-1, reproduced) and uses a plus or minus 2 match window against D10's plus or minus 3 (P3A1-2, reproduced); the scorer, lint, and leak check pass their main cases."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "All six files fail fully at their red bases and pass at HEAD with labeled counts, but no test covers cross-route verdicts, the queue's match boundary, the D7 key schema, or class counts for an invalid review."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat for the 13 Phase 3 commits shows only each task's files, and the protected-path diff and git status --short docs/ are empty across 39d5077..8bfb6d1."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Green logs carry labeled test counts that the reruns match, and every finding has a file:line or a command result; some plan evidence lines cite logs that I only spot-checked."
+    }
+  ]
+}

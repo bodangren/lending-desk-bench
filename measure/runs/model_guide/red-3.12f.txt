@@ -1,0 +1,39 @@
+Red task 3.12f — the adversarial defect tests fail first
+Base: 1e368ba0de3427b206035a2233c139c8b817ac5a
+
+Command 1:
+  cd harness && npx vitest run model-guide-tests/adversarial-p3.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  2 failed | 21 passed (23)
+
+Failed test names (2):
+1. adversarial phase 3: claim identity and the rule of two > P3X1-1 two different claims split by whitespace get two queue items
+   reason: `expected 1 to be 2`. The queue holds one item. adjudicate.ts
+   claimKey joins the claim fields with a space, so title "a b" + reason
+   "c" and title "a" + reason "b c" give the same key; claimId gives two
+   ids. Spec D11: one queue item and one verdict per distinct claim.
+2. adversarial phase 3: set lint edges > P3X1-2 a plant outside every hunk of its diff is refused
+   reason: `expected +0 to be 2`. The lint exits 0 on a key whose plant has
+   `new_lines` [9999, 9999], a range on no line of its diff. Spec D5 and
+   FR-8: each plant changes `+` lines of the seeded diff.
+
+Both cases now use `it`; only the two `it.fails` markers changed. The
+assertions were checked against the spec and pin the right behavior: P3X1-1
+computes claimId for the two claims and asserts they differ and that the
+queue holds 2 items; P3X1-2 asserts exit 2. No assertion changed.
+
+P3X1-2 refusal line for Green 3.12g: the test asserts the exit code only,
+so Green must add one named line. The pinned name is
+`lint: plant-line: <diff_id> <plant_id>` for a plant whose new_lines range
+holds no added line of its diff. Every other lint line stays as it is.
+
+Command 2:
+  cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Exit: 0
+Tests  20 passed (20)
+
+Command 3:
+  cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Exit: 0
+Tests  18 passed (18)

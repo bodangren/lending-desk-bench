@@ -1,0 +1,57 @@
+Red task 1.10: review fixes, round 1.
+
+Commands:
+- cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  Exit code: 1
+- cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  Exit code: 1
+- cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  Exit code: 0
+
+Failed test names by finding:
+
+A1:
+- A1 refuses the exact docs path before any write
+- A1 refuses the docs path with a trailing slash before any write
+- A1 refuses the docs path with a double slash before any write
+- A1 refuses a missing folder under docs without creating it
+- A1 refuses an existing folder under docs before any write
+- A1 refuses the relative docs path from the repo root
+- A1 refuses the dot-relative docs path from the repo root
+- A1 refuses the parent-relative docs path from the harness folder
+- A1 refuses a docs path with a parent segment before any write
+- A1 refuses an outside symlink that points to docs before any write
+- A1 refuses the repo root because docs is under it
+
+A2:
+- A2 refuses a file added under docs after the preview
+- A2 refuses a file added under a new docs subfolder after the preview
+- A2 names each of two files added under docs after the preview
+
+A3:
+- A3 refuses a PM sum line that names another file with the manifest line
+
+B1:
+- B1 refuses the parent approval path before any copy
+- B1 refuses the parent-segment approval path before any copy
+- B1 refuses the absolute approval path before any copy
+- B1 refuses the dot-relative approval path before any copy
+- B1 refuses the double-slash approval path before any copy
+- B1 refuses the backslash approval path before any copy
+- B1 refuses the empty approval path before any copy
+- B1 refuses an approval record without a files section
+- B1 refuses an approval record with an empty files section
+
+B2:
+- B2 refuses a script value in the numeric coverage field without writing a file
+
+B3:
+- No failed test. The new leak guard passes.
+
+C2:
+- C2 refuses publish without preview-base.json and writes no file
+
+C4:
+- C4 refuses publish without --preview with a usage line
+- C4 refuses an unknown publish flag with a usage line and writes no file
+- C4 refuses an unknown real-work flag with a usage line and writes no output file

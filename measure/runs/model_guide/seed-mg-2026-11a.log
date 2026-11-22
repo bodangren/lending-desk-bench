@@ -1,0 +1,78 @@
+route: openai/gpt-6.1-sol#high
+start: 2026-11-16T09:09:04.567Z
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bash -c 'cd harness && npx tsx model-guide/review-set.ts lint mg-2026-11a --private "$P" --sets /tmp/opencode/seed-11a/sets --created 2026-11-16'
+exit: 2
+counts: source_diffs=0 plants=0 blockers=0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+command: gh api --method GET repos/<selected-repo>/commits/<selected-commit>
+exit: 0
+counts: source_diffs=14
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh node /tmp/opencode/seed-11a/fetch.mjs
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh node /tmp/opencode/seed-11a/seed.mjs
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh node /tmp/opencode/seed-11a/self-check.mjs
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bash -c 'cd harness && npx tsx model-guide/review-set.ts lint mg-2026-11a --private "$P" --sets /tmp/opencode/seed-11a/sets --created 2026-11-16'
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh npx --prefix harness tsx harness/model-guide/review-set.ts lint mg-2026-11a --private "$P" --created 2026-11-16
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bash -c 'cd harness && npx tsx model-guide/leak-check.ts --private "$P" --repo /home/daniebo/Desktop/lending-desk-bench --preview /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/data/sets'
+exit: 0
+command: node /tmp/opencode/seed-11a/check-manifest.mjs
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh node /tmp/opencode/seed-11a/seed.mjs
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh node /tmp/opencode/seed-11a/self-check.mjs
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bash -c 'cd harness && npx tsx model-guide/review-set.ts lint mg-2026-11a --private "$P" --sets /tmp/opencode/seed-11a/sets --created 2026-11-16'
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh npx --prefix harness tsx harness/model-guide/review-set.ts lint mg-2026-11a --private "$P" --created 2026-11-16
+exit: 0
+command: node /tmp/opencode/seed-11a/check-manifest.mjs
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bash -c 'cd harness && npx tsx model-guide/leak-check.ts --private "$P" --repo /home/daniebo/Desktop/lending-desk-bench --preview /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/data/sets'
+exit: 0
+counts: diffs=14 seeded_diffs=12 controls=2 plants=44 blockers=19 major=6 minor=19
+counts: C1=3 C2=3 C3=4 C4=4 C5=3 C6=5 C7=3 C8=18 C9=1
+counts: private_raw_responses=14 private_source_diffs=14 private_seeded_diffs=14 private_keys=14
+command: git --no-pager status --short
+exit: 0
+command: git diff --check -- measure/tracks/model_guide/plan.md
+exit: 0
+command: git add -- measure/tracks/model_guide/plan.md
+exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bash -c 'cd harness && npx tsx model-guide/leak-check.ts --private "$P" --repo /home/daniebo/Desktop/lending-desk-bench --preview /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/data/sets'
+exit: 0
+command: git commit --only measure/tracks/model_guide/plan.md -m <requested-message>
+exit: 0
+command: git show --format= --name-only HEAD
+exit: 0
+counts: committed_files=1
+counts: pilot_copy_diffs=6 pilot_copy_plants=20 pilot_copy_blockers=11
+end: 2026-11-16T09:19:00.948Z

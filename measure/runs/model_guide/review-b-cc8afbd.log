@@ -1,0 +1,20 @@
+MEASURE_AGENT_RESULT
+status: fail
+role: measure-review-b-security
+track: model_guide
+audited_head_sha: cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 3c4e4623c67f1e14c8ab75b2e6b007b5183f2eae
+scope_range: 66fe1accf71c0f881fffa58ff05bb0a94407477f..cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5
+security_applicability: applicable
+tests: quota.test.ts 17 passed; review-run.test.ts 52 pass 0 fail; judge-run.test.ts 30 passed; pgrep scans after each gate print no line of mine
+blocking_findings: B1 quota.ts:273 reads windows["week"] but the live /api/quota/opencode-go answer names it windows["weekly"] (night-4.11.sh:75, probe-4.10.sh:56, cron-daily.sh:539), so weekly 100 gives state ready (reproduced); B2 quota.ts:271-279 returns ready when a required Go window is absent, though spec D15 says a missing field is stopped (reproduced with {"5h":10}, {"day":10}, {"week":10})
+nonblocking_findings: N1 runner keys Go on quota_source while quota.ts keys on quota_provider; N2 no negative-value test and no live "weekly" test
+test_strategy_violations: TS1 the Go tests fabricate "week" (quota.test.ts:285 and both fake servers) and never exercise the live "weekly" shape
+live_contract_violations: LC1 quota.ts:273 window name mismatch with the live answer; reproduced state ready at weekly 100
+prod_wiring_violations: none
+route_parity_violations: none
+process_hygiene: after each gate both pgrep scans printed nothing; at 01:05 a transient fake-opencode pair and one quota-server from a concurrent session appeared (temp /tmp/mg-review-run-SkSrFK, /tmp/mg-review-fake-RHtsam) and were gone at the next check; I did not start or stop them
+retry_recommendation: retry_implementation
+confidence: 0.92
+END_MEASURE_AGENT_RESULT

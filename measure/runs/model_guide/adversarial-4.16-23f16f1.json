@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "role": "measure-adversarial-testing",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.16",
+  "status": "pass",
+  "summary": "The narrow token-sum gate passes. Seven new risk cases run in both runners with no new token or answer defect. No real-key leak was found.",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "23f16f18787da5190dc8563e0373d48233653927",
+  "audited_head_sha": "23f16f18787da5190dc8563e0373d48233653927",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A-F1 [Nit, carried over] The deterministic clock floors call start to whole seconds. A stale message created after the floor but before call entry can pass the freshness filter in both runners. The named case stays skipped. A fresh session excludes this response. Route to backlog row 4.15 under the PM cap.",
+    "P4F-2 [Nit, carried over] A matching top-level sessionID hides a foreign info.sessionID in both selectors. Native messages omit these owner fields. The named case stays skipped. Route to backlog row 4.15 under the PM cap.",
+    "P4F-3 [Nit, carried over] Both selectors accept malformed terminal metadata in synthetic fixtures. The ten named cases stay skipped. Native values are expected to be valid. Route to backlog row 4.15 under the PM cap."
+  ],
+  "evidence": [
+    "git rev-parse HEAD at entry returned 23f16f18787da5190dc8563e0373d48233653927. It matches role_base_sha and the pre-adversarial HEAD.",
+    "I read the Measure index, model_guide metadata and routing files, spec D9-D15, Phase 4b, test-strategy section 14.12, and the anti-pattern catalog.",
+    "Task 4.16 carries [~]. The explicit model_guide assignment governs this role. I changed no domain_trust path or marker.",
+    "The exact remediation diff a05a0f4 changes only review-run.sh and judge-run.sh. Both runners list every current-call message once per id and emit a step_finish line for each call.",
+    "I read reviews A, B, and C on 23f16f1. All three passed under the PM cap. None found a real-key leak.",
+    "I added seven risk cases to adversarial-p4f.test.ts. Each case runs the real review and judge entry points against synthetic message pages.",
+    "The new cases cover a repeated id in one page, an id repeated across pages, a finishless step with tokens, partial token keys, an all-zero bundle, large safe integers, and an unsafe integer field.",
+    "The single-file run exits 0: Tests 62 passed | 14 skipped (76). All fourteen new cases pass in both runners.",
+    "The repeated-id cases store 117 tokens, not 156 or 10. The finishless case stores 69. The partial-key case stores 49 with tokens_complete false.",
+    "The zero-bundle case stores 0 tokens with tokens_complete true. The large case stores exact sums of 3000000000000000 and 6004500000000000 with tokens_complete true.",
+    "The unsafe-field case stores input 0 with tokens_complete false. No new case exposes a token or answer defect.",
+    "A4: the prior round proved the phase-acceptance role gate rejects an all-[~] fixture. This narrow round changes no plan marker. A7: the existing A7 key-shape case passes in both runners.",
+    "A5: plan.md has no match for all checks pass or PASS=N.*FAIL=0. The Green r9 line cites a historical log, not a current gate claim.",
+    "Both runner syntax checks pass. git diff --check passes on the test file. git status shows only the four pre-existing untracked paths.",
+    "The working and committed test file SHA-256 are both 15a15c455bd6921cf9d472a8b05e794e11538b39fa1585465056422e1c3ae47d.",
+    "git diff --name-only 23f16f1..7319344 lists only harness/model-guide-tests/adversarial-p4f.test.ts.",
+    "A final pgrep finds no fake, quota server, or p4f vitest process. No fixture folder remains.",
+    "No live request, credential read, POST or DELETE to port 38307, browser call, opencode CLI, or openchamber CLI ran.",
+    "The result is provisional. It does not accept Phase 4b. No finding blocks under the PM cap."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 23f16f18787da5190dc8563e0373d48233653927",
+    "git show a05a0f4 -- harness/model-guide/review-run.sh harness/model-guide/judge-run.sh -> token-sum change inspected",
+    "git diff --stat a05a0f4 -> two runners, 26 insertions, 8 deletions",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4f.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 62 passed; 14 skipped (76); 199.44s",
+    "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass' measure/tracks/model_guide/plan.md -> no match",
+    "bash -n harness/model-guide/review-run.sh && bash -n harness/model-guide/judge-run.sh -> exit 0",
+    "git diff --check -- harness/model-guide-tests/adversarial-p4f.test.ts -> exit 0",
+    "sha256sum harness/model-guide-tests/adversarial-p4f.test.ts -> 15a15c455bd6921cf9d472a8b05e794e11538b39fa1585465056422e1c3ae47d",
+    "git commit -m 'test(model_guide): adversarial 4.16 r3 on Green r9' -m 'track_id: model_guide' -- harness/model-guide-tests/adversarial-p4f.test.ts -> 7319344",
+    "git diff --name-only 23f16f1..HEAD -> harness/model-guide-tests/adversarial-p4f.test.ts only",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]|[v]itest.*adversarial-p4[f]' -> no process",
+    "find /home/daniebo/.cache/opencode -maxdepth 1 -name 'mg-p4f-*' -> no folder"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4f.test.ts",
+    "measure/runs/model_guide/adversarial-4.16-23f16f1.json",
+    "measure/runs/model_guide/adversarial-4.16-23f16f1.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "Provisional result. It does not accept Phase 4b. No real-key leak and no new token or answer defect. No finding blocks under the PM cap. The three carried-over skips stay in backlog row 4.15. Reviews A, B, and C also report a timing-sensitive F20 token assertion in review-run.test.ts; keep it nonblocking. Rerun this gate after any implementation commit. No production file changed. Facts changed: none.",
+  "route": "opencode-go/hy4-flash-free#high",
+  "ratings": [
+    { "axis": "correctness", "score": 5, "evidence": "All fourteen new cases pass in both runners with exact token sums for duplicate ids, finishless steps, partial keys, zero tokens, and large integers." },
+    { "axis": "test_meaning", "score": 5, "evidence": "Seven P4G cases run both real shell entry points with exact token and tokens_complete assertions; five would fail before a05a0f4 and two are guards." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git diff --name-only 23f16f1..7319344 lists only harness/model-guide-tests/adversarial-p4f.test.ts." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "The single-file vitest run exits 0 with 62 passed and 14 skipped; committed and working SHA-256 match at 15a15c45." }
+  ]
+}

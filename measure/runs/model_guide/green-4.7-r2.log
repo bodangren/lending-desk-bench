@@ -1,0 +1,84 @@
+Green fix round 2 for task 4.7 — ADV-R-8, the runner lock
+Track: model_guide. Phase 4: The runner and the first track A results
+(by Sun 2026-11-22). Role: measure-jr-green. Date: 2026-11-18.
+
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 1b38ad8a3d404f97c73a98e5be146c774273d741 (HEAD after the Red
+rewrite of ADV-R-8)
+first_attempt_base_sha adc950a3217387571284c5c6167b8399a31e2878
+
+1. The finding and its rule
+
+  ADV-R-8 [Major] of `measure/runs/model_guide/adversarial-deb8a21.json`.
+  Two runs at the same time with the same route, set, and date computed the
+  same pass number, shared one output folder, and clobbered one
+  `.incoming-<diff>` file.
+
+  The orchestrator and the PM chose option A on 2026-11-18. The runner takes
+  one exclusive lock for one route, one set, and one date. It takes the lock
+  before the pass number and before any call. A second run that finds the
+  lock held exits 2 with one stderr line that names the lock, makes no call,
+  and writes no pass record. The trap releases the lock on every exit path.
+
+  The first Green attempt stopped, because the former ADV-R-8 required both
+  runs to exit 0 with pass numbers 1 and 2. The Red rewrite 1b38ad8 makes
+  ADV-R-8 follow option A. Green edited no test file.
+
+2. Change
+
+  `harness/model-guide/review-run.sh` holds the lock in
+  `<private>/.locks/review-<set>-<route-slug>-<date>.lock` through `flock -n`
+  on the file descriptor 9. The lock sits after the route, set, and diff
+  checks, and before the pass number and the quota read. The `EXIT`, `INT`,
+  and `TERM` traps reach `on_exit`, which runs `flock -u 9` and closes the
+  descriptor. The lock refusal prints one line on stderr and writes no pass
+  record. The script header names the new rule.
+
+  No other file changed. `harness/opencode-credential.sh` and
+  `harness/opencode-host.sh` did not change.
+
+3. Commits
+
+  75b3b3394857f1414a521985fe91f0b9addb4218 fix(model_guide): review runner lock per route, set, and date (ADV-R-8)
+  f6c29b0d87c1095174f05f685688e2f969d2efd5 measure(model_guide): record Green fix ADV-R-8
+
+4. Test result lines (one file at a time from `harness/`, each with
+`--configLoader native --maxWorkers=1 --reporter=dot`)
+
+  adversarial-p4-runner.test.ts exit 0  Tests  12 passed (12)
+  review-run.test.ts            exit 0  Tests  23 passed (23)
+  quota.test.ts                 exit 0  Tests  15 passed (15)
+  credential-provider.test.ts   exit 0  Tests  11 passed (11)
+  preview-gate.test.ts          exit 0  Tests  111 passed (111)
+
+  ADV-R-8 shows one run with exit 0 and pass 1, one run with exit 2 and one
+  stderr line that names the lock, one pass record, one model call, and no
+  `-p2` file. A third run after the lock is released gets pass 2.
+
+5. Gates and orphan reads
+
+  bash -n harness/model-guide/review-run.sh                    exit 0
+  A quota server process: none stays.
+  ps -eo pid,args | grep '[f]ake-opencode'                     prints no line
+  A `/tmp/mg-adv-r-*` or `/tmp/mg-review-run-*` folder: none stays.
+
+6. Plan state
+
+  4.7 stays [x] 303f73d, and its row now names the fix 75b3b33. No task is
+  [b].
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.7 (fix round 2, ADV-R-8)
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 1b38ad8a3d404f97c73a98e5be146c774273d741
+resulting_head: f6c29b0d87c1095174f05f685688e2f969d2efd5
+commits: 75b3b33 (production), f6c29b0 (plan record)
+files_changed: harness/model-guide/review-run.sh, measure/tracks/model_guide/plan.md
+tests: adversarial-p4-runner 12 passed; review-run 23 passed; quota 15 passed; credential-provider 11 passed; preview-gate 111 passed. Gates: bash -n runner 0; no quota server process; no fake-opencode process; no temp folder stays.
+dispositions: ADV-R-8 FIX(one exclusive flock per route, set, and date, before the pass number and any call; the second run exits 2 with one stderr line that names the lock and writes no pass record; the trap releases the lock)
+handoff: ADV-R-8 is fixed at 75b3b33. The lock file sits in `<private>/.locks/` and names the set, the route slug, and the date. The refused run prints its one line on stderr, so the model-call count and the one-record rule hold. The next role may review the lock path and the trap. No test file changed.
+END_MEASURE_AGENT_RESULT

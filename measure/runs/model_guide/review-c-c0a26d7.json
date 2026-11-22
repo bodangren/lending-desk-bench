@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "The range f26965d..c0a26d7 changes only error_line_of in review-run.sh and judge-run.sh, adds the 4.13aa tests, and records the plan entries. Both runner hunks are identical: a scan that exits 2 fails closed to the fixed text, and the decoded error-event text is scanned too. The probe record fields (write_probe_record, review-run.sh:909), the state values (reachable, region-blocked, unreachable, complete, open, wait), and the probe and night driver parsing (probe-4.10.sh:135-143, night-4.11.sh:62-63 and 223) are unchanged. All ten test suites pass.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Nit] review-c: the process-table guard ADV-R-12 (harness/model-guide-tests/adversarial-p4-runner.test.ts:916, liveFakeOpencode at :474) greps the whole process table, so a fake-opencode child of a concurrent session fails the file. It failed once today with another session's child (process started 11:19:33, after my judge-run ended 11:19:10) and passed 14/14 in a quiet window. Rationale: the guard cannot tell its own children from another session's. backlog 4.14."
+  ],
+  "evidence": [
+    "git rev-parse HEAD gives c0a26d75a37955bb9c20be9cb3ab2d993d39907b, which starts with c0a26d7",
+    "git diff f26965d..c0a26d7 --stat shows only judge-run.sh, review-run.sh, judge-run.test.ts, review-run.test.ts, and measure/tracks/model_guide/plan.md",
+    "git diff f26965d..c0a26d7 on the two scripts shows two identical hunks inside error_line_of only (judge-run.sh:638-653, review-run.sh:868-883); no record writer, state variable, or caller shape changed",
+    "write_probe_record keeps the fields set_id, route, diff, date, state, tokens, tokens_complete, error, infra (review-run.sh:909-933); the error field now carries the fixed text when a scan fails",
+    "the probe states stay reachable, region-blocked, unreachable (review-run.sh:1005-1026) and the pass state values stay complete, open, wait, region-blocked (night-4.11.sh:207-209 comment, review-run.sh:1097-1113)",
+    "probe-4.10.sh:135-143 parses the review-run output by the refused tag and the exit code only, so the fixed error text needs no driver change; night-4.11.sh:62-63 greps '^<route> reachable' and night-4.11.sh:223 reads the state field of the newest pass record",
+    "scan_output overwrites TMP_VALUES before each value check (judge-run.sh:575-584), so the decoded-text grep at judge-run.sh:646 reads current values only; the rc=2 branch returns before it",
+    "bun test harness/model-guide-tests/review-run.test.ts: 86 pass, 0 fail, 671 expect calls",
+    "npx vitest run judge-run.test.ts: 45 passed (45); decode-parity: 3 passed (3); adjudicate: 23 passed (23); review-score: 27 passed (27); quota: 30 passed (30); credential-provider: 22 passed (22); adversarial-p4-runner: 14 passed (14) on the re-run; adversarial-p4b: 12 passed (12) on the re-run; seed-messages: 17 passed (17)",
+    "the first adversarial-p4-runner run failed only ADV-R-12; ps showed the offending fake-opencode child started at 11:19:33, after my judge-run had finished at 11:19:10, so it was another session's process; the re-run in a quiet window passed 14/14",
+    "the first adversarial-p4b run reported Test Files 1 failed with Tests 12 passed (12); the immediate re-run passed with 1 file and 12 tests; the remaining pgrep hits were fresh mg-judge-fake quota servers of the concurrent session, not mine",
+    "harness/results.json is a gitignored vitest artifact (vitest.config.ts:26), so the runs changed no tracked file outside measure/runs/",
+    "the decoded first line of the error event is the only text that reaches stdout, the probe record, or the pass record (error_event_text takes the first line, review-run.sh:594-618), so a key on a later line of a decoded message never enters an output or a record"
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git log --oneline f26965d..c0a26d7",
+    "git diff --stat f26965d..c0a26d7",
+    "bun test harness/model-guide-tests/review-run.test.ts",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1",
+    "cd harness && npx vitest run model-guide-tests/seed-messages.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' after each run"
+  ],
+  "changed_files": [
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/runs/model_guide/review-c-c0a26d7.json",
+    "measure/runs/model_guide/review-c-c0a26d7.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    { "axis": "correctness", "score": 5, "evidence": "the identical error_line_of hunks (judge-run.sh:638-653, review-run.sh:868-883) fail closed on scan exit 2 and scan the decoded text, and AA1-AA5 plus JA1-JA5 pin every emitted path." },
+    { "axis": "test_meaning", "score": 5, "evidence": "the plan records the Red failing first (82 pass 4 fail on review-run, 42 pass 3 fail on judge-run) and the Green runs pass: review-run 86 pass 0 fail, judge-run 45 passed (45)." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git diff --stat f26965d..c0a26d7 lists exactly the two runners, the two test files, and measure/tracks/model_guide/plan.md." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "every claim above names a command result or a file:line, for example write_probe_record at review-run.sh:909-933 and the night driver state read at night-4.11.sh:223." }
+  ]
+}

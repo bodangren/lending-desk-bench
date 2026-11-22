@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "summary": "Fail at the audited head 2fdb8f8, because one blocker is open. The queue builder `adjudicate.ts:216` finds 0 claims in a stored real `--format json` output, so the queue of row 4.13 stays empty. Review C found the same gap, and task 4.13v (bc0391f) fixed it after the audited head. The six fixes ADV-P4B-1 to ADV-P4B-6 hold under hostile probes, with one depth gap in the XDG guard. The three gate files pass with 12, 65, and 30 tests, and no credential value reaches stdout or a file. Eight nonblocking findings, N8 to N15, remain; N8 and N14 matter before the first live pass.",
+  "blocking_findings": [
+    "B1 [Blocker] The queue builder cannot read a real stored output. `adjudicate.ts:216-232` (`readFindings`) scans the raw file for a fence and does not decode the `--format json` event stream. The runner stores that raw stream (`review-run.sh:1041`), and `queue` reads it at `adjudicate.ts:304`. Probe: a stored stream in the real writer shape gave 0 queue items, and the same answer as plain text gave 1 item. The queue stays empty with exit 0 and no message, so no claim reaches a judge and no false claim counts against a route. The fix of ADV-P4B-1 covered only `judge-run.sh` and `review-score.ts`; task 4.13v (bc0391f) fixed `adjudicate.ts` after the audited head, on the finding of Review C."
+  ],
+  "nonblocking_findings": [
+    "N8 [Minor] The real event shape has no test at the audited head. AJ1 feeds `{\"type\":\"result\",\"text\":...}` and `{\"type\":\"step-finish\",\"tokens\":...}` (`adversarial-p4b.test.ts:1538-1541`). The installed `opencode.exe` bundle writes `type:\"text\"` with `part.text`, and `type:\"step_finish\"` with `part.tokens`. No test in `judge-run.test.ts` or `adversarial-p4b.test.ts` holds a `type:\"text\"` event, so the branch at `judge-run.sh:932-935` has no test. `decodeAnswerText` (`review-score.ts:233`) had no test at 2fdb8f8; Red 4.13u (05bb618) adds scorer and queue tests only. Add one judge case with the real shape.",
+    "N9 [Minor] The KILL guard misleads in one case and lacks one test. `stop_daemons` logs `INFRA stopped daemon <pid>` for every selected pid (`review-run.sh:516`, `judge-run.sh:400`), also for a daemon that lives. ADV-P4B-4 adds that case on purpose: no recorded starttime gives no KILL, and AD2 asserts a live process and the `stopped` line at once. An operator then reads `stopped` for a live daemon that holds the job store. No test covers the mismatch branch for a reused pid (`review-run.sh:500-501`); AD2 covers the empty record only. Log the real state of each pid, and add a mismatch case.",
+    "N10 [Minor] The XDG guard checks the first level of each call path only. Probe (the guard text of `review-run.sh:719-730`, run verbatim): a symlink at `data/opencode` and a symlink at `data/opencode/auth.json`, both pointing outside the root, passed. The auth store of opencode sits under `$XDG_DATA_HOME` (review-b-ee48a25 N2). The exposure needs a preset folder, because `opencode_host_begin` makes a fresh folder otherwise; the job config also denies every tool. `provider-credential.sh:78` still checks `home` only; it runs after the runner guard in both runners. Resolve the store folder and the store file too, or refuse any symlink under the job root.",
+    "N11 [Nit] The daemon matcher accepts `serve` and `--service` in any order and at any distance. Probes: `opencode.exe --service serve` and `node script.js --note serve --service` were selected. The fix direction of ADV-P4B-3 named the adjacent pair, and no test pins either side. The job-root path rule bounds the effect. A `--service=<tag>` token is not selected, so a daemon with that form survives. Require `serve` directly before `--service`, and add a case.",
+    "N12 [Nit] The verdict regex at `judge-run.sh:942` grows with the square of the input on a run of the text ```json with no newline. Probe: 4000, 8000, and 16000 openers took 107, 361, and 1447 ms. The parse runs after the call with no timeout, the model output cap bounds the cost to seconds, and the regex is not new. The decode itself is linear: a 20 MB text event took 93 ms, 200k event lines 207 ms, and 3 million nested brackets 700 ms. `review-score.ts` uses `indexOf` and shows no such growth. Scan the fences with `indexOf`.",
+    "N13 [Nit] The two decoders differ in shape and fence rule. Both accept `{\"type\":\"result\",\"text\":...}`, which the installed bundle never writes: probe E1, one such line inside a plain answer, gave a forged verdict for two ids. The model already controls its own fence, so the line adds no power. The scorer takes the first ```json fence, and the judge takes the last flat object. An example fence before the final answer made the scorer read the review as invalid (probe F1). Drop the `result` branch when the real shape has a test, and use one fence rule.",
+    "N14 [Minor, outside the range] `read_tokens` reads no token from the real event shape. It tests `event.type === \"step-finish\"` and `event.tokens` (`review-run.sh:151-152`, `judge-run.sh:112`); the installed bundle writes `type:\"step_finish\"` with `part.tokens`. Probe: the real shape gave `0 0 0 0 0 0` (sums zero, no event seen), and the fixture shape gave the sums. Every real call then logs zero tokens with `tokens_complete` false, and no harness code gates on that flag. The range did not change this code, and the root cause matches B1. Verify one stored real stream, then read `part.tokens` of a `step_finish` event.",
+    "N15 [Nit] The orphan scan at `adversarial-p4b.test.ts:258` keeps every line that holds `mg-`, so a concurrent suite of another session fails it. My first run of gate 1 passed 12 of 12 tests. The `afterAll` hook then failed on `fake-opencode serve --service mg-decoy-D3` (pid 3143975), a decoy of another session. The re-run in a quiet period passed. Scope the filter to the tag `mg-advb-`."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41 at the audit start. That equals the audited head of the brief. `git cat-file -t` returned `commit` for phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf, role_base_sha 56ab786658576437cf4f373252be2a76f5951130, and the audited head. Both bases are ancestors of the audited head. I took phase_base_sha from the evidence line of plan row 4.13t.",
+    "HEAD moved during the audit, because other sessions committed work. Red 4.13u added 05bb618 and 0f426b1 (tests and plan only, 07:54). Green 4.13v then added bc0391f and 0b52f33 (08:00). `git diff --name-only 2fdb8f8..HEAD` names two production files, `adjudicate.ts` and `review-score.ts`. The probes and the three gate runs read files equal to 2fdb8f8; only the last queue probe ran at 0b52f33. I audited no commit after 2fdb8f8.",
+    "Security applicability: applicable. The range changes the daemon guard that signals processes by pid, the XDG and HOME guard of every opencode call, the quota source that gates paid runs, the parse of stored model output, and the diff id check before the pass record.",
+    "Scope: `git diff --stat 56ab786..2fdb8f8` names 5 files, 194 insertions and 37 deletions: `judge-run.sh`, `review-run.sh`, `quota.ts`, `review-score.ts`, and `plan.md`. No test file changed, as plan row 4.13t requires. All changes match plan row 4.13t.",
+    "Real event shape: I read the text of the installed `opencode.exe` bundle with `grep -a`; I did not run it. The writer is `JSON.stringify({type,timestamp,sessionID,...data})`. The `text` event holds `part:{type:\"text\",text,time}` and fires from `session.text.ended`, an assistant event, so a user prompt cannot reach the decoder. The `step_finish` event holds `part.tokens`.",
+    "Check 1, event decode (probe on the `judge-run.sh:919-957` script extracted verbatim, 28 streams): a fence inside a `tool_use`, `reasoning`, `error`, or `step_finish` event gave `{}`. A nested event string gave `{}`, and a split backtick marker gave `{}`. Only the ids of the group and the three verdict values passed, the last flat object won, and a `__proto__` key had no effect. The scorer decoder (verbatim, 18 streams) gave the same results, and its `readFindings` checks `file` and `line` of each finding. No hostile stream injected a verdict or a finding.",
+    "Check 1, slow parse: the decode is linear. A 20 MB text event took 93 ms, 200k event lines 207 ms, 500k non-JSON brace lines 2.0 s, and 3 million nested brackets 700 ms. The scorer took 20, 125, and 601 ms for the first, second, and last of those. The regex at `judge-run.sh:942` is quadratic on openers with no newline (N12).",
+    "Check 2, quota (real `quota.ts` through `tsx`, a fake `ra-quota` that prints nothing, 38 runs): a `fetchedAt` of +100 s, +300 s, +1 h, +10 years, milliseconds, and microseconds gave `stopped` with `quota: the last-good reading is dated in the future`. Infinity, NaN, string, null, boolean, array, and missing values gave `stopped` (`missing`). Garbage text, an empty file, a JSON array, a directory, and an unset path also gave `stopped`. Stale 6 h 1 s and 6 h 21700 s gave `stopped`. A fresh reading, 5 h 59 min, and +30 s gave `ready`. One row (+61 s) read `ready` because the probe clock drifted by seconds before the read; the re-run with a fresh timestamp gave `stopped` at +100 s.",
+    "Check 3, matcher (`daemon_pids` of both runners extracted verbatim, 14 synthetic processes): the real shape `opencode.exe serve --service` was selected. `observe --service`, `serve` without `--service`, one joined token, the guard's own `node -e` source, a `..` HOME decoy, and an outside HOME and cwd were not selected. The two runner blocks are equal apart from the log prefix. A reversed order and a non-adjacent pair were also selected (N11). No live daemon ran on this machine, so the real argv shape rests on plan row 4.13q.",
+    "Check 4, KILL: by code read, `review-run.sh:497-504` and `judge-run.sh:381-388` send the KILL only when the record is not empty and equals the current starttime. AD2 passes at HEAD: a TERM-ignoring child with an empty stat survives. My simulation with a replaced `kill` function did not run, because the shell rule rejected the command. I did not rephrase that command. N9 lists the open test gap. The second KILL path, `opencode-host.sh:88-90`, has no starttime check; the range did not change it.",
+    "Check 5, XDG guard (the guard text of `review-run.sh:710-730` run verbatim on 19 job folders): a symlink out of the root at `home`, `config`, `data`, `state`, `cache`, `runtime`, or `tmp` refused with a named line. A dangling link, a relative link out, a relative root, and an empty root refused. A root with `..` segments, a root that is a symlink to a real job, and a link that stays inside the root passed. A link at `data/opencode` passed (N10). The call environment sets the same seven paths (`review-run.sh:747-753`, `judge-run.sh:521-527`).",
+    "Check 6, diff id (the check text of `review-run.sh:364-369` run verbatim): the ids `d-01\\n`, `d-01\\nevil`, an empty id, `a b`, `a\\tb`, `a\\rb`, `a/b`, `a#b`, `a..b`, and `..` refused. A trailing newline refuses, because the bash regex `$` matches only at the end of the string. A non-ASCII id refuses under the `LC_ALL=C` that `review-run.sh:94` exports, and it passes under `en_US.UTF-8`. The regex is `^[A-Za-z0-9._-]+$`, and the set id rule also needs a leading letter or digit. A leading `-` is accepted; I found no sink that reads the id as an option, because every use sits in a path. AM1 passes in gate 1.",
+    "Credential values: the range adds no output of a value. The new refusal lines are fixed text (`review-run.sh:365`, `:368`, `:725`, `:727`; `judge-run.sh:499`, `:501`), and the loop name is a constant. The judge decode writes only verdict values to its verdict file. The scorer decode keeps the text in memory. The quota reasons are fixed strings (`quota.ts:380`, `:383`). The credential scan still runs on the raw file before the decode (`review-run.sh:1016`, `judge-run.sh:882`).",
+    "Earlier findings of review-b-ee48a25: N1 is closed (AQ1, AQ2, and my quota runs). N2 is closed for the seven first-level paths, with the residual N10. N3 was closed at 56ab786 (AD3, AD4). N4 is closed in code and by AD2, with the residual N9. N5 stays open and untouched, because the range does not change `provider-credential.sh`. N6 is closed: the token compare replaces the substring, and the self-match of the guard's own `node -e` source is gone. N7 was closed at 56ab786 (AQ3).",
+    "Gate 1: `cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot`. The first run passed 12 tests and failed the `afterAll` hook on a decoy of another session (N15). The re-run in a quiet period gave `Test Files 1 passed (1)` and `Tests 12 passed (12)` in 12.21 s; I piped that run through `grep -v` to drop warning lines, and the pipe used `2>&1`. Gate 2: `bun test harness/model-guide-tests/review-run.test.ts` gave 65 pass, 0 fail, 502 expect() calls, 104.99 s. Gate 3: the same vitest command on `quota.test.ts` gave 30 passed (30) in 20.46 s. The counts match plan row 4.13t (12, 65, 30).",
+    "Process hygiene: after each gate, `pgrep -af` for `fake-opencod[e]`, `quota-serve[r]`, and `serve --servic[e]` showed none of my processes. Other sessions ran `bun test review-run.test.ts` and `vitest run judge-run.test.ts` at the same time, and their processes (quota servers under `/tmp/mg-review-fake-*`, a fake-opencode under `/tmp/mg-review-run-*`) appeared in some scans. I sent no signal. I ran no driver, no `heavy-run.sh`, no `opencode` or `openchamber` command, and no server of my own. The test files signal their own helper children only.",
+    "Rejected calls: the shell rule rejected one KILL simulation and one grep that held the text `mv`. I did not rephrase the simulation. I re-ran the grep without the `mv` pattern.",
+    "A2 (consent-blind publish gate): not applicable, because the range flips no draft to published and names no subject. A6 (registry overstatement): not triggered. `measure/tracks.md:34` lists model_guide as pending, and the file marks no security state as resolved. The claims of plan row 4.13t match my probes; the claim for ADV-P4B-5 (each of the seven paths resolves inside the root) holds at the first level.",
+    "Measure-guard note: the harness appended a guard line about track domain_trust and its task 1.3. This audit belongs to model_guide. I took no action on that note.",
+    "Scratch probe files sit under `/tmp/opencode/review-b-2fdb8f8`, outside the repository. The only repository writes are the two result files under `measure/runs/model_guide`."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41 at the start; 0b52f334c744922f545098c33119f4471929d089 at the end",
+    "git cat-file -t <phase_base_sha, role_base_sha, audited_head_sha>; git merge-base --is-ancestor <base> 2fdb8f8 -> commit x3, both bases are ancestors",
+    "git diff 56ab786..2fdb8f8 (5 files) and git diff 2fdb8f8..HEAD -> read in full; git log -5 --format='%h %cI %s' -> commit times",
+    "grep -a on the installed opencode.exe bundle (read only) -> writer shape of the text and step_finish events",
+    "node -e (judge decoder from judge-run.sh extracted verbatim, 28 hostile streams) -> verdict maps and timings",
+    "node -e (scorer decoder from review-score.ts extracted verbatim, 18 streams) -> findings and timings",
+    "node -e + npx tsx adjudicate.ts queue on a real-shape stored stream -> 0 items at 2fdb8f8, 1 item at HEAD 0b52f33; the plain control gave 1 item",
+    "node -e (real quota.ts through tsx, fake ra-quota, 38 last-good files and modes) -> stopped or ready per case",
+    "node -e (daemon_pids of both runners, 14 synthetic processes) -> selected pid sets",
+    "node -e (XDG guard text of review-run.sh, 19 job folders) -> pass or refuse per case",
+    "node -e (diff id check text, 24 ids, locale C and en_US.UTF-8) -> pass or refuse per id",
+    "node -e (read_tokens of both runners, real and fixture event shapes) -> token sums",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> run 1: 12 passed, afterAll hook failed on a foreign decoy; run 2: exit 0, 12 passed (12)",
+    "bun test harness/model-guide-tests/review-run.test.ts -> exit 0, 65 pass, 0 fail, 502 expect() calls, 104.99 s",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 30 passed (30), 20.46 s",
+    "pgrep -af for fake-opencod[e], quota-serve[r], and 'serve --servic[e]' after each gate and at the end -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/review-score.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "route_to_green",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "56ab786658576437cf4f373252be2a76f5951130",
+  "audited_head_sha": "2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41",
+  "security_applicability": "applicable: the range changes the daemon guard that signals processes by pid, the XDG and HOME guard of every opencode call, the quota source that gates paid runs, the parse of stored model output, and the diff id check before the pass record",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The six fixes hold under probes (`quota.ts:378-384`, `review-run.sh:453`, `:499`, `:719-730`, `:364-369`), but the queue builder `adjudicate.ts:216` still misses the real stream."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "AQ1, AQ2, AD1, AD2, AH1, AM1, and AJ1 failed first and pass now, but AJ1 feeds an event shape the bundle never writes (`adversarial-p4b.test.ts:1538-1541`) and no test pins the pid-mismatch branch."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "`git diff --stat 56ab786..2fdb8f8` names 5 files, none a test file, all within plan row 4.13t."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "The gate counts of plan row 4.13t (12, 65, 30) match my runs, but the AJ1 and token examples of the plan use event shapes that the bundle does not write."
+    }
+  ]
+}

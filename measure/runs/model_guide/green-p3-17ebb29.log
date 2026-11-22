@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 17ebb295ab3ee49b8e8fd9fade60ca1ef3bf2e9c
+head_sha: 8bfb6d1442214a2a0a64eb058329462edfacd1c2
+commits: d297316e2118371ac33bff7b050f5797f9ddc950, 8bfb6d1442214a2a0a64eb058329462edfacd1c2
+tests_run: `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot` one file at a time, each exit 0: `real-work.test.ts` `Tests  20 passed (20)`; `input-check.test.ts` `Tests  15 passed (15)`; `preview-gate.test.ts` `Tests  100 passed (100)`; `leak-guard.test.ts` `Tests  2 passed (2)`; `adversarial.test.ts` `Tests  49 passed (49)`; `print-audit.test.ts` `Tests  15 passed (15)`; `guide.test.ts` `Tests  16 passed (16)`; `update.test.ts` `Tests  8 passed (8)`; `adversarial-p2.test.ts` `Tests  14 passed (14)`; `pick-diffs.test.ts` `Tests  17 passed (17)`; `review-set.test.ts` `Tests  15 passed (15)`; `review-score.test.ts` `Tests  21 passed (21)`; `adjudicate.test.ts` `Tests  13 passed (13)`; `leak-check.test.ts` `Tests  10 passed (10)`. `cd harness && npx tsx model-guide/leak-check.ts --private model-guide-tests/fixtures/review --repo <temp repo with only review-prompt.md staged>` exit 0 and printed nothing. `git status --short docs/` printed nothing. The 14 runs also pass at HEAD 8bfb6d1.
+files_changed: harness/model-guide/review-prompt.md (new file, 76 lines); measure/tracks/model_guide/plan.md (task lines only). No test file changed. No fixture changed. New files added: harness/model-guide/review-prompt.md. Untracked evidence: measure/runs/model_guide/green-p3-17ebb29.log.
+plan_updates: 3.11 changed [~] to `[x] d297316` with an Evidence line that cites measure/runs/model_guide/green-p3-17ebb29.log and gives no test count. 3.12 changed [ ] to [~]. Both in commit 8bfb6d1.
+tasks_flipped_x: 3.11 (SHA d297316). tasks_flipped_b: none.
+dispositions: none
+handoff: Green 3.11 wrote only harness/model-guide/review-prompt.md. It is the public reviewer instruction of spec D10. It tells the reviewer the input form (the first line of the commit message and the diff with its new-side numbers and `L---` for a removed line), that there is no repository, no history, and no tool, the output as exactly one fenced JSON block with the six keys file, line, severity, class, title, and reason, the three severity words with their meanings, the nine classes with a one-line meaning each, that the line is the new-side number, the limit of 30 findings, and that only real defects count. It holds no key field, no plant, no seeded line, no operator of the D6 catalog, and no path of a set. The corpus holds 14 seeded-only lines, and none of them sits in the prompt. Task 3.12 is [~] for the next role. The checker reads the prompt as an artifact (test-strategy section 7) and records that no test reads it.
+END_MEASURE_AGENT_RESULT

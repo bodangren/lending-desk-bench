@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 80c17f5979b632a38e2a6797ff20504b418e198c
+result_file: measure/runs/model_guide/phase-acceptance-80c17f5.json
+retry_recommendation: retry_tests
+summary: Acceptance 2, 3, 4, 8 hold and all five test files pass; PA1-1 blocks: acceptance 5 "no pick yet" has no test, and a work type on unknown or other routes only disappears from the page.
+END_MEASURE_AGENT_RESULT

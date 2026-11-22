@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "route": "opencode-go/glm-5.3#high",
+  "summary": "The fake-pinned rules are correct: quota.ts, review-run.sh, and judge-run.sh give the Go thresholds 5h 95 / week 100, they keep 70 / 80 for every other source, no Go stop fires at 80 %, and all four suites pass at HEAD (quota 17, review-run 52, judge-run 30, adversarial 14). But the phase contract with the live source is broken twice, and the night driver of 2026-11-19 depends on it. (1) The new Go branch of quota.ts reads the window key \"week\"; the live endpoint GET /api/quota/opencode-go returns \"weekly\" (and no \"week\"), so the week-100 wait can never fire live. (2) The live Go answer holds the window \"credits_balance\" with usedPercent null; parseAnswer rejects it, so every live Go read gives state \"stopped\" (verified: npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 prints \"quota: the window credits_balance holds no usable usedPercent\"). Both Go pilot routes (deepseek, mimo) therefore record an open pass with a quota error tonight and the phase goal \"first track A results\" fails. The night driver (read-only) reads \"5h\" and \"weekly\" with 95 / 100, so the readers of the same source disagree with quota.ts. The tests pin the wrong live shape: every fake body serves \"5h\", \"day\", \"week\".",
+  "blocking_findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "file": "harness/model-guide/quota.ts:272-275",
+      "finding": "The Go branch of stateOf reads windows[\"week\"], but the live opencode-go source returns the week window under the key \"weekly\". I read the live endpoint: {\"windows\":{\"5h\":...,\"weekly\":...,\"monthly\":...,\"credits_balance\":...}}. There is no \"week\" key. So the week-100 wait of spec D15 and AC12 never fires live. A Go route with weekly 100 % and 5h below 95 % gets the state \"ready\". The night driver /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh:73-74 (read-only) reads windows[\"5h\"] and windows[\"weekly\"] with the thresholds 95 / 100, so it disagrees with quota.ts. The fake bodies of all suites serve \"5h\", \"day\", \"week\" (quota.test.ts:289-291 goBody, review-run.test.ts:477-481, judge-run.test.ts:536-540), so the tests pin a key the live source never sends. The spec D15 example (spec.md quota.ts header, line 28 of the tool doc) also shows \"week\".",
+      "fix": "Read the week window under the live key \"weekly\" in the Go branch of stateOf (accept \"week\" only as a fallback if the PM wants both). Change the fake bodies of quota.test.ts, review-run.test.ts, and judge-run.test.ts to serve the real window set \"5h\", \"weekly\", \"monthly\" (plus a null-valued window for the parse cases). Fix the spec D15 example and the quota.ts doc line the same way. Add a Q10-style case that pins the live key."
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "file": "harness/model-guide/quota.ts:259",
+      "finding": "parseAnswer rejects any window whose usedPercent is not a number. The live opencode-go answer holds \"credits_balance\" with usedPercent null, so every live Go read stops. Verified live: quota.ts --provider opencode-go --base http://127.0.0.1:38307 gives {\"state\":\"stopped\"} and the stderr line \"quota: the window credits_balance holds no usable usedPercent\". review-run.sh then writes an open pass with a quota error before each diff, so no Go pilot pass can start tonight. Kimi parses fine live (windows 5h 25, weekly 79.02), so the break is Go-specific and hits exactly the two Go pilot routes of the night. The parse lines predate this diff, but this phase moved the Go rule onto this path and claims the live read works (spec D15, plan row 4.13h re-probe step).",
+      "fix": "Skip a window whose usedPercent is null or not a number (the pattern of harness/cron-daily.sh guard_read, which treats such a window as \"missing\" and reads on), or skip windows with a valueLabel. Keep the stopped state for an answer with no usable window at all. Pin the real shape in the suites: one case with a null-valued window gives ready or wait on the other windows, and one case with no usable window still gives stopped."
+    }
+  ],
+  "nonblocking_findings": [
+    {
+      "id": "N1",
+      "severity": "minor",
+      "file": "harness/model-guide/judge-run.sh:691-697",
+      "finding": "The QUOTA_MAX >= 80 branch of the group loop is dead code for every sourced provider: a window of 80 % already gives the wait state, and the wait branch above it (line 683) stops the run first. The new IS_GO_ROUTE guard keeps the dead branch. The comment at lines 670-673 still describes an 80 % stop that cannot occur. Pre-existing, no behavior change from this diff.",
+      "fix": "Either drop the dead branch or fix the comment to say the wait state covers it. No behavior change is needed."
+    },
+    {
+      "id": "N2",
+      "severity": "minor",
+      "file": "/home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/probe-4.10.sh:60-76",
+      "finding": "The probe job script (read-only, outside the repo) still stops Go probes at \"5h > 95 or week > 90\". The PM order of 2026-11-19 and the night driver use 5h >= 95 and week >= 100. The probe is stricter, so it skips a Go route at week 91-100 that the runner would start. No spend risk, but the probe and the runner disagree on the week rule.",
+      "fix": "Align the probe week rule with the night driver (week >= 100) when the orchestrator next owns that file, or leave it as a safe margin and note it in the plan."
+    },
+    {
+      "id": "N3",
+      "severity": "minor",
+      "file": "measure/tracks/model_guide/spec.md:752-756",
+      "finding": "Spec D15 says \"the week window\" and the tool doc example shows windows {\"5h\",\"day\",\"week\"}, but the live source has no \"day\" or \"week\" key. The spec example drifted from the live shape, and the code and the fakes followed it. This is the root of F1.",
+      "fix": "Fix the D15 example and the FR-15 wording to name the live keys \"5h\" and \"weekly\" when Green fixes F1."
+    }
+  ],
+  "evidence": [
+    "Live read of the real source (loopback GET, no driver, no opencode CLI): curl -s http://127.0.0.1:38307/api/quota/opencode-go returns windows \"5h\" 1.10, \"weekly\" 0.44, \"monthly\" 0.22, \"credits_balance\" usedPercent null. There is no \"week\" window.",
+    "Live quota.ts run: cd harness && npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 gives {\"state\":\"stopped\"} and the stderr line \"quota: the window credits_balance holds no usable usedPercent\". Exit 0.",
+    "Live quota.ts run on kimi: --provider kimi-code-plan-cn gives {\"state\":\"wait\",\"windows\":{\"5h\":25,\"weekly\":79.02}}. Kimi parses fine, so the parse break is Go-specific.",
+    "The night driver night-4.11.sh (read-only) reads windows[\"5h\"] and windows[\"weekly\"] with stop at five >= 95 or weekly >= 100 (lines 73-76 and 108-113 of the copy under .local/share). Daniel's O1 ruling in measure/tracks/daily_model_schedule/spec.md:1419 also pins \"usage.windows.weekly.usedPercent\".",
+    "harness/cron-daily.sh:547-556 (guard_read, live since 2026-11-04) reads windows weekly and monthly and treats a null usedPercent as \"missing\", not as a stop of the whole read. quota.ts does the opposite.",
+    "The Go branch of stateOf: harness/model-guide/quota.ts:271-277 keys on windows[\"5h\"] and windows[\"week\"].",
+    "The fake bodies serve the wrong keys: harness/model-guide-tests/quota.test.ts:285-297 (goBody: \"5h\", day, week), review-run.test.ts:471-481, judge-run.test.ts:531-541.",
+    "All four suites pass at HEAD, one file at a time, fakes only: quota.test.ts 17 passed (17) exit 0; review-run.test.ts 52 pass 0 fail exit 0; judge-run.test.ts 30 passed (30) exit 0; adversarial-p4-runner.test.ts 14 passed (14) exit 0. My own pgrep scans after each run printed no line. Transient /tmp/mg-review-fake-*/quota-server.js lines that appeared between my runs belong to a sibling session that runs the same suites (the Red record red-4.13g.txt notes the same sibling); the scan after my last suite printed nothing.",
+    "The moved 70 / 80 cases still assert something real: Q2 and Q6 run on kimi-code-plan-cn (quota.test.ts:461-481), R5, R6 x2, and P6 pin kimi (review-run.test.ts:977-1080, 1910-1918), J11 x2 pins kimi (judge-run.test.ts:1543-1608), and ADV-R-2 moved the huge w199 85 body to kimi-code-plan-cn (adversarial-p4-runner.test.ts:530) so the wait claim stays real. The new Go cases G1-G3 pin start, probe, start-test, and stop at 95 / 100 and no stop at 80 %.",
+    "The runners follow D15 on the fake source: review-run.sh refuses the probe at wait with QUOTA_WAIT_TEXT (line 541), stops a Go pass at wait only (lines 778-784), and keeps the 80 % stop for other sources (line 785). judge-run.sh uses QUOTA_WAIT_TEXT in the start test (line 454) and guards the 80 % branch with IS_GO_ROUTE != 1 (line 691). Q9 pins 5h 80 % ready for Go.",
+    "Plan claims match the runs: row 4.13h claims quota 17, review-run 52, judge-run 30, adversarial 14, all exit 0, and I reproduced each. The Red record red-4.13g.txt holds exit 1, the failed names Q9, Q10, G1-G3 of both runners, and the moved-case list, and the current test files match that record.",
+    "Scope check: git diff 66fe1ac..cc8afbd touches only quota.ts, review-run.sh, judge-run.sh, the three Red test files, adversarial-p4-runner.test.ts, plan.md, and spec.md. No unrelated change. HEAD is cc8afbd and equals the audited head.",
+    "Spec D15 (spec.md:731-770), FR-15 (spec.md:1327-1338), and AC12 (spec.md:1447-1450) match the code on thresholds 95 / 100 for Go and 70 / 80 for others. The spec example and the live source disagree on the week key (N3, F1).",
+    "AC12 check on the judge G1 wait case: write_files runs unconditionally at the end of judge-run.sh, so the run record exists with state \"open\" and the conditional assertion is not vacuous."
+  ],
+  "commands": [
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 17 passed (17), exit 0; both pgrep scans empty",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 52 pass, 0 fail, exit 0; both pgrep scans empty",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 30 passed (30), exit 0; my scan empty (one transient sibling-session line appeared once)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 14 passed (14), exit 0; both pgrep scans empty",
+    "curl -s --max-time 8 --noproxy '*' http://127.0.0.1:38307/api/quota/opencode-go -> windows 5h, weekly, monthly, credits_balance(null); no week key",
+    "curl -s http://127.0.0.1:38307/api/quota/kimi-for-coding and /api/quota/minimax-cn-coding-plan -> windows 5h and weekly only",
+    "cd harness && npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 -> state stopped, stderr \"quota: the window credits_balance holds no usable usedPercent\", exit 0",
+    "cd harness && npx tsx model-guide/quota.ts --provider kimi-code-plan-cn --base http://127.0.0.1:38307 -> state wait, windows {\"5h\":25,\"weekly\":79.02}",
+    "git diff --stat 66fe1accf71c0f881fffa58ff05bb0a94407477f..cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5 -> 9 files, only the planned ones"
+  ],
+  "changed_files": [
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/quota.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [
+    "F1: quota.ts reads the Go week window under the key \"week\" (quota.ts:272-275), but the live opencode-go source and the night driver use \"weekly\". The week-100 wait of spec D15 and AC12 never fires live, and the readers of the same source disagree.",
+    "F2: the live opencode-go answer holds a \"credits_balance\" window with usedPercent null; parseAnswer (quota.ts:259) rejects it, so every live Go read gives state \"stopped\". No Go pilot pass can start tonight through review-run.sh or judge-run.sh, and the phase goal of the first track A results fails."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "The rules are right on the fake source, but the live read gives stopped on the real opencode-go endpoint (verified with npx tsx quota.ts against 127.0.0.1:38307) and the week key \"week\" does not exist live."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "Red record red-4.13g.txt shows the new Go cases fail first, and the moved 70/80 cases keep real assertions on kimi, but every fake body pins the wrong live window keys, so the live-read claim is untested."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 66fe1ac..cc8afbd lists only the nine planned files of rows 4.13g and 4.13h plus the spec rows of the PM order."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Plan rows carry commands and counts that I reproduced (quota 17, review-run 52, judge-run 30, adversarial 14, all exit 0), but the live re-probe claim of row 4.13h has no live verification and my live read disproves it."
+    }
+  ]
+}

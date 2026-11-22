@@ -1,0 +1,23 @@
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+audited_head_sha: 9bf5b3b5a231f0d0d3a5e09c74d34297b6ad2c06
+delta: ba3142a..9bf5b3b
+prior_review: measure/runs/model_guide/review-a-ba3142a.json
+status: pass
+result_json: measure/runs/model_guide/review-a-9bf5b3b.json
+blocking_findings: 0
+nonblocking_findings: 2 (RA3-1 Major, RA3-2 Nit)
+prior_findings:
+  RA2-1: partly closed; guide.ts-only minimum mutant N1 survives (RA3-1)
+  RA2-2: closed for the pick cell (N4, N6 fail); second cell has no #variant case (RA3-2)
+  RA2-3: closed; plan.md:1144 counts reproduce
+two_minimums: not a defect; D16 rank rule (real-work.ts:41) and D18 pick rule (guide.ts:359) are two spec rules; the guide.ts copy needs its own test
+fixture: allowed list adds only t1/prod-tiny; MANIFEST sha256 and size match; no other expected value moves
+tests: guide 17/17, preview-gate 99/99, real-work 13/13, input-check 23/23, leak-check 22/22, update 9/9, adversarial 46/46; each exit 0
+mutation: 6 mutants; N3, N4, N6 fail guide; N2 fails real-work only; N1 and N5 survive
+retry_recommendation: retry_tests
+handoff: Red adds a RA-2 variant where t1/prod-nine is not allowed, asserts second null, confirms N1 fails, and corrects the comment at guide.test.ts:728-731. Red gives the second print-audit route a #variant suffix (RA3-2).
+RESULT: PASS
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,11 @@
+Phase 2 acceptance at 3d76ae8: PASS. Nine suites green, five finals and checker pass, preview record confirmed.
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 3d76ae8faf61b40c719d8419a563addfc20c2496
+result_file: measure/runs/model_guide/phase-acceptance-3d76ae8.json
+retry_recommendation: none
+summary: Phase 2 passes: all nine suites exit 0 at 3d76ae8, finals and checker pass, preview shows table and print-audit block
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-mid-red
+task: 4.16
+status: pass
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: dabc9c3571a8b7e990d6ab3566f6c4e711f811b6
+red_commit_sha: c35c38144eca83c8340551d5b65561481841c81f
+resulting_head: 672e85afbb21559bd5844d3b56deee52b2f0438c
+commits: c35c38144eca83c8340551d5b65561481841c81f test(model_guide): Red task 4.16 live fixtures stamp the call time; 672e85afbb21559bd5844d3b56deee52b2f0438c measure(model_guide): record Red task 4.16 r8
+tests: default created and completed of the two native live-message helpers now use the fixture time, stamped by the fake at message-read time; explicit created stays; F20 ordering fixtures use a read-stamp offset
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md
+red_command_results: with Green's working-tree runners review-run 130 pass 0 fail, judge-run 61 passed, adversarial-p4e 54 passed; at committed runners in a throwaway copy review-run 130 pass, judge-run 61 passed, adversarial-p4e 6 failed 48 passed with only the intended P4E failures
+remaining_failures: none with Green's working-tree runners; the six P4E cases remain at the committed runners and are Green r8 work. No fake process remains.
+handoff: The fixture ruling is applied. Green's two runner files were left untouched and unstaged. The scheduled callers still need BENCH_SERVER_BASE exports, an orchestrator task. No deferred task was created.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,35 @@
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1a Red - Page B layout (spec D16 "Layout (PM P1 2026-11-16)")
+role: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 952299400423bd0abc7ddcf9d45ddbf77da2c486
+resulting_head: c0d122ed121021b17df3cceaa8e2f7b7956fa81c
+commits:
+  - 2cb7efd72e6b3ac06c3a8be7d0505574c0e01102
+  - c0d122ed121021b17df3cceaa8e2f7b7956fa81c
+files:
+  - harness/model-guide-tests/preview-gate.test.ts
+  - measure/tracks/model_guide/plan.md
+commands:
+  - "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, Tests 10 failed | 96 passed (106)"
+  - "git add -- harness/model-guide-tests/preview-gate.test.ts measure/tracks/model_guide/plan.md"
+  - "git commit -m 'test(model_guide): Red task 4.1a page B layout (D16)' -- harness/model-guide-tests/preview-gate.test.ts measure/tracks/model_guide/plan.md -> 2cb7efd"
+failing_cases:
+  - "G1: the source line sits in the About this data footer, not at the top of the page -> the page holds data-mg=\"about-footer\": expected -1 to be greater than -1"
+  - "G2: the coverage numbers sit in the same About this data footer -> the page holds data-mg=\"about-footer\": expected -1 to be greater than -1"
+  - "G3: a row with fewer than 10 results sits in Too few runs to rank, with no rank, never in the ranked table -> producer holds a default table: expected undefined to be defined"
+  - "G4: a rate is a whole percent with no (n=...), an empty value is a dash, and Runs holds the result count -> Producer roles holds a default table: expected undefined to be defined"
+  - "G5: the top block gives one ranked-pick line per role group and per work type -> the page holds data-mg=\"top-block\": expected -1 to be greater than -1"
+  - "G6: a group with no row of 10 or more results says no pick yet in the top block -> the top block still has one line per group: expected [] to have a length of 4 but got +0"
+  - "G7: a default table has six columns or fewer and a work-type table drops Blocking % -> Producer roles holds a default table: expected undefined to be defined"
+  - "G8: the remaining columns sit behind a More columns toggle -> the page holds data-mg=\"more-columns\": expected -1 to be greater than -1"
+  - "G9: each work type sits in a tab or a collapsed section -> app code is wrapped by a work-type hook: expected -1 to be greater than -1"
+  - "G10: a plain model name comes from model-names.json and an unnamed key drops the plan prefix -> the committed model-names.json exists: expected false to be true"
+unchanged_passing_groups: V page tests, page guard (A/B/C/F/P/U cases), print-audit block (T1, T11, N4), CLI argument tests, Acceptance 5, P2B2-2
+dispositions: none
+sha_note: "Neither phase_base_sha nor role_base_sha was named in the task message. Both were resolved from the repository: phase_base_sha is the Phase 4 strategy commit 57baaaa per test-strategy.md section 11; role_base_sha is HEAD 9522994 at the start of this role. Both resolve with git rev-parse."
+fix_r3: 0576d2f12c45e6dec8374c9d462449c2f75f1980 G5 matches by key and label
+END_MEASURE_AGENT_RESULT

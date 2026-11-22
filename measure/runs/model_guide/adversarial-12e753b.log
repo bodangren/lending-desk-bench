@@ -1,0 +1,11 @@
+Adversarial P2 round 2 verdict on 12e753b: nine suites green (234 tests), but one new blocking defect in /tmp probe (P2ADV2-1 symlinked .tmp parent escapes the eight-path refusal); Red must add the refusal test.
+MEASURE_AGENT_RESULT
+role: adversarial
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916
+result_file: measure/runs/model_guide/adversarial-12e753b.json
+retry_recommendation: retry_tests
+summary: round 2 at 12e753b: 234 tests green, one new blocker P2ADV2-1 (.tmp parent symlink escapes update.sh refusal, outside write with exit 0); Red must add the P2B2-1d refusal test
+END_MEASURE_AGENT_RESULT

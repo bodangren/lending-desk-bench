@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Pass. The fixes close the five findings F1 to F5 of the review at c46161f. I proved each fix on a synthetic process table and on the real scripts with fake binaries. The guard now selects a real NUL-separated 'opencode.exe serve --service' argv. It spares the '..' decoy, the sibling folder, and the symlink out of the root. The starttime check comes before the KILL. The seed cwd stays outside a git work tree when TMPDIR sits inside the repository. The HOME guard refuses a symlinked home, a relative root, and an unset root. Selection uses integrationID and active, and two active entries refuse as ambiguous. A stale reading, a missing reading, and garbage output stop the quota. Seven nonblocking gaps remain. The two most notable: a future-dated last-good reading counts as fresh, and the HOME guard resolves the home folder only. All three gate files pass with 65, 22, and 30 tests.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N1 (quota, Minor): A forged last-good reading does not fail closed. quota.ts:369 tests whether the age is 21600 s or more. A negative age never trips that test. With ra-quota silent, a fetchedAt of now plus 10 years and a fetchedAt in milliseconds both gave the state ready (probes C9 and C10). Stale, missing, garbage, string-time, negative, null, and partial readings all gave stopped. The real file shape is right: plans.opencode-go.fetchedAt in seconds, mode 600, atomic replace. ra-quota applies the same age test. The exposure needs a local writer, because the drivers keep the file at /tmp/ra-quota-lastgood.json. Fix: treat a fetchedAt more than 60 s in the future as missing, and add a test.",
+    "N2 (HOME guard, Minor): The guard resolves the home folder only. The XDG folders of the same call stay unchecked: data, config, state, cache, runtime, and tmp. See provider-credential.sh:66-78 and :120, review-run.sh:701, and judge-run.sh:485. opencode keeps its auth store under XDG_DATA_HOME. In probe H5, the data folder was a symlink out of the root. The seed exited 0, and the fake import wrote into the outside folder. The exposure is small, because opencode_host_begin builds the folders with mode 700. A symlink needs a preset BENCH_OPENCODE_HOME. Fix: run check_job_home over all seven subpaths.",
+    "N3 (test gap, Minor): The tests H1 and H2 cover the helper guard only. No test drives the runner guards at review-run.sh:695-705 and judge-run.sh:479-489. A regression there stays green. I ran the production text of both guards. A normal root passed, and a symlinked home and a relative root refused. Fix: add one runner test with a preset BENCH_OPENCODE_HOME whose home is a symlink out of the root.",
+    "N4 (F3 residual, Minor): The starttime check skips when no starttime was recorded. The condition at review-run.sh:486 and judge-run.sh:381 tests that the record is not empty. An empty record sends the KILL with no identity check. In my simulation, pid 91004 with an unreadable stat received the KILL. The check works when a record exists. Pid 91002 (starttime changed, pid reused) received the TERM and no KILL. No test covers the check, and plan row 4.13r defers it to the hardening row. Fix: skip the KILL when no starttime was recorded, and add a BENCH_OPENCODE_PROC test.",
+    "N5 (F4 residual, Nit): The seed cwd fallback trusts the exit status of git rev-parse. With GIT_CEILING_DIRECTORIES set to the work tree and TMPDIR inside it, git reported no work tree. The seed cwd then became <work tree>/sub/mg-seed-export.NLNNvZ, inside the work tree. A safe.directory refusal would act the same (not run). The drivers set neither variable and leave TMPDIR unset. The exposure is nil today. Fix: walk the ancestors of the cwd for .git. The plan wording 'never sits under a git root' is true only when git sees the work tree.",
+    "N6 (matcher, Nit): The match at review-run.sh:441 and judge-run.sh:336 is a substring test on the joined argv. It matches 'observe --service' (synthetic pid 6001). It also matches the guard's own node process, whose -e source holds the text. The self-match occurs only when the runner cwd sits inside the job root. The runners start in the repository root, so the exposure is nil today. Fix: split the cmdline on NUL and compare two adjacent entries for equality.",
+    "N7 (quota test gap, Minor): Q16a and Q16b pass through the output of the double. No test reaches the fresh fallback branch at quota.ts:367-372. The double also writes a flat last-good shape, while the real file wraps the entry under plans (quota.ts:326-329). My probes C3, C4, and D2 show both paths work with the real shape. Fix: add one case where ra-quota prints nothing and a fresh plans-wrapped reading exists."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD returned ee48a254266afee947d555e4e562093c60d64153 at the start and at the end of the audit. It equals the audited head of the brief. git status --porcelain --untracked-files=no printed nothing, so no tracked file changed. The brief names the range start c46161f and no phase_base_sha. I took phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf from plan rows 4.13q and 4.13r. I took role_base_sha c46161fb858de0883cf304a7dfc40f0afd486e64 from the range start. git cat-file -t returned commit for all three.",
+    "Security applicability: applicable. The range changes the daemon guard that signals processes by pid, the HOME guard of every opencode call, the credential selection, the seed export, and the quota source that gates paid runs.",
+    "Scope: git diff --stat c46161f..ee48a25 -> 11 files, 1074 insertions, 82 deletions. The files are review-run.sh, judge-run.sh, provider-credential.sh, quota.ts, four test files, the fake-opencode fixture, plan.md, and spec.md. All match plan rows 4.13q and 4.13r. The extra guard against an empty root in daemon_pids sits inside F2.",
+    "F1 closed: I ran the production block of review-run.sh and judge-run.sh (daemon_pid_alive to stop_daemons, extracted verbatim) on a synthetic process table through BENCH_OPENCODE_PROC. Pid 1001 (NUL-separated argv opencode.exe, serve, --service; HOME and cwd inside the job root) was selected. The old c46161f guard selected only the one-argv0 pid 1002. These pids were not selected: 'serve --hostname --port' (OpenChamber shape), a non-adjacent pair, no HOME with cwd outside, and a real-HOME service with cwd /.",
+    "F2 closed: three pids were not selected. Pid 2001 resolves outside through '<root>/../outside'. Pid 2002 sits in the sibling '<root>-other'. Pid 2003 passes a symlink out of the root. With the old one-argv0 shape, the old guard selected the '..' decoy 7001 and the symlink decoy 7003. HEAD selected only the in-root daemon 7004. Pid 3001 (HOME outside, cwd inside the root) was selected. The roots '/', '//', and an empty string selected nothing at HEAD. The old guard selected every daemon for the root '/'. Both runners returned the same sets.",
+    "F3 closed in code: review-run.sh:468 records the starttime (field 22 of /proc/<pid>/stat) before the TERM. review-run.sh:483-488 compares it before the KILL. judge-run.sh:363 and :378-383 hold the same code. Simulation under set -euo pipefail, with the production stop_daemons, kill replaced by a logging function, and no signal sent: pid 91001 (same starttime) got TERM and KILL. Pid 91002 (starttime changed, pid reused) got TERM and no KILL. Pid 91003 (zombie) got no KILL. Pid 91004 (no starttime recorded) got KILL, see N4.",
+    "F4 closed: the real provider-credential.sh in seed mode ran with a fake opencode and TMPDIR inside a scratch git work tree. The export cwd was /tmp/mg-seed-export.plhv5L, and git -C returned 128 (no work tree). The scratch work tree held no leftover, and no /tmp/mg-seed-export.* folder stayed. A fake git that reports a work tree for every path made the seed exit 2 with no export call (fail closed). See N5.",
+    "F5 closed: the real provider-credential.sh refused a job home that is a symlink out of the root ('the call HOME is outside the job root', seed and scan-values, zero fake calls). It refused a relative BENCH_OPENCODE_HOME ('the job root must be an absolute path') and an unset BENCH_OPENCODE_HOME ('no job folder'). A symlink to a valid job folder passed (control). The production runner guards ran verbatim: a normal root passed, and a symlinked home and a relative root refused. An unset process HOME does not refuse. The one exempt export then uses the account home, and every job call sets HOME itself. See N2 and N3.",
+    "Selection: the real helper selected the one active entry by integrationID (probe S1). The import stdin held 1 entry with the access and orgID markers and the refresh marker replaced by inert. It held no marker of another provider, of a legacy provider-only entry, or of an inactive entry. Two active entries of one integrationID refused as ambiguous in seed (S3: exit 2, no import call) and in scan-values (S6). A legacy provider-only entry (S4) and an inactive entry (S5) gave exit 2 with the fixed line 'the credential seed failed' and no import. Tests C8, C9, and C10 pin the same behavior.",
+    "Quota fail closed (29 probes through the real quota.ts with a fake ra-quota and fake last-good files in the real plans-wrapped shape): garbage, empty, '{}', no windows, a JSON array, junk around the object, weekly negative, string, null, only 5h, nested arrays, stale 7 h, stale 6 h 1 s, missing file, garbage file, string fetchedAt, and a plans object without opencode-go all gave stopped. Each gave one fixed 'quota:' line and exit 0. A good object gave ready, or wait at 5h 95 and weekly 100. A fresh 5 h 59 min reading gave ready. Two forged readings gave ready, see N1. A ra-quota that exits 1 with a good object also gave ready (probe D1).",
+    "Drivers (read only, not run): probe-4.10.sh:55 and night-4.11.sh:92 call 'timeout 90 ra-quota status --json' and parse the opencode-go 5h and weekly percent with python3 -I. A failed call, an empty body, a missing key, a non-number, a bool, and a negative value print fail, and the route is skipped. A 5h value of 95 or more, or a weekly value of 100 or more, skips the route. The drivers export only PATH, BENCH_QUOTA_BASE, BENCH_RA_QUOTA, and RA_QUOTA_LASTGOOD. They do not set BENCH_OPENCODE_PROC, and they hold no credential. The real status --json shape and the real last-good shape match the parse in quota.ts. /tmp/ra-quota-lastgood.json has mode 600.",
+    "No new real-HOME call form: the opencode binary call sites at HEAD are review-run.sh:732 and judge-run.sh:516 (run --standalone, HOME set to the job folder, unchanged in the range). The others are provider-credential.sh:131 (run_opencode, guarded by check_job_home) and provider-credential.sh:194 (the one exempt export: 'auth export <provider> --standalone', timeout 60, cwd in a fresh folder outside a work tree). No model-guide TypeScript file spawns an opencode binary. The added lines of the production diff hold no new HOME assignment and no file write. The only new folder is the mktemp -d seed cwd, removed after the call.",
+    "No value reaches stdout or a file outside the designed import: seed wrote 0 bytes to stdout in S1, S3, S4, S5, H4, H5, and H6. The job tree and the scratch work tree held no marker after any run. The new refusal lines name only the provider. scan-values prints the access value and the orgID on stdout by design (S7: 45 bytes, two lines), and the runner consumes them. The helper stderr files stay mode 600 and are removed (leftover tmp files: none). quota.ts echoes no ra-quota output: it discards the stderr, and every reason is a fixed string.",
+    "judge-run.sh: the block from daemon_pid_alive to stop_daemons differs from review-run.sh only in the INFRA line prefix (diff output). Both runners returned the same pid sets on the synthetic table, and both HOME guards behaved the same. I did not run judge-run.test.ts, because the brief lists three files.",
+    "Gate 1: bun test harness/model-guide-tests/review-run.test.ts -> EXIT 0, 65 pass, 0 fail, 502 expect() calls, 100.28 s. This matches the 65 of plan row 4.13r. pgrep for fake-opencod[e], quota-serve[r], and 'serve --servic[e]' printed nothing right after.",
+    "Gate 2: cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, 22 passed (22), 2.50 s. This matches plan row 4.13r. The three pgrep scans printed nothing right after.",
+    "Gate 3: the same command for quota.test.ts -> EXIT 0, 30 passed (30), 20.34 s. This matches plan row 4.13r. The scan right after showed fake-opencode and quota-server processes under /tmp/mg-review-run-YxhuuM and /tmp/mg-review-fake-ywg9m9 (pids 2221754 to 2221948). They belong to a concurrent session: my gate had ended, the pids are newer than my vitest pid, and the processes were gone at the next scan. A scan at the end of the audit printed nothing.",
+    "Process hygiene: this review sent no signal. The F3 simulation replaced kill with a shell function. No driver, no heavy-run.sh, no real opencode CLI, and no real ra-quota ran. The proofs used fake binaries and files under /tmp/opencode/review-b-ee48a25, outside the repository. The only repository writes are the two files under measure/runs/model_guide.",
+    "Test meaning: the tests D1, D2, D3, and JD1 now pin the real argv split from the spawn file of the fake (3 entries or more, serve and --service adjacent, no joined entry). A raw-string matcher cannot pass them. D4 and JD2 spawn real decoys for the '..' HOME, the sibling, and a cwd through a symlink. N3 extracts daemon_pid_alive verbatim. According to plan rows 4.13q and 4.13r, the new cases failed at the role base: 9 in review-run and 4 in judge-run. No test covers the starttime check, the runner HOME guard, or the fresh quota fallback: see N3, N4, and N7.",
+    "A2 (consent-blind publish gate): not applicable. The range flips no draft to published status and publishes no named subject. A6 (registry overstatement): not triggered. measure/tracks.md:34 lists model_guide as pending and marks no security state resolved. Plan rows 4.13q and 4.13r are marked done, and their guard claims match my proofs. The one exception is the F4 wording 'never sits under a git root', which holds only when git sees the work tree (N5).",
+    "Plan accuracy: the gate numbers of plan row 4.13r (65, 22, 30) match my runs. The row states that F3 has no test and gives the reason, and my reading confirms it. The row cites quota.ts:407-421 for the ra-quota branch, and that range is exact.",
+    "Measure-guard note: the harness appended a guard line that names the domain_trust track and its task 1.3. This audit belongs to model_guide. I took no action on that note and wrote only under measure/runs/model_guide."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --porcelain --untracked-files=no; git cat-file -t <phase_base, role_base, audited_head> -> HEAD ee48a25, no tracked change, three commits",
+    "git diff --stat c46161fb858de0883cf304a7dfc40f0afd486e64..ee48a254266afee947d555e4e562093c60d64153 -> 11 files, 1074 insertions, 82 deletions",
+    "git diff c46161f..ee48a25 for the three scripts, quota.ts, the test files, the fake, plan.md, and spec.md -> read in full",
+    "node -e (synthetic /proc table; production block extracted verbatim from review-run.sh and judge-run.sh; old c46161f block as control) -> F1 and F2 pid sets",
+    "node -e (production stop_daemons under set -euo pipefail, kill replaced by a function, fake proc table) -> TERM and KILL log for pids 91001 to 91004",
+    "node -e (real provider-credential.sh with a fake opencode, a scratch git work tree, and a fake git) -> probes S1 to S7, H1 to H6, and the GIT_CEILING probe",
+    "node -e (runner HOME guard text of both runners, run verbatim) -> 8 results",
+    "node -e (real quota.ts through tsx, fake ra-quota, fake last-good files) -> 29 probes",
+    "node -e (daemon_pids with the roots '/', '//', empty, '<root>//', '<root>/./', and the old guard for '/') -> selections",
+    "node -e (guard run with the cwd inside and outside the job root) -> self-match probe",
+    "bun test harness/model-guide-tests/review-run.test.ts -> EXIT 0, 65 pass, 0 fail",
+    "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, 22 passed",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, 30 passed",
+    "pgrep -af for fake-opencod[e], quota-serve[r], and 'serve --servic[e]' after each gate and at the end -> nothing of mine",
+    "read only: probe-4.10.sh, night-4.11.sh, the ra-quota status, last-good, and cache code, and the key shape of /tmp/ra-quota-lastgood.json and /tmp/ra-quota-cache.json"
+  ],
+  "changed_files": [
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/provider-credential.sh",
+    "harness/model-guide/quota.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/credential-provider.test.ts",
+    "harness/model-guide-tests/quota.test.ts",
+    "harness/model-guide-tests/fixtures/fakes/fake-opencode",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "c46161fb858de0883cf304a7dfc40f0afd486e64",
+  "audited_head_sha": "ee48a254266afee947d555e4e562093c60d64153",
+  "security_applicability": "applicable: the range changes the daemon guard that signals processes by pid, the HOME guard of every opencode call, the credential selection and seed export, and the quota source that gates paid runs",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The synthetic table at review-run.sh:422-455 selects pid 1001 (real NUL argv) and spares 2001, 2002, and 2003, but the HOME guard skips the XDG folders (probe H5) and the KILL skips an empty starttime record (pid 91004)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "D1 to D4, N3, C8 to C11, H1, H2, and Q16c and Q16d are real and discriminating (plan rows 4.13q and 4.13r record 9 and 4 failures at the role base), but no test covers the starttime check, the runner HOME guard, or the fresh quota fallback."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat c46161f..ee48a25 names 11 files, all within plan rows 4.13q and 4.13r: three scripts, quota.ts, four test files, the fake, plan.md, and spec.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Plan row 4.13r gate numbers (65, 22, 30) match my runs, and row 4.13r states honestly that F3 has no test, but the wording 'never sits under a git root' outruns the code when GIT_CEILING_DIRECTORIES hides the work tree (probe: seed cwd inside the work tree)."
+    }
+  ]
+}

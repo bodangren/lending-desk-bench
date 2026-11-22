@@ -1,0 +1,202 @@
+Red task 4.1e — page B data source (spec D16 "Data source (PM 2026-11-17)")
+Track: model_guide. Phase 4.
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 330d20fbc5611a7f0a631f699e85e7b0e55db485
+
+Commands (test-strategy 13.2, run one at a time, 2026-11-17, daytime rule A-23 held):
+
+  cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  18 failed | 2 passed (20)
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  12 failed (12)
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  92 failed | 7 passed (99)
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  15 failed (15)
+  cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1, Tests  5 failed | 4 passed (9)
+  cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0, Tests  22 passed (22)
+
+No failure carries a TypeError, a ReferenceError, a missing helper, or a syntax
+error. Every new case fails on the old CLI: `usage: real-work.ts --input <file>
+--out <folder>`, `usage: preview.sh --export <file> [--preview <folder>]`, or
+`usage: update.sh <export file>` where the new manifest contract is expected.
+That is the missing behavior of task 4.1f.
+
+1. Failed names grouped by DS id (all in the six runs above)
+
+DS1 (input-check.test.ts):
+  DS1: one flipped byte of ra-outcomes-2026-10-20.json with the size and the
+    JSON shape intact gives sha256 and no output file
+  DS1: one flipped byte of aa-reliability-2026-10-20.json with the size and
+    the JSON shape intact gives sha256 and no output file
+  DS1: one flipped byte of allowed-routes-2026-10-20.json with the size and
+    the JSON shape intact gives sha256 and no output file
+  DS1: a MANIFEST size of plus or minus one with the right SHA-256 gives size
+
+DS2 (input-check.test.ts):
+  DS2: a flipped byte that also breaks the JSON gives sha256, not json
+  DS2: a right SHA-256 with invalid JSON gives json
+  DS2: no MANIFEST gives manifest with the manifest file name
+  DS2: a MANIFEST with no line for one file gives manifest with the file name
+  DS2: a MANIFEST line that names ../decoy.json gives manifest and the decoy
+    is never read
+  DS2: a MANIFEST line that names sub/name.json gives manifest and the decoy
+    is never read
+  DS2: a missing data file gives input with the file name
+  DS2: an outcomes file that is not an array gives schema with the file name
+  DS2: an AA file with no models object gives schema with the file name
+  DS2: an allowed file that lacks an array gives schema with the file name
+  DS2: no argument gives one usage line on stderr, empty stdout, and no file
+  DS2: an empty manifest value gives one usage line on stderr, empty stdout,
+    and no file
+  DS2: an unknown flag gives one usage line on stderr, empty stdout, and no file
+
+DS3 (input-check.test.ts):
+  DS3: a passing run writes no input file name and no input bytes outside the
+    staged folder
+
+DS4 to DS13 (real-work.test.ts):
+  DS4: a route note strips at the first space-paren, so keys stay whole and
+    the footer route count is 30
+  DS5: the producer merge weights the first-round rate by accepted and the
+    averages by their own denominators
+  DS6: a null cell leaves the average denominator, an empty average shows a
+    dash, and a zero-task row has no row
+  DS7: the checker merge sums decided, not runs
+  DS8: the minimum is 5 tasks or runs, and a row with 5 tasks and no rate
+    sits in Too few tasks
+  DS9: the producer rank orders by accept %, then lower rework, then more tasks
+  DS10: the checker rank orders by pass %, then fewer escapes, then more runs,
+    and the route unknown never shows
+  DS11: the AA net score uses byEffort of the busiest variant, an alias, and
+    the -free suffix
+  DS12: the marks not-for-verdicts and not-allowed sit on the model rows as
+    attributes
+  DS13: the top block gives one line per role in the given order, with the
+    filters of rule 8
+
+DS14 to DS21 and FX2 (preview-gate.test.ts):
+  FX2: the page holds 9 ranked and 2 too-few producer rows, 11 ranked and 2
+    too-few checker rows, and 10 top lines
+  DS14: the page holds no work-type section and no heading that names a
+    retired work type
+  DS15: no producer header matches pass, and the checker table has no
+    blocking columns
+  DS16: the default columns match the pinned lists and every number cell
+    matches its format
+  DS18: the About this data footer holds the three files, the dates, and the
+    coverage of the fixture
+  DS19: the number cells carry white-space: nowrap and the model-name cell
+    carries no wrap lock
+  DS20: the print-audit block maps the raw route keys to plain names and holds
+    no raw key
+  DS21: the hostile route reaches the HTML escaped, __proto__ is an ordinary
+    row, and the counts hold
+
+DS17 (real-work.test.ts):
+  DS17: two providers with one plain name stay two rows, the default table
+    has no Routes column, and the routes sit in More columns
+  DS17: a key in model-names.json shows its plain name and an unnamed key
+    drops the plan prefix
+
+Changed G cases (preview-gate.test.ts, test-strategy 13.5):
+  G1: the footer lists the three files with their SHA-256 values and the read
+    date, below the first table
+  G2: the coverage numbers sit in the same About this data footer
+  G3: a row below the minimum of 5 sits in Too few tasks, with no rank, never
+    in the ranked table
+  G4: a rate is a whole percent with no (n=...), an empty value is a dash, and
+    the count columns hold the counts
+  G6: each top line without a pick shows one of the four causes
+  G7: the two default tables hold exactly the pinned columns
+  G8: the remaining columns sit behind a More columns toggle
+  G10: a plain model name comes from model-names.json and an unnamed key drops
+    the plan prefix
+
+Changed UX and print-audit cases (preview-gate.test.ts):
+  U1: the footer chain that holds a SHA-256 value carries a wrap rule
+  U3: every .table-wrap box carries tabindex, role, and a non-empty aria-label
+  U4: the ./real-work.html nav link carries aria-current="page" and no other
+    link does
+  T1: the print-audit block shows 52, 13, both results, the bias note, and the
+    calibration line
+  T11: the hostile route name and checklist text reach the HTML escaped, and
+    __proto__ adds no route
+  N4: the block shows every error type with its count and no placeholder line
+  T1: the block rows hold the real row shape and the per-route result of each row
+  P2U1-1: the block shows summary.bias_note when the top-level note differs
+    from it
+  P2B2-2 preview: a newest score file whose name holds a newline does not
+    steer the pick (the newest file by modification time wins)
+  plus the B2 route-escape, F14, F15, F19, A3-1 (x2) staging cases and the
+  publish cases that call preview.sh first (they fail on the new usage line).
+
+2. Base-passing guards (they pass at the role base on purpose)
+
+  FX1: the committed MANIFEST holds the SHA-256 and the size of each fixture
+    file (input-check.test.ts)
+  FX3: no test file names a real dated data file or the real MANIFEST
+    (input-check.test.ts)
+  LG1, LG2 (x4), LG3 (x4): the nine leak-check cases of section 13.7
+    (leak-check.test.ts, Tests 22 passed, exit 0)
+  preview-gate.test.ts (7, no page B data needed): B2-1 refuses preview.sh
+    with a dangling entry under docs without a traceback; B3-1 refuses publish
+    with a directory symlink under docs and writes no file; B3-1 refuses
+    publish with a relative docs symlink in the approval row and writes
+    through no link; B3-1 refuses publish with an outside docs symlink and
+    leaves the outside file byte-identical; C2 refuses publish without
+    preview-base.json and writes no file; C4 refuses publish without --preview
+    with a usage line; F20 refuses the root preview path before it starts a tool
+  update.test.ts (4): P2B2-1a, P2B2-1b, P2B2-1c, P2B2-1d (the symlink guard
+    runs before the tool)
+
+3. Cases that fail only because the CLI and the staging changed
+
+  Every item of list 1 fails first on the old usage line, because the hard
+  cutover of section 13.8 removed `--input`, `--export`, and the old
+  `update.sh <export>` form (Q-S1, Q-S12). The preview-gate publish cases that
+  call preview.sh first, the G/T/U/P2B2-2 page cases, and the D18 Q1/Q2 page
+  half belong here. They turn green when task 4.1f implements the manifest CLI.
+
+4. guide.ts and update.sh cases (normal Red cases; the orchestrator folded
+   them into 4.1f, so no case carries the [guide-bound] tag and none exists)
+
+  guide.test.ts (15, all listed above under their T/D18/FR-6/B8-1 names)
+  update.test.ts (5): U1, U2, U3, UP1, P2B2-2 update
+
+5. Retired cases (the new export has no work-type split and no old schema;
+   test-strategy 13.5 and D18 PM 2026-11-17)
+
+  preview-gate.test.ts: Acceptance 5 (x2), it.each(REQUIRED_COVERAGE_KEYS),
+  it.each(A32_CASES), B2 numeric coverage, G5, G9
+  guide.test.ts: T3 work-type rows case, starveWorkType and renameYM helpers
+  adversarial-p2.test.ts: P2ADV-7 ten-result boundary (the minimum now lives
+    in DS8 and DS13); P2ADV-8 rewritten to the fixture routes
+  adversarial.test.ts: the work-type __proto__ case and the rating-axis
+    __proto__ case (both features left the output schema)
+  adversarial.test.ts: E escapes a hostile export file name in the source
+    line (retired in fix r7: a hostile file name can no longer pass the
+    input check, because the RA-3 rule of spec D16 Inputs allows only the
+    three exact dated file names; the E hostile-value case covers the escape)
+
+6. Fixture files committed by Red
+
+  harness/model-guide-tests/fixtures/page-b/ra-outcomes-2026-10-20.json
+  harness/model-guide-tests/fixtures/page-b/aa-reliability-2026-10-20.json
+  harness/model-guide-tests/fixtures/page-b/allowed-routes-2026-10-20.json
+  harness/model-guide-tests/fixtures/page-b/MANIFEST-2026-10-20.txt
+  (a file under harness/model-guide-tests/fixtures/ counts as a test path,
+  is_tests_fixture in measure_interphase_checks.py; no deviation recorded)
+
+Open points carried to the handoff (decided by the orchestrator, applied):
+  - the refusal line goes to stderr, form `input-check: <check> <file name>`
+    with the base file name; a missing MANIFEST names MANIFEST-<date>.txt
+  - Test writing evidence prefix "page B producer"
+  - a row with no source shows "no pick yet" as its evidence text
+  - fixture producer pass/fail values stay as written
+  - update.sh usage line `usage: update.sh <path of MANIFEST-<date>.txt>`
+  - the unknown row is hidden (spec Q-S10 wins over the strategy note)
+Kept open for review: the U3 guard needs six .table-wrap boxes on the built
+page; Green must confirm the count or send it to the orchestrator.

@@ -1,0 +1,90 @@
+Red evidence for plan task 2.16 — UX test for the print-audit bias note
+(P2U1-1)
+Recorded 2026-11-16 by the mid-red role at role_base_sha b4fba01b280a7ccfc4186a1de318435d0d01c034
+Phase base: c22f313603108585f8bb45996057627acfbc78ae
+Finding: measure/runs/model_guide/ux-browser-b4fba01.json (P2U1-1)
+
+The defect: `preview.sh` `print_audit_block` renders only `audit["note"]`,
+the top-level scope note. It never reads `summary.bias_note`, so spec D17
+("The block on page B shows the two results, the error types with their
+counts, and the bias note") is not met. In the built page the string
+`wrote the answer key` appears 0 times.
+
+Contract decision recorded here (the orchestrator rule was "name the output
+field as the tool header and spec describe it"):
+
+- The tool header of print-audit.ts reads: "The output holds the 52 rows
+  with the fields id, severity, checklist (a code and a text), and results;
+  the error types with their counts; the two route results as `11 of 13`
+  style text; the summary; and the bias note." Spec D17 reads: "The file
+  holds ... the result of each run, the summary, and the bias note." Both
+  list the bias note as an item of its own beside the summary.
+- The tests therefore pin that item as the output field `bias_note`.
+- Measured before this task: the tool already copies `summary` whole, so
+  the bias note text IS in the output file today, at `summary.bias_note`
+  (verified with a variant input whose top-level `note` differs from
+  `summary.bias_note`: both strings reached the file). A plain
+  "the text appears somewhere in the output" assertion passes at HEAD and
+  would be no Red at all, so the contract was tightened to the item the
+  header and spec name. The tests also keep the summary path and the
+  "the top-level note does not replace it" checks, so a fix that only
+  overwrites `note` fails too.
+
+Targeted Red command (day rule: one file per run, one worker):
+  cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  2 failed | 13 passed (15)
+  The 13 earlier tests stay green. Only the two new tests fail.
+
+Failed test names (print-audit.test.ts):
+- P2U1-1: with a top-level note that differs from summary.bias_note the output holds the bias note as its own item
+  AssertionError: the output holds the bias note as its own item:
+  expected undefined to be 'Bias note marker for P2U1-1.'
+  The input carries `note` = "Scope note sentence that is not the bias
+  note." and `summary.bias_note` = "Bias note marker for P2U1-1."; the
+  output has no `bias_note` item.
+- P2U1-1: the real print-audit data file holds the real bias note as its own item
+  AssertionError: the real data file holds the bias note as its own item
+  (undefined). `harness/model-guide/data/print-audit-2026-11.json` holds
+  the real bias note only at `summary.bias_note` ("A Sonnet 5.5 session
+  wrote the answer key, so the s55 score may be too high. ..."), and its
+  top-level `note` is the scope note, which the test also pins apart from
+  the bias note.
+
+Targeted Red command for the page half:
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  1 failed | 99 passed (100)
+  The 99 earlier tests stay green, including T1, which reads `fixture.note`
+  from the block.
+
+Failed test name (preview-gate.test.ts):
+- P2U1-1: the block shows summary.bias_note when the top-level note differs from it
+  AssertionError: the bias note of summary reaches the print-audit block:
+  expected '<section class="card">...' to contain 'The sample favors
+  layout errors. One calibration run only.'
+  The fixture already holds two different texts: `note` = "One calibration
+  run on a fixed sample. It is one data point and not a rank." and
+  `summary.bias_note` = "The sample favors layout errors. One calibration
+  run only." The test asserts the precondition that they differ, so a
+  fixture edit that makes them equal fails the test instead of hiding the
+  defect (the reason the current unit test cannot see it).
+
+The other required files, each run alone with one worker, exit 0 with a
+labeled Tests line:
+  cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  8 passed (8)
+
+  cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  14 passed (14)
+
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+
+No existing assertion was changed, no fixture file was added, and no
+production file was edited. The new tests read the committed data file
+`harness/model-guide/data/print-audit-2026-11.json`, not the hand-off file.
+`git status --short docs/` prints nothing.

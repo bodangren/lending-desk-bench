@@ -1,0 +1,3 @@
+MEASURE_AGENT_RESULT
+{"audited_head":"2091d16451b2dde9198e47761e4d462809142b98","blocking_findings":[],"nonblocking_findings":[],"retry_recommendation":"none","role":"measure-review-c-ux-api","status":"pass","summary":"Review C passes at 2091d16. The lock refusal, the tag names, and the name-agnostic readers hold with passing suites. No Blocker or Major finding."}
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,23 @@
+review-b round 2 audit log, track model_guide, Phase 2, head 3d42bf8d84359364392f473d9ac6d9b9bef466d2
+provenance: phase_base_sha c22f313603108585f8bb45996057627acfbc78ae, role_base_sha 3d42bf8d84359364392f473d9ac6d9b9bef466d2, audited_head_sha 3d42bf8d84359364392f473d9ac6d9b9bef466d2, HEAD confirmed current and unchanged during the audit
+security_applicability: applicable. Round 2 changes touch the docs write gate, the score-file selection rule, and the rank tie-break.
+step 1: read the round 2 diff 6132fb7..3d42bf8: adversarial-p2.test.ts (9dd0833), guide.ts + preview.sh + update.sh (be41213), plan.md records (3d42bf8). Read adversarial-6132fb7.json (P2ADV-1 to P2ADV-5 blockers) and green-p2-9dd0833.log.
+step 2: verified the five fixes. P2B1-1 from round 1 is fixed by Object.hasOwn in guide.ts parseArgs and pinned by P2ADV-4. D13 tie-break matches spec.md:556-557 (worst score, then worst blocker recall, then median) and is pinned by P2ADV-1. Newest-by-mtime replaces the alphabetical glob match in both scripts, pinned by P2ADV-2. No-change rerun exits 0 with no commit and a clean tree, pinned by P2ADV-3. Symlinked data dir refused with exit 2 before any write, pinned by P2ADV-5.
+step 3: symlink guard scope check (brief item). update.sh:53-58 checks -L on docs, docs/assets, docs/assets/data only. The files written through are not checked: docs/assets/data/real-work.json and model-guide.json (cp at :110-111), and on the before-approval branch (live today, no approval record) PREVIEW_ABS itself (mkdir -p :103) plus preview real-work.json and model-guide.json (cp :104-105). Demonstrated in /tmp/opencode/p2b2-cp that a copy through a planted destination symlink overwrites the outside target. Same primitive P2ADV-5 rated blocker one level up; preview.sh already refuses planted links in the same preview folder. Blocking finding P2B2-1, routed to Green.
+step 4: newest-file rule hostile names (brief item). Demonstrated in /tmp/opencode/p2b2-scores: spaces, glob characters, and leading dashes are safe (absolute paths, -- present, single-pass glob, quoted use); a newest file named evil.json-newline-mg-a.json steers the selection to the older evil.json because ls -1t | head -n 1 parses line-based. No privilege escalation (folder writer wins by mtime anyway; guide.ts validates the chosen file), but the header promise fails on this edge. Non-blocking P2B2-2 with a stat-based fix suggestion.
+step 5: no-change path (brief item). git add of the two explicit paths, git diff --cached --quiet on the same pathspec, exit 0 before the commit. Identical content leaves nothing staged; unrelated staged or dirty entries are untouched; both cp writes complete before the check, so no partial state. Pinned by P2ADV-3 and U2.
+step 6: write paths and quoting (brief items). No new write path in the round 2 diff; newest_score_file is read-only. Every expansion stays quoted, including $folder, $SCORES, and the GUIDE_ARGS array; P2ADV-11 pins a repo path with a space.
+step 7: nits. guide.ts defaults a missing or non-finite blocker_recall to 0 instead of refusing (P2B2-3, inconsistent strictness in one validator). Round 1 P2B1-2 double-read TOCTOU in print-audit.ts stays open as P2ADV-7 (P2B2-4 carryover; file unchanged).
+step 8: tests at HEAD, single files, exit 0 each: adversarial-p2 14/14, update 3/3, guide 15/15, preview-gate 98/98. git status --short docs/ empty. A2 gate unchanged (approval record absent). A6: tracks.md unchanged, no resolved security claim. Task 2.8 stays open and is not a finding; this round serves as its code check of the round 2 diff.
+verdict: fail. One blocker P2B2-1 routed to Green, three non-blocking nits. retry_recommendation retry_implementation. confidence high.
+
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 3d42bf8d84359364392f473d9ac6d9b9bef466d2
+result_file: measure/runs/model_guide/review-b-3d42bf8.json
+retry_recommendation: retry_implementation
+summary: Round 2 fixes for P2ADV-1 to P2ADV-5 are correct and pinned with all four suites green (130 tests), but the update.sh symlink guard misses the files it writes through (docs target files and the live preview-branch targets), so a planted symlink redirects the cp write outside the folder; blocker P2B2-1 routes to Green, plus three non-blocking nits.
+END_MEASURE_AGENT_RESULT

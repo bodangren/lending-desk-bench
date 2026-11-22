@@ -1,0 +1,36 @@
+ux-browser rerun for track model_guide, phase Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+audited_head_sha 9cb95b6643eba0cd04f0623865224f3d9ef88b3c
+provisional verdict inconclusive, written first at the start of the run
+prior audit at 80c17f5: measure/runs/model_guide/ux-browser-80c17f5.json
+webbridge status running true extension_connected true, daemon v2.0.27, extension v2.0.36
+server python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview, URL answered 200
+set 1280x900 -> innerWidth 1280, scrollWidth 1270, clientWidth 1270, no horizontal scroll
+set 390x844 -> innerWidth 390, scrollWidth 390, clientWidth 390, no horizontal scroll
+clipped boxes outside .table-wrap -> 0 at 1280 px and 0 at 390 px, U1 holds
+source paragraph at 390 -> scrollWidth 311 equals clientWidth 311, card scrollWidth 356 equals clientWidth 356, full SHA-256 reads
+Tab walk -> 8 links, then 7 named .table-wrap boxes, then BODY, U3 holds
+ArrowRight on each of the 7 boxes -> scrollLeft 0 to 40, ArrowLeft returns 0, U3 holds
+aria-current -> one element, link Real work value page, class active on the same link, U4 holds
+rate scan at 390 -> 155 cells, 0 outside pattern value (n=count) or no rate
+rate scan at 1280 -> 196 cells, 5 outside pattern, all five Trend cells with empty state no trend
+mark scan -> 94 cells hold few runs, method note holds the phrase once, marked rows sit after unmarked rows
+tables -> 7 tables: producer 12 rows, checker 29 rows, five work types with H3 app code 29, docs and ops 14, other 1, print books 19, tooling 10
+no pick yet -> 0 occurrences, all five work types rank
+AX tree at 390 -> 4781 nodes, 1 navigation, 1 main, 13 headings, 7 tables, 121 rows, 70 columnheaders, 1199 cells, 8 named links, 7 named regions
+console and network -> 0 script tags, reload captured 4 requests all 200, stylesheet 114 rules, no console error
+U2 re-measured at 1280 -> checker table 1111 px, box 1071 px, mark column 40 px outside the box, stays known nonblocking
+U5 re-checked -> page declares no icon link, docs/ has no favicon.ico, direct request answers 404, stays known nonblocking
+screenshots -> 6 files under measure/runs/model_guide/ux-9cb95b6/
+sessions closed -> guide-ux9 closed 1 tab, guide-ux9b closed 1 tab
+server killed by pid, port 8766 free, HEAD unchanged at 9cb95b6643eba0cd04f0623865224f3d9ef88b3c
+final verdict pass
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 9cb95b6643eba0cd04f0623865224f3d9ef88b3c
+result_file: measure/runs/model_guide/ux-browser-9cb95b6.json
+retry_recommendation: none
+summary: U1, U3, and U4 hold, the five work-type tables show, and the Phase 1 checklist passes at 1280 px and 390 px with no console error. U2 and U5 stay known nonblocking items.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "phase_base_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "role_base_sha": "d137057f6b419ed8cda4247ac1805235ae1a2f4c",
+  "audited_head_sha": "d137057f6b419ed8cda4247ac1805235ae1a2f4c",
+  "reviewer_model": "Step 5 Preview",
+  "route": "nvidia/stepfun-ai/step-5-preview#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 3 of the security review, delta only. The change over f497917 holds four files: the new adversarial test file, adjudicate.ts, review-set.ts, and plan.md. No new write path appears and no symlink or set-id refusal is weakened. adjudicate.ts now builds the claim key from the same JSON tuple that the claim id hashes, so the queue dedups on the claim identity. review-set.ts adds one lint failure for a plant range that holds no added line, and the line prints only the diff id and the plant id. The queue item holds no route name and no private path. The four single-file suites pass at HEAD. The round 2 nit P3B2-1 carries open.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P3B2-1 [Nit] review-b: nothing enforces the D9 order of the key SHA-256. review-set.ts still computes key_sha256 from the key bytes at lint time, and adjudicate.ts rewrites the key files after the lint, so a lint run before the apply publishes a hash that the apply invalidates. The delta of 8fee6bb changed neither line. The phase plan controls the order at task 4.13: the apply runs first, then the lint runs again, then the orchestrator commits the manifest. Carries round 2 P3B2-1 and round 1 P3B1-6. Non-blocking."
+  ],
+  "evidence": [
+    "Provenance: `git --no-pager rev-parse HEAD` printed d137057f6b419ed8cda4247ac1805235ae1a2f4c before the audit and again after the probes; it equals audited_head_sha and role_base_sha. No docs/assets/data-only publish commit landed during this audit, so I audit d137057.",
+    "Delta scope: `git --no-pager diff --stat f497917 d137057` holds four files: adversarial-p3.test.ts (674 new lines), adjudicate.ts (15 changed lines), review-set.ts (13 new lines), and measure/tracks/model_guide/plan.md (12 new lines). No fixture, no docs path, and no other harness file changed.",
+    "F7 (P3B1-2) rechecked and still withdrawn: the symlink guards are byte-identical to round 2 and the call sites are unchanged. adjudicate.ts:276 refuses for queue, 375 for verdicts, 376 for real-defects, and 432 for the key write-back, each on writePath(target, privateDir); review-set.ts:524 refuses for the manifest; review-score.ts:451 and pick-diffs.ts:299 hold their round 2 guards. The adjudicate suite (20/20) and the review-set suite (18/18) still pin the refusal lines, so no refusal is weakened.",
+    "F8 (P3B1-5) rechecked and still withdrawn: isPlainSetId guards are unchanged in review-set.ts:171-174, review-score.ts:97-101, adjudicate.ts:100-102, and pick-diffs.ts:88-92, and the plain-name refusal tests pass in the four suites.",
+    "No new write path: each write call site of the two changed tools is the same one as round 2. adjudicate.ts writes queue.json, verdicts.json, real-defects.json, and the key files only, and review-set.ts writes the manifest only. The delta adds no mkdirSync, no writeFileSync, and no other output path.",
+    "Queue secrecy after the dedup change: claimKey is now JSON.stringify of the same tuple that claimId hashes (adjudicate.ts:252-269), so the dedup key and the claim id agree. Probe in a temp private folder: two raw routes report one claim whose reason differs by one whitespace, and the queue holds two items with two ids (forge-01#C9054d785bd53 and forge-01#C9edb06468787). The queue text holds no route name and no private path. Each item holds only id, line, and claim(class, severity, title, reason), which is what the queue held before.",
+    "New lint line secrecy: `lint: plant-line: <diff_id> <plant_id>` prints only the diff id and the plant id (review-set.ts:459-462, and holdsAddedLine at 311-317). Probe: a key whose plant new_lines move to [9999, 9999] gives `lint: plant-line: forge-01 P1`, exit 2, and no manifest in the sets folder. The line holds no plant text, no file, no line number, and no private path.",
+    "New tests use temp folders only: adversarial-p3.test.ts builds its root with mkdtempSync from tmpdir, holds no /home or /Users path, and copies no fixture outside the temp folder. It ran green here at 23/23.",
+    "Tests at HEAD, each a single file with `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`, all exit 0: adversarial-p3 23/23, adjudicate 20/20, review-set 18/18, leak-check 13/13.",
+    "Round 2 suites not rerun here stay green from round 2: pick-diffs 19/19, review-score 25/25, and leak-guard 2/2 at f497917, and the delta changes neither pick-diffs.ts nor review-score.ts nor leak-check.ts.",
+    "A2 not applicable and unchanged: no tool or test flips a draft to a published state, and publish.ts and preview.sh are absent from the delta. A6 clean: the delta holds no measure/tracks.md change, so no security state is newly claimed resolved; measure/tracks.md:40 still shows model_guide as pending.",
+    "P3B2-1 carries open: the 8fee6bb delta touches neither the key_sha256 computation in review-set.ts nor the key write-back in adjudicate.ts, so the D9 order stays a workflow control of task 4.13."
+  ],
+  "commands": [
+    "git --no-pager rev-parse HEAD (d137057f6b419ed8cda4247ac1805235ae1a2f4c, before the audit and after the probes)",
+    "git --no-pager log --oneline f497917..d137057",
+    "git --no-pager diff --stat f497917 d137057",
+    "git --no-pager diff f497917 d137057 -- harness/model-guide/adjudicate.ts harness/model-guide/review-set.ts",
+    "grep -n refuseSymlink|isPlainSetId|writePath harness/model-guide/adjudicate.ts harness/model-guide/review-set.ts",
+    "grep -c mkdtempSync|tmpdir() harness/model-guide-tests/adversarial-p3.test.ts; grep -n /home/|/Users/ the same file",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p3.test.ts --configLoader native --maxWorkers=1 --reporter=dot (23 passed)",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (20 passed)",
+    "cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot (18 passed)",
+    "cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (13 passed)",
+    "node -e copy of the fixture private set into /tmp/opencode/p3b2b with one plant moved to new_lines [9999, 9999]",
+    "timeout 120 npx tsx model-guide/review-set.ts lint mg-2026-11a --private /tmp/opencode/p3b2b/private --sets /tmp/opencode/p3b2b/sets --created 2026-11-13 (exit 2, `lint: plant-line: forge-01 P1`, no manifest)",
+    "timeout 120 npx tsx model-guide/adjudicate.ts queue mg-2026-11a --private /tmp/opencode/p3b2b/priv2 --raw /tmp/opencode/p3b2b/raw (exit 0, two items, two ids, no route name, no private path)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-d137057.json",
+    "measure/runs/model_guide/review-b-d137057.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The two changes do what the brief says: the queue splits two whitespace-different claims into two ids (probe items=2) and the lint refuses a plant at [9999,9999] with `lint: plant-line: forge-01 P1`."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "adversarial-p3.test.ts pins each delta rule and passes 23/23, and the adjudicate 20/20 and review-set 18/18 suites still pin the symlink and set-id refusals."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat f497917 d137057 holds exactly the test file, the two tools, and plan.md; no fixture, docs path, or other harness file changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each claim has a file:line from the delta diff, a single-file test count, or a bounded /tmp probe result."
+    }
+  ]
+}

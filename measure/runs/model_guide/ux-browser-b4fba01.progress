@@ -1,0 +1,10 @@
+01:16:30 start provisional JSON and log written before any browser step
+01:18:00 check1 index overview table done 6 rows, table above hero (top 66 vs hero 576), pick or no-pick, second choice, evidence, date present; base line only on 2 of 6 rows by the design of guide.ts
+01:19:41 check2 print-audit block fail 52, 13, both route results, error type counts, one calibration run and not a rank present; the bias note summary.bias_note is absent from the page
+01:21:25 check3 390px no page scroll done real-work docSW 390 = docCW 390, 0 clipped boxes outside .table-wrap; index docSW 390 = docCW 390, 0 clipped
+01:22:00 check4 focus and names done real-work 7 scroll boxes with tabindex 0, role region, aria-label each; Tab walk reaches all 7; ArrowRight scrolls 0 to 40; index overview box named Model guide table, 2 older boxes unnamed
+01:22:30 check5 console done 0 errors on index.html and real-work.html at 1280 and 390
+01:24:00 ax trees done real-work 4894 nodes, 7 named regions, 8 named links; index 704 nodes, 2 named regions, 29 named links
+01:25:30 audit result JSON written and validated by measure_interphase_checks.py audit-result (PASS: audit result is valid)
+01:26:00 server stopped with kill 3730024; port 8766 free; webbridge session p2ux closed
+01:26:30 final status fail with one blocking finding P2U1-1 (the print-audit block omits the bias note)

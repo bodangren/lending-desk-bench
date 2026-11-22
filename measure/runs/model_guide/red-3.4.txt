@@ -1,0 +1,39 @@
+Red task 3.4 — the adjudication queue and apply (spec D11, FR-12)
+Base: bf8fa50855f9401684b6a54ab48c1e2e691480e6
+
+Command:
+  cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  13 failed (13)
+Test Files  1 failed (1)
+
+Every failure is the absent module:
+  Error: production file is missing:
+  /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/adjudicate.ts
+  (Phase 2 has no adjudicate tool)
+
+Failed test names (13):
+1.  J1 the queue units > J1 writes one item per finding with its id and no route name
+2.  J1 the queue units > J1 groups by file and a 3-line window
+3.  J1 the queue units > J1 leaves out a finding that matches a plant
+4.  J2 the apply mapping > J2 maps real-defect to neutral and to the key
+5.  J2 the apply mapping > J2 maps false-claim to a false claim
+6.  J2 the apply mapping > J2 maps unclear to provisional
+7.  J2 the apply mapping > J2 treats a verdict the two judges do not share as unclear
+8.  J2 the apply mapping > J2 keeps two different claims of one group as two items with their own verdict
+9.  J3 the blind queue > J3 holds no route name and no verdict
+10. J4 no rescue > J4 never makes a wrong-line finding found through apply
+11. J4 no rescue > J4 never makes a wrong-class finding found through apply
+12. J4 no rescue > J4 never counts a disagreement against the model
+13. the write flags > each missing value exits 2 with one named line and writes nothing
+
+No product assertion has run, so no test passes at the base. The tests reuse
+the fixtures/review/ corpus of task 3.2 and add no fixture. Tests 4 to 12 also
+start the scorer of task 3.3 with the `verdicts.json` that `apply` writes, so
+`apply` is proven by the same verdict contract that review-score.test.ts pins
+(`<diff_id>#F<n>` and the words real-defect, false-claim, unclear).
+
+Other required suites at the base:
+  leak-guard.test.ts  exit 0, Tests  2 passed (2)
+  guide.test.ts       exit 0, Tests  15 passed (15)

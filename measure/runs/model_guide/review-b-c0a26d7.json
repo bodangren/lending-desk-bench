@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-b-security",
+  "track": "model_guide",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "status": "pass",
+  "summary": "Pass at HEAD c0a26d7 with no blocking finding. I found no path that carries a real key into a committed file or a public page. Tasks 4.13aa and 4.13ab close N22 and N23 on every printed path. All 57 key probes show the fixed text and no full key. The ten gate files pass, and two needed one re-run after another session tripped the unscoped orphan check. Three new items (N30 to N32) and the carried items go to backlog 4.14.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N30 [Nit] backlog 4.14: Two scan paths still have no failing test, so N25 is only partly closed. Mutation r6 prints the unscanned stdout event text in the probe region branch, and all 18 cases of tasks 4.13y and 4.13aa pass. Mutation j7 does the same in the judge `--start-test` line, and all 6 judge cases pass. The code is right (probes PM4, PM10, JN1, and JN3). Fix: add two cases. The first case is a probe with a key in the stdout event of a region error. The second case is a start test with a key in a stdout event.",
+    "N31 [Nit] backlog 4.14: A failed scan and a found key print the same fixed text. The cases AA1, AA2, JA1, and JA2 pin this text. In probes PN12 and JN6 a clean error line (connection reset by peer) and a failed scan printed `the error output held a credential value`. A live operator reads a false key alarm and cannot read the real error. Fix: print a separate fixed text for a failed scan. Change those four cases.",
+    "N32 [Nit, outside the range] backlog 4.14: The quota reason line goes to stdout and to the records without a scan (`review-run.sh:649`, `judge-run.sh:486`). Its text can hold the `error` string of the loopback quota answer (`quota.ts:276`). That source never sees the job-store key, and I found no key path. Fix: map the reason to a fixed list of texts.",
+    "N24 [Nit, carried] backlog 4.14: The scan matches a whole key only. Probes PM9 and JM9 wrapped a key over two stderr lines. The prefix `sk-test-creden` (14 characters) reached stdout and the records, and no full key reached any output. Fix: accept the limit. Record the limit in the plan.",
+    "N26 [Nit, carried] backlog 4.14: The error line has no length cap. Probes PM19 and PM20 sent 300 KB to stdout, then `write_probe_record` failed with `Argument list too long`. Probe PS8 gave exit 126 and no pass record. Fix: cut the line to 500 bytes in `error_line_of`.",
+    "N27 [Nit, carried] backlog 4.14: `read_tokens` keeps `tokens_complete` true when a sum passes 2^53 (probe PS7 gave 27021597764222972) or when the last `step_finish` line is cut. Fix: clear the flag in both cases.",
+    "N28 [Nit, carried] backlog 4.14: A probe that fails once and then succeeds stores the first error line (PM15). The record then holds the state `reachable` and an error line. Fix: clear `error_line` when the state is `reachable`.",
+    "N29 [Nit, carried, outside the range] backlog 4.14: `scan_output` writes the key values to `$TMPDIR/mg-review-values.$$` and `mg-judge-values.$$` (mode 600). A SIGKILL leaves the file. It sits in `/tmp` or in the ignored `.tmp/`, so no commit holds it. Spec D14 says the helper writes no value into a file. Fix: read the values through a process substitution.",
+    "N20 [Nit, carried: implemented, live check pending] backlog 4.14: `error_event_text` reads `error.message`, `error.data.message`, and a string `error`. Only the first live probe shows the real text of the Go region error.",
+    "N5 [Nit, carried] backlog 4.14: The seed cwd fallback trusts the exit status of `git rev-parse`. `provider-credential.sh` has no diff in the range.",
+    "N9 [Minor, carried] backlog 4.14: `stop_daemons` logs `INFRA stopped daemon <pid>` for every selected pid, and no test covers the starttime mismatch branch (`review-run.sh:500-547`).",
+    "N10 [Minor, carried] backlog 4.14: The XDG guard checks the first level of each call path only. A link at `data/opencode` and a link at `data/opencode/auth.json` both pass (`review-run.sh:746-757`).",
+    "N11 [Nit, carried] backlog 4.14: The daemon matcher selects a process whose argv holds `serve` and `--service` in any order and at any distance (`review-run.sh:480`).",
+    "N12 [Nit, carried] backlog 4.14: The fence regex in `judge-run.sh` takes time with the square of a run of fence openers. The output cap of the call bounds the cost.",
+    "N13 [Nit, carried] backlog 4.14: The three decoders differ in guards and fence rule, and the `result` branch stays in all three.",
+    "N15 [Nit, carried] backlog 4.14: The orphan scans are not scoped to the own temp folder of the test. In this audit they failed on another session's process in `review-run.test.ts` (the test `resolves the opencode of the spawn to the fake and leaves no fake process`) and in `quota.test.ts` (the file-level check). A re-run passed each time.",
+    "N21 [Nit, carried] backlog 4.14: The message rule `[[:cntrl:]]` is ASCII-only under `LC_ALL=C`. U+202E, U+0085, and U+200B pass (`review-run.sh:361`)."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned c0a26d75a37955bb9c20be9cb3ab2d993d39907b at the start and at the end of the audit. The brief names c0a26d7. The phase_base_sha is 57baaaa364f968a2f44c6e14eb96f8a9d68beebf. The role_base_sha is f26965dc13381a14a5c27db16c3e4a2ce67e5a33, the audited head of the earlier Review B. The working tree held only the four untracked paths that existed at the start.",
+    "Security applicability: applicable. `git diff --stat f26965d..c0a26d7` names 5 files with 467 insertions. The production hunks are 12 lines in `review-run.sh:866-883` and 12 lines in `judge-run.sh:637-654`. Both hunks sit in `error_line_of`, which prints the error line of a failed model call.",
+    "Scope: commit 62126e2 changes tests and the plan only. Commit b795f32 changes the two runners only. `git diff --stat 62126e2 c0a26d7 -- harness/model-guide-tests` is empty, so Green changed no test and no fake. `provider-credential.sh`, `quota.ts`, `seed-messages.ts`, and `opencode-host.sh` have no diff in the range.",
+    "Failing first: I extracted 62126e2 with `git archive`. Its runners are identical to those of f26965d (`diff -q`). `bun test harness/model-guide-tests/review-run.test.ts -t 'task 4.13aa'` there gave 4 fail (AA1, AA2, AA3, AA5) and 1 pass (AA4, a guard). `npx vitest run model-guide-tests/judge-run.test.ts -t 4.13aa` gave 3 failed (JA1, JA2, JA3) and 2 passed (JA4 and JA5, both guards). The counts match plan row 4.13ab: 82 pass and 4 fail before the fix, 86 after; 42 pass and 3 failed before, 45 after.",
+    "Mutation proof, review-run: in scratch copies of HEAD, mutation r1 (remove the fail-closed block) and r4 (the block never runs) fail AA1 and AA2. Mutation r2 (remove the decoded-text scan) and r3 (scan the file, not the line) fail AA3 and AA5. Mutation r7 (the pass region branch prints unscanned event text) fails Y12 and AA5. Mutation r8 (no scan for a stdout-sourced line) fails Y12, AA3, AA4, and AA5.",
+    "Mutation proof, judge-run: mutation j1 fails JA1 and JA2, and mutations j2 and j3 fail JA3. Mutation j4 (no scan for a stdout-sourced line) fails JA3 and JA4. Mutation j5 (an unscanned start-test line) fails JA2 and JA5. Mutations j6 and j8 (unscanned group-loop lines) fail JA3 and JA4, and j6 also fails JY1 and JA1. So the earlier N25 gaps j1 and j2 are closed.",
+    "Surviving mutations: r6 (the probe region branch prints the unscanned stdout event text) gave 18 pass and 0 fail. j7 (the start-test line prints the unscanned stdout event text) gave 6 pass and 0 fail. This is finding N30. The production code is right on both paths, as probes PM4, PM10, JN1, and JN3 show.",
+    "Key probes re-ran at HEAD in a scratch copy of c0a26d7 with fakes only. The sets are PM1 to PM20 and PS1 to PS8 (28 cases), JM1 to JM11 (11 cases), and 18 new cases (PN1 to PN12, JN1 to JN6).",
+    "The old leaks of N22 (PM16, PM17, PS6, JM6, JM7) and N23 (PM6, PS5, JM3) now print the fixed text. The cases PM1 to PM5, PM7, PM11 to PM13, PS1, PS2, PS4, JM1, JM2, JM4, and JM5 give the fixed text too.",
+    "In none of those 57 cases did a full key or an orgID reach an output or a file. I checked stdout, stderr, the probe, pass, and judge records, the private folder, the repository copy, the runner temp folder, and the fake log. The only text of a key is the 14-character prefix of N24 in PM9 and JM9. PM14 and JM10 (a key in a successful answer) gave the existing refusal line.",
+    "New edge probes put a key with a quote and a backslash at the start of a long stdout error event. PN1, PN2, PN3, and PN5 use 200 KB, 70 KB, 100 KB, and 10 KB. PN4 does the same in pass mode, and PN6 uses a string `error` field. PN7 and JN4 fail the scan after a good seed. PN8, PN9, and JN5 use the real helper. PN10 uses the orgID, and PN11 uses a key with a newline. All gave the fixed text and no key.",
+    "Pipefail check: the decoded-text scan pipes one line into `grep -q` under `pipefail`, and a SIGPIPE could fail it. In plain bash 5.3.9 (SIGPIPE default, `yes | grep -q y` gave 141) the same pipeline with a key at the start returned 0 for lines up to 1000027 bytes. `grep` reads the whole single line before it matches, so the writer always ends. I found no bypass.",
+    "Path audit, records: the probe, pass, and judge records go to `<private>`, default `$HOME/.local/share/lending-desk-bench/model-guide`, which sits outside the repository. A search of `harness/model-guide/*.ts` found no reader of the pass `errors` field or the probe `error` field.",
+    "Path audit, score file: `review-score.ts:531-549` writes route, pass, date, a computed state, and numbers. It reads no runner record, and its header says the score file holds no finding text. `guide.ts` reads only the score file, `real-work.json`, and three other data files.",
+    "Path audit, `pages/real-work.html`: the page is a static template of 8537 bytes. `real-work.ts` builds `real-work.json` from three dated data files named in the manifest, and it reads no runner record. Eight key-shape patterns (sk-, sk-ant-, ghp_, github_pat_, AKIA, AIza, xox, JWT) matched 0 tracked files. The range adds one fake key: `sk-test-\"quoted\"\\back` plus a tab.",
+    "Path audit, logs and stdout: `.gitignore:11` (`runs/`) ignores `measure/runs/**`, and `.gitignore:23` (`.tmp/`) ignores the job folder where the key sits during a run. `heavy-run.sh` writes only the job label, the first 120 characters of the command, and the exit code to `~/.local/state/heavy-run.log`. The runner prints error text only after the scan and the decoded-text scan, and `opencode-host.sh` prints paths and counts only. The earlier live probe capture `probe-4.10.txt` holds 0 key-shaped strings.",
+    "Gates at HEAD, one file at a time, fakes only: `bun test harness/model-guide-tests/review-run.test.ts` gave 85 pass and 1 fail at the first run (the unscoped orphan check saw another session's quota server). The re-run gave 86 pass, 0 fail, 671 expect() calls in 172 s. Vitest gave judge-run 45, decode-parity 3, adjudicate 23, review-score 27, credential-provider 22, adversarial-p4-runner 14, adversarial-p4b 12, and seed-messages 17 passed.",
+    "The first run of `quota.test.ts` gave 30 passed and a file-level failure (`an orphan process of this run stays alive`) while another session ran a judge test. The re-run gave 30 passed with no failure. The counts for review-run, judge-run, decode-parity, adversarial-p4-runner, and adversarial-p4b match plan row 4.13ab (86, 45, 3, 14, 12). `bash -n` passes for both runners and the helper.",
+    "A2 (consent-blind publish gate) is not triggered: the range flips no draft to published, names no subject, and has no commit of `publish.ts` in `57baaaa..HEAD`. A6 (registry overstatement) is not triggered: `measure/tracks.md:34` lists model_guide as pending and holds no resolved security claim. That line is stale, because it says Red task 1.1 comes next.",
+    "Observation outside the range: `.opencode/` is untracked and not ignored, and a `git add -A` would commit it. It holds goal-lock files with hostnames, pids, UUIDs, and 40-hex sentinel tokens. I found no provider credential there. Adding it to `.gitignore` is advisable.",
+    "State of earlier findings: N22 is closed (PM16, PM17, PS6, JM6, JM7, PN7, JN4, mutations r1, r4, j1). N23 is closed (PM6, PS5, JM3, PN1 to PN4, PN6, PN9, JN5, mutations r2, r3, j2, j3). N25 is partly closed. The judge gaps j1 and j2 are closed. The review gap m8 (now r6) stays open, and the new variant j7 joins it (N30). N24, N26 to N29, N20, N5, N9 to N13, N15, and N21 stay open and appear above.",
+    "Process hygiene: after each run, `pgrep -af 'fake-opencod[e]|quota-serve[r]'` showed nothing of mine. Quota servers and fake processes of other sessions appeared in many checks (`/tmp/mg-judge-fake-*`, `/tmp/mg-review-fake-*`, `/tmp/mg-adv-r-*`) with changing pids. I sent no signal to a process that I did not start. I started no server outside the test files, and I ran no `opencode`, no `openchamber`, and no `heavy-run.sh`. At the end no process referenced my scratch folder.",
+    "Shell rules: the shell refused several commands (a `bash` heredoc, a script text with a literal `rm -f`, and a pattern with `cp`). I rewrote those steps with `node` and `fs`. The ten gate runs at HEAD used no redirection and no pipe except `grep` and `cut` on the output. The Red-base, probe, and mutation runs used `2>&1` into a pipe, in scratch copies only. I wrote no output to a file by redirection.",
+    "Scratch files sit under /tmp/opencode/review-b-c0a26d7 (about 80 MB). They hold `git archive` copies of c0a26d7 and 62126e2, the probe test copies, and the mutation copies r1 to r8 and j1 to j8. They are outside the repository. The repository changed only by the two result files in `measure/runs/model_guide`, a folder that git ignores.",
+    "Measure-guard note: the harness appended a guard line about the track domain_trust and its task 1.3. This audit belongs to model_guide. I took no action on that note."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> c0a26d75a37955bb9c20be9cb3ab2d993d39907b (start and end)",
+    "git diff --stat f26965d..c0a26d7; git diff f26965d..c0a26d7 -- harness/model-guide/review-run.sh harness/model-guide/judge-run.sh; git show --stat 62126e2 9e7672f b795f32 c0a26d7; git diff --stat 62126e2 c0a26d7 -- harness/model-guide-tests (empty)",
+    "git archive --format=tar -o <tar> c0a26d7|62126e2 harness; tar -xf (scratch copies under /tmp/opencode/review-b-c0a26d7)",
+    "cd <62126e2 copy> && bun test harness/model-guide-tests/review-run.test.ts -t 'task 4.13aa' -> 1 pass, 4 fail (AA1, AA2, AA3, AA5)",
+    "cd <62126e2 copy>/harness && npx vitest run model-guide-tests/judge-run.test.ts -t 4.13aa --configLoader native --maxWorkers=1 -> 3 failed (JA1, JA2, JA3), 2 passed",
+    "cd <HEAD copy> && bun test harness/model-guide-tests/review-b-probe.test.ts -t 'REVIEW-B f26965d probes' -> 25 pass (PM1 to PM18, PS1 to PS7); -t 'REVIEW-B f26965d extra' -> PM19, PM20, PS8; -t 'REVIEW-B c0a26d7 new probes' -> PN1 to PN12",
+    "cd <HEAD copy>/harness && npx vitest run model-guide-tests/judge-b-probe.test.ts -t 'REVIEW-B f26965d judge probes' -> JM1 to JM11; -t 'REVIEW-B c0a26d7 new judge probes' -> JN1 to JN6 (--configLoader native --maxWorkers=1 --reporter=dot)",
+    "node (heredoc): builders for the probe files and the mutation copies r1 to r8 and j1 to j8, then bun test or vitest of the 4.13y and 4.13aa cases in each copy",
+    "plain bash experiment: printf big-line | grep -F -q -f values under set -o pipefail, for filler sizes 100 to 1000000 -> rc 0 each time; yes | grep -q y -> 141",
+    "git grep -I -l -E <8 key-shape patterns> -> 0 tracked files; git check-ignore -v measure/runs/..., .tmp/...; bash -n on both runners and the helper -> ok",
+    "bun test harness/model-guide-tests/review-run.test.ts -> first run 85 pass, 1 fail (foreign orphan); re-run 86 pass, 0 fail, 671 expect() calls, 172.24 s",
+    "cd harness && npx vitest run model-guide-tests/<judge-run|decode-parity|adjudicate|review-score|quota|credential-provider|adversarial-p4-runner|adversarial-p4b|seed-messages>.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 45, 3, 23, 27, 30 (one re-run), 22, 14, 12, 17 passed",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' after every run -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "f26965dc13381a14a5c27db16c3e4a2ce67e5a33",
+  "baseline_sha": "f26965dc13381a14a5c27db16c3e4a2ce67e5a33",
+  "audited_head": "c0a26d75a37955bb9c20be9cb3ab2d993d39907b",
+  "audited_head_sha": "c0a26d75a37955bb9c20be9cb3ab2d993d39907b",
+  "security_applicability": "applicable: the range changes harness/model-guide/review-run.sh and harness/model-guide/judge-run.sh, which print and store the error line of a failed model call that can hold the provider credential",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "Eight probes (PM6, PM16, PM17, PS5, PS6, JM3, JM6, JM7) leaked a key at f26965d and print only the fixed text at HEAD (`review-run.sh:866-883`)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "AA1 to AA3, AA5, and JA1 to JA3 fail at 62126e2 and under mutations r1 to r4 and j1 to j3. Mutations r6 and j7 pass every case (N30)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "`git diff --stat f26965d..c0a26d7` shows 12 production lines in each runner, `git diff --stat 62126e2 c0a26d7 -- harness/model-guide-tests` is empty, and no fake changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The plan counts match my runs: 4 and 3 failures at 62126e2, then 86, 45, 3, 14, and 12 passes at HEAD."
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "role": "ux-browser",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "8fd8882a8539d051129eb106e46974a934df5223",
+  "audited_head_sha": "8fd8882a8539d051129eb106e46974a934df5223",
+  "reviewer_model": "openai/gpt-6-luna",
+  "route": "openai/gpt-6-luna#high",
+  "status": "pass",
+  "summary": "The required review passed the route, score, label, overflow, and mobile checks. At 390 px, route cells wrap into narrow columns and keyboard arrows did not scroll the table; both findings are nonblocking.",
+  "ux_applicability": "applicable",
+  "webbridge_status": "not_run",
+  "webbridge_evidence": {
+    "screenshots": [
+      "measure/runs/model_guide/ux-4b/review-390.png",
+      "measure/runs/model_guide/ux-4b/review-1280.png",
+      "measure/runs/model_guide/ux-4b/index-390.png",
+      "measure/runs/model_guide/ux-4b/index-1280.png"
+    ],
+    "accessibility_snapshots": [
+      "measure/runs/model_guide/ux-4b/cdp-facts.json: full Chrome DevTools accessibility snapshots for review.html and index.html at 390 px and 1280 px.",
+      "review.html at 390 px: 781 AX nodes, 1 navigation, 1 main, 7 tables, 26 column headers, 1 named region, and 0 unnamed links.",
+      "index.html at 390 px: 872 AX nodes, 1 navigation, 1 main, 3 tables, 15 column headers, 2 named regions, and 0 unnamed links."
+    ],
+    "interactions": [
+      "The Review link count is one on review.html and index.html.",
+      "The review results region can receive focus. ArrowRight and ArrowLeft left scrollLeft at 0 while the table overflowed its scroll box.",
+      "The 390 px route table scrolls inside its own box: table width 632 px, scroll-box width 299 px, and scrollWidth 632 px."
+    ]
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Moderate] review.html at 390 px: the route cell is about 58 px wide. Route names and the incomplete reason wrap into fragments, and the rows are about 470 to 506 px high. This makes the score table hard to scan. The table remains horizontally scrollable and all values remain present. score-impact: no",
+    "F2 [Minor] review.html at 390 px: the focusable named table region receives focus, but ArrowRight and ArrowLeft do not move its scroll position. Pointer or touch scrolling remains available. score-impact: no"
+  ],
+  "evidence": [
+    "The phase strategy requires a real browser check of review.html at 390 px and 1280 px. Both checks ran with headless Chrome.",
+    "HEAD is 8fd8882a8539d051129eb106e46974a934df5223, which matches the requested audited HEAD.",
+    "The phase diff changes the review renderer and score data.",
+    "The preview build completed with PROJECT_DEV_URL=http://127.0.0.1:8766/review.html and manifest harness/model-guide/data/MANIFEST-2026-11-17.txt.",
+    "The first browser-control finding is withdrawn: headless Chrome at /usr/bin/google-chrome completed the required viewport checks, captured screenshots, and collected accessibility snapshots.",
+    "review.html has exactly three route rows. DeepSeek shows worst 78.6; Hy4 shows worst 75.4; MiMo shows incomplete: 0 of 3 passes and dashes in rank and score cells.",
+    "Both passing route rows show incomplete: 1 of 3 passes with the shared reason and no rank. Each pass item shows its route.",
+    "All eight review table column labels are present. index.html has one Code review row with no pick yet: not enough evidence.",
+    "At 390 px, review.html document scrollWidth equals clientWidth at 380 px; index.html also has no page-level horizontal overflow. At 1280 px, both pages report 1270 px for scrollWidth and clientWidth.",
+    "At 390 px, the route table overflows only inside its own horizontally scrollable box. The method note is present and wraps in the 390 px layout.",
+    "The local server and Chrome debug process stopped. A pgrep-owned-process check found no Chrome using the audit profile and no HTTP server on port 8766. HEAD remained unchanged."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 8fd8882a8539d051129eb106e46974a934df5223",
+    "git rev-parse 8fd8882 -> 8fd8882a8539d051129eb106e46974a934df5223",
+    "PROJECT_DEV_URL=http://127.0.0.1:8766/review.html bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt",
+    "python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview (background; stopped with SIGTERM)",
+    "google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=$(mktemp -d) --hide-scrollbars --window-size=390,2400 --screenshot=measure/runs/model_guide/ux-4b/review-390.png http://127.0.0.1:8766/review.html",
+    "google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=$(mktemp -d) --hide-scrollbars --window-size=1280,1600 --screenshot=measure/runs/model_guide/ux-4b/review-1280.png http://127.0.0.1:8766/review.html",
+    "google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=$(mktemp -d) --hide-scrollbars --window-size=390,2400 --screenshot=measure/runs/model_guide/ux-4b/index-390.png http://127.0.0.1:8766/index.html",
+    "google-chrome --headless=new --disable-gpu --no-first-run --user-data-dir=$(mktemp -d) --hide-scrollbars --window-size=1280,1600 --screenshot=measure/runs/model_guide/ux-4b/index-1280.png http://127.0.0.1:8766/index.html",
+    "node measure/runs/model_guide/ux-4b/cdp-audit.mjs -> measure/runs/model_guide/ux-4b/cdp-facts.json",
+    "pgrep -x chrome and pgrep -x python3 with /proc command-line checks -> no audit Chrome profile and no HTTP server on port 8766",
+    "git rev-parse HEAD -> 8fd8882a8539d051129eb106e46974a934df5223 (unchanged)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/ux-browser-4b-8fd8882.json",
+    "measure/runs/model_guide/ux-browser-4b-8fd8882.log",
+    "measure/runs/model_guide/ux-4b/cdp-audit.mjs",
+    "measure/runs/model_guide/ux-4b/cdp-facts.json",
+    "measure/runs/model_guide/ux-4b/review-390.png",
+    "measure/runs/model_guide/ux-4b/review-1280.png",
+    "measure/runs/model_guide/ux-4b/index-390.png",
+    "measure/runs/model_guide/ux-4b/index-1280.png"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high"
+}

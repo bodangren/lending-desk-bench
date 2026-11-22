@@ -1,0 +1,95 @@
+Green task 4.1f, review round 4 — page B review fixes (task 4.1f)
+Track: model_guide. Phase 4.
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 1ee2549c38e1af097f88cbc9c113fa2e1197b176 (Red tests of the
+review remediation, RA-1 to RA-6)
+
+Command note: each test file ran one at a time from harness/, with
+`--configLoader native --maxWorkers=1 --reporter=dot`. The full suite did not
+run (PM rule A-23). Green edited no test and no fixture file.
+
+1. Items (orchestrator decision, Review A `review-a-94af783.json`)
+
+  RA-1 FIX  preview.sh `overview_rows` maps the pick and second cells with the
+            page B helper: a `#variant` route maps to its model key, a named
+            key shows its name, and an unnamed key drops the plan prefix.
+            "no pick yet: not enough evidence" stays as it is;
+            model-guide.json keeps the raw keys and guide.ts does not change.
+  RA-3 FIX  real-work.ts requires each MANIFEST line name to equal exactly
+            `ra-outcomes-<D>.json`, `aa-reliability-<D>.json`, or
+            `allowed-routes-<D>.json`, with D the date of the MANIFEST name.
+            Any other name gives exit 2, no output file, and
+            `input-check: manifest <that line's name>`. A duplicate line of a
+            kind stays refused.
+  RA-4 FIX  `addRow` records every string role of a merged row, so the Roles
+            cell lists a role outside the ten lines of rule 8 (for example
+            spec-review). The two role sets that limited it are gone.
+  RA-5 FIX  update.sh states the stderr form of the input-check line.
+
+2. Commits
+
+  065815b fix(model_guide): page B review fixes RA-1, RA-3, RA-4, RA-5 (task 4.1f)
+  bb133deb8a1b71811ae67713f17f6f2c77c1ab47 measure(model_guide): record Green 4.1f review fixes
+
+3. Nine test result lines (HEAD 065815b, the production commit)
+
+  input-check.test.ts     exit 0  Test Files  1 passed (1)  Tests  23 passed (23)
+  real-work.test.ts       exit 0  Test Files  1 passed (1)  Tests  13 passed (13)
+  preview-gate.test.ts    exit 0  Test Files  1 passed (1)  Tests  99 passed (99)
+  guide.test.ts           exit 0  Test Files  1 passed (1)  Tests  17 passed (17)
+  update.test.ts          exit 0  Test Files  1 passed (1)  Tests  9 passed (9)
+  leak-check.test.ts      exit 0  Test Files  1 passed (1)  Tests  22 passed (22)
+  adversarial-p2.test.ts  exit 0  Test Files  1 passed (1)  Tests  13 passed (13)
+  adversarial-p3.test.ts  exit 0  Test Files  1 passed (1)  Tests  34 passed (34)
+  adversarial.test.ts     exit 1  Test Files  1 failed (1)  Tests  2 failed | 45 passed (47)
+
+4. The two failures (Red-side; RA-3 and the two cases cannot both hold)
+
+  - "X: path classes of --manifest > X accepts a manifest path with spaces
+    and unicode in the name" stages the outcomes file as `real work é.json`,
+    so the tool gives `input-check: manifest real work é.json` and exit 2.
+    The case expects exit 0.
+  - "E: HTML escaping of the page > E escapes a hostile export file name in
+    the source line" stages the outcomes file as `a<b>"&x.json`, so the tool
+    gives `input-check: manifest a<b>"&x.json` and exit 2. The case expects
+    exit 0.
+  RA-3 says every line name must equal exactly one of the three dated names.
+  The two cases stage a fourth name, so no tool can pass both.
+  The default fix (Red): name the staged outcomes file
+  `ra-outcomes-2026-10-20.json` inside the unicode folder `fix ture é` for the
+  X case, which still proves a manifest path with spaces and unicode. Retire
+  the hostile file-name case, or aim it at the hostile text of the outcomes
+  content, which the E hostile-value case already covers. adversarial.test.ts
+  was not part of the Red commit 1ee2549.
+
+5. Gates
+
+  bash -n harness/model-guide/preview.sh                  exit 0
+  git status --short docs/                                prints nothing
+  bash harness/model-guide/preview.sh \
+    --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt   exit 0
+  Live page facts stay as the 2026-11-18 closeout: 10 picks, two default
+  tables, six `.table-wrap` boxes, footer rows 217, routes 53, unknown rows 6,
+  share 2.8 %, date 2026-11-17, no work-type hook, and no raw route key in
+  the print-audit block.
+
+6. Plan state
+
+  4.1f is [x] d25b556 with the fix line 065815b. 4.1e is [x] cca8fad with the
+  Red fixes f205c80, d94f549, and 1ee2549. No task is [b].
+
+MEASURE_AGENT_RESULT
+status: blocked
+task: 4.1f
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 1ee2549c38e1af097f88cbc9c113fa2e1197b176
+resulting_head: bb133deb8a1b71811ae67713f17f6f2c77c1ab47
+commits: 065815b29e11e362b1e796c0e587c827fb82ff55 (fix), bb133deb8a1b71811ae67713f17f6f2c77c1ab47 (plan record)
+files_changed: harness/model-guide/real-work.ts, harness/model-guide/preview.sh, harness/model-guide/update.sh, measure/tracks/model_guide/plan.md
+tests: input-check 23 passed; real-work 13 passed; preview-gate 99 passed; guide 17 passed; update 9 passed; leak-check 22 passed; adversarial-p2 13 passed; adversarial-p3 34 passed; adversarial 45 passed | 2 failed (Red-side conflict with RA-3). Gates: bash -n preview.sh 0; docs/ clean; live preview exit 0.
+dispositions: RA-1=FIX; RA-3=FIX; RA-4=FIX; RA-5=FIX
+handoff: The four decided fixes are committed in 065815b and eight of the nine files exit 0. adversarial.test.ts holds two Red-side cases that RA-3 excludes: "X accepts a manifest path with spaces and unicode in the name" (stages the outcomes file as `real work é.json`) and "E escapes a hostile export file name in the source line" (stages `a<b>"&x.json`). RA-3 requires each MANIFEST line to name exactly `ra-outcomes-<D>.json`, `aa-reliability-<D>.json`, or `allowed-routes-<D>.json`, so the tool refuses both names with exit 2 and `input-check: manifest <name>`. Request a Mid Red retry: in the X case, name the staged outcomes file `ra-outcomes-2026-10-20.json` inside the folder `fix ture é`; retire the E hostile file-name case or aim it at the outcomes content (the E hostile-value case already covers that escaping). Verify with: cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot. Then a four-line Green retry marks the pair green and its result is PASS. The 4.1f evidence line in plan.md states the two failures; no [x] claim is made on that line.
+END_MEASURE_AGENT_RESULT

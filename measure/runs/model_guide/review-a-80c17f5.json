@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "80c17f5979b632a38e2a6797ff20504b418e198c",
+  "audited_head_sha": "80c17f5979b632a38e2a6797ff20504b418e198c",
+  "reviewer_model": "opencode-go/mimo-v2.6-flash",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "status": "pass",
+  "summary": "Round 7 audits the delta 2a9d421..80c17f5 (4 commits, 4 files) for the UX fixes U1, U3, U4. Red at b06ac41 gives 3 failed | 85 passed (88) on my own run; Green at 80c17f5 gives 88 passed, exit 0. The generated page keeps all D16 content, the source paragraph wraps the SHA-256, all 7 table-wrap boxes carry tabindex, role, and a fitting aria-label, and only the Real work link carries aria-current. Plan rows 1.20 and 1.21 are true. A6-1 and A6-2 stay nonblocking and unchanged.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A7-1 [Minor] review-a carry-over of A6-1, unchanged: harness/model-guide/publish.ts:12-48 and harness/model-guide/real-work.ts:8-20 with harness/model-guide-tests/adversarial.test.ts:328, 436: five refusal lines are named in tool headers but no test asserts them; the X tests assert only `^input-check: \\S+\\n$`. The delta 2a9d421..80c17f5 touches none of these files (git diff --name-only lists preview-gate.test.ts, pages/real-work.html, preview.sh, plan.md), so the finding is byte-identical to round 6. Fix: assert the exact line in the ADV-1, ADV-2, ADV-11, X-missing, and X-badjson tests.",
+    "A7-2 [Minor] review-a carry-over of A6-2, unchanged: harness/model-guide/publish.ts:227-249 with harness/model-guide-tests/adversarial.test.ts:769-793: the ADV-11 test does not assert the `publish: write <path>` line and does not assert that no `.publish-*.tmp` file stays under docs/; the rename loop at publish.ts:249 is not wrapped. The delta does not touch publish.ts or adversarial.test.ts, so the finding is byte-identical to round 6. Fix: assert the exact line and no leftover temp file in the test; wrap the rename loop.",
+    "A7-3 [Nit] review-a: the copied preview pages index.html, methodology.html, results.html, and tracks.html keep `class=\"active\"` on their own nav link and carry no aria-current (`grep -rn 'class=\"active\"' .tmp/model-guide-preview/*.html`). Plan task 1.21 scopes U4 to the ./real-work.html nav link only, and the test pins exactly that page, so the delta matches the plan; the site-wide screen-reader gap U4 named still holds on the copied pages. Fix: add aria-current=\"page\" when preview.sh rewrites the nav of each copied page."
+  ],
+  "evidence": [
+    "HEAD check: `git rev-parse HEAD` printed 80c17f5979b632a38e2a6797ff20504b418e198c, equal to audited_head_sha and role_base_sha, and equal again at the end of the audit. The delta 2a9d421..80c17f5 holds exactly 4 commits: b06ac41 test, d344a21 plan, 7618b8c fix, 80c17f5 plan. `git diff --name-only 2a9d421..80c17f5` lists 4 files: harness/model-guide-tests/preview-gate.test.ts, harness/model-guide/pages/real-work.html, harness/model-guide/preview.sh, measure/tracks/model_guide/plan.md. Commit stats: b06ac41 touches only the test file, d344a21 and 80c17f5 touch only plan.md, 7618b8c touches only pages/real-work.html and preview.sh, so Green touched no test file as plan row 1.21 claims.",
+    "Day-rule runs at HEAD: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot` gave exit 0, `Test Files 1 passed (1)`, `Tests 88 passed (88)`. `bash -n harness/model-guide/preview.sh` gave exit 0. Both match plan row 1.21.",
+    "Failing-first proof (A4): I extracted a git archive of b06ac41 (the Red test commit; production code still at the 2a9d421 state) into /tmp/opencode/r7/red2 with a node_modules symlink and ran the same single-file command. It gave exit 1, `Tests 3 failed | 85 passed (88)`, and the three failure names are exactly U1, U3, U4. This matches red-1.20.txt (`Tests 3 failed | 85 passed (88)`, exit 1) and proves each check fails when its deliverable is missing. A control archive of 2a9d421 gives 85 passed with no U1-U3-U4 test present, so the three tests are new at b06ac41.",
+    "Vacuity construction: with the fix absent the checks fail (red run above). If the generated page were missing, generatedPage throws in readFileSync after runPreview status 0; if the Source heading or SHA-256 were missing, sourceSection and the shaAt expect fail; if no table-wrap box existed, `expect(tags.length).toBeGreaterThanOrEqual(6)` would fail on 0; if the nav link were missing, U4 requires exactly one ./real-work.html anchor. No check passes on a missing deliverable. A3 clean: the new block parses no bare digits; its only numeric assertion is a computed length against a labeled integer bound, and every other assertion matches exact attribute text with named reasons.",
+    "D16 content kept: the delta adds only attributes (git diff shows `-`/`+` lines that differ by tabindex/role/aria-label/aria-current/overflow-wrap only). In the generated .tmp/model-guide-preview/real-work.json: schema model-guide-real-work/1, file real-work-outcomes-2026-11-14.json, sha256 prefix dae855cad, generated_on 2026-11-14, runs 1798, range 2026-06-06 to 2026-11-13, share_known_route 0.506, share_with_result 0.717, paired duplicates 36, unknown 889, other 3. The rendered page shows 1,798, 2026-06-06 to 2026-11-13, 50.6 %, 71.7 %, dae855ca, and the exact method note sentence once.",
+    "U1: pages/real-work.html:33 holds `<p style=\"overflow-wrap: anywhere\">` before the MODEL-GUIDE:SOURCE placeholder, and the generated page carries `<p style=\"overflow-wrap: anywhere\">`. This wraps the SHA-256 inside the `.card { overflow: hidden }` box, which was the 390 px clipping cause.",
+    "U3: the generated page holds 7 .table-wrap boxes, each with all three attributes: Producer roles table, Checker roles table (pages/real-work.html:45, 73), and app code table, docs and ops table, other table, print books table, tooling table from preview.sh:317-318, where the label is `html.escape(name)` + ` table`. The five work-type labels equal the five keys of work_types, so each label names its table.",
+    "U4: `grep -o 'aria-current=\"page\"' .tmp/model-guide-preview/real-work.html | wc -l` gives 1, on the ./real-work.html link (line 18). No other anchor in that page carries aria-current; the test asserts both directions (exactly one real-work link with it, zero other anchors with any aria-current).",
+    "Plan rows 1.20 and 1.21: both checked `[x]` with commit hashes b06ac41 and 7618b8c that exist in the delta. red-1.20.txt exists and its numbers (exit 1, 3 failed | 85 passed (88), companions 15/19/2/49) match my red run and the round 6 verified counts. green-p1-d344a21.log exists and states preview-gate 88 passed plus the same companion counts; preview-1.21.txt exists and its stated U1/U3/U4 values match the generated page I grepped. No plan count overstates my runs. A5 clean.",
+    "A6-1 and A6-2 unchanged: `git diff --name-only 2a9d421..80c17f5` contains none of publish.ts, real-work.ts, or adversarial.test.ts, so both round 6 findings remain accurate and stay nonblocking. They are re-listed as A7-1 and A7-2 with carry-over text.",
+    "Scope: no file under docs/ changed in the delta (`git diff --name-only 2a9d421..80c17f5` above), and `git status --short` shows only the unrelated untracked .opencode/, harness/wt.txt, tech-debt.md. This role wrote only review-a-80c17f5.json and review-a-80c17f5.log under measure/runs/model_guide/. All fixture runs ran under /tmp/opencode/r7; no test or probe wrote into the repository.",
+    "Anti-pattern scope: the delta changes no orchestration script, no contract test outside preview-gate, and no registry, so framework-wide checks stay out of range; the preview.sh change is the work_tables emitter and passes `bash -n`."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 80c17f5979b632a38e2a6797ff20504b418e198c (checked at start and end)",
+    "git log --oneline 2a9d421..80c17f5 -> 4 commits b06ac41, d344a21, 7618b8c, 80c17f5; git diff --name-only 2a9d421..80c17f5 -> 4 files",
+    "git show --stat b06ac41 d344a21 7618b8c 80c17f5 -> test-only, plan-only, 2 harness files, plan-only",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 88 passed (88)",
+    "bash -n harness/model-guide/preview.sh -> exit 0",
+    "git archive b06ac41 | tar -x -C /tmp/opencode/r7/red2 plus node_modules symlink; same vitest command -> exit 1, Tests 3 failed | 85 passed (88), failures U1, U3, U4",
+    "git archive 2a9d421 | tar -x -C /tmp/opencode/r7/red; same vitest command -> exit 0, Tests 85 passed (85) (the U1-U3-U4 tests do not exist yet)",
+    "grep on .tmp/model-guide-preview/real-work.html -> 1 aria-current on line 18, 7 table-wrap boxes each with tabindex/role/aria-label, `<p style=\"overflow-wrap: anywhere\">` present",
+    "python3 read of .tmp/model-guide-preview/real-work.json -> schema, file, sha prefix dae855ca, generated_on, and all coverage values as listed",
+    "grep -rn 'class=\"active\"' .tmp/model-guide-preview/*.html -> active class on 4 copied pages with no aria-current (A7-3)",
+    "grep -n 'table-wrap' across harness/model-guide-tests -> only preview-gate.test.ts; no companion test pins the markup"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide/preview.sh",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The generated page keeps every D16 value (real-work.json read at HEAD) and each UX fix holds in pages/real-work.html:33,45,73 and preview.sh:317-318, verified by grep on .tmp/model-guide-preview/real-work.html (7 labelled table-wrap boxes, 1 aria-current)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "My own red run of the b06ac41 archive gave 3 failed | 85 passed (88) with exactly the U1, U3, U4 names, then 88 passed at 80c17f5, so every claim has a failing-first test."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "`git diff --name-only 2a9d421..80c17f5` prints only the 4 planned files; commit stats show b06ac41 test-only and 7618b8c harness-only, matching plan rows 1.20 and 1.21."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "red-1.20.txt, green-p1-d344a21.log, and preview-1.21.txt exist and every number in them matches my single-file runs (3 failed | 85 passed, 88 passed, exit 0 on bash -n)."
+    }
+  ]
+}

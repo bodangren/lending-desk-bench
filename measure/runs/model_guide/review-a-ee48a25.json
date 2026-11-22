@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "route": "opencode-go/glm-5.3#high",
+  "summary": "Re-review of B1 at 1572612. The scope is the one text commit ee48a25 (range 1572612..ee48a25, plan.md and spec.md only) plus the two driver files outside the repo. The ruling holds end to end. The drivers probe-4.10.sh and night-4.11.sh export BENCH_RA_QUOTA=/home/daniebo/Desktop/advantage-pr/scripts/jobs/ra-quota and RA_QUOTA_LASTGOOD=/tmp/ra-quota-lastgood.json (probe lines 16-17, night lines 16-17), and quota.ts reads those exact names (BENCH_RA_QUOTA at quota.ts:408, RA_QUOTA_LASTGOOD at quota.ts:315). ra-quota honors the same RA_QUOTA_LASTGOOD override for its last-good write (ra-quota:1323-1332), so writer and reader share one file, and its config holds the plan id opencode-go with thresholds 5h 95 / weekly 100. Every claim in the new plan row Point 8 text (plan.md:2397) matches the code and the drivers: quota.ts keeps no default path, the ra-quota read is `timeout 90 ra-quota status --json` (equals RA_QUOTA_TIMEOUT_MS 90_000, quota.ts:88), the tool reads .[\"opencode-go\"].windows percents, requires usable 5h and weekly, applies the 95/100 thresholds (quota.ts:69,78), and stops on a stale (>= 6 h, quota.ts:91) or missing last-good reading. Spec D15 (spec.md:752-756) and FR-15 (spec.md:1344) state the same facts. heavy-run.sh passes the environment through (run_cmd executes the command directly, the flock re-exec inherits the parent env, and the systemd-run scope unsets only the DBUS addresses), the jobs folder holds only the two drivers, and the other nightly entry (harness/cron-daily.sh) never calls the model_guide runners. No living plan or spec text claims a default ra-quota path; the remaining matches are historical run artifacts. The drivers' own Go check uses the same thresholds as quota.ts (five >= 95 or week >= 100, probe:77, night:92). One nonblocking gap: the row 4.13 judge calls of the Go judge route run from the orchestrator session, not from the drivers, and no text names BENCH_RA_QUOTA for them.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "NB1 The row 4.13 judge calls of the Go judge route do not come from the drivers, and no text names their quota env. The second judge is `opencode-go/muse-spark-1.3-contributor#high` (plan.md:2403-2404), and the calls run 'one call per judge per diff through heavy-run.sh' from the orchestrator session (plan.md:2400-2401), not from probe-4.10.sh or night-4.11.sh. judge-run.sh gates each judge call on the quota rule of the judge route (judge-run.sh:65, 241-248: the Go rule keys on quota_provider opencode-go), so a Go judge call without BENCH_RA_QUOTA reads through the port source (quota.ts:422-429), the source probe-4.10 line 4 records as timing out, and the call can refuse with 'the quota read timed out'. The new Point 8 text documents the env names and values but scopes them to the production drivers (plan.md:2397). Row 4.13 is not executed yet, so no live call has hit this. Fix: before the row runs, the orchestrator session exports BENCH_RA_QUOTA and RA_QUOTA_LASTGOOD for the judge calls, or the row 4.13 text says so."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD -> ee48a254266afee947d555e4e562093c60d64153, equal to the audited head of the brief; git log --oneline 1572612..ee48a25 holds exactly one commit (ee48a25); git show --stat ee48a25 touches only measure/tracks/model_guide/plan.md (4 lines) and measure/tracks/model_guide/spec.md (7 lines); git status --porcelain holds only the pre-existing untracked paths (.opencode/, harness/model-guide/data/sets/, harness/wt.txt, tech-debt.md). No code file changed in the range, so the 1572612 gate records still describe the same code.",
+    "B1 withdrawn (resolved by the ruled fix, not contested): the drivers now set the production quota source and the text states the facts. probe-4.10.sh:16-17 and night-4.11.sh:16-17 export BENCH_RA_QUOTA=/home/daniebo/Desktop/advantage-pr/scripts/jobs/ra-quota and RA_QUOTA_LASTGOOD=/tmp/ra-quota-lastgood.json; quota.ts:408 reads BENCH_RA_QUOTA and quota.ts:315 reads RA_QUOTA_LASTGOOD, so both names are right; the ra-quota binary exists and is executable (ls: -rwxr-xr-x, 123831 bytes); ra-quota's own lastgood_path honors the same RA_QUOTA_LASTGOOD override (ra-quota:1323-1332, default file name ra-quota-lastgood.json at :230), so the ra-quota write and the quota.ts readLastgood share one path; quota.ts keeps no default (full read of the GO branch, quota.ts:407-421, and the fallthrough at :422-429).",
+    "Driver diffs against the -raq backups: diff probe-4.10.sh.bak-20261119-raq probe-4.10.sh -> the two exports added at lines 16-17, the QUOTA_URL constant removed, the read changed from 'curl -s --max-time 20 $QUOTA_URL' to 'timeout 90 \"$BENCH_RA_QUOTA\" status --json' at line 55, and the parse changed from doc[\"usage\"][\"windows\"] usedPercent to doc[\"opencode-go\"][\"windows\"] percent at lines 63-65; diff night-4.11.sh.bak-20261119-raq night-4.11.sh -> the same four changes at lines 16-17, 70, 78-80. No other line of either driver changed. File mtimes 06:20 Nov 19 match the plan's 'since 2026-11-19 06:2x'.",
+    "Runner-call wiring: heavy-run.sh passes the environment through — run_cmd runs the command array directly, the flock re-exec `flock ... \"$0\" --locked \"${lock_args[@]}\"` inherits the parent env, and the systemd-run scope prefix only unsets the four DBUS addresses; ls of the jobs folder shows only probe-4.10.sh and night-4.11.sh plus backups; harness/cron-daily.sh (the nightly systemd entry, lending-desk-daily.timer at 01:00) never calls review-run.sh or judge-run.sh (grep found no match; its header says 'BENCH_DAILY_RUNNER is retired and is never started') and it uses its own curl quota guard at cron-daily.sh:526; the plan rows 4.10, 4.11, and 4.12 route every real pass through heavy-run.sh from the drivers (plan.md:1816-1824, 1841, 1870).",
+    "Plan row 4.13r Point 8 (plan.md:2397) verified claim by claim against the code and the drivers: 'reads ra-quota only when BENCH_RA_QUOTA names it (quota.ts:407-421)' — quota.ts:407-421; 'keeps no default path' — full read of quota.ts shows no default; 'They export ...' — probe:16-17 and night:16-17; 'timeout 90 ra-quota status --json' — probe:55 and night:70, and quota.ts:88 RA_QUOTA_TIMEOUT_MS = 90_000; 'reads .[\"opencode-go\"].windows percents' — quota.ts:360-363 with percentWindows at :300-308; 'requires usable 5h and weekly, else stopped naming the gap' — quota.ts:412-416; 'applies the 95/100 thresholds' — quota.ts:69,78 and stateOf at :385-391; 'stopped naming a stale (>= 6 h) or missing last-good' — quota.ts:91 (LASTGOOD_TTL_SECONDS = 6 * 3600) and :368-370; 'When BENCH_RA_QUOTA is unset, the tool uses the API path through BENCH_QUOTA_BASE or the openchamber status port' — quota.ts:406 and :422-426; 'The production drivers set BENCH_QUOTA_BASE and BENCH_RA_QUOTA' — probe:15-16 and night:15-16.",
+    "Spec text: spec.md:752-756 adds the D15 bullet 'Go quota through ra-quota (PM 2026-11-19)' — the drivers point quota.ts at ra-quota with status --json, the last good reading lives 6 h, an older or missing reading gives stopped, and the OpenChamber endpoint is the source only when BENCH_RA_QUOTA is unset; spec.md:1344 (FR-15) says 'For Go it reads ra-quota when BENCH_RA_QUOTA is set'. Both match the code. The D15 table row for opencode-go still names the endpoint as the port-source id mapping, and the new bullet directly below states the precedence, so the combined text holds.",
+    "No other default-path claim: grep for 'default ra-quota', ':-/home/daniebo/Desktop/advantage-pr/scripts/jobs/ra-quota', and 'BENCH_RA_QUOTA:-' over measure/tracks/model_guide/ and measure/runs/model_guide/ matches only historical run artifacts (review-a-1572612.json and .log, my own prior finding text, and the green-4.13r.log:13 handoff record of the old statement). No living plan or spec text claims a default path.",
+    "Driver Go check thresholds equal quota.ts: both drivers stop the route when five >= 95 or week >= 100 (probe:77, night:92) with the usable rule (int or float, not bool, >= 0) applied to both windows first; quota.ts stateOf returns wait for the same two thresholds (GO_FIVEH_PERCENT = 95, GO_WEEK_PERCENT = 100, quota.ts:69,78) after the same usable-5h-and-weekly requirement (quota.ts:412-416); the drivers parse doc[\"opencode-go\"][\"windows\"][\"5h\"][\"percent\"] and [\"weekly\"][\"percent\"], which matches the ra-quota output shape (cmd_status prints json.dumps(plans) at ra-quota:1672-1676, plans keyed by plan id with windows holding percent) and the ra-quota config (python read of ~/.config/ra-quota/routes.json: rules key 'opencode-go' with thresholds {\"5h\": 95, \"weekly\": 100}).",
+    "F3 text fix in the same commit: the plan row's old no-test reason ('BENCH_OPENCODE_PROC affects selection only') was stale after the N3 fix; the row now says 'F3 (the starttime check before KILL) has no test yet. A test through BENCH_OPENCODE_PROC is possible and goes to the hardening row before closeout' (plan.md:2392), which resolves the stale-reason part of my earlier N1.",
+    "A4/A3/A5 checks: the range changed measure text only, added no check, no count assertion, and no pass claim; the gate counts the row repeats (65, 37, 22, 30, 14) were reproduced by my four gates at 1572612 and the range changed no code or test file, so the claims stay true at ee48a25; the new factual claims about the drivers were each verified against the files themselves.",
+    "Process hygiene: no driver run, no heavy-run.sh run, no real opencode or openchamber command, no signal to any process, and no test run (the range touches no code and no test; the code at ee48a25 is identical to the code the 1572612 gates covered). All reads were file reads, greps, and diffs."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git log --oneline 1572612..ee48a25; git show --stat ee48a25; git status --porcelain",
+    "git diff 1572612..ee48a25 -- measure/tracks/model_guide/plan.md measure/tracks/model_guide/spec.md",
+    "diff .../jobs/probe-4.10.sh.bak-20261119-raq .../jobs/probe-4.10.sh; diff .../jobs/night-4.11.sh.bak-20261119-raq .../jobs/night-4.11.sh",
+    "read of probe-4.10.sh and night-4.11.sh (full, read-only)",
+    "read of quota.ts:300-441 and grep of the quota.ts constants (GO_FIVEH_PERCENT, GO_WEEK_PERCENT, RA_QUOTA_TIMEOUT_MS, LASTGOOD_TTL_SECONDS)",
+    "read of heavy-run.sh (read-only): run_cmd, the flock re-exec, and the systemd-run scope env handling",
+    "grep -n 'quota' review-run.sh and judge-run.sh; grep judge-run.sh callers; read of judge-run.sh:236-248",
+    "grep and read of ra-quota: lastgood_path (:1323-1332), LASTGOOD_TTL_SECONDS (:231), cmd_status (:1672-1676), collect_plans (:597)",
+    "python3 -I read of ~/.config/ra-quota/routes.json rules['opencode-go']",
+    "grep -rn 'default ra-quota|BENCH_RA_QUOTA:-|:-/home/daniebo/Desktop/advantage-pr/scripts/jobs/ra-quota' over measure/tracks/model_guide/ and measure/runs/model_guide/",
+    "cat of ~/.config/systemd/user/lending-desk-daily.{service,timer}; grep of cron-daily.sh for runner calls",
+    "grep -n 'Point 8|4.13 The adjudication|second judge|Go quota through ra-quota|For Go it reads ra-quota' plan.md spec.md"
+  ],
+  "changed_files": [
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md",
+    "/home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/probe-4.10.sh (outside the repo, read-only)",
+    "/home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh (outside the repo, read-only)"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "Every claim in plan.md:2397, spec.md:752-756, and spec.md:1344 matches the code (quota.ts:407-421, 88, 315) and the drivers (probe:16-17, 55, 77; night:16-17, 70, 92), and the ra-quota names, paths, and thresholds agree on both sides (ra-quota:1326, routes.json opencode-go 5h 95 weekly 100); the one uncovered edge is the row 4.13 Go judge call, which runs from the orchestrator session with no named env (plan.md:2400-2404)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "The range changed no test and the ruling requires none (the drivers sit outside the repo test perimeter), so the Q16a-d seam cases and Q7 port-source case remain the only pins; every new text claim was instead verified read-only against quota.ts, the drivers, and ra-quota."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat ee48a25 touches exactly plan.md and spec.md; the two driver files changed only the four quota lines each against their -raq backups, and nothing else in the repo or the drivers moved."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each checked point carries a file:line or command result: quota.ts:408/315 for the env names, probe:16-17/55/77 and night:16-17/70/92 for the driver facts, ra-quota:1323-1332/1672-1676 for the last-good path and output shape, the routes.json read for the plan id, and the heavy-run.sh and cron-daily.sh reads for the call wiring."
+    }
+  ]
+}

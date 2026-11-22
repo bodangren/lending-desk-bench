@@ -1,0 +1,57 @@
+Strategy log - model_guide Phase 4, addendum for tasks 4.1e and 4.1f (page B data source)
+
+Date: 2026-11-17. Role: strategy. Route: claude-code/claude-sonnet-5-5#max.
+
+Read: measure/index.md, measure/tracks.md, measure/anti-patterns.md, spec.md
+(D16 incl. "Data source (PM 2026-11-17)", D17, D18, D19, FR-1 to FR-5,
+acceptance 2 to 5 and 13), plan.md Phase 4 (rows 4.1, 4.1a, 4.1b, 4.1e, 4.1f
+and the rest), the existing test-strategy.md (sections 2.4, 3.4, 4.1 to 4.4,
+5, 6.2, 8, 9.4, 10, 11, 12), harness/model-guide/preview.sh, update.sh,
+pages/real-work.html, real-work.ts (header), guide.ts (header and the
+real-work reader), leak-check.ts, data/model-names.json, the print-audit data
+file, and the names and titles of all 98 cases of preview-gate.test.ts (G1 to
+G10 read in full). Real input shapes read only: `ra-quota outcomes --json`
+(217 rows, written to /tmp/opencode/strategy-4.1e/outcomes.json, not in the
+repo), the AA file, and the two fields of ra-quota routes.json.
+
+Checks run (read only):
+- measure_interphase_checks.py: `is_tests_fixture` counts a path under a
+  `fixtures` folder inside a `*-tests` folder as a test path. The new fixtures
+  need no recorded Mid Red deviation.
+- A python oracle (/tmp/opencode/strategy-4.1e/oracle.py) applied rules 1 to 11
+  to the 35 synthetic fixture rows of section 13.3. It confirmed every expected
+  value: both tables, the ten top lines, and the footer values (35 rows, 30
+  routes, 2 unknown, 5.7 %).
+- guide.ts needs `work_types`, `can_pick`, and `pass_rate` in real-work.json,
+  and update.sh still calls `real-work.ts --input`. The plan has no row for
+  either file. Section 13.1 PC-2 and question Q-S11 cover the gap.
+- git status --short docs/ prints nothing after the commit.
+- git diff --name-only 75e95db..HEAD lists test-strategy.md only.
+
+Commands run: read-only git, ls, sed, grep, one ra-quota outcomes --json read
+(output in /tmp), two python3 -I scripts. No test suite, no test file run, no
+benchmark, no model call, no opencode CLI. The baseline counts of the existing
+cases come from plan row 4.1b (106 passed at c8041cc); the strategy role did
+not re-run them.
+
+Nothing staged from .opencode/, tech-debt.md, harness/wt.txt,
+harness/model-guide/data/sets/, harness/model-guide-tests/review-run.test.ts,
+harness/model-guide-tests/fixtures/fakes/, measure/runs/, docs/, reports/.
+
+The measure-guard line of the brief named the active track domain_trust. This
+role worked on model_guide as the brief says and touched no domain_trust file.
+
+MEASURE_AGENT_RESULT
+role: strategy
+status: PASS
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 75e95db468569fea595f21ca7215e57fffbe0d7a
+resulting_head: 577d85d6719787b6aa5bf9fc893c846317ac2912
+commits: 577d85d6719787b6aa5bf9fc893c846317ac2912 measure(model_guide): strategy for page B data source (4.1e, 4.1f)
+files_changed: measure/tracks/model_guide/test-strategy.md (revision 5: new section 13 and one revision line)
+tests: none run (daytime rule, strategy role). Read-only checks only: python oracle of the fixture values, git status --short docs/ prints nothing, git diff --name-only 75e95db..HEAD lists test-strategy.md only.
+dispositions: none
+handoff: (1) Capture the role_base_sha of Red 4.1e with one `git rev-parse HEAD` directly after commit 577d85d6719787b6aa5bf9fc893c846317ac2912 and before Red 4.1e starts. phase_base_sha stays 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (the Phase 4 strategy commit); this section starts no new phase. (2) Section 13 of test-strategy.md holds the risk list RS1 to RS11 (task 4.1e high, task 4.1f high), the four Red lines (one test file each, --maxWorkers=1), the Green gate of task 4.1f, the fixture design (four files under fixtures/page-b/ with sentinel date 2026-10-20, 35 oracle-checked rows), groups DS1 to DS21 and FX1 to FX3 with falsification conditions, the decision for each of G1 to G10 (change G1 to G4 and G6 to G8, replace G5, retire G9, keep G10 with new staging; T1, T11, N4, P2U1-1 keep), the data-mg hook contract, leak-check guards LG1 to LG3 (base-passing, labeled), the intentionally-red table, review applicability (Review A, B, C, adversarial, and the UX browser review on .tmp/model-guide-preview/real-work.html all apply), and the anti-pattern rows. (3) Plan changes the orchestrator applies before Red 4.1e: PC-1 widen row 4.1e to the named test files, with the new Verify wording (the cases that stage page B data fail at the base, not only the new cases); PC-2 add rows 4.1g Red and 4.1h Green for guide.ts, update.sh, and guide-section.html, because guide.ts refuses the new real-work.json and update.sh still calls real-work.ts --input, and neither file is in row 4.1e or 4.1f; PC-3 widen the 4.1f Verify to the Green gate of section 13.2. Until row 4.1h is green the cases tagged [guide-bound] stay red, and the 2026-11-18 preview has no overview table. (4) Open questions with defaults: Q-S1 CLI is `--manifest <MANIFEST-date.txt>` for real-work.ts and preview.sh, `update.sh <manifest>` per D19 (alternative: keep `--export`). Q-S2 MANIFEST line is `<sha256>  <size>  <file name>` for ra-outcomes-, aa-reliability-, allowed-routes-<date>.json. Q-S3 refusal line is `input-check: <check> <file name>`, checks manifest, input, sha256, size, json, schema, exit 2, no output. Q-S4 read date and export date are the date in the MANIFEST name. Q-S5 route count is the distinct stripped route strings with unknown included; unknown share has one decimal. Q-S6 the pick is the first row of the rank order that passes the filters. Q-S7 AA lookup uses the models block only. Q-S8 the not-for-verdicts mark is pinned on checker rows only. Q-S9 a producer row with 5 tasks or more and no rate sits in Too few tasks. Q-S10 the unknown row place is not pinned. Q-S11 the guide.ts and update.sh follow-up pair (alternative: fold both into 4.1e and 4.1f). Q-S12 hard cutover, no legacy flag. Q-S13 the print-audit page maps route keys to plain names and the data file keeps raw route keys (D17 can read as plain names in the file). (5) Do not stage .opencode/, tech-debt.md, harness/wt.txt, harness/model-guide/data/sets/, harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/fixtures/fakes/, measure/runs/, docs/, reports/. The untracked review-run.test.ts and fake-opencode belong to task 4.1 and this pair does not touch them.
+END_MEASURE_AGENT_RESULT

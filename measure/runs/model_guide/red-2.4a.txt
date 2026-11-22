@@ -1,0 +1,64 @@
+red-2.4a.txt — task 2.4a Red, track model_guide, phase 2
+role: mid-red (opencode-go/mimo-v2.6-flash)
+date: 2026-11-15
+phase_base_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: 7eddc6ee4e7b79ce91e779e6f55bccd870069e20 (HEAD at run time)
+
+Ruling recorded in plan.md under 2.4a (spec D17, orchestrator 2026-11-15):
+the error types are the severity classes blocker, major, minor with the
+count of rows of each; the checklist code is the `item` value; a run
+result is the row value under the route short key; a route result is
+`blockers_found` of that route over `summary.key.blockers`.
+
+Work: the fixture pair `harness/model-guide-tests/fixtures/print-audit/`
+(print-audit-mini.json + MANIFEST.txt) is re-pinned to the real OD6 key
+shape with synthetic values only: top keys source/note/routes/summary/
+errors; routes maps short key -> route name (k31pro, s55, bad01 with a
+hostile name `"><img src=x onerror=alert(1)>`); summary holds `key`
+(blockers 13, majors 20, minors 19), one object per route short key, a
+plain `__proto__` key, and `bias_note`; 52 rows = 13 blocker + 20 major +
+19 minor; rows hold id, severity, checklist, and one string per route
+short key (no `type`, no `results`); 43 rows hold 1 to 3 checklist items
+(`item` + `text`) and 9 hold none; one hostile checklist text and one
+`__proto__` checklist text; route results 11 of 13, 13 of 13, 7 of 13.
+
+Day rule: one test file per command, --maxWorkers=1, --reporter=dot.
+
+1) cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 1
+   Tests  5 failed | 8 passed (13)
+   failed test names:
+   - N1: passes on the fixture pair and writes the D17 facts into the output file
+     reason: row 0 fields — the tool still writes the old `type` row key
+     (expected [checklist, id, results, severity], got a row with `type`)
+   - N5: a row with a type key gives exit 2, one named line, and no output file
+     reason: the tool still accepts the old shape (exit 0, expected 2)
+   - N5: a row with a results list gives exit 2, one named line, and no output file
+     reason: the tool still accepts the old shape (exit 0, expected 2)
+   - N5: a checklist item with code instead of item gives exit 2, one named line, and no output file
+     reason: the tool still accepts the old shape (exit 0, expected 2)
+   - N5: a route value in the old object shape gives exit 2, one named line, and no output file
+     reason: the tool still accepts the old shape (exit 0, expected 2)
+
+2) cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 1
+   Tests  1 failed | 97 passed (98)
+   failed test name:
+   - T1: the block rows hold the real row shape and the per-route result of each row
+     reason: the generated data file still carries the old `type` row key
+
+Companion files, each run alone (must exit 0):
+3) cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  15 passed (15)
+4) cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  20 passed (20)
+5) cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  2 passed (2)
+6) cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  49 passed (49)
+
+Note: guide.test.ts and update.test.ts assemble a print-audit data file
+from the fixture. Their helper now reads the real key shape (route name
+from the route value, result from summary[key].blockers_found over
+summary.key.blockers). Both files were already red at this HEAD because
+guide.ts and update.sh do not exist yet.

@@ -1,0 +1,30 @@
+Task 1.21 Green — final preview re-run (task 1.9 command, default preview folder).
+
+Command (from the repo root):
+  harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json
+
+Exit code: 0.
+
+Checked values, read from .tmp/model-guide-preview/real-work.json:
+- schema: model-guide-real-work/1
+- source.file: real-work-outcomes-2026-11-14.json
+- source.sha256 prefix: dae855cad4bcd29b (the sha256sum of the export
+  file gives the same prefix; spec EV1 lists the full value)
+- source.generated_on: 2026-11-14
+- coverage.runs: 1798
+- coverage date range: 2026-06-06 to 2026-11-13
+- coverage.share_known_route: 0.506
+- coverage.share_with_result: 0.717
+- coverage.paired_duplicates_left_out: 36
+- coverage.unknown_runs: 889
+- coverage.other_runs: 3
+
+UX fix checks, read from .tmp/model-guide-preview/real-work.html:
+- U1: the source paragraph tag is `<p style="overflow-wrap: anywhere">`.
+- U3: 7 `.table-wrap` boxes carry tabindex="0", role="region", and a
+  non-empty aria-label (Producer roles table, Checker roles table, and the
+  5 work-type tables: app code, docs and ops, other, print books, tooling).
+- U4: one link carries aria-current="page": the ./real-work.html nav link.
+
+`git status --short docs/` printed nothing. This role changed no file under
+docs/ and no real export byte entered the repository.

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Pass. The audit covers ff4e009..f26965d at HEAD f26965d, current. The range holds tasks 4.13y and 4.13z. My N3 is fixed with a failing-first test. The Code Mode proof runs the verbatim read_tokens block of ff4e009 and of HEAD on the Y7 stream. The base prints the flag 1, so a call with one full token event and one tokens-less step_finish event kept tokens_complete true. HEAD prints the flag 0 and keeps the valid sums. So Y7 fails first at the base. The same proof shows Y4, Y5, and Y6 fail first at the base: the base counts 1e20, 9007199254740993, -5, and 0.5 and keeps the flag 1. HEAD rejects each value and sets the flag 0. The real bundle shape and the old fake shape print the same row at the base and at HEAD, so the earlier token contract stays. The record fields and state values are unchanged. The pass record holds set_id, route, pass, date, state, diffs with tokens, outputs, errors, tokens, and tokens_complete (review-run.sh write_record). The probe record holds state, tokens, tokens_complete, and error. The state set stays complete, open, wait, and region-blocked. The pass record name derivation stays byte-identical to the night driver glob. The error line change adds the fixed text only when a credential value is in the source. The drivers parse the same shapes: the probe line stays one line, a refusal still starts review-run:, and the reachable line still reads route reachable -. read_tokens, error_event_text, and error_line_of are byte-identical between the two runners. All ten gate files pass one file at a time, fakes only: review-run 81 pass 0 fail, judge-run 40, decode-parity 3, adjudicate 23, review-score 27, quota 30, credential-provider 22, adversarial-p4-runner 14, adversarial-p4b 12, seed-messages 17. The counts match the plan row 4.13z.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N1 [Nit] review-c: error_line_of prints the raw error line when the scan itself fails (review-run.sh:866-874, judge-run.sh:637-645). scan_output returns 2 when the credential helper fails, and the function then prints the unsanitized line to stdout and into the records. The reachable probe path and the pass path stop on the same failure (review-run.sh:994-1001, 1112-1117). Rationale: a broken helper plus a key in the error line still leaks the key, and no test pins this edge."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD gives f26965dc13381a14a5c27db16c3e4a2ce67e5a33, the audited head, current at the start and at the end of the gates. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf and role_base_sha ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45 match the brief. git status shows only untracked files that this range does not touch (.opencode/, harness/model-guide/data/sets/, harness/wt.txt, tech-debt.md). The range ff4e009..f26965d changes the fake, the two test files review-run.test.ts and judge-run.test.ts, the two runners, and plan.md.",
+    "N3 fixed, failing first: the Code Mode proof runs the verbatim read_tokens node block of ff4e009 and of HEAD on the Y7 stream (one full token event plus the tokens-less step_finish line of review-run.test.ts:3556-3557). The base prints 10 20 5 100 7 1 and HEAD prints 10 20 5 100 7 0. So Y7, which asserts tokens_complete false with the valid sums kept (review-run.test.ts:3736-3755), fails at the base and passes at HEAD. The spec line agrees: measure/tracks/model_guide/spec.md:683 says a call with no token field adds 0 and sets tokens_complete false.",
+    "N17 fixed, failing first: the same proof on the Y4 to Y6 fixtures gives at the base 1e20 counted with flag 1, 9007199254740993 counted with flag 1, -5 plus 10 summed to 5 with flag 1, 0.5 plus 0.5 summed to 1 with flag 1, and -5 counted with flag 1. HEAD gives 0 with flag 0 in each case and keeps the valid fields. So Y4, Y5, and Y6 (review-run.test.ts:3644-3735) fail at the base and pass at HEAD.",
+    "Regression proof: the same run gives 10 20 5 100 7 1 at the base and at HEAD for the real bundle step_finish shape and for the old step-finish fake shape. So W1 to W3, WJ1, and WJ2 keep their contract, and Y8 and Y9 stay green guards.",
+    "Record fields unchanged: write_record of review-run.sh:662-698 still writes set_id, route, pass, date, state, diffs with id and tokens (total included), outputs, errors, tokens with total, and tokens_complete, and no complete field and no rank field. The probe record writer (review-run.sh:920-940) still writes state, tokens, tokens_complete, and error. The judge run record adds the errors array only (judge-run.sh:890-894), an additive field no strict reader rejects. The pilot token report of Q1 reads tokens and tokens_complete, and both keys keep their names and types.",
+    "State values unchanged: STATE starts complete (review-run.sh:415), the quota stop writes open, the region error writes region-blocked (review-run.sh:1085), and the wait value keeps its quota meaning. is_region_error keeps the Go-route guard and the same two error phrases; it reads the stdout error event first and the error file second (review-run.sh:879-892). The Y11 to Y13 tests pin the stdout event path, and Y13 pins the one-line probe form route region-blocked with exit 3 (review-run.test.ts:3895-3920).",
+    "Driver contract, read only: probe-4.10.sh:139-146 still parses one line per route, a refusal still starts review-run: (review-run.sh:133), and the reachable line still reads route reachable - (review-run.sh:1013-1014). The fixed error text holds no newline and no vertical bar, so the probe output stays one line. night-4.11.sh:213-218 derives run_slug and route_tag the same way as review-run.sh:409-411 and globs the pass record name of review-run.sh:587-593. reachable() greps ^route reachable (night-4.11.sh:62-64) and the state read takes the state key of the record (night-4.11.sh:223). No driver line changed, and I changed nothing in the jobs folder.",
+    "Error line contract: error_line_of reads the stdout error event first and the first stderr line second, scans the chosen source with scan_output, and prints the fixed text 'the error output held a credential value' on a hit (review-run.sh:853-877). The pre-fix hunks in git diff ff4e009..f26965d read head -n 1 of the error file only, so Y1, Y2, Y3, and JY1, which assert the key never reaches stdout or the records, fail first at the base. The raw staging and error files are removed on every failure branch, so the key leaves no file (Y1, Y12 assertions).",
+    "Route parity: diff of the read_tokens blocks of the two runners prints identical, and diff of error_event_text and of error_line_of prints identical. The three shared functions hold no route-specific branch except the Go guard of is_region_error, which the spec D22 pins.",
+    "Commit split and plan claims: Red c294988 changes the fake, the two test files, and 2 plan lines. Green 6e50a2b changes the two runners only. The record commits 6f66285 and f26965d change plan.md only. Row 4.13z names review-run 81 pass 0 fail, judge-run 40, decode-parity 3, adversarial-p4-runner 14, and adversarial-p4b 12; my clean runs match all five counts. The named base failures (review-run 70 pass 11 fail, judge-run 39 pass 1 fail) agree with the node proof for Y4 to Y7 and with the pre-fix hunks for the error-line cases.",
+    "Process hygiene: after each gate file I ran pgrep -af 'fake-opencod[e]|quota-serve[r]'. Each check of my own runs showed nothing of this audit. A concurrent session ran review-run and adversarial gates at the same time; the visible mg-review-run and mg-adv-r-run processes belong to that session, and no mg temp dir of my finished runs stayed. No signal was sent to any process not started by this audit, no driver ran, and no opencode or openchamber command ran."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> f26965dc13381a14a5c27db16c3e4a2ce67e5a33",
+    "git log --oneline 57baaaa..f26965d -> the range holds c294988, 6f66285, 6e50a2b, f26965d on top of the earlier 4.13 tasks",
+    "git diff ff4e009..f26965d --stat -> 6 files: the fake, the two test files, the two runners, plan.md",
+    "git show --stat c294988 -> fake + judge-run.test.ts + review-run.test.ts + plan.md; git show --stat 6e50a2b -> the two runners only; git show --stat 6f66285 and f26965d -> plan.md only",
+    "Code Mode tokens proof (verbatim read_tokens blocks of ff4e009 and HEAD on the Y7, Y4, Y5, Y6, real, and old shapes) -> y7-n3 pre=[10 20 5 100 7 1] head=[10 20 5 100 7 0]; y4a-1e20 pre=[1e20 20 5 100 7 1] head=[0 20 5 100 7 0]; y4b, y5a, y5b, y6 the same pattern; real-full and old-shape identical in both",
+    "diff of the read_tokens, error_event_text, and error_line_of blocks of review-run.sh against judge-run.sh -> READ_TOKENS_IDENTICAL, ERROR_EVENT_TEXT_IDENTICAL, ERROR_LINE_OF_IDENTICAL",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 81 pass, 0 fail, exit 0",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 40 passed (40)",
+    "cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 3 passed (3)",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 23 passed (23)",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 27 passed (27)",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 30 passed (30)",
+    "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 22 passed (22)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 14 passed (14)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 12 passed (12)",
+    "cd harness && npx vitest run model-guide-tests/seed-messages.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 17 passed (17)",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' after each gate -> nothing of this audit; the concurrent session's mg-review-run and mg-adv-r-run processes appeared between my runs and were left alone"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/fixtures/fakes/fake-opencode",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "role": "measure-review-c-api-contract",
+  "track": "model_guide",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45",
+  "audited_head_sha": "f26965dc13381a14a5c27db16c3e4a2ce67e5a33",
+  "contract_applicability": "applicable",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    { "axis": "correctness", "score": 5, "evidence": "The Code Mode proof on the verbatim blocks shows the flag 0 at HEAD for the tokens-less event (N3) and for each hostile number (N17), with the valid sums kept, and the record fields and state values of write_record (review-run.sh:662-698) are unchanged." },
+    { "axis": "test_meaning", "score": 5, "evidence": "Y7 fails first at the base (proof: pre=[10 20 5 100 7 1], head=[10 20 5 100 7 0]), Y4 to Y6 fail first the same way, and the pre-fix hunks of git diff ff4e009..f26965d show Y1 to Y3 and JY1 fail first because the base printed the raw stderr line." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git show --stat gives the split: Red c294988 touches the fake, the two test files, and 2 plan lines; Green 6e50a2b touches the two runners only; the record commits touch plan.md only." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "Every claim has a command result or a file:line: ten gate runs with counts, three parity diffs that print identical, one Code Mode proof with the exact rows, and the driver parse lines probe-4.10.sh:139-146 and night-4.11.sh:213-228." }
+  ]
+}

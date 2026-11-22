@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+status: pass
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 99ec28c28b4934a6b72c422a32de8545be7e7875
+pre_adversarial_head: 99ec28c28b4934a6b72c422a32de8545be7e7875
+audited_head: 99ec28c28b4934a6b72c422a32de8545
+route: openai/gpt-6-luna#high
+commits: 8fd8882a8539d051129eb106e46974a934df5223 test file only; no push
+commands: adversarial-p4g.test.ts -> exit 0; 4 passed; grep plan false-claim patterns -> no match; git diff --check -> exit 0
+findings: none
+files_changed: harness/model-guide-tests/adversarial-p4g.test.ts; measure/runs/model_guide/adversarial-4b-99ec28c.json; measure/runs/model_guide/adversarial-4b-99ec28c.log
+plan_updates: none; phase marker unchanged
+handoff: Four adversarial tests pass. No implementation defect was found. Rerun this gate after any implementation commit. This result does not accept Phase 4b. Facts changed: none.
+END_MEASURE_AGENT_RESULT

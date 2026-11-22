@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Pass. The Phase 4b audit of model_guide commits 7f92b17..dc31a0a finds no blocking security defect. Provenance: git rev-parse HEAD = dc31a0af910bd17255dba10cb662d241fb47da1b, equal to role_base_sha and the audited HEAD; phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5 is an ancestor (git merge-base --is-ancestor -> 0). The Sol judge seat is safe: judges.json adds only family, route, quota_provider, and quota_source; quota.ts maps the judge provider openai to the fixed table value codex and sends one GET to /api/quota/codex (quota.ts:232, :447), never a credentials path and never gift-reset (grep -> no match). The live path of the Sol pilot route keeps the eight tool denies, writes the deny-all config before the first call, and makes no seed call, no auth call, and no DELETE (judge-run.sh:306, :695, :764-800; endpoints only POST /api/session, POST prompt, GET message). The --incomplete-reason refusal is key-shape aware and echo free (review-score.ts:557-559; R7 tests pin the refusal line and that the sk- value never prints), and preview.sh HTML-escapes the mark and renders the worst cell through one_decimal (preview.sh:328, :492; V10 and V11 pin it). The committed track A data is clean: leak-check over harness/model-guide/data exits 0, the manifest holds hashes only and its key_sha256 values match the private key files (spot verified forge-01 and forge-02), the score file arithmetic is internally consistent (99/126 -> 78.6; 14/19 -> 0.7368; by_class and by_severity sums match found 38, missed 3), and commit 70212ae adds only the two incomplete_reason prose strings. docs/ is unchanged (git status --short docs/ and git diff 7d7d218..HEAD -- docs/ both empty). A6 holds: tech-debt.md carries the Phase 4b findings honestly, and the three it.skip probes sit at the recorded lines. Two nonblocking findings stay, both score-impact: no.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N1 [Minor] score-impact: no. harness/model-guide/review-score.ts:92-93 (KEY_SHAPE_RE) refuses five key shapes only: sk-, xox[bap]-, ghp_, github_pat_, AKIA. A PEM private key block or another token shape (AIza, glpat-, ya29.) pasted into --incomplete-reason passes the refusal and lands in the committed score file, because leak-check scans JSON key names (new_lines, witness, operator) and diff lines, not free-text values. This extends the recorded F-B3 (tech-debt.md: the live LIVE_KEY_SHAPE scan omits PEM blocks) to the new scorer flag. No leak exists at HEAD: the two committed reason strings are clean prose (commit 70212ae). Prevention gap only; the PM round cap of 2026-11-19 keeps it nonblocking. Fix: add the PEM block shape to KEY_SHAPE_RE and cover it with one R7 refusal test.",
+    "N2 [Nit] score-impact: no. The literal private folder path /home/daniebo/.local/share/lending-desk-bench/model-guide sits in ignored local run records (green-4.9f.log:64, review-b-cc8afbd.json:22 and :38, five more review files). measure/runs is gitignored (.gitignore:11 runs/), git ls-files confirms none is committed, and the leak gate never targets measure/runs, so the PM round cap keeps this nonblocking. These files predate Phase 4b. Fix: keep writing a placeholder (as seed-mg-2026-11a.log does with $P) in future run records."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD -> dc31a0af910bd17255dba10cb662d241fb47da1b before and after the audit, equal to role_base_sha and the audited HEAD. git merge-base --is-ancestor 7d7d218... HEAD -> 0 (phase base is an ancestor). Untracked: only .opencode/ and harness/wt.txt.",
+    "Security applicability: applicable. The range seats a live judge route on a real quota read, adds a new operator-input flag that lands in a committed public file, and commits the first public track A data (manifest and score file).",
+    "Board frozen: git status --short docs/ -> empty; git diff 7d7d218d00a95d9d619d2856173b8136b6ace4a5..HEAD -- docs/ -> empty diff. No Phase 4b commit touched docs/.",
+    "Leak check: cd harness && npx tsx model-guide/leak-check.ts --private /home/daniebo/.local/share/lending-desk-bench/model-guide --repo /home/daniebo/Desktop/lending-desk-bench --preview /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/data -> exit 0, no output. The scan covered every committed file under data: the mg-2026-11a manifest, the mg-2026-11a score file, MANIFEST-2026-11-17.txt, aa-reliability, allowed-routes, ra-outcomes, model-names. The private set holds 14 seeded diffs and 14 source diffs, so the seeded-line scan had real data.",
+    "Leak check extension: the same command with --preview .../measure -> exit 2 with private-path findings in eight ignored run records only. git ls-files on all eight -> empty; git check-ignore -v -> .gitignore:11 runs/ matches each. No committed file and no public page holds the private path (N2).",
+    "Quota read stays GET-only: quota.ts:232 sets method GET with an accept header; quota.ts:447 builds the URL from the SOURCE_IDS table value only (openai -> codex at :113); the base must match /^https?:\\/\\/[^/]+\\/?$/ (:445) and the reason list is closed text (:280-282). grep -n 'credentials|gift' harness/model-guide/quota.ts -> no match. The judge row (judges.json, commit fb00647) holds family, route, quota_provider openai, quota_source codex and no secret.",
+    "Sol live path: is_pilot_route at judge-run.sh:306-312 and review-run.sh:351-357 both list openai/gpt-6.1-sol#high. The live endpoints are POST /api/session (judge-run.sh:862), POST /api/session/<id>/prompt (:910), GET /api/session/<id>/message (:935); review-run.sh:1112, :1160, :1185 are the same. No DELETE, no auth call anywhere in the live blocks. The seed call runs only when LIVE_PATH != 1 (judge-run.sh:694-711), so a pilot route never seeds. live_ensure_config (:777-800) writes or checks the deny-all config of the eight tools (read, edit, bash, webfetch, websearch, question, subagent, skill) and refuses a preset root with a missing or permissive config before the first call. BENCH_SERVER_BASE must be a loopback http origin with no userinfo (:328-339).",
+    "--incomplete-reason handling: review-score.ts:557-559 refuses a reason that matches KEY_SHAPE_RE with one fixed line 'score: incomplete-reason' and exit 2; the value is never printed. review-score.test.ts:828-829 pins the refusal line and asserts the sk- value never reaches stdout; :816-830 and :833-848 pin the field write, the absent-flag guard, and the needs-a-value refusal. The reason lands only on incomplete route records (review-score.ts:535-538).",
+    "Preview label: preview.sh review_route_rows builds 'incomplete: <n> of 3 passes (<reason>)' and passes it through esc (preview.sh:328, html.escape) into the mark span; the worst cell uses one_decimal (:492), which returns the dash for any non-number. preview-gate.test.ts V10 pins the mark text and the worst cell, V11 pins that '<quota & \"stop\">' never appears raw, and V2 pins the count and the dashed rank, median, best, and recall cells.",
+    "Published data: data/sets/mg-2026-11a.json holds only id, repo, commit, parent, seeded_sha256, key_sha256 for 14 diffs; the named repos are the operator's own (bodangren/advantage-forge 7, Reading-Advantage-Thailand/reading-advantage-monorepo 7). sha256sum of the private keys/forge-01.json -> 2d282df8cfe4cc92fa0a7d0b5dbb41b8ce927ef509291f220584a76cb14df217 and keys/forge-02.json -> 52e2588c88b0e0fec9fd9577090f65e32bd01a37b219a31a3e56973d2aaa9708, both equal to the manifest key_sha256 values. No new_lines, witness, operator, sk-, xox-, ghp_, AKIA text in either committed data file (grep -> no match).",
+    "Score file integrity: git diff 9b44176 70212ae on the score file shows only the two added incomplete_reason strings. Arithmetic checks: found_weight 99 / weight 126 -> 78.6 and 95/126 -> 75.4 match the stored scores; blockers_found 14 / blockers 19 -> 0.7368 matches both worst_blocker_recall values; by_class found sums to 38 and missed to 3; by_severity found 14+5+19 = 38 and missed 2+1+0 = 3. The green record (green-4.14-r2.log) states a dry-run rerun matched 9b44176 byte for byte before the reason fields.",
+    "A2 (consent-blind publish gate): the two published data files carry hashes, counts, and route scores only; the only named subjects are the operator's own repositories, and the seeded diff content never reaches them (leak-check seeded-line scan clean). The publish path ran review-set lint (14 key SHA-256 values match, green-4.13-sol.log:50) and leak-check before each data commit, per test-strategy gate 9. No named third-party subject is published, so no consent artifact is required.",
+    "A6 (registry overstatement): tech-debt.md dc31a0a adds a Phase 4b section that lists the carried nonblocking findings, states plainly that none is a key leak into a committed file or a public page, and names the skipped probes. Verified: A-F1 is it.skip at adversarial-p4f.test.ts:343, P4F-2 at :374, and P4F-3 is it.skip.each at :404-406, exactly as recorded. measure/tracks.md in the range adds only the accepted deps_refresh archive row; no model_guide security state is claimed resolved.",
+    "Tests at HEAD, one file at a time, all exit 0: review-score.test.ts 31 passed (31); quota.test.ts 32 passed (32); preview-gate.test.ts 113 passed (113); judge-run.test.ts 63 passed (63); bun test harness/model-guide-tests/review-run.test.ts -> 130 pass, 0 fail, 922 expect() calls. No real model or judge call, no full suite, within the allowed hours.",
+    "Scope: git diff --stat 7f92b17..dc31a0a -> 13 files, 916 insertions, 37 deletions: judge-run.test.ts, preview-gate.test.ts, review-score.test.ts, data/review-scores/mg-2026-11a.json, data/sets/mg-2026-11a.json, judge-run.sh, judges.json, preview.sh, quota.ts, review-run.sh, review-score.ts, plan.md, tech-debt.md. routes.json, adjudicate.ts, and provider-credential.sh are unchanged in the scope. The deps_refresh files in the phase range are the accepted archived track and were read as context only."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> dc31a0af910bd17255dba10cb662d241fb47da1b (start and end of the audit)",
+    "git merge-base --is-ancestor 7d7d218d00a95d9d619d2856173b8136b6ace4a5 HEAD -> 0; git merge-base --is-ancestor dc31a0af910bd17255dba10cb662d241fb47da1b HEAD -> 0",
+    "git status --short docs/ -> empty; git diff 7d7d218..HEAD -- docs/ -> empty",
+    "cd harness && npx tsx model-guide/leak-check.ts --private /home/daniebo/.local/share/lending-desk-bench/model-guide --repo /home/daniebo/Desktop/lending-desk-bench --preview /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/data -> exit 0, no output",
+    "same command with --preview .../measure -> exit 2, private-path findings in 8 ignored run records; git ls-files on all 8 -> empty; git check-ignore -v -> .gitignore:11 runs/",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 31 passed (31)",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 32 passed (32)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 113 passed (113)",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 63 passed (63)",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 130 pass, 0 fail",
+    "sha256sum /home/daniebo/.local/share/lending-desk-bench/model-guide/sets/mg-2026-11a/keys/forge-01.json forge-02.json -> both match the manifest key_sha256 values",
+    "git diff --stat 7f92b17..dc31a0a -> 13 files; git diff --stat 7f92b17..dc31a0a -- routes.json adjudicate.ts provider-credential.sh -> empty",
+    "grep -n 'credentials|gift' harness/model-guide/quota.ts -> no match; sed reads of judge-run.sh:285-400, :620-860 and review-run.sh live blocks"
+  ],
+  "changed_files": [
+    "harness/model-guide/judges.json",
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/review-score.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/data/sets/mg-2026-11a.json",
+    "harness/model-guide/data/review-scores/mg-2026-11a.json",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/review-score.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "tech-debt.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "dc31a0af910bd17255dba10cb662d241fb47da1b",
+  "audited_head_sha": "dc31a0af910bd17255dba10cb662d241fb47da1b",
+  "security_applicability": "applicable: the range seats the Sol judge on a live quota read, adds an operator-input flag that lands in a committed public score file, and commits the first public track A data (manifest and score file)",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The codex quota read is GET-only on a fixed table value (quota.ts:232, :447), the refusal is echo free (review-score.ts:557-559), the mark is escaped (preview.sh:328), and the score arithmetic is consistent (99/126 -> 78.6, 14/19 -> 0.7368) with manifest hashes matching the private keys."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Red commits 78bcba8 and 3e3d01b precede the green commits, R7 pins the refusal without echo (review-score.test.ts:828-829) and V11 pins the escape, but no test probes a key shape outside the five patterns of KEY_SHAPE_RE (N1)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 7f92b17..dc31a0a lists exactly the 13 planned files; routes.json, adjudicate.ts, provider-credential.sh, and docs/ are unchanged in the scope."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim carries a command result: leak-check exit 0 over the committed data, five suites green at HEAD (31, 32, 113, 63, 130), two sha256 spot checks against the manifest, and the it.skip lines verified at the tech-debt recorded positions."
+    }
+  ]
+}

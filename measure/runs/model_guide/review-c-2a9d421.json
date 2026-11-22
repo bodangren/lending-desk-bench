@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "8eafbc3255d6f012aa23b119961c2e5a8ef6da40",
+  "audited_head_sha": "2a9d4213c73c2ed3fdc53ae931029f910092735d",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 6 finds no blocker. Every new refusal line matches its header and the tests. Page B matches spec D16. C5-3 is closed and C5-2 is closed for the root case. Four minor or nit items are new (C6-1 to C6-4), and C5-1 stays open in the plan.",
+  "contract_applicability": "applicable: test-strategy.md section 9, Phase 1 row assigns Review C the CLI exit codes of real-work.ts, preview.sh, and publish.ts, and the phase adds new data files and a new page.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "C6-1 [Minor] review-c: harness/model-guide/publish.ts:6-11 and :95-114, measure/tracks/model_guide/spec.md:211 and :772-781: The format of the approval record exists only in the publish.ts header. Spec D21 says that the orchestrator writes the record after Daniel gives his word, and the data model says the record holds `the words of Daniel`. The format has no field for his words, and it does not say where free text may go. The parser (:103-113) fails with `publish: bad line <text>` on any non-blank line after `files:` that is not a row, so a quote of Daniel placed after `files:` stops the publish. The header says `<YYYY-MM-DD>` but the code accepts any non-empty `date:` text. The row regex (:109) accepts lower-case hex only. Fix: add one sample record to spec D21 or to the plan task that writes the record. State that free text goes before `files:`, that `files:` is the last section, and that hex is lower-case. Validate the date or change the header to `<date>`.",
+    "C6-2 [Minor] review-c: harness/model-guide/real-work.ts:9 and :237-261: The header says the checks run in the order `input, json, manifest, sha256, size, schema, run-sum`. The code runs input (:237), manifest (:240), sha256 (:247), size (:250), manifest again for the sum-line file name (:252), json (:258), schema, and run-sum. A non-JSON input with no MANIFEST.txt gives `input-check: manifest`, not `json`. The header also gives no text for `manifest`, `sha256`, and `size`. Fix: correct the order in the header and add one line for each of the three checks.",
+    "C6-3 [Nit] review-c: harness/model-guide/publish.ts:97 and :164, harness/model-guide/real-work.ts:241, :243, and :502-503: These calls have no guard. An unreadable MANIFEST.txt or input file (real-work.ts:241, :243), an unreadable preview file (publish.ts:164, `sha256File`), an approval record that is not a file (publish.ts:97), and an unwritable `--out` folder (real-work.ts:502-503) throw. The run then ends with exit 1 and a stack trace on stderr. The headers promise exit 0 or 2 and one line on stdout. By code trace; the sandbox denied chmod, so I could not run these cases. Fix: wrap each call and refuse with `input-check: input`, `publish: sha256 <path>`, `publish: bad approval record`, and a new named line. Or state the limit in the headers.",
+    "C6-4 [Nit] review-c: harness/model-guide/publish.ts:49 and :220-222: The root case of C5-2 is closed. Header line 42 and code line 130 both give `publish: drift .`. The sentence `Each refusal prints one line on stdout` stays. The drift step prints one line for each drifted entry, so two or more lines are possible. Fix: write `Each refusal prints one line, except drift, which prints one line for each entry.`",
+    "C5-1 [Minor] review-c: measure/tracks/model_guide/plan.md:95 and :663-667 (carried; no change in 8eafbc3..2a9d421): No planned Red task pins one `Real work` link and one `Review` link on each docs page before task 4.8. Plan line 95 still says `each page` with no Phase 1 limit. The `Review` link in the preview index.html is a dead link until task 4.8 writes review.html (no docs/review.html exists). Fix: add a Red task before 4.8 for the nav links on every page, and add one sentence to plan line 95 that names the dead Review link in Phases 1 to 3."
+  ],
+  "evidence": [
+    "HEAD at audit time was 2a9d4213c73c2ed3fdc53ae931029f910092735d (git rev-parse HEAD), equal to audited_head_sha. git diff --stat 8eafbc3..2a9d421 lists preview.sh, publish.ts, real-work.ts, and plan.md only. git status --short shows only .opencode/ and tech-debt.md as untracked.",
+    "C5-3 closed: publish.ts:191-196 lstats the docs root and refuses a non-directory with `publish: bad docs root`, exit 2. The header (:27-31) states the text and the reason. Test adversarial.test.ts (49 passed) covers ADV-1. preview.sh refuses a docs root link with `preview: refused path <abs>` (python scan :154-164).",
+    "C5-2 partly closed: the unreadable root prints `publish: drift .` (code :130, header :42), and preview.sh prints `preview: unreadable docs` (python scan :130, header :16). The one-line sentence at publish.ts:49 stays (C6-4).",
+    "New publish lines match code and header: `publish: bad approval record` (:100-102, header :14-16), `publish: bad preview base` (:175-185, header :23-26), `publish: bad docs root` (:193), `publish: drift <path>` (:221), `publish: write <path>` (:246, header :43-47). The check order in the header equals the code order (:96 to :246). All refusals write to stdout through refuse() (:65-68), exit 2, and stderr stays empty. Only the usage error writes to stderr (:76).",
+    "New real-work lines match code: `input-check: input` (:237), `input-check: json` (:258), `input-check: schema` (:261-308, :500). Probes: a missing input and a directory input each gave stdout `input-check: input`, exit 2, empty stderr, and no preview folder (preview.sh through /tmp/rc6). The `json` line was not probed because the sandbox denied each file copy; the test input-check.test.ts and the code trace agree. The check order in the header is wrong (C6-2).",
+    "preview.sh probes in /tmp/rc6 (git archive 2a9d421; docs/ restored after each case): control run exit 0, then a second run exit 0 with one `href=\"./real-work.html\"` and one `href=\"./review.html\"` link in index.html. A symlink docs/lnk gave `preview: refused path /tmp/rc6/docs/lnk`, exit 2, empty stderr, no preview folder. A FIFO docs/ff gave `preview: refused path /tmp/rc6/docs/ff`, exit 2, no hang, empty stderr, no preview folder. A docs root link and the unreadable cases were not probed: the sandbox denied mv, chmod, and cp.",
+    "Publish probes were not run: the sandbox denied the write of an approval record into the temp copy. The publish contract rests on the code trace and on the tests: preview-gate.test.ts 85 passed, adversarial.test.ts 49 passed (each run alone, --maxWorkers=1, dot reporter).",
+    "Approval record format (spec D21): documented in the publish.ts header only (:6-11), not in the spec or the plan. See C6-1. The spec data model (spec.md:211) says the record holds the words of Daniel; the format has an `approved_by:` name and a `date:` line and no field for the words.",
+    "Page B: .tmp/model-guide-preview/real-work.html (built 2026-11-15 11:43). The nav lists Overview, Methodology, Results, Real work (class active), Review, Models, Tracks (lines 14-22). The method note at line 253 equals the D16 text. Source line: real-work-outcomes-2026-11-14.json, SHA-256 dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2, generated 2026-11-14. Coverage: 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, 71.7 %, 36 left-out, 889 unknown, 3 other. These match preview-1.19.txt. The preview index.html holds one link of each kind. The docs/models pages carry no new links (Phase 1 scope, plan.md:667).",
+    "Plan row 1.19 (plan.md:339-350) is marked [x] 1cc5657 with the three fix SHAs and the test counts. My runs confirm preview-gate 85 and adversarial 49 passed. The row names the first fix commit; earlier rows use one SHA as well.",
+    "Real docs/ untouched: git status --short docs prints 0 lines; find docs -type l prints 0 lines. Probes ran only in /tmp/rc6.",
+    "Route parity: this audit ran on claude-code/claude-sonnet-5-5#high, the substitute route that the brief names. The adversarial test file came from an Anthropic route; this review does not judge that file. It audits the production CLI and the user-flow contract that the DeepSeek Green wrote."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 2a9d4213c73c2ed3fdc53ae931029f910092735d",
+    "git archive 2a9d421 | tar -x -C /tmp/rc6 (harness/node_modules linked from the repo)",
+    "cd /tmp/rc6 && bash harness/model-guide/preview.sh --export harness/model-guide-tests/fixtures/real-work-mini.json --preview /tmp/rc6-p0 -> exit 0 (twice; one link of each kind)",
+    "same command with --export /tmp/rc6-nope.json and with --export /tmp -> exit 2, stdout `input-check: input`, empty stderr, no preview folder",
+    "same command with docs/lnk (symlink) -> exit 2, `preview: refused path /tmp/rc6/docs/lnk`; with docs/ff (FIFO) -> exit 2, `preview: refused path /tmp/rc6/docs/ff`",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 85 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 49 passed",
+    "git status --short docs | wc -l -> 0; find docs -type l | wc -l -> 0"
+  ],
+  "changed_files": [
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "medium",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "publish.ts:65-68 and :96-246 and real-work.ts:69-71 refuse with exit 2 and stdout only (preview.sh probes in /tmp/rc6; preview-gate 85 and adversarial 49 passed), with the unguarded reads of C6-3 at the edges."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "adversarial.test.ts (49 passed) and preview-gate.test.ts (85 passed) pin the new refusal lines; I did not judge the adversarial file quality, and the nav on every page has no planned failing-first test (C5-1)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 8eafbc3..2a9d421 lists only preview.sh, publish.ts, real-work.ts, and plan.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 3,
+      "evidence": "Two refusal probes and a FIFO probe ran on /tmp/rc6, but the sandbox denied the publish, json, and chmod probes, so those claims rest on tests and code trace (C6-3)."
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+ "audited_head_sha": "e13413f31733defe84fb623fb85c08e332942b81",
+ "baseline_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+ "blocking_findings": [],
+ "changed_files": [],
+ "commands": [
+  "git rev-parse HEAD",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "probe the 70ebfc5 bias_note change in /tmp temp runs"
+ ],
+ "confidence": "high",
+ "evidence": [
+  "Nine single-file runs at e13413f, each cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot, all exit 0: adversarial-p2 14 passed, adversarial 49 passed, update 8 passed, preview-gate 100 passed (includes the new bias-note block test), guide 15 passed, print-audit 15 passed (includes the two new bias_note tests), input-check 15 passed, real-work 20 passed, leak-guard 2 passed (238 tests).",
+  "/tmp probes of the 70ebfc5 change (synthetic hand-offs, never the real hand-off, temp repos only): hostile bias_note exits 0 with the raw string in JSON and the preview page shows it fully escaped with no raw <img>; numeric and missing bias_note give bias_note null and the page omits the Bias note line; empty string gives bias_note '' and the page renders the bare label, which matches the header promise (null only when the summary holds no string); missing summary gives exit 2 input-check: keys.",
+  "Range note: no new docs/ publish commit since b4fba01; the range holds only 05acc8c and 119b06d, both docs/assets/data-only daily publishes from the nightly unit."
+ ],
+ "live_contract_violations": [],
+ "nonblocking_findings": [
+  "P2ADV4-1 [Nit] adversarial-testing: carryover. Spec Q6 says the page shows the PM label k3.1-pro and names no route, while the binding 2.4a ruling in plan.md names full routes and the implementation follows it. Rationale: spec D17/Q6 was never updated to record the 2.4a ruling; no behavior change is asked for.",
+  "P2ADV4-2 [Nit] adversarial-testing: carryover. print-audit.ts reads the input file twice, once for the JSON parse and once for the SHA-256. Rationale: code inspection; no single-read promise in the header and not exploitable in the hand-off threat model.",
+  "P2ADV4-3 [Nit] adversarial-testing: carryover. The test-strategy Phase 2 closeout gate wording (git diff --name-only phase_base_sha..HEAD -- docs/ prints nothing) fails on the daily-publish commits 05acc8c and 119b06d in range. Rationale: no Phase 2 commit touched docs/ and the tree is clean, so D21 holds in substance."
+ ],
+ "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+ "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+ "prod_wiring_violations": [],
+ "ratings": [
+  {
+   "axis": "correctness",
+   "score": 5,
+   "evidence": "The 70ebfc5 bias_note item, its escaped render, and the regenerated data file are right on every probed branch (hostile, empty, non-string, missing, missing summary) at e13413f."
+  },
+  {
+   "axis": "test_meaning",
+   "score": 5,
+   "evidence": "The three a26cf96 tests pin the new item, its render, and the data shape and all 238 tests pass, one file at a time."
+  },
+  {
+   "axis": "scope_discipline",
+   "score": 5,
+   "evidence": "70ebfc5 touches only print-audit.ts, preview.sh, and the data file with the one new item; nothing else in range belongs to this track."
+  },
+  {
+   "axis": "evidence_quality",
+   "score": 5,
+   "evidence": "Each claim cites a single-file Tests line or a /tmp probe with exit code and exact page bytes."
+  }
+ ],
+ "retry_recommendation": "none",
+ "reviewer_model": "muse-spark-1.3-contributor",
+ "role": "adversarial-testing",
+ "role_base_sha": "e13413f31733defe84fb623fb85c08e332942b81",
+ "route": "opencode-go/muse-spark-1.3-contributor#high",
+ "schema_version": 1,
+ "status": "pass",
+ "summary": "Round 4 adversarial verification at e13413f: all nine suites green (238 tests); /tmp probes confirm the 70ebfc5 bias_note change on every branch (hostile escaped, null omitted, empty kept per header, missing summary refused); no blocking defect.",
+ "test_commit_sha": "none",
+ "track": "model_guide"
+}

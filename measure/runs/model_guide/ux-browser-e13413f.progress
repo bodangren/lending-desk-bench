@@ -1,0 +1,8 @@
+02:08:00 start provisional JSON and log written before any browser step
+02:09:00 check1 print-audit block at 1280 done 52, 13, 11 of 13, 13 of 13, error types minor 21 major 18 blocker 13, Bias note paragraph present, one calibration run, not a rank, no placeholder
+02:10:00 check1 print-audit block at 390 done bias note paragraph scrollWidth 311 = clientWidth 311, tail visible, no page scroll, 0 console errors
+02:10:40 check2 index overview table done table first above the hero at 1280 (66 vs 576) and at 390 (149 vs 1090), six rows, no console errors
+02:11:40 check3 390px scroll and console done docSW 390 = docCW 390 on both pages, 0 clipped boxes outside .table-wrap, 0 console errors on both pages at both widths
+02:12:00 focus and ax done real-work 7 named regions, ArrowRight scrolls 0 to 40 at 390; index 2 named regions, 29 named links
+02:13:00 audit result JSON written and validated: PASS: audit result is valid
+02:13:30 server stopped; port 8766 free; webbridge session p2ux2 closed; final status pass with P2U1-1 withdrawn

@@ -1,0 +1,65 @@
+# Green p1 task 1.19 (adversarial fixes ADV-1 to ADV-11)
+
+The committed Red change f014ee8 (adversarial.test.ts) sits inside
+phase_base_sha..HEAD. HEAD at start was
+8eafbc3255d6f012aa23b119961c2e5a8ef6da40, the role_base_sha. Dirty paths
+.opencode/ and tech-debt.md were not touched.
+
+Fixes (all in harness/model-guide/):
+
+- publish.ts (1cc5657): the docs root is lstatted and a root symlink gives
+  `publish: bad docs root`, exit 2, before any drift walk or copy (ADV-1).
+  The record must hold a non-empty `approved_by:` line and a non-empty
+  `date:` line, else `publish: bad approval record`, exit 2 (ADV-2). An
+  unreadable docs root prints `publish: drift .` and no empty path (ADV-5).
+  A preview base that is not a JSON object, or a `docs` value that is not an
+  object, gives `publish: bad preview base`, exit 2, no stack trace (ADV-10).
+  Each approved file is staged in its target folder before the first rename;
+  a destination that cannot be staged gives `publish: write <path>`, exit 2,
+  and the run removes its temp files, so no partial set stays (ADV-11).
+- preview.sh (f3d5843): one Python scan of docs/ replaces the find calls. A
+  symlink or another non-regular entry (a FIFO) gives
+  `preview: refused path <absolute path>`, exit 2, before any write (ADV-4).
+  An unreadable entry gives `preview: unreadable <path relative to the
+  repo>`, exit 2; an unreadable docs root prints `docs`; an unreadable
+  folder no longer ends the run with a find error (ADV-3). The header names
+  both refusal lines and the `docs` value.
+- real-work.ts (b7e24da): a missing input path or a path that is not a
+  regular file gives `input-check: input`, exit 2; text that is not JSON
+  gives `input-check: json`; a non-object root, a bad coverage block, and a
+  row with no string route give `input-check: schema`, all with no stack
+  trace and no write (ADV-6). The output copies only the coverage keys of
+  spec EV4 plus `unknown_runs` and `other_runs`, so an extra key such as
+  `private_note` reaches no public file (ADV-7). Work types and rating axes
+  are built with Object.fromEntries, so a name such as `__proto__` stays a
+  row (ADV-8). Every count is a non-negative safe integer, and each sum is
+  checked, so a negative or huge count gives `input-check: schema` (ADV-9).
+  The header names the `input` and `json` lines and the schema row rules.
+
+Brief vs tests: no difference. The tests pin the exact refusal texts and
+were followed.
+
+Tests (each file alone, --maxWorkers=1 --reporter=dot):
+- cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 49 passed (49) (first run at Red HEAD: exit 1, 20 failed | 29 passed)
+- cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 85 passed (85)
+- cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 15 passed (15)
+- cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 19 passed (19)
+- cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 2 passed (2)
+- bash -n harness/model-guide/preview.sh -> exit 0
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 8eafbc3255d6f012aa23b119961c2e5a8ef6da40
+head_sha: 2a9d4213c73c2ed3fdc53ae931029f910092735d
+commits: 1cc56572cb342d3cea48aa89954981a16739a183, f3d58430e9bbc2265a6b00447e33025a44be4388, b7e24dad941837528ea2fbb678eef8ff270d8b3b, 2a9d4213c73c2ed3fdc53ae931029f910092735d
+tests_run: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0, 85 passed); cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0, 15 passed); cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0, 19 passed); cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0, 2 passed); cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0, 49 passed); bash -n harness/model-guide/preview.sh (exit 0); harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json (exit 0)
+files_changed: harness/model-guide/publish.ts, harness/model-guide/preview.sh, harness/model-guide/real-work.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/preview-1.19.txt, measure/runs/model_guide/green-p1-8eafbc3.log
+plan_updates: Task 1.19 marked [x] 1cc5657 with the evidence line (the three fix SHAs, the five per-file results, bash -n, preview-1.19.txt, and the role log path). No test count beyond the observed runs.
+remaining_failures: none
+handoff: ADV-1 to ADV-11 are fixed; the new refusal lines are `publish: bad approval record`, `publish: bad docs root`, `publish: write <path>`, `preview: refused path <abs>` for a non-regular docs entry, `preview: unreadable docs` for the root, `input-check: input`, and `input-check: json`; no test file, docs/ file, or harness file outside harness/model-guide/ changed, and the preview re-run exited 0 with no docs/ change.
+dispositions: F1=FIX; F2=FIX; F3=FIX; F4=FIX; F5=FIX; F6=FIX; F7=FIX; F8=FIX; F9=FIX; F10=FIX; F11=FIX
+END_MEASURE_AGENT_RESULT

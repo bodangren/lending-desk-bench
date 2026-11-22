@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: heavy-run.sh; judge-run 63 pass; review-score 33 pass; preview-gate 116 pass; quota 32 pass; adversarial-p4g 4 pass; Bun review-run 130 pass, 0 fail; both leak scopes exit 0; five bash syntax checks pass; artifact assertions pass.
+files_changed: measure/runs/model_guide/phase-acceptance-4b-8fd8882.json; measure/runs/model_guide/phase-acceptance-4b-8fd8882.log
+plan_updates: none
+known_failures: No blocking gate failure. F4 wording, Review B NB1-NB3, UX findings, and recorded PM debt remain nonblocking.
+handoff: Accept Phase 4b at 8fd8882a8539d051129eb106e46974a934df5223. Allow test-only commit 8fd8882 after the 99ec28c reviews. Task 4.11 stays deferred. No rank or publish approval follows. The board stays frozen. Facts changed: Phase 4b acceptance passes at this HEAD.
+route: openai/gpt-6.1-sol#high
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+audited_head_sha: 8fd8882a8539d051129eb106e46974a934df5223
+END_MEASURE_AGENT_RESULT

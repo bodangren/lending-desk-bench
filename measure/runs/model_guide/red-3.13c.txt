@@ -1,0 +1,48 @@
+Red task 3.13c — pick-diffs retries a transient gh error
+Base: 9f43f357350bf6863289f7d18a8b8f8b62d39741
+
+Command 1:
+  cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Exit: 1
+Tests  5 failed | 21 passed (26), duration 6.58 s.
+The 21 old tests (including the two large-output cases of 3.13a) stay green.
+
+Failed test names and reasons (5):
+1. P3T2 the transient gh retry > P3T2-1 retries a detail call that fails once with HTTP 502
+   reason: exit 2 (`pick-diffs: gh api failed`), expected 0; the tool does
+   not retry.
+2. P3T2 the transient gh retry > P3T2-2 retries a list call that fails once with HTTP 504
+   reason: exit 2, expected 0; the list call is not retried.
+3. P3T2 the transient gh retry > P3T2-3 retries a secondary rate limit and a connection error
+   reason: exit 2, expected 0 for both the `secondary rate limit (HTTP 403)`
+   and the `error connecting to api.github.com` lines.
+4. P3T2 the transient gh retry > P3T2-4 refuses after 4 tries of a detail 502 and writes the stderr line
+   reason: the gh log holds 1 call for that detail path, expected 4. The
+   stdout line and the no-candidates rule already hold; the stderr line does
+   not, because gh's stderr is dropped.
+5. P3T2 the transient gh retry > P3T2-5 refuses at once on a detail 404 and writes the stderr line
+   reason: the exit code and the one-call count hold, but the tool stderr is
+   empty, expected `gh: Not Found (HTTP 404)`.
+
+Pinned contract for Green 3.13d:
+- A transient gh failure is a non-zero gh exit whose stderr matches,
+  case-insensitive, one of `HTTP 5\d\d`, `HTTP 429`, `secondary rate limit`,
+  `error connecting to`, `connection reset`, `unexpected EOF`, `timeout`,
+  `TLS handshake`.
+- ghApi retries a transient failure up to 3 more times (4 tries total) and
+  waits before each retry. `PICK_DIFFS_RETRY_WAIT_MS` sets the base wait
+  (default 5000) and the waits are base x1, x6, x24. The tests set it to 0.
+- Any other non-zero gh exit refuses at once with no retry. A spawn error
+  (`run.error`, for example ENOBUFS) refuses at once.
+- On every refusal after a gh failure, stdout is exactly
+  `pick-diffs: gh api failed`, no candidates file is written, and the tool
+  writes the last non-empty line of gh's stderr to its own stderr.
+
+The five cases write their fake `gh` as a temp script inside the test (a
+counter file in its temp folder); nothing under `fixtures/fakes/` changed.
+No network, no real home, no real gh.
+
+Command 2:
+  cd harness && npx vitest run model-guide-tests/adversarial-p3.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Exit: 0
+Tests  31 passed (31)

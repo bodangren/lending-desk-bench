@@ -1,0 +1,81 @@
+Green 5.3 log, 2026-11-22, Green r3. Route opencode-go/hy4-flash-free#high.
+Phase base 8fd8882a8539d051129eb106e46974a934df5223. Role base a7e99651e4730584479b7c706ffc160647abaaa2.
+HEAD equals role base at the start. Both commits landed after it. The working tree holds no tracked change.
+PM 2026-11-22 option A. No data file changed; the score file stays at 0306c97.
+
+Targeted Red command before code:
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+At role base it exits 1, Tests 2 failed | 120 passed (122). The failures are R4 and R4-publish. At the code commit it exits 0, Tests 122 passed (122).
+
+Companion gates, each one file at a time:
+review-score.test.ts exits 0, Tests 33 passed (33).
+adversarial-p4g.test.ts exits 0, Tests 4 passed (4).
+bash -n harness/model-guide/preview.sh exits 0.
+leak-check.ts exits 0 on the public data folder.
+preview.sh exits 0 into .tmp/model-guide-preview with --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt. The preview is local only. No push ran.
+There is no separate publish test file. R4-publish lives in preview-gate.test.ts.
+
+Code decision:
+Commit 2147dcd changes only harness/model-guide/preview.sh. It mirrors real-work.json, model-guide.json, and review.json into <preview>/assets/data/ after the root copies are written. The root copies stay. The docs files copied into assets/data stay unchanged. A stale mirror goes away when its root copy goes away.
+publish.ts needs no change. readApproval accepts a relative path with a folder segment, main() joins that path under both the preview and docs, and the copy loop makes the target folder. R4-publish failed only because <preview>/assets/data/model-guide.json did not exist.
+
+Verification of the earlier PM fixes:
+Each mark sits on its own line. No reason text appears in any preview HTML or JSON file. The MiMo class and severity count cells and its two main-row sum cells show the dash. DeepSeek keeps 0 / 13 and hy4 keeps 0 / 6. The three nested files match their root copies byte for byte.
+
+Approval record check (read-only, no publish.ts run):
+node measure/runs/model_guide/check-approval-r3.cjs exits 0.
+PASS approved_by: PM under Daniel standing site-push word 2026-11-06
+PASS date: 2026-11-22
+PASS index.html 52c294b30668020b25dcccbf436e92a1162b542a9af006505ba94f19b056f1f1
+PASS review.html e6ed8ff7c77a5dd2fdf4bf507a2faf78ac4934ceb53855132229bcd2ef08af90
+PASS real-work.html 35a71c804547dd87c2389f92f57578423c6c1e3d9ea6c056ec0a3d9f0502509d
+PASS assets/data/real-work.json a5ab25a5e09a8679e3956534441d41e722391e109a11bfac2f350ee10fde1e52
+PASS assets/data/model-guide.json d667f5ff7c380f2683d6918a0ed3f91e4504fc193392bc1e730191abf6c0d669
+PASS assets/data/review.json dedd725a0e39e8ad57159b3ae0a72bc1b3fd6318ed515b6326ab73dcfee6c003
+PASS six rows
+PASS no preview-base.json row
+APPROVAL CHECK: PASS
+
+Six SHA-256 values of the approved preview files:
+index.html 52c294b30668020b25dcccbf436e92a1162b542a9af006505ba94f19b056f1f1
+review.html e6ed8ff7c77a5dd2fdf4bf507a2faf78ac4934ceb53855132229bcd2ef08af90
+real-work.html 35a71c804547dd87c2389f92f57578423c6c1e3d9ea6c056ec0a3d9f0502509d
+assets/data/real-work.json a5ab25a5e09a8679e3956534441d41e722391e109a11bfac2f350ee10fde1e52
+assets/data/model-guide.json d667f5ff7c380f2683d6918a0ed3f91e4504fc193392bc1e730191abf6c0d669
+assets/data/review.json dedd725a0e39e8ad57159b3ae0a72bc1b3fd6318ed515b6326ab73dcfee6c003
+
+MEASURE_AGENT_RESULT
+role: green
+track: model_guide
+phase: Phase 5
+task: 5.3
+route: opencode-go/hy4-flash-free#high
+status: green
+round: r3
+phase_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+role_base_sha: a7e99651e4730584479b7c706ffc160647abaaa2
+implementation_commit: 2147dcd
+record_commit: 34eb41b
+final_green_head: 34eb41bfcc45cc5f809db520bc257b01ead325f0
+commits: 2147dcd, 34eb41b
+tasks_flipped_to_x: none; row 5.3 stays [~] until the PM GO and the publish gate
+tasks_flipped_to_b_deferred: none
+targeted_red_command: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+targeted_red_output_before_code: exit 1, Tests 2 failed | 120 passed (122); R4 and R4-publish
+targeted_red_output_after_code: exit 0, Tests 122 passed (122)
+review_score_gate: exit 0, Tests 33 passed (33)
+adversarial_p4g_gate: exit 0, Tests 4 passed (4)
+bash_n_gate: exit 0
+leak_check_gate: exit 0
+preview_gate_local: exit 0, local only, no push
+publish_ts_run: none
+new_files_added: measure/runs/model_guide/check-approval-r3.cjs (read-only check, untracked, not staged)
+changed_files: harness/model-guide/preview.sh, measure/tracks/model_guide/publish-approval.md, measure/tracks/model_guide/plan.md
+sha256_index_html: 52c294b30668020b25dcccbf436e92a1162b542a9af006505ba94f19b056f1f1
+sha256_review_html: e6ed8ff7c77a5dd2fdf4bf507a2faf78ac4934ceb53855132229bcd2ef08af90
+sha256_real_work_html: 35a71c804547dd87c2389f92f57578423c6c1e3d9ea6c056ec0a3d9f0502509d
+sha256_assets_data_real_work_json: a5ab25a5e09a8679e3956534441d41e722391e109a11bfac2f350ee10fde1e52
+sha256_assets_data_model_guide_json: d667f5ff7c380f2683d6918a0ed3f91e4504fc193392bc1e730191abf6c0d669
+sha256_assets_data_review_json: dedd725a0e39e8ad57159b3ae0a72bc1b3fd6318ed515b6326ab73dcfee6c003
+handoff: PM option A is in place at 34eb41b. Commit 2147dcd makes the preview hold the three data files under assets/data as byte copies of the root files. publish.ts was not changed because its parser and copy loop already accept a relative path with a folder segment; R4-publish failed only on the missing nested preview file. No data file changed. All gates pass one file at a time. The earlier PM fixes still hold. publish-approval.md now has the exact publish.ts field lines and six rows in docs-relative form, with preview-base.json removed. The read-only check script passes and its output is in this log. publish.ts was never run. No push ran and nothing was written under docs/. Row 5.3 stays [~]. Untracked .opencode/ and harness/wt.txt stayed unstaged. No process is left running.
+END_MEASURE_AGENT_RESULT

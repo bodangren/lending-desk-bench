@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "phase_base_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "role_base_sha": "8bfb6d1442214a2a0a64eb058329462edfacd1c2",
+  "audited_head_sha": "8bfb6d1442214a2a0a64eb058329462edfacd1c2",
+  "reviewer_model": "mimo-v2.6-flash",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "contract_applicability": "applicable: strategy-p3-756580d.log names review_c among the Phase 3 gates, test-strategy.md:703-707 assigns Review C the CLI subcommand names, exit codes, manifest and score field sets, and the --private flag, and the exact phase diff 39d5077..8bfb6d1 adds five CLI tools, one prompt, their tests, and plan.md",
+  "status": "fail",
+  "summary": "Phase 3 API and data contracts at 8bfb6d1 hold on the happy path: pick-diffs writes model-guide-candidates/1 for the 3.13/3.14 seeding, review-set writes the exact D9 manifest, review-score writes a D13 score file that the Phase 2 guide.ts reader consumes (test R6 asserts the Code review row), adjudicate applies the three verdict words, leak-check matches FR-10, review-prompt.md matches the D10 output block, all five writers require --private with a named exit-2 refusal, and the four required suites pass (21, 13, 16, 15). No Phase 3 commit touches a page or a docs/ file, so the UX browser review does not apply, and plan rows 3.1 to 3.11 with 3.3a and 3.8a are true. One blocker breaks the Phase 4 flow: adjudicate queue/apply and review-score share the id form <diff_id>#F<n>, but the queue takes n from one route's output position while the scorer reads n from the position of the route it scores, so different claims collide on one id and a verdict recorded for one route applies to another route's finding; that breaks D11 per-finding verdicts and changes D13 scores and the rank. One major: the queue match window is 2 lines while D10, its own header, and the Red test header say 3. Four nits cover date validation, uncaught JSON.parse on a malformed key, an inaccurate context-line sentence in review-prompt.md, and CWD-dependent default output folders.",
+  "blocking_findings": [
+    "P3C1-1 [Blocker] review-c: The shared finding id space of adjudicate.ts and review-score.ts does not identify a finding across routes. harness/model-guide/adjudicate.ts:245-269 assigns the id <diff_id>#F<n> from the position of the finding inside ONE route's raw output while deduplicating only by claim (diff, file, line, class, severity, title, reason), and :339-343 writes verdicts[item.id] with last-write-wins; harness/model-guide/review-score.ts:301 reads verdicts[<diff_id>#F<n>] at the position inside the route pass it scores, and :301-304 applies false-claim (minus 2 points), real-defect, and unclear (provisional) from that lookup. Consequence A: two routes whose unmatched findings sit at the same index with different claims produce two queue items with one id, and because each judge file is a flat id-to-verdict map (adjudicate.ts:339-342), the judges cannot give each finding its own verdict, which spec D11 lines 449-452 requires and FR-12 (spec.md:904-912) builds on. Consequence B: a claim reported by route A at index 1 and by route B at index 5 keeps only id F1 (adjudicate.ts:258-267), so scoring route B finds no verdict at F5 and the same claim costs route A two points but costs route B nothing, while an unclear verdict marks one route's pass provisional and not the other's. Both directions change pass scores and the D13 rank that guide.ts turns into the Code review pick (guide.ts:240-285). Neither direction is tested: adjudicate.test.ts:267-311 and :421-437 build multi-route raw only with identical claims, and no test scores two routes against one verdicts file. Rationale: the id form has no route component, so a route-blind queue and a route-local scorer cannot share it. Fix options for Green: give the queue route-neutral unique ids and have the scorer resolve verdicts by claim (file, line, class) instead of position, or produce one verdicts map per route, or make the id carry a claim key. This needs a design decision before task 4.13."
+  ],
+  "nonblocking_findings": [
+    "P3C1-2 [Major] review-c: harness/model-guide/adjudicate.ts:81 sets WINDOW = 2 and matchesPlant (adjudicate.ts:161-169) uses first - 2 to last + 2, while the same file's header (adjudicate.ts:24-27), the Red test header (adjudicate.test.ts:32-34), spec D10 (spec.md:435-437), and the scorer (review-score.ts:80 and :221) all define the match window as new_lines[0] - 3 to new_lines[1] + 3. A finding at exactly 3 lines from a plant edge is found by the scorer but queued as unmatched, so judges adjudicate a matched finding and a shared real-defect verdict writes a seeded plant into key.real_defects and into the PM hand-off (adjudicate.ts:344-367). Test J1 (adjudicate.test.ts:303-311) uses line = new_lines[0], so the distance-3 case is untested. Rationale: the queue's own documented contract and spec D10 disagree with the code. Fix: use 3 for the match comparison and keep 2 only for the group window, or correct the header, the Red test header, and D10.",
+    "P3C1-3 [Nit] review-c: review-score.ts:82 and :130 accept any YYYY-MM-DD text, including an impossible date such as 2026-02-31, and write it into the score file; guide.ts:172-181 and :252-255 then refuse with input-check: scores exit 2, and preview.sh:156-164 drops the whole six-row overview table. The producer accepts what its consumer refuses. Rationale: one bad --date removes the Code review row and all five other rows. Fix: validate the calendar date in review-score.ts, or let guide.ts skip the pass.",
+    "P3C1-4 [Nit] review-c: review-score.ts:268 and :412, and adjudicate.ts:237 and :323, call JSON.parse on a key file and on queue.json with no guard, so a malformed key ends the run with an uncaught exception, exit 1, and a stack trace, while review-set.ts:326-330 refuses the same input with lint: key-json: <diff_id> exit 2 and both headers (review-score.ts:8-9, adjudicate.ts:9-12) promise one refusal line and exit 2. Rationale: the same private input has three different failure contracts. Fix: wrap the parses and refuse with score: key, queue: key, and apply: queue.",
+    "P3C1-5 [Nit] review-c: harness/model-guide/review-prompt.md:15 tells the reviewer that a line that starts with a number and a space is a context line, but every body line starts with L (review-set.ts:84 BODY_RE and fixtures/review/sets/mg-2026-11a/src/forge-01.diff line L10 +  const v10 = compute(10);), and a context line is L<n>, one space, the kind space, and the text; lines 12-14 also say each line starts with its new-side number while a removed line starts with L---. Rationale: the D10 input misdescribes the diff format it consumes. Fix: describe the kind character after the number.",
+    "P3C1-6 [Nit] review-c: review-set.ts:77 and review-score.ts:75 default --sets and --scores to repo-root-relative harness/model-guide/data/..., but the usage lines (review-set.ts:4-5, review-score.ts:4-6) and every documented command run from harness/, so the defaults resolve to harness/harness/model-guide/data/... which preview.sh:119-142 and update.sh:91-111 never read; a run that omits the flag then writes where no consumer looks and the Code review row stays no pick yet. The Red headers call both flags required (review-set.test.ts:18, review-score.test.ts:20) while the tools make them optional (review-set.ts:196, review-score.ts:138) and no test probes a missing value. Fix: require the flags or resolve the defaults against the repository root."
+  ],
+  "evidence": [
+    "HEAD provenance: git rev-parse HEAD = 8bfb6d1442214a2a0a64eb058329462edfacd1c2 at the start and at the end of the audit; it equals role_base_sha and audited_head_sha, phase_base_sha 39d5077 is its ancestor, and no docs/assets/data publish commit landed above it, so no fallback naming was needed.",
+    "contract_applicability = applicable: measure/runs/model_guide/strategy-p3-756580d.log lists review_c in review_gates, test-strategy.md:703-707 assigns Review C the API only, and git diff 39d5077..8bfb6d1 adds pick-diffs.ts, review-set.ts, review-score.ts, adjudicate.ts, leak-check.ts, review-prompt.md, four test files, and plan.md.",
+    "No page and no docs/ file: git show --stat on every one of the 26 model_guide commits in the range lists only harness/model-guide/*.ts, harness/model-guide/review-prompt.md, harness/model-guide-tests/*, and measure/tracks/model_guide/plan.md; git log 39d5077..8bfb6d1 -- docs/ returns only f6c2920 Publish daily 2026-11-15 OpenCode Go results (pm-pin catch-up), a daily_model_schedule commit. The UX browser review does not apply (test-strategy.md:712-718).",
+    "pick-diffs.ts to the 3.13/3.14 seeding: schema model-guide-candidates/1 with qualified (sha, parent, committer_date, files, lines, code_share), selected, and rejected written to <private>/candidates/<owner>__<name>.json (pick-diffs.ts:56, :310-328); D4 rules and reasons at pick-diffs.ts:58-78; newest-first sort and held-diff skip at :300-308; only gh api --method GET (pick-diffs.ts:133).",
+    "review-set.ts to the D9 manifest: exactly set_id, created, diffs[id, repo, commit, parent, seeded_sha256, key_sha256], and plant_counts{by_class, by_severity} (review-set.ts:481-496), no path, no line, no plant text, and --created is required so no wall clock enters (review-set.ts:192); spec.md:398-413 names the same field set.",
+    "review-score.ts to guide.ts: pass records carry route, pass, date, state, score, weight, found_weight, found, missed, false_claims, blockers, blockers_found, blocker_recall, invalid_reviews, real_defects, by_class, by_severity (review-score.ts:424-442); route records carry route, state, passes, worst, median, best, worst_blocker_recall, rank (review-score.ts:361-370); guide.ts:240-262 reads routes[].state, routes[].passes[].state/date/score/blocker_recall, counts provisional as complete, and needs 3 passes; test R6 (review-score.test.ts:599-638) asserts the Code review row with evidence track A: worst 3.8 (n=3).",
+    "guide reader re-verified live: cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot gives Tests 16 passed (16), exit 0, including T7b a track A route with one provisional pass keeps its rank.",
+    "Verdict words: adjudicate.ts:80 holds real-defect, false-claim, unclear and apply writes that flat map to <private>/sets/<set_id>/adjudication/verdicts.json (adjudicate.ts:383); review-score.ts:301-304 reads the same three words. The id form matches in shape but not in meaning across routes; see P3C1-1.",
+    "leak-check.ts against FR-10 (spec.md:888-894): staged files from the git index, every file under docs/ staged or not, and every file under --preview (leak-check.ts:216-232); JSON key new_lines/witness/operator at any depth, the private folder path, and a seeded body line of 20 or more characters absent from the source diff (leak-check.ts:51-52, :104-137, :171-196); exit 2 with one leak-check: line per finding (leak-check.ts:234-237); green-p3-17ebb29.log records the prompt-only temp repo printing nothing.",
+    "review-prompt.md against D10: exactly one fenced json block, findings with file, line, severity, class, title, reason, at most 30 findings, the three severities and nine classes (review-prompt.md:24-76), matching the scorer readFindings (review-score.ts:185-206) and the 30-finding cap (review-score.ts:79, :281); the context-line sentence is inaccurate, see P3C1-5.",
+    "CLI and exit codes: all five writers require --private with a named refusal line and exit 2 (pick-diffs.ts:108-110, review-set.ts:191-192, review-score.ts:125-127, adjudicate.ts:117-119, leak-check.ts:80-81); the subcommands are lint, score, queue, and apply as FR-8, FR-9, and FR-12 name them; the uncaught-parse exit-1 path is P3C1-4 and the date path is P3C1-3.",
+    "Plan rows 3.1 to 3.11 with 3.3a and 3.8a: git show --stat shows each Red commit touched only its test file and fixtures (84553cd, 2dda97b, cf3781d, 0959cc2, 5097acc, 9483f01) and each Green commit only its tool (d095a38, 2acd4fa, f023951, fd96d3b, fd42d41, 9d7f3f2, d297316); red-3.1.txt to red-3.5.txt each hold a command, an exit line, and failing Tests counts of 17, 15, 19, 13, and 10; red-3.3a.txt holds the two commands, exit 1 twice, and five failed test names with reasons; the seven green-p3-*.log files for 192da41, 7e52d2e, 35be00c, 5fc37de, 5eeceab, 6e49630, and 17ebb29 exist; 3.12 stays [~] and 3.13 to 3.16 stay [ ].",
+    "Four required suites at HEAD, each single file with --configLoader native --maxWorkers=1 --reporter=dot and no shell redirection: review-score.test.ts 21 passed, adjudicate.test.ts 13 passed, guide.test.ts 16 passed, review-set.test.ts 15 passed, all exit 0.",
+    "Untested contract cases behind the findings: adjudicate.test.ts:267-311 and :421-437 build multi-route raw only with identical claims, so no test scores two routes against one verdicts file (P3C1-1); J1's match test at :303-311 uses distance 0, so the distance-3 window is untested (P3C1-2); no test probes a missing --sets or --scores (P3C1-6).",
+    "No routed or CONTEST items: this is the first review-c run on a Phase 3 head (no review-c-*.json names a Phase 3 phase), so no dispositions line is required."
+  ],
+  "commands": [
+    "git rev-parse HEAD (start and end of audit: 8bfb6d1442214a2a0a64eb058329462edfacd1c2)",
+    "git log --oneline 39d5077..8bfb6d1",
+    "git diff --stat 39d5077..8bfb6d1",
+    "git show --stat on the 26 model_guide commits of the range (file scope per task)",
+    "git log 39d5077..8bfb6d1 -- docs/ (only the f6c2920 catch-up publish commit)",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot (21 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (13 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (16 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "grep and read of pick-diffs.ts, review-set.ts, review-score.ts, adjudicate.ts, leak-check.ts, guide.ts, preview.sh, update.sh, review-prompt.md, spec.md D4-D13 and FR-8 to FR-12, plan.md Phase 3 to Phase 5, test-strategy.md section 9.3",
+    "grep of measure/runs/model_guide/red-3.*.txt and green-p3-*.log for commands, exits, and Tests lines",
+    "python3 json.load over measure/runs/model_guide/review-c-*.json for the house schema and prior retry conventions"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-c-8bfb6d1.json",
+    "measure/runs/model_guide/review-c-8bfb6d1.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [
+    "P3C1-1 [Blocker] review-c: adjudicate.ts:245-269 and :339-343 take the finding id from one route's output position and write one flat verdicts map, while review-score.ts:301 reads that map at the position of the route it scores, so ids collide across routes and verdicts apply to the wrong finding.",
+    "P3C1-2 [Major] review-c: adjudicate.ts:81 and :161-169 match plants in a 2-line window while D10, the tool header, and the Red test header require 3, so matched findings are queued and adjudicated."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "The set, score, candidate, leak, and prompt contracts match their readers (review-set.ts:481-496 to spec.md:398-413, review-score.ts:424-470 to guide.ts:240-285), but adjudicate.ts:245-269 shares a position-based id space with review-score.ts:301 that misapplies verdicts across routes, and adjudicate.ts:81 uses a 2-line match window where D10 requires 3."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "84 tests pass across the four required files with fail-first evidence in red-3.1.txt to red-3.3a.txt, but adjudicate.test.ts:267-311 and :421-437 only use identical claims across routes and J1's match test uses distance 0, so the blocker and the major are untested."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat on all 26 model_guide commits lists only the five tools, review-prompt.md, their tests, and plan.md; no page, no docs/ file, no preview.sh change, and the only docs/ commit in range belongs to the daily_model_schedule catch-up."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim carries a file:line or a command result, including four live single-file vitest runs, the per-commit file-scope listing, the red and green evidence files, and a re-check of HEAD after the analysis."
+    }
+  ]
+}

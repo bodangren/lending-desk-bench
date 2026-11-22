@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: c9d60b9a72d2be2184e0dc58f71a48f23f8b5984
+head_sha: d137057f6b419ed8cda4247ac1805235ae1a2f4c
+commits: 8fee6bbc129ae45b84f86e996b806731f77a1807, d137057f6b419ed8cda4247ac1805235ae1a2f4c
+tests_run: Single files only, each with `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`: `adversarial-p3.test.ts` exit 0, `Tests  23 passed (23)`; `adjudicate.test.ts` exit 0, `Tests  20 passed (20)`; `review-set.test.ts` exit 0, `Tests  18 passed (18)`; `review-score.test.ts` exit 0, `Tests  25 passed (25)`; `guide.test.ts` exit 0, `Tests  16 passed (16)`. `git --no-pager status --short docs/` printed nothing.
+files_changed: commit 8fee6bb holds harness/model-guide/adjudicate.ts and harness/model-guide/review-set.ts. Commit d137057 holds measure/tracks/model_guide/plan.md. No test file changed, no fixture changed, no docs/ path changed. The log measure/runs/model_guide/green-p3-c9d60b9.log is untracked evidence and is not staged.
+plan_updates: 3.12g changed [~] to `[x] 8fee6bb` with an Evidence line that cites measure/runs/model_guide/green-p3-c9d60b9.log and holds no test count. 3.12 stays [~]. The plan commit is d137057.
+dispositions: none
+handoff: Green 3.12g is complete on HEAD d137057. P3X1-1: the queue dedup key of adjudicate.ts is now the claim tuple itself, the same JSON.stringify string that claimId hashes, so two claims that differ only by a whitespace shift keep two items with their two claim ids; the queue stays route-blind, the item id stays the claim id, and the scorer is untouched. P3X1-2: the lint refuses a plant whose new_lines range holds no added (+) line of its diff with one line `lint: plant-line: <diff_id> <plant_id>`, exit 2, and no manifest; every other lint line is unchanged. The two tests of 3.12f now pass with no assertion change. No routed findings: dispositions none.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,18 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b — the live runs and the first track A results
+role: measure-mid-red
+status: complete
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+red_commit_sha: 9c476a3cb2243871d0c9b3e5f8c71005a386b17a
+plan_commit_sha: 6c42e434e47a3c5458c7ff87ec5259b0df075cce
+resulting_head: 6c42e434e47a3c5458c7ff87ec5259b0df075cce
+commits: 9c476a3 test(model_guide): Red task 4.15 backlog; 6c42e43 measure(model_guide): record Red task 4.15
+tests: review-run.test.ts N21 N10 N11 N9 N26 N27 N28 N31x2 N30/F1 guard; judge-run.test.ts N31 JA1 JA2 N30 guard; quota.test.ts N32; adversarial-p4-runner.test.ts P4B-C1 (Review C, F2, N15 shared); adversarial-p4c.test.ts E1 un-skipped (ADV-P4C-1); decode-parity.test.ts P4 N13
+files: harness/model-guide-tests/review-run.test.ts, judge-run.test.ts, quota.test.ts, adversarial-p4-runner.test.ts, adversarial-p4c.test.ts, decode-parity.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-4.15.txt, measure/runs/model_guide/red-4.15-7d7d218.log
+remaining_failures: 15 new failing cases at the base — line 1 review-run 87 pass/9 fail (N21, N10, N11, N9, N26, N27, N28, N31 x2); line 2 judge-run 2 failed/46 passed (N31 JA1, JA2); line 3 quota 1 failed/30 passed (N32); line 4 adversarial-p4-runner 1 failed/14 passed (P4B-C1); line 5 adversarial-p4c 1 failed/12 passed (E1); line 6 decode-parity 3 pass/1 fail (P4 N13). All existing cases still pass.
+gaps: N30 probe and judge start-test cases plus F1 pass at the base; the code path is already correct and the missing item is a test (gap closing inside an otherwise failing-first round). F2 and the runner and judge parts of N15 share the process-table scoping fix proved by P4B-C1 on line 4. N32 runner record text and judge record text are covered only by the quota reason source on line 3. N5, N12, N20, N24, N29 are document only and have no test.
+breakage_proof: N30/F1 probe case fails under mutation r6 of measure/runs/model_guide/review-b-c0a26d7.json (probe region branch prints the unscanned stdout error event); N30 judge case fails under mutation j7 (judge --start-test prints the unscanned stdout error event). Both mutations survived every earlier case in that review. The new cases assert the fixed text and no key on exactly those paths. I did not re-run the mutations in a scratch copy. N13 was tightened after a first version passed at the base; it now puts the forged result branch first, and the scorer took the forged finding.
+handoff: Green must implement the Red contracts. Failed scan text is exactly `the error output could not be scanned`; found-key text stays `the error output held a credential value`. The quota reason line prints only a fixed closed-list text. error_line_of cuts at 500 bytes. read_tokens clears tokens_complete above 2^53. The message rule refuses U+202E, U+0085, U+200B. daemon_pids needs adjacent serve then --service. stop_daemons logs only on a matching start time. The XDG guard walks every path level. The process-table guard scopes to its own temp root. E1 has no skip. Green changes no test file. Open items for a later Red round: add N32 reason-text cases in review-run.test.ts and judge-run.test.ts records; add separate N15 cases in the runner and judge files; record document-only reasons for N5, N12, N20, N24, N29 in plan.md; optionally re-run mutations r6 and j7 against the new guard cases for a local breakage proof. Row 4.15 stays [~] until Green.
+END_MEASURE_AGENT_RESULT

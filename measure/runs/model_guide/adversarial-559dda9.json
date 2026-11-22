@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "role": "measure-adversarial-testing",
+  "track": "model_guide",
+  "audited_head": "559dda9cd78754d7c4caa258c8edf4c585c22364",
+  "status": "pass",
+  "summary": "All seven earlier defects are closed. harness/model-guide-tests/adversarial-p4.test.ts gives `Tests  18 passed (18)` at 559dda9 (it gave 7 failed and 11 passed at d74cf4c). The 12 earlier mutants and 9 new mutants of the delta gave 20 kills and 1 survivor. The survivor (header nowrap restored) is an equivalent mutant under the orchestrator ruling. The five delta probes (rank rounding at 9 decimals, display rounding once, the alias rule, Object.hasOwn byEffort, audit_name) found no blocking defect. They found 3 new Nits (ADV-12 to ADV-14, spec silent); ADV-8 to ADV-11 stay as they were. The ten runs that plan.md cites re-ran with the cited counts. This role added 3 lines to case ADV4-3 to pin the ruling that a direct key wins (commit c8c5e9ecca070beeb54fec27f79542d24ccecfc1). No production code changed.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "ADV-8 [Minor] harness/model-guide/real-work.ts:411-416 | Two variants with the same counted runs: the first route in file order wins. Probe on a temp copy (unchanged since d74cf4c): t1/tie#low first gives net score 11 (not for verdicts), t1/tie#high first gives 44 (can pick). Row order of the export can flip a verdict. | Spec D16 AA net score and test-strategy Q-S7 leave a tie open, so no test | Fix scope: owner chooses one tie rule (for example the lower score, or the primary row).",
+    "ADV-9 [Nit] harness/model-guide/real-work.ts:674 | The routes unknown#high and unknown[1m] are not the route unknown. They show as the model unknown, rank, and pick when the allowed list holds unknown. The real export holds only the plain route unknown, so this is a spec edge only. | Spec D16 Route key names the route unknown | No test. Fix scope: optional, compare the model key.",
+    "ADV-10 [Nit] harness/model-guide/real-work.ts:326-333 | A producer row with tasks 0 and accepted above 0 adds its accepted count and its rate to the merged first-round %. Probe: a row with 10 tasks and 20 % plus a tasks-0 row (accepted 5, rate 1.0) gives 60 %. The real export holds accepted at or below tasks in all producer rows, so the shape cannot occur. | Spec D16 Producer table: a row with tasks 0 does not show (silent on sums) | No test. Fix scope: owner rules the sum rule.",
+    "ADV-11 [Nit] harness/model-guide/preview.sh:483-486 against :464-468 | tokens_text uses Python round (half to even), so 342500 shows 342k, and pct rounds half up. | Spec D16 Producer table shows 343k as an example only; the rounding mode is not specified | No test. Fix scope: none required.",
+    "ADV-12 [Nit] harness/model-guide/real-work.ts:386-395 and :112-115 | (a) The fix of ADV-6 covers a key against an alias only. Two models that hold the same alias, or two keys that differ only in case, still resolve by file order (probe: net score 51 with one order, 25 with the other). (b) variantOf keeps `[1m]` after `#`, while modelKey removes `[1m]` at any position. The route x#high[1m] gets the variant high[1m], so the row uses the primary score (30) and not byEffort.high (44). The real export holds `[1m]` before `#` only. | Spec D16 AA net score is silent on both | No test. Fix scope: optional; strip `[1m]` in variantOf and take the first alias holder by key order.",
+    "ADV-13 [Nit] harness/model-guide/preview.sh:464-468 | pct adds 0.5 to a float product, so an exact tie rounds by float noise. On the built page a first-round rate 0.125 shows 13 %, 0.145 shows 14 %, 0.155 shows 16 %, and 0.285 shows 28 %. A checker row of 1 of 8 shows 13 %, 23 of 40 (57.5 %) shows 57 %, and 29 of 200 (14.5 %) shows 14 %. Of 100 export-style rates with 3 decimals that end in 5, 4 round down. The rank key is not affected. The line is not in the delta of cea0a90 (it is older). | Spec D16 and FR-3: a rate shows as a whole percent; the spec names no tie rule | No test (spec silent). Fix scope: optional; round on exact decimals, or add a small tolerance, in pct.",
+    "ADV-14 [Nit] harness/model-guide/preview.sh:360-367 | audit_name removes `[1m]` and `#<variant>` but not a note at the first ' (' (the D16 key rule). Probe: the key claude-code/claude-opus-5-5 (reviewer)#high shows `claude-opus-5-5 (reviewer)`. The keys `[1m]` and `claude-code/` show an empty name. The real print-audit file holds two plain keys, so no real page is affected. | Spec D17 names the plan prefix and the variant only, plus no raw route key | No test. Fix scope: optional; strip the note first, with the same rule as page B."
+  ],
+  "evidence": [
+    "Closure check at 559dda9: cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot gives exit 0 and `Tests  18 passed (18)`. The 7 cases that failed at d74cf4c now pass: ADV4-16 (ADV-1), ADV4-18 (ADV-2), ADV4-9 (ADV-3), ADV4-11 (ADV-4), ADV4-12 (ADV-5), ADV4-3 (ADV-6), ADV4-5 (ADV-7). Findings ADV-1 to ADV-7 are closed. No CONTEST item came with this brief, so none is kept or withdrawn.",
+    "Real files: bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview /tmp/opencode/adv-p4/preview-real-559b exits 0, and `git status --short docs/` prints nothing. On the page built from the real files at 559dda9 (Playwright, Chrome channel), each default-table model name wraps to 2 lines or fewer at 390 px, each scroll box has a hint at 390, 980, and 1280 px, and the page has no sideways overflow at the 3 widths.",
+    "Mutation check on a copy of the production tree in /tmp/opencode/adv-p4/mut (the repo tree stayed unchanged). The 12 earlier mutants of real-work.ts are all killed on the new code: M1 by ADV4-2, M2 by ADV4-6, M3 by ADV4-1, M4 by ADV4-10, M5 by ADV4-7, M6 by ADV4-6 and ADV4-7, M7 by ADV4-1 and ADV4-10, M8 by ADV4-1, ADV4-2 and ADV4-6, M9, M11 and M12 by ADV4-8, M10 by ADV4-2.",
+    "Nine new mutants of the delta cea0a90: N1 rank key off killed by ADV4-9; N2 alias overwrites a key killed by ADV4-3; N3 Object.hasOwn off killed by ADV4-5; N4 audit_name keeps [1m] killed by ADV4-12; N5 rework rounded again and N9 cleanup rounded again killed by ADV4-11; N6 no model min-width killed by ADV4-16; N7 no scroll hint killed by ADV4-18; N8 header nowrap restored SURVIVED. N8 is an equivalent mutant: the orchestrator rules that number headers may wrap, so a header that does not wrap breaks no rule, and the 10em minimum width keeps each name at 2 lines or fewer (ADV4-16 and ADV4-18 pass under N8).",
+    "Test change of this role: ADV4-3 now pins the orchestrator ruling that a direct AA key wins over an alias (k1=25, k2=26). Before the change the case passed under both rules, so mutant N2 would have survived. The change is 3 lines in harness/model-guide-tests/adversarial-p4.test.ts, commit c8c5e9ecca070beeb54fec27f79542d24ccecfc1. The 18 cases pass with the change.",
+    "Probe 1, rank rounding at 9 decimals: no defect. Rates at the half boundary and the 1e300 against 1e299 rework case rank in the order of the spec (rate, then lower rework, then more tasks). ADV4-9 and mutant N1 prove that float noise no longer breaks a tie.",
+    "Probe 2, display rounding once: a randomized differential through the real page build against an exact decimal oracle, 379 producer rows and 292 checker rows plus 8 unknown-share cases, gives 0 mismatches outside tie values (29 near-tie values skipped). The page rounds once. The tie behavior is ADV-13.",
+    "Probe 3, the alias rule: a direct key wins over an alias in both file orders (ADV4-3). Alias against alias and case-only key collisions still depend on file order (ADV-12). Probe 4, Object.hasOwn byEffort: the variants __proto__, constructor, an empty variant, and a case difference all use the right row; the `[1m]` after `#` case is ADV-12. Probe 5, audit_name: `[1m]` before or after `#` and a variant suffix give the plain name (ADV4-12); a note and an empty key are ADV-14.",
+    "A5 (plan truthfulness): plan.md:1207-1222 (commit 559dda9) cites ten runs. Each run was repeated one file at a time and gave exit 0 with the cited count: adversarial-p4 18, real-work 13, preview-gate 99, guide 17, input-check 23, update 9, leak-check 22, adversarial 46, adversarial-p2 13, adversarial-p3 34. The claim that the preview on the real files exits 0 and `git status --short docs/` prints nothing also holds. The claims are true.",
+    "A4 (vacuous pass): each case in adversarial-p4.test.ts checks the exact row set or the counts before it reads a value, and the mutation runs M3, M7, M9, M11, M12, N1 and N2 prove that a wrong rule fails. The phase diff holds no plan-marker check, so the all-[~] plan fixture does not apply to this diff.",
+    "A7 (over-broad filter): ADV4-15 passes at 559dda9. A route note with never, do not, operator, witness, and new_lines as prose passes leak-check (exit 0). The same words beside a real operator key give exit 2 with `leak-check: key-field`, and beside the private folder path give exit 2 with `leak-check: private-path`. The filter keeps each hit.",
+    "Frozen paths: `git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..559dda9 -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh` prints nothing.",
+    "Scope: the Green commit cea0a90 changed 3 files (pages/real-work.html, preview.sh, real-work.ts), the files of ADV-1 to ADV-7. This role changed harness/model-guide-tests/adversarial-p4.test.ts only. measure/runs/ and the paths on the exclusion list are not staged.",
+    "Observation, no finding: the rank uses the rate at 9 decimals, and the page shows a whole percent. Two rows that show the same percent can rank by the unrounded rate before the rework rule. The spec says `first-round accept %` and `shows as a whole percent` without saying which value ranks. The orchestrator keeps the scroll hint under every table box (it shows also where a box does not scroll). RB-1 and RC2-3 are known and not repeated."
+  ],
+  "commands": [
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bash /tmp/opencode/adv-p4/a5-run.sh (one vitest run per file: adversarial-p4, real-work, preview-gate, guide, input-check, update, leak-check, adversarial, adversarial-p2, adversarial-p3)",
+    "bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview /tmp/opencode/adv-p4/preview-real-559b",
+    "git status --short docs/",
+    "python3 -I /tmp/opencode/adv-p4/mutate3.py (21 mutants on a copy of the production tree in /tmp)",
+    "python3 -I /tmp/opencode/adv-p4/differential.py (display rounding against an exact decimal oracle)",
+    "python3 -I /tmp/opencode/adv-p4/probes.py and /tmp/opencode/adv-p4/audit-probe.py (delta probes through temp folders and temp repos)",
+    "node /tmp/opencode/adv-p4/measure.mjs, measure2.mjs, measure3.mjs, measure4.mjs (Playwright, Chrome channel, layout probes on the real page)",
+    "git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..559dda9 -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4.test.ts"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "All 7 earlier defects are closed (adversarial-p4.test.ts `Tests  18 passed (18)` at 559dda9); only spec-silent Nits remain (real-work.ts:386-395, preview.sh:464-468)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Each of the 7 fixes has a case that failed before the fix (ADV4-3, 5, 9, 11, 12, 16, 18) and 20 of 21 mutants die, but tie rounding at preview.sh:464 and alias against alias have no test because the spec is silent."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "`git show --stat cea0a90` lists exactly pages/real-work.html, preview.sh, and real-work.ts, the three files of ADV-1 to ADV-7."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "plan.md:1207-1222 cites ten counts and each count held on re-run: 18, 13, 99, 17, 23, 9, 22, 46, 13, 34."
+    }
+  ]
+}

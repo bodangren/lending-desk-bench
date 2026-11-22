@@ -1,0 +1,11 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-review-a-correctness
+task: 4.16
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 33374182f4798169e8c3e2dc676f8a4a2f9327a6
+audited_head_sha: 33374182f4798169e8c3e2dc676f8a4a2f9327a6
+handoff: F1 [Low, nonblocking]: both runners floor the call-start timestamp to seconds before comparing native millisecond message.created values; stale messages from the preceding fraction of a second can pass. P4E-2 tests only created=1. Route this fix and a failing-first edge fixture to backlog row 4.15 under the PM cap. No product decision is needed.
+END_MEASURE_AGENT_RESULT

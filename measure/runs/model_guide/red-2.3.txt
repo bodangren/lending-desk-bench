@@ -1,0 +1,84 @@
+Red evidence for plan task 2.3 — the weekly update (update.test.ts) and the
+two D18 rulings in guide.test.ts
+Recorded 2026-11-15 by the mid-red role at role_base_sha c89ba5c6e4786d05b48ce2be97bb6fe740566626
+Phase base: c22f313603108585f8bb45996057627acfbc78ae
+
+Targeted Red command (day rule: one file per run, one worker):
+  cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  3 failed (3)
+  Every test fails with: Error: production file is missing:
+  /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/update.sh
+  (Phase 2 has no weekly update script yet)
+  Expected reason: harness/model-guide/update.sh does not exist before
+  Green task 2.7.
+
+Failed test names (update.test.ts):
+- U1: before the approval update.sh writes the two data files into the preview folder only
+- U2: after the approval update.sh writes the two data files into docs/assets/data and commits exactly those two paths
+- U3: a failed input check gives exit 2 and changes no file
+
+The two D18 ruling tests added to guide.test.ts (Part B):
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  15 failed (15)
+  (13 from red-2.2.txt plus the two ruling tests below; every test still
+  fails with "production file is missing: .../model-guide/guide.ts
+  (Phase 1 has no overview tool)", so Green task 2.5 owns them)
+- D18 Q1: the test writing row picks from the producer table and the evidence cell names it
+- D18 Q2: with no complete track A route and a qualified checker row the code review pick is the no-pick words
+
+Ruling Q1 (spec D18, plan task 2.3): the test writing row uses the page B
+producer table as a whole. real-work.json has no role key, so the "role red"
+filter cannot apply. The evidence cell of that row starts with
+"page B producer". guide.test.ts now allows the prefix "page B producer" in
+the evidence regex of T2 and in the test writing case of T3.
+Ruling Q2 (spec D18, plan task 2.3): the code review row shows
+"no pick yet: not enough evidence" until Phase 4 even when the page B
+checker table holds a qualified model. The checker table does not pick for
+code review before Phase 4.
+
+The other Phase 2 and Phase 1 files, each run alone with one worker:
+  cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  9 failed (9)
+  (unchanged from red-2.1.txt: the print-audit tool and page block are Green 2.4)
+
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  3 failed | 94 passed (97)
+  failed: T1 the print-audit block, T11 the hostile name, N4 the block
+  shows every error type (all Green 2.4; G1 to G4 pass at the base by design)
+
+  cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  20 passed (20)
+
+  cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  2 passed (2)
+
+  cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  49 passed (49)
+
+update.test.ts pins (spec D19, D21):
+- command: bash harness/model-guide/update.sh <export file>, cwd <repo>,
+  default preview folder <repo>/.tmp/model-guide-preview
+- approval gate: the existence of
+  <repo>/measure/tracks/model_guide/publish-approval.md
+- before the approval: the two data files land in the preview folder only;
+  every other file keeps its SHA-256, no docs/ write, no commit
+- after the approval: the two data files land in docs/assets/data/ and one
+  git commit holds exactly docs/assets/data/real-work.json and
+  docs/assets/data/model-guide.json; an unrelated dirty docs/index.html
+  stays uncommitted and stays dirty; the temp repo has no remote, so a push
+  would fail the run
+- a failed input check: exit 2, one named input-check line, byte-identical
+  temp tree, no new preview folder, no commit
+- every git action runs in a temp repo under the system temp folder; the
+  real repo history is never touched

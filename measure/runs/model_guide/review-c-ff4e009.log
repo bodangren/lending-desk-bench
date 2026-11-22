@@ -1,0 +1,25 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+role: measure-review-c-api-contract
+status: complete
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+commits: 05bb618 0f426b1 bc0391f 0b52f33 943f9f7 c5942e6 f88f9b6 ff4e009 (audited head ff4e009)
+blocking_findings: none
+nonblocking_findings: N1 [Nit] review-c: the orphan guard of review-run.test.ts:364-367 can fail a clean run (own dying timeout wrapper plus any foreign mg- line; clean re-run 68 pass 0 fail). N2 [Nit] review-c: plan.md:1913 and :1959 still name the token log of the step-finish events only. N3 [Nit] review-c: read_tokens skips a tokens-less step_finish event instead of marking the call incomplete (review-run.sh:162-170); the spec line of D13 still holds.
+evidence: token fix failing-first (node proof: pre-fix zeros 0 0 0 0 0 0, HEAD 10 20 5 100 7 1); queue fix failing-first (node proof: pre-fix null, HEAD findings); decoder parity IDENTICAL (review-score.ts:233-261 vs adjudicate.ts:223-251); read_tokens parity IDENTICAL (both runners); record schema per spec D13 (review-run.sh:662-684, 827-840); driver contract parity (night-4.11.sh:213-228 vs review-run.sh:398, 402, 584; probe-4.10.sh:139-146); drivers read only under ~/.local/share/lending-desk-bench/model-guide/jobs/ and changed nothing there
+commands: git rev-parse HEAD -> ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45; bun test review-run.test.ts -> 68 pass 0 fail (clean re-run; first run hit its own orphan guard); vitest judge-run -> 39 passed; decode-parity -> 3 passed; adjudicate -> 23 passed; review-score -> 27 passed; quota -> 30 passed; credential-provider -> 22 passed; adversarial-p4-runner -> 14 passed; adversarial-p4b -> 12 passed; seed-messages -> 17 passed; pgrep after each -> nothing of this audit
+retry_recommendation: none
+confidence: high
+tests_run: all ten gate files pass, one file at a time, fakes only, clean pgrep after each
+files_changed: none outside measure/runs/model_guide/review-c-ff4e009.json and .log
+plan_updates: none
+known_failures: none
+handoff: Pass. The two earlier blockers (Review A token log, Review B queue decoder) are fixed with failing-first tests at HEAD ff4e009. Tasks 4.13u to 4.13x are complete. Task 4.13 (the adjudication calls through heavy-run.sh) is the next open work; the token and decoder contracts are ready for the live passes.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41
+audited_head_sha: ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45
+contract_applicability: applicable
+route: opencode-go/glm-5.3#high
+ratings: correctness 5, test_meaning 5, scope_discipline 5, evidence_quality 5
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13w Red: the token log reads the real step_finish event (Review A 2fdb8f8)
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 0b52f334c744922f545098c33119f4471929d089
+resulting_head: c5942e67d23944eb4e386c54fc9e6017c5e29c34
+commits: 943f9f7 c5942e67d23944eb4e386c54fc9e6017c5e29c34
+red_test_command: bun test harness/model-guide-tests/review-run.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+failing_tests: review-run.test.ts W1 (pass record holds summed real tokens), W2 (probe record holds real tokens), W3 (mixed old and real shapes sum); judge-run.test.ts WJ1 (verdict read from real text events plus run record holds real token sums), WJ2 (run record holds summed real tokens of both groups); decode-parity.test.ts P3 (judge run reads verdicts from the stream and logs the real token sums)
+handoff: Green task 4.13x owns the production fix. Read the token event from part.tokens of step_finish events in both runners (judge-run.sh read_tokens near line 112, review-run.sh read_tokens near line 151), keeping the old step-finish shape working: the old event carries top-level event.tokens with cache:{read,write}; the real event carries part.tokens with input, output, reasoning, cache:{read,write} under type step_finish (confirmed against the installed @opencode/cli bundle message-store SQL: tokens.input, tokens.reasoning, tokens.cache.read, tokens.cache.write, tokens.output). Failing-first pins: W1/W2/W3 (65 pass), WJ1/WJ2 (37 pass), P3 (P1 scorer parity and P2 queue parity pass at Red base as guards; WJ1 verdict half passes at Red base as a guard). Earlier cases stay green in all three files. The fake gained a token_stream mode (texts plus nested tokens); the old tokens field is unchanged. No production file was touched. After each Red run, pgrep for fake-opencod[e] and quota-serve[r] showed nothing, and no mg- temp dir stayed under /tmp.
+END_MEASURE_AGENT_RESULT

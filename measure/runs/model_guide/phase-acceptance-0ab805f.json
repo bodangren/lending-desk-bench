@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "model_guide",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "0ab805f22e654dd780016d6a74664686d265181c",
+  "audited_head_sha": "0ab805f22e654dd780016d6a74664686d265181c",
+  "route": "opencode-go/glm-5.3#high",
+  "status": "pass",
+  "summary": "Phase 4 passes acceptance at HEAD 0ab805f. Phase 4 now holds only the runner, the judge runner, and the page; every row is [x] and every row SHA resolves in git. The PM move of 2026-11-19 is clean: the range bd967a7..0ab805f changes only measure/tracks/model_guide/plan.md, and the task texts of rows 4.10 to 4.14 moved byte-identically into Phase 4b. Reviews A, B, and C and the adversarial audit all pass at c0a26d7, and only two non-implementation commits sit between that HEAD and the audited HEAD: bd967a7 (test-only, adversarial-p4c.test.ts) and 0ab805f (plan.md only), so those results apply. This acceptance records the exact HEAD it accepted, 0ab805f, and names the two commits it allowed. All 13 test gates pass one at a time, and no fake-opencode or quota-server process stayed after any run. No blocking finding exists: no path leaks a real key into a committed file or a public page, and every Phase 4 row is truly done. The open nonblocking findings are recorded in row 4.15 of Phase 4b, exactly as the PM rule orders.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "PA4-1 [Nit, row 4.15 backlog] ADV-P4C-1 confirmed at HEAD: adversarial-p4c.test.ts gives 12 passed | 1 skipped, and the skipped case pins a credential value split across two stdout error events, whose tail reaches the runner stdout and the private judge record. The full value never prints and the record stays private, so the PM rule of 2026-11-19 keeps it nonblocking. The plan already records it in row 4.15.",
+    "PA4-2 [Nit, row 4.15 backlog] The nonblocking findings of Reviews A, B, and C at c0a26d7 stay open and are all recorded in row 4.15: Review A F1 (the probe region-branch stdout-event scan path has no failing test) and F2 (the orphan-scan flake under concurrent load); Review B N30, N31, N32 and the carried N5, N9 to N13, N15, N20, N21, N24, N26 to N29; Review C (the process-table guard cannot tell another session's fake from its own). None of them blocks a Phase 4 row, and none leaks a key.",
+    "PA4-3 [Nit, row 4.15 backlog] The model_guide row of measure/tracks.md (line 34) still reads 'the re-review (task 0.3) and then Red task 1.1 come next', while Phases 1 to 4 are complete. No 'resolved' claim is false, so the A6 check holds; only the status text is stale. The registry status update belongs to the orchestrator audit, and per the PM rule of 2026-11-19 the item goes to row 4.15.",
+    "PA4-4 [Nit, row 4.15 backlog] test-strategy.md section 2.4 still says 'Tasks 4.10 to 4.14 own no line' inside its Phase 4 list, but commit 0ab805f moved those rows into Phase 4b. The live-run commands themselves moved unchanged, so this is doc drift only; the closeout items that concern the live runs now belong to Phase 4b."
+  ],
+  "evidence": [
+    "git rev-parse HEAD gives 0ab805f22e654dd780016d6a74664686d265181c at the start and at the end of this audit. The working tree holds only untracked paths: .opencode/, harness/model-guide/data/sets/ (the public set manifest stays uncommitted by design, spec D9: its key SHA-256 values change after the Phase 4b apply of task 4.13), harness/wt.txt, and tech-debt.md.",
+    "Prerequisite results: review-a-c0a26d7.json, review-b-c0a26d7.json, review-c-c0a26d7.json, and adversarial-c0a26d7.json all hold status pass at c0a26d75a37955bb9c20be9cb3ab2d993d39907b. The exact range c0a26d7..0ab805f holds two commits only: bd967a7 (test-only: adds harness/model-guide-tests/adversarial-p4c.test.ts, 1282 lines, no production file) and 0ab805f (measure/tracks/model_guide/plan.md only). No implementation byte changed between the prerequisite HEAD and the audited HEAD, so the results apply. This acceptance accepted HEAD 0ab805f and allowed the two named commits.",
+    "The PM move is clean: git diff --name-only bd967a7..0ab805f prints only measure/tracks/model_guide/plan.md, and the moved task texts are byte-identical (md5 per row, bd967a7 vs HEAD): 4.10 2411dfc4ddf36267958866ccb501029c, 4.11 f5cedad550ad48f35662ad57ac229ee0, 4.12 a1c4953a128caf2083a88248bfda301c, 4.13 dc1ba56227e967c9434afc8bf7d1b8e9, 4.14 1d8789b7ee02081fe910b2c0b74c2493. Row 4.15 cites the routed findings of Reviews A, B, C and the adversarial audit, which match those result files.",
+    "All 129 first-line SHAs of the [x] rows of plan.md resolve in git (git cat-file -e <sha>^{commit}), and the 29 further cited SHAs of the Phase 4 rows (role bases, fix commits, Red fixes) also resolve: f274fa8, 8e111d2, 193c4c2, b021698, 0e0f4a2, 42bdece, 4bdbd3f, 80869bd, 242fe52, 3c4e462, 8485737, 5085d9b, 38919fd, 5697381, e35ccf6, c46161f, 0ba6a28, 8e0c441, e60814a, 154eb7d, dd57da7, 07418d2, 0f426b1, c5942e6, 6f66285, 9e7672f, f26965d, c0a26d7, 57baaaa. Task 4.9's verify line holds: check-4.9.json holds fail with fix commit 0ba6a28 for each finding, and the re-run check-4.9-8e0c441.json holds pass.",
+    "All 13 test gates pass at HEAD, one file at a time: bun test harness/model-guide-tests/review-run.test.ts gives 86 pass, 0 fail; npx vitest run judge-run.test.ts gives Tests 45 passed (45); decode-parity 3 passed (3); adjudicate 23 passed (23); review-score 27 passed (27); quota 30 passed (30); credential-provider 22 passed (22); adversarial-p4-runner 14 passed (14); adversarial-p4b 12 passed (12); adversarial-p4c 12 passed, 1 skipped (the row 4.15 ADV-P4C-1 pin, documented in the plan); seed-messages 17 passed (17); preview-gate 111 passed (111); real-work 16 passed (16); guide 18 passed (18). After each run, pgrep -af 'fake-opencod[e]|quota-serve[r]' printed nothing.",
+    "A5: the plan claims match reality. Row 4.13ab claims review-run 86 pass 0 fail, judge-run 45 passed, decode-parity 3, adversarial-p4-runner 14, adversarial-p4b 12, and green-4.13ab.log records the same; this audit reproduced every count at HEAD. red-4.13aa.log records the failing-first state (82 pass 4 fail; 42 passed 3 failed) that Reviews A and B also re-ran at the Red base.",
+    "A6: the model_guide row of measure/tracks.md holds no 'resolved' claim that fails reality; only its status text is stale (PA4-3). A3, A4, and A7 do not apply: the Phase 4 diff of this track touches no measure framework script, no filter, and no marker gate; it touches only harness/model-guide*, harness/model-guide-tests*, and measure/tracks/model_guide/*.",
+    "Closeout items hold at HEAD: git status --short docs/ prints nothing; git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..HEAD -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests prints nothing; routes.json holds the six rows of spec D12 in order, kinds plan and free only, the Hy row with quota_source null, and no judge row; judges.json holds the three judge routes; phase_base_sha 57baaaa is the strategy commit 'docs(model_guide): test strategy for Phase 4 and Phase 3 records'.",
+    "The latest UX browser reviews pass: ux-browser-1633eba.json (page B with the role labels of tasks 4.1i and 4.1j, pass, no overflow at 390, 980, 1280 px) and ux-browser-c8c5e9e.json (top block of 4.1a to 4.1f, pass). No later UX result exists in the folder."
+  ],
+  "commands": [
+    "git rev-parse HEAD (0ab805f22e654dd780016d6a74664686d265181c, at start and end)",
+    "git log --oneline bd967a7..0ab805f and git diff --name-only bd967a7..0ab805f (plan.md only)",
+    "md5sum of each moved row text 4.10 to 4.14 at bd967a7 and at HEAD (identical pairs)",
+    "git cat-file -e <sha>^{commit} for all 129 [x] row SHAs and the 29 cited Phase 4 SHAs",
+    "python3 json.load of review-a/b/c-c0a26d7.json and adversarial-c0a26d7.json (all pass at c0a26d7)",
+    "bun test harness/model-guide-tests/review-run.test.ts (86 pass, 0 fail, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot (45 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot (3 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (23 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot (27 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot (30 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot (22 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot (14 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot (12 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot (12 passed, 1 skipped, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/seed-messages.test.ts --configLoader native --maxWorkers=1 --reporter=dot (17 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (111 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot (16 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (18 passed, exit 0)",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' after every gate (nothing)",
+    "git status --short docs/ (nothing)",
+    "git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..HEAD -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests (nothing)",
+    "cat harness/model-guide/routes.json and harness/model-guide/judges.json (six rows, three judge rows)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/phase-acceptance-0ab805f.json",
+    "measure/runs/model_guide/phase-acceptance-0ab805f.log"
+  ],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "All 13 gates pass at HEAD (review-run 86/0, judge-run 45, quota 30, credential-provider 22, preview-gate 111), and the runner, judge runner, page, and routes files match their row contracts."},
+    {"axis": "test_meaning", "score": 4, "evidence": "Every Phase 4 row has failing-first Red evidence (red-4.13aa.log: 82 pass 4 fail) and a passing gate; the residual untested scan paths (Review B N30) are recorded in row 4.15 rather than covered."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "The model_guide range 57baaaa..0ab805f touches only harness/model-guide*, harness/model-guide-tests*, and measure/tracks/model_guide/*; the two commits after the prerequisite HEAD are test-only (bd967a7) and plan-only (0ab805f)."},
+    {"axis": "evidence_quality", "score": 5, "evidence": "Every claim in this audit has a command result: 129 row SHAs resolve, the five moved row texts match by md5, and each gate count was reproduced in this run."}
+  ],
+  "reviewer_ratings": [
+    {"reviewer_role": "review-a", "reviewer_route": "opencode-go/glm-5.3#high", "agreed": true, "score": 5, "evidence": "review-a-c0a26d7.json gives pass, and its gate counts (review-run 86 pass 0 fail, judge-run 45) match this audit's own runs at HEAD."},
+    {"reviewer_role": "review-b", "reviewer_route": "claude-code/claude-sonnet-5-5#max", "agreed": true, "score": 5, "evidence": "review-b-c0a26d7.json gives pass with no blocking finding, and its ten-file gate claim matches this audit's 13 passing gates; its nonblocking items are all in row 4.15."},
+    {"reviewer_role": "review-c", "reviewer_route": "opencode-go/glm-5.3#high", "agreed": true, "score": 5, "evidence": "review-c-c0a26d7.json gives pass, and its one nonblocking item (the process-table guard) reproduced cleanly here: adversarial-p4-runner gave 14 passed (14)."},
+    {"reviewer_role": "adversarial", "reviewer_route": "opencode-go/glm-5.3#high", "agreed": true, "score": 5, "evidence": "adversarial-c0a26d7.json gives pass with ADV-P4C-1 nonblocking; this audit confirmed the pin as the single skipped case of adversarial-p4c.test.ts and the row 4.15 record."}
+  ]
+}

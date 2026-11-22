@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "audited_head": "c8c5e9ecca070beeb54fec27f79542d24ccecfc1",
+  "status": "pass",
+  "summary": "Verdict: pass. No Blocker or Major finding in the production delta d74cf4c..c8c5e9e. The rank keys at 9 decimals, the raw values in real-work.json with one rounding in preview.sh, the alias rule, Object.hasOwn on byEffort, the audit_name strip, and the CSS change are correct. guide.ts reads only first_round.value, tasks, allowed, and model, and it rounds the rate once. No other reader of real-work.json exists. An independent oracle from the spec text over the real files gives 0 differences on the new preview. real-work 13, guide 17, preview-gate 99, and adversarial-p4 18 pass, each with exit 0.",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "HEAD check: git rev-parse HEAD returned c8c5e9ecca070beeb54fec27f79542d24ccecfc1. The production delta d74cf4c..c8c5e9e is cea0a90 only: real-work.ts, preview.sh, and pages/real-work.html. d20d611 and c8c5e9e change only adversarial-p4.test.ts, and 559dda9 changes only plan.md. git status --short shows only the six untracked paths that existed at the start.",
+    "Rank keys (FR-3): real-work.ts rankKey rounds the rate and the rework to 9 decimals in compareRows only. The order of a pick and of the table both come from compareRows, so a float-noise tie now falls to the next rule (lower rework, then fewer escapes, then more runs, then model key).",
+    "Numbers (D16): real-work.json now holds the raw weighted mean_rework, cleanup_share, tokens_per_accepted, findings_per_run, and unknown_share. preview.sh rounds each value one time (one_decimal, pct, tokens_text, two_decimals, footer .1f), and none of these formatters changed in the delta. guide.ts:356-371 reads first_round.value and tasks and rounds the rate one time with Math.round, so the overview evidence and the pick are unchanged. grep finds no other reader of real-work.json in harness (outside the tests), docs, or pages. The real preview text holds no number with 4 or more decimals. model-guide.json rows equal the rows of the d74cf4c-era preview (/tmp/ra2-pv-real).",
+    "Alias rule (ADV-6): aaIndex fills the direct keys in a first pass and the aliases in a second pass, so a direct key wins over an alias in any file order.",
+    "byEffort (ADV-7): netScoreOf reads byEffort[variant] only when Object.hasOwn is true, else the primary row, as spec D16 AA net score says.",
+    "audit_name (ADV-5): preview.sh:367 removes [1m] and the #variant suffix before the model-names.json lookup, which is the page B model key rule of D16 and D17.",
+    "CSS (ADV-1, ADV-2): the header text may wrap, the model cells get min-width 10em, and table_wrap now writes one scroll hint after each scroll box, the More columns tables too. Observation, below Major: the hint shows at each width, also for a table that fits, although the table_wrap docstring says that such a hint stays hidden. Spec D16 Width requires a visible hint for a wide table and does not forbid it for a fitting table.",
+    "Oracle: a Python script written from spec D16 Data source and FR-3 (not from the TypeScript) read ra-outcomes, aa-reliability, allowed-routes, and model-names of 2026-11-17. It compared the new preview /tmp/ra4-pv-real: the producer order and cells (Tasks, First-round accept %, Rework, Cleanup %, Tokens) of 4 ranked rows, the checker order and cells (Runs, Pass %, Findings per run, Escapes, Net score) of 20 ranked rows, both marks on each ranked row, the presence of 12 and 17 too-few rows, the ten top lines (model key, rate, count), and the footer (rows 217, routes 53, unknown 6, share 2.8 %). TOTAL DIFFS 0.",
+    "Tests at HEAD, one file at a time with --configLoader native --maxWorkers=1 --reporter=dot: real-work 13 passed (13); guide 17 passed (17); preview-gate 99 passed (99); adversarial-p4 18 passed (18). Each exit code is 0."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> c8c5e9ecca070beeb54fec27f79542d24ccecfc1",
+    "git log --oneline d74cf4c..HEAD; git diff d74cf4c..HEAD -- harness/model-guide/",
+    "cd harness && npx vitest run model-guide-tests/<file>.test.ts --configLoader native --maxWorkers=1 --reporter=dot for real-work (13), guide (17), preview-gate (99), adversarial-p4 (18) -> each exit 0",
+    "bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview /tmp/ra4-pv-real -> exit 0",
+    "python3 -I oracle from spec D16 and FR-3 over the real data files against /tmp/ra4-pv-real/real-work.html -> TOTAL DIFFS 0",
+    "python3 -I compare of /tmp/ra2-pv-real/model-guide.json and /tmp/ra4-pv-real/model-guide.json rows -> equal; long-float scan of real-work.html and index.html text -> none",
+    "grep -rn real-work.json harness docs harness/model-guide/pages (outside tests) -> only update.sh and preview.sh copy and pass the file"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "audited_head_sha": "c8c5e9ecca070beeb54fec27f79542d24ccecfc1",
+  "phase_base_sha": "d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34",
+  "prior_review": "measure/runs/model_guide/review-a-d74cf4c.json",
+  "route": "claude-code/claude-opus-5-5[1m]#high",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "The spec oracle over the real files gives TOTAL DIFFS 0 on /tmp/ra4-pv-real, and model-guide.json rows are unchanged."},
+    {"axis": "test_meaning", "score": 4, "evidence": "adversarial-p4.test.ts gives 18 passed (18), and its 7 cases failed before cea0a90; the hint-on-fitting-table behaviour has no test."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "cea0a90 changes only real-work.ts, preview.sh, and pages/real-work.html, and each hunk maps to one of ADV-1 to ADV-7."},
+    {"axis": "evidence_quality", "score": 4, "evidence": "The four test counts reproduce at HEAD, but the table_wrap docstring at preview.sh:510-511 claims a hidden hint that the CSS does not give."}
+  ]
+}

@@ -1,0 +1,19 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-mid-red
+status: complete
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: ff64dab8cb45fa087e64db3e2f90035331267a4a
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+red_commit_sha: d51151a159bf4994df4e410ada2787c3ed567347
+plan_commit_sha: e78aa08727a76908cfefb8ff0343840b96a14f8f
+resulting_head: e78aa08727a76908cfefb8ff0343840b96a14f8f
+commits: d51151a test(model_guide): Red task 4.15 live daemon shape; e78aa08 measure(model_guide): record Red task 4.15 r5
+tests: Four new or rewritten cases. adversarial-p4-runner.test.ts P4B-L1 (live opencode.exe shape) and P4B-C1 (foreign job marker). judge-run.test.ts P4B-J1 (live shape) and P4B-J2 (foreign job marker).
+files: harness/model-guide-tests/adversarial-p4-runner.test.ts, harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-4.15.txt, measure/runs/model_guide/red-4.15-ff64dab.log
+remaining_failures: 4 at the base. `cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests 2 failed | 14 passed (16)`: P4B-L1 `expected [] to include '900123'`, P4B-C1 `expected [] to include '810001'`. `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests 2 failed | 48 passed (50)`: P4B-J1 `expected [] to include '900124'`, P4B-J2 `expected [] to include '810003'`. All other cases pass. review-run.test.ts was not changed or run.
+gaps: Review A F1 regression. The executable-path filter drops the live daemon, whose argv[0] is the absolute opencode.exe path outside every job root. One live-shape case and one foreign-session case now pin each runner copy. Property chosen for the foreign case: BENCH_OPENCODE_JOB in /proc/<pid>/environ plus the session's own temp root for HOME and cwd, not the executable path, because both entries use the same live exe path and any path filter drops both. The judge copy had no shape or foreign-marker case before; it was pinned only by N3 on daemon_pid_alive.
+breakage_proof: At ff64dab all four cases fail with an empty selection. The guards read argv[0] as a path and drop both entries. Removing that filter makes the live-shape cases select the local pid. The foreign cases then exclude the pid marked for another job root. The synthetic proc tables are the falsification. No process was started; pgrep printed nothing of mine.
+handoff: Green should scope daemon_pids on the BENCH_OPENCODE_JOB marker of this run, not on an executable path. Both runner copies need the same edit. Keep the adjacent serve and --service token check and the HOME and cwd root check. Green changes no test file. Row 4.15 stays [~].
+END_MEASURE_AGENT_RESULT

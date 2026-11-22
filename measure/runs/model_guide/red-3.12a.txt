@@ -1,0 +1,78 @@
+Red task 3.12a — review round 1 correctness findings
+Base: 8bfb6d1442214a2a0a64eb058329462edfacd1c2
+
+Command 1:
+  cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  14 failed | 3 passed (17)
+
+Failed test names (14):
+1.  J1 the queue units > J1 writes one item per finding with its id and no route name
+2.  J1 the queue units > J1 groups by file and a 3-line window
+3.  J1 the queue units > J1 leaves out a finding that matches a plant
+4.  J1 the queue units > J1 gives two routes with different claims at the same index two items
+5.  J1 the queue units > J1 uses the route-blind claim id form
+6.  J1 the queue units > J1 matches at new_lines[0] - 3 and new_lines[1] + 3 and not one line further
+7.  J2 the apply mapping > J2 maps real-defect to neutral and to the key
+8.  J2 the apply mapping > J2 maps false-claim to a false claim
+9.  J2 the apply mapping > J2 maps unclear to provisional
+10. J2 the apply mapping > J2 treats a verdict the two judges do not share as unclear
+11. J2 the apply mapping > J2 keeps two different claims of one group as two items with their own verdict
+12. J2 the apply mapping > J2 keeps one claim at different indices as one item and costs both routes the same
+13. J4 no rescue > J4 never makes a wrong-line finding found through apply
+14. J4 no rescue > J4 never makes a wrong-class finding found through apply
+
+Chained reason: the queue still emits `<diff_id>#F<n>` from the output
+position (P3A1-1), so every claim-id assertion fails; its match window is
+±2 (P3A1-2), so lines at `new_lines[0] - 3` and `new_lines[1] + 3` are
+queued; and the apply keys the verdict map by the old id, so a claim id in a
+judge file never reaches the key.
+
+Command 2:
+  cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  7 failed | 16 passed (23)
+
+Failed test names (7):
+1. R1 the match > R1 looks up a verdict by the route-blind claim id, not the output position
+2. R2 the window and the nearer plant > R2 does not find a wrong class at the right line under a real-defect verdict
+3. R2 the window and the nearer plant > R2 does not find a wrong line outside the window under a real-defect verdict
+4. R3 the score and the counts > R3 applies max(0, 100 F / W - 2 X) and records the counts
+5. R3 the score and the counts > R3 makes a score below 0 become 0
+6. R3 the score and the counts > R3 counts every plant of an invalid review as missed at every level
+7. R4 invalid reviews and pass states > R4 marks an unclear verdict provisional and keeps the rank
+
+Reasons: the scorer still looks a verdict up by `<diff_id>#F<n>` (P3A1-1),
+so a claim-keyed verdict is neutral and the false-claim, real-defect, and
+unclear cases do not move; and a diff whose review is invalid skips its
+plants in `by_class` and `by_severity`, so the two sums are 44 while the
+top-level `missed` is 48 (P3A1-3/4).
+
+Command 3:
+  cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  1 failed | 15 passed (16)
+
+Failed test name (1):
+1. S2 the plant refusals > S2 rejects a D7 key plant without new_lines, file, or witness, or with a bad severity
+   reason: the lint passes a key whose plant holds no `new_lines`, no
+   `file`, or no `witness`, and a severity outside blocker, major, minor
+   (P3A1-5). It exits 0 instead of 2.
+
+Command 4 (unchanged, stays green):
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 0
+Tests  16 passed (16)
+
+Changed assertions (the ruling replaces the old id form): adjudicate.test.ts
+and review-score.test.ts now build the claim id
+`<diff_id>#C<first 12 hex of SHA-256 of
+JSON.stringify([diff_id, file, line, class, severity, title, reason])>` and
+use it in every queue item, judge file, verdict map, key real_defects entry,
+and hand-off entry. The old `<diff_id>#F<n>` strings are gone from both
+files. No committed fixture changed; each lint mutation is a temp copy of
+the set.

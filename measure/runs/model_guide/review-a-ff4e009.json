@@ -1,0 +1,91 @@
+{
+ "schema_version": 1,
+ "track": "model_guide",
+ "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+ "role": "measure-review-a-correctness",
+ "route": "opencode-go/glm-5.3#high",
+ "audited_head_sha": "ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45",
+ "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+ "role_base_sha": "2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41",
+ "status": "pass",
+ "summary": "Pass at the audited head ff4e009. Both earlier blockers are fixed with real failing-first tests. The token log blocker of review-a-2fdb8f8 is fixed in f88f9b6: read_tokens of both runners reads the old step-finish top-level tokens and the real step_finish part.tokens of the installed bundle. I reproduced the defect first: the pre-fix reader printed 0 0 0 0 0 0 on the real stream, and the post-fix reader prints the sums on both shapes. The queue blocker of review-b-2fdb8f8 stays closed by bc0391f, and the two TypeScript decoders remain byte-identical. The three decoder copies agree: the parity file drives the scorer, the queue, and the judge runner through their public paths with one real stream, and all three cases pass. The record holds the spec D13 token fields: input, output, reasoning, cache_read, cache_write, total, one tokens object per diff, and tokens_complete false when a call holds no token event. All nine gate files pass one file at a time with fakes only, the counts match the plan rows 4.13u to 4.13x, and no process of mine stayed alive.",
+ "blocking_findings": [],
+ "nonblocking_findings": [
+  "The orphan scan liveFakeOpencode() of adversarial-p4-runner.test.ts:474-484 matches every fake-opencode process on the machine. My first run of that file failed ADV-R-8 on the decoy fake-opencode serve --service mg-decoy-D2 120 (pid 84160), a child of the concurrent session's review-run.test.ts (review-run.test.ts:3096, alive by design for 120 s). The quiet re-run passed 14 of 14. The same scan class was Review B N15 of adversarial-p4b. The defect is pre-existing and outside the audited range. Fix direction: scope the scan to the tag of the file, as the quota scan at adversarial-p4-runner.test.ts:113 already does with mg-adv-r-.",
+  "Plan row 4.13t still names the committed session exports (runs/*/artifacts/session.json, part.type step-finish) as the event-shape source, but that is the message-part shape, not the run event stream shape. Rows 4.13w and 4.13x correct the record with the installed bundle as the source. The historical row is stale evidence only; the rows that gate live calls cite the right shape."
+ ],
+ "evidence": [
+  "Provenance: git rev-parse HEAD returned ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45 at the audit start and at the end, equal to the audited head. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf and role_base_sha 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41 match the plan rows 4.13u and 4.13x. The range 2fdb8f8..ff4e009 holds exactly the eight commits of tasks 4.13u to 4.13x.",
+  "The token blocker of review-a-2fdb8f8 is fixed and failing-first. read_tokens of review-run.sh and judge-run.sh reads both shapes: the old event sets tokens from event.tokens, and the real step_finish event sets tokens from part.tokens (the diff of f88f9b6). I ran the pre-fix read_tokens, extracted verbatim from git show 0b52f33:harness/model-guide/judge-run.sh, on a real-shape stream: it printed 0 0 0 0 0 0. The post-fix function of both runners printed 10 20 5 100 7 1 on the real shape and on the old shape. A stream with both shapes summed both events (2 2 6 8 10) and set the completeness flag 0 because one field was a string. A step_finish event with no part.tokens gave zeros with the flag 0. The two runner blocks are byte-identical (diff of the two read_tokens functions printed nothing).",
+  "The Red tests of 4.13w are real: W1, W2, and W3 of review-run.test.ts assert the summed real tokens, the per-diff tokens, and tokens_complete true; WJ2 of judge-run.test.ts asserts the same for the run record; P3 of decode-parity.test.ts asserts the same through the judge runner. Each assertion fails when read_tokens returns zeros, and my probe shows the pre-fix reader returns zeros on the real stream. The Red record measure/runs/model_guide/red-4.13w.log lists W1, W2, W3, WJ1, WJ2, and P3 as failing. The Green record green-4.13x.log lists review-run 68 pass 0 fail against the Red base 65 pass 3 fail, which matches.",
+  "Spec D13 token fields hold: write_record of review-run.sh:658-684 builds per-diff tokens with total as the sum of the five parts, flat totals, and tokens_complete from TOKENS_ALL; TOKENS_ALL turns 0 when any call flag is not 1 (review-run.sh:1057); write_probe_record at review-run.sh:834-842 builds the same fields for the probe. The judge record holds the run totals, the per-group tokens, and tokens_complete (judge-run.sh:818-823). A call with no token event adds 0 and sets the flag false, which the probe verified.",
+  "The three decoder copies agree at HEAD: diff of adjudicate.ts:223-250 against review-score.ts:233-260 printed IDENTICAL, and the focus range changed only the decoder comment of review-score.ts. The inline decoder of judge-run.sh is untouched by the range, and decode-parity.test.ts drives all three readers through their public paths (score, queue, judge run) with one real stream: text events joined in order, step and tool events ignored, the verdict map read, and the real tokens logged. The file gave 3 passed (3).",
+  "The queue blocker of review-b-2fdb8f8 stays closed: bc0391f added decodeAnswerText to adjudicate.ts and readFindings calls it before the fence parse (adjudicate.ts:255-256 in the range diff). Review C verified the failing-first property at 0b52f33 with a node check on the pre-fix readFindings. My gates confirm the current state: adjudicate 23 passed (23) and review-score 27 passed (27).",
+  "Real shape, read-only: grep -a on the installed bundle /home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe still holds the writer call u(\"step_finish\",n,{part:o}) and the part type step-finish, so the fix reads the shape the bundle writes.",
+  "Scope, per commit from git show --stat: 05bb618 touches adjudicate.test.ts and review-score.test.ts only; 0f426b1, 0b52f33, c5942e6, and ff4e009 touch plan.md only; bc0391f touches adjudicate.ts and the review-score.ts comment; 943f9f7 touches the three test files, the fake-opencode fixture, and the plan row; f88f9b6 touches judge-run.sh and review-run.sh only, exactly as the row 4.13x claim no test file changed states. The fake gained a token_stream mode and kept the old tokens mode, so the earlier T1, T2, J7, and J8 cases stay green.",
+  "Plan claims (A5): the gate counts of row 4.13x (review-run 68 pass 0 fail, judge-run 39, decode-parity 3, adjudicate 23, review-score 27, adversarial-p4b 12) match my runs exactly. The row 4.13u claims (adjudicate 2 failed | 21 passed at the Red base, 27 for review-score) match the Red record and my runs.",
+  "No vacuous pass (A4): the new tests assert content through the public paths (verdict maps, token sums, per-diff tokens, tokens_complete) and check the production file with a named error. No digit-only count (A3): the plan rows label every count with its file.",
+  "Process hygiene: after each gate, pgrep -af for fake-opencod[e] and quota-serve[r] showed no process of mine. Foreign quota servers and one decoy of a concurrent session (pids above the pids of my runs, paths /tmp/mg-review-fake-* and /tmp/mg-judge-fake-*) appeared during some scans and cleared by themselves. I sent no signal and started no server. The first adversarial-p4-runner run failed only on the foreign decoy; the quiet re-run exited 0. The final scan after all gates showed nothing.",
+  "Scratch probe files sit under /tmp/opencode/review-a-ff4e009, outside the repository. The only repository writes are the two result files under measure/runs/model_guide."
+ ],
+ "commands": [
+  "git rev-parse HEAD -> ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45 (start and end)",
+  "git show --stat 05bb618 0f426b1 bc0391f 0b52f33 943f9f7 c5942e6 f88f9b6 ff4e009 -> per-commit file lists, all within the plan rows",
+  "node -e probe (pre-fix read_tokens from git show 0b52f33) -> real shape: 0 0 0 0 0 0; old shape: 10 20 5 100 7 1",
+  "node -e probe (post-fix read_tokens of both runners) -> real shape: 10 20 5 100 7 1; old shape: 10 20 5 100 7 1; mixed shapes: 2 2 6 8 10 flag 0; part with no tokens: zeros flag 0",
+  "diff of the read_tokens functions of both runners -> identical; diff of adjudicate.ts:223-250 against review-score.ts:233-260 -> IDENTICAL",
+  "grep -a on the installed opencode.exe bundle (read only) -> u(\"step_finish\",n,{part:o}) present",
+  "bun test harness/model-guide-tests/review-run.test.ts -> 68 pass, 0 fail, 523 expect() calls, exit 0",
+  "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 39 passed (39), exit 0",
+  "cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 3 passed (3), exit 0",
+  "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 23 passed (23), exit 0",
+  "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 27 passed (27), exit 0",
+  "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 30 passed (30), exit 0",
+  "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 22 passed (22), exit 0",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> first run: ADV-R-8 failed on the foreign decoy mg-decoy-D2; quiet re-run: Tests 14 passed (14), exit 0",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 12 passed (12), exit 0",
+  "cd harness && npx vitest run model-guide-tests/seed-messages.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 17 passed (17), exit 0",
+  "pgrep -af 'fake-opencod[e]|quota-serve[r]' after every file and at the end -> nothing of mine"
+ ],
+ "changed_files": [
+  "harness/model-guide-tests/adjudicate.test.ts",
+  "harness/model-guide-tests/decode-parity.test.ts",
+  "harness/model-guide-tests/fixtures/fakes/fake-opencode",
+  "harness/model-guide-tests/judge-run.test.ts",
+  "harness/model-guide-tests/review-run.test.ts",
+  "harness/model-guide-tests/review-score.test.ts",
+  "harness/model-guide/adjudicate.ts",
+  "harness/model-guide/judge-run.sh",
+  "harness/model-guide/review-run.sh",
+  "harness/model-guide/review-score.ts",
+  "measure/tracks/model_guide/plan.md"
+ ],
+ "test_strategy_violations": [],
+ "live_contract_violations": [],
+ "prod_wiring_violations": [],
+ "route_parity_violations": [],
+ "retry_recommendation": "none",
+ "confidence": "high",
+ "ratings": [
+  {
+   "axis": "correctness",
+   "score": 5,
+   "evidence": "read_tokens of both runners sums the old and the real shapes (probe: pre-fix zeros on the real stream, post-fix 10 20 5 100 7 1 on both), and the record holds the spec D13 fields with per-diff tokens and tokens_complete (review-run.sh:662-684)."
+  },
+  {
+   "axis": "test_meaning",
+   "score": 5,
+   "evidence": "W1, W2, W3, WJ2, and P3 fail at the pre-fix base because the pre-fix reader returns zeros on the real stream (my probe), and P1, P2, and the verdict half of WJ1 are documented guards over the already-fixed decoder."
+  },
+  {
+   "axis": "scope_discipline",
+   "score": 5,
+   "evidence": "git show --stat per commit: f88f9b6 touches judge-run.sh and review-run.sh only, 943f9f7 touches the three test files, the fake fixture, and the plan row, and the record commits touch plan.md only."
+  },
+  {
+   "axis": "evidence_quality",
+   "score": 5,
+   "evidence": "Every claim names a file:line, a probe result, or a gate count; nine gate files ran one at a time with counts that match the plan rows 4.13u to 4.13x."
+  }
+ ]
+}

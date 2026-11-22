@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "role": "spec-review",
+  "track": "model_guide",
+  "phase": "track setup",
+  "round": 2,
+  "baseline_sha": "ea36faecc283a2c717876b4cd68fc6992f0c8f53",
+  "audited_head_sha": "2fae48ceee0de417c97044c710668eafc1512850",
+  "reviewer_model": "opencode-go/deepseek-v4.1-flash",
+  "status": "fail",
+  "summary": "The revision fixes F1-F4 and F8-F12 in substance. F5, F6, F7, and F9 are only partly fixed. The revision adds three Blockers: the print-audit input check has no size or schema source (F13), the pilot set has no identity or reseed rule (F14), and the quota no-value state differs between the spec and the plan test (F15). Four Major findings remain on bias, dates, the work-type threshold, and the manifest hash. Phase 1 has no open product decision, but the review verdict is fail.",
+  "paraphrase": {
+    "proposes": "The track adds track A, a seeded-defect code review benchmark. It takes diffs from two public repos by a fixed rule, plants defects with a private answer key, and scores each route by the worst of three passes. It adds page B from the sanitized weekly export, one print-audit block, and an overview table that says which model to use for each kind of work. It moves the replay track to the backlog and holds the first publish for Daniel's word.",
+    "current_system": "Per the spec, the benchmark runs build, bugfix, tests, and change tracks through one hidden harness. The build scores are 88.9 to 95.0 and the tests scores are 79.4 to 98.8, so the tables do not separate the models. The site publishes the docs/ folder through a daily job that commits and pushes it. Page B uses a separate sanitized export of 1,798 role runs."
+  },
+  "round1_dispositions": {
+    "F1": "fixed: D6 holds a closed operator catalog from C1 to C9; FR-8 and plan 3.2 lint the operator against its class.",
+    "F2": "fixed: D11 makes one finding the unit; a group only removes duplicates; plan 3.4 tests a mixed group.",
+    "F3": "partly fixed: D16 defines the work-type rate, rank, and minimum, but the minimum does not say runs or pass + fail (F18).",
+    "F4": "fixed: plan 0.2 and the constraints give the reviewer only measure/runs/model_guide/; the author updates spec-review.md.",
+    "F5": "partly fixed: D4 fixes the diff choice and D11 adds a second judge, but the author and first judge stay Anthropic, the second judge is a ranked family, and unclear removes the rank (F16).",
+    "F6": "partly fixed: D13 adds the pilot gate, but the pilot set has no identity or selection rule (F14) and the pilot nights do not fit the dates (F17).",
+    "F7": "partly fixed: D15 names the quota source of each provider, but a source with no value is wait in the spec and stopped in plan 4.2 (F15).",
+    "F8": "fixed: OD3 and Q4 record the PM decision; D16, FR-3, and acceptance 4 rank checkers by pass rate only and show the blocking rate.",
+    "F9": "partly fixed: OD6, D17, acceptance 6, and plan 2.4 carry the error types, but the D17 input check reads a size and a schema that the hand-off file and MANIFEST do not hold (F13).",
+    "F10": "fixed: D21, FR-7, and plan 1.3 and 5.3 compare the current docs/ files with preview-base.json and stop on a drift.",
+    "F11": "fixed in substance: each Green task names one tool or one page and a verify line; three tasks write two files (F22).",
+    "F12": "fixed: plan 0.1 starts with the commit bbde00d."
+  },
+  "blocking_findings": [
+    "F13 [Blocker] spec.md D17 and plan.md 2.4: The print-audit input check reads a size and a schema that the hand-off file and its MANIFEST do not hold. Rationale: the v13 JSON has no schema key, and its MANIFEST.txt holds the SHA-256 but no size; task 2.4 cannot pass the D17 check on the real file, so acceptance 6 and the 2026-11-18 preview are blocked.",
+    "F14 [Blocker] spec.md D13 and plan.md 4.11: The pilot set has no id, no selection rule, no seeding task, and no stated relation to the ranked set; a reseed has no new id. Rationale: D8 fixes the first set at 14 diffs and a change makes a new set id, while D13 adds a 6-diff pilot set; the implementer must choose which 6 diffs to seed and whether the pilot tests the ranked set, so two builds diverge and the gate can pass a set that is not ranked.",
+    "F15 [Blocker] spec.md D15 and FR-15; plan.md 4.2: A source with no value gives wait in the spec and stopped in the plan test. Rationale: D15 and FR-15 say a source with no value gives wait, while task 4.2 says a missing field and a non-number give stopped; the Red test and a Green built to the spec cannot both pass."
+  ],
+  "nonblocking_findings": [
+    "F16 [Major] spec.md D5, D11, R3, and Q9: The second judge is a ranked family, the author and first judge stay Anthropic, and an unclear verdict removes the route's rank. Rationale: MiniMax M3.1 Flash is a D12 ranked route; the agreement rule blocks a single false claim but not style bias, and the no-rank rule makes a disagreement count against the model, contrary to OD5; use a judge family outside D12 (Qwen or Doubao), or give the judge's family no rank and keep the pass ranked with agreed verdicts only.",
+    "F17 [Major] spec.md D13 and R7; plan.md Phase 4: The pilot's two nights plus the three main passes do not fit before 2026-11-22 for the two pilot routes. Rationale: D15 allows one pass per route per night; with the set ready on 11-19, the pilot needs 11-19 and 11-20, leaving 11-21 and 11-22 for two main passes, so MiniMax and Kimi finish on 11-23; seed and run the pilot by 11-18, or let the pilot passes count, and add the allowed reason to acceptance 11.",
+    "F18 [Major] spec.md D16 and acceptance 5; plan.md 1.1: The work-type fewer-than-10-runs rule does not say whether it counts the export runs or the shown pass + fail. Rationale: 17 work-type rows have runs of 10 or more and pass + fail below 10, so the choice changes the few-runs mark and the overview pick; say fewer than 10 results (pass + fail) and state that the work-type row sums the role rows.",
+    "F19 [Major] spec.md D9 and D11; plan.md 3.15 and 4.13: The public manifest records the key SHA-256 before apply adds real_defects, so the published hash no longer matches the key. Rationale: FR-12 updates the key after the 3.15 manifest commit; the R8 integrity check then reports a changed key for a legitimate adjudication; rewrite and commit the manifest after the apply, or keep real_defects outside the hashed key.",
+    "F20 [Nit] spec.md OD6 and D17: The checklist item code and text is a list of 0 to 3 items in the file. Rationale: 43 rows hold 1 to 3 checklist items and 9 hold none; plan 2.1 already says items, so the spec should say the checklist items (0 to 3).",
+    "F21 [Nit] spec.md OD8 and R9: The region block is stated as present, but Daniel turned on Global regions at about 11:00 on 2026-11-14. Rationale: the rule is a useful guard; record that the switch is on, so the pilot route rule and the probe are read as guards, not as the current state.",
+    "F22 [Nit] plan.md 2.4, 2.6, and 4.8: Three Green tasks write two files, so the rule each Green task writes one tool or one page is not literal. Rationale: each pair is one page or data file plus its wiring; keep the small unit and say one tool or one page, plus its wiring.",
+    "F23 [Nit] plan.md 0.3: The verify line uses the CONTEST words withdrawn or kept for a revision round. Rationale: this round has no CONTEST item; the reviewer reports fixed, partly fixed, or not fixed, and the plan should use that vocabulary."
+  ],
+  "findings": [
+    {
+      "id": "F13",
+      "severity": "blocker",
+      "location": "spec.md D17; plan.md task 2.4",
+      "evidence": "sha256sum gives f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87. The JSON top keys are source, note, routes, summary, and errors; it has no schema key. MANIFEST.txt holds source, date, sender, and the SHA-256 line; it holds no size. stat gives 14,620 bytes. Plan 2.1 says the input check passes on the file; plan 2.4 says the D17 check passes first.",
+      "finding": "F13 [Blocker] spec.md D17 and plan.md 2.4: The print-audit input check reads a size and a schema that the hand-off file and its MANIFEST do not hold. Rationale: the v13 JSON has no schema key, and its MANIFEST.txt holds the SHA-256 but no size; task 2.4 cannot pass the D17 check on the real file, so acceptance 6 and the 2026-11-18 preview are blocked."
+    },
+    {
+      "id": "F14",
+      "severity": "blocker",
+      "location": "spec.md D13 and D8; plan.md task 4.11",
+      "evidence": "D8 fixes the first set at 12 seeded diffs, 2 control diffs, and one set id. D13 adds a pilot set of 6 seeded diffs, 3 from each repo, but gives no id, no selection rule, no seeding task, and no relation to the 12 seeded diffs. Plan 3.14 seeds mg-2026-11a; plan 4.11 runs the pilot set; no task seeds the pilot set. D8 says a change makes a new set id; plan 4.11 says the orchestrator seeds a harder set through task 3.14 and names no new id.",
+      "finding": "F14 [Blocker] spec.md D13 and plan.md 4.11: The pilot set has no id, no selection rule, no seeding task, and no stated relation to the ranked set; a reseed has no new id. Rationale: D8 fixes the first set at 14 diffs and a change makes a new set id, while D13 adds a 6-diff pilot set; the implementer must choose which 6 diffs to seed and whether the pilot tests the ranked set, so two builds diverge and the gate can pass a set that is not ranked."
+    },
+    {
+      "id": "F15",
+      "severity": "blocker",
+      "location": "spec.md D15 and FR-15; plan.md task 4.2",
+      "evidence": "D15 says wait when a window is 70 % or more, or the source gives no value. FR-15 says wait for a source with no value. Plan 4.2 says a missing field and a value that is not a number give stopped. A missing field is a source with no value.",
+      "finding": "F15 [Blocker] spec.md D15 and FR-15; plan.md 4.2: A source with no value gives wait in the spec and stopped in the plan test. Rationale: D15 and FR-15 say a source with no value gives wait, while task 4.2 says a missing field and a non-number give stopped; the Red test and a Green built to the spec cannot both pass."
+    },
+    {
+      "id": "F16",
+      "severity": "major",
+      "location": "spec.md D5, D11, R3, and Q9",
+      "evidence": "D12 ranks minimax-cn-coding-plan/MiniMax-M3.1-Flash; D11 names opencode/minimax-m3.1-flash-free#high as the second judge. D5 names claude-code/claude-opus-5-5[1m]#high as the author; D11 names the same route as the first judge. D11 makes an unclear verdict mark the pass provisional and remove the rank. OD5 says only agreed verdicts count and a disagreement never counts against the model.",
+      "finding": "F16 [Major] spec.md D5, D11, R3, and Q9: The second judge is a ranked family, the author and first judge stay Anthropic, and an unclear verdict removes the route's rank. Rationale: MiniMax M3.1 Flash is a D12 ranked route; the agreement rule blocks a single false claim but not style bias, and the no-rank rule makes a disagreement count against the model, contrary to OD5; use a judge family outside D12 (Qwen or Doubao), or give the judge's family no rank and keep the pass ranked with agreed verdicts only."
+    },
+    {
+      "id": "F17",
+      "severity": "major",
+      "location": "spec.md D13 and R7; plan.md Phase 4 and the date table",
+      "evidence": "D15 allows one pass for each route on one night. D13 gives the pilot 2 passes for each of 2 routes. The plan says the set is ready Thu 2026-11-19 and the main passes run on 11-20, 11-21, and 11-22. The pilot routes are MiniMax and Kimi, which are in the main set. Acceptance 11 lists unreachable, quota stop, region block, and provisional as reasons; plan 4.12 adds open pass.",
+      "finding": "F17 [Major] spec.md D13 and R7; plan.md Phase 4: The pilot's two nights plus the three main passes do not fit before 2026-11-22 for the two pilot routes. Rationale: D15 allows one pass per route per night; with the set ready on 11-19, the pilot needs 11-19 and 11-20, leaving 11-21 and 11-22 for two main passes, so MiniMax and Kimi finish on 11-23; seed and run the pilot by 11-18, or let the pilot passes count, and add the allowed reason to acceptance 11."
+    },
+    {
+      "id": "F18",
+      "severity": "major",
+      "location": "spec.md D16 and acceptance 5; plan.md task 1.1",
+      "evidence": "D16 says the page shows pass + fail beside each work-type rate, then says a row with fewer than 10 runs gets few runs. The export work_types value has runs, pass, and fail. 17 rows have runs of 10 or more and pass + fail below 10; 213 rows have pass + fail below 10. The all_time row is per route and role, so a route and work-type row must sum the roles; D16 does not say so.",
+      "finding": "F18 [Major] spec.md D16 and acceptance 5; plan.md 1.1: The work-type fewer-than-10-runs rule does not say whether it counts the export runs or the shown pass + fail. Rationale: 17 work-type rows have runs of 10 or more and pass + fail below 10, so the choice changes the few-runs mark and the overview pick; say fewer than 10 results (pass + fail) and state that the work-type row sums the role rows."
+    },
+    {
+      "id": "F19",
+      "severity": "major",
+      "location": "spec.md D9 and D11; plan.md tasks 3.15 and 4.13",
+      "evidence": "D9 says the public manifest holds the SHA-256 of the key. FR-12 says adjudicate.ts apply updates the key real_defects. Plan 3.15 commits the manifest; plan 4.13 runs apply after that commit; plan 4.14 writes the score file. The key file changes after its SHA-256 is public.",
+      "finding": "F19 [Major] spec.md D9 and D11; plan.md 3.15 and 4.13: The public manifest records the key SHA-256 before apply adds real_defects, so the published hash no longer matches the key. Rationale: FR-12 updates the key after the 3.15 manifest commit; the R8 integrity check then reports a changed key for a legitimate adjudication; rewrite and commit the manifest after the apply, or keep real_defects outside the hashed key."
+    },
+    {
+      "id": "F20",
+      "severity": "nit",
+      "location": "spec.md OD6 and D17",
+      "evidence": "The v13 file has 52 errors. 43 rows hold a checklist list of 1 to 3 items; 9 rows hold an empty list. OD6 and D17 say the checklist item code and text (singular). Plan 2.1 says checklist items.",
+      "finding": "F20 [Nit] spec.md OD6 and D17: The checklist item code and text is a list of 0 to 3 items in the file. Rationale: 43 rows hold 1 to 3 checklist items and 9 hold none; plan 2.1 already says items, so the spec should say the checklist items (0 to 3)."
+    },
+    {
+      "id": "F21",
+      "severity": "nit",
+      "location": "spec.md OD8 and R9",
+      "evidence": "OD8 and R9 state that the Go account rejects non-European and non-US hosted models until Daniel turns on Global regions. The PM brief records that Daniel turned on Global regions at about 11:00 on 2026-11-14. The revision commit is 09:14.",
+      "finding": "F21 [Nit] spec.md OD8 and R9: The region block is stated as present, but Daniel turned on Global regions at about 11:00 on 2026-11-14. Rationale: the rule is a useful guard; record that the switch is on, so the pilot route rule and the probe are read as guards, not as the current state."
+    },
+    {
+      "id": "F22",
+      "severity": "nit",
+      "location": "plan.md tasks 2.4, 2.6, and 4.8",
+      "evidence": "Plan 2.4 writes the print-audit data file and the print-audit block of real-work.html. Plan 2.6 writes guide-section.html and the overview edit of preview.sh. Plan 4.8 writes review.html and the review page edit of preview.sh. The plan header says each Green task writes one tool or one page.",
+      "finding": "F22 [Nit] plan.md 2.4, 2.6, and 4.8: Three Green tasks write two files, so the rule each Green task writes one tool or one page is not literal. Rationale: each pair is one page or data file plus its wiring; keep the small unit and say one tool or one page, plus its wiring."
+    },
+    {
+      "id": "F23",
+      "severity": "nit",
+      "location": "plan.md task 0.3",
+      "evidence": "Plan 0.3 says the round 2 result names each round 1 finding as withdrawn or kept. All 12 round 1 items have FIX, and this round has no CONTEST item. The review brief asks for fixed, partly fixed, or not fixed.",
+      "finding": "F23 [Nit] plan.md 0.3: The verify line uses the CONTEST words withdrawn or kept for a revision round. Rationale: this round has no CONTEST item; the reviewer reports fixed, partly fixed, or not fixed, and the plan should use that vocabulary."
+    }
+  ],
+  "evidence": [
+    "HEAD check: git rev-parse HEAD and git rev-parse 2fae48c both returned 2fae48ceee0de417c97044c710668eafc1512850, so the audited HEAD matches.",
+    "Revision: git show --stat 2fae48c shows spec.md, plan.md, spec-review.md, metadata.json, measure/index.md, measure/tracks.md, and the rigor_a_h metadata.",
+    "F1 fixed: spec.md D6 lists the closed catalog from C1 to C9; FR-8 and plan 3.2 fail an operator outside the catalog of its class.",
+    "F2 fixed: spec.md D11 makes one finding the unit of adjudication; a group only removes duplicates; plan 3.4 tests a group with two claims.",
+    "F3 partly fixed: spec.md D16 defines the work-type rate and rank; the 10-run minimum is ambiguous (F18).",
+    "F4 fixed: plan 0.2 gives the reviewer only measure/runs/model_guide/; the author or a Build session writes spec-review.md.",
+    "F5 partly fixed: spec.md D4 makes the diff choice a rule; D11 adds a second judge; the author and first judge stay Anthropic, and the second judge is a ranked family (F16).",
+    "F6 partly fixed: spec.md D13 adds the pilot gate; the pilot set and the reseed have no identity (F14) and the dates do not fit (F17).",
+    "F7 partly fixed: spec.md D15 names the quota source of each provider; the missing-value state conflicts with plan 4.2 (F15). The ids claude, kimi-for-coding, minimax-cn-coding-plan, and opencode-go match the OpenChamber quota instruction in the orchestrator agent file.",
+    "F8 fixed: spec.md OD3 and Q4 record the pass-rate-only checker rank; D16, FR-3, and acceptance 4 show the blocking rate beside it.",
+    "F9 partly fixed: OD6 and D17 carry the error types; the input check has no size or schema source (F13).",
+    "F10 fixed: spec.md D21, FR-7, and plan 1.3 and 5.3 compare docs/ with preview-base.json and stop on a drift.",
+    "F11 fixed in substance: plan 1.4 to 4.8 give each Green task one tool or one page and a verify line; three tasks write two files (F22).",
+    "F12 fixed: plan 0.1 starts with bbde00d; git log -1 bbde00d shows the registry commit.",
+    "Print-audit file: sha256 f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87 matches OD6. The file holds 52 errors, 13 blockers, 18 majors, and 21 minors. 43 rows hold a checklist list of 1 to 3 items; 9 rows hold none. The JSON has no schema key. MANIFEST.txt holds no size. The file size is 14,620 bytes.",
+    "Real-work export: sha256 dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2. The coverage block holds 1,798 runs, 909 with a known route, 1,290 with a result, and 36 left-out duplicates. The all_time block has 141 rows and 42 routes.",
+    "Work-type counts: 17 rows have runs of 10 or more and pass + fail below 10; 213 work-type rows have pass + fail below 10. After the model merge, app code has 7 rows with pass + fail of 10 or more, docs and ops 3, print books 2, and tooling 1 (unknown only).",
+    "Pilot route family: D12 ranks minimax-cn-coding-plan/MiniMax-M3.1-Flash; the real-work export also lists opencode/minimax-m3.1-flash-free#high. Both are the MiniMax M3.1 Flash family.",
+    "Dates: the set date is Thu 2026-11-19; the main passes are 11-20, 11-21, and 11-22; D15 allows one pass for each route on one night; the pilot needs 2 passes for each of 2 routes.",
+    "Plan checks: the plan has no pinned test count. The test command in the plan uses vitest; harness/vitest.config.ts excludes only node_modules and tests-track, so model-guide-tests is collectable. harness/package.json holds tsx.",
+    "The reviewer ran no test and no model call. The reviewer read the spec, the plan, the review standard, the round 1 result, the hand-off files, the vitest config, and the OpenChamber quota instruction."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git rev-parse 2fae48c",
+    "git show --stat 2fae48c",
+    "git log --oneline -1 bbde00d",
+    "sha256sum ~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json",
+    "cat ~/Desktop/handoff/a23-print-audit-error-types/MANIFEST.txt",
+    "stat -c '%s' ~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json",
+    "sha256sum ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json",
+    "python3 -c 'read the print-audit and real-work JSON files'",
+    "grep -n 'api/quota' harness/cron-daily.sh measure/tracks/model_guide/spec.md",
+    "grep -n 'pilot' measure/tracks/model_guide/spec.md measure/tracks/model_guide/plan.md",
+    "sed -n '1,120p' harness/vitest.config.ts",
+    "grep -n 'api/quota' -A 12 -B 4 ~/.config/opencode/agents/measure-orchestrator.md"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/spec-review-2fae48c.json",
+    "measure/runs/model_guide/spec-review-2fae48c.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high"
+}

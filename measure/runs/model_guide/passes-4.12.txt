@@ -1,0 +1,21 @@
+night 1 mg-2026-11p 2026-11-20T02:00:01+07:00 HEAD 6c42e434e47a3c5458c7ff87ec5259b0df075cce dry=0
+waited 0 s for the probe
+skipped: opencode-go/deepseek-v4.1-flash not reachable in probe-4.10
+skipped: opencode/hy4-flash-free not reachable in probe-4.10
+skipped: opencode-go/mimo-v2.6-flash not reachable in probe-4.10
+done 2026-11-20T02:00:01+07:00
+left processes: 0
+night 2 mg-2026-11p 2026-11-21T02:00:00+07:00 HEAD 90edb7b7a136c8862ef4cc3f573efb32b3b21425 dry=0
+waited 2280 s for the probe
+night 2 mg-2026-11p opencode-go/deepseek-v4.1-flash exit=2 state=none review-run: a pilot route needs BENCH_SERVER_BASE
+night 2 mg-2026-11p opencode-go/hy4-flash-free#high exit=2 state=none review-run: a pilot route needs BENCH_SERVER_BASE
+night 2 mg-2026-11p opencode-go/mimo-v2.6-flash exit=2 state=none review-run: a pilot route needs BENCH_SERVER_BASE
+done 2026-11-21T03:56:40+07:00
+left processes: 0
+night 3 mg-2026-11a 2026-11-22T02:00:00+07:00 HEAD 6306874c3b8b9f5e45880101e7901a6f5e45ce7e dry=0
+waited 0 s for the probe
+night 3 mg-2026-11a opencode-go/deepseek-v4.1-flash exit=2 state=complete -
+night 3 mg-2026-11a opencode-go/hy4-flash-free#high exit=0 state=complete -
+night 3 mg-2026-11a opencode-go/mimo-v2.6-flash exit=2 state=none review-run: the model answer did not complete
+done 2026-11-22T04:31:25+07:00
+left processes: 0

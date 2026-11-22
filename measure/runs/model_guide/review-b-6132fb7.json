@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+  "audited_head_sha": "6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+  "reviewer_model": "qwen3.8-max",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Phase 2 is safe to accept. The committed data file is a faithful D17 derivation of the private OD6 hand-off (row-by-row match, no book text, no page, no file name, no hand-off source string). The D17 input check refuses tampered input with exit 2 and no output file. All rendered data text is html.escape'd. The docs write path is gated on the approval record, stages explicit paths only, and never pushes. Fixtures are synthetic. All six test suites are green (180 tests). Three non-blocking nits, no blockers.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2B1-1 [Nit] review-b: guide.ts parseArgs looks flags up in the FLAGS object literal (guide.ts:132), so a bare token such as `constructor`, `toString`, or `__proto__` reads an inherited Object.prototype property instead of undefined. The token is then silently ignored instead of refused with `input-check: args` as the header doc claims. No prototype pollution and no output impact: the value lands as an own property of the local args object under a coerced key, and the required-flag check still refuses incomplete calls. Fix: use Object.hasOwn(FLAGS, argv[i]) or a Map.",
+    "P2B1-2 [Nit] review-b: print-audit.ts reads the input file twice (text at print-audit.ts:134 for the JSON parse, bytes at print-audit.ts:135 for the SHA-256). The parsed content and the verified hash can come from different file states if the file changes between the reads. Not exploitable in the hand-off folder threat model (an attacker with write access there also controls MANIFEST.txt). Fix: read one buffer and derive both the text and the hash from it.",
+    "P2B1-3 [Nit] review-b: the phase window diff c22f313..6132fb7 carries docs/assets/data/benchmark.json, bugfix.json, and tracks.json changes from the unrelated daily-publish commit 05acc8c. These are the daily job's machine data, not phase author work, and they hold no security risk. Scope note for the acceptance record."
+  ],
+  "evidence": [
+    "Committed data file derivation: a row-by-row rebuild from ~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json (sha256 f52a7bbf...a6e87, matches OD6 and MANIFEST.txt) gives 0 mismatches against harness/model-guide/data/print-audit-2026-11.json; the only output strings not in the hand-off are '11 of 13', '13 of 13', the source sha256, and the schema name.",
+    "The hand-off `source` string ('advantage-pr print_curriculum_audit_20261104 (spec.md checklist A1-J1; calibration-v13.md v0.1)') does not reach the committed file: output `source` holds only {sha256}. A scan of every string value of the committed file for .pdf/.epub/.docx/.json/.txt/.md/page-N/home-path patterns found 0 hits. No book text, no page, no file name.",
+    "Fresh regeneration: `npx tsx model-guide/print-audit.ts --input <real hand-off> --out /tmp/opencode/p2b-good` exits 0 and the output is byte-identical to the committed file (both sha256 91dbaa00e0a3cbeabec1ddc47ece669aef98bcaeabc573bb1ba470da44166542).",
+    "D17 refusal live check: a one-byte-tampered copy with the real MANIFEST.txt gives `input-check: sha256`, exit 2, and the --out folder is not created.",
+    "Refusal matrix tested: print-audit.test.ts N2/N5 cover changed byte, wrong manifest SHA, missing top key, 51 rows, old-shape row keys (type, results list, code-instead-of-item, non-string route value), each with exit 2 and no output file; all checks run before any write (refuse() at print-audit.ts:51-54, write only at :198-199).",
+    "HTML escaping: preview.sh overview_rows escapes kind, pick, second, evidence, evidence_date with html.escape and formats base_line with float() (preview.sh:296-317); print_audit_block escapes route names, results, error-type names, counts via int(), the bias note, checklist code and text, row id and severity (preview.sh:470-528). Pinned by preview-gate.test.ts T11 (hostile route `\"><img src=x onerror=alert(1)>` and hostile checklist text arrive escaped; a plain __proto__ summary key adds no route) and B2 (escaped script value, no raw tag).",
+    "Prototype pollution: print-audit.ts builds routes and error_types with Object.fromEntries (own-property create, no pollution); guide.ts reads page-B tables into a Map and arrays (guide.ts:195-199, 258-267) and output rows are object literals; adversarial.test.ts H tests pin that work-type and rating-axis names constructor/toString/__proto__/hasOwnProperty stay ordinary entries or refuse. No dynamic key writes to shared prototypes in the diff.",
+    "update.sh gate: writes under docs/ only after measure/tracks/model_guide/publish-approval.md exists (update.sh:84-93); the approval record does not exist at the audited HEAD (ls measure/tracks/model_guide/), so no docs write path is live. Staging is explicit-path only: `git add -- <two paths>` and `git commit -q -m ... -- <two paths>` (update.sh:96-98); no `git push` in any phase file (grep). Every expansion is quoted. Pinned by update.test.ts U1 (preview-only, no commit, docs clean), U2 (exactly two paths committed, unrelated dirty docs/index.html stays uncommitted, temp repo has no remote), U3 (refused input check exits 2, repo status byte-identical).",
+    "Write paths in the diff: preview.sh writes only the preview folder plus a mktemp staging folder and refuses preview paths at or under docs/ and symlinks in docs or the preview folder before any write (preview.sh:84-97, 155-241); print-audit.ts and guide.ts write only to the operator-supplied --out folder; update.sh writes staging, the preview folder, or the two approved docs paths. No new write path outside the preview folder and the approved docs paths.",
+    "Fixtures are synthetic: 0 identical rows and 0 shared checklist texts between fixtures/print-audit/print-audit-mini.json and the real OD6 hand-off; 0 identical rows between fixtures/page-guard/real-work-page.json and the real 2026-11-14 export (fixture coverage runs 1285 vs real 1798); both fixture MANIFEST.txt files say 'synthetic fixture' and their sha256 lines match the fixture files; fixtures carry the hostile names on purpose. leak-guard.test.ts (green) rejects the hand-off path context and the real export SHA-256 under harness/model-guide-tests/.",
+    "A2 (consent-blind publish gate): the draft-to-published switch in update.sh checks the approval record (Daniel's word, spec D21) before any docs/ write; tests U1/U2 pin both sides of the gate. Page B data holds route and model names only, no named person or school.",
+    "A6 (registry overstatement): measure/tracks.md holds no 'resolved' security claim for model_guide; its status line still says 'pending - spec review round 1 revised 2026-11-14', which understates progress rather than overstates it. No marketing copy ahead of the implementation.",
+    "Test suites green at the audited HEAD, single-file runs: print-audit 13/13, guide 15/15, update 3/3, preview-gate 98/98, adversarial 49/49, leak-guard 2/2; exit 0 each; `git status --short docs/` empty before and after; HEAD unchanged at 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2 during the audit."
+  ],
+  "commands": [
+    "git rev-parse HEAD (6132fb70dfe02d83c4c8c4f1a7339b32414eefb2, before and after the audit)",
+    "git diff --name-status c22f313603108585f8bb45996057627acfbc78ae..6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+    "python3 row-by-row compare of harness/model-guide/data/print-audit-2026-11.json against the real OD6 hand-off (0 mismatches)",
+    "sha256sum /tmp/opencode/p2b-good/print-audit-2026-11.json harness/model-guide/data/print-audit-2026-11.json (identical)",
+    "cd harness && npx tsx model-guide/print-audit.ts --input <tampered copy> --out /tmp/opencode/p2b-bad-out (exit 2, input-check: sha256, no output)",
+    "cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot (13 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot (3 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (98 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot (49 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot (2 passed, exit 0)",
+    "python3 compare fixtures against the real hand-off files (0 identical rows, 0 shared checklist texts)",
+    "grep -n push harness/model-guide/update.sh harness/model-guide/preview.sh harness/model-guide/guide.ts harness/model-guide/print-audit.ts (no git push)",
+    "git status --short docs/ (empty)",
+    "ls measure/tracks/model_guide/ (no publish-approval.md)"
+  ],
+  "changed_files": [
+    "docs/assets/data/benchmark.json",
+    "docs/assets/data/bugfix.json",
+    "docs/assets/data/tracks.json",
+    "harness/model-guide-tests/fixtures/guide/benchmark-mini.json",
+    "harness/model-guide-tests/fixtures/guide/review-scores-mini.json",
+    "harness/model-guide-tests/fixtures/guide/tracks-mini.json",
+    "harness/model-guide-tests/fixtures/page-guard/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/page-guard/real-work-page.json",
+    "harness/model-guide-tests/fixtures/print-audit/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/print-audit/print-audit-mini.json",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/print-audit.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/data/print-audit-2026-11.json",
+    "harness/model-guide/guide.ts",
+    "harness/model-guide/pages/guide-section.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/print-audit.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "A fresh run of print-audit.ts on the real OD6 hand-off reproduces the committed data file byte-identically (sha256 91dbaa00...), and the tampered-input run refuses with exit 2 and no output."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "Each security claim has a pinned test: refusals (print-audit.test.ts N2/N5), escaping and __proto__ (preview-gate.test.ts T11, B2), pollution names (adversarial.test.ts H at lines 537-579), the docs gate (update.test.ts U1-U3); all 180 tests green."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "Phase commits match plan tasks 2.1-2.9; the window diff also carries docs/assets/data changes from the unrelated daily-publish commit 05acc8c (git log c22f313..6132fb7 -- docs/assets/data/)."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim in this audit has a command result: row-by-row fixture and data-file comparisons, sha256sum outputs, six single-file vitest runs with exit codes, and grep results for the push and approval checks."
+    }
+  ]
+}

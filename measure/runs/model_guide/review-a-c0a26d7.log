@@ -1,0 +1,7 @@
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings: none
+nonblocking_findings: F1 backlog 4.14 residual part of Review B N25 (m8): the probe region branch of review-run.sh:990 has no failing test for a key in a stdout error event, the precise m8 mutation kept all 42 cases of task 4.13 green at HEAD; F2 backlog 4.14 carried (NA3/N15): the orphan scans are not scoped to the own temp folder and the concurrent session load tripped one gate per file, each re-run passed clean
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

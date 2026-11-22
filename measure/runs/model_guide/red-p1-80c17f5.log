@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 80c17f5979b632a38e2a6797ff20504b418e198c
+head_sha: 5993d282b44eb26a69fbc999fe18cab62807dfe9
+commits: 530c73a, 5993d28
+tests_run: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 1, Tests 1 failed | 89 passed (90)); real-work.test.ts (exit 1, Tests 1 failed | 19 passed (20)); input-check.test.ts (exit 0, 15 passed); leak-guard.test.ts (exit 0, 2 passed); adversarial.test.ts (exit 0, 49 passed)
+files_changed: harness/model-guide-tests/preview-gate.test.ts, harness/model-guide-tests/real-work.test.ts, measure/tracks/model_guide/plan.md
+plan_updates: task 1.22 marked [x] with test commit 530c73a and an Evidence line citing red-1.22.txt plus the orchestrator ruling; task 1.23 opened as [~] with a five-file single-worker dot-reporter Verify line
+remaining_failures: preview-gate Acceptance 5 (PA1-1) unknown-only work type test (no <h3>translation</h3> on the page); real-work unknown-only work type test (work_types keys lack translation)
+handoff: Green task 1.23: in real-work.ts keep each work-type name that appears in any all_time row (including unknown/other rows) with an empty row list when no ranked row carries it; in preview.sh render one section per work_types key, and for a work type with an empty row list render its H3 heading and no pick yet with no table. Touch no test file. Verify each of the five test files alone with one worker and the dot reporter.
+END_MEASURE_AGENT_RESULT

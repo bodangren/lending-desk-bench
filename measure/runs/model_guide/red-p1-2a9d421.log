@@ -1,0 +1,69 @@
+role: mid-red
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+tasks: 1.20 (Red, done), 1.21 (Green, opened [~])
+phase_base_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 2a9d4213c73c2ed3fdc53ae931029f910092735d
+head_sha: d344a210d8e4cab684db34c8a9b9cd3c8779b712
+
+Dirty paths before work: .opencode/, harness/wt.txt, tech-debt.md (untracked).
+Classification: unrelated user work. Preserved, never staged.
+
+Work log:
+1. Read measure/runs/model_guide/ux-browser-2a9d421.json. Routed U1 (blocking),
+   U3 (minor), U4 (nit) into failing tests. U2 and U5 stayed out of scope by
+   orchestrator decision; they go to the phase acceptance as nonblocking.
+2. Marked task 1.20 [~] in measure/tracks/model_guide/plan.md under Phase 1,
+   after task 1.19.
+3. Appended a describe block "the UX fixes U1, U3, U4 of task 1.20" to
+   harness/model-guide-tests/preview-gate.test.ts. The tests read the generated
+   real-work.html in the preview folder via repoFixture + runPreview, as the
+   existing tests do. No file under harness/model-guide/ or docs/ changed.
+4. Ran the targeted Red command (day rule: single files only, one worker, dot
+   reporter):
+   cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   Exit 1. Tests line: Tests  3 failed | 85 passed (88).
+   Failed for the right reasons:
+   - U1: source paragraph tag is <p>, no style, no class, no wrapper.
+   - U3: tag is <div class="table-wrap">, no tabindex, role, aria-label.
+   - U4: tag is <a class="active" href="./real-work.html">, no aria-current.
+5. Companion runs, each alone, one worker, dot reporter, all exit 0:
+   - input-check.test.ts: Tests  15 passed (15)
+   - real-work.test.ts: Tests  19 passed (19)
+   - leak-guard.test.ts: Tests  2 passed (2)
+   - adversarial.test.ts: Tests  49 passed (49)
+6. Wrote measure/runs/model_guide/red-1.20.txt (gitignored, not staged).
+7. Commit b06ac41: test(model_guide): UX fixes U1 U3 U4 task 1.20
+   (harness/model-guide-tests/preview-gate.test.ts alone).
+8. Commit d344a21: measure(model_guide): record Red task 1.20 and open Green
+   task 1.21 (plan.md alone). Task 1.20 marked [x] with the test commit SHA and
+   an Evidence line that cites red-1.20.txt, no test count. Task 1.21 added as
+   [~] with a Verify line for the five files, each alone, one worker, dot.
+
+Notes for Green:
+- The fixture-generated page holds 6 table-wrap boxes (2 role tables from the
+  page template, 4 work-type tables from work_tables in preview.sh). The real
+  export holds 7. The U3 test asserts >= 6 boxes and checks every box.
+- U1 accepts either an inline style on the source paragraph or a wrapper inside
+  the Source card, or a class on one of them with a rule in a <style> block of
+  the generated page: overflow-wrap: anywhere or word-break: break-all. The
+  docs/ route (dropping overflow: hidden on .card) is not accepted, because the
+  fix must not need a change under docs/.
+- The source paragraph comes from the <!--MODEL-GUIDE:SOURCE--> slot at
+  harness/model-guide/pages/real-work.html:33; preview.sh fills the slot.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 2a9d4213c73c2ed3fdc53ae931029f910092735d
+head_sha: d344a210d8e4cab684db34c8a9b9cd3c8779b712
+commits: b06ac41 (test file), d344a21 (plan.md)
+tests_run: preview-gate.test.ts exit 1, Tests 3 failed | 85 passed (88); input-check.test.ts exit 0, 15 passed; real-work.test.ts exit 0, 19 passed; leak-guard.test.ts exit 0, 2 passed; adversarial.test.ts exit 0, 49 passed (each alone, --configLoader native --maxWorkers=1 --reporter=dot)
+files_changed: harness/model-guide-tests/preview-gate.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-1.20.txt (not staged)
+plan_updates: 1.20 marked [~] then [x] with commit b06ac41 and Evidence citing red-1.20.txt; 1.21 Green added as [~] with the five-file Verify line
+remaining_failures: U1 (source paragraph wrap rule), U3 (table-wrap tabindex/role/aria-label), U4 (aria-current on the active nav link)
+handoff: Green task 1.21 fixes only harness/model-guide/. U1: add overflow-wrap: anywhere (or word-break: break-all) to the source paragraph in pages/real-work.html, as an inline style or as a class with a rule in a <style> block that the generated page carries; do not rely on a docs/ change. U3: add tabindex="0", role="region", and a non-empty aria-label (name the table, for example "Producer roles table") to every .table-wrap: the two in pages/real-work.html and the ones that work_tables builds in preview.sh. U4: add aria-current="page" to the ./real-work.html nav link in pages/real-work.html; no other link may carry aria-current. Then run the five test files, each alone with one worker and the dot reporter; all must exit 0. Never stage .opencode/, tech-debt.md, harness/wt.txt, harness/node_modules, or measure/runs/.
+END_MEASURE_AGENT_RESULT

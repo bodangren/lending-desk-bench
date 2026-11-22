@@ -1,0 +1,39 @@
+route: openai/gpt-6.1-sol#high
+start: 2026-11-16T09:23:15Z
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bash -c 'cd harness && npx tsx model-guide/review-set.ts lint mg-2026-11p --private "$HOME/.local/share/lending-desk-bench/model-guide" --sets /tmp/opencode/seed-11p/sets --created 2026-11-16'
+initial_lint_attempt_exit: tool timeout after 120000 ms
+initial_lint_retry_exit: 2
+initial_lint_output: lint: set-missing: mg-2026-11p
+command: node /tmp/opencode/seed-11p/seed.cjs seed
+diffs: 6
+plants: 20
+blockers: 11
+seeded_sha256_matches: 6
+key_matches_except_set_id: 6
+source_byte_matches: 6
+private_files: 18
+private_directories: 4
+permissions_check_exit: 0
+copy_check_exit: 0
+seed_exit: 0
+command: HEAVY_MIN_AVAIL_MB=1500 HEAVY_PRIORITY=p2 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh bash -c 'cd harness && npx tsx model-guide/review-set.ts lint mg-2026-11p --private "$HOME/.local/share/lending-desk-bench/model-guide" --sets /tmp/opencode/seed-11p/sets --created 2026-11-16'
+lint_exit: 0
+lint_output_bytes: 0
+command: node /tmp/opencode/seed-11p/seed.cjs check
+diffs: 6
+plants: 20
+blockers: 11
+seeded_sha256_matches: 6
+key_matches_except_set_id: 6
+source_byte_matches: 6
+private_files: 18
+private_directories: 4
+permissions_check_exit: 0
+copy_check_exit: 0
+verification_exit: 0
+command: git --no-pager status --short
+status_exit: 0
+command: git --no-pager status --short -- docs/
+docs_status_exit: 0
+docs_changed_paths: 0
+end: 2026-11-16T09:28:20Z

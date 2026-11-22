@@ -1,0 +1,17 @@
+Review A round 4, track model_guide, phase P2, HEAD b4fba01b280a7ccfc4186a1de318435d0d01c034.
+Provisional verdict: pass with one kept Nit (P2A1-2); no new findings.
+HEAD equals role_base_sha and audited_head_sha at start and end. No new daily publish landed during the audit; in-range docs-only 119b06d is out of scope per brief.
+Model-guide commits in range: 5037e77 test-only (P2B2-1d), 58811b2 plan 2.14 record, 2e4e641 update.sh parent-chain fix, b4fba01 plan 2.15 record. daily_model_schedule commits and 119b06d unaudited.
+Day-rule reruns at HEAD, each exit 0: update 8 passed, preview-gate 99 passed, adversarial-p2 14 passed, guide 15 passed.
+Live preview re-run: six rows identical to preview-2.9.txt, count 6, stale false. git status --short docs/ prints nothing.
+Plan rows 2.14/2.15 true; task 2.7 now has leading SHA 1cc8792. Task 2.8 is [~], not counted.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: b4fba01b280a7ccfc4186a1de318435d0d01c034
+result_file: measure/runs/model_guide/review-a-b4fba01.json
+retry_recommendation: none
+summary: Round 4 passes: P2ADV2-1 parent-chain refusal correct and minimal, all suites green, six rows unchanged; P2A1-2 kept, no new findings.
+END_MEASURE_AGENT_RESULT

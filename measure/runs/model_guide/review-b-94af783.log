@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+track: model_guide
+audited_head: 94af783e15f6f73590a2f59ba1a27cee8159bf84
+blocking_findings: 0
+nonblocking_findings: 1 (RB-1 Nit: symlinked data file reads and no max input size; sha256/size gates still apply; local tool only)
+tests: 237 passed in 8 suites (input-check 20, leak-check 22, update 9, adversarial 47, adversarial-p2 13, real-work 12, preview-gate 99, guide 15)
+notes: A2 not applicable (no draft-to-published flip; model routes only). A6 clear (tracks.md shows model_guide pending, no resolved claim). RA-3 confirmed, not repeated.
+END_MEASURE_AGENT_RESULT

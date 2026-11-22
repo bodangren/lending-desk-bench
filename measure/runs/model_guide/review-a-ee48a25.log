@@ -1,0 +1,20 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: pass
+route: opencode-go/glm-5.3#high
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+audited_range: 1572612..ee48a254266afee947d555e4e562093c60d64153
+audited_head_sha: ee48a254266afee947d555e4e562093c60d64153 (equals HEAD)
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 42bdece8953ce3b25e230fd234e4698c30044d60 (per plan row 4.13r)
+summary: Re-review of B1 at 1572612 over the text commit ee48a25 and the two driver files outside the repo. The ruling holds: the drivers export BENCH_RA_QUOTA and RA_QUOTA_LASTGOOD with the names quota.ts reads (quota.ts:408, 315) and ra-quota honors for its last-good write (ra-quota:1323-1332); heavy-run.sh passes the env through and the drivers are the only production entry for the model_guide runners; plan row 4.13r Point 8 (plan.md:2397), spec D15 (spec.md:752-756), and FR-15 (spec.md:1344) state the facts; no living text claims a default path; the drivers' own Go check uses the same 95/100 thresholds and 90 s timeout as quota.ts. B1 withdrawn as resolved by the ruled fix.
+blocking_findings: 0
+nonblocking_findings: 1
+nonblocking_1: The row 4.13 judge calls of the Go judge route (opencode-go/muse-spark-1.3-contributor#high, plan.md:2403-2404) run through heavy-run.sh from the orchestrator session (plan.md:2400-2401), not from the drivers, and no text names BENCH_RA_QUOTA for them; judge-run.sh gates the Go judge route on the quota (judge-run.sh:241-248), so a call without the env reads the port source (quota.ts:422-429) that probe-4.10 line 4 records as timing out. Row 4.13 is not executed yet; fix before the row runs (export the two variables in the orchestrator session, or say so in the row text).
+b1_disposition: withdrawn (resolved by the ruled fix, not contested); evidence entry in the JSON records what was checked
+retry_recommendation: none
+confidence: high
+tests_run: none (the range changed measure text only; no code or test file moved, so the 1572612 gate records still describe the same code)
+process_hygiene: no driver run, no heavy-run.sh run, no opencode or openchamber command, no signal, no test
+END_MEASURE_AGENT_RESULT

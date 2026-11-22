@@ -1,0 +1,85 @@
+PROOF: real-HOME `opencode auth export` (PM 2026-11-19, conditions 1-3)
+Date: log timestamps 2026-11-18T19:48:36Z to 19:49:Z (UTC); session date 2026-11-19.
+Exactly one real opencode call was made in this session (STEP 3). No credential value is recorded. No model call was made. No heavy-run.sh and no harness runner ran.
+
+COMMAND (from /home/daniebo/Desktop/lending-desk-bench, no value):
+  export PATH=/home/daniebo/.nvm/versions/node/v24.19.0/bin:/home/daniebo/.local/share/pnpm/bin:/home/daniebo/.local/bin:/usr/local/bin:/usr/bin:/bin; timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 opencode auth export opencode-go --standalone > /dev/null 2>/tmp/opencode/proof-export.err; echo rc=$?
+rc=0
+
+LIST A (STEP 1, `pgrep -af 'serve --service'` before):
+  3074029 /bin/bash -c pgrep -af 'serve --service' || echo "NO_MATCH rc=$?"
+  Meaning: no `serve --service` process. Only the pgrep shell itself matched.
+LIST B (STEP 4, after `sleep 5`, `pgrep -af 'serve --service'` after):
+  3075383 /bin/bash -c sleep 5; pgrep -af 'serve --service' || echo "NO_MATCH rc=$?"
+  Meaning: no `serve --service` process. Only the pgrep shell itself matched.
+
+CHECK (a): PASS. No pid in B is absent from A. Both lists hold only the transient pgrep shell. No new service process appeared. Nothing was stopped.
+
+LOG FILE: opencode.log (only *.log in ~/.local/share/opencode/log/; confirmed by ls -la).
+N0 (STEP 2, `wc -l` before): 104772.
+NEW LINES after N0: 407 total (`wc -l` on the tail at ~19:49Z); 262 non-empty (`grep -c .`) at first tail. Count grows while this proof runs because this observer session logs its own shell calls.
+RUN IDS in new lines: 5741993b x2 (bleed-over tail of a prior run, first truncated line), 9d9f4999 x176 (the new CLI run from STEP 3), 601cad7e (this observer Build session's own server; grows with each proof command).
+NEW CLI RUN ID: 9d9f4999 (timestamps 19:48:36Z-19:48:38Z match STEP 3; `cli starting` then `shutdown started` SIGTERM).
+
+CHECK (b): FAIL under the literal rule (new lines hold `spawning process` lines). Substance: zero claude/tool spawn, zero session prompt/resume/turn. Detail:
+- `spawning process` lines total in new lines: 111. By run: 5741993b x1 (prior-run bleed), 601cad7e x104 (this observer session's own git snapshot and /bin/bash proof commands, incl. the sleep/pgrep/tail/grep/sed calls), 9d9f4999 x6. All 6 in the new CLI run are command=git (rev-parse, remote get-url, symbolic-ref x3, rev-parse). No claude command. No tool spawn. Commands seen overall: git x97, /bin/bash x13 (all observer-session proof commands), one opencode.exe serve --stdio line (CLI start of run 9d9f4999).
+- `claude` matches (5): only plugin id `@openchamber/opencode-claude@1.6.0` loading (x2 in run 9d9f4999) and watcher paths `~/.claude/skills` (subscribe/started/stopped). No claude process was spawned.
+- `session prompt|resume|turn|prompt created|session created|message created` matches: only watcher file paths for `opencode-measure-guard/src/hooks/turn.ts` (subscribe/started/stopped) plus the observer's own grep command line echoed in its args. No session, prompt, resume, or turn activity.
+- Allowed-class lines present for run 9d9f4999: `cli starting` (serve --stdio --port 0), `location services booted`, `loading plugin` x13, events config.updated / provider.updated / model.updated / agent.updated / command.updated, `shutdown started` SIGTERM, plus ~148 watcher subscribe/started/stopped lines (server boot/teardown noise).
+
+MASKED NON-WATCHER LINES for run 9d9f4999 (mask `sed -E 's/(sk-|key|token|secret)[^ "]*/[masked]/gI'`):
+timestamp=2026-11-18T19:48:36.389Z level=INFO run=9d9f4999 message="cli starting" version=2.2.4 channel=latest local=false args="["serve","--stdio","--port","0"]" role=cli
+timestamp=2026-11-18T19:48:36.516Z level=INFO run=9d9f4999 message="spawning process" command=git args="["rev-parse","--git-dir","--git-common-dir","--show-toplevel"]" cwd=/home/daniebo/Desktop/lending-de[masked] http.span=3 role=server
+timestamp=2026-11-18T19:48:36.520Z level=INFO run=9d9f4999 message="spawning process" command=git args="["remote","get-url","origin"]" cwd=/home/daniebo/Desktop/lending-de[masked] http.span=7 role=server
+timestamp=2026-11-18T19:48:36.563Z level=INFO run=9d9f4999 message="location services booted" directory=/home/daniebo/Desktop/lending-de[masked] workspaceID=undefined durationMs=49 http.span=50 role=server
+timestamp=2026-11-18T19:48:36.577Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/opencode/plugins/idle-compact entrypoint=file:///home/daniebo/.config/opencode/plugins/idle-compact/index.ts http.span=64 role=server
+timestamp=2026-11-18T19:48:36.580Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/opencode/plugins/opencode-measure-guard entrypoint=file:///home/daniebo/.config/opencode/plugins/opencode-measure-guard/index.ts http.span=67 role=server
+timestamp=2026-11-18T19:48:36.593Z level=INFO run=9d9f4999 msg="loading plugin" id=@openchamber/opencode-claude@1.6.0 entrypoint=file:///home/daniebo/.cache/opencode/npm/@openchamber/opencode-claude@1.6.0/1794946752248/node_modules/@openchamber/opencode-claude/opencode-claude.js http.span=80 role=server
+timestamp=2026-11-18T19:48:36.607Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/opencode/plugins/idle-compact entrypoint=file:///home/daniebo/.config/opencode/plugins/idle-compact/index.ts http.span=94 role=server
+timestamp=2026-11-18T19:48:36.608Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/openchamber/run/instances/3248719/agent-tool/openchamber-agent-tool entrypoint=file:///home/daniebo/.config/openchamber/run/instances/3248719/agent-tool/openchamber-agent-tool/index.js http.span=95 role=server
+timestamp=2026-11-18T19:48:36.610Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/openchamber/run/instances/3248719/limit-failover/openchamber-limit-failover entrypoint=file:///home/daniebo/.config/openchamber/run/instances/3248719/limit-failover/openchamber-limit-failover/index.js http.span=97 role=server
+timestamp=2026-11-18T19:48:36.611Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/openchamber/run/instances/3248719/session-title/openchamber-session-title entrypoint=file:///home/daniebo/.config/openchamber/run/instances/3248719/session-title/openchamber-session-title/index.js http.span=98 role=server
+timestamp=2026-11-18T19:48:37.883Z level=INFO run=9d9f4999 message=event event.id=evt_1f0343d7b001zS6TJHH0zSSdJP event.created=1795031317883 event.type=config.updated event.location.directory=/home/daniebo/Desktop/lending-de[masked] event.location.workspaceID=undefined event.data={} http.span=1370 role=server
+timestamp=2026-11-18T19:48:38.316Z level=INFO run=9d9f4999 message=event event.id=evt_1f0343f2c001oxvA0O5ymHDprZ event.created=1795031318316 event.type=provider.updated event.location.directory=/home/daniebo/Desktop/lending-de[masked] event.location.workspaceID=undefined event.data={} http.span=1803 role=server
+timestamp=2026-11-18T19:48:38.338Z level=INFO run=9d9f4999 message=event event.id=evt_1f0343f42001Cwj0DX4J3itWSo event.created=1795031318338 event.type=model.updated event.location.directory=/home/daniebo/Desktop/lending-de[masked] event.location.workspaceID=undefined event.data={} http.span=1825 role=server
+timestamp=2026-11-18T19:48:38.340Z level=INFO run=9d9f4999 message="spawning process" command=git args="["--no-optional-locks","-c","core.autocrlf=false","-c","core.fsmonitor=false","-c","core.longpaths=true","-c","core.symlinks=true","-c","core.quotepath=false","symbolic-ref","--quiet","--short","HEAD"]" cwd=/home/daniebo/Desktop/lending-de[masked] http.span=1827 role=server
+timestamp=2026-11-18T19:48:38.341Z level=INFO run=9d9f4999 message="spawning process" command=git args="["--no-optional-locks","-c","core.autocrlf=false","-c","core.fsmonitor=false","-c","core.longpaths=true","-c","core.symlinks=true","-c","core.quotepath=false","remote"]" cwd=/home/daniebo/Desktop/lending-de[masked] http.span=1828 role=server
+timestamp=2026-11-18T19:48:38.353Z level=INFO run=9d9f4999 message="spawning process" command=git args="["--no-optional-locks","-c","core.autocrlf=false","-c","core.fsmonitor=false","-c","core.longpaths=true","-c","core.symlinks=true","-c","core.quotepath=false","symbolic-ref","refs/remotes/origin/HEAD"]" cwd=/home/daniebo/Desktop/lending-de[masked] http.span=1840 role=server
+timestamp=2026-11-18T19:48:38.357Z level=INFO run=9d9f4999 message=event event.id=evt_1f0343f55001LmlSxk5G1WvgEd event.created=1795031318357 event.type=agent.updated event.location.directory=/home/daniebo/Desktop/lending-de[masked] event.location.workspaceID=undefined event.data={} http.span=1844 role=server
+timestamp=2026-11-18T19:48:38.357Z level=INFO run=9d9f4999 message=event event.id=evt_1f0343f55002NAycxC5ipREIjX event.created=1795031318357 event.type=command.updated event.location.directory=/home/daniebo/Desktop/lending-de[masked] event.location.workspaceID=undefined event.data={} http.span=1844 role=server
+timestamp=2026-11-18T19:48:38.375Z level=INFO run=9d9f4999 message="spawning process" command=git args="["rev-parse","--git-dir","--git-common-dir","--show-toplevel"]" cwd=/home/daniebo/Desktop/lending-de[masked] http.span=1862 role=server
+timestamp=2026-11-18T19:48:38.486Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/opencode/plugins/idle-compact entrypoint=file:///home/daniebo/.config/opencode/plugins/idle-compact/index.ts http.span=1973 role=server
+timestamp=2026-11-18T19:48:38.486Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/opencode/plugins/opencode-measure-guard entrypoint=file:///home/daniebo/.config/opencode/plugins/opencode-measure-guard/index.ts http.span=1973 role=server
+timestamp=2026-11-18T19:48:38.487Z level=INFO run=9d9f4999 msg="loading plugin" id=@openchamber/opencode-claude@1.6.0 entrypoint=file:///home/daniebo/.cache/opencode/npm/@openchamber/opencode-claude@1.6.0/1794946752248/node_modules/@openchamber/opencode-claude/opencode-claude.js http.span=1974 role=server
+timestamp=2026-11-18T19:48:38.487Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/opencode/plugins/idle-compact entrypoint=file:///home/daniebo/.config/opencode/plugins/idle-compact/index.ts http.span=1974 role=server
+timestamp=2026-11-18T19:48:38.487Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/openchamber/run/instances/3248719/agent-tool/openchamber-agent-tool entrypoint=file:///home/daniebo/.config/opencode/plugins/idle-compact/index.ts http.span=1974 role=server
+timestamp=2026-11-18T19:48:38.488Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/openchamber/run/instances/3248719/limit-failover/openchamber-limit-failover entrypoint=file:///home/daniebo/.config/openchamber/run/instances/3248719/limit-failover/openchamber-limit-failover/index.js http.span=1975 role=server
+timestamp=2026-11-18T19:48:38.488Z level=INFO run=9d9f4999 msg="loading plugin" id=/home/daniebo/.config/openchamber/run/instances/3248719/session-title/openchamber-session-title entrypoint=file:///home/daniebo/.config/openchamber/run/instances/3248719/session-title/openchamber-session-title/index.js http.span=1975 role=server
+timestamp=2026-11-18T19:48:38.512Z level=INFO run=9d9f4999 message="shutdown started" signal=SIGTERM role=cli
+(Remaining ~148 lines of run 9d9f4999 are watcher subscribe/started/stopped noise from server boot/teardown. Full masked tail is reproducible: `tail -n +104773 <log>` piped through the mask above.)
+
+ERR FILE (STEP 6): `grep -c . /tmp/opencode/proof-export.err` = 0. Masked err content: empty. Deleted after reading.
+
+VERDICT: FAIL. Check (a) PASS (no new `serve --service` process). Check (b) FAIL on the literal rule (6 git `spawning process` lines in the new CLI run, plus observer-session spawns interleaved). Load-bearing facts: the export ran clean (rc=0, empty stderr), spawned no claude process, no tool process, and no session/prompt/resume/turn activity. The 6 spawns are server-boot git queries (rev-parse, remote get-url, symbolic-ref). The observer session's own proof commands account for the other spawns in the window.
+
+Proof 2 (cwd outside git)
+date: 2026-11-18T19:51:27Z (log timestamps; UTC)
+cwd: /tmp/opencode/export-cwd (verified outside git: `git rev-parse --show-toplevel` => "fatal: not a git repository (or any parent up to mount point /)")
+command (no value): export PATH=<node24>:<pnpm>:<localbin>:/usr/local/bin:/usr/bin:/bin; timeout 60 env -u OPENCODE_DB OPENCODE_DISABLE_AUTOUPDATE=1 opencode auth export opencode-go --standalone > /dev/null 2>/tmp/opencode/proof2-export.err; echo rc=$?
+rc: 0
+list A (pgrep -af 'serve --service' before): no serve process (only self-match of the observing shell pid 3095131)
+list B (pgrep -af 'serve --service' after sleep 5): no serve process (only self-match of the observing shell pid 3096567)
+check (a): PASS - no new serve --service pid; nothing to stop
+N0: 105450 (wc -l ~/.local/share/opencode/log/opencode.log before)
+N1: 105628 (wc -l after STEP 4 counts); new lines: 178
+run id (new CLI run): 910e4977 (`cli starting` args=["auth","export","opencode-go","--standalone"] role=cli); child server run: 100b05db (`cli starting` args=["serve","--stdio","--port","0"])
+spawning lines run 910e4977 (clean pattern run=910e4977 message="spawning process"): 1
+  command: /home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe args=["serve","--stdio","--port","0"] cwd=/tmp/opencode/export-cwd role=cli
+  git spawns for run 910e4977 (command=git|rev-parse|remote|symbolic-ref): 0
+spawning lines run 100b05db (child server): 0
+session/prompt/resume/turn lines run 910e4977: 0
+note: naive grep for 'run=100b05db.*spawning process' self-matches observer shell spawn lines (run=601cad7e whose args embed the pattern); clean pattern with message="spawning process" gives the true counts above
+check (b) strict (zero spawning lines for that run id): FAIL - 1 spawning line (the expected internal `serve --stdio --port 0` child)
+check (b) git/session scope: zero git spawns and zero session prompt/resume/turn lines for run 910e4977 - the 6 git lines (rev-parse, remote get-url, symbolic-ref) seen in Proof 1 with cwd inside the repo are gone with cwd outside any git repo
+stderr lines (grep -c . /tmp/opencode/proof2-export.err): 0; err file and cwd folder deleted
+verdict: (a) PASS - export left no serve --service process; (b) strict-FAIL on one expected serve --stdio spawn, PASS on zero git spawns and zero session lines for the export run id

@@ -1,0 +1,33 @@
+Task 1.1 Red evidence.
+
+Task: 1.1 Red. The merge and the rates.
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+Production path under test: harness/model-guide/real-work.ts (missing at baseline).
+
+Command:
+cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1
+
+Exit line: Exited with code 1
+Summary line: Tests  19 failed (19)
+Test Files  1 failed (1)
+
+Failed test names (all fail with "production file is missing: harness/model-guide/real-work.ts"):
+1. merges the three route variants of one model by sums and lists the routes
+2. keeps the same model on two providers as two rows
+3. keeps unknown and other out of the ranks and unmerged
+4. computes the pass rate without no_result and keeps no_result in its own field
+5. carries the run count beside each rate
+6. ranks producers by pass rate then by the lower blocking rate
+7. ranks checkers by pass rate only
+8. does not move a rank when a rating changes alone
+9. shows the mean of each axis with its n
+10. computes a work-type rate as pass over pass plus fail with the result count
+11. sums the role rows of a route and work type
+12. ranks work types by rate then by the higher result count
+13. uses only runs, pass, and fail of a work type
+14. marks 9 results with few runs and 10 without it, and puts the mark below
+15. marks a work type under 10 results and makes it unable to pick
+16. gives no rate to a work type with no result
+17. shows no agreement value when rater_checks.n is 0
+18. puts the coverage numbers in the coverage block
+19. computes the 4-week pass rate from the last 4 ISO weeks

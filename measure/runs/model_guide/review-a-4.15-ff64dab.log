@@ -1,0 +1,102 @@
+Review A correctness, task 4.15, phase 4b, track model_guide.
+
+Provenance: HEAD ff64dab8cb45fa087e64db3e2f90035331267a4a at the start and at
+the end. phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5.
+role_base_sha ff64dab8cb45fa087e64db3e2f90035331267a4a. The audited range is
+7d7d218..ff64dab. Red commits 9c476a3, f4fa0a3, b3c9615, d8edbf9 hold tests.
+Green commit 6bcb0e5 holds production. The record commits change plan.md and
+measure/runs only.
+
+Scope: 12 files, +848/-40. No frozen path changed. No docs/ file changed. No
+package.json change. No real key sits in a committed file. No page changed.
+
+Gates at HEAD, one file at a time, fakes only. All nine counts match the plan
+row 4.15 and green-4.15.txt.
+
+- review-run 96 pass, 0 fail.
+- judge-run 48 passed.
+- quota 31 passed.
+- adversarial-p4-runner 15 passed.
+- adversarial-p4c 13 passed.
+- decode-parity 4 pass.
+- adjudicate 23 pass.
+- review-score 27 passed.
+- adversarial-p4b 12 passed.
+
+Each 4.15 fix matches its section 14.5 contract.
+
+- N21 adds U+202E, U+0085, and U+200B to read_message_line.
+- N9 suppresses the INFRA line when the start time changed.
+- N10 walks each call path and below for a symlink.
+- N11 requires adjacent `serve` then `--service`.
+- N26 cuts the error line to 499 content bytes.
+- N27 clears tokens_complete when a field sum is not a safe integer.
+- N28 clears error_line on a reachable probe.
+- N30 guards the probe region branch and the judge start-test line.
+- N31 gives a failed scan its own text and keeps the found-key text.
+- N32 removes the raw quota reason at the source.
+- E1 is un-skipped and passes.
+- N13 drops a result branch when text events exist in the two TS decoders.
+
+The AA1, AA2, JA1, and JA2 text change is the N31 contract. It removes no
+assertion. The no-key checks stay.
+
+The two error_line_of copies, the two daemon_pids copies,
+error_all_events_text, and scan_output are byte-identical across the runners.
+Route parity holds.
+
+Findings. No finding is blocking under the PM round cap.
+
+F1 is the serious one. The new exe-path filter in daemon_pids skips the live
+daemon shape. The live incident shows argv[0] as the absolute opencode.exe
+under node_modules, outside every job root. I ran the extracted production
+block over a synthetic proc table with that argv[0] and HOME and cwd inside the
+job root. It selected no pid. The P4B-C1 local control uses a bare `node`
+argv[0], so it cannot fail on the real shape. The exit-time
+opencode_host_cleanup may still stop the daemon by the BENCH_OPENCODE_JOB
+marker. The per-pass guard and its INFRA record no longer match. Fix: key the
+scope on the BENCH_OPENCODE_JOB marker, and add a case with a path-form exe
+outside the job root.
+
+F2: the judge shell decoder keeps a top-level result event text in `parts`.
+The two TS decoders drop it when text events exist. My node comparison shows
+the divergence. The three comments still say `the same decoder`. The N13 judge
+fixture feeds the shell a different shape.
+
+F3: the N32 case sits only in quota.test.ts. The strategy names the two
+runner files too. review-run.test.ts:1895 only checks the word `quota`.
+
+F4: the N26 case asserts only `<=500` and does not run a probe or write a
+record. An empty line would pass.
+
+F5: the judge-run copies of N10 and N27 are not pinned. The N10 walk refuses
+any symlink under a call path, not only one that leaves the root.
+
+F6: plan.md:2503-2505 still says a failed scan prints the found-key text. Task
+4.15 N31 changes that path.
+
+Hygiene: I started no server and ran no opencode and no openchamber. pgrep for
+fake-opencode and quota-server printed nothing of mine. I changed no
+production file, no test, and no plan. I wrote only the two result files.
+
+Handoff: F1 is a regression of the opencode_host_isolation fault. It needs a
+fix before the 2026-11-22 night run. I recommend a small Red/Green cycle, or a
+remediation track if the PM keeps 4.15 open past the night run. Option A: fix
+F1 in 4.15 now, with a case whose local pid uses the absolute opencode.exe
+argv[0] and HOME and cwd in the job root. Option B: record a remediation track
+and keep 4.15 nonblocking. F2 to F6 can wait for the next backlog round.
+
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-review-a-correctness
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: ff64dab8cb45fa087e64db3e2f90035331267a4a
+audited_head_sha: ff64dab8cb45fa087e64db3e2f90035331267a4a
+blocking_findings: none
+nonblocking_findings: F1 the daemon exe-path filter skips the live opencode daemon argv shape (review-run.sh:502-503, judge-run.sh:376-377; my synthetic run selected no pid) and the per-pass INFRA guard no longer matches it; F2 the judge shell decoder keeps a top-level result event where the two TS decoders drop it, and the comments still say the same decoder; F3 the N32 group is only in quota.test.ts, not the two runner files the strategy names; F4 the N26 case checks only <=500 and does not write a record; F5 the judge-run N10 and N27 copies are unpinned and the N10 walk refuses any symlink under a call path; F6 plan.md:2503 still says a failed scan holds the found-key text
+retry_recommendation: create_remediation_track
+confidence: high
+handoff: F1 is a regression of the opencode_host_isolation fault and needs a fix before the 2026-11-22 night run. Question for the orchestrator: option A, fix F1 in 4.15 now with a case whose local pid uses the absolute opencode.exe argv[0] and HOME and cwd in the job root; or option B, record a remediation track and keep 4.15 nonblocking. F2 to F6 can wait for the next backlog round. No blocking finding. No real-key leak.
+END_MEASURE_AGENT_RESULT

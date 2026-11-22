@@ -1,0 +1,88 @@
+Green task 4.1h — checker rank by net score, pick labels, escapes "no data",
+overview text (spec D16 Data source PM 2026-11-18, D18 PM 2026-11-18, FR-3)
+Track: model_guide. Phase 4.
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 6caf40ef7d3b28d90490125a48a209678907d1c8 (HEAD after the Red 4.1g
+record; Red commits edc7372 and 6caf40e)
+
+Command note: each test file ran one at a time from harness/, with
+`--configLoader native --maxWorkers=1 --reporter=dot`. The full suite did not
+run (PM rule A-23). Green edited no test and no fixture file.
+
+1. Changes (orchestrator decisions applied)
+
+  - Checker rank (D16 Checker table, PM 2026-11-18): the AA net score high
+    first; a row that is not rated ranks after every rated row; then the
+    higher findings per run; then more runs; then the model key ascending
+    (A to Z). Escapes take no part in any rank.
+  - A gate pick follows the checker rank order inside the rows of its role.
+  - Top block line forms: a producer line is "<plain name> <rate> % in this
+    role, <count> tasks"; a gate line is "<plain name> <pass rate> % pass in
+    this role, <count> runs, net <net score>". A line with no pick is exactly
+    "no pick yet". The role sits in the `data-role` attribute; the old
+    visible role label and the pick-name/rate/count hooks are gone.
+  - Escapes (D16 Numbers, PM 2026-11-18): `real-work.json` writes
+    `coverage.escapes_total` over every gate row of the outcomes file. While
+    that total is 0, every Escapes cell shows "no data" (ranked rows, Too few
+    tasks rows, and the More columns table); otherwise the cell shows the
+    number.
+  - The Checker roles text carries "A high pass % does not mean a good
+    checker." The About this data footer carries the effort-level sentence of
+    D16.
+  - `pages/guide-section.html` says a model needs 5 tasks or runs, not 10
+    (D18 Overview text).
+  - `guide.ts` does not change: ruling Q2 keeps the page B checker table out
+    of the Code review pick, so the new checker order does not reach it.
+
+2. Commits
+
+  a86c872d32b1c1d6748e1a1bc201f23fde50dc8a feat(model_guide): checker rank by net score, pick labels, escapes no data (task 4.1h)
+  f760a9f617da38ecd4eb9039bb2713cbd566827b measure(model_guide): record Green task 4.1h
+
+3. Ten test result lines (HEAD a86c872, the production commit)
+
+  real-work.test.ts       exit 0  Test Files  1 passed (1)  Tests  14 passed (14)
+  preview-gate.test.ts    exit 0  Test Files  1 passed (1)  Tests  102 passed (102)
+  guide.test.ts           exit 0  Test Files  1 passed (1)  Tests  18 passed (18)
+  adversarial-p4.test.ts  exit 0  Test Files  1 passed (1)  Tests  18 passed (18)
+  input-check.test.ts     exit 0  Test Files  1 passed (1)  Tests  23 passed (23)
+  update.test.ts          exit 0  Test Files  1 passed (1)  Tests  9 passed (9)
+  leak-check.test.ts      exit 0  Test Files  1 passed (1)  Tests  22 passed (22)
+  adversarial.test.ts     exit 0  Test Files  1 passed (1)  Tests  46 passed (46)
+  adversarial-p2.test.ts  exit 0  Test Files  1 passed (1)  Tests  13 passed (13)
+  adversarial-p3.test.ts  exit 0  Test Files  1 passed (1)  Tests  34 passed (34)
+
+4. Gates
+
+  bash -n harness/model-guide/preview.sh                  exit 0
+  git status --short docs/                                prints nothing
+  bash harness/model-guide/preview.sh \
+    --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt   exit 0
+  Live page facts: 10 pick lines in the sentence forms, for example
+  "DeepSeek V4.1 Flash 60 % in this role, 13 tasks",
+  "Claude Opus 5.5 55 % pass in this role, 11 runs, net 42.37", and
+  "no pick yet" for Coder, Acceptance, and Final acceptance. The Checker
+  roles section holds the warning sentence and "no data" in every Escapes
+  cell, because the real outcomes file holds no escape. The About this data
+  footer holds the effort-level sentence.
+
+5. Plan state
+
+  4.1g is [x] edc7372. 4.1h is [x] a86c872. No task is [b]. The `page-check`
+  browser proof at 390, 980, and 1280 px stays with the orchestrator.
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1h
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 6caf40ef7d3b28d90490125a48a209678907d1c8
+resulting_head: f760a9f617da38ecd4eb9039bb2713cbd566827b
+commits: a86c872d32b1c1d6748e1a1bc201f23fde50dc8a (production), f760a9f617da38ecd4eb9039bb2713cbd566827b (plan record)
+files_changed: harness/model-guide/real-work.ts, harness/model-guide/preview.sh, harness/model-guide/pages/real-work.html, harness/model-guide/pages/guide-section.html, measure/tracks/model_guide/plan.md
+tests: real-work 14 passed; preview-gate 102 passed; guide 18 passed; adversarial-p4 18 passed; input-check 23 passed; update 9 passed; leak-check 22 passed; adversarial 46 passed; adversarial-p2 13 passed; adversarial-p3 34 passed. Gates: bash -n preview.sh 0; docs/ clean; live preview exit 0.
+dispositions: none
+handoff: Task 4.1h is green at HEAD f760a9f; the production commit is a86c872. The checker rank now follows D16 PM 2026-11-18 (net score, not-rated last, findings, runs, model key ascending), a gate pick follows that order inside its role, the top lines use the sentence forms with "in this role", every Escapes cell says "no data" while the outcomes file holds no escape, the two new sentences sit in the checker text and the footer, and the overview text says 5 tasks or runs. guide.ts did not change: ruling Q2 keeps the checker table out of the Code review pick, and no test pins a checker second source there. The orchestrator still owns the `page-check` browser proof at 390, 980, and 1280 px and the pair closeout.
+END_MEASURE_AGENT_RESULT

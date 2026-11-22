@@ -1,0 +1,31 @@
+Task 1.3 Red evidence.
+
+Task: 1.3 Red. The preview and the publish gate.
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+Production paths under test: harness/model-guide/preview.sh,
+harness/model-guide/publish.ts, harness/model-guide/real-work.ts, and
+harness/model-guide/pages/real-work.html (all missing at baseline).
+
+Command:
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1
+
+Exit line: Exited with code 1
+Summary line: Tests  7 failed (7)
+Test Files  1 failed (1)
+
+Pinned lines of publish.ts: `publish: no approval record`,
+`publish: sha256 <path>`, and `publish: drift <path>`. Each refusal exits 2
+and writes no file. The preview folder is the temp `<repo>/.tmp/model-guide-preview`.
+
+Failed test names (all fail with "production file is missing: harness/model-guide/preview.sh"):
+1. writes page B and its data into the preview folder with the nav and the method note
+2. records the SHA-256 of each copied docs file in preview-base.json
+3. leaves the temp docs copy without a change
+4. refuses publish without an approval record and writes no file
+5. refuses publish with one wrong SHA-256 and writes no file
+6. refuses publish and names the file when a docs file drifted after the preview
+7. copies the approved files into docs with a matching record and no drift
+
+Note: case 7 is an added success case. Plan task 1.3 lists only refusal
+cases. Without case 7, a publish tool that always exits 2 would pass. The
+case pins the approval record format and the copy step.

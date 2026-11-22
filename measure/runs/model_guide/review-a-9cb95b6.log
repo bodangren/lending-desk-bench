@@ -1,0 +1,25 @@
+role: review-a
+round 8 audit of delta 80c17f5..9cb95b6 (PA1-1 "no pick yet", tasks 1.22 and 1.23)
+HEAD at start and at end of audit: 9cb95b6643eba0cd04f0623865224f3d9ef88b3c, equals audited_head_sha and role_base_sha.
+phase_base_sha 0a44cc9c417587e418899a97ac63f131a59fe2cd.
+Delta: 4 commits (530c73a test, 5993d28 plan, 56a173b fix, 9cb95b6 plan), 5 files (preview-gate.test.ts, real-work.test.ts, preview.sh, real-work.ts, plan.md). No docs/ file changed. Unrelated untracked files: .opencode/, harness/wt.txt, tech-debt.md.
+Day-rule runs at HEAD: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 90 passed (90). Same for real-work.test.ts -> exit 0, Tests 20 passed (20). bash -n harness/model-guide/preview.sh -> exit 0.
+A4 missing-deliverable fixture: git archive 5993d28 (tests present, fix absent) into /tmp/opencode/r8/red with a node_modules symlink. preview-gate -> exit 1, Tests 1 failed | 89 passed (90), failure at preview-gate.test.ts:1326 expecting "<h3>translation</h3>"; the dumped pre-fix page holds no translation heading and no "no pick yet" anywhere. real-work -> exit 1, Tests 1 failed | 19 passed (20), failure at real-work.test.ts:339 expecting the "translation" key. Both match red-1.22.txt, so the new tests fail first and pass after the fix.
+Code read: real-work.ts:407-418 reads work_types keys of every all_time row before the route skip, creates the empty map for a name first seen on an unknown/other row, and keeps `if (skipped) continue` before any numeric accumulation, so counts and rates cannot change. unknown and other share the one skipped branch. The Object.fromEntries build stays.
+preview.sh:315-317 renders `<h3>{escaped name}</h3><p>no pick yet</p>` for an empty row list with no table, exactly the 1.22 ruling. The filled branch at 318-335 keeps tabindex, role, and aria-label (U3).
+Real export unchanged: preview-1.23.txt shows all 5 work types have rows (29, 14, 1, 19, 10). This audit greped .tmp/model-guide-preview/real-work.html: full SHA-256, 2026-11-14, 1,798, 2026-06-06, 2026-11-13, 50.6 %, 71.7 %, and the method note each appear 1 time; "no pick yet" appears 0 times; h3 count is 5; "(n=" appears 91 times; git status --short docs/ prints nothing.
+Acceptance scan (2, 3, 4, 5, 8): acceptance 3 has I2 tests; acceptance 4 has M1, M2 (line 172), M3, M5 plus live HTML values; acceptance 5 now has M4, M5, and both new no-pick-yet tests; acceptance 8 has P2, P3, P4 and the live docs check. One gap found and named: A8-1, the rendered date, coverage numbers, and run-count suffix of acceptances 2 and 4 have no HTML test (data-level tests and the task 1.9 live check cover them).
+Plan rows 1.22 and 1.23 are true: commit file lists match the Red/Green contract, and red-1.22.txt, green-p1-5993d28.log, preview-1.23.txt exist with counts that match my runs. A5 clean. A3 clean (labeled counts only). No test-strategy violation: Red wrote tests only, Green wrote no test file, every run used one file and one worker. The delta touches no orchestration script, contract test, or registry file, so framework-wide checks stay out of range.
+No .skip, .only, or .todo beyond the 7 root-gated ctx.skip calls; no test skipped in my runs.
+This role wrote only review-a-9cb95b6.json and review-a-9cb95b6.log under measure/runs/model_guide/. Fixture runs ran under /tmp/opencode/r8 only.
+No blocking findings. status: pass. retry_recommendation: none. confidence: high.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 9cb95b6643eba0cd04f0623865224f3d9ef88b3c
+result_file: measure/runs/model_guide/review-a-9cb95b6.json
+retry_recommendation: none
+summary: PA1-1 fixed as ruled; new tests fail at 5993d28 and pass at HEAD (90 and 20); real-export counts and rates unchanged; plan rows 1.22 and 1.23 true; one nonblocking finding A8-1 names page-level acceptance clauses with no HTML test.
+END_MEASURE_AGENT_RESULT

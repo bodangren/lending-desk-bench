@@ -1,0 +1,28 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: pass
+role: measure-review-a-correctness
+route: opencode-go/glm-5.3#high
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+tasks: 4.13k, 4.13l
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: e9e7d366719e3b00ad27c299809772e72941fd70
+audited_head_sha: a3799bea45b5cd9fdca1b81c5495e0303c7cfaee
+audit_range: e9e7d366719e3b00ad27c299809772e72941fd70..a3799bea45b5cd9fdca1b81c5495e0303c7cfaee
+previous_result: measure/runs/model_guide/review-a-e9e7d36.json
+summary: F3 fixed - quota.ts requires usable values, not names, for the Go 5h and weekly windows (quota.ts:283-287, 323-328), Q13 pins stopped for each unusable case and Red 4.13k failed first on exactly those cases; N4 fixed - spec D15 and FR-15 say usable values (spec.md:749-753, 1340-1344); no caller broke - the runners parse only the state and numeric windows (review-run.sh:455-475) and all three runner suites copy the new quota.ts and pass; the live read of 127.0.0.1:38307 gives state ready on usable 5h 10.01 and weekly 4.00.
+blocking_findings: none
+nonblocking_findings: N6 - the Green 4.13l evidence omits the adversarial-p4-runner gate that 4.13j listed (suite passes at HEAD, 14 passed, my run); N1 kept (CONTEST kept, pre-existing) - judge-run.sh:671-699 dead QUOTA_MAX >= 80 branch behind the 70 stop, unchanged in this range; N5 kept (CONTEST kept, pre-existing) - the orphan and liveness scans match any line that holds fake-opencode or quota-server, and a sibling's review-run fake children tripped my first quota run's afterAll today (PIDs 2691277/2691282, /tmp/mg-review-run-Lvy5oa, dead right after).
+withdrawn: F3 (fixed as ordered, verified at quota.ts:283-287 and 323-328 with Q13 quota.test.ts:627-720); N4 (fixed, spec.md:749-753 and 1340-1344)
+gates: quota.test.ts 26 passed (26) exit 0; review-run.test.ts 53 pass 0 fail (bun) exit 0; judge-run.test.ts 30 passed (30) exit 0; adversarial-p4-runner.test.ts 14 passed (14) exit 0; one file at a time, fakes only; pgrep fake-opencod[e] and quota-serve[r] empty after each clean run
+live_read: {"provider":"opencode-go","source":"opencode-go","state":"ready","cap":3,"windows":{"5h":10.008601645833332,"weekly":4.003440658333333,"monthly":2.0017203291666665}}
+cross_session: yes - a sibling session's review-run fake children (PIDs 2691277/2691282, /tmp/mg-review-run-Lvy5oa) tripped my first quota run's afterAll orphan scan while all 26 tests passed, and a sibling quota-server (PID 2693211, /tmp/mg-review-fake-pDBExI) was live before my re-run; both scans were empty after the sibling finished and every clean run passed
+test_strategy_violations: none
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+retry_recommendation: none
+confidence: high
+result_path: measure/runs/model_guide/review-a-a3799be.json
+END_MEASURE_AGENT_RESULT

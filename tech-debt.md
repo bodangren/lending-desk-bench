@@ -295,3 +295,20 @@ Phase 4b reviews left these items nonblocking under the PM round cap. None is a 
 - Review C F-C4: the F20 token assertion failed twice from read-time stamps, then passed unchanged (`review-c-4.16-23f16f1.json`).
 - Night driver nit: `reachable()` greps the whole probe file, not the last block (`~/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh`).
 - Judge-run nit: the live quota endpoint answered slower than the 5 s quota read timeout twice during the 4.13 judge runs; the runner stops with groups open and needs a rerun (`measure/runs/model_guide/adjudicate-judge-a.log`).
+
+## model_guide Phase 4b/5 late findings (carried 2026-11-22, PM late-findings rule)
+
+These findings were raised after the round cap. Each source JSON records score-impact: no.
+
+- Review B 4b NB1: `--pilot-routes` refusal branches lack tests. Direct probes show each refusal prints only `score: pilot-routes` with exit 2 (`review-b-4b-99ec28c.json`).
+- Review B 4b NB2: pilot-array validation drops non-object items, empty routes, and duplicates silently. A malformed pilot file then under-reports routes (`review-b-4b-99ec28c.json`).
+- Review B 4b NB3: a pilot route string with a key shape lands unscanned in the pilot file and the score file. `KEY_SHAPE_RE` covers `--incomplete-reason` only (`review-b-4b-99ec28c.json`).
+- UX 4b F1: at 390 px the route cell is about 58 px wide. Route names and the reason wrap, and rows grow to 470-506 px. The table stays horizontally scrollable (`ux-browser-4b-8fd8882.json`).
+- UX 4b F2: at 390 px the named table region takes focus, but ArrowRight and ArrowLeft do not move its scroll position. Pointer and touch scrolling work (`ux-browser-4b-8fd8882.json`).
+- Review A 5 F2: the weekly update leaves the public static HTML unchanged. An HTML refresh task is needed before the next export (`review-a-5-a8835be.json`).
+- Review A 5 F3: the README describes one preview-copy branch. Preview copies run only before approval; the post-approval step writes docs data only (`review-a-5-a8835be.json`).
+- Review B 5 F1: `update.sh` commits public data with no leak-check step. A future export with private text would reach docs unscanned (`review-b-5-a8835be.json`).
+- Review C 5 F1: the README names `harness/model-guide/update.sh` without `bash`. The file has no execute bit, so the documented command cannot run (`review-c-5-a8835be.json`).
+- UX 5 F2: at 390 px the named table region takes focus, but ArrowRight and ArrowLeft do not scroll it. Pointer and touch scrolling work (`ux-browser-5-3ba285f.json`).
+
+None of these findings is a key leak into a committed file or a public page. None has score impact: none can hide a wrong result in the current scores or the published page.

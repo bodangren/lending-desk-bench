@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 4364289cf995336f3aedb1cb76168f597791a85a
+green_commit_sha: 6bcb0e5
+handoff: All nine files pass one at a time on implementation 6bcb0e5 with no production change since. review-run 96 passed; judge-run 48 passed; quota 31 passed; adversarial-p4-runner 15 passed; adversarial-p4c 13 passed; decode-parity 4 passed; adjudicate 23 passed; review-score 27 passed; adversarial-p4b 12 passed. Counts are in measure/runs/model_guide/green-4.15.txt. Plan record commit ff64dab keeps row 4.15 [~]; the row closes after the night run per the PM round cap. Flipped to [x]: none, the row stays open per the round cap. Flipped to [b]: none. New files added: none. Hygiene: pgrep printed nothing of mine after each run; git status docs prints nothing. Two full-file runs showed transient load failures that passed alone or on a quiet rerun; the recorded runs are clean.
+END_MEASURE_AGENT_RESULT

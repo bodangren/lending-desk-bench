@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "summary": "Fail. The Go quota gate is fail-open against the live quota answer. quota.ts:273 reads the week window as windows[\"week\"], but the live OpenChamber /api/quota/opencode-go answer names it windows[\"weekly\"] (night-4.11.sh:75, probe-4.10.sh:56, cron-daily.sh:539, README.md:269). I reproduced the live shape: 5h 10, weekly 100, monthly 10 gives {\"state\":\"ready\"}. So the Go 100 % week threshold never fires, and a pass, probe, or judge call can start at weekly 100 %. The same function returns ready when the required 5h or week window is absent (quota.ts:271-279), though spec D15 says a missing field is stopped; I reproduced {\"5h\":10} -> ready and {\"day\":10} -> ready. The tests are green (quota 17, review-run 52, judge-run 30) but they fabricate the key \"week\", so they do not pin the live contract. Provenance: phase_base_sha 57baaaa, role_base_sha 3c4e462, audited_head_sha cc8afbd (current HEAD); audit scope range 66fe1ac..cc8afbd. The Go row key and route name cannot make a non-Go route take the Go thresholds; routes.json is repo-owned and the quota answer cannot set the provider. The 5h threshold works because the live key is 5h; only the week key is wrong. The 80 % stop still holds for every other source. A2 and A6 do not apply.",
+  "blocking_findings": [
+    "B1 [Blocker] harness/model-guide/quota.ts:273 (stateOf :271-279): the Go week threshold reads windows[\"week\"], but the live /api/quota/opencode-go answer names the week window windows[\"weekly\"]. Evidence: night-4.11.sh:75, probe-4.10.sh:56, harness/cron-daily.sh:539, README.md:269 all read weekly. Reproduced: body {\"usage\":{\"windows\":{\"5h\":{usedPercent:10},weekly:{usedPercent:100},monthly:{usedPercent:10}}}} -> {\"provider\":\"opencode-go\",\"state\":\"ready\",\"windows\":{\"5h\":10,\"weekly\":100,\"monthly\":10}}. So the Go 100 % week threshold never fires, and review-run.sh / judge-run.sh start a pass, probe, or judge call at weekly 100 %. This also breaks the between-diff stop (review-run.sh:778-786) and the start test (judge-run.sh:451-460), because both key on QUOTA_STATE=wait. Fix: read windows[\"weekly\"] (keep windows[\"5h\"]); add a Q11 test with the live shape (5h low, weekly 100 -> wait) and one pass, probe, and judge case on the live shape.",
+    "B2 [Blocker] harness/model-guide/quota.ts:271-279: the Go branch returns \"ready\" when a required window is absent. Spec D15 says a missing field is \"stopped\". Reproduced: {\"5h\":10} -> ready; {\"day\":10} -> ready; {\"week\":10} (5h absent) -> ready. parseAnswer (:228-266) accepts any non-empty window set, so a truncated answer reaches stateOf. Effect: a partial or damaged answer starts a Go pass, probe, or judge call (fail open). Fix: for the Go provider, require windows[\"5h\"] and windows[\"weekly\"] to be finite numbers; if either key is absent, return \"stopped\". Add Q11 cases: missing weekly, missing 5h, and only day -> stopped."
+  ],
+  "nonblocking_findings": [
+    "N1 [Minor] harness/model-guide/review-run.sh:256-264 and harness/model-guide/judge-run.sh:240-245 key the Go rule on quota_source, while quota.ts:271 keys it on the --provider value (quota_provider). They agree in routes.json today, but a future row that sets the two fields differently can drop the 80 % stop. Fix: derive both from one field, or refuse a row whose quota_provider does not map to its quota_source.",
+    "N2 [Nit] Test gaps: no case sends a negative usedPercent (quota.ts:258 rejects it, but no test pins it), and no case sends the live \"weekly\" key. Q9/Q10 (quota.test.ts:487, :512), review G1/G2/G3 (review-run.test.ts:1085, :1126, :1972), and judge G1/G2/G3 (judge-run.test.ts:1615, :1666, :1735) all use the fabricated \"week\" key. Fix: add the negative and live-shape cases."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD -> cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5, equal to the audited HEAD. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf and role_base_sha 3c4e4623c67f1e14c8ab75b2e6b007b5183f2eae come from plan row 4.13h and are ancestors of HEAD (git merge-base --is-ancestor -> 0). Audit scope base 66fe1accf71c0f881fffa58ff05bb0a94407477f is also an ancestor of HEAD (0).",
+    "Security applicability: applicable. The range sets the quota gate of every model call in review-run.sh and judge-run.sh, reads the loopback quota answer and routes.json, and writes pass and judge records. A wrong state spends real Go quota.",
+    "Gate 1: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Test Files 1 passed (1), Tests 17 passed (17). pgrep -af \"fake-opencod[e]\" -> rc 1; pgrep -af \"quota-serve[r]\" -> rc 1.",
+    "Gate 2: bun test harness/model-guide-tests/review-run.test.ts -> EXIT 0, 52 pass, 0 fail, 403 expect() calls, Ran 52 tests across 1 file. pgrep scans -> rc 1 both.",
+    "Gate 3: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Test Files 1 passed (1), Tests 30 passed (30). pgrep scans -> rc 1 both.",
+    "Process hygiene: after each of my three gates, pgrep -af \"fake-opencod[e]\" and pgrep -af \"quota-serve[r]\" printed nothing (rc 1). At 01:05 my later check saw a transient fake-opencode pair (pid 1796240/1796246, temp /tmp/mg-review-run-SkSrFK) and one quota-server (pid 1796033, temp /tmp/mg-review-fake-RHtsam); both temp folders are not mine, the PIDs are newer than my gates, and they were gone at the next check, so a concurrent session ran the same suite. I did not start or stop them. My manual probes used inline node servers on 127.0.0.1:18641-18644 and I killed each one.",
+    "B1 reproduction: inline node HTTP server returned the live shape {usage:{windows:{\"5h\":{usedPercent:10},weekly:{usedPercent:100},monthly:{usedPercent:10}}}}; npx tsx harness/model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:18644 printed {\"provider\":\"opencode-go\",\"source\":\"opencode-go\",\"state\":\"ready\",\"cap\":3,\"windows\":{\"5h\":10,\"weekly\":100,\"monthly\":10}} and EXIT 0.",
+    "B2 reproduction: same harness with {\"5h\":10} printed state ready; {\"day\":10} printed state ready; {\"week\":10} printed state ready. All EXIT 0.",
+    "Live key evidence: /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh:74-75 reads windows[\"5h\"] and windows[\"weekly\"]; probe-4.10.sh:55-56 is the same; harness/cron-daily.sh:539-540 reads windows.weekly and windows.monthly; README.md:269 names usage.windows.weekly.usedPercent. The live scripts fail closed: an exception or a non-usable value prints fail, and night-4.11.sh:137-139 skips the route.",
+    "Go row selection: routes.json has three opencode-go rows with quota_provider and quota_source both opencode-go; review-run.sh:246-264 and judge-run.sh:223-245 read the exact route row and key IS_GO_ROUTE on quota_source. A route name or quota answer cannot set the provider, so a non-Go route cannot take the Go thresholds (audit item 1).",
+    "Other sources: review-run.sh:785-789 and judge-run.sh:691 keep the 80 % stop for IS_GO_ROUTE=0; R6 (review-run.test.ts:1025) and J11 (judge-run.test.ts:1546) pin it on kimi-code-plan-cn. Parse validation: quota.ts:259 rejects a null window, a missing usedPercent, a non-number, a non-finite value, and a negative value -> stopped; Q3 pins the string, 1e999, and missing-usedPercent cases.",
+    "A2 (consent-blind publish gate): not applicable. git diff 66fe1ac..cc8afbd changes only quota.ts, review-run.sh, judge-run.sh, the three test files, plan.md, and spec.md; no draft-to-published status flip and no named subject publish.",
+    "A6 (registry overstatement): not triggered. measure/tracks.md:17-18,34 calls model_guide 'pending — spec review round 1 revised 2026-11-14'; no security state is marked resolved.",
+    "Scope: git diff --stat 66fe1ac..cc8afbd -> 9 files, 667 insertions, 67 deletions: adversarial-p4-runner.test.ts (one case moved to kimi), judge-run.test.ts, quota.test.ts, review-run.test.ts, judge-run.sh, quota.ts, review-run.sh, plan.md, spec.md."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5",
+    "git merge-base --is-ancestor 57baaaa... cc8afbd... -> 0; 3c4e462... -> 0; 66fe1ac... -> 0",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Tests 17 passed (17)",
+    "bun test harness/model-guide-tests/review-run.test.ts -> EXIT 0, 52 pass 0 fail",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Tests 30 passed (30)",
+    "pgrep -af \"fake-opencod[e]\" -> rc 1; pgrep -af \"quota-serve[r]\" -> rc 1 (after each gate)",
+    "inline node quota server + npx tsx harness/model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:18644 with the live weekly shape -> state ready (B1)",
+    "inline node quota server + npx tsx harness/model-guide/quota.ts with {\"5h\":10}, {\"day\":10}, {\"week\":10} -> state ready (B2)",
+    "grep -n 'weekly' /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh -> :75 windows[\"weekly\"][\"usedPercent\"]",
+    "git diff --stat 66fe1ac..cc8afbd -> 9 files, 667 insertions, 67 deletions"
+  ],
+  "changed_files": [
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/quota.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [
+    "TS1 [Blocker] The Go quota tests fix a window name the live endpoint does not return. quota.test.ts:285 goBody emits \"week\", and review-run.test.ts / judge-run.test.ts fake servers emit \"week\"; night-4.11.sh:75 and probe-4.10.sh:56 read \"weekly\". Q9/Q10/G1/G2/G3 are green on a fabricated shape, so they do not prove the live contract that the test strategy (test-strategy.md Go quota rows) requires. Fix: use \"weekly\" in the fakes and rerun the three gates; the Go week cases must then stay green only after B1."
+  ],
+  "live_contract_violations": [
+    "LC1 [Blocker] quota.ts:273 disagrees with the live /api/quota/opencode-go answer: it reads windows[\"week\"], and the live answer holds windows[\"weekly\"]. Reproduced state ready at weekly 100. This is the same defect as B1."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": 0.92,
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "3c4e4623c67f1e14c8ab75b2e6b007b5183f2eae",
+  "audited_head_sha": "cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5",
+  "security_applicability": "applicable: the range sets the quota gate of every model call in two runners, so a fail-open state spends real Go quota",
+  "route": "opencode-go/deepseek-v4.1-flash",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "quota.ts:273 reads week while the live answer uses weekly; the live shape gives state ready at weekly 100 (reproduced), and a missing window gives ready at quota.ts:271-279."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 2,
+      "evidence": "Tests are real integration tests, but goBody at quota.test.ts:285 and both fake servers emit \"week\", so Q9/Q10/G1/G2/G3 are green on a shape the live endpoint does not return."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "git diff --stat 66fe1ac..cc8afbd names only the 9 planned files; the adversarial case move to kimi and the spec wording are in scope."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 3,
+      "evidence": "The plan row carries gate commands and counts, but no command exercises the live weekly shape, which is why the fail-open passed review."
+    }
+  ]
+}

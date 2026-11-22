@@ -1,0 +1,76 @@
+Task 1.18 Red — adversarial record and test-owner fixes (ADV-12, ADV-13).
+
+Baseline: role_base_sha f014ee83940e312183ddc8eefbb4b9db845cb325 (the
+adversarial test commit). Phase base: 0a44cc9c417587e418899a97ac63f131a59fe2cd.
+
+Defects fixed in harness/model-guide-tests/leak-guard.test.ts, from the
+adversarial record measure/runs/model_guide/adversarial-0acceea.json:
+
+- ADV-12 [Nit] leak-guard.test.ts:25-27 with :36-38 — filesUnder pushed the
+  symlink line text `link <rel> <target>` as a relative path and hits() read
+  that text back with readFileSync, so any symlink in the scanned folder
+  threw ENOENT instead of being scanned. Fix: the walk returns {rel, text}
+  entries; a symlink contributes its link line plus, when the target is a
+  plain file, the target text; a dangling or unreadable link contributes the
+  link line only. No entry text is ever read back as a path.
+- ADV-13 [Nit] leak-guard.test.ts:38-39 — the needle match was case
+  sensitive, so the export SHA-256 written in upper-case letters passed.
+  Fix: hits() compares text and needle in lower case.
+
+Commands (daytime rule, each alone):
+
+- cd harness && npx vitest run model-guide-tests/leak-guard.test.ts
+  --configLoader native --maxWorkers=1 --reporter=dot
+  -> exit 0, Tests 2 passed (2). The guard still passes on the real test
+  folder.
+- cd harness && npx vitest run model-guide-tests/adversarial.test.ts
+  --configLoader native --maxWorkers=1 --reporter=dot
+  -> exit 1, Tests 20 failed | 29 passed (49). Before the fix the record
+  showed 22 failed | 27 passed; the two ADV-12 and ADV-13 L tests now pass:
+  - "L runs the guard on a folder that holds a symlink to a clean file
+    without a crash" (ADV-12)
+  - "L makes the guard fail on the export SHA-256 in upper-case letters"
+    (ADV-13)
+
+Remaining failing test names, grouped by ADV id (all belong to ADV-1 to
+ADV-11; no ADV-12 or ADV-13 case remains):
+
+- ADV-1 — "S C5-3 refuses publish when the docs root is a symlink and
+  writes through no link"
+- ADV-2 — "P refuses an approval record that holds no approved_by and no
+  date, and writes no file"
+- ADV-3 — "S A5-1 refuses preview.sh with an unreadable directory under
+  docs with a refusal line and exit 2"; "S C5-2 refuses preview.sh with an
+  unreadable docs root with one refusal line and exit 2"
+- ADV-4 — "S A5-2 ends preview.sh when docs holds a FIFO, and writes no
+  file under docs"
+- ADV-5 — "S C5-2 prints no empty path in a publish drift line when the
+  docs root is unreadable"
+- ADV-6 — "X refuses an export path that does not exist, with a manifest
+  beside it, with exit 2"; "X refuses an export path that is a folder with
+  exit 2"; "H refuses export text that is not JSON with exit 2 and no stack
+  trace"; "H refuses a JSON null root with exit 2 and no stack trace"; "H
+  handles an all_time row whose route is not a string without a stack
+  trace"; "H handles an all_time row without a route key without a stack
+  trace"; "H keeps a deeply nested extra coverage key from breaking the
+  preview after it started to write"
+- ADV-7 — "H passes no extra coverage key of the export into the public
+  real-work.json"
+- ADV-8 — "H keeps a work type named __proto__ in the output, or refuses
+  the export"; "H keeps a rating axis named __proto__ in the output, or
+  refuses the export"
+- ADV-9 — "H refuses a negative result count, or keeps every pass rate
+  inside 0 to 1"; "H refuses a count too large to add, or keeps every count
+  a finite number"
+- ADV-10 — "P refuses a preview base that is valid JSON but not an object,
+  with no stack trace"
+- ADV-11 — "P writes all approved files or none when one destination
+  cannot be written"
+
+Hand-off to Green (task 1.19): fix ADV-1 to ADV-11 in
+harness/model-guide/ only. Touch no test file. The failing test names and
+their asserted refusal lines are in
+measure/runs/model_guide/adversarial-0acceea.json (blocking_findings and
+nonblocking_findings). The four Phase 1 test files (preview-gate 85,
+input-check 15, real-work 19, leak-guard 2) must still pass each alone with
+one worker and the dot reporter.

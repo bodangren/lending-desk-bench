@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "role": "ux-browser",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "audited_head_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "reviewer_model": "opencode-go/mimo-v2.6-flash",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "status": "pass",
+  "summary": "The rerun at HEAD 9cb95b6 confirms the U1, U3, and U4 fixes in the served page. The Phase 1 checklist passes at 1280 px and 390 px with no console error. U2 and U5 stay known nonblocking items.",
+  "ux_applicability": "applicable",
+  "webbridge_status": "healthy",
+  "webbridge_evidence": {
+    "screenshots": [
+      "measure/runs/model_guide/ux-9cb95b6/real-work-1280.png",
+      "measure/runs/model_guide/ux-9cb95b6/real-work-390.png",
+      "measure/runs/model_guide/ux-9cb95b6/real-work-1280-viewport.png",
+      "measure/runs/model_guide/ux-9cb95b6/real-work-390-viewport.png",
+      "measure/runs/model_guide/ux-9cb95b6/crop-1280-top.png",
+      "measure/runs/model_guide/ux-9cb95b6/crop-390-top.png"
+    ],
+    "accessibility_snapshots": [
+      "cdp Accessibility.getFullAXTree on http://127.0.0.1:8766/real-work.html at 390 px -> 4781 nodes",
+      "AX tree counts: 1 RootWebArea, 1 navigation, 1 main, 13 headings, 7 tables, 7 rowgroups, 121 rows, 70 columnheader nodes, 1199 cells, 8 links, 7 regions with names, 7 terms, 7 definitions",
+      "The seven regions are named Producer roles table, Checker roles table, app code table, docs and ops table, other table, print books table, tooling table",
+      "0 links without a name, one h1, heading order h1 to h2 to h3, document lang en"
+    ],
+    "interactions": [
+      "kimi-webbridge navigate opened http://127.0.0.1:8766/real-work.html in session guide-ux9 (tabId 1042593100), then in session guide-ux9b (tabId 1042593104)",
+      "cdp Emulation.setDeviceMetricsOverride 1280x900 -> innerWidth 1280, document scrollWidth 1270, clientWidth 1270",
+      "cdp Emulation.setDeviceMetricsOverride 390x844 -> innerWidth 390, document scrollWidth 390, clientWidth 390",
+      "cdp Input.dispatchKeyEvent Tab walk -> 8 links, then the 7 named .table-wrap boxes in document order, then BODY",
+      "ArrowRight on each focused .table-wrap -> scrollLeft 0 to 40; ArrowLeft returns it to 0, on all seven boxes",
+      "DOM layout rect scan at 1280 px -> nav inner height 64 px with one link row; at 390 px -> height 147 px with two link rows; no card overlap at either width",
+      "cdp Page.captureScreenshot with and without captureBeyondViewport -> 6 files under measure/runs/model_guide/ux-9cb95b6/",
+      "close_session -> closed 1 tab in guide-ux9 and closed 1 tab in guide-ux9b"
+    ]
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "U2 [Minor] ux-browser: .tmp/model-guide-preview/real-work.html (the checker table) and .tmp/model-guide-preview/assets/css/site.css (.table-wrap): The checker table still needs 1111 px and its wrapper still gives 1071 px at 1280 px, so the last column `Mark` (40 px wide) sits outside the wrapper. The wrapper shows a horizontal scrollbar, and U3 gives the box a Tab stop, so the mark stays reachable. Fix: shorten the columns, or move the mark into the row, or raise --max.",
+    "U5 [Nit] ux-browser: the preview server and docs/: A direct request for /favicon.ico still answers 404. The served page declares no icon link, and docs/ holds no favicon.ico. Fix: add one icon file, or declare an icon link."
+  ],
+  "evidence": [
+    "UX applies: the phase serves the user-facing page .tmp/model-guide-preview/real-work.html.",
+    "Browser tool healthy: kimi-webbridge status returned running true and extension_connected true, daemon v2.0.27, extension v2.0.36.",
+    "HEAD at audit time was 9cb95b6643eba0cd04f0623865224f3d9ef88b3c (git rev-parse HEAD), equal to audited_head_sha and to the commit `measure(model_guide): record Green task 1.23`. git status shows only .opencode/, harness/wt.txt, and tech-debt.md untracked. HEAD did not change during the audit.",
+    "Route parity: this audit ran on opencode-go/mimo-v2.6-flash, the route that the brief names. Green built the page. The page was not built by this model.",
+    "Server: `python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview` from the repo root. URL http://127.0.0.1:8766/real-work.html answered 200, and /assets/css/site.css answered 200. The server stopped at the end, and port 8766 is free.",
+    "Green 56a173b changed preview.sh and real-work.ts so a work type with no ranked row shows its H3 and `no pick yet`. The served page holds no `no pick yet` text, so all five work types rank.",
+    "Spot values match the 80c17f5 audit: producer row 1 is 1.0000 (n=10), checker row 1 is 0.9302 (n=43), app code row 1 is 0.9643 (n=28).",
+    "U1 holds at 390 px: the source paragraph reports scrollWidth 311 equals clientWidth 311, and its card reports scrollWidth 356 equals clientWidth 356. The full text reads `File real-work-outcomes-2026-11-14.json, SHA-256 dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2, generated 2026-11-14.`",
+    "The clipped-box scan outside .table-wrap returns zero boxes at 1280 px and at 390 px. crop-390-top.png shows the whole hash on wrapped lines.",
+    "U3 holds: the Tab walk moves focus through the 8 links, then to each of the 7 .table-wrap boxes with its aria-label, then to BODY. On each box ArrowRight moves scrollLeft from 0 to 40, and ArrowLeft returns it to 0. The AX tree holds 7 named region nodes.",
+    "U4 holds: the page holds one element with aria-current, the link `Real work` with value `page`. The class `active` sits on that same link only.",
+    "Checklist at 1280 px: document scrollWidth 1270 equals clientWidth 1270, so the page needs no horizontal scroll. Cards stack at x 75 with width 1120 and no overlap. The nav inner box is 64 px high with one link row.",
+    "Checklist at 390 px: document scrollWidth 390 equals clientWidth 390, so the page needs no horizontal scroll. Cards stack at x 16 with width 358 and no overlap. The nav inner box is 147 px high with two link rows.",
+    "Rates with run count: the rate-column scan at 390 px reads 155 cells and finds zero cells outside the pattern `value (n=count)` or `no rate`.",
+    "The same scan at 1280 px reads 196 cells. Five cells sit outside the pattern, and all five are Trend cells with the empty state `no trend`. Every pass rate and blocking rate cell conforms.",
+    "The `few runs` mark is a word: 94 Mark cells hold the plain text `few runs`, and the method note holds the same phrase once as prose. In every table the marked rows sit after the unmarked rows.",
+    "Each table keeps a descending pass rate inside the unmarked block and inside the marked block. The marked block restarts at 1.0000 (n=4) after the unmarked block ends at 0.6429 (n=14), which is the block boundary.",
+    "Separate tables: the DOM holds 7 tables. Table 1 sits under H2 `Producer roles` with 12 rows, table 2 under H2 `Checker roles` with 29 rows, and five tables sit under H2 `Work types`.",
+    "The five work-type sections show with H3 headings app code, docs and ops, other, print books, tooling, and row counts 29, 14, 1, 19, 10. The `other` table has 1 row and shows `no rate`.",
+    "Coverage block: Runs 1,798; Date range 2026-06-06 to 2026-11-13; Share with a known model 50.6 %; Share with a result 71.7 %; Left-out paired duplicates 36; Runs with route unknown 889; Runs with route other 3.",
+    "Method note of D16: the page text holds the exact sentence `Route names stay as written in the record, so #high and [1m] variants are separate routes. This page merges them by model.`",
+    "Accessibility at 390 px: the AX tree holds 1 navigation, 1 main, 13 headings, 7 tables, 121 rows, 70 columnheader nodes, 1199 cells, 8 links with a name on every one, lang `en`, and one h1.",
+    "Console and network: real-work.html holds 0 script tags. A reload captured 4 requests, all 200, and the stylesheet reports 114 rules, so no console error can occur.",
+    "Empty and error states: the Print audit card holds only the H2 `Print audit` and no body text. That is the known Phase 2 item. The cells `no rate` and `no trend` carry the empty states of the tables.",
+    "U2 re-measured at 1280 px: the checker table needs 1111 px, its box gives 1071 px, the producer table needs 1072 px, and the five work-type tables fit inside 1071 px or less.",
+    "U5 re-checked: the served page declares no icon link, docs/ holds no favicon.ico, and a direct request for /favicon.ico answers 404. The reload made no favicon request in this session.",
+    "Spacing and hierarchy at both widths: the H1, the lede, the Source card, the Coverage card, and the table cards stack with a 19 px gap at 1280 px and a 19 px gap at 390 px. real-work-1280-viewport.png shows one nav row, and real-work-390-viewport.png shows two nav rows with no overlap.",
+    "This role wrote only measure/runs/model_guide/ux-browser-9cb95b6.json, the log, and the ux-9cb95b6 screenshots. No implementation file changed."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+    "git status --porcelain -> only .opencode/, harness/wt.txt, tech-debt.md untracked",
+    "python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview (background, twice)",
+    "curl -o /dev/null -w %{http_code} http://127.0.0.1:8766/real-work.html -> 200; /assets/css/site.css -> 200; /real-work.json -> 200; /favicon.ico -> 404",
+    "kimi-webbridge status -> running true, extension_connected true, daemon v2.0.27, extension v2.0.36",
+    "cdp Emulation.setDeviceMetricsOverride width 1280 height 900 -> innerWidth 1280, scrollWidth 1270, clientWidth 1270",
+    "cdp Emulation.setDeviceMetricsOverride width 390 height 844 -> innerWidth 390, scrollWidth 390, clientWidth 390",
+    "evaluate DOM scan at 1280 and at 390 for clipped boxes outside .table-wrap -> [] at both widths",
+    "evaluate rate column scan over the seven tables -> 0 cells outside pattern at 390 px; 5 Trend cells `no trend` at 1280 px",
+    "evaluate source paragraph metrics at 390 -> scrollWidth 311, clientWidth 311, card scrollWidth 356, card clientWidth 356",
+    "cdp Input.dispatchKeyEvent Tab walk -> 8 links, then 7 named .table-wrap boxes, then BODY",
+    "cdp Input.dispatchKeyEvent ArrowRight and ArrowLeft on each .table-wrap -> scrollLeft 0 to 40 to 0 on all seven",
+    "evaluate layout rect scan at 1280 and 390 -> nav link rows [14] and [56, 97], overlap [] at both widths",
+    "cdp Accessibility.getFullAXTree -> 4781 nodes, 7 named regions, 7 tables, 70 columnheader nodes, 13 headings, 8 links",
+    "cdp Page.captureScreenshot -> measure/runs/model_guide/ux-9cb95b6/6 png files",
+    "python3 PIL crop -> crop-1280-top.png, crop-390-top.png",
+    "kimi-webbridge close_session -> closed 1 in guide-ux9, closed 1 in guide-ux9b",
+    "kill of the server pid, then ss -ltn and curl -> port 8766 free"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "All mandated D16 values show at both widths, all rate cells carry a run count, and the SHA-256 reads fully at 390 px."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "The Phase 1 checklist of test-strategy section 9 ran in a real browser at 1280 px and 390 px, and each item has a DOM measurement or a screenshot proof."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "This role wrote only the result JSON, the log, and the ux-9cb95b6 screenshots. No implementation file changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim comes from a browser measurement at a named width, a screenshot path, an AX tree count, or a curl status code."
+    }
+  ]
+}

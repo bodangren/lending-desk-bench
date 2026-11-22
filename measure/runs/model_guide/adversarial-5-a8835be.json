@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Five adversarial Phase 5 tests pass against the production preview and publish scripts in isolated temporary repositories.",
+  "evidence": [
+    "The initial git rev-parse HEAD returned a8835be3ddc9b3e71f8965301772f97935da39d5, matching role_base_sha and the current pre-adversarial implementation head.",
+    "The phase contract and exact diff were read from spec.md, plan.md, test-strategy.md, anti-patterns.md, and git diff 8fd8882a8539d051129eb106e46974a934df5223...a8835be3ddc9b3e71f8965301772f97935da39d5.",
+    "The targeted command passed before and after the test-only commit: 1 test file passed, 5 tests passed.",
+    "The tests exercise real preview.sh and publish.ts commands in temporary repositories; they do not read or write the real docs/ or .tmp/.",
+    "Commit 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36 contains only adversarial-p5.test.ts.",
+    "Final git status contains only the pre-existing untracked .opencode/ and harness/wt.txt paths."
+  ],
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p5.test.ts",
+    "measure/runs/model_guide/adversarial-5-a8835be.json",
+    "measure/runs/model_guide/adversarial-5-a8835be.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "commands": [
+    "git rev-parse HEAD (before adversarial edits): a8835be3ddc9b3e71f8965301772f97935da39d5",
+    "build-graph stats measure/runs/deps_refresh/adversarial-graph.db",
+    "build-graph callers measure/runs/deps_refresh/adversarial-graph.db readApproval (no results)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p5.test.ts --configLoader native --maxWorkers=1 --reporter=dot (before commit: 5 passed)",
+    "git diff --check",
+    "git commit -m \"test(model_guide): adversarial p5\" -- harness/model-guide-tests/adversarial-p5.test.ts",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p5.test.ts --configLoader native --maxWorkers=1 --reporter=dot (after commit: 5 passed)",
+    "git rev-parse HEAD; git status --short"
+  ],
+  "phase_base_sha": "8fd8882a8539d051129eb106e46974a934df5223",
+  "role_base_sha": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "audited_head": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "preview.sh:881-959 renders the pinned zero-count and incomplete-route states."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "adversarial-p5.test.ts passes five isolated preview and publish boundary cases."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "Only the requested adversarial Phase 5 test is staged for commit."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "The target Vitest run exits 0 with five passed tests, and the tests invoke actual temp-repo scripts."
+    }
+  ]
+}

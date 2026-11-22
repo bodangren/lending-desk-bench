@@ -1,0 +1,80 @@
+role: jr-green
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+task: 2.4b Green (print-audit reads only the real OD6 shape)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: dcaa77d52fa96ca4bca817867cd34828642eaaa5
+status: complete
+head_sha: 9813d5fd208fa6eb97a52cc26861492029e43837
+commits: b8f90454fb0acbcf45f5921e5f2898fcb6063f20 (tool + data file), 9813d5fd208fa6eb97a52cc26861492029e43837 (plan)
+
+The Red change is commit 3fef9a8 (tests and fixtures) and dcaa77d (plan).
+Both sit inside c22f313..dcaa77d, so the tool edit is in Green.
+
+Work: harness/model-guide/print-audit.ts reads one hand-off shape only.
+Every dual-shape fallback is gone: no row `type`, no row `results` list, no
+checklist `code` fallback, no `{blockers_total, blockers_resolved}` route
+object. A valid row holds id, severity, checklist (`item` and `text`), and
+one string per route short key. The old shape gives exit 2 with
+`input-check: errors`; a route value that is not a string gives exit 2 with
+`input-check: keys`. Output rows hold id, severity, checklist (code and
+text), and results in route order. error_types counts the severity classes
+blocker, major, minor. routes maps the route name to `blockers_found of
+summary.key.blockers`. The tool iterates the routes keys only, so a plain
+`__proto__` key in summary becomes no route and no row; the output keeps the
+input summary as it is. `harness/model-guide/preview.sh` did not change: its
+block already reads id, severity, checklist code and text, and results.
+
+Data refresh: npx tsx model-guide/print-audit.ts --input
+~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json
+--out model-guide/data -> exit 0. The input SHA-256 is
+f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87 and
+`source.sha256` holds it. totals errors 52, blockers 13; routes
+"kimi-code-plan-cn/k3.1-pro" 11 of 13 and "claude-code/claude-sonnet-5-5#high"
+13 of 13; error_types minor 21, major 18, blocker 13; a row holds
+[checklist, id, results, severity]. The data diff removes one `type` line
+from each of the 52 rows and changes nothing else.
+
+Day rule: one test file per command, --maxWorkers=1, --reporter=dot. All runs
+below are at HEAD b8f9045 with the plan edit in the working tree.
+
+1) cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  13 passed (13)
+2) cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  98 passed (98)
+3) cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  15 passed (15)
+4) cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  20 passed (20)
+5) cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  2 passed (2)
+6) cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  49 passed (49)
+7) cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 1 — Tests  15 failed (15). State only: task 2.5 writes guide.ts.
+8) cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 1 — Tests  3 failed (3). State only: task 2.7 writes update.sh.
+9) bash -n harness/model-guide/preview.sh -> exit 0
+10) git status --short docs/ -> no output
+
+No test file and no fixture changed. No file under docs/ changed.
+
+Plan updates: 2.4b is [x] b8f9045 with the shape rules, the refused old
+shape, the data refresh, and an Evidence line that cites this log (no test
+count). 2.5 stays [~].
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: dcaa77d52fa96ca4bca817867cd34828642eaaa5
+head_sha: 9813d5fd208fa6eb97a52cc26861492029e43837
+commits: b8f90454fb0acbcf45f5921e5f2898fcb6063f20, 9813d5fd208fa6eb97a52cc26861492029e43837
+tests_run: print-audit.test.ts -> exit 0, Tests 13 passed (13); preview-gate.test.ts -> exit 0, Tests 98 passed (98); input-check.test.ts -> exit 0, Tests 15 passed (15); real-work.test.ts -> exit 0, Tests 20 passed (20); leak-guard.test.ts -> exit 0, Tests 2 passed (2); adversarial.test.ts -> exit 0, Tests 49 passed (49); guide.test.ts -> exit 1, Tests 15 failed (15), state only for task 2.5; update.test.ts -> exit 1, Tests 3 failed (3), state only for task 2.7; bash -n harness/model-guide/preview.sh -> exit 0; git status --short docs/ -> no output
+files_changed: harness/model-guide/print-audit.ts, harness/model-guide/data/print-audit-2026-11.json, measure/tracks/model_guide/plan.md
+plan_updates: 2.4b [x] b8f9045 with the real-shape rules, the refused old shape, the data refresh, and an Evidence line that cites measure/runs/model_guide/green-p2-dcaa77d.log (no test count); 2.5 kept as [~]
+dispositions: none
+handoff: The print-audit tool and its data file now read and write the real OD6 shape only. The data file comes from the hand-off of SHA-256 f52a7bbf...a6e87. Task 2.5 is next and still [~]: guide.ts must rank by blockers_found and must not iterate summary keys into routes or rows. The stale working-tree files .opencode/, harness/wt.txt, and tech-debt.md were not staged. No commit moved the track to archive and no closeout metadata changed.
+END_MEASURE_AGENT_RESULT

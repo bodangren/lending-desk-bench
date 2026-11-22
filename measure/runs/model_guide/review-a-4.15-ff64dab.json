@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.15",
+  "status": "pass",
+  "summary": "Pass at HEAD ff64dab over the range 7d7d218..ff64dab. Red commits 9c476a3, f4fa0a3, b3c9615, d8edbf9 hold tests; Green commit 6bcb0e5 holds production. I ran the nine files one at a time. Every count matches the plan row 4.15 and green-4.15.txt: review-run 96 pass, judge-run 48, quota 31, adversarial-p4-runner 15, adversarial-p4c 13, decode-parity 4, adjudicate 23, review-score 27, adversarial-p4b 12. Each 4.15 fix matches its section 14.5 contract: N21, N9, N10, N11, N26, N27, N28, N30, N31, N32, E1, and N13. The AA1, AA2, JA1, and JA2 text change is the N31 contract. It removes no assertion. The two error_line_of copies and the two daemon_pids copies are byte-identical; error_all_events_text and scan_output are byte-identical too. No real key sits in a committed file and no page changed. One serious nonblocking regression remains: the new exe-path filter in daemon_pids skips the live opencode daemon shape, so the per-pass guard no longer matches it. The exit-time opencode_host_cleanup may still stop it by the BENCH_OPENCODE_JOB marker. The other findings are coverage and documentation gaps. No real-key leak is present, so no finding is blocking under the PM round cap.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [High, nonblocking under the PM round cap] The new exe-path filter in daemon_pids skips the live daemon shape. review-run.sh:502-503 and judge-run.sh:376-377 drop a pid when argv[0] holds a path outside the job root. The live incident shape is `/home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe serve --service` (measure/runs/opencode_host_isolation/record-3.1.log). That exe exists outside every job root. I ran the extracted production block over a synthetic proc table with that argv[0] and HOME and cwd inside the job root. It selected no pid. The P4B-C1 local control uses a bare `node` argv[0] (adversarial-p4-runner.test.ts:938), so it cannot fail on the real shape. The exit-time opencode_host_cleanup still stops marked processes by BENCH_OPENCODE_JOB (opencode-host.sh:35-48). The per-pass guard and its INFRA record no longer match. Fix: key the scope on the BENCH_OPENCODE_JOB marker, and add a case with a path-form exe outside the job root.",
+    "F2 [Medium, nonblocking] The judge shell decoder is not behavior-identical to the two TS decoders. judge-run.sh:1120 still pushes a `result` event text into `parts`, while review-score.ts:261 and adjudicate.ts:250 push it into `resultParts` and drop it when text parts exist. I ran both algorithms in node on a stream with a top-level `result` event and `text` events. The shell answer kept the forged result block and the TS answer dropped it. The comments at judge-run.sh:1099, review-score.ts:229, and adjudicate.ts:218 still say `the same decoder`. The N13 judge fixture (decode-parity.test.ts:600-610) feeds the shell a different shape, so it pins the filter only for a nested JSON line. No key leaks and the pinned parity passes, so it is nonblocking.",
+    "F3 [Low] The N32 group sits only in quota.test.ts:889. The strategy row 14.5 names review-run.test.ts and judge-run.test.ts too. review-run.test.ts:1895 only checks that the reason holds the word `quota`. No runner case pins the raw loopback reason out of stdout or a record. The quota.ts fix removes the raw string at the source (quota.ts:277), so the code is safe. The named runner coverage is absent.",
+    "F4 [Low] The N26 case (review-run.test.ts:4381-4405) asserts only `stdout.length <= 500`. An empty error line would pass. The case does not run a probe or write a record, while the strategy says a 300 KB line gives a record and exit 0. The production cut at review-run.sh:944 and judge-run.sh:714 is correct.",
+    "F5 [Low] The N10 symlink walk and the N27 token rule also landed in judge-run.sh (lines 556 and 153), but only review-run.test.ts pins them. The strategy rows N10 and N27 name review-run.test.ts only. A later drift in the judge copy has no test. Separately, the N10 walk refuses any symlink at or below a call path (review-run.sh:792, judge-run.sh:556), not only a link that resolves outside the root. The refusal message says `out of the job root`. It is fail-closed, but broader than the stated contract.",
+    "F6 [Low] plan.md:2503-2505 still says error_line_of prints `the error output held a credential value` when scan_output exits 2. Task 4.15 N31 changes that path to `the error output could not be scanned`. The 4.13ab entry is historical, but a reader can take it as current."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned ff64dab8cb45fa087e64db3e2f90035331267a4a at the start and at the end. That equals the audited HEAD of the brief. phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5; role_base_sha ff64dab8cb45fa087e64db3e2f90035331267a4a. The audited range is 7d7d218..ff64dab. Red commits 9c476a3, f4fa0a3, b3c9615, d8edbf9 change tests only. Green 6bcb0e5 changes review-run.sh, judge-run.sh, quota.ts, review-score.ts, and adjudicate.ts. The record commits change plan.md and measure/runs only.",
+    "Scope: `git diff --stat 7d7d218..ff64dab` gives 12 files, +848/-40: five production files, six test files, and plan.md. No frozen path changed (harness/opencode-credential.sh, harness/opencode-host.sh, harness/provenance.ts, harness/tests). No file under docs/ changed. harness/package.json did not change. The working tree held the same four untracked paths at the start and at the end.",
+    "Gates at HEAD, one file at a time, fakes only. `bun test harness/model-guide-tests/review-run.test.ts` gave 96 pass, 0 fail, 727 expect() calls. `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot` gave judge-run `Tests 48 passed (48)`, quota `31 passed (31)`, adversarial-p4-runner `15 passed (15)`, adversarial-p4c `13 passed (13)`, review-score `27 passed (27)`, and adversarial-p4b `12 passed (12)`. `bun test` gave decode-parity `4 pass` and `0 fail`, and adjudicate `23 pass` and `0 fail`. Every count matches the plan row 4.15 and green-4.15.txt.",
+    "N21, N9, N10, N11, N26, N27, N28 fixes match the 14.5 contracts. N21 adds the three UTF-8 byte patterns E2 80 AE, C2 85, and E2 80 8B to read_message_line (review-run.sh:373-376); the case fails when the byte check is absent. N9 suppresses the INFRA line when the start time changed (review-run.sh:563-570, judge-run.sh:439-446); the case has a positive control and a reused-pid control. N10 walks each call path with `find -mindepth 0 -type l` (review-run.sh:790-796, judge-run.sh:554-560). N11 requires adjacent `serve` then `--service` (review-run.sh:496-500, judge-run.sh:370-374). N26 cuts the line to 499 content bytes before the scan (review-run.sh:944, judge-run.sh:714). N27 clears `tokens_complete` when a field sum is not a safe integer (review-run.sh:195, judge-run.sh:153). N28 clears `error_line` on a reachable probe (review-run.sh:1076).",
+    "N30, N31, F1, and E1 fixes match the 14.5 contracts. `ERROR_SCAN_TEXT` is exactly `the error output could not be scanned` (review-run.sh:859, judge-run.sh:623) and prints only on scan exit 2. The found-key text stays for a real found key. AA1, AA2, JA1, and JA2 now expect the scan-fail text; every other assertion, including the no-key checks, stays. The N30 probe and judge start-test cases assert the fixed text and no key; the fixture puts the key in the stdout error event. E1 is un-skipped (`it`, adversarial-p4c.test.ts:907) and passes; `error_all_events_text` joins the first line of every error event and greps the values file (review-run.sh:967-971, judge-run.sh:728-733).",
+    "N32: quota.ts:275-277 returns `the quota source reported an error` and drops the loopback string. The case at quota.test.ts:889 asserts the raw marker `mg-n32-raw-quota-reason-0123456789` is absent from the first stderr line and the fixed text is present. F3 records the missing runner cases.",
+    "N13: review-score.ts and adjudicate.ts split `result` parts and drop them when text parts exist. judge-run.sh does not. My node run of the two algorithms on a stream with a top-level `result` event plus `text` events printed the shell answer with the forged block and the TS answer without it. The third N13 fixture for the judge is built from a text event that holds a JSON `result` line, so the shell filter is exercised for a nested line only. The decode-parity file passes 4 of 4 at HEAD.",
+    "The two error_line_of copies are byte-identical. The two daemon_pids copies are byte-identical. stop_daemons differs only in the runner name, and error_line_of differs only in the comment after the function. error_all_events_text and scan_output are byte-identical. Route parity holds for the two runners.",
+    "F1 proof: I read `daemon_pids() { ... }` from review-run.sh, made a synthetic proc table with pid 900123, argv[0] `/home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe`, then `serve`, `--service`, HOME under the job root, and cwd under the job root. The extracted block printed an empty selection. The exe exists (`ls -l` shows it). The live incident record shows the same absolute path in the daemon argv.",
+    "No real-key leak: `git diff 7d7d218..ff64dab | grep -E 'sk-[A-Za-z0-9_-]{8,}|AKIA|ghp_|xox[bap]'` printed no line. The committed test keys are explicit fakes: `sk-test-credential-value-0123456789` and `sk-adv-runner-secret-...`. The production redaction prints fixed text. No page under docs/ changed.",
+    "Plan claim check (A5): the plan row 4.15 and green-4.15.txt name the nine HEAD counts. My runs match every number. red-4.15.txt names the Red failures and the six lines; the Red r3 and r4 records match the diff. So the plan and the evidence hold no false pass claim.",
+    "Process hygiene: `pgrep -af 'fake-opencod[e]|quota-serve[r]'` after my runs printed nothing of mine. I started no server. I ran no opencode and no openchamber."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> ff64dab8cb45fa087e64db3e2f90035331267a4a (start and end)",
+    "git diff --stat 7d7d218..ff64dab -> 12 files, +848/-40",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 96 pass, 0 fail, 727 expect() calls",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 48 passed (48)",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 31 passed (31)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 15 passed (15)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 13 passed (13)",
+    "bun test harness/model-guide-tests/decode-parity.test.ts -> 4 pass, 0 fail",
+    "bun test harness/model-guide-tests/adjudicate.test.ts -> 23 pass, 0 fail",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 27 passed (27)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 12 passed (12)",
+    "node decode comparison (shell vs TS) on a top-level result event plus text events -> shell keeps the forged block, TS drops it",
+    "node run of the extracted daemon_pids on a synthetic table with argv[0] the absolute opencode.exe and HOME and cwd in the job root -> selected `\"\"`",
+    "node block diff of the two error_line_of, daemon_pids, error_all_events_text, and scan_output functions -> identical",
+    "git diff 7d7d218..ff64dab | grep -E 'sk-[A-Za-z0-9_-]{8,}|AKIA|ghp_|xox[bap]' -> no line",
+    "git status --porcelain -> only the four pre-existing untracked paths",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' after every run -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/review-score.ts",
+    "harness/model-guide/adjudicate.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/quota.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4c.test.ts",
+    "harness/model-guide-tests/decode-parity.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "create_remediation_track",
+  "confidence": "high",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "ff64dab8cb45fa087e64db3e2f90035331267a4a",
+  "audited_head": "ff64dab8cb45fa087e64db3e2f90035331267a4a",
+  "audited_head_sha": "ff64dab8cb45fa087e64db3e2f90035331267a4a",
+  "route": "opencode-go/deepseek-v4.1-flash",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The nine files pass and each 4.15 fix matches its contract, but daemon_pids skips the live daemon argv shape (review-run.sh:502-503; my synthetic run selected no pid)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Each new case fails first per red-4.15.txt and the N30 guards have mutation proofs, but P4B-C1 uses a bare-name local pid (adversarial-p4-runner.test.ts:938) and N26 checks only `<=500` (review-run.test.ts:4405)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The diff touches only the five production files, the six 4.15 test files, and plan.md row 4.15; no frozen path, no docs/ file, and no package.json change."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim has a command result or a file:line; my nine runs match green-4.15.txt and the plan row 4.15 counts, and the decoder and daemon comparisons print the exact divergence."
+    }
+  ]
+}

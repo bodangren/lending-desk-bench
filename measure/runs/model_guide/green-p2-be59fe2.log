@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: 68aea8a40aa52683d4e0b6084dc06ca0987e85c2
+head_sha: c20576201c34f7ac694260fcbdcc1043b9574dc5
+commits: 1cc87926781b29bab5e7ebe65a5a3a3cfdacf538, c20576201c34f7ac694260fcbdcc1043b9574dc5
+tests_run: cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 3 passed (3); bash -n harness/model-guide/update.sh -> exit 0; git status --short docs/ -> no output
+files_changed: harness/model-guide/update.sh (commit 1cc8792), measure/tracks/model_guide/plan.md (commit c205762, evidence only)
+plan_updates: Task 2.7 marked [x] with fix commit 1cc8792 and an Evidence line that cites measure/runs/model_guide/green-p2-be59fe2.log and holds no test count. Tasks 2.8 and 2.9 stay [ ].
+dispositions: none
+handoff: Task 2.7 is complete. harness/model-guide/update.sh runs real-work.ts and guide.ts into a temp folder, writes the two data files into .tmp/model-guide-preview before the approval record exists, and after it writes into docs/assets/data/ and commits exactly docs/assets/data/real-work.json and docs/assets/data/model-guide.json with explicit paths, with no push. A failed input check passes through the one input-check line and exit 2, and it leaves the repo byte-identical. The single-file gate update.test.ts exits 0 with Tests 3 passed (3), and git status --short docs/ prints nothing. One Red defect was found and fixed by Red 2.7a before this Green commit: the test helper approve() now commits the approval record, and U3 compares the run-end status with the status after its own byte append. The review roles own task 2.8 and the preview task 2.9; the orchestrator runs both. New files for audit scope: harness/model-guide/update.sh only.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,28 @@
+MEASURE_AGENT_RESULT
+role: measure-mid-red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+task: 4.9 fix — F1 one pass per night for a no-source route, F2 stopped quota read
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 742926f6551f446e7ac3724782194e6c847b84d6
+head_sha: e60814a0fee060e2f2358a9490b8652f7d04c029
+commits:
+  e60814a0fee060e2f2358a9490b8652f7d04c029 test(model_guide): Red 4.9 F1 one pass per night for a no-source route, F2 stopped read
+test_command: cd harness && npx vitest run model-guide-tests/review-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+test_exit: 1
+test_summary: Tests  1 failed | 24 passed (25); Test Files  1 failed (1)
+first_failure_line: "FAIL  model-guide-tests/review-run.test.ts > P4 the check 4.9 fixes F1 and F2 > F1 a route with no quota source runs at most one pass per night, and the second run refuses before any call"
+first_failure_message: "AssertionError: OPENCODE_HOME CLEANUP stopped=0 path=/tmp/mg-review-run-YJchCs/repo/.tmp/opencode-host-model-guide-1184718 : expected +0 to be 2"
+remaining_failures: "1 of 25: F1 (checker F1, missing behavior). F2 passes as a guard; the 23 earlier cases stay green."
+refusal_contract_f1: "spec D15 gives no exit code and no line; the runner's lock refusal (ADV-R-8) is exit 2 with one line on stderr, so F1 pins exit 2, exactly one stderr line starting review-run: and holding 'one pass per night', an empty stdout, no call, and no second pass record"
+no_source_shape: "quota_source: null with a non-empty quota_provider (nvidia), kind free, family StepFun, the shape of the committed routes.json; quota.ts gives it ready, cap 1, and no request; the helper routesFile now distinguishes undefined from null and takes a family"
+files:
+  harness/model-guide-tests/review-run.test.ts (changed; F1 and F2 cases appended; routesFile honours quota_source null; orphan nets kept)
+  measure/runs/model_guide/red-4.9.txt (record, not staged)
+  measure/runs/model_guide/red-4.9.log (record, not staged)
+plan_rows: "no plan row marked"
+process_check: "after the run: pgrep -af 'mg-.*quota-server' 0 line, ps -eo pid,args | grep '[f]ake-opencode' 0 line, orphan count 0, no mg-* temp folder under /tmp"
+no_production_file_touched: true
+no_opencode_cli: true
+handoff: the fix for checker F1 keys the one-pass guard of review-run.sh on the empty QUOTA_SOURCE instead of the empty QUOTA_PROVIDER, and prints this refusal as one line on stderr (exit 2). Case F1 then passes with no second call and no second pass record. F2 already passes and guards the stopped-read path of review-run.sh:311-315.
+END_MEASURE_AGENT_RESULT

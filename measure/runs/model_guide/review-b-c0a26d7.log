@@ -1,0 +1,7 @@
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings: none
+nonblocking_findings: N30 [Nit] two scan paths have no failing test (mutations r6 and j7 survive); N31 [Nit] a failed scan and a found key print the same fixed text; N32 [Nit] the quota reason line is not scanned; carried N24 N26 N27 N28 N29 N20 N5 N9 N10 N11 N12 N13 N15 N21; all backlog 4.14 (full text in review-b-c0a26d7.json)
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

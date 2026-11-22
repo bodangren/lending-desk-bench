@@ -1,0 +1,11 @@
+Adversarial P2 verdict on 6132fb7: 14 new tests at 9dd0833, 5 fail at HEAD (P2ADV-1 to P2ADV-5), 9 pass; eight required suites green (215 tests), docs/ clean.
+MEASURE_AGENT_RESULT
+role: adversarial
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2
+result_file: measure/runs/model_guide/adversarial-6132fb7.json
+retry_recommendation: retry_implementation
+summary: adversarial-p2 at 9dd0833 exposes 5 blocking defects at 6132fb7 (D13 tie-break, newest score file, no-change rerun, inherited-key flags, symlinked data dir); route to Green
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,26 @@
+UX browser review for model_guide Phase 4b, row 4.14.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+audited_head_sha: 8fd8882a8539d051129eb106e46974a934df5223
+The preview build completed with the local manifest at harness/model-guide/data/MANIFEST-2026-11-17.txt.
+Headless Chrome captured review.html and index.html at 390 px and 1280 px.
+The cdp-audit.mjs script captured DOM metrics, interactions, and full accessibility trees in cdp-facts.json.
+At 390 px the page has no horizontal overflow. The route table scrolls inside its own box.
+The review page shows three routes: DeepSeek 78.6, Hy4 75.4, and MiMo incomplete at 0 of 3 passes with dashes.
+The Code review row says no pick yet: not enough evidence.
+Finding F1: at 390 px, route cells are about 58 px wide and the rows grow to about 470 to 506 px. score-impact: no.
+Finding F2: arrow keys do not move the focused table region. score-impact: no.
+The Chrome debug process and HTTP server stopped. The pgrep-owned-process check found none of mine.
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+route: openai/gpt-6-luna#high
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+audited_head_sha: 8fd8882a8539d051129eb106e46974a934df5223
+result_file: measure/runs/model_guide/ux-browser-4b-8fd8882.json
+retry_recommendation: none
+summary: The required browser checks passed. Two nonblocking responsive and keyboard usability findings remain.
+END_MEASURE_AGENT_RESULT

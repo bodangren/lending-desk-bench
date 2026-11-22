@@ -1,0 +1,68 @@
+{
+ "audited_head_sha": "12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916",
+ "baseline_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+ "blocking_findings": [
+  "P2ADV2-1 [Blocker] adversarial-testing: a symlinked intermediate parent of the preview folder escapes the update.sh eight-path symlink refusal and takes writes outside the repo. Test Red must add: update.test.ts P2B2-1d, before the approval a symlinked .tmp parent gives exit 2 and no outside write. Setup: temp repo as updateRepo, an outside folder, symlink <root>/.tmp to the outside folder, run update.sh with the fixture export. Expected: exit 2, stdout the line update: refused path <path>, the outside folder stays empty, no commit runs. Rationale: at 12e753b the run exits 0 and writes real-work.json and model-guide.json into <outside>/model-guide-preview/, against the update.sh header (the two files go into the preview folder only; the script writes no file outside the preview folder) and spec D21; the eight-path loop checks PREVIEW_ABS itself but not its parents. Repro: /tmp/opencode/adv2 (outside/model-guide-preview/ holds both files after an exit-0 run)."
+ ],
+ "changed_files": [],
+ "commands": [
+  "git rev-parse HEAD",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+  "probe newest_score_file loop and update.sh eight-path refusal in /tmp temp repos"
+ ],
+ "confidence": "high",
+ "evidence": [
+  "Nine single-file runs at 12e753b, each cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot, all exit 0: adversarial-p2 14 passed, adversarial 49 passed, update 7 passed, preview-gate 99 passed, guide 15 passed, print-audit 13 passed, input-check 15 passed, real-work 20 passed, leak-guard 2 passed (234 tests). The update 7 and preview-gate 99 include the P2B2-1 and P2B2-2 tests, so the round 2 fixes are pinned green.",
+  "/tmp probe of the round 3 eight-path refusal (temp repo, never the real docs/, no real approval file): with <root>/.tmp symlinked to an outside folder, update.sh before the approval exits 0 and writes real-work.json and model-guide.json into <outside>/model-guide-preview/. The eight-path loop checks PREVIEW_ABS itself but not its intermediate parents. Repro tree kept at /tmp/opencode/adv2.",
+  "Round 1 fixes confirmed green: the five former P2ADV-1 to P2ADV-5 failures now pass inside adversarial-p2 14/14 (D13 tie-break, newest-by-mtime, no-change rerun exit 0, inherited-key refusal, target symlink refusal)."
+ ],
+ "live_contract_violations": [],
+ "nonblocking_findings": [
+  "P2ADV2-2 [Nit] adversarial-testing: carryover of round 1 P2ADV-6. Spec Q6 says the page shows the PM label k3.1-pro and names no route, while the binding 2.4a ruling in plan.md names full routes and the implementation follows it. Rationale: spec D17/Q6 was never updated to record the 2.4a ruling; no behavior change is asked for.",
+  "P2ADV2-3 [Nit] adversarial-testing: carryover of round 1 P2ADV-7. print-audit.ts reads the input file twice, once for the JSON parse and once for the SHA-256. Rationale: code inspection; no single-read promise in the header and not exploitable in the hand-off threat model.",
+  "P2ADV2-4 [Nit] adversarial-testing: carryover of round 1 P2ADV-8. The test-strategy Phase 2 closeout gate wording (git diff --name-only phase_base_sha..HEAD -- docs/ prints nothing) fails on the unrelated daily-publish commit 05acc8c in range. Rationale: no Phase 2 commit touched docs/ and the tree is clean, so D21 holds in substance."
+ ],
+ "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+ "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+ "prod_wiring_violations": [],
+ "ratings": [
+  {
+   "axis": "correctness",
+   "score": 3,
+   "evidence": "All nine suites green at 12e753b, but the /tmp probe shows update.sh writes both preview files outside the repo through a symlinked .tmp parent with exit 0 (P2ADV2-1)."
+  },
+  {
+   "axis": "test_meaning",
+   "score": 4,
+   "evidence": "234 tests pass including the new P2B2-1/P2B2-2 pins, yet no test covers a symlinked intermediate parent of a write path; Red must add P2ADV2-1."
+  },
+  {
+   "axis": "scope_discipline",
+   "score": 5,
+   "evidence": "Verify-only round: writes only under measure/runs/model_guide/ plus /tmp probes; nothing committed, real docs/ untouched."
+  },
+  {
+   "axis": "evidence_quality",
+   "score": 5,
+   "evidence": "Each claim cites a single-file Tests line or the /tmp repro tree at /tmp/opencode/adv2 with exit code and directory listing."
+  }
+ ],
+ "retry_recommendation": "retry_tests",
+ "reviewer_model": "muse-spark-1.3-contributor",
+ "role": "adversarial-testing",
+ "role_base_sha": "12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916",
+ "route": "opencode-go/muse-spark-1.3-contributor#high",
+ "schema_version": 1,
+ "status": "fail",
+ "summary": "Round 2 adversarial verification at 12e753b: all nine suites green (234 tests), but a /tmp probe exposes one new blocking defect: a symlinked .tmp parent escapes the update.sh eight-path refusal, writing both preview files outside the repo with exit 0. Red must add the P2ADV2-1 refusal test; route to tests.",
+ "test_commit_sha": "none",
+ "track": "model_guide"
+}

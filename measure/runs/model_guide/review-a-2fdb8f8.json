@@ -1,0 +1,80 @@
+{
+ "schema_version": 1,
+ "track": "model_guide",
+ "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+ "role": "measure-review-a-correctness",
+ "route": "opencode-go/glm-5.3#high",
+ "audited_head_sha": "2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41",
+ "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+ "role_base_sha": "56ab786658576437cf4f373252be2a76f5951130",
+ "status": "fail",
+ "summary": "Fail. The range 56ab786..2fdb8f8 (commit 8b34bbd plus the plan row) fixes ADV-P4B-1..6, and I verified each fix against the code, the tests, and the real event writer of the installed @opencode/cli bundle, read-only. ADV-P4B-2..6 are correct: the quota fallback refuses a future-dated fetchedAt, the daemon guard compares argv tokens one by one, the guard sends no KILL without a recorded starttime, the call-path guard covers all seven call paths, and a non-plain diff id refuses before the lock. The answer half of ADV-P4B-1 is correct on the real stream: the bundle prints {\"type\":\"text\",...,\"part\":{\"type\":\"text\",\"text\":\"...\"}} and both decoders (judge-run.sh and review-score.ts) join the text events in order, skip every tool, step, reasoning, and error event, and pass plain answers through unchanged. One blocker stays: the token log does not work on the real stream. The same bundle writer prints the token event as {\"type\":\"step_finish\",...,\"part\":{...,\"tokens\":{input,output,reasoning,cache:{read,write}}}}, but read_tokens in both runners matches \"step-finish\" and reads top-level event.tokens, the shape only of the committed fake. Every live call would record zero tokens and tokens_complete false, silently, and the plan claim 'the token log keeps working' holds only against that fake. All five gate files I ran pass (adversarial-p4b 12, review-run 65/0, judge-run 37, review-score 25 at the audited content, quota 30), and no process of mine stayed alive.",
+ "blocking_findings": [
+  "The token log reads a shape the real `opencode run --format json` stream never prints. judge-run.sh:112 and review-run.sh:151 match `event.type === \"step-finish\"` and read top-level `event.tokens`, but the installed @opencode/cli bundle writes the token event through its run JSON writer as `{\"type\":\"step_finish\",\"timestamp\":...,\"sessionID\":...,\"part\":{\"type\":\"step-finish\",...,\"cost\":...,\"tokens\":{\"input\":...,\"output\":...,\"reasoning\":...,\"cache\":{\"read\":...,\"write\":...}}}}` (the `u(\"step_finish\",n,{part:o})` call of the run stream handler, bin/opencode.exe; TokenUsageInfo of @opencode/client types.d.ts:84-92). The committed fake (fixtures/fakes/fake-opencode:259) prints `{\"type\":\"step-finish\",\"tokens\":{...}}`, so every gate passes while the first live pass and the first live judge call record input, output, reasoning, cache_read, and cache_write as 0 and tokens_complete false (spec D13, spec.md:680-684: the tokens are 'read from the token fields of the opencode json events'). The same silent-garbage class as the original ADV-P4B-1: no earlier test drives the real shape. The 4.13t plan claim of a working token log rests on the session exports under runs/*/artifacts/session.json, whose `part.type` holds `step-finish`; that is the message-part shape, not the run event stream shape, so the plan evidence backs the wrong shape. Consequence: the pilot token report that gates the PM approval (spec D13, Q1) reads silent zeros. Fix direction: read the tokens from `part.tokens` of `step_finish` events in both runners, and pin the real shape with a failing-first test (the fake and its pins can keep the old shape alongside)."
+ ],
+ "nonblocking_findings": [
+  "No committed test drives the real text-event shape through the judge runner. The AJ1 pin (adversarial-p4b.test.ts:1532-1541) feeds a `{\"type\":\"result\",\"text\":...}` event, a shape the installed bundle never prints (its answer events are `{\"type\":\"text\",...,\"part\":{...}}`); the production node block handles both, so AJ1 passes, but the real shape of the judge path has no failing-first pin. The 4.13u Red that landed after the audited head (05bb618) adds real-shape tests for the scorer only, and they pass. The judge runner keeps the coverage gap.",
+  "The answer decoder is duplicated in judge-run.sh (node block) and review-score.ts (decodeAnswerText) with no test that holds the two copies to each other. The copies already differ in guards (review-score.ts rejects arrays for event and part; judge-run.sh checks only a truthy object part). The divergence is behaviorally nil today, because a JSON array cannot hold a named `text` property, but a later edit of one copy can drift silently. The stated reason for the duplication (the adversarial fixture copies only judge-run.sh and quota.ts into its temp repo) is sound; a same-input parity test would close the drift risk.",
+  "The ADV-P4B-3 fix narrows one match the old guard caught: a daemon whose `serve` and `--service` sit inside one argv token (for example `sh -c \"opencode serve --service\"`) no longer matches, because tokens are now compared one by one (judge-run.sh:335-337, review-run.sh:448-450). The old joined substring matched that shape. Exposure is nil today, because the runners start the call binary with direct argv and the pinned AD1 decoy is now protected, but the hardening row should note the wrapped shape."
+ ],
+ "evidence": [
+  "Provenance: `git rev-parse HEAD` returned 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41 at the audit start, equal to the audited head; phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf and role_base_sha 56ab786658576437cf4f373252be2a76f5951130 match the plan row 4.13t. The range holds exactly 8b34bbd (the fix) and 2fdb8f8 (the plan row) and touches judge-run.sh, quota.ts, review-run.sh, review-score.ts, plan.md.",
+  "Two commits landed after the audited head while my gates ran (05bb618, tests only, and 0f426b1, plan only, of the concurrent Red task 4.13u). `git diff --stat 2fdb8f8..0f426b1` shows no production file, so every production read and every gate of this audit ran the audited content. Only review-score.test.ts differed: 05bb618 appended two tests; the 25 tests of the audited content all pass (27 total in my run).",
+  "Real event shape, read-only, from the installed bundle /home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe: the run JSON writer `u(r,t,n)` prints `JSON.stringify({type:r,timestamp:t,sessionID:e.sessionID,...n})` plus a newline; the stream handler emits `u(\"text\",t,{part:r})` for text parts, `u(\"reasoning\",...)`, `u(\"step_start\",...)`, `u(\"tool_use\",...)`, `u(\"error\",...)`, and for session.step.ended `u(\"step_finish\",n,{part:{type:\"step-finish\",...,cost,cost,tokens:t.data.tokens}})`. So the answer event is `{\"type\":\"text\",...,\"part\":{\"type\":\"text\",\"text\":\"...\"}}` and the token event is `step_finish` with `part.tokens` (hyphen type and top-level tokens never appear).",
+  "ADV-P4B-1 answer checks: multi-part answers join in stream order with a newline (the parts array of both decoders); tool, step, reasoning, and error events never add text (only `type === \"text\"` with a string `part.text`, plus the AJ1 legacy `result` event); plain answers return raw unchanged (empty parts); judge-run.sh and review-score.ts extract the same way (review-score.ts adds array guards that cannot change behavior on parsed JSON). The AJ1, AD3, AD4 pins pass.",
+  "ADV-P4B-2: quota.ts:374-383 computes ageSeconds and refuses a fetchedAt more than 60 s in the future before the stale check; AQ1 (ten years in the future) and AQ2 (milliseconds) both give stopped through the real tool, and quota.test.ts gives 30 passed (30).",
+  "ADV-P4B-3..6 verified in the diff and by the pins: token-by-token argv compare in both runners (AD1 passes); `[ -n \"${started_at[$pid]:-}\" ] || continue` before every KILL (AD2 passes); the call-path loop covers home, config, data, state, cache, runtime, and tmp, exactly the env of run_model_call in both runners and the import env of provider-credential.sh (AH1 passes); the plain-id check `^[A-Za-z0-9._-]+$` plus the parent-segment refusal runs before the symlink check and the lock (AM1 passes).",
+  "Gates, one file at a time, fakes only: `cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot` -> Tests 12 passed (12); `bun test harness/model-guide-tests/review-run.test.ts` -> 65 pass / 0 fail; `cd harness && npx vitest run model-guide-tests/judge-run.test.ts ...` -> Tests 37 passed (37); `cd harness && npx vitest run model-guide-tests/review-score.test.ts ...` -> Tests 27 passed (27 = the 25 of the audited content plus the two 4.13u tests); `cd harness && npx vitest run model-guide-tests/quota.test.ts ...` -> Tests 30 passed (30) on the clean re-run.",
+  "The first quota run failed only its own final orphan guard on a decoy `fake-opencode serve --service mg-decoy-D3 120` (pid 3275712, above my vitest pid 3264182, so spawned by the concurrent session's review-run D3 test while my run was in flight); all 30 tests of that run passed, the decoy died on its own, and the re-run exited 0. After each file, `pgrep -af 'fake-opencod[e]'` and `pgrep -af 'quota-serve[r]'` printed nothing of mine; one foreign in-flight quota-server (pid 3322438, again above every pid of my runs) cleared by itself at the final scan.",
+  "Plan claim check (4.13t row): the gate claims match my runs for the five files I ran (12, 65/0, 37, 25 at the audited content, 30). The claims for credential-provider.test.ts 22 and adversarial-p4-runner.test.ts 14 were not re-run in this audit and stay unverified here. The plan's shape claim for the answer text is right; its token-log evidence chain (session exports whose part.type holds step-finish) describes the message-part shape, not the run event stream, and backs the fake shape that the blocker names."
+ ],
+ "commands": [
+  "git rev-parse HEAD -> 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41 (audit start)",
+  "git diff --stat 56ab786..2fdb8f8 -> judge-run.sh, quota.ts, review-run.sh, review-score.ts, plan.md",
+  "git diff 2fdb8f8..0f426b1 --stat -> tests and plan only, no production file (the two concurrent 4.13u commits)",
+  "grep -a 'JSON.stringify({type:r,timestamp:t,sessionID' and a byte-region read of bin/opencode.exe (read-only) -> the run json writer, the text part handler, and the step_finish part with nested tokens",
+  "cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 12 passed (12)",
+  "bun test harness/model-guide-tests/review-run.test.ts -> 65 pass / 0 fail",
+  "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 37 passed (37)",
+  "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 27 passed (27)",
+  "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> first run 30 passed but the suite orphan guard caught a concurrent session's decoy; clean re-run Tests 30 passed (30), exit 0",
+  "pgrep -af 'fake-opencod[e]'; pgrep -af 'quota-serve[r]' after every file -> nothing of mine"
+ ],
+ "changed_files": [
+  "harness/model-guide/judge-run.sh",
+  "harness/model-guide/quota.ts",
+  "harness/model-guide/review-run.sh",
+  "harness/model-guide/review-score.ts",
+  "measure/tracks/model_guide/plan.md"
+ ],
+ "test_strategy_violations": [],
+ "live_contract_violations": [
+  "The token contract of spec D13 is broken on the real binary: read_tokens (judge-run.sh:112, review-run.sh:151) matches the fake event shape `{\"type\":\"step-finish\",\"tokens\":{...}}`, while the installed @opencode/cli run stream prints `{\"type\":\"step_finish\",...,\"part\":{...,\"tokens\":{...}}}`, so a live call adds no token field and the record holds zeros with tokens_complete false."
+ ],
+ "prod_wiring_violations": [],
+ "route_parity_violations": [],
+ "retry_recommendation": "retry_implementation",
+ "confidence": "high",
+ "ratings": [
+  {
+   "axis": "correctness",
+   "score": 3,
+   "evidence": "The five fixes are right and verified against the installed bundle's writer, but the token log on the same real stream still parses the fake shape (judge-run.sh:112 vs the bundle's `u(\"step_finish\",n,{part:o})`), so every live call would record zero tokens."
+  },
+  {
+   "axis": "test_meaning",
+   "score": 3,
+   "evidence": "The seven adversarial pins are real failing-first tests and now pass (adversarial-p4b 12 passed), but no committed test feeds the real text-event shape to the judge runner or the real step_finish token event to either runner (AJ1 uses the fake result-event shape)."
+  },
+  {
+   "axis": "scope_discipline",
+   "score": 5,
+   "evidence": "Commit 8b34bbd touches exactly the four production files named in the plan row 4.13t and no test file; 2fdb8f8 adds only the plan row."
+  },
+  {
+   "axis": "evidence_quality",
+   "score": 4,
+   "evidence": "Every finding cites a file:line, a test name, or a bundle byte region, and five gate runs back the plan claims; one plan evidence chain (session exports as the token event source) names the wrong shape, and two claimed gates (credential-provider 22, adversarial-p4-runner 14) were not re-run here."
+  }
+ ]
+}

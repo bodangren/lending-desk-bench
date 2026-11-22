@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+status: fail
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: 364a39c
+tests_run: cd harness && npx vitest run model-guide-tests/adversarial-p4f.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1; 4 failed, 44 passed, 14 skipped; selected P4E regressions pass; A4 and shell syntax checks pass
+files_changed: harness/model-guide-tests/adversarial-p4f.test.ts; the audit JSON and log
+plan_updates: none
+known_failures: P4F-1 undercounts tool-step tokens and falsely marks missing telemetry complete in both runners; A-F1, P4F-2, and P4F-3 have named skips
+handoff: Route P4F-1 to Green and row 4.15. It can corrupt night-3 token data. The PM cap leaves all findings nonblocking. Rerun after any implementation commit. No production file changed. Facts changed: none.
+END_MEASURE_AGENT_RESULT

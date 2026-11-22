@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: 629e094414fe1a78f40ca59f0f71526b9b8a46d4
+result_file: measure/runs/model_guide/review-b-629e094.json
+retry_recommendation: none
+summary: Round 6 security review, delta only, at 629e094. The change over 2488905 fixes my round 5 finding P3B5-1: retryWaitBase takes PICK_DIFFS_RETRY_WAIT_MS only as a finite number from 0 to 60000, and an empty, whitespace, non-number, negative, or over-60000 value gives the default 5000, so the longest wait is 60000 x 24 and the retry count stays at four tries. My probes with 1e308 and -5 each exit 0 and write the candidates file after one retry. pick-diffs holds one spawnSync and one write path, runs `gh api --method GET` only with array arguments and no shell, and opens no network call of its own. The two single-file suites pass at HEAD. The round 2 nit P3B2-1 carries open.
+END_MEASURE_AGENT_RESULT

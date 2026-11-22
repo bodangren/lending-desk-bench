@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 5: The publish gate and the weekly update",
+  "status": "pass",
+  "summary": "Pass under the PM rules. The six published files match the approval hashes byte for byte, hold counts only, and pass leak-check with docs and the preview in scope. No key value, key shape, private path, finding text, reviewed-repo file path, seeded line, or internal reason text appears in any published file. The publish gate is consent-bound and the consent artifact is valid. One nonblocking finding goes to tech-debt: the weekly update path omits the leak-check step.",
+  "evidence": [
+    "git rev-parse HEAD returned a8835be3ddc9b3e71f8965301772f97935da39d5 before and after the audit. The working tree under docs/ is clean.",
+    "Security applicability holds: the range 8fd8882..a8835be publishes six public files under docs/ from private review data, so the data flows of this audit apply.",
+    "leak-check.ts usage read at harness/model-guide/leak-check.ts:1-46. The scan targets every staged file, every file under docs/ staged or not, and the preview folder.",
+    "npx tsx model-guide/leak-check.ts --private $HOME/.local/share/lending-desk-bench/model-guide --repo .. --preview ../.tmp/model-guide-preview exited 0 at 18:18 +07. No key-field, private-path, or seeded-line finding in the staged files, docs/, or the preview.",
+    "sha256sum of the six docs files returns exactly the six rows of publish-approval.md:25-30 (index.html 52c294b3..., review.html e6ed8ff7..., real-work.html 35a71c80..., real-work.json a5ab25a5..., model-guide.json d667f5ff..., review.json dedd725a...). The six preview copies hold the same six hashes.",
+    "git show --stat 906a4a6 lists exactly the six approved docs paths and no other file. git log --name-only 8fd8882..a8835be -- docs/ lists only commit 906a4a6, so nothing else under docs/ changed in the range.",
+    "grep -c -E 'PM 2026|nights 1 and 2|incomplete_reason' prints 0 in each of the six published files. The score-file diff 8fd8882..a8835be removes exactly the three incomplete_reason fields from mg-2026-11a.json.",
+    "review.html:106-108 and review.json hold the 19 real defects as counts only: deepseek 13, hy4 6, and dashes for the zero-pass route. review.html:155 states the page holds no finding text, no file path, and no line; the read of the full file confirms it.",
+    "A key-shape scan (sk-, ghp_, gho_, AKIA, AIza, xox, JWT, Bearer, 40-plus hex) over the six published files finds only the three published SHA-256 input digests of real-work.json:4-21 and real-work.html:245-247, which are deliberate public source hashes.",
+    "grep for 'lending-desk', 'advantage-pr', '.local/share', '/home/daniebo', 'Desktop' over the six published files prints no match, so no reviewed-repo file path or private path appears.",
+    "publish-approval.md is a valid consent artifact: approved_by line 7, date line 8 (2026-11-22), Daniel's standing site-push quote lines 10-12, the PM decision and the counts-only ruling lines 14-18, the push condition line 20, and the six sha256 rows 25-30 that match the docs files.",
+    "A2 consent gate: publish.ts:95-115 refuses a missing or empty approved_by or date line, and publish.ts:156-167 refuses any approved file whose preview hash differs from the record. No publish runs without the consent artifact, and the artifact binds the exact published bytes.",
+    "A6 registry overstatement: measure/tracks.md:34 holds a pending status row dated 2026-11-14 with no resolved security claim. Plan row 5.3 flipped to [x] at f97d68b with publish evidence that matches the actual commit 906a4a6 and the verified hashes. Row 5.4 stays open as deferred at a8835be. No claim outruns the implementation.",
+    "adversarial-p4g.test.ts at this HEAD exits 0 with Tests 4 passed (4). The test writes a hostile incomplete_reason with script markup into a score file and asserts review.html renders neither the raw nor the escaped reason (adversarial-p4g.test.ts:128-171).",
+    "The preview.sh range diff only removes reason rendering, adds the zero-pass dashes, and mirrors the three data files into preview assets/data. No private folder path or private data source enters preview.sh.",
+    "The current published state is clean, so the PM round cap blocks nothing: no real-key or private-data leak exists in any committed file or public page.",
+    "This audit wrote only the two supplied artifacts under measure/runs/model_guide/. No production code, test, plan, or registry file changed. No commit, push, publish.ts run, update.sh run, browser, or model call ran."
+  ],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Major] review-b -> tech-debt: The weekly update commits public data without a leak-check step. score-impact: no. The first publish ran leak-check.ts before commit 906a4a6 (plan.md publish evidence), but update.sh:82-143 runs only the real-work input check and guide.ts before it copies real-work.json and model-guide.json into docs/assets/data/ and commits them. update.sh never calls leak-check.ts. Plan row 5.4 verify steps (plan.md:2843-2845) and the new README.md:285-287 section name no leak check either. A future export row that carries private text would reach the public docs unscanned. The current published files pass leak-check, so no wrong result hides in the current scores or page. Add a leak-check.ts run to update.sh after the copy, or to the plan 5.4 verify steps and the README section."
+  ],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "changed_files": [
+    "README.md",
+    "docs/assets/data/model-guide.json",
+    "docs/assets/data/real-work.json",
+    "docs/assets/data/review.json",
+    "docs/index.html",
+    "docs/real-work.html",
+    "docs/review.html",
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide/data/review-scores/mg-2026-11a.json",
+    "harness/model-guide/preview.sh",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/publish-approval.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "commands": [
+    "git rev-parse HEAD",
+    "git status --short",
+    "git log --oneline -12",
+    "git diff --stat 8fd8882a8539d051129eb106e46974a934df5223..a8835be3ddc9b3e71f8965301772f97935da39d5",
+    "git diff --stat 8fd8882a8539d051129eb106e46974a934df5223..a8835be3ddc9b3e71f8965301772f97935da39d5 -- docs/",
+    "git log --format='%H %s' --name-only 8fd8882a8539d051129eb106e46974a934df5223..a8835be3ddc9b3e71f8965301772f97935da39d5 -- docs/",
+    "git show --stat --format='%H %s' 906a4a6",
+    "git show --stat --format='%H %s' f97d68b a8835be 34eb41b",
+    "git show f97d68b",
+    "git show a8835be -- README.md measure/tracks/model_guide/plan.md",
+    "git diff 8fd8882..a8835be -- harness/model-guide/preview.sh",
+    "git diff 8fd8882..a8835be -- harness/model-guide-tests/adversarial-p4g.test.ts",
+    "git diff 8fd8882..a8835be -- harness/model-guide/data/review-scores/mg-2026-11a.json",
+    "date '+%F %T %Z'",
+    "cd harness && npx tsx model-guide/leak-check.ts --private $HOME/.local/share/lending-desk-bench/model-guide --repo .. --preview ../.tmp/model-guide-preview",
+    "sha256sum docs/index.html docs/review.html docs/real-work.html docs/assets/data/real-work.json docs/assets/data/model-guide.json docs/assets/data/review.json",
+    "sha256sum .tmp/model-guide-preview/index.html .tmp/model-guide-preview/review.html .tmp/model-guide-preview/real-work.html .tmp/model-guide-preview/assets/data/real-work.json .tmp/model-guide-preview/assets/data/model-guide.json .tmp/model-guide-preview/assets/data/review.json",
+    "grep -c -E 'PM 2026|nights 1 and 2|incomplete_reason' docs/index.html docs/review.html docs/real-work.html docs/assets/data/review.json docs/assets/data/real-work.json docs/assets/data/model-guide.json",
+    "grep -c 'incomplete_reason|PM 2026|nights 1 and 2' harness/model-guide/data/review-scores/mg-2026-11a.json",
+    "grep -inE 'lending-desk|advantage-pr|\\.local/share|/home/daniebo|Desktop' over the six published files",
+    "grep -oEnE 'sk-[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{8,}|gho_[A-Za-z0-9]{8,}|AKIA[A-Z0-9]{12,}|AIza[A-Za-z0-9_-]{10,}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\\\\.[A-Za-z0-9_-]{10,}|[A-Fa-f0-9]{40,}|Bearer [A-Za-z0-9._-]{10,}' over the six published files",
+    "grep -inE 'witness|new_lines|operator|incomplete|PM 2026|nights|reason|daniebo|/home/|\\.local|seed|private|set_id|diff' docs/real-work.html docs/assets/data/model-guide.json",
+    "grep -n 'model_guide' measure/tracks.md",
+    "grep -n 'leak' harness/model-guide/real-work.ts",
+    "sed -n '2838,2860p' measure/tracks/model_guide/plan.md",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh npx vitest run model-guide-tests/adversarial-p4g.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "git status --short docs/"
+  ],
+  "phase_base_sha": "8fd8882a8539d051129eb106e46974a934df5223",
+  "role_base_sha": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "audited_head": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "audited_head_sha": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "route": "opencode-go/glm-5.3#high (PM 2026-11-22: GLM for a review where Sol is excluded; Review A ran on Sol). Substitution for `ra-quota pick review-b`.",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "All six published files equal their approval hashes, hold counts only, and pass leak-check exit 0 with docs and preview in scope."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "adversarial-p4g.test.ts exits 0 with 4 passed and asserts review.html renders no incomplete_reason raw or escaped, but update.sh's future public writes have no leak test."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The range holds the 13 planned files and commit 906a4a6 holds exactly the six approved docs paths; nothing else under docs/ changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim in this result has a command result: leak-check exit 0, six matching sha256sum rows, grep counts of 0, and the 4-pass adversarial run."
+    }
+  ]
+}

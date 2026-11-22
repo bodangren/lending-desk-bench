@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+status: blocked
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 51bd94b07389c9ff5a35263e825f118a9a0a5357
+green_commit_sha: fb96cb9
+handoff: Contract fixes landed in fb96cb9, recorded in the plan r5 commit. error_line_of uses a bounded substring and the symlink walk stops at the first hit; the guard block carries its own root. review-run 100 passed; judge-run 50 passed; adversarial-p4-runner 16 passed; adversarial-p4c 13 passed; credential-provider 24 passed; review-score 27 passed; adjudicate 23 passed; leak-check exit 0. Counts are in measure/runs/model_guide/green-4.15.txt. One case stays red and is a Red conflict, not a Green gap. decode-parity P5 needs text-wins in the judge decoder, but committed J1 pins result-wins on the same text-plus-result shape: J1 feeds text-forged then result-real and expects the result; P5 feeds text-real then result-forged and expects the text. No content-blind decoder satisfies both. Proof: a scratch text-wins patch made J1 fail with the forged first block winning; the scratch was restored and the committed J1 still passes. The judge decoder is byte-identical to the passing state. Request a Mid Red retry for P5 versus J1 only. Options: restate J1 for text-wins (the direction the real event shape points), or scope P5 to scorer and queue only. Do not touch N26b, G2, or the marker filters. Row 4.15 stays [~]. New files added: none. Hygiene: pgrep printed nothing of mine after each run; git status docs prints nothing.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,38 @@
+Red task 4.13c — the judge route list (spec D11, PM 2026-11-18).
+Date: 2026-11-18. Role base: 154eb7dd03ca4b09f090f8cc9ca59d1259da80fb.
+Phase base: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (Phase 4 strategy commit).
+
+Red command (task message):
+  cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Exit: 1. Result: Tests 2 failed | 19 passed (21), Test Files 1 failed (1).
+
+The 2 new failing cases (both fail because production judge-run.sh reads
+only routes.json and never reads judges.json):
+  - J15 accepts each route of judges.json and review-run.sh never reads
+    judges.json — kimi-code-plan-cn/k3.1-pro#high gives
+    "judge-run: the route is not in routes.json", expected exit 0, got 2.
+    The review-run.sh never-reads assertion inside this test passes at HEAD.
+  - J16 refuses a review-only route of routes.json — opencode-go/deepseek-
+    v4.1-flash is accepted at HEAD (exit 0 with calls), expected exit 2
+    with one judge-run: line, no call, and no file.
+
+Already satisfied at HEAD (kept as a guard for the Green route-source
+switch, which must not start accepting unknown routes):
+  - J16b refuses an unknown route (opencode-go/not-a-route#high, in neither
+    file) with exit 2, one judge-run: line, no call, and no file — passes.
+
+The 18 earlier cases pass at this HEAD. The shared builder gained an opt-in
+`judgesRoutes` field that writes a temp judges.json only for the new cases;
+no earlier assertion changed.
+
+Orphan scan after the run: `pgrep -af "fake-opencod[e]"` prints no line;
+`pgrep -af "quota-serve[r]"` prints no line; no mg-judge-* folder stays
+under /tmp. Only the fake opencode was used; no real opencode CLI, no
+heavy-run.sh, no network call, no model call.
+
+pick-diffs note (task 4.9e extra): no case was added to
+harness/model-guide-tests/pick-diffs.test.ts (29 pass, 0 fail, unchanged).
+The existing design does not allow it: pick-diffs.ts writes only the
+candidates file keyed by commit SHA and never touches sets/, and it has no
+diff_id mapping, so messages/<diff_id>.txt belongs to the seeding layer
+(review-set/seeder), not to pick-diffs. Full reason in the handoff.

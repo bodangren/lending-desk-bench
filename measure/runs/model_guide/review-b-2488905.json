@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "phase_base_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "role_base_sha": "2488905cd01f717f14523d41b250346169b9c358",
+  "audited_head_sha": "2488905cd01f717f14523d41b250346169b9c358",
+  "reviewer_model": "Step 5 Preview",
+  "route": "nvidia/stepfun-ai/step-5-preview#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 5 of the security review, delta only. The change over a4894ae adds a bounded retry to one gh call of pick-diffs.ts plus its tests, the adversarial round 3 tests, and text for spec D5 and the plan. The retry count is bounded at four tries, and a non-transient failure refuses at once. pick-diffs still runs only `gh api --method GET` with array arguments and no shell, and no new write path appears. The two single-file suites pass at HEAD. One Major stays open: a non-number or huge PICK_DIFFS_RETRY_WAIT_MS makes the retry wait block forever, because the code does not check the value. The round 2 nit P3B2-1 carries open.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P3B5-1 [Major] review-b: the retry wait of pick-diffs.ts is not bounded against a bad PICK_DIFFS_RETRY_WAIT_MS. ghApi takes `const base = Number(process.env.PICK_DIFFS_RETRY_WAIT_MS ?? 5000)` (pick-diffs.ts:210) and calls waitSync(base * GH_RETRY_SCALES[attempt]) (pick-diffs.ts:202 and 226). A value that is not a number gives NaN and a huge value gives Infinity, and Atomics.wait blocks forever in both cases, so a transient gh failure hangs the tool instead of four tries and one refusal. Probes with `timeout 3 node -e ...`: Number(\"abc\") is NaN and blocks, Number(\"1e999\") and Number(\"Infinity\") block, and Number(\"1e308\") blocks, while 0 returns at once and the default 5000 waits its full bound. No script in the repo sets the variable (grep finds it only in pick-diffs.ts and in the tests, which set 0), so every shipped run uses the default and is bounded. Fix: clamp the base to a finite non-negative number, for example `const base = Number.isFinite(raw) ? Math.max(0, Math.min(raw, 60000)) : 5000`. Route to Green. Non-blocking because the trigger needs an operator-set bad value and a transient failure at the same time, and the data path stays correct when it happens.",
+    "P3B2-1 [Nit] review-b: nothing enforces the D9 order of the key SHA-256. review-set.ts still computes key_sha256 from the key bytes at lint time, and adjudicate.ts rewrites the key files after the lint, so a lint run before the apply publishes a hash that the apply invalidates. The delta of 2488905 touches neither file. The phase plan controls the order at task 4.13: the apply runs first, then the lint runs again, then the orchestrator commits the manifest. Carries rounds 2 to 4, and round 1 P3B1-6. Non-blocking."
+  ],
+  "evidence": [
+    "Provenance: `git --no-pager rev-parse HEAD` printed 2488905cd01f717f14523d41b250346169b9c358 at the start of the audit and before each test run, so the audited tree is 2488905. One later commit landed during the audit and I name it: 2e0cfff measure(model_guide): D8 and D13 diff rule of the two sets, which touches only measure/tracks/model_guide/plan.md and measure/tracks/model_guide/spec.md, so it is an allowed landing and I still audit 2488905. The commits in the range a4894ae..2488905 are d97aa12 (adversarial round 3 tests), aab5836 and dff4d65 (spec D5 and plan text), e9071e8 (a docs/assets/data-only publish), 9f43f35 (a site commit outside this track, named only), 5a91775 (Red 3.13c), 69ac213 (record Red 3.13c), c867117 (Green 3.13d), and 2488905 (record Green 3.13b and 3.13d).",
+    "Out-of-track commits named: 9f43f35 touches docs/index.html, docs/results.html, docs/assets/css/site.css, docs/assets/js/site.js, and harness/tests/unit/board-standing.test.ts; it is a site change and not work of this track. e9071e8 changes only docs/assets/data files. Neither changes a model_guide tool or test.",
+    "Delta scope: `git --no-pager diff --stat a4894ae 2488905` holds adversarial-p3.test.ts (72 new lines), pick-diffs.test.ts (115 changed lines), pick-diffs.ts (63 changed lines), plan.md (36), spec.md (31), harness/tests/unit/board-standing.test.ts (91 new), and the docs files of the two publish commits. No other harness file changed.",
+    "F9 (P3B1-2 and the write path) rechecked and still closed: the pick-diffs.ts delta adds the transient patterns, the retry scales, lastStderrLine, reportGhStderr, waitSync, and the retry loop, and it adds no mkdirSync and no writeFileSync. The write path to <private>/candidates/<owner>__<name>.json is unchanged, the refuseSymlink guard at pick-diffs.ts:299 is unchanged, and the isPlainSetId guard at pick-diffs.ts:88-92 is unchanged.",
+    "The gh boundary holds: ghApi still builds the fixed argument array (api, --method, GET, path) and spawns it with no shell (pick-diffs.ts:202-205). The retry loop calls the same spawn, so every try is an api GET only, and the path always starts with repos/<owner>/<name>/. The P3T2 tests log every call in the fake gh log and count two calls for one transient failure and four calls for a permanent one, so the count is bounded at four tries.",
+    "The retry stops early on a non-transient failure: the loop refuses at once when the stderr does not match GH_TRANSIENT (pick-diffs.ts:222-224). Test P3T2-5 pins one call for a detail 404, and test P3T2-4 pins four calls and exit 2 with `pick-diffs: gh api failed` for a detail 502. No candidates file is written on either refusal.",
+    "F10 (P3B5-1) open: probes with `timeout 3 node -e ...` show that Atomics.wait blocks forever for NaN (the Number of \"abc\"), for Infinity (the Number of \"1e999\" or of \"Infinity\"), and for 1e308, while 0 returns at once. The code computes the base with Number and passes it to waitSync with no finite check (pick-diffs.ts:210, 202, 226). The default 5000 and the test value 0 are bounded, and grep finds PICK_DIFFS_RETRY_WAIT_MS only in pick-diffs.ts and in the tests, so the shipped runs are safe.",
+    "The stderr line cannot reach a public file: reportGhStderr writes the last non-empty line of gh stderr to the stderr of the tool (pick-diffs.ts:184-188). No script in the repo invokes pick-diffs yet (grep over harness/*.sh, harness/model-guide/*.sh, and harness/schedule-tests finds no call), so the line reaches only the terminal of the operator. No script of this track captures a tool stderr into a repo or a docs file; the writers of this track are the private folder, the public manifest, the public score file, and the queue files, and none reads a captured stderr. A gh error line names the API path, which holds the public repo names of spec D9, and gh prints no credential value.",
+    "The new tests use temp folders only and no network: the retry tests build a temp fake gh script with writeFileSync and chmodSync in a tempDir folder, put that folder first on PATH, set FAKE_GH_LOG and PICK_DIFFS_RETRY_WAIT_MS to 0 in a copied child environment, and use a 60 second timeout on each child (pick-diffs.test.ts:398-440). The adversarial round 3 tests spawn tsx with temp fake gh folders and check that a commits list over 64 MiB, a detail failure mid-run, and a truncated JSON tail each fail closed with no candidates file (adversarial-p3.test.ts P3X3-1 to P3X3-3).",
+    "Tests at HEAD, each a single file with `cd harness && timeout 300 npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`, all exit 0: pick-diffs 26/26 and leak-check 13/13. The counts match the plan evidence of c867117 (pick-diffs 26, adversarial-p3 31, review-set 18).",
+    "A6: plan.md and spec.md change text only, and measure/tracks.md is not in the delta, so no new resolved-security claim appears. A2 not applicable and unchanged: the delta adds no publish, preview, or draft-status code.",
+    "P3B2-1 carries open: 2488905 changes neither the key_sha256 computation in review-set.ts nor the key write-back in adjudicate.ts."
+  ],
+  "commands": [
+    "git --no-pager rev-parse HEAD (2488905cd01f717f14523d41b250346169b9c358 at the start and before each run; a later allowed commit 2e0cfff landed on plan.md and spec.md only)",
+    "git --no-pager log --oneline a4894ae..2488905",
+    "git --no-pager diff --stat a4894ae 2488905",
+    "git --no-pager diff a4894ae 2488905 -- harness/model-guide/pick-diffs.ts harness/model-guide-tests/pick-diffs.test.ts harness/model-guide-tests/adversarial-p3.test.ts",
+    "grep -rn PICK_DIFFS_RETRY_WAIT_MS --include=*.sh --include=*.ts --include=*.md harness measure (only pick-diffs.ts and the tests)",
+    "grep -rn pick-diffs harness/*.sh harness/model-guide/*.sh harness/schedule-tests (no invocation yet)",
+    "cd harness && timeout 300 npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot (26 passed)",
+    "cd harness && timeout 300 npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (13 passed)",
+    "timeout 3 node -e ... Atomics.wait with Number(NaN), Number(Infinity), Number(1e308) and 0 (the first three block past the timeout, 0 returns at once)",
+    "more timeout 3 node -e ... Atomics.wait with Number(\"abc\") and Number(\"1e999\") (both block past the timeout)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-2488905.json",
+    "measure/runs/model_guide/review-b-2488905.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The retry stops at four tries and refuses at once on a 404 (pick-diffs.ts:222-224, tests P3T2-4 and P3T2-5), but the wait value from PICK_DIFFS_RETRY_WAIT_MS gets no finite check, so Number(\"abc\") hangs the wait in my probe."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "P3T2-1 to P3T2-5 pin one retry, four tries with a refusal, an early refusal, and the stderr line, and pass in pick-diffs 26/26; P3X3-1 to P3X3-3 pin fail-closed reads over 64 MiB and truncated JSON."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "git diff --stat a4894ae 2488905 holds the model_guide tool, its tests, plan.md and spec.md, plus the out-of-track site files 9f43f35 and the docs publish e9071e8, which I name and do not audit."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each claim has a file:line from the delta diff, a single-file test count, a grep result, or the bounded Atomics.wait probe result."
+    }
+  ]
+}

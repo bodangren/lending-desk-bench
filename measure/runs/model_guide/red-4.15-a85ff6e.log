@@ -1,0 +1,19 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-mid-red
+status: complete
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: a85ff6ec17d5ead7b9377b177f11efb9072763f0
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+red_commit_sha: f84cc17d40b4a9a4728067465afde0da5eda6c4f
+plan_commit_sha: c42ee3665665978bfd53d8256192396c60bdc06f
+resulting_head: c42ee3665665978bfd53d8256192396c60bdc06f
+commits: f84cc17 test(model_guide): Red task 4.15 seed reason and the hy4 Go route; c42ee36 measure(model_guide): record Red task 4.15 r6
+tests: credential-provider.test.ts SR1 (empty export) and SR2 (foreign integrationID); review-run.test.ts R-SR1 (runner carries the seed reason) and J1 (hy4 Go route).
+files: harness/model-guide-tests/credential-provider.test.ts, harness/model-guide-tests/review-run.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-4.15.txt, measure/runs/model_guide/red-4.15-a85ff6e.log
+remaining_failures: 4 at the base. `bun test harness/model-guide-tests/review-run.test.ts` exit 1, `95 pass` / `2 fail`, 97 tests: J1 and R-SR1. `cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests 2 failed | 22 passed (24)`: SR1 and SR2. All other cases pass.
+gaps: The seed wrapper hides the selector's no-entry reason behind the generic text. The 2026-11-20 probe showed this on both Go routes. The PM changed the hy4 pilot route to the Go plan family, and the routes.json pin named the old path. SR2 uses an entry of another integrationID; C9 (ambiguous) keeps its text. A grep found no other test file naming the old route.
+breakage_proof: At the base SR1 and SR2 receive `provider-credential: the credential seed failed`, and R-SR1 receives `review-run: the provider credential seed failed`, instead of the named no-entry reason. J1 sees the old route still present and the new row missing. The fake export is an in-memory temp file, so each case is hermetic and no process was started. pgrep printed nothing.
+handoff: Green should report the selector's no-entry reason as `provider-credential: the store holds no active entry of provider <provider>` and have review-run.sh carry it as `the provider credential seed failed: <reason>` on its one refusal line. A fixed empty or foreign store makes one export call. routes.json should hold `opencode-go/hy4-flash-free#high` with family Hy, kind plan, quota_provider and quota_source opencode-go, and drop the old path. Do not change the ambiguous text or any data file. Green changes no test file. Row 4.15 stays [~].
+END_MEASURE_AGENT_RESULT

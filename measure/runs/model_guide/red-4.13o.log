@@ -1,0 +1,40 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13o
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: fddffd482359a77fcc80ea0c10a8c8a53f6bbfad
+resulting_head: 5697381bb049e08da66932a23366d2e4f764cacd
+commits: 8fca0e3b9de7f07afb6278fe8cb411a931736532 test(model_guide): Red task 4.13o daemon guard, HOME guard, seed export; 5697381bb049e08da66932a23366d2e4f764cacd measure(model_guide): record Red task 4.13o
+red_test_command: bun test harness/model-guide-tests/review-run.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+tests: review-run.test.ts 55 pass 7 fail (62); judge-run.test.ts 4 failed | 30 passed (34); credential-provider.test.ts 16 passed (16)
+files: harness/model-guide-tests/fixtures/fakes/fake-opencode; harness/model-guide-tests/review-run.test.ts; harness/model-guide-tests/judge-run.test.ts; measure/tracks/model_guide/plan.md
+failing_tests: review-run D1 the pass stops the daemon child, writes the INFRA line to stderr and the pass record, and leaves the decoy alive (no INFRA line, daemon survives); review-run D3 a daemon that ignores SIGTERM is KILLed after the guard (TERM-ignoring daemon survives); review-run D2 the probe stops the daemon child and records the INFRA line and field (no INFRA line, daemon survives); review-run S1 the seed export uses the real HOME with the exact exempt form, timeout 60, and a cwd outside the runner cwd (no real-HOME export call); review-run S2 the seed succeeds when the fake real-HOME store holds the provider entry (seed fails, no real-HOME call); review-run S5 exactly one real-HOME call, the exempt seed export (zero real-HOME calls); review-run R1 an empty shared store refuses the pass with exit 2, one line, no call, and no record (exit 0, pass proceeds); judge-run JD1 the judge run stops the daemon child, writes the INFRA line to stderr and the run record, and leaves the decoy alive (no INFRA line, daemon survives); judge-run JS1 the seed export uses the real HOME with the exact exempt form, timeout 60, and a cwd outside the runner cwd (no real-HOME export call); judge-run JS2 exactly one real-HOME call, the exempt seed export (zero real-HOME calls); judge-run JR1 an empty shared store refuses the judge run with exit 2, one line, no call, and no judge file (exit 0, run proceeds)
+passing_guards: review-run S3 the import call has the job HOME and --standalone; review-run S4 the scan-values export reads the job store; all pre-4.13o review-run cases (53 pass); all pre-4.13o judge-run cases (30 passed); credential-provider.test.ts 16 passed (16); anti-pattern scan for A3/A4/A7/A9 finds no rg -q digit, no markers-consistent, no bare-word exclusion, no archived-track path in the new cases
+orphans: pgrep -af fake-opencod[e] prints nothing; pgrep -af quota-serve[r] prints nothing; pgrep -af serve --servic[e] prints nothing after each of the three commands
+production_change: none
+handoff: Green task 4.13p implements the 4.13o contract in harness/model-guide/review-run.sh, harness/model-guide/judge-run.sh, and harness/model-guide/provider-credential.sh: the serve --service guard with TERM then KILL after 5 s on every exit path, the <runner>: INFRA stopped daemon <pid> stderr line and the infra record field, job-root scoping that never touches an outside process, the single real-HOME auth export <provider> --standalone seed export (timeout 60, cwd in an empty folder outside any git repo), job-HOME import/run/scan-values, and the exit-2 one-line refusal of any other outside-HOME call and of a seed whose shared store holds no entry. Touch no test file.
+END_MEASURE_AGENT_RESULT
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13o
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 5697381bb049e08da66932a23366d2e4f764cacd
+resulting_head: e35ccf6b966a10bf8fd87f69793ee8c47e5c4ae7
+commits: 28543bd9abe5c29ebc709c6d8ab31367dac42882 test(model_guide): Red task 4.13o fixes after Green block (Option A); e35ccf6b966a10bf8fd87f69793ee8c47e5c4ae7 measure(model_guide): record Red 4.13o fixes
+red_test_command: bun test harness/model-guide-tests/review-run.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+tests: review-run.test.ts 56 pass 6 fail (62); judge-run.test.ts 4 failed | 30 passed (34)
+files: harness/model-guide-tests/review-run.test.ts; harness/model-guide-tests/judge-run.test.ts; measure/tracks/model_guide/plan.md
+failing_tests: review-run D1 the pass stops the daemon child, writes the INFRA line to stderr and the pass record, and leaves the decoy alive (no INFRA line, missing guard); review-run D2 the probe stops the daemon child and records the INFRA line and field (no INFRA line, missing guard); review-run D3 a daemon that ignores SIGTERM is KILLed after the guard (daemon survives, missing guard; runs 11.8 s inside the new 25 s timeout); review-run S1 the seed export uses the real HOME with the exact exempt form, timeout 60, and a cwd outside the runner cwd (zero real-HOME export calls, missing seed); review-run S5 exactly one real-HOME call, the exempt seed export (zero real-HOME calls, missing seed); review-run R1 an empty shared store refuses the pass with exit 2, one line, no call, and no record (exit 0, missing refusal); judge-run JD1 the judge run stops the daemon child, writes the INFRA line to stderr and the run record, and leaves the decoy alive (no INFRA line, missing guard); judge-run JS1 the seed export uses the real HOME with the exact exempt form, timeout 60, and a cwd outside the runner cwd (zero real-HOME export calls, missing seed); judge-run JS2 exactly one real-HOME call, the exempt seed export (zero real-HOME calls, missing seed); judge-run JR1 an empty shared store refuses the judge run with exit 2, one line, no call, and no judge file (exit 0, missing refusal)
+passing_guards: review-run S2 passes at HEAD because no guard trips yet; it pins the success path Green 4.13p must keep (judged acceptable per Option A; the Red signal is carried by the six failing review-run cases). S3, S4, R1-adjacent empty-job-store refusal coverage unchanged. No other assertion changed.
+orphans: pgrep -af fake-opencod[e] prints nothing; pgrep -af quota-serve[r] prints nothing; pgrep -af serve --servic[e] prints nothing after each of the two commands
+production_change: none
+handoff: Green task 4.13p implements the 4.13o contract in harness/model-guide/review-run.sh, harness/model-guide/judge-run.sh, and harness/model-guide/provider-credential.sh per the 4.13o row. Touch no test file. The reference implementation in /tmp/opencode/green-probe/harness/model-guide is a validated starting point and is not a commit.
+END_MEASURE_AGENT_RESULT

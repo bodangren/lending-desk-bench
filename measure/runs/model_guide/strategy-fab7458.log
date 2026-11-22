@@ -1,0 +1,53 @@
+Strategy log — model_guide Phase 1
+
+Date: 2026-11-14. Role: strategy. Route: opencode-go/deepseek-v4.1-flash
+(the table route claude-code/claude-opus-5-5[1m]#high was WAIT by pace).
+
+Read: measure/index.md, measure/tracks.md, measure/anti-patterns.md,
+measure/tracks/model_guide/spec.md, plan.md, spec-review.md,
+harness/vitest.config.ts, and harness/schedule-tests/rescore-guard.test.ts.
+
+Phase 0 checks:
+- Task 0.2 verify line holds. spec-review-bbde00d.json holds round 1 with
+  4 Blocker, 7 Major, and 1 Nit findings, each with an id and a severity.
+  spec-review.md round 1 gives each finding a disposition and a response.
+  F1 to F4 are Blocker and each says FIX.
+- Task 0.3 verify line holds. spec-review-2fae48c.json holds
+  round1_dispositions with F1 to F12, each fixed or partly fixed.
+  spec-review.md holds the round 2 section and the PM decision of
+  2026-11-14.
+
+Export input: read the top keys and the row keys of
+real-work-outcomes-2026-11-14.json only (schema real-work-outcomes/1,
+coverage, weekly, all_time, work_types, ratings, rater_checks). Copied no
+part of it into the repo.
+
+Wrote measure/tracks/model_guide/test-strategy.md. Closed plan tasks 0.2
+and 0.3 with an evidence line each. No other plan line changed.
+
+Commands run: read-only git (log, status, diff, rev-parse, add, commit),
+ls, cat, python3 -I to read JSON keys. No test, no benchmark, no model
+call, and no heavy run.
+
+Commit: 0a44cc9c417587e418899a97ac63f131a59fe2cd.
+git diff --name-only fab7458..HEAD -- docs/ printed nothing.
+
+Next step for the orchestrator: capture phase_base_sha directly after this
+strategy commit, before Red task 1.1.
+
+MEASURE_AGENT_RESULT
+role: strategy
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+role_base_sha: fab74581c4c73fe98b9133930b179d8f53246fb7
+head_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+commits: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+files_changed: measure/tracks/model_guide/test-strategy.md (new), measure/tracks/model_guide/plan.md
+plan_updates: 0.2 closed as [x] 2fae48c with an evidence line; 0.3 closed as [x] fab7458 with an evidence line; no other line changed
+risk_by_phase: P1 high, P2 high, P3 high, P4 critical, P5 critical
+review_applicability: P1 security yes, UX/API yes, adversarial yes, browser yes (.tmp/model-guide-preview/real-work.html through http://127.0.0.1:8766); P2 all four yes; P3 security and adversarial yes, UX/API and browser no; P4 security, adversarial, and browser yes, UX/API no; P5 security, adversarial, and browser yes, UX/API no
+RED_TEST_COMMAND: cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 | cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 | cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1
+GREEN_TEST_COMMAND: cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 | cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 | cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1
+handoff: Capture phase_base_sha=0a44cc9c417587e418899a97ac63f131a59fe2cd directly after this strategy commit and before Red task 1.1. Phase 1 Red is three files, one at a time with --maxWorkers=1. Plan 1.2 keeps the size and the schema check for the page B export; spec D17 dropped them for the print-audit file only, so no test asserts a size field or a schema key for that file. Phase 1 browser review default is the static server on .tmp/model-guide-preview at port 8766 with PROJECT_DEV_URL http://127.0.0.1:8766/real-work.html; the file:// path is a fallback only when the page inlines its data. The fixtures are synthetic and match spec EV2; the committed MANIFEST.txt must stay in step with fixtures/real-work-mini.json. No question needs an answer.
+END_MEASURE_AGENT_RESULT

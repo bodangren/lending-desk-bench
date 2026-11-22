@@ -1,0 +1,89 @@
+{
+  "schema_version": "1",
+  "status": "fail",
+  "summary": "Review A on Phase 4 range 57baaaa..3581902 (115 commits, HEAD verified). The runner block (review-run.sh, quota.ts, provider-credential.sh, routes.json), the judge runner (judge-run.sh), and the page B data source (real-work.ts, preview.sh, guide.ts, update.sh, pages, three dated data files + MANIFEST) implement spec D12-D19, D22 and FR-1..FR-5 with strong falsifiable tests; I reproduced the Green claims (review-run 39 pass under bun, judge-run 18 pass and quota 15 pass under vitest, leak-check 22 pass, adversarial-p4-runner 14 pass, no orphan fake-opencode or quota-server process). One blocking defect: the model prompt omits the first line of the commit message that spec D10 requires, and review-prompt.md itself tells the model that this line comes first (A4-adjacent test gap: no case pins it). One blocking decision is needed for the fix (where the message line is stored), so the item goes to the handoff. Five nonblocking findings: a stale test-strategy closeout item, an unreachable D18 second source for the code review row, a row-count boundary deviation, the probe retry vs the D14 wording, and the bun 5 s timeout on two runner-block files.",
+  "blocking_findings": [
+    "F1 (blocker, harness/model-guide/review-run.sh:461 and :583): The model call stdin is `cat \"$PROMPT_FILE\" \"$diff_path\"`, so the model receives the reviewer instruction and the seeded diff only. Spec D10 (spec.md:460-466) requires the prompt to hold three parts: the fixed reviewer instruction, the first line of the commit message, and the seeded diff. review-prompt.md:10 says 'The first line is the commit message.', so every live call tells the model to expect a line that never arrives; the model can read the first diff header line as the commit message. No file of the private set folder holds the message (D7 key holds source.commit, a SHA only; the lint-checked diffs hold clean diff bytes), so the runner cannot send it today. The probe has the same gap. No test pins the commit line (S1 at review-run.test.ts:1988 asserts the seeded-diff text and the absence of the source-only marker only). Fix: rule where the commit-message first line lives (see handoff), write it into the private set folder per diff, prepend it between the prompt and the diff in review-run.sh for the pass and the probe, and add a Red case that the call holds the message line and no other line of the commit."
+  ],
+  "nonblocking_findings": [
+    "N1 (major, measure/tracks/model_guide/test-strategy.md:338-341): Closeout item 6 of section 2.4 still requires routes.json to hold 'the nine rows of spec D12 in order' plus the second judge 'with ranked false'. The PM 2026-11-18 ruling (spec.md revision 4, lines 551-556; plan row 4.9b) cut the list to six rows and removed the three routes; the current routes.json is correct and holds no second-judge row while the D11 fallback holds. A closeout checker that runs item 6 as written fails the correct file. Update the strategy text before the Phase 4 closeout.",
+    "N2 (minor, harness/model-guide/guide.ts:384-400): The D18 second source for the Code review row (the page B checker table) is unreachable. fromTrackA returns the no-pick words whenever the track A rank is empty, so ruling Q2 (spec.md:1086-1090, 'before Phase 4') is applied unconditionally. If the pilot gate fails and no ranked set exists after Phase 4, the code review row can never pick from the checker table, against D18 'When the first source has no qualified model, the second source picks.' Record the scope ruling at 4.14 or add the fallback with a phase guard.",
+    "N3 (minor, harness/model-guide/real-work.ts:677-684): The footer row count counts only outcomes rows with a string route, a kind of producer or gate, and a string role, and silently skips the rest. Q-S5 (test-strategy.md:1938-1940) says the row count is the length of the outcomes array. On the real file the two agree (217 rows, verified with node), so no live number is wrong today; a malformed row in a later weekly export would undercount without a refusal line.",
+    "N4 (nit, harness/model-guide/review-run.sh:581-607 vs spec.md:689-692): Spec D14 says '--probe makes exactly one model call', but run_probe retries a transport error up to 3 attempts, and P2 (review-run.test.ts:1622-1648) pins three attempts before 'unreachable'. The retry follows the D13 transport-error rule and is reasonable, but the spec words and the test header (review-run.test.ts:1471 'exactly one model call') disagree with the pinned behavior. Record the ruling or reword D14 to 'one reachability check with the retry rule of D13'.",
+    "N5 (nit, harness/model-guide-tests/judge-run.test.ts J14b and quota.test.ts Q5): `bun test` fails these two cases on its 5 s per-test timeout (J14b 5003 ms, Q5 5007 ms; both tools printed the correct answer inside the bound). Both files pass under their recorded vitest commands, which are the gate lines in plan rows 4.13b and 4.4. The restart brief names only adversarial-p4-runner as bun-incompatible. Record that the vitest line is the gate for judge-run and quota as well."
+  ],
+  "evidence": [
+    "git rev-parse HEAD -> 3581902d06cbe616d95043d201fa2b39b445e697, equal to audited_head_sha; range 57baaaa..3581902 lists 115 commits",
+    "harness/model-guide/review-run.sh:461 `cat \"$PROMPT_FILE\" \"$diff_path\" | timeout ... opencode run` holds no commit-message source; review-prompt.md:10 'The first line is the commit message.'; spec.md:460-466 D10 Input names the commit-message first line; the D7 key (spec.md:393-417) holds source.commit only",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 39 pass, 0 fail, exit 0 (57.06s); pgrep fake-opencode and quota-server print nothing",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 18 passed, exit 0 (35.74s); under bun only J14b fails on the 5000 ms test timeout; matches plan row 4.13b",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 15 passed, exit 0; under bun only Q5 fails on the 5000 ms test timeout; matches plan row 4.4",
+    "bun test harness/model-guide-tests/real-work.test.ts -> 14 pass, exit 0; guide.test.ts -> 18 pass, exit 0; leak-check.test.ts -> 22 pass, exit 0",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 14 passed, exit 0 (64.75s); no orphan process after every run",
+    "MANIFEST loop of test-strategy 13.2 item 6 prints nothing (sha256 and size agree for the three dated files); grep -c 'new_lines|witness|operator' on the three files and the MANIFEST gives 0 in each",
+    "git rev-list 57baaaa..3581902 -- docs/ range check prints nothing; git diff --stat over harness/opencode-credential.sh, harness/opencode-host.sh, harness/provenance.ts, harness/tests prints nothing; harness/package.json unchanged",
+    "node read of harness/model-guide/data/ra-outcomes-2026-11-17.json: 217 rows, kinds producer 63 and gate 154, first row holds counts only, no text fields",
+    "harness/model-guide/data/sets/mg-2026-11a.json stays untracked and no review-scores folder exists, the intended pre-4.13/4.14 state (git status --porcelain)",
+    "adjudicate.ts:382-398 reads the judge files as flat maps keyed by finding id; judge-run.sh:579 writes judge-<a|b>.json as exactly that map, and judge-run.sh reads no judge file (J3 pins no route name and no slug in the prompt)",
+    "compareGateRows (real-work.ts:574-586) orders by AA net score high first, not-rated last, findings per run, runs, model key; pickOf (real-work.ts:605-618) adds allowed and net >= 20; escapes_text (preview.sh:526-531) shows 'no data' when escapes_total is 0"
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git log --oneline 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..3581902d06cbe616d95043d201fa2b39b445e697",
+    "git diff --name-only 57baaaa..3581902",
+    "git rev-list 57baaaa..3581902 -- docs/ (range rule of test-strategy 2.2 item 3)",
+    "git diff --stat 57baaaa..3581902 -- harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/tests",
+    "cd harness/model-guide/data && while read -r sha size name; do ... done < MANIFEST-2026-11-17.txt",
+    "grep -c 'new_lines\\|witness\\|operator' <the four committed data files>",
+    "bun test harness/model-guide-tests/review-run.test.ts",
+    "bun test harness/model-guide-tests/judge-run.test.ts",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bun test harness/model-guide-tests/real-work.test.ts",
+    "bun test harness/model-guide-tests/guide.test.ts",
+    "bun test harness/model-guide-tests/quota.test.ts",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bun test harness/model-guide-tests/leak-check.test.ts",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "pgrep -af 'fake-opencod[e]' and pgrep -af 'quota-serve[r]' after every test run (printed nothing each time)"
+  ],
+  "changed_files": [
+    "harness/model-guide/data/aa-reliability-2026-11-17.json (new)",
+    "harness/model-guide/data/allowed-routes-2026-11-17.json (new)",
+    "harness/model-guide/data/MANIFEST-2026-11-17.txt (new)",
+    "harness/model-guide/data/model-names.json (new)",
+    "harness/model-guide/data/ra-outcomes-2026-11-17.json (new)",
+    "harness/model-guide/guide.ts (changed)",
+    "harness/model-guide/judge-run.sh (new)",
+    "harness/model-guide/pages/guide-section.html (new)",
+    "harness/model-guide/pages/real-work.html (changed)",
+    "harness/model-guide/pages/review.html (new)",
+    "harness/model-guide/preview.sh (changed)",
+    "harness/model-guide/provider-credential.sh (new)",
+    "harness/model-guide/quota.ts (new)",
+    "harness/model-guide/real-work.ts (changed)",
+    "harness/model-guide/review-run.sh (new)",
+    "harness/model-guide/routes.json (new)",
+    "harness/model-guide/update.sh (changed)",
+    "harness/model-guide-tests/adversarial*.test.ts (4 files), credential-provider.test.ts, guide.test.ts, input-check.test.ts, judge-run.test.ts, leak-check.test.ts, preview-gate.test.ts, quota.test.ts, real-work.test.ts, review-run.test.ts, update.test.ts (new or changed)",
+    "harness/model-guide-tests/fixtures/fakes/fake-opencode (new)",
+    "harness/model-guide-tests/fixtures/page-b/ (4 new fixture files)",
+    "measure/tracks/model_guide/spec.md, plan.md, test-strategy.md (PM rulings and task evidence; in-track)",
+    "measure/tracks/{tests_bench,change_bench,go_catalog_w43} removed (PM-ordered archive commits 15479e4..742926f, marked 'archive check, PM 2026-11-18'; out of track by PM order, accepted)"
+  ],
+  "test_strategy_violations": [
+    "Test-strategy 2.4 closeout item 6 (nine routes.json rows plus a ranked:false second judge) is stale against the PM 2026-11-18 D12 ruling that the phase itself implements (finding N1)."
+  ],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "handoff": "Question for the orchestrator or the PM, for the F1 fix before the first pass night of 2026-11-20: where does the first line of the commit message live, so that review-run.sh can send it as spec D10 requires? Options: (a) extend the D7 key schema with source.message, the first line of the commit message, written by the fixture author for each diff of mg-2026-11a and mg-2026-11p, and the runner reads it from the key it already opens; (b) write <private>/sets/<set_id>/messages/<diff_id>.txt next to the diffs folder, and the runner prepends it; (c) PM ruling that drops the commit-message line from D10 and rewrites review-prompt.md:10 to say the input is the diff only. Recommended default: (a), the smallest change that keeps the D10 contract; the runner change itself is small (prepend the line between the prompt and the diff in the pass and the probe) and needs one new Red case in review-run.test.ts that pins the message line in the call. Reviews B and C passed on the parts below; the adversarial role passed on the page and runner block; F1 was outside each of their scopes (no case pins the prompt assembly against D10).",
+  "retry_recommendation": "escalate_human",
+  "confidence": "high",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    { "axis": "correctness", "score": 4, "evidence": "The runner, judge, and page B tools match D11-D19 and D22 in every tested case; the one wrong behavior is the D10 prompt input (review-run.sh:461, finding F1), plus the N2/N3 boundary gaps." },
+    { "axis": "test_meaning", "score": 4, "evidence": "R1-R15, Q1-Q8, C1-C7, J1-J14b, and DS cases are subprocess tests with pinned refusal lines and falsification conditions; all reproduced runs passed (review-run 39 pass, judge-run 18 pass); the D10 commit-message input is the one untested claim (F1)." },
+    { "axis": "scope_discipline", "score": 4, "evidence": "The non-measure diff holds exactly the plan file map; frozen paths and docs/ show no change in the range; the only extras are the PM-ordered archive commits (742926f and neighbors), accepted by PM order." },
+    { "axis": "evidence_quality", "score": 4, "evidence": "Each finding carries a file:line and each reproduced command carries its exit code (review-run exit 0, judge-run vitest exit 0, MANIFEST loop exit 0); the preview-gate claims rest on the recorded B and C runs, not re-run here." }
+  ]
+}

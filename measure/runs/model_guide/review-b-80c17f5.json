@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "80c17f5979b632a38e2a6797ff20504b418e198c",
+  "audited_head_sha": "80c17f5979b632a38e2a6797ff20504b418e198c",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 7 passes with no blocker. The delta 2a9d421..80c17f5 changes four files: real-work.html (static markup), preview.sh (one tag), preview-gate.test.ts (tests), and plan.md. The only export-derived text written into a new attribute is the work-type name in aria-label. It passes through html.escape with the default quote flag, so a quote, an apostrophe, an angle bracket, or an ampersand cannot leave the attribute. The inline style value is a static string. No new write path exists, and publish.ts and real-work.ts did not change. No private export data leaked. Prior findings B5-1 to B5-3 stay nonblocking and unchanged (carried as B7-1 to B7-3).",
+  "security_applicability": "applicable: test-strategy.md section 9 Phase 1 row assigns Review B the publish gate, the no-docs/-write rule, and the no-real-export-bytes rule. git diff --name-only 2a9d421..80c17f5 lists harness/model-guide/preview.sh and harness/model-guide/pages/real-work.html, which write export-derived text into the generated page, plus preview-gate.test.ts and plan.md.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "B7-1 [Nit] review-b: carried unchanged from B5-1. harness/model-guide/real-work.ts:8-9 documents the check order as `input, json, manifest, sha256, size, schema, run-sum`, but the code runs manifest, sha256, and size before the JSON parse. The tool fails closed. real-work.ts has 0 diff lines in 2a9d421..80c17f5. Fix: align the header line with the code order.",
+    "B7-2 [Nit] review-b: carried unchanged from B5-2. A same-user race window remains between the docs scan and the copy in preview.sh, and between the docs walk and the staged write in publish.ts. publish.ts has 0 diff lines in 2a9d421..80c17f5, and the preview.sh scan and copy lines did not move (the diff touches only the table-wrap tag near line 314). Record only. Optional hardening: pass the flag `wx` to writeFileSync.",
+    "B7-3 [Nit] review-b: carried unchanged from B5-3. preview.sh scans an existing preview folder with `find -type l`, so it refuses symlinks only; a FIFO in the preview folder stalls cp. The case is same-user only inside the user-owned .tmp folder. The preview.sh diff does not touch this code. Fix: refuse non-regular entries in the preview folder too, or write page files to temp names and rename."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD printed 80c17f5979b632a38e2a6797ff20504b418e198c before and after the audit, equal to audited_head_sha, so the audit is current. git status --short printed only the pre-existing untracked .opencode/, harness/wt.txt, and tech-debt.md before my two artifacts.",
+    "Delta scope: git diff --stat 2a9d421..80c17f5 lists exactly four files: preview-gate.test.ts (+131), pages/real-work.html (+4/-4), preview.sh (+2/-1), plan.md (+23). The plan names these files for tasks 1.20 and 1.21. git diff --name-only 2a9d421..80c17f5 -- docs printed 0 lines, and the diff of real-work.ts plus publish.ts is 0 lines.",
+    "Escaping in attributes: preview.sh:316-318 writes `aria-label=\"{html.escape(name)} table\"`, where name is a work_types key of real-work.json. Python html.escape defaults to quote=True. Probe `python3 -I -c` with the input x\" onfocus=\"alert(1)' <b>& printed x&quot; onfocus=&quot;alert(1)&#x27; &lt;b&gt;&amp;. So a hostile key cannot close the double-quoted attribute or add an event handler. The same escape call already guards the <h3> at :316. real-work.ts:110-120 accepts any string key in work_types, so the escape is the only guard; it holds.",
+    "Static values: the new style=\"overflow-wrap: anywhere\" at pages/real-work.html:33 and the two aria-label values `Producer roles table` and `Checker roles table` at :45 and :73 are fixed text in the page template, not export-derived. tabindex=\"0\", role=\"region\", and aria-current=\"page\" are fixed too. The page holds no <script> and no on* attribute added by the delta. The Source paragraph content (file, SHA-256, generated_on) still goes through html.escape at preview.sh:340-342, unchanged.",
+    "No private data in attributes: the live .tmp/model-guide-preview/real-work.html holds seven aria-label values: app code table, Checker roles table, docs and ops table, other table, print books table, Producer roles table, tooling table. They are the work-type category names and two fixed role names; none names a person, a school, or a student. The SHA-256 on the page is the spec D16 readable hash, unchanged from the prior round.",
+    "No new write path: preview.sh changed in one f-string only (the table-wrap tag). It adds no cp, mkdir, rm, redirect, or file open. The generated page still lands in the preview folder only. git ls-files .tmp printed 0 lines, so no generated file entered git.",
+    "No export leak: git grep -l of the full export SHA at 80c17f5 lists measure/tracks/model_guide/metadata.json, plan.md, and spec.md, a subset of the files at 2a9d421. The 32-character prefix also matches adversarial.test.ts:816 and leak-guard.test.ts:21; both are the existing leak-guard needle, present at 2a9d421 and not in this delta. 0 matches in harness/model-guide source or pages.",
+    "A6 registry check: measure/tracks.md claims no resolved security state for model_guide (pending), so no claim outruns the implementation. A2: the delta adds no publish path and no draft-to-published flip; the consent gate of publish.ts is unchanged and the public page names no subject.",
+    "Test confirmation (each file alone, one worker, dot reporter): preview-gate.test.ts 88 passed (88); adversarial.test.ts 49 passed (49); leak-guard.test.ts 2 passed (2). The three new U1/U3/U4 tests were red at 2a9d421 per red-1.20.txt and pass at 80c17f5.",
+    "Test meaning (security view): the U3 test asserts a non-empty aria-label on every table-wrap tag but does not assert escaping of a hostile work-type name in that attribute. The escape is correct in code and my probe, but no test pins it. Not a blocker: the h3 and aria-label share one escape call, and ADV tests in adversarial.test.ts cover export-text escaping for the page body."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 80c17f5979b632a38e2a6797ff20504b418e198c (before and after)",
+    "git diff --stat 2a9d421..80c17f5; git diff 2a9d421..80c17f5 -- harness/model-guide/preview.sh harness/model-guide/pages/real-work.html",
+    "git diff 2a9d421..80c17f5 -- harness/model-guide/real-work.ts harness/model-guide/publish.ts | wc -l -> 0; git diff --name-only 2a9d421..80c17f5 -- docs | wc -l -> 0",
+    "python3 -I -c \"import html; ...\" hostile name probe -> x&quot; onfocus=&quot;alert(1)&#x27; &lt;b&gt;&amp;",
+    "grep -o 'aria-label=\"[^\"]*\"' .tmp/model-guide-preview/real-work.html -> 7 values, category and role names only",
+    "git grep -l <full export SHA> 80c17f5 -> metadata.json, plan.md, spec.md; git ls-files .tmp | wc -l -> 0",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 88 passed (88)",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 49 passed (49)",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 2 passed (2)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-80c17f5.json",
+    "measure/runs/model_guide/review-b-80c17f5.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "preview.sh:316-318 escapes the work-type name with html.escape before it enters aria-label; the probe turned a quote and angle bracket payload into entities."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "preview-gate.test.ts U3 asserts tabindex, role, and aria-label on every table-wrap tag (88 passed), but no test feeds a hostile work-type name into the attribute."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 2a9d421..80c17f5 lists only the four planned files, and docs, real-work.ts, and publish.ts have 0 diff lines."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim above carries a command result or a file:line, including the three single-file vitest runs (88, 49, and 2 passed)."
+    }
+  ]
+}

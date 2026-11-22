@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.16",
+  "status": "pass",
+  "verdict": "pass",
+  "summary": "Pass under the PM cap. One sub-second freshness gap remains nonblocking for backlog row 4.15.",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "33374182f4798169e8c3e2dc676f8a4a2f9327a6",
+  "audited_head_sha": "33374182f4798169e8c3e2dc676f8a4a2f9327a6",
+  "evidence": [
+    "git rev-parse HEAD at entry and exit returned 33374182f4798169e8c3e2dc676f8a4a2f9327a6.",
+    "Reviewed exact phase diff 7d7d218d00a95d9d619d2856173b8136b6ace4a5..33374182f4798169e8c3e2dc676f8a4a2f9327a6 and requested delta 2bdf5cb..3337418; six changed paths, 523 insertions, 31 deletions in the requested delta.",
+    "Read Measure index and track metadata, model_guide spec D14, Phase 4b plan, routes.json, and test-strategy sections 14.12 and 2.5.",
+    "The explicit foreign sessionID is rejected by both selectors at review-run.sh:1218-1219 and judge-run.sh:968-969. Native message schema in installed OpenChamber indexer.js:30-38 does not require sessionID; omission is safe because each call uses a new session and reads its session-scoped message endpoint.",
+    "The native message time.created field is numeric in installed OpenChamber indexer.js:30-37. Current-call filtering uses the expected millisecond scale, but LIVE_CALL_START is captured with date +%s and multiplied by 1000; this floors the boundary to seconds and permits a stale message from within the preceding second.",
+    "P4E-2 only tests a very old timestamp (created=1); it does not cover a stale timestamp in the same second. The test is not vacuous, but its edge coverage is incomplete.",
+    "Both selectors reject finish=tool-calls before accepting time.completed at review-run.sh:1234-1238 and judge-run.sh:984-988. The wait loops continue only until LIVE_DEADLINE, and the adversarial timeout cases pass.",
+    "Shared live helper blocks compare byte-identically; live_model_call remains the intentional runner-specific exception. Both runner files pass bash -n and git diff --check passes.",
+    "Fixture defaults use current time, while the explicit stale timestamp remains unchanged. The fixture adjustment does not weaken its assertion.",
+    "Commands passed: review-run.test.ts, 130 pass / 0 fail; judge-run.test.ts, 61 passed; adversarial-p4e.test.ts, 54 passed. Each ran separately with no shell redirection.",
+    "The Green plan evidence in plan.md:2671 matches green-4.16-dabc9c3.log. A3 count parsing and A5 current-pass claims match actual test output. The phase did not change framework scripts, contract tests, or registry; framework anti-pattern checks do not apply.",
+    "build-graph was not used: changed production files are shell scripts, and this role may not create a graph database. The new TypeScript file is test-only; no exported production symbol or caller contract changed.",
+    "No live API request, model call, credential read, CLI call, or file outside the supplied result artifacts was made. pgrep found no fake process. Existing untracked paths were left untouched."
+  ],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Low, nonblocking] Both runners floor LIVE_CALL_START to whole seconds with date +%s, then compare native millisecond time.created against start*1000 (review-run.sh:1212, judge-run.sh:962). A stale terminal message created after that floor but before call entry can pass the freshness filter. P4E-2 uses created=1 and does not test this sub-second boundary. Capture a millisecond call-start timestamp or use another precise current-call marker, then add a failing-first fixture. Route to backlog row 4.15 under the PM cap."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git diff --stat 2bdf5cb 3337418",
+    "git diff --no-ext-diff --unified=40 7d7d218d00a95d9d619d2856173b8136b6ace4a5 3337418 -- harness/model-guide/review-run.sh harness/model-guide/judge-run.sh harness/model-guide-tests/review-run.test.ts harness/model-guide-tests/judge-run.test.ts harness/model-guide-tests/adversarial-p4e.test.ts measure/tracks/model_guide/plan.md",
+    "git diff --check 7d7d218d00a95d9d619d2856173b8136b6ace4a5..3337418 && bash -n harness/model-guide/review-run.sh && bash -n harness/model-guide/judge-run.sh",
+    "bun test harness/model-guide-tests/review-run.test.ts",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4e.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "jq -e '.schema_version == 1 and .phase_base_sha == \"7d7d218d00a95d9d619d2856173b8136b6ace4a5\" and .role_base_sha == \"33374182f4798169e8c3e2dc676f8a4a2f9327a6\" and .audited_head_sha == \"33374182f4798169e8c3e2dc676f8a4a2f9327a6\" and (.nonblocking_findings | length == 1)' measure/runs/model_guide/review-a-4.16-3337418.json"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4e.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "F1 is nonblocking under the PM cap and belongs to backlog row 4.15. The exact question and its options are not applicable; this finding needs no product decision.",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    { "axis": "correctness", "score": 4, "evidence": "Both selectors reject foreign session IDs and tool-calls, but second-level time flooring leaves a sub-second stale-message gap at review-run.sh:1212." },
+    { "axis": "test_meaning", "score": 4, "evidence": "The enabled P4E suite passed 54 tests; P4E-2 uses only a very old timestamp and misses the same-second edge." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git diff 2bdf5cb..3337418 changes two runners, three test files, and the task plan only." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "Three separate test commands passed, and the native time shape is defined at installed indexer.js:30-37." }
+  ]
+}

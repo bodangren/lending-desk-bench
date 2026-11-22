@@ -1,0 +1,11 @@
+Phase 3 review-a on 8bfb6d1: six test files pass (17/15/21/13/10/16), scorer and secrecy rules hold, one blocker in adjudicate.ts cross-route verdict ids.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: fail
+audited_head_sha: 8bfb6d1442214a2a0a64eb058329462edfacd1c2
+result_file: measure/runs/model_guide/review-a-8bfb6d1.json
+retry_recommendation: retry_implementation
+summary: All six Phase 3 test files pass at HEAD with labeled counts, and window, nearer-plant, duplicate, 30-finding, invalid, provisional, and rank rules match D10 to D13; the 3.3a end-to-end test and T7b prove the score file reaches guide.ts and a provisional pass keeps its rank. One blocker (P3A1-1): adjudicate.ts keys findings by a per-route output position, so two routes with different claims at the same index share one verdict slot and scores can change. Nonblocking: queue match window is plus or minus 2 not 3 (P3A1-2), missed counts skip invalid reviews and disagree across levels (P3A1-3, P3A1-4), the lint passes D7 key mutations (P3A1-5), and test-strategy section 7 still says in-process (P3A1-6). Decisions judged: subprocess CLI accepted with the stale strategy line, missed decision only partly implemented, K4 19-character deferral accepted, routes[].passes as pass records accepted.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "b7426e75ec7ae6e0afd88b3be828700cab6ff9b6",
+  "audited_head_sha": "b7426e75ec7ae6e0afd88b3be828700cab6ff9b6",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "fail",
+  "summary": "Round 2 closes F1 to F7, F9 and F11 for absolute paths and for the tested cases, and the page key contract still holds. One blocker remains: preview.sh checks a relative --preview path from the caller directory but uses it from the harness directory, so the D21 docs guard has a bypass. Both DECLINE items agree with the spec.",
+  "contract_applicability": "applicable: test-strategy.md section 9, Phase 1 row assigns Review C the CLI exit codes of real-work.ts, preview.sh, and publish.ts, and the phase adds new data files and a new page.",
+  "blocking_findings": [
+    "C2-1 [Blocker] review-c: harness/model-guide/preview.sh:27: A relative --preview value is checked from the caller directory (preview.sh:27 realpath) but used after `cd \"$ROOT/harness\"` (preview.sh:36) and passed unchanged as `--out \"$PREVIEW\"` (preview.sh:38). From the repo root, `--preview ../docs` passes the check (realpath gives /home/daniebo/Desktop/docs), then real-work.ts writes <repo>/docs/real-work.json (real-work.ts:348-349) before the cp at preview.sh:43 fails. This reopens F1 (spec D21: no write under docs/ before approval). Test A1-7 (preview-gate.test.ts:437) uses cwd=harness only, so no test covers cwd=repo root. Fix: resolve PREVIEW and EXPORT to absolute paths before the cd, use PREVIEW_REAL afterwards, and add a test with cwd=repo root and a relative path that reaches docs from harness."
+  ],
+  "nonblocking_findings": [
+    "C2-2 [Major] review-c: harness/model-guide/preview.sh:38-43: real-work.ts writes <preview>/real-work.json first (preview.sh:38), then `cp -a docs/. <preview>/` runs (preview.sh:43). After a first publish, docs/ holds real-work.json (test p5, preview-gate.test.ts:387-399, publishes it at the docs root). The next preview run then copies the old file over the new one, the renderer reads the old data (preview.sh:182), and the page shows the old source file and SHA-256 with exit 0. A silent stale page in the weekly flow (spec D19). Fix: write real-work.json after the docs copy, or run real-work.ts into a temp folder and move the file after the copy. The input-check refusal must still leave the preview folder without a new file (preview-gate.test.ts:575-579). By code trace; I did not run it.",
+    "C2-3 [Minor] review-c: harness/model-guide/preview.sh:36-38: A relative --export path also resolves from the harness folder after the cd, not from the caller directory. real-work.ts then reads a wrong MANIFEST.txt path and refuses with `input-check: manifest`, a misleading reason. The usage line names `<file>` with no absolute-path rule. Same fix as C2-1.",
+    "C2-4 [Minor] review-c: harness/model-guide/preview.sh:19-20: `--export` or `--preview` as the last argument runs `shift 2` with one argument left. With `set -e` the script then exits 1 with no usage line (by bash semantics; my probe was blocked by the sandbox). `--preview \"\"` reaches `realpath -m -- \"\"` at preview.sh:27, which I confirmed prints an error with exit 1 on this host. The C4 usage contract (exit 2 with a usage line) therefore covers real-work.ts and publish.ts only. No test pins a preview.sh usage error.",
+    "C2-5 [Minor] review-c: harness/model-guide/publish.ts:71: A non-blank row of the files section that does not match `^[0-9a-f]{64}\\s+(.*)$` (an uppercase hex, a 63-character hex) is skipped without a message. The tool then copies the other rows and exits 0, so a file that Daniel approved is not published and nothing says so. The failure is safe (less is published), but the exit code and the output hide it. Refuse with one named line, for example `publish: bad record line`.",
+    "C2-6 [Minor] review-c: harness/model-guide/real-work.ts:169-170: The F6 fix checks only paired_duplicates_left_out. preview.sh:195-202 also reads coverage first_run_date, last_run_date, share_known_route, share_with_result, and runs with no check. A missing or non-numeric value raises a Python traceback (exit 1) after real-work.json is already in the preview. The preview.sh header (line 8-9) promises exit 0 or exit 2 only. The real export holds these keys, so the risk is low. Validate them in the schema check or document the limit.",
+    "C2-7 [Nit] review-c: harness/model-guide/publish.ts:103: An approved path that names a directory passes existsSync, then readFileSync throws EISDIR and the tool exits 1 with a stack trace. It writes nothing (all checks run before the copy). Use a file check and refuse with the `publish: sha256 <path>` line.",
+    "C2-8 [Nit] review-c: harness/model-guide/preview.sh:2-9: The header does not state the `preview: refused path <value>` refusal (exit 2, stdout) or the usage line. preview.sh:35 also creates the preview folder before the input check, so a refused input leaves an empty folder; the test snapshot ignores empty folders (preview-gate.test.ts:139-156 with includeDirs false). Add the refusal to the header."
+  ],
+  "evidence": [
+    "HEAD equaled audited_head_sha b7426e75ec7ae6e0afd88b3be828700cab6ff9b6 (git rev-parse HEAD). The remediation range 2131746..b7426e7 changed seven files: input-check.test.ts, leak-guard.test.ts (new), preview-gate.test.ts, preview.sh, publish.ts, real-work.ts, plan.md. docs/ has no change (git log 0a44cc9..HEAD -- docs and git status docs print nothing).",
+    "F8 DECLINE agreed: spec D16 and FR-1 say `exit 2 and one line that names the failed check`, and D21 says `refuses with exit 2, names each drifted file`. grep for stderr and standard error in spec.md, test-strategy.md and plan.md finds no stream rule. The code now splits by kind: refusals on stdout, usage errors on stderr, in all three tools. The test headers pin the split (preview-gate.test.ts:43-45 and 64-72, input-check.test.ts:35-37). I withdraw C1 of round 1.",
+    "F10 DECLINE agreed: spec.md:672 and spec.md:965 say a row with fewer than 10 results `cannot pick`, test-strategy.md:196 (M5) tests it, and real-work.test.ts reads can_pick. The field serves the pick rule of Phase 2. I withdraw C3 of round 1.",
+    "Pinned texts equal code. publish.ts header lines 12-24 equal publish.ts:65, 68, 74, 99, 104, 109, 124 and the usage line at publish.ts:32 and 45; the test header (preview-gate.test.ts:54-72) and PUBLISH_USAGE (preview-gate.test.ts:88) match. preview.sh:31 `preview: refused path $PREVIEW` equals preview-gate.test.ts:255. real-work.ts:69 and :74 usage line equals input-check.test.ts:53. The check order of publish.ts matches its header: record, files, path, sha256, preview base, drift, copy.",
+    "Each refusal writes nothing: the preview.sh path refusal (preview.sh:26-33) runs before mkdir at preview.sh:35; real-work.ts refuse() runs before mkdirSync at real-work.ts:348; publish.ts runs every check before the copy loop at publish.ts:128-132. The tests snapshot docs, the target, and the repo (preview-gate.test.ts:247-273). Exceptions: C2-8 (empty preview folder after an input refusal) and C2-7.",
+    "Caller wiring (C4): preview.sh passes only --input and --out to real-work.ts (preview.sh:38); real-work.ts parseArgs (real-work.ts:57-78) accepts both and exits 2 on any other flag. The preview.sh exit status is passed on at preview.sh:39-41. No caller breaks. The relative-path hazard is C2-1 and C2-3.",
+    "Page data contract: every key preview.sh reads (source.file, sha256, generated_on; coverage runs, first_run_date, last_run_date, share_known_route, share_with_result, paired_duplicates_left_out, unknown_runs, other_runs; row model, routes, runs, pass, fail, error, no_result, blocking_findings, pass_rate, blocking_rate, ratings, rater_checks, trend, few_runs, rank; work rows model, routes, runs, pass, fail, pass_rate, few_runs, rank) is written by real-work.ts:335-346 and :218-240 and :297-307. The template pages/real-work.html has no diff in the remediation range and its seven tokens are replaced at preview.sh:209-216. The crash case for missing coverage keys is C2-6.",
+    "F6 check: paired_duplicates_left_out must be an integer (real-work.ts:169-170); the only coverage value that preview.sh prints without a numeric format or html.escape is now safe. Route names, model names, source file, dates all pass html.escape (preview.sh:128-129, 187-188, 196).",
+    "F1 check: absolute docs paths, trailing and double slashes, symlinks, ancestors, and `docs-preview` siblings are covered by A1-1 to A1-12 (preview-gate.test.ts:401-485). The relative path case from another directory is not (C2-1). F2 check: publish.ts:114-122 refuses added and removed docs files (A2 tests, preview-gate.test.ts:487-522). F3: input-check.test.ts:191-222 feed sum-line manifests. F4: plan.md no longer cites 54836d0 (grep) and `git cat-file -t 2131746` prints commit. F5: publish.ts:52-56 and :64-76 refuse unsafe paths and an empty files section. F7: leak-guard.test.ts scans the test folder for the hand-off context and the real export SHA-256. F9: publish.ts:108-109 prints `publish: no preview base`. F11: usage lines for publish.ts and real-work.ts, tests C4.",
+    "The approval record needs no approved_by or date check: spec.md:780-783 and :858 require only that the record exists and that each SHA-256 matches. I report no finding for the consent fields.",
+    "Probe limits: the sandbox denied the shell commands that build a temp repo and a bash shift probe, and the brief forbids preview.sh against the real docs/. C2-1 to C2-4 therefore rest on code trace plus two read-only realpath calls: `cd harness && realpath -m -- ../docs` printed <repo>/docs; `cd <repo> && realpath -m -- ../docs` printed /home/daniebo/Desktop/docs; `realpath -m -- \"\"` printed an error and exit 1.",
+    "Route parity: this audit ran on claude-code/claude-sonnet-5-5#high. Kimi wrote the Green fix of the round, so the review route differs from the fix route."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> b7426e75ec7ae6e0afd88b3be828700cab6ff9b6",
+    "git diff --stat 2131746..b7426e7 -> seven files",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 39 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 11 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 2 passed",
+    "grep -n 'can_pick\\|cannot pick\\|stderr\\|standard error' spec.md test-strategy.md plan.md -> cannot pick at spec.md:672, :965; no stderr rule",
+    "cd harness && realpath -m -- ../docs -> <repo>/docs; cd <repo> && realpath -m -- ../docs -> /home/daniebo/Desktop/docs",
+    "grep -n 54836d0 measure/tracks/model_guide/plan.md -> no output; git cat-file -t 2131746 -> commit"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/leak-guard.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [
+    "C2-1 [Blocker] review-c: harness/model-guide-tests/preview-gate.test.ts:437: The A1 relative-path case runs only with cwd=harness; no test runs a relative --preview from the repo root."
+  ],
+  "live_contract_violations": [
+    "C2-1 [Blocker] review-c: harness/model-guide/preview.sh:27: A relative --preview is checked from the caller directory and used from the harness directory; the docs guard can be bypassed.",
+    "C2-2 [Major] review-c: harness/model-guide/preview.sh:43: The docs copy overwrites the new real-work.json after a first publish."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "medium",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "Absolute-path guards and the publish checks hold (preview-gate.test.ts 39 passed), but preview.sh:27 versus preview.sh:36-38 leaves a relative-path bypass of the docs guard."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "A1 to A2, B1, B2, C2 and C4 cases fail first on the old code and pin exact stdout, stderr and tree snapshots (preview-gate.test.ts:247-273), but no case runs a relative --preview from the repo root."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 2131746..b7426e7 lists seven files, all in the planned Phase 1 remediation set, and docs/ has no change."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every claim cites a file:line or a command result; C2-1 to C2-4 rest on code trace and two realpath calls because the sandbox blocked the temp-repo probe."
+    }
+  ]
+}

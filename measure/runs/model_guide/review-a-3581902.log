@@ -1,0 +1,33 @@
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+route: opencode-go/glm-5.3#high
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: not supplied (restart: the first Review A run died in the server restart at 20:29 and left no artifact; this run audited the full phase range)
+audited_head_sha: 3581902d06cbe616d95043d201fa2b39b445e697
+status: fail
+verdict: one blocking finding (F1), five nonblocking findings (N1 to N5)
+
+Audited range: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..3581902d06cbe616d95043d201fa2b39b445e697, 115 commits. HEAD equals audited_head_sha (git rev-parse HEAD).
+
+Read: spec.md (D7, D11-D19, D22, FR-1..FR-5), plan.md rows 4.1 to 4.13b with their evidence claims, test-strategy.md sections 2.4, 3.4, 4.4, 9.4, and 13.
+
+Test runs, one file at a time, fake opencode only, no network and no model call:
+- bun test harness/model-guide-tests/review-run.test.ts: 39 pass, 0 fail, exit 0.
+- bun test harness/model-guide-tests/judge-run.test.ts: 17 pass, 1 fail (J14b, the 5000 ms bun per-test timeout); vitest line of plan 4.13b: 18 passed, exit 0.
+- bun test harness/model-guide-tests/real-work.test.ts: 14 pass, exit 0.
+- bun test harness/model-guide-tests/guide.test.ts: 18 pass, exit 0.
+- bun test harness/model-guide-tests/quota.test.ts: 14 pass, 1 fail (Q5, the 5000 ms bun timeout); vitest line of plan 4.4: 15 passed, exit 0.
+- bun test harness/model-guide-tests/leak-check.test.ts: 22 pass, exit 0.
+- cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot: 14 passed, exit 0.
+After every run, pgrep -af "fake-opencod[e]" and pgrep -af "quota-serve[r]" printed nothing, and no temp server stayed.
+
+Range gates: the docs/ range rule prints nothing; the frozen-path diff (opencode-credential.sh, opencode-host.sh, provenance.ts, harness/tests) prints nothing; harness/package.json is unchanged; data/sets/mg-2026-11a.json stays untracked and no review-scores file exists, the intended state before 4.13 and 4.14. The MANIFEST of the three dated data files agrees on SHA-256 and size, and no key field name appears in any committed data file.
+
+Blocking finding F1: review-run.sh:461 (and the probe at :583) sends only review-prompt.md plus the seeded diff to the model. Spec D10 requires the first line of the commit message in the prompt, and review-prompt.md:10 tells the model that this line comes first, so every live call names an input that never arrives. No file of the set folder holds the message, and no test pins it. The fix needs an owner ruling on where the message line is stored (options a, b, c in the result handoff), so retry_recommendation is escalate_human.
+
+Nonblocking findings: N1 stale test-strategy 2.4 closeout item 6 (nine rows, ranked:false) against the PM 2026-11-18 six-row D12 list; N2 the D18 checker-table second source for the Code review row is unreachable in guide.ts (Q2 applied unconditionally); N3 the real-work.ts footer row count filters rows where Q-S5 says to count the array; N4 the probe retries three calls where D14 says exactly one; N5 bun's 5 s timeout fails judge-run J14b and quota Q5, so the vitest line is the gate for those files as well.
+
+Result artifact: measure/runs/model_guide/review-a-3581902.json.
+END_MEASURE_AGENT_RESULT

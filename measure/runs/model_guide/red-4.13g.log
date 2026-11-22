@@ -1,0 +1,27 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: done
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13g Red (Go plan thresholds, PM order 2026-11-19, spec D15)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 66fe1accf71c0f881fffa58ff05bb0a9440747f
+resulting_head: 3c4e4623c67f1e14c8ab75b2e6b007b5183f2eae
+adv_r2: bae1884 test(model_guide): Red task 4.13g ADV-R-2 on a non-Go source; adversarial-p4-runner.test.ts 14 passed at HEAD, pgrep scans clean; plan record 3c4e462
+commits: 0861c05 test(model_guide): Red task 4.13g Go plan thresholds (tests + plan rows); 882872e measure(model_guide): record Red task 4.13g (plan SHA + evidence)
+red_test_command: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot; bun test harness/model-guide-tests/review-run.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot (one file at a time, fakes only)
+failing_tests: quota.test.ts Q9 (ready at 5h 94 % for opencode-go), Q10 (ready at week 99 % for opencode-go); review-run.test.ts G1 (pass starts at week 97 %), G2 (pass runs through 80 %), G3 (probe starts at week 97 %); judge-run.test.ts G1 (judge starts at week 97 %), G2 (judge runs through 80 %), G3 (start-test ready at week 97 %). Each fails because HEAD still applies the 70 %/80 % rule to Go routes. All other cases pass: quota 15, review-run 49, judge-run 27.
+files: harness/model-guide-tests/quota.test.ts, harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md (rows 4.13g [~] 0861c05, 4.13h [ ]). Evidence: measure/runs/model_guide/red-4.13g.txt (not staged). Production files untouched.
+handoff: Green 4.13h owns quota.ts, review-run.sh, judge-run.sh. Notes: (1) changed earlier 70/80 cases to kimi-code-plan-cn: Q2, Q6, R5, R6 x2, P6, J11 x2. (2) adversarial-p4-runner.test.ts ADV-R-2 huge (w199 85 on opencode-go, expects wait) will fail after Green; it is outside 4.13g/4.13h files, so Green must move it to a non-Go provider or the new thresholds. ADV-R-3 (69 to 100) still holds. (3) A sibling session ran the same test files concurrently (parent opencode serve 3250773); its mg-judge-fake server appeared in one pgrep scan; all recorded failures come from this role's own runs. (4) Spec HEAD moved 66fe1ac to 84e254e (spec-only Build commit); no production file differs. (5) After Green passes, re-probe the 2 Go pilot routes in the 02:00-06:00 window. No question; no block.
+END_MEASURE_AGENT_RESULT
+MEASURE_AGENT_RESULT
+role: mid-red
+status: done
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13g fix
+resulting_head: cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5
+commits: 4b4054c test(model_guide): G2 timeout and cleanup (task 4.13g); cc8afbd measure(model_guide): record G2 test fix
+handoff: G2 alone took 5.88s, past the 5s default, so the timeout killed it before dropFixture ran; that left its quota server and runner child behind (the 2 dangling processes). The `}, 120_000);` timeout lets cleanup run, so no cleanup code change was needed and no assertion changed. Full file now 52 pass 0 fail with both pgrep scans empty. No question; no block.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,97 @@
+# Green log of task 4.13b (the judge runner, spec D11)
+
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13b Green
+role_base_sha: 80869bdc6bd546da446d2c86312e0076d70cbe1e
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+implementation_commit: 61449ae (feat(model_guide): judge runner (task 4.13b))
+plan_evidence_commit: 3581902 (measure(model_guide): record Green task 4.13b)
+final_green_head: 3581902
+
+## Red before the change
+
+git status --short before editing: only untracked unrelated paths (.opencode/,
+harness/model-guide/data/sets/, harness/wt.txt, tech-debt.md). No tracked file
+is dirty.
+
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts
+  --configLoader native --maxWorkers=1 --reporter=dot
+-> exit 1, "Test Files  1 failed (1)", "Tests  18 failed (18)", 719ms.
+Every case fails with "the judge runner is missing:
+/home/daniebo/Desktop/lending-desk-bench/harness/model-guide/judge-run.sh".
+
+## The change
+
+New file harness/model-guide/judge-run.sh, mode 755, 736 lines. It follows the
+contract of plan row 4.13a and the patterns of
+harness/model-guide/review-run.sh. No shared helper was extracted. The
+committed Red test file is unchanged.
+
+## Green gates, one at a time
+
+1. cd harness && npx vitest run model-guide-tests/judge-run.test.ts
+     --configLoader native --maxWorkers=1 --reporter=dot
+   -> exit 0, "Test Files  1 passed (1)", "Tests  18 passed (18)", 39.19s.
+2. pgrep -af "fake-opencod[e]" ; pgrep -af "quota-serve[r]" ; ls -d /tmp/mg-judge*
+   -> no line, no folder.
+3. bun test harness/model-guide-tests/review-run.test.ts
+   -> exit 0, 39 pass, 0 fail, 293 expect() calls, 64.28s.
+4. pgrep -af "fake-opencod[e]" ; pgrep -af "quota-serve[r]"
+   -> no line.
+5. cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts
+     --configLoader native --maxWorkers=1 --reporter=dot
+   -> exit 0, "Test Files  1 passed (1)", "Tests  14 passed (14)", 66.06s.
+6. pgrep -af "fake-opencod[e]" ; pgrep -af "quota-serve[r]"
+   -> no line.
+
+No real opencode call, no heavy-run.sh call, no network call, and no model
+call: the fake opencode fixture served every case.
+
+## Tasks flipped
+
+- [x] 71adc88 4.13a Red: the judge runner (spec D11). (was [~])
+- [x] 61449ae 4.13b Green: the judge runner (spec D11). (new row)
+No task is [b]. No task moved to the archive, and no closeout metadata changed.
+
+## Files a reviewer must scope
+
+- harness/model-guide/judge-run.sh (new, 755)
+- measure/tracks/model_guide/plan.md (rows 4.13a and 4.13b only)
+Nothing under docs/, reports/, harness/model-guide/data/sets/,
+harness/wt.txt, tech-debt.md, .opencode/, or measure/runs/ is staged.
+
+MEASURE_AGENT_RESULT
+status: pass
+role: green
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13b
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 80869bdc6bd546da446d2c86312e0076d70cbe1e
+red_commits: 71adc88, cf86504, 80869bd (the Red change is inside phase_base_sha..role_base_sha)
+implementation_commit: 61449ae
+plan_evidence_commit: 3581902
+final_green_head: 3581902
+targeted_command: "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot"
+targeted_result: "exit 0; Tests 18 passed (18); Test Files 1 passed (1); 39.19s"
+live_gates:
+  - "bun test harness/model-guide-tests/review-run.test.ts -> 39 pass, 0 fail, 293 expect() calls (64.28s)"
+  - "npx vitest run model-guide-tests/adversarial-p4-runner.test.ts -> 14 passed (14) (66.06s)"
+orphan_check: "pgrep -af fake-opencod[e] and pgrep -af quota-serve[r] print no line after each gate; no /tmp/mg-judge* folder stays"
+tasks_flipped:
+  - "[x] 71adc88 4.13a Red from [~]"
+  - "[x] 61449ae 4.13b Green (new row after 4.13a)"
+tasks_deferred: none
+new_files:
+  - harness/model-guide/judge-run.sh
+changed_files:
+  - measure/tracks/model_guide/plan.md
+untouched: "the committed Red test file harness/model-guide-tests/judge-run.test.ts"
+notes:
+  - "The prompt holds the seeded diff of the group and its items, and no route name, no slug, and no judge-file text; the runner reads no judge file."
+  - "The answer parse takes the last fenced json block that is a flat object and keeps only the group ids with real-defect, false-claim, or unclear."
+  - "The lock is one set, one judge, and one date; the quota rules are no start at 70 % and stop at 80 % of a window."
+  - "A start test or a real judge call still needs heavy-run.sh and a real opencode; this Green role ran neither."
+handoff: "The review roles audit judge-run.sh against plan row 4.13a and the 18 cases, and check that plan row 4.13b names 61449ae. The row 4.13 call and the start test are still human-gated: they need the real opencode CLI through heavy-run.sh, and this role ran the fake only."
+END_MEASURE_AGENT_RESULT

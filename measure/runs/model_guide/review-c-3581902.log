@@ -1,0 +1,102 @@
+Review C (UX and API contract) of 5b6399f..3581902, tasks 4.9a to 4.13b.
+Route: opencode-go/glm-5.3#high. Repo: /home/daniebo/Desktop/lending-desk-bench.
+
+Provenance: phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf;
+role_base_sha 8e0c441a0d026d886bf006388136e7b4e49e4286 (the parent of the
+range start 5b6399f); audited_head_sha
+3581902d06cbe616d95043d201fa2b39b445e697. `git rev-parse HEAD` prints the
+audited sha, so the HEAD is current.
+
+Contract applicability: applicable. The phase diff adds CLI surface
+(--probe, judge-run.sh, --start-test), output schemas, exit codes, and
+producer-consumer wiring, the exact scope of this role.
+
+Runs (fake opencode only, one file at a time, no redirection):
+
+- bun test harness/model-guide-tests/review-run.test.ts
+  -> 39 pass, 0 fail, 293 expect() calls, 1 file (57.06s).
+- pgrep -af "fake-opencod[e]"; pgrep -af "quota-serve[r]" -> no line.
+- cd harness && npx vitest run model-guide-tests/judge-run.test.ts
+  --configLoader native --maxWorkers=1 --reporter=dot
+  -> Test Files 1 passed, Tests 18 passed (34.88s).
+- pgrep -af "fake-opencod[e]"; pgrep -af "quota-serve[r]" -> no line; no
+  mg-* folder stays under /tmp.
+
+Wiring checks (drivers read only, never run):
+
+- review-run.sh:629,632 print `<route> reachable -` and
+  `<route> <state> <error line>`. probe-4.10.sh:114-121 appends them into
+  measure/runs/model_guide/probe-4.10.txt. night-4.11.sh:53-55 greps
+  `^$1 reachable` on that file. The formats match.
+- judge-run.sh:579 writes the flat verdict map to
+  <private>/sets/<set_id>/adjudication/judge-<a|b>.json.
+  adjudicate.ts:6-7,382-399 reads it through --judge-a/--judge-b.
+  A missing judge file stays an empty map, so every finding stays unclear
+  (adjudicate.ts:448-463). judge-run.sh:701-717 keeps only the three
+  verdict values, which apply accepts.
+- review-run.sh:666 names the per-pass outputs folder, and
+  review-score.ts:18-19,326 reads <outputs>/<diff_id>.txt. The pass record
+  fields route, pass, date, state match the score-file pass entry of task
+  4.14 (review-score.ts:59-72).
+- routes.json holds the six D12 rows in order, none of the three removed
+  routes; pinned by review-run.test.ts:1903-1927 (J1).
+- review-run.sh:241-247 globs <set>/diffs/*.diff, so the seeded diffs are
+  the review input (spec D7); pinned by the S1 to S4 cases.
+- Exit codes: probe 0 reachable, 3 unreachable or region-blocked, 2
+  refusal; pass 0 with a record, 2 refusal; judge-run 2 refusal, 0 ready
+  or run, 3 not-ready. All pinned by the suites.
+
+Blocking findings: none.
+
+Nonblocking findings:
+
+- C1 (minor, review-run.sh:581-607): the probe retries a transport error
+  up to 3 total calls, against the exactly-one-call text of spec.md:689.
+  P1 pins one call only on the success path; P2 (review-run.test.ts:1643)
+  asserts only greater than 0. Fix: stop after the first failed call, or
+  ask the PM to amend D14.
+- C2 (major, jobs/probe-4.10.sh:25-29 and jobs/night-4.11.sh:36-40): the
+  drivers cover only the 3 pilot routes. Task 4.10 needs one probe line per
+  route of routes.json (plan.md:1733-1744); task 4.12 needs one pass per
+  reachable route per night (plan.md:1773-1786). The routes
+  claude-code/claude-sonnet-5-5#high, minimax MiniMax-M3.1-Flash, and
+  opencode-go/muse-spark-1.3-contributor#high get no line and no pass.
+  Fix: extend the drivers before the night of 2026-11-19.
+- C3 (minor, jobs/night-4.11.sh:36-40): the driver runs hy4, deepseek,
+  mimo; spec D15 needs the D12 order deepseek, hy4, mimo (spec.md:539-549,
+  733-734). Fix: reorder the array.
+- C4 (minor, judge-run.sh:181-185 with routes.json:4): spec D11 names
+  claude-code/claude-sonnet-5-5#max as a possible first judge
+  (spec.md:494-496), but routes.json holds only #high and judge-run.sh
+  refuses a route that routes.json does not hold. Fix: the PM adds the #max
+  row or names #high before task 4.13.
+- C5 (minor, test-strategy.md section 2.4 item 6 and spec.md:565-566):
+  stale text after the PM 2026-11-18 ruling. The closeout item still
+  requires nine rows and a ranked-false second judge. Fix: update both
+  texts before the closeout, or the closeout check fails falsely.
+- C6 (minor, jobs/night-4.11.sh:141-147 and jobs/probe-4.10.sh:114-121):
+  the drivers log only stdout. A complete, wait, and open pass all log
+  `exit=0 -`, so passes-4.12.txt cannot name the reason that
+  plan.md:1784-1786 requires, and a probe refusal line carries no route
+  name. Fix: read the record state in the driver, or append the reason.
+- C7 (nit, judge-run.sh:576): judged_by marks every item id of a complete
+  group as judged, also when the answer dropped that id. Fix: keep only
+  the ids that hold a verdict.
+
+Status: pass. No blocking finding. The seven items above route to the
+orchestrator (C2, C3, C6), the PM (C1, C4, C5), and the next Green touch
+of judge-run.sh (C7). Retry recommendation: none.
+
+MEASURE_AGENT_RESULT
+role: measure-review-c-ux-api
+route: opencode-go/glm-5.3#high
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 8e0c441a0d026d886bf006388136e7b4e49e4286
+audited_head_sha: 3581902d06cbe616d95043d201fa2b39b445e697
+status: pass
+contract_applicability: applicable
+blocking_findings: 0
+nonblocking_findings: 7 (C1 probe retry vs D14 exactly-one-call; C2 driver coverage of only the 3 pilot routes; C3 driver route order vs D12; C4 the #max judge route is not a routes.json row; C5 stale closeout and spec text after the PM ruling; C6 driver lines cannot name the pass reason; C7 judged_by marks dropped ids)
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

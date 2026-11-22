@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+  "audited_head_sha": "6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+  "reviewer_model": "bailian-token-plan/qwen3.8-max#high",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "contract_applicability": "applicable",
+  "status": "pass",
+  "summary": "Phase 2 production contract holds: model-guide.json (schema model-guide-overview/1, six D18 rows, exact keys) and print-audit-2026-11.json (52 errors, 13 blockers, OD6 SHA-256 f52a7bbf verified against the real hand-off file) match spec D17/D18 and the Q1, Q2, and 2.4a rulings; the preview pages agree with the JSON byte-for-byte in content, the no-pick and evidence wording is exact, update.sh meets D19, and no model_guide commit wrote under docs/. Task 2.8 is the open check task of this phase and is not counted as a finding. Six nonblocking items: untested page branches (stale mark, table position, section dedupe), the spec Q6 label default versus the 2.4a route-name ruling, a latent track A tie-break deviation from D13, alphabetical newest-score-file selection, and the unused plan marker-comment note.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2C1-1 [Nit] review-c: The D19 page stale mark has no test. guide.test.ts T6 (line 516) pins only the JSON stale boolean at the 14/15-day boundary; the overview_stale render branch of preview.sh (lines 320-326, paragraph with data-stale=\"true\") is exercised by no test and not by the real preview (model-guide.json holds stale:false). Rationale: a spec clause of the page contract (D19 'shows the mark stale') has no failing-first test, and a regression in the branch would ship silently.",
+    "P2C1-2 [Nit] review-c: The D18/acceptance-7 position clause ('shows it first, above the current hero') and the five column header texts have no automated test. No test file references id=\"model-guide\", the hero anchor, or the headers 'Kind of work'/'Use this model'/'Second choice'/'Evidence'/'Evidence date'; plan 2.6's 'a second preview over a published index keeps one section' is also untested (preview-gate C3-2 covers only nav links). Current correctness is shown only by the real preview (index.html: section at line 28, hero at line 55) and the manual record preview-2.9.txt. Rationale: page-contract clauses rest on a manual record instead of a test.",
+    "P2C1-3 [Nit] review-c: Spec Q6's default ('the page shows the PM label k3.1-pro and names no route') conflicts with the binding 2.4a ruling output. The data file and the real-work.html block name full routes: 'kimi-code-plan-cn/k3.1-pro 11 of 13; claude-code/claude-sonnet-5-5#high 13 of 13'. The implementation follows the 2.4a ruling recorded in plan.md (routes maps the route name to blockers_found of summary.key.blockers); spec.md D17/Q6 was never updated to record the ruling. Rationale: spec and page diverge on the label wording; the owner of spec.md should record the 2.4a ruling at D17/Q6 or the PM should answer Q6.",
+    "P2C1-4 [Nit] review-c: The track A tie-break in guide.ts deviates from D13. readTrackARank sorts by worst score descending then route name ascending (guide.ts line 241); D13 breaks a tie by the higher worst blocker recall and then the higher median score, and D18 names 'track A rank (worst of N)' as the Code review source. No test covers two routes with an equal worst score. Rationale: in Phase 4 a tie could make the overview pick differ from the review.html rank order.",
+    "P2C1-5 [Nit] review-c: 'Newest review score file' is the alphabetically last glob match, not the newest by date, in preview.sh (lines 126-130) and update.sh (lines 61-65). No review-scores folder exists in Phase 2, so behavior is correct now; in Phase 4 a pilot file (mg-2026-11p*) sorts after the ranked file (mg-2026-11a) and would win. Rationale: latent wiring defect for the Phase 4 integration.",
+    "P2C1-6 [Nit] review-c: The plan.md file-map note says the overview block goes between <!-- model-guide:start --> and <!-- model-guide:end --> after </nav>; the implementation inserts the section at the '<header class=\"hero' anchor and dedupes by id=\"model-guide\", and no marker comments exist in docs/index.html or the preview. The placement contract itself holds (section directly after </nav> at line 26, above the hero at line 55). Rationale: plan.md wiring note diverges from the shipped mechanism; the note should be updated before Phase 5 publish work relies on it."
+  ],
+  "evidence": [
+    "HEAD confirmed current and unchanged: git rev-parse HEAD = 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2 before and after the audit; equals role_base_sha and audited_head_sha; phase_base_sha c22f313 is its ancestor with 24 commits in range.",
+    "contract_applicability=applicable: the exact phase diff (git diff --stat c22f313..6132fb7) ships two public JSON data contracts, two CLI tools (guide.ts, print-audit.ts), one CLI script contract (update.sh, D19), the preview.sh page wiring, and two page contracts; 22 files, all under harness/model-guide*, harness/model-guide-tests*, measure/tracks/model_guide/, plus the external docs/ commit named below.",
+    "model-guide.json contract: schema 'model-guide-overview/1'; root keys exactly {schema, today, stale, rows}; six rows with kinds exactly ['Code review','app code','test writing','docs and ops','print-book audit','tooling']; row keys exactly {kind, pick, second, evidence, evidence_date, base_line}; pinned by guide.test.ts T2 (lines 340-360, ROOT_KEYS/ROW_KEYS/KINDS constants at lines 115-128).",
+    "Page and JSON agree: .tmp/model-guide-preview/index.html rows equal model-guide.json cell-for-cell (picks, seconds, evidence 'page B: pass 0.96 (n=28)' form, dates 2026-11-14; base_line 95 renders 'base line 95.0', 98.7 renders 'base line 98.7').",
+    "Exact wording: pick cell shows the exact words 'no pick yet: not enough evidence' (guide.ts NO_PICK line 81, JSON rows 1 and 6, page rows 1 and 6); evidence cell form matches the D18 example 'page B: pass 0.86 (n=114)'; Q1 evidence starts 'page B producer' (test 'D18 Q1', guide.test.ts line 572); Q2 code review is no-pick while the checker table holds a qualified model (test 'D18 Q2', guide.test.ts line 594; no checker fallback exists in guide.ts main()).",
+    "Stale rule: guide.ts marks stale when daysBetween(newest evidence_date, today) > 14 (lines 430-434); T6 pins 15 days stale / 14 days not; real preview holds stale:false and the page shows no stale text (export generated 2026-11-14, today 2026-11-15).",
+    "print-audit-2026-11.json contract: schema 'model-guide-print-audit/1'; totals {errors:52, blockers:13}; routes {'kimi-code-plan-cn/k3.1-pro':'11 of 13','claude-code/claude-sonnet-5-5#high':'13 of 13'} per the 2.4a ruling; error_types {minor:21, major:18, blocker:13} summing to 52 per the 2.4a severity-class ruling; checklist lengths {0:9, 1:27, 2:15, 3:1} matching OD6 (43 rows hold 1-3 items, 9 hold none); rows hold id, severity, checklist (code+text), results; summary and note retained; no 'pages', 'text', or 'file' key outside checklist items.",
+    "OD6 provenance verified live: data file source.sha256 = f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87; sha256sum of ~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json gives the same value; its MANIFEST.txt holds the same line. The hand-off file itself never entered the repository (only the derived data file and the synthetic fixture print-audit-mini.json are committed).",
+    "print-audit block on real-work.html (D17 'The page' and 'No placeholder'): shows '52 error rows, 13 blockers', both route results, the error types with counts (dl), the bias note, and the sentence 'This data point is one calibration run of the audit. It is not a rank.'; the line 'Error types: not yet received.' occurs 0 times; the block holds lists (dl/ul), no table after the work types (PA2-1 guard tests pass); no book page number and no file name appear.",
+    "print-audit input check (D17): print-audit.ts checks MANIFEST SHA-256, top keys source/note/routes/summary/errors, route string values, integer blockers counts, and exactly 52 valid rows with item+text checklist; exit 2 with one 'input-check: <check>' line and no output file; no size check and no schema-key check per D17; pinned by print-audit.test.ts N1/N2/N5 (13 tests pass).",
+    "update.sh CLI contract (D19): usage 'update.sh <export file>' else exit 2; runs the real-work.ts input check into a mktemp staging folder first; runs guide.ts with the newest score file when one exists; before approval (no measure/tracks/model_guide/publish-approval.md) copies real-work.json and model-guide.json into .tmp/model-guide-preview only; after approval copies into docs/assets/data/ and commits exactly those two explicit paths (git add -- and git commit -- with both paths); never pushes; a failed check exits 2 with the tool's one line and changes no repo file; pinned by update.test.ts U1/U2/U3 (3 tests pass).",
+    "Test runs at HEAD, each single file with --configLoader native --maxWorkers=1 --reporter=dot: guide.test.ts 15 passed exit 0; print-audit.test.ts 13 passed exit 0; update.test.ts 3 passed exit 0; preview-gate.test.ts 98 passed exit 0.",
+    "No docs/ write by this track: git log c22f313..6132fb7 -- docs/ lists only commit 05acc8c 'Publish daily 2026-11-15 OpenCode Go results: beam-free (pm-pin catch-up)', the standing daily publish job of spec EV8 (harness/cron-daily.sh commits docs/), authored outside the track; every model_guide commit touches only harness/ and measure/ paths; git status --short docs/ prints nothing at HEAD.",
+    "Preview record provenance: git diff c205762..6132fb7 touches only measure/tracks/model_guide/plan.md, so the task 2.9 preview record (measure/runs/model_guide/preview-2.9.txt) and the .tmp preview files reflect the production code at audited HEAD; the six rows, base lines, rulings, and block values recorded there match my direct inspection of the preview files.",
+    "Route/nav parity: preview-gate pins the nav order Results < Real work < Review < Models (lines 444-447) and exactly-one-of-each link on a second preview (C3-2, line 1086); Phase 2 adds no route changes beyond the overview section, and the real preview index holds one section and single links."
+  ],
+  "commands": [
+    "git rev-parse HEAD (run before and after the audit: 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2)",
+    "git log --oneline c22f313603108585f8bb45996057627acfbc78ae..6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+    "git diff --stat c22f313603108585f8bb45996057627acfbc78ae..6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+    "git log c22f313..6132fb7 --format='%h %s' -- docs/",
+    "git log c22f313..6132fb7 --name-only --format='C %h %s' (docs/ paths only in 05acc8c)",
+    "git status --short docs/ (empty)",
+    "git show ac0046f -- measure/tracks/model_guide/spec.md (Q1/Q2 rulings)",
+    "git diff c205762..6132fb7 --stat (plan.md only)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot (13 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot (3 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (98 passed, exit 0)",
+    "sha256sum ~/Desktop/handoff/a23-print-audit-error-types/print-audit-error-types-v13.json (f52a7bbf...a6e87, matches data file source.sha256 and MANIFEST.txt)",
+    "python3 inspection of harness/model-guide/data/print-audit-2026-11.json (keys, totals, routes, error_types, checklist lengths, forbidden-key scan)",
+    "python3 inspection of .tmp/model-guide-preview/model-guide.json and index.html (row-by-row agreement, section line 28 after </nav> line 26, hero line 55)",
+    "grep -c 'Error types: not yet received.' on .tmp/model-guide-preview/real-work.html (0)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-c-6132fb7.json",
+    "measure/runs/model_guide/review-c-6132fb7.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "Data contracts, wording, rulings Q1/Q2/2.4a, and the OD6 SHA-256 provenance all verify against spec D17-D19 (harness/model-guide/data/print-audit-2026-11.json source.sha256 = f52a7bbf...a6e87; model-guide.json rows match D18 exactly), with latent edge gaps: the track A tie-break at guide.ts:241 deviates from D13 and the page stale branch is unexercised."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "129 tests across the four files pass at HEAD and pin the exact keys (guide.test.ts T2 lines 340-360), the rulings (tests 'D18 Q1'/'D18 Q2'), the stale boundary (T6), refusals (print-audit N2/N5), and D19 behavior (update U1/U2/U3); the page position, the page stale mark, and the section dedupe have no test."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat c22f313..6132fb7 shows only planned harness/model-guide*, harness/model-guide-tests*, and measure/tracks/model_guide/ paths; the single docs/ commit in range (05acc8c) is the standing daily publish job of spec EV8, not a track commit."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every plan task 2.1-2.9 carries a commit SHA, a run log, or a record file (for example measure/runs/model_guide/preview-2.9.txt), and I re-verified the central claims with live commands: four single-file vitest runs (exit 0 each) and sha256sum of the real OD6 hand-off file."
+    }
+  ]
+}

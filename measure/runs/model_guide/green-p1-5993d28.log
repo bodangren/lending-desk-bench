@@ -1,0 +1,77 @@
+role: jr-green
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+task: 1.23 (Green, done)
+phase_base_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 5993d282b44eb26a69fbc999fe18cab62807dfe9
+head_sha: 9cb95b6 (fix + plan commits)
+
+Dirty paths before work: .opencode/, harness/wt.txt, tech-debt.md (untracked).
+Classification: unrelated user work. Preserved, never staged.
+
+Red commit check: 530c73a (tests) and 5993d28 (plan) sit inside
+0a44cc9..HEAD. The Red change touches only the two test files under
+harness/model-guide-tests/. No file under harness/model-guide/ changed in the
+Red commit, so the Red contract is intact.
+
+Work log:
+1. Read red-p1-80c17f5.log, red-1.22.txt, phase-acceptance-80c17f5.json
+   (PA1-1), the two new tests of commit 530c73a, and the 1.22 ruling in
+   plan.md.
+2. Reran the targeted Red command on 5993d28. Exit 1. Tests 1 failed |
+   89 passed (90): the PA1-1 unknown-only work type has no <h3>translation</h3>.
+3. Fix in harness/model-guide/ only:
+   - real-work.ts: the all_time loop now reads the work-type names of every
+     row before the route skip. A name from a row on the unknown or other
+     route creates its empty map, and the numeric build still skips those
+     routes, so no unknown or other run enters a row count. The
+     Object.fromEntries build and the schema checks ADV-6 to ADV-9 stay.
+   - preview.sh work_tables: one section per work_types key. An empty row
+     list gives the escaped H3 heading and <p>no pick yet</p> with no table
+     and no .table-wrap. A filled list keeps the U3 attributes on the box.
+   No test file and no file under docs/ changed.
+4. Targeted Green run: preview-gate.test.ts exit 0, Tests 90 passed (90).
+5. Companion runs, each alone with one worker and the dot reporter, all
+   exit 0: input-check 15 passed, real-work 20 passed, leak-guard 2 passed,
+   adversarial 49 passed. bash -n harness/model-guide/preview.sh exits 0.
+6. Task 1.9 preview re-run:
+   harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json
+   Exit 0. Record in measure/runs/model_guide/preview-1.23.txt (not staged).
+   The export ranks all 5 work types (app code 29, docs and ops 14, other 1,
+   print books 19, tooling 10 rows), so the page shows 5 H3 headings and no
+   "no pick yet" line. docs/ stayed clean.
+7. Commit 56a173b: fix(model_guide): acceptance 5 no pick yet task 1.23
+   (real-work.ts and preview.sh alone).
+8. Plan commit 9cb95b6: measure(model_guide): record Green task 1.23. Task 1.23
+   marked [x] with 56a173b and an Evidence line that cites this log and
+   preview-1.23.txt. No test count in plan.md.
+
+Tests run (all from harness/, --configLoader native --maxWorkers=1 --reporter=dot):
+- model-guide-tests/preview-gate.test.ts: exit 0, Tests 90 passed (90)
+- model-guide-tests/input-check.test.ts: exit 0, Tests 15 passed (15)
+- model-guide-tests/real-work.test.ts: exit 0, Tests 20 passed (20)
+- model-guide-tests/leak-guard.test.ts: exit 0, Tests 2 passed (2)
+- model-guide-tests/adversarial.test.ts: exit 0, Tests 49 passed (49)
+
+Files changed: harness/model-guide/real-work.ts,
+harness/model-guide/preview.sh, measure/tracks/model_guide/plan.md.
+New files: measure/runs/model_guide/preview-1.23.txt (not staged),
+measure/runs/model_guide/green-p1-5993d28.log (this file, not staged).
+
+dispositions: F1=FIX
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 5993d282b44eb26a69fbc999fe18cab62807dfe9
+head_sha: 9cb95b6
+commits: 56a173b (fix), 9cb95b6 (plan)
+tests_run: preview-gate.test.ts exit 0, Tests 90 passed (90); input-check.test.ts exit 0, Tests 15 passed (15); real-work.test.ts exit 0, Tests 20 passed (20); leak-guard.test.ts exit 0, Tests 2 passed (2); adversarial.test.ts exit 0, Tests 49 passed (49); bash -n harness/model-guide/preview.sh exit 0; preview.sh --export exit 0 (each test file alone, --configLoader native --maxWorkers=1 --reporter=dot)
+files_changed: harness/model-guide/real-work.ts, harness/model-guide/preview.sh, measure/tracks/model_guide/plan.md
+plan_updates: 1.23 marked [x] with fix commit 56a173b and an Evidence line citing green-p1-5993d28.log and preview-1.23.txt, no test count
+dispositions: F1=FIX
+handoff: F1=PA1-1 is fixed in harness/model-guide/ only. A work type carried only by the unknown or other route keeps its name with an empty row list, and the page renders its H3 heading with "no pick yet" and no table. New file for review scope: measure/runs/model_guide/preview-1.23.txt (not staged).
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 192da41992e06fee2247ef4ed76248d75a6b302a
+head_sha: 7e52d2efe931e6f8a01a9f443959a84168be5edf
+commits: d095a38d4422b7a27e2c0b7cf9b5b828328ba980, 7e52d2efe931e6f8a01a9f443959a84168be5edf
+tests_run: `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  17 passed (17)`; `cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  2 passed (2)`; `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  15 passed (15)`; `git status --short docs/` printed nothing. The three runs also pass at HEAD 7e52d2e.
+files_changed: harness/model-guide/pick-diffs.ts (new file, 331 lines); measure/tracks/model_guide/plan.md (task lines only). No test file changed. Untracked evidence: measure/runs/model_guide/green-p3-192da41.log.
+plan_updates: 3.6 changed [~] to `[x] d095a38` with an Evidence line that cites measure/runs/model_guide/green-p3-192da41.log and gives no test count. 3.7 changed [ ] to [~]. Both in commit 7e52d2e.
+tasks_flipped_x: 3.6 (SHA d095a38). tasks_flipped_b: none.
+dispositions: none
+handoff: Green 3.6 wrote only harness/model-guide/pick-diffs.ts. The Red test and its fake gh stayed unchanged. The tool calls `gh api --method GET repos/<owner>/<name>/commits --paginate` once, then one detail call per commit that passes the merge and date rules. The rule order follows the doc comment of pick-diffs.test.ts. The output holds schema, repo, set_id, qualified, selected, and rejected. A held diff stays in qualified and is skipped by selected. No wall-clock field sits in the output. Task 3.7 is [~] for the next Green role. The next role should write harness/model-guide/review-set.ts and touch no other file.
+END_MEASURE_AGENT_RESULT

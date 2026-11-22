@@ -1,0 +1,20 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-mid-red
+status: complete
+red_kind: gap_closing
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 9d06c673ca86c044862d8fc9fadbab54d994c2b6
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+red_commit_sha: d8edbf950f095c39a7c72e4579d4dc7e2a3088ff
+plan_commit_sha: 4364289cf995336f3aedb1cb76168f597791a85a
+resulting_head: 4364289cf995336f3aedb1cb76168f597791a85a
+commits: d8edbf9 test(model_guide): Red task 4.15 fix the N27 fixture; 4364289 measure(model_guide): record Red task 4.15 r4
+tests: review-run.test.ts N27 fixture only. Both token fields are now 10_000_000_000_000_000, above 2^53 (9007199254740992). The assert that tokens_complete is false stays.
+files: harness/model-guide-tests/review-run.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-4.15.txt, measure/runs/model_guide/red-4.15-r4.log
+remaining_failures: none at this HEAD. `bun test harness/model-guide-tests/review-run.test.ts` exit 0, `96 pass`, `0 fail`, 96 tests. N27 passes. T1 and every other case stay green.
+gaps: One gap closed. The N27 fixture used two fields of 5e15, each below 2^53, while T1 of adversarial-p4c.test.ts pins that per-field values of exactly 2^53-1 keep tokens_complete true. The fixture did not cross the boundary that its own title and assert describe. No other case was changed.
+breakage_proof: Neutralized-code run in a scratch copy at /tmp/opencode/n27-mut. I removed both the per-field safe-integer guard and the per-key sum guard in review-run.sh and ran only N27. The case failed with `an unsafe sum kept tokens_complete true`, expected false and received true. The scratch copy was removed after the run. On the real HEAD both guards are present and N27 passes, so the case proves the production rule.
+handoff: N27 is resolved. Green's 6bcb0e5 now satisfies all 15 cases. Row 4.15 stays [~] until the phase closeout owns the flip. No production file changed in this retry. pgrep printed nothing of mine.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,83 @@
+Red role log for model_guide Phase 1, tasks 1.1 to 1.3.
+
+Session: Red · P1 T1.1-T1.3 · model_guide
+Route: opencode-go/deepseek-v4.1-flash
+Repo: /home/daniebo/Desktop/lending-desk-bench
+Branch: main
+phase_base_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+
+Dirty paths at start: `.opencode/` (untracked, ignorable) and `tech-debt.md`
+(untracked, unrelated user work). Both stayed unstaged. `docs/` has no change.
+
+Task results:
+- 1.1 done at 563d33a. Three files: the test, the synthetic fixture, and its
+  manifest. All tests fail with "production file is missing".
+- 1.2 done at 0f0b2df. One file: input-check.test.ts. All tests fail with
+  "production file is missing".
+- 1.3 done at b42a234. One file: preview-gate.test.ts. All tests fail with
+  "production file is missing".
+- 1.4 marked [~] as the handoff to Green.
+
+Interface decisions that spec.md did not fix are pinned in each test header:
+- real-work.ts: `--input <file> --out <folder>`. It writes `real-work.json`
+  with schema `model-guide-real-work/1`. The exit-2 line is
+  `input-check: <check>` on stdout. The checks are manifest, sha256, size,
+  schema, and run-sum, in that order.
+- The output rate is rounded to 4 decimals. The blocking rate is rounded to
+  3 decimals. The trend uses the last 4 ISO weeks present in `weekly`.
+- preview.sh: `--export <file>`, optional `--preview <folder>`, default
+  `<repo>/.tmp/model-guide-preview`. It resolves the repo root three levels
+  above the script. It writes `real-work.json`, `real-work.html`, and
+  `preview-base.json`. It writes no file under `docs/`.
+- preview-base.json: `{schema:"model-guide-preview-base/1",docs:{<path>:<sha>}}`.
+- publish.ts: `--preview <folder>`, run from `<repo>/harness`. The approval
+  record is `<repo>/measure/tracks/model_guide/publish-approval.md`. Its
+  format is `approved_by:`, `date:`, `files:`, then `<sha256>  <path>` lines.
+  The checks run approval, approved sha, drift, copy. The lines are
+  `publish: no approval record`, `publish: sha256 <path>`, and
+  `publish: drift <path>`.
+- Added case: `preview-gate.test.ts` case 7 is a success case for the publish
+  copy. Plan task 1.3 lists only refusals. Without case 7, a tool that always
+  exits 2 would pass.
+
+Measure-guard note: each plan edit printed a note that the Phase 0 heading has
+no `[checkpoint: <sha>]`. The guard did not deny a marker. The note is for the
+orchestrator.
+
+r2, 2026-11-14: finding R2-1 (FIX).
+
+Cause: M5 expected `row(page.producer, "z/m").pass_rate.n` to be 10. The
+fixture `z/m` all_time row has pass 11, fail 4, and error 0, so its n is 15.
+M2b expects 15 for the same field. The two cases could not both pass.
+
+Fix: only M5 changed. M5 now calls `stagedCopy` and makes a copy where the
+`z/m` producer row has pass 7, fail 3, error 0, and no_result 8. Its n is
+exactly 10, and its runs stay 18. The fixture, the fixture MANIFEST.txt, M2b,
+and every other case stay unchanged. The `w/m` assertions stay at 9.
+
+Command: cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1
+Exit line: Exited with code 0
+Result with the Green draft present: Test Files 1 passed (1); Tests 19 passed (19).
+M5 and M2b now agree.
+
+Green worktree: `harness/model-guide/real-work.ts` is an uncommitted draft,
+and `measure/tracks/model_guide/plan.md` holds uncommitted edits. This retry
+did not edit, stage, move, or delete them. It committed only the test file.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 7304376c157dc72e3ee99218caba32ec39e4f086
+head_sha: 33fcc482ce5520225f82d07ac33200d50d5d1280
+commits: 563d33a1a57997667ea71caa805a3f9f9724ecab, 0f0b2df746974b58e14c7aaae3a62338f96b7826, b42a234b4e5246b524912c06f423524dbba720b3, 7304376c157dc72e3ee99218caba32ec39e4f086, 33fcc482ce5520225f82d07ac33200d50d5d1280
+tests_run: cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 (exit 0, 19 passed, with the Green draft present)
+files_changed: harness/model-guide-tests/real-work.test.ts only (r2 commit 33fcc48). Earlier commits hold the fixture, MANIFEST.txt, input-check.test.ts, preview-gate.test.ts, and plan.md.
+plan_updates: none in r2. Plan markers from r1 stay as they are.
+remaining_failures: none in real-work.test.ts on the Green draft. input-check.test.ts and preview-gate.test.ts still wait on the Green tasks.
+handoff: M5 now stages a copy with a `z/m` producer row of exactly 10 results. M2b keeps n = 15 on the fixture. All 19 real-work cases pass with the Green draft. The orchestrator must decide the Phase 0 checkpoint note from measure-guard. Do not commit the Green draft or the plan.md edits from this role.
+END_MEASURE_AGENT_RESULT
+RED_TEST_COMMAND: cd harness && npx vitest run model-guide-tests/real-work.test.ts model-guide-tests/input-check.test.ts model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1

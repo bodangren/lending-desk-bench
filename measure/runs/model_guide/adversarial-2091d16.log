@@ -1,0 +1,18 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+track: model_guide
+audited_head: 2091d16451b2dde9198e47761e4d462809142b98
+commit: none (confirm-only round; no file changed)
+file: harness/model-guide-tests/adversarial-p4-runner.test.ts
+command: cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+result: exit 0, Tests 14 passed (14)
+orphan_check: pgrep -af 'mg-.*quota-server' prints no test process (orphan count 0); ps fake-opencode read prints nothing; /tmp/mg-adv-r-* is gone
+blocking_findings: none
+nonblocking_findings: none
+accepted_risk_notes:
+- Hostile route slugs need a routes.json change (a committed file); the D12 list holds no colliding pair.
+- The runner depends on flock(1) at run time; a host without flock fails each pass at the lock step rather than running unlocked.
+- A refused second run (exit 2, lock held) is the decided contract; a legitimate operator retry waits for the holder or uses a new date.
+status: pass
+retry_recommendation: none
+END_MEASURE_AGENT_RESULT

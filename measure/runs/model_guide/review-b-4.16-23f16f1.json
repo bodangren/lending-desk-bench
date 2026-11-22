@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-b-security",
+  "track": "model_guide",
+  "phase": "Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)",
+  "task": "4.16",
+  "session": "Review B · 4b 4.16 · model_guide",
+  "status": "pass",
+  "summary": "Pass under the PM round cap. No real-key leak was found. The token sum uses the same owner and current-call filters as answer selection, so no foreign or stale message can add tokens. Hostile token values score zero and clear tokens_complete. Deny check, key scan, and endpoint set are unchanged. The F20 45-versus-48 failure is a fixture timing artifact, not a production hole; it goes to backlog row 4.15.",
+  "phase_base_sha": "7d7d218d00a95d9d619d2856173b8136b6ace4a5",
+  "role_base_sha": "23f16f18787da5190dc8563e0373d48233653927",
+  "audited_head_sha": "23f16f18787da5190dc8563e0373d48233653927",
+  "audited_head_current": true,
+  "security_applicability": "applicable",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F-B5 [Low, nonblocking] review-b: The F20 token assertion in review-run.test.ts:5719-5721 and :5750-5752 expects input 7, output 8, total 45 under r8 newest-only semantics. Under r9 the sum covers every current-call step, so the fixture's EARLY message (review-run.test.ts:5705, stampOffsetMs -1000; stamping at :4812) passes the freshness filter at review-run.sh:1221 whenever the message GET lands more than one second after the floored call start. Its SMALL tokens then enter the sum at review-run.sh:1252 and yield 48. This is a fixture timing artifact, not a real hole: the sum uses the same owner and freshness filters as answer selection (review-run.sh:1219-1226, :1252), and a fresh per-call session holds only current-call messages. It does not corrupt night-3 token data. Fix by making EARLY unambiguously stale or by expecting the summed value. Route to backlog row 4.15."
+  ],
+  "evidence": [
+    "HEAD: git rev-parse HEAD returned 23f16f18787da5190dc8563e0373d48233653927 before and after the audit. It matches role_base_sha and audited_head_sha. audited_head_current is true.",
+    "Scope: git diff --name-only 3337418 23f16f1 listed four files: the two runners, the new adversarial-p4f.test.ts, and plan.md. The runner diff has hunks only at live_synthesize (judge-run.sh 960/972-974/998-1001; review-run.sh 1210/1222-1224/1248-1251).",
+    "Shared filter: review-run.sh builds calls[] inside the same loop that applies the owner check (:1219) and the freshness check created >= start (:1221), then sets newest = calls[0] (:1226). The token loop iterates that same calls array (:1252). A foreign or stale message cannot enter the sum.",
+    "Route parity: the live_synthesize body sha256 is c53b3620e48ab66cc93ef67b03c0bcb2eb82d9e838762121cf2e8e7df105da51 in both runners. The helpers are byte-identical.",
+    "Hostile tokens: read_tokens at review-run.sh:168-170 requires typeof number, Number.isSafeInteger, and value >= 0; negative, huge, string, and NaN values score zero and set complete 0. Fields over 2^53 clear the flag (:240-242). The shell regex at :245 accepts only five tab-separated integers and a 0/1 flag. Y4, Y5, and Y6 in review-run.test.ts cover these cases and passed.",
+    "Missing bundle: the new loop pushes a step_finish line with an empty part when tokens is absent (review-run.sh:1252-1257); read_tokens marks a token event without a bundle incomplete (:222). P4F-1 missing-bundle case passed.",
+    "No new file write of message text or keys: the token change only adds lines to the existing staging stream. The only writeFileSync in the block targets process.argv[2], unchanged from r8. adversarial-p4f.test.ts:419-427 confirms a planted key shape is neither printed nor stored.",
+    "Deny check unchanged: eight tool denies written and checked before the first call (review-run.sh:410-431). The diff does not touch these lines. adversarial-p4e.test.ts:278 covered the missing-deny stop in the prior round on r8.",
+    "Key scan unchanged: LIVE_KEY_SHAPE and scan_output remain at review-run.sh:1400-1402 and :1548. The diff does not touch them.",
+    "Endpoints unchanged: only POST /api/session, POST /api/session/$session/prompt, and GET /api/session/$session/message appear. The p4f curl guard at adversarial-p4f.test.ts:105-113 refuses any other URL or redirect flag, and :214 checks no DELETE.",
+    "Tests, one file at a time: adversarial-p4f 48 passed / 14 skipped / 0 failed (187.03s); review-run 130 pass / 0 fail with 922 expect calls (210.46s); judge-run 61 passed (94.57s). P4F-1 NIGHT-3 DATA LOSS cases passed in both runners.",
+    "F20 flake cause: the timestamp 48 equals BIG(7,8,9,10,11) plus SMALL(1,2,0,0,0). The fake stamps _stampAtRead messages at message-read time (review-run.test.ts:4809-4814). EARLY carries stampOffsetMs -1000 (:5705, :4902), so its created is read-time minus 1000 ms. It passes created >= start (review-run.sh:1221) only when the read is more than one second after the floored call entry. Answer selection stays FINAL because calls[0] is unchanged. The fixed 45 expectation is stale under r9; no production filter is bypassed.",
+    "Skipped p4f cases A-F1, P4F-2, and P4F-3 are declared backlog items (plan.md Green r9 record). At least one msg id dedup per message is applied at review-run.sh:1250-1251.",
+    "A2 does not apply: test-strategy.md:2477, row 4.16 flips no draft to published. A6 is satisfied: measure/tracks.md:34 marks model_guide pending and names no resolved security state.",
+    "Cleanup: every p4f fixture clears detached children and servers in afterEach (adversarial-p4f.test.ts:29-43). No fake was left running. No opencode or openchamber CLI was run, no POST or DELETE was sent to port 38307, no benchmark ran, and no real key or credential store was read."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 23f16f18787da5190dc8563e0373d48233653927 before and after verification",
+    "git status --short -> four untracked paths; no tracked change",
+    "git diff --stat 3337418 23f16f1 -> four files, 455 insertions, 8 deletions",
+    "git diff 3337418 23f16f1 -- harness/model-guide/review-run.sh harness/model-guide/judge-run.sh measure/tracks/model_guide/plan.md -> token-sum change only",
+    "git diff --unified=0 3337418 23f16f1 -- both runners | grep '^@@' -> hunks only at live_synthesize lines 960/972-974/998-1001 and 1210/1222-1224/1248-1251",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4f.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 48 passed | 14 skipped (62); 187.03s",
+    "bun test harness/model-guide-tests/review-run.test.ts -> exit 0; 130 pass / 0 fail; 922 expect calls; 210.46s",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; Tests 61 passed (61); 94.57s",
+    "sed -n '/^live_synthesize() {/,/^}/p' on both runners | sha256sum -> c53b3620e48ab66cc93ef67b03c0bcb2eb82d9e838762121cf2e8e7df105da51 for both",
+    "grep of review-run.sh -> calls[] at 1210, owner check 1219, freshness 1221, calls.push 1222, newest=calls[0] 1226, token loop 1252",
+    "grep of review-run.test.ts -> stamp stamping at 4809-4814, _stampAtRead 4901, _stampOffset 4902, F20 expectations 5719-5721 and 5750-5752",
+    "grep of review-run.sh -> deny check 410-431, LIVE_KEY_SHAPE 1400, key scan 1548, all outside the diff hunks",
+    "git diff 7d7d218..23f16f1 | grep for AKIA, ghp_, github_pat_, and PEM -> no real-key hit"
+  ],
+  "changed_files": [
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/adversarial-p4f.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "handoff": "Pass under the PM round cap. No real-key leak and all violation arrays are empty. The r9 token sum reuses the owner and current-call filters, ignores hostile token values, and keeps both live_synthesize helpers byte-identical. The F20 45-versus-48 failure is a fixture timing artifact from the -1000 ms relative stamp under r9 sum semantics, not a hole that corrupts night-3 token data; route the stale test expectation to backlog row 4.15. No blocker is routed to Green. This result does not accept Phase 4b.",
+  "route": "opencode-go/hy4-flash-free#high",
+  "ratings": [
+    { "axis": "correctness", "score": 4, "evidence": "review-run.sh:1219-1226 and :1252 apply the same owner and freshness filters to answer selection and token sum; hostile values score zero." },
+    { "axis": "test_meaning", "score": 4, "evidence": "P4F-1 NIGHT-3 DATA LOSS and the hostile-token Y4-Y6 cases are failing-first and pass, but the F20 token expectation is stale under r9 and flaky." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git diff 3337418 23f16f1 shows only the two runners, the new p4f test, and plan.md; runner hunks touch only live_synthesize." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "Three one-file runs, sha256 helper parity, hunk-scope grep, and a diff key scan back every claim with a command result or file:line." }
+  ]
+}

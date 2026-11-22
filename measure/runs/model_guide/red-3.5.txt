@@ -1,0 +1,37 @@
+Red task 3.5 — the leak check (spec D9, FR-10, G5, G7)
+Base: b91ab90fd22fdb06137fead7b87e6164c5d13cc4
+
+Command:
+  cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  10 failed (10)
+Test Files  1 failed (1)
+
+Every failure is the absent module:
+  Error: production file is missing:
+  /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/leak-check.ts
+  (Phase 2 has no leak-check tool)
+
+Failed test names (10):
+1.  K1 the clean tree > K1 passes a clean staged tree
+2.  K2 the key field > K2 fails a staged file with a new_lines key
+3.  K2 the key field > K2 fails a staged file with a witness or operator key at any depth
+4.  K2 the key field > K2 and G5 pass a prose word and a string value with the key words
+5.  K3 the private path > K3 fails a staged file with the private folder path
+6.  K4 the seeded line > K4 fails a staged file with a seeded line that is not in the source diff
+7.  K4 the seeded line > K4 passes a line that the source diff also holds
+8.  K5 docs and preview, unstaged > K5 fails an unstaged file under docs/ with a key field
+9.  K5 docs and preview, unstaged > K5 fails an unstaged preview file with a seeded line
+10. the write flags > each missing value exits 2 with one named line and writes nothing
+
+No product assertion has run, so no test passes at the base. The tests reuse
+the fixtures/review/ corpus of task 3.2 and add no fixture. The seeded-only
+line that K4 uses is `  const v10 = wrong(11);` (24 characters); the shared
+line is `  const v16 = compute(16);` (26 characters). K4's 19-character
+boundary is not tested: the corpus has no seeded-only line of 19 characters,
+and the plan line allows no new fixture.
+
+Other required suites at the base:
+  leak-guard.test.ts  exit 0, Tests  2 passed (2)
+  guide.test.ts       exit 0, Tests  15 passed (15)

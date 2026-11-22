@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "e13413f31733defe84fb623fb85c08e332942b81",
+  "audited_head_sha": "e13413f31733defe84fb623fb85c08e332942b81",
+  "reviewer_model": "qwen3.8-max",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 5: the P2U1-1 bias-note fix is safe. The new bias_note renders through html.escape with an isinstance-string guard; an end-to-end /tmp probe with a hostile note holding a script tag, angle brackets, an ampersand, and both quote kinds shows the fully escaped text and no raw tag. print-audit.ts keeps its refusal semantics (missing summary exits 2 with input-check: keys and no output; a non-string bias_note yields null, as its header states). The regenerated data file is byte-identical to a fresh run on the real OD6 hand-off, adds only the bias_note item, and holds no book text, page, or file name. No new write path. All three suites green (117 tests). P2B4-1 and the two nits are carried as nonblocking.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2B5-1 [Major] review-b: carryover of P2B4-1, still open: preview.sh follows a symlinked .tmp parent and writes the preview outside the repo at exit 0. preview.sh:81 resolves PREVIEW_ABS with `realpath -m`, which follows a planted <repo>/.tmp link, and no refusal covers a symlinked parent of the default preview folder. Round 4 probe reproduced it in /tmp/opencode/p2b4-probe (the whole preview landed in the outside folder at exit 0). Rated Major, not Blocker: the header promises no in-repo containment (an operator-chosen --preview outside the repo is a supported mode), the final folder name is fixed, the written data is the public docs copy plus sanitized aggregates, and planting needs repo-root write access. Round 5 did not change the preview.sh guards. Fix suggestion for Green: when the default preview path is used, refuse when the resolved PREVIEW_ABS differs from the lexical $ROOT/.tmp/model-guide-preview, or apply the update.sh parent-chain -L walk to the preview default.",
+    "P2B5-2 [Nit] review-b: carryover of P2B4-2 (round 3 P2B2-3), still open per the round 5 brief: guide.ts readTrackARank defaults a missing or non-finite pass.blocker_recall to 0 instead of refusing, while a missing or non-finite date or score refuses with `input-check: scores`. The silent 0 only affects the first D13 tie-break key. guide.ts did not change in round 5.",
+    "P2B5-3 [Nit] review-b: carryover of P2B4-3 (round 1 P2B1-2, adversarial P2ADV-7/P2ADV2-3), still open per the round 5 brief: print-audit.ts reads the input file twice (text for the JSON parse at print-audit.ts:135, bytes for the SHA-256 at print-audit.ts:136), so the verified hash and the parsed content can come from different file states. Not exploitable in the hand-off threat model. The round 5 change to print-audit.ts touched only the output object.",
+    "P2B5-4 [Nit] review-b: the two new P2U1-1 tests pin the bias note's presence, its separate item, and its rendering, but no test pins the escaping of the new bias-note line with a hostile value, and no test pins the null output for a non-string bias_note. Both behaviors were verified empirically in this audit (the /tmp preview probe and the num-bias run) and both hold; the pins would keep them held. The existing T11 hostile-text pattern in preview-gate.test.ts is the natural home."
+  ],
+  "evidence": [
+    "Provenance: HEAD confirmed e13413f31733defe84fb623fb85c08e332942b81 before and after the audit; no publish commit landed after it. The diff b4fba01..e13413f holds exactly print-audit.test.ts and preview-gate.test.ts (a26cf96), print-audit.ts, preview.sh, and data/print-audit-2026-11.json (70ebfc5), and plan.md records (8579399, e13413f). git status --short docs/ empty.",
+    "Escaping, code: preview.sh print_audit_block reads summary.bias_note only when isinstance(summary, dict) and renders it only when isinstance(bias_note, str), through html.escape inside `<p class=\"muted\"><strong>Bias note:</strong> ...` (preview.sh:520-525). html.escape with the default quote=True escapes <, >, &, and both quote kinds, the same call every other data text uses.",
+    "Escaping, empirical end-to-end: in /tmp/opencode/p2b4-probe (temp repo, tools refreshed to HEAD, .tmp link removed), a hostile bias_note `<script>alert(\"x\")</script> & 'sq' \"dq\" <b>bold</b>` planted in the data file renders in real-work.html as `Bias note:</strong> &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#x27;sq&#x27; &quot;dq&quot; &lt;b&gt;bold&lt;/b&gt;`; grep counts show the raw tag absent (one alert occurrence, inside the escaped form; one lt;script occurrence). preview.sh exit 0.",
+    "Refusal semantics unchanged, empirical: a fixture variant with summary.bias_note = 42 exits 0 and writes bias_note null (matching the print-audit.ts header 'The bias note is null when the summary holds no string'); a variant with the summary key removed exits 2 with the single line `input-check: keys` and an empty out folder. The TOP_KEYS check, the row checks, and every other refusal are untouched in the diff.",
+    "Data file derivation: `npx tsx model-guide/print-audit.ts --input <real OD6 hand-off> --out /tmp/opencode/p2b5-regen` exits 0 and the output is byte-identical to the committed file (both sha256 2b2fe10a45f2674d4dd6c7900bc97fa92d22a83a9d597df8fcfdb8052f464642). The only diff against the round 4 file is the added top-level bias_note, equal to the hand-off summary.bias_note. A pattern scan of every string value for .pdf/.epub/.docx/.json/.txt/.md/page-N/home-path gives 0 hits: no book text, no page, no file name (spec D17 'The page').",
+    "Tests at HEAD, single-file runs, exit 0 each: print-audit 15/15 (2 new P2U1-1 pins), preview-gate 100/100 (1 new P2U1-1 pin), leak-guard 2/2; 117 tests total. red-2.16.txt and green-p2-8579399.log exist and the green log matches these counts.",
+    "No new write path: print-audit.ts still writes only <out>/print-audit-2026-11.json after every check (the change adds one field to the output object); preview.sh writes only the preview folder and its staging (the change adds one rendered line). The update.sh guard and both write branches did not change in round 5.",
+    "A2 gate unchanged: docs writes still require measure/tracks/model_guide/publish-approval.md, absent at HEAD. A6: measure/tracks.md unchanged for model_guide, no resolved security claim. Tasks 2.16 and 2.17 are recorded [x] with their evidence files; task 2.8 stays open and is not counted as a finding, this round serves as its code check of the round 5 diff.",
+    "The bias note text is hand-off content that spec D17 explicitly includes ('the summary, and the bias note'), so its presence in the committed file is in spec; leak-guard stays green because the note holds no hand-off path context and no export SHA-256."
+  ],
+  "commands": [
+    "git rev-parse HEAD (e13413f31733defe84fb623fb85c08e332942b81, before and after)",
+    "git log --oneline b4fba01b280a7ccfc4186a1de318435d0d01c034..HEAD",
+    "git diff b4fba01b280a7ccfc4186a1de318435d0d01c034..HEAD -- harness/model-guide/print-audit.ts harness/model-guide/preview.sh harness/model-guide/data/print-audit-2026-11.json harness/model-guide-tests/print-audit.test.ts harness/model-guide-tests/preview-gate.test.ts",
+    "cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (100 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot (2 passed, exit 0)",
+    "cd harness && npx tsx model-guide/print-audit.ts --input <real OD6 hand-off> --out /tmp/opencode/p2b5-regen (exit 0) + sha256sum against the committed data file (identical)",
+    "python3 probe setup in /tmp/opencode/p2b4-probe (tools refreshed to HEAD, hostile bias_note planted, .tmp link removed) + bash harness/model-guide/preview.sh --export fixture/real-work-mini.json (exit 0)",
+    "grep of /tmp/opencode/p2b4-probe/.tmp/model-guide-preview/real-work.html (escaped Bias note line present once; raw tag absent)",
+    "python3 fixture variants in /tmp/opencode/p2b5-num-bias and /tmp/opencode/p2b5-no-summary + npx tsx model-guide/print-audit.ts on each (exit 0 with bias_note null; exit 2 with input-check: keys and an empty out folder)",
+    "python3 string scan of the committed data file (0 suspicious values)",
+    "git status --short docs/ (empty)"
+  ],
+  "changed_files": [
+    "docs/assets/data/benchmark.json",
+    "docs/assets/data/bugfix.json",
+    "docs/assets/data/tracks.json",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/fixtures/guide/benchmark-mini.json",
+    "harness/model-guide-tests/fixtures/guide/review-scores-mini.json",
+    "harness/model-guide-tests/fixtures/guide/tracks-mini.json",
+    "harness/model-guide-tests/fixtures/page-guard/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/page-guard/real-work-page.json",
+    "harness/model-guide-tests/fixtures/print-audit/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/print-audit/print-audit-mini.json",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/print-audit.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/data/print-audit-2026-11.json",
+    "harness/model-guide/guide.ts",
+    "harness/model-guide/pages/guide-section.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/print-audit.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The regenerated data file is byte-identical to a fresh run on the real hand-off (sha256 2b2fe10a...), the hostile bias_note renders fully escaped in the end-to-end probe, and the refusal probes show unchanged exit-2 semantics."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The three new P2U1-1 pins (print-audit 15/15, preview-gate 100/100) cover presence, the separate item, and rendering, but the escaping of the new line and the null-on-non-string rule rest on this audit's empirical probes rather than committed tests (P2B5-4)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff b4fba01..e13413f holds exactly the two test files, print-audit.ts, preview.sh, the one-item data file regeneration, and plan.md; nothing else changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim carries a command result: three single-file vitest runs with exit codes, the byte-identical regeneration sha256sum pair, grep counts from the probe HTML, and both refusal probe outputs."
+    }
+  ]
+}

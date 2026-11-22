@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "audited_head_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "reviewer_model": "claude-opus-5-5[1m]",
+  "route": "claude-code/claude-opus-5-5[1m]#medium",
+  "status": "pass",
+  "summary": "Phase 1 passes acceptance at 9cb95b6. PA1-1 is closed by 530c73a (tests) and 56a173b (fix). Acceptance 2, 3, 4, 5, and 8 hold in the preview folder. The five test files pass alone and bash -n passes. The page-level test gap of A8-1 and C8-1 is an accepted nonblocking risk (PA2-1), because the behavior exists and the live preview proves it. PA1-2 to PA1-11 still hold, and the adversarial evidence is still current.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "PA2-1 [Minor] accepted known risk, decision on A8-1 and C8-1: no test asserts in the generated real-work.html the generated date, the coverage numbers, the 'few runs' mark, or the ' (n=...)' run count (acceptance 2, 4, 5). This is not the same class as PA1-1. PA1-1 was missing behavior: the code dropped a work type, and no test or live check could show the clause. Here the behavior exists: the JSON tests pin the values (input-check.test.ts:138-146, real-work.test.ts:172-179, :264-291, :312-323), and the real preview page rendered at 16:39 after 56a173b holds 'generated 2026-11-14' 1 time, '1,798' 1, '2026-06-06' 1, '2026-11-13' 1, '50.6' 1, '71.7' 1, 'few runs' 95, and '(n=' 197. Acceptance 2 is by definition a check on the real export, which no test may hold (plan: no real export byte in the repository), so a live check (task 1.9 records, this audit) is its correct proof. The risk is only a future preview.sh regression. Recommendation, not a gate: the first Red task of Phase 2, which changes real-work.html for the print-audit block, adds these preview-gate.test.ts tests on the fixture: (1) 'page shows the source line with the generated date' (expect the HTML to contain `generated ${fixture.generated_on}`); (2) 'page coverage block shows runs, date range, and the two shares' (the fixture coverage.runs formatted with a thousands comma, the first and last dates, and both shares as one-decimal percent); (3) 'page marks each few-runs row with few runs' (each producer, checker, and work-type row with few_runs true in real-work.json has 'few runs' in its HTML row, and a row with 10 results has none); (4) 'page shows the run count beside each rate' (each rendered rate cell ends with ` (n=${pass_rate.n})`).",
+    "PA2-2 [Info] accepted known risk, B8-1: no adversarial test feeds a hostile work-type name through the new unknown-route path of 56a173b. The code escapes the H3 with html.escape (preview.sh:316) and builds the map with Object.fromEntries (real-work.ts:461); ADV-8 covers __proto__ on a known route.",
+    "PA2-3 [Info] PA1-2 to PA1-11 still hold. 80c17f5..9cb95b6 changes no line of publish.ts, the real-work.ts header, the preview.sh scan and copy code, the template, or site.css. The reviews carry the same items unchanged: B7-1 to B7-3, C8-2 (= C6-1, Phase 5 must close it before the first publish), C8-3 (= C6-2), C8-4 (= C5-1, dead Review link, plan note C4-1), U2, and U5. The empty Print audit card stays a Phase 2 item.",
+    "PA2-4 [Info] adversarial currency: adversarial-0acceea.json is still current enough. The only code commit after 80c17f5 is 56a173b (8 lines: real-work.ts keeps the work-type names of unknown and other rows with an empty row list; preview.sh renders an H3 and 'no pick yet' for an empty list). The new path reuses the escaped H3 and the Object.fromEntries build that ADV-8 already pins, and adversarial.test.ts passes 49 of 49 at 9cb95b6. No new adversarial round is necessary."
+  ],
+  "evidence": [
+    "git rev-parse HEAD = 9cb95b6643eba0cd04f0623865224f3d9ef88b3c at the start and at the end; the working tree shows only the untracked .opencode/, harness/wt.txt, and tech-debt.md.",
+    "Review A, Review B, Review C, and UX browser results at 9cb95b6 all have status pass and audited_head_sha 9cb95b6643eba0cd04f0623865224f3d9ef88b3c. 9cb95b6 changes only plan.md after 56a173b.",
+    "preview-gate.test.ts exit 0, Tests 90 passed (90). input-check.test.ts exit 0, 15 passed. real-work.test.ts exit 0, 20 passed. leak-guard.test.ts exit 0, 2 passed. adversarial.test.ts exit 0, 49 passed. bash -n harness/model-guide/preview.sh exit 0.",
+    "PA1-1 closed: preview-gate.test.ts adds 'Acceptance 5: an export with no work-type rows renders \"no pick yet\"' and 'Acceptance 5 (PA1-1): a work type carried only by the unknown route renders a heading and \"no pick yet\" with no table'; real-work.test.ts adds 'keeps a work type carried only by the unknown route with an empty row list'. All three pass. 56a173b keeps the name before the skip (real-work.ts:409-415) and adds the empty-list branch (preview.sh:315-317). The plan records the ruling under task 1.22.",
+    "Acceptance 2: .tmp/model-guide-preview/real-work.html and real-work.json are dated 16:39, after 56a173b (16:39:21). The page holds the full SHA-256 dae855ca...64f2, 'generated 2026-11-14', 1,798, 2026-06-06, 2026-11-13, 50.6, and 71.7; preview-1.23.txt records exit 0.",
+    "Acceptance 3: input-check.test.ts changed-byte tests (lines 152 and 206) pass.",
+    "Acceptance 4: the exact method note is on the page; 'few runs' 95 times and '(n=' 197 times; M1, M2, M3, and M5 pass.",
+    "Acceptance 5: 5 work-type sections with tables on the real page (every work type has rows, so no 'no pick yet' line), and the no-row branch has tests that pass.",
+    "Acceptance 8: no publish-approval.md; publish.ts --preview ../.tmp/model-guide-preview prints 'publish: no approval record', exit 2; git status --short docs/ prints nothing.",
+    "A5: plan task 1.23 claims each file passes alone; this audit got the same results. Task SHAs 530c73a and 56a173b resolve to the named commits.",
+    "A3, A4, A6, A7: the delta touches no framework contract test, no filter, and not measure/tracks.md, so these checks do not apply."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git log --format='%h %s' 80c17f5..HEAD",
+    "git diff 80c17f5..HEAD -- harness/model-guide/ harness/model-guide-tests/ measure/tracks/model_guide/plan.md",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bash -n harness/model-guide/preview.sh",
+    "grep -o <value> .tmp/model-guide-preview/real-work.html | wc -l",
+    "cd harness && npx tsx model-guide/publish.ts --preview ../.tmp/model-guide-preview",
+    "git status --short docs/",
+    "git show -s --format='%h %ci' 530c73a 56a173b 9cb95b6"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/phase-acceptance-9cb95b6.json",
+    "measure/runs/model_guide/phase-acceptance-9cb95b6.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {"axis": "correctness", "score": 4, "evidence": "Acceptance 2, 3, 4, 5, and 8 hold; the PA1-1 path now keeps the work type and renders 'no pick yet' (preview.sh:315-317)."},
+    {"axis": "test_meaning", "score": 4, "evidence": "The three new PA1-1 tests failed first at 530c73a and pass at 9cb95b6; page-level tests for the date, the coverage, and the run counts are still missing (PA2-1)."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "56a173b changes 8 lines in real-work.ts and preview.sh and no test file, as task 1.23 states."},
+    {"axis": "evidence_quality", "score": 4, "evidence": "Plan tasks 1.22 and 1.23 name their commits, the role log, and preview-1.23.txt, and this audit reproduced each test result."}
+  ],
+  "reviewer_ratings": [
+    {"reviewer_role": "review-a", "reviewer_route": "opencode-go/mimo-v2.6-flash", "agreed": true, "score": 5, "evidence": "review-a-9cb95b6.json gives pass and raises A8-1 with the exact test lines and a nonblocking reason that this audit re-checked."},
+    {"reviewer_role": "review-b", "reviewer_route": "claude-code/claude-sonnet-5-5#high", "agreed": true, "score": 4, "evidence": "review-b-9cb95b6.json gives pass with B8-1 on the hostile-name path, which this audit confirmed at preview.sh:316 and real-work.ts:461."},
+    {"reviewer_role": "review-c", "reviewer_route": "opencode-go/mimo-v2.6-flash", "agreed": true, "score": 5, "evidence": "review-c-9cb95b6.json gives pass, and C8-1 lists the grep counts on the real page, which match this audit."}
+  ]
+}

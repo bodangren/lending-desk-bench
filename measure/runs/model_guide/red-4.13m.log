@@ -1,0 +1,20 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13m
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: a3799bea45b5cd9fdca1b81c5495e0303c7cfaee
+resulting_head: 38919fdf9a57d41a588de1bf3cab15ad554af25b
+commits: 93c0dcfa702d18ad47807781f0c70671124b5f80 test(model_guide): Red task 4.13m standalone credential calls; 38919fdf9a57d41a588de1bf3cab15ad554af25b measure(model_guide): record Red task 4.13m
+red_test_command: cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+tests: Tests 2 failed | 14 passed (16)
+files: harness/model-guide-tests/credential-provider.test.ts; measure/tracks/model_guide/plan.md
+failing_tests: ST1 every call that seed makes holds --standalone (auth export holds no --standalone); ST2 every call that scan-values makes holds --standalone (auth export holds no --standalone)
+passing_guards: ST3 no serve and no empty subcommand; ST4 review-run.sh run --standalone guard; ST5 judge-run.sh run --standalone guard
+orphans: pgrep -af fake-opencod[e] prints nothing; pgrep -af quota-serve[r] prints nothing
+production_change: none
+handoff: Green task 4.13n adds --standalone to the three run_opencode auth calls in harness/model-guide/provider-credential.sh (lines 147 export, 179 import, 187 export) so each matches harness/opencode-credential.sh and the runners use run --standalone
+END_MEASURE_AGENT_RESULT

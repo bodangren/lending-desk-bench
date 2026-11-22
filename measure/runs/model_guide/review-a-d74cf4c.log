@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+audited_head_sha: d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34
+delta: 9bf5b3b..d74cf4c
+prior_review: measure/runs/model_guide/review-a-9bf5b3b.json
+status: pass
+result_json: measure/runs/model_guide/review-a-d74cf4c.json
+blocking_findings: 0
+nonblocking_findings: 0
+prior_findings:
+  RA3-1: closed; mutant N1 (guide.ts minimum 4 only) fails the RA-2 case
+  RA3-2: closed; mutant N5 (second cell without the #variant split) fails the RA-1 case
+tests: guide 17/17, preview-gate 99/99; each exit 0
+mutation: N1, N4, N5, N9 each fail guide.test.ts
+plan: plan.md:1145 fix round r9 counts reproduce
+retry_recommendation: none
+handoff: none
+RESULT: PASS
+END_MEASURE_AGENT_RESULT

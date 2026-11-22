@@ -1,0 +1,18 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b
+role: measure-strategy
+status: pass
+role_base_sha: 0ab805f22e654dd780016d6a74664686d265181c
+strategy_commit_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+strategy_commit_message: measure(model_guide): test strategy for Phase 4b
+strategy_file: measure/tracks/model_guide/test-strategy.md
+phase_base_sha_capture: orchestrator runs git rev-parse HEAD directly after commit 7d7d218d00a95d9d619d2856173b8136b6ace4a5 and before Red row 4.15; no commit between them, so the captured value equals the strategy commit; the strategy doc embeds no base value; 0ab805f predates the strategy and is not the base
+tests_run: none, this is a documentation task
+section_added: 14 Phase 4b with risk per row 4.10-4.15, runner rules, Red/Green/closeout gates, owners, live evidence for 4.10-4.14, test groups with falsification for 4.15, guardrails, Green production constraint, artifact/live split, review applicability, anti-pattern coverage, and phase_base_sha capture point
+drift_fixed: section 2.4 now points tasks 4.10 to 4.14 to section 4b (section 14)
+document_only_items: N5, N12, N20, N24, N29, each with a reason
+green_constraint: row 4.15 production changes land after 06:00 +07 on 2026-11-20, after the 01:45 probe and 02:00 night 1 run on accepted HEAD 0ab805f; Red tests may land before
+handoff: none, no product decision or user input was needed
+result: PASS
+END_MEASURE_AGENT_RESULT

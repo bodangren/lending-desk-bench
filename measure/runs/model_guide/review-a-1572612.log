@@ -1,0 +1,22 @@
+MEASURE_AGENT_RESULT
+role: review-a-correctness
+status: fail
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: "re-review of 4.13q and 4.13r, earlier findings F1 and N2-N4 at c46161f"
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: c46161fb858de0883cf304a7dfc40f0afd486e64
+audited_head_sha: 1572612a513316c21dcc22b84e61338e19815ba3
+route: opencode-go/glm-5.3#high
+result_path: measure/runs/model_guide/review-a-1572612.json
+verdict: FAIL, one blocking finding, retry_implementation
+earlier_findings: F1 resolved (NUL-joined match plus real-split fake with spawn argv pins, D1/D2/D3/JD1); N2 resolved (realpath HOME guards, H1/H2); N3 resolved (daemon_pid_alive honors BENCH_OPENCODE_PROC, verbatim-extract N3 cases); N4 resolved (git-root check with /tmp fallback, S6/JS3/C11). No CONTEST items were routed, so none kept.
+blocking_findings: 1
+blocking_1: Point 8 is not wired in production. quota.ts runs ra-quota only when BENCH_RA_QUOTA is set (quota.ts:407-421); nothing in this repo, in advantage-pr, or in heavy-run.sh sets it, and the code holds no default, so a live Go quota read still goes through openchamber status --json -> GET /api/quota/opencode-go (quota.ts:422-429), the source probe-4.10 line 4 records as timing out. The plan row 4.13r claims the default ${BENCH_RA_QUOTA:-/home/daniebo/Desktop/advantage-pr/scripts/jobs/ra-quota} with 'else the default ra-quota path (production)' (plan.md:2397) and the Green handoff repeats it; Q16a-d pin only the seam with a fake double and Q7 still pins the port source, so the production claim has no test and is false. Spec D15 still names the OpenChamber endpoint as the live Go source, so Green lands the default and the PM confirms the source switch.
+nonblocking_findings: 2
+nonblocking_1: Point 3 (starttime before KILL) is implemented and correct in both runners but pinned by no test, and the plan's no-test reason (plan.md:2392, 'daemon_pid_alive reads the real /proc; BENCH_OPENCODE_PROC affects selection only') is stale after the same commit made daemon_pid_alive and daemon_starttime honor the seam; the suite already signals processes it owns, so a deterministic fake-table case is constructible. Risk is low on this host (pid_max 4194304, 5 s window).
+nonblocking_2: The Q16 assertion message 'the fake ra-quota never attempted the hanging API' contradicts its expectation of exactly one attempt (quota.test.ts:1167 and parallels); message-only defect.
+gates: bun test harness/model-guide-tests/review-run.test.ts -> 65 pass 0 fail in 111.52 s; npx vitest run model-guide-tests/judge-run.test.ts -> Tests 37 passed (37) in 62.82 s; credential-provider.test.ts -> Tests 22 passed (22) in 2.43 s; quota.test.ts -> Tests 30 passed (30) in 20.81 s. All four match the plan row counts. pgrep for fake-opencod[e], quota-serve[r], serve --servic[e] printed nothing after each gate. No driver, no heavy-run.sh, no signal to any process.
+retry_recommendation: retry_implementation
+confidence: high
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,10 @@
+Post-move project test gate, measure_guide closeout, 2026-11-22
+
+Command: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: EXIT=0
+Test Files  1 passed (1)
+Tests  122 passed (122)
+Duration  46.66s
+
+Wrapper note: HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'bun test harness/model-guide-tests/preview-gate.test.ts'
+The wrapper waited over 600 s on the shared heavy.lock while p1 jobs held it. The queued p2 job produced no test result and was stopped. The same gate ran directly in real mode with the exit and summary above. The lock holder was not touched. No process is left running.

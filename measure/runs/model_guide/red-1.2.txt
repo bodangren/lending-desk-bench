@@ -1,0 +1,24 @@
+Task 1.2 Red evidence.
+
+Task: 1.2 Red. The input check.
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+Production path under test: harness/model-guide/real-work.ts (missing at baseline).
+
+Command:
+cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1
+
+Exit line: Exited with code 1
+Summary line: Tests  6 failed (6)
+Test Files  1 failed (1)
+
+Pinned check lines: `input-check: manifest`, `input-check: sha256`,
+`input-check: size`, `input-check: schema`, `input-check: run-sum`.
+The check exits 2 and writes no output file.
+
+Failed test names (all fail with "production file is missing: harness/model-guide/real-work.ts"):
+1. passes on the fixture and keeps the file name, the SHA-256, and generated_on
+2. refuses a changed byte with exit 2 and writes no output file
+3. refuses a wrong size with exit 2 and writes no output file
+4. refuses a wrong schema with exit 2 and writes no output file
+5. refuses a run sum that differs from coverage.runs with exit 2
+6. refuses a missing MANIFEST.txt with exit 2 and writes no output file

@@ -1,0 +1,19 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-mid-red
+status: complete
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: c0e8db545caeeea99bfe1a61eeafff8be59c99b5
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+red_commit_sha: e3de8c3a6bf5d1851121f559a2758ecb13ca3c2c
+plan_commit_sha: 51bd94b07389c9ff5a35263e825f118a9a0a5357
+resulting_head: 51bd94b07389c9ff5a35263e825f118a9a0a5357
+commits: e3de8c3 test(model_guide): Red task 4.15 review B contract cases; 51bd94b measure(model_guide): record Red task 4.15 r7
+tests: review-run.test.ts N26 runner-path, N26b pipefail function case, G2 symlink-walk case, N27 revised fixture; decode-parity.test.ts P5 forged result last; adversarial-p4-runner.test.ts P4B-C1 and judge-run.test.ts P4B-J2 F7 marker fixtures.
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/decode-parity.test.ts, harness/model-guide-tests/adversarial-p4-runner.test.ts, harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-4.15.txt, measure/runs/model_guide/red-4.15-c0e8db5.log
+remaining_failures: 3 at the base. `bun test harness/model-guide-tests/review-run.test.ts` exit 1, `98 pass` / `2 fail`, 100 tests: N26b and G2. `bun test harness/model-guide-tests/decode-parity.test.ts` exit 1, `4 pass` / `1 fail`, 5 tests: P5. adversarial-p4-runner `Tests 16 passed (16)` and judge-run `Tests 50 passed (50)` at this HEAD.
+gaps: Three cases already pass at this HEAD and are recorded as guards with breakage proof. The N26 runner-path case passes because the runner calls error_line_of inside a command substitution, which suppresses errexit in the function. The N27 revised fixture passes because the sum check already landed. The two F7 cases pass because the marker filter is correct. Review A F7 and Review B N13, G1, and G2 name the missing coverage, not a missing production fix for these three cases.
+breakage_proof: N27 fails in a scratch copy with the per-key sum check neutralized (`an unsafe sum kept tokens_complete true`, received true). P4B-C1 and P4B-J2 fail in scratch copies with the marker filter `if (job !== "" && real(job) !== baseReal) continue;` neutralized in both runners. Scratch copies were removed. N26b and G2 reproduce the exit 141 aborts at the base; P5 reproduces the judge divergence at the base.
+handoff: Green should use a bounded substring instead of `printf | head -c 499`, add `-quit` to the symlink find, and keep result text apart from text parts in the judge decoder. The N27 sum check and both marker filters already work. Green changes no test file. Row 4.15 stays [~].
+END_MEASURE_AGENT_RESULT

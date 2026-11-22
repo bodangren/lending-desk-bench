@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "e13413f31733defe84fb623fb85c08e332942b81",
+  "audited_head_sha": "e13413f31733defe84fb623fb85c08e332942b81",
+  "reviewer_model": "bailian-token-plan/qwen3.8-max#high",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "contract_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 5: the UX blocker fix in 70ebfc5 verifies and the Phase 2 contract still holds. print-audit.ts adds exactly one output item, a top-level bias_note taken from summary.bias_note or null, its header documents the new item, and the schema name and every other key are unchanged; preview.sh renders the bias note escaped in the print-audit block beside the kept scope-note line; the regenerated data file differs only by the bias_note line and its source SHA-256 still equals the OD6 hand-off value f52a7bbf...a6e87. The block now shows all four D17 'The page' items: the two results, the error types with counts, the bias note, and the calibration-run-not-a-rank line, with no placeholder. The page equals the data file, the six overview rows are identical to rounds 1 to 4, and no docs/ write happened. P2C1-3 stays the known PM question. Two nits carry over unfixed: the plan marker-comment note (P2C5-1) and the unpinned blocker_recall field name (P2C5-2). Task 2.8 stays open, marked [~], and is not counted as a finding.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2C5-1 [Nit] review-c: Carry-over of P2C2-1/P2C3-1/P2C4-1, still open. The plan.md file-map note (lines 93-97) still says the overview block goes between <!-- model-guide:start --> and <!-- model-guide:end --> after </nav>, while the shipped mechanism inserts the section at the '<header class=\"hero' anchor and dedupes by id=\"model-guide\"; no marker comments exist anywhere. The placement contract holds and is pinned (adversarial-p2.test.ts P2ADV-6). Rationale: the plan note diverges from the implementation and could mislead the Phase 5 publish work; the owner of plan.md should update the note.",
+    "P2C5-2 [Nit] review-c: Carry-over of P2C2-2/P2C3-2/P2C4-2, still open. The D13 first tie-breaker reads pass.blocker_recall in guide.ts readTrackARank, but no fixture or test carries that field, P2ADV-1 exercises only the median branch, and a missing or non-finite value silently defaults to 0 (the open review-B nit P2B2-3 names the same leniency). review-score.ts (Phase 4 task 3.3) does not exist yet; a different field name there would silently degrade the recall tie-break for every route. Rationale: pin blocker_recall in a guide tie-break test with recall values and in the Phase 4 score-file contract, or refuse a complete pass without a numeric recall."
+  ],
+  "evidence": [
+    "HEAD confirmed current and unchanged: git rev-parse HEAD = e13413f31733defe84fb623fb85c08e332942b81 at the start and at the end of the audit; equals role_base_sha and audited_head_sha; no docs/assets/data publish commit landed above it during the audit, so no fallback naming was needed; phase_base_sha c22f313 is its ancestor.",
+    "Exact round-5 diff (git diff --stat b4fba01..e13413f): 6 files only, preview-gate.test.ts (+16), print-audit.test.ts (+48), data/print-audit-2026-11.json (one added line), preview.sh (13), print-audit.ts (6), plan.md (+30). All four commits in the range are model_guide commits (a26cf96 tests, 70ebfc5 fix, 8579399 and e13413f plan records); guide.ts, update.sh, and both page templates are untouched since round 4, where they were verified.",
+    "print-audit.ts output contract changed only by the new item: the diff adds exactly one field, bias_note: typeof summary.bias_note === 'string' ? summary.bias_note : null, plus one header sentence 'The bias note is null when the summary holds no string'; the schema name model-guide-print-audit/1, the input checks, the refusal lines, and every other output key are unchanged.",
+    "The regenerated data file differs only by the bias_note line: git diff shows one added top-level key whose text equals summary.bias_note; live inspection confirms schema model-guide-print-audit/1, source.sha256 = f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87 equal to the OD6 hand-off file and its MANIFEST, totals {errors: 52, blockers: 13}, routes {'kimi-code-plan-cn/k3.1-pro': '11 of 13', 'claude-code/claude-sonnet-5-5#high': '13 of 13'}, error_types {minor: 21, major: 18, blocker: 13}, and 52 error rows.",
+    "Block wording matches D17 'The page' in the rebuilt .tmp/model-guide-preview/real-work.html: line 248 holds the totals and 'This data point is one calibration run of the audit. It is not a rank.'; 'Blockers found:' with both results occurs once; the error types render with their counts; line 257 holds '<strong>Bias note:</strong> A Sonnet 5.5 session wrote the answer key, so the s55 score may be too high. Review A noted E35 for s55 is partial, not found (minors found 5, not 6).', HTML-escaped and equal to summary.bias_note in the data file; the scope-note line stays; 'Error types: not yet received.' occurs 0 times.",
+    "The fix is pinned fail-first at three levels: red-2.16.txt records the new tests failing on the previous code; print-audit.test.ts P2U1-1 pins the output contract on a fixture whose top-level note differs from summary.bias_note (bias_note as its own item, summary keeps it, note does not replace it) and pins the real data file (bias_note present and naming the caveat); preview-gate.test.ts P2U1-1 pins the rendered block containing summary.bias_note when the two notes differ.",
+    "Test runs at HEAD, each single file with --configLoader native --maxWorkers=1 --reporter=dot and no shell redirection: print-audit.test.ts 15 passed exit 0; preview-gate.test.ts 100 passed exit 0; guide.test.ts 15 passed exit 0. The Green log green-p2-8579399.log additionally records update 8, adversarial-p2 14, input-check 15, real-work 20, leak-guard 2, adversarial 49, and bash -n preview.sh, all exit 0.",
+    "Page and data file agree and the six overview rows did not change: .tmp/model-guide-preview/model-guide.json holds today 2026-11-16, stale false, schema model-guide-overview/1, and all six rows identical in every cell to rounds 1 to 4 (base lines 95 and 98.7 included); index.html shows no data-stale text, correct for the 2026-11-14 export; the Green log records rows_identical = True, count = 6, and grep -c 'wrote the answer key' on real-work.html printing 1 for the task 2.9 preview rerun at the new code.",
+    "No docs/ write: git log b4fba01..e13413f -- docs/ is empty; git status --short docs/ prints nothing.",
+    "P2C1-3 stays known: the Q6 label default versus the 2.4a route-name ruling remains the open PM question, carried by the adversarial record as P2ADV2-2; no new finding is raised for it, per the orchestrator.",
+    "Known open items owned by other roles, noted for visibility and not duplicated: UX nits P2U1-2 to P2U1-6 from ux-browser-b4fba01.json (whose single blocker P2U1-1 is the fix verified here), adversarial nits P2ADV2-3 and P2ADV2-4, and review-B nit P2B2-3 (the same code path as P2C5-2).",
+    "Plan and record consistency: plan.md marks 2.16 [x] a26cf96 with red-2.16.txt evidence, including the recorded contract decision on the output field bias_note, and 2.17 [x] 70ebfc5 with green-p2-8579399.log evidence; task 2.8 stays [~] as the open check task of the phase and is not counted as a finding."
+  ],
+  "commands": [
+    "git rev-parse HEAD (run before and after the audit: e13413f31733defe84fb623fb85c08e332942b81)",
+    "git log --oneline b4fba01..e13413f",
+    "git diff --stat b4fba01..e13413f",
+    "git diff b4fba01..e13413f -- harness/model-guide/print-audit.ts harness/model-guide/preview.sh harness/model-guide/data/print-audit-2026-11.json measure/tracks/model_guide/plan.md harness/model-guide-tests/",
+    "git log b4fba01..e13413f --format='%h %s' -- docs/ (empty)",
+    "git status --short docs/ (empty)",
+    "cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (100 passed, exit 0)",
+    "python3 inspection of harness/model-guide/data/print-audit-2026-11.json (keys, schema, source sha, totals, routes, error_types, 52 rows, bias_note == summary.bias_note)",
+    "grep inspection of .tmp/model-guide-preview/real-work.html (Bias note line 257, calibration line 248, Blockers found count 1, no placeholder) and model-guide.json (six rows identical to rounds 1-4)",
+    "read measure/runs/model_guide/green-p2-8579399.log and measure/runs/model_guide/ux-browser-b4fba01.json"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-c-e13413f.json",
+    "measure/runs/model_guide/review-c-e13413f.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The D17 'The page' contract is now complete: the block shows the two results, the error types with counts, the bias note (real-work.html:257, escaped, equal to summary.bias_note), and the calibration-not-a-rank line; the data file changed by exactly one key and its source SHA-256 still equals the OD6 hand-off value."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The three P2U1-1 tests pin the fix fail-first at the output, real-data, and page levels with a fixture whose two notes differ (red-2.16.txt records the failures on the previous code); the only unpinned branch in the phase remains the blocker_recall tie-break (carry-over P2C5-2)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "All four commits in b4fba01..e13413f are model_guide commits and the diff touches exactly the two production files of the fix, the regenerated data file, the two test files, and the plan record; no docs/ commit in range and git status --short docs/ prints nothing."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "green-p2-8579399.log holds every command, exit code, Tests line, rows_identical=True, and the bias-note grep count; red-2.16.txt and ux-browser-b4fba01.json record the failing-first tests and the blocker; I re-verified all central claims with three live single-file vitest runs and direct file inspection."
+    }
+  ]
+}

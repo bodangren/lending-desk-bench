@@ -1,0 +1,75 @@
+Strategy log — model_guide Phase 4, revision 4 of test-strategy.md
+
+Date: 2026-11-16. Role: strategy. Route: opencode-go/deepseek-v4.1-flash
+(the table route claude-code/claude-opus-5-5[1m]#high is out; Claude is in
+WAIT at 92 % of the week, so `ra-quota pick strategy` gave this route).
+
+Read: measure/index.md, measure/tracks.md, measure/anti-patterns.md,
+spec.md D4, D9 to D15, D22, FR-11, FR-14, FR-15, acceptance 10 and 11,
+plan.md Phase 4 tasks 4.1 to 4.14 and the Phase 3 rows, the Phase 3
+acceptance record at 17c1069, harness/opencode-credential.sh,
+harness/opencode-host.sh, harness/cron-daily.sh guard_read, the headers of
+review-score.ts, adjudicate.ts, leak-check.ts, review-set.ts, and
+preview.sh, and the temp-repo pattern of
+harness/schedule-tests/rescore-guard.test.ts.
+
+Checks run (read only):
+- The Mid Red gate rule of measure_interphase_checks.py: non_test_paths
+  counts a committed file without a `.test.` suffix and outside a `tests/`
+  segment as a non-test file. The fake `opencode` of task 4.1 is one such
+  file, and section 3.4 records that expected deviation.
+- The Red 3.13c and 3.13e temp fake scripts, as the precedent for the temp
+  fakes of tasks 4.2, 4.3, and 4.8a.
+- harness/opencode-host.sh line 187 reads BENCH_OPENCODE_BIN, and
+  harness/opencode-credential.sh line 47 does too, so one fake serves both.
+- harness/cron-daily.sh guard_read (line 507) gives the port source, the
+  endpoint shape, the field rule, and the BENCH_DAILY_QUOTA_CMD precedent.
+- git status --short docs/ after the commit prints nothing.
+- git diff --stat HEAD~1..HEAD -- harness/ prints nothing.
+
+Wrote: measure/tracks/model_guide/test-strategy.md revision 4. New content:
+section 1 Phase 4 risk row; section 2.4 with the four Red lines, the Green
+line owners, the Green gate, and the ten item closeout gate; section 3.4
+with the one committed fixture, the recorded Mid Red deviation, the temp
+fakes, the temp repo, and the environment rules; section 4.4 with groups R1
+to R15, Q1 to Q8, C1 to C7, and V1 to V9, each with a falsification
+condition; eleven new guardrail bullets in section 5; section 6.2 with the
+two plan changes and assumptions A4-1 and A4-2; section 7 with the Phase 4
+split, the pilot report check, and the seven facts that only tasks 4.10 to
+4.12 can prove; section 8 with the red span 4.1 to 4.7 and the mixed
+preview-gate file; section 9.4 with the five review roles, the browser
+review of review.html, the checker, and the secrecy rule; ten Phase 4
+anti-pattern rows in section 10; section 11 with the Phase 4 capture point;
+section 12 with the per-task evidence and section 12.1 with the Phase 3
+records.
+
+Plan changes in the same commit. No checkbox of an existing task moved.
+1. Task 4.2: the fake quota source is now the temp in-process `node:http`
+   server that the test writes, and the task commits no fixture
+   (test-strategy section 6.2, change 1).
+2. New Red row 4.8a before row 4.8: the review page cases V1 to V9 go into
+   `harness/model-guide-tests/preview-gate.test.ts`, with its Verify line
+   and its `red-4.8a.txt` record (test-strategy section 6.2, change 2).
+
+Commands run: read-only git (log, status, diff, show, rev-parse, add,
+commit), ls, head, sed, grep, python3 to read one JSON record. No test
+suite, no benchmark, no model call, and no heavy run. Nothing staged from
+.opencode/, tech-debt.md, harness/wt.txt, measure/runs/, docs/, reports/,
+harness/model-guide/data/, or harness/cron-daily.sh.
+
+MEASURE_AGENT_RESULT
+role: strategy
+status: complete
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+role_base_sha: 5feedcf32c118bead3632920b604fcc377ed7db3
+head_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+commits: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+files_changed: measure/tracks/model_guide/test-strategy.md (revision 4), measure/tracks/model_guide/plan.md
+plan_updates: 4.2 now names the temp fake quota source and commits no fixture; new Red row 4.8a before 4.8 for the review page cases V1 to V9 of test-strategy section 4.4; no checkbox of an existing task changed; no other line changed
+risk_by_phase: P1 high, P2 high, P3 high, P4 critical, P5 critical
+applicable_gates: review-a, review-b, review-c, adversarial-testing, ux-browser-review (review.html of task 4.8, section 9.4), and the code checker of task 4.9; phase-acceptance at closeout; spec-review not applicable (no spec change)
+dispositions: none
+red_test_order: 4.1 review-run.test.ts, then 4.2 quota.test.ts, then 4.3 credential-provider.test.ts, then 4.8a preview-gate.test.ts (V1 to V9)
+handoff: (1) Capture phase_base_sha directly after commit 57baaaa364f968a2f44c6e14eb96f8a9d68beebf, before Red task 4.1 starts: run `git rev-parse HEAD` once on that commit. The accepted Phase 3 HEAD 17c1069 and role_base_sha 5feedcf both predate the strategy commit and are NOT the Phase 4 base; a base that predates it fails closeout gate item 5. (2) Red order and schedule: Red 4.1 tonight 2026-11-16 (it is the largest file); Red 4.2, Red 4.3, and Red 4.8a on 2026-11-17, and 4.2, 4.3, and 4.8a may run in parallel because they touch different files; Green 4.4, 4.5, and 4.6 in parallel after their Red, then Green 4.7 (it needs 4.4 and 4.5), then Green 4.8, all on 2026-11-18; Reviews A, B, C, and the adversarial role in parallel after 4.8; the fixes and checker 4.9 on 2026-11-19; the probe 4.10 in the 02:00 to 06:00 +07 window of the night 2026-11-18 to 2026-11-19, recorded by the evening of 2026-11-19. Pass nights: 2026-11-20 (pilot pass 1 and pass 1 of the other reachable routes), 2026-11-21 (pilot pass 2 and the pilot report of 4.11), 2026-11-22 (pilot pass 3 and pass 3 of the rest), then adjudication 4.13, the manifest commit, the score file 4.14, and the preview page. No red test file may survive into 2026-11-20. (3) Mid Red gate deviation, expected and accepted once: Red 4.1 records `- harness/model-guide-tests/fixtures/fakes/fake-opencode` with the reason that plan task 4.1 names the file and no product code reads it. Red 4.2, Red 4.3, and Red 4.8a commit no fixture, so their gate output holds no deviation. (4) The phase needs a live seam that the Green roles must build: `quota.ts` takes `--base <url>` (default from `openchamber status --json`), and `review-run.sh` forwards `BENCH_QUOTA_BASE`; the runner sets `OPENCODE_CONFIG` to the job config path so the fake and the review can read the deny list; `MG_CALL_TIMEOUT_S` defaults to 600, and `MG_RUN_RETRY_WAIT_MS` is bounded. Without these seams, R2, R3, R5, R6, R8, R14, Q1, and Q7 cannot be written. (5) Two assumptions with defaults, no answer needed to continue: A4-1, `preview.sh` takes `--pilot-gate pass|fail` with the default `pass`, because the score file of D13 holds no pilot field and FR-14 needs the verdict; A4-2, when `ra-quota pick` gives a family of D12 as the first judge of 4.13, the orchestrator takes the next family outside D12, or ByteDance Doubao, or `openai/gpt-6.1-sol#high` with `--allow-codex` as the last resort, because the first judge reads the seeded source diffs. (6) Secrecy: Reviews A, B, C, the adversarial role, the acceptance role, and checker 4.9 read no key, no seeded diff, no source diff, no raw output, and no adjudication note; tasks 4.13, 4.14, and the pilot report check hold the only Phase 4 reads of the private folder, and they run as scripts or on a family outside D12. (7) Do not stage .opencode/, tech-debt.md, harness/wt.txt, measure/runs/, docs/, reports/, harness/model-guide/data/, or harness/cron-daily.sh.
+END_MEASURE_AGENT_RESULT

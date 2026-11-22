@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "summary": "Fail on one kept blocker. B1, N1, N2, TS1, LC1 from review-b-cc8afbd are fixed and withdrawn: quota.ts:68,291 reads the week window under the live key `weekly`; the live GET at 127.0.0.1:38307 printed state ready with windows 5h 5.15, weekly 2.06, monthly 1.03; Q11 pins wait at weekly 100; Q15 pins stopped when the 5h or weekly name is absent; both runners key IS_GO_ROUTE on quota_provider (review-run.sh:261, judge-run.sh:245), the same field quota.ts reads; all fakes emit the live key set. Gates: quota 24 passed (24), review-run 53 pass 0 fail (bun), judge-run 30 passed (30). The drivers night-4.11.sh and probe-4.10.sh fail closed: a missing 5h or weekly key raises and prints fail, so the route is skipped. The 80 % stop holds for non-Go routes (review-run.sh:786-789, judge-run.sh:692), and a non-Go route cannot take the Go thresholds because the provider comes from the repo-owned routes.json row and the quota answer cannot set it. Kept blocker: B2 is only half closed. quota.ts:319-324 checks the window NAMES, not the usable values, so a present-but-unusable weekly (null, string, or negative) beside a usable 5h gives ready. Q13 (quota.test.ts:626-674) pins exactly this: {5h:50, weekly:-1, monthly:10} -> ready, and I reproduced it inline against quota.ts (state ready). This is fail-open on the Go week threshold: when the weekly value cannot be evaluated, the gate that protects real Go spend starts a pass, probe, or judge call anyway. Plan row 4.13j states B2 as 'both 5h and weekly must be finite numbers, else stopped', and spec D15 defines unusable windows as skipped and a Go answer lacking 5h or weekly as stopped. A2 and A6 do not apply.",
+  "blocking_findings": [
+    "B2 [Blocker] harness/model-guide/quota.ts:319-324 (with stateOf :288-297): the required-window rule checks answer.names (every name of the answer, usable or not), not the usable windows map. So a present-but-unusable weekly beside a usable 5h gives ready. Evidence: Q13 (harness/model-guide-tests/quota.test.ts:648-662) pins {5h:50, weekly:-1, monthly:10} -> ready and passed in gate 1; my inline probe against quota.ts with the same body printed {\"provider\":\"opencode-go\",\"source\":\"opencode-go\",\"state\":\"ready\",\"cap\":3,\"windows\":{\"5h\":50,\"monthly\":10}}. A weekly with a wrong shape (weekly:{percent:50}) or a null weekly after a schema drift takes the same path: the name is present, the value is skipped, and the Go 100 % week threshold never fires. Plan row 4.13j states B2 as 'both 5h and weekly must be finite numbers, else stopped'; spec D15 skips unusable windows and gives stopped for a Go answer that lacks the 5h or the weekly window. Effect: a damaged or drifted Go quota answer starts a pass, probe, or judge call with unknown week usage (fail open on the PM-order threshold). Fix: for opencode-go, require usable values (finite numbers, not negative) for both 5h and weekly from the usable windows map; if either is absent there, return stopped. Q13 changes to match: usable 5h with a negative, string, null, or wrong-shape weekly gives stopped; the only-string case stays stopped. Q12 stays as-is (a null credits_balance beside usable windows is not a required window). | CONTEST kept: Green implemented a name-presence check and pinned the fail-open as Q13 ready; the plan row's own B2 text requires finite numbers else stopped, and a spend gate must fail closed when the weekly value cannot be evaluated."
+  ],
+  "nonblocking_findings": [
+    "ND1 [Minor] The night drivers accept a negative usedPercent. night-4.11.sh:80-88 and probe-4.10.sh:65-73 test usable(value) only for int/float, so weekly -1 passes and stop stays 0; the route proceeds. The runners re-check through quota.ts before each call, so real spend is still gated, and the live endpoint emits real percentages. Fix: reject value < 0 in usable() in both drivers so the pre-flight gate matches quota.ts."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD -> e9e7d366719e3b00ad27c299809772e72941fd70, equal to the audited HEAD. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (plan row 4.13h) and role_base_sha 84857378fe693da61e9fb074fd37983805c3eb6f (plan row 4.13j) are ancestors of HEAD (git merge-base --is-ancestor -> 0). Audit scope base 66fe1ac... is also an ancestor (0).",
+    "Security applicability: applicable. The range sets the quota gate of every model call in review-run.sh and judge-run.sh, reads the loopback quota answer and routes.json, and writes pass and judge records. A wrong state spends real Go quota.",
+    "F-B1 withdrawn: quota.ts:68 sets GO_WEEK_WINDOW='weekly' and :291 reads windows['weekly']; the live read npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 printed {\"provider\":\"opencode-go\",\"source\":\"opencode-go\",\"state\":\"ready\",\"cap\":3,\"windows\":{\"5h\":5.154458979166667,\"weekly\":2.061783591666667,\"monthly\":1.0308917958333335}}, so the live weekly key is read and parsed.",
+    "F-N1 withdrawn: review-run.sh:246 reads QUOTA_PROVIDER from the routes.json row and :261 sets IS_GO_ROUTE when it equals opencode-go; judge-run.sh:223,245 is the same; quota.ts keys on --provider, the same field. quota_source now feeds only the no-source cap-1 guard (review-run.sh:437). A mismatched row cannot drop the Go gate: provider opencode-go with any quota_source still takes the Go thresholds, and provider opencode-go with a null quota_source adds the stricter cap-1 guard. No fail-open path remains.",
+    "F-N2 withdrawn: Q12 (quota.test.ts:592-624) pins the null skip and stopped-on-all-null; Q13 (quota.test.ts:626-674) pins negative and string values as unusable; Q11 pins the live shape with wait at weekly 100 and 5h 95; Q15 (quota.test.ts:723-749) pins stopped when the 5h or weekly name is absent.",
+    "F-TS1 withdrawn: the fakes emit the live key set: liveGoBody (quota.test.ts:289-300) holds 5h, weekly, monthly, and a null credits_balance; review-run.test.ts:488-498 and judge-run.test.ts:543-552 build the same live body. All three gates ran on these fakes.",
+    "F-LC1 withdrawn: the live GET at 127.0.0.1:38307 agrees with quota.ts (weekly parsed, state ready), so the live contract of the quota answer holds.",
+    "Gate 1: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Test Files 1 passed (1), Tests 24 passed (24).",
+    "Gate 2: bun test harness/model-guide-tests/review-run.test.ts -> EXIT 0, 53 pass, 0 fail, 414 expect() calls.",
+    "Gate 3: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Test Files 1 passed (1), Tests 30 passed (30).",
+    "Process hygiene: my gates left no process. After gate 1 the pgrep scans showed one transient fake-opencode pair and quota-server under /tmp/mg-review-run-2OPVN6 and /tmp/mg-review-fake-q69Hvg; after gate 2 one quota-server under /tmp/mg-judge-fake-AAlWIQ; after gate 3 one under /tmp/mg-review-fake-ZjN8UL. All PIDs were newer than my gate processes, each temp folder is not mine, each process exited at the next check, and pid 2510184 (a concurrent session's own quiet-check: pgrep -af 'mg-review-run|mg-judge-run|fake-opencode|quota-server') shows a parallel session runs the same suites. I started and killed one inline probe server on 127.0.0.1:18653 only.",
+    "B2 reproduction: a background inline node server on 127.0.0.1:18653 returned {usage:{windows:{5h:{usedPercent:50},weekly:{usedPercent:-1},monthly:{usedPercent:10}}}}; npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:18653 printed state ready with windows {5h:50, monthly:10} and exit 0. quota.ts:319-324 checks answer.names, which holds every name, so the skipped weekly passes the check.",
+    "Drivers fail closed on the same rule: night-4.11.sh:74-75 and probe-4.10.sh:59-60 read windows['5h'] and windows['weekly']; a missing key raises and prints fail (night-4.11.sh:76-78, probe-4.10.sh:61-63), and a non-usable value prints fail (:83-85, :68-70), so the route is skipped (:137-144, :111-118). Both drivers gate only opencode-go/* routes by route prefix.",
+    "Non-Go isolation: QUOTA_PROVIDER comes from the repo-owned routes.json row for the --route value; the quota answer cannot set the provider, and a row with quota_provider opencode-go is a Go route by definition. The 80 % stop for other sources holds at review-run.sh:786-789 and judge-run.sh:692 (IS_GO_ROUTE != 1).",
+    "A2 (consent-blind publish gate): not applicable. git diff 66fe1ac..e9e7d36 changes only quota.ts, review-run.sh, judge-run.sh, the three test files, adversarial-p4-runner.test.ts, plan.md, and spec.md; no draft-to-published status flip and no named subject publish.",
+    "A6 (registry overstatement): not triggered. measure/tracks.md lists model_guide as 'pending — spec review round 1 revised 2026-11-14'; no security state is marked resolved.",
+    "Scope: git diff --stat 66fe1ac..e9e7d36 -> 9 files, 1126 insertions, 98 deletions: adversarial-p4-runner.test.ts, judge-run.test.ts, quota.test.ts, review-run.test.ts, judge-run.sh, quota.ts, review-run.sh, plan.md, spec.md. Matches plan rows 4.13g-4.13j."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> e9e7d366719e3b00ad27c299809772e72941fd70",
+    "git merge-base --is-ancestor 57baaaa... e9e7d36... -> 0; 8485737... -> 0; 66fe1ac... -> 0",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Tests 24 passed (24)",
+    "bun test harness/model-guide-tests/review-run.test.ts -> EXIT 0, 53 pass 0 fail",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Tests 30 passed (30)",
+    "pgrep -af \"fake-opencod[e]\" / \"quota-serve[r]\" after each gate -> only transient foreign processes of a concurrent session; each gone at the next check",
+    "npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 -> state ready, windows 5h 5.15 / weekly 2.06 / monthly 1.03 (live read-only GET)",
+    "inline node server 127.0.0.1:18653 with {5h:50, weekly:-1, monthly:10} + npx tsx model-guide/quota.ts --provider opencode-go -> state ready (kept B2 reproduction)",
+    "grep -n 'weekly' night-4.11.sh -> :75; probe-4.10.sh -> :56,60 (drivers read the live key and fail closed)",
+    "git diff --stat 66fe1ac..e9e7d36 -> 9 files, 1126 insertions, 98 deletions"
+  ],
+  "changed_files": [
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/quota.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [
+    "LC2 [Blocker] quota.ts:319-324 disagrees with spec D15 for a Go answer whose weekly window is present but unusable: the state rule for the Go plan is defined over usable windows ('ready means the weekly window is below 100'), yet the gate passes when the weekly value was skipped, so ready becomes vacuous. This is the same defect as the kept B2. Fix: require usable 5h and weekly values for opencode-go, else stopped; Q13 changes to match."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": 0.9,
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "84857378fe693da61e9fb074fd37983805c3eb6f",
+  "audited_head_sha": "e9e7d366719e3b00ad27c299809772e72941fd70",
+  "security_applicability": "applicable: the range sets the quota gate of every model call in two runners, so a fail-open state spends real Go quota",
+  "route": "kimi-code-plan-cn/kimi-for-coding",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "quota.ts:291 reads the live weekly key and the live GET gives state ready, but quota.ts:319-324 checks names not usable values, so a present-but-unusable weekly gives ready (reproduced inline, state ready on {5h:50, weekly:-1, monthly:10})."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "Q11/Q15 pin the live shape and the missing-name stop (24 passed), but Q13 (quota.test.ts:648-662) pins the fail-open as ready, so the contested claim is pinned to the wrong behavior."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 66fe1ac..e9e7d36 names only the 9 planned files of rows 4.13g-4.13j."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every claim has a command result or file:line: live GET state line, inline B2 reproduction, three gate runs, driver line numbers."
+    }
+  ]
+}

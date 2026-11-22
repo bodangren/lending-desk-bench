@@ -1,0 +1,29 @@
+Red task 3.13a — pick-diffs reads a gh output over 1 MiB
+Base: 5252e8f8eb2b09a0c3a13b61b24ec5119f6a98f2
+
+Command:
+  cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  2 failed | 19 passed (21)
+
+Failed test names (2):
+1. P3T1 the gh output buffer > P3T1-1 reads a commits list output over 1 MiB
+   reason: `pick-diffs: gh api failed`, exit 2. The fake prints the commits
+   list with 31,000,000 bytes of trailing whitespace; spawnSync uses Node's
+   default maxBuffer of 1,048,576 bytes and sets ENOBUFS, so the tool offers
+   the refusal. The real monorepo list is 25,978,347 bytes (found in task
+   3.13).
+2. P3T1 the gh output buffer > P3T1-2 reads a commit detail output over 1 MiB
+   reason: `pick-diffs: gh api failed`, exit 2. Each commit detail call
+   prints 1,500,000 bytes of trailing whitespace; the same maxBuffer makes
+   the first detail call fail. This case proves the fix must cover every gh
+   spawn, not only the list call.
+
+The fake gains two test-only env modes, `FAKE_GH_LIST_PAD` and
+`FAKE_GH_DETAIL_PAD`: the named call prints its canned JSON followed by that
+many spaces (valid JSON with trailing whitespace). No large fixture is
+committed; the padding is produced at run time. The other 19 pick-diffs
+tests stay green, and the file runs in under 5 s.
+
+Expected after Green 3.13b: `Tests  21 passed (21)`.

@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 3b84d4bb044ea3c419132b37885c4d5480688fda
+head_sha: 17c106931b68c9e97f00b215d8b2407631927933
+commits: 17c106931b68c9e97f00b215d8b2407631927933 (plan evidence only)
+route: openai/gpt-6.1-sol#high
+tests_run: The initial live lint exited 2 with "lint: set-missing: mg-2026-11p" after one wrapper timeout. The final live lint exited 0 with empty output. The copy check exited 0. Task 3.16 owns no Red test command. No test suite ran.
+files_changed: measure/tracks/model_guide/plan.md; 18 new private files under $HOME/.local/share/lending-desk-bench/model-guide/sets/mg-2026-11p/{keys,diffs,src}; /tmp/opencode/seed-11p/seed.cjs; /tmp/opencode/seed-11p/sets/mg-2026-11p.json; measure/runs/model_guide/seed-mg-2026-11p.log; measure/runs/model_guide/green-p3-3b84d4b.log
+plan_updates: Task 3.16 changed from [ ] through [~] to [x], with faaca63 as the requested implementation anchor. Commit 17c106931b68c9e97f00b215d8b2407631927933 records the evidence. No task changed to [b].
+dispositions: none
+handoff: Review task 3.16 only. The set holds 6 diffs, 20 plants, and 11 blockers. All 6 seeded copies match their twins and keys by SHA-256. All 6 keys differ only in set_id. All 6 source copies match byte for byte. Private directories use mode 700; files use mode 600. The manifest stays outside the repository. The live gate used heavy-run.sh with HEAVY_MIN_AVAIL_MB=1500 and HEAVY_PRIORITY=p2. The seed log records the exact command. Committed Red tests remain unchanged. The committed Red change 2dda97b is inside baseline_sha..HEAD. Unrelated untracked paths remain unchanged. No production file changed, so no implementation commit was needed. Phase closeout gates remain with the orchestrator. Immutable phase_base_sha is 39d50779524c1082bf72f6f64642989d38402da2; final Green HEAD is 17c106931b68c9e97f00b215d8b2407631927933.
+facts_changed: Pilot mg-2026-11p is seeded and linted; 6 diffs, 20 plants, and 11 blockers; task 3.16 is complete.
+END_MEASURE_AGENT_RESULT

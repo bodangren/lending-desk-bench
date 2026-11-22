@@ -1,0 +1,16 @@
+Red 4.13e run record, 2026-11-18. Test commit 5db6a32, plan commit 242fe52. Full evidence in red-4.13e.txt (not staged).
+MEASURE_AGENT_RESULT
+role: mid-red
+status: done
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13e
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: def8681105e9b343ae1a6774b1f2df70eeb804ae
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+resulting_head: 242fe529b26f9d1a4e132f407a2036567c7e3011
+commits: 5db6a323ade0fc68c146953b41cae5100df2e767, 242fe529b26f9d1a4e132f407a2036567c7e3011
+red_test_command: bun test harness/model-guide-tests/real-work.test.ts; bun test harness/model-guide-tests/guide.test.ts; bun test harness/model-guide-tests/preview-gate.test.ts; bun test harness/model-guide-tests/review-run.test.ts; bun test harness/model-guide-tests/seed-messages.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+failing_tests: J18, J18b, J18c, J19, M5, M6, M7, M8, M9, DS12, DS13, DS26-row-count, G6, ADV4-7, ADV4-21
+handoff: Green 4.13f implements B2 (judge-run.sh quota-field and tab refusals), B3 (message-file second line, control character, 1000-byte bound; send only the checked line), B4 ([-L] refusal for message file and seeded diff), C7 (judged_by keeps only ids with a verdict), N3 (footer row count equals outcomes array length), N8 (NET_SCORE_GATE 20 to above-0 in real-work.ts, guide.ts, preview-gate.test.ts). Guards already green and must stay so: J18d, P2b (3-call ceiling), 8 SM4 cases, DS26 net-0 case, guide.test.ts. The three A4 bun timeouts in preview-gate.test.ts are a pre-existing (ctx) runner artifact, untouched. Green runs after the 2026-11-19 probe ends (after 06:00 +07) because the probe reads review-run.sh from this worktree. No question for the orchestrator.
+END_MEASURE_AGENT_RESULT

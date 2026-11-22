@@ -1,0 +1,109 @@
+Red task 4.9a — probe mode, token log, and the new routes.json
+Track: model_guide. Phase 4. Role: measure-mid-red. Date: 2026-11-18.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 5b6399f6a77e9e9c81f2b82a16e25edd40f7adb7
+Commits: fe29d81c34b86683bde3b0251ae749c72091a882 (tests),
+         0d86f2517af3797339c7bf1557b071017bb17e7e (plan record)
+
+Scope (test files only)
+  harness/model-guide-tests/review-run.test.ts (the cases P1 to P7, T1,
+  T2, J1; the `stdin` log field of the fake; the token field of the fake;
+  the pass-record contract in the header).
+  harness/model-guide-tests/fixtures/fakes/fake-opencode (reads the stdin
+  of a `run` call for the log, emits a `step-finish` json event when the
+  call spec holds `tokens`).
+  No production file, no plan row other than the `[~]` marker of 4.9a.
+
+Command (the changed file)
+  cd harness && npx vitest run model-guide-tests/review-run.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+
+Result
+  Exit code: 1
+  Tests  10 failed | 25 passed (35)
+  Test Files  1 failed (1)
+  Duration 41.47s
+  First failure line:
+    FAIL  model-guide-tests/review-run.test.ts > P4 probe mode, the token
+    log, and routes.json (task 4.9a) > P1 the probe calls the first control
+    diff once, prints reachable, and writes a probe record with the tokens
+  First failure message:
+    AssertionError: review-run: unknown flag --probe
+    : expected 2 to be +0
+
+Failed test names (10)
+  P1 the probe calls the first control diff once, prints reachable, and
+    writes a probe record with the tokens
+  P2 the probe prints unreachable with the error line and exits 3
+  P3 the probe prints region-blocked with the D22 error line and exits 3
+  P4 the probe refuses an unknown route and a metered route before any call
+  P5 the probe takes the lock of the route, the set, and the date
+  P6 the probe obeys the 70 % quota rule and makes no call
+  P7 the probe runs the credential scan and stores no value
+  T1 the pass record holds the token sums and each diff entry holds its own
+    tokens
+  T2 a call with no token field adds 0 and sets tokens_complete false
+  J1 the committed routes.json holds none of the three removed routes and
+    holds the pilot routes
+
+The 25 earlier cases stay green. P1 to P3 fail on the unknown `--probe`
+flag, P4 on a refusal line that must name the route or the kind, P5 on the
+missing lock, P6 and P7 on the refusal line that must name the quota rule
+and the credential scan, T1 and T2 on the missing `tokens` field, and J1 on
+`kimi-code-plan-cn/kimi-for-coding#high`, which is still in the committed
+`routes.json`. No NameError, no TypeError, no ReferenceError, and no
+syntax error in the run.
+
+Command (the fake changed, so its other consumer ran)
+  cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+  Exit code: 0, Tests  14 passed (14).
+
+Token shape used (stated, per the PM order)
+  The repo holds no parse code for the token fields, so the shape is the
+  one the PM named. The fake emits one json event per call that holds
+  tokens, in the shape of an `opencode run --format json` step-finish
+  event:
+
+    {"type":"step-finish","tokens":{"input":10,"output":20,"reasoning":5,
+      "cache":{"read":100,"write":7}}}
+
+  The record holds the flat sums of spec D13:
+
+    "tokens": {"input","output","reasoning","cache_read","cache_write",
+               "total"}
+
+  `total` is the sum of the five components. Each entry of `diffs` holds
+  its `id` and its own `tokens` object in the same shape. `tokens_complete`
+  is `true` when every call held a token field and `false` when one call
+  did not; a call with no token field adds 0.
+
+Contracts this file pins where the spec is silent (Green 4.9b implements
+them; no design choice beyond them is made here)
+  1. The probe record lives in `<private>/probes/<set_id>/` and holds
+     `set_id`, `route`, `date`, `state`, `tokens`, `tokens_complete`, and
+     the diff of the call. Pass records stay in `<private>/passes/`, so
+     "no pass record" means that folder is empty.
+  2. A probe blocked by the 70 % quota rule or by the credential scan is a
+     refusal: exit 2, one `review-run:` line on stdout, no pass record.
+  3. A probe that finds the lock held follows the lock refusal of
+     `review-run.sh`: exit 2 and one `review-run:` line on stderr.
+  4. `unreachable` and `region-blocked` print the first line of the error
+     of the call after the state word.
+  5. The control diff is the first diff whose key holds no plant; the test
+     writes the keys of the temp set, with `d-02` as the only control.
+
+Process checks after the runs
+  `pgrep -af 'mg-.*quota-server'`: 0 line.
+  `ps -eo pid,args | grep '[f]ake-opencode'`: 0 line.
+  Orphan count: 0. No `mg-*` temp folder stays under `/tmp`. The background
+  probe of P5 is killed in its finally and tracked by the orphan net.
+
+Files touched by this role
+  harness/model-guide-tests/review-run.test.ts (commit fe29d81)
+  harness/model-guide-tests/fixtures/fakes/fake-opencode (commit fe29d81)
+  measure/tracks/model_guide/plan.md (row 4.9a to [~] plus evidence,
+    commit 0d86f25)
+  measure/runs/model_guide/red-4.9a.txt (this record, not staged)
+  measure/runs/model_guide/red-4.9a.log (not staged)
+  No production file touched. No push. No model call. No real opencode.

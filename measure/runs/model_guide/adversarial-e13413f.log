@@ -1,0 +1,11 @@
+Adversarial P2 round 4 verdict on e13413f: nine suites green (238 tests); 70ebfc5 bias_note verified on every branch in /tmp (hostile escaped, null omitted, empty per header, missing summary refused); no blocking defect.
+MEASURE_AGENT_RESULT
+role: adversarial
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: e13413f31733defe84fb623fb85c08e332942b81
+result_file: measure/runs/model_guide/adversarial-e13413f.json
+retry_recommendation: none
+summary: round 4 at e13413f: 238 tests green, bias_note branches verified, no blocking defect
+END_MEASURE_AGENT_RESULT

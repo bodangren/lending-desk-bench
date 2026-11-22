@@ -1,0 +1,18 @@
+review-b round 8, delta 80c17f5..9cb95b6, HEAD 9cb95b6643eba0cd04f0623865224f3d9ef88b3c (unchanged during audit)
+isRow validates every row before the route skip: schema checks apply to unknown and other rows.
+Object.fromEntries build kept: __proto__ stays an own key (adversarial 49 passed).
+H3 text uses html.escape; probe output escaped quote, angle bracket, ampersand.
+Skipped rows add the name only, with an empty list: no counts, route text, or model key reach the public JSON.
+No new write path. docs and publish.ts have 0 diff lines. git ls-files .tmp is 0.
+Tests, each alone: preview-gate 90 passed, adversarial 49 passed, leak-guard 2 passed, real-work 20 passed.
+B8-1 nit: no hostile-name test on the unknown-route path. B7-1 to B7-3 nonblocking and unchanged.
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 9cb95b6643eba0cd04f0623865224f3d9ef88b3c
+result_file: measure/runs/model_guide/review-b-9cb95b6.json
+retry_recommendation: none
+summary: Round 8 passes with no blocker; unknown-route work-type names pass the same schema checks, escape in the H3, leak no data, and add no write path; B7-1 to B7-3 unchanged.
+END_MEASURE_AGENT_RESULT

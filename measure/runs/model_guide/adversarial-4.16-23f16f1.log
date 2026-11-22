@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: 7319344e28 test file only; no push
+tests_run: cd harness && npx vitest run model-guide-tests/adversarial-p4f.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 62 passed; 14 skipped (76)
+files_changed: harness/model-guide-tests/adversarial-p4f.test.ts; measure/runs/model_guide/adversarial-4.16-23f16f1.json; measure/runs/model_guide/adversarial-4.16-23f16f1.log
+plan_updates: none; task 4.16 stays [~]
+known_failures: none in this test file; A-F1, P4F-2, and P4F-3 stay named skips under the PM cap
+handoff: Provisional result. It does not accept Phase 4b. No real-key leak and no new token or answer defect. No finding blocks. Carried-over skips stay in backlog row 4.15. Rerun this gate after any implementation commit. No production file changed. Facts changed: none
+END_MEASURE_AGENT_RESULT

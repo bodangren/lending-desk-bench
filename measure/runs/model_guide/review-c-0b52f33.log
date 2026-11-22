@@ -1,0 +1,22 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: pass
+summary: Re-review of F1, N1, and N2 at HEAD 0b52f33 withdraws all three. The queue decodes the real event stream (adjudicate.ts:223-256), its decoder is byte-identical to review-score.ts:233-260 and logic-identical to judge-run.sh:919-938, the queue schema is unchanged (adjudicate.ts:390-403 untouched), the 4.13u tests are real and failing-first (pre-fix readFindings prints null on the test stream shape), the scorer guard fails without the decoder (the fence slice keeps JSON escapes and fails JSON.parse, invalid_reviews turns 1), row 4.13t names all three readers (plan.md:2409), and row 4.13u keeps [x] with the recorded Red deviation (plan.md:2444, 2473-2475). Gates: adjudicate 23 passed (23), review-score 27 passed (27), no process left behind.
+blocking_findings: none
+nonblocking_findings: none
+evidence: F1 withdrawn (queue decodes, pin failing-first, node proof); N1 withdrawn (scorer guard real, node proof of the JSON.parse failure); N2 withdrawn (plan.md:2409 names three readers); decoder parity by diff IDENTICAL; queue schema untouched; gates one file at a time with clean pgrep
+commands: git rev-parse HEAD -> 0b52f334c744922f545098c33119f4471929d089; git diff --stat 2fdb8f8..0b52f33 -> 5 files +225/-7; diff of the two decoder bodies -> IDENTICAL; node -e checks -> pre-fix null, guard slice fails JSON.parse; vitest adjudicate -> 23 passed; vitest review-score -> 27 passed; pgrep after each -> nothing
+changed_files: harness/model-guide-tests/adjudicate.test.ts, harness/model-guide-tests/review-score.test.ts, harness/model-guide/adjudicate.ts, harness/model-guide/review-score.ts, measure/tracks/model_guide/plan.md
+test_strategy_violations: none
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+retry_recommendation: none
+confidence: high
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41
+audited_head_sha: 0b52f334c744922f545098c33119f4471929d089
+contract_applicability: applicable
+route: opencode-go/glm-5.3#high
+ratings: correctness 5, test_meaning 5, scope_discipline 5, evidence_quality 5
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,26 @@
+UX browser review for model_guide Phase 5.
+HEAD is 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36 and matches role_base_sha.
+PROJECT_DEV_URL was unset. Chrome opened the committed HTML files by file URL.
+The five requested screenshots and a 390 px method-note screenshot are under measure/runs/model_guide/ux-5/.
+layout-facts.json holds six viewport records, full accessibility trees, page widths, route values, and interaction facts.
+At 390 px, the review page has no page overflow. Its route cell is 160 px wide, and its table scrolls inside its own box.
+DeepSeek shows 78.6. Hy4 shows 75.4. MiMo shows incomplete at 0 of 3 passes with dashes in each count cell.
+The index Code review row says no pick yet: not enough evidence. Both navigation links appear once.
+F1 withdrawn: The route cell now measures 160 px and meets the 160 px minimum.
+F2 is kept: ArrowRight and ArrowLeft leave the focused table region at scrollLeft 0. score-impact: no.
+The layout script saved its evidence, then returned exit 1 while removing its temporary Chrome profile: ENOTEMPTY.
+pgrep -af ux5-chrome returned no process. HEAD remained unchanged.
+The command `rm -rf /tmp/ux5-chrome-a /tmp/ux5-chrome-b /tmp/ux5-chrome-c /tmp/ux5-chrome-d /tmp/ux5-chrome-e /tmp/ux5-chrome-cdp` was refused: `Permission denied: shell`.
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 5: The publish gate and the weekly update
+route: openai/gpt-6-luna#high
+status: pass
+phase_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+role_base_sha: 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36
+audited_head_sha: 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36
+result_file: measure/runs/model_guide/ux-browser-5-3ba285f.json
+retry_recommendation: escalate_human
+summary: The published UI passes the required viewport checks. Keep the minor keyboard scrolling finding for human review.
+END_MEASURE_AGENT_RESULT

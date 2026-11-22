@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: review-c
+status: complete
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+commits: 62126e2, 9e7672f, b795f32, c0a26d7
+tests_run: bun test review-run.test.ts 86 pass 0 fail; vitest judge-run 45 passed; decode-parity 3 passed; adjudicate 23 passed; review-score 27 passed; quota 30 passed; credential-provider 22 passed; adversarial-p4-runner 14 passed on re-run; adversarial-p4b 12 passed on re-run; seed-messages 17 passed; pgrep clean of my processes after each run
+files_changed: measure/runs/model_guide/review-c-c0a26d7.json, measure/runs/model_guide/review-c-c0a26d7.log
+plan_updates: none
+known_failures: none of mine. Two first-run file failures (ADV-R-12 and the adversarial-p4b file check) traced to fake-opencode and quota-server processes of a concurrent session; both files passed on the re-run
+handoff: pass, no blocking finding. The two error_line_of hunks are identical and fail closed. Record fields, state values, and probe and night driver parsing are unchanged. One Nit goes to backlog 4.14: the process-table guards cannot tell another session's children from their own.
+END_MEASURE_AGENT_RESULT

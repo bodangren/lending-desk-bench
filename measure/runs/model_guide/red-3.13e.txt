@@ -1,0 +1,40 @@
+Red task 3.13e — a bad retry wait value cannot hang pick-diffs (P3A5-1, P3B5-1)
+Base: 2e0cffffa2a3d004b8476f3587b9bd13642e69af
+
+Command:
+  cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  3 failed | 26 passed (29), duration 53.05 s (45 s of the three hangs plus the old suite).
+The 26 old tests stay green.
+
+Failed test names (3):
+1. P3T2 the transient gh retry > P3T3 a bad retry wait of abc falls back to 5000 and cannot hang
+   reason: the spawn hits its 15 s limit and is killed (status null,
+   ETIMEDOUT) because `Number("abc")` is NaN and `waitSync(NaN)` never
+   returns. Expected exit 0.
+2. P3T2 the transient gh retry > P3T3 a bad retry wait of Infinity falls back to 5000 and cannot hang
+   reason: the spawn times out at 15 s; `Number("Infinity")` is Infinity and
+   `waitSync(Infinity)` never returns.
+3. P3T2 the transient gh retry > P3T3 a bad retry wait of 1e308 falls back to 5000 and cannot hang
+   reason: the spawn times out at 15 s; `Number("1e308")` is a huge finite
+   number and `waitSync(1e308)` never returns.
+
+Each case uses the temp fake `gh` of the P3T2 tests: a detail call fails once
+with `gh: Server Error (HTTP 502)`, then succeeds. Each case sets a 20 s
+vitest timeout and a 15 s spawnSync timeout, so a hang fails the case instead
+of blocking the suite. After the fix each case waits the default base once
+(5 s), so the new tests take about 15 s in total.
+
+Pinned contract for Green 3.13f:
+- The base wait is the env value `PICK_DIFFS_RETRY_WAIT_MS` only when it is a
+  finite number from 0 to 60000 inclusive. Any other value (empty, `abc`,
+  `Infinity`, `-5`, `1e308`) gives the default base 5000.
+- The waits stay base x1, base x6, base x24 (4 tries total for a transient
+  failure).
+- Nothing else changes: the transient regex, the immediate refusal for any
+  other failure or a spawn error, the exact stdout `pick-diffs: gh api
+  failed`, and the last non-empty gh stderr line on the tool stderr.
+
+No other assertion changed and nothing under `fixtures/fakes/` changed. The
+new fakes are temp scripts. No network, no real home, no real gh.

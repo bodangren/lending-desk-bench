@@ -1,0 +1,21 @@
+Phase acceptance of Phase 4 (model_guide) at HEAD 0ab805f22e654dd780016d6a74664686d265181c, run 2026-11-19. The provisional first pass of this log was written before the test gates; this block is the refined verdict.
+
+Checks done:
+- HEAD matches the audited SHA at the start and the end.
+- Reviews A, B, C and the adversarial audit pass at c0a26d7. Only two non-implementation commits sit between c0a26d7 and the audited HEAD: bd967a7 (test-only, adversarial-p4c.test.ts) and 0ab805f (plan.md only), so the results apply. The acceptance records the exact HEAD 0ab805f and the two allowed commits.
+- The range bd967a7..0ab805f changes only measure/tracks/model_guide/plan.md. The task texts of rows 4.10 to 4.14 moved byte-identically (md5 per row).
+- Every [x] row SHA of plan.md resolves in git (129 rows), plus the 29 cited fix and base SHAs of Phase 4.
+- All 13 test gates pass one file at a time: bun review-run 86 pass 0 fail; vitest judge-run 45, decode-parity 3, adjudicate 23, review-score 27, quota 30, credential-provider 22, adversarial-p4-runner 14, adversarial-p4b 12, adversarial-p4c 12 passed 1 skipped (the row 4.15 pin), seed-messages 17, preview-gate 111, real-work 16, guide 18. No fake-opencode or quota-server process stayed after any run.
+- A5 holds: the plan claims of rows 4.13aa and 4.13ab match this audit's runs. A6 holds: tracks.md makes no false 'resolved' claim; its model_guide status text is stale, a nonblocking item. A3, A4, A7 do not apply: the phase diff touches no framework contract test, filter, or marker gate.
+- Closeout: git status --short docs/ prints nothing; the frozen-path diff prints nothing; routes.json holds the six spec D12 rows with no judge row and no metered kind; judges.json holds the three judge routes; phase_base_sha 57baaaa is the strategy commit.
+- The latest UX browser reviews pass at 1633eba and c8c5e9e.
+
+Verdict: pass. No blocking finding. The open nonblocking findings (ADV-P4C-1, the Review A/B/C nits, the stale tracks.md status line, and the test-strategy section 2.4 drift) are recorded in row 4.15 of Phase 4b, per the PM rule of 2026-11-19.
+
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings:
+nonblocking_findings: PA4-1 [Nit, row 4.15] ADV-P4C-1 confirmed: adversarial-p4c.test.ts gives 12 passed and 1 skipped; the skipped case pins a credential value split across two stdout error events whose tail reaches the runner stdout and the private judge record; no full key and no committed file, so the PM rule keeps it nonblocking. | PA4-2 [Nit, row 4.15] The Review A, B, C nonblocking findings at c0a26d7 (A F1 and F2; B N30, N31, N32 and the carried N5, N9 to N13, N15, N20, N21, N24, N26 to N29; C the process-table guard) stay open and are all recorded in row 4.15; none blocks a Phase 4 row and none leaks a key. | PA4-3 [Nit, row 4.15] The model_guide row of measure/tracks.md line 34 still reads 'the re-review (task 0.3) and then Red task 1.1 come next' while Phases 1 to 4 are complete; no 'resolved' claim is false (A6 holds), only the status text is stale; the registry update belongs to the orchestrator audit. | PA4-4 [Nit, row 4.15] test-strategy.md section 2.4 still lists 'Tasks 4.10 to 4.14' under Phase 4, but commit 0ab805f moved those rows into Phase 4b; doc drift only, the commands moved unchanged.
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

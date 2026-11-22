@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "role": "ux-browser",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+  "audited_head_sha": "6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+  "reviewer_model": "opencode-go/mimo-v2.6-flash",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "status": "inconclusive",
+  "summary": "Provisional: browser review of the Phase 2 scope has started. Static reading shows the overview table first above the hero with six rows, and the print-audit block holds 52, 13, the two route results, and the severity counts. Browser measurements pending.",
+  "ux_applicability": "applicable",
+  "webbridge_status": "healthy",
+  "webbridge_evidence": {
+    "screenshots": [],
+    "accessibility_snapshots": [],
+    "interactions": []
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "UX applies: the phase changes the user-facing pages .tmp/model-guide-preview/index.html and .tmp/model-guide-preview/real-work.html (test-strategy section 9.2).",
+    "Provisional write: this file was written before the browser pass and is refined after it."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2",
+    "kimi-webbridge status -> running true, extension_connected true, daemon v2.0.27, extension v2.0.36"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "low",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 1,
+      "evidence": "Provisional write before the browser pass."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 1,
+      "evidence": "Provisional write before the browser pass."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "This role writes only the result JSON, the log, and the screenshots."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 1,
+      "evidence": "Provisional write before the browser pass."
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+MEASURE_AGENT_RESULT
+role: measure-mid-red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+task: 4.3 Red — the provider credential
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: f274fa8719c17a85f5305e27894e9b4ac6cc9021
+head_sha: cbfb93e7e1094039b06499850d910869036cb48b
+commits:
+  f7e7da47d2f67dc975b46081415df205baa60221 test(model_guide): Red task 4.3 provider credential
+  cbfb93e7e1094039b06499850d910869036cb48b measure(model_guide): record Red task 4.3
+test_command: cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+test_exit: 1
+test_summary: Tests  11 failed (11); Test Files  1 failed (1)
+first_failure_line: "FAIL  model-guide-tests/credential-provider.test.ts > C1 the seed > C1 seeds exactly the entry of the provider into the job store and prints no value"
+first_failure_message: "AssertionError: the provider credential script is missing: /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/provider-credential.sh: expected false to be true"
+remaining_failures: 11 of 11, all with the message "the provider credential script is missing: .../harness/model-guide/provider-credential.sh" (C1, C2, C3 x2, C4, C5 x3, C6, C7, fake-binary check)
+files:
+  harness/model-guide-tests/credential-provider.test.ts (new, committed; temp fake opencode written by the test; no fixture committed)
+  measure/tracks/model_guide/plan.md (row 4.3 marked [~], evidence added)
+  measure/runs/model_guide/red-4.3.txt (record, not staged)
+  measure/runs/model_guide/red-4.3.log (record, not staged)
+tool_path_seam: "none; SCRIPT_SOURCE is a fixed join(HARNESS, model-guide, provider-credential.sh)"
+authoring_check: "the same bytes of the test ran in a temp harness at /tmp/opencode/val/harness with a throwaway prototype: first run 11 failed on a prototype path defect, after the fix Tests  11 passed (11); the temp harness was removed"
+gate_deviation: "none; task 4.3 commits no fixture"
+process_check: "after the run: ps -eo pid,args | grep '[f]ake-opencode' prints no line; no mg-cred temp folder stays under /tmp"
+secrecy: "no private folder, no key, no seeded diff, no real credential file, no real home folder; values are obvious FAKE-ACCESS-* and FAKE-ORGID-* fakes; the fake is the only opencode on PATH"
+no_production_file_touched: true
+handoff: Green task 4.6 implements harness/model-guide/provider-credential.sh against the pinned contract in the header of credential-provider.test.ts (seed <p> imports exactly the entry whose provider field is <p> with an empty stdout; scan-values <p> prints the access value then the orgID; errors are one stderr line "provider-credential: <reason>" with exit 2; a bad BENCH_CREDENTIAL_SEED_DELAYS or AGENT_TIMEOUT gives exit 2 before any export call; the helper writes no value to disk). The fake shared export holds two provider entries and one entry of another kind; the job store file sits outside the job folder so case C6 can grep the whole job folder.
+END_MEASURE_AGENT_RESULT

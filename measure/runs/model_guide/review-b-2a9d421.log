@@ -1,0 +1,42 @@
+review-b r5 (second session) log for model_guide, audited head 2a9d421.
+
+provenance: git rev-parse HEAD -> 2a9d4213c73c2ed3fdc53ae931029f910092735d (equals audited_head_sha; HEAD is current). phase_base_sha 0a44cc9c417587e418899a97ac63f131a59fe2cd; role_base_sha 0acceeaaa9456f30c9f3c72f67212971e55a5d39 (the head of the round-4 review-b audit).
+git status: untracked .opencode/, harness/wt.txt, tech-debt.md only; harness/wt.txt is a leftover of an earlier session and was left in place. git status --short docs printed 0 lines before and after every probe.
+
+inputs read:
+- test-strategy.md section 9: Phase 1 Review B = publish gate, no docs/ write, no real export bytes in the repo -> security_applicability: applicable. The diff 0acceea..2a9d421 changes publish.ts, preview.sh, and real-work.ts, which hold that gate.
+- adversarial-0acceea.json (ADV-1..ADV-14), green-p1-8eafbc3.log (fix claims), review-a-2a9d421.json (r6 pass, 65 probes; not repeated), spec.md D21 (:772), plan.md tasks 1.18/1.19, preview-1.19.txt, tracks.md:40.
+- code at 2a9d421: publish.ts (252 lines), preview.sh (376 lines), real-work.ts (506 lines).
+
+probe environment: git archive 2a9d421 -> /tmp/opencode/rb5/head; per-probe copies; node_modules symlinked; synthetic export fixture only (no real export byte read). Shell-level writes outside the workspace are refused by the permission gate, so probe drivers ran through python3; the product tools ran unmodified with timeout 60. The real docs/ was never touched.
+
+finished checks:
+- p0 control preview (real preview.sh): exit 0; docs snapshot unchanged (34 files); ADV-7: no private_note and no needle in the public real-work.json/html; coverage keys are exactly the EV4 list plus runs_with_known_route, runs_with_result, unknown_runs, other_runs.
+- p2 ADV-2/A2 consent gate: six record bypass variants (no owner, commented owner, blank owner, wrong case, blank date, no date) each exit 2 with one line "publish: bad approval record", empty stderr, docs unchanged. Control publishes exactly the two approved files, shas match, no other change, 0 ".publish-*.tmp" leftovers. The real tree holds no publish-approval.md, so the D21 gate is closed. The live real-work.html holds 0 name words (daniel, daniebo, school, teacher, student).
+- p1 ADV-1: docs root symlink -> exit 2, "publish: bad docs root", link target byte-identical.
+- p3 ADV-11 partial set: read-only destination -> exit 2, "publish: write locked/new.html", no partial set, 0 temp leftovers, docs unchanged.
+- p4 ADV-11 temp-name redirect: planted ".publish-*" symlink (root), regular file (root), and symlink (new subfolder) -> exit 2 with exactly three drift lines before staging; secrets byte-identical; planted file unchanged. Planted temp names cannot redirect a stage write.
+- p5 B4-1 recheck: hard link under docs; preview exit 0; publish exit 0; docs/hl.html H2; outside file H1 byte-identical; outside nlink 2 -> 1. The staged rename unlinks instead of writing through. B4-1 WITHDRAWN.
+- p6 preview docs scan: FIFO, unix socket, directory symlink each -> exit 2, "preview: refused path <abs>", empty stderr, no .tmp folder, no hang; control exit 0. No non-regular-file bypass of the docs scan.
+- p7 real-work.ts: bad JSON -> "input-check: json"; missing path and folder -> "input-check: input"; exit 2, empty stderr, no output folder.
+- p10 (hardening probe): a FIFO inside the existing preview folder stalls preview.sh (timeout 30 s, no refusal line): the preview-folder scan refuses symlinks only (preview.sh:99-105). Same-user .tmp boundary -> Nit B5-3. One leftover cp process was killed; ps clean after.
+- p8 repo-level: full export SHA at 2a9d421 only in spec.md, plan.md, metadata.json (same set as phase base); export file name and hand-off path only in track documents; git ls-files .tmp -> 0; no tracked symlink in docs; 0 docs commits in range; per-commit scope exact (7 commits, 6 planned files).
+- p9 tests (archive copy, each file alone): adversarial.test.ts exit 0, 49 passed; leak-guard.test.ts exit 0, 2 passed. Matches plan 1.19, green log, and red-1.18.txt (20 failed at 8eafbc3, red-first).
+- live state: preview-base.json matches all 34 current docs files (0 missing, 0 stale, 0 mismatch); 0 links in docs and preview; real-work.json equals every preview-1.19.txt claim (runs 1798, sha prefix dae855cad4bcd29b, 2026-11-14, 0.506, 0.717, 36, 889, 3) -> A5 clean.
+- A6: tracks.md:40 says pending and claims no resolved security state; nothing to falsify. The stale note is by design (strategy section 10 A14: the orchestrator moves it after the phase commit).
+- route parity: adversarial anthropic, Review A mimo, this review qwen (families mimo/kimi/deepseek/glm/anthropic excluded by the orchestrator; Qwen wrote nothing in this phase). Artifacts do not name the Red 1.18 and Green 1.19 models; recorded as an observation, no violation.
+
+findings: no blocker. Nits B5-1 (real-work.ts:8-9 header check order vs code order), B5-2 (B4-2 carried, narrowed: same-user temp-name race window; optional "wx" hardening), B5-3 (preview-folder scan refuses symlinks only; FIFO stalls the run). B4-1 withdrawn with probe evidence.
+
+repo writes by this role: measure/runs/model_guide/review-b-2a9d421.json and review-b-2a9d421.log only. No commit.
+
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 2a9d4213c73c2ed3fdc53ae931029f910092735d
+result_file: measure/runs/model_guide/review-b-2a9d421.json
+retry_recommendation: none
+summary: Round 5 passes with no blocker. My probes on git archive copies of 2a9d421 confirm the publish gate: a docs root symlink cannot redirect a write (ADV-1); a record without approved_by or date cannot publish and six bypass variants exit 2 (ADV-2, D21 consent gate); the staged publish leaves no partial set and no .publish-*.tmp file, and planted temp names are refused as drift before staging (ADV-11); no unknown coverage key reaches the public real-work.json (ADV-7); the docs scan refuses a FIFO, a socket, and a directory link before any write. No real export byte or SHA entered the repo beyond the three track documents that held them at phase base. adversarial.test.ts passes 49 of 49 and leak-guard 2 of 2 at head. B4-1 is withdrawn: the staged rename unlinks a docs hard link and the outside file stays byte-identical. Three Nits remain: B5-1 header check order, B5-2 the carried same-user race window, B5-3 a FIFO in the preview folder that stalls preview.sh. Route to Green with the phase pass; no docs/ write happened and the real docs/ was never touched.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,20 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-mid-red
+task: 4.16
+status: pass
+red_kind: gap_closing
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: da0d807748de3e67d28ac3a51693b1698d7e8f5f
+red_commit_sha: 0f122494c780fad66d025a48158988bdd536a921
+resulting_head: eba61cf40ff8dcea106183507bd652dbf3cf4fc0
+commits: 0f122494c780fad66d025a48158988bdd536a921 test(model_guide): Red task 4.16 fix the L9 Go quota fixture; eba61cf40ff8dcea106183507bd652dbf3cf4fc0 measure(model_guide): record Red task 4.16 r2
+gaps: L9 review-run.test.ts wait half used the non-Go 70 % quota boundary for a Go pilot route; corrected to 5h 95 % per spec D15 and L9-G of quota.test.ts. The ready half stayed at 10 %. No other case changed.
+breakage_proof: neutralized-code run A appended `; QUOTA_STATE="ready"` to the parsed quota read of review-run.sh; the filtered L9 case failed with `a wait state made a live session` (0 pass, 1 fail, exit 1) because the 95 % half created a session.
+breakage_proof: neutralized-code run B appended `; QUOTA_STATE="wait"` to the same line; the filtered L9 case failed with `a ready state made no live session` (0 pass, 1 fail, exit 1) because the 10 % half created none. The runner file was restored and byte-compared after each run.
+tests: bun test harness/model-guide-tests/review-run.test.ts exit 0, 112 pass, 0 fail, 833 expect() calls.
+files: harness/model-guide-tests/review-run.test.ts, measure/tracks/model_guide/plan.md
+remaining_failures: none; the four targeted lines pass on Green's HEAD.
+handoff: L9 now matches the Go quota rule. Green needs no further change for this case. The remaining item from the first Red round stands: adversarial-p4d.test.ts still uses pilot route hy4-flash-free#high for its seed-reason cases and needs a non-pilot move by the next test-owning role. No deferred task was created.
+END_MEASURE_AGENT_RESULT

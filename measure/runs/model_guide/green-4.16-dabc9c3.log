@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-jr-green
+task: 4.16
+status: pass
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 672e85afbb21559bd5844d3b56deee52b2f0438c
+resulting_head: a1a5312
+commits: a1a5312 fix(model_guide): Green task 4.16 foreign session, current-call answer, tool-calls step; plan-evidence commit records the Green r8 entry under row 4.16
+tests: review-run.test.ts 130 pass 0 fail (exit 0); judge-run.test.ts Tests 61 passed (61) (exit 0); adversarial-p4e.test.ts 54 pass 0 fail (exit 0); decode-parity.test.ts 8 pass 0 fail (exit 0); leak-check.test.ts 22 pass 0 fail (exit 0); bash -n passes on both runners; git status --short docs/ empty
+files: harness/model-guide/review-run.sh; harness/model-guide/judge-run.sh; measure/tracks/model_guide/plan.md
+END_MEASURE_AGENT_RESULT

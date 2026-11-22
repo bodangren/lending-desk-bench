@@ -1,0 +1,36 @@
+### What this track proposes
+The track adds a seeded-defect review benchmark for code review. It builds a real-work page from a weekly sanitized export, adds one print-audit calibration point, and leads the overview with a work-type model table. It also records the replay track in the backlog and gates the first publish on Daniel's approval.
+
+### How the current system works, per this spec
+Per the spec, the current benchmark runs build, bugfix, tests, and change tracks through one hidden harness. The build and tests leaderboards cluster at high scores, so they do not guide model choice. The site publishes daily data from docs/ through a timer that commits and pushes that folder. The new page B data comes from a separate sanitized export of 1,798 role runs.
+
+### Findings
+- F1 [Blocker] spec.md D5-D7 and plan.md 3.1-3.5: Comprehension gap: The required operator catalog does not exist, so the seeding contract has no finite valid values. Rationale: D5 requires one named operator per plant, while D6 lists only examples and the lint must validate the field.
+- F2 [Blocker] spec.md D10-D11 and plan.md 3.1: The adjudication unit can contain different findings, but the spec gives one verdict for the whole group. Rationale: One verdict cannot classify each member of a mixed group. A favorable verdict can forgive false claims and compress route scores.
+- F3 [Blocker] spec.md D16 and D18: Comprehension gap: The work-type rank and its score inputs are undefined. Rationale: The export gives work types only runs, pass, and fail, but D16 defines pass rate with error and blocking findings. The overview cannot select these rows without new rules.
+- F4 [Blocker] plan.md 0.2: The reviewer cannot write the required track review file under the report-only gate. Rationale: Task 0.2 assigns measure/tracks/model_guide/spec-review.md to the reviewer, but the role permits writes only under measure/runs/model_guide/. Red cannot pass the stated verification.
+- F5 [Major] spec.md D4, D5, D11, D12, R3, and Q9: The same Anthropic family selects, seeds, and adjudicates the set while Claude Sonnet is ranked. Rationale: Hiding the route name does not hide model style. No independent selection or adjudication rule protects the ranked family from family bias.
+- F6 [Major] spec.md D5, D6, D8, D11, D13, and R1: The track has no difficulty calibration or minimum score spread. Rationale: Common one-line mutations and the rescue of wrong-line or wrong-class claims can produce the same high scores as the build track. No gate rejects an undiscriminating set before ranking.
+- F7 [Major] spec.md D12, D15, EV10, and plan.md 4.1: The quota contract does not cover most plan routes. Rationale: The repository exposes only the opencode-go quota endpoint, but the route list uses five other providers. The quota_provider values and live sources are absent, so fake tests cannot prove the 70 % and 80 % rules.
+- F8 [Major] spec.md Owner requirement, D16, and Q4: The checker rank does not follow the PM order. Rationale: The PM order names pass rate and blocking findings, but the default checker rank uses pass rate only. The open owner choice needs an approved rule before this ranking becomes authoritative.
+- F9 [Major] spec.md Owner requirement, D17, and acceptance 5: The preview can omit the required print-audit error types. Rationale: The PM order requires error types, but the spec accepts "Error types: not yet received." A complete page B can therefore miss one required data point.
+- F10 [Major] spec.md D21 and FR-7: The publish tool can overwrite newer site files with stale preview files. Rationale: The daily job can change docs/ between preview and approval. The publish check validates preview hashes, but it does not compare the current docs source.
+- F11 [Major] plan.md tasks 1.2, 2.2, 3.2, and 4.2: The Red and Green units bundle many independent tools and pages. Rationale: Phase 3 alone asks one Green task to write six tools. A failed component cannot have a small repair or verification boundary.
+- F12 [Nit] plan.md task 0.1: The completed registry task has no commit SHA. Rationale: The plan marker rules require a SHA on the first line of each completed task, and the anti-pattern catalog rejects completed tasks without evidence.
+
+MEASURE_AGENT_RESULT
+role: spec-review
+status: complete
+audit_status: fail
+track: model_guide
+phase: track setup
+audited_head: bbde00d5254b72402ccf795b7e0888fecc774d6a
+result_file: measure/runs/model_guide/spec-review-bbde00d.json
+commits: none
+tests_run: none
+files_changed: measure/runs/model_guide/spec-review-bbde00d.json, measure/runs/model_guide/spec-review-bbde00d.log
+plan_updates: none
+known_failures: F1 through F4 block Red; F5 through F11 need document changes
+retry_recommendation: escalate_human
+handoff: Route F1 through F11 to the author, build session, or user as each scope requires. Resolve the four Blockers before Red starts. F8 also needs an approved PM rule.
+END_MEASURE_AGENT_RESULT

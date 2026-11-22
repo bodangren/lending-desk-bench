@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+task: 4.16
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: eba61cf40ff8dcea106183507bd652dbf3cf4fc0
+green_commit_sha: 1b0646b
+green_record_commit: 31fe9a0
+final_head: 31fe9a0
+red_fix_commits: 0f12249 test(model_guide): Red task 4.16 fix the L9 Go quota fixture; eba61cf measure(model_guide): record Red task 4.16 r2
+handoff: The L9 conflict is closed. Red moved only the wait fixture of L9 to quotaPercent 95 in 0f12249, which is the D15 Go boundary, and the ready half stays at 10 %. `bun test harness/model-guide-tests/review-run.test.ts` exits 0 with `112 pass` / `0 fail` (833 expect() calls, 190.21 s) on role_base_sha eba61cf. No production file changed; the implementation stays at 1b0646b, the record at da0d807, and this completion record at 31fe9a0. The full gate on this HEAD: judge-run `Tests 51 passed (51)`, decode-parity 8 pass, quota `Tests 32 passed (32)`, credential-provider `Tests 24 passed (24)`, adversarial-p4-runner 16, adversarial-p4b 12, adversarial-p4c 13, adversarial-p4d 21 passed 6 skipped, adjudicate 23, review-score 27, `bash -n` on both runners, leak-check exit 0, and `git status --short docs/` empty. Counts are in measure/runs/model_guide/green-4.16.txt. Tasks flipped to [x]: none; the row stays [~] for the orchestrator phase gate. Tasks flipped to [b]: none. New tracked files: none. No push, no live call, no POST to port 38307, no real HOME read, and no opencode or openchamber CLI. Hygiene: pgrep finds no fake of mine.
+END_MEASURE_AGENT_RESULT

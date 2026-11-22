@@ -1,0 +1,26 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+role: adversarial-testing
+route: opencode-go/glm-5.3#high
+audited_head_sha: c0a26d75a37955bb9c20be9cb3ab2d993d39907b
+baseline_sha: ee48a254266afee947d555e4e562093c60d64153
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: c0a26d75a37955bb9c20be9cb3ab2d993d39907b
+test_commit_sha: bd967a7263eb1f6931f0d2381e120641b60e5420
+status: pass
+blocking_findings: 0
+nonblocking_findings: 1
+retry_recommendation: none
+confidence: high
+nonblocking:
+- ADV-P4C-1 [Nit] (backlog 4.14) a value split across two stdout error events: error_event_text (judge-run.sh:592-616) reads the last error event only, so the tail of the value prints into the runner stdout and the run record. Pinned failing at the audited HEAD, now it.skip in the committed file. The full value never prints and the record sits in the private folder, so the PM rule of 2026-11-19 keeps it nonblocking.
+guard_pins_passing: E2, E3, E4, J1, J2, T1, T2, T3, A1, A2, A3, A4
+gate: cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 12 passed | 1 skipped (13)
+regression: cd harness && bun test model-guide-tests/review-run.test.ts -> exit 0, 86 pass; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 45 passed
+orphans: pgrep fake-opencod[e], pgrep quota-serve[r], ps | grep 'serve --servic[e]' printed nothing of mine after each run
+changed_files: harness/model-guide-tests/adversarial-p4c.test.ts
+result_json: measure/runs/model_guide/adversarial-c0a26d7.json
+verdict: PASS
+END_MEASURE_AGENT_RESULT

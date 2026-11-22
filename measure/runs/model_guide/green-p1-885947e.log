@@ -1,0 +1,59 @@
+# Green p1 task 1.13 (remediation round 2)
+
+The committed Red change d632534 (tests) and 885947e (plan) sit inside
+phase_base_sha..HEAD. HEAD at start was 885947e176c9ce5f6d63f836aabbb0dbc99867c8,
+the role_base_sha. Dirty paths .opencode/ and tech-debt.md were not touched.
+
+Fixes (all in harness/model-guide/):
+
+- preview.sh: resolves --export and --preview against the caller folder
+  before any cd, and uses only absolute paths after that (F12, F14).
+  A flag as the last argument or an empty --export / --preview value gives
+  the usage line on stderr, exit 2, stdout empty, no write (F15).
+  The root path / gives `preview: refused path /`, exit 2, before any tool
+  starts (F20). The header names the `preview: refused path` refusal (F19).
+  The docs/ copy runs before real-work.ts, so the fresh real-work.json and
+  real-work.html win over stale docs copies (F13). A refused input check
+  removes the preview folder when the run created it, so no new preview
+  folder remains (F19).
+- real-work.ts: each coverage key that preview.sh reads is required in the
+  schema check. A missing key gives `input-check: schema`, exit 2, before
+  any write (F17).
+- publish.ts: a malformed approval row gives `publish: bad line <text>`,
+  exit 2, stderr empty, no copy (F16). A record path that names a folder
+  gives `publish: bad path <path>`, exit 2 (F18). The drift set uses
+  own-property checks, so a docs file named constructor or toString is
+  flagged (F23). Invalid preview-base JSON gives `publish: bad preview
+  base`, exit 2, stderr empty, no stack trace (F23).
+- F21: the task 1.9 preview command re-ran once at the final code HEAD
+  (default preview folder). See preview-1.13.txt. Exit 0; the page shows
+  the pinned SHA-256, generated_on, runs, date range, and shares.
+  `git status --short docs/` prints nothing. No real export byte entered
+  the repo.
+
+Brief vs tests: no difference. The tests are the source of truth for the
+exact refusal texts and were followed.
+
+Tests (each file alone, --maxWorkers=1 --reporter=dot):
+- cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0 (first run at Red HEAD: exit 1, 22 failed)
+- cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0
+- cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0
+- cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0
+- bash -n harness/model-guide/preview.sh -> exit 0 (shellcheck is not installed)
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 885947e176c9ce5f6d63f836aabbb0dbc99867c8
+head_sha: aa894a7d18e5da6b362997c1c52f142a07168402
+commits: d26213904165d195a2ecbd4c95b9747b17913aea, aa894a7d18e5da6b362997c1c52f142a07168402
+tests_run: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0); cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0); cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0); cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0); harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json (exit 0)
+files_changed: harness/model-guide/preview.sh, harness/model-guide/publish.ts, harness/model-guide/real-work.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/preview-1.13.txt, measure/runs/model_guide/green-p1-885947e.log
+plan_updates: Task 1.13 marked [x] d262139 with the evidence line (each test file exit 0, the role log path, and preview-1.13.txt). No test count written.
+remaining_failures: none
+handoff: All routed findings F12 to F21 and F23 are fixed and verified. F22 and F24 are declined per the brief. The role log and preview-1.13.txt are untracked local evidence files, consistent with earlier rounds. No test file was edited. No commit after 00:15; no push. Reviewers can scope the audit to the three harness/model-guide files and plan.md.
+dispositions: F12=FIX; F13=FIX; F14=FIX; F15=FIX; F16=FIX; F17=FIX; F18=FIX; F19=FIX; F20=FIX; F21=FIX; F22=DECLINE; F23=FIX; F24=DECLINE
+END_MEASURE_AGENT_RESULT

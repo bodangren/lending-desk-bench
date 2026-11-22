@@ -1,0 +1,177 @@
+Red task 4.13a — the judge runner of the model_guide track
+Date: 2026-11-18
+Role: mid-red (substitution: minimax-cn-coding-plan/MiniMax-M3.1-Flash)
+Track: model_guide
+Phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+Row: 4.13a Red: the judge runner (spec D11). New row, placed before row 4.13.
+
+Base SHAs
+  phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+    (the commit "docs(model_guide): test strategy for Phase 4 and Phase 3
+    records"; test-strategy section 11)
+  role_base_sha: 4bdbd3f5f145f1cfe5a817766b162cf8da51dbd4
+    (the HEAD before this Red role; "measure(model_guide): record Green task
+    4.9d")
+  Both values were named in the task message. Both resolve in the repository.
+
+The gap
+  Task 4.13 needs one judge call per judge per diff through heavy-run.sh
+  (spec D11, spec.md lines 488 to 537). No tool makes a judge call.
+  `adjudicate.ts queue` writes
+  `<private>/sets/<set_id>/adjudication/queue.json`, and
+  `adjudicate.ts apply --judge-a <file> --judge-b <file>` reads two flat maps
+  that map a finding id to `real-defect`, `false-claim`, or `unclear`
+  (adjudicate.ts lines 1 to 78). The new tool is
+  `harness/model-guide/judge-run.sh`. It fills that gap.
+
+The Red run
+  Command:
+    cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  Exit code: 1
+  Test Files  1 failed (1)
+  Tests  18 failed (18)
+  Duration  723ms
+
+  The 18 failed test names, and the reason of each failure:
+    J1  calls the fake once for each group, writes the judge file and the
+        run record, and writes nothing in the repository
+    J1b uses the default private folder of review-run.sh when no --private
+        flag is given
+    J2  calls run --standalone --format json --model <route> in the job
+        folder of opencode_host_begin with a job config that denies every
+        tool
+    J3  holds the seeded diff of the group and its items, and no route name
+        and no slug
+    J4  the prompt of the second judge holds no text of the judge file of the
+        first judge
+    J5  keeps the last flat json block and drops the ids of another group
+        and the values outside the three verdicts
+    J6  adds no verdict for a group whose answer holds no valid json block
+    J7  holds the set id, the judge, the route, the date, the state, the
+        groups, the judged_by map, the tokens, and the tokens flag
+    J8  a call with no token field adds 0 and sets tokens_complete false
+    J9  refuses a missing queue, an empty queue, and a bad judge value with
+        exit 2, one named line, no call, and no file
+    J10 refuses a second run of the same set, judge, and date with exit 2,
+        one line on stderr, and no call
+    J11 makes no call at a window of 70 %
+    J11 stops the run at 80 % and leaves the run open with the verdict of the
+        first group
+    J12 stops the run at a credential value and keeps the value out of the
+        private folder, the repository, and the log
+    J13 makes one call on a built-in sample group, prints ready, and writes no
+        judge file
+    J13b prints not-ready with the error line and exits 3 when the call fails
+    J14 ends the call at MG_CALL_TIMEOUT_S, stops the fake child, and removes
+        the job folder
+    J14b the watcher of the call stops the model call when the runner dies
+
+  Every case fails with the same one reason:
+    AssertionError: the judge runner is missing:
+    /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/judge-run.sh:
+    expected false to be true // Object.is equality
+  No case passes at the role base, so no claim rests on a vacuous pass (A4).
+
+The contract, and the case of each point
+  Point 1, the usage and the default private folder:
+    J1b (the default private folder of review-run.sh), J9 (a bad --judge
+    value), J13 and J13b (the --start-test flag).
+  Point 2, the queue input, one call per group, and the prompt:
+    J1 (one call per group), J3 (the seeded diff of the group, the items of
+    the group, no route name, no slug), J4 (no text of the judge file of the
+    first judge in the prompt of the second judge).
+  Point 3, the answer and the verdict parsing:
+    J5 (the last flat json block wins, the ids of another group and the
+    values outside the three verdicts are dropped), J6 (a group with no valid
+    block adds no verdict).
+  Point 4, the two output files:
+    J1 (the judge file and the run record), J7 (the fields of the run
+    record), J8 (the token sums and the tokens flag).
+  Point 5, the safety rules of review-run.sh:
+    J2 (the job folder of opencode_host_begin, the call shape, the job
+    config that denies every tool), J10 (the flock lock of one set, one
+    judge, and one date), J11 (the quota rules of spec D15), J12 (the
+    credential value scan), J14 and J14b (the watcher of the call, the trap
+    of the job folder), J8 (the token log of the step-finish events).
+  Point 6, the refusals:
+    J9 (a missing queue, an empty queue, and a bad --judge value give exit 2,
+    one `judge-run:` line on stdout, no call, and no file).
+  Point 7, the start test:
+    J13 (one call, the line `<route> ready -`, exit 0, no judge file, no set
+    data in the prompt), J13b (the line `<route> not-ready <error line>`,
+    exit 3).
+
+The test-bug check
+  A scratch runner was written outside the repository, copied into
+  `harness/model-guide/judge-run.sh` for one run, and deleted before the
+  commits. With that scratch in place the file gave `Tests  18 passed (18)`
+  and exit 0. The scratch proved that the 18 failures come from the missing
+  tool and not from a test bug. The scratch file is not part of the track, and
+  `harness/model-guide/judge-run.sh` does not exist at the role HEAD.
+  The scratch used the fake `opencode` only. It never ran the real `opencode`
+  CLI, never called heavy-run.sh, and made no network or model call.
+  The scratch runner was written and deleted to check the tests only. No
+  production file was committed: the role HEAD holds no
+  `harness/model-guide/judge-run.sh`, and the range
+  57baaaa364f968a2f44c6e14eb96f8a9d68beebf..HEAD holds the test file and
+  `measure/tracks/model_guide/plan.md` only.
+
+The marker of row 4.13a
+  Row 4.13a stays `[~]` until the Green role passes, the same pattern as row
+  4.9c. The first record commit set the marker to `[x]`; the Red role gate
+  refused that, because no current phase task carried `[~]`. Commit
+  80869bdc6bd546da446d2c86312e0076d70cbe1e changes the marker back to
+  `- [~] 71adc88 4.13a Red: the judge runner (spec D11).` and touches no
+  other line of the plan. The Green role flips the marker when the runner
+  passes.
+
+Process checks after the runs
+  `pgrep -af "fake-opencod[e]"`: 0 line.
+  `pgrep -af "quota-serve[r]"`: 0 line.
+  `ps -eo pid,args | grep '[f]ake-opencode'`: 0 line.
+  `ps -eo pid,args | grep '[q]uota-server'`: 0 line.
+  No `mg-judge-*` temp folder stays under `/tmp`.
+
+Files touched by this role
+  harness/model-guide-tests/judge-run.test.ts (new file, commit 71adc88)
+  measure/tracks/model_guide/plan.md (row 4.13a, the file map line, and the
+    evidence lines; commits 71adc88 and cf86504; the marker commit 80869bd)
+  measure/runs/model_guide/red-4.13a.log (this record, not staged)
+  Never staged: `.opencode/`, `tech-debt.md`, `harness/wt.txt`,
+  `harness/model-guide/data/sets/`, `measure/runs/`, `docs/`, `reports/`.
+  Those untracked paths hold user work and stayed untouched.
+
+The marker commit
+  80869bdc6bd546da446d2c86312e0076d70cbe1e — "measure(model_guide): Red task
+  4.13a stays in progress until Green"; one path,
+  measure/tracks/model_guide/plan.md. The row is now
+  `- [~] 71adc88 4.13a Red: the judge runner (spec D11).`
+
+The next role
+  The Green role writes `harness/model-guide/judge-run.sh` and touches no
+  test file. The test file stays red until that task. The plan row 4.13
+  keeps its `[ ]` mark and runs the tool through heavy-run.sh.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 4bdbd3f5f145f1cfe5a817766b162cf8da51dbd4
+resulting_head: 80869bdc6bd546da446d2c86312e0076d70cbe1e
+commits:
+  - 71adc88145aff12ed639e04f4a6a035b8c49ea92 — the test file and row 4.13a of the plan; two paths
+  - cf8650491465c21a4de17835386418741b6a4ecf — the SHA and the evidence lines of row 4.13a; one path
+  - 80869bdc6bd546da446d2c86312e0076d70cbe1e — the marker of row 4.13a stays `[~]` until Green passes; one path
+tests_run:
+  - "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot: exit 1; Tests  18 failed (18); Test Files  1 failed (1). Every case fails with the reason 'the judge runner is missing'."
+  - "the same command with a scratch runner in place: exit 0; Tests  18 passed (18). The scratch was written outside the repository and deleted before the commits."
+files_changed:
+  - harness/model-guide-tests/judge-run.test.ts
+  - measure/tracks/model_guide/plan.md
+plan_updates: "Row 4.13a is new and sits directly before row 4.13. It holds the contract of the judge runner (the seven points of the task), the verify command, the commit SHA, and the evidence lines. The file map gains the line for harness/model-guide/judge-run.sh. The marker of row 4.13a is `[~]`, because the Red row stays in progress until the Green task passes. No other row changed."
+known_failures:
+  - "All 18 cases of harness/model-guide-tests/judge-run.test.ts fail at the role HEAD, because harness/model-guide/judge-run.sh does not exist yet. The Green role that writes the runner closes them."
+handoff: "The Green role writes harness/model-guide/judge-run.sh from the contract of row 4.13a of measure/tracks/model_guide/plan.md and touches no test file. The new test file harness/model-guide-tests/judge-run.test.ts stays red until then: 18 cases, all failing on the missing runner. The scratch runner used for the test-bug check was written and deleted; no production file was committed, and the role HEAD holds no harness/model-guide/judge-run.sh. Row 4.13a stays `[~]`; the Green role flips the marker when the runner passes."
+END_MEASURE_AGENT_RESULT

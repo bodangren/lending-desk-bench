@@ -1,0 +1,34 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13i Red: the live Go quota answer (Review A cc8afbd F1, F2)
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5
+resulting_head: 3bde1750b9f76e9f124456ac8311c7755ae54c24
+commits: 6a3f586 test(model_guide): Red task 4.13i live Go quota answer; 3bde175 measure(model_guide): record Red task 4.13i
+red_test_command: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot; bun test harness/model-guide-tests/review-run.test.ts
+tests: quota.test.ts Tests 7 failed | 17 passed (24), exit 1; review-run.test.ts 52 pass 1 fail (53), exit 1
+files: harness/model-guide-tests/quota.test.ts; harness/model-guide-tests/review-run.test.ts; measure/tracks/model_guide/plan.md
+failing_tests: Q11 x3 (ready 50/97/89, wait weekly 100, wait 5h 95); Q12 null skip; Q13 string/negative skip; Q14 kimi 70 rule with real keys; Q15 Go required windows absent; G4 real-set pass starts at weekly 97 and refuses at weekly 100
+handoff: Green 4.13j owns quota.ts F1 (read weekly), F2 (skip null/non-number, stopped only with no usable window), B2 (Go requires finite 5h and weekly), N2 (negative not usable), N1 (one field for the Go rule), plus the spec D15 example and quota.ts doc live keys. Judge-run fake bodies still serve day/week and move in a later row. No production file changed; unrelated paths .opencode/, tech-debt.md, harness/wt.txt, harness/model-guide/data/sets/ untouched.
+END_MEASURE_AGENT_RESULT
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13i Red conversion: Go fakes use the live window names
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5
+resulting_head: 84857378fe693da61e9fb074fd37983805c3eb6f
+commits: bb1fa68 test(model_guide): Red task 4.13i Go fakes use the live window names; 8485737 measure(model_guide): record Red task 4.13i Go fake conversion
+red_test_command: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot; bun test harness/model-guide-tests/review-run.test.ts
+tests: judge-run.test.ts Tests 20 failed | 10 passed (30), exit 1; adversarial-p4-runner.test.ts Tests 5 failed | 9 passed (14), exit 1; quota.test.ts Tests 11 failed | 13 passed (24), exit 1; review-run.test.ts 25 pass 28 fail (53), exit 1
+files: harness/model-guide-tests/quota.test.ts; harness/model-guide-tests/review-run.test.ts; harness/model-guide-tests/judge-run.test.ts; harness/model-guide-tests/adversarial-p4-runner.test.ts; measure/tracks/model_guide/plan.md
+failing_tests: quota Q1, Q7, Q9, Q10, Q11 x3, Q12, Q13, Q14, Q15; review-run R1, R2, R3, R7 x2, R9, R10, R11, R12, R13, fake-binary, P1, P2, P3, P5, P7, T1, T2, S1, S2, S4, M1, M2, P2b, G1, G2, G3, G4; judge J1 x2, J2, J3, J4, J5, J6, J7, J8, J10, J12, J13 x2, J14 x2, J15, J19, G1, G2, G3; adversarial ADV-R-1, ADV-R-3, ADV-R-5, ADV-R-7, ADV-R-8
+handoff: Green 4.13j owns quota.ts F1/F2/B2/N2/N1 plus the spec D15 example and quota.ts doc live keys. Stay-green at HEAD is impossible for a converted Go case (week-100 refusal needs the week key live never sends; week-97 start needs a usable read the null window blocks). Only mechanical key renames week to weekly in three Q9/Q10 label assertions; percentages, states, counts unchanged; kimi/non-Go fakes keep old names (J11 verified green, R5/R6 green, ADV-R-2 passes). No production file changed.
+END_MEASURE_AGENT_RESULT

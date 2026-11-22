@@ -1,0 +1,85 @@
+Green fix for task 4.9 blocker F1 — the one-pass rule of a no-source route
+Track: model_guide. Phase 4: The runner and the first track A results
+(by Sun 2026-11-22). Role: measure-jr-green. Date: 2026-11-18.
+
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha e60814a0fee060e2f2358a9490b8652f7d04c029
+
+1. The finding and its rule
+
+  F1 [blocker] of `measure/runs/model_guide/check-4.9.json`. The one-pass
+  guard of `review-run.sh` keyed on an empty `QUOTA_PROVIDER`. The committed
+  no-source rows set a provider (`nvidia`) and a null `quota_source`, so the
+  guard never fired and a second pass of the same date ran.
+
+  The Red test e60814a states the contract. The guard keys on an empty or
+  null `quota_source`. A second run of a no-source route for the same
+  `--date` exits 2 before any call. It prints exactly one stderr line that
+  starts `review-run:` and holds `one pass per night`. Its stdout is empty.
+  It starts no job and writes no second pass record.
+
+2. Base evidence
+
+  At the role base e60814a, `review-run.test.ts` ran with
+  `Tests  1 failed | 24 passed (25)`. The failure was F1: the second run
+  exited 0 instead of 2. The F2 case passed at the base.
+
+3. Change
+
+  `harness/model-guide/review-run.sh` keys the guard on
+  `[ -z "$QUOTA_SOURCE" ]`. The refusal prints one line on stderr and exits
+  2, the same shape as the lock refusal. The guard still runs after the
+  slug and tag are known and before the quota read and any call. The script
+  header names the rule.
+
+  No other change. No test file changed.
+
+4. Commits
+
+  0ba6a283043cef17f19f58f853c3cd13aa01abae fix(model_guide): one pass per night keys on the quota source (task 4.9 F1)
+  8e0c441a0d026d886bf006388136e7b4e49e4286 measure(model_guide): record 4.9 F1 fix
+
+5. Test result lines (one file at a time from `harness/`, each with
+`--configLoader native --maxWorkers=1 --reporter=dot`)
+
+  review-run.test.ts            exit 0  Tests  25 passed (25)
+  adversarial-p4-runner.test.ts exit 0  Tests  14 passed (14)
+  quota.test.ts                 exit 0  Tests  15 passed (15)
+
+  F1: the first run of the no-source route exits 0 with 3 calls, one pass
+  record, and no quota request. The second run exits 2 with one stderr line
+  that starts `review-run:` and holds `one pass per night`, empty stdout,
+  no new call, and one pass record only.
+
+  F2: the stopped quota read before the pass leaves the pass `open`, writes
+  one record with the quota reason, makes no call, and stores no raw
+  output. The case passes at the role base, so F2 needed no production
+  change.
+
+6. Gates and orphan reads
+
+  bash -n harness/model-guide/review-run.sh                    exit 0
+  A quota server process: none stays.
+  ps -eo pid,args | grep '[f]ake-opencode'                     prints no line
+  A `/tmp/mg-adv-r-*` or `/tmp/mg-review-run-*` folder: none stays.
+
+7. Plan state
+
+  Row 4.9 stays `[ ]`, because the checker runs again. Its evidence line
+  names the fix 0ba6a28 and the Red test e60814a. No task is [b].
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.9 (blocker F1)
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: e60814a0fee060e2f2358a9490b8652f7d04c029
+resulting_head: 8e0c441a0d026d886bf006388136e7b4e49e4286
+commits: 0ba6a28 (production), 8e0c441 (plan record)
+files_changed: harness/model-guide/review-run.sh, measure/tracks/model_guide/plan.md
+tests: review-run 25 passed; adversarial-p4-runner 14 passed; quota 15 passed. Gates: bash -n runner 0; no quota server process; no fake-opencode process; no temp folder stays.
+dispositions: F1=FIX(the one-pass guard keys on an empty or null quota_source; the second run of a no-source route for the same date exits 2 with one stderr line that holds "one pass per night", empty stdout, no call, and no second record); F2=FIX(no production change needed: the stopped-read branch already writes the open record with the quota reason, and the Red F2 case passes at the role base)
+handoff: F1 is fixed at 0ba6a28 and F2 needed no change. The runner header names the refusal shape. Row 4.9 stays [ ] until the checker runs again; the checker should now see the guard on quota_source and the stderr refusal. The log `measure/runs/model_guide/green-4.9.log` is not staged.
+END_MEASURE_AGENT_RESULT

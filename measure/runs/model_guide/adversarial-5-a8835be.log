@@ -1,0 +1,19 @@
+MEASURE_AGENT_RESULT
+status: pass
+summary: Five Phase 5 adversarial tests pass against the production preview and publish scripts in isolated temporary repositories.
+blocking_findings: []
+nonblocking_findings: []
+evidence: Target Vitest command passed 5 tests before and after the test-only commit; pre-adversarial HEAD was a8835be3ddc9b3e71f8965301772f97935da39d5.
+commands: npx vitest run model-guide-tests/adversarial-p5.test.ts --configLoader native --maxWorkers=1 --reporter=dot (before and after commit; 5 passed each)
+retry_recommendation: none
+changed_files: harness/model-guide-tests/adversarial-p5.test.ts; measure/runs/model_guide/adversarial-5-a8835be.json; measure/runs/model_guide/adversarial-5-a8835be.log
+test_strategy_violations: []
+live_contract_violations: []
+prod_wiring_violations: []
+route_parity_violations: []
+phase_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+role_base_sha: a8835be3ddc9b3e71f8965301772f97935da39d5
+audited_head: a8835be3ddc9b3e71f8965301772f97935da39d5
+route: openai/gpt-6-luna#high
+commits: 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36
+END_MEASURE_AGENT_RESULT

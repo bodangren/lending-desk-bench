@@ -1,0 +1,31 @@
+MEASURE_AGENT_RESULT
+role: measure-review-b-security
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+scope_tasks: 4.13e, 4.13f
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 242fe529b26f9d1a4e132f407a2036567c7e3011
+audited_head_sha: 66fe1accf71c0f881fffa58ff05bb0a94407477f
+head_current: no, moved mid-audit; commit 84e254e (4.13g spec) plus uncommitted 4.13g test edits are outside my scope; every read and gate is bound to 66fe1ac via git show and a detached worktree at /tmp/opencode/mg-audit-66fe1ac
+security_applicability: applicable
+status: pass
+blocking_findings: 0
+nonblocking_findings: 5 (B1 Minor symlinked parent folders, B2 Minor predictable stage folder, B3 Minor non-ASCII control code points, B4 Nit diff TOCTOU and unpinned stage cleanup, B5 Nit null verdict counts in judged_by)
+test_strategy_violations: 0
+live_contract_violations: 0
+prod_wiring_violations: 0
+route_parity_violations: 0
+retry_recommendation: none
+confidence: high
+gate_1_review_run: 49 pass, 0 fail (detached worktree at 66fe1ac)
+gate_2_judge_run: 27 passed, 1 file (detached worktree at 66fe1ac)
+gate_3_real_work: 16 pass, 0 fail (detached worktree at 66fe1ac)
+pgrep_fake_opencode_after_each_gate: no line
+pgrep_quota_server_after_each_gate: one transient concurrent-session line after gate 2 (/tmp/mg-judge-fake-Z06S5t, pid 1275760, gone seconds later); my suites kill every server they start, and I did not start or stop it
+dirty_worktree_note: first runs in the shared worktree hit the uncommitted 4.13g Red tests (G1-G3) and two load flakes; the detached 66fe1ac runs give 49/49 with those cases green
+a2_publish_gate: not applicable, no publish.ts or preview.sh change in the range and no draft-to-published flip
+a6_registry_claim: not triggered, measure/tracks.md model_guide row says pending
+fixes_verified: B2 judge rows (judge-run.sh:201-218), B3/B4 message checks and staging (review-run.sh:294-346, :563), C7 judged_by (judge-run.sh:618-625), N3 footer count (real-work.ts:684-685), N8 net gate above 0 (real-work.ts:479-482, :621)
+gate_null_net_bypass: none, passesNetGate requires net non-null and above 0, pinned by DS26 and ADV4-7/20
+result_artifact: measure/runs/model_guide/review-b-66fe1ac.json
+END_MEASURE_AGENT_RESULT

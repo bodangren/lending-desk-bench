@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Pass. The re-review of F1 and N1 at 1572612 confirms both fixed at ee48a25. F1 is closed: both production drivers now export BENCH_RA_QUOTA and RA_QUOTA_LASTGOOD, and their own check runs 'timeout 90 ra-quota status --json' (probe-4.10.sh:16-17,55; night-4.11.sh:16-17,70); quota.ts reads the Go quota through ra-quota whenever BENCH_RA_QUOTA is set (quota.ts:407-420) with a 90 s bound (quota.ts:88) and honors RA_QUOTA_LASTGOOD with the 6 h rule (quota.ts:315,367-372); the export chain reaches the runner, because the 04:35 run proved driver exports flow through heavy-run.sh into quota.ts. The live read at audit time gives opencode-go 5h 7.41 percent and weekly 17.57 percent, both under the 95/100 stop thresholds, and the last-good file is fresh (age 0.01 h). N1 is closed: the false claim is gone and the new point 8 text matches the code and the drivers line for line. The plan and spec text of ee48a25 match quota.ts and both drivers. The timers list mg-probe-4-10b at Fri 2026-11-20 01:45 +07 plus the three night timers at 02:00. The gate quota.test.ts passes 30/30 at HEAD and leaves no process. Two nonblocking gaps stay: night 1 fires 15 minutes after the probe start and greps the probe file at its own start, so routes that complete after 02:00 are skipped in night 1; and the plan still names the 02:00 2026-11-19 window while the approved run is 01:45 on 2026-11-20.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N4: Night 1 races the probe. mg-night-4-11-n1 fires at 2026-11-20 02:00 +07, 15 minutes after the probe starts at 01:45. A route's probe line lands only after its calls complete: one call per attempt, MG_CALL_TIMEOUT 600 s per attempt, up to 3 attempts per route (review-run.sh:217,720,863). night-4.11.sh greps '^<route> reachable' at its own start (night-4.11.sh:62-64,119-121), so every route whose probe line lands after 02:00 is skipped in night 1 as 'not reachable in probe-4.10'. Nights 2 and 3 read the completed file, so the pilot keeps Sat and Sun. The PM owns the schedule; either the probe must finish all three routes inside 15 minutes, or night 1 must start later, or the loss of night 1 stands accepted.",
+    "N5: Stale schedule text. probe-4.10.sh:3 still says '02:00-06:00 +07 on 2026-11-19' while the scheduled run is 2026-11-20 01:45, and the plan rows 1816 and 2194-2195 still name the 02:00 2026-11-19 re-probe. No plan row records the approved 01:45 2026-11-20 probe; the schedule lives only in the transient systemd timer mg-probe-4-10b. Correct the comments and the plan row when the probe result is recorded."
+  ],
+  "evidence": [
+    "F1 withdrawn: I re-checked the full wiring. Both drivers export the seams: probe-4.10.sh:15-17 and night-4.11.sh:15-17 export BENCH_QUOTA_BASE, BENCH_RA_QUOTA=/home/daniebo/Desktop/advantage-pr/scripts/jobs/ra-quota and RA_QUOTA_LASTGOOD=/tmp/ra-quota-lastgood.json. The drivers' own check runs 'timeout 90 \"$BENCH_RA_QUOTA\" status --json' and reads doc[\"opencode-go\"][\"windows\"] percent values (probe-4.10.sh:54-65, night-4.11.sh:69-80). quota.ts reads the Go quota through ra-quota whenever BENCH_RA_QUOTA is set (quota.ts:407-420), with the same 90 s bound (RA_QUOTA_TIMEOUT_MS, quota.ts:88,345) and the .[\"opencode-go\"].windows percent parse (quota.ts:359-364). quota.ts honors RA_QUOTA_LASTGOOD at quota.ts:315 and applies the 6 h staleness rule at quota.ts:367-372. The export chain reaches the runner: the 04:35 probe proved that a driver export (BENCH_QUOTA_BASE) flows through heavy-run.sh into quota.ts, so BENCH_RA_QUOTA flows the same way. With the seam set, no real run falls back to the 5 s direct read.",
+    "N1 withdrawn: the false claim 'Nothing in this repo sets BENCH_QUOTA_BASE outside tests' is removed from the plan row 4.13r. The new point 8 text (plan.md, row 4.13r) states that quota.ts reads ra-quota only when BENCH_RA_QUOTA names it, keeps no default path, and that the production drivers outside the repo set BENCH_QUOTA_BASE and BENCH_RA_QUOTA. Every sentence matches the code (quota.ts:407-421, 422-426) and the drivers (probe-4.10.sh:15-17, night-4.11.sh:15-17).",
+    "N2 resolved by the PM decision: the drivers still hold only the upper bound (probe-4.10.sh:101 stops after 05:55; night-4.11.sh:127 stops after 05:00), but the PM approved the 01:45 start, which was one resolution path of N2. The earlier start makes no real call before the approved time anymore.",
+    "The spec text matches the code: spec.md adds 'For Go it reads ra-quota when BENCH_RA_QUOTA is set' and 'The OpenChamber endpoint is the source only when BENCH_RA_QUOTA is unset' (spec.md D15 area), which matches quota.ts:407-421 (ra-quota branch, no endpoint fallback when set) and quota.ts:422-426 (API path when unset). The 6 h last-good rule of the spec matches LASTGOOD_TTL_SECONDS = 6 * 3600 at quota.ts:91 and the >= compare at quota.ts:369.",
+    "The plan point 8 text matches the drivers: it names the exact export values and 'timeout 90 ra-quota status --json' (plan.md, row 4.13r point 8); the drivers run 'timeout 90 \"$BENCH_RA_QUOTA\" status --json' with BENCH_RA_QUOTA at the named path (probe-4.10.sh:16,55; night-4.11.sh:16,70). The plan line reference quota.ts:407-421 matches the actual block.",
+    "The live read, one ra-quota call, read-only: 'ra-quota status --json' gives opencode-go windows 5h percent 7.414332875, weekly percent 17.566125666666665, monthly 8.783062833333332, state GO. Both Go values sit far under the 95/100 stop thresholds, so the driver check passes and the runner read gives ready. The last-good file /tmp/ra-quota-lastgood.json holds plans.opencode-go with fetchedAt age 0.01 h and the same 5h and weekly values, so the fallback stands fresh.",
+    "The timers: 'systemctl --user list-timers mg-* --no-pager' lists mg-probe-4-10b.timer at Fri 2026-11-20 01:45:00 +07, mg-night-4-11-n1.timer at Fri 2026-11-20 02:00:00 +07, mg-night-4-11-n2.timer at Sat 2026-11-21 02:00:00 +07, mg-night-4-11-n3.timer at Sun 2026-11-22 02:00:00 +07. 'systemctl --user cat' shows the transient units: mg-probe-4-10b.service runs /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/probe-4.10.sh, and mg-night-4-11-n1.service runs night-4.11.sh 1.",
+    "The probe answer: the 01:45 probe can give each of the 3 pilot routes a real result. The wiring no longer blocks it: both Go routes read the quota through ra-quota at the driver level (90 s bound) and the runner level (90 s bound, last-good fallback), and the live values sit at 7.41 and 17.57 percent. The remaining conditions: (1) the shared credential store holds exactly one active entry with integrationID opencode-go for routes 1 and 3, and one with opencode for route 2; a missing or ambiguous entry refuses the seed exactly as at 04:35; (2) the ra-quota read succeeds within 90 s at probe time, or the last-good file holds a usable reading younger than 6 h; (3) the Go windows stay under 5h 95 and weekly 100 at probe time; (4) each real call returns a non-empty answer within 600 s, on one of its 3 attempts, else the route records unreachable; (5) all three routes start before the 05:55 window end; (6) for the pilot passes, night 1 at 02:00 greps the probe file 15 minutes after the probe start, so routes that complete after 02:00 are skipped in night 1 (see N4); nights 2 and 3 read the completed file.",
+    "Gates at HEAD ee48a25: 'cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot' gives Tests 30 passed (30), exit 0. The pgrep scan after the run printed none. The other gates hold from 1572612, because the range 1572612..ee48a25 touches only measure/tracks/model_guide/plan.md and spec.md (git diff --stat: 2 files, +8/-3, no code file).",
+    "Provenance: audited HEAD ee48a254266afee947d555e4e562093c60d64153 equals the checked-out HEAD (git rev-parse HEAD). The audited range 1572612..ee48a25 holds one text commit. The driver diffs were taken against their *.bak-20261119-raq backups: probe-4.10.sh adds the two exports, drops QUOTA_URL, and swaps the curl for the ra-quota read; night-4.11.sh holds the same three changes. Both backups match the pre-fix state named in F1.",
+    "Process hygiene: after the quota gate, 'pgrep -af fake-opencod[e]|quota-serve[r]' printed none. This audit started no driver, no heavy-run call, and no signal."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> ee48a254266afee947d555e4e562093c60d64153",
+    "git log --oneline 1572612..ee48a25 -> 1 commit ee48a25 'measure(model_guide): Go quota source through the drivers, row 4.13r text (Reviews A, C 1572612)'",
+    "git diff --stat 1572612..ee48a25 -> measure/tracks/model_guide/plan.md, measure/tracks/model_guide/spec.md, +8/-3",
+    "diff /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/probe-4.10.sh.bak-20261119-raq probe-4.10.sh -> +export BENCH_RA_QUOTA, +export RA_QUOTA_LASTGOOD, -QUOTA_URL, ra-quota read with timeout 90, doc[\"opencode-go\"][\"windows\"] percent keys",
+    "diff /home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh.bak-20261119-raq night-4.11.sh -> the same four changes",
+    "systemctl --user list-timers 'mg-*' --no-pager -> mg-probe-4-10b at Fri 2026-11-20 01:45:00 +07, n1 at 02:00, n2 at Sat 02:00, n3 at Sun 02:00",
+    "systemctl --user cat mg-probe-4-10b.timer .service mg-night-4-11-n1.timer .service -> ExecStart probe-4.10.sh and night-4.11.sh 1, OnCalendar 2026-11-20 01:45 / 02:00 Asia/Bangkok",
+    "ra-quota status --json (one call, read-only) -> opencode-go 5h percent 7.414332875, weekly percent 17.566125666666665",
+    "python3 read of /tmp/ra-quota-lastgood.json -> plans.opencode-go fetchedAt age 0.01 h, same 5h and weekly values",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 30 passed (30), exit 0",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' -> none"
+  ],
+  "changed_files": [
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md",
+    "/home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/probe-4.10.sh (outside the repo, diffed against probe-4.10.sh.bak-20261119-raq)",
+    "/home/daniebo/.local/share/lending-desk-bench/model-guide/jobs/night-4.11.sh (outside the repo, diffed against night-4.11.sh.bak-20261119-raq)"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "1572612a513316c21dcc22b84e61338e19815ba3",
+  "audited_head_sha": "ee48a254266afee947d555e4e562093c60d64153",
+  "contract_applicability": "applicable",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    { "axis": "correctness", "score": 5, "evidence": "The plan and spec text of ee48a25 matches the code and the drivers line for line (quota.ts:407-421, 88, 315, 367-372; probe-4.10.sh:16-17,55; night-4.11.sh:16-17,70), and the live ra-quota read returns the opencode-go windows the text names." },
+    { "axis": "test_meaning", "score": 3, "evidence": "The seam behavior stays pinned by quota.test.ts, 30/30 exit 0 at HEAD; the driver wiring itself has no failing-first test, because the drivers sit outside the repo." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git diff --stat 1572612..ee48a25 shows only plan.md and spec.md, +8/-3, and the two driver diffs carry exactly the F1 fix and no extra change." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "Every claim names a file:line, a driver diff line, the systemctl listing, or the single ra-quota command result shown in commands." }
+  ]
+}

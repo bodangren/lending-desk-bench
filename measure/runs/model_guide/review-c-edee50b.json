@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Re-review of 3581902..edee50b (tasks 4.9e, 4.9f, 4.13c, 4.13d, rulings commit 154eb7d). C1 to C6 are resolved; C7 stays open as a nit. The message-line contract holds end to end: the call stdin holds review-prompt.md, the message line, and the seeded diff in that order (M1, M2). A missing or empty message file refuses with exit 2 before the lock, the quota read, and the call (M3, M4). seed-messages.ts writes one file per diff, prints one line `seed-messages: <n> written` on exit 0, and every exit-2 refusal writes no file (SM1 to SM3). The backfill left 14 non-empty message files for mg-2026-11a and 6 for mg-2026-11p, so the probe tonight (02:00 +07 on 2026-11-19) finds the message file of its control diff. judges.json holds the three D11 judge routes with the specified quota fields. judge-run.sh accepts a route only from judges.json, and review-run.sh never reads it (J15 to J17). Both outside-repo drivers now hold the pilot routes in the D12 order deepseek, hy4, mimo. The night driver reads the newest pass record and appends exit=<rc> state=<state>, and the probe driver starts every refusal line with the route. All three allowed suites pass at HEAD (43, 9, 22 tests) with no orphan process after the last two. The first suite's immediate pgrep held one transient process under a concurrent same-suite run in another session; a delayed check found no leftover. Four nonblocking findings stay: the P2 retry-count pin that spec D14 names is not made, the stale 4.10 sequencing text, the untested arg-level refusals of seed-messages.ts, and C7.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "C7 (nit, harness/model-guide/judge-run.sh:600): judged_by marks every item id of a complete group as judged, also when the model answer dropped that id and it holds no verdict. Unchanged since 3581902. Fix: keep only the ids that hold a verdict.",
+    "R1 (minor, harness/model-guide-tests/review-run.test.ts:1668-1670 against measure/tracks/model_guide/spec.md:714-715): spec D14 says the 3-call probe ceiling is pinned 'as test P2 pins', but P2 asserts only that the call count is greater than 0. No test pins the retry count on the error path. Fix: pin `modelCalls(...).length` to 3 in P2, or drop the pin claim from D14.",
+    "R2 (nit, measure/tracks/model_guide/plan.md:1817): row 4.10 says the probe of 2026-11-19 'runs before 4.9f', but 4.9f is complete and the probe needs its message files, so it runs after 4.9f. Stale sequencing text with no live impact tonight. Fix: change the sentence to 'runs after 4.9f and before 4.11'.",
+    "R3 (minor, harness/model-guide/seed-messages.ts:64-86,141-146): the arg-level refusals (set id given twice, unknown flag, flag without value, bad set-id pattern, missing set folder, no diff) hold no test case; the nine cases cover the happy path, the four diff checks, and scope. Fix: add one case per arg-level refusal.",
+    "R4 (nit, pre-existing, harness/model-guide/review-run.sh:11 and :153): the header says --date defaults to today in UTC, but DATE uses local `date +%F`. The night driver uses the same local date, so the record lookup matches. Fix: align the header text with the code."
+  ],
+  "evidence": [
+    "phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha 3581902d06cbe616d95043d201fa2b39b445e697; audited_head_sha edee50b8e93f8cdfda51791a897d3480436923b4; git rev-parse HEAD prints the head sha and the working tree holds no modified tracked file, so the audited HEAD is current",
+    "contract_applicability: applicable, because the phase diff adds CLI surface (the new seed-messages.ts tool, the message-line stdin contract of review-run.sh, the judges.json route list of judge-run.sh), output file schemas, exit codes, and producer-consumer wiring, the exact scope of this role",
+    "C1 resolved: spec.md:711-715 now allows the probe to retry up to 3 calls on a transport error, so review-run.sh:630-658 no longer deviates from D14; residual test gap in R1",
+    "C2 resolved: plan.md:1811-1815 and plan.md:1854-1860 state the pilot-only scope (Q1, PM 2026-11-18), spec.md:624-627 and spec.md:755-757 agree, and probe-4.10.sh:26-30 and night-4.11.sh:37-41 hold exactly the three pilot routes",
+    "C3 resolved: probe-4.10.sh:26-30 and night-4.11.sh:37-41 list deepseek, hy4, mimo, the D12 pilot order of spec.md:624-626",
+    "C4 resolved: harness/model-guide/judges.json holds kimi-code-plan-cn/k3.1-pro#high, opencode-go/muse-spark-1.3-contributor#high, and claude-code/claude-sonnet-5-5#max with quota_provider and quota_source exactly as spec.md:521-529 lists them; judge-run.sh:174-217 accepts a route only from judges.json and never falls back to routes.json (J17 pins the missing-file refusal)",
+    "C5 resolved: test-strategy.md closeout item 6 now requires the six D12 rows and no judge row, and spec.md:582-585 drops the stale nine-row and ranked-false text; routes.json holds the six D12 rows and no judge route (no commit in the range touches it)",
+    "C6 resolved: night-4.11.sh:142-170 globs the pass record by the runner's own conventions (review-run.sh:153 local date, :296-300 slug and tag, :351-357 pass file name), checks the mtime against the run start, and appends `exit=<rc> state=<state>` (line 170); the pass record state values complete, open, wait, region-blocked match review-run.sh:25 header and the tests; probe-4.10.sh:119-125 starts the refusal and no-line cases with the route name",
+    "C7 stays open: judge-run.sh:600 marks every id of a complete group as judged, also ids without a verdict in the group map",
+    "messages: mg-2026-11a holds 14 diff files and 14 non-empty message files, and mg-2026-11p holds 6 diff files and 6 non-empty message files; every diff id has one message file; no message, key, or diff content was printed",
+    "probe tonight: the first control diff of mg-2026-11a (plants 0) is forge-07 and messages/forge-07.txt exists with 74 bytes, so probe-4.10.sh on 2026-11-19 02:00 +07 finds it and the pre-lock message check passes for the whole set",
+    "message-line contract: review-run.sh:503-506 cats prompt, message, diff into the call; the pre-lock loop review-run.sh:285-292 refuses a missing or empty message file with exit 2 before the lock; review-prompt.md:10 already tells the model the first line is the commit message; M1-M4 pin all of it",
+    "seed-messages contract: seed-messages.ts:42-49 gives exit 2 with one refusal line, :186 gives exit 0 with `seed-messages: <n> written`, :170-185 writes every file only after every message is known, and :146 refuses a set with no diff; SM1-SM3 pin the writes, the four diff checks, and the scope",
+    "bun test harness/model-guide-tests/review-run.test.ts exits 0 with 43 pass, 0 fail, 329 expect() calls, 1 file (62.66s)",
+    "bun test harness/model-guide-tests/seed-messages.test.ts exits 0 with 9 pass, 0 fail, 41 expect() calls, 1 file (3.55s)",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot exits 0 with Test Files 1 passed, Tests 22 passed (43.41s)",
+    "process check: after seed-messages and after judge-run, pgrep -af fake-opencod[e] and pgrep -af quota-serve[r] printed no line; after review-run the immediate pgrep held one transient quota-server line while another session ran the identical suite on this machine (pid 344554, command text PGREP-DONE, not this session's PGREP_DONE), and a 100 s delayed check printed no mg-review-fake leftover",
+    "scope: git log --name-only 3581902..edee50b lists exactly the 11 planned files of rows 4.9e, 4.9f, 4.13c, 4.13d and the rulings commit; no commit touches docs/, harness/opencode-credential.sh, harness/opencode-host.sh, harness/provenance.ts, or harness/model-guide/routes.json",
+    "Red and Green records: measure/runs/model_guide/red-4.9e.txt, red-4.13c.txt, and green-4.9f.log exist on disk, and the plan rows record the failing-first counts (4 fail then 43 pass; 2 failed then 22 passed)"
+  ],
+  "commands": [
+    "git rev-parse HEAD -> edee50b8e93f8cdfda51791a897d3480436923b4; git status --short -> only untracked files",
+    "git diff --stat 3581902..edee50b -> 11 files, 1195 insertions, 109 deletions",
+    "git log 3581902..edee50b -- docs/ harness/opencode-credential.sh harness/opencode-host.sh harness/provenance.ts harness/model-guide/routes.json -> no commit",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 43 pass, 0 fail (62.66s)",
+    "pgrep -af fake-opencod[e]; pgrep -af quota-serve[r] -> one transient line under a concurrent same-suite run in another session; gone at a 100 s delayed check",
+    "bun test harness/model-guide-tests/seed-messages.test.ts -> 9 pass, 0 fail (3.55s); pgrep scans -> no line",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Test Files 1 passed, Tests 22 passed (43.41s); pgrep scans -> no line",
+    "ls and find on /home/daniebo/.local/share/lending-desk-bench/model-guide/sets/mg-2026-11a -> 14 diffs, 14 non-empty message files; same on mg-2026-11p -> 6 and 6"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/seed-messages.test.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/judges.json",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/seed-messages.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md",
+    "measure/tracks/model_guide/test-strategy.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The three suites pass at HEAD (43, 9, 22 tests), both seeded sets hold one non-empty message file per diff, and the night driver's record lookup uses the runner's own naming (night-4.11.sh:160 against review-run.sh:351-357)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "red-4.9e.txt and red-4.13c.txt show failing-first counts, and M1-M4, SM1-SM3, and J15-J17 pin the new contracts, but P2 asserts only greaterThan 0 calls (review-run.test.ts:1668-1670) and no case covers the arg-level refusals of seed-messages.ts."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git log --name-only 3581902..edee50b lists exactly the 11 planned files, and no commit touches docs/, the frozen runner paths, or routes.json."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every wiring claim has a file:line (judge-run.sh:174-217, night-4.11.sh:142-170, spec.md:521-529) and every run claim has a command result in this artifact."
+    }
+  ]
+}

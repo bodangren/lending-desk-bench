@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "route": "opencode-go/glm-5.3#high",
+  "summary": "Audit of tasks 4.13m-4.13p (range a3799be..c46161f, Red 93c0dcf/38919fd/8fca0e3/5697381/28543bd/e35ccf6, Green a70e410/fddffd4/62a805b/c46161f). The standalone-call inventory, the one real-HOME seed export (timeout 60, mktemp cwd, --standalone), the job-HOME import and scan-values, the empty-shared-store refusal, the infra-before-record wiring, and the Option A test changes all hold, and the three in-scope gates pass on rerun (review-run 62 pass on the second run; the first run had one timing failure in pre-existing R12). One blocking defect: the daemon guard matches the literal substring 'serve --service' on the raw /proc/<pid>/cmdline buffer, where a real daemon's argv elements are NUL-separated, so a real 'opencode.exe serve --service' process (the exact incident shape recorded in the host-isolation track) is never selected; the guard matches only the crafted argv[0] of the test fake, so in production the 4.13o point-1 guard stops nothing, logs no INFRA line, and writes no infra field.",
+  "blocking_findings": [
+    "F1 The daemon guard never selects a real serve --service daemon. daemon_pids (review-run.sh:419-425, judge-run.sh:314-320) reads /proc/<pid>/cmdline as utf8 and tests argv.includes(\"serve --service\") on the raw buffer, but Linux separates real argv elements with NUL bytes: a daemon started as 'opencode.exe serve --service' (the incident shape recorded at measure/runs/opencode_host_isolation/record-3.1.log:21 and measure/tracks/opencode_host_isolation/spec.md:28) has cmdline '...opencode.exe\\0serve\\0--service', which does not contain the space-joined substring. Verified by a node check: the NUL-separated shape does not match; a single argument that embeds the text does. The only matching shape is the test fake's crafted argv[0] ('fake-opencode serve --service <tag>' via exec -a, fake-opencode spawn_daemon_child). Consequence: on every wired path (pass, probe, judge run, start test, EXIT trap) the guard finds no real daemon, sends no TERM or KILL, prints no INFRA line, and the records hold no infra field, while D1/D3/D2/JD1 pass. Fix: normalize the cmdline before matching (argv.replace(/\\0/g, \" \").includes(\"serve --service\") or split on NUL and require the token pair), and give the fake daemon a real token split so the tests pin the real shape."
+  ],
+  "nonblocking_findings": [
+    "N1 The review-run gate is timing-flaky under load: the first rerun printed '61 pass / 1 fail' (R12 caught a live model-call wrapper of an earlier case, 'timeout ... 600 ... fake-opencode run' still in liveFakeProcesses), the immediate second run printed '62 pass / 0 fail'. A concurrent judge-run test run of another session was active near 04:35. The Green claim '62 pass (62)' holds only on a quiet machine; R12 is a pre-existing case, not changed by this diff.",
+    "N2 The HOME guards are tautological as written: provider-credential.sh:97 calls check_job_home with the constant \"$FOLDER/home\" (always inside the job root), and review-run.sh:662-665 and judge-run.sh:446-449 compare \"$JOB/home\" against the pattern \"$JOB\"/*, which is true for every JOB value except \"/\". No reachable input makes them refuse. The effective protection is the fixed HOME env of run_opencode and run_model_call plus the S5/JS2 one-real-HOME-call assertions; the guards themselves add no reachable check.",
+    "N3 daemon_pid_alive (review-run.sh:440-448, judge-run.sh:294-302) hardcodes /proc/<pid>/stat while daemon_pids honors BENCH_OPENCODE_PROC (review-run.sh:433, judge-run.sh:328). With a fake process table the liveness loop would read the real /proc. No production impact (both default to /proc), but the two helpers disagree.",
+    "N4 run_seed_export (provider-credential.sh:159) takes its cwd folder from \"${TMPDIR:-/tmp}\"; an operator TMPDIR inside a git work tree breaks the 4.13o rule 'cwd in an empty folder outside any git repo'. The plan's own example, a folder under the job root tmp, would not have this edge."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD -> c46161fb858de0883cf304a7dfc40f0afd486e64, equal to audited_head_sha; git log a3799be..c46161f holds exactly the ten listed commits; phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf matches the plan rows 4.13m-4.13p.",
+    "Gate 1: bun test harness/model-guide-tests/review-run.test.ts -> first run '61 pass / 1 fail' (R12, leftover model-call pids of an earlier case), immediate second run '62 pass / 0 fail' in 104.15 s; after the passing run pgrep -af fake-opencod[e] and pgrep -af quota-serve[r] printed nothing of mine.",
+    "Gate 2: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 'Test Files 1 passed (1)', 'Tests 34 passed (34)' in 58.04 s; the one pgrep line that appeared was pid 539831 of a concurrent run of another session (fixture mg-judge-fake-oJPqVh; my fixture was mg-judge-fake-dzkm04), ignored per the stop order; my own processes were gone.",
+    "Gate 3: cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 'Tests 16 passed (16)' in 1.85 s; pgrep printed nothing after the file.",
+    "F1 mechanism: node -e check -> the utf8 cmdline 'opencode\\0serve\\0--service\\0' does NOT include 'serve --service'; 'fake-opencode serve --service mg-tag\\0120\\0' DOES include it. Production matcher: review-run.sh:419-425 and judge-run.sh:314-320.",
+    "F1 real target shape: measure/runs/opencode_host_isolation/record-3.1.log:21 holds '3179063 .../node_modules/@opencode/cli/bin/opencode.exe serve --service', and measure/tracks/opencode_host_isolation/spec.md:28 names pid 1224243 'opencode.exe serve --service' as the incident the PM stop order answers; Linux /proc cmdline NUL-separates those argv tokens.",
+    "F1 test shape: harness/model-guide-tests/fixtures/fakes/fake-opencode spawn_daemon_child runs 'exec -a \"fake-opencode serve --service $2\" sleep 120', so the whole match text sits inside argv[0]; the test files' own procCmdline helper (review-run.test.ts, near line 1015) normalizes \\0 to spaces before matching, the production matcher does not.",
+    "Guard wiring: stop_daemons runs before each record write and in the EXIT trap - review-run.sh:849-850 (probe record), 981 (pass record), 477 (trap); judge-run.sh:897-898 (run record), 372 (trap); the --start-test path (judge-run.sh:570-574) exits through the EXIT trap armed at judge-run.sh:389; INFRA lines append to INFRA_LIST and each record writer passes it (review-run.sh:625, 765; judge-run.sh:753).",
+    "Seed contract: provider-credential.sh:157-164 run_seed_export (timeout 60, --standalone, mktemp -d cwd removed after the call), 172 the seed export goes through it, 204 the import runs with the job HOME and --standalone, 212 scan-values exports from the job HOME; the empty shared store fails closed through SELECT_JS line 131 -> read_seed_payload returns 2 at 198 -> refuse at 203 (exit 2); R1 and JR1 pass and pin exit 2, one named line, no model call, no record.",
+    "Option A (28543bd) keeps real assertions: D1/JD1 keep isAlive=false, the one INFRA stderr line with the fake daemon pid, the infra record field, and decoy survival; S1/JS1 count only exports whose HOME is the real fixture HOME; S2 seeds the job store and asserts one pass record with state complete; D3 holds its 25 s per-test timeout.",
+    "Standalone inventory: every \"$OPENCODE_BIN\" invocation holds --standalone - review-run.sh:692 and judge-run.sh:476 (run), provider-credential.sh:161, 204, 212 (auth); grep found no other opencode call in harness/model-guide, and harness/opencode-host.sh holds no invocation of its own.",
+    "Caller coverage: grep -rln provider-credential outside measure -> only review-run.sh and judge-run.sh (CREDENTIAL_HELPER at review-run.sh:101, judge-run.sh:82); both seed before the first model call and scan-values after, so the changed helper contract has no uncovered caller.",
+    "Red claim check: red-4.13m.log holds 'Tests 2 failed | 14 passed (16)' on ST1/ST2; red-4.13o.log holds '56 pass 6 fail (62)' and '4 failed | 30 passed (34)' before Green and the same two counts after the Option A fix; both match plan rows 4.13m and 4.13o, so no stale plan evidence was found (A5).",
+    "A3 check: the gate counts are labeled integers taken from bun and vitest output ('62 pass', 'Tests 34 passed (34)'); no digit-only count parse exists in the new cases."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git log --oneline a3799be..c46161f",
+    "git diff --stat a3799be..c46161f",
+    "node -e '<cmdline match check: opencode\\0serve\\0--service vs includes(\"serve --service\")>'",
+    "bun test harness/model-guide-tests/review-run.test.ts (twice)",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "pgrep -af 'fake-opencod[e]' and pgrep -af 'quota-serve[r]' after each test file",
+    "git show --stat 93c0dcf 8fca0e3 28543bd a70e410 62a805b",
+    "grep -rn '\"$OPENCODE_BIN\"' harness/model-guide/*.sh harness/*.sh",
+    "grep -rln provider-credential --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=measure ."
+  ],
+  "changed_files": [
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/provider-credential.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide-tests/credential-provider.test.ts",
+    "harness/model-guide-tests/fixtures/fakes/fake-opencode",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [
+    "F1 fixture shape: the fake's daemon mode (spawn_daemon_child, exec -a \"fake-opencode serve --service $2\") puts the whole match text inside argv[0], so D1/D3/D2/JD1 pin the implementation quirk instead of the real daemon argv recorded in the host-isolation incident; the tests cannot fail for the production miss."
+  ],
+  "live_contract_violations": [
+    "F1: the live PM stop-order point 3 (stop serve --service daemons under the job root, TERM then KILL after 5 s, INFRA on stderr and in the record) is not met in production, because no real serve --service process matches the raw cmdline substring check."
+  ],
+  "prod_wiring_violations": [
+    "F1: daemon_pids (review-run.sh:419-425, judge-run.sh:314-320) selects only processes whose single argument embeds the literal 'serve --service'; a real 'opencode.exe serve --service' daemon (record-3.1.log:21) has NUL-separated argv tokens and is never selected, so the guard that is wired on every path stops no real daemon."
+  ],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "The seed, HOME, refusal, and wiring contracts hold (provider-credential.sh:157-212; R1/JR1 pass), but the core deliverable of 4.13o point 1 misses its real target: the node cmdline check plus record-3.1.log:21 show a real 'opencode.exe serve --service' daemon never matches argv.includes(\"serve --service\")."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "Red records show genuine failing-first cases (red-4.13o.log: 6 fail and 4 fail before Green), and the Option A cases still assert real behavior, but the four daemon cases pass only against the fake's crafted argv[0] and so cannot prove the guard against a real daemon."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat a3799be..c46161f touches exactly the three runner scripts, the three test files, the fake, and plan.md rows 4.13m-4.13p; no unrelated file changed and the untracked paths pre-existed per the Green log."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "The three in-scope gates were rerun with labeled counts (62/34/16) and every audit point carries a file:line or a command result; the adversarial-p4-runner (14) and quota (26) gate claims rest on the Green log alone, and one gate needed two runs (N1)."
+    }
+  ]
+}

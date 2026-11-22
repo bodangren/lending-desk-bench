@@ -1,0 +1,59 @@
+# Review B round 4 — model_guide Phase 1 — audited HEAD 0acceea
+
+Audit only. No production file, test, plan, or registry file was edited, and
+nothing was committed. The only files written are this log and
+`review-b-0acceea.json`.
+
+Provenance: working HEAD was 0acceeaaa9456f30c9f3c72f67212971e55a5d39, equal to
+`audited_head_sha`. Every probe ran in a git archive copy under
+`/tmp/opencode/rb4`, never on the real `docs/`.
+
+B3-1 is closed.
+
+- preview.sh:107-111 refuses every docs symlink before a write. Probes: a
+  relative file link, a nested link, and a directory link each gave exit 2 with
+  `preview: refused path <absolute link path>`, empty stderr, no preview folder,
+  and an unchanged link target.
+- publish.ts:109-125 walks docs with lstatSync. Probes: the exact round-3
+  relative-link case gave exit 2 `publish: drift index.html` with the outside
+  file byte-identical; a directory link with an approved row beneath gave exit 2
+  `publish: drift dl` and no write into the linked folder.
+- Control runs gave exit 0 and wrote only the preview folder. A link planted
+  inside an existing preview folder gave exit 2.
+
+No docs write without the approval record: no approval record gave exit 2
+`publish: no approval record`; unsafe rows gave exit 2 `publish: bad path`.
+`.tmp/` is ignored and the real tree holds no approval record.
+
+Tests at 0acceea, each file alone with `--maxWorkers=1 --reporter=dot`:
+preview-gate 85 passed, input-check 15, real-work 19, leak-guard 2. The same
+preview-gate file on 6dc3b4f gave `Tests 9 failed | 76 passed (85)`, and the
+names match red-1.16.txt items 1 to 9. The tests are not vacuous.
+`bash -n preview.sh` exits 0.
+
+No real export bytes or SHA in the repo: the full SHA sits only in
+measure/tracks/model_guide/spec.md, plan.md, and metadata.json, and the same
+three files held it at the phase base 0a44cc9. No model_guide commit in
+0a44cc9..0acceea touched docs/.
+
+Two Nits are recorded for traceability, not as blockers.
+B4-1: a hard link under docs (nlink 2) is invisible to lstat, so publish can
+change an outside name at exit 0. Git cannot store a hard link.
+B4-2: the docs scan and the copy are separate steps, so a link created between
+them in one run is not re-checked. Same user only.
+
+Review A items A5-1, A5-2, and A5-3 were checked from the security side only
+and are not repeated. A5-1 fails closed with no write.
+
+Verdict: pass.
+
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 0acceeaaa9456f30c9f3c72f67212971e55a5d39
+result_file: measure/runs/model_guide/review-b-0acceea.json
+retry_recommendation: none
+summary: B3-1 is closed in preview and publish by probes and by a 9-fail/85-pass test pair; no docs write without the approval record and no export leak; two Nits (hard link, scan-to-copy race) are recorded for traceability.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,28 @@
+review-c audit log, track model_guide, Phase 2, audited HEAD 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2.
+Provisional verdict written first: pass. Refinement checks follow below.
+Step 1. git rev-parse HEAD = 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2, equals role_base_sha and audited_head_sha. phase_base_sha c22f313 is an ancestor, 24 commits in range.
+Step 2. contract_applicability = applicable. The exact phase diff ships two public JSON contracts, two CLI tools, the update.sh D19 CLI contract, the preview.sh page wiring, and two page contracts.
+Step 3. Read spec.md D17, D18 (with rulings Q1 and Q2 of commit ac0046f), D19, D21, FR-5, FR-6, acceptance 6 to 8. Read plan.md Phase 2 including the 2.4a ruling. Task 2.8 is the one open task of the phase and is not counted as a finding.
+Step 4. Read guide.ts, print-audit.ts, update.sh, preview.sh, pages/guide-section.html.
+Step 5. model-guide.json in the preview: schema model-guide-overview/1, root keys schema, today, stale, rows. Six rows, D18 kinds in order, row keys kind, pick, second, evidence, evidence_date, base_line. Pinned by guide.test.ts T2.
+Step 6. index.html: section id model-guide at line 28, directly after nav line 26, above hero line 55. Five D18 column headers. Rows agree cell-for-cell with model-guide.json. Base lines 95.0 and 98.7 render beside the picks. No stale text, stale is false.
+Step 7. Exact wording: no pick yet: not enough evidence appears verbatim in the JSON and the page for Code review (ruling Q2) and tooling. Evidence cells match the D18 form, for example page B: pass 0.96 (n=28). Ruling Q1: test writing evidence starts with page B producer.
+Step 8. print-audit-2026-11.json: schema model-guide-print-audit/1, totals errors 52 blockers 13, routes kimi-code-plan-cn/k3.1-pro 11 of 13 and claude-code/claude-sonnet-5-5#high 13 of 13 per the 2.4a ruling, error types minor 21 major 18 blocker 13, checklist lengths 0:9 1:27 2:15 3:1 per OD6, summary and note retained, no pages, text, or file key outside checklist items.
+Step 9. OD6 provenance: sha256sum of the real hand-off file gives f52a7bbf0f4263a84a16dba02cb4ccf4c76b6f40d3e70110104ebbf6140a6e87, equal to the data file source.sha256 and the MANIFEST.txt line. The hand-off file itself never entered the repository.
+Step 10. real-work.html print-audit block: 52 error rows, 13 blockers, both results, error types with counts, bias note, the sentence This data point is one calibration run of the audit. It is not a rank. The line Error types: not yet received. occurs 0 times. The block holds lists and no table.
+Step 11. update.sh D19: usage exit 2, staging in a temp folder, preview-only write before the approval, docs/assets/data write plus one commit with exactly two explicit paths after the approval, never pushes. Pinned by update.test.ts U1 U2 U3.
+Step 12. Test runs, each single file with --configLoader native --maxWorkers=1 --reporter=dot, no shell redirection: guide.test.ts 15 passed exit 0, print-audit.test.ts 13 passed exit 0, update.test.ts 3 passed exit 0, preview-gate.test.ts 98 passed exit 0.
+Step 13. docs/ writes: the only commit in range that touches docs/ is 05acc8c, the standing daily publish job of spec EV8, authored outside the track. Every model_guide commit touches only harness/ and measure/. git status --short docs/ prints nothing.
+Step 14. Preview provenance: git diff c205762..6132fb7 touches only plan.md, so the preview files and preview-2.9.txt reflect the production code at audited HEAD.
+Step 15. Nonblocking findings P2C1-1 to P2C1-6 recorded in the result JSON: untested page stale mark, untested table position and headers and section dedupe, spec Q6 default versus the 2.4a route-name ruling, track A tie-break deviation from D13, alphabetical newest-score-file selection, and the unused plan marker-comment note.
+Step 16. Refinement: re-ran git rev-parse HEAD after all checks, still 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2. Validated the result JSON with python3 json.load. Verdict stands: pass, retry_recommendation none, confidence high.
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2
+result_file: measure/runs/model_guide/review-c-6132fb7.json
+retry_recommendation: none
+summary: Phase 2 contract holds end to end: both JSON contracts match spec D17 to D19 and the Q1, Q2, and 2.4a rulings with verified OD6 provenance, the pages agree with the JSON with exact wording, update.sh meets D19, all four test files pass at HEAD, and no track commit wrote docs/; six nonblocking items named.
+END_MEASURE_AGENT_RESULT

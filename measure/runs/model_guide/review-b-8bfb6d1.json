@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "phase_base_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "role_base_sha": "8bfb6d1442214a2a0a64eb058329462edfacd1c2",
+  "audited_head_sha": "8bfb6d1442214a2a0a64eb058329462edfacd1c2",
+  "reviewer_model": "qwen3.8-max",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "security_applicability": "applicable",
+  "status": "fail",
+  "summary": "Phase 3 tools are correct in the main cases and all six suites are green at HEAD (78 tests). The gh boundary is api GET only with no shell, the public manifest and score file hold no key field, plant text, file, or line, the reviewer prompt holds no plant hint, and every write command requires an explicit --private. Two blockers remain. First, leak-check.ts silently skips every staged file with a non-ASCII path because it parses the C-quoted output of git diff --cached --name-only and the follow-up git show fails; a staged seeded line under such a name gives exit 0 (demonstrated). Second, none of the four write tools checks for a planted symlink at its output target; review-set and review-score wrote a full manifest and score file through planted links to outside files (demonstrated, exit 0), the same primitive that Phase 2 rated a blocker and guarded in update.sh. One major, three nits.",
+  "blocking_findings": [
+    "P3B1-1 [Blocker] review-b: leak-check.ts silently skips every staged file whose path holds a non-ASCII character. stagedPaths runs `git diff --cached --name-only` with no -z (leak-check.ts:159-163), so git with its default core.quotepath prints a C-quoted name such as \"caf\\303\\251.txt\"; indexText then runs `git show :<quoted name>` (leak-check.ts:166-168), which fails, returns null, and the scan loop skips the file (leak-check.ts:216-219). Demonstrated in the /tmp/opencode/lc-probe-4v6jck temp repo: a staged file named caf\u00e9.txt that holds the seeded secret line gives exit 0, while every ASCII-named variant of the same content gives exit 2. Rationale: FR-10 requires exit 2 when any staged file holds a seeded line of 20 characters or more, so this is a silent bypass of the only secrecy gate before a track A commit, and non-ASCII file names are a plausible class in a project that ships Thai curriculum content. Fix: read the staged names with `git diff --cached --name-only -z` (NUL separated, never quoted) or run git with -c core.quotepath=false, and pin a leak-check test with a non-ASCII staged name. Route to Green.",
+    "P3B1-2 [Blocker] review-b: a planted symlink at an output target redirects the write of all four write tools, and no tool checks the link. review-set.ts:495-496, review-score.ts:467-468, adjudicate.ts:311-313 and 382-387 plus the key write-back at adjudicate.ts:373-380, and pick-diffs.ts:326-328 all use mkdirSync recursive plus writeFileSync, and both follow symlinks. Demonstrated through real tool runs: a symlink at <scores>/mg-2026-11a.json that points to an outside file received the complete score file (review-score exit 0), and a symlink at <sets>/mg-2026-11a.json received the complete manifest (review-set lint exit 0); the outside file was rewritten in both runs (/tmp/opencode/p3b1-sym2, /tmp/opencode/p3b1-sym3). Rationale: this is the same primitive that P2ADV-5 and P2B2-1 rated a blocker and that Green then guarded in update.sh:52-70 and preview.sh; a redirected manifest write means the lint-verified manifest never lands in the repo while a symlink to an outside path can be committed, and a planted link in the private tree redirects the adjudicate key write-back outside the private folder. Fix: refuse with exit 2 when lstat shows a symlink on each target folder and target file, the same way update.sh refuses it, and pin one adversarial test per tool. Route to Green."
+  ],
+  "nonblocking_findings": [
+    "P3B1-3 [Major] review-b: the private-path check of leak-check misses the real path of the private folder when the caller passes --private as a symlink. privatePaths holds only the given string and resolve() of it (leak-check.ts:200-202); resolve normalizes .. and . but does not resolve symlinks, contrary to the code comment that a link in the path must not hide the folder. Demonstrated: with --private as a symlink to the real folder, a staged file that holds the real absolute path exits 0 (/tmp/opencode/lc-probe-4v6jck case 10). Rationale: the check should catch every spelling of the folder location; add the realpathSync forms of both strings to privatePaths and pin a test.",
+    "P3B1-4 [Nit] review-b: a broken symlink under docs/ or the preview folder crashes leak-check with an uncaught ENOENT and exit 1, because filesUnder calls statSync, which follows the dead link (leak-check.ts:140-148). Demonstrated with docs/broken to /nonexistent-target-xyz (/tmp/opencode/lc-probe-4v6jck case 4b). Rationale: the crash fails closed, but it breaks the one-line-per-finding contract, and a caller that maps exit 2 to leak and exit 0 to clean may treat exit 1 as a tool fault; use lstat and skip non-files, or catch per file.",
+    "P3B1-5 [Nit] review-b: set_id and --set pass no path-separator validation, so a value such as ../x steers the output file outside the named public folder through join (review-set.ts:496, review-score.ts:444, adjudicate.ts:311-313). Rationale: the value is operator-typed and a matching private keys folder must also resolve, so this is a hardening note; accept only an id of the [A-Za-z0-9][A-Za-z0-9._-]* shape with no leading dot.",
+    "P3B1-6 [Nit] review-b: nothing enforces the D9 order that the manifest key_sha256 is committed after the adjudication apply. review-set.ts:362 computes key_sha256 from the key bytes at lint time, and adjudicate.ts:373-380 rewrites key files, so a lint run before apply publishes a hash that the apply invalidates. Rationale: the spec assigns the order to the orchestrator, but a stale hash in a committed manifest silently breaks later verification; lint could warn or check for an adjudication marker."
+  ],
+  "evidence": [
+    "Provenance: HEAD confirmed 8bfb6d1442214a2a0a64eb058329462edfacd1c2 before and after the audit; it equals audited_head_sha and role_base_sha; no docs/assets/data-only publish commit landed during the audit.",
+    "Diff scope: git diff --stat 39d5077..8bfb6d1 -- harness/model-guide shows exactly the planned seven files (adjudicate.ts 419, leak-check.ts 240, pick-diffs.ts 331, review-prompt.md 76, review-score.ts 471, review-set.ts 499 new; guide.ts +10/-3). publish.ts and preview.sh are untouched in the range.",
+    "Tests at HEAD, single-file vitest runs, all exit 0: leak-check 10/10, pick-diffs 17/17, review-set 15/15, review-score 21/21, adjudicate 13/13, leak-guard 2/2 (78 total).",
+    "leak-check probes in the /tmp/opencode/lc-probe-4v6jck temp repo: baseline staged seeded line exit 2; staged rename exit 2 on renamed.txt; staged deletion exit 0 (the content is not in the commit, correct); docs symlink to a private file exit 2; staged symlink exit 2 with private-path; binary file with the embedded secret exit 2; path with spaces exit 2; nested JSON witness key exit 2 with key-field; non-ASCII staged name exit 0 (P3B1-1); real path text with a symlinked --private exit 0 (P3B1-3); broken docs symlink exit 1 crash (P3B1-4). The six vectors the brief names (rename, symlink, staged deletion, binary, spaces, nested JSON key) all hold.",
+    "Symlink write demonstrations through real tool runs: /tmp/opencode/p3b1-sym2 review-score exit 0 rewrote outside.json through a planted <scores>/mg-2026-11a.json link; /tmp/opencode/p3b1-sym3 review-set lint exit 0 rewrote outside-manifest.json through a planted <sets> link (P3B1-2). An invalid-JSON link target exits 2 on the score-file check before the write (review-score.ts:446-453), which is accidental, not a guard.",
+    "pick-diffs gh boundary: spawnSync with no shell and the fixed argument array [api, --method, GET, <path>] (pick-diffs.ts:132-135); the path always starts with repos/; a flag value that starts with -- is refused (pick-diffs.ts:104); owner/name are split and validated (pick-diffs.ts:111-112). The fake gh exits 3 on any verb other than api, and test PK4 asserts that every logged call is api GET with no other verb (pick-diffs.test.ts:346-357). No repo name or commit message reaches a shell.",
+    "Public content: the manifest holds only set_id, created, and per diff id, repo, commit, parent, seeded_sha256, key_sha256, plus the plant counts (review-set.ts:481-493); the score file holds route, pass, date, state, scores, weights, and counts with no finding text, file, or line (review-score.ts:424-442, 461-465); queue.json, verdicts.json, real-defects.json, and the key write-back land under <private>/sets/<set>/adjudication or keys (adjudicate.ts:311-313, 373-387); candidates land under <private>/candidates (pick-diffs.ts:326-328).",
+    "review-prompt.md holds no witness, new_lines, or operator word (grep exit 1), no plant or seeded wording, and no count or line hint; the C1-C9 class list is the public taxonomy that the D10 match needs, and the example finding uses the generic src/example.ts.",
+    "--private enforcement: pick-diffs.ts:108-110, review-set.ts:191, review-score.ts:125-127, adjudicate.ts:117-119, and leak-check.ts:80-81 each require --private (or --repo where named) and refuse an empty or flag-shaped value; every suite pins the needs-a-value refusal lines.",
+    "A2 not applicable: no tool or test in 39d5077..8bfb6d1 flips a draft to a published state; the publish gate (publish.ts, preview.sh, the D21 approval record) is untouched in the range. A6 clean: measure/tracks.md:40 shows model_guide as pending with the spec-review note and claims no resolved security state.",
+    "Fixture secrecy: the committed fixture keys under harness/model-guide-tests/fixtures/review/sets/mg-2026-11a are synthetic (src/forge-*.ts bodies such as const v10 = wrong(11)); their real repo and commit source metadata is public by D9 design; the range diff holds no /home or absolute private path (grep empty); leak-guard 2/2 pins that the fixtures hold no hand-off path context and no real export SHA-256.",
+    "guide.ts change of fd96d3b: a provisional pass now counts for the 3-pass threshold (guide.ts:245-252), which matches FR-14 (a provisional pass does not remove the rank); the reader touches only the public score file, so it adds no secrecy surface."
+  ],
+  "commands": [
+    "git rev-parse HEAD (8bfb6d1442214a2a0a64eb058329462edfacd1c2, before and after)",
+    "git log --oneline 39d5077..8bfb6d1",
+    "git diff --stat 39d5077..8bfb6d1 -- harness/model-guide harness/model-guide-tests",
+    "cd harness && npx vitest run model-guide-tests/{leak-check,pick-diffs,review-set,review-score,adjudicate,leak-guard}.test.ts --configLoader native --maxWorkers=1 --reporter=dot (each single-file, all green)",
+    "node -e probes in /tmp/opencode/lc-probe-4v6jck (11 leak-check bypass vectors)",
+    "node -e probes in /tmp/opencode/p3b1-sym2 and /tmp/opencode/p3b1-sym3 (review-score and review-set write through a planted symlink)",
+    "grep witness|new_lines|operator harness/model-guide/review-prompt.md (exit 1, no match)",
+    "grep /home/ over the range diff (empty)",
+    "read harness/model-guide/{pick-diffs,leak-check,review-set,review-score,adjudicate}.ts and review-prompt.md in full; git diff of guide.ts"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-8bfb6d1.json",
+    "measure/runs/model_guide/review-b-8bfb6d1.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "All 78 single-file tests pass at HEAD and the tools match D4-D13 in the main cases, but leak-check.ts:159-168 drops non-ASCII staged paths (probe exit 0 on a staged seeded line)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Each tool has a real suite with pinned exit codes and a fake-gh verb log (pick-diffs.test.ts:346-357), but no test pins the rename, space, binary, or non-ASCII staged-path vectors of leak-check."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 39d5077..8bfb6d1 shows exactly the seven planned harness/model-guide files plus the Phase 3 tests and fixtures; publish.ts and preview.sh are untouched."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every Green task 3.1-3.11 has a green-p3-*.log in measure/runs/model_guide and plan.md records it, but the symlink-write and non-ASCII-path behaviors carry no recorded probe."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: green-complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13ab
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 9e7672f4d79b1b6b2e799d111f862d7e47e46dd1
+resulting_head: c0a26d75a37955bb9c20be9cb3ab2d993d39907b
+commits: b795f32dd5b1dec7df48a8a4d23cf0126f587589 fix(model_guide): fail closed on a failed scan and scan the decoded error text (task 4.13ab); c0a26d75a37955bb9c20be9cb3ab2d993d39907b measure(model_guide): record Green task 4.13ab
+tests: review-run.test.ts 86 pass 0 fail (before the fix 82 pass 4 fail: AA1 AA2 AA3 AA5); judge-run.test.ts 45 passed (45) (before the fix 42 passed 3 failed: JA1 JA2 JA3); decode-parity.test.ts 3 passed (3); adversarial-p4-runner.test.ts 14 passed (14); adversarial-p4b.test.ts 12 passed (12); guards AA4 JA4 JA5 and every earlier case stayed green; pgrep for fake-opencod[e] and quota-serve[r] showed nothing after each run
+handoff: The fix is in harness/model-guide/review-run.sh and harness/model-guide/judge-run.sh only. error_line_of prints "the error output held a credential value" when scan_output exits 2, and it scans the decoded error-event text when the byte scan finds no value. No test file changed. Rows 4.13aa and 4.13ab are [x]; the track is not archived. The live probe on 2026-11-20 01:45 can proceed.
+END_MEASURE_AGENT_RESULT

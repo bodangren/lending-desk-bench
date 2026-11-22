@@ -1,0 +1,19 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-mid-red
+status: complete
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 5a722ecde7dbd865b02b9e28d4102cf651d6f761
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+red_commit_sha: 13409097946455e8ad14a1e1219d7175eae444b8
+plan_commit_sha: 1e16812697644c9ecbcb528ca240874931dd9ca3
+resulting_head: 1e16812697644c9ecbcb528ca240874931dd9ca3
+commits: 1340909 test(model_guide): Red task 4.15 align J1 with decoder parity; 1e16812 measure(model_guide): record Red task 4.15 r8
+tests: adversarial-p4c.test.ts J1 and J2 aligned to text-wins. judge-run.test.ts run as requested; no result-event case there.
+files: harness/model-guide-tests/adversarial-p4c.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-4.15.txt, measure/runs/model_guide/red-4.15-r8.log
+remaining_failures: 2 at the base. `cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests 2 failed | 11 passed (13)`: J1 and J2 both received `real-defect` from the forged result event instead of `false-claim` from the real text answer. `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Tests 50 passed (50)`.
+gaps: The case named J1 is in adversarial-p4c.test.ts, not judge-run.test.ts. J2 in that file also pinned result-wins on a text-plus-result stream and was aligned the same way. ADV-P4B AJ1 is result-only (a step-finish event then a result event) and keeps its result expectation. judge-run.test.ts has no result-event case and needed no edit.
+breakage_proof: At the base the judge decoder prefers the result event, so both aligned cases return the forged `real-defect`. A text-wins decoder returns the text answer `false-claim` and both cases pass. No process was started; pgrep printed nothing of mine.
+handoff: Green should make the judge decoder drop the result branch when text parts exist, matching review-score.ts:263 and adjudicate.ts:250, while keeping result-only streams (ADV-P4B AJ1) working. The two aligned cases then pass and decode-parity P5 passes. Green changes no test file. Row 4.15 stays [~].
+END_MEASURE_AGENT_RESULT

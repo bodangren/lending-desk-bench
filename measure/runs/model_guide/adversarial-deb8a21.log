@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+track: model_guide
+audited_head: deb8a21e27fe5c68f51bf10b35d46ec4a463beebf
+commit: 1b38ad8a3d404f97c73a98e5be146c774273d741
+file: harness/model-guide-tests/adversarial-p4-runner.test.ts
+command: cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+result: exit 1, Tests 1 failed | 11 passed (12); the one failure is the rewritten ADV-R-8 on the missing lock (the other run exits 0, expected 2)
+orphan_check: pgrep -af 'mg-.*quota-server' prints no test process (orphan count 0); ps fake-opencode read prints nothing
+frozen_paths: git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf..HEAD -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh prints nothing
+blocking_findings:
+- ADV-R-8 [Major] harness/model-guide/review-run.sh | Two concurrent same-name runs collide instead of one proceeding (exit 0, pass 1) and the other refusing (exit 2, one stderr lock line, no writes). Orchestrator and PM 2026-11-18 decide a non-blocking exclusive lock per route + set + date, released on every exit path. | Rewritten ADV-R-8 asserts this contract and fails on the missing lock. | Fix scope: Green.
+nonblocking_findings: none
+status: fail
+retry_recommendation: none
+END_MEASURE_AGENT_RESULT

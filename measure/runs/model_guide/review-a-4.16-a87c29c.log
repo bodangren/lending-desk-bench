@@ -1,0 +1,152 @@
+Final result: PASS under the PM round cap only.
+All eleven completed test commands exit 0. No real-key leak was found.
+F13 and F20 remain partly fixed. F15 needs caller configuration. New F21 proves R10 was weakened.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: a87c29c5ded286f9e315020ca09ed14636548d77
+HEAD matched before the audit, after the server restart, and after verification.
+The exact phase diff contains 19 files, 4807 insertions, and 128 deletions.
+The 5f01ef9..a87c29c remediation contains nine files, 541 insertions, and 144 deletions.
+
+F13 [Major], partly fixed
+The call now starts one deadline and removes the ten-second empty window.
+An eleven-second queued answer succeeds inside a 30-second budget after 12.936 seconds.
+The boundary defect remains. A completion due at 1.5 seconds succeeds under a one-second budget after 2.739 seconds.
+live_remaining clamps an expired budget to one second, and the complete branch returns before checking expiry.
+Both actual wait helpers also accept a late-only reply after two seconds under a one-second deadline.
+Check expiry before each request and before accepting completion. Route to Green.
+
+F15 [Major], runtime fixed and callers pending
+Unset pilot bases now refuse before seed and model calls. Explicit empty keeps the approved local default.
+The new unset tests clear the variable rather than setting it empty.
+Both supplied drivers still omit BENCH_SERVER_BASE at the final check.
+The scheduled probe and night run therefore refuse unless the exports land.
+No further guard change is requested. Route the driver exports and verification to the orchestrator.
+
+F20 [Major], partly fixed
+The original newest-final cases now store FINAL and its 45-token bundle.
+The inverse ordering remains wrong: a newer partial does not block an older completed record.
+The full runner stores EARLY and the older three-token bundle, then marks the pass complete.
+Both actual selectors also classify an older tool-calls step as complete behind a newer partial.
+Wait for the newest assistant and the call's terminal state. Route the inverse-order cases and fix to Green.
+
+F21 [Major], new output regression and weakened test
+review-run.sh:1817-1835 adds a decoder to every stored output, including the isolated path.
+It accepts only text/result events and discards plain text without a matching event.
+The exact revised R10 scenario exits 0, records complete, and stores a zero-byte output. Its tail is absent.
+A separate valid plain isolated answer also becomes a zero-byte output.
+The new decoder returns empty successfully, so its copy fallback does not run.
+
+R10 at review-run.test.ts:1593-1611 removed the tail-presence and whole-size assertions.
+It now checks exit 0, one record, and no oversized file.
+I removed the synthetic stored output. Every revised R10 assertion still passed.
+The original tail-presence assertion rejected the same missing deliverable.
+test-strategy.md:695 still requires the 2 MiB raw output whole.
+Restore output preservation and meaningful tail/size coverage.
+Route production to Green and the test correction through the orchestrator to Red.
+
+Fixture migration review
+The route substitutions preserve each isolated case's intent.
+They use the synthetic non-pilot Go route in temporary route catalogs and retain provider opencode-go.
+Go quota windows, D22 region detection, seed reasons, daemon guards, and credential scans remain covered.
+The existing assertions in the adversarial files remain unchanged.
+p4d adds the missing route catalog and retains exact seed-reason assertions.
+
+The live fake defaults to a native completed answer only when messages is undefined.
+Explicit messages: [] still tests the empty page.
+L10 keeps reachable behavior through a completed answer. The empty-probe case keeps unreachable and exit 3.
+These changes preserve the two contracts. R10 is the exception to assertion preservation.
+
+Earlier findings
+F12 remains withdrawn: native create fields and returned-location checks remain intact.
+F14 remains withdrawn for native token decoding. F16 remains withdrawn for failed-GET status handling.
+F17 remains withdrawn for native errors. F18 remains withdrawn for URL userinfo rejection.
+F19 remains withdrawn for config refusals, exact send-timeout behavior, and probe DELETE coverage.
+The previous GET-only check confirmed effective build denies in a fresh non-git job.
+This remediation does not change discovery or permission validation.
+I made no new real-server request and did not repeat that check after the restart.
+
+Tests and restart
+Eight file runs completed before the restart. The interrupted p4b command has no counted result.
+I reran p4b and completed p4c and p4d after the restart, on the same audited HEAD.
+Each file ran separately without shell redirection. No full suite ran.
+
+bun test harness/model-guide-tests/review-run.test.ts
+exit 0; 128 pass; 0 fail; 913 expect calls; 213.88 seconds.
+
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 59 passed (59).
+
+bun test harness/model-guide-tests/decode-parity.test.ts
+exit 0; 8 pass; 0 fail; 49 expect calls.
+
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 32 passed (32).
+
+cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 24 passed (24).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 16 passed (16).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+completed rerun exit 0; Tests 12 passed (12).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 13 passed (13).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4d.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 21 passed | 6 skipped (27). The skips predate this remediation.
+
+bun test harness/model-guide-tests/adjudicate.test.ts
+exit 0; 23 pass; 0 fail; 205 expect calls.
+
+bun test harness/model-guide-tests/review-score.test.ts
+exit 0; 27 pass; 0 fail; 249 expect calls.
+
+Evidence and architecture
+A3: test counts use labeled summaries, command exits, and structured record lengths.
+A4: the missing-deliverable fixture proves the revised R10 passes without stored output.
+A5: current plan test counts match all completed commands. The earlier failed Green gate remains explicit.
+No false current test-exit claim reproduced.
+The plan's semantic deadline and R10 claims remain incomplete, as F13 and F21 show.
+No TypeScript export changed. Existing scorer and adjudication callers support the former raw formats.
+The new fourth decoder lacks their plain-text fallback.
+build-graph exists, but graph.db remains absent. I created no database and used source caller checks.
+The live remaining-time, request, create, synthesis, wait, and error-line functions remain byte-identical between runners.
+No route-parity difference reproduced.
+
+Safety and limits
+bash -n and git diff --check pass.
+Frozen paths, docs, provenance.ts, harness/tests, and harness/package.json have empty phase diffs.
+No Measure orchestration script, framework contract test, or registry changed.
+Framework-wide anti-pattern checks remain outside this audit.
+Only the two supplied result artifacts remain. Synthetic helper fixtures were removed.
+No production, test, plan, or registry edit remains. No commit or push ran.
+HEAD remains a87c29c5ded286f9e315020ca09ed14636548d77. The four pre-existing untracked paths remain.
+The final process check found no fake-opencode, quota-server, or live-server child.
+I ran no opencode or openchamber CLI and no live model call.
+I read no real key, credential store, private seeded diff, or live message body.
+I did not repeat Green's leak-check command. No real-key leak was found.
+No formal CONTEST item was supplied.
+
+Handoff
+All four findings are Major and nonblocking under the PM round cap.
+Add and verify the driver exports before the probe.
+Route F13, F20, and F21 to Green. Route the R10 assertion correction through the orchestrator to Red.
+The route substitutions preserve intent, but R10 was weakened.
+Empty violation arrays express the capped disposition only.
+This audit does not establish full live readiness or accept Phase 4b.
+
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role_base_sha: a87c29c5ded286f9e315020ca09ed14636548d77
+commits: none
+tests_run: All eleven files passed separately; deadline, native ordering, raw-output, missing-deliverable, syntax, and diff probes completed.
+files_changed: measure/runs/model_guide/review-a-4.16-a87c29c.json; measure/runs/model_guide/review-a-4.16-a87c29c.log
+plan_updates: none
+known_failures: F13 and F20 remain partly fixed. F15 needs driver exports. New F21 proves output loss and a weakened R10 assertion. All are Major and nonblocking under the PM cap.
+handoff: Pass the capped audit only. Add the driver exports before the probe. Fix late acceptance, stale answer selection, and isolated output loss. Restore R10 tail and size assertions. Route production to Green and test correction through the orchestrator to Red. No real-key leak was found. This audit does not accept Phase 4b.
+END_MEASURE_AGENT_RESULT

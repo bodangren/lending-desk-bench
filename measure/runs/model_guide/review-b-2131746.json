@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "213174652648b742af7a2adffce9ccb9e4f043b9",
+  "audited_head_sha": "213174652648b742af7a2adffce9ccb9e4f043b9",
+  "reviewer_model": "kimi-code-plan-cn/kimi-for-coding#high",
+  "status": "fail",
+  "summary": "Phase 1 fails the security gate. preview.sh can write under docs/ before approval (confirms A1) and publish.ts misses docs files added after the preview (confirms A2). publish.ts also accepts traversal paths from the approval record (B1). The PM manifest fallback stays untested (confirms A3).",
+  "security_applicability": "applicable: the diff adds the preview and publish gate for a new public data path (test-strategy.md section 9, Phase 1 row).",
+  "blocking_findings": [
+    "A1 [Blocker] review-b: harness/model-guide/preview.sh:20: `--preview` accepts any folder, including `<repo>/docs`. Line 29 then runs real-work.ts with `--out \"$PREVIEW\"`, and real-work.ts:333-334 writes `real-work.json` there. Line 213 also writes `real-work.html`, and line 72 writes `preview-base.json`. No check keeps the preview folder out of `docs/`, so a preview run can place tracked files under `docs/` before any approval. Spec D21 and FR-7 forbid this write. Confirms A1.",
+    "A2 [Blocker] review-b: harness/model-guide/publish.ts:78: The drift loop iterates only over the paths recorded in `preview-base.json`. A file added under `docs/` after the preview is not in that map and is never checked, so publish exits 0 and the next daily commit pushes the unreviewed file. Spec D21 requires a check of each current `docs/` file before any copy. Confirms A2."
+  ],
+  "nonblocking_findings": [
+    "A3 [Major] review-b: harness/model-guide-tests/input-check.test.ts:129: No test uses the PM sum-line manifest form that commit ef2d16f added for task 1.9 (readManifestSumLine at harness/model-guide/real-work.ts:79). The sha256 and size refusal cases build only `sha256:` and `size:` manifests, so both pass if the fallback branch is removed. Confirms A3.",
+    "A4 [Minor] review-b: measure/tracks/model_guide/plan.md:234: Task 1.9 cites commit 54836d0. `git branch --all --contains 54836d0` prints nothing, so no branch holds it. The reachable plan-record commit is 2131746. Confirms A4.",
+    "B1 [Major] review-b: harness/model-guide/publish.ts:66 and harness/model-guide/publish.ts:90: The approval record path (rel) is joined without validation. A record line with `../` escapes `docs/`; with the default preview depth it can write outside the repository. The record is also not parsed for `approved_by` or `date`, and a record without a `files:` section exits 0 while copying nothing. The D21 gate must reject non-plain relative paths and a record without the consent fields.",
+    "B2 [Minor] review-b: harness/model-guide/preview.sh:191: `coverage['paired_duplicates_left_out']` comes from the raw export spread (real-work.ts:327) and lands in real-work.html without html.escape. A crafted export value injects raw HTML. All other export strings (model, routes, work types, dates, source fields, rating axes) are escaped.",
+    "B3 [Minor] review-b: harness/model-guide-tests: test-strategy.md:183-186 promises a guard case that scans the test folder for the hand-off folder name. No test scans for it; grep for `handoff` and `Desktop` in model-guide-tests finds no guard. A fixture that carries real export bytes would not fail any test."
+  ],
+  "evidence": [
+    "HEAD equaled audited_head_sha 213174652648b742af7a2adffce9ccb9e4f043b9. The audited diff was exactly 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9, ten files, all in the planned set.",
+    "Confirms A1: preview.sh:20 takes any --preview value; preview.sh:26 does mkdir -p on it; preview.sh:29 calls real-work.ts with --out \"$PREVIEW\"; real-work.ts:333-334 does mkdirSync and writeFileSync of real-work.json with no containment check. preview.sh:213 writes real-work.html and preview.sh:72 writes preview-base.json into the same folder. The sandbox denied writes outside measure/runs/, so the scratch reproduction was not run; the static path is one call chain with no branch that rejects a docs/ target.",
+    "Confirms A2: publish.ts:76-83 builds the drift list only from Object.keys(base.docs). publish.ts:89-93 then copies the approved files. The drift test at preview-gate.test.ts:246 mutates an existing docs file; no test adds a new docs file after the preview.",
+    "Confirms A3: real-work.ts:146-151 prefers the keyed manifest lines and falls back to the PM sum line of commit ef2d16f. input-check.test.ts:75-83 builds only keyed manifests; no test in model-guide-tests feeds a sum-line MANIFEST.",
+    "Confirms A4: `git branch --all --contains 54836d0` printed nothing. plan.md:234 still cites it as the 1.9 commit.",
+    "B1: publish.ts:54 parses `<sha256>  <path>` and publish.ts:66/90 use join(preview, rel) and join(ROOT, \"docs\", rel) with no check that rel is a plain relative path. readApproval at publish.ts:44-58 does not verify approved_by or date, and returns an empty list when `files:` is absent, which reaches exit 0 at the end of main.",
+    "B2: preview.sh:186-194 escapes dates and shares but interpolates paired_duplicates_left_out, unknown_runs, and other_runs without escape. unknown_runs and other_runs are computed integers from real-work.ts:313-318; paired_duplicates_left_out is raw export data from the spread at real-work.ts:327.",
+    "B3: `grep -rn 'handoff' harness/model-guide-tests/*.ts` and `grep -rn 'Desktop' harness/model-guide-tests/*.ts` found no guard. The committed fixture is synthetic (routes x/m, x/m#high, x/m[1m]#high, y/m, z/m, w/m, unknown, other) and MANIFEST.txt marks it synthetic. input-check.test.ts:124-126 asserts the fixture SHA-256 against the committed manifest.",
+    "Input check order verified: manifest, sha256, size, schema, run-sum all run before the first write at real-work.ts:333. Every refusal exits 2 with one named line (real-work.ts:34-37).",
+    "Publish refusal order verified: approval record, then approved SHA-256, then drift, then copy (publish.ts:62-93). Each refusal prints and exits before any writeFileSync.",
+    "Shell safety of preview.sh verified: set -euo pipefail at line 10, all expansions quoted, no rm -rf, no temp files, heredoc is quoted ('PY'). cp -a at line 34 preserves symlinks rather than following them.",
+    "Escaping verified for the main injection vectors: model, routes, rate text, ratings axes, agreement, trend, work-type names, source fields, and dates all pass through html.escape (preview.sh:119-131, 146-147, 155, 178-180, 187-188).",
+    "A2-consent check: no test or tool flips a draft to published. The publish gate requires the approval record, and P3 (preview-gate.test.ts:221) proves exit 2 without it. The record itself carries Daniel's words per spec D21, but see B1 for the missing field validation.",
+    "A6 registry check: measure/tracks.md:40 says model_guide is 'pending' with 'Red task 1.1 come next'. This understates progress; it claims no resolved security state, so no overstatement exists.",
+    "No file under docs/ changed in the diff. harness/provenance.ts, harness/tests, harness/opencode-host.sh, and harness/opencode-credential.sh have no diff. The route under audit is kimi-code-plan-cn/kimi-for-coding#high as dispatched.",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 -> exit 0, 7 passed."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 213174652648b742af7a2adffce9ccb9e4f043b9",
+    "git diff --stat 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9 -> 10 files, 2825 insertions",
+    "git branch --all --contains 54836d0 -> no output",
+    "git cat-file -t 54836d0 -> commit (unreachable object)",
+    "git log --oneline -3 ef2d16f -> ef2d16f fix(model_guide): accept the PM manifest format task 1.9",
+    "grep -rn 'handoff\\|Desktop' harness/model-guide-tests/*.ts -> no guard case",
+    "grep -o '\"route\": \"[^\"]*\"' harness/model-guide-tests/fixtures/real-work-mini.json -> only synthetic routes",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 -> exit 0, 7 passed",
+    "git status --short docs/ -> no output"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/fixtures/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/real-work-mini.json",
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [
+    "A3 [Major] review-b: harness/model-guide-tests/input-check.test.ts:129: The PM sum-line manifest form has no unit test.",
+    "B3 [Minor] review-b: harness/model-guide-tests: The promised handoff-folder guard scan is absent."
+  ],
+  "live_contract_violations": [
+    "A1 [Blocker] review-b: harness/model-guide/preview.sh:20: The preview path can target docs/ before approval.",
+    "A2 [Blocker] review-b: harness/model-guide/publish.ts:78: The drift check omits current docs files added after the preview.",
+    "B1 [Major] review-b: harness/model-guide/publish.ts:90: The approval record paths are not validated as plain relative paths inside docs/."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "kimi-code-plan-cn/kimi-for-coding#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "preview.sh:20 and publish.ts:78 leave two D21 write-gate holes open (A1, A2), and publish.ts:90 accepts traversal paths (B1)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "preview-gate.test.ts passes 7 of 7, but the PM manifest fallback (real-work.ts:79) and the promised leak guard have no test."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat lists only the ten planned Phase 1 files; docs/ and the protected harness paths have no diff."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every claim cites a file:line or a command result; the scratch reproduction of A1 was blocked by the sandbox and is proven statically."
+    }
+  ]
+}

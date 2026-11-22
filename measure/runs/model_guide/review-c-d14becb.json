@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "audited_head_sha": "d14becb350354103b18d43d87e94b46df8784ec8",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 4 closes C3-1, C3-2, and the A3-3 refusal line for the tested cases: a refused run leaves an existing preview folder unchanged, a second preview keeps one nav link of each kind, and the page B nav and method note match spec D16. No blocker remains. One minor item and three nits stay open.",
+  "contract_applicability": "applicable: test-strategy.md section 9, Phase 1 row assigns Review C the CLI exit codes of real-work.ts, preview.sh, and publish.ts, and the phase adds new data files and a new page.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "C4-1 [Minor] review-c: harness/model-guide/preview.sh:109-112 and plan.md:95: Plan line 95 says the nav of each page gets the links `Real work` and `Review` after `Results`. The preview adds them to index.html only (preview.sh python step, index_path block). The pages methodology.html, results.html, tracks.html, and the 19 pages under models/ keep the old nav (grep of `Results</a>` in docs/ shows no other link). After a publish, a user on the Results page has no link to Real work. In Phase 1 the `Review` link also points to review.html, which no task before 4.8 writes: the link is dead in the preview. Fix: state in plan.md that the link set on the other pages and the Review link wait for a named later task, or apply the same idempotent insert to every docs page that holds a `Results</a>` link (use `../` in models/). By code trace; the sandbox blocked a preview.sh probe.",
+    "C4-2 [Nit] review-c: harness/model-guide/preview.sh:119-122 and :138: The python block imports hashlib, html, json, and os, but sha256_file calls `sys.exit(2)` (line 138). The name `sys` is not defined, so that branch raises NameError, not the refusal line `preview: unreadable <path>`. The branch is dead for a dangling link (the shell check at :103 runs first). An unreadable file (mode 000) under docs/ fails earlier at `cp -a` (:112): exit 1 with a cp message, after `mkdir -p` (:109), so a half-copied preview folder stays. The header (lines 7-11) names only the dangling case, and test B2-1 covers only a dangling link for preview.sh (preview-gate.test.ts:1076-1083). Add `import sys`, or remove the branch. Optionally check readability in the shell before the mkdir. By code trace.",
+    "C4-3 [Nit] review-c: harness/model-guide-tests/preview-gate.test.ts:1014-1027: The test A3-3 checks exit 2, an unchanged docs snapshot, and one non-empty stdout line. It does not pin the line `preview: refused path <link path>` that the header of preview.sh (lines 8-10) and plan.md F3 state. A wrong text would pass. The header block of the test file (line 44) lists only the `<value>` form. Add an exact stdout check with the absolute link path.",
+    "C4-4 [Nit] review-c: harness/model-guide/pages/real-work.html:106-108 and .tmp/model-guide-preview/real-work.html: The card `Print audit` shows a heading and no content in Phase 1, because the token is replaced with an empty string (preview.sh python step). FR-5 forbids a placeholder line and the block belongs to a later phase, so the empty card is a known gap. A reader sees an empty section in the preview. Hide the card until the data file exists, or accept it for the preview only."
+  ],
+  "evidence": [
+    "HEAD at audit time was 1a83bc9, one docs-only publish commit above audited_head_sha d14becb350354103b18d43d87e94b46df8784ec8 (git diff --stat d14becb..HEAD: three files under docs/assets/data/). I read the d14becb tree. The round range aa894a7..d14becb changes preview.sh, publish.ts, real-work.ts, two test files, plan.md, and files of the other track daily_model_schedule (outside this phase).",
+    "C3-1 fixed: preview.sh:84-91 runs real-work.ts into `mktemp -d` staging (trap removes it); the symlink check (:93-100) and the dangling check (:103-107) run before `mkdir -p` (:109) and `cp -a` (:112). A refused run leaves an existing preview folder unchanged and creates no parent. Tests A3-1 existing folder and A3-1 nested (preview-gate.test.ts:983-1012) pass: stdout `input-check: schema\\n`, stderr empty, preview snapshot equal, docs snapshot equal, `.tmp` absent. The header lines 13-16 state this promise.",
+    "C3-2 fixed: the python step inserts only the link that is missing (`href=\"./real-work.html\"` and `href=\"./review.html\"` tests before the insert). Test C3-2 (preview-gate.test.ts:1029-1041) publishes the preview index into docs/ and runs preview again: exit 0, one of each link. The header names the idempotent insert. The case of a docs index without `>Results</a>` skips the insert without a message; docs/index.html holds that anchor (line 21), so no live case.",
+    "A3-3 contract: preview.sh:93-100 refuses any symlink inside an existing preview folder with exit 2 and one stdout line `preview: refused path <path of the link>` before any write; the path form matches header lines 8-10. The link check runs after the input check, so an input refusal wins when both apply. Docs has no symlink today (find docs -type l printed nothing), so the first preview never plants a link that the second run refuses. The line text is untested (C4-3).",
+    "A3-2/C3-3 fixed: real-work.ts:179-203 types generated_on, coverage.runs, first_run_date, last_run_date, share_known_route, share_with_result, and paired_duplicates_left_out in the schema check. Tests A3-2 in input-check.test.ts (four cases) and preview-gate.test.ts (four cases) pass: exit 2, `input-check: schema`, no traceback, no real-work.json or real-work.html in the preview folder.",
+    "B2-1 fixed for publish: publish.ts:86-110 and :141-166 map an entry that cannot be stated or read to `publish: drift <path>`, exit 2, no write; tests B2-1 dangling link and mode 000 file (preview-gate.test.ts:1043-1074) pass. For preview.sh a dangling link gives `preview: unreadable <path>` exit 2 (preview.sh:103-107, test :1076); a mode 000 file does not (C4-2).",
+    "Exit codes and refusal lines after round 3 equal the headers: preview.sh exit 0, or exit 2 with one stdout line (`preview: refused path`, `preview: unreadable`, or the real-work.ts line `input-check: <check>`); a usage error prints one line on stderr and exits 2 (preview.sh:24-45). publish.ts keeps its refusal lines and exit 2 (header lines 8-26). Declined C3-4, C3-5, and C3-6 stay as the PM scoped them (2026-11-14 23:15); I report nothing new for them.",
+    "Page B in .tmp/model-guide-preview/real-work.html (built 2026-11-15 09:11, code e73023d, preview-1.15.txt): the nav lists Overview, Methodology, Results, Real work (class active), Review, Models, Tracks (lines 15-21). The method note at line 253 equals the D16 text: `Route names stay as written in the record, so #high and [1m] variants are separate routes. This page merges them by model.` The source line shows SHA-256 dae855ca…64f2 and generated 2026-11-14; the coverage block shows 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, 71.7 %, 36 left-out duplicates, 889 unknown, 3 other. That equals spec acceptance 2. The producer and checker tables carry the Mark column, and checker row 1 (kimi-code-plan-cn/kimi-for-coding) joins two routes (acceptance 4).",
+    "Probe limits: the sandbox denied every shell command that runs preview.sh or builds a temp repo copy for it (the same limit as round 3). The test files run preview.sh in their own temp repos, so their results are the executed evidence. C4-1 to C4-4 rest on code trace and on file reads.",
+    "Route parity: this audit ran on claude-code/claude-sonnet-5-5#high. Kimi wrote the Green fix of the round and GLM wrote the Red tests, so the review route differs from both."
+  ],
+  "commands": [
+    "git diff --stat aa894a7..d14becb -> 15 files; the track files are preview.sh, publish.ts, real-work.ts, input-check.test.ts, preview-gate.test.ts, plan.md",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 76 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 15 passed",
+    "git diff --stat d14becb..HEAD -> three docs/assets/data files only",
+    "grep 'Results</a>' docs/*.html docs/models/*.html -> index.html, methodology.html, results.html, tracks.html, and the models/ pages hold the old nav; no page holds Real work",
+    "grep -n 'import\\|sys' harness/model-guide/preview.sh -> imports hashlib, html, json, os at :119-122; sys.exit at :138"
+  ],
+  "changed_files": [
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/input-check.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "medium",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "preview.sh:84-112 stages the input check before any write and the nav insert is idempotent (preview-gate.test.ts 76 passed), with edge gaps in C4-1 and C4-2."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "A3-1, A3-2, C3-2, and B2-1 tests pin status, stdout, stderr, and tree snapshots (preview-gate.test.ts:983-1083), but A3-3 pins no refusal text (:1014-1027)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat aa894a7..d14becb shows only the five planned model_guide files plus plan.md in this track."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Claims cite file:line and two vitest runs (76 and 15 passed); C4-1 to C4-4 rest on code trace because the sandbox blocked the preview.sh probe."
+    }
+  ]
+}

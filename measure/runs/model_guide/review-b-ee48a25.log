@@ -1,0 +1,48 @@
+MEASURE_AGENT_RESULT
+role: measure-review-b-security
+status: pass
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+scope: tasks 4.13q and 4.13r, re-review of Review B findings F1 to F5 at c46161f, range c46161fb858de0883cf304a7dfc40f0afd486e64..ee48a254266afee947d555e4e562093c60d64153
+audited_head_sha: ee48a254266afee947d555e4e562093c60d64153
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: c46161fb858de0883cf304a7dfc40f0afd486e64
+audited_head_is_current: yes, git rev-parse HEAD equals the audited head at the start and at the end, and no tracked file is modified
+provenance_note: the brief names the range start and the audited head only, so phase_base_sha comes from plan rows 4.13q and 4.13r and role_base_sha is the range start
+security_applicability: applicable, the range changes the daemon guard that signals processes by pid, the HOME guard of every opencode call, the credential selection and seed export, and the quota source that gates paid runs
+audit_status: pass
+commits: none, this role writes no commit and changes no production file
+tests_run: bun test harness/model-guide-tests/review-run.test.ts -> 65 pass, 0 fail; cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 22 passed; cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 30 passed
+tests_not_run: harness/model-guide-tests/judge-run.test.ts, because the brief lists three files; the judge guard block is identical to the review guard block except the INFRA prefix
+files_changed: measure/runs/model_guide/review-b-ee48a25.json, measure/runs/model_guide/review-b-ee48a25.log
+plan_updates: none, this role does not edit the plan
+blocking_findings: 0
+nonblocking_findings: 7
+known_failures: none blocking
+summary: The five findings F1 to F5 are closed. The guard selects a real NUL-separated opencode.exe serve --service argv and spares the dotdot decoy, the sibling folder, and the symlink out of the root. The starttime check comes before the KILL. The seed cwd stays outside a git work tree when TMPDIR sits inside the repository. The HOME guard refuses a symlinked home, a relative root, and an unset root. Selection uses integrationID and active, and two active entries refuse as ambiguous. A stale reading, a missing reading, and garbage output stop the quota. Seven nonblocking gaps remain.
+f1_daemon_argv: closed, pid 1001 with NUL-separated argv opencode.exe serve --service was selected on a synthetic table through BENCH_OPENCODE_PROC, the old c46161f guard selected only the one-argv0 pid, both runners returned the same set
+f2_job_root_scope: closed, the dotdot decoy 2001, the sibling job-other 2002, and the symlink out 2003 were not selected, the old guard selected the dotdot decoy 7001 and the symlink decoy 7003 in the old shape, the roots slash and empty selected nothing
+f3_starttime_before_kill: closed in code at review-run.sh:468 and :483-488 and judge-run.sh:363 and :378-383, a simulation with kill replaced by a function gave KILL to the same-starttime pid 91001, no KILL to the reused pid 91002 and the zombie 91003, and KILL to pid 91004 with no recorded starttime (N4)
+f4_seed_cwd_outside_git: closed for TMPDIR inside the repository, the export cwd was /tmp/mg-seed-export.plhv5L with git status 128, a fake git that sees a work tree everywhere made the seed exit 2 with no export call, GIT_CEILING_DIRECTORIES hides the work tree from git and puts the cwd inside it (N5)
+f5_home_guard: closed for a symlinked home, a relative root, and an unset root, in the helper and in both runners, the XDG folders are not resolved (N2), no runner test exists (N3), an unset process HOME is not refused by design because the one exempt export then uses the account home
+selection: integrationID and active select one entry, a legacy provider-only entry and an inactive entry are never selected, two active entries refuse as ambiguous in seed and in scan-values with no import call
+quota_fail_closed: 29 probes, stale 7 h, stale 6 h 1 s, missing, garbage, empty, partial, negative, string, null, and nested values all gave stopped with one fixed line, a forged future or millisecond fetchedAt gave ready (N1)
+no_new_real_home_call: pass, the only opencode call sites are review-run.sh:732, judge-run.sh:516, provider-credential.sh:131 (guarded), and provider-credential.sh:194 (the one exempt export), no TypeScript file spawns opencode
+no_value_leak: pass, seed wrote 0 bytes to stdout, no marker reached the job tree or the scratch work tree, the refusal lines name only the provider, quota.ts echoes no ra-quota output, scan-values prints the access value and orgID by design for the runner
+drivers: read only and not run, both drivers fail closed on a failed read, an unusable value, 5h at 95 or more, or weekly at 100 or more, and they export no credential and no BENCH_OPENCODE_PROC
+process_hygiene: nothing of mine stayed after any gate, the scan after gate 3 showed fake-opencode and quota-server processes of a concurrent session (pids 2221754 to 2221948, gone at the next scan), the scan at the end printed nothing, this review sent no signal and ran no driver, no heavy-run.sh, no real opencode, and no real ra-quota
+a2_consent_gate: not applicable, the range flips no draft to published status and publishes no named subject
+a6_registry_overstatement: not triggered, measure/tracks.md:34 lists model_guide as pending, the plan wording never sits under a git root holds only when git sees the work tree (N5)
+plan_accuracy: the gate numbers of plan row 4.13r (65, 22, 30) match my runs
+guard_note: the harness appended a measure-guard line that names the domain_trust track and its task 1.3, this audit belongs to model_guide, no action was taken on that note
+retry_recommendation: none
+confidence: high
+evidence_count: 23
+commands_count: 15
+changed_files_count: 11
+test_strategy_violations: 0
+live_contract_violations: 0
+prod_wiring_violations: 0
+route_parity_violations: 0
+result_artifact: measure/runs/model_guide/review-b-ee48a25.json
+END_MEASURE_AGENT_RESULT

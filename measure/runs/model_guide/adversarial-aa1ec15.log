@@ -1,0 +1,26 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+track: model_guide
+audited_head: aa1ec1572c794f96caba9064ed17975cb73ee91e
+role_base_sha: aa1ec1572c794f96caba9064ed17975cb73ee91e
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+test_commit: 1633eba6b7679e2ca5f92ade125c76b0f6c93937
+status: pass
+summary: 6 new adversarial cases for the PM 2026-11-18 delta (ADV4-19 to ADV4-24); Tests 24 passed (24); each new case kills its mutant M1-M6; one new spec-silent Nit ADV-15 (negative escapes); ADV-8 to ADV-14 carried forward; no production change.
+blocking_findings: none
+nonblocking_findings: ADV-8, ADV-9, ADV-10, ADV-11, ADV-12, ADV-13, ADV-14, ADV-15
+commands:
+  cd harness && npx vitest run model-guide-tests/adversarial-p4.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  => Test Files 1 passed (1); Tests 24 passed (24)
+  git diff --stat 57baaaa..aa1ec15 -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh
+  => prints nothing
+changed_files:
+  harness/model-guide-tests/adversarial-p4.test.ts
+retry_recommendation: none
+route: opencode-go/muse-spark-1.3-contributor#high
+ratings:
+  correctness: 4 (new checker-order, boundary, and escapes cases pass at aa1ec15; only the invalid-input Nit ADV-15 stays open)
+  test_meaning: 4 (each new case fails on its mutant M1-M6; the negative-escape literal reading has a probe but no test)
+  scope_discipline: 5 (one test file, 201 insertions, explicit-path commit; measure/runs/ unstaged)
+  evidence_quality: 5 (gate command, six mutant kills, and probe outputs recorded with file:line)
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Pass. Tasks 4.13e and 4.13f close the earlier findings as the plan rows say. review-run.sh refuses a message file with a second line (:309-313), a control character (:315-318), a line over 1000 bytes counted as bytes under LC_ALL=C (:90, :320-324), a symlinked message file (:298-301), and a symlinked seeded diff (:340-342). The runner stages the checked line only (:346) and the call cats the staged file, never the source file (:563), so a file swapped after the check cannot change what the model sees. judge-run.sh refuses a judge row with an empty quota field or a tab (:201-210, :218) before any call, and judged_by marks only ids that hold a verdict (:621). The pick gate in real-work.ts is a strict net above 0 (:479-482), so a not-rated or null net never passes (:621), and the footer count is the outcomes array length (:684-685). All three gates pass at the audited HEAD: review-run 49/49, judge-run 27/27, real-work 16/16, and the pgrep scans print no line of mine. Four bypass checks leave hardening gaps, all nonblocking: a symlinked messages/ or diffs/ parent folder passes the file-level link checks, the stage folder has a predictable PID-named path made with mkdir -p, the control-character rule misses multi-byte UTF-8 controls, and no test pins the stage cleanup.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "B1 [Minor] harness/model-guide/review-run.sh:281, 298, 340: The B4 fix checks the message file and each diff entry with [ -L ], but it never checks the parent folders $MESSAGE_DIR (sets/<id>/messages) or $SET_DIR/diffs. A symlinked messages/ folder makes [ -L \"$file\" ] false, because the file itself is a regular file at the link target, so the runner reads and sends the first line of any local file, and a symlinked diffs/ does the same for the seeded diff. This breaks the header claim at :31 ('The runner reads diffs/ and messages/ only; it never reads src/'). seed-messages.ts refuses a linked messages/ folder on its write path and SM4 pins it, so the seeder and the runner disagree on the same artifact. Fix: refuse [ -L \"$MESSAGE_DIR\" ] and [ -L \"$SET_DIR/diffs\" ] (also $SET_DIR), and add one test per linked folder (exit 2, one named line, no call).",
+    "B2 [Minor] harness/model-guide/review-run.sh:288-289, 346, 563: The stage folder is ${TMPDIR:-/tmp}/mg-review-msg.$$, a predictable PID-named path, and mkdir -p is not exclusive: a local process that pre-creates that path as a directory or a link to one makes the mkdir succeed, and the runner writes the checked lines there and cats them back at call time. A swap of the staged file between :346 and :563 sends unchecked text to the model. The earlier temp files TMP_VALUES and TMP_QUOTA_ERR use the same PID pattern but carry no model input. Fix: make the folder with mktemp -d (unpredictable and exclusive), refuse a path that exists, and add a guard test that the stage folder is gone after a pass and after a refusal.",
+    "B3 [Minor] harness/model-guide/review-run.sh:90, 315 with the header claim at :22-26: Under LC_ALL=C the pattern [[:cntrl:]] matches the ASCII control bytes only. The multi-byte UTF-8 encodings of C1 controls (U+0085 = 0xC2 0x85) and the separators U+2028 and U+2029 pass the check and reach the prompt, so the claim 'a control character never reaches the model' does not hold for non-ASCII control code points. A NUL byte cannot pass, because command substitution drops it before the check and the write. No test covers a non-ASCII byte. Fix: also refuse a byte at or above 0x80, or decode and refuse the C1 and separator code points, and add one test with 0xC2 0x85.",
+    "B4 [Nit] harness/model-guide/review-run.sh:340, 563: The seeded diff is checked for a link once, before the lock, and is catted again at each call, so a diff swapped after the check reaches the model unchecked. The swap needs the same local write access to the private folder as B1, and diff text is review input by design, so the impact is bench integrity, not disclosure. The stage cleanup (drop_message_stage at :111-116, called by refuse at :119 and by the trap at :384) is correct on every exit path I traced, but no test asserts that the stage folder is gone after a run. Fix: none required for the swap; add one stage-cleanup assertion.",
+    "B5 [Nit] harness/model-guide/judge-run.sh:621: judged_by uses Object.hasOwn(map, id), so an id whose verdict value is null or not a string still counts as 'holds a verdict'. The rule says the map holds ids with a verdict only. The verdict files come from the runner's own answer parse, so the case needs a hostile answer, and J19 pins the dropped-id case. Fix: also require a non-null verdict value, and extend J19 with a null-verdict answer."
+  ],
+  "evidence": [
+    "Provenance: HEAD was 66fe1accf71c0f881fffa58ff05bb0a94407477f at audit start (git rev-parse HEAD, 2026-11-18 ~23:50 +07), equal to the audited HEAD. While I audited, the shared worktree moved: commit 84e254e (spec.md Go plan thresholds, task 4.13g, outside my scope) landed, and uncommitted 4.13g Red edits to review-run.test.ts, judge-run.test.ts, quota.test.ts, and plan.md appeared. Per the brief I bound every code read and every gate to 66fe1ac: file text via git show 66fe1ac:<path>, and the gates in a detached worktree at /tmp/opencode/mg-audit-66fe1ac pinned to 66fe1accf71c0f881fffa58ff05bb0a94407477f. The production files review-run.sh, judge-run.sh, real-work.ts, guide.ts hold the same bytes in the dirty worktree (git status lists only test and measure files as modified), so the line numbers above hold at both.",
+    "Bases: phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf and role_base_sha 242fe529b26f9d1a4e132f407a2036567c7e3011 come from the plan row 4.13f (measure/tracks/model_guide/plan.md). audited_head_sha 66fe1accf71c0f881fffa58ff05bb0a94407477f.",
+    "Security applicability: applicable. The range reads private set data (message files, seeded diffs) and sends it to a model provider, reads judges.json rows into a tab-joined shell row, writes pass and probe records, and sets the model pick of the guide page from outcome data.",
+    "Gate 1, in the detached 66fe1ac worktree: bun test harness/model-guide-tests/review-run.test.ts -> 49 pass, 0 fail, 364 expect() calls, 49 tests. After it, both pgrep scans printed nothing. This matches the Green evidence in plan row 4.13f (49 pass, 0 fail).",
+    "Gate 2, in the detached 66fe1ac worktree: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Test Files 1 passed, Tests 27 passed (27). This matches the Green evidence (27 pass).",
+    "Gate 2 process scan: after the run, pgrep -af \"quota-serve[r]\" printed one line, pid 1275760, /tmp/mg-judge-fake-Z06S5t/quota-server.js. The suite kills every server it starts with SIGKILL in an awaited afterEach and in process exit handlers (judge-run.test.ts:116-168), so my finished run could not hold one. Seconds later pid 1275760 was gone and a new server of a different temp folder (mg-judge-fake-E0hgiZ, pid 1277915) was alive: a concurrent session was running the same suite in the shared worktree. I did not start or stop either process.",
+    "Gate 3, in the detached 66fe1ac worktree: bun test harness/model-guide-tests/real-work.test.ts -> 16 pass, 0 fail, 393 expect() calls. After it, both pgrep scans printed nothing. This matches the Green evidence (16 pass).",
+    "First runs in the shared worktree were dirty, not wrong: my first two runs picked up the uncommitted 4.13g Red tests (the three G1-G3 failures name 'task 4.13g' and are the expected red of work outside my scope), and two timing cases (R12, the fake-binary case) flaked once under the concurrent load of the other session. The detached worktree at 66fe1ac gives 49/49 with those same cases green, so no finding rests on the dirty runs.",
+    "Red provenance: measure/runs/model_guide/red-4.13e.txt records that M5 to M9, J18, J18b, J18c, J19, DS26 row-count, DS12, DS13, ADV4-7, ADV4-21, and G6 each failed on the def8681 production HEAD, and that the SM4 guards and J18d held at HEAD. The Green commit 9ae4e51 closes each failure, and my three gates confirm the closure at 66fe1ac.",
+    "TOCTOU between check and read: the runner checks the source message file (review-run.sh:294-331), then writes the checked MESSAGE_TEXT to the stage folder (:346), and the call cats the staged file (:563), never the source file. A source file swapped after the check cannot change what the model sees. The same does not hold for the stage folder itself (B2) or the diff file (B4).",
+    "Byte count: LC_ALL=C is exported at review-run.sh:90, so ${#line} at :320 counts bytes, and a multi-byte line over 1000 bytes is refused. The claim in the comment at :319 is accurate. The test M7 uses 1200 ASCII bytes, so the byte semantics under a multi-byte line stay unpinned.",
+    "Gate change: passesNetGate at real-work.ts:479-482 returns net !== null && net > NET_SCORE_GATE, so a not-rated entry (netScoreOf returns null at :413), a missing or non-finite score (netScoreValue at :404-406), net 0, and a negative net all fail. pickOf skips the row for gate roles at :621, and producerRow and gateRow mark not_for_verdicts with the same function (:510, :535). DS26 pins net 0, ADV4-7 pins net 0 and 19.99, ADV4-20 pins -3 and -30 and not-rated.",
+    "Footer count: rows is the length of the outcomes array (real-work.ts:684-685), and the parse loop no longer counts rows into it, so a malformed or unknown row still counts. DS26 pins 42 against a 41-valid fixture with one added malformed row.",
+    "judge row refusal: the node row read at judge-run.sh:193-210 checks quota_provider and quota_source as non-empty strings and every top-level string field for a tab, before the row prints and before the tools, the lock, or any call. A null quota field fails the typeof check, so it is refused too. J18, J18b, J18c pin the three refusals with exit 2, one named line, no call, no file; J18d pins the committed judges.json.",
+    "judged_by: the complete-group branch at judge-run.sh:618-625 marks an id only when Object.hasOwn(map, id), so a dropped id stays out, which closes C7. J19 pins it with an answer that gives one verdict for a two-id group.",
+    "A2 (consent-blind publish gate): not applicable. git diff --name-status edee50b8..66fe1ac lists no change to harness/model-guide/publish.ts or preview.sh, and the preview-gate.test.ts hunks of this range change only pick expectations (Review B picks gate-one at net 18.5), not any draft-to-published flip. The publish gate and its approval record predate the range.",
+    "A6 (registry overstatement): not triggered. measure/tracks.md holds one model_guide row and calls it 'pending — spec review round 1 revised 2026-11-14', with no security 'resolved' claim.",
+    "Cleanup paths: drop_message_stage (review-run.sh:111-116) runs in refuse (:119) before the trap is armed, and in on_exit (:384) on every trap path after it (normal exit, INT, TERM, probe_refuse at :523/:526/:620/:674/:717/:721, the lock refusals at :401/:422). A SIGKILL leaves the stage folder behind, but it holds only checked public commit lines.",
+    "Scope: the range edee50b8..66fe1ac holds 7 commits and 14 files. The production commits 5db6a32 (tests only), aef521d and 9ae4e51 touch only the six harness files named by plan row 4.13f; def8681 touches only plan.md and spec.md and carries the review text fixes (the --date local-date header fix at review-run.sh:11, and the spec D10 ruling that admits the probe keys read and names seed-messages.ts). 242fe52 and 66fe1ac are the Red and Green plan records."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 66fe1accf71c0f881fffa58ff05bb0a94407477f at audit start; later 84e254e857cf043397acf8a1f02b510bc01fc2e9 (4.13g spec, outside scope)",
+    "git log --oneline edee50b8..66fe1ac -> 7 commits: def8681, 5db6a32, 242fe52, aef521d, 9ae4e51, 66fe1ac (+ one range marker)",
+    "git diff --stat edee50b8..66fe1ac -> 14 files, 776 insertions, 65 deletions",
+    "git worktree add --detach /tmp/opencode/mg-audit-66fe1ac 66fe1accf71c0f881fffa58ff05bb0a94407477f -> detached worktree at the audited HEAD",
+    "bun test harness/model-guide-tests/review-run.test.ts (in the detached worktree) -> 49 pass, 0 fail, 364 expect() calls",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot (in the detached worktree) -> Tests 27 passed (27)",
+    "bun test harness/model-guide-tests/real-work.test.ts (in the detached worktree) -> 16 pass, 0 fail, 393 expect() calls",
+    "pgrep -af \"fake-opencod[e]\" and pgrep -af \"quota-serve[r]\" after each gate -> no line of mine; one transient concurrent-session quota-server line after gate 2, documented in evidence",
+    "git show 66fe1ac:harness/model-guide/review-run.sh | grep -n ... -> :288 stage path, :315 cntrl check, :320 byte count, :346 stage write, :563 call cat",
+    "git show 66fe1ac:harness/model-guide/judge-run.sh | grep -n ... -> :218 quota refusal, :621 judged_by hasOwn",
+    "git show 66fe1ac:measure/tracks/model_guide/plan.md -> phase_base_sha 57baaaa..., role_base_sha 242fe529..., gate counts 49/27/16"
+  ],
+  "changed_files": [
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/real-work.ts",
+    "harness/model-guide/guide.ts",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/seed-messages.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/adversarial-p4.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "Each fix does what the plan row says (review-run.sh:309-346, judge-run.sh:201-218 and :618-625, real-work.ts:479-482), and the pick gate rejects null, 0, and negative nets (ADV4-20 pins -3 and -30); the open edges are the symlinked parent (review-run.sh:281) and the non-ASCII controls (review-run.sh:315)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Every new rule has a failing-first case in measure/runs/model_guide/red-4.13e.txt (M5-M9, J18-J19, DS26, ADV4-7/21, G6), and my gates at 66fe1ac give 49/49, 27/27, 16/16; unpinned are the stage cleanup, the non-ASCII control byte, and the multi-byte length."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat on 5db6a32, aef521d, 9ae4e51 lists only the plan-named harness files, def8681 touches only plan.md and spec.md, and every test-file change maps to a bullet of plan row 4.13e."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim above has a command result or a file:line behind it, including the detached-worktree gate runs and the pgrep scans after each."
+    }
+  ]
+}

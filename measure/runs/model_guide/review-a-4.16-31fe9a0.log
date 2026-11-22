@@ -1,0 +1,162 @@
+Final audit: PASS under the PM round cap only.
+The live path is not operationally ready.
+All eleven test files pass. No real-key leak was found.
+Seven Major findings and one Nit finding remain nonblocking under the cap.
+
+Provenance
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 31fe9a01678d37cf27ccb3465ba895ddb6f62d91
+audited_head_sha: 31fe9a01678d37cf27ccb3465ba895ddb6f62d91
+HEAD matched at the start and after verification.
+The exact phase diff contains 18 files, 3900 insertions, and 116 deletions.
+The focused f749b47..31fe9a0 diff contains ten files, 2126 insertions, and 28 deletions.
+
+Findings
+F12 [Major]: Both session-create bodies send directory instead of location.directory.
+The live handler defaults this request to process.cwd(). That directory is /home/daniebo.
+The job-root deny config therefore does not protect the created session.
+L1 and L11 assert the same incorrect shape.
+
+F13 [Major]: Review calls use a zero wait, although the prompt endpoint admits input asynchronously.
+An empty answer produces a complete pass with a zero-byte output after one GET.
+A partial answer also produces complete. The judge stops at the first text part.
+Use one deadline and await terminal completion.
+
+F14 [Major]: The live synthesizers discard native tokens beside content.
+The native completed-answer fixture records all token fields as zero and tokens_complete false.
+L4 supplies invented step_finish content instead of the native token shape.
+
+F15 [Major]: Neither scheduled driver nor transient service unit sets BENCH_SERVER_BASE.
+The user manager also has no value for it.
+The runner silently selects isolated seeding for pilot routes without that variable.
+Configure the caller and refuse that fallback for pilots.
+
+F16 [Major]: Both wait helpers capture the status after shell negation.
+A failed GET therefore returns status zero. Both extracted-function fixtures reproduce it.
+
+F17 [Major]: Native assistant errors disappear during synthesis.
+A native region error produces a complete pass and an empty output instead of region-blocked.
+
+F18 [Major]: The URL guard accepts http://127.0.0.1:38307@example.invalid.
+The actual hostname is example.invalid. The extracted guard selects LIVE_PATH=1.
+No request ran during this proof.
+
+F19 [Nit]: L2 omits missing and unreadable config cases.
+L5 omits the exact timeout line and exit code. L7 exercises only a pass.
+The missing-config behavior also differs from the strategy's refusal requirement.
+
+Important live proof
+I read /proc/3250773/exe without executing it.
+It resolves to /home/daniebo/.nvm/versions/node/v24.19.0/lib/node_modules/@opencode/cli/bin/opencode.exe.
+Its installed package version is 2.2.4. Its cwd is /home/daniebo.
+The session.create handler at byte 175664326 uses payload.location or process.cwd().
+It reads neither top-level directory nor the directory header.
+OpenChamber scheduled-tasks/runtime.js:789 and openchamber-sessions/routes.js:355-364 use location.directory.
+
+Deny confidence
+I have high confidence that the current request misses the job-root deny config.
+ConfigDiscovery.discover at byte 174252421 walks ancestor folders without a git condition.
+OpenChamber shared.js:225-252 documents the same discovery order.
+I have medium confidence that a corrected non-git location loads the project file.
+I did not verify server-effective permissions or create a real session.
+
+Offline fixture matrix
+I reused the actual review test helpers through an in-memory transpilation.
+No repository test file changed. The helpers used synthetic temporary fixtures and fake servers.
+Every fixture made one message GET and returned exit zero with one complete pass record.
+- Missing answer: zero-byte output; zero tokens; tokens_complete false.
+- Native completed answer: native token values 7, 8, 9, 10, and 11 all became zero.
+- Native partial answer: no completed time or finish; the runner stored the partial output.
+- Native region error: zero-byte output; the error never reached classification.
+
+Both actual synthesizers also discarded native tokens in an independent in-memory evaluation.
+Both wait helpers returned zero when their GET helper returned one.
+The wait helper returned immediately on one text count with a 600-second budget.
+Each HTTP request also receives a fresh timeout instead of sharing one call deadline.
+
+Tests
+Each file ran separately, without shell redirection.
+The tool results contain the actual output.
+
+bun test harness/model-guide-tests/review-run.test.ts
+exit 0; 112 pass; 0 fail; 833 expect calls; 192.07 seconds.
+
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 51 passed (51).
+
+bun test harness/model-guide-tests/decode-parity.test.ts
+exit 0; 8 pass; 0 fail; 49 expect calls.
+
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 32 passed (32).
+
+cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 24 passed (24).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 16 passed (16).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 12 passed (12).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 13 passed (13).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4d.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 21 passed | 6 skipped (27).
+
+bun test harness/model-guide-tests/adjudicate.test.ts
+exit 0; 23 pass; 0 fail; 205 expect calls.
+
+bun test harness/model-guide-tests/review-score.test.ts
+exit 0; 27 pass; 0 fail; 249 expect calls.
+
+Plan and architecture
+The current plan evidence matches these labeled counts. The historical L9 failure remains explicit.
+No false current test-exit claim reproduced under A5.
+A3 count checks use array lengths or structured fields, not bare digit searches.
+A4 exposes the empty-answer complete result through the missing-deliverable fixture.
+The fake server cannot prove live compatibility because it repeats the incorrect create and token shapes.
+The isolated non-pilot path still passes its seed and decoder regressions.
+No changed TypeScript decoder is exported. Their CLI callers remain covered by the scorer and adjudication tests.
+The live_synthesize, live_wait_answer, and error_line_of function bodies remain byte-identical.
+
+build-graph exists, but graph.db was absent.
+build-graph stats failed with no such table: nodes and created an empty database.
+I removed that empty file immediately and used source searches for callers.
+No persistent database, dependency, or abstraction was added.
+
+Safety and limits
+bash -n and git diff --check pass.
+The phase diff is empty for docs, frozen host files, provenance.ts, harness/tests, and harness/package.json.
+No Measure orchestration script, framework contract test, or registry changed.
+Framework-wide anti-pattern checks remain outside this audit.
+The final process check found no fake-opencode, quota-server, or live-server child.
+The four pre-existing untracked paths remain. HEAD stayed unchanged.
+I made one permitted GET to /api/doc. It returned 404.
+I made no POST or DELETE to port 38307 and no live model call.
+I read no private seeded diff, credential store, real key, or live message body.
+I did not repeat Green's leak-check command. No real-key leak was found.
+Only the two supplied result artifacts remain from this audit.
+No production, test, plan, or registry edit remains. No commit or push ran.
+
+Handoff
+Send F12-F14 to Green before relying on live results.
+Configure BENCH_SERVER_BASE in the scheduled callers.
+Route the remaining code and test findings to Green.
+The PM cap makes all findings nonblocking. Empty violation arrays express that capped disposition only.
+This audit does not establish live readiness or accept Phase 4b.
+
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role_base_sha: 31fe9a01678d37cf27ccb3465ba895ddb6f62d91
+commits: none
+tests_run: Eleven files passed separately; native-message, missing-answer, failed-GET, URL, syntax, and diff probes completed.
+files_changed: measure/runs/model_guide/review-a-4.16-31fe9a0.json; measure/runs/model_guide/review-a-4.16-31fe9a0.log
+plan_updates: none
+known_failures: F12-F18 Major and F19 Nit remain nonblocking under the PM cap. The live path is not operationally ready.
+handoff: Pass the capped audit only. Send F12-F14 to Green and configure BENCH_SERVER_BASE in the scheduled callers. The current session uses /home/daniebo, not the denied job root. Empty or partial answers record complete, and native tokens become zero. Recommend create_remediation_track. No real-key leak was found. This result does not accept Phase 4b.
+END_MEASURE_AGENT_RESULT

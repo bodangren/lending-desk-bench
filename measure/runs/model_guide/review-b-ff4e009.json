@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-b-security",
+  "track": "model_guide",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "status": "pass",
+  "summary": "Pass at HEAD ff4e009 with no blocking finding. Both earlier blockers are fixed, and each fix has a failing-first test that I ran at its Red base. The new `read_tokens` and the new queue decoder resist hostile input: each record stays valid JSON, and model text forges no event. Ten gate files pass at HEAD. No guard of the seed, HOME, XDG, daemon, diff id, or message check changed in the range. Five new nonblocking findings and seven carried findings remain; N16 (a key on stderr) matters before the first live probe.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N16 [Minor] A credential value on the first stderr line of a failed call reaches stdout and the records, because no scan covers that line. Probe PB1 (a temp copy of the HEAD tree with two appended cases): `--probe` exited 3 and printed `opencode-go/muse-spark-1.3-contributor#high unreachable Error: Invalid API key provided: sk-test-credential-value-0123456789`. The private probe record held the same value. Probe PB2: the region branch wrote the value to the private pass record. The code paths are `review-run.sh:897-903`, `:933-938`, and `:1002-1006`, and `judge-run.sh:631-633` and `:882-887`. `scan_output` reads the stdout file only, and no committed test feeds a key through stderr. In `--format json` the real binary writes errors to stdout, so the exposure needs an unusual stderr line. The code is outside the changed lines. Fix: scan the error file with `scan_output`, use a fixed text on a hit, and add a failing-first case.",
+    "N17 [Minor] `read_tokens` counts a number that cannot be a token count, and `tokens_complete` stays true. Probe on both runners (the function text is identical): `1e20` gave 100000000000000000000 with flag 1. Two events with `-5` and `10` gave 5 with flag 1. Two events with `0.5` gave 1 with flag 1. The value 2^53+1 lost one unit with flag 1. A single negative, fractional, or 1e21 value gave the zero row with flag 0, which also erases the valid fields of that call. The record stays valid JSON in every case. A string, null, boolean, array, nested object, or missing `cache` gave flag 0, as the plan says. The values come from the opencode process, not from model text. Fix: count only a non-negative safe integer as a number.",
+    "N18 [Nit] No committed test pins three behaviors that Green added in task 4.13x: the flag turns false for a field that is not a number, the sums add several events of one call, and a hostile number keeps the record valid. W1 to W3, WJ1, WJ2, and P3 pin the positive cases only. T2 and J8 pin a call with no token field. Each `token_stream` helper makes one call with one token event. If `complete` returned to `seen > 0`, no test would fail. Add a Red case for each behavior.",
+    "N20 [Minor, outside the role, not verified live] The region state and the error line read stderr only. In `--format json` the installed bundle writes each error as a stdout `error` event: `u()` returns true, so the stderr printer is skipped. If the live region error is such an event, `is_region_error` never matches (`review-run.sh:805-812`), because the fake prints the text on stderr. A Go route then shows `unreachable` or an open pass, not `region-blocked`. I read the bundle only and ran no live call. The first live probe on 2026-11-20 shows the truth. Route to Review A and the orchestrator.",
+    "N21 [Nit] The message rule `[[:cntrl:]]` is ASCII-only under `LC_ALL=C`. Probe on the real `read_message_line`: U+0085, U+202E, and U+200B passed. A tab, a bell, an escape, and a CR in the middle refused. The set author controls the message files, so the exposure is small. A commit subject with a bidi or zero-width character can still hide text from a human reader.",
+    "N5 [Nit, carried] The seed cwd fallback trusts the exit status of `git rev-parse`. `provider-credential.sh` has no diff in the range, so the finding stays open.",
+    "N9 [Minor, carried] `stop_daemons` logs `INFRA stopped daemon <pid>` for every selected pid, also for a live daemon, and no test covers the starttime mismatch branch (`review-run.sh:519`, `:533-537`). The code did not change.",
+    "N10 [Minor, carried] The XDG guard checks the first level of each call path only. At HEAD the guard passed a link at `data/opencode` and a link at `data/opencode/auth.json`, both pointing outside the job root (`review-run.sh:737-748`). A fresh job folder makes the exposure small.",
+    "N11 [Nit, carried] The daemon matcher selects a process whose argv holds `serve` and `--service` in any order and at any distance (`review-run.sh:471`). The code did not change.",
+    "N12 [Nit, carried] The verdict fence regex in `judge-run.sh` takes time with the square of a run of fence openers that holds no newline. The output cap of the call bounds the cost. The code did not change.",
+    "N13 [Nit, carried, extended] The three decoders differ in guards and fence rule, and the `result` branch stays in all three. Probe 30: a token event line inside a plain output counted 999 in each field with flag 1. Probe forge-05: `queue` read a forged `text` event line in a plain output and ignored the plain fence. A real stream cannot do this, because the text sits inside a JSON string (probes 28, 29, forge-02, forge-03, and forge-06 gave nothing), and `--format json` is always set (`review-run.sh:775`). Drop the `result` branch, and decode only an event stream.",
+    "N15 [Nit, carried, extended] The orphan scans are not scoped to the own temp folder of the test: `adversarial-p4b.test.ts:258`, `liveFakeProcesses()` in `review-run.test.ts:1098`, and the same helper in `judge-run.test.ts`. Three failures in this audit came from fakes of other sessions (R12, `the fake binary of every spawn`, and J14). A re-run after a quiet check passed."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45 at the start and at the end of the audit. That equals the audited head of the brief. The role_base_sha is 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41, the audited head of the earlier Review B, which the focus range of the brief names. The phase_base_sha is 57baaaa364f968a2f44c6e14eb96f8a9d68beebf. The working tree held only the four untracked paths that existed at the start.",
+    "Security applicability: applicable. The range changes the parse of the token events that feed the run record. It also adds a decoder that reads model-controlled text in the queue builder.",
+    "Scope: `git diff --stat 2fdb8f8..ff4e009` names 11 files, 1250 insertions and 31 deletions. Production hunks: `review-run.sh` lines 47-51 (comment) and 136-189 (`read_tokens`), `judge-run.sh` lines 69 (comment) and 97-140 (`read_tokens`), `adjudicate.ts` lines 214-251 (`decodeAnswerText`) plus the call in `readFindings`, and `review-score.ts` lines 230-232 (comment). The guard regions did not move: `read_message_line` (:331), `daemon_pids` (:452), `stop_daemons` (:491), the XDG guard (:737), the seed call (:752), and `scan_output` (:795). `provider-credential.sh`, `quota.ts`, `seed-messages.ts`, `opencode-host.sh`, `review-prompt.md`, and `routes.json` have no diff in the range.",
+    "Earlier blocker, Review A (token log): fixed by f88f9b6, with failing-first tests. I extracted the Red base c5942e6 with `git archive` into a temp folder and ran the tests there. `bun test ... review-run.test.ts -t 4.13w` gave 0 pass and 3 fail (W1, W2, W3): the real tokens read as zero, and the mixed case counted the old shape only. `vitest ... judge-run.test.ts -t 4.13w` gave 2 failed (WJ1, WJ2) with zero sums. `decode-parity.test.ts` gave 1 failed (P3) and 2 passed (P1 and P2 are guards). At HEAD every one of these passes. `git diff c5942e6 ff4e009 -- harness/model-guide-tests` is empty, so Green changed no test and no fake.",
+    "Earlier blocker, Review B B1 (adjudicate decoder): fixed by bc0391f, with failing-first tests. At the Red base 05bb618 (no `decodeAnswerText` in `adjudicate.ts`), `adjudicate.test.ts` gave `Tests 2 failed | 21 passed (23)`. The stream case and the escaped-newline case returned an empty queue (`expected [] to deeply equal [ids]`). At HEAD the file gives 23 passed. The two test files did not change between 05bb618 and HEAD. Review C withdrew the matching finding at 0b52f33.",
+    "Real event shape (the installed `opencode.exe` bundle, read with `grep -a`, never run): the writer is `JSON.stringify({type,timestamp,sessionID,...data})` plus a newline, and it works only when the format is json. The `step_finish` event holds `part.tokens`, and the `text` event holds `part.text`. Each error site has the form `if(!u(\"error\",...))A(message)`, so json mode writes errors to stdout. A second `step_finish` writer runs in a catch-up pass behind the per-message ended state. I found no sign of a double count.",
+    "Hostile token values (35 streams through the real `read_tokens` function of both runners, run under bash with the regex gate; both runners gave the same row in every case): a string, null, boolean, array, nested object, or missing `cache` gave flag 0, with that field counted as 0. A `tokens` value that is an array or a string gave the zero row. A JSON literal `1e999` (Infinity after the parse) gave flag 0. A `__proto__` key had no effect. An event inside the string of a text event counted nothing, also after an escaped newline. The old and the real shape sum together, and CRLF lines work. Values that pass as complete are in N17.",
+    "Record integrity: I fed the rows of the cases `1e20`, a negative net, 2^53+1, a forged plain-text event, `1e308`, `1e999`, and 100k nesting into the real `write_record` block of `review-run.sh`. Each gave valid JSON. The `1e20` case gave total 100000000000000000000 with `tokens_complete` true. The `1e308` and `1e999` cases gave a zero or partial row with `tokens_complete` false. No bash arithmetic touches a token value in either runner, and node does the sums.",
+    "Volume (read_tokens, wall time): 200k real events took 283 ms. One 20 MB non-event line took 69 ms. 1M non-JSON brace lines took 3.6 s. 3M nested brackets in one line took 193 ms. One 30 MB `step_finish` line took 109 ms. No hang and no crash. The 1M-line case costs seconds because each bad line throws once, and the output cap of the call bounds it.",
+    "Queue decoder (the real `adjudicate.ts queue` on 13 hostile raw outputs, one run, 1.9 s): a fence only inside `tool_use`, `reasoning`, or `error` events queued nothing. Text events with a non-string `text` queued nothing. Two fences queued the first only. A `__proto__` key queued nothing. A 20 MB text event plus 200k event lines queued the one claim. Hostile fields (`../../etc/passwd`, line 1e308, an object severity, an array class, a 1 MB title) kept `queue.json` valid, and `file` is only a string with no disk read. A string line, an empty file, a null line, and `1e999` queued nothing. CRLF, a BOM, 100k nesting, and 300k junk lines each queued the one claim. The two TypeScript `decodeAnswerText` functions are identical (`diff` of both function bodies).",
+    "Guards at HEAD (the real code extracted from `review-run.sh`, run on synthetic input): `read_message_line` refused a second line, a tab, a bell, an escape, a CR in the middle, 1001 bytes, an empty line, a whitespace-only line, and a symlink. It passed 1000 bytes and a trailing CR (N21 covers the passes). The diff id check refused a newline, a CR, a tab, a space, a leading newline, `..`, `a/b`, `a#b`, and a non-ASCII id, under `LC_ALL=C` and under `en_US.UTF-8`. The newline cases used a variable that holds a real newline. The HOME and XDG guard refused a link out of the root at `home` and `data`, a dangling link at `tmp`, and a relative root. It passed a link inside the root, and it passed the two deep links of N10. `scan_output` runs before `read_tokens` at every call site (`review-run.sh:916`, `:1034`, and the judge runner), so a hit deletes the output before any token read.",
+    "Stderr probe (a temp copy of the HEAD tree, with a copy of `review-run.test.ts` and two appended cases, never committed): PB1 exited 3 and printed the line with the test key, and the private probe record held the key. PB2 (the region branch) wrote the key to the private pass record. See N16.",
+    "Gates at HEAD, one file at a time, fakes only, `pgrep` after each: `bun test harness/model-guide-tests/review-run.test.ts` gave 68 pass, 0 fail, 523 expect() calls in 108.32 s. `judge-run.test.ts` gave 39 passed (39). `decode-parity.test.ts` gave 3 passed (3). `adjudicate.test.ts` gave 23 passed (23). `review-score.test.ts` gave 27 passed (27). `quota.test.ts` gave 30 passed (30). `credential-provider.test.ts` gave 22 passed (22). `adversarial-p4-runner.test.ts` gave 14 passed (14). `adversarial-p4b.test.ts` gave 12 passed (12). `seed-messages.test.ts` gave 17 passed (17). The counts match plan row 4.13x.",
+    "Concurrency: my first run of `review-run.test.ts` failed 2 tests, and my first run of `judge-run.test.ts` failed 1 test. All 3 failed on the assertion `a fake process is still alive`. The listed processes were `mg-decoy-D3` and `mg-daemon-D3` (the D3 case sits at line 2949, after the failing case at line 1665), fakes under `/tmp/mg-adv-r-run-*` from `adversarial-p4-runner.test.ts`, and a `mg-adv-r-quota` server. Other sessions ran those suites at the same time. I re-ran each file after a quiet check, and both passed.",
+    "Process hygiene: after each of my runs, `pgrep -af 'fake-opencod[e]|quota-serve[r]'` showed nothing of mine. Foreign processes appeared in some scans: quota servers under `/tmp/mg-adv-r-quota-*`, `/tmp/mg-review-fake-*`, and `/tmp/mg-judge-fake-*`. I sent no signal to a process that I did not start. I started no server outside the tests. I ran no `opencode`, no `openchamber`, and no `heavy-run.sh`. One re-run of `judge-run.test.ts` piped its output through `2>&1 | grep -v` to drop warning lines. Later runs used `NODE_NO_WARNINGS=1` and no redirection.",
+    "Rejected commands: the shell rule refused inline `node -e` scripts that held `child_process` or a `>` character. I rewrote the probes to use `fs` only, and I ran the extracted functions through driver script files. I did not hide the rejected text.",
+    "A2 (consent-blind publish gate): not triggered. The range flips no draft to published and names no subject. `publish.ts` has no commit in `57baaaa..ff4e009`, and its approval record is the consent artifact. The data files name routes only. A6 (registry overstatement): not triggered. `measure/tracks.md:34` lists model_guide as pending and claims no resolved security state. That line is stale, because it says Red task 1.1 comes next. It understates the progress.",
+    "State of earlier findings: B1 (adjudicate decoder) is closed. N8 (no real-shape test) is closed by WJ1, WJ2, P1, P2, P3, and the fake `token_stream`. N14 (token log) is closed by task 4.13x. N5, N9, N10, N11, N12, N13, and N15 stay open and are carried above, because their code did not change.",
+    "Plan claim check: the counts of plan rows 4.13v and 4.13x match my runs. The claim `Before the fix the review-run file gave 65 pass, 3 fail (W1, W2, W3)` matches the 3 failures that I saw at the Red base. The claim `Tests 2 failed | 21 passed (23)` matches my run at 05bb618.",
+    "Measure-guard note: the harness appended a guard line about track domain_trust and its task 1.3. This audit belongs to model_guide. I took no action on that note.",
+    "Scratch files sit under /tmp/opencode/review-b-ff4e009, outside the repository (about 153 MB: three `git archive` copies and the probe inputs). The repository changed only by the two result files in `measure/runs/model_guide`, a folder that git ignores."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45 (start and end)",
+    "git diff --stat 2fdb8f8..ff4e009; git diff -U0 2fdb8f8..ff4e009 -- <four production files> (hunk headers); git diff --stat c5942e6 ff4e009 -- harness/model-guide-tests (empty)",
+    "git archive --format=tar --prefix=red-w/ c5942e6 harness; git archive --prefix=red-u/ 05bb618 harness; git archive --prefix=head/ HEAD harness (temp copies under /tmp/opencode/review-b-ff4e009)",
+    "bash run-all.sh (35 hostile token streams, real read_tokens of both runners); bash run-vol.sh (write_record block and volume probes)",
+    "cd harness && npx tsx model-guide/adjudicate.ts queue mg-2026-11a --private <temp> --raw <temp>/raw -> exit 0, 13 hostile outputs, 1.9 s",
+    "bash run-guards.sh and run-ids.sh (real read_message_line, diff id lines, and XDG guard lines on synthetic input)",
+    "grep -a on the installed opencode.exe bundle (read only): writer, step_finish, text, and error sites",
+    "bun test harness/model-guide-tests/review-run.test.ts -> run 1: 66 pass, 2 fail (foreign orphans); run 2 after a quiet check: 68 pass, 0 fail, 523 expect() calls, 108.32 s",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> run 1: 38 passed, 1 failed (foreign orphan); run 2: 39 passed (39)",
+    "cd harness && npx vitest run model-guide-tests/<decode-parity|adjudicate|review-score|quota|credential-provider|adversarial-p4-runner|adversarial-p4b|seed-messages>.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 3, 23, 27, 30, 22, 14, 12, 17 passed",
+    "Red base runs in the temp copies: bun test review-run.test.ts -t 4.13w -> 3 fail; vitest judge-run.test.ts -t 4.13w -> 2 failed; vitest decode-parity.test.ts -> 1 failed, 2 passed; vitest adjudicate.test.ts at 05bb618 -> 2 failed | 21 passed (23)",
+    "bun test review-run.test.ts -t 'REVIEW-B probe' in the temp copy of HEAD -> PB1 and PB2 printed the leak evidence",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' after every run -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/adjudicate.ts",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/review-score.ts",
+    "harness/model-guide-tests/adjudicate.test.ts",
+    "harness/model-guide-tests/decode-parity.test.ts",
+    "harness/model-guide-tests/fixtures/fakes/fake-opencode",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/review-score.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41",
+  "baseline_sha": "2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41",
+  "audited_head": "ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45",
+  "audited_head_sha": "ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45",
+  "security_applicability": "applicable: the range changes the parse of the token events that feed the run record, and it adds a decoder that reads model-controlled text in the queue builder",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "`read_tokens` reads the real and the old shape (`review-run.sh:152-182`), but a hostile number keeps `tokens_complete` true (N17, probes 16 and 20)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "W1 to W3, WJ1, WJ2, P3, and the two 4.13u adjudicate cases fail at the Red base and pass at HEAD, but the completeness logic has no test (N18)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "`git diff -U0 2fdb8f8..ff4e009` shows production hunks only in `read_tokens` of both runners, `decodeAnswerText` in `adjudicate.ts`, and comments; Green changed no test."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each count of plan rows 4.13v and 4.13x matches my run: 2 failed | 21 passed at 05bb618, 3 failures at the Red base, and ten gate files at HEAD."
+    }
+  ]
+}

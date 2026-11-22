@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "audited_head": "d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34",
+  "status": "pass",
+  "summary": "Verdict: pass. No finding. Commit d74cf4c closes RA3-1 and RA3-2. Mutant N1 (guide.ts minimum 4 only) now fails the RA-2 case. Mutant N5 (overview second cell without the #variant split) now fails the RA-1 case. The earlier killed mutants N4 and N9 still fail. guide.test.ts gives 17 passed (17) and preview-gate.test.ts gives 99 passed (99), each with exit 0. The plan record of fix round r9 is true. The delta changes only guide.test.ts and plan.md, and adds no new test gap at Blocker level.",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "HEAD check: git rev-parse HEAD returned d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34. git log 9bf5b3b..HEAD holds one commit, d74cf4c. It changes only harness/model-guide-tests/guide.test.ts and measure/tracks/model_guide/plan.md, so no production file and no fixture file changes.",
+    "RA3-1 closed: guide.test.ts:759-783 adds a variant that removes t1/prod-nine from allowedRoutes and asserts pick t1/prod-one and second null. Mutant N1 (guide.ts:359 row.tasks >= 5 changed to >= 4, real-work.ts unchanged) fails the RA-2 case with 1 failed | 16 passed (17). The assertion second null also proves that the realWorkFrom allowed option works, because t1/prod-nine would otherwise be the second choice. The comment at guide.test.ts:729-733 now says correctly that the earlier variant needs a minimum change in both tools.",
+    "RA3-2 closed: guide.test.ts:653-656 gives the second print-audit route the key kimi-code-plan-cn/k3.1-pro#high. Mutant N5 (preview.sh:389 audit_name changed to model_name) fails the RA-1 case with 1 failed | 16 passed (17), because model_name gives k3.1-pro#high and not Kimi K3.1 Pro.",
+    "Kept kills: N4 (overview pick with model_name) fails 1 case, and N9 (guide.ts allowed filter removed) fails 4 cases (T3, D18 Q1, RA-1, RA-2).",
+    "Plan record: plan.md:1145 says guide 17 passed (17) and preview-gate 99 passed (99), each exit 0. Both reproduce at d74cf4c.",
+    "Scope: the orchestrator asked for a new test gap only at Blocker level. I found none in the delta."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34",
+    "git log --oneline 9bf5b3b..HEAD; git diff 9bf5b3b..HEAD",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 17 passed (17)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 99 passed (99)",
+    "rsync -a --delete --exclude node_modules harness/ /tmp/ra2-mut/harness/ (node_modules linked)",
+    "python3 -I mutation driver in /tmp/ra2-mut/harness against guide.test.ts: baseline 17 passed; N1 1 failed; N5 1 failed; N4 1 failed; N9 4 failed"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "audited_head_sha": "d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34",
+  "phase_base_sha": "9bf5b3b5a231f0d0d3a5e09c74d34297b6ad2c06",
+  "prior_review": "measure/runs/model_guide/review-a-9bf5b3b.json",
+  "route": "claude-code/claude-opus-5-5[1m]#high",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "The delta changes no production file, and guide.test.ts (17) and preview-gate.test.ts (99) pass at d74cf4c with exit 0."},
+    {"axis": "test_meaning", "score": 5, "evidence": "Mutants N1 and N5, which survived at 9bf5b3b, now each fail 1 guide.test.ts case, and N4 and N9 still fail."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "git diff 9bf5b3b..HEAD touches only guide.test.ts and plan.md:1145."},
+    {"axis": "evidence_quality", "score": 5, "evidence": "The two counts at plan.md:1145 reproduce exactly at d74cf4c."}
+  ]
+}

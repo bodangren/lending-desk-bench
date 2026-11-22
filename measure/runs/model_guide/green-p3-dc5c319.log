@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 5906a607721f2bc6754e77c3f1d57949a553244a
+head_sha: a1a4e5697df50e83c623e70c80b235ae8e338138
+commits: 32980bc388ccf45878f5a3dad28e9c8030358249, a1a4e5697df50e83c623e70c80b235ae8e338138
+tests_run: Runs of the Green 3.12d session at a1a4e56, all with `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`: `adjudicate.test.ts` exit 1, `Tests  3 failed | 17 passed (20)`, the three failures are the 3.12b security cases; `review-score.test.ts` exit 1, `Tests  2 failed | 23 passed (25)`, both failures are 3.12b security cases; `review-set.test.ts` exit 1, `Tests  2 failed | 16 passed (18)`, both failures are 3.12b security cases; `guide.test.ts` exit 0, `Tests  16 passed (16)`; `git status --short docs/` printed nothing.
+files_changed: commit 32980bc holds harness/model-guide/adjudicate.ts, harness/model-guide/review-score.ts, and harness/model-guide/review-set.ts. Commit a1a4e56 holds measure/tracks/model_guide/plan.md. No test file and no fixture changed, and no docs/ path changed.
+plan_updates: 3.12c changed [~] to `[x] 32980bc` with an Evidence line that cites `measure/runs/model_guide/green-p3-dc5c319.log`; 3.12d changed [ ] to [~]; the fixture author lines of 3.14 and 3.16 now name the route of `ra-quota pick` (PM order of 2026-11-16). The plan commit is a1a4e56.
+dispositions: none
+handoff: This log was refreshed by the Green 3.12d session on MiMo, because the MiniMax Green session stopped on a quota error before it refreshed this log.
+END_MEASURE_AGENT_RESULT

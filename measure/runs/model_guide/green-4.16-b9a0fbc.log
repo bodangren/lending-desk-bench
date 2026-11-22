@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+task: 4.16
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: b9a0fbc7477a705e8b438fae9155b39a05ab3cb7
+green_commit_sha: c202290
+green_record_commit: 2bdf5cb
+final_head: 2bdf5cb
+red_commit_sha: d601806
+handoff: The F13, F20, and F21 fixes landed in c202290 and are recorded in 2bdf5cb. `live_remaining` returns 1 when the deadline has passed, `live_curl` then returns 126 with no request, and `live_wait_answer` checks expiry before each GET and again before accepting a completion, so a late answer is refused and no request starts after the deadline. The selector reads only the newest assistant message: a newest partial blocks every older completed message and older tool-calls step until it is terminal, and the tokens come from that message. The isolated path stores the raw output whole again, and only the live path decodes the plain answer; R10 keeps its 2 MiB tail and size. Each file ran once, one at a time, all exit 0: review-run `130 pass` / `0 fail` (922 expect() calls, 218.46 s); judge-run `Tests 61 passed (61)`; decode-parity 8 pass; quota `Tests 32 passed (32)`; credential-provider `Tests 24 passed (24)`; adversarial-p4-runner 16; adversarial-p4b 12; adversarial-p4c 13; adversarial-p4d 21 passed 6 skipped; adjudicate 23 pass; review-score 27 pass. `bash -n` passes on both runners, `git status --short docs/` prints nothing, and the tree holds only the allowed untracked paths. No live call, no POST to port 38307, no real HOME read, no opencode or openchamber CLI, and no fake child of mine remains. Counts are in measure/runs/model_guide/green-4.16.txt. Tasks flipped to [x]: none; row 4.16 stays [~] for the orchestrator phase gate. Tasks flipped to [b]: none. New tracked files: none; measure/runs/model_guide/green-4.16.txt is ignored by .gitignore.
+END_MEASURE_AGENT_RESULT

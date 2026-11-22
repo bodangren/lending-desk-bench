@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Pass. The re-review of F1, N1, and N2 at HEAD 0b52f33 withdraws all three. The queue now decodes the real event stream: readFindings calls decodeAnswerText before the fence parse (adjudicate.ts:223-256). The two TypeScript decoders are byte-identical (diff of adjudicate.ts:223-250 against review-score.ts:233-260 prints IDENTICAL), and judge-run.sh:919-938 holds the same logic: text parts join in order, step and tool events match no branch, a plain answer passes through unchanged. The queue schema is unchanged: the range touches only the decoder and readFindings, and the queue document at adjudicate.ts:390-403 is untouched. The 4.13u tests are real and failing-first: a node check runs the pre-fix readFindings on the verbatim 4.13u stream shape and it prints null, so the two stream cases failed before the fix. The scorer guard is real: the same node check shows that without the decoder the fence slice holds JSON escapes and fails JSON.parse, so the review turns invalid and invalid_reviews becomes 1, and the equality case fails (review-score.ts:372-373). Row 4.13t names all three readers (plan.md:2409-2413). Row 4.13u stays [x] and the evidence records the Red deviation (plan.md:2444, 2473-2475). Gates pass one file at a time, fakes only: adjudicate 23 passed (23), review-score 27 passed (27), and no fake or server process stayed behind after either run.",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "F1 withdrawn: the queue decodes the raw output now. adjudicate.ts:223-250 adds decodeAnswerText, readFindings at adjudicate.ts:255-256 calls it before the fence parse, and writeQueue feeds the raw file through it at adjudicate.ts:344. The Red pin exists and is failing-first: adjudicate.test.ts:658-717 holds the 4.13u block, and a node check runs the pre-fix readFindings (the verbatim fence parse without a decoder, from the 2fdb8f8 version) on the same stream shape the tests build. It prints null, so the two event-stream cases failed at the pre-fix base and the plan record of 'Tests 2 failed | 21 passed (23)' matches the code. With the decoder the same input parses one finding, the two text parts join back to the exact fence, and a plain answer passes through unchanged. The vitest run at HEAD gives 23 passed (23).",
+    "N1 withdrawn: the scorer decoder now has a pin. review-score.test.ts:761-818 holds the 4.13u block with two cases: an event-stream output scores the same as the same answer in plain text, and a plain-text output still scores. The guard reasoning holds in the code: if the decoder is removed, the fence markers sit inside the JSON-escaped event string, the slice between them starts with backslash-n and backslash-quote escapes, it fails JSON.parse, readFindings returns null, the review turns invalid at review-score.ts:372-373, invalid_reviews becomes 1 against the plain record's 0, and the toEqual case fails. The node check proves the slice really holds those escapes and fails JSON.parse. The vitest run gives 27 passed (27).",
+    "N2 withdrawn: the plan row now names every consumer. plan.md:2409-2413 reads 'three readers read a raw output: judge-run.sh reads the judge verdict, review-score.ts reads the findings in readFindings, and adjudicate.ts reads the findings in readFindings'. The three readers all hold the decoder: judge-run.sh:919-938, review-score.ts:233-260, adjudicate.ts:223-250.",
+    "Decoder parity, contract 1: diff of adjudicate.ts:223-250 against review-score.ts:233-260 prints IDENTICAL, so the queue decodes the same way as the scorer. judge-run.sh:919-938 holds the same logic in its inline node script: a text event with a string part.text is pushed in order, a result event with a string text is pushed, step-start, tool, and step-finish events match no branch and are ignored, the parts join with a newline, and a raw text with no event part returns unchanged. The bc0391f diff for review-score.ts changes its decoder comment only, which now names the three readers.",
+    "Queue schema, contract 2: the range diff for adjudicate.ts adds only decodeAnswerText and the readFindings change; the queue document at adjudicate.ts:390-403 holds the same set_id, groups, id, diff_id, file, window, items, id, line, and claim keys as before the range, so the schema is unchanged.",
+    "Plan rows, contracts 4 and 5: row 4.13t at plan.md:2409 names all three readers. Row 4.13u at plan.md:2444 reads '[x] 05bb618', and the evidence at plan.md:2473-2475 reads 'Row stays [x] for Red; Green task 4.13v follows. Deviation: Red marked this row [x], not [~]; the row keeps [x] with the Red commit SHA.' The 4.13v row repeats the record at plan.md:2498. So the evidence records the deviation.",
+    "Gates at HEAD 0b52f33, one file at a time, fakes only: 'cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot' gives 'Tests 23 passed (23)', exit 0; the pgrep scans for fake-opencod[e] and quota-serve[r] show nothing after the run. 'cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot' gives 'Tests 27 passed (27)', exit 0; the same pgrep scans show nothing after the run. Both test files spawn the real tools on temp copies with a fake HOME, so the results are real.",
+    "Provenance and scope: git rev-parse HEAD gives 0b52f334c744922f545098c33119f4471929d089, the audited HEAD, current. The range 2fdb8f8..0b52f33 touches exactly harness/model-guide-tests/adjudicate.test.ts (+60), harness/model-guide-tests/review-score.test.ts (+58), harness/model-guide/adjudicate.ts (+44/-1), harness/model-guide/review-score.ts (+6/-3, comment only), and measure/tracks/model_guide/plan.md (+64/-4). Per commit: 05bb618 touches the two test files only, bc0391f touches adjudicate.ts and review-score.ts only, and 0f426b1 and 0b52f33 touch plan.md only, which matches the plan rows 4.13u and 4.13v. The judge-run.sh decoder comment still names one of the other two copies; the comment stays factually true and judge-run.sh sits outside the 4.13v scope, so this is no finding."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 0b52f334c744922f545098c33119f4471929d089",
+    "git diff --stat 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41..0b52f334c744922f545098c33119f4471929d089 -> 5 files, +225/-7",
+    "diff <(sed -n 223,250p harness/model-guide/adjudicate.ts) <(sed -n 233,260p harness/model-guide/review-score.ts) -> IDENTICAL, exit 0",
+    "node -e (no-backtick form) -> pre-fix readFindings on the 4.13u stream: null; fixed readFindings count: 1; decoder round-trips the fence: true; plain passes through: true; guard slice fails JSON.parse: true; guard slice head: backslash-n backslash-quote escapes",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 23 passed (23), exit 0",
+    "pgrep -af 'fake-opencod[e]'; pgrep -af 'quota-serve[r]' -> nothing after the adjudicate run",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 27 passed (27), exit 0",
+    "pgrep -af 'fake-opencod[e]'; pgrep -af 'quota-serve[r]' -> nothing after the scorer run",
+    "git show --stat 05bb618 -> 2 test files only; git show --stat bc0391f -> adjudicate.ts and review-score.ts only; git show --stat 0f426b1 and 0b52f33 -> plan.md only",
+    "grep -n 'three readers' measure/tracks/model_guide/plan.md -> 2409; grep -n 'Deviation' measure/tracks/model_guide/plan.md -> 2474"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adjudicate.test.ts",
+    "harness/model-guide-tests/review-score.test.ts",
+    "harness/model-guide/adjudicate.ts",
+    "harness/model-guide/review-score.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41",
+  "audited_head_sha": "0b52f334c744922f545098c33119f4471929d089",
+  "contract_applicability": "applicable",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    { "axis": "correctness", "score": 5, "evidence": "All three readers decode the stream: the two TypeScript decoders diff IDENTICAL, judge-run.sh:919-938 holds the same logic, and the queue document at adjudicate.ts:390-403 is untouched by the range." },
+    { "axis": "test_meaning", "score": 5, "evidence": "The queue cases fail at the pre-fix base (node check: pre-fix readFindings prints null on the 4.13u stream; plan records 2 failed | 21 passed) and the scorer guard fails without the decoder (node check: the fence slice fails JSON.parse, so invalid_reviews turns 1 at review-score.ts:372-373)." },
+    { "axis": "scope_discipline", "score": 5, "evidence": "git show --stat per commit: 05bb618 touches the two test files only, bc0391f touches adjudicate.ts and the review-score.ts comment only, and both records touch plan.md only, exactly as the plan rows claim." },
+    { "axis": "evidence_quality", "score": 5, "evidence": "Every claim names a file:line or a command result: the decoder parity by diff, the failing-first behavior by a node check on the pre-fix code path, and both gates with pgrep scans." }
+  ]
+}

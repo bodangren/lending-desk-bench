@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "audited_head_sha": "d14becb350354103b18d43d87e94b46df8784ec8",
+  "reviewer_model": "volcengine-agent-plan/ark-code-latest#high",
+  "status": "pass",
+  "summary": "Round 3 passes with no blocker. B2-1 is fixed and verified by probes and reruns. The A3-3 preview-folder symlink refusal closes the write-through. One new nonblocking Major (B3-1) stays: a valid relative symlink under docs/ can redirect the Phase 5 publish copy outside docs/. Phase 1 cannot reach it because no approval record exists and the tree holds no symlink. It must close before the first publish.",
+  "security_applicability": "applicable: test-strategy.md section 9, Phase 1 row assigns Review B the publish gate, the no-docs/-write rule, and the no-real-export-bytes rule. The round-3 diff changes preview.sh, publish.ts, and real-work.ts, which hold that gate.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "B3-1 [Major] review-b: harness/model-guide/publish.ts:169-173 with harness/model-guide/preview.sh:103-112: a valid symlink under docs/ with a relative target can redirect a publish write outside docs/. Probe in a git archive of d14becb: docs/rel-alias.html linked to ../outside.html. cp -a at preview.sh:112 copies the link string into the preview. The string resolves to <repo>/outside.html from docs but to <repo>/.tmp/outside.html from the preview folder. preview-base.json pins the docs-side hash (H1). The approval row carries the preview-side hash (H2), so the drift check at publish.ts:141-167 passes. writeFileSync at publish.ts:172 then follows the docs link and overwrites the outside file: exit 0, content changed H1 to H2. A ../../ target wrote a file two levels above docs/. isSafeRelPath at publish.ts:58-63 checks only the logical row path, and docsFiles at publish.ts:92-108 uses statSync, which follows links. A directory symlink fails closed with `publish: drift dirlink/<file>`. Reachability in Phase 1 is zero: git ls-tree shows no tracked symlink, no publish-approval.md exists in the d14becb tree, and the copy loop writes only approved rows after Daniel's word. Fix before the Phase 5 first publish: make preview.sh refuse every symlink under docs/ (the line 103 scan drops the dangling test), and make publish.ts use lstatSync in docsFiles and push every non-regular entry to the broken list so drift exits 2 before the copy. Add a failing-first test that plants a relative docs symlink and names it in an approval row."
+  ],
+  "evidence": [
+    "Provenance: working HEAD is 1a83bc9. git diff --name-only d14becb 1a83bc9 lists only docs/assets/data/benchmark.json, bugfix.json, and tracks.json. The harness/ and model_guide paths are byte-identical at d14becb and HEAD, so the d14becb tree audit is current. Every probe ran in a git archive d14becb copy under /tmp/opencode/rb3-3390667. The real docs/ folder was never touched.",
+    "B2-1 withdrawn: publish.ts:97-102 wraps statSync and maps a failure to the broken list; publish.ts:156-161 wraps the drift hash read; preview.sh:103-107 refuses a dangling docs entry before any write. Temp-copy probes: dangling docs link in preview gave exit 2, `preview: unreadable docs/dangling.txt`, no traceback, no preview folder; dangling docs link in publish gave exit 2, `publish: drift dangling.txt`, no traceback, docs snapshot unchanged; a mode-000 docs file in publish gave exit 2, `publish: drift locked.txt`, no traceback, docs snapshot unchanged. The three B2-1 tests in preview-gate.test.ts pass at d14becb and are listed as failed on aa894a7 in red-1.14.txt items 9 to 11.",
+    "A3-3 verified: preview.sh:94-100 scans an existing preview folder with find -type l before any write. Probe: a planted preview/real-work.json symlink to an outside sink and a subfolder link to docs gave exit 2, `preview: refused path <preview>/real-work.json`, docs unchanged, the outside sink file unchanged, and no docs/real-work.json. The red record item 7 shows exit 0 and a docs write on aa894a7, so the test is not vacuous.",
+    "B3-1 probe facts: a relative docs symlink passed the preview dangling scan because the link target exists. The preview copy kept the link (os.path.islink true). preview-base.json held the docs-side resolution hash, which matched the outside H1 file. The preview-side resolution matched a different H2 file. Publish with an approval row for the link path exited 0 and replaced H1 with H2 outside docs/. A ../../ link reached /tmp/opencode/deep-write.txt, two levels above docs/. A directory symlink gave exit 2 with `publish: drift dirlink/link-target.html` and no outside change. A control publish with no symlink wrote only the two approved rows into docs/.",
+    "Staging safety: preview.sh:80-81 creates one mktemp -d folder and installs trap rm -rf. The count of /tmp/tmp.* entries was 84 before and 84 after a refused run. A refusal into a new nested preview left no leaf and no parent folder. Path refusals for --preview docs, docs/assets, /, ., a symlink to docs, and a missing export each gave exit 2 before mktemp ran.",
+    "Review A items from the security side only, not repeated: A4-1 is fail-closed. A mode-000 docs file makes cp fail with exit 1 and leaves no preview-base.json, so a later publish hits `publish: no preview base`. The dead sys.exit branch at preview.sh:138 would raise NameError while the base dict is built at preview.sh:154, before preview-base.json is written at preview.sh:156. No docs write occurs on either path. A4-3 is fail-closed: a mode-000 docs directory gave exit 1 with an EACCES stack from publish.ts:93, but the throw happens in docsFiles at publish.ts:142, before the copy loop at publish.ts:169, and the docs snapshot was unchanged.",
+    "No docs write: git diff --name-only 0a44cc9..d14becb -- docs/ is empty. git status --short docs/ in the real repo is empty. find docs -type l in the real repo returns 0. The d14becb tree holds no publish-approval.md (git ls-tree count 0), so publish always exits 2 with `publish: no approval record` in Phase 1; a probe confirmed that line.",
+    "No real export bytes or SHA in product or test files: no real-work-outcomes-2026 file is tracked. The full export SHA appears only in measure/tracks/model_guide/spec.md, plan.md, and metadata.json, and it already appears there at the phase base 0a44cc9. The split needles in leak-guard.test.ts keep the test folder clean, and that file passes. No daniebo, home path, or handoff string appears under harness/model-guide or harness/model-guide-tests at d14becb. All fixtures use synthetic routes.",
+    "A2 consent check: no tool or test flips a draft state to a published state. The approval record of spec D21 is the consent gate, and it holds Daniel's word. Page B shows model routes and aggregate rates. It names no person or school, so no named-subject consent gap exists.",
+    "A6 registry check: measure/tracks.md:40 lists model_guide as pending and claims no resolved security state. Plan task 1.15 marks work complete with exit-code evidence only, and my reruns match it: preview-gate 76 passed, input-check 15 passed, real-work 19 passed, leak-guard 2 passed, each alone with --maxWorkers=1.",
+    "Shell safety: bash -n preview.sh exits 0. set -euo pipefail sits at preview.sh:24. Every expansion is quoted. The Python heredoc marker is quoted. The only rm -rf is the trap on the mktemp folder. No eval or temp-file path from user input exists. real-work.ts holds one write at lines 382-383, after every refusal, and it never copies the input file. JSON.parse at real-work.ts:178 is unwrapped, but a throw there exits before the single write and creates no file, so it is not a finding.",
+    "Scope: the round-3 range also holds daily_model_schedule files and harness/schedule-tests files. They belong to another track and are outside this audit. The six model_guide files match the planned 1.14 and 1.15 task lists.",
+    "Route parity: Red 1.14 ran on GLM, Green 1.15 on Kimi, and this review runs on volcengine ark-code. The review family differs from both implementation families."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 1a83bc9; git diff --name-only d14becb HEAD -> three docs/assets/data files only; git diff d14becb HEAD -- harness measure/tracks/model_guide -> empty",
+    "git diff --stat 0a44cc9..d14becb -> 20 files, zero under docs/; git diff --name-only 0a44cc9..d14becb -- docs/ -> empty",
+    "git grep at d14becb for the full export SHA -> spec.md, plan.md, metadata.json only; same set present at 0a44cc9; git ls-tree for mode 120000 and for publish-approval -> none",
+    "git archive d14becb into /tmp/opencode/rb3-3390667 with a node_modules symlink for tsx; all probes ran there",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 76 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts ... -> 15 passed",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts ... -> 19 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts ... -> 2 passed",
+    "probe: preview --preview docs, docs/assets, /, ., a docs symlink, and a missing export -> exit 2 each",
+    "probe: planted preview symlinks -> exit 2, refused-path line, docs and outside sink unchanged",
+    "probe: dangling docs symlink in preview -> exit 2, preview: unreadable, no traceback; in publish -> exit 2, publish: drift, no traceback",
+    "probe: mode-000 docs file in publish -> exit 2, publish: drift locked.txt; mode-000 docs directory -> exit 1 EACCES before the copy loop, docs unchanged",
+    "probe: relative docs symlink ../outside.html -> publish exit 0 and an outside-file content change H1 to H2; a ../../ link wrote two levels above docs/; a directory symlink -> exit 2 drift",
+    "probe: no approval record -> exit 2, publish: no approval record; control publish -> exit 0, only the two approved docs files written",
+    "probe: /tmp/tmp.* count 84 before and 84 after a refused run; nested-preview refusal left no parent; bash -n preview.sh -> exit 0"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "volcengine-agent-plan/ark-code-latest#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "B2-1 and the A3-3 refusal hold in probes at preview.sh:94-107 and publish.ts:97-161, but B3-1 shows the publish copy can leave docs/ through a relative docs symlink (publish.ts:172)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "red-1.14.txt lists 15 failing tests on aa894a7 and all four files pass at d14becb in my reruns, but no test plants a valid relative symlink under docs/ for the B3-1 write-through class."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff 0a44cc9..d14becb shows no docs/ change, and the six model_guide files in round 3 match the planned 1.14 and 1.15 tasks."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each claim cites a file:line or a recorded probe result from a git archive copy, including exit codes, refusal lines, and before-and-after snapshots."
+    }
+  ]
+}

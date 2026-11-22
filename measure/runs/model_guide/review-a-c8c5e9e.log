@@ -1,0 +1,24 @@
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+audited_head_sha: c8c5e9ecca070beeb54fec27f79542d24ccecfc1
+delta: d74cf4c..c8c5e9e (production: cea0a90)
+prior_review: measure/runs/model_guide/review-a-d74cf4c.json
+status: pass
+result_json: measure/runs/model_guide/review-a-c8c5e9e.json
+blocking_findings: 0
+nonblocking_findings: 0
+checks:
+  rank keys: 9-decimal keys in compareRows only; table and pick share the order
+  numbers: real-work.json raw; preview.sh rounds once; guide.ts reads first_round.value and tasks and rounds once; no other reader
+  alias rule: direct keys first pass, aliases second pass
+  byEffort: Object.hasOwn guard, else primary row
+  audit_name: strips [1m] and #variant before the lookup
+  css: model cell min-width 10em; one hint after each scroll box
+oracle: real files, new preview, TOTAL DIFFS 0 (tables, marks, top lines, footer)
+tests: real-work 13/13, guide 17/17, preview-gate 99/99, adversarial-p4 18/18; each exit 0
+retry_recommendation: none
+handoff: none
+RESULT: PASS
+END_MEASURE_AGENT_RESULT

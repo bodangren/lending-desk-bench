@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+track: model_guide
+phase: Phase 4: The runner and the first track A results
+audited_head_sha: 1572612a513316c21dcc22b84e61338e19815ba3
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 42bdece8953ce3b25e230fd234e4698c30044d60
+security_applicability: applicable
+retry_recommendation: none
+confidence: high
+summary: Pass. F1-F5 all withdrawn with machine proof. The verbatim daemon guard selects a real NUL-separated argv daemon and refuses ..-decoy, sibling, and symlink-outside HOMEs and cwds on a synthetic table. The KILL step compares starttime. The seed export cwd fell back to /tmp when TMPDIR sat inside the repo. The HOME guard refuses symlink-out and relative roots and tolerates an unset HOME. The export selection uses integrationID plus active and refuses ambiguity. quota.ts gives stopped on stale or missing last-good readings and fails closed on forged ra-quota output. No new real-HOME call form; no credential value reached stdout or a file. Gates review-run 65 pass, credential-provider 22 passed, quota 30 passed; pgrep scans clean after each file.
+blocking_findings: 0
+nonblocking_findings: 0
+result_file: measure/runs/model_guide/review-b-1572612.json
+END_MEASURE_AGENT_RESULT

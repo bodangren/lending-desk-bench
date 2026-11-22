@@ -1,0 +1,19 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-mid-red
+status: complete
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 6c42e434e47a3c5458c7ff87ec5259b0df075cce
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+red_commit_sha: f4fa0a372ab7606fd05b74de5808a87f2265fba7
+plan_commit_sha: 6e3e226153acaa08c944a81be154935e81024768
+resulting_head: 6e3e226153acaa08c944a81be154935e81024768
+commits: f4fa0a3 test(model_guide): Red task 4.15 fix P4B-C1; 6e3e226 measure(model_guide): record Red task 4.15 r2
+tests: adversarial-p4-runner.test.ts P4B-C1 rewritten. Option B. A synthetic proc table through BENCH_OPENCODE_PROC holds a local daemon pid and a fake of another session with a foreign executable path. The case asserts that daemon_pids selects only the local pid.
+files: harness/model-guide-tests/adversarial-p4-runner.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-4.15.txt, measure/runs/model_guide/red-4.15-6c42e43.log
+remaining_failures: 1 failing case at the base. Command `cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests 1 failed | 14 passed (15)`. Failure: `expected [ '810001', '810002' ] to not include '810002'`. The other 14 cases pass and are unchanged.
+gaps: Option A was tried first and passed at HEAD 6c42e43 (`Tests 15 passed`). A full clean run of review-run.sh with a foreign `fake-opencode serve --service` process from another temp root alive ends with exit 0, no INFRA line for the foreign pid, and the foreign process alive. The runner already scopes daemon_pids by HOME and cwd. Option A cannot fail for the right reason, so the case uses Option B and pins the remaining hole: a fake whose executable comes from another temp root while HOME and cwd match this run. The runner must key on its own job root, not on a bare serve and --service match.
+breakage_proof: The synthetic proc table is the falsification. At HEAD daemon_pids matches both entries because it checks only HOME and cwd; the case fails on the foreign pid 810002. A fix that rejects an argv path outside its own root makes the case pass while keeping the local pid 810001. No foreign process is started, so no cleanup kill is needed. pgrep printed nothing of mine.
+handoff: Green can now fix P4B-C1 in production by making daemon_pids reject a process whose executable path sits outside its own job root, while keeping the local pid. The other 14 cases need their earlier production edits. Green changes no test file. Do not reintroduce the old ps-based assertion. Row 4.15 stays [~].
+END_MEASURE_AGENT_RESULT

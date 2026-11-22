@@ -1,0 +1,124 @@
+Review A correctness and architecture: task 4.15, round 2.
+Verdict: PASS under the PM round cap. No blocking finding.
+This review does not accept the live phase.
+
+Provenance
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: c0e8db545caeeea99bfe1a61eeafff8be59c99b5
+audited_head_sha: c0e8db545caeeea99bfe1a61eeafff8be59c99b5
+HEAD matched the audited SHA at the start and after verification.
+The audited range contains 15 files, 1141 insertions, and 58 deletions.
+The later ff64dab..c0e8db5 changes received a separate review.
+
+Tests
+Each file ran separately. No shell redirection was used.
+The tool results hold the actual test output.
+
+bun test harness/model-guide-tests/review-run.test.ts
+exit 0; 97 pass; 0 fail; 741 expect calls; 193.42 s.
+
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 50 passed (50).
+
+cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 24 passed (24).
+
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 31 passed (31).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 16 passed (16).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 13 passed (13). E1 ran without a skip.
+
+bun test harness/model-guide-tests/decode-parity.test.ts
+exit 0; 4 pass; 0 fail.
+
+bun test harness/model-guide-tests/adjudicate.test.ts
+exit 0; 23 pass; 0 fail.
+
+cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 27 passed (27).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 12 passed (12).
+
+bun test harness/model-guide-tests/review-run.test.ts -t 'R12 stops|R14 ends'
+exit 0; 2 pass; 95 filtered out; 0 fail; 14 expect calls; 8.81 s.
+Both cases also passed in the full-file run.
+The earlier failures indicate load-sensitive test budgets, not a reproduced production regression.
+
+Independent proofs
+The daemon probe evaluated the actual embedded JavaScript with an in-memory filesystem.
+Both copies selected the absolute opencode.exe shape with the local marker.
+Both copies excluded a foreign marker, including with local HOME and cwd.
+Removing the marker filter still passed the committed separate-root fixture shape.
+That mutation failed the stronger shared-HOME fixture.
+An empty source fixture failed both daemonBlock presence guards.
+
+The decoder probe evaluated the actual TypeScript functions and the judge parser.
+A text event carried real-defect. A following result event carried false-claim.
+Both TypeScript decoders excluded the result event. The judge selected false-claim.
+
+The token probe evaluated the actual embedded JavaScript from both runners.
+The committed unsafe-field shape stayed incomplete after removal of the new sum check.
+Two valid 5e15 input values exercised the new overflow check.
+A valid event followed by a cut step_finish incorrectly kept completeness equal to 1.
+
+Withdrawn findings
+F1 withdrawn: The marker filter fixes the live executable regression in both runners.
+F6 withdrawn: The old plan text describes historical commit b795f32, not current behavior.
+
+Nonblocking findings
+F2: The judge decoder still accepts a forged result branch that the TypeScript decoders exclude.
+F3: N32 lacks the two runner cases named by the strategy.
+F4: N26 accepts empty output and does not prove the probe record write.
+F5: The judge N10 and N27 copies lack direct cases; the symlink refusal is broader than its text.
+F7: The marker cases change HOME and cwd too, so they do not isolate the marker filter.
+F8: N27 does not test accumulated overflow; a cut final token event still leaves completeness true.
+F9: The changed judge seed refusal lacks a direct case.
+F10: Current pilot instructions still name the removed free route.
+F11: R12 and R14 retain test budgets below their permitted elapsed times.
+The JSON holds the full findings, exact paths, and routing.
+No CONTEST item was supplied in this round.
+
+Architecture and plan checks
+The daemon matcher and the three error-scan functions remain byte-identical across the runners.
+No changed TypeScript function is exported. Source searches located the CLI and internal callers.
+build-graph exists, but graph.db is absent. No graph database was written.
+The current Green counts match the actual test exits and labeled summaries.
+The production commits follow the 06:00 +07 constraint and both recorded live events.
+No false current pass claim reproduced under A5.
+No bare-digit count assertion appeared in the changed tests.
+No Measure orchestration script, framework contract test, or registry changed.
+Framework-wide checks were outside this audit scope.
+
+Scope and hygiene
+git diff --check and bash -n passed for all three changed shell files.
+The frozen-path diff, package.json diff, and public-page diff are empty.
+A credential-pattern scan found zero credential-shaped values in the audited code diff.
+I read no real private key, seeded diff, raw output, or shared credential store.
+I did not run the full private-data leak gate.
+pgrep found no remaining fake or quota server from these runs.
+The four pre-existing untracked paths remained unchanged.
+Only the supplied result JSON and log were written by this audit.
+No commit, push, real model call, opencode CLI, or openchamber CLI ran.
+
+Live limitation
+The new seed reason exposes the empty-store refusal. It does not repair the store.
+Rows 4.10 through 4.14 remain open. Night 1 skipped every pilot route.
+The PM must resolve the live store before a successful seed.
+
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: Ten files passed separately; the focused R12/R14 rerun passed; syntax and diff checks passed.
+files_changed: measure/runs/model_guide/review-a-4.15-c0e8db5.json; measure/runs/model_guide/review-a-4.15-c0e8db5.log
+plan_updates: none
+known_failures: No blocking finding. F2-F5 and F7-F11 remain nonblocking under the PM round cap.
+handoff: F1 is fixed. Route code and tests to Green, and documents to the orchestrator. The live seed remains unresolved. Recommend create_remediation_track. This review does not accept the live phase.
+END_MEASURE_AGENT_RESULT

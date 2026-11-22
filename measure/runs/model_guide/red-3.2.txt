@@ -1,0 +1,41 @@
+Red task 3.2 — the set lint (spec D5 to D9, D13, FR-8)
+Base: 6e4a869d9cd1de683b3ec944036c3184e9686286
+
+Command:
+  cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  15 failed (15)
+Test Files  1 failed (1)
+
+Every failure is the absent module:
+  Error: production file is missing:
+  /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/review-set.ts
+  (Phase 2 has no review-set tool)
+
+Failed test names (15):
+1.  S1 the lint accept and the public manifest > S1 passes the D8 set and writes only the D9 fields
+2.  S1 the lint accept and the public manifest > S5 holds no secret field and only 40 or 64 hex digests
+3.  S3 the operator catalog > S3 accepts a valid operator of each class of D6
+4.  S3 the operator catalog > S3 rejects an operator that is not in the catalog of its class
+5.  S2 the plant refusals > S2 rejects a plant in a removed line
+6.  S2 the plant refusals > S2 rejects plants fewer than 8 lines apart
+7.  S2 the plant refusals > S2 rejects a plant over 6 lines
+8.  S2 the plant refusals > S2 rejects a wrong hunk header
+9.  S2 the plant refusals > S2 rejects a wrong seeded SHA-256
+10. S2 the plant refusals > S2 rejects a class count below D8
+11. S2 the plant refusals > S2 rejects a blocker count below D8
+12. S4 the count profile > S4 passes a pilot set with 6 diffs and 12 or more plants
+13. S4 the count profile > S4 rejects a pilot set with 5 diffs
+14. the write flags > each missing value exits 2 with one named line and writes nothing
+15. G9 environment > G9 gives the same manifest under BENCH_TRACK=change and a pinned TZ
+
+No product assertion has run, so no test passes at the base. The fixture
+corpus is self-consistent: 14 diffs, 48 plants, hunk headers recomputed from
+the body, no plant crosses a removed line, plant spans 1 to 6 lines, plants
+8 or more lines apart, and every operator is in the catalog of its class.
+
+Other required suites at the base:
+  pick-diffs.test.ts  exit 1, Tests  17 failed (17), unchanged
+  leak-guard.test.ts  exit 0, Tests  2 passed (2)
+  guide.test.ts       exit 0, Tests  15 passed (15)

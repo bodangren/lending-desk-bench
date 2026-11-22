@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+track: model_guide
+audited_head: d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34
+blocking_findings: 0
+nonblocking_findings: 1 (RB-1 Nit kept as accepted risk: symlinked reads stay hash-gated in a local-only tool)
+tests: 181 passed in 4 suites (input-check 23, adversarial 46, preview-gate 99, adversarial-p2 13)
+notes: Exact-name rule has no bypass (case, lookalikes, trailing spaces, path parts, unreal dates). Retired E file-name case loses no coverage; all other escaping tests green.
+END_MEASURE_AGENT_RESULT

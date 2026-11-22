@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "role": "final-acceptance",
+  "track": "model_guide",
+  "phase": "track review",
+  "status": "pass",
+  "summary": "Final acceptance passes at 3ba285f. HEAD equals the audited HEAD. Exactly one passing phase-acceptance result covers each phase (1 at 9cb95b6, 2 at 3d76ae8, 3 at 17c1069, 4 at 0ab805f, 4b at 8fd8882, 5 at 3ba285f); each baseline is an ancestor of its audited HEAD and every audited HEAD is an ancestor of HEAD. The only open plan rows are 4.11 and 5.4, both deferred under PM rulings of 2026-11-22. All supplied gates pass one at a time: PROJECT_LINT, PROJECT_CHECKS, PROJECT_TESTS (122 passed), review-score (33), judge-run (63), quota (32), adversarial-p4g (4), adversarial-p5 (5), bun review-run (130 pass after one documented F20 fixture flake), and leak-check with docs in scope. The six published docs files match publish-approval.md, and the live page shows the PM-ruled incomplete state with no rank and no internal reason text. The known nonblocking items do not block under the PM round cap of 2026-11-19 and the late-findings rule. Closeout must update the stale registry row and metadata and push the two local-only commits.",
+  "track_base_sha": "ea36faecc283a2c717876b4cd68fc6992f0c8f53",
+  "role_base_sha": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "baseline_sha": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "audited_head": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "audited_head_sha": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "route": "opencode-go/glm-5.3#high",
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "FA-NB1 [Registry, closeout action] measure/tracks.md:34 still holds the 2026-11-14 note 'the re-review (task 0.3) and then Red task 1.1 come next' and the in-progress marker stays `[ ]`; measure/tracks/model_guide/metadata.json keeps status pending. The row makes no overstatement claim, so A6 holds, but the note is stale. Closeout must update the row, the marker, and the metadata at the archive move (same pre-closeout state the deps_refresh final acceptance accepted).",
+    "FA-NB2 [Test fixture, already recorded] review-run.test.ts F20 'an older partial answer does not hide a newer final answer' failed once under load in this audit (129 pass / 1 fail) and passed unchanged on the rerun (130 pass / 0 fail). The expectation holds only when the runner's first message GET lands within the 1000 ms stamp offset of the older message. tech-debt.md already records this as Review B F-B5 and Review C F-C4. It cannot hide a wrong result in the current scores or the published page.",
+    "FA-NB3 [Push state] origin/main is at f97d68b. The two later commits a8835be (plan.md only) and 3ba285f (adversarial-p5.test.ts only) are local-only; they carry no docs/ and no production change, and the published docs are live. The orchestrator or closeout should push them.",
+    "FA-NB4 [Known carried items, PM-ruled nonblocking] Review A 4b F4 (plan wording), Review B 4b NB1-NB3, UX 4b F1-F2, Review A 5 F2-F3, Review B 5 F1, Review C 5 F1, and UX 5 F2 are recorded in their review JSONs and tech-debt.md ('2026-11-22 - model_guide Phase 4b nonblocking findings'). None is a real-key leak into a committed file or a public page, and none can hide a wrong result in the current scores or the published page, so none blocks under the PM round cap of 2026-11-19 and the late-findings rule.",
+    "FA-NB5 [Setup] measure/doctor.sh does not exist in this repository. The orchestrator-supplied PROJECT_LINT, PROJECT_CHECKS, and PROJECT_TESTS gates are the doctor equivalent, the same live-gate ruling recorded in the deps_refresh final acceptance (measure/runs/deps_refresh/final-acceptance-d67d668.json).",
+    "FA-NB6 [Phase 0 shape] The plan's Phase 0 is the registry and spec-review checkpoint ('[checkpoint: 0a44cc9]'); its results are spec-review-bbde00d.json (round 1) and spec-review-2fae48c.json (round 2), and no phase-acceptance artifact exists for it by design. The acceptance chain starts at Phase 1 with phase_base_sha 0a44cc9."
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/final-acceptance-3ba285f.json",
+    "measure/runs/model_guide/final-acceptance-3ba285f.log"
+  ],
+  "live_contract_violations": [],
+  "test_strategy_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "evidence": [
+    "HEAD: `git rev-parse HEAD` printed 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36, equal to role_base_sha and audited_head. `git status --short` showed only the pre-existing untracked `.opencode/` and `harness/wt.txt`; `git status --short docs/` printed nothing.",
+    "Track base: `git rev-parse ea36fae` printed ea36faecc283a2c717876b4cd68fc6992f0c8f53 (spec 'Base commit'), an ancestor of HEAD (`git merge-base --is-ancestor` exit 0).",
+    "Phase acceptance chain: one passing result per phase. Phase 1 pass at 9cb95b6643eba0cd04f0623865224f3d9ef88b3c (phase_base 0a44cc9), Phase 2 pass at 3d76ae8faf61b40c719d8419a563addfc20c2496 (phase_base c22f313), Phase 3 pass at 17c106931b68c9e97f00b215d8b2407631927933 (phase_base 39d5077), Phase 4 pass at 0ab805f22e654dd780016d6a74664686d265181c (phase_base 57baaaa), Phase 4b pass at 8fd8882a8539d051129eb106e46974a934df5223 (phase_base 7d7d218), Phase 5 pass at 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36 (phase_base 8fd8882). For each, `git merge-base --is-ancestor <phase_base> <audited>` and `git merge-base --is-ancestor <audited> HEAD` exited 0. The superseded fail results are Phase 1 at 80c17f5 (PA1-1, closed by 530c73a/56a173b and the passing 9cb95b6 result) and Phase 5 at a8835be (prerequisite gap, closed by the passing 3ba285f result).",
+    "Path diffs: `git diff --name-only 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36 HEAD` printed no path, so the audited HEAD and the latest result each equal current HEAD. `git diff --name-only 8fd8882a8539d051129eb106e46974a934df5223 HEAD` printed 14 paths (README.md, six docs files, adversarial-p4g/p5/preview-gate tests, the score file, preview.sh, plan.md, publish-approval.md): all Phase 5 work covered by the passing Phase 5 acceptance at HEAD. `git diff --name-only 0ab805f22e654dd780016d6a74664686d265181c HEAD` adds only Phase 4b work covered by its passing acceptance. The earlier phase diffs (9cb95b6, 3d76ae8, 17c1069) additionally list other tracks' interleaved commits (deps_refresh, daily_model_schedule, archive moves) outside this track and this track's later-phase work under later acceptances.",
+    "Plan state: grep found 158 `[x]` task rows and exactly two open boxes, 4.11 ('deferred (PM 2026-11-22)', the pilot gate; the PM ruled no extra nights and the D13 spread check waits for the next set) and 5.4 ('deferred: moved to the weekly update job (PM 2026-11-22)'; README.md records the job). No `[~]` or `[b]` row remains.",
+    "Approved publish: `sha256sum docs/index.html docs/review.html docs/real-work.html docs/assets/data/real-work.json docs/assets/data/model-guide.json docs/assets/data/review.json` printed 52c294b3..., e6ed8ff7..., 35a71c80..., a5ab25a5..., d667f5ff..., dedd725a..., each equal to the value in measure/tracks/model_guide/publish-approval.md.",
+    "PM page rulings on the committed page: `grep -o 'incomplete: [0-9] of 3 passes' docs/review.html` found two '1 of 3' lines and one '0 of 3' line; the worst cells show 78.6 and 75.4 with dash rank cells; `grep -c 'incomplete_reason\\|nights 1 and 2\\|PM 2026' docs/review.html` printed 0; real defects show counts only (13 and 6, sum 19, matching the 19 agreed real-defect verdicts of task 4.13).",
+    "Live page: an HTTP read of https://bodangren.github.io/lending-desk-bench/review.html returned the published page with the same three incomplete routes, no rank number, no reason text, and counts-only real defects.",
+    "Score secrecy (AC9): `cmp harness/model-guide/data/review-scores/mg-2026-11a.json docs/assets/data/review.json` found no difference, and the preview copy matches too; `grep -c 'new_lines\\|witness\\|\"operator\"'` printed 0 on the score file and the set manifest.",
+    "AC12 inputs: harness/model-guide/routes.json holds exactly the six D12 routes and every kind is `plan`; judges.json holds the four judge seats including the PM 2026-11-22 Sol row; measure/runs/model_guide/passes-4.12.txt names each pilot route with exit and state for all three nights and the MiMo incomplete-answer reason.",
+    "PROJECT_LINT: `git ls-files -z 'harness/*.sh' 'harness/model-guide/*.sh' | xargs -0 -r -n1 bash -n` exited 0 with no output.",
+    "PROJECT_CHECKS: `cd harness && npm audit --audit-level=high` exited 0 with 5 moderate advisories only (@vitest/mocker, vitest, minimatch via deslop-js/react-doctor), the set the deps_refresh track pinned with recorded reasons; no high or critical advisory.",
+    "PROJECT_TESTS: `cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exited 0 with Tests 122 passed (122), matching the closing plan claim of row 5.3.",
+    "Gate replays (A5): review-score.test.ts 33 passed (33); judge-run.test.ts 63 passed (63); quota.test.ts 32 passed (32); adversarial-p4g.test.ts 4 passed (4); adversarial-p5.test.ts 5 passed (5); each exits 0 and each matches the recorded gate claim at HEAD.",
+    "review-run gate: `bun test harness/model-guide-tests/review-run.test.ts` first gave 129 pass / 1 fail (the F20 token case), then the unchanged rerun gave 130 pass / 0 fail, exit 0. The failure is the recorded fixture timing artifact (tech-debt.md Review B F-B5 and Review C F-C4): the older message is stamped read-time minus 1000 ms, so its tokens count only when the first GET lands after the call start plus 1000 ms. review-run.sh and its test are unchanged since 8fd8882, where the Phase 4b acceptance recorded 130 pass / 0 fail through heavy-run.sh.",
+    "Leak check: `cd harness && npx tsx model-guide/leak-check.ts --private /home/daniebo/.local/share/lending-desk-bench/model-guide --repo .. --preview ../.tmp/model-guide-preview` exited 0 with no line; docs, staged files, and the preview folder were in scope.",
+    "A5: `grep -E 'PASS=[0-9]+.*FAIL=0|all checks pass' measure/tracks/model_guide/plan.md` found no hit. The final-HEAD gate claims (122, 33, 63, 32, 4, 5, 130) all replayed green in this audit; earlier totals in plan rows describe earlier commits.",
+    "A6: `grep -E 'resolved|completely fixed|fully solved|all (checks |tests )?pass' measure/tracks.md` found no hit, so the registry makes no overstatement claim about the adversarial test state. The model_guide row (tracks.md:34) and metadata.json status pending are stale pre-closeout state; closeout must update them at the archive move.",
+    "A9: no `tests/*.sh` exists at the repo root (project note in measure/anti-patterns.md). A grep of harness/model-guide-tests, harness/schedule-tests, and harness/tests for `measure/(tracks|archive)/(change_bench|tests_bench|go_catalog_w43|deps_refresh)/` found no hit; no test references an archived track path.",
+    "Reviews and adversarial state: Phase 4b reviews A, B, C and the adversarial result pass at 99ec28c with 0 blocking findings, UX passes at 8fd8882; Phase 5 reviews A, B, C and the adversarial result pass at a8835be with 0 blocking findings, UX passes at 3ba285f. The carried nonblocking items sit in the review JSONs and tech-debt.md and none is a real-key leak.",
+    "Doctor: `measure/doctor.sh` does not exist in this repository. The orchestrator supplied PROJECT_LINT, PROJECT_CHECKS, and PROJECT_TESTS as the doctor equivalent, the same ruling as measure/runs/deps_refresh/final-acceptance-d67d668.json.",
+    "Scope of this role: no commit, no push, no publish.ts or update.sh run, no full suite, no Chrome, no opencode or openchamber CLI. Only the two supplied artifacts under measure/runs/model_guide/ were written."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short; git status --short docs/",
+    "git rev-parse ea36fae; git merge-base --is-ancestor ea36faecc283a2c717876b4cd68fc6992f0c8f53 HEAD",
+    "python3: read every phase-acceptance-*.json of measure/runs/model_guide/ and print phase, status, phase_base_sha, role_base_sha, audited_head_sha",
+    "git merge-base --is-ancestor <phase_base> <audited> and <audited> HEAD for each of the six passing results",
+    "git diff --name-only 9cb95b6643eba0cd04f0623865224f3d9ef88b3c HEAD; git diff --name-only 3d76ae8faf61b40c719d8419a563addfc20c2496 HEAD; git diff --name-only 17c106931b68c9e97f00b215d8b2407631927933 HEAD; git diff --name-only 0ab805f22e654dd780016d6a74664686d265181c HEAD; git diff --name-only 8fd8882a8539d051129eb106e46974a934df5223 HEAD; git diff --name-only 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36 HEAD (empty)",
+    "grep -nE '^\\s*-?\\[([ ~bx])\\]' measure/tracks/model_guide/plan.md | grep -v '\\[x\\]' (only 4.11 and 5.4, both deferred)",
+    "sha256sum docs/index.html docs/review.html docs/real-work.html docs/assets/data/real-work.json docs/assets/data/model-guide.json docs/assets/data/review.json",
+    "grep -o 'incomplete: [0-9] of 3 passes' docs/review.html; grep -c 'incomplete_reason\\|nights 1 and 2\\|PM 2026' docs/review.html; grep -o 'no pick yet: not enough evidence' docs/index.html; grep -o 'track A: no complete rank (n=0)' docs/index.html",
+    "cmp harness/model-guide/data/review-scores/mg-2026-11a.json docs/assets/data/review.json; cmp .tmp/model-guide-preview/assets/data/review.json docs/assets/data/review.json; grep -c 'new_lines\\|witness\\|\"operator\"' harness/model-guide/data/review-scores/mg-2026-11a.json harness/model-guide/data/sets/mg-2026-11a.json",
+    "git ls-files -z 'harness/*.sh' 'harness/model-guide/*.sh' | xargs -0 -r -n1 bash -n (exit 0)",
+    "cd harness && npm audit --audit-level=high (exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (122 passed)",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot (33 passed)",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot (63 passed)",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot (32 passed)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4g.test.ts --configLoader native --maxWorkers=1 --reporter=dot (4 passed)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p5.test.ts --configLoader native --maxWorkers=1 --reporter=dot (5 passed)",
+    "bun test harness/model-guide-tests/review-run.test.ts (first run 129 pass / 1 fail on the recorded F20 flake; rerun 130 pass / 0 fail, exit 0)",
+    "cd harness && npx tsx model-guide/leak-check.ts --private /home/daniebo/.local/share/lending-desk-bench/model-guide --repo .. --preview ../.tmp/model-guide-preview (exit 0)",
+    "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass' measure/tracks/model_guide/plan.md (no hit, A5); grep -nE 'resolved|completely fixed|fully solved|all (checks |tests )?pass' measure/tracks.md (no hit, A6); grep -rnE 'measure/(tracks|archive)/(change_bench|tests_bench|go_catalog_w43|deps_refresh)/' harness/model-guide-tests/ harness/schedule-tests/ harness/tests/ (no hit, A9)",
+    "python3: print status, blocking count, route, and audited head of the ten Phase 4b and Phase 5 review/adversarial/UX results",
+    "webfetch https://bodangren.github.io/lending-desk-bench/review.html",
+    "git log --format='%h %s' --name-only 8fd8882a8539d051129eb106e46974a934df5223..3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36; git rev-parse origin/main; git log origin/main..HEAD --oneline"
+  ],
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The six published hashes match publish-approval.md, the live review.html shows the PM-ruled incomplete state with counts-only real defects, and docs/assets/data/review.json is byte-identical to the committed score file; the open edges (4.11 pilot gate, 5.4 weekly update) are PM-ruled deferrals."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Every final-HEAD gate claim replayed green (122, 33, 63, 32, 4, 5, 130) against the real tools, but the F20 token case is a documented fixture timing artifact and three adversarial cases stay it.skip in tech-debt.md."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git log --name-only 8fd8882..3ba285f lists only model_guide paths: the six approved docs files, preview.sh, two adversarial test files, the score file, plan.md, publish-approval.md, and the PM-ordered README section for the weekly job."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each plan row carries a commit SHA and a gate count, the leak-check with docs in scope exits 0, and passes-4.12.txt names exit and state for every pilot route and night."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.1-sol#high (Phase 4b, at 99ec28c)",
+      "agreed": true,
+      "score": 4,
+      "evidence": "I agree with the pass verdict; its one nit (F4, plan wording at plan.md:2801) is recorded in tech-debt.md and changes no score."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "opencode-go/glm-5.3#high (Phase 4b, at 99ec28c)",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I agree with the pass verdict; NB1-NB3 are score-impact no and sit in tech-debt.md, and NB3 involves a hypothetical route string, not a real credential value, so the round cap holds."
+    },
+    {
+      "reviewer_role": "review-c",
+      "reviewer_route": "openai/gpt-6.1-sol#high (Phase 4b, at 99ec28c)",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I agree with the pass verdict at 0 blocking findings; the C2 route part was fixed in the 4.14 round and the legend part is carried in tech-debt.md."
+    },
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "openai/gpt-6-luna#high (Phase 4b, at 99ec28c)",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I agree with the pass verdict; the adversarial result reports 0 blocking findings and the live adversarial-p4g and p5 suites pass in my replay."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.1-sol#high (Phase 5, at a8835be)",
+      "agreed": true,
+      "score": 4,
+      "evidence": "I agree with the pass verdict; F2 and F3 concern the weekly update path that the PM moved out of the track, and I confirmed the first publish ran leak-check."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "opencode-go/glm-5.3#high (Phase 5, at a8835be)",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I agree with the pass verdict; F1 (weekly leak-check gap) is real but score-impact no under the late-findings rule, and my leak-check replay with docs in scope exits 0 for the published state."
+    },
+    {
+      "reviewer_role": "review-c",
+      "reviewer_route": "openai/gpt-6.1-sol#high (Phase 5, at a8835be)",
+      "agreed": true,
+      "score": 4,
+      "evidence": "I agree with the pass verdict; F1 (the documented weekly command form) is score-impact no and waits for the weekly job."
+    },
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "openai/gpt-6-luna#high (Phase 5, at a8835be)",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I agree with the pass verdict; adversarial-5-a8835be.json reports 0 blocking findings and adversarial-p5.test.ts passes 5 of 5 in my replay at HEAD."
+    }
+  ]
+}

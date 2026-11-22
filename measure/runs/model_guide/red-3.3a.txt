@@ -1,0 +1,39 @@
+Red task 3.3a — the score file meets the guide.ts reader and D13 provisional passes
+Base: 48cd01521945e0be701e772d0c2d08bedb30b2b0
+
+Command 1:
+  cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  4 failed | 17 passed (21)
+
+Failed test names (4):
+1. R4 invalid reviews and pass states > R4 marks an unclear verdict provisional and keeps the rank
+   reason: `routes[].passes` is the number 3, not the array of the route's
+   pass records; `toHaveLength` fails.
+2. R4 invalid reviews and pass states > R4 gives incomplete with fewer than 3 complete passes
+   reason: `routes[].passes` is the number 2, not an array.
+3. R6 the score file shape and the write flags > R6 writes routes[].passes as the array of that route's pass records
+   reason: `Array.isArray(route.passes)` is false; the file holds a count.
+4. R6 the score file shape and the write flags > R6 satisfies the guide.ts reader and names the route in the Code review row
+   reason: `guide.ts` exits 2 with `input-check: scores`, because
+   `routes[].passes` is not an array.
+
+Command 2:
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  1 failed | 15 passed (16)
+
+Failed test name (1):
+5. T7b: a track A route with one provisional pass keeps its rank (D13)
+   reason: guide.ts skips a pass whose state is not `complete`, so the top
+   route falls to 2 passes and loses the rank. The pick moves from
+   `opencode-go/kimi-k2.7-code` to `opencode-go/mimo-v2.6-flash`.
+
+No fixture added or changed. The score file of the test is built at runtime
+from the fixtures/review/ corpus.
+
+Other required suites at the base:
+  review-set.test.ts  exit 0, Tests  15 passed (15)
+  pick-diffs.test.ts  exit 0, Tests  17 passed (17)

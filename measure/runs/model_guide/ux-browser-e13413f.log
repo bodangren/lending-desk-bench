@@ -1,0 +1,28 @@
+Phase 2 browser re-check for track model_guide at HEAD e13413f31733defe84fb623fb85c08e332942b81.
+
+Summary: The fix of P2U1-1 holds. The print-audit block shows the bias note at 1280 px and at 390 px and the text is not clipped. The overview table still shows first above the hero with six rows. Neither page needs a horizontal page scroll at 390 px and neither page logs a console error. P2U1-1 is withdrawn. P2U1-2 to P2U1-6 stay nonblocking as P2U2-1 to P2U2-5.
+
+02:08:00 start provisional JSON and log written before any browser step
+02:07:56 git rev-parse HEAD -> e13413f31733defe84fb623fb85c08e332942b81, equal to audited_head_sha and role_base_sha; no nightly publish commit landed during the audit
+02:08:40 preview freshness checked: real-work.html and index.html written 01:57, later than preview.sh and the data file at 01:52 and later than the e13413f commit at 01:54
+02:09:00 server started: python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview; / answered 200, /real-work.html answered 200, /favicon.ico answered 404
+02:09:30 check 1 print-audit block at 1280 done: 52 error rows, 13 blockers, kimi-code-plan-cn/k3.1-pro 11 of 13, claude-code/claude-sonnet-5-5#high 13 of 13, error types minor 21 major 18 blocker 13, one calibration run, not a rank, no placeholder line
+02:09:30 check 1 bias note found: the card holds the muted paragraph 'Bias note: A Sonnet 5.5 session wrote the answer key, so the s55 score may be too high. Review A noted E35 for s55 is partial, not found (minors found 5, not 6).'
+02:10:00 check 1 at 390 done: bias note scrollWidth 311 = clientWidth 311, 6 line boxes inside the client width, tail '(minors found 5, not 6).' visible, 0 clipped boxes outside .table-wrap, 0 console errors
+02:10:40 check 2 index overview table done: section top 66 above hero top 576 at 1280 px, section top 149 above hero top 1090 at 390 px, 6 body rows, same cell text as at b4fba01
+02:11:40 check 3 done: docSW 390 = docCW 390 on both pages at 390 px and 1270 = 1270 at 1280 px, 0 console errors on both pages at both widths
+02:12:00 focus and accessibility done: real-work holds 7 named regions at 1280 px and 390 px, ArrowRight scrolls the focused Producer roles table 0 to 40 at 390 px, index holds 2 named regions and 29 named links
+02:12:30 source confirmation: print-audit.ts line 197 writes the top-level bias_note and preview.sh line 521 reads it and line 524 renders it escaped as a muted Bias note paragraph
+02:13:00 audit result JSON written and validated: PASS: audit result is valid
+02:13:30 server stopped; port 8766 free; webbridge session p2ux2 closed; final status pass with P2U1-1 withdrawn
+
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: e13413f31733defe84fb623fb85c08e332942b81
+result_file: measure/runs/model_guide/ux-browser-e13413f.json
+retry_recommendation: none
+summary: The fix of P2U1-1 holds. The print-audit block shows the bias note at 1280 px and 390 px without clipping, the overview table still shows first above the hero, and neither page needs a horizontal page scroll or logs a console error.
+END_MEASURE_AGENT_RESULT

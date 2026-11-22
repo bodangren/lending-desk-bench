@@ -1,0 +1,31 @@
+MEASURE_AGENT_RESULT
+role: measure-mid-red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+task: 4.8a Red — the review page (cases V1 to V9)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: cbfb93e7e1094039b06499850d910869036cb48b
+head_sha: 20dcb31e5ec42b2fff1d6078b32b5e237d42d8fe
+commits:
+  6be38940d0ce46ca9008fa36f298c92e64cd0551 test(model_guide): Red task 4.8a review page
+  20dcb31e5ec42b2fff1d6078b32b5e237d42d8fe measure(model_guide): record Red task 4.8a
+test_command: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+test_exit: 1
+test_summary: Tests  9 failed | 102 passed (111); Test Files  1 failed (1)
+first_failure_line: "FAIL  model-guide-tests/preview-gate.test.ts > the review page cases V1 to V9 of task 4.8a > V1: the page holds the rank, worst, median, best, blocker recall, false claims, real defects, and the counts by class and severity"
+first_failure_message: "AssertionError: review.html is missing from the preview folder: /tmp/model-guide-preview-v1-2SQtzO/.tmp/model-guide-preview/review.html: expected false to be true"
+remaining_failures: "9 of 9, all V cases: V1, V2, V3, V5, V6, V7, V8 fail with review.html missing; V4 fails with the usage line (preview.sh has no --pilot-gate); V9 fails on the review.html existence check after its docs snapshot, git status docs/, and preview-base checks pass"
+green_rest: "102 passed: every Phase 1 to Phase 3 case of the file stays green"
+files:
+  harness/model-guide-tests/preview-gate.test.ts (changed; V1 to V9 appended; no fixture file, no env seam)
+  measure/tracks/model_guide/plan.md (row 4.8a marked [~], evidence added)
+  measure/runs/model_guide/red-4.8a.txt (record, not staged)
+  measure/runs/model_guide/red-4.8a.log (record, not staged)
+authoring_check: "the same bytes ran in a temp harness at /tmp/opencode/valp with a prototype review page in a patched copy of preview.sh: Tests  9 passed | 102 skipped (111), exit 0; the temp harness was removed"
+gate_deviation: "none; task 4.8a commits no fixture"
+process_check: "after the run: no model-guide-preview temp folder under /tmp, no fake-opencode process, no leftover harness"
+secrecy: "no private folder, no key, no seeded diff, no real score file, no model call; V7 proves the page and review.json hold no private key"
+no_production_file_touched: true
+contract_defaults: "score file = newest under data/review-scores/; route false claims, real defects, and counts = sum over passes; blocker recall cell = worst blocker recall as a whole percent; markup = the data-mg names in the test header; named line = preview: pilot gate fail; method note names the set size as <n> diffs"
+handoff: Green task 4.8 writes harness/model-guide/pages/review.html and the review page edit of harness/model-guide/preview.sh to the contract in the header of the V block of preview-gate.test.ts (score file source, --pilot-gate pass|fail with default pass and the line preview: pilot gate fail, the review table heads and data-mg cells, the counts rows, the pass spans, the set count spans, the method note, the nav links, and the no-private-key rule). The 102 other cases of the file must stay green.
+END_MEASURE_AGENT_RESULT

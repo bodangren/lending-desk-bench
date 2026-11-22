@@ -1,0 +1,122 @@
+Green tasks 4.4 to 4.7 — the runner and the first track A results
+Track: model_guide. Phase 4: The runner and the first track A results
+(by Sun 2026-11-22). Role: measure-jr-green. Date: 2026-11-18.
+
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha 20dcb31e5ec42b2fff1d6078b32b5e237d42d8fe (HEAD at the start)
+repair_base_sha 8e111d2453856c2077cb89c5d2700203c2906b89 (HEAD after the
+Red fix of task 4.1)
+
+Red commits of this phase: 4.1 4e00ec2 + f274fa8 + the fix 8e111d2; 4.2
+60e0da3 + dce6401; 4.3 f7e7da4; 4.8a 6be3894. Green edited no test file and
+no fixture. The committed Red tests stayed immutable.
+
+1. Task 4.4 — `harness/model-guide/quota.ts`
+
+  The tool reads `GET /api/quota/<id>` of spec D15 for the four providers
+  with a source. The base is `--base`, else `BENCH_QUOTA_BASE`, else the port
+  of `openchamber status --json`. Every window below 70 % gives `ready`. A
+  window of 70 % or more gives `wait`. A quota error, a limit error, a read
+  failure, an empty window set, a missing `usedPercent`, a string value, and
+  a value of `1e999` give `stopped` with one line `quota: <reason>` on
+  stderr. A provider with no source gives `ready` and the cap 1 with no
+  request. A provider with a source gives the cap 3. The read times out at
+  5 s, and the whole answer is parsed, so a 2 MiB body with 200 windows
+  works.
+
+  Fix commit 82a0e6a: `void main()` replaces top-level await. The review
+  runner copies the tool into a temp repo that holds no `type: module`
+  package.json, and tsx then compiles the file as CJS.
+
+2. Task 4.5 — `harness/model-guide/routes.json`
+
+  The file holds the nine rows of spec D12 in order, each with exactly
+  `family`, `route`, `kind`, `quota_provider`, and `quota_source`. The kinds
+  are `plan` and `free` only. The Hy row `opencode/hy4-flash-free` is
+  present. There is no second-judge row, because spec D11 keeps the fallback
+  "no ready route". The file holds no test of its own, so the three Phase 4
+  files prove it. All three pass at the 4.7 HEAD.
+
+3. Task 4.6 — `harness/model-guide/provider-credential.sh`
+
+  `seed <p>` reads the shared store with one `opencode auth export` call,
+  retried on a transient failure with the waits of
+  `BENCH_CREDENTIAL_SEED_DELAYS`, and imports the one active entry of the
+  provider with `opencode auth import`. The payload goes over the pipe of
+  the import call and never touches a disk. `scan-values <p>` prints the
+  access value and the orgID of the entry, one per line. A provider with no
+  entry gives exit 2 and one named line. A bad `AGENT_TIMEOUT` or a bad
+  `BENCH_CREDENTIAL_SEED_DELAYS` gives exit 2 before any call.
+
+4. Task 4.7 — `harness/model-guide/review-run.sh`
+
+  The runner reads the quota before each pass and before each diff. A pass
+  starts only on `ready`. It stops at a window of 80 % and leaves the pass
+  `open`. A route with no quota source runs at most 1 pass per night. Each
+  call is `run --standalone --format json --model <route>` with the job
+  store of `opencode_host_run`, the job config that denies the eight tools,
+  and the prompt on stdin. It retries a transport error twice, treats an
+  empty answer as no response, and marks a Go route with the region error
+  `region-blocked`. It scans each raw output before the store, and it
+  deletes the output and stops the pass on a hit. A refusal prints one line
+  `review-run: <check>` on stdout and exits 2 before any write.
+
+  Blocked first, then repaired. The first run of `review-run.test.ts`
+  reached `Tests  2 failed | 21 passed (23)`. Two Red cases could not pass
+  under spec D12 to D15: R4 case 1 wrote its unknown route into the temp
+  `routes.json`, and R6 case 2 read 79 % from the first quota read, which
+  D15 and R5 make `wait`. Green did not edit the test. The Mid Red fix
+  8e111d2 corrected both cases, and the file then gave `Tests  23 passed
+  (23)`.
+
+5. Commits
+
+  9c1dfa6eda07ff907a7933c78b1df17f94313801 feat(model_guide): quota sources (task 4.4)
+  d1ed6e8a5a6812d874235993755eb214cf4c13ce measure(model_guide): record Green task 4.4
+  82a0e6a5f0ec344f580afaff10c911f2b57976b9 fix(model_guide): quota tool for the copied temp repo (task 4.4)
+  7bf337a1415913623bae077d08048176b4657186 feat(model_guide): routes.json (task 4.5)
+  1235b760b9c7614fd6cad59856d88e0cdd58c842 measure(model_guide): record Green task 4.5
+  4d8f87caf0084f539959c62d6a310499d0d8424e feat(model_guide): provider credential (task 4.6)
+  2b6910c45dcd2f75e5b8cefe712205b09c625cd2 measure(model_guide): record Green task 4.6
+  303f73d1a371e474603444092367a9d67608a7f3 feat(model_guide): review runner (task 4.7)
+  63dd0ec25f213e3e907b684c0061ec63830553d4 measure(model_guide): record Green task 4.7
+
+6. Test result lines (one file at a time from `harness/`, each with
+`--configLoader native --maxWorkers=1 --reporter=dot`)
+
+  quota.test.ts               exit 0  Tests  15 passed (15)   at 82a0e6a
+  credential-provider.test.ts exit 0  Tests  11 passed (11)   at 4d8f87c
+  review-run.test.ts          exit 0  Tests  23 passed (23)   at 303f73d
+  ps -eo pid,args | grep '[f]ake-opencode'   prints no line after each run
+
+7. Gates
+
+  bash -n harness/model-guide/review-run.sh                  exit 0
+  bash -n harness/model-guide/provider-credential.sh        exit 0
+  git diff --stat 57baaaa364f968a2f44c6e14eb96f8a9d68beebf -- \
+    harness/opencode-credential.sh harness/opencode-host.sh \
+    harness/provenance.ts harness/tests                   prints nothing
+  git status --short docs/                                  prints nothing
+
+8. Plan state
+
+  4.1 is [x] 4e00ec2, with the Red fixes f274fa8 and 8e111d2. 4.2 is [x]
+  60e0da3, with the seam dce6401. 4.3 is [x] f7e7da4. 4.4 is [x] 9c1dfa6,
+  with the fix 82a0e6a. 4.5 is [x] 7bf337a. 4.6 is [x] 4d8f87c. 4.7 is [x]
+  303f73d. No task is [b].
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.4-4.7
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 20dcb31e5ec42b2fff1d6078b32b5e237d42d8fe
+resulting_head: 63dd0ec25f213e3e907b684c0061ec63830553d4
+commits: 9c1dfa6 (4.4), 82a0e6a (4.4 fix), 7bf337a (4.5), 4d8f87c (4.6), 303f73d (4.7); plan records d1ed6e8, 1235b76, 2b6910c, 63dd0ec
+files_changed: harness/model-guide/quota.ts, harness/model-guide/routes.json, harness/model-guide/provider-credential.sh, harness/model-guide/review-run.sh, measure/tracks/model_guide/plan.md
+tests: quota 15 passed; credential-provider 11 passed; review-run 23 passed against Red fix 8e111d2. Gates: bash -n on both scripts 0; the phase-base path check prints nothing; docs/ clean; no fake-opencode process left.
+dispositions: none
+handoff: Tasks 4.4 to 4.7 are green. The first 4.7 attempt was blocked by two Red defects in review-run.test.ts; the Mid Red fix 8e111d2 corrected R4 and R6, and the committed test file stayed unchanged by Green. The runner defaults the retry wait to 5000 ms and refuses a bad value. Task 4.8 owns the review page next.
+END_MEASURE_AGENT_RESULT

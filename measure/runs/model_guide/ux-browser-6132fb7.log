@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: inconclusive
+audited_head_sha: 6132fb70dfe02d83c4c8c4f1a7339b32414eefb2
+result_file: measure/runs/model_guide/ux-browser-6132fb7.json
+retry_recommendation: escalate_human
+summary: Provisional write; the Phase 2 browser pass is in progress.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,38 @@
+Final audit: pass under the PM cap.
+The audited HEAD matches the required role base.
+The installed client and server source confirm the request shapes.
+GET-only checks confirm the session envelope and a structured message error.
+No browser check applies. No live model call ran.
+review-run: 130 pass, 0 fail, 922 expectations, 217.44 seconds.
+judge-run: Tests 61 passed (61), 99.54 seconds.
+decode-parity: Tests 8 passed (8), 8.44 seconds.
+The first wrapped attempt exceeded the tool timeout without a test result.
+The second wrapped attempt passed. Each completed command ran one file.
+F-C1 [Major, nonblocking]: The night driver needs the planned BENCH_SERVER_BASE export.
+F-C2 [Major, nonblocking]: The night driver can accept historical or incomplete probe data.
+Use one completed probe block from the intended code revision.
+Match the exact route, state, and exit code.
+Use opencode-go/hy4-flash-free#high for Hy.
+Stop when the selected probe block is incomplete.
+The probe caller preserves all three states, stdout refusals, and stderr-only failures.
+The night caller records exit codes and pass states independently.
+The current probe file contains older code and the old Hy route.
+The scheduled live probe must establish current reachability.
+The orchestrator owns both external caller findings. No blocker goes to Green.
+The audit writes only the supplied JSON and log. Facts changed: none.
+MEASURE_AGENT_RESULT
+role: measure-review-c-ux-api
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: wrapped Bun review-run 130 pass, 0 fail; wrapped Vitest judge-run 61 passed; wrapped Vitest decode-parity 8 passed
+files_changed: the supplied JSON and log only
+plan_updates: none
+known_failures: F-C1 and F-C2 are Major and nonblocking under the PM cap; no implementation blocker
+handoff: Add the night export. Select a completed probe block. Match the exact route, state, and exit. Stop on an incomplete block. Phase 4b remains open.
+role_base_sha: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+END_MEASURE_AGENT_RESULT
+RESULT: PASS

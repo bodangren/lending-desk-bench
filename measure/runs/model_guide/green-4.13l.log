@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: pass
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13l
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 5085d9b162a60559e4bf415fb0f33cb91a627b98
+resulting_head: a3799be
+commits: 8ce8964 fix(model_guide): Go needs usable 5h and weekly values (task 4.13l); a3799be measure(model_guide): record Green task 4.13l
+green_test_command: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+results: quota.test.ts 26 passed (26); bun test review-run.test.ts 53 pass 0 fail; judge-run.test.ts 30 passed (30); pgrep fake-opencode and quota-server empty after each gate; live GET 127.0.0.1:38307 state ready with empty stderr; Red before the fix was 2 failed | 24 passed
+handoff: Green 4.13l fixes quota.ts to require usable 5h and weekly values for opencode-go; spec D15 and FR-15 now state the same rule (Review A e9e7d36 F3); no test file changed; tasks 4.13k and 4.13l are [x] in plan.md with commit a3799be; review should audit quota.ts usableWindow plus the D15 and FR-15 text; Green HEAD is a3799be on phase base 57baaa; lead time was 02:03 to 02:12 +07
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,40 @@
+Green phase 2 task 2.8: plan record only, no code and no test change.
+
+Role base: e13413f31733defe84fb623fb85c08e332942b81.
+Phase base: c22f313603108585f8bb45996057627acfbc78ae.
+Facts read and confirmed:
+- measure/runs/model_guide/check-2.8.json holds status pass at
+  e13413f31733defe84fb623fb85c08e332942b81, route
+  opencode-go/muse-spark-1.3-contributor#high, with an empty
+  blocking_findings list.
+- Every Phase 2 blocking finding has a fix commit: P2ADV-1 to P2ADV-5 in
+  be41213, P2B2-1 and P2B2-2 in 38d1071, P2ADV2-1 in 2e4e641, P2U1-1 in
+  70ebfc5.
+- The five final audits at e13413f each hold status pass:
+  review-a-e13413f.json, review-b-e13413f.json, review-c-e13413f.json,
+  adversarial-e13413f.json, ux-browser-e13413f.json.
+
+Change: plan.md only. Task 2.8 is [x] 70ebfc5 (the fix commit of the last
+blocking finding, the task 1.8 form) with its Verify line and three new
+Evidence lines; one Note line records that closeout gate item 3 fails only
+on the daily publish commits 05acc8c and 119b06d, which are not Phase 2 work
+(nit P2A1-2).
+
+No test ran: this task is a plan record only. No code file and no test file
+changed. git status --short docs/ prints nothing.
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: e13413f31733defe84fb623fb85c08e332942b81
+head_sha: 3d76ae8faf61b40c719d8419a563addfc20c2496
+commits: 3d76ae8faf61b40c719d8419a563addfc20c2496
+tests_run: none (plan record only)
+files_changed: measure/tracks/model_guide/plan.md
+plan_updates: Task 2.8 is [x] 70ebfc5 with the checker JSON status pass, the blocker-to-fix map, the five final audits at e13413f, and the P2A1-2 note; no other task marker changed.
+dispositions: none
+handoff: The checker record for Phase 2 is complete: check-2.8.json is pass at e13413f, all nine blocking findings map to be41213, 38d1071, 2e4e641, and 70ebfc5, and the five final audits are pass. The only open gate wording is closeout item 3, whose docs/ diff comes from the daily publish commits 05acc8c and 119b06d, not Phase 2 work (nit P2A1-2). No code or test changed; plan.md is the only staged path.
+END_MEASURE_AGENT_RESULT

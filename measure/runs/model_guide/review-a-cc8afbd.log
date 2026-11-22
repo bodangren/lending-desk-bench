@@ -1,0 +1,20 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: fail
+route: opencode-go/glm-5.3#high
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+tasks: 4.13g, 4.13h (Go plan thresholds, PM order 2026-11-19, spec D15)
+phase_base_sha: 66fe1accf71c0f881fffa58ff05bb0a94407477f
+role_base_sha: 66fe1accf71c0f881fffa58ff05bb0a94407477f
+audited_head_sha: cc8afbd622e4229b5ef347dfd1e8c0a051e3c5c5
+result_path: measure/runs/model_guide/review-a-cc8afbd.json
+summary: The fake-pinned rules are correct (Go 5h 95 / week 100, others 70 / 80, no Go stop at 80 %, all four suites green at HEAD), but the live contract is broken twice and tonight's Go pilot passes depend on it. F1: quota.ts reads the Go week window under the key "week"; the live endpoint returns "weekly" and no "week", so the week-100 wait never fires live, and the night driver (read-only) disagrees. F2: the live Go answer holds a "credits_balance" window with usedPercent null; parseAnswer rejects it, so every live Go read gives state "stopped" (verified live), and no Go pilot pass can start tonight. The fake bodies of all suites serve "5h", "day", "week", so the tests pin a shape the live source never sends.
+blocking_findings: F1 (quota.ts:272-275, week key "week" vs live "weekly", week-100 rule dead live); F2 (quota.ts:259, credits_balance null usedPercent makes every live Go read "stopped")
+nonblocking_findings: N1 (judge-run.sh:691 dead QUOTA_MAX>=80 branch, pre-existing); N2 (probe-4.10.sh week > 90 vs PM order week 100, outside the repo); N3 (spec D15 example names "week"/"day", not the live keys)
+tests: quota.test.ts 17 passed exit 0; review-run.test.ts 52 pass 0 fail exit 0; judge-run.test.ts 30 passed exit 0; adversarial-p4-runner.test.ts 14 passed exit 0; all fakes only, one file at a time; my pgrep scans after each run printed no line (transient mg-review-fake lines between runs belong to a sibling session that runs the same suites)
+live_checks: curl GET /api/quota/opencode-go -> windows 5h, weekly, monthly, credits_balance(null); npx tsx quota.ts --provider opencode-go against the live base -> state stopped with "the window credits_balance holds no usable usedPercent"; kimi live -> wait with windows {"5h":25,"weekly":79.02}
+plan_claims: row 4.13g Red record and row 4.13h Green counts match my runs at HEAD; no false-claim text found in the two rows
+retry_recommendation: retry_implementation
+confidence: high
+END_MEASURE_AGENT_RESULT

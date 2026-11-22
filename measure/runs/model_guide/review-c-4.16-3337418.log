@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+status: pass
+summary: Pass under the PM cap. The live API contract and runner parity hold. Tests pass. One stale-probe caller gap remains nonblocking.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 33374182f4798169e8c3e2dc676f8a4a2f9327a6
+audited_head_sha: 33374182f4798169e8c3e2dc676f8a4a2f9327a6
+contract_applicability: applicable
+blocking_findings: []
+nonblocking_findings: ["F-C3 [Major, nonblocking] night probe freshness: night-4.11.sh:61-74 accepts the last completed probe block without matching its HEAD to the current runner revision. The current probe-4.10.txt:13-17 records HEAD 90edb7b, but this audit is at 3337418. Night 3 can therefore start from reachability established before the session freshness and tool-calls wait changes. Require the planned same-night probe or compare its recorded HEAD before using it. This could make night 3 run with stale reachability; it does not cause a refusal on the current path. Route to the orchestrator."]
+evidence: ["HEAD matched required SHA at entry and final check.", "Read-only GETs confirmed API response fields without printing message text.", "Review runner 130 tests, judge runner 61 tests, P4E adversarial 54 tests, decode parity 8 tests, and quota 32 tests passed.", "night-4.11.sh exports BENCH_SERVER_BASE and uses exact route tokens; current probe is complete but records older HEAD 90edb7b.", "No real-key leak or blocker found under the PM cap."]
+commands: ["git rev-parse HEAD -> 33374182f4798169e8c3e2dc676f8a4a2f9327a6", "five separate one-file test runs passed; no full suite", "bash -n both runners and git diff --check -> exit 0"]
+changed_files: ["harness/model-guide-tests/adversarial-p4-runner.test.ts", "harness/model-guide-tests/adversarial-p4b.test.ts", "harness/model-guide-tests/adversarial-p4c.test.ts", "harness/model-guide-tests/adversarial-p4d.test.ts", "harness/model-guide-tests/adversarial-p4e.test.ts", "harness/model-guide-tests/credential-provider.test.ts", "harness/model-guide-tests/decode-parity.test.ts", "harness/model-guide-tests/judge-run.test.ts", "harness/model-guide-tests/quota.test.ts", "harness/model-guide-tests/review-run.test.ts", "harness/model-guide/adjudicate.ts", "harness/model-guide/judge-run.sh", "harness/model-guide/provider-credential.sh", "harness/model-guide/quota.ts", "harness/model-guide/review-run.sh", "harness/model-guide/review-score.ts", "harness/model-guide/routes.json", "measure/tracks/model_guide/plan.md", "measure/tracks/model_guide/spec.md", "measure/tracks/model_guide/test-strategy.md"]
+test_strategy_violations: []
+live_contract_violations: []
+prod_wiring_violations: []
+route_parity_violations: []
+confidence: high
+retry_recommendation: none
+handoff: No blocker goes to Green under the PM cap. Night 3 has BENCH_SERVER_BASE and exact pilot route tokens, so the runner does not refuse for missing base or route mismatch. It can skip routes when the live Go quota reaches a limit. The current latest probe block is complete and reachable for all three routes, but it names HEAD 90edb7b rather than 3337418. The night caller does not check probe revision freshness. Keep F-C3 as a nonblocking backlog item and require a same-night probe or a matching HEAD before using reachability.
+route: openai/gpt-6-luna#high
+END_MEASURE_AGENT_RESULT

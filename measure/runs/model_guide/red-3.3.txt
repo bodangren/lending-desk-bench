@@ -1,0 +1,44 @@
+Red task 3.3 — the scorer (spec D10, D11, D13, FR-9)
+Base: a6e34c54ffe1e0c6dcdc2603dc04acf464737209
+
+Command:
+  cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  19 failed (19)
+Test Files  1 failed (1)
+
+Every failure is the absent module:
+  Error: production file is missing:
+  /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/review-score.ts
+  (Phase 2 has no review-score tool)
+
+Failed test names (19):
+1.  R1 the match > R1 matches a finding in the window and counts the plant weight once
+2.  R1 the match > R1 accepts an alternate class of accepted_classes
+3.  R1 the match > R1 treats a second finding on a found plant as a duplicate
+4.  R1 the match > R1 ignores finding 31 and later
+5.  R2 the window and the nearer plant > R2 matches new_lines[0] - 3 and new_lines[1] + 3, and not one line further
+6.  R2 the window and the nearer plant > R2 does not find a wrong class at the right line under a real-defect verdict
+7.  R2 the window and the nearer plant > R2 does not find a wrong line outside the window under a real-defect verdict
+8.  R2 the window and the nearer plant > R2 matches a finding between two plants to the nearer plant
+9.  R2 the window and the nearer plant > R2 matches two findings between two plants to each plant
+10. R3 the score and the counts > R3 applies max(0, 100 F / W - 2 X) and records the counts
+11. R3 the score and the counts > R3 makes a score below 0 become 0
+12. R4 invalid reviews and pass states > R4 makes an invalid review with 0 found and 0 false claims
+13. R4 invalid reviews and pass states > R4 marks an unclear verdict provisional and keeps the rank
+14. R4 invalid reviews and pass states > R4 gives incomplete with fewer than 3 complete passes
+15. R5 the rank > R5 ranks by the worst pass
+16. R5 the rank > R5 breaks a tie by the higher worst blocker recall
+17. R5 the rank > R5 breaks a remaining tie by the higher median
+18. R6 the score file shape and the write flags > R6 holds no secret field and no finding text
+19. R6 the score file shape and the write flags > each missing value exits 2 with one named line and writes nothing
+
+No product assertion has run, so no test passes at the base. The tests reuse
+the fixtures/review/ corpus of task 3.2 and add no fixture. The expected
+numbers come from that corpus: W 132 (16 blockers at weight 5, 20 majors at
+weight 2, 12 minors at weight 1), 14 diffs, 48 plants.
+
+Other required suites at the base:
+  leak-guard.test.ts  exit 0, Tests  2 passed (2)
+  guide.test.ts       exit 0, Tests  15 passed (15)

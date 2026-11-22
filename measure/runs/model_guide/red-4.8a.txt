@@ -1,0 +1,110 @@
+Red task 4.8a — the review page (cases V1 to V9)
+Track: model_guide. Phase 4. Role: measure-mid-red. Date: 2026-11-18.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: cbfb93e7e1094039b06499850d910869036cb48b
+
+Scope
+  One file changed: `harness/model-guide-tests/preview-gate.test.ts` (the
+  cases V1 to V9 appended as one new describe block, 642 lines). No fixture
+  file (test-strategy 4.4: the score document and the set manifest are
+  built inline). No env seam that swaps a tool under test. No production
+  file, no `docs/` file.
+
+Command
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+
+Result
+  Exit code: 1
+  Tests  9 failed | 102 passed (111)
+  Test Files  1 failed (1)
+  Duration 43.32s
+  First failure line:
+    FAIL  model-guide-tests/preview-gate.test.ts > the review page cases V1
+    to V9 of task 4.8a > V1: the page holds the rank, worst, median, best,
+    blocker recall, false claims, real defects, and the counts by class and
+    severity
+  First failure message:
+    AssertionError: review.html is missing from the preview folder:
+    /tmp/model-guide-preview-v1-2SQtzO/.tmp/model-guide-preview/review.html:
+    expected false to be true
+
+Failed test names (9)
+  V1: the page holds the rank, worst, median, best, blocker recall, false
+    claims, real defects, and the counts by class and severity
+  V2: a route with two complete passes shows incomplete, no rank number,
+    and no worst score
+  V3: a provisional pass stays complete, the route keeps its rank, and the
+    page marks the pass provisional
+  V4: --pilot-gate fail shows no rank and one named line, and --pilot-gate
+    pass shows the rank
+  V5: the page shows the diff, plant, and blocker counts of the set
+    manifest, and a changed count moves the cell
+  V6: the method note names the set size, the weights, the false-claim
+    cost, N = 3, and the pilot gate
+  V7: the page and review.json hold no private key and no private path,
+    and a prose word does not fail the scan
+  V8: each page of the preview holds one Review link and one Real work link
+  V9: the temp docs tree stays byte-identical, git status docs/ stays
+    empty, and preview-base lists every docs file
+
+Phase 1 to Phase 3 cases: the 102 other cases pass. The 9 failed names are
+exactly the V cases, so the file as a whole is red only for the review
+page. V4 fails with the usage line `usage: preview.sh --manifest <file>
+[--preview <folder>]`, because `preview.sh` does not know `--pilot-gate`
+yet. V9 runs its docs snapshot, its `git status --short docs/`, and its
+preview-base check before the page check; the three pass at the base, so
+the git path of the case is proven live. No NameError, no TypeError, no
+ReferenceError, and no syntax error in the run.
+
+Authoring check (the PM rule: an authoring error is fixed first)
+  The same bytes of the test file were copied to a temp harness outside
+  the repository at `/tmp/opencode/valp/harness`, next to a copy of
+  `harness/model-guide` whose `preview.sh` carries a prototype review page
+  and the `--pilot-gate` flag:
+
+    cd /tmp/opencode/valp/harness && <repo>/harness/node_modules/.bin/vitest \
+      run model-guide-tests/preview-gate.test.ts --configLoader native \
+      --maxWorkers=1 --reporter=dot -t "review page cases"
+
+  Result: exit 0, `Tests  9 passed | 102 skipped (111)`. Every V
+  assertion, the regex helpers, the git docs check, and the method-note
+  patterns work against a page that follows the contract. The temp harness
+  was removed after the run.
+
+Contract decisions that the spec does not pin (default: the value in the
+test header of `preview-gate.test.ts`)
+  1. The score file source: the newest file under
+     `harness/model-guide/data/review-scores/`, the rule that guide.ts
+     already uses. D16 does not say how preview.sh finds the score file.
+  2. Route-level false claims, real defects, and counts by class and
+     severity: the sum over the passes of the route. D13 defines them per
+     pass only.
+  3. The blocker recall cell: the worst blocker recall of the route, as a
+     whole percent.
+  4. The markup names: `data-mg="review-table"`, `review-route`,
+     `review-rank`, `review-worst`, `review-median`, `review-best`,
+     `review-recall`, `review-false-claims`, `review-real-defects`,
+     `review-class`, `review-severity`, `review-pass`, `review-set-counts`,
+     `review-set-diffs`, `review-set-plants`, `review-set-blockers`,
+     `review-method`, and the named line `preview: pilot gate fail`.
+  5. The method note names the set size as `<n> diffs`.
+
+Process and secrecy checks after the run
+  `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+  No `model-guide-preview` temp folder stays under `/tmp`; the temp
+  harness `/tmp/opencode/valp` was removed.
+  The cases read no private folder, no key, no seeded diff, no real score
+  file, and no model (secrecy rule of section 9.4). V7 proves that the
+  page and `review.json` hold no private key.
+
+Mid Red gate deviation (test-strategy section 3.4)
+  None. Task 4.8a commits no fixture.
+
+Files touched by this role
+  harness/model-guide-tests/preview-gate.test.ts (changed, commit 6be3894)
+  measure/tracks/model_guide/plan.md (row 4.8a to [~] plus evidence, commit
+    20dcb31)
+  measure/runs/model_guide/red-4.8a.txt (this record, not staged)
+  measure/runs/model_guide/red-4.8a.log (not staged)
+  No production file touched. No push.

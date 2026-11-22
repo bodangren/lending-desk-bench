@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: pass
+summary: Audit of range edee50b..66fe1ac (tasks 4.13e Red 5db6a32, 4.13f Green aef521d+9ae4e51, text fixes def8681). HEAD equaled the audited head 66fe1ac at audit start; a parallel session moved HEAD to 882872e mid-audit with Red 4.13g, outside this range. Every plan bullet (B2, B3, B4, B5/R3, C7, R1, N3, N8) is fixed in code and pinned by non-hollow tests recorded as failing at base in red-4.13e.txt. N8 verified in depth: NET_SCORE_GATE = 0 (real-work.ts:47), passesNetGate (:482-484) requires net !== null && net > 0 and serves producerRow, gateRow, and pickOf, so a null/not-rated net never passes and net 0 gives no pick (DS26, ADV4-7); guide.ts comment and pages/real-work.html match; the changed '>= 20' assertions still discriminate. def8681 spec D10 fixes verified: seed-messages.ts named as writer, probe keys wording, reseed runbook steps in plan rows 3.16/4.11, row 4.10 sequencing fix, R4 header fix. Reproduced gates: real-work 16 pass 0 fail, guide 18 pass 0 fail, preview-gate vitest 111 passed (111), review-run 49 audited passes (3 extra fails belong to task 4.13g, outside the range). pgrep fake-opencode/quota-server clean after each run once concurrent neighbors finished. One new nit N10: a NUL byte in a message line is stripped by bash before the B3 control-character check, so it is neither refused nor shipped; impact nil. No A3/A4/A5 issue.
+blocking_findings: none
+nonblocking_findings: N10 (nit, harness/model-guide/review-run.sh:306-309) NUL byte evades the control-character refusal because bash command substitution strips NUL; never reaches the model; fix only if the spec sentence is meant literally.
+test_strategy_violations: none
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+retry_recommendation: none
+confidence: high
+route: kimi-code-plan-cn/kimi-for-coding
+ratings: correctness 4 (all bullets correct; N10 edge), test_meaning 4 (failing-first tests for every claim, guards labeled), scope_discipline 5 (exactly 14 in-scope files), evidence_quality 5 (every claim has a command result or file:line)
+END_MEASURE_AGENT_RESULT

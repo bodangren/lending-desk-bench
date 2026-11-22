@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+status: fail
+role: measure-review-b-security
+track: model_guide
+audited_head_sha: e9e7d366719e3b00ad27c299809772e72941fd70
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 84857378fe693da61e9fb074fd37983805c3eb6f
+security_applicability: applicable
+blocking_findings: 1
+nonblocking_findings: 1
+B2: [Blocker] harness/model-guide/quota.ts:319-324 checks answer.names, not usable values; a present-but-unusable weekly beside a usable 5h gives ready (Q13 quota.test.ts:648-662 pins it; reproduced inline, state ready on {5h:50, weekly:-1, monthly:10}). Fail-open on the Go week threshold. Fix: for opencode-go require usable finite non-negative values for both 5h and weekly, else stopped; Q13 changes to match. CONTEST kept: Green pinned the fail-open as Q13 ready, but plan row 4.13j states B2 as finite numbers else stopped, and a spend gate must fail closed.
+ND1: [Minor] night-4.11.sh:80-88 and probe-4.10.sh:65-73 accept a negative usedPercent in usable(), so the drivers proceed on weekly -1; the runners re-check through quota.ts. Fix: reject value < 0 in usable() in both drivers.
+withdrawn: B1 (quota.ts:68,291 reads weekly; live GET state ready with weekly 2.06), N1 (both runners key IS_GO_ROUTE on quota_provider, review-run.sh:261, judge-run.sh:245), N2 (Q12/Q13/Q11/Q15 cover null, negative, string, live shape, missing name), TS1 (fakes emit the live key set, quota.test.ts:289-300, review-run.test.ts:498, judge-run.test.ts:552), LC1 (live GET agrees with quota.ts).
+gates: quota.test.ts 24 passed (24) EXIT 0; review-run.test.ts 53 pass 0 fail EXIT 0; judge-run.test.ts 30 passed (30) EXIT 0.
+live_get: npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 -> {"provider":"opencode-go","source":"opencode-go","state":"ready","cap":3,"windows":{"5h":5.154458979166667,"weekly":2.061783591666667,"monthly":1.0308917958333335}}
+process_hygiene: my gates left no fake-opencode and no quota-server; transient foreign processes of a concurrent session appeared after each gate and exited; pid 2510184 shows the other session's own quiet-check.
+A2: not applicable. A6: not triggered.
+retry_recommendation: escalate_human
+confidence: 0.9
+result_path: measure/runs/model_guide/review-b-e9e7d36.json
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,156 @@
+Red tasks 4.9e and 4.13c — the message line and the judge route list
+Date: 2026-11-18
+Role: mid-red
+Track: model_guide
+Phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+Rows: 4.9e Red (review-run.test.ts, spec D10 ruling 2026-11-18); 4.13c Red
+(judge-run.test.ts, spec D11 judge routes, PM 2026-11-18)
+
+Base SHAs
+  phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+    (the Phase 4 strategy commit; test-strategy section 11)
+  role_base_sha: 154eb7dd03ca4b09f090f8cc9ca59d1259da80fb
+    (the HEAD before this Red role)
+  Both values were named in the task message. Both resolve in the repository.
+
+The gap
+  Task 4.9e: review-run.sh sends only the prompt and the seeded diff. Spec
+  D10 ruling 2026-11-18 wants the prompt, the message line of
+  <private>/sets/<set_id>/messages/<diff_id>.txt, and the seeded diff in
+  that order, plus a refusal for a missing or empty message file.
+  Task 4.13c: judge-run.sh reads only routes.json. Spec D11 (PM 2026-11-18)
+  wants a route accepted only from the new harness/model-guide/judges.json,
+  with a refusal for a review-only route and an unknown route.
+
+The Red runs
+  Command (4.9e):
+    bun test harness/model-guide-tests/review-run.test.ts
+  Exit code: 1
+  39 pass, 4 fail, 307 expect() calls, Ran 43 tests across 1 file
+
+  The 4 failed test names, and the reason of each failure:
+    M1 the pass call holds the prompt, the message line, and the seeded
+       diff in that order — the call stdin holds no MSG-LINE marker
+    M2 the probe call holds the prompt, the message line, and the seeded
+       diff in that order — the call stdin holds no MSG-LINE marker
+    M3 a pass with a missing message file refuses — exit 0, expected 2
+    M4 a probe with an empty message file refuses — exit 0, expected 2
+  The 39 earlier cases pass, including with the shared fixture builder now
+  writing messages/<diff_id>.txt for every diff.
+
+  Command (4.13c):
+    cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  Exit code: 1
+  Tests  2 failed | 19 passed (21); Test Files  1 failed (1)
+
+  The 2 failed test names, and the reason of each failure:
+    J15 accepts each route of judges.json and review-run.sh never reads
+       judges.json — kimi-code-plan-cn/k3.1-pro#high gives
+       "judge-run: the route is not in routes.json", expected exit 0, got 2
+    J16 refuses a review-only route of routes.json — opencode-go/deepseek-
+       v4.1-flash is accepted at HEAD (exit 0 with calls), expected exit 2
+       with one judge-run: line, no call, and no file
+  Already satisfied at HEAD, kept as a guard for the Green route-source
+  switch: J16b refuses an unknown route with exit 2 — passes.
+  The 18 earlier cases pass. The shared builder gained the opt-in
+  `judgesRoutes` field that writes a temp judges.json only for the new
+  cases; no earlier assertion changed.
+
+  pick-diffs: bun test harness/model-guide-tests/pick-diffs.test.ts gives
+  29 pass, 0 fail. No case was added: the design has no diff_id mapping
+  (pick-diffs.ts writes only the candidates file keyed by commit SHA and
+  never touches sets/), so messages/<diff_id>.txt belongs to the seeding
+  layer, not to pick-diffs.
+
+Process checks after the runs
+  `pgrep -af "fake-opencod[e]"`: 0 line.
+  `pgrep -af "quota-serve[r]"`: 0 line.
+  No mg-* temp folder stays under /tmp. Only the fake opencode was used;
+  no real opencode CLI, no heavy-run.sh, no network or model call.
+
+Files touched by this role
+  harness/model-guide-tests/review-run.test.ts (M1-M4 and the fixture
+    message files, commit c5ea02c)
+  harness/model-guide-tests/judge-run.test.ts (J15, J16, J16b and the
+    judgesRoutes fixture field, commit c5ea02c)
+  measure/tracks/model_guide/plan.md (rows 4.9e and 4.13c marked [~] with
+    the Red SHA and evidence, commit aec19a2)
+  measure/runs/model_guide/red-4.9e.txt (this record, not staged)
+  measure/runs/model_guide/red-4.13c.txt (this record, not staged)
+  measure/runs/model_guide/red-4.9e.log (this record, not staged)
+  Never staged: `.opencode/`, `tech-debt.md`, `harness/wt.txt`,
+  `harness/model-guide/data/sets/`, `measure/runs/`, `docs/`, `reports/`.
+  Those untracked paths hold user work and stayed untouched.
+
+The next roles
+  Green 4.9f implements the message line in review-run.sh, the seeder write
+  of messages/<diff_id>.txt, and the backfill for mg-2026-11a and mg-2026-11p
+  before night 1 (2026-11-20 02:00 +07).
+  Green 4.13d writes harness/model-guide/judges.json and switches judge-run.sh
+  to accept a route only from judges.json. The 18 earlier judge tests will
+  need their temp judges.json to list the fixture route; adjust the fixture,
+  never an assertion.
+  Rows 4.9e and 4.13c stay `[~]` until Green flips them.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+tasks: 4.9e and 4.13c
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 154eb7dd03ca4b09f090f8cc9ca59d1259da80fb
+resulting_head: aec19a22267e46d3a2d110af50a895c0637213d8
+commits:
+  - c5ea02c19453c4c75851debb851ec5c90f624291 — the two test files (M1-M4, J15, J16, J16b, and both fixture updates); two paths
+  - aec19a22267e46d3a2d110af50a895c0637213d8 — rows 4.9e and 4.13c marked [~] with the Red SHA and evidence; one path
+red_test_command:
+  - "bun test harness/model-guide-tests/review-run.test.ts: exit 1; 39 pass, 4 fail; Ran 43 tests across 1 file."
+  - "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot: exit 1; Tests  2 failed | 19 passed (21); Test Files  1 failed (1)."
+  - "bun test harness/model-guide-tests/pick-diffs.test.ts: exit 0; 29 pass, 0 fail; unchanged, no case added."
+files_changed:
+  - harness/model-guide-tests/review-run.test.ts
+  - harness/model-guide-tests/judge-run.test.ts
+  - measure/tracks/model_guide/plan.md
+plan_updates: "Rows 4.9e and 4.13c are marked [~] with the Red role SHA 154eb7d and the evidence lines (failed test names, exit codes, and the pgrep scans). Both rows stay [~] until Green flips them. No other row changed."
+known_failures:
+  - "M1 and M2 fail because the call stdin holds no message line (production review-run.sh sends only the prompt and the diff)."
+  - "M3 and M4 fail because a missing or empty message file gives exit 0 instead of the exit-2 refusal."
+  - "J15 fails because a judges.json route gives 'judge-run: the route is not in routes.json' (production judge-run.sh never reads judges.json)."
+  - "J16 fails because the review-only route opencode-go/deepseek-v4.1-flash is accepted at HEAD."
+  - "J16b passes at HEAD (an unknown route is already refused) and stays as a guard for the Green route-source switch."
+handoff: "Green 4.9f implements the message line in review-run.sh (prompt, message line, seeded diff), the missing/empty refusal, the seeder write of messages/<diff_id>.txt, and the backfill for mg-2026-11a and mg-2026-11p before night 1 (2026-11-20 02:00 +07). Green 4.13d writes harness/model-guide/judges.json with the three D11 routes and switches judge-run.sh to accept a route only from judges.json; routes.json stays the six review routes, and the 18 earlier judge tests will need their temp judges.json to list the fixture route (adjust the fixture, never an assertion). No pick-diffs case was added: pick-diffs.ts has no diff_id mapping and never touches sets/, so messages/<diff_id>.txt belongs to the seeding layer. Rows 4.9e and 4.13c stay [~]; Green flips them. No question; status ready."
+END_MEASURE_AGENT_RESULT
+
+Red remediation 4.9e and 4.13c — fixtures, judge list refusal, seed-messages
+Date: 2026-11-18
+Role: mid-red (orchestrator ruling 2026-11-18; Green/MiniMax out of steps)
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+tasks: 4.9e and 4.13c remediation (R1, R2, R3)
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 154eb7dd03ca4b09f090f8cc9ca59d1259da80fb
+resulting_head: 07418d21f073a3201055832dd5fbd82fa0e8a880
+commits:
+  - dd57da75a96d8563b661ad2e1cd781fb01818954 — the three test files (R1 fixture messages, R2 always-written judges.json plus J17, R3 seed-messages.test.ts); three paths
+  - 07418d21f073a3201055832dd5fbd82fa0e8a880 — rows 4.9e and 4.13c keep [~] with the new SHA, row 4.9f names seed-messages.ts and the two backfill commands; one path
+red_test_command:
+  - "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot: exit 0; Tests  14 passed (14) with Green's worktree production changes in place."
+  - "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot: exit 1; Tests  1 failed | 21 passed (22). The failure is J17 (exit 0, expected 2: Green falls back to routes.json when judges.json is missing)."
+  - "bun test harness/model-guide-tests/seed-messages.test.ts: exit 1; 0 pass, 9 fail. Every case fails with 'production file is missing: harness/model-guide/seed-messages.ts'."
+files_changed:
+  - harness/model-guide-tests/adversarial-p4-runner.test.ts
+  - harness/model-guide-tests/judge-run.test.ts
+  - harness/model-guide-tests/seed-messages.test.ts
+  - measure/tracks/model_guide/plan.md
+plan_updates: "Rows 4.9e and 4.13c stay [~] with the remediation SHA dd57da7 and the new evidence. Row 4.9f drops the pick-diffs seeder line and names harness/model-guide/seed-messages.ts with its contract (usage, first-line write, exit 0 line, the four exit-2 causes with whole-run atomicity, no src read, nothing outside messages/) and the two backfill commands for mg-2026-11a and mg-2026-11p. No other row changed."
+known_failures:
+  - "J17 fails against Green's worktree judge-run.sh (exit 0, expected 2) because Green falls back to routes.json when judges.json is missing, against spec D11. The next Green must remove the fallback and read judges.json only."
+  - "All 9 seed-messages cases fail because harness/model-guide/seed-messages.ts does not exist yet."
+production_files: "NOT staged, edited, or reverted: harness/model-guide/review-run.sh (M), harness/model-guide/judge-run.sh (M), harness/model-guide/judges.json (untracked). Green's worktree production stays as found."
+handoff: "Next Green 4.9f/4.13d: write seed-messages.ts, remove the judges.json-missing fallback so judge-run.sh accepts a route only from judges.json, rerun the backfill commands for mg-2026-11a and mg-2026-11p, and flip rows 4.9e and 4.13c. No question; status ready."
+END_MEASURE_AGENT_RESULT

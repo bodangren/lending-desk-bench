@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "role": "ux-browser",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916",
+  "audited_head_sha": "12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916",
+  "reviewer_model": "opencode-go/mimo-v2.6-flash",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "status": "fail",
+  "summary": "The browser review at the pinned head 12e753b fails one check: the print-audit block omits the bias note. All other checks pass at 1280 px and 390 px. The same defect already carries id P2U1-1, Green 2.17 fixed it at 70ebfc5, and this run verified the fix in the served preview at e13413f. No new routing is needed.",
+  "ux_applicability": "applicable",
+  "webbridge_status": "healthy",
+  "webbridge_evidence": {
+    "screenshots": [
+      "measure/runs/model_guide/ux-12e753b/index-1280-viewport.png",
+      "measure/runs/model_guide/ux-12e753b/index-1280-top.png",
+      "measure/runs/model_guide/ux-12e753b/index-390-viewport.png",
+      "measure/runs/model_guide/ux-12e753b/index-390-top.png",
+      "measure/runs/model_guide/ux-12e753b/index-390-modelguide.png",
+      "measure/runs/model_guide/ux-12e753b/real-work-1280-viewport.png",
+      "measure/runs/model_guide/ux-12e753b/real-work-1280-printaudit.png",
+      "measure/runs/model_guide/ux-12e753b/real-work-390-viewport.png",
+      "measure/runs/model_guide/ux-12e753b/real-work-390-printaudit.png",
+      "measure/runs/model_guide/ux-12e753b/verify-e13413f-real-work-1280-printaudit.png"
+    ],
+    "accessibility_snapshots": [
+      "cdp Accessibility.getFullAXTree on http://127.0.0.1:8766/real-work.html at 390 px -> 5274 nodes; 1 RootWebArea, 1 navigation, 1 main, 13 headings, 7 tables, 7 named regions, 8 links, 0 links without a name",
+      "The seven real-work regions are Producer roles table, Checker roles table, app code table, docs and ops table, other table, print books table, tooling table",
+      "cdp Accessibility.getFullAXTree on http://127.0.0.1:8766/index.html at 1280 px -> 684 nodes; 1 navigation, 1 main, 7 headings, 3 tables, 2 named regions, 28 links, 0 links without a name",
+      "The two index regions are For this kind of work, use this model and Model guide table; a final index re-check holds 809 nodes with the same two named regions"
+    ],
+    "interactions": [
+      "kimi-webbridge navigate opened http://127.0.0.1:8766/index.html and http://127.0.0.1:8766/real-work.html in session guide-ux2r (tabId 1042593124), plus the five preview pages for the aria-current survey",
+      "cdp Emulation.setDeviceMetricsOverride 1280x900 -> both pages report scrollWidth 1270 and clientWidth 1270",
+      "cdp Emulation.setDeviceMetricsOverride 390x844 -> both pages report scrollWidth 380 and clientWidth 380",
+      "cdp Page.addScriptToEvaluateOnNewDocument installed error hooks -> __uxErr empty on both pages at both widths, at 12e753b and at e13413f",
+      "cdp Input.dispatchKeyEvent Tab walk on index.html at 390 px, 20 stops -> 8 nav links, the named Model guide box at stop 9, then links inside the two unnamed legacy boxes",
+      "cdp Input.dispatchKeyEvent Tab walk on real-work.html at 390 px, 14 stops -> 8 nav links, then Producer roles table, Checker roles table, app code table, docs and ops table, other table, print books table in document order",
+      "cdp Input.dispatchKeyEvent ArrowRight -> Model guide box scrollLeft 0 to 40 of 178; Producer roles box 0 to 40 of 773; legacy leaderboard box to 93 of 93 from a focused inner link; legacy history box to 160 of 168",
+      "network start/list/stop -> index.html 12 requests with only /favicon.ico 404; real-work.html 4 requests, all 200",
+      "evaluate DOM scans -> six rows in D18 order, base lines on two rows, print-audit text assertions, clipped-text scan 0 at 390 px, layout rects, aria-current survey of five preview pages",
+      "cdp Accessibility.getFullAXTree -> real-work 5274 nodes; index 684 nodes, final re-check 809 nodes",
+      "daemon screenshot action + file copy -> 10 PNG files under measure/runs/model_guide/ux-12e753b/",
+      "post-fix verification in session guide-ux2v (tabId 1042593153) at e13413f -> bias note present in the block, no console error, no horizontal scroll at either width",
+      "close_session guide-ux2, guide-ux2r, guide-ux2v -> 1 tab closed each"
+    ]
+  },
+  "blocking_findings": [
+    "P2U1-1 [Blocker] ux-browser: .tmp/model-guide-preview/real-work.html, the Print audit card, and harness/model-guide/preview.sh print_audit_block: at audited head 12e753b the block omits the bias note. It renders only the top-level scope note 'Seeded-error answer key of one unreleased book proof...'. The data file harness/model-guide/data/print-audit-2026-11.json holds summary.bias_note 'A Sonnet 5.5 session wrote the answer key, so the s55 score may be too high. Review A noted E35 for s55 is partial, not found (minors found 5, not 6).' The served page holds the string 'wrote the answer key' 0 times. Rationale: spec D17 'The page' requires the block to show the two results, the error types with their counts, and the bias note; test-strategy section 9.2 lists the bias note as required. Same id and same defect as P2U1-1 in measure/runs/model_guide/ux-browser-b4fba01.json; Red 2.16 exists and Green 2.17 (70ebfc5) fixed it, so no new routing is needed. Fix: render summary.bias_note in the block; the fix landed at 70ebfc5 and this run verified it in the served preview at e13413f."
+  ],
+  "nonblocking_findings": [
+    "P2U1-2 [Nit] ux-browser: .tmp/model-guide-preview/index.html, the nav: no link carries aria-current. The active Overview link uses the class active only, while real-work.html keeps aria-current=page on its Real work link and no wrong link carries aria-current. Rationale: docs/index.html is pre-existing markup outside the Phase 2 diff, so this is no regression; the overview page still gives a screen reader no current-page marker. Same id as P2U1-2 in measure/runs/model_guide/ux-browser-b4fba01.json. Fix: add aria-current=page to the active Overview link.",
+    "P2U1-3 [Nit] ux-browser: .tmp/model-guide-preview/index.html, the leaderboard and history scroll boxes: both .table-wrap boxes carry no tabindex, no role, and no aria-label, and both scroll at 390 px with 93 px and 168 px of overflow. Their inner links take focus, and ArrowRight scrolls each box to its maximum, so the content stays reachable. Rationale: the boxes come from pre-existing docs/index.html outside the Phase 2 diff, while the new Model guide box carries tabindex 0, role region, and a name. Same id as P2U1-3 in measure/runs/model_guide/ux-browser-b4fba01.json. Fix: give the two boxes tabindex 0, role region, and an aria-label.",
+    "P2U1-4 [Nit] ux-browser: .tmp/model-guide-preview/index.html, the overview table: the base line shows on 2 of 6 rows, app code base line 95.0 and test writing base line 98.7. The other four rows carry no base line. Rationale: guide.ts and spec D18 tie base lines to the build and tests scores only, so the code follows the spec; the brief check names a base line in each row. Same id as P2U1-4 in measure/runs/model_guide/ux-browser-b4fba01.json. Fix: confirm the row scope with the PM, or show a base line in every picked row.",
+    "P2U1-5 [Nit] ux-browser: carryover of the Phase 1 item U2. The checker roles table of real-work.html needs 1111 px and its box gives 1071 px at 1280 px, so the last column Mark sits outside the box. The box has a Tab stop and ArrowRight scrolls it, so the mark stays reachable. Rationale: known Phase 1 item, stays nonblocking. Fix: shorten the columns, move the mark into the row, or raise the max width. Same id as P2U1-5 in measure/runs/model_guide/ux-browser-b4fba01.json.",
+    "P2U1-6 [Nit] ux-browser: carryover of the Phase 1 item U5. A request for /favicon.ico answers 404, the served pages declare no icon link, and docs/ holds no favicon.ico. Rationale: known Phase 1 item, stays nonblocking; page reloads make no favicon request. Fix: add one icon file, or declare an icon link. Same id as P2U1-6 in measure/runs/model_guide/ux-browser-b4fba01.json."
+  ],
+  "evidence": [
+    "UX applies: the phase changes the user-facing pages index.html and real-work.html in the preview folder (test-strategy section 9.2).",
+    "The brief pinned audited_head_sha to 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916. git rev-parse HEAD returned that value at the start, mid-run, and after the last measurement batch.",
+    "HEAD changed during this run by other roles: 12e753b to b4fba01 (record Green 2.15), then a26cf96 and 8579399 (Red 2.16), then 70ebfc5 and e13413f (record Green 2.17). This role committed nothing.",
+    "A second ux-browser run at b4fba01 exists: measure/runs/model_guide/ux-browser-b4fba01.json, written 2026-11-16 01:26, status fail. It filed P2U1-1 to P2U1-6. This run measured the same defects independently at 12e753b and reuses those ids to avoid duplicate routing.",
+    "The preview folder was regenerated during this run at 00:58 and at 01:57 on Nov 16. The six overview rows and the print-audit values stayed unchanged in every measurement before and after both regenerations.",
+    "Check 1 holds: the body order is site-nav, model-guide, hero. At 1280 px the table top is 66 px and the hero top is 576 px. At 390 px the table top is 149 px and the hero top is 1129 px.",
+    "Check 2 rows: six rows show in D18 order: Code review, app code, test writing, docs and ops, print-book audit, tooling. Two rows show the exact text 'no pick yet: not enough evidence'. Every row shows a second choice, an evidence cell with a run count, and the date 2026-11-14.",
+    "The base line shows on two rows: app code 95.0 and test writing 98.7. guide.ts and spec D18 tie base lines to the build and tests scores only. This is finding P2U1-4.",
+    "A few-runs pick never shows as a pick: the tooling row shows evidence 'page B: pass 1.00 (n=2)' and no pick. The table holds no 'few runs' text and no 'stale' mark; model-guide.json reports stale false.",
+    "Check 3 holds: the clipped-text scan at 390 px finds zero text elements outside a scroll box on index.html and zero on real-work.html, at 12e753b and at e13413f.",
+    "Check 4 on real-work.html: all seven .table-wrap boxes carry tabindex 0, role region, and a named aria-label. A Tab walk reaches them in document order, and ArrowRight scrolls the Producer box from 0 to 40 of 773.",
+    "Check 4 on index.html: the Model guide box carries tabindex 0, role region, and the label 'Model guide table'. Tab stop 9 focuses it, and ArrowRight scrolls it from 0 to 40 of 178. The two legacy boxes carry no tabindex, role, or label; their inner links take focus, and ArrowRight scrolls each box to its maximum of 93 px and 168 px. This is finding P2U1-3.",
+    "Check 5: real-work.html holds exactly one aria-current element, on the Real work link with value page. No link on any preview page carries aria-current on a wrong link. index.html holds no aria-current; its active Overview link uses class active only, like the other legacy pages. This is finding P2U1-2.",
+    "Check 6 fails at 12e753b on the bias note: the block shows the top-level note 'Seeded-error answer key of one unreleased book proof...', and the string 'wrote the answer key' appears 0 times in the served page. The data file holds that text at summary.bias_note. This is finding P2U1-1.",
+    "Check 6 other values pass at 12e753b and at e13413f: '52 error rows, 13 blockers', 'kimi-code-plan-cn/k3.1-pro 11 of 13', 'claude-code/claude-sonnet-5-5#high 13 of 13', minor 21, major 18, blocker 13, 'one calibration run', 'not a rank'. The placeholder line 'Error types: not yet received.' appears 0 times.",
+    "The block holds no file name and no page number; a filename and page-number scan of the block returns no match. The .json name sits in the Source card, which is Phase 1 scope. Full route names are the known PM question Q6, not a finding.",
+    "Check 7 holds: an injected error hook records no error, rejection, or console.error on either page at either width, at 12e753b and at e13413f.",
+    "Check 8 holds: at 390 px both pages report scrollWidth 380 and clientWidth 380. At 1280 px both pages report scrollWidth 1270 and clientWidth 1270.",
+    "U2 re-measured at 1280 px: the checker table needs 1111 px and its box gives 1071 px, so the last column sits outside by 40 px. The box has a Tab stop. This is finding P2U1-5, a known Phase 1 item.",
+    "U5 re-checked: /favicon.ico answers 404 by curl and in the browser network list. This is finding P2U1-6, a known Phase 1 item.",
+    "Post-fix verification at e13413f, outside the pinned audited head: the served block contains 'wrote the answer key', all other block values pass, both pages record no console error, and neither page scrolls sideways at 390 px. Green 2.17 landed as 70ebfc5 and was recorded at e13413f.",
+    "Accessibility snapshots: the real-work.html AX tree at 390 px holds 5274 nodes, 7 named regions, 13 headings, 7 tables, 8 links, and 0 links without a name. The index.html AX tree at 1280 px holds 684 nodes, 2 named regions, 7 headings, 3 tables, 28 links, and 0 links without a name.",
+    "Ten screenshots under measure/runs/model_guide/ux-12e753b/ cover both pages at 1280 px and 390 px, the overview table, the print-audit block, and one post-fix print-audit capture at e13413f.",
+    "Server handling: the round-1 server pid 3730024 was already stopped by a SIGTERM at 01:26 before this run finished. This run restarted one server for the post-fix verification and stopped it with kill 2128138; port 8766 then answered no connection. A different role started a new server (pid 2153645) at 02:08:17 after this cleanup; this role left it running because it belongs to another run.",
+    "Browser sessions guide-ux2, guide-ux2r, and guide-ux2v are closed; each close_session call closed one tab.",
+    "This role wrote only the result JSON, the log, and the screenshots. No implementation, test, plan, or registry file changed, and this role committed nothing."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916 during the measurements; later 8579399 and e13413f after other roles committed",
+    "git status --porcelain -> only .opencode/, harness/wt.txt, tech-debt.md untracked",
+    "git log --oneline 12e753b..HEAD and git log -4 -> b4fba01, a26cf96, 8579399, 70ebfc5, e13413f with task 2.14 to 2.17 messages",
+    "kimi-webbridge status -> running true, extension_connected true, daemon v2.0.27, extension v2.0.36",
+    "python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview -> reused round-1 server, restarted once for verification, stopped at the end",
+    "curl -o /dev/null -w %{http_code} -> index.html 200, real-work.html 200, assets/css/site.css 200, favicon.ico 404",
+    "cdp Emulation.setDeviceMetricsOverride 1280x900 -> both pages scrollWidth 1270 equals clientWidth 1270",
+    "cdp Emulation.setDeviceMetricsOverride 390x844 -> both pages scrollWidth 380 equals clientWidth 380",
+    "evaluate DOM scans -> six rows, D18 order, base lines, print-audit text assertions, clipped-text scan 0, layout rects, aria-current survey of five pages",
+    "grep -c 'wrote the answer key' real-work.html -> 0 at 12e753b, 1 at e13413f; grep -c 'Seeded-error answer key' -> 1 at both",
+    "cdp Input.dispatchKeyEvent Tab walk -> index 20 stops with Model guide box at stop 9; real-work 14 stops with 6 named boxes reached",
+    "cdp Input.dispatchKeyEvent ArrowRight -> Model guide box 0 to 40 of 178; Producer box 0 to 40 of 773; legacy boxes to 93 of 93 and 160 of 168",
+    "cdp Accessibility.getFullAXTree -> real-work 5274 nodes, 7 named regions; index 684 nodes, final re-check 809 nodes, 2 named regions",
+    "network start/list/stop -> index 12 requests with favicon 404 only; real-work 4 requests, all 200",
+    "cdp Page.addScriptToEvaluateOnNewDocument plus evaluate -> __uxErr empty on both pages at both widths",
+    "daemon screenshot action plus file copy -> 10 PNG files under measure/runs/model_guide/ux-12e753b/",
+    "close_session -> guide-ux2, guide-ux2r, guide-ux2v each closed 1 tab",
+    "kill 2128138 -> server stopped; curl 127.0.0.1:8766 returns no connection (port free)"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "At the audited head 12e753b the served block omits the spec D17 bias note; every other mandated value shows at both widths."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "The section 9.2 checklist ran in a real browser at 1280 px and 390 px on both pages, with DOM, AX, network, and screenshot evidence per item."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "This role wrote only the result JSON, the log, and the screenshots. No implementation file changed and no commit was made."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim cites a browser measurement, an AX tree count, a screenshot path, an HTTP status code, or a git object id."
+    }
+  ]
+}

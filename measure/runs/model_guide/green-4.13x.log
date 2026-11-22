@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13x Green: the token log reads the real step_finish event (Review A 2fdb8f8)
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: c5942e67d23944eb4e386c54fc9e6017c5e29c34
+resulting_head: ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45
+commits: f88f9b6343e394369ce4877846910fbf3efb3fac ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45
+tests: review-run.test.ts 68 pass 0 fail (Red base 65 pass 3 fail); judge-run.test.ts 39 passed (39); decode-parity.test.ts 3 passed (3); adjudicate.test.ts 23 passed (23); review-score.test.ts 27 passed (27); adversarial-p4b.test.ts 12 passed (12). pgrep for fake-opencode and quota-server showed nothing after each run.
+handoff: Both read_tokens readers accept the old step-finish top-level tokens and the real step_finish part.tokens shape, sum over every event, and set tokens_complete true only when all five fields are numbers. Rows 4.13w and 4.13x are [x]. No test file changed. New files added: none (the log is untracked). Reviewers scope the production diff to harness/model-guide/review-run.sh and harness/model-guide/judge-run.sh. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; final Green HEAD ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45.
+END_MEASURE_AGENT_RESULT

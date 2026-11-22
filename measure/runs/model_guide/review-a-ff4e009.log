@@ -1,0 +1,7 @@
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings: none
+nonblocking_findings: 1) liveFakeOpencode() of adversarial-p4-runner.test.ts:474-484 matches every fake-opencode process on the machine, so a concurrent session's decoy (mg-decoy-D2, review-run.test.ts:3096) failed ADV-R-8 spuriously in my first run; the quiet re-run passed 14 of 14; pre-existing and outside the range; scope the scan to the file's own tag, as the quota scan at line 113 does. 2) Plan row 4.13t still cites the session exports (message-part shape step-finish) as the event-shape source; rows 4.13w and 4.13x correct the record with the installed bundle; stale historical evidence only.
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

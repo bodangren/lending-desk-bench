@@ -1,0 +1,91 @@
+Red evidence for plan task 2.12 — Review B round 2 tests (P2B2-1 file
+symlinks, P2B2-2 newline names)
+Recorded 2026-11-15 by the mid-red role at role_base_sha 3d42bf8d84359364392f473d9ac6d9b9bef466d2
+Phase base: c22f313603108585f8bb45996057627acfbc78ae
+Findings: measure/runs/model_guide/review-b-3d42bf8.json
+
+Pinned contracts (both stated in the test names):
+
+P2B2-1 the symlink guard of `update.sh` covers every path component the
+script writes through. After the approval that is
+`docs/assets/data/real-work.json` and `docs/assets/data/model-guide.json`.
+Before the approval that is the preview folder itself and its two target
+files. A planted link at any of those names gives exit 2 with one line that
+names the refusal, writes nothing outside the repo, and changes no byte of
+the link target. Every case runs in a temp repo; the link target lives in a
+second temp folder outside that repo.
+
+P2B2-2 the contract is "the truly newest file by modification time wins",
+the same for `update.sh` and `preview.sh`. The planted newest score file
+holds a newline in its name, and the older file beside it has no complete
+route, so only a correct pick shows `new-model`.
+
+Targeted Red command (day rule: one file per run, one worker):
+  cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  4 failed | 3 passed (7)
+  The three tests of task 2.3 and 2.7a stay green. The four new tests fail
+  for the right reason: the guard and the stat-based pick are missing.
+
+Failed test names (update.test.ts):
+- P2B2-1a: after the approval a symlink at either docs target file gives exit 2 and no outside write
+  AssertionError: a symlink at docs/assets/data/real-work.json must exit 2:
+  expected +0 to be 2. The run followed the link and exited 0, so the
+  outside target bytes moved with it.
+- P2B2-1b: before the approval a symlinked preview folder gives exit 2 and no outside write
+  AssertionError: a symlinked preview folder must exit 2:
+  expected +0 to be 2. `mkdir -p` followed the link and the two copies
+  landed outside the repo.
+- P2B2-1c: before the approval a symlink at either preview target file gives exit 2 and no outside write
+  AssertionError: a symlink at .tmp/model-guide-preview/real-work.json must
+  exit 2: expected +0 to be 2. The `cp` at update.sh:104-105 followed the
+  link.
+- P2B2-2 update: a newest score file whose name holds a newline does not steer the pick (the newest file by modification time wins)
+  AssertionError: expected 'no pick yet: not enough evidence' to be
+  'new-model'. The `ls -1t | head -n 1` rule at update.sh:78-82 read the
+  first line of the newline name and picked the older `evil.json`.
+
+Targeted Red command for the preview half:
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  1 failed | 98 passed (99)
+  The 98 tests of the preview and the publish gate stay green.
+
+Failed test name (preview-gate.test.ts):
+- P2B2-2 preview: a newest score file whose name holds a newline does not steer the pick (the newest file by modification time wins)
+  AssertionError: expected 'no pick yet: not enough evidence' to be
+  'new-model'. The same rule at preview.sh:126-130 picked the older file.
+  The test gives the temp repo the real benchmark and tests data files, so
+  the overview table renders at all.
+
+The other required files, each run alone with one worker, all exit 0 with a
+labeled Tests line:
+  cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  14 passed (14)
+
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+
+  cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  13 passed (13)
+
+  cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  20 passed (20)
+
+  cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  2 passed (2)
+
+  cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  49 passed (49)
+
+No production file was edited. `git status --short docs/` prints nothing.

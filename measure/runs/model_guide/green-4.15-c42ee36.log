@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: c42ee3665665978bfd53d8256192396c60bdc06f
+green_commit_sha: e66db50
+handoff: Seed reason and hy4 route fixed in e66db50, recorded in c0e8db5. The helper refuses a fixed empty or foreign store with the closed-list no-entry reason after one export call; both runners carry it on the seed refusal line; routes.json holds the Hy plan row for opencode-go/hy4-flash-free#high. Seven files pass one at a time: credential-provider 24 passed, review-run 97 passed, judge-run 50 passed, quota 31 passed, adversarial-p4-runner 16 passed, adversarial-p4b 12 passed, adversarial-p4c 13 passed. Counts are in measure/runs/model_guide/green-4.15.txt. leak-check exit 0. Flipped to [x]: none, the row stays [~] per the PM round cap. Flipped to [b]: none. New files added: none. Hygiene: pgrep printed nothing of mine after each run; git status docs prints nothing.
+END_MEASURE_AGENT_RESULT

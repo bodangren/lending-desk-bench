@@ -1,0 +1,11 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-review-a-correctness
+task: 4.16
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 23f16f18787da5190dc8563e0373d48233653927
+audited_head_sha: 23f16f18787da5190dc8563e0373d48233653927
+handoff: F1 remains nonblocking under the PM cap and routes to backlog row 4.15. F1 is kept as a contested finding for human disposition. My review-run run failed one timing-sensitive F20 case: expected input 7, output 8, total 45; got input 8, output 10, total 48. The orchestrator and Green recorded passing runs. F2 and F3 also route to backlog row 4.15.
+END_MEASURE_AGENT_RESULT

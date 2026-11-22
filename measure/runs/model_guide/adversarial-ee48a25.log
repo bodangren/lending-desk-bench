@@ -1,0 +1,31 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+role: adversarial-testing
+route: opencode-go/glm-5.3#high
+audited_head_sha: ee48a254266afee947d555e4e562093c60d64153
+baseline_sha: 8e0c441a0d026d886bf006388136e7b4e49e4286
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: ee48a254266afee947d555e4e562093c60d64153
+test_commit_sha: 56ab786658576437cf4f373252be2a76f5951130
+status: fail
+blocking_findings: 1
+nonblocking_findings: 5
+retry_recommendation: route_to_green
+confidence: high
+blocking:
+- ADV-P4B-1 [Blocker] judge-run.sh:897-920 scans the raw stdout for a fenced json block, but the answer of a real `opencode run --format json` call is a result event whose fenced block is JSON-escaped, so every production judge verdict silently drops to unclear; review-score.ts:226-247 holds the same defect on the same stored bytes. Pinned failing: AJ1 the answer in the real --format json event shape yields its verdict (expected {"d-01#C0a1b2c3d4e5f":"real-defect"}, got {}).
+nonblocking:
+- ADV-P4B-2 [Major, review-b N1] quota.ts:369: a forged future-dated or millisecond-scale fetchedAt gives ready, not stopped. Pinned failing: AQ1, AQ2.
+- ADV-P4B-3 [Minor, review-b N6] review-run.sh:441 and judge-run.sh:336: the substring match stops a process whose argv tokens hold `observe` and `--service`. Pinned failing: AD1.
+- ADV-P4B-4 [Minor, review-b N4] review-run.sh:486 and judge-run.sh:381: the KILL fires with no recorded starttime (pid-reuse shape). Pinned failing: AD2.
+- ADV-P4B-5 [Minor, review-b N2] provider-credential.sh:66-78 and 119-131: a symlinked XDG data folder sends the seeded credential store outside the job root and the run exits 0. Pinned failing: AH1.
+- ADV-P4B-6 [Nit] review-run.sh:356-367: a diff id with a newline corrupts the pass record instead of refusing. Pinned failing: AM1.
+guard_pins_passing: AQ3, AQ4, AQ5, AD3, AD4
+gate: cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, Tests 7 failed | 5 passed (12)
+orphans: pgrep fake-opencod[e], pgrep quota-serve[r], ps | grep 'serve --servic[e]' printed nothing of mine after each run
+changed_files: harness/model-guide-tests/adversarial-p4b.test.ts
+result_json: measure/runs/model_guide/adversarial-ee48a25.json
+verdict: FAIL
+END_MEASURE_AGENT_RESULT

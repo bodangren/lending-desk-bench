@@ -1,0 +1,23 @@
+MEASURE_AGENT_RESULT
+status: red
+route: opencode-go/muse-spark-1.3-contributor#high
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+task: 4.14
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 5d2152aa7b07b54a7cec170861e35fd64aeb8fd4
+head: 3e3d01b87c4f24ef7eaaf93fdb7c567185f47d96
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+commits: 3e3d01b test(model_guide): red for the incomplete-route label
+tests: harness/model-guide-tests/review-score.test.ts, harness/model-guide-tests/preview-gate.test.ts
+files: harness/model-guide-tests/review-score.test.ts, harness/model-guide-tests/preview-gate.test.ts, measure/tracks/model_guide/plan.md
+red_command: cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+red_result: review-score exit 1, Tests 3 failed | 28 passed (31); preview-gate exit 1, Tests 3 failed | 110 passed (113)
+remaining_failures: review-score R7 writes incomplete_reason on every incomplete route and keeps every other field; review-score R7 refuses a reason with a key shape without printing the value; review-score R7 needs a value for --incomplete-reason; preview-gate V2 shows incomplete with its pass count, no rank number, and its worst score; preview-gate V10 shows the reason and its pass count, and a one-pass route shows its score; preview-gate V11 HTML-escapes the incomplete reason
+failure_reason: each fails on the missing behavior: the scorer refuses with score: unknown flag --incomplete-reason; the page renders the bare mark incomplete with -- in the worst cell
+guards_passing: review-score R7 writes no incomplete_reason when the flag is absent; all 27 older review-score cases; all 110 older preview-gate cases including V1 and V3 to V9
+production_changed: none
+pm_ruling: 2026-11-22, no spec change, keep the three-pass rule; each route with fewer than three complete passes shows incomplete: <n> of 3 passes (<reason>) with its score, no rank number; provisional counts as complete; reason HTML-escaped; replaces the one pass scope note
+refusal_style: score: incomplete-reason on key shape without echoing the value; score: --incomplete-reason needs a value on a missing value; follows the file refuse style
+handoff: Green implements --incomplete-reason in review-score.ts and the mark plus worst cell in preview.sh. The pinned refusal line is score: incomplete-reason. No push ran. No process left running.
+END_MEASURE_AGENT_RESULT

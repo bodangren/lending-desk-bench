@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: blocked
+track: model_guide
+phase: Phase 5: The publish gate and the weekly update
+commits: none
+tests_run: Not run. The required adversarial and UX browser results are stale.
+files_changed: measure/runs/model_guide/phase-acceptance-5-a8835be.json, measure/runs/model_guide/phase-acceptance-5-a8835be.log
+plan_updates: none
+known_failures: F1 blocks on the missing current adversarial result. F2 blocks on the missing current UX browser result.
+handoff: Run adversarial testing and UX browser review at a8835be3ddc9b3e71f8965301772f97935da39d5. Then rerun acceptance. Keep the four supplied implementation findings nonblocking. Facts changed: acceptance status is blocked.
+route: openai/gpt-6.1-sol#high (PM 2026-11-22 route for acceptance roles; substitution for `ra-quota pick phase-acceptance`; family OpenAI, not the Red family Muse).
+phase_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+role_base_sha: a8835be3ddc9b3e71f8965301772f97935da39d5
+audited_head_sha: a8835be3ddc9b3e71f8965301772f97935da39d5
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "role": "measure-closeout",
+  "track": "model_guide",
+  "phase": "closeout",
+  "route": "opencode-go/hy4-flash-free#high",
+  "baseline_sha": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "audited_head_sha": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+  "status": "pass",
+  "summary": "model_guide is archived. The two record fixes are in place. The plan holds 139 completed top-level tasks and two PM-deferred rows marked [b] with a trailing (deferred:PM) field. No [~] or [ ] row remains. metadata.json holds status done and a completion date. The registry lists the track only in Archived Tracks, and measure/index.md points to the archive. A5, A6, and the A9 pre-move scans are clean. The closeout interphase check and the post-move project test gate pass. The nine late findings are carried in tech-debt.md. None is a key leak and none has score impact. No code, test, docs, or published data changed. No push ran.",
+  "final_acceptance": {
+    "path": "measure/runs/model_guide/final-acceptance-3ba285f.json",
+    "status": "pass",
+    "audited_head": "3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36",
+    "provenance_match": true,
+    "scope_note": "Final acceptance passes at the pre-closeout HEAD. Its audited_head_sha equals the current HEAD."
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "4.11 stays deferred under the PM no-extra-nights ruling of 2026-11-22. Marked [b] with (deferred:PM).",
+    "5.4 stays deferred: the first weekly update moved to the weekly update job under the PM ruling of 2026-11-22. Marked [b] with (deferred:PM).",
+    "Review B 4b NB1-NB3, UX 4b F1-F2, Review A 5 F2-F3, Review B 5 F1, Review C 5 F1, and UX 5 F2 are carried in tech-debt.md under the PM late-findings rule. None is a key leak and none has score impact.",
+    "publish.ts and update.sh still name the pre-archive approval path. No closeout gate reads it. Code changes are outside closeout scope. The manifest lists both files for the orchestrator."
+  ],
+  "evidence": [
+    "git rev-parse HEAD printed 3ba285fcd73f1c2b6bb89ef0b22c16dd5f494a36, equal to role_base_sha and to the final-acceptance audited_head_sha. git status showed only the pre-existing untracked .opencode/ and harness/wt.txt before any closeout edit.",
+    "Record fix 1a: plan.md PM calls block now names the scorer flag key-shape gap and the preview labels as carried findings that touch the scorer or the preview, while no carried finding can hide a wrong result in the current scores or the published page. Source: review-a-4b-99ec28c.json F4.",
+    "Record fix 1b: tech-debt.md now holds the section 'model_guide Phase 4b/5 late findings (carried 2026-11-22, PM late-findings rule)' with one line and one source file for each of the nine findings, plus the no-leak and no-score-impact statement.",
+    "git mv moved measure/tracks/model_guide to measure/archive/model_guide after the record fixes.",
+    "The archived plan holds 141 top-level tasks: 139 [x], 0 [~], 0 [ ], and 2 [b]. Every [x] row carries a SHA anchor. Both [b] rows carry a trailing (deferred:PM) field. The PM made both deferral rulings on 2026-11-22 and the final acceptance records them.",
+    "A5: grep for PASS=N FAIL=0, all checks pass, all tests pass, and completely fixed in the archived plan and measure/tracks.md found no hit.",
+    "A6: grep for resolved, completely fixed, fully solved, and pass claims in measure/tracks.md found no hit. model_guide appears only in the Archived Tracks section.",
+    "A9 before the move: 5 code hits for measure/tracks/model_guide/ in publish.ts, update.sh, and four test files. No root tests/*.sh exists. No test reads the pre-archive plan.md path. Every hit and its disposition is listed in the closeout manifest.",
+    "A9 after the move: the project test gate ran in real mode as 'cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot', EXIT=0, Test Files 1 passed (1), Tests 122 passed (122), 0 fail. The heavy-run wrapper waited over 600 s on the shared heavy.lock under p1 contention, produced no result, and was stopped. The same gate ran directly. The summary is in measure/runs/model_guide/closeout-gate-summary.log. No check failed because of the move.",
+    "The closeout interphase check printed PASS: closeout checks passed.",
+    "metadata.json holds status done, completed 2026-11-22, and actual_tasks 139. The registry description matches the metadata description.",
+    "No bulky run artifact was deleted. Every file under measure/runs/model_guide/ is retained and committed with the archive.",
+    "Untracked user paths .opencode/ and harness/wt.txt were not staged. No code, test, docs, or published data path changed. No push ran."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short",
+    "python3: read final-acceptance-3ba285f.json and confirm audited_head_sha equals HEAD",
+    "grep -nE '^- \\[[x~ b]\\]' measure/tracks/model_guide/plan.md (before and after the marker fix)",
+    "python3: read each source review and UX JSON and extract the nine late findings",
+    "git mv measure/tracks/model_guide measure/archive/model_guide",
+    "python3: count top-level [x], [~], [ ], [b] rows in the archived plan",
+    "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass|all tests pass|completely fixed' measure/archive/model_guide/plan.md measure/tracks.md",
+    "grep -nE 'resolved|completely fixed|fully solved|all (checks |tests )?pass' measure/tracks.md; awk '/^## Archived Tracks/{exit} /model_guide/{print}' measure/tracks.md",
+    "grep -rn 'measure/tracks/model_guide/' --include='*.sh' --include='*.ts' --include='*.js' --include='*.py' --include='*.cjs' --include='*.mjs' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=runs --exclude-dir=.opencode .",
+    "HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'bun test harness/model-guide-tests/preview-gate.test.ts' (lock wait over 600 s, no result, stopped); cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (EXIT=0, 122 passed)",
+    "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track model_guide",
+    "git add -- measure/archive/model_guide measure/runs/model_guide/ measure/index.md measure/tracks.md tech-debt.md; git commit -m 'measure(model_guide): closeout'"
+  ],
+  "changed_files": [
+    "measure/archive/model_guide/metadata.json",
+    "measure/archive/model_guide/plan.md",
+    "measure/archive/model_guide/automation-supervisor-closeout-manifest.json",
+    "measure/index.md",
+    "measure/tracks.md",
+    "tech-debt.md",
+    "measure/runs/model_guide/closeout-3ba285f.json",
+    "measure/runs/model_guide/closeout-3ba285f.log",
+    "measure/runs/model_guide/closeout-gate-summary.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "model_guide is closed out and archived. The PM owns the two open deferred rows 4.11 and 5.4; both are marked [b] with (deferred:PM) and listed in the report. The nine late findings are in tech-debt.md with no score impact and no key leak. publish.ts and update.sh still name the pre-archive approval path; no gate reads it and code changes are outside closeout scope, so the orchestrator may open a Red round for that path. No push ran. facts changed: track path, metadata status done and completion date, registry entry, index paths, plan wording at the PM calls block, and a new tech-debt section."
+}

@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-mid-red
+task: 4.16
+status: pass
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 5f01ef93c68f7afe6b2889ea36aafb12a85ef1e5
+red_commit_sha: 1d06dbe0286db169f9e529ad7486112af7242784
+resulting_head: 363743259c6c8acf3dbc7b021db4e14b322078af
+commits: 1d06dbe0286db169f9e529ad7486112af7242784 test(model_guide): Red task 4.16 deadline, unset base, newest answer; 363743259c6c8acf3dbc7b021db4e14b322078af measure(model_guide): record Red task 4.16 r4
+tests: six new r4 cases in review-run.test.ts (queued 11 s answer inside 30 s, late completion guard, empty probe, unset base, newest terminal answer, older partial) and five new r4 cases in judge-run.test.ts (queued answer, late completion, unset base, newest terminal answer, older partial)
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md
+red_command_results: bun review-run exit 1 (123 pass, 5 fail, 903 expect calls); vitest judge-run exit 1 (Tests 5 failed | 54 passed (59)); no adversarial file changed
+remaining_failures: review-run F13 queued 11 s answer, F13 empty probe, F15 unset base, F20 newest terminal answer, F20 older partial; judge-run F13 queued answer, F13 late completion, F15 unset base, F20 newest terminal answer, F20 older partial. The review-run late-completion case passes at the base and is a declared guard. No unrelated case fails and no fake process remains.
+handoff: Green must use one deadline from call entry, refuse an unset pilot base without seeding, and select the newest terminal assistant answer with its tokens in both runners. Move the isolated seed-reason cases of adversarial-p4d.test.ts to a non-pilot route: a trial with claude-code/claude-sonnet-5-5#high broke its two seed-reason cases, so the pilot hy4 route was restored. Configure BENCH_SERVER_BASE in the scheduled callers. No deferred task was created.
+END_MEASURE_AGENT_RESULT

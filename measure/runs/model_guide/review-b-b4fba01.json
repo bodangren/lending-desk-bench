@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "b4fba01b280a7ccfc4186a1de318435d0d01c034",
+  "audited_head_sha": "b4fba01b280a7ccfc4186a1de318435d0d01c034",
+  "reviewer_model": "qwen3.8-max",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 4: P2ADV2-1 is closed. The update.sh -L refusal now walks every parent of $PREVIEW_ABS up to (not including) $ROOT, so a symlinked .tmp is refused with exit 2 before any write, pinned Red-first by update.test.ts P2B2-1d with byte-identical outside and repo checks. The walk is robust to spaces, leading dashes, and (hypothetical) .. components and fails safe. All four suites green (136 tests). One new non-blocking finding: a /tmp probe shows preview.sh follows a symlinked .tmp parent and writes the whole preview outside the repo at exit 0; its stated contract does not promise in-repo containment, so this is Major, not a blocker. Two nits carried.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2B4-1 [Major] review-b: preview.sh follows a symlinked .tmp parent and writes the preview outside the repo at exit 0. Probe in /tmp/opencode/p2b4-probe: with <root>/.tmp symlinked to /tmp/opencode/p2b4-outside, `preview.sh --export fixture/real-work-mini.json` exits 0 and writes index.html, real-work.html, real-work.json, model-guide.json, preview-base.json, and the whole docs copy into /tmp/opencode/p2b4-outside/model-guide-preview/. Cause: preview.sh:80 resolves PREVIEW_ABS with `realpath -m`, which follows the planted link, and the refusals only cover the root path, the docs nesting, links inside an existing preview folder, and links under docs. Rated Major, not Blocker: the header promises no in-repo containment (an operator-chosen --preview outside the repo is a supported mode), the final folder name is fixed (model-guide-preview), the written data is the public docs copy plus sanitized aggregates, and planting the link needs repo-root write access, the same capability that allows direct tampering. Fix suggestion for Green: when the default preview path is used, refuse when the resolved PREVIEW_ABS differs from the lexical $ROOT/.tmp/model-guide-preview, or apply the update.sh parent-chain -L walk to the preview default.",
+    "P2B4-2 [Nit] review-b: carryover of P2B2-3, still open per the round 4 brief: guide.ts readTrackARank defaults a missing or non-finite pass.blocker_recall to 0 instead of refusing, while a missing or non-finite date or score refuses with `input-check: scores`. The silent 0 only affects the first D13 tie-break key. guide.ts did not change in round 4.",
+    "P2B4-3 [Nit] review-b: carryover of P2B2-4 (round 1 P2B1-2, adversarial P2ADV-7/P2ADV2-3), still open per the round 4 brief: print-audit.ts reads the input file twice (text for the JSON parse, bytes for the SHA-256), so the verified hash and the parsed content can come from different file states. Not exploitable in the hand-off threat model. print-audit.ts did not change in round 4."
+  ],
+  "evidence": [
+    "Provenance: HEAD confirmed b4fba01b280a7ccfc4186a1de318435d0d01c034 before and after the audit; no daily publish commit landed after it. The daily publish commit 119b06d (docs/assets/data only) and the daily_model_schedule merge 6452f29 with record 1d934da are in the window and out of Phase 2 scope per the brief; the Phase 2 changes since 12e753b are exactly update.test.ts (5037e77), update.sh (2e4e641), and plan.md records (58811b2, b4fba01). git status --short docs/ empty.",
+    "P2ADV2-1 closure, code: update.sh:57-74 builds PREVIEW_CHAIN by walking $PREVIEW_ABS up to (not including) $ROOT, stopping also at / and ., and the -L loop now lists the three data folders, both docs target files, every chain component, and both preview target files. The loop runs before the mktemp staging (:78), before both tool runs, and before every mkdir and cp. The header (:21-26) matches the code.",
+    "P2ADV2-1 closure, test: update.test.ts P2B2-1d plants <root>/.tmp -> an empty outside folder, runs update.sh before the approval, and pins exit 2, exactly one `update: refused path` line naming .tmp, an empty outside tree, a byte-identical repo tree, and no new commit. red-2.14.txt and green-p2-58811b2.log record it failing 1 | 7 at the role base and passing 8/8 at HEAD.",
+    "Walk robustness, empirical: replicating the loop with ROOT='/tmp/opencode/p2b4 walk/-dash repo' yields exactly the two components (.tmp and model-guide-preview) with spaces and the leading dash intact, count=2, terminating at $ROOT. All expansions are quoted in the array build and the for list. A hypothetical path with a literal .. component overshoots $ROOT upward and checks extra ancestors, which fails safe (more refusals, never fewer); in practice PREVIEW_ABS is the hardcoded '$ROOT/.tmp/model-guide-preview' and ROOT comes from cd+pwd, so no .. appears.",
+    "preview.sh probe (P2B4-1): built /tmp/opencode/p2b4-probe mirroring the update.test.ts temp repo (copied harness/model-guide, fixture docs skeleton, guide fixture base-lines, fixture export pair, node_modules link), planted .tmp -> /tmp/opencode/p2b4-outside, ran preview.sh with the fixture export: exit 0, and find shows real-work.html, preview-base.json, model-guide.json, real-work.json, index.html, and the assets copy under /tmp/opencode/p2b4-outside/model-guide-preview/. The probe stayed in /tmp; the real repo was not touched.",
+    "Tests at HEAD, single-file runs, exit 0 each: update 8/8, preview-gate 99/99, adversarial-p2 14/14, guide 15/15 (136 tests). Matches green-p2-58811b2.log, which also records the other five suites green (234 tests total), bash -n clean, and the task 2.9 preview rows unchanged.",
+    "No new write path and quoting: the round 4 model-guide production diff changes only the refusal block of update.sh; both write branches, the staging flow, and the selection function are untouched. Every new expansion ($NEXT, $PREVIEW_CHAIN elements, the for list) is quoted.",
+    "A2 gate unchanged: the docs write branch still requires measure/tracks/model_guide/publish-approval.md, absent at HEAD. A6: measure/tracks.md unchanged for model_guide, no resolved security claim. Tasks 2.14 and 2.15 are recorded [x] with red-2.14.txt and green-p2-58811b2.log; task 2.8 stays open and is not counted as a finding, this round serves as its code check of the round 4 diff.",
+    "Round 3 nit P2B3-1 (the .tmp parent missing from the update.sh guard) is withdrawn as fixed by 2e4e641: F-P2B3-1 withdrawn: checked the PREVIEW_CHAIN walk at update.sh:57-62, the P2B2-1d pin, and the empirical walk replication; a planted .tmp link is now refused before any write. The same gap in preview.sh is reported separately as P2B4-1 because preview.sh does not promise in-repo containment."
+  ],
+  "commands": [
+    "git rev-parse HEAD (b4fba01b280a7ccfc4186a1de318435d0d01c034, before and after)",
+    "git log --oneline 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916..HEAD",
+    "git diff 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916..b4fba01b280a7ccfc4186a1de318435d0d01c034 -- harness/model-guide/update.sh harness/model-guide-tests/update.test.ts",
+    "read harness/model-guide/update.sh lines 50-70 at HEAD (guard order before staging and writes)",
+    "read measure/runs/model_guide/adversarial-12e753b.json and measure/runs/model_guide/green-p2-58811b2.log",
+    "bash replication of the PREVIEW_CHAIN walk with a spaces and leading-dash ROOT and with a .. path (terminates; components intact; fails safe)",
+    "python3 build of /tmp/opencode/p2b4-probe (temp repo with planted .tmp symlink to /tmp/opencode/p2b4-outside)",
+    "cd /tmp/opencode/p2b4-probe && bash harness/model-guide/preview.sh --export fixture/real-work-mini.json (exit 0; find shows the preview tree written outside the repo)",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot (8 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (99 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot (14 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "git status --short docs/ (empty)"
+  ],
+  "changed_files": [
+    "docs/assets/data/benchmark.json",
+    "docs/assets/data/bugfix.json",
+    "docs/assets/data/tracks.json",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/fixtures/guide/benchmark-mini.json",
+    "harness/model-guide-tests/fixtures/guide/review-scores-mini.json",
+    "harness/model-guide-tests/fixtures/guide/tracks-mini.json",
+    "harness/model-guide-tests/fixtures/page-guard/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/page-guard/real-work-page.json",
+    "harness/model-guide-tests/fixtures/print-audit/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/print-audit/print-audit-mini.json",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/print-audit.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/data/print-audit-2026-11.json",
+    "harness/model-guide/guide.ts",
+    "harness/model-guide/pages/guide-section.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/print-audit.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The parent-chain walk at update.sh:57-74 closes P2ADV2-1 for every component from the repo root down, fails safe on .. overshoot, and the empirical replication shows spaces and leading-dash roots handled; the preview.sh gap is reported separately as P2B4-1."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "P2B2-1d failed 1 | 7 at the role base for the recorded right reason (red-2.14.txt) and passes at HEAD (8/8) with byte-identical outside-tree, repo-tree, and commit-count assertions."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff 12e753b..b4fba01 holds, for model_guide, exactly update.sh, update.test.ts, and plan.md; the daily-publish commit 119b06d and the daily_model_schedule merge 6452f29 are other tracks' work per the brief."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim carries a command result: four single-file vitest runs with exit codes, the /tmp preview.sh probe with its find output, and the walk replication output."
+    }
+  ]
+}

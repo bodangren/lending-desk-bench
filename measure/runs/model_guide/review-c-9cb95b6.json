@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "audited_head_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "reviewer_model": "MiMo-V2.6-Flash",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "status": "pass",
+  "summary": "The delta 80c17f5..9cb95b6 closes PA1-1 against spec D16: the page and real-work.json carry the same work-type list, an empty work type gets an H3 at the same level and in sorted order with the exact text 'no pick yet' and no table, the real export page and JSON regenerate byte-identical, and no docs/ file changed. The PA1-1 test fails at the base commit. One nonblocking test gap is named (C8-1), and C6-1, C6-2, C5-1 stay nonblocking.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "C8-1 [Nit] review-c: spec acceptance 2, 4, and 5 (spec.md:955-958, :960-962, :963-966) name page clauses with no page-level test. No test file asserts that the generated HTML holds the generated date (input-check.test.ts:146 pins source.generated_on in the JSON only; preview-gate F13 at :857-876 pins the page SHA-256 only), the coverage block numbers (real-work.test.ts:312-322 pin the JSON only), the 'few runs' mark in HTML (real-work.test.ts:264-291 pin JSON few_runs and can_pick only), or a rate run count on the page (real-work.test.ts:172 pins JSON pass_rate.n only). grep over harness/model-guide-tests/*.ts for 'generated ', 'Date range', '1,798', 'few runs', and '(n=' finds no expect on the HTML. The real page does render all four (source line 'generated 2026-11-14', '<dt>Runs</dt><dd>1,798</dd>', 95 x 'few runs', 91 x '(n='), so the clauses hold today; only the test is missing. Fix: one preview-gate test that asserts the four strings in the generated page.",
+    "C8-2 [Nit] review-c (carried as C6-1 from review-c-80c17f5.json): unchanged by the delta 80c17f5..9cb95b6. publish.ts:6-11 still has approved_by, date, and files with no field for the words of Daniel that spec D21 names, and git diff 80c17f5..9cb95b6 -- harness/model-guide/publish.ts is empty. Stays open and nonblocking for Phase 1; Phase 5 must close it before the first publish.",
+    "C8-3 [Nit] review-c (carried as C6-2 from review-c-80c17f5.json): unchanged by the delta. real-work.ts:9 still gives the check order 'input, json, manifest, sha256, size, schema, run-sum' while the code at :237-261 runs manifest before json; the delta edits only :407-415 (work-type collection). The tool still fails closed. Stays open and nonblocking.",
+    "C8-4 [Nit] review-c (carried as C5-1 from review-c-80c17f5.json): unchanged by the delta. plan.md:95 still says 'The nav of each page gets the links Real work and Review' with no Phase 1 limit, the delta adds one hunk at plan.md:372 only, and the C4-1 note about the dead Review link still sits at plan.md:710. Stays open and nonblocking."
+  ],
+  "evidence": [
+    "git rev-parse HEAD at the start of the audit = 9cb95b6643eba0cd04f0623865224f3d9ef88b3c, equal to audited_head_sha and role_base_sha; the working tree holds only the untracked .opencode/, harness/wt.txt, and tech-debt.md.",
+    "git log --oneline 80c17f5..9cb95b6 = 530c73a (Red 1.22), 5993d28 (record Red 1.22), 56a173b (Green fix 1.23), 9cb95b6 (record Green 1.23). git diff --stat 80c17f5..9cb95b6 = preview-gate.test.ts +33, real-work.test.ts +10, preview.sh +3, real-work.ts +5-2, plan.md +20; no other file.",
+    "Test command from the brief: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Test Files 1 passed, Tests 90 passed (90), the 88 of round 7 plus the two new Acceptance 5 tests.",
+    "Falsifier: measure/runs/model_guide/red-1.22.txt records the PA1-1 test failing at base 80c17f5 (exit 1, 1 failed | 89 passed, 'the page holds no <h3>translation</h3>') and the empty-map test passing at base as a documented pin of the preview.sh:299-300 branch.",
+    "Page and JSON agree on the work-type list: preview.sh:338 loads real-work.json and preview.sh:370 passes page[\"work_types\"] into work_tables, so one key set feeds both. On the real export the JSON keys are app code, print books, tooling, docs and ops, other and the page holds exactly the five <h3> names app code, docs and ops, other, print books, tooling.",
+    "Empty work type heading: preview.sh:302 runs one sorted(work_types) loop for both branches, and preview.sh:307-308 emits '<h3>{name}</h3>\\n<p>no pick yet</p>' for an empty row list, then continue. Same <h3> level, alphabetical position among the filled sections, no <table>. The new preview-gate test asserts the h3, the text, no table, and that a filled section keeps its table.",
+    "Exact text: the rendered line is <p>no pick yet</p>, and the new test asserts the section contains 'no pick yet'. The whole-map-empty branch preview.sh:299-300 returns <p>no pick yet</p> and the first new test pins it.",
+    "Real export page unchanged: harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json --preview /tmp/opencode/pv-revc9 exited 0; diff of real-work.html and of real-work.json against .tmp/model-guide-preview/ both printed nothing (byte-identical). The real export ranks all five work types (row counts 29, 19, 10, 14, 1), so the new branch never fires on it.",
+    "No docs/ write: git diff --stat 80c17f5..9cb95b6 -- docs/ prints nothing, git status --short docs/ prints nothing (before and after this audit's preview run), and the four delta commits touch no docs/ path.",
+    "Public real-work.json shape intact: top keys stay schema, source, coverage, producer, checker, work_types; work_types values stay arrays of row objects, and the real export holds no empty array. real-work.ts:410-414 keeps unknown/other work-type names with an empty row list while the numeric build still skips those routes (key \"\" never enters a table).",
+    "Acceptance scan (Phase 1 Verify line names acceptance 2, 3, 4, 5, 8): acceptance 3 has input-check.test.ts:152 and :206; acceptance 8 has preview-gate.test.ts:476 and :501 plus the live publish refusal; acceptance 4 method note and route list have preview-gate.test.ts:429 and real-work.test.ts:129; acceptance 5 rate, sum, few-runs, and can_pick have real-work.test.ts:223, :233, :283, and the new no-pick tests. The page-level gaps of acceptance 2, 4, and 5 are named as C8-1.",
+    "C6-1, C6-2, C5-1 stay nonblocking: the delta touches no publish.ts line, leaves real-work.ts:9 and the check order at :237-261 alone, and adds no plan line at :95 or to the C4-1 note; each carrier is verified unchanged above.",
+    "green-p1-5993d28.log records preview-gate 90 passed, real-work 20 passed, input-check 15 passed, leak-guard 2 passed, adversarial 49 passed at Green, which matches this audit's run of the named file."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git rev-parse 80c17f5 9cb95b6 0a44cc9c417587e418899a97ac63f131a59fe2cd",
+    "git log --oneline 80c17f5..9cb95b6",
+    "git diff --stat 80c17f5..9cb95b6",
+    "git diff 80c17f5..9cb95b6 -- harness/model-guide-tests/preview-gate.test.ts harness/model-guide-tests/real-work.test.ts harness/model-guide/preview.sh harness/model-guide/real-work.ts measure/tracks/model_guide/plan.md",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "git diff --stat 80c17f5..9cb95b6 -- docs/ ; git status --short docs/",
+    "grep '<h3>' and 'no pick yet' and 'File ' and '<dt>Runs' .tmp/model-guide-preview/real-work.html",
+    "node -e reading .tmp/model-guide-preview/real-work.json work_types keys and row counts",
+    "bash harness/model-guide/preview.sh --export $HOME/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json --preview /tmp/opencode/pv-revc9",
+    "diff /tmp/opencode/pv-revc9/real-work.html .tmp/model-guide-preview/real-work.html ; diff /tmp/opencode/pv-revc9/real-work.json .tmp/model-guide-preview/real-work.json",
+    "grep -rn 'no pick yet|few runs|generated |Date range|(n=' harness/model-guide-tests/*.ts",
+    "git show 80c17f5:harness/model-guide/preview.sh | grep -n 'no pick yet'",
+    "cat measure/runs/model_guide/red-1.22.txt",
+    "sed -n 951,989p measure/tracks/model_guide/spec.md (acceptance 2, 3, 4, 5, 8)"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-c-9cb95b6.json",
+    "measure/runs/model_guide/review-c-9cb95b6.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "contract_applicability": "applicable: test-strategy.md section 9, Phase 1 row assigns Review C the CLI exit codes of real-work.ts, preview.sh, and publish.ts, and the phase diff 0a44cc9..9cb95b6 adds those Phase 1 tools. This round audits the exact delta 80c17f5..9cb95b6, which edits real-work.ts and preview.sh (two exit-code carriers) and the page/JSON contract the brief scopes.",
+  "route_note": "Route: opencode-go/mimo-v2.6-flash",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "preview.sh:302-311 gives every work type an H3 with 'no pick yet' and no table when its row list is empty, and the regenerated real export page is byte-identical (diff empty)."},
+    {"axis": "test_meaning", "score": 4, "evidence": "red-1.22.txt shows the PA1-1 test failing at base 80c17f5 and 90 tests pass now, but C8-1 names four page-rendering clauses that still have no page-level assertion."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "git diff --stat 80c17f5..9cb95b6 touches only preview-gate.test.ts, real-work.test.ts, preview.sh, real-work.ts, and plan.md, with no docs/ line."},
+    {"axis": "evidence_quality", "score": 5, "evidence": "Every claim here carries a command result: the test run (90 passed), the byte-identical diff against /tmp/opencode/pv-revc9, and git diff on docs/ and publish.ts."}
+  ]
+}

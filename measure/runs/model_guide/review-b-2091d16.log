@@ -1,0 +1,9 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+audited_head: 2091d16451b2dde9198e47761e4d462809142b98
+tests: review-run 23 passed, adversarial-p4-runner 14 passed; fake-opencode and mg-adv-r orphan reads print nothing
+findings: none blocking, none major
+notes: lock path confined under private root; refusal writes nothing; trap releases lock and cleans job folder on EXIT INT TERM; hash input not shell-evaluated
+result_path: measure/runs/model_guide/review-b-2091d16.json
+END_MEASURE_AGENT_RESULT

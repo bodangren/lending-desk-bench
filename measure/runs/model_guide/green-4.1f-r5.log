@@ -1,0 +1,86 @@
+Green task 4.1f, adversarial round 5 — page B adversarial fixes
+Track: model_guide. Phase 4.
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha d20d61100a184f5f039f08a3fd917a1241158e56 (Red tests of
+adversarial-p4, findings in measure/runs/model_guide/adversarial-d74cf4c.json)
+
+Command note: each test file ran one at a time from harness/, with
+`--configLoader native --maxWorkers=1 --reporter=dot`. The full suite did not
+run (PM rule A-23). Green edited no test and no fixture file.
+
+1. Items (orchestrator decision)
+
+  ADV-1 FIX  pages/real-work.html: the number-column headers may wrap at
+             spaces, the number cells stay nowrap, and the model column
+             carries `min-width: 10em` on a `model-cell` class. A
+             `model-name` CSS rule stays out, so DS19 still holds.
+  ADV-2 FIX  every `.table-wrap` carries its own `scroll-hint` as the next
+             sibling, the More columns boxes included. The hint element shows
+             at every width, because a CSS rule cannot read the overflow of a
+             box; a table that fits keeps the hint, which the pair's rule
+             allows (the rule asks that each overflowing box shows one).
+  ADV-3 FIX  `compareRows` rounds a rate and a rework to 9 decimals before a
+             comparison (`rankKey`), so float noise at the last bits never
+             breaks a tie.
+  ADV-4 FIX  `real-work.json` holds the raw weighted values; the page rounds
+             each displayed value once (whole percent, one decimal, two
+             decimals, whole thousands). `roundTo` is gone from the tool.
+  ADV-5 FIX  `audit_name` removes `[1m]` and a `#<variant>` suffix before the
+             model-names.json lookup, the page B model key rule.
+  ADV-6 FIX  `aaIndex` indexes every direct model key first, then every
+             alias, so a direct key wins over an alias whatever the file
+             order.
+  ADV-7 FIX  `netScoreOf` reads `byEffort` by `Object.hasOwn` only, so a
+             variant named `__proto__` or `constructor` finds no entry and the
+             primary row applies.
+
+2. Commits
+
+  cea0a90842d68297c076844179ab4868c2f998bd fix(model_guide): page B adversarial fixes ADV-1 to ADV-7 (task 4.1f)
+  559dda9cd78754d7c4caa258c8edf4c585c22364 measure(model_guide): record Green 4.1f adversarial fixes
+
+3. Ten test result lines (HEAD cea0a90, the production commit)
+
+  adversarial-p4.test.ts  exit 0  Test Files  1 passed (1)  Tests  18 passed (18)
+  real-work.test.ts       exit 0  Test Files  1 passed (1)  Tests  13 passed (13)
+  preview-gate.test.ts    exit 0  Test Files  1 passed (1)  Tests  99 passed (99)
+  guide.test.ts           exit 0  Test Files  1 passed (1)  Tests  17 passed (17)
+  input-check.test.ts     exit 0  Test Files  1 passed (1)  Tests  23 passed (23)
+  update.test.ts          exit 0  Test Files  1 passed (1)  Tests  9 passed (9)
+  leak-check.test.ts      exit 0  Test Files  1 passed (1)  Tests  22 passed (22)
+  adversarial.test.ts     exit 0  Test Files  1 passed (1)  Tests  46 passed (46)
+  adversarial-p2.test.ts  exit 0  Test Files  1 passed (1)  Tests  13 passed (13)
+  adversarial-p3.test.ts  exit 0  Test Files  1 passed (1)  Tests  34 passed (34)
+
+4. Gates
+
+  bash -n harness/model-guide/preview.sh                  exit 0
+  git status --short docs/                                prints nothing
+  bash harness/model-guide/preview.sh \
+    --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt   exit 0
+  Live page facts: 10 picks, two default tables, six `.table-wrap` boxes,
+  six `scroll-hint` elements, footer rows 217, routes 53, unknown rows 6,
+  share `2.8 %`, date 2026-11-17, no work-type hook, and no raw route key in
+  the print-audit block. The browser cases ADV4-16, ADV4-17, and ADV4-18
+  pass at 390, 980, and 1280 px.
+
+5. Plan state
+
+  4.1f stays [x] d25b556 with the fix lines 065815b and cea0a90. 4.1e is
+  [x] cca8fad. No task is [b].
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1f
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: d20d61100a184f5f039f08a3fd917a1241158e56
+resulting_head: 559dda9cd78754d7c4caa258c8edf4c585c22364
+commits: cea0a90842d68297c076844179ab4868c2f998bd (fix), 559dda9cd78754d7c4caa258c8edf4c585c22364 (plan record)
+files_changed: harness/model-guide/real-work.ts, harness/model-guide/preview.sh, harness/model-guide/pages/real-work.html, measure/tracks/model_guide/plan.md
+tests: adversarial-p4 18 passed; real-work 13 passed; preview-gate 99 passed; guide 17 passed; input-check 23 passed; update 9 passed; leak-check 22 passed; adversarial 46 passed; adversarial-p2 13 passed; adversarial-p3 34 passed. Gates: bash -n preview.sh 0; docs/ clean; live preview exit 0; six table boxes and six hints.
+dispositions: ADV-1=FIX; ADV-2=FIX; ADV-3=FIX; ADV-4=FIX; ADV-5=FIX; ADV-6=FIX; ADV-7=FIX
+handoff: The seven decided items are committed in cea0a90 and all ten test files exit 0 at HEAD; the plan record is 559dda9. One design note for the reviews: ADV-2 shows the scroll hint under every table box, not only an overflowing one, because a CSS rule cannot read a box's overflow and no script tag may enter the page (the E case forbids `<script`). A review that wants the hint hidden on a narrow table needs a script-free rule, for example a media query per column count, and its own Red case. The orchestrator still owns the `page-check` browser proof and the pair closeout.
+END_MEASURE_AGENT_RESULT

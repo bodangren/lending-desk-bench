@@ -1,0 +1,3 @@
+MEASURE_AGENT_RESULT
+{"role":"measure-review-c-ux-api","audited_head":"aa1ec1572c794f96caba9064ed17975cb73ee91e","status":"pass","summary":"Review C passes at aa1ec15. The PM 2026-11-18 data-source rules hold in preview and tests. No Blocker or Major finding.","blocking_findings":[],"nonblocking_findings":[],"retry_recommendation":"none"}
+END_MEASURE_AGENT_RESULT

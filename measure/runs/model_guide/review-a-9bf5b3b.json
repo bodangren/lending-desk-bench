@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "audited_head": "9bf5b3b5a231f0d0d3a5e09c74d34297b6ad2c06",
+  "status": "pass",
+  "summary": "Verdict: pass. No blocking finding. Commit 9bf5b3b closes RA2-2 for the pick cell and closes RA2-3. RA2-1 stays partly open. If only the guide.ts minimum changes to 4, guide.test.ts still passes 17 of 17 (RA3-1, Major). A changed real-work.ts minimum fails, but DS8 to DS10 already caught that mutant. The second cell has no #variant case (RA3-2, Nit). The fixture change moves no other expected value, and the plan record of fix round r8 is true. The two copies of the minimum are two spec rules (D16 rank and D18 pick), not a defect. The guide.ts copy still needs its own test.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "RA3-1 [Major] review-a: harness/model-guide-tests/guide.test.ts:676-756 (RA-2 case), comment at 728-731, and harness/model-guide/guide.ts:359. Evidence: the executed mutant N1 (guide.ts:359 row.tasks >= 5 changed to >= 4, real-work.ts unchanged) survives guide.test.ts with 17 passed (17). The cause: real-work.json lists t1/prod-tiny after the ranked rows (by_role.red order prod-evil rank 1, prod-one rank 2, prod-nine rank 3, prod-tiny rank null). guide.ts takes the first qualified row, so prod-one always comes before prod-tiny. Prod-one always qualifies, and prod-nine qualifies as the second choice. The comment 'a missing minimum picks t1/prod-tiny' is false for the guide.ts rule. The Red claim is true only with both minimums at 4 (mutant N3 fails 3 cases). The real-work.ts minimum alone (N2) already failed DS8, DS9, and DS10. The guide.ts rule can change a result: when at most one allowed red row has a rank, N1 gives prod-tiny as the pick or the second choice. Spec D18 pick rule: a model qualifies with 5 tasks or more in a producer row. Fix scope: Red adds a variant where t1/prod-nine is not allowed (or has no red row) and asserts second null. Red then confirms that N1 fails. Red corrects the comment.",
+    "RA3-2 [Nit] review-a: harness/model-guide-tests/guide.test.ts:651-655 and 699-706, and harness/model-guide/preview.sh:389. Evidence: the RA-1 case now puts a #variant route in the print-book audit pick, and mutants N4 (pick without audit_name) and N6 (audit_name without the # split) each fail 1 case. The second route kimi-code-plan-cn/k3.1-pro has no #variant, so mutant N5 (second cell with model_name, not audit_name) survives with 17 passed (17). Spec D17 and Q-S13 map each route key at render time. Fix scope: Red gives the second print-audit route a #variant suffix, for example kimi-code-plan-cn/k3.1-pro#high, and asserts Kimi K3.1 Pro."
+  ],
+  "evidence": [
+    "HEAD check: git rev-parse HEAD returned 9bf5b3b5a231f0d0d3a5e09c74d34297b6ad2c06. git log ba3142a..HEAD holds one commit, 9bf5b3b. It changes only guide.test.ts, the fixture allowed list, the MANIFEST, and plan.md, and no production file. git status --short shows only the six untracked paths that existed at the start.",
+    "RA2-2: closed for the pick cell. The print-audit routes of the temp repo are claude-code/claude-sonnet-5-5#high and kimi-code-plan-cn/k3.1-pro. N4 and N6 each fail the RA-1 case. N5 (second cell) survives (RA3-2).",
+    "RA2-1: partly closed. The fixture now allows t1/prod-tiny (real-work.json by_role.red: prod-tiny tasks 4, rate 1, allowed true, rank null). N3 (both minimums 4) fails 3 guide.test.ts cases (D18 Q1, RA-1, RA-2). N2 (real-work.ts MIN_COUNT 4 only) fails 4 real-work.test.ts cases (DS8, DS9, DS10, and one more) and passes guide.test.ts 17 of 17. N1 (guide.ts only) survives (RA3-1).",
+    "Two copies of the minimum (Red handoff): real-work.ts:41 MIN_COUNT = 5 sets the rank and the Too few tasks group of D16 and FR-3. guide.ts:359 sets the pick qualification of D18. These are two spec rules with the same number, and guide.ts guards its input contract from real-work.json. Equal values give the correct result today. A shared constant is optional. The gap is the missing guide.ts test (RA3-1).",
+    "Fixture change: allowed-routes-2026-10-20.json adds only t1/prod-tiny. sha256sum gives aec159635eabccd77afad240551cba8f677f59502c4bc23d89619305d8169f32 and stat gives 482 bytes, equal to the MANIFEST line. The allowed list changes only the not-allowed mark of prod-tiny. It changes no rank, no footer value, and no top line, because prod-tiny has 4 tasks. guide, preview-gate, real-work, and input-check pass with no change to an expected value.",
+    "Plan record: plan.md:1144 says adversarial 46 passed at ba3142a and gives seven counts for this round. All seven reproduce at 9bf5b3b, each with exit 0: guide 17 passed (17), preview-gate 99 passed (99), real-work 13 passed (13), input-check 23 passed (23), leak-check 22 passed (22), update 9 passed (9), adversarial 46 passed (46). RA2-3 is closed.",
+    "Mutation run in the scratch copy /tmp/ra2-mut/harness (rsync of harness/ at 9bf5b3b, node_modules linked; baseline guide 17 passed (17)): 6 mutants, 3 killed (N3, N4, N6), N2 killed only by real-work.test.ts, 2 survived (N1, N5)."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 9bf5b3b5a231f0d0d3a5e09c74d34297b6ad2c06",
+    "git log --oneline ba3142a..HEAD; git diff ba3142a..HEAD",
+    "cd harness && npx vitest run model-guide-tests/<file>.test.ts --configLoader native --maxWorkers=1 --reporter=dot for guide (17), preview-gate (99), real-work (13), input-check (23), leak-check (22), update (9), adversarial (46) -> each exit 0",
+    "sha256sum and stat -c %s of fixtures/page-b/allowed-routes-2026-10-20.json -> aec15963...9f32, 482",
+    "cd harness && npx tsx model-guide/real-work.ts --manifest model-guide-tests/fixtures/page-b/MANIFEST-2026-10-20.txt --out /tmp/ra3-fx-out -> exit 0; python3 -I read of by_role.red",
+    "python3 -I mutation driver in /tmp/ra2-mut/harness: N1 guide.ts minimum 4 (survives), N2 real-work.ts MIN_COUNT 4 (guide survives, real-work 4 failed), N3 both (3 failed), N4 overview pick model_name (1 failed), N5 overview second model_name (survives), N6 audit_name without split (1 failed)"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_tests",
+  "confidence": "high",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "audited_head_sha": "9bf5b3b5a231f0d0d3a5e09c74d34297b6ad2c06",
+  "phase_base_sha": "ba3142a143f9eea87ebfa2fbc9f812f0b9127ec5",
+  "prior_review": "measure/runs/model_guide/review-a-ba3142a.json",
+  "route": "claude-code/claude-opus-5-5[1m]#high",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "The delta changes no production file, and all seven test files pass at 9bf5b3b with exit 0."},
+    {"axis": "test_meaning", "score": 3, "evidence": "N4 and N6 now fail the RA-1 case, but N1 (guide.ts:359 minimum 4) survives guide.test.ts 17 of 17 and the comment at guide.test.ts:728-731 claims otherwise."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "git diff ba3142a..HEAD touches only guide.test.ts, the allowed list, the MANIFEST, and plan.md:1144."},
+    {"axis": "evidence_quality", "score": 4, "evidence": "All seven counts at plan.md:1144 reproduce, but the Red report says the minimum mutant fails without saying that only the paired mutant N3 fails."}
+  ]
+}

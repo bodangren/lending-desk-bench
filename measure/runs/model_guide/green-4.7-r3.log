@@ -1,0 +1,77 @@
+Green fix round 3 for task 4.7 — ADV-R-13, the lock name
+Track: model_guide. Phase 4: The runner and the first track A results
+(by Sun 2026-11-22). Role: measure-jr-green. Date: 2026-11-18.
+
+phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha c9caed55b34a7012445db365b240ade0aa783b9b (HEAD at the start)
+
+1. The finding and its rule
+
+  ADV-R-13 [Major] of `measure/runs/model_guide/adversarial-f6c29b0.json`.
+  The routes `t/one#c` and `t-one#c` fold to one `RUN_SLUG`, so they shared
+  one lock file and one output folder.
+
+  The orchestrator decided on 2026-11-18: the lock file name appends the
+  first 12 hex characters of the SHA-256 of the full route string to the
+  slug, so each route has its own lock. The output folder name changes too
+  when the test needs it, with the same suffix. Nothing else changes.
+
+2. Change
+
+  `harness/model-guide/review-run.sh` computes `ROUTE_TAG` as the first 12
+  hex characters of the SHA-256 of the full route string. The lock file is
+  `<private>/.locks/review-<set>-<slug>-<tag>-<date>.lock`, and the output
+  folder is
+  `<private>/outputs/<set>/<date>-<slug>-<tag>-p<pass>`. The record name
+  keeps the plain slug.
+
+  The output folder change is needed. Without it, the second route writes
+  its staging file over the staging file of the first route. The first route
+  then exits 1 on its `mv`. The orchestrator allowed this change with the
+  same suffix.
+
+  The script header names the new rule. No test file changed.
+
+3. Commits
+
+  448dbf913407d082c13f8c5f738382af6299eb58 fix(model_guide): review runner lock name per full route (ADV-R-13)
+  bdfcfbb22ab89fbb8dd6abd3b8eb35be0dfffe57 measure(model_guide): record Green fix ADV-R-13
+
+4. Test result lines (one file at a time from `harness/`, each with
+`--configLoader native --maxWorkers=1 --reporter=dot`)
+
+  adversarial-p4-runner.test.ts exit 0  Tests  13 passed (13)
+  review-run.test.ts            exit 0  Tests  23 passed (23)
+  preview-gate.test.ts          exit 0  Tests  111 passed (111)
+
+  ADV-R-13 runs the route `t/one#c` with a 3 s call, then starts the route
+  `t-one#c` after 1.2 s. Both runs exit 0, because the two routes hold
+  different locks and different output folders.
+
+5. Gates and orphan reads
+
+  bash -n harness/model-guide/review-run.sh                    exit 0
+  A quota server process: none stays.
+  ps -eo pid,args | grep '[f]ake-opencode'                     prints no line
+  A `/tmp/mg-adv-r-*` or `/tmp/mg-review-run-*` folder: none stays.
+
+6. Plan state
+
+  4.7 stays [x] 303f73d, and its row now names the fixes 75b3b33 and
+  448dbf9. No task is [b].
+
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.7 (fix round 3, ADV-R-13)
+role: green
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: c9caed55b34a7012445db365b240ade0aa783b9b
+resulting_head: bdfcfbb22ab89fbb8dd6abd3b8eb35be0dfffe57
+commits: 448dbf9 (production), bdfcfbb (plan record)
+files_changed: harness/model-guide/review-run.sh, measure/tracks/model_guide/plan.md
+tests: adversarial-p4-runner 13 passed; review-run 23 passed; preview-gate 111 passed. Gates: bash -n runner 0; no quota server process; no fake-opencode process; no temp folder stays.
+dispositions: ADV-R-13 FIX(the lock file name and the output folder name carry the first 12 hex characters of the SHA-256 of the full route string, so two routes that fold to one slug keep their own lock and their own output folder; the record name keeps the plain slug)
+handoff: ADV-R-13 is fixed at 448dbf9. The lock path is `<private>/.locks/review-<set>-<slug>-<tag>-<date>.lock`, and the output folder is `<private>/outputs/<set>/<date>-<slug>-<tag>-p<pass>`. The output folder change is needed by ADV-R-13 and uses the same suffix, as the orchestrator allowed. The pass record name keeps the plain slug, because the decision changes the lock and the output folder only. A later round that wants route-unique record names must also update the pass-number count and the one-pass cap patterns.
+END_MEASURE_AGENT_RESULT

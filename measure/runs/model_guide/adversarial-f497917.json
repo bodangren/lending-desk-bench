@@ -1,0 +1,73 @@
+{
+  "audited_head_sha": "f497917a3d1f387d4c3c6f8b94e6331d5fd6587a",
+  "blocking_findings": [
+    "P3X1-1 [Blocker] adversarial-testing: adjudicate.ts queue merges two different claims into one queue item when the title and reason differ only by a whitespace shift. Rationale: claimKey (adjudicate.ts:253) joins the claim fields with a space, so title \"a b\" + reason \"c\" and title \"a\" + reason \"b c\" share one dedup key, while claimId (adjudicate.ts:259, JSON.stringify) gives two ids; the queue of spec D11 (\"two different claims get two ids\") keeps one item, the loser never gets a verdict, and a false-claim loser escapes the score.",
+    "P3X1-2 [Major] adversarial-testing: review-set.ts lint passes a plant at new_lines [9999, 9999] that lies on no hunk of its diff. Rationale: readDiff checks operator, length, removed-line crossing, spacing, hunk headers, and SHA-256, but never checks that a plant range sits on diff lines, so a plant that changes no + line of the source diff (spec D5) passes FR-8 and its weight counts in W although no route can find it."
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-p3.test.ts"
+  ],
+  "commands": [
+    "git --no-pager rev-parse HEAD printed f497917a3d1f387d4c3c6f8b94e6331d5fd6587a before the probes and 1e368ba after the test-only commit; no docs/assets/data publish commit landed during the audit",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p3.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 21 passed | 2 expected fail (23), at f497917 and again at 1e368ba",
+    "cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 25 passed (25)",
+    "cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 20 passed (20)",
+    "cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 18 passed (18)",
+    "cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 13 passed (13)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 16 passed (16)",
+    "cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 19 passed (19)",
+    "npx tsx model-guide/adjudicate.ts queue mg-mini with paired whitespace-shift claims -> exit 0, queue.json holds 1 group with 1 item for 2 claims (P3X1-1)",
+    "npx tsx model-guide/review-set.ts lint mg-2026-11a with P1 at [9999, 9999] on a fixture copy -> exit 0 (P3X1-2)",
+    "git status --short docs/ prints nothing"
+  ],
+  "confidence": "high",
+  "evidence": [
+    "P3X1-1: adjudicate.ts:253 claimKey joins with a space while adjudicate.ts:259 claimId hashes JSON.stringify; /tmp/verify11 probe: queue.json 1 group, 1 item, id d1#C936522a302fa for two claims; adversarial-p3.test.ts P3X1-1 it.fails",
+    "P3X1-2: review-set.ts:438-455 checks operator, length, removed-line, spacing but no on-diff check; /tmp/verify12 probe: lint exit 0 with P1 at [9999, 9999]; adversarial-p3.test.ts P3X1-2 it.fails",
+    "P3X1-M pin: JS RegExp . never matches CR, so CRLF body lines parse to zero lines and the lint fail-closes with lint: hunk-header (adversarial-p3.test.ts P3X1-M passes)",
+    "Boundary pins, all passing at f497917: two fenced blocks (first wins), extra JSON keys, string line invalid, line 0 in-window match, unknown severity match, unknown class to verdict, equidistant tie to first key plant, W with zero blockers recall 0, W=0 score 0, 20/19-char K4 edge, trailing-space and CRLF seeded lines, split secret exit 0 per FR-10, staged deletion exit 0, 20-deep key-field hit, A7 prose-never pin, missing and bogus judge verdicts unclear, extra verdict ids ignored, identical Unicode dedup, 3-pass route with one invalid pass stays complete in guide.ts",
+    "A4: no markers-consistent check exists under harness/model-guide, harness/model-guide-tests, or measure/tracks/model_guide; plan task 3.12 is [~] with 3.13+ open, so no vacuous PASS is possible",
+    "A7: no English-word exclusion filter exists in the five Phase 3 tools; P3X1-T proves prose never/do not does not suppress a key-field hit",
+    "A5: plan.md holds no PASS=/FAIL=0/all-checks-pass claim; the cited Green suites re-verified exit 0 above"
+  ],
+  "live_contract_violations": [],
+  "nonblocking_findings": [],
+  "phase": "Phase 3: The track A review set and the scorer (by Thu 2026-11-19)",
+  "phase_base_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "evidence": "review-score.ts, adjudicate.ts, review-set.ts, leak-check.ts, and guide.ts behave per spec on 21 passing probes, with two enforcement gaps (P3X1-1, P3X1-2)",
+      "score": 3
+    },
+    {
+      "axis": "test_meaning",
+      "evidence": "adversarial-p3.test.ts holds 23 tests: 21 passing boundary pins and 2 failing-first tests for P3X1-1 and P3X1-2",
+      "score": 4
+    },
+    {
+      "axis": "scope_discipline",
+      "evidence": "commit 1e368ba adds only harness/model-guide-tests/adversarial-p3.test.ts; no existing test or fixture changed",
+      "score": 5
+    },
+    {
+      "axis": "evidence_quality",
+      "evidence": "every claim cites a file:line and a command result, including the /tmp/verify11 and /tmp/verify12 probes",
+      "score": 5
+    }
+  ],
+  "retry_recommendation": "retry_implementation",
+  "role": "adversarial-testing",
+  "role_base_sha": "f497917a3d1f387d4c3c6f8b94e6331d5fd6587a",
+  "route": "opencode-go/muse-spark-1.3-contributor#high",
+  "status": "fail",
+  "summary": "Phase 3 adversarial testing at f497917: 23 new probes, 21 pass, 2 expose defects. P3X1-1 (Blocker): adjudicate queue merges whitespace-shifted distinct claims into one item, so a false claim can escape verdicts. P3X1-2 (Major): review-set lint accepts a plant outside every hunk, counting unfindable weight in W. All existing Phase 3 suites still pass; only the new test file was committed (1e368ba).",
+  "test_strategy_violations": [],
+  "track": "model_guide",
+  "schema_version": 1,
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "baseline_sha": "39d50779524c1082bf72f6f64642989d38402da2",
+  "test_commit_sha": "1e368ba0de3427b206035a2233c139c8b817ac5a",
+  "reviewer_model": "opencode-go/muse-spark-1.3-contributor#high"
+}

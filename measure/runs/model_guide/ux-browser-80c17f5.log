@@ -1,0 +1,36 @@
+ux-browser rerun for model_guide phase P1 at HEAD 80c17f5979b632a38e2a6797ff20504b418e198c.
+Commit: 80c17f5 measure(model_guide): record Green task 1.21.
+git status --porcelain shows only .opencode/, harness/wt.txt, and tech-debt.md untracked.
+HEAD did not change during the audit. This role wrote only under measure/runs/model_guide/.
+Server: python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview from the repo root.
+URL http://127.0.0.1:8766/real-work.html answered 200. /assets/css/site.css answered 200.
+kimi-webbridge status: running true, extension_connected true, daemon v2.0.27, extension v2.0.36. Session guide-ux.
+Fix gate confirmed in the served source: line 18 aria-current="page", line 33 overflow-wrap: anywhere on the source paragraph, lines 45-229 tabindex/role/aria-label on all seven .table-wrap.
+U1 at 390 px: source paragraph scrollWidth 311 equals clientWidth 311, card scrollWidth 356 equals clientWidth 356. Full SHA-256 reads. Clipped scan outside .table-wrap finds zero boxes at 1280 and 390.
+U3: Tab walk reaches the 8 links then all seven .table-wrap boxes in order. ArrowRight moves scrollLeft 0 to 40 and ArrowLeft returns 0 on each box. AX tree holds seven named region nodes.
+U4: the only aria-current is on the Real work link with value page. The class active sits on the same link only.
+Checklist at 1280 px: scrollWidth 1270 equals clientWidth 1270, no horizontal page scroll.
+Checklist at 390 px: scrollWidth 390 equals clientWidth 390, no horizontal page scroll.
+Rates with run count: column scan of seven tables, zero cells outside the pattern value (n=count) or no rate.
+few runs is a word: 94 Mark cells hold the plain text, plus one prose mention in the method note. Marked rows sit after unmarked rows. Rank runs 1 to n in all seven tables.
+Separate tables: seven tables, 12 rows producer, 29 rows checker, five work-type tables under H3 headings.
+Method note sentence of D16 present verbatim. Coverage values present: 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, 71.7 %, 36, 889, 3.
+Accessibility: 4781 AX nodes, 1 navigation, 1 main, 13 headings h1 to h3, 7 tables, 70 columnheader, 1199 cells, 8 links all named, lang en, one h1.
+Console: no script tag on the page. Server log shows favicon.ico 404 and review.html 404.
+Known items unchanged: Print audit card holds only its heading (Phase 2), Review link 404 (plan note C4-1).
+U2 still holds: checker table 1111 px in a 1071 px wrapper at 1280 px, scroll box reachable, nonblocking.
+U5 still holds: favicon.ico 404 on every load, nonblocking.
+No new findings U6 and up.
+Verdict: pass. No blocking findings. retry_recommendation none.
+Server stopped with pkill -f 'http.server 8766'. Port 8766 is free.
+Browser session closed.
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 80c17f5979b632a38e2a6797ff20504b418e198c
+result_file: measure/runs/model_guide/ux-browser-80c17f5.json
+retry_recommendation: none
+summary: U1, U3, and U4 fixes confirmed in the served page, the Phase 1 checklist passes at 1280 px and 390 px, U2 and U5 remain nonblocking.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,25 @@
+Red task 4.9e — the message line in the prompt (spec D10 ruling 2026-11-18).
+Date: 2026-11-18. Role base: 154eb7dd03ca4b09f090f8cc9ca59d1259da80fb.
+Phase base: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (Phase 4 strategy commit).
+
+Red command (task message):
+  bun test harness/model-guide-tests/review-run.test.ts
+Exit: 1. Result: 39 pass, 4 fail, 307 expect() calls, Ran 43 tests across 1 file.
+
+The 4 new failing cases (all fail because production review-run.sh sends
+only the prompt and the diff, and never reads messages/):
+  - M1 the pass call holds the prompt, the message line, and the seeded diff
+    in that order — stdin holds no MSG-LINE marker.
+  - M2 the probe call holds the prompt, the message line, and the seeded diff
+    in that order — stdin holds no MSG-LINE marker.
+  - M3 a pass with a missing message file refuses — exit 0, expected 2.
+  - M4 a probe with an empty message file refuses — exit 0, expected 2.
+
+The 39 earlier cases pass at this HEAD, including with the shared fixture
+builder now writing messages/<diff_id>.txt for every diff, so the builder
+change needs no production change and keeps them green once Green lands.
+
+Orphan scan after the run: `pgrep -af "fake-opencod[e]"` prints no line;
+`pgrep -af "quota-serve[r]"` prints no line; no mg-* folder stays under /tmp.
+Only the fake opencode was used; no real opencode CLI, no heavy-run.sh, no
+network call, no model call.

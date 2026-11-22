@@ -1,0 +1,59 @@
+Green task 1.11, remediation round 1 of Phase 1.
+
+Red rerun first: `preview-gate.test.ts` exit 1 (27 failed, 12 passed) and
+`input-check.test.ts` exit 1 (2 failed, 9 passed), same as the Red handoff.
+`leak-guard.test.ts` exit 0.
+
+Fixes, each the smallest change:
+
+- A1 (preview.sh): a realpath-based rule compares the real path of
+  `<repo>/docs` with `realpath -m` of the preview value. It refuses an
+  equal path, a preview path under docs, and docs under the preview path.
+  The refusal prints `preview: refused path <value>` on stdout, keeps
+  stderr empty, exits 2, and runs before any mkdir or write. A name-prefix
+  folder such as `<repo>/docs-preview` stays allowed.
+- A2 (publish.ts): the drift check scans every current file of `docs/`
+  and every path of `preview-base.json`. Added, removed, and changed
+  files each give one `publish: drift <path>` line, exit 2, no copy, no
+  crash.
+- A3 (real-work.ts): a PM sum line must name the input base name, else
+  `input-check: manifest`, exit 2.
+- B1 (publish.ts): approval paths must be plain relative paths inside
+  docs. `..`, `.`, empty segments, a leading `/`, a backslash, or an
+  empty path give `publish: bad path <path>`, exit 2, no copy. A record
+  with no `files:` section or no rows gives `publish: no files`, exit 2.
+- B2 (real-work.ts): `coverage.paired_duplicates_left_out` must be an
+  integer in the schema check; a string gives `input-check: schema`,
+  exit 2. Route names stay escaped in the page (the render already
+  escapes; no change was needed there).
+- C2 (publish.ts): a missing `preview-base.json` gives
+  `publish: no preview base`, exit 2, no stack trace, no copy.
+- C4 (publish.ts, real-work.ts): unknown flags and a missing `--preview`
+  give the pinned usage line on stderr, keep stdout empty, and exit 2.
+- A4 (plan.md): task 1.9 marker now cites ef2d16f, and its evidence line
+  names the plan-record commit 2131746.
+
+Deferred dispositions from the brief: C1 (refusal lines stay on stdout)
+and C3 (`can_pick` stays in real-work.json). No change for either.
+
+Difference between the brief and the tests: none found. The tests were
+followed as the source of truth for every pinned line and exit code.
+Finding id map: F1=A1, F2=A2, F3=A3, F4=A4, F5=B1, F6=B2, F7=B3, F8=C1,
+F9=C2, F10=C3, F11=C4.
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+baseline_sha: 0a44cc9c417587e418899a97ac63f131a59fe2cd
+role_base_sha: 43384eaf27818df129fa01a9d039bc69eb17e8f6
+head_sha: b7426e75ec7ae6e0afd88b3be828700cab6ff9b6
+commits: 3a477f555015e7405319a2fe8590a3171b04fdb4, b7426e75ec7ae6e0afd88b3be828700cab6ff9b6
+tests_run: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 1, 27 failed — Red rerun); cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 1, 2 failed — Red rerun); cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0); cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0); cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0); cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot (exit 0)
+files_changed: harness/model-guide/preview.sh, harness/model-guide/publish.ts, harness/model-guide/real-work.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/green-p1-43384ea.log
+plan_updates: Task 1.8 [x] 3a477f5 with the review evidence at 2131746. Task 1.9 marker [x] ef2d16f with the plan-record commit 2131746 in the evidence line. Task 1.11 [x] 3a477f5 with each test file, exit 0, and this log path. No test counts were written.
+remaining_failures: none
+dispositions: F1=FIX; F2=FIX; F3=FIX; F4=FIX; F5=FIX; F6=FIX; F7=FIX; F8=DECLINE; F9=FIX; F10=DECLINE; F11=FIX
+handoff: All fixes of the round are in commit 3a477f5. New reviews A, B, and C on HEAD b7426e7 (code at 3a477f5) follow, so task 1.8 reaches its pass state. `git status --short docs/` prints nothing; the untracked `.opencode/` and `tech-debt.md` were not touched. No test file changed.
+END_MEASURE_AGENT_RESULT

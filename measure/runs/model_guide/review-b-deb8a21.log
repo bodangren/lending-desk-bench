@@ -1,0 +1,9 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+audited_head: deb8a21e27fe5c68f51bf10b35d46ec4a463be8e
+tests: quota 15 passed, credential-provider 11 passed, review-run 23 passed, preview-gate 111 passed; ps shows no fake-opencode process
+findings: none blocking, none major
+notes: A2 not applicable (no publish path change); A6 not applicable (no resolved claim in tracks.md); minor note on one-pass gate keying in summary
+result_path: measure/runs/model_guide/review-b-deb8a21.json
+END_MEASURE_AGENT_RESULT

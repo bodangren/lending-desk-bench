@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: d137057f6b419ed8cda4247ac1805235ae1a2f4c
+result_file: measure/runs/model_guide/review-b-d137057.json
+retry_recommendation: none
+summary: Round 3 security review, delta only, at d137057. The change over f497917 holds four files: the new adversarial test file, adjudicate.ts, review-set.ts, and plan.md. No new write path appears and no symlink or set-id refusal is weakened. The queue dedups on the claim id tuple, so two claims that differ by whitespace get two ids, and the queue item holds no route name and no private path. The new lint line `lint: plant-line: <diff_id> <plant_id>` prints no plant text, line number, or private path. The four single-file suites pass at HEAD. The round 2 nit P3B2-1 carries open.
+END_MEASURE_AGENT_RESULT

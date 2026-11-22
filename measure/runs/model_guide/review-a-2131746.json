@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "audited_head_sha": "213174652648b742af7a2adffce9ccb9e4f043b9",
+  "reviewer_model": "nvidia/minimaxai/minimax-m3.1-flash#thinking",
+  "status": "fail",
+  "summary": "Phase 1 task 1.8 fails. The page B calculations match D16, but preview.sh can write under docs/ and publish.ts misses added docs files. The PM manifest fallback has no unit test. Task 1.9 still cites an unreachable commit.",
+  "blocking_findings": [
+    "A1 [Blocker] review-a: harness/model-guide/preview.sh:20: `--preview` accepts `<repo>/docs`. Line 29 then writes `docs/real-work.json` before any approval or drift check. Spec D21 and FR-7 forbid this write.",
+    "A2 [Blocker] review-a: harness/model-guide/publish.ts:78: The drift loop checks only paths recorded in `preview-base.json`. A new file added under `docs/` after the preview is not detected. Spec D21 requires a check of each current `docs/` file before any copy."
+  ],
+  "nonblocking_findings": [
+    "A3 [Major] review-a: harness/model-guide-tests/input-check.test.ts:129: The changed-byte and wrong-size cases use `sha256:` and `size:` manifest lines. No test covers the PM sum line from commit `ef2d16f`. Both cases would pass if the new branch were absent or wrong.",
+    "A4 [Minor] review-a: measure/tracks/model_guide/plan.md:234: Task 1.9 cites `54836d0`, but no branch contains that commit. The reachable plan-record commit is `2131746`. The other Phase 1 SHAs exist in the audited range."
+  ],
+  "evidence": [
+    "HEAD equaled audited_head_sha 213174652648b742af7a2adffce9ccb9e4f043b9. The audited diff was exactly 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9.",
+    "The D16 calculations match the code at harness/model-guide/real-work.ts:180. The pass rate excludes no_result, the blocking rate uses results, few runs uses results, and the trend uses the last four ISO weeks.",
+    "The work-type code at harness/model-guide/real-work.ts:273 reads only runs, pass, and fail. Its rank uses the pass rate and result count.",
+    "The producer rank at harness/model-guide/real-work.ts:238 uses the lower blocking rate. The checker rank does not use blocking findings or ratings.",
+    "The merge at harness/model-guide/real-work.ts:49 removes only `[1m]` and the variant suffix. It keeps each provider separate.",
+    "The coverage block at harness/model-guide/real-work.ts:313 adds unknown and other runs. The real preview shows 1,798 runs, 50.6 percent, and 71.7 percent.",
+    "The PM MANIFEST has `dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2  167451  real-work-outcomes-2026-11-14.json`.",
+    "Commit ef2d16f at harness/model-guide/real-work.ts:146 parses the PM sum line. A changed byte fails the SHA check. A wrong manifest size fails the size check when the SHA still matches.",
+    "A changed file with a new size stops at the SHA check because SHA runs first. Every input refusal exits 2 before the output write.",
+    "No Phase 1 test uses the PM sum-line manifest. The two input refusal tests would pass with the fallback branch removed.",
+    "The test at harness/model-guide-tests/preview-gate.test.ts:213 uses the default preview path. It does not reject `--preview <repo>/docs`.",
+    "The test at harness/model-guide-tests/preview-gate.test.ts:246 changes an existing docs file. It does not add a new docs file after the preview.",
+    "The preview script calls real-work.ts at harness/model-guide/preview.sh:29 and the template at harness/model-guide/preview.sh:197. The publish script uses the preview files at harness/model-guide/publish.ts:66.",
+    "The build graph found no exported symbols or import callers in the two TypeScript scripts. The shell and plan wiring provide the callers.",
+    "The Phase 1 SHAs 563d33a, 0f0b2df, b42a234, f48787c, b38d577, f36ebb1, and 520e1b7 exist in the audited range. Commit 54836d0 resolves only as an unreachable object.",
+    "The three targeted test files exited 0. They reported 19, 6, and 7 passing tests. No digit-only count assertion or vacuous deliverable check was found.",
+    "The diff contains no change under docs/. The protected provenance, test, host, and credential paths also have no diff.",
+    "The route uses MiniMax. The audited Red and Green work used DeepSeek and Muse, so route parity holds."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 213174652648b742af7a2adffce9ccb9e4f043b9",
+    "git diff --no-ext-diff --find-renames 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9",
+    "git diff --name-status 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9",
+    "git log --oneline --decorate 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9",
+    "git show --no-patch --format=%h 563d33a 0f0b2df b42a234 f48787c b38d577 f36ebb1 520e1b7",
+    "git rev-parse --verify 54836d0^{commit} -> 54836d0685ec911f62902837d67ff4999028990b",
+    "git branch --all --contains 54836d0685ec911f62902837d67ff4999028990b -> no output",
+    "git show --no-ext-diff --unified=60 ef2d16f -- harness/model-guide/real-work.ts",
+    "git status --short docs/ -> no output",
+    "git diff --name-only 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9 -- docs/ -> no output",
+    "git diff --stat 0a44cc9c417587e418899a97ac63f131a59fe2cd..213174652648b742af7a2adffce9ccb9e4f043b9 -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh -> no output",
+    "build-graph scan /home/daniebo/Desktop/lending-desk-bench/harness/model-guide /tmp/opencode/model-guide-review-a-2131746-small.db -> 33 nodes and 31 edges",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 -> exit 0, 19 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 -> exit 0, 6 passed",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 -> exit 0, 7 passed"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/fixtures/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/real-work-mini.json",
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide/pages/real-work.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [
+    "A3 [Major] review-a: harness/model-guide-tests/input-check.test.ts:129: The PM manifest format added after Red has no unit test."
+  ],
+  "live_contract_violations": [
+    "A1 [Blocker] review-a: harness/model-guide/preview.sh:20: The preview path can target docs/ before approval.",
+    "A2 [Blocker] review-a: harness/model-guide/publish.ts:78: The drift check omits current docs files added after the preview."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "nvidia/minimaxai/minimax-m3.1-flash#thinking",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "harness/model-guide/preview.sh:20 and harness/model-guide/publish.ts:78 expose two D21 write-gate defects."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "harness/model-guide-tests/input-check.test.ts:129 covers only keyed manifest lines, although 32 targeted tests pass."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-status lists only the ten planned Phase 1 files."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "measure/runs/model_guide/preview-1.9.txt:3 records the live preview, but measure/tracks/model_guide/plan.md:234 cites an unreachable SHA."
+    }
+  ]
+}

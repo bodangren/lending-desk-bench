@@ -1,0 +1,41 @@
+Review B security audit, model_guide Phase 4b, PM 2026-11-22 exception fix round.
+Range: dc31a0af910bd17255dba10cb662d241fb47da1b..99ec28c28b4934a6b72c422a32de8545be7e7875.
+Route: opencode-go/glm-5.3#high. Result artifact: measure/runs/model_guide/review-b-4b-99ec28c.json.
+
+Provenance: git rev-parse HEAD -> 99ec28c28b4934a6b72c422a32de8545be7e7875, equal to role_base_sha and the audited HEAD. phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5 is an ancestor.
+
+- --pilot-routes input: the scorer refuses a missing file, a directory, an invalid-JSON file, and a non-array file with one fixed line `score: pilot-routes` and exit 2 (review-score.ts:587-600). I probed all four branches; none echoes the path or a value. The refusal runs before any private-folder read and before any write. A key-shaped --incomplete-reason gives `score: incomplete-reason` with no value print.
+- Escape: each pass item renders its route through html.escape in the attribute and in the new visible span (preview.sh:968-973). The C2-route test pins the escape of `x/<b>&"q"`. The zero-pass row dashes every score cell even over stored zeros (preview.sh:928; F1-preview).
+- Committed data: the pilot file holds family, route, kind, and quota names only. The corrected score file holds exactly the three D12 pilot routes; the superseded aa1fd9c rows are gone and the plan records the retraction. A range grep finds no key value, no key shape, and no absolute private path. leak-check over harness/model-guide/data exits 0.
+- Board: docs/ is untouched in the range (git status --short docs/ empty; git diff dc31a0a..99ec28c -- docs/ empty).
+- A2: the new data names routes and quota sources only; no third-party named subject; no consent artifact needed.
+- A6: tracks.md is unchanged; the plan gate counts 33 and 116 match my runs; the document-only citations exist at test-strategy.md:2058-2059 and :2142-2146; tech-debt.md carries my dc31a0a N1 and N2 with source text.
+- Tests at HEAD, one file at a time: review-score.test.ts 33 passed (33); preview-gate.test.ts 116 passed (116). Run at 14:11 local time. No model call, no full suite.
+
+Findings: no blocking findings. Three nonblocking, all score-impact: no:
+- NB1 [Minor]: the --pilot-routes refusal branches have no test; the F1 tests cover only the happy paths. The refusals work (probed). Fix: one refusal case with a non-array temp file.
+- NB2 [Nit]: pilot items without a string route drop silently, so a malformed pilot file under-reports with no signal (review-score.ts:601-604). Within the pinned contract.
+- NB3 [Nit]: a pilot route string that matches a key shape would land unscanned in the committed pilot file and score file; the KEY_SHAPE_RE guard covers the reason flag only. Extends the recorded N1 prevention gap. No leak at HEAD.
+
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: pass
+summary: PASS. No blocking security defect in the PM 2026-11-22 fix round dc31a0a..99ec28c at audited HEAD 99ec28c. The --pilot-routes input refuses a missing, unreadable, or non-array file with one fixed echo-free line, the visible route name is HTML-escaped, the zero-pass row dashes every score cell, the committed files of the range hold no key value, no key shape, and no absolute private path, docs/ is frozen, leak-check exits 0 over the data folder, and A6 holds with the aa1fd9c retraction recorded. Three nonblocking findings, all score-impact: no, all tech-debt class. Two suites green at HEAD: 33 and 116 passed.
+blocking_findings: none
+nonblocking_findings: NB1 [Minor] score-impact: no — the --pilot-routes refusal branches (missing, unreadable, non-array) and the no-echo property have no test; F1 covers only the happy paths; I probed all four branches and each prints only `score: pilot-routes` with exit 2 (review-score.ts:587-600). NB2 [Nit] score-impact: no — pilot items without a string route drop silently, so a malformed pilot file under-reports with no signal (review-score.ts:601-604); within the pinned contract. NB3 [Nit] score-impact: no — a pilot route string matching a key shape lands unscanned in the committed pilot and score files; the KEY_SHAPE_RE guard covers the reason flag only (review-score.ts:584-586 vs :601-604); extends the recorded N1 gap; no leak at HEAD.
+evidence: git rev-parse HEAD = 99ec28c28b4934a6b72c422a32de8545be7e7875; four refusal probes each `score: pilot-routes` exit 2 with no echo; reason probe `score: incomplete-reason` exit 2 with no value print; leak-check --preview harness/model-guide/data exit 0; range grep over the 8 changed files -> benign hits only ($HOME and ~ forms, the KEY_SHAPE_RE itself, the synthetic test value, an absence assertion); preview.sh:968-973 esc span, :928 zero-pass dash, :328 html.escape; C2-route and F1-preview tests pin the escape and the dashes; python3 read -> score file routes exactly the three pilot routes with mimo at 0 passes; plan gate counts 33 and 116 match my runs; test-strategy.md:2058-2059 and :2142-2146 hold the cited dispositions; git diff aa1fd9c 75e97a5 -> the three over-broad rows deleted and the retraction recorded in plan.md.
+commands: git rev-parse HEAD and dc31a0a; git merge-base --is-ancestor phase_base HEAD -> 0; git status --short docs/ -> empty; git diff dc31a0a..99ec28c -- docs/ -> empty; git diff --stat dc31a0a..99ec28c -> 8 files; cd harness && npx tsx model-guide/leak-check.ts --private ... --preview .../data -> exit 0; cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 33 passed (33); cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 116 passed (116); four --pilot-routes probes and one reason probe; range leak grep; python3 read of the score and pilot files.
+changed_files: harness/model-guide/review-score.ts, harness/model-guide/preview.sh, harness/model-guide/data/pilot-routes/mg-2026-11a.json, harness/model-guide/data/review-scores/mg-2026-11a.json, harness/model-guide-tests/review-score.test.ts, harness/model-guide-tests/preview-gate.test.ts, measure/tracks/model_guide/plan.md, tech-debt.md
+test_strategy_violations: none
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+retry_recommendation: none
+confidence: high
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 99ec28c28b4934a6b72c422a32de8545be7e7875
+audited_head_sha: 99ec28c28b4934a6b72c422a32de8545be7e7875
+security_applicability: applicable: the range adds an operator-input flag whose values land in a committed public score file, adds a committed pilot data file, and changes the public preview render
+route: opencode-go/glm-5.3#high
+ratings: correctness 5 (four refusal branches verified by probe, escape pinned by test, score file consistent with the pilot file); test_meaning 4 (red db29807 precedes green 5006625, C2-route hostile escape and F1-preview dashes pinned, refusal branches untested); scope_discipline 5 (the range diff names exactly the 8 planned files; docs/ and the runners untouched); evidence_quality 5 (leak-check exit 0, four probes with exit codes, two green suites at HEAD, range grep, cited lines read).
+END_MEASURE_AGENT_RESULT

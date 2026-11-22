@@ -1,0 +1,32 @@
+Phase 2 browser review for track model_guide at HEAD b4fba01b280a7ccfc4186a1de318435d0d01c034.
+
+Summary: The overview table and the page layout hold at 1280 px and 390 px with no console error, but the print-audit block omits the bias note. One blocking finding P2U1-1. Five nonblocking findings: two pre-existing gaps in docs/index.html, the base line scope, and the carried Phase 1 items U2 and U5.
+
+01:16:30 start provisional JSON and log written before any browser step
+01:16:05 git rev-parse HEAD -> b4fba01b280a7ccfc4186a1de318435d0d01c034, equal to audited_head_sha and role_base_sha
+01:17:00 preview freshness checked: index.html and real-work.html written 00:58, later than every input and later than the b4fba01 commit at 00:55
+01:17:30 server pid 3730024 answered 200 on / and /real-work.html; /favicon.ico answered 404
+01:18:00 check 1 index overview table done: 6 rows, section top 66 above hero top 576, pick or no-pick, second choice, evidence, date in every row, base line on 2 of 6 rows
+01:19:00 check 2 print-audit block measured: 52 error rows, 13 blockers, kimi-code-plan-cn/k3.1-pro 11 of 13, claude-code/claude-sonnet-5-5#high 13 of 13, error types minor 21 major 18 blocker 13, one calibration run, not a rank
+01:19:41 check 2 print-audit block fail: the card holds no bias note; document.body.innerText holds 'wrote the answer key' 0 times and 'too high' 0 times
+01:19:50 cause located: preview.sh print_audit_block renders audit.note only and never reads audit.summary, so summary.bias_note cannot reach the page
+01:21:00 check 3 at 390 px: real-work docSW 390 = docCW 390, index docSW 390 = docCW 390, 0 clipped boxes outside .table-wrap on both pages
+01:21:40 check 4 on real-work.html: 7 scroll boxes with tabindex 0, role region, and an aria-label; Tab walk reaches all 7; ArrowRight scrolls 0 to 40
+01:22:00 check 4 gap on index.html: the leaderboard and history boxes hold no tabindex, no role, and no aria-label; the new Model guide table box passes
+01:22:15 check 4 nav: real-work.html holds aria-current=page on the Real work link only; index.html holds no aria-current on any nav link
+01:22:30 check 5 console: 0 errors on index.html and 0 on real-work.html at 1280 px and at 390 px
+01:24:00 accessibility snapshots: real-work AX tree 4894 nodes with 7 named regions and 8 named links; index AX tree 704 nodes with 2 named regions and 29 named links
+01:25:30 audit result JSON written and validated: PASS: audit result is valid
+01:26:00 server stopped with kill 3730024; port 8766 free; webbridge session p2ux closed
+01:26:30 final status fail with one blocking finding P2U1-1 and five nonblocking findings
+
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: fail
+audited_head_sha: b4fba01b280a7ccfc4186a1de318435d0d01c034
+result_file: measure/runs/model_guide/ux-browser-b4fba01.json
+retry_recommendation: escalate_human
+summary: The overview table and the page layout hold at 1280 px and 390 px with no console error, but the print-audit block omits the bias note, so the route result 13 of 13 shows without the caveat that the answer key came from the same family.
+END_MEASURE_AGENT_RESULT

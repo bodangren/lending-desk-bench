@@ -1,0 +1,30 @@
+MEASURE_AGENT_RESULT
+role: measure-review-b-security
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+scope_tasks: 4.9e, 4.9f, 4.13c, 4.13d
+phase_base_sha: 3581902d06cbe616d95043d201fa2b39b445e697
+role_base_sha: edee50b8e93f8cdfda51791a897d3480436923b4
+audited_head_sha: edee50b8e93f8cdfda51791a897d3480436923b4
+head_current: yes
+security_applicability: applicable
+status: pass
+blocking_findings: 0
+nonblocking_findings: 6 (B1 Minor, B2 Minor, B3 Minor, B4 Minor, B5 Nit, B6 Nit)
+test_strategy_violations: 0
+live_contract_violations: 0
+prod_wiring_violations: 0
+route_parity_violations: 0
+retry_recommendation: none
+confidence: high
+gate_1_seed_messages: 9 pass, 0 fail
+gate_2_review_run: 43 pass, 0 fail
+gate_3_judge_run: 22 passed (1 file)
+pgrep_fake_opencode_after_each_gate: no line
+pgrep_quota_server_after_each_gate: no line
+concurrent_process_note: one /tmp/mg-review-fake-L7WkmH/quota-server.js seen after my gates finished; not mine, transient, left alone
+private_sets_counts: mg-2026-11a 14/14, mg-2026-11p 6/6, one line per message file
+a2_publish_gate: not applicable, no draft to published test in the range
+a6_registry_claim: not triggered, measure/tracks.md line 34 says pending
+result_artifact: measure/runs/model_guide/review-b-edee50b.json
+END_MEASURE_AGENT_RESULT

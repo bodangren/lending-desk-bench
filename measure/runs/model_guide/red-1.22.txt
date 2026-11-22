@@ -1,0 +1,28 @@
+Red run for plan task 1.22 (PA1-1, phase-acceptance-80c17f5), HEAD 80c17f5 base.
+Day rule: single files only, each alone with one worker and the dot reporter.
+
+preview-gate.test.ts: exit 1. Tests 1 failed | 89 passed (90).
+  Failed: Acceptance 5 (PA1-1): a work type carried only by the unknown route
+    renders a heading and "no pick yet" with no table.
+    Reason: the page holds no <h3>translation</h3>; the unknown-only work
+    type disappears instead of rendering a heading with "no pick yet".
+  Passed (pins current branch): Acceptance 5: an export with no work-type
+    rows renders "no pick yet" (the whole-map empty branch at preview.sh:299-300).
+  All 88 pre-existing tests still pass.
+
+real-work.test.ts: exit 1. Tests 1 failed | 19 passed (20).
+  Failed: keeps a work type carried only by the unknown route with an empty row list.
+    Reason: work_types keys lack "translation"; real-work.ts:409-410 skips the
+    unknown and other rows before it collects the work-type names.
+  All 19 pre-existing tests still pass.
+
+input-check.test.ts: exit 0. Tests 15 passed (15).
+leak-guard.test.ts: exit 0. Tests 2 passed (2).
+adversarial.test.ts: exit 0. Tests 49 passed (49).
+
+Commands:
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot

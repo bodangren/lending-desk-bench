@@ -1,0 +1,23 @@
+night 3 mg-2026-11a 2026-11-21T11:02:01+07:00 HEAD 33374182f4798169e8c3e2dc676f8a4a2f9327a6 dry=1
+DRY /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route opencode-go/deepseek-v4.1-flash
+DRY /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route opencode-go/hy4-flash-free#high
+DRY /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route opencode-go/mimo-v2.6-flash
+done 2026-11-21T11:02:02+07:00
+left processes: 0
+night 3 mg-2026-11a 2026-11-21T11:02:09+07:00 HEAD 33374182f4798169e8c3e2dc676f8a4a2f9327a6 dry=1
+DRY /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route opencode-go/deepseek-v4.1-flash
+skipped: opencode-go/hy4-flash-free#high not reachable in probe-4.10
+skipped: opencode-go/mimo-v2.6-flash not reachable in probe-4.10
+done 2026-11-21T11:02:09+07:00
+left processes: 0
+night 3 mg-2026-11a 2026-11-21T11:02:13+07:00 HEAD 33374182f4798169e8c3e2dc676f8a4a2f9327a6 dry=1
+stopped: probe block incomplete
+not run: opencode-go/deepseek-v4.1-flash
+not run: opencode-go/hy4-flash-free#high
+not run: opencode-go/mimo-v2.6-flash
+night 3 mg-2026-11a 2026-11-21T11:02:16+07:00 HEAD 33374182f4798169e8c3e2dc676f8a4a2f9327a6 dry=1
+DRY /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route opencode-go/deepseek-v4.1-flash
+skipped: opencode-go/hy4-flash-free#high not reachable in probe-4.10
+DRY /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh harness/model-guide/review-run.sh --set mg-2026-11a --route opencode-go/mimo-v2.6-flash
+done 2026-11-21T11:02:17+07:00
+left processes: 0

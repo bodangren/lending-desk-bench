@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red-complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13u
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41
+resulting_head: 0f426b171ae319955e3c4c3270c988dc05c97605
+commits: 05bb618 test(model_guide): Red task 4.13u event stream in the queue and the scorer; 0f426b1 measure(model_guide): record Red task 4.13u
+red_test_command: cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+failing_tests: 4.13u gives an event-stream raw output the same queue items as the same answer in plain text; 4.13u reads JSON-escaped newlines and quotes in the stream
+handoff: Green 4.13v copies decodeAnswerText into adjudicate.ts and calls it in the queue readFindings; the 2 failing 4.13u adjudicate cases must turn green with no earlier case changing; the 2 passing 4.13u review-score cases pin the scorer decoder and must stay green. No production file was changed by this role. Dirty paths left untouched as unrelated user work: .opencode/, harness/wt.txt, tech-debt.md, harness/model-guide/data/sets/.
+END_MEASURE_AGENT_RESULT

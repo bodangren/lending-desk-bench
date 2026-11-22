@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 1e368ba0de3427b206035a2233c139c8b817ac5a
+head_sha: c9d60b9a72d2be2184e0dc58f71a48f23f8b5984
+commits: 463136a5ed23c162562988cd596aa630a5e30c82, c9d60b9a72d2be2184e0dc58f71a48f23f8b5984
+tests_run: `cd harness && npx vitest run model-guide-tests/adversarial-p3.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests  2 failed | 21 passed (23)`; `adjudicate.test.ts` exit 0, `Tests  20 passed (20)`; `review-set.test.ts` exit 0, `Tests  18 passed (18)`.
+files_changed: harness/model-guide-tests/adversarial-p3.test.ts (the two `it.fails` markers became `it`); measure/tracks/model_guide/plan.md; untracked evidence measure/runs/model_guide/red-3.12f.txt and measure/runs/model_guide/red-p3-1e368ba.log. No production file, no fixture, and no docs/ path touched.
+plan_updates: added 3.12f as [~] after 3.12e and 3.12g as [ ] after it; 3.12f then changed to `[x] 463136a` with an Evidence line that cites measure/runs/model_guide/red-3.12f.txt; 3.12g changed [ ] -> [~]. 3.12 stays [~]. The plan commit is c9d60b9.
+remaining_failures: two adversarial-p3 tests fail at HEAD for the two defects: P3X1-1 two different claims split by whitespace get two queue items (the queue holds 1, expected 2; adjudicate.ts claimKey joins the fields with a space, so title "a b" + reason "c" and title "a" + reason "b c" collide, while claimId gives two ids); P3X1-2 a plant outside every hunk of its diff is refused (lint exits 0 on new_lines [9999, 9999], expected 2; review-set.ts does not check that a plant range sits on added lines). The other 21 adversarial-p3 cases pass, and adjudicate (20) and review-set (18) are green.
+dispositions: none
+handoff: Green 3.12g: edit only `harness/model-guide/adjudicate.ts` and `harness/model-guide/review-set.ts`. Touch no test file, no fixture, and no plan line. (1) P3X1-1: the queue dedup key must be the distinct claim identity, not the space-joined fields. Use the canonical claim id (or the exact `JSON.stringify([diff_id, file, line, class, severity, title, reason])` string) as the dedup key, so two claims that differ only by a whitespace shift stay two items and keep their two claim ids. Keep the queue route-blind and the item id = the claim id. Do not change the scorer. (2) P3X1-2: in the lint, a plant whose `new_lines` range holds no added line of its diff must be refused with one line `lint: plant-line: <diff_id> <plant_id>` and exit 2, with no manifest. The range must sit on `+` lines of a hunk, as in the fixture. Keep every other lint line as it is. (3) Verify: adversarial-p3 `Tests  23 passed (23)`; adjudicate `Tests  20 passed (20)`; review-set `Tests  18 passed (18)`; review-score `Tests  25 passed (25)` and guide `Tests  16 passed (16)` to prove nothing else moved. Run `git status --short docs/`; it must print nothing. Do not weaken a test.
+END_MEASURE_AGENT_RESULT

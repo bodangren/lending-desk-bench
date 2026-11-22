@@ -1,0 +1,83 @@
+MEASURE_AGENT_RESULT
+role: measure-review-c-ux-api
+route: opencode-go/glm-5.3#high
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+scope: tasks 4.13m-4.13p
+range: a3799bea45b5cd9fdca1b81c5495e0303c7cfaee..c46161fb858de0883cf304a7dfc40f0afd486e64
+audited_head: c46161fb858de0883cf304a7dfc40f0afd486e64
+head_current: yes (git rev-parse HEAD equals the audited sha)
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (from the plan rows 4.13m-4.13p)
+role_base_sha: e35ccf6b966a10bf8fd87f69793ee8c47e5c4ae7 (from the 4.13p row; the Red rows carry their own)
+contract_applicability: applicable (the phase diff adds the refusal lines, the INFRA stderr line, the infra record field, the HOME guard, and the seed export; endpoint contracts, driver line formats, and record reader tolerance are all in scope)
+status: pass
+blocking_findings: 0
+nonblocking_findings: 3
+confidence: high
+retry_recommendation: none
+result_json: measure/runs/model_guide/review-c-c46161f.json
+
+summary:
+The four planned contracts hold at HEAD. Every real opencode call holds
+--standalone (ST1-ST5 pin it). The seed makes exactly one real-HOME
+auth export <provider> --standalone call under timeout 60 in an empty
+mktemp cwd with no .git; the import and scan-values keep the job HOME;
+an empty shared store refuses the run with exit 2, one <runner>: line,
+no call, and no record (R1, JR1, failing-first in red-4.13o.log). The
+daemon guard stops only serve --service processes under the run's job
+root, writes <runner>: INFRA stopped daemon <pid> on stderr only, and
+puts the same text in the infra array of the pass, probe, or run
+record; every record write is preceded by stop_daemons or happens
+before a job folder exists, and the EXIT trap covers every exit path.
+Every record reader accepts the new field: adjudicate.ts,
+review-score.ts, and guide.ts parse JSON by named field and never read
+the runner records, and the night driver's state= read is python
+json.load().get("state"). The drivers keep their line contracts: the
+refusal goes to stdout, the INFRA line to stderr and the log file.
+
+gates (fakes only, one file at a time, no redirection):
+- bun test harness/model-guide-tests/review-run.test.ts: all 62 named
+  tests pass; the two run-level failures I saw were a sibling
+  session's decoy daemons tripping the unscoped environment scans
+  (sibling bun test PID 468934, started 04:32:31 +07, tree
+  /tmp/mg-review-run-MWG730); both pgrep scans after each run: empty.
+- cd harness && npx vitest run model-guide-tests/judge-run.test.ts
+  --configLoader native --maxWorkers=1 --reporter=dot: 34 passed (34).
+- cd harness && npx vitest run model-guide-tests/credential-provider.test.ts
+  --configLoader native --maxWorkers=1 --reporter=dot: 16 passed (16).
+
+probe-4.10.txt (the real probe, run 04:35 +07 at HEAD c46161f; my
+final read at 04:40:55 +07):
+It holds the header naming the audited HEAD and exactly one correct
+line for each finished pilot route:
+- opencode-go/deepseek-v4.1-flash refused review-run: the provider
+  credential seed failed exit=2
+- opencode/hy4-flash-free refused review-run: the provider credential
+  seed failed exit=2
+The third pilot route, opencode-go/mimo-v2.6-flash, was still mid-run
+at that read, so its line had not landed; the driver appends exactly
+one line per route, so that route will hold one line of the same
+format. The probe log shows one provider-credential: the credential
+seed failed stderr line per refused route and the job folder cleanup
+after each. The real shared store holds no entry for these providers,
+so the refusal is the correct 4.13p behavior at the audited HEAD, not a
+defect: the run stopped before any model call and wrote no record.
+
+nonblocking_findings:
+N1 the three HOME-guard refusal lines (provider-credential.sh:87-91,
+review-run.sh:661-664, judge-run.sh:445-448) have no failing-first test
+and cannot trip through the public interface: the guards check paths
+the same scripts construct (provider-credential.sh:97 compares
+$FOLDER/home under $FOLDER). They are defense-in-depth and keep exit 2;
+fix: pin them with a forced-guard test or note them as unreachable.
+N2 pre-existing, unchanged in this range, re-proven today: the
+environment scans (review-run.test.ts:1735, :321-324) match any
+session's fake-opencode or quota-server process, so a sibling suite's
+decoys fail the gate while every named test passes; fix: scope the
+scans to the run's own temp tree.
+N3 stop_daemons (review-run.sh:440-475, judge-run.sh:335-370) writes
+one INFRA line for every pid of the initial scan, so a daemon that
+dies on its own during the TERM wait still gets a stopped-daemon line;
+wording precision only; fix: write the line only for signalled pids.
+
+END_MEASURE_AGENT_RESULT

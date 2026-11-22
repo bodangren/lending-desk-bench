@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "0acceeaaa9456f30c9f3c72f67212971e55a5d39",
+  "audited_head_sha": "2a9d4213c73c2ed3fdc53ae931029f910092735d",
+  "reviewer_model": "bailian-token-plan/qwen3.8-max#high",
+  "status": "pass",
+  "summary": "Round 5 passes with no blocker. The publish gate holds in my own probes on git archive copies of 2a9d421. A docs root symlink cannot redirect a write (ADV-1). A record without approved_by or date cannot publish; six bypass variants each exit 2 with one line (ADV-2, spec D21 consent gate). The staged publish leaves no partial set and no .publish-*.tmp file, and the drift walk refuses planted temp names before staging, so temp names cannot be redirected (ADV-11). No unknown coverage key reaches the public real-work.json (ADV-7). The docs scan refuses a FIFO, a socket, and a directory link before any write. No real export byte or SHA entered the repo beyond the three track documents that held them at phase base. Round-4 Nit B4-1 is withdrawn: the staged rename unlinks a docs hard link and the outside file stays byte-identical. Three Nits remain: a header order line, the carried same-user race window (B4-2 narrowed), and a FIFO in the preview folder that stalls preview.sh.",
+  "security_applicability": "applicable: test-strategy.md section 9 Phase 1 row assigns Review B the publish gate, the no-docs/-write rule, and the no-real-export-bytes rule. git diff --name-only 0acceea..2a9d421 lists harness/model-guide/publish.ts, harness/model-guide/preview.sh, and harness/model-guide/real-work.ts, which hold that gate, plus two test files and plan.md.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "B5-1 [Nit] review-b: harness/model-guide/real-work.ts:8-9 documents the check order as `input, json, manifest, sha256, size, schema, run-sum`, but the code runs the manifest read at :239-241, the sha256 check at :243-247, and the size check at :248-251 before the JSON parse at :254-259. A single-fault input prints the right name (probe p7: bad JSON gives `input-check: json`, exit 2, empty stderr, no output folder). A multi-fault input (bad JSON plus a wrong manifest) prints `sha256` where the header order says `json`. The tool fails closed in every case. Fix: align the header line with the code order.",
+    "B5-2 [Nit] review-b: carried from B4-2 with a narrower scope. A same-user race window remains between scan and write: preview.sh scans docs at :112-183 and copies at :185-189; publish.ts walks docs at :197-223 and stages at :237-248. The staged design closes the destination-name write-through: rename does not follow a link at the destination, and the drift walk refuses any planted entry before staging (probe p4: three planted .publish-* names each give one drift line, exit 2, secrets byte-identical). The residual window is a temp name swapped to a symlink between the walk and writeFileSync at publish.ts:242, in milliseconds, same user only. Not closable with a path check; record only. Optional hardening: pass the flag `wx` to writeFileSync so an existing temp name fails.",
+    "B5-3 [Nit] review-b: harness/model-guide/preview.sh:99-105 scans an existing preview folder with `find -type l`, so it refuses symlinks only. Probe p10: a FIFO planted at <preview>/real-work.json stalls the run; timeout ended it after 30 s with no refusal line, because cp at preview.sh:189 blocks on the FIFO. The docs scan refuses every non-regular entry (probe p6: FIFO, socket, and directory link each give `preview: refused path <abs>`, exit 2, no .tmp folder). The boundary is the user-owned .tmp folder, so the case is same-user only. Fix: refuse non-regular entries in the preview folder too, or write page files to temp names and rename."
+  ],
+  "evidence": [
+    "Provenance: working HEAD was 2a9d4213c73c2ed3fdc53ae931029f910092735d (git rev-parse HEAD), equal to audited_head_sha, so the audit is current. git status --short docs printed 0 lines before and after every probe; git status --short printed only the pre-existing untracked .opencode/, harness/wt.txt, and tech-debt.md plus my two artifacts under measure/runs/model_guide/. Every probe ran in a git archive copy of 2a9d421 under /tmp/opencode/rb5 with a node_modules symlink; the product tools ran unmodified with timeout 60. The real docs/ was never touched. One leftover cp process from probe p10 was killed; ps then showed no probe process.",
+    "B4-1 withdrawn: probe p5 in a copy of 2a9d421 planted docs/hl.html as a hard link to an outside file (content H1, nlink 2), re-ran the real preview.sh (exit 0), approved hl.html with the sha of H2, and published. Publish exited 0; docs/hl.html held H2; the outside file stayed byte-identical H1; its nlink dropped to 1. The staged write plus rename at publish.ts:237-249 unlinks the hard link instead of writing through it, so the round-4 defect is gone.",
+    "ADV-1 (probe p1): docs replaced by a symlink to an outside folder, with a valid approval record and preview. Publish exited 2 with the single line `publish: bad docs root` and empty stderr. The link target held only its sentinel file, byte-identical. publish.ts:191-196 lstats the root before the drift walk and the copy.",
+    "ADV-2 and A2 (probe p2): record variants with no owner line, a commented `# approved_by:` line, a blank owner value, a wrong-case `Approved_by:`, a blank date, and a missing date line each gave exit 2, the single line `publish: bad approval record`, empty stderr, and an unchanged docs snapshot. The control record (approved_by plus date plus two rows) published exactly the two approved files with matching shas; no other docs file changed; `find docs -name '.publish-*.tmp'` was empty. The real tree holds no publish-approval.md (ls of measure/tracks/model_guide), so the consent gate of spec D21 (spec.md:772) is closed, and the public page names no subject: the live real-work.html holds 0 matches for daniel, daniebo, school, teacher, and student.",
+    "ADV-11 partial set (probe p3): two approved rows, the second under a mode-0555 docs/locked folder. Publish exited 2 with the single line `publish: write locked/new.html` and empty stderr. docs/real-work.json did not exist after the run (no partial set), 0 temp files remained under docs, and the docs snapshot was unchanged. publish.ts:227-248 stages every file, drops all staged temp files on a failure, and renames only after every stage succeeded.",
+    "ADV-11 temp-name redirect (probe p4): a symlink .publish-777-0.tmp at the docs root, a regular file .publish-888-1.tmp, and a symlink sub/.publish-999-0.tmp beneath an approved new folder each landed in the drift walk of publish.ts:122-150 before staging. Publish exited 2 with exactly three sorted `publish: drift` lines naming the planted entries. Both outside secrets stayed S0; the planted regular file kept its content; docs gained nothing. A planted temp name therefore cannot redirect a stage write.",
+    "Preview docs scan (probe p6): a FIFO, a unix socket, and a directory symlink under docs each gave exit 2, one line `preview: refused path <absolute path>`, empty stderr, and no .tmp folder; no run hung (timeout 60). The control run gave exit 0 and built the preview folder. The Python scan at preview.sh:112-183 lstats every entry, refuses any symlink or other non-regular entry, reports unreadable entries, and runs before mkdir and cp.",
+    "ADV-7 (probes p0 and p7): the synthetic export carried coverage.private_note with a needle value. The real preview.sh exited 0 and the public real-work.json held 0 occurrences of the key and of the needle; real-work.html held 0. The coverage keys were exactly the spec EV4 list plus runs_with_known_route, runs_with_result, unknown_runs, and other_runs (real-work.ts:469-481 copies named keys only). real-work.ts refusals: bad JSON gave `input-check: json`; a missing path and a folder path each gave `input-check: input`; every case exited 2 with empty stderr and created no output folder.",
+    "No real export bytes or SHA in the repo: git grep of the full export SHA dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2 at 2a9d421 lists measure/tracks/model_guide/spec.md, plan.md, and metadata.json only, the same set Review B found at phase base. The export file name and the hand-off path appear only in those track documents. git ls-files .tmp printed 0 lines. git ls-files -s docs holds 0 mode-120000 entries. leak-guard.test.ts passed (2 passed) at 2a9d421.",
+    "Test confirmation (probe p9, each file alone, --maxWorkers=1 --reporter=dot, in the archive copy): adversarial.test.ts gave exit 0 and `Tests  49 passed (49)`; leak-guard.test.ts gave exit 0 and `Tests  2 passed (2)`. These match plan task 1.19, green-p1-8eafbc3.log, and red-1.18.txt (20 failed | 29 passed at 8eafbc3, red-first). Review A r6 independently ran the same files and the red proof; I did not repeat its other 65 probes.",
+    "A5 plan-claim check: the live .tmp/model-guide-preview/real-work.json matches every value claimed by preview-1.19.txt: schema model-guide-real-work/1, source file real-work-outcomes-2026-11-14.json, sha prefix dae855cad4bcd29b, generated_on 2026-11-14, runs 1798, range 2026-06-06 to 2026-11-13, shares 0.506 and 0.717, paired_duplicates_left_out 36, unknown_runs 889, other_runs 3. The live preview-base.json matches all 34 current docs files (0 missing, 0 stale, 0 mismatch) and both folders hold 0 symlinks.",
+    "A6 registry check: measure/tracks.md:40 lists model_guide as pending and claims no resolved security state, so no claim outruns the implementation. The note still points at task 0.3 while the plan reached 1.19; test-strategy.md section 10 A14 says the orchestrator moves the note after the phase commit, and the phase is open, so this is by design, not a finding.",
+    "Scope: per-commit name-only checks of the seven commits in 0acceea..2a9d421 show exactly the planned files: f014ee8 adversarial.test.ts; 825182a leak-guard.test.ts; 8eafbc3 plan.md; 1cc5657 publish.ts; f3d5843 preview.sh; b7e24da real-work.ts; 2a9d421 plan.md. git log 0acceea..2a9d421 -- docs printed 0 commits.",
+    "Route parity: the adversarial round ran on anthropic (claude-sonnet-5-5), Review A r6 on mimo, and this review on qwen (bailian-token-plan), which the orchestrator picked with the families mimo, kimi, deepseek, glm, and anthropic excluded. The run artifacts do not name the Red 1.18 and Green 1.19 models; the orchestrator states Qwen wrote nothing in this phase, so the reviewer family differs from the writer families. No violation is recorded; route assignment is the orchestrator's record."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 2a9d4213c73c2ed3fdc53ae931029f910092735d; git status --short docs | wc -l -> 0 before and after all probes",
+    "git archive 2a9d421 into /tmp/opencode/rb5/head with a node_modules symlink; per-probe copies p0-p6, p10 via python copytree or tar pipe (shell cp is refused by the permission gate; probes ran through python3 drivers, product tools unmodified)",
+    "synthetic fixture /tmp/opencode/rb5/export/real-work-test.json + MANIFEST.txt (no real export byte read)",
+    "probe p0 real preview.sh control -> exit 0, docs snapshot unchanged, ADV-7 needle counts 0, coverage keys EV4 list only",
+    "probe p2 six approval-record bypass variants -> exit 2, 'publish: bad approval record', docs unchanged; control publish -> exit 0, 2 files added, 0 tmp leftovers",
+    "probe p1 docs root symlink -> exit 2, 'publish: bad docs root', link target untouched",
+    "probe p3 read-only destination -> exit 2, 'publish: write locked/new.html', no partial set, 0 '.publish-*.tmp' under docs",
+    "probe p4 planted temp names (root symlink, root regular file, subfolder symlink) -> exit 2, three 'publish: drift .publish-*' lines, secrets byte-identical",
+    "probe p5 hard link under docs -> publish exit 0, docs/hl.html H2, outside file H1 unchanged, outside nlink 1 (B4-1 withdrawn)",
+    "probe p6 FIFO / unix socket / directory symlink under docs -> exit 2, 'preview: refused path <abs>' each, no .tmp folder, no hang; control exit 0",
+    "probe p7 real-work.ts bad JSON -> 'input-check: json'; missing path and folder path -> 'input-check: input'; exit 2, empty stderr, no output folder",
+    "probe p10 FIFO inside the existing preview folder -> HANG, timeout 30 s, no refusal line (B5-3); leftover cp killed",
+    "cd /tmp/opencode/rb5/head/harness && timeout 300 npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 49 passed (49)",
+    "cd /tmp/opencode/rb5/head/harness && timeout 120 npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 2 passed (2)",
+    "git grep -l dae855...f2 2a9d421 -> spec.md, plan.md, metadata.json only; git grep real-work-outcomes 2a9d421 -- docs harness -> schema strings only; git ls-files .tmp -> 0; git log --oneline 0acceea..2a9d421 -- docs -> 0 commits",
+    "python live check: preview-base.json vs docs -> 34/34 match; real-work.json values equal preview-1.19.txt; name-word counts 0 in real-work.html",
+    "ps -eo pid,cmd | grep rb5 -> no leftover probe process after the kill"
+  ],
+  "changed_files": [
+    "measure/runs/model_guide/review-b-2a9d421.json",
+    "measure/runs/model_guide/review-b-2a9d421.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "All assigned gates held in probes p0-p9 (ADV-1, ADV-2, ADV-7, ADV-11, docs scan), but a FIFO inside the existing preview folder stalls preview.sh with no refusal (probe p10, B5-3) and the header check order of real-work.ts:8-9 disagrees with the code."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "adversarial.test.ts gave 49 passed at 2a9d421 after 20 failed | 29 passed at 8eafbc3 (red-1.18.txt, Review A red rerun), and my probes reproduce the pinned refusal lines; per Review A A6-1/A6-2 some header lines and the temp-cleanup are not asserted exactly."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "Per-commit name-only checks of the seven commits in 0acceea..2a9d421 show exactly the six planned files, git log -- docs printed 0 commits, and my only repo writes are the two artifacts under measure/runs/model_guide/."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim cites a probe with its exit code, exact stdout line, and before-and-after snapshots, a git grep result, or a labeled test count (49 passed, 2 passed)."
+    }
+  ]
+}

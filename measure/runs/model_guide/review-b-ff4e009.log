@@ -1,0 +1,22 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+task: 4.13u, 4.13v, 4.13w, 4.13x
+route: claude-code/claude-sonnet-5-5#max
+audited_head_sha: ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 2fdb8f8f5be14c395f4883fcc2a143d1bf7e9d41
+head_at_end: ff4e0093a9e6d1d62c8d8ededf2e738cdc152a45
+security_applicability: applicable
+result_path: measure/runs/model_guide/review-b-ff4e009.json
+blocking_findings: none
+nonblocking_findings: 12 (new: N16, N17, N18, N20, N21; carried: N5, N9, N10, N11, N12, N13, N15)
+gates: review-run 68 pass 0 fail; judge-run 39 passed; decode-parity 3 passed; adjudicate 23 passed; review-score 27 passed; quota 30 passed; credential-provider 22 passed; adversarial-p4-runner 14 passed; adversarial-p4b 12 passed; seed-messages 17 passed
+failing_first: token log at Red base c5942e6 gives 3 fail in review-run (W1 to W3), 2 fail in judge-run (WJ1, WJ2), 1 fail in decode-parity (P3); adjudicate at Red base 05bb618 gives 2 failed | 21 passed (23)
+retry_recommendation: none
+confidence: high
+handoff: Both earlier blockers are fixed with failing-first tests. Send N16 (a key on the first stderr line reaches stdout and the records) and N17 (read_tokens accepts a number that cannot be a token count) to a hardening row before the first live probe on 2026-11-20. Send N20 (the region state reads stderr only; not verified live) to Review A and the orchestrator. N18 asks for Red cases for the completeness logic. Other sessions run the same suites at the same time, so a first run can fail on the orphan assertion; re-run after a quiet check.
+summary: The new token parse and the new queue decoder resist hostile input, each record stays valid JSON, and no guard of the seed, HOME, XDG, daemon, diff id, or message check changed in the range.
+END_MEASURE_AGENT_RESULT

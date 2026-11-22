@@ -1,0 +1,91 @@
+Red task 4.1 — the review runner
+Track: model_guide. Phase 4. Role: measure-mid-red. Date: 2026-11-18.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 1633eba6b7679e2ca5f92ade125c76b0f6c93937
+
+Command
+  cd harness && npx vitest run model-guide-tests/review-run.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+
+Result
+  Exit code: 1
+  Tests  23 failed (23)
+  Test Files  1 failed (1)
+  Duration 878ms
+  First failure line:
+    FAIL  model-guide-tests/review-run.test.ts > P4 R1 the pass shape of
+    the review runner > R1 calls the fake once for each diff, stores one
+    raw output per diff in the private folder, and writes one pass record
+  First failure message:
+    AssertionError: the review runner is missing:
+    /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/review-run.sh:
+    expected false to be true
+
+Failed test names (23)
+  R1 calls the fake once for each diff, stores one raw output per diff in
+    the private folder, and writes one pass record
+  R2 calls the model with run --standalone --format json --model <route>
+  R3 writes a job config that denies read, edit, bash, webfetch, websearch,
+    question, subagent, and skill
+  R4 refuses a route that routes.json does not hold before any call
+  R4 refuses a route whose kind is metered before any call
+  R5 starts no pass at a window of 70 % and starts the pass at 69.9 %
+  R6 stops the pass at 80 % and leaves the pass open with the two stored
+    outputs
+  R6 runs the pass to the end at 79 %
+  R7 retries a transport error twice and completes the pass
+  R7 leaves the pass open after three transport errors
+  R8 ends the run inside the timeout with MG_RUN_RETRY_WAIT_MS=NaN
+  R8 ends the run inside the timeout with MG_RUN_RETRY_WAIT_MS=Infinity
+  R8 ends the run inside the timeout with MG_RUN_RETRY_WAIT_MS=-1
+  R8 ends the run inside the timeout with MG_RUN_RETRY_WAIT_MS=1e999
+  R9 deletes a raw output that holds a credential value and stops the pass
+  R10 stores a 2 MiB raw output whole
+  R10 finds a credential value in the last 1000 bytes of a 2 MiB raw output
+  R11 marks a Go route with the region error as region-blocked
+  R12 stops the fake child, removes the job folder, and leaves no fake
+    process
+  R13 writes no file in the temp repo and no file under docs
+  R14 ends the call at MG_CALL_TIMEOUT_S
+  R15 refuses a set id with a slash and a route value with a parent segment
+  resolves the opencode of the spawn to the fake and leaves no fake process
+
+Every case fails on the missing runner. No case passes at the phase base.
+No NameError, no TypeError, no ReferenceError, and no syntax error in the
+run.
+
+Reuse or replace decision
+  Reuse both files of the stopped Red run:
+  - harness/model-guide-tests/review-run.test.ts
+  - harness/model-guide-tests/fixtures/fakes/fake-opencode
+  Reason: the file covers every normal case and edge case of plan row 4.1
+  and the groups R1 to R15 of test-strategy section 4.4. It copies the
+  scripts it runs into a temp repo, in the pattern of
+  harness/schedule-tests/rescore-guard.test.ts. The fake child carries
+  `fake-opencode` in its command line, and no test reaches the real
+  opencode binary. The fake is the one committed fixture allowed by
+  test-strategy section 3.4.
+  One defect was fixed before this record: the temp quota server source
+  held a real newline inside a JavaScript string literal, so the server
+  never started and every case failed for the wrong reason. The fix doubles
+  the `\\n` and `\\t` escapes in that source string. The fixed file is in
+  commit 4e00ec2.
+
+Mid Red gate deviation (test-strategy section 3.4)
+  - harness/model-guide-tests/fixtures/fakes/fake-opencode
+  Reason: plan task 4.1 names this file; no product code reads it.
+
+$FAKE_OPENCODE_LOG lines of one run
+  None at Red. The runner does not exist, so no model call runs and the
+  fake writes no log line. The Green role records the lines.
+
+Process check after the run
+  `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+
+Files touched by this role
+  harness/model-guide-tests/review-run.test.ts (new, commit 4e00ec2)
+  harness/model-guide-tests/fixtures/fakes/fake-opencode (new, commit
+    4e00ec2, mode 0755)
+  measure/tracks/model_guide/plan.md (row 4.1 to [~] plus evidence, commit
+    2d4f383)
+  No production file was touched.

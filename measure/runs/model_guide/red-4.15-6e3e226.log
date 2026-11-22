@@ -1,0 +1,19 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-mid-red
+status: complete
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 6e3e226153acaa08c944a81be154935e81024768
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+red_commit_sha: b3c9615df4a7d68bb0347ca45fbc5beaf61ea186
+plan_commit_sha: 858beb73ca56c76e83aa3b45c998f12d7dbbdee9
+resulting_head: 858beb73ca56c76e83aa3b45c998f12d7dbbdee9
+commits: b3c9615 test(model_guide): Red task 4.15 align old scan cases with N31; 858beb7 measure(model_guide): record Red task 4.15 r3
+tests: Four old cases aligned with N31. review-run.test.ts AA1 and AA2 now expect `the error output could not be scanned` on stdout and in the stored error. judge-run.test.ts JA1 and JA2 now expect that text on the call line, the start-test line, and the stored error.
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md, measure/runs/model_guide/red-4.15.txt, measure/runs/model_guide/red-4.15-6e3e226.log
+remaining_failures: 15 failing cases at HEAD. `bun test harness/model-guide-tests/review-run.test.ts` exit 1, `85 pass` / `11 fail`, 96 tests: AA1, AA2 newly fail, plus the nine P4b cases N21, N10, N11, N9, N26, N27, N28, N31 x2. `cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests 4 failed | 44 passed (48)`: JA1, JA2 newly fail, plus N31 JA1 and N31 JA2.
+gaps: No other case in the two files had the same conflict. AA3, AA4, AA5, Y1, Y2, Y3, Y11, Y12 in review-run.test.ts and JA3, JA4, JA5 in judge-run.test.ts plant a real found key and keep `the error output held a credential value`. The N30 guards keep it too. All other assertions of the four changed cases stay, including the no-key-leak checks.
+breakage_proof: At HEAD the four cases fail for the right reason. The runner prints the found-key text `the error output held a credential value` where the distinct failed-scan text is now required. No key value reaches stdout or a record. No process was started by this retry; pgrep printed nothing of mine.
+handoff: Green can now implement the whole 4.15 production set. A failed value scan must print `the error output could not be scanned` and never the found-key text. A real found key still prints `the error output held a credential value`. The four updated cases are consistent with the N31 cases. Green changes no test file. Row 4.15 stays [~].
+END_MEASURE_AGENT_RESULT

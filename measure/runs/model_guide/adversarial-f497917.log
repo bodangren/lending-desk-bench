@@ -1,0 +1,12 @@
+Adversarial testing of Phase 3 at f497917 is done. New suite harness/model-guide-tests/adversarial-p3.test.ts: 23 tests, 21 pass, 2 name defects and stay green through it.fails. Both defects were confirmed with manual /tmp probes outside the suite. Existing Phase 3 suites re-verified green at HEAD (review-score 25, adjudicate 20, review-set 18, leak-check 13, guide 16, pick-diffs 19). git status --short docs/ prints nothing. Only the new test file was committed as 1e368ba. No publish commit landed during the audit; audited code is f497917.
+MEASURE_AGENT_RESULT
+role: adversarial
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: fail
+audited_head_sha: f497917a3d1f387d4c3c6f8b94e6331d5fd6587a
+result_file: measure/runs/model_guide/adversarial-f497917.json
+retry_recommendation: retry_implementation
+summary: 2 findings route to Green. P3X1-1 [Blocker]: the adjudicate queue dedup key joins claim fields with a space, so two whitespace-shifted distinct claims share one queue item and the loser escapes verdicts; fix by keying dedup on the JSON claim tuple. P3X1-2 [Major]: the review-set lint accepts a plant outside every hunk, so unfindable weight counts in W; fix by refusing a plant range that sits on no diff line. Boundary pins (21 passing) cover hostile outputs, claim identity, lint edges, leak-check K4 edges, and the invalid-pass route through guide.ts.
+handoff: Green owns P3X1-1 and P3X1-2 with retry_recommendation retry_implementation; failing-first tests P3X1-1 and P3X1-2 in adversarial-p3.test.ts must turn green after the fix with no other test touched. No user decision is needed: the split-secret probe (P3X1-Q) pins exit 0 per the FR-10 per-file rule, and A4/A5/A7 checks are clean.
+END_MEASURE_AGENT_RESULT

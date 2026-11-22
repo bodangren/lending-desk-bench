@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "role": "adversarial",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "0acceeaaa9456f30c9f3c72f67212971e55a5d39",
+  "audited_head_sha": "0acceeaaa9456f30c9f3c72f67212971e55a5d39",
+  "test_commit_sha": "f014ee83940e312183ddc8eefbb4b9db845cb325",
+  "adversarial_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "fail",
+  "summary": "The adversarial file adds 49 tests: 27 pass and 22 fail on 0acceea. The failures show 2 blocking defects (a docs root symlink lets publish write through the link; an approval record with no approved_by or date publishes) and 11 nonblocking defects for Green. No production code was changed. The four existing test files still pass.",
+  "blocking_findings": [
+    "ADV-1 [Minor] publish.ts:124 and publish.ts:185-189: publish.ts walks the docs root with readdirSync and never lstats the root itself. With docs replaced by a symlink to another folder, the walk matches the base and the copy loop writes real-work.html and real-work.json into the link target at exit 0. This breaks the header promise at publish.ts:28-29 (the copy writes through no link) and repeats the closed B3-1 class at the root. Failing test: 'S C5-3 refuses publish when the docs root is a symlink and writes through no link'. Fix: lstat the docs root and map a link to a `publish: drift` refusal before the copy. (Review C item C5-3.)",
+    "ADV-2 [Minor] publish.ts:77-91: readApproval reads only the `files:` section. A record with no `approved_by` and no `date` publishes at exit 0. Spec D21 and the glossary make the record hold the words of Daniel and the date, so the record is the consent artifact. Failing test: 'P refuses an approval record that holds no approved_by and no date, and writes no file'. Fix: require a non-empty `approved_by:` line and a `date:` line, and refuse with one line and exit 2."
+  ],
+  "nonblocking_findings": [
+    "ADV-3 [Minor] preview.sh:107 and preview.sh:116: find exits 1 on an unreadable folder, so `set -e` ends the run with `find: Permission denied`. The header at preview.sh:13-15 promises `preview: unreadable <path>` and exit 2. Failing tests: 'S A5-1 refuses preview.sh with an unreadable directory under docs...' and 'S C5-2 refuses preview.sh with an unreadable docs root...'. No write happens, so the run fails closed. (Review A item A5-1, Review C item C5-2.)",
+    "ADV-4 [Nit] preview.sh:150-162: a FIFO under docs passes the symlink scan and the readable scan, cp -a copies it, and the Python hash step blocks on open. The run stayed hung until `timeout` ended it (status 124 after 20 s). The preview folder is half built at that time. Failing test: 'S A5-2 ends preview.sh when docs holds a FIFO...'. Fix: refuse any docs entry that is not a plain file or folder before mkdir. publish.ts already maps a FIFO to drift ('S A5-2 refuses publish with a FIFO...' passes). (Review A item A5-2.)",
+    "ADV-5 [Nit] publish.ts:106: an unreadable docs root pushes the empty prefix to the broken list and prints `publish: drift ` with an empty path next to one drift line for each base file. Failing test: 'S C5-2 prints no empty path in a publish drift line when the docs root is unreadable'. (Review C item C5-2.)",
+    "ADV-6 [Minor] real-work.ts:168, 179, 180, 219 and 383: five hostile or odd inputs end in an uncaught exception, exit 1, and a stack trace, against the header contract of exit 0 or exit 2. Cases: export path missing or a folder (readFileSync), text that is not JSON (JSON.parse), JSON null root (doc.schema), a route that is not a string or is missing (modelKey), and a value nested 30000 levels deep (JSON.stringify RangeError). Nothing is written, so the run fails closed, but preview.sh then exits 1 with no `input-check:` line. Failing tests: 'X refuses an export path that does not exist...', 'X refuses an export path that is a folder...', 'H refuses export text that is not JSON...', 'H refuses a JSON null root...', 'H handles an all_time row whose route is not a string...', 'H handles an all_time row without a route key...', 'H keeps a deeply nested extra coverage key...'. Fix: wrap the read and parse in a refusal, and check the row shape in the schema check.",
+    "ADV-7 [Minor] real-work.ts:376: `coverage: { ...doc.coverage, ... }` copies every extra coverage key of the export into the public real-work.json. A key such as `private_note` reaches the file that publish copies into docs. A conformant export holds no extra key (spec line 51), but the tool does not enforce that. Failing test: 'H passes no extra coverage key of the export into the public real-work.json'. Fix: copy the named coverage keys only.",
+    "ADV-8 [Nit] real-work.ts:248-250 and real-work.ts:359: `ratings[axis] = ...` and `workTypes[name] = rows` write to a plain object. A key named `__proto__` sets the prototype and the entry vanishes from the output with exit 0 and no refusal. Failing tests: 'H keeps a work type named __proto__...' and 'H keeps a rating axis named __proto__...'. Fix: build the objects with Object.fromEntries or a null-prototype object. Route names `constructor`, `toString`, `__proto__`, and `hasOwnProperty` work (the Map keys hold; test passes).",
+    "ADV-9 [Minor] real-work.ts:64-67 and real-work.ts:207-210: the input check validates no count. Probe on the fixture: pass 50 and fail -30 gave a pass rate of 1.7059 at rank 1 with can_pick true. Two rows with pass 1e308 gave null counts in the output, and preview.sh prints them as the text `None`. The strategy names a wrong rate that becomes a pick as the Phase 1 risk. Failing tests: 'H refuses a negative result count, or keeps every pass rate inside 0 to 1' and 'H refuses a count too large to add, or keeps every count a finite number'. Fix: refuse a count that is not a non-negative safe integer.",
+    "ADV-10 [Nit] publish.ts:153: a preview-base.json that holds the JSON text `null` makes `base.docs` throw a TypeError, exit 1, and a stack trace. The header at publish.ts:20-22 promises `publish: bad preview base`. Nothing is written. Failing test: 'P refuses a preview base that is valid JSON but not an object, with no stack trace'.",
+    "ADV-11 [Minor] publish.ts:185-189: the copy loop writes each approved file in turn. When a later destination fails (a read-only folder), the earlier files stay in docs and the run exits 1. Spec D21 makes the first publish one set that Daniel looks at once, and the next daily commit would then push half the set. Failing test: 'P writes all approved files or none when one destination cannot be written'. Fix: check each destination folder first, or copy to temp names and rename.",
+    "ADV-12 [Nit] leak-guard.test.ts:25-27 with leak-guard.test.ts:36-38: filesUnder pushes the text `link <rel> <target>` for a symlink, and hits() then reads that text as a path. Any symlink in the test folder makes the guard throw ENOENT instead of scanning it. The guard fails closed. Failing test: 'L runs the guard on a folder that holds a symlink to a clean file without a crash'.",
+    "ADV-13 [Nit] leak-guard.test.ts:38-39: the guard matches the needle with a case-sensitive includes, so the export SHA-256 in upper-case letters passes. Failing test: 'L makes the guard fail on the export SHA-256 in upper-case letters'. Fix: compare in lower case.",
+    "B4-1 [Nit] kept, no test: probe in a temp folder shows a hard link under docs has lstat isFile true and nlink 2, so publish.ts:119-121 accepts it, as Review B found. No header or spec text promises a refusal, and git cannot store a hard link. A test would pin a missing promise, so none was added. Optional guard: push an entry with nlink above 1 to the broken list.",
+    "B4-2 [Nit] kept, no test: a link made between the docs scan and the copy cannot be tested without a race, and a path check cannot close it. Same-user case only.",
+    "ADV-14 [Nit] no test: an empty export (weekly and all_time empty, coverage.runs 0) passes the input check at exit 0 and writes an empty page with no pick. The spec names no refusal for it. Record only; a later spec choice can add a refusal (A4 vacuous pass)."
+  ],
+  "evidence": [
+    "Provenance: audited_head_sha is 0acceeaaa9456f30c9f3c72f67212971e55a5d39 (git rev-parse HEAD at the start); the only commit this role added is f014ee8, tests only. No production file, no docs/ file, no harness file outside harness/model-guide-tests/ changed. git status --short docs printed nothing.",
+    "Every case runs in a temp repo built from a copy of harness/model-guide and a synthetic docs tree, or in a temp folder. No case reads the real docs/, the real export, a model, or the network. The L guard-copy cases run a copy of leak-guard.test.ts in a temp project.",
+    "A5 check (plan claim): the four existing test files each exit 0 at 0acceea with 85, 15, 19, and 2 passed. The plan claim of task 1.17 is true.",
+    "Starting points: A5-1 confirmed (failing test, exit 1, find: Permission denied). A5-2 confirmed for preview.sh (status 124 after 20 s) and not for publish.ts (drift line, passes). A5-3 closed by a passing test with the exact refusal line. C5-2 confirmed for publish.ts (empty path) and the same unreadable-root class in preview.sh. C5-3 confirmed with a write into the link target. B4-1 confirmed by probe, no test. B4-2 not testable.",
+    "F-withdrawn-none: no earlier adversarial finding exists for this track, so no CONTEST item applies.",
+    "Passing coverage: preview path classes (file, outside link, link into docs, link to root), export CRLF manifest and link, escaping of every printed field and of template token text, approval parser cases (CRLF, duplicate, upper-case, comment, absent, replay, trailing space), no needle in the production and test folders, and guard detection of a planted SHA-256 and a planted hand-off path at depth.",
+    "Failing-first proof: each failing test names the defect in its message (for example 'publish wrote through the docs root link; status 0', 'preview.sh hung on a FIFO; status 124'). The passing control cases in the same groups show the helpers work.",
+    "Mutation note: the test run started two child processes with a timeout for the FIFO case. ps showed no preview.sh or mkfifo process after the run."
+  ],
+  "added_tests": [
+    "harness/model-guide-tests/adversarial.test.ts (49 tests: 27 pass, 22 fail on 0acceea)",
+    "S group (8): S A5-1 unreadable directory refusal [fail]; S A5-2 FIFO hang in preview.sh [fail]; S A5-2 FIFO drift in publish [pass]; S A5-3 exact refusal line for a dangling link [pass]; S C5-2 empty drift path [fail]; S C5-2 unreadable docs root in preview.sh [fail]; S C5-3 docs root symlink [fail]",
+    "X group (5): missing export [fail]; export is a folder [fail]; spaces and unicode name [pass]; CRLF manifest [pass]; export symlink [pass]",
+    "V group (4, all pass): preview path is a file; preview symlink to an outside folder; new folder below a link into docs; link to the repo root",
+    "H group (12): invalid JSON [fail]; null root [fail]; array, string, number roots [pass]; route not a string [fail]; missing route [fail]; deep nesting [fail]; extra coverage key [fail]; negative count [fail]; huge count [fail]; prototype member route names [pass]; __proto__ work type [fail]; __proto__ axis [fail]",
+    "E group (3, all pass): hostile value in every printed text field, export file name, template token text in a route name",
+    "P group (11): no approved_by or date [fail]; preview base null [fail]; partial publish [fail]; CRLF record [pass]; duplicate path with a wrong SHA-256 [pass]; upper-case SHA-256 [pass]; comment line [pass]; absent preview file [pass]; replayed publish [pass]; trailing space in a row [pass]",
+    "L group (9): production folder and test folder scan in any letter case [pass]; guard copy control, planted SHA-256, planted hand-off path [pass]; guard symlink crash [fail]; guard upper-case SHA-256 [fail]; own-file needle check [pass]"
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 0acceeaaa9456f30c9f3c72f67212971e55a5d39 before the commit; f014ee83940e312183ddc8eefbb4b9db845cb325 after the test commit",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, Tests 22 failed | 27 passed (49)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts ... --reporter=dot -> exit 0, Tests 85 passed (85)",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts ... --reporter=dot -> exit 0, Tests 15 passed (15)",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts ... --reporter=dot -> exit 0, Tests 19 passed (19)",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts ... --reporter=dot -> exit 0, Tests 2 passed (2)",
+    "python3 -I /tmp/opencode/advprobe/probe.py -> empty export exit 0; negative count rate 1.7059 rank 1; 1e308 counts null; fractional count accepted",
+    "node lstat probe of a hard link -> isFile true, nlink 2",
+    "git commit -m 'test(model_guide): adversarial tests phase 1' -- harness/model-guide-tests/adversarial.test.ts -> f014ee8, 1 file changed"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial.test.ts"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [
+    "ADV-1",
+    "ADV-3",
+    "ADV-6",
+    "ADV-10"
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "route_to_green",
+  "confidence": "high",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "Page B, input check, and publish gate pass 27 of 49 hostile cases, but publish.ts:124 follows a docs root link and real-work.ts:179-180 throws on null or invalid JSON."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Each of the 22 failing cases asserts a header or spec promise with a named message (adversarial.test.ts 'S C5-3 ...'), and the controls in each group pass."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat f014ee8 lists adversarial.test.ts only; no production, docs, or harness file outside harness/model-guide-tests changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Each finding has a file:line, a test name, and a command result; B4-2 has no executable proof because the race cannot run deterministically."
+    }
+  ]
+}

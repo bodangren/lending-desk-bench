@@ -1,0 +1,86 @@
+Red task 4.3 — the provider credential
+Track: model_guide. Phase 4. Role: measure-mid-red. Date: 2026-11-18.
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: f274fa8719c17a85f5305e27894e9b4ac6cc9021
+
+Scope
+  One file: `harness/model-guide-tests/credential-provider.test.ts`. No
+  fixture committed (test-strategy 3.4). No production file touched. No
+  tool-path seam: `SCRIPT_SOURCE` is a fixed `join` of the harness path.
+
+Command
+  cd harness && npx vitest run model-guide-tests/credential-provider.test.ts \
+    --configLoader native --maxWorkers=1 --reporter=dot
+
+Result
+  Exit code: 1
+  Tests  11 failed (11)
+  Test Files  1 failed (1)
+  Duration 215ms
+  First failure line:
+    FAIL  model-guide-tests/credential-provider.test.ts > C1 the seed > C1
+    seeds exactly the entry of the provider into the job store and prints
+    no value
+  First failure message:
+    AssertionError: the provider credential script is missing:
+    /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/provider-credential.sh:
+    expected false to be true
+
+Failed test names (11)
+  C1 seeds exactly the entry of the provider into the job store and prints
+    no value
+  C2 scan-values prints the access and orgID that a raw output holds
+  C3 a seed for a provider with no entry gives exit 2, one named line, no
+    value, and no store entry
+  C3 scan-values for a provider with no entry gives exit 2 and no value
+  C4 retries a transient export failure and seeds after two calls
+  C5 rejects BENCH_CREDENTIAL_SEED_DELAYS=NaN before any export call
+  C5 rejects AGENT_TIMEOUT=Infinity before any export call
+  C5 rejects AGENT_TIMEOUT=-1 before any export call
+  C6 leaves no credential value in the job folder, in stdout, or in stderr
+  C7 seeds one entry from a 2 MiB export with a long unknown field
+  resolves opencode to the fake, seeds with it, and leaves no fake process
+
+Every case fails on the missing script. No case passes at the phase base.
+No NameError, no TypeError, no ReferenceError, and no syntax error in the
+run.
+
+Authoring check (the PM rule: an authoring error is fixed first)
+  The same bytes of the test file were copied to a temp harness outside
+  the repository at `/tmp/opencode/val/harness`, next to a throwaway
+  prototype of `provider-credential.sh` and a copy of the real
+  `opencode-host.sh`:
+
+    cd /tmp/opencode/val/harness && <repo>/harness/node_modules/.bin/vitest \
+      run model-guide-tests/credential-provider.test.ts \
+      --configLoader native --maxWorkers=1 --reporter=dot
+
+  First run: exit 1, `Tests  11 failed (11)`. The defect was in the
+  prototype, not in the test: a script under `harness/model-guide/` must
+  resolve `harness/opencode-host.sh` two levels up, not one. After the
+  fix: exit 0, `Tests  11 passed (11)`. The temp fake, the temp repo, the
+  job folder, and every assertion work. The recorded Red run above runs in
+  the repository, where `provider-credential.sh` does not exist yet.
+
+Process and secrecy checks after the recorded run
+  `ps -eo pid,args | grep '[f]ake-opencode'` prints no line.
+  No `mg-cred` temp folder stays under `/tmp`.
+  The test reads no private folder, no key, no seeded diff, no real
+  credential file, and no real home folder (secrecy rule of 9.4). The
+  values are obvious fakes: `FAKE-ACCESS-*` and `FAKE-ORGID-*`.
+  The fake sits at `<temp>/bin/fake-opencode` and at
+  `<temp>/bin/fake-opencode.d/opencode` on `PATH`, so no call can reach
+  the real `opencode` binary. The validation harness under
+  `/tmp/opencode/val` was removed after the run.
+
+Mid Red gate deviation (test-strategy section 3.4)
+  None. Task 4.3 commits no fixture.
+
+Files touched by this role
+  harness/model-guide-tests/credential-provider.test.ts (new, commit
+    f7e7da4)
+  measure/tracks/model_guide/plan.md (row 4.3 to [~] plus evidence, commit
+    cbfb93e)
+  measure/runs/model_guide/red-4.3.txt (this record, not staged)
+  measure/runs/model_guide/red-4.3.log (not staged)
+  No production file touched. No push.

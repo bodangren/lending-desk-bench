@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: fail
+route: opencode-go/glm-5.3#high
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+scope: tasks 4.13g-4.13j, range 66fe1accf71c0f881fffa58ff05bb0a94407477f..e9e7d366719e3b00ad27c299809772e72941fd70
+audited_head: e9e7d366719e3b00ad27c299809772e72941fd70 (equals HEAD)
+earlier_result: measure/runs/model_guide/review-a-cc8afbd.json
+summary: F1 (weekly key), F2 (null window skipped), and N3 (spec example) are fixed, and the live read works: npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 gives state ready on the live window set with the null credits_balance skipped. All four suites pass one file at a time (quota 24, review-run 53, judge-run 30, adversarial 14, all exit 0) and the plan evidence of rows 4.13g-4.13j matches. Green decision (a) N1 is accepted: both runners key the Go rule, the quota read, and the credential seed on quota_provider, the one field quota.ts reads, and a bogus provider fails closed. Green decision (b) B2 is a blocker: the Go required-window check at quota.ts:319-324 keys on raw window names instead of usable values, so a Go answer whose weekly is present but unusable (null, string, or negative) gives ready beside a usable 5h. Reproduced against the real binary: weekly null, -1, and "10" beside 5h 50 all give state ready. Plan row 4.13j orders "both 5h and weekly must be finite numbers, else stopped", Review B cc8afbd B2 names this fail-open, Q13 pins the unsafe behavior (quota.test.ts:648-662), and the night driver and the probe refuse the same answer, so the readers of the source disagree.
+blocking_findings: F3 quota.ts:319-324 Go required-window check uses raw names, so an unusable weekly gives ready; fix: require 5h and weekly in the usable windows set (answer.windows), flip Q13's negative-weekly case to stopped, add a null-weekly case, and align the D15 and FR-15 wording.
+nonblocking_findings: N1 judge-run.sh:671-699 dead 80 % branch and stale comment (carried, pre-existing); N4 spec.md:1331-1338 FR-15 still says stopped for a non-number value, contradicting the rewritten D15 skip rule; N5 review-run.test.ts:174-179 liveness scans match any command line containing "fake-opencode"/"quota-server"/"mg-", so a sibling monitor shell broke gates that pass clean once it exits.
+withdrawn_findings: F1 withdrawn: fixed, quota.ts reads windows["weekly"] (quota.ts:68,291) and every fake serves the live set; F2 withdrawn: fixed, parseAnswer skips unusable windows and stops only when none is left (quota.ts:272-281), live read ready; N2 withdrawn: fixed, both drivers now read weekly with >= 95 and >= 100; N3 withdrawn: fixed, spec D15 and the doc comment hold the live keys.
+test_strategy_violations: none
+live_contract_violations: F3 Go answer with a present but unusable weekly gives ready against the plan row 4.13j B2 order and the driver rules
+prod_wiring_violations: none
+route_parity_violations: none
+gates: quota.test.ts 24 passed exit 0; review-run.test.ts 53 pass 0 fail exit 0 after cross-session contamination cleared; judge-run.test.ts 30 passed exit 0 after the same; adversarial-p4-runner.test.ts 14 passed exit 0; pgrep scans empty on every clean run, cross-session lines reported in the result JSON
+retry_recommendation: retry_implementation
+confidence: high
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 2e0cffffa2a3d004b8476f3587b9bd13642e69af
+head_sha: 3756ca199a15e07087c78892122d21f5843c71a7
+commits: 33e091def97d77cb3621b4b58ee7bd6b2f751c86, 3756ca199a15e07087c78892122d21f5843c71a7
+tests_run: `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 1, `Tests  3 failed | 26 passed (29)`, duration 53.05 s at HEAD because each of the three cases is killed at its 15 s spawn limit; the 26 old tests stay green.
+files_changed: harness/model-guide-tests/pick-diffs.test.ts (three P3T3 cases); measure/tracks/model_guide/plan.md; untracked evidence measure/runs/model_guide/red-3.13e.txt and measure/runs/model_guide/red-p3-2e0cfff.log. Nothing under fixtures/fakes/ changed; the fakes are temp scripts. No production file and no docs/ path touched.
+plan_updates: added 3.13e as [~] and 3.13f as [ ] after 3.13d and before 3.13; 3.13e changed to `[x] 33e091d` with an Evidence line that cites measure/runs/model_guide/red-3.13e.txt; 3.13f changed [ ] -> [~]. 3.13 stays [ ]. The plan commit is 3756ca1.
+remaining_failures: the three P3T3 cases fail at HEAD because the tool hangs in `waitSync`: `PICK_DIFFS_RETRY_WAIT_MS=abc` gives NaN, `Infinity` gives Infinity, and `1e308` gives a huge finite number; the spawnSync limit of 15 s kills each run and the test sees status null, so exit 0 is not reached. Nothing else fails.
+dispositions: none
+handoff: Green 3.13f: edit only `harness/model-guide/pick-diffs.ts`. Touch no test file, no fixture, and no plan line. (1) In `ghApi`, parse the base wait so it is the env value `PICK_DIFFS_RETRY_WAIT_MS` only when it is a finite number from 0 to 60000 inclusive; an empty value, `abc`, `Infinity`, `-5`, and `1e308` all give the default 5000. Watch the empty string: `Number("")` is 0, so treat an empty or whitespace-only raw value as the default. (2) Keep the waits base x1, base x6, base x24, the 4-try ceiling, the transient regex, the immediate refusal for any other failure or a spawn error, the exact stdout `pick-diffs: gh api failed`, and the last non-empty gh stderr line on the tool stderr. (3) Update the file header doc to state the env value, its 0 to 60000 bound, the default 5000, the three waits, the 4 tries, and the stderr rule (P3C5-1); keep the rest of the header accurate. (4) Verify with `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot`: expect `Tests  29 passed (29)` and about 23 s (each P3T3 case waits the default 5 s once). Rerun `adversarial-p3.test.ts` (31 passed) and `review-set.test.ts` (18 passed), and run `git status --short docs/`; it must print nothing. Never run the tool against the real gh; a monorepo run uses this checkout now.
+END_MEASURE_AGENT_RESULT

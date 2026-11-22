@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "aa894a7d18e5da6b362997c1c52f142a07168402",
+  "audited_head_sha": "d14becb350354103b18d43d87e94b46df8784ec8",
+  "reviewer_model": "claude-code/claude-sonnet-5-5#high",
+  "status": "pass",
+  "summary": "Round 4 passes. Each round 3 finding is fixed and a test that fails on aa894a7 pins it. The temp staging holds in every probe. One Minor item and three Nits remain, all in the error paths of unreadable docs entries and in test strength. No docs write is possible.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A4-1 [Minor] review-a: harness/model-guide/preview.sh:103-138 and plan.md task 1.15 F5: The F5 claim that preview.sh maps an unreadable docs entry to a refusal line holds only for a dangling entry (the bash `find` scan at preview.sh:103-107). An unreadable file under docs (mode 000) makes `cp -a` fail at preview.sh:112: exit 1, a `cp: cannot open ... Permission denied` line on stderr, and a half-built preview folder (assets, index.html, methodology.html were present in my probe). The Python branch `preview: unreadable` at preview.sh:129-138 calls `sys.exit(2)`, but the script imports hashlib, html, json, and os only (preview.sh:119-122), so `sys` is undefined. That branch would raise NameError and it is unreachable by any test. No file is written under docs, so the failure is safe. The test B2-1 for preview.sh covers only the dangling case. Fix: add `import sys`, or remove the dead branch; run a readability scan (for example `find ... ! -readable`) before the copy and refuse with `preview: unreadable <path>`; add a test for an unreadable file.",
+    "A4-2 [Nit] review-a: harness/model-guide/preview.sh:93-99: The planted-symlink scan also matches a valid symlink that `cp -a` copied from docs. With a symlink docs/alias.html -> index.html in a temp copy, the first preview gave exit 0 and the second preview gave `preview: refused path <preview>/alias.html`, exit 2. The tracked docs tree holds 0 symlinks (git ls-files -s docs, mode 120000: 0 entries), so the effect is none today. Fix: copy with `cp -aL`, or refuse a docs symlink in the first run.",
+    "A4-3 [Nit] review-a: harness/model-guide/publish.ts:93 (readdirSync in the walk): The B2-1 fix wraps statSync and the hash read but not readdirSync. An unreadable directory under docs (mode 000) gave exit 1 with `Error: EACCES: permission denied, scandir .../docs/lockdir` and a stack trace in a temp copy. No file is written. It is the same family as B2-1 at a new place. Fix: wrap the readdirSync call and push the directory path to the broken list.",
+    "A4-4 [Nit] review-a: harness/model-guide-tests/preview-gate.test.ts (test `A3-3 refuses a symlink planted ...`): The test checks exit 2, an unchanged docs snapshot, and one non-empty stdout line. It does not check the text `preview: refused path <link>` that preview.sh:9-10 and plan.md task 1.15 F3 state. A change of the line text would still pass. The docs-write part of the test fails on aa894a7, so the fix itself is pinned. Fix: assert the exact line with the link path."
+  ],
+  "evidence": [
+    "HEAD at audit time was 1a83bc9, a docs-only publish commit (docs/assets/data/benchmark.json, bugfix.json, tracks.json) on top of d14becb. I audited the d14becb tree: git diff 0a44cc9..d14becb, git diff aa894a7..d14becb, and git archive d14becb for the probes. git diff --name-only d14becb 1a83bc9 lists the three data files only. The round 3 range holds preview.sh, publish.ts, real-work.ts, input-check.test.ts, preview-gate.test.ts, and plan.md for model_guide; the other files in the range belong to daily_model_schedule and are outside this phase.",
+    "A3-1/C3-1 fixed: preview.sh:80-87 runs real-work.ts into `mktemp -d` before any preview write, with `trap 'rm -rf \"$STAGING\"' EXIT` at :81; the docs copy and `mkdir -p` come after (preview.sh:109-113). Probes in a git archive copy: a refused run into an existing folder left the sha256 of all files identical; a refused run into /tmp/ra4/n1/n2/n3 created no parent; /tmp/tmp.* entries counted 84 before and 84 after, so the temp folder is cleaned on a refusal and on a success. The two A3-1 tests failed on aa894a7 and pass at d14becb.",
+    "A3-2/C3-3 fixed: real-work.ts:180-204 checks generated_on, first_run_date, last_run_date as strings and runs, share_known_route, share_with_result as finite numbers, all inside the schema check. Probes: generated_on null, last_run_date 5, and paired_duplicates_left_out 2.5 each gave `input-check: schema`, exit 2, and no preview folder. unknown_runs and other_runs are computed by the tool (real-work.ts:376), so they need no type check. The four A3-2 tests in each of preview-gate.test.ts and input-check.test.ts failed on aa894a7 (input-check: 4 failed, 11 passed) and pass at d14becb.",
+    "A3-3 fixed: preview.sh:93-99 scans an existing preview folder with `find -type l -print -quit` before any write. Probes: a dangling file link planted at <preview>/real-work.json to <repo>/docs/zzz.json gave `preview: refused path <preview>/real-work.json`, exit 2, and docs/zzz.json did not exist; a link to the docs folder in <preview>/sub/lnk was refused; a --preview value that is a symlink to docs was refused; a --preview symlink to an outside folder was resolved and allowed (exit 0, files in the outside folder). The test failed on aa894a7 with exit 0 and a new docs/real-work.json. The line text is not asserted (A4-4).",
+    "C3-2/A3-4 fixed: preview.sh:162-172 tests each link before the insert. The second preview over an existing preview gave 1 link of each kind (grep count 1 and 1). The test C3-2 failed on aa894a7 (2 and 2).",
+    "B2-1 fixed for a dangling entry and an unreadable file in publish: publish.ts:86-109 and :138-161 map a stat failure and a hash failure to `publish: drift <path>`. preview.sh:103-107 maps a dangling entry to `preview: unreadable docs/<path>` (probe: exit 2, no preview folder). Three tests failed on aa894a7 and pass at d14becb. Gaps: A4-1 and A4-3.",
+    "Red proof: I overlaid harness/model-guide-tests from d14becb onto a git archive of aa894a7 and ran the two files. preview-gate: 11 failed, 65 passed (76); input-check: 4 failed, 11 passed (15). The 15 names match red-1.14.txt. At d14becb each file alone with --maxWorkers=1 --reporter=dot: preview-gate exit 0 (76 passed), input-check exit 0 (15 passed), real-work exit 0 (19 passed), leak-guard exit 0 (2 passed); bash -n preview.sh exit 0. These match green-p1-eb85c0a.log.",
+    "Regression check of earlier fixes: the 65 older preview-gate tests (F12 to F23: path matrix, stale real-work copies, usage lines, publish refusals, coverage keys, leaf cleanup) all pass at d14becb. The earlier A3-1 Minor (existing folder overlaid, parents left) is closed by the staging order. The earlier A3-3 Minor (symlink write-through) is closed. The earlier A3-2 Minor (types) is closed. The header at preview.sh:1-25 matches the behavior, including the claim that a refused run leaves no parent folder.",
+    "Temp staging check: refused path and usage runs exit before mktemp (no staging). An input-check refusal exits through the trap and removes the staging folder. The symlink refusal and the dangling refusal also exit through the trap. The staging folder lives in /tmp, never in the repo. A relative --export resolves from the caller folder before the cd.",
+    "Plan record: the 1.14 and 1.15 markers cite 563a263 and e73023d, and the Evidence lines state exit codes without a PASS or FAIL count (A5 clean). Both commits are on main. preview-1.15.txt records exit 0, SHA dae855ca, 1,798 runs, one nav link of each kind, and no docs write.",
+    "Anti-pattern checks: A3 clean (tests assert labeled output lines and exit codes). A4: the missing-base, no-files, dangling, and unreadable fixtures fail with exit 2 and a named line; the A3-1 tests fail on the old code, so they are not vacuous. A5 clean. The build-graph scan finds no exported symbol in the three scripts; the callers are the plan commands and the tests.",
+    "No probe touched the real docs/ folder. All probes ran in git archive copies under /tmp/ra4."
+  ],
+  "commands": [
+    "git diff 0a44cc9..d14becb --stat; git diff aa894a7..d14becb -- harness/model-guide/ harness/model-guide-tests/ measure/tracks/model_guide/plan.md",
+    "git diff --name-only d14becb 1a83bc9 -> docs/assets/data/benchmark.json, bugfix.json, tracks.json",
+    "git archive d14becb into /tmp/ra4/repo and /tmp/ra4/repo2; bash harness/model-guide/preview.sh probes (refused run into an existing and a new nested folder, symlink cases, dangling entry, valid docs symlink, unreadable file, staging leftovers count)",
+    "preview.sh with an unreadable docs/locked.txt -> exit 1, `cp: cannot open` (A4-1)",
+    "preview.sh with docs/alias.html -> index.html, run twice -> second run exit 2 (A4-2)",
+    "publish.ts with an unreadable docs/lockdir -> exit 1, EACCES stack (A4-3)",
+    "git archive aa894a7 plus harness/model-guide-tests from d14becb; cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=verbose -> 11 failed, 65 passed",
+    "same overlay; npx vitest run model-guide-tests/input-check.test.ts ... -> 4 failed, 11 passed",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 76 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts ... -> exit 0, 15 passed",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts ... -> exit 0, 19 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-guard.test.ts ... -> exit 0, 2 passed",
+    "bash -n harness/model-guide/preview.sh -> exit 0"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/input-check.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-code/claude-sonnet-5-5#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "harness/model-guide/preview.sh:80-87 staging held in the existing-folder, nested-parent, and symlink probes, but preview.sh:138 calls sys.exit without import sys (A4-1)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The 15 round 3 tests failed on aa894a7 (11 in preview-gate, 4 in input-check) and pass at d14becb, but the A3-3 test does not assert the refusal text and no test covers an unreadable file in preview.sh."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff aa894a7..d14becb for model_guide lists six planned files (three scripts, two test files, plan.md) and nothing under docs/."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "red-1.14.txt, green-p1-eb85c0a.log, and preview-1.15.txt match my reruns (11 and 4 failed on the old code, 76 and 15 passed at d14becb)."
+    }
+  ]
+}

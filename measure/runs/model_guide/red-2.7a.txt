@@ -1,0 +1,74 @@
+Red evidence for plan task 2.7a — fix approve() and the U3 status check of
+update.test.ts (the Green 2.7 block)
+Recorded 2026-11-15 by the mid-red role at role_base_sha be59fe2f13f657c6fa7d1d166ece5dd6b5bf95a0
+Phase base: c22f313603108585f8bb45996057627acfbc78ae
+Test commit of task 2.3 that carried the two blocking assertions: b839dab
+
+The two blocked assertions and their fix (no production file changed):
+
+1. U2 expected the status string " M docs/index.html" and got
+   " M docs/index.html\n?? measure/". The helper approve(root) wrote
+   measure/tracks/model_guide/publish-approval.md after the initial commit
+   and never committed it, so the record itself was untracked for the whole
+   run. update.sh must not touch that record, so no production fix exists.
+   Fix: approve(root) now runs `git add` on that one path and then one
+   `git commit` before update.sh runs. The record is clean before the run,
+   and U2 still proves that the update commit holds exactly the two data
+   files while the unrelated dirty docs/index.html stays uncommitted.
+
+2. U3 expected an empty status, but the test itself appends one byte to
+   fixture/real-work-mini.json after the initial commit, so that file is
+   dirty by design. Fix: U3 reads `git status --short` once after the byte
+   append and compares the run-end status with that string. The intent of
+   U3 is unchanged: exit 2, one named input-check line, treeHashes(root)
+   byte-identical, no new preview folder, no new commit.
+
+A third, smaller defect in the same file blocked the run: the afterAll
+cleanup called rmSync without importing it, so the file failed with
+"ReferenceError: rmSync is not defined" once the temp repos were really
+created. `rmSync` is now in the node:fs import list. This changes no test
+intent.
+
+Targeted command (day rule: one file per run, one worker):
+  cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  3 passed (3)
+  Failed test names: none. The three tests of update.test.ts pass with
+  harness/model-guide/update.sh present (the uncommitted Green 2.7 file,
+  which this role did not edit, stage, or delete).
+
+The other Phase 2 and Phase 1 files, each run alone with one worker, all
+exit 0 with a labeled Tests line:
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+  (the two D18 ruling tests of task 2.3 pass now that guide.ts exists)
+
+  cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  13 passed (13)
+
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  98 passed (98)
+
+  cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  20 passed (20)
+
+  cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  2 passed (2)
+
+  cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  49 passed (49)
+
+No file under harness/model-guide/ and no file under docs/ was edited.
+`git status --short docs/` prints nothing. The uncommitted
+harness/model-guide/update.sh of Green 2.7 was never edited, staged, or
+deleted. Every git action of the test runs in a temp repo.

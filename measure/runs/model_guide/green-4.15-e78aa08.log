@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role: measure-jr-green
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: e78aa08727a76908cfefb8ff0343840b96a14f8f
+green_commit_sha: 2abe2b4
+handoff: Review A F1 fixed in 2abe2b4, recorded in a85ff6e. daemon_pids in both runners now keys on the BENCH_OPENCODE_JOB marker with adjacency and HOME and cwd checks; the two copies are byte-identical. Five files pass one at a time: adversarial-p4-runner 16 passed, judge-run 50 passed, review-run 96 passed, adversarial-p4b 12 passed, adversarial-p4c 13 passed. Counts are in measure/runs/model_guide/green-4.15.txt. leak-check exit 0. Flipped to [x]: none, the row stays [~] per the PM round cap. Flipped to [b]: none. New files added: none. Hygiene: pgrep printed nothing of mine after each run; git status docs prints nothing. One p4r run and one review-run run showed single transient load failures that passed alone and on quiet reruns; the recorded runs are clean.
+END_MEASURE_AGENT_RESULT

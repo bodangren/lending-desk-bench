@@ -1,0 +1,11 @@
+MEASURE_AGENT_RESULT
+role: task-4.9-check
+track: model_guide
+audited_head: 8e0c441a0d026d886bf006388136e7b4e49e4286
+status: pass
+summary: All suites green (quota 15, credential-provider 11, review-run 25 with new F1/F2 Red tests). F1 fixed and proved live: the second same-night run of a no-source route refuses with exit 2, empty stdout, and one stderr line. F2 withdrawn: the stopped-quota path is now tested. All six items confirm.
+blocking_findings: none (F1 withdrawn: guard keys on QUOTA_SOURCE per 0ba6a28 and the live probe refuses)
+nonblocking_findings: none (F2 withdrawn: e60814a adds the stopped-read test)
+allowed_list_observations: claude-code/claude-sonnet-5-5#high, kimi-code-plan-cn/kimi-for-coding#high, bailian-token-plan/glm-5.3#high, nvidia/stepfun-ai/step-5-preview#high, opencode-go/muse-spark-1.3-contributor#high are NOT on the allowed list; minimax-cn-coding-plan/MiniMax-M3.1-Flash, opencode-go/deepseek-v4.1-flash, opencode/hy4-flash-free, opencode-go/mimo-v2.6-flash match exactly.
+retry_recommendation: none
+END_MEASURE_AGENT_RESULT

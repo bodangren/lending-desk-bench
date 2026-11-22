@@ -1,0 +1,79 @@
+role: mid-red
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+task: 2.4a Red (fixture re-pin to the real OD6 key shape)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: 7eddc6ee4e7b79ce91e779e6f55bccd870069e20
+status: complete
+head_sha: dcaa77d52fa96ca4bca817867cd34828642eaaa5
+commits: 3fef9a8fb2be1ebc00138f57ce0a3e6d7117b803 (tests + fixtures), dcaa77d52fa96ca4bca817867cd34828642eaaa5 (plan)
+
+Ruling recorded in plan.md under 2.4a (spec D17, orchestrator 2026-11-15):
+the error types are the severity classes blocker, major, minor with the
+count of rows of each; the checklist code is the `item` value; a run
+result is the row value under the route short key; a route result is
+`blockers_found` of that route over `summary.key.blockers`.
+
+Fixture re-pin (synthetic values only): top keys source/note/routes/
+summary/errors; routes maps short key -> route name (k31pro, s55, bad01
+with hostile name `"><img src=x onerror=alert(1)>`); summary holds `key`
+(blockers 13, majors 20, minors 19), one object per route short key, a
+plain `__proto__` key, and `bias_note`; 52 rows = 13 blocker + 20 major +
+19 minor; rows hold id, severity, checklist, and one string per route
+short key; 43 rows hold 1 to 3 checklist items (`item` + `text`) and 9
+hold none; one hostile checklist text and one `__proto__` checklist text;
+route results 11 of 13, 13 of 13, 7 of 13.
+
+Day rule: one test file per command, --maxWorkers=1, --reporter=dot.
+All runs below are at HEAD 7eddc6e with the new tests in the working tree.
+
+1) cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 1 — Tests  5 failed | 8 passed (13)
+   failed: N1 (the tool still writes the old `type` row key), N5 x4
+   (row with `type`, row with `results`, checklist item with `code`
+   instead of `item`, route value in the old object shape: the tool still
+   accepts the old shape, exit 0 instead of exit 2)
+2) cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 1 — Tests  1 failed | 97 passed (98)
+   failed: T1 block rows real row shape (the generated data file still
+   carries the old `type` row key)
+3) cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  15 passed (15)
+4) cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  20 passed (20)
+5) cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  2 passed (2)
+6) cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+   exit 0 — Tests  49 passed (49)
+
+Evidence file: measure/runs/model_guide/red-2.4a.txt (not staged).
+The record of the failed test names with each pinned reason is there.
+
+Files changed: harness/model-guide-tests/print-audit.test.ts,
+harness/model-guide-tests/preview-gate.test.ts,
+harness/model-guide-tests/guide.test.ts,
+harness/model-guide-tests/update.test.ts,
+harness/model-guide-tests/fixtures/print-audit/print-audit-mini.json,
+harness/model-guide-tests/fixtures/print-audit/MANIFEST.txt,
+measure/tracks/model_guide/plan.md.
+No file under harness/model-guide/ and no file under docs/ changed.
+
+Plan updates: 2.4a marked [x] with commit 3fef9a8 and an Evidence line
+citing red-2.4a.txt; 2.4b added as [~] "Read only the real OD6 shape in
+print-audit.ts. Touch no test file."; 2.5 kept as it is.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+baseline_sha: c22f313603108585f8bb45996057627acfbc78ae
+role_base_sha: 7eddc6ee4e7b79ce91e779e6f55bccd870069e20
+head_sha: dcaa77d52fa96ca4bca817867cd34828642eaaa5
+commits: 3fef9a8fb2be1ebc00138f57ce0a3e6d7117b803, dcaa77d52fa96ca4bca817867cd34828642eaaa5
+tests_run: cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, Tests 5 failed | 8 passed (13); model-guide-tests/preview-gate.test.ts -> exit 1, Tests 1 failed | 97 passed (98); model-guide-tests/input-check.test.ts -> exit 0, Tests 15 passed (15); model-guide-tests/real-work.test.ts -> exit 0, Tests 20 passed (20); model-guide-tests/leak-guard.test.ts -> exit 0, Tests 2 passed (2); model-guide-tests/adversarial.test.ts -> exit 0, Tests 49 passed (49)
+files_changed: harness/model-guide-tests/print-audit.test.ts, harness/model-guide-tests/preview-gate.test.ts, harness/model-guide-tests/guide.test.ts, harness/model-guide-tests/update.test.ts, harness/model-guide-tests/fixtures/print-audit/print-audit-mini.json, harness/model-guide-tests/fixtures/print-audit/MANIFEST.txt, measure/tracks/model_guide/plan.md
+plan_updates: 2.4a [x] 3fef9a8 with the D17 ruling line and an Evidence line citing measure/runs/model_guide/red-2.4a.txt (no test count); 2.4b added as [~]; 2.5 kept as it is
+remaining_failures: print-audit.test.ts N1 and N5 (four cases) and preview-gate.test.ts T1 block-rows test, all pinned to the old shape still accepted or the old `type` key still read; expected Red until 2.4b
+handoff: Green 2.4b edits only harness/model-guide/print-audit.ts and touches no test file, no fixture, and no other file. Read only the real OD6 shape and remove every dual-shape fallback: routes values must be strings (short key -> route name); summary.key.blockers over summary[key].blockers_found give the route result `N of M`; a row holds id, severity, checklist, and one string per route short key; a checklist item holds `item` and `text`. Refuse the old shape: a row with a `type` key or a `results` list, or a checklist item without `item` (for example `code`), gives exit 2 with `input-check: errors`; a route value that is not a string gives exit 2 with `input-check: keys`. Drop the `type` field from output rows: rows are {id, severity, checklist:[{code,text}], results:[one value per route in route order]}, error_types counts the severity classes blocker, major, minor, routes maps the route name to `blockers_found of summary.key.blockers`. The fixture summary holds a plain `__proto__` key that must never become a route or a row. Optionally re-run the tool on the OD6 hand-off file to refresh harness/model-guide/data/print-audit-2026-11.json so its rows match the new output shape; the block does not read `type`. Verify: cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot and the same for preview-gate.test.ts each exit 0; input-check, real-work, leak-guard, adversarial stay at exit 0; git status --short docs/ prints nothing. Note for 2.5: the guide.test.ts and update.test.ts assembly helpers now read the real shape (committed in 3fef9a8), the print-audit routes include a hostile synthetic name ranked third at 7 of 13, and guide.ts must rank by found count and must not iterate summary keys into routes.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,73 @@
+Red evidence for plan task 2.2 — the overview table (guide.test.ts)
+Recorded 2026-11-15 by the mid-red role at role_base_sha b1dcd24c14bc7084ebc52b4dcfe294bda936ec47
+Phase base: c22f313603108585f8bb45996057627acfbc78ae
+
+Targeted Red command (day rule: one file per run, one worker):
+  cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  13 failed (13)
+  Every test fails with: Error: production file is missing:
+  /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/guide.ts
+  (Phase 1 has no overview tool)
+  Expected reason: harness/model-guide/guide.ts does not exist before
+  Green task 2.5.
+
+Failed test names:
+- T2: model-guide.json holds the six rows of D18 in order with the pinned fields
+- T3: the first source picks the first and the second choice from its rank
+- T3: the evidence cell holds the source, the number, and the run count
+- T2: each row carries its evidence date
+- T3: the base line shows beside the pick and never changes it
+- T3: the rows of app code, docs and ops, print books, and tooling use the work-type table
+- T4: with no qualified model in the first source the print-audit second source picks
+- T5: no qualified model in either source shows the no-pick words
+- FR-6: the table is written when the score flag or the score file is absent
+- T6: evidence 15 days old shows stale and 14 days shows none
+- T7: a track A route with incomplete does not qualify
+- T5 page: the preview index shows the no-pick words for the empty row
+- B8-1 page: a hostile model name reaches the overview table HTML escaped
+(designators T2 to T7 follow the Phase 2 group table of
+measure/tracks/model_guide/test-strategy.md section 4.2; the FR-6 and B8-1
+cases have no separate group there)
+
+A11 environment check — the verdict does not move:
+  BENCH_TRACK=change npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  13 failed (13)
+
+The other Phase 2 and Phase 1 files, each run alone with one worker:
+  cd harness && npx vitest run model-guide-tests/print-audit.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  9 failed (9)
+  (unchanged from red-2.1.txt: the print-audit tool and page block are Green 2.4)
+
+  cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 1
+  Tests  3 failed | 94 passed (97)
+  (unchanged from red-2.1.txt: T1, T11, and the page part of N4 are Green 2.4;
+  G1 to G4 pass at the base by design)
+
+  cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  15 passed (15)
+
+  cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  20 passed (20)
+
+  cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  2 passed (2)
+
+  cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit code: 0
+  Tests  49 passed (49)
+
+Open decisions for the orchestrator (recorded here and in the handoff):
+1. Spec D18 says the test writing source is "page B producer table, role
+   red", but the Phase 1 data file real-work.json has no role key. The test
+   proves the producer table as the source and leaves the role filter open.
+2. Spec D18 lets the page B checker table pick for the code review row when
+   track A has no qualified route, but the strategy closeout gate wants
+   "no pick yet" for that row until Phase 4. The test does not pin the code
+   review row for that case.

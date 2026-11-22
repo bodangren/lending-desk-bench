@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "model_guide",
+  "phase": "Phase 5: The publish gate and the weekly update",
+  "status": "pass",
+  "summary": "Pass under the PM rules. The live review page equals the committed page. Approval, navigation, and table checks pass. One nonblocking CLI finding goes to tech-debt.",
+  "evidence": [
+    "git rev-parse HEAD returned a8835be3ddc9b3e71f8965301772f97935da39d5.",
+    "The exact phase range changes 13 paths, including three public HTML pages and three public data files.",
+    "test-strategy.md:379-395 requires approval, drift refusal, and explicit public paths. These contracts apply to the exact phase diff.",
+    "Read both passing audits. Their known findings remain assigned to tech-debt.",
+    "publish.ts:95-114 accepts the committed owner, date, files header, and six hash rows.",
+    "publish.ts:156-223 checks the preview hashes and docs drift before the copy loop.",
+    "update.sh:40-42 returns usage on stderr with exit 2. Lines 82-86 forward an input refusal.",
+    "update.sh:125-143 uses the two README data paths and explicit commit paths. It never pushes.",
+    "git ls-tree reports mode 100644 for update.sh. stat reports mode 664 without an execute bit.",
+    "The wrapped read-only assertions completed. No publish.ts, update.sh, preview rebuild, browser, full suite, or model call ran.",
+    "The live review URL returned HTTP 200 and 15,633 bytes. Its bytes equal docs/review.html at the audited HEAD.",
+    "Both review copies have SHA-256 e6ed8ff7c77a5dd2fdf4bf507a2faf78ac4934ceb53855132229bcd2ef08af90.",
+    "All eight navigation targets on each assigned HTML page resolve to committed docs files. Each navigation contains one Review and one Real work link.",
+    "docs/review.html:106-108 puts each route before its bare incomplete mark on a separate line. Every rank remains a dash.",
+    "DeepSeek shows incomplete: 1 of 3 passes and worst 78.6. Hy4 shows incomplete: 1 of 3 passes and worst 75.4.",
+    "MiMo shows incomplete: 0 of 3 passes. All seven main result cells and all 24 class and severity count cells show dashes.",
+    "docs/index.html:44 says no pick yet: not enough evidence for Code review.",
+    "All six approval rows use safe docs-relative paths. Each hash matches its committed docs file and its existing preview file.",
+    "preview-base.json contains 34 docs entries. Each path and hash equals the phase-base docs tree.",
+    "The post-publish comparison differs at exactly the six approved paths. This expected drift follows the completed first publish.",
+    "publish.ts:199-223 detects added, removed, changed, and broken docs entries. It prints sorted drift lines and exits 2 before copying.",
+    "README.md:287 names the same manifest argument as update.sh:40-47. The caller-relative manifest becomes absolute before the script changes folders.",
+    "update.sh:125-129 writes only the two preview files before approval. Lines 132-143 write and commit only the two documented docs data paths afterward.",
+    "update.sh:129-140 returns 0 for the preview branch and an unchanged approved rerun. Tool failures retain their exit status at :82-86 and :117-122.",
+    "The README states no exit-code promise. Source inspection confirms usage exit 2 on stderr and input-check exit 2 from real-work.ts:86-88.",
+    "Existing update.test.ts:367-382 checks the usage stream and status through bash. Its other tests check both approval branches and explicit commit paths.",
+    "The passing Review A and B artifacts supply the existing targeted test results. This audit does not replay their tests or duplicate their findings.",
+    "The phase diff changes no HTTP handler. Contract applicability comes from the published routes, approval data, and new weekly-command documentation.",
+    "The final git rev-parse HEAD returned a8835be3ddc9b3e71f8965301772f97935da39d5. The audited source paths remain unchanged.",
+    "Only the supplied JSON and log were written. The pre-existing untracked .opencode/ and harness/wt.txt remain unchanged."
+  ],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Major] review-c -> tech-debt: The documented weekly command cannot execute directly. score-impact: no. README.md:287 names harness/model-guide/update.sh without bash. The committed script has mode 100644; the current file has mode 664. A shell refuses this command before the CLI can return its documented status. update.test.ts:269-272 and :371 use bash, so they do not prove the README command. Document bash harness/model-guide/update.sh or set the execute bit. Current scores and public pages remain unchanged."
+  ],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "changed_files": [
+    "README.md",
+    "docs/assets/data/model-guide.json",
+    "docs/assets/data/real-work.json",
+    "docs/assets/data/review.json",
+    "docs/index.html",
+    "docs/real-work.html",
+    "docs/review.html",
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide/data/review-scores/mg-2026-11a.json",
+    "harness/model-guide/preview.sh",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/publish-approval.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "commands": [
+    "git rev-parse HEAD",
+    "git status --short",
+    "git diff --name-status 8fd8882a8539d051129eb106e46974a934df5223 a8835be3ddc9b3e71f8965301772f97935da39d5",
+    "date -Is",
+    "git diff 8fd8882a8539d051129eb106e46974a934df5223 a8835be3ddc9b3e71f8965301772f97935da39d5 -- README.md harness/model-guide/preview.sh harness/model-guide-tests/preview-gate.test.ts harness/model-guide-tests/adversarial-p4g.test.ts harness/model-guide/data/review-scores/mg-2026-11a.json",
+    "git ls-tree -r --name-only a8835be3ddc9b3e71f8965301772f97935da39d5 docs",
+    "git ls-files -s harness/model-guide/update.sh",
+    "git ls-tree a8835be3ddc9b3e71f8965301772f97935da39d5 harness/model-guide/update.sh",
+    "stat -c '%a %A %n' harness/model-guide/update.sh",
+    "git diff --name-only a8835be3ddc9b3e71f8965301772f97935da39d5 -- harness/model-guide/publish.ts harness/model-guide/update.sh docs README.md",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh python3 -c: read-only live-byte, navigation, table, approval, and preview-base assertions; completed shell ID sh_202ffcfa2001Uu55YxRKVwS0Hk",
+    "git check-ignore -v measure/runs/model_guide/review-c-5-a8835be.json measure/runs/model_guide/review-c-5-a8835be.log",
+    "git diff --name-only a8835be3ddc9b3e71f8965301772f97935da39d5 -- docs README.md harness/model-guide/publish.ts harness/model-guide/update.sh"
+  ],
+  "phase_base_sha": "8fd8882a8539d051129eb106e46974a934df5223",
+  "role_base_sha": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "audited_head": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "audited_head_sha": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "contract_applicability": "applicable",
+  "route": "openai/gpt-6.1-sol#high (PM 2026-11-22 route for review and acceptance roles; substitution for `ra-quota pick review-c`).",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The read-only contract assertions pass, but README.md:287 names update.sh directly while its committed mode is 100644."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The live-byte and table assertions pass; update.test.ts:269-272 uses bash and does not prove the documented direct invocation."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The exact phase diff contains 13 release, documentation, preview, score, test, and approval paths."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The wrapped assertions verify live bytes, all 24 navigation targets, all six approval hashes, and all 34 preview-base entries."
+    }
+  ]
+}

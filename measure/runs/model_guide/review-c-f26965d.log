@@ -1,0 +1,7 @@
+MEASURE_AGENT_RESULT
+status: pass
+blocking_findings: none
+nonblocking_findings: N1 [Nit] review-c: error_line_of prints the raw error line when the scan itself fails (review-run.sh:866-874, judge-run.sh:637-645). scan_output returns 2 when the credential helper fails, and the function then prints the unsanitized line to stdout and into the records. The reachable probe path and the pass path stop on the same failure (review-run.sh:994-1001, 1112-1117). Rationale: a broken helper plus a key in the error line still leaks the key, and no test pins this edge.
+retry_recommendation: none
+confidence: high
+END_MEASURE_AGENT_RESULT

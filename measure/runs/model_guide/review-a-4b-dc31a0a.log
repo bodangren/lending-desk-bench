@@ -1,0 +1,81 @@
+Review A: correctness and architecture
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: dc31a0af910bd17255dba10cb662d241fb47da1b
+audited_head_sha: dc31a0af910bd17255dba10cb662d241fb47da1b
+route: openai/gpt-6.1-sol#high
+The orchestrator supplied role_base_sha after the provisional blocked result.
+The audit reads the exact phase diff and distinguishes the accepted deps_refresh work.
+The focused delta after 7319344 contains 14 model_guide paths.
+The PM cap permits only a real-key leak to block this review.
+
+Commands ran one file at a time through /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh.
+No command used shell output redirection.
+No full suite or real model call ran.
+
+Command: npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 31 passed (31).
+Command: npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 113 passed (113).
+Command: npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 63 passed (63).
+Command: npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 32 passed (32).
+Command: bun test harness/model-guide-tests/review-run.test.ts
+Result: exit 0; 130 pass; 0 fail; 922 expect() calls.
+Command: npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 18 passed (18).
+Targeted total: 387 passed across six files.
+
+The Sol alternative changes no other selected route path.
+The two is_pilot_route blocks are byte-identical.
+The shared live helpers and daemon_pids are byte-identical.
+live_model_call retains its earlier prompt-handling difference.
+quota.ts uses GET and preserves the D15 thresholds.
+The two public scores match a read-only evaluation of scorePass.
+The public route records match a read-only evaluation of routeRecords.
+All 14 manifest key hashes match the private files.
+The applied verdicts contain 19 real-defect agreements and eight unclear results.
+Both provisional passes count as complete passes.
+Both routes remain incomplete and have no rank.
+The preview shows both reason marks, scores 78.6 and 75.4, and no Code review pick.
+All 136 completed plan rows have ancestor SHA evidence.
+The three probe lines satisfy task 4.10's explicit Verify line.
+Task 4.11 remains deferred under the PM ruling.
+No private seeded line was found in the changed model_guide production and record files.
+The public manifest, score file, and review preview contain no detected real-key leak.
+The phase changes no frozen harness path or docs path.
+bash -n passes on both runners and preview.sh.
+The scoped git diff --check passes.
+
+The available build-graph database predates the label change.
+Graph inspection identifies routeRecords as internal but supplies no caller edge.
+Direct reads verify its CLI caller and the preview and guide consumers.
+No changed TypeScript symbol is exported.
+
+Auxiliary check: the initial Node invocation reproduced the scores before its callback parser failed.
+Cause: the isolated callback still contained TypeScript annotations.
+The corrected fixture waited for the shared heavy lock.
+I stopped only that queued process group.
+Result: exit 143; no missing-deliverable mutation result.
+This auxiliary result does not change the six targeted test results.
+
+Nonblocking F1: MiMo has no zero-pass row on the review page.
+Nonblocking F2: closure text overstates failing-first coverage and shared audit provenance.
+Nonblocking F3: eight debt entries contain no source text.
+The JSON holds the routed findings and their file evidence.
+No blocker was found under the PM cap.
+This review does not approve a publish or accept the deferred pilot gate.
+
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: review-score 31 pass; preview-gate 113 pass; judge-run 63 pass; quota 32 pass; review-run 130 pass; guide 18 pass; auxiliary fixture canceled
+files_changed: measure/runs/model_guide/review-a-4b-dc31a0a.json; measure/runs/model_guide/review-a-4b-dc31a0a.log
+plan_updates: none
+known_failures: No targeted file failed. The auxiliary callback attempt had a parser error; its corrected run was canceled during the shared-lock wait.
+handoff: Pass under the PM cap. Carry F1-F3 as nonblocking future work. No implementation retry or publish is authorized. Task 4.11 remains deferred.
+route: openai/gpt-6.1-sol#high
+END_MEASURE_AGENT_RESULT

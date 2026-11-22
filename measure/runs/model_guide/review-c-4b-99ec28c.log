@@ -1,0 +1,40 @@
+Final contract audit. The exception fixes pass.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 99ec28c28b4934a6b72c422a32de8545be7e7875
+audited_head_sha: 99ec28c28b4934a6b72c422a32de8545be7e7875
+contract_applicability: applicable
+C1 withdrawn: The usage synopsis lists both optional flags.
+C2 route part withdrawn: Both pass items visibly name their route.
+C2 legend part remains recorded debt under the PM decision.
+The focused scorer command passed 6 tests and skipped 27.
+The focused preview command passed 3 tests and skipped 113.
+Each test file ran separately through heavy-run.sh with --maxWorkers=1.
+Six direct CLI refusal cases returned exit 2 and the exact expected line.
+Every refusal check produced empty stderr and no output path.
+The local preview command exited 0.
+review.json equals the committed score file byte for byte.
+review.html contains exactly three route rows.
+DeepSeek retains worst 78.6. Hy4 retains worst 75.4.
+MiMo shows incomplete: 0 of 3 passes with the approved reason.
+MiMo rank, worst, median, best, and recall cells contain en dashes.
+Both pass items visibly name their route and provisional state.
+The actual Code review row says no pick yet: not enough evidence.
+The preview syntax check and exception diff check passed.
+No docs path changed. No publish, real model call, or commit ran.
+No browser inspection ran. The dedicated browser role retains layout checks.
+The final HEAD remains 99ec28c28b4934a6b72c422a32de8545be7e7875.
+Facts changed: none.
+MEASURE_AGENT_RESULT
+role: review-c
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: Focused scorer 6 passed; focused preview 3 passed; six CLI refusals passed; local preview and HTML assertions passed.
+files_changed: measure/runs/model_guide/review-c-4b-99ec28c.json; measure/runs/model_guide/review-c-4b-99ec28c.log
+plan_updates: none
+known_failures: No active findings. The C2 legend part remains recorded debt.
+handoff: Accept C1 and the C2 route fix. Keep the C2 legend debt. Browser layout proof remains with the browser role.
+route: openai/gpt-6.1-sol#high
+END_MEASURE_AGENT_RESULT
+RESULT: PASS

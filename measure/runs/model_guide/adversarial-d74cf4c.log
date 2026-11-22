@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+scope: tasks 4.1e and 4.1f, page B data source (spec D16 Data source, D17, D18, D19, FR-1 to FR-5)
+status: fail
+audited_head_sha: d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34
+test_commit: d20d61100a184f5f039f08a3fd917a1241158e56
+result_file: measure/runs/model_guide/adversarial-d74cf4c.json
+retry_recommendation: retry_implementation
+summary: 18 cases in harness/model-guide-tests/adversarial-p4.test.ts; 7 failed and 11 passed. The 7 failures are implementation defects for Green: ADV-1 Blocker (at 390 px a model name wraps to 3 lines on the real files; pages/real-work.html:48 and :55), ADV-2 Major (no scroll hint for the More columns tables; preview.sh:606), ADV-3 Major (float noise breaks the rework tie; real-work.ts:555), ADV-4 Minor (double rounding; real-work.ts:482-483), ADV-5 Minor ([1m] leaks into the print-audit block; preview.sh:363), ADV-6 Minor (alias or key AA match depends on file order; real-work.ts:383), ADV-7 Nit (__proto__ variant; real-work.ts:414). A mutation check of 12 mutants left no survivor. No production code changed.
+handoff: Green fixes ADV-1 to ADV-7 (or the orchestrator rules ADV-6 as spec-silent and removes test ADV4-3). Any implementation commit needs a new run of this gate.
+END_MEASURE_AGENT_RESULT

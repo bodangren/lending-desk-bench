@@ -1,0 +1,11 @@
+Review A round 6 of Phase 3 at 629e094: pass. P3A5-1 fixed with a bounded wait base; P3T3 tests assert real output; suites green (29, 18); D8/D13/plan and lint agree; six carried nits open.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+status: pass
+audited_head_sha: 629e094414fe1a78f40ca59f0f71526b9b8a46d4
+result_file: measure/runs/model_guide/review-a-629e094.json
+retry_recommendation: none
+summary: P3A5-1 is fixed at 629e094: retryWaitBase uses the env value only when finite from 0 to 60000, else 5000, so no wait can hang. The P3T3 tests assert real accepted output with hang-proof limits, the header text is true, the D8/D13/plan diff-rule text agrees with itself and with the lint profile, and plan rows 3.13e and 3.13f are true. pick-diffs 29/29 and review-set 18/18 pass. Six carried nits stay open.
+END_MEASURE_AGENT_RESULT

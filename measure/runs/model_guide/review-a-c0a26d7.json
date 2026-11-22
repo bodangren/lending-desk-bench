@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "role": "measure-review-a-correctness",
+  "track": "model_guide",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "status": "pass",
+  "summary": "Pass at HEAD c0a26d7. The range f26965d..c0a26d7 (Red 62126e2 + 9e7672f, Green b795f32 + c0a26d7) fixes the routed findings with real failing-first tests. Review B N22, Review A NA2, and Review C N1 are fixed: error_line_of prints the fixed text when scan_output exits 2, so a failed credential scan never prints the raw error line (review-run.sh:870-873, judge-run.sh:641-644). Review B N23 is fixed: when the byte scan finds no value, the runner scans the decoded error-event text against the credential values too (review-run.sh:880-883, judge-run.sh:651-654), so a JSON-escaped key with a quote, a backslash, or a tab still gives the fixed text. Review A NA1 is fixed: JA5 pins a key on the stderr line of a failed --start-test, and my j2 mutation now fails JA2 and JA5. The judge parts of Review B N25 are fixed: my j1 mutation fails JA3 and JA4. Failing first is verified by my own runs at the Red base: review-run 82 pass, 4 fail (AA1, AA2, AA3, AA5) and judge-run 42 passed, 3 failed (JA1, JA2, JA3), exactly the plan and red-4.13aa.log claims; AA3 and AA5 leaked the raw escaped key at the base. All ten gate files pass at HEAD one at a time: review-run 86 pass 0 fail, judge-run 45, decode-parity 3, adjudicate 23, review-score 27, quota 30, credential-provider 22, adversarial-p4-runner 14, adversarial-p4b 12, seed-messages 17. The token log, the decoders, the region state, and the record fields hold no diff in the range, and the two error_line_of copies are byte-identical. Two nonblocking findings remain, both backlog 4.14: the probe region-branch stdout-event scan path of N25 still has no failing test (the precise m8 mutation keeps all 4.13 cases green at HEAD), and the orphan-scan environment flake struck again under the load of a concurrent session.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Nit, backlog 4.14, residual part of Review B f26965d N25 mutation m8] The probe region branch of review-run.sh still has no failing test for a key in a stdout error event. I applied the precise m8 mutation (review-run.sh:990: print error_event_text of the staging file when it is non-empty, else the old error_line_of call) in a scratch copy of HEAD, and `bun test harness/model-guide-tests/review-run.test.ts -t 'task 4.13'` gave 42 pass, 0 fail. Y13 is the only probe region-event case and its message is clean, AA4 is a probe but non-region, and AA2 and AA5 are pass mode, so no committed case catches the mutation. The shipped code is correct, so under the PM blocking rule of 2026-11-19 this is nonblocking. Fix: add a probe case with a region error event that holds the key.",
+    "F2 [Nit, backlog 4.14, carried from Review A NA3 / Review B N15, observed again] The orphan scans of the runner tests are not scoped to the own temp folder, and the load of a concurrent session tripped one gate per file. My first review-run run at HEAD failed the case `resolves the opencode of the spawn to the fake and leaves no fake process` (85 pass, 1 fail) and passed clean (86/0) on the re-run; my first judge-run run at HEAD failed the J14 timeout case once (44/45) and passed clean (45/45) twice; my first judge-run run at the Red base showed a fourth unnamed failure once and then matched the plan (42/3) twice. Each pgrep after my runs showed only foreign fake and quota servers under /tmp/mg-adv-r-run-*, /tmp/mg-review-fake-*, and /tmp/mg-judge-fake-* from the concurrent session, each dying within seconds; nothing of mine survived."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned c0a26d75a37955bb9c20be9cb3ab2d993d39907b at the start and at the end. That equals the audited head of the brief. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf; role_base_sha f26965dc13381a14a5c27db16c3e4a2ce67e5a33. The audited range is f26965d..c0a26d7: Red 62126e2 (two test files, 2 plan lines) and 9e7672f (plan record), Green b795f32 (review-run.sh and judge-run.sh, +12 lines each) and c0a26d7 (plan.md only). 5 files, +467/-0. The working tree held only the four untracked paths that existed at the start.",
+    "Scope: `git show --stat` on each commit confirms the Green commit b795f32 touches only the two runner scripts, the Red commit 62126e2 touches only the two test files and 2 plan lines, and the record commits touch only plan.md. No fake and no production guard changed in Green, as the plan row 4.13ab claims.",
+    "Failing first, verified by my own runs at the Red base: I extracted 62126e2 with `git archive` into /tmp/opencode/review-a-c0a26d7/red-62126e2 (node_modules linked) and ran `bun test harness/model-guide-tests/review-run.test.ts`: 82 pass, 4 fail. The failures are exactly AA1, AA2, AA3, and AA5, and the target run `-t 'task 4.13aa'` confirmed the same four with AA4 green. AA3 failed with the probe line holding the raw key `sk-test-\"quoted\"\\back<TAB>ail`, and AA5 failed with the pass record error holding `Error: the model is not available in your region (sk-test-\"quoted\"\\back<TAB>ail)`. `npx vitest run model-guide-tests/judge-run.test.ts` at the Red base gave 3 failed (JA1, JA2, JA3) | 42 passed (45) on two of three runs; JA1 failed with the judge output holding the key and JA3 with the escaped key. Every number matches the plan row 4.13ab and the red-4.13aa.log record.",
+    "Gates at HEAD, one file at a time, fakes only: `bun test harness/model-guide-tests/review-run.test.ts` gave 86 pass, 0 fail, 671 expect() calls (after one environment flake, F2). `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot` gave judge-run 45 passed (45) (clean on the last two runs), decode-parity 3, adjudicate 23, review-score 27, quota 30, credential-provider 22, adversarial-p4-runner 14, adversarial-p4b 12, seed-messages 17. All ten counts match the plan row 4.13ab and the green-4.13ab.log record.",
+    "N22 fix, fail closed: error_line_of treats a scan exit of 2 as a hit and prints the fixed text (review-run.sh:868-873, judge-run.sh:639-644), before the exit-0 branch. The reachable probe path (review-run.sh:1007-1015) and the pass raw-output scan (review-run.sh:1122-1133) still refuse on exit 2, so no reachable path prints an unscanned line. AA1 (probe, failed scan, stderr key) and AA2 (pass, region, failed scan) failed at the Red base with the raw key in the probe line and in the pass record and pass at HEAD; JA1 and JA2 pin the judge call and the --start-test line.",
+    "N23 fix, decoded-text scan: after a clean byte scan (exit 1), the runner greps the decoded error line against the fresh credential values of scan_output (review-run.sh:878-883, judge-run.sh:649-654). scan_output writes TMP_VALUES before it can return 1, and an empty value list empties the file, so the check never reads stale values and never fires without values. AA3 (probe) and AA5 (pass, region) failed at the Red base with the escaped key leaked raw and pass at HEAD; JA3 pins the judge call.",
+    "N25 and NA1, proven by mutations at HEAD: the precise j1 mutation (judge error_line_of drops the stdout event source, mut-j1 copy) failed JA3 and JA4 (2 failed | 43 passed); the j2 mutation (--start-test returns to the unscanned first stderr line, mut-j2 copy) failed JA2 and JA5. So the judge stdout event scan and the --start-test redaction line are pinned now. The third named mutation m8 is not: the precise m8 mutation in the probe region branch (review-run.sh:990, print the raw event text with the stderr fallback kept) kept all 42 cases of `-t 'task 4.13'` green, and a cruder variant that also dropped the stderr fallback failed Y2. F1 records the gap.",
+    "Regression check, token log, decoders, region state, and records: the Green diff touches only the error_line_of block of each runner, so read_tokens, error_event_text, is_region_error, write_record, write_probe_record, scan_output, and every guard hold no diff in the range. A node diff of the two error_line_of blocks prints ERROR_LINE_OF_IDENTICAL, so route parity holds. The pass record still refuses on a failed raw-output scan with the fixed line `the credential value scan failed on <diff>` and state open. The probe line and record take the fixed text `the error output held a credential value`, one line with no pipe, so the drivers probe-4.10.sh and night-4.11.sh keep their parse. The ten gate counts at HEAD equal the f26965d counts plus the five AA and five JA cases, so no earlier behavior regressed.",
+    "Plan claim check (A5): the plan row 4.13ab names the base counts 82 pass 4 fail (AA1, AA2, AA3, AA5) and 42 passed 3 failed (JA1, JA2, JA3), and the HEAD counts 86 pass 0 fail, 45, 3, 14, and 12. My runs match every number, and the red-4.13aa.log and green-4.13ab.log records name the same counts and the same case names. The row also claims that Green changed no test, which `git show --stat b795f32` confirms.",
+    "Process hygiene: after every run I ran `pgrep -af 'fake-opencod[e]|quota-serve[r]'`. My own fake and quota servers exited within seconds of each run. Foreign servers of a concurrent session appeared under /tmp/mg-review-fake-*, /tmp/mg-judge-fake-*, and /tmp/mg-adv-r-run-* between runs, with new pids each time, and I sent no signal to any of them. I started no server outside a test file, and I ran no opencode, no openchamber, and no heavy-run.sh.",
+    "Scratch files sit under /tmp/opencode/review-a-c0a26d7 (the Red-base archive and the three mutation copies, about 120 MB), outside the repository. The repository changed only by the two result files in measure/runs/model_guide/, a folder that git ignores."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> c0a26d75a37955bb9c20be9cb3ab2d993d39907b (start and end)",
+    "git diff --stat f26965d..c0a26d7 -> 5 files, +467/-0; git show --stat 62126e2 b795f32 -> tests+plan / the two runners only",
+    "cd /tmp/opencode/review-a-c0a26d7/red-62126e2 && bun test harness/model-guide-tests/review-run.test.ts -> 82 pass, 4 fail (AA1 AA2 AA3 AA5)",
+    "cd /tmp/opencode/review-a-c0a26d7/red-62126e2 && bun test harness/model-guide-tests/review-run.test.ts -t 'task 4.13aa' -> 4 fail (AA1 AA2 AA3 AA5), 1 pass (AA4)",
+    "cd /tmp/opencode/review-a-c0a26d7/red-62126e2/harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 3 failed (JA1 JA2 JA3) | 42 passed (45), twice",
+    "bun test harness/model-guide-tests/review-run.test.ts (at HEAD) -> 86 pass, 0 fail, 671 expect() calls (after one F2 flake)",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 45 passed (45)",
+    "cd harness && npx vitest run model-guide-tests/<decode-parity|adjudicate|review-score|quota|credential-provider|adversarial-p4-runner|adversarial-p4b|seed-messages>.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 3, 23, 27, 30, 22, 14, 12, 17 passed",
+    "mutation m8 (probe region branch, precise form) in a scratch copy of HEAD -> bun test -t 'task 4.13' 42 pass 0 fail (F1)",
+    "mutation j1 (judge, no stdout event source) -> judge-run 2 failed (JA3, JA4) | 43 passed; mutation j2 (--start-test unscanned stderr) -> 2 failed (JA2, JA5) | 43 passed",
+    "node block diff of error_line_of of the two runners -> ERROR_LINE_OF_IDENTICAL",
+    "pgrep -af 'fake-opencod[e]|quota-serve[r]' after every run -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "f26965dc13381a14a5c27db16c3e4a2ce67e5a33",
+  "audited_head": "c0a26d75a37955bb9c20be9cb3ab2d993d39907b",
+  "audited_head_sha": "c0a26d75a37955bb9c20be9cb3ab2d993d39907b",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "Each routed finding works per its request: exit 2 gives the fixed text before the exit-0 branch (review-run.sh:870-873), the decoded line is scanned against fresh values (review-run.sh:880-883), and AA1-AA5, JA1-JA5 pass at HEAD with the ten gate counts matching the plan row 4.13ab."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "AA1, AA2, AA3, AA5 and JA1, JA2, JA3 fail at the Red base with the exact leaks (my run: 82/4 and 42/3) and my j1 and j2 mutations fail JA3/JA4 and JA2/JA5, but the precise m8 mutation keeps all 42 cases green (F1)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat: Green b795f32 adds 12 lines to each runner only, Red 62126e2 holds the two test files and 2 plan lines, and the record commits touch plan.md only."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim has a command result: my Red-base runs match the plan counts exactly, three mutation runs prove the guard cases, and a node diff prints ERROR_LINE_OF_IDENTICAL."
+    }
+  ]
+}

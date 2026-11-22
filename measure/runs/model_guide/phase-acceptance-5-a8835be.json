@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "model_guide",
+  "phase": "Phase 5: The publish gate and the weekly update",
+  "status": "fail",
+  "summary": "Acceptance stops at the prerequisite gate. Review A/B/C target the current HEAD, but no applicable adversarial or UX browser result targets it.",
+  "blocking_findings": [
+    "F1 [Blocker] phase-acceptance -> orchestrator: The required adversarial result is stale. adversarial-4b-99ec28c.json:9-11 targets 99ec28c28b4934a6b72c422a32de8545be7e7875. Later commits change preview.sh, score data, and public files. Rationale: The test-only exception does not apply. A passing adversarial test replay does not replace the required independent role result. Run adversarial testing against the current HEAD before acceptance.",
+    "F2 [Blocker] phase-acceptance -> orchestrator: The required UX browser result is stale. ux-browser-4b-8fd8882.json:6-8 targets 8fd8882a8539d051129eb106e46974a934df5223. Later commits change the renderer and publish its output. Rationale: The test-only exception does not apply. Review C:18 records no browser run; its byte-parity check does not replace the required UX browser review. Run UX browser review against the current HEAD before acceptance."
+  ],
+  "nonblocking_findings": [
+    "F3 [Major] review-a -> tech-debt: Carry Review A F2. update.sh:132-143 updates JSON without refreshing the static HTML. The PM defers task 5.4. Current published scores remain unchanged.",
+    "F4 [Nit] review-a -> tech-debt: Carry Review A F3. README.md:287 promises preview copies after approval, but update.sh:125-143 separates preview and approved outputs.",
+    "F5 [Major] review-b -> tech-debt: Carry Review B F1. update.sh:82-143 commits public data without leak-check. Review B reports that the current published files pass leak-check.",
+    "F6 [Major] review-c -> tech-debt: Carry Review C F1. README.md:287 names update.sh directly, but its committed mode is 100644. The deferred weekly command needs bash or an execute bit."
+  ],
+  "evidence": [
+    "Initial and final git rev-parse HEAD returned a8835be3ddc9b3e71f8965301772f97935da39d5.",
+    "phase_base_sha is 8fd8882a8539d051129eb106e46974a934df5223. role_base_sha and audited_head_sha equal the current HEAD.",
+    "Review A/B/C each report pass and target a8835be3ddc9b3e71f8965301772f97935da39d5. Their blocking findings and violation lists are empty.",
+    "A complete scan of the model_guide audit JSON files found no adversarial or UX browser result targeting the current HEAD.",
+    "adversarial-4b-99ec28c.json targets 99ec28c28b4934a6b72c422a32de8545be7e7875. Its test-only commit 8fd8882 was valid for Phase 4b.",
+    "ux-browser-4b-8fd8882.json targets 8fd8882a8539d051129eb106e46974a934df5223 and describes the earlier page with internal reason text.",
+    "Both prior-head ranges change harness/model-guide/preview.sh, the score file, and six docs paths. No test-only advance can preserve these prerequisites.",
+    "No older prerequisite HEAD was accepted. No test-only commit exception was applied.",
+    "Read spec D19/D21, test strategy section 2.5, Phase 5 tasks and Verify lines, anti-patterns, and the Phase 5 Red/Green logs.",
+    "Read the exact phase file list and commit list. The range changes 13 paths and includes renderer changes 8680f0d, e67dea5, and 2147dcd.",
+    "Plan lines 2840-2845 explicitly defer task 5.4 to the weekly job under the PM ruling. This run does not claim a weekly update occurred.",
+    "The four supplied implementation findings remain nonblocking under the PM late-findings rule. This preflight does not independently certify their behavior.",
+    "A5: The current Phase 5 section contains no PASS=N, FAIL=0 or all checks pass pattern. Its Green r3 claims match the supplied Green log and current review reports.",
+    "A5 remains unverified by an acceptance test replay because the prerequisite gate failed. No test pass is claimed by this run.",
+    "A3/A4/A6/A7 framework checks do not apply: the exact phase file list changes no framework contract, filter, or tracks registry.",
+    "Acceptance commands did not run. This role must run after the required adversarial and UX browser reviews.",
+    "No publish.ts, update.sh, preview rebuild, browser, model call, full suite, or commit ran.",
+    "The final git status shows only the pre-existing untracked .opencode/ and harness/wt.txt paths. The supplied artifacts are ignored."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short; date '+%F %T %Z'; command -v heavy-run.sh",
+    "git diff --stat 8fd8882a8539d051129eb106e46974a934df5223..a8835be3ddc9b3e71f8965301772f97935da39d5",
+    "git log --format='%H %s' 8fd8882a8539d051129eb106e46974a934df5223..a8835be3ddc9b3e71f8965301772f97935da39d5",
+    "git diff --name-only 8fd8882a8539d051129eb106e46974a934df5223..a8835be3ddc9b3e71f8965301772f97935da39d5",
+    "python3 -c: enumerate every model_guide adversarial and UX audit JSON with its status, phase, and audited HEAD",
+    "git diff --name-only 99ec28c28b4934a6b72c422a32de8545be7e7875..a8835be3ddc9b3e71f8965301772f97935da39d5 -- harness/model-guide/preview.sh harness/model-guide/data/review-scores/mg-2026-11a.json docs/",
+    "git diff --name-only 8fd8882a8539d051129eb106e46974a934df5223..a8835be3ddc9b3e71f8965301772f97935da39d5 -- harness/model-guide/preview.sh harness/model-guide/data/review-scores/mg-2026-11a.json docs/",
+    "python3 -c: scan the exact Phase 5 plan section for A5 patterns and print its current Green and publish claims",
+    "git rev-parse HEAD; git status --short"
+  ],
+  "changed_files": ["measure/runs/model_guide/phase-acceptance-5-a8835be.json", "measure/runs/model_guide/phase-acceptance-5-a8835be.log"],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high",
+  "phase_base_sha": "8fd8882a8539d051129eb106e46974a934df5223",
+  "role_base_sha": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "baseline_sha": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "audited_head": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "audited_head_sha": "a8835be3ddc9b3e71f8965301772f97935da39d5",
+  "route": "openai/gpt-6.1-sol#high (PM 2026-11-22 route for acceptance roles; substitution for `ra-quota pick phase-acceptance`; family OpenAI, not the Red family Muse).",
+  "ratings": [
+    {"axis": "correctness", "score": 3, "evidence": "Review A/B/C report correct current publication, but missing prerequisite results prevent an acceptance audit."},
+    {"axis": "test_meaning", "score": 3, "evidence": "red-5.3.log:18-22 records two behavioral failures, but this preflight runs no tests."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "The exact phase diff lists 13 release, preview, data, test, and record paths."},
+    {"axis": "evidence_quality", "score": 3, "evidence": "Current Review A/B/C results exist, but the adversarial and UX browser results target older implementation content."}
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.1-sol#high (PM 2026-11-22 route for review and acceptance roles; substitution for `ra-quota pick review-a`). Red family: Muse; Green family: Hy4.",
+      "agreed": true,
+      "score": 3,
+      "evidence": "Review A:109-112 targets the current HEAD; its scoped verdict remains separate from the missing acceptance prerequisites."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "opencode-go/glm-5.3#high (PM 2026-11-22: GLM for a review where Sol is excluded; Review A ran on Sol). Substitution for `ra-quota pick review-b`.",
+      "agreed": true,
+      "score": 3,
+      "evidence": "Review B:81-84 targets the current HEAD and reports current leak-check evidence; this preflight does not replay that command."
+    },
+    {
+      "reviewer_role": "review-c",
+      "reviewer_route": "openai/gpt-6.1-sol#high (PM 2026-11-22 route for review and acceptance roles; substitution for `ra-quota pick review-c`).",
+      "agreed": true,
+      "score": 3,
+      "evidence": "Review C:18-20 distinguishes its read-only byte check from a browser run, so its pass does not establish the missing UX prerequisite."
+    },
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 3,
+      "evidence": "adversarial-4b-99ec28c.json:47 requires a rerun after implementation changes; its historical pass does not apply to Phase 5."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: a1a4e5697df50e83c623e70c80b235ae8e338138
+head_sha: f497917a3d1f387d4c3c6f8b94e6331d5fd6587a
+commits: 0fb247b71b349cfe30bf0fa91abf9d439a2ef9c3, f497917a3d1f387d4c3c6f8b94e6331d5fd6587a
+tests_run: All runs use `cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot`. `leak-check.test.ts` exit 0, `Tests  13 passed (13)`. `pick-diffs.test.ts` exit 0, `Tests  19 passed (19)`. `review-set.test.ts` exit 0, `Tests  18 passed (18)`. `review-score.test.ts` exit 0, `Tests  25 passed (25)`. `adjudicate.test.ts` exit 0, `Tests  20 passed (20)`. `guide.test.ts` exit 0, `Tests  16 passed (16)`. `leak-guard.test.ts` exit 0, `Tests  2 passed (2)`. `git status --short docs/` printed nothing.
+files_changed: commit 0fb247b holds harness/model-guide/leak-check.ts, harness/model-guide/review-set.ts, harness/model-guide/review-score.ts, harness/model-guide/adjudicate.ts, and harness/model-guide/pick-diffs.ts. Commit f497917 holds measure/tracks/model_guide/plan.md. No test file changed, no fixture changed, no docs/ path changed. Untracked evidence measure/runs/model_guide/green-p3-a1a4e56.log and the refreshed measure/runs/model_guide/green-p3-dc5c319.log are not staged.
+plan_updates: 3.12d changed [~] to `[x] 0fb247b` with an Evidence line that cites measure/runs/model_guide/green-p3-a1a4e56.log. 3.12 stays [~]. The Phase 4 judge line of task 4.13 now names the route of `ra-quota pick` (PM order of 2026-11-16). The plan commit is f497917.
+dispositions: none
+handoff: Green 3.12d is complete on HEAD f497917. leak-check reads staged names with `-z` and passes each raw name to `git show` (P3B1-1), compares the realpath of `--private` (P3B1-3), and skips a broken symlink with no crash (P3B1-4). The four write tools refuse a symlink at the output target or an existing ancestor inside the named roots before any write, with the named refusal line (P3B1-2), and refuse a set id that is not a plain name (P3B1-5). No routed findings: dispositions none.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,31 @@
+MEASURE_AGENT_RESULT
+role: measure-mid-red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+task: 4.1 Red — the review runner
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 1633eba6b7679e2ca5f92ade125c76b0f6c93937
+head_sha: 2d4f3837a347c643bdad6220b365b36ef31f80cf
+commits:
+  4e00ec2046c67fad28518a05d6c4b2f2730868f6 test(model_guide): Red task 4.1 review runner
+  2d4f3837a347c643bdad6220b365b36ef31f80cf measure(model_guide): record Red task 4.1
+test_command: cd harness && npx vitest run model-guide-tests/review-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+test_exit: 1
+test_summary: Tests  23 failed (23); Test Files  1 failed (1)
+first_failure_line: "FAIL  model-guide-tests/review-run.test.ts > P4 R1 the pass shape of the review runner > R1 calls the fake once for each diff, stores one raw output per diff in the private folder, and writes one pass record"
+first_failure_message: "AssertionError: the review runner is missing: /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/review-run.sh: expected false to be true"
+remaining_failures: 23 of 23, all with the message "the review runner is missing: .../harness/model-guide/review-run.sh" (R1 x3, R4 x2, R5, R6 x2, R7 x2, R8 x4, R9, R10 x2, R11, R12, R13, R14, R15, fake-binary check)
+files:
+  harness/model-guide-tests/review-run.test.ts (new, committed)
+  harness/model-guide-tests/fixtures/fakes/fake-opencode (new, committed, mode 0755)
+  measure/tracks/model_guide/plan.md (row 4.1 marked [~], evidence added)
+  measure/runs/model_guide/red-4.1.txt (record, not staged)
+  measure/runs/model_guide/red-4.1.log (record, not staged)
+reuse_decision: reuse both untracked files of the stopped Red run, with one fix (the temp quota server source held real newlines inside JavaScript string literals, so the server never started; the fix doubles the \n and \t escapes)
+gate_deviation: "- harness/model-guide-tests/fixtures/fakes/fake-opencode (plan task 4.1 names this file; no product code reads it)"
+process_check: "ps -eo pid,args | grep '[f]ake-opencode' printed no line after the run"
+no_production_file_touched: true
+handoff: Green task 4.7 implements harness/model-guide/review-run.sh against this contract; Green 4.4 owns quota.ts, 4.6 owns provider-credential.sh, 4.5 owns routes.json. The fake is the one committed fixture of Phase 4 (test-strategy 3.4); Red 4.2, 4.3, and 4.8a must commit no fixture. The runner contract is in the header of review-run.test.ts (flags --route/--set/--private/--date, exit 2 refusals, pass record fields, seams BENCH_QUOTA_BASE, MG_CALL_TIMEOUT_S, MG_RUN_RETRY_WAIT_MS). The $FAKE_OPENCODE_LOG lines of a real run stay empty until a runner exists.
+fix_r3: 8e111d2453856c2077cb89c5d2700203c2906b89 R4, R6
+fix_r4: adc950a3217387571284c5c6167b8399a31e2878 orphan check
+END_MEASURE_AGENT_RESULT

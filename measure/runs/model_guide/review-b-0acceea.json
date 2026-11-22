@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "baseline_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "d14becb350354103b18d43d87e94b46df8784ec8",
+  "audited_head_sha": "0acceeaaa9456f30c9f3c72f67212971e55a5d39",
+  "reviewer_model": "opencode/deepseek-v4.1-flash-free#high",
+  "status": "pass",
+  "summary": "Round 4 passes with no blocker. B3-1 is closed: every docs symlink is refused by preview.sh before a write, and publish.ts walks docs with lstat so a link maps to a drift refusal. My probes match the new tests (9 failed on 6dc3b4f, 85 passed at 0acceea). No docs write happens without the approval record, and no real export byte or SHA entered the repo. Two Nits remain for the record: a hard link under docs is invisible to lstat, and the scan-to-copy steps are not re-checked.",
+  "security_applicability": "applicable: test-strategy.md section 9 Phase 1 row assigns Review B the publish gate, the no-docs/-write rule, and the no-real-export-bytes rule. The round-4 diff changes preview.sh and publish.ts, which hold that gate.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "B4-1 [Nit] review-b: harness/model-guide/publish.ts:98-126 (lstat walk) with the copy at publish.ts:185-189: a hard link under docs/ is a regular file for lstat (nlink 2), so the drift walk accepts it. Probe p7 in a git archive of 0acceea: docs/hl.html hard-linked to <repo>/outside-hard.html, an approval row for hl.html, and a matching base. Publish exited 0 and the outside name changed from HARD-H1 to HARD-H2. The case is outside the B3-1 symlink rule and it needs the same filesystem, the same user, and write access to the target; git stores two separate blobs, so a checkout never holds a hard link. Optional guard: push an entry with lstat nlink > 1 to the broken list in docsFiles.",
+    "B4-2 [Nit] review-b: harness/model-guide/preview.sh:107-125 and harness/model-guide/publish.ts:158-189: each docs scan and its copy are two separate steps, so a link created between them is not re-checked. In preview, cp -a copies such a link as a link and the Python step then reads its target. In publish, the copy loop writes only approved rows whose SHA-256 matches the preview file. The window needs the same user inside one run, and the content written is tool output or approved content. Probes p1 and p3 show the reachable ordering cases end in exit 2. Not closable in full with a path check; record only."
+  ],
+  "evidence": [
+    "Provenance: working HEAD was 0acceeaaa9456f30c9f3c72f67212971e55a5d39 (git rev-parse HEAD), equal to audited_head_sha, so the 0acceea tree audit is current. Every probe ran in a git archive copy under /tmp/opencode/rb4. The real docs/ folder was never touched: git status --short docs printed 0 lines before and after.",
+    "B3-1 closed in preview.sh: preview.sh:107-111 scans docs with find -type l before mkdir and cp. Probe c1: docs/index.html replaced by a relative link to ../outside.html gave exit 2, `preview: refused path <docs>/index.html`, empty stderr, no preview folder, and the outside file stayed byte-identical. Probe c2: a nested link docs/a/link.html to ../../nested-target.html gave exit 2 with the same line class. Probe c3: a directory link docs/dl to ../outdir gave exit 2 and outdir/secret.txt stayed D1.",
+    "B3-1 closed in publish.ts: publish.ts:109-125 uses lstatSync and pushes every non-file entry to the broken list, which becomes `publish: drift <path>` before the copy loop. Probe p1 rebuilt the exact round-3 write-through case (base resolving through the link, approval row naming the link path): exit 2, `publish: drift index.html`, outside file still OUT1, docs snapshot unchanged. Probe p2: a directory link with an approved row beneath it gave exit 2, `publish: drift dl`, and no write into outdir.",
+    "Control runs: probe c4 (no link) gave exit 0, wrote real-work.json, real-work.html, and preview-base.json into the preview folder only, and left the docs snapshot unchanged. Probe p6 (two approved rows) gave exit 0 and no docs change.",
+    "Preview-folder links: probe c7 planted a link at pv/index.html after a clean run; the next run gave exit 2, `preview: refused path <pv>/index.html`, the sink stayed S0, and docs stayed unchanged. Probe p5 put a directory link in the preview folder and approved a row beneath it; publish exited 0, wrote docs/sub/secret.txt as a regular file, left docs/sub not a link, and left outdir unchanged. The write stayed under docs.",
+    "No docs write without the approval record: probe p3 with a valid preview and no record gave exit 2, `publish: no approval record`. Probe p4 gave exit 2 and `publish: bad path <value>` for ../outside.html, /etc/passwd, a/../../x, .., and a\\b. The real tree holds no publish-approval.md (ls of measure/tracks/model_guide lists index.md, metadata.json, plan.md, spec-review.md, spec.md, test-strategy.md).",
+    "Unreadable directory (Review A item A5-1, security side only): probe c6 put docs/lockdir at mode 000. Preview gave exit 1 with one `find: <path>: Permission denied` line on stderr, no preview folder, and no docs change. The run fails closed and writes nothing.",
+    "Test reruns at 0acceea, each file alone with --maxWorkers=1 --reporter=dot: preview-gate 85 passed, input-check 15 passed, real-work 19 passed, leak-guard 2 passed, each exit 0. bash -n harness/model-guide/preview.sh exited 0. shellcheck is not installed on this host.",
+    "Red proof: I extracted 6dc3b4f, overlaid the model-guide-tests of 0acceea, and ran preview-gate.test.ts with --reporter=dot: `Tests  9 failed | 76 passed (85)`. The nine verbose names match red-1.16.txt items 1 to 9 (three B3-1 preview links, three B3-1 publish links, A4-3 unreadable directory, two A4-1 unreadable file). The tests are not vacuous.",
+    "Shell safety: set -euo pipefail sits at preview.sh:27. Every expansion in the new scans is quoted (preview.sh:107-120). The `!` is a find argument, not a shell negation. A copy of the tree under `/tmp/opencode/rb4/space dir/repo copy` ran preview with a preview path that holds a space: the control gave exit 0 with the expected files, and a docs link gave exit 2 with the exact path, so the quoting holds.",
+    "No real export bytes or SHA in the repo: git grep for the full export SHA lists measure/tracks/model_guide/spec.md, plan.md, and metadata.json, and the same three files held it at 0a44cc9. leak-guard.test.ts:18 holds only a 31-character prefix. No export file name appears under docs/ or harness/model-guide. .tmp/ is ignored (.gitignore:23) and git ls-files .tmp lists 0 files.",
+    "Live state: .tmp/model-guide-preview/preview-base.json matches all 34 current docs files (no missing key, no stale key, no hash mismatch), the preview folder holds 0 links, and docs holds 0 links (find docs -type l). No model_guide commit in 0a44cc9..0acceea touched docs/; the two docs/assets/data commits are the daily publish commits 1a83bc9 and ddd320f.",
+    "A2 consent check: no tool or test flips a draft state to a published state. Spec D21 makes the approval record the consent gate. The page names models, routes, and aggregate rates only; grep of .tmp/model-guide-preview/real-work.html for daniel, daniebo, school, teacher, and student printed no match.",
+    "A6 registry check: measure/tracks.md:40 lists model_guide as pending and claims no resolved security state. Plan task 1.17 claims the fixes with exit-code evidence only, and my reruns match it (9 failed on the old code; 85, 15, 19, and 2 passed at 0acceea).",
+    "Scope: git diff --name-only 6dc3b4f..0acceea lists harness/model-guide/preview.sh, harness/model-guide/publish.ts, and measure/tracks/model_guide/plan.md. Red 7682719 changed the test file only; 6dc3b4f changed plan.md only. The three other commits in range (1a83bc9, ddd320f, 46002d0) are outside this track.",
+    "Route parity: Red 1.16 ran on GLM, Green 1.17 on Kimi, and this review runs on DeepSeek. The review family differs from both implementation families."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 0acceeaaa9456f30c9f3c72f67212971e55a5d39",
+    "git archive 0acceea into /tmp/opencode/rb4/t1 with a node_modules symlink; probe cases c1-c4, c6, c7, p1-p7 in separate copies",
+    "probe c1 relative docs link -> exit 2, `preview: refused path <docs>/index.html`, outside unchanged, no preview folder",
+    "probe c2 nested docs link -> exit 2 with the refusal line; probe c3 directory link -> exit 2, outdir secret unchanged",
+    "probe c4 control preview -> exit 0, preview files written, docs snapshot unchanged",
+    "probe c6 unreadable docs directory -> exit 1, one find Permission denied line, no preview folder, no docs write",
+    "probe c7 link inside an existing preview folder -> exit 2, sink and docs unchanged",
+    "probe p1 relative docs link in the approval row -> exit 2, `publish: drift index.html`, outside file still OUT1",
+    "probe p2 directory link with an approved row beneath -> exit 2, `publish: drift dl`, no outside write",
+    "probe p3 no approval record -> exit 2, `publish: no approval record`",
+    "probe p4 unsafe rows ../outside.html, /etc/passwd, a/../../x, .., a\\b -> exit 2, `publish: bad path <value>` each",
+    "probe p5 preview-folder link on a publish read -> exit 0, docs/sub/secret.txt regular file, outdir unchanged",
+    "probe p6 control publish of two approved rows -> exit 0, no docs change",
+    "probe p7 hard link under docs -> exit 0, outside name changed HARD-H1 to HARD-H2 (nlink 2)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 85 passed",
+    "cd harness && npx vitest run model-guide-tests/input-check.test.ts ... -> exit 0, 15 passed; real-work.test.ts -> 19 passed; leak-guard.test.ts -> 2 passed",
+    "git archive 6dc3b4f plus model-guide-tests from 0acceea; preview-gate.test.ts -> 9 failed, 76 passed (85), names match red-1.16.txt",
+    "bash -n harness/model-guide/preview.sh -> exit 0",
+    "git grep full export SHA -> spec.md, plan.md, metadata.json only; same set at 0a44cc9; git ls-files .tmp -> 0",
+    "python3 check of .tmp/model-guide-preview/preview-base.json against docs/ -> 34 keys, 0 missing, 0 stale, 0 mismatch, 0 links"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode/deepseek-v4.1-flash-free#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "preview.sh:107-111 and publish.ts:109-125 held in probes c1-c3 and p1-p2, but a hard link under docs still lets the copy change an outside name at exit 0 (probe p7)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "preview-gate.test.ts:1146-1260 asserts exact refusal lines and snapshots; the nine new tests failed on 6dc3b4f (9 failed, 76 passed) and pass at 0acceea (85 passed)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only 6dc3b4f..0acceea lists preview.sh, publish.ts, and plan.md only, and git status --short docs prints 0 lines."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each claim cites a file:line or a recorded probe with its exit code, refusal line, and before-and-after bytes from a git archive copy."
+    }
+  ]
+}

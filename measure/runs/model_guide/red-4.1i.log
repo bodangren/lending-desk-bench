@@ -1,0 +1,25 @@
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1i
+role: red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 160696a24c85cb678df81e4adbd318b6c8fd4e5d
+resulting_head: a258017d6466d8e3248d9bcbff39177ca41a1da5
+commits:
+  - 9771edb019d16329dd1d33bc8bd19400e8a258c0 test(model_guide): Red task 4.1i role labels on the top lines
+  - a258017d6466d8e3248d9bcbff39177ca41a1da5 measure(model_guide): record Red task 4.1i
+files_changed:
+  - measure/tracks/model_guide/plan.md (4.1i marked [~]; evidence recorded under 4.1i)
+  - harness/model-guide-tests/real-work.test.ts (DS13 full visible text with labels, DS25 labeled gate lines, picksOf no-pick flag; 14 tests)
+  - harness/model-guide-tests/preview-gate.test.ts (topPicksOf carries the line text, G6 asserts the visible text of all ten lines; 102 tests)
+  - harness/model-guide-tests/adversarial-p4.test.ts (Pick.text, ROLE_LABEL map, expectTopBlock label prefix and labeled no-pick text; 18 tests)
+tests:
+  - real-work.test.ts: exit 1, Tests  2 failed | 12 passed (14); first failure DS13 `red visible line text: expected 'prod-one 100 % in this role, 5 tasks' to be 'Red: prod-one 100 % in this role, 5 tasks'`; failed: DS13, DS25
+  - preview-gate.test.ts: exit 1, Tests  1 failed | 101 passed (102); first failure G6 (same missing role label); failed: G6
+  - adversarial-p4.test.ts: exit 1, Tests  7 failed | 11 passed (18); first failure ADV4-1 `red line starts with "Red: ", got "alpha 80 % in this role, 20 tasks"`; failed: ADV4-1, ADV4-2, ADV4-6, ADV4-7, ADV4-8, ADV4-9, ADV4-10
+  - No NameError, TypeError, ReferenceError, or syntax error in any run; guards: real-work 12 passed, preview-gate 101 passed, adversarial-p4 11 passed
+dispositions: none
+handoff: Green 4.1j implements the label prefix in preview.sh (and the template if needed): every line becomes "<role label>: ..." with the ten labels Red, Green, Coder, Review A, Review B, Review C, Adversarial, Acceptance, Phase acceptance, Final acceptance. adversarial-p4 asserts the label prefix plus rate and count from the visible text rather than rebuilding the full sentence, because its fixtures carry plain names from keys and, in some cases, from the names file. No fixture changed.
+END_MEASURE_AGENT_RESULT

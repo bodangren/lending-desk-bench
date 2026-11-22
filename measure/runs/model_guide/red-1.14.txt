@@ -1,0 +1,52 @@
+# Red task 1.14 — review fixes, round 3 (base fbb5def9a76b16a4e5b7f7f1029363e88d55a5f0)
+
+Commands (one file at a time, daytime rule):
+
+```
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+cd harness && npx vitest run model-guide-tests/input-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+```
+
+Result line 1: `Tests  11 failed | 65 passed (76)`, exit code 1.
+Result line 2: `Tests  4 failed | 11 passed (15)`, exit code 1.
+
+## Failed test names — preview-gate.test.ts (11)
+
+1. A3-2 refuses a null coverage runs value with the schema line, no traceback, and no half-built preview folder
+   - reason: stdout is `input-check: run-sum`, expected `input-check: schema`
+2. A3-2 refuses a number in coverage first_run_date with the schema line, no traceback, and no half-built preview folder
+   - reason: exit 1 (Python traceback), expected exit 2 with `input-check: schema`
+3. A3-2 refuses a string in coverage share_known_route with the schema line, no traceback, and no half-built preview folder
+   - reason: exit 1 (Python traceback), expected exit 2 with `input-check: schema`
+4. A3-2 refuses a missing generated_on with the schema line, no traceback, and no half-built preview folder
+   - reason: exit 1 (Python traceback), expected exit 2 with `input-check: schema`
+5. A3-1 keeps an existing preview folder byte-identical after an input check refusal
+   - reason: the refused run overlays the existing preview folder (index.html changes)
+6. A3-1 leaves no new parent folder after a refusal into a new nested preview folder
+   - reason: the created parent folder `.tmp/a3-1-nested-parent` stays
+7. A3-3 refuses a symlink planted inside an existing preview folder without a docs write
+   - reason: exit 0 and a new file `docs/real-work.json` through the planted link
+8. C3-2 keeps exactly one of each nav link on a second preview over a published index
+   - reason: 2 `href="./real-work.html"` and 2 `href="./review.html"` after the second run
+9. B2-1 refuses publish with a dangling symlink under docs and writes no file
+   - reason: exit 1 (statSync stack), expected exit 2 with `publish: drift dangling.txt`
+10. B2-1 refuses publish with an unreadable file under docs and writes no file
+    - reason: exit 1 (sha256File stack), expected exit 2 with `publish: drift locked.txt`
+11. B2-1 refuses preview.sh with a dangling entry under docs without a traceback
+    - reason: exit 1 (sha256_file Python traceback), expected exit 2
+
+## Failed test names — input-check.test.ts (4)
+
+12. A3-2 refuses a null coverage runs value with the schema line and no output file
+    - reason: stdout is `input-check: run-sum`, expected `input-check: schema`
+13. A3-2 refuses a number in coverage first_run_date with the schema line and no output file
+    - reason: exit 0, expected exit 2 with `input-check: schema`
+14. A3-2 refuses a string in coverage share_known_route with the schema line and no output file
+    - reason: exit 0, expected exit 2 with `input-check: schema`
+15. A3-2 refuses a missing generated_on with the schema line and no output file
+    - reason: exit 0, expected exit 2 with `input-check: schema`
+
+Existing tests: all 65 of preview-gate.test.ts and all 11 of input-check.test.ts pass.
+
+No synthetic fixture file was added; every case mutates a temp copy of
+`real-work-mini.json` with a matching manifest.

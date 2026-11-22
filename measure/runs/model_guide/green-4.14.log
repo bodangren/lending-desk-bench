@@ -1,0 +1,21 @@
+MEASURE_AGENT_RESULT
+status: blocked
+route: opencode-go/hy4-flash-free#high (Go family, Phase 4b Red family Muse)
+track: model_guide
+task: 4.14
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 028afcb1a1fbbc79c59c5a23778b9af2df9be34a
+green_head: 5d2152aa7b07b54a7cec170861e35fd64aeb8fd4
+implementation_commit: 9b44176
+plan_evidence_commit: 5d2152a
+tasks_flipped_to_x: none; task 4.14 stays [~]
+tasks_flipped_to_b_deferred: none
+targeted_command: none; this is an operational task with no Red tests
+scorer_output: deepseek p1 score 78.6 provisional, hy4 p1 score 75.4 provisional, both 1 pass of 3, rank null; the tool output matches the row 4.13 dry run
+leak_check: exit 0
+preview: exit 0 into .tmp/model-guide-preview/; nothing published, board frozen, no push
+verify: review.html shows the no-rank state with reason at line 82; the Code review row says "no pick yet: not enough evidence"; D18 fact guide.ts fromTrackA line 387
+new_files: harness/model-guide/data/review-scores/mg-2026-11a.json
+missing: the scope note "one pass" cannot be carried by the scorer, which holds a fixed schema at review-score.ts lines 59-74, or by the page, which renders the rank cell at preview.sh line 934; a code change is needed in both files and that change goes through Red first
+handoff: Question for the orchestrator and PM. How should the scope note "one pass" reach each rank? Option A: a Mid Red retry adds a note field to the scorer schema and a note in the page rank cell, then Green reruns the score file and preview. Option B: the PM relaxes the note requirement and row 4.14 closes from the current Verify evidence. I made no code edit and did not fake the note in the data file.
+END_MEASURE_AGENT_RESULT

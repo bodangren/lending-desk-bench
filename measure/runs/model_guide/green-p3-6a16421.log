@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: provisional
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 6a164210a7dc16615ed89b619b0162a66e570623
+head_sha: a4894ae7cfd66c755daf014e749b61484e06fa8a
+commits: a4894ae7cfd66c755daf014e749b61484e06fa8a
+tests_run: provisional, the candidate runs are next
+files_changed: provisional
+plan_updates: provisional
+dispositions: none
+handoff: provisional
+END_MEASURE_AGENT_RESULT

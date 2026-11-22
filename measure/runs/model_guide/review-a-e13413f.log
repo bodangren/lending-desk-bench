@@ -1,0 +1,17 @@
+Review A round 5, track model_guide, phase P2, HEAD e13413f31733defe84fb623fb85c08e332942b81.
+Provisional verdict: pass with one kept Nit (P2A1-2); no new findings.
+HEAD equals role_base_sha and audited_head_sha at start and end. No nightly docs commit landed during the audit. phase_base_sha c22f313603108585f8bb45996057627acfbc78ae.
+Range b4fba01..e13413f: a26cf96 test-only, 8579399 plan 2.16 record, 70ebfc5 fix (tool + block + one data line), e13413f plan 2.17 record. No docs/ touch; git status --short docs/ prints nothing.
+Day-rule reruns at HEAD, each exit 0: print-audit 15 passed, preview-gate 100 passed, guide 15 passed.
+Data file provenance intact: source SHA f52a7bbf matches OD6; diff is only +bias_note. Six rows identical to preview-2.9.txt; bias text now in real-work.html.
+Plan rows 2.16/2.17 true. Task 2.8 stays [~], not counted.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: pass
+audited_head_sha: e13413f31733defe84fb623fb85c08e332942b81
+result_file: measure/runs/model_guide/review-a-e13413f.json
+retry_recommendation: none
+summary: Round 5 passes: P2U1-1 bias-note fix meets the D17 ruling with provenance intact, all suites green, six rows unchanged; P2A1-2 kept, no new findings.
+END_MEASURE_AGENT_RESULT

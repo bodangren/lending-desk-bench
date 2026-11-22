@@ -1,0 +1,62 @@
+Red task 3.1 — the candidate diffs (spec D4, FR-8)
+Base: 39d50779524c1082bf72f6f64642989d38402da2
+
+Command:
+  cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+
+Exit: 1
+Tests  17 failed (17)
+Test Files  1 failed (1)
+
+Every failure is the absent module:
+  Error: production file is missing:
+  /home/daniebo/Desktop/lending-desk-bench/harness/model-guide/pick-diffs.ts
+  (Phase 2 has no pick-diffs tool)
+
+Failed test names (17):
+1.  PK1 the candidate list > PK1 lists the qualified commits, newest first
+2.  PK1 the candidate list > PK1 calls gh api GET only, one list call and one detail call per candidate
+3.  PK1 the candidate list > PK1 uses the repo of --repo and stops at the default limit of 12
+4.  PK2 each refusal > PK2 rejects a merge commit
+5.  PK2 each refusal > PK2 rejects a committer date outside the range
+6.  PK2 each refusal > PK2 rejects a file count outside 1 to 8
+7.  PK2 each refusal > PK2 rejects a line count outside 40 to 400
+8.  PK2 each refusal > PK2 rejects a code share below 60 percent
+9.  PK2 each refusal > PK2 rejects a lock file
+10. PK2 each refusal > PK2 rejects a binary file
+11. PK2 each refusal > PK2 rejects a path under dist, build, or generated
+12. PK2 each refusal > PK2 rejects a file over 2000 lines
+13. PK2 each refusal > PK2 classifies every commit once and selects no rejected commit
+14. PK3 selection > PK3 takes the first qualified commits and skips a held diff
+15. PK4 no other call > PK4 logs api GET entries only, with no other verb
+16. G9 environment > G9 gives the same selection under BENCH_TRACK=change and a pinned TZ
+17. the write flags > each missing value exits 2 with one named line and writes nothing
+
+`$FAKE_GH_LOG` of one run: none. The tool is absent, so the Red run makes
+no gh call. The exact log that test PK1 asserts for the accepted run is:
+
+api GET repos/bodangren/advantage-forge/commits --paginate
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111102
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111103
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111104
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111105
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111106
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111107
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111109
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111110
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111111
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111112
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111113
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111114
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111115
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111116
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111117
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111118
+api GET repos/bodangren/advantage-forge/commits/1111111111111111111111111111111111111119
+
+The detail calls at suffix 01 (date after), 08 (merge), and 20 (date
+before) do not occur, because the list entry rejects them first.
+
+Other required suites at the base:
+  leak-guard.test.ts  exit 0, Tests  2 passed (2)
+  guide.test.ts       exit 0, Tests  15 passed (15)

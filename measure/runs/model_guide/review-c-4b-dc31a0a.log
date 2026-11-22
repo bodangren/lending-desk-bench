@@ -1,0 +1,37 @@
+Final contract audit. Pass under the PM cap.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: dc31a0af910bd17255dba10cb662d241fb47da1b
+audited_head_sha: dc31a0af910bd17255dba10cb662d241fb47da1b
+contract_applicability: applicable
+The local preview command exited 0.
+review.json equals the committed score file byte for byte.
+DeepSeek: incomplete, 1 of 3 passes, score 78.6, no rank.
+Hy4: incomplete, 1 of 3 passes, score 75.4, no rank.
+Code review: no pick yet: not enough evidence.
+Review A F1 remains confirmed and already routed. It has score-impact: yes.
+C1: The usage synopsis omits the new flag. score-impact: no.
+C2: The pass list and class labels need explanations. score-impact: no.
+The six shared runner functions compare byte-identical.
+Both runner syntax checks, the preview syntax check, and the scoped diff check passed.
+The focused S1-S2 rerun waited inside heavy-run.sh and supplied no test output.
+I stopped only process group 1739309. The command exited 143.
+The audit reuses the passing same-HEAD tests from Review A and Review B.
+The independent preview and direct source checks support the pass decision.
+No real model call, publish, implementation edit, or commit ran.
+The final HEAD check still returned dc31a0af910bd17255dba10cb662d241fb47da1b.
+Final assertions passed on both actual review rows and the actual index Code review row.
+The final artifact JSON parsed successfully.
+MEASURE_AGENT_RESULT
+role: review-c
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: Same-HEAD A/B evidence reused; focused S1-S2 rerun stopped while waiting, exit 143; local preview and static contract checks passed.
+files_changed: measure/runs/model_guide/review-c-4b-dc31a0a.json; measure/runs/model_guide/review-c-4b-dc31a0a.log
+plan_updates: none
+known_failures: Two nonblocking findings have score-impact: no. Review A F1 remains already routed.
+handoff: Route C1 and C2 to Green as nonblocking follow-up. Keep the existing MiMo fix round. Browser layout proof remains with the browser role.
+route: openai/gpt-6.1-sol#high
+END_MEASURE_AGENT_RESULT
+RESULT: PASS

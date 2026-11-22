@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: fail
+audited_head_sha: b7426e75ec7ae6e0afd88b3be828700cab6ff9b6
+result_file: measure/runs/model_guide/review-c-b7426e7.json
+retry_recommendation: retry_implementation
+summary: One blocker remains (C2-1: a relative --preview path bypasses the docs guard of preview.sh); both DECLINE items agree with the spec.
+END_MEASURE_AGENT_RESULT

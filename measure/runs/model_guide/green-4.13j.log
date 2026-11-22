@@ -1,0 +1,14 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: pass
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13j
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 84857378fe693da61e9fb074fd37983805c3eb6f
+resulting_head: e9e7d366719e3b00ad27c299809772e72941fd70
+commits: 34d6be2 fix(model_guide): live Go quota answer (task 4.13j); e9e7d36 measure(model_guide): live Go quota text and record Green task 4.13j
+green_test_command: cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot; bun test harness/model-guide-tests/review-run.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot; cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+results: quota.test.ts 24 passed (24); review-run.test.ts 53 pass, 0 fail (bun); judge-run.test.ts 30 passed (30); adversarial-p4-runner.test.ts 14 passed (14); live quota read state ready (windows 5h 4.43, weekly 1.77, monthly 0.89); every gate left no fake-opencode and no quota-server process
+handoff: F1 reads weekly; F2 and N2 skip a null, non-number, or negative usedPercent and give stopped only when no usable window is left; B2 requires the 5h and weekly names on a Go answer and gives stopped when either is absent, while a present but unusable window is skipped as Q13 pins; N1 keys the Go rule in review-run.sh and judge-run.sh on quota_provider, the field quota.ts reads, because a refusal of a disagreement breaks the committed ADV-R-7 fixture that defaults quota_source with ??; the quota.ts doc comment and spec D15 hold the live keys; plan row 4.12 holds the PM 2026-11-19 night limit 5h 95 % / week 100 %; row 4.13i is [x] with 6a3f586 and row 4.13j is [x] with 34d6be2. New files: none in the repo except this log (not staged) and measure/tracks text edits. The track stays out of archive; no closeout metadata changed.
+END_MEASURE_AGENT_RESULT

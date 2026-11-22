@@ -1,0 +1,43 @@
+Red record 4.13i: the live Go quota answer (Review A cc8afbd F1, F2; Review B cc8afbd B2, N2).
+
+Live read (read-only GET, 2026-11-19): curl -s http://127.0.0.1:38307/api/quota/opencode-go
+returns windows "5h" (number), "weekly" (number), "monthly" (number), and
+"credits_balance" (usedPercent null). There is no "week" or "day" key.
+
+Command 1 (exit 1):
+  cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  Tests 7 failed | 17 passed (24). All 17 earlier cases pass.
+  Failed names (each fails for the defect, at HEAD 6a3f586):
+  - Q11 gives ready for opencode-go at 5h 50, weekly 97, and monthly 89 with a null credits_balance
+    (got stopped: parseAnswer rejects the null credits_balance, F2)
+  - Q11 gives wait for opencode-go at weekly 100 with the live window set
+    (got stopped: same null rejection; the week-100 wait never fires, F1+F2)
+  - Q11 gives wait for opencode-go at 5h 95 with the live window set
+    (got stopped: same null rejection, F2)
+  - Q12 skips a null window; an answer with no usable window gives stopped
+    (got stopped on the mixed set: the null window stops the read, F2)
+  - Q13 skips a string or negative value beside usable windows and stops when it is the only window
+    (got stopped on the mixed sets: any non-number stops the read, F2)
+  - Q14 gives ready below 70 and wait at 70 for kimi-code-plan-cn on 5h, weekly, and monthly
+    with a null credits_balance
+    (got stopped: the null window stops the read even on a non-Go source, F2)
+  - Q15 gives stopped for opencode-go when 5h or weekly is absent, even beside a usable window
+    (got ready: the Go branch reads windows["week"], which is absent, and treats it as no wait, F1+B2)
+  pgrep scans after the run print no line.
+
+Command 2 (exit 1):
+  bun test harness/model-guide-tests/review-run.test.ts
+  52 pass, 1 fail (53). All 52 earlier cases pass.
+  Failed name:
+  - G4 the pass starts with the real window set at weekly 97 % and refuses at weekly 100 %
+    (the runner started no pass at weekly 97 %: expected 3 model calls, got 0;
+    the null credits_balance stops the quota read, F2)
+  pgrep scans after the run print no line.
+
+Old fakes that do not match the live shape: goBody and windowsBody in
+quota.test.ts (serve "day"/"week"); QUOTA_SERVER_SOURCE in review-run.test.ts
+(serves "5h"/"day"/"week" unless realKeys); the judge-run fake bodies
+(serve "5h"/"day"/"week"; unchanged, a later row moves them).
+
+No production file changed. No spec.md change. No real opencode CLI and no
+heavy-run.sh in any test; all quota answers come from fakes.

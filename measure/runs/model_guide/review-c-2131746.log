@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-c
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 213174652648b742af7a2adffce9ccb9e4f043b9
+result_file: measure/runs/model_guide/review-c-2131746.json
+retry_recommendation: retry_implementation
+summary: Phase 1 fails the UX/API contract gate: the page B data contract is clean and key-matched, but preview.sh can write under docs/ before approval (confirms A1), publish.ts misses added docs files (confirms A2) and accepts unvalidated approval paths (confirms B1), and refusals go to stdout, not stderr, in two of the three tools (C1).
+END_MEASURE_AGENT_RESULT

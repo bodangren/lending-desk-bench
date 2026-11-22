@@ -1,0 +1,24 @@
+Red run record: task 1.20, UX fixes U1, U3, U4 (ux-browser-2a9d421)
+Date: 2026-11-15
+Role base SHA: 2a9d4213c73c2ed3fdc53ae931029f910092735d
+Command: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Exit code: 1
+Tests line: Tests  3 failed | 85 passed (88)
+
+Failed test names (each fails for the pinned reason):
+1. the UX fixes U1, U3, U4 of task 1.20 > U1: the source paragraph or a wrapper in the Source card carries a wrap rule
+   Reason: the source paragraph tag is `<p>` with no style attribute, no class, and no wrapper, so no `overflow-wrap: anywhere` or `word-break: break-all` applies. (U1 blocking)
+2. the UX fixes U1, U3, U4 of task 1.20 > U3: every .table-wrap box carries tabindex, role, and a non-empty aria-label
+   Reason: the tag is `<div class="table-wrap">` with no `tabindex="0"`, no `role="region"`, no `aria-label`. (U3 minor)
+3. the UX fixes U1, U3, U4 of task 1.20 > U4: the ./real-work.html nav link carries aria-current="page" and no other link does
+   Reason: the tag is `<a class="active" href="./real-work.html">` with no `aria-current="page"`. (U4 nit)
+
+The 85 existing preview-gate tests still pass.
+
+Companion runs (each alone, one worker, dot reporter), all exit 0:
+- input-check.test.ts: Tests  15 passed (15), exit 0
+- real-work.test.ts: Tests  19 passed (19), exit 0
+- leak-guard.test.ts: Tests  2 passed (2), exit 0
+- adversarial.test.ts: Tests  49 passed (49), exit 0
+
+Out of scope by orchestrator decision: U2 (checker table width) and U5 (favicon 404). They go to the phase acceptance as nonblocking.

@@ -1,0 +1,3 @@
+MEASURE_AGENT_RESULT
+{"audited_head":"deb8a21e27fe5c68f51bf10b35d46ec4a463be8e","blocking_findings":[],"nonblocking_findings":[],"retry_recommendation":"none","role":"measure-review-c-ux-api","status":"pass","summary":"Review C passes at deb8a21. The runner, quota, credential, routes, and review page contracts hold with passing suites. No Blocker or Major finding."}
+END_MEASURE_AGENT_RESULT

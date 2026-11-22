@@ -1,0 +1,33 @@
+Enabled attack run on 2bdf5cb:
+cd harness && npx vitest run model-guide-tests/adversarial-p4e.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Exit 1. Tests 6 failed | 44 passed (50).
+P4E-1 failed in review and judge: expected complete=false, received true.
+P4E-2 failed in review and judge: expected complete=false, received true.
+P4E-3 failed in review and judge: expected complete=false, received true.
+Each failed case reached GET /api/session/ses_p4e/message.
+The earlier fixture failures were test defects, not product findings.
+
+Committed guard run:
+The same command exits 0. Tests 48 passed | 6 skipped (54).
+The six skips name P4E-1, P4E-2, and P4E-3, once per runner.
+decode-parity.test.ts exits 0. Tests 8 passed (8).
+The PM-cap JSON passes validation. The result block passes validation.
+The test-only commit is current. Production still matches the audited HEAD.
+The final process scan finds no fake-opencode or quota-server process.
+
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+status: fail
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: 90edb7b
+tests_run: adversarial-p4e enabled: 6 failed, 44 passed; final: 48 passed, 6 skipped, exit 0; decode-parity: 8 passed, exit 0; A4 fixture: incomplete FAIL and complete PASS; both shell syntax checks PASS
+files_changed: harness/model-guide-tests/adversarial-p4e.test.ts; the supplied JSON and log
+plan_updates: none; task 4.16 remains [~]
+known_failures: P4E-1 foreign-session tag; P4E-2 stale answer; P4E-3 completed tool-calls step; each fails in both runners
+handoff: The JSON passes only under the PM cap. No real-key leak was found. Route P4E-1 to P4E-3 to Green. The six skipped cases preserve the failing proof. Any production change requires a new adversarial run. This result does not accept Phase 4b. Facts changed: none.
+role_base_sha: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+test_commit_sha: 90edb7b7a136c8862ef4cc3f573efb32b3b21425
+END_MEASURE_AGENT_RESULT

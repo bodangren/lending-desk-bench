@@ -1,0 +1,15 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 78627f5a647b6fe70c5e50f553ea3f38597a75e0
+head_sha: 5252e8f8eb2b09a0c3a13b61b24ec5119f6a98f2
+commits: 5252e8f8eb2b09a0c3a13b61b24ec5119f6a98f2
+tests_run: no test run. The two pick-diffs runs of task 3.13 both failed: `cd harness && npx tsx model-guide/pick-diffs.ts --repo Reading-Advantage-Thailand/reading-advantage-monorepo --set mg-2026-11a --private $HOME/.local/share/lending-desk-bench/model-guide` exit 2, stdout `pick-diffs: gh api failed`; the same command with `--repo bodangren/advantage-forge` exit 2, stdout `pick-diffs: gh api failed`. `gh auth status` exit 0. `git --no-pager status --short docs/` printed nothing.
+files_changed: commit 5252e8f holds measure/tracks/model_guide/plan.md alone. No code, no test, and no fixture changed, and no docs/ path changed. Untracked evidence written and not staged: measure/runs/model_guide/candidates-3.13.txt and this log. Outside the repository: the private folder $HOME/.local/share/lending-desk-bench/model-guide/ was created with mode 700 and holds no candidate list.
+plan_updates: 3.12 changed [~] to `[x] 8fee6bb` with two Evidence lines in the style of the 2.8 record: the check-3.12.json pass at 78627f5 with the fix commit of each Phase 3 blocking finding, and the four final audits at d137057 with status pass. 3.13 stays [ ], 3.14 stays [ ]. The plan commit is 5252e8f.
+dispositions: none
+handoff: Task 3.13 stays blocked and 3.13 stays [ ] until a Red task fixes the buffer defect. Both pick-diffs runs refuse with `pick-diffs: gh api failed`, exit 2, and write no output file. The gh login works and the same list call run by hand exits 0. The cause is Node spawnSync default maxBuffer 1,048,576 bytes: the paginated commits list is 25,978,347 bytes for Reading-Advantage-Thailand/reading-advantage-monorepo and 5,468,608 bytes for bodangren/advantage-forge, so spawnSync sets `Error: spawnSync gh ENOBUFS` and the tool refuses. No candidate list exists, so no repo reaches the 7 qualified commits rule and no rule was widened. The evidence file measure/runs/model_guide/candidates-3.13.txt holds both commands, exit codes, and the cause. Default A follows through Red first: a minimal fix to harness/model-guide/pick-diffs.ts that sets spawnSync maxBuffer for the list call, then rerun 3.13.
+END_MEASURE_AGENT_RESULT

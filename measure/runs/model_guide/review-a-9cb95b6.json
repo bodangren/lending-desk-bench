@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "audited_head_sha": "9cb95b6643eba0cd04f0623865224f3d9ef88b3c",
+  "reviewer_model": "mimo-v2.6-flash",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "status": "pass",
+  "summary": "PA1-1 is fixed as ruled: names come from every all_time row, counts still skip unknown and other, the empty branch renders H3 plus \"no pick yet\" with no table, and both new tests fail first and pass after the fix. Counts and rates for the real export are unchanged. One nonblocking finding A8-1 names page-level acceptance clauses with no HTML test.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A8-1 [Nit] acceptance scan: three page-level clauses of the Phase 1 acceptance list have no test that asserts them in the rendered real-work.html: acceptance 2 \"the page shows ... generated_on 2026-11-14\" and the coverage numbers (1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, 71.7 %), and acceptance 4 \"Each rate has its run count\". Data-level tests hold the values (input-check.test.ts:138-146, real-work.test.ts:312-323, real-work.test.ts:172-179), and test-strategy.md closeout item 5 assigns the five real values to the task 1.9 live check, but a preview.sh regression that dropped the rendered date, the coverage text, or the \" (n=...)\" suffix would pass the whole suite. Rationale: same miss class as PA1-1 at the rendering layer, held nonblocking because this audit greped every value present in the current preview HTML and the live checks cover the real artifact. Note: preview-1.23.txt records the five values from real-work.json while the strategy names real-work.html; this audit greped the HTML directly."
+  ],
+  "evidence": [
+    "HEAD at start and at end of the audit: git rev-parse HEAD = 9cb95b6643eba0cd04f0623865224f3d9ef88b3c, equals audited_head_sha and role_base_sha. Working tree holds only the pre-existing untracked .opencode/, harness/wt.txt, and tech-debt.md.",
+    "Delta scope: git diff --name-only 80c17f5..9cb95b6 lists exactly 5 files (preview-gate.test.ts, real-work.test.ts, preview.sh, real-work.ts, plan.md). No docs/ file changed. Protected paths (measure/tracks.md, harness/provenance.ts, harness/tests, harness/opencode-credential.sh, harness/opencode-host.sh) show an empty diff.",
+    "A4 missing-deliverable fixture: git archive 5993d28 (tests present, fix absent) extracted to /tmp/opencode/r8/red. preview-gate.test.ts: exit 1, Tests 1 failed | 89 passed (90), failure at line 1326 expecting \"<h3>translation</h3>\"; the dumped pre-fix page holds no translation heading and no \"no pick yet\" anywhere. real-work.test.ts: exit 1, Tests 1 failed | 19 passed (20), failure at line 339 expecting the \"translation\" key. Both match red-1.22.txt, so the new tests are not vacuous.",
+    "Day-rule runs at HEAD: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, Tests 90 passed (90). Same command for real-work.test.ts -> exit 0, Tests 20 passed (20). bash -n harness/model-guide/preview.sh -> exit 0. Counts match plan rows 1.22 and 1.23 and green-p1-5993d28.log, so A5 is clean.",
+    "real-work.ts:407-418 collects work_types keys of every all_time row before the route skip; `if (skipped) continue` guards all numeric accumulation, so no unknown or other run enters a count or rate. The Object.fromEntries build stays (plan 1.23 ADV-8 claim true). unknown and other share the one skipped branch.",
+    "Counts and rates do not change for the real export: the numeric loop is byte-equivalent to the pre-fix skip for known rows. preview-1.23.txt shows all 5 work types have rows (app code 29, docs and ops 14, other 1, print books 19, tooling 10), and this audit greped .tmp/model-guide-preview/real-work.html: \"no pick yet\" appears 0 times, h3 count is 5, so the real page gained no section and lost no value.",
+    "preview.sh:315-317 empty branch renders `<h3>{html.escape(name)}</h3>` then `<p>no pick yet</p>` with no table, exactly the 1.22 ruling. The filled branch at 318-335 keeps tabindex=\"0\", role=\"region\", and aria-label (U3), confirmed in the generated page by the U3 test and the pre-fix page dump.",
+    "New test quality: the PA1-1 preview test controls with an app-code section that must hold a table, slices the translation section between headings, and asserts no <table>; the real-work test pins toEqual([]). Test (a) pins the pre-existing whole-map empty branch through the full pipeline. Each fails first (evidence 3).",
+    "Acceptance scan of Phase 1 (2, 3, 4, 5, 8): acceptance 3 has the I2 input-check tests; acceptance 4 has M1, M2 (line 172 run counts), M3, M5 plus 91 rendered \"(n=\" occurrences and the method note once; acceptance 5 now has M4, M5, and both new no-pick-yet tests for all four clauses; acceptance 8 has P2, P3, P4 and `git status --short docs/` prints nothing. Acceptance 2 live values greped exactly once each in the current preview HTML: full SHA-256 dae855ca...64f2, 2026-11-14, 1,798, 2026-06-06, 2026-11-13, 50.6 %, 71.7 %. Only the rendering-layer gaps named in A8-1 remain.",
+    "Plan rows 1.22 and 1.23 are true: 530c73a touches only the two test files, 5993d28 and 9cb95b6 touch only plan.md, 56a173b touches only real-work.ts and preview.sh. red-1.22.txt, green-p1-5993d28.log, and preview-1.23.txt exist and their failure names and counts match my runs.",
+    "A3 clean: no bare-digit count parsing in the new tests or in this audit; only labeled \"Tests  N passed\" lines. No .skip, .only, or .todo beyond the 7 root-gated ctx.skip calls; no test skipped in my runs.",
+    "test-strategy.md: the Red commit writes only test files, the Green commit writes no test file, and every run used one file with one worker. The delta touches no orchestration script, contract test, or registry file, so the framework-wide anti-pattern checks stay out of range."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git log --oneline -8 && git diff --stat 80c17f5..9cb95b6 && git diff 80c17f5..9cb95b6",
+    "git show --stat 530c73a 5993d28 56a173b 9cb95b6",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "cd harness && npx vitest run model-guide-tests/real-work.test.ts --configLoader native --maxWorkers=1 --reporter=dot",
+    "bash -n harness/model-guide/preview.sh",
+    "mkdir -p /tmp/opencode/r8/red && git archive 5993d28 | tar -x -C /tmp/opencode/r8/red (+ node_modules symlink) then the two vitest commands above inside the archive",
+    "grep -c -F <value> .tmp/model-guide-preview/real-work.html (SHA-256, 2026-11-14, 1,798, dates, shares, 'no pick yet', '(n=', method note)",
+    "grep -c '<h3>' .tmp/model-guide-preview/real-work.html",
+    "grep -rn '\\.skip(|\\.only(|\\.todo(' harness/model-guide-tests/",
+    "git status --short docs/",
+    "git diff --name-only 80c17f5..9cb95b6 -- measure/tracks.md harness/provenance.ts harness/tests harness/opencode-credential.sh harness/opencode-host.sh"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/real-work.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "real-work.ts:407-418 collects names before the skip and guards all accumulation with `if (skipped) continue`; preview.sh:315-317 renders the ruled empty branch; the real export page keeps 5 tables and all values (grep counts in this audit)."},
+    {"axis": "test_meaning", "score": 4, "evidence": "Both new tests fail at 5993d28 with the pinned assertions (archive run: 1 failed in each file) and pass at HEAD with an app-code table control; A8-1 names three page-level clauses with no failing-first test."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "git diff --name-only 80c17f5..9cb95b6 shows only the two test files, real-work.ts, preview.sh, and plan.md; Green commit 56a173b touches no test file and no docs/ file."},
+    {"axis": "evidence_quality", "score": 4, "evidence": "Plan rows 1.22 and 1.23 cite red-1.22.txt, green-p1-5993d28.log, and preview-1.23.txt whose counts (90, 20, exit 0) match my runs; preview-1.23.txt reads the JSON where the strategy names the HTML, so this audit greped the HTML itself."}
+  ]
+}

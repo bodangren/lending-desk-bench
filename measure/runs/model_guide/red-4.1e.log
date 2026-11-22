@@ -1,0 +1,51 @@
+MEASURE_AGENT_RESULT
+status: PASS
+task: 4.1e
+role: red
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 330d20fbc5611a7f0a631f699e85e7b0e55db485
+resulting_head: cca8fad01f1d253482f55007abff7731455d3660
+commits:
+  - fec9ffb0b9d4333f99f9a8bbde15e849c2a83a0d test(model_guide): Red task 4.1e part 1 fixtures, input check, real-work (D16 Data source)
+  - bb64b610cf5a02e81b5df84e66fc8b2a98b2e94d test(model_guide): Red task 4.1e part 2 preview-gate (DS14-DS21, FX2, G changes)
+  - 8e8a18b02114bcddb9c217688834cd349eb6656d test(model_guide): Red task 4.1e part 3 guide (D18 Data source inputs)
+  - a0fb496aff3df8317bfc129097d4ad28ee041d47 test(model_guide): Red task 4.1e part 4 update (D19 manifest argument)
+  - fa87ad3cab5338719bb32e581fc2cd3a0734e0b0 test(model_guide): Red task 4.1e part 5 leak-check LG1-LG3 page B coverage
+  - ee00698753df86a3206799b1378fa7f9631b795f test(model_guide): Red task 4.1e part 6 adversarial staging and CLI form
+  - fdbd8051b0453d0205059d995f0c0828e08922c0 test(model_guide): Red task 4.1e part 7 adversarial p2/p3 staging
+  - b5f56b4fc6e33c80d0037eee6642f91c9c66329f test(model_guide): Red task 4.1e manifest refusal line form
+  - cca8fad01f1d253482f55007abff7731455d3660 measure(model_guide): record Red task 4.1e
+files_changed:
+  - measure/tracks/model_guide/plan.md (4.1e marked [~]; six command lines recorded under 4.1e)
+  - harness/model-guide-tests/fixtures/page-b/ra-outcomes-2026-10-20.json (35 synthetic rows)
+  - harness/model-guide-tests/fixtures/page-b/aa-reliability-2026-10-20.json
+  - harness/model-guide-tests/fixtures/page-b/allowed-routes-2026-10-20.json
+  - harness/model-guide-tests/fixtures/page-b/MANIFEST-2026-10-20.txt
+  - harness/model-guide-tests/input-check.test.ts (FX1, DS1-DS3, FX3; 20 tests)
+  - harness/model-guide-tests/real-work.test.ts (DS4-DS13, DS17; 12 tests)
+  - harness/model-guide-tests/preview-gate.test.ts (helpers to --manifest; DS14-DS21, FX2; G1-G4, G6-G8, G10 changed; G5, G9, Acceptance 5, F17, A32, B2 coverage retired; U1 retargeted; 99 tests)
+  - harness/model-guide-tests/guide.test.ts (manifest staging; D18 source table; 15 tests)
+  - harness/model-guide-tests/update.test.ts (update.sh manifest argument; UP1 added; 9 tests)
+  - harness/model-guide-tests/leak-check.test.ts (LG1-LG3 added; 22 tests)
+  - harness/model-guide-tests/adversarial.test.ts (staging helpers and CLI form only)
+  - harness/model-guide-tests/adversarial-p2.test.ts (staging helpers, CLI form; P2ADV-7 retired, P2ADV-8 retargeted)
+  - harness/model-guide-tests/adversarial-p3.test.ts (staging helpers and CLI form only)
+tests:
+  - input-check.test.ts: exit 1, Tests  18 failed | 2 passed (20)
+  - real-work.test.ts: exit 1, Tests  12 failed (12)
+  - preview-gate.test.ts: exit 1, Tests  92 failed | 7 passed (99)
+  - guide.test.ts: exit 1, Tests  15 failed (15)
+  - update.test.ts: exit 1, Tests  5 failed | 4 passed (9)
+  - leak-check.test.ts: exit 0, Tests  22 passed (22)
+  - All DS1-DS21, FX2, changed G, U, T, P2B2-2, D18 and T-case failures show the old usage line (real-work.ts --input, preview.sh --export, update.sh <export>) where the new manifest contract is expected. No TypeError, ReferenceError, missing helper, or syntax error in any run. Guards FX1, FX3, LG1-LG3 pass at the base.
+dispositions: none
+handoff: Green task 4.1f implements the manifest CLI and the Data source rules. Orchestrator decisions applied: refusal line on stderr with form `input-check: <check> <file name>` (missing MANIFEST names MANIFEST-<date>.txt); Test writing evidence prefix "page B producer"; a row with no source shows "no pick yet" as evidence text; fixture producer pass/fail values stay as written; update.sh usage line `usage: update.sh <path of MANIFEST-<date>.txt>`; the unknown row stays hidden (spec Q-S10 wins). Kept open: the U3 guard requires six .table-wrap boxes on the built page; Green must confirm or escalate to the orchestrator. Test-strategy 13.8 [guide-bound] handling does not apply: guide.ts and update.sh cases are normal Red cases and must pass after 4.1f. Retired cases are listed in measure/runs/model_guide/red-4.1e.txt.
+fix_r4: f205c80aa6bfbcc7a61bd3a0534e5835b196ca5d DS2, T6, P2ADV-14
+fix_r5: d94f5490b9a1bce3a2da881e54d8758508f7a4a2 DS1, update path, H route
+fix_r6: 1ee2549c38e1af097f88cbc9c113fa2e1197b176 RA-1..RA-6
+fix_r7: ba3142a143f9eea87ebfa2fbc9f812f0b9127ec5 X path, E retired
+fix_r8: 9bf5b3b5a231f0d0d3a5e09c74d34297b6ad2c06 RA2-1, RA2-2, RA2-3
+fix_r9: d74cf4ceb3dc41692e7b0ee011bcac9f7b816c34 RA3-1, RA3-2
+END_MEASURE_AGENT_RESULT

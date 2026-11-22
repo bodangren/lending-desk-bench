@@ -1,0 +1,31 @@
+MEASURE_AGENT_RESULT
+status: green
+route: opencode-go/hy4-flash-free#high
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+task: 4.14
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 3e3d01b87c4f24ef7eaaf93fdb7c567185f47d96
+red_head: 3e3d01b87c4f24ef7eaaf93fdb7c567185f47d96
+final_green_head: 714199569d88433091a77056c796a5a4fd395afe
+implementation_commit: a40df7bfe4d0cccda00de98db1b3791de01cf4a1 feat(model_guide): the incomplete-route label on the review page
+score_commit: 70212aed5ea1ba504764ffb97bce7a8c3db65a2f feat(model_guide): the incomplete reason on mg-2026-11a
+plan_evidence_commit: 714199569d88433091a77056c796a5a4fd395afe measure(model_guide): record row 4.14 green evidence
+tasks_flipped_to_x: 4.14 (70212aed5ea1ba504764ffb97bce7a8c3db65a2f)
+tasks_flipped_to_b_deferred: none
+red_rerun_1: before code, cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot, exit 1, Tests 3 failed | 28 passed (31)
+red_rerun_2: before code, cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot, exit 1, Tests 3 failed | 110 passed (113)
+targeted_command_1: cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot, exit 0, Tests 31 passed (31)
+targeted_command_2: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot, exit 0, Tests 113 passed (113)
+shell_gate: bash -n harness/model-guide/preview.sh, exit 0
+implementation: review-score.ts accepts --incomplete-reason and writes incomplete_reason on incomplete routes only. A key-shaped reason refuses with score: incomplete-reason, exit 2, no write. A missing value refuses with score: --incomplete-reason needs a value. preview.sh shows incomplete: <n> of 3 passes with an escaped reason, the worst pass score, and en dashes in the rank, median, best, and recall cells.
+score_data: the scorer reran on the two pass records of commit 9b44176 with the same private folder, outputs, date, set, and verdicts, plus the reason. A dry run without the flag matched 9b44176 byte for byte. git diff 9b44176 on the score file shows only the two added incomplete_reason fields. No score, rank, or count was hand edited.
+reason: nights 1 and 2 gave no pass; no extra nights (PM 2026-11-22)
+leak_check: npx tsx model-guide/leak-check.ts --private <private> --repo <repo> --preview .tmp/model-guide-preview, exit 0
+preview: preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview .tmp/model-guide-preview, exit 0, local preview only, nothing published, no push
+verify: review.html shows the reason mark on both routes. The worst cells show 78.6 and 75.4. The rank, median, best, and recall cells show an en dash. index.html line 44 holds the Code review row with no pick yet: not enough evidence and the source track A: no complete rank (n=0). Verify holds under the PM ruling.
+pm_ruling: 2026-11-22, the three-pass rule stands, no spec change, each route under three complete passes shows the incomplete mark with its score and no rank number, board frozen, local preview only
+new_files: measure/runs/model_guide/green-4.14-r2.log
+changed_files: harness/model-guide/review-score.ts, harness/model-guide/preview.sh, harness/model-guide/data/review-scores/mg-2026-11a.json, measure/tracks/model_guide/plan.md
+handoff: Phase acceptance should audit commits a40df7b, 70212ae, and 7141995. The committed Red tests were not edited. The board is frozen. No push ran. No process of mine is left running.
+END_MEASURE_AGENT_RESULT

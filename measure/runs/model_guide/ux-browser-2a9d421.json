@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "role": "ux-browser",
+  "track": "model_guide",
+  "phase": "Phase 1: Page B in the preview folder (by Wed 2026-11-18)",
+  "phase_base_sha": "0a44cc9c417587e418899a97ac63f131a59fe2cd",
+  "role_base_sha": "8eafbc3255d6f012aa23b119961c2e5a8ef6da40",
+  "audited_head_sha": "2a9d4213c73c2ed3fdc53ae931029f910092735d",
+  "reviewer_model": "opencode-go/mimo-v2.6-flash",
+  "route": "opencode-go/mimo-v2.6-flash",
+  "status": "fail",
+  "summary": "The phase checklist passes at 1280 px and the page matches spec D16 in the browser. One blocking item: at 390 px the Source card clips the SHA-256, so the data of D16 is unreadable on a phone. Four minor or nit items are new (U2 to U5). The empty Print audit card and the dead Review link stay known items of this phase.",
+  "ux_applicability": "applicable",
+  "webbridge_status": "healthy",
+  "webbridge_evidence": {
+    "screenshots": [
+      "measure/runs/model_guide/ux-2a9d421/real-work-1280.png",
+      "measure/runs/model_guide/ux-2a9d421/real-work-390.png",
+      "measure/runs/model_guide/ux-2a9d421/real-work-390-viewport.png",
+      "measure/runs/model_guide/ux-2a9d421/crop-1280-top.png",
+      "measure/runs/model_guide/ux-2a9d421/crop-1280-tables.png",
+      "measure/runs/model_guide/ux-2a9d421/crop-390-top.png",
+      "measure/runs/model_guide/ux-2a9d421/crop-390-tables.png"
+    ],
+    "accessibility_snapshots": [
+      "cdp Accessibility.getFullAXTree on http://127.0.0.1:8766/real-work.html at 1280 px -> 4577 nodes",
+      "AX tree counts: 1 RootWebArea, 1 navigation, 1 main, 13 headings, 7 tables, 7 rowgroups, 121 rows, 70 column headers, 1199 cells, 8 links, 1 DescriptionList with 7 terms and 7 definitions",
+      "0 links without a name, 0 images without alt, 0 column headers without scope, lang en, one h1, heading order h1 to h2 to h3"
+    ],
+    "interactions": [
+      "cdp Emulation.setDeviceMetricsOverride 1280x900 -> innerWidth 1280, scrollWidth 1270, clientWidth 1270",
+      "cdp Emulation.setDeviceMetricsOverride 390x844 -> innerWidth 390, scrollWidth 390, clientWidth 390",
+      "cdp Emulation.setDeviceMetricsOverride 1600x900 -> checker table still 1111 px in a 1071 px wrapper",
+      "Tab key walk via cdp Input.dispatchKeyEvent -> focus moves to the nav links and the focus ring shows a 2 px outline on :focus-visible",
+      "cdp Page.addScriptToEvaluateOnNewDocument (error collector) then cdp Page.reload then evaluate -> window.__ux stayed empty"
+    ]
+  },
+  "blocking_findings": [
+    "U1 [Blocking] ux-browser: .tmp/model-guide-preview/real-work.html:33 (the Source paragraph) and .tmp/model-guide-preview/assets/css/site.css:158 (.card { overflow: hidden }): At 390 px the SHA-256 of the source line is clipped and has no scroll path. The paragraph reports scrollWidth 569 px and clientWidth 311 px. The card reports scrollWidth 591 px, clientWidth 356 px, and overflow-x hidden. The visible text stops near `...aa16a7` and the next line reads `generated 2026-11-14.` Spec D16 says the page shows the file name, its SHA-256, and generated_on. The file name and the date show, the hash does not. Fix: add `overflow-wrap: anywhere` to the source line, or drop `overflow: hidden` on that card."
+  ],
+  "nonblocking_findings": [
+    "U2 [Minor] ux-browser: .tmp/model-guide-preview/real-work.html (the checker table) and .tmp/model-guide-preview/assets/css/site.css:217-220 (.table-wrap): The checker table needs 1111 px and its wrapper gives 1071 px, so the last column `Mark` (40 px wide) sits outside the wrapper at 1280 px and at 1600 px. The header of that column spans x 1168 to 1209 while the wrapper ends at x 1172. The wrapper shows a horizontal scrollbar, so the mark stays reachable by scroll. Fix: shorten the columns, or move the mark into the row, or raise --max.",
+    "U3 [Minor] ux-browser: .tmp/model-guide-preview/assets/css/site.css:217-220 (.table-wrap { overflow-x: auto }): The scroll boxes hold no tabindex, no role, and no label. At 390 px all seven tables scroll inside their box. A keyboard user cannot scroll them and cannot read the cut columns. Fix: give each .table-wrap `tabindex=\"0\"`, `role=\"region\"`, and an aria-label of the table.",
+    "U4 [Nit] ux-browser: .tmp/model-guide-preview/real-work.html:14 (nav): The active link `Real work` carries class `active` and a visible pill, and no page holds `aria-current`. A screen reader hears the link but not the current page. Fix: add `aria-current=\"page\"` to the active link.",
+    "U5 [Nit] ux-browser: the preview server and docs/: Every page load asks for /favicon.ico and gets 404. The page declares no icon link. docs/ holds no favicon.ico either, so the request is site-wide and sits outside the Phase 1 diff. Fix: add one icon file, or declare an icon link."
+  ],
+  "evidence": [
+    "UX applies: the phase adds the user-facing page .tmp/model-guide-preview/real-work.html.",
+    "Browser tool healthy: the Kimi WebBridge status call returned running true and extension_connected true, daemon v2.0.27, extension v2.0.36, session model-guide-ux.",
+    "HEAD at audit time was 2a9d4213c73c2ed3fdc53ae931029f910092735d (git rev-parse HEAD), equal to audited_head_sha, and equal to the commit `measure(model_guide): record Green task 1.19`. git status --porcelain shows only .opencode/, harness/wt.txt, and tech-debt.md as untracked. This role wrote only under measure/runs/model_guide/.",
+    "Route parity: this audit ran on opencode-go/mimo-v2.6-flash, the route that the brief names. Kimi and DeepSeek are the Green families of this phase. The page was not built by this model.",
+    "Server: `python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview` from the repo root. URL http://127.0.0.1:8766/real-work.html answered 200. /assets/css/site.css answered 200 and the browser lists it as the one stylesheet. The dark theme, the DM Sans body font, and the card borders show, so the css applies.",
+    "Checklist at 1280 px (CDP Emulation.setDeviceMetricsOverride 1280x900): document scrollWidth 1270 equals clientWidth 1270, so the page needs no horizontal scroll. A scan of all elements outside .table-wrap finds no clipped box. Screenshot: measure/runs/model_guide/ux-2a9d421/real-work-1280.png (1270x10312) and crop-1280-top.png.",
+    "Checklist at 390 px (CDP override 390x844): document scrollWidth 390 equals clientWidth 390, so the page needs no horizontal scroll at 390 px. The scan outside .table-wrap finds two boxes with cut text, the Source card and its paragraph. That is U1. Screenshot: measure/runs/model_guide/ux-2a9d421/real-work-390.png (390x11908), real-work-390-viewport.png (780x1688), crop-390-top.png, crop-390-tables.png.",
+    "Nav of D16: the nav lists Overview, Methodology, Results, Real work (class active), Review, Models, Tracks in that order. The active link shows an accent pill and text rgb(226,178,90). Contrast of the active link is 8.73:1, of the inactive links 7.29:1, of the body text 16.71:1, and of the `few runs` mark 15.84:1. All pass WCAG AA.",
+    "Method note of D16: the H2 `Method` block starts with the exact sentence `Route names stay as written in the record, so #high and [1m] variants are separate routes. This page merges them by model.` The rest of the note names the merge rule, the pass rate, the trend window, and the rank rule.",
+    "Source block: `File real-work-outcomes-2026-11-14.json, SHA-256 dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2, generated 2026-11-14.` All six mandated values are present: prefix dae855ca, 2026-11-14, 1,798 runs, 2026-06-06 to 2026-11-13, 50.6 %, 71.7 %.",
+    "Coverage block: Runs 1,798; Date range 2026-06-06 to 2026-11-13; Share with a known model 50.6 %; Share with a result 71.7 %; Left-out paired duplicates 36; Runs with route unknown 889; Runs with route other 3. The values equal real-work.json and preview-1.19.txt.",
+    "Run counts on rates: a DOM scan reads 155 rate cells across the seven tables. Every cell holds `value (n=count)` or `no rate`. Zero cells break the pattern. Spot checks agree: checker row 1 gives 0.9302 (n=43) with pass 40 and fail 3, work-type row 1 gives 0.9643 (n=28) with pass 27 and fail 1.",
+    "The `few runs` mark is a word: 95 occurrences of the plain text `few runs`, each in its own Mark cell. In every table the marked rows sit after the unmarked rows, and both blocks keep a descending pass rate. Rank runs 1 to n in all seven tables.",
+    "Separate tables: the DOM holds seven tables. Table 1 sits under H2 `Producer roles` (12 rows), table 2 under H2 `Checker roles` (29 rows), and five tables sit under H2 `Work types` with H3 headings app code, docs and ops, other, print books, tooling. Those five headings equal the five keys of work_types in real-work.json.",
+    "Console and network: the page holds no script tag at all, so no script error can occur. An injected collector for window error, unhandledrejection, console.error, and resource error stays empty after load and after the viewport changes. The network log holds real-work.html 200, assets/css/site.css 200, two font requests 200, and one favicon.ico 404 (U5).",
+    "Accessibility snapshot: CDP Accessibility.getFullAXTree returns navigation, main, 13 headings in h1 to h2 to h3 order, 7 tables, 70 column headers with scope on every one, 8 links with a name on every one, a DescriptionList for the coverage block, lang `en`, and one h1. No image has a missing alt. Tab moves the focus through the 8 links and the focus ring shows as a 2px outline.",
+    "Empty and error states: the Print audit card holds only the H2 `Print audit` and no body text. That is the known Phase 2 item. The Review link points at ./review.html and the server answers 404, docs/review.html does not exist. That is the known item of plan note C4-1. The cells `no rate`, `no ratings`, and `no agreement value` carry the empty states of the tables. No work type lacks a row, so `no pick yet` does not show.",
+    "Spacing and hierarchy at both widths: the H1, the lede, the Source card, the Coverage card, and the table cards stack with even margins. At 390 px the nav wraps to two lines with no overlap and the cards fill the width. No text collides with a border except the Source line of U1."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 2a9d4213c73c2ed3fdc53ae931029f910092735d",
+    "git status --porcelain -> only .opencode/, harness/wt.txt, tech-debt.md untracked",
+    "python3 -m http.server 8766 --bind 127.0.0.1 --directory .tmp/model-guide-preview (background)",
+    "curl -o /dev/null -w %{http_code} http://127.0.0.1:8766/real-work.html -> 200",
+    "curl -o /dev/null -w %{http_code} http://127.0.0.1:8766/assets/css/site.css -> 200",
+    "curl -o /dev/null -w %{http_code} http://127.0.0.1:8766/review.html -> 404; /favicon.ico -> 404; / -> 200; /models/ -> 200; /results.html -> 200; /tracks.html -> 200; /methodology.html -> 200",
+    "kimi-webbridge status -> running true, extension_connected true, daemon v2.0.27, extension v2.0.36",
+    "cdp Emulation.setDeviceMetricsOverride width 1280 height 900 -> innerWidth 1280, scrollWidth 1270, clientWidth 1270",
+    "cdp Emulation.setDeviceMetricsOverride width 390 height 844 -> innerWidth 390, scrollWidth 390, clientWidth 390",
+    "cdp Emulation.setDeviceMetricsOverride width 1600 -> checker table still 1111 px wide in a 1071 px wrapper",
+    "cdp Page.addScriptToEvaluateOnNewDocument (error collector) then Page.reload then evaluate -> window.__ux []",
+    "cdp network start / network list -> 200 on html, css, fonts; 404 on favicon.ico",
+    "evaluate DOM scan at 1280 and at 390 for clipped boxes, rate cells, mark order, nav, method note, source and coverage text",
+    "cdp Accessibility.getFullAXTree -> 4577 nodes, 7 tables, 70 column headers, 13 headings, 8 links",
+    "cdp Page.captureScreenshot -> measure/runs/model_guide/ux-2a9d421/real-work-1280.png, real-work-390.png, real-work-390-viewport.png",
+    "python3 PIL crop -> crop-1280-top.png, crop-1280-tables.png, crop-390-top.png, crop-390-tables.png"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "All mandated D16 values show in the browser at 1280 px and all 155 rate cells carry a run count, but the SHA-256 is unreadable at 390 px (U1)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The phase checklist of test-strategy section 9 runs in a real browser at both widths and each item has a DOM or screenshot proof."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "This role wrote only measure/runs/model_guide/ux-browser-2a9d421.json, the log, and the screenshots. No implementation file changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim comes from a browser measurement at a named width, a screenshot path, or a curl status code."
+    }
+  ]
+}

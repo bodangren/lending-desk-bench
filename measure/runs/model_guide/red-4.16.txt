@@ -1,0 +1,346 @@
+Red evidence — model_guide row 4.16, the live-server path
+Track: model_guide. Phase: 4b. Task: 4.16. Role: measure-mid-red.
+Date: 2026-11-20.
+
+phase_base_sha (Phase 4b gate): 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha (this role):      ce3e7c0d0d38e7ff1c6231416295ef80c6775905
+Both values resolve to commit objects. HEAD at role start equals role_base_sha.
+
+Scope: test files only under harness/model-guide-tests/. No production file,
+no frozen path, and no file under docs/ changed.
+
+=== Targeted Red command, one line at a time (section 14.12.4) ===
+
+Line 1.
+  bun test harness/model-guide-tests/review-run.test.ts
+  exit: 1
+  summary: 100 pass, 12 fail, 810 expect() calls, 112 tests
+  failed names (all new L cases):
+    P4b row 4.16 the live-server path of the review runner > L1 a pilot pass creates one session with the job root and the route provider, model, and variant
+    P4b row 4.16 the live-server path of the review runner > L2 a project config missing one deny refuses with exit 2 before any session create
+    P4b row 4.16 the live-server path of the review runner > L3 a pilot pass makes no auth export, no auth import, and no seed call
+    P4b row 4.16 the live-server path of the review runner > L3 a pilot probe makes no auth export, no auth import, and no seed call
+    P4b row 4.16 the live-server path of the review runner > L4 the runner reads the answer text and token sums from the session message parts
+    P4b row 4.16 the live-server path of the review runner > L5 a message send past MG_CALL_TIMEOUT_S stops the call and writes no pass record
+    P4b row 4.16 the live-server path of the review runner > L6 a probe retries a transport error up to 3 calls and reports unreachable
+    P4b row 4.16 the live-server path of the review runner > L6 a probe that fails once and then succeeds reports reachable with no error line
+    P4b row 4.16 the live-server path of the review runner > L7 a pilot pass, probe, and judge path make no DELETE request
+    P4b row 4.16 the live-server path of the review runner > L8 a known key shape in a message part is refused and no value-list seam is called
+    P4b row 4.16 the live-server path of the review runner > L9 the quota rules stay: wait makes no live call, ready makes one session
+    P4b row 4.16 the live-server path of the review runner > L10 the probe prints the state line and keeps the exit codes on the live path
+  The 100 other cases of this file pass, including the eight old seed cases
+  that now use the synthetic non-pilot route. No unrelated case fails.
+  Breakage reason at the base: no POST /api/session reaches the fake server,
+  because review-run.sh has no BENCH_SERVER_BASE live-server path yet.
+
+Line 2.
+  cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit: 1
+  summary: Tests 1 failed | 50 passed (51)
+  failed name:
+    P4b row 4.16 L11 the live-server path of the judge runner > L11 a Go judge route uses one session with the job root and the judge model, with no seed, auth, or DELETE
+  Breakage reason at the base: the Go judge route uses the isolated seed path,
+  so no session create reaches the fake server.
+
+Line 3.
+  bun test harness/model-guide-tests/decode-parity.test.ts
+  exit: 1
+  summary: 3 fail, 5 pass, 8 tests
+  failed names:
+    4.16 L4 the three readers decode session message parts > L4 the scorer and the queue read the answer and tokens from the message parts
+    4.16 L4 the three readers decode session message parts > L4 a text part wins over a forged result branch, and a result-only parts payload still decodes
+    4.16 L4 the three readers decode session message parts > L4 the judge reads verdicts and token sums from message parts
+  Breakage reason at the base: the three decoders parse newline-separated
+  events only. They do not parse the `parts` array of a session message.
+
+Line 4.
+  cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit: 0
+  summary: Tests 32 passed (32)
+  GUARD: the one new case L9-G passes at the base. The quota rules are
+  unchanged by row 4.16, so no quota case can be a false Red case here. The
+  Red case of group L9 is the review-run L9 case of line 1. Falsification of
+  L9-G: move the Go 5h boundary in quota.ts from 95 to 96 and the 95 assertion
+  fails. Q9 of this same file pins that boundary already.
+
+=== Fake server and process hygiene ===
+Each runner case starts a node:http server on 127.0.0.1 port 0. The test reads
+the random port from stdout and passes it only through BENCH_SERVER_BASE. The
+fake records every method, path, and body. It has no DELETE handler. No case
+names port 38307 and no case calls the live server. The server stops in the
+afterEach of the file and in the finally block of each case.
+After the last run: pgrep -af 'fake-opencod[e]|quota-serve[r]|node .*fake'
+printed no process of this role (the only match was the grep command itself).
+
+=== Old cases changed for the new contract (section 14.12.3) ===
+review-run.test.ts: eight seed cases now pass a synthetic non-pilot route
+(opencode-go/isolated-nonpilot#high) through isolatedOverride(). They keep
+covering the isolated seed path and stay green. L3 cases added for the pilot
+routes assert that no auth verb reaches the fake log.
+judge-run.test.ts: J15 now loops over the two non-Go judge routes for the
+isolated seed path. L11 covers the Go judge route on the live server. The
+other judge routes stay on the isolated seed path.
+credential-provider.test.ts: untouched. C1 to C11 stay green.
+adversarial-p4d.test.ts: untouched. Its seed-reason cases use
+opencode-go/hy4-flash-free#high, a pilot route. It is outside the four Red
+lines of section 14.12.4 and changing its shared ROUTE constant would change
+unrelated cases. It is listed in the handoff for the next role.
+
+=== bun default timeout ===
+Two existing cases, R12 and R14 of review-run.test.ts, crossed bun's 5 s
+default under the added live-server load. Each now has a 60 s case timeout.
+No assertion changed. All 100 non-L cases pass in the final run.
+
+=== r2, Mid Red retry after Green (2026-11-20) ===
+role_base_sha: da0d807748de3e67d28ac3a51693b1698d7e8f5f
+Green commits 1b0646b and da0d807 landed the live-server path. Green's log
+named one Red conflict: the wait half of L9 used quotaPercent 70, which is the
+non-Go boundary. D15 and quota.ts give a Go route wait at 5h 95 % or weekly
+100 %, and L9-G of quota.test.ts pins that rule. The first half of L9 was
+wrong. The case now uses quotaPercent 95 for a Go wait. The second half stays
+at 10 %. No other case changed.
+
+  bun test harness/model-guide-tests/review-run.test.ts
+  exit: 0
+  summary: 112 pass, 0 fail, 833 expect() calls, 112 tests
+
+The Red command passes on Green's HEAD. This round is gap closing: it removes
+a wrong fixture boundary, and it adds no false Red case. The corrected case
+already passes. Breakage proofs are recorded in red-4.16-r2.log.
+
+=== r3, real API shapes after Review A (2026-11-20) ===
+role_base_sha: 31fe9a01678d37cf27ccb3465ba895ddb6f62d91
+Source: measure/runs/model_guide/review-a-4.16-31fe9a0.json, findings F12 to
+F19, read in full. Real shapes were checked in the read-only OpenChamber web
+source: session create uses `location.directory` and a nested `model`; a native
+assistant message carries `content[]`, top-level `tokens`, `time.completed`,
+`finish`, and `error`. One GET read of the live session list confirmed the
+session shape. No message text was copied and no POST or DELETE was sent to
+port 38307.
+
+The fake HTTP server in review-run.test.ts and judge-run.test.ts now creates
+sessions with `location.directory`, returns a native assistant record, and
+can queue a completion, fail a message GET, or return a native model error.
+L1 and L11 now assert the real create shape. L4 and the judge L11 now assert
+native token fields. New cases pin F12, F13, F15, F16, F17, F18, and F19.
+
+Targeted lines, one file at a time.
+  bun test harness/model-guide-tests/review-run.test.ts
+  exit: 1
+  summary: 113 pass, 9 fail, 863 expect() calls, 122 tests
+  failed names:
+    L1 a pilot pass creates one session with the job root and the route provider, model, and variant
+    L4 the runner reads the answer text and native token fields of the assistant message
+    F12 a session whose returned location is not the job root is refused before the pass
+    F13 a queued answer that completes later passes and a partial answer at the deadline does not
+    F15 a pilot route with no base uses the default loopback base and never the isolated seed
+    F16 a failed message GET makes the probe unreachable
+    F17 a native region error on a Go probe is region-blocked, not reachable
+    F18 a server base with userinfo for an external host is refused with no request
+    F19 L2 a missing config is refused, an unreadable config is refused, and no session is created
+  Three new cases pass at the base and are declared guards: F16 pass-not-complete,
+  F19 L5 exact timeout text and exit 2, and F19 L7 probe makes no DELETE. Each
+  pins an existing contract and has a falsification: remove the read-failure
+  branch, change the fixed timeout text, or add a DELETE. No other case fails.
+
+  cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit: 1
+  summary: Tests 4 failed | 50 passed (54)
+  failed names:
+    L11 a Go judge route uses one session with the job root and the judge model, with no seed, auth, or DELETE
+    F16 a failed message GET leaves the judge run incomplete
+    F17 a native region error on a Go judge route is not a complete empty run
+    F18 a server base with userinfo for an external host is refused with no request
+
+  cd harness && npx vitest run model-guide-tests/decode-parity.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit: 1
+  summary: Tests 1 failed | 7 passed (8)
+  failed name: L4 the judge reads verdicts and token sums from message parts
+
+The quota.test.ts line was not changed this round.
+After the last run: pgrep -af 'fake-opencod[e]|quota-serve[r]|node .*fake'
+printed no process of this role. No production file changed.
+
+=== r4, Review A r2 deadline, unset base, and newest answer (2026-11-20) ===
+role_base_sha: 5f01ef93c68f7afe6b2889ea36aafb12a85ef1e5
+Source: measure/runs/model_guide/review-a-4.16-5f01ef9.json, findings F13,
+F15, and F20, read in full. The review reports that a separate ten-second
+empty window overrides the call deadline, an unset pilot base selects the
+isolated seed, and both synthesizers keep the oldest assistant of a
+newest-first page. Only test files changed.
+
+Targeted lines, one file at a time.
+  bun test harness/model-guide-tests/review-run.test.ts
+  exit: 1
+  summary: 123 pass, 5 fail, 903 expect() calls, 128 tests
+  failed names:
+    F13 a queued answer that completes at 11 s is accepted inside a 30 s deadline
+    F13 an empty probe answer is not reachable
+    F15 an unset base on a pilot route refuses with exit 2, one named line, and no seed call
+    F20 the newest terminal answer and its tokens win on a newest-first page
+    F20 an older partial answer does not hide a newer final answer
+  One new case passes at the base and is declared a guard: F13 completion after
+  the deadline is refused with the fixed text already. Its falsification is to
+  remove the completion check; the case then sees a late complete answer.
+
+  cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit: 1
+  summary: Tests 5 failed | 54 passed (59)
+  failed names:
+    F13 a queued judge answer at 11 s is accepted inside a 30 s deadline
+    F13 a judge completion after the deadline is refused with the deadline text
+    F15 an unset base on a pilot judge route refuses, with one named line and no seed call
+    F20 the newest terminal judge answer and its tokens win on a newest-first page
+    F20 an older partial judge answer does not hide a newer final answer
+
+Adversarial files: adversarial-p4d.test.ts was probed with a non-pilot route
+from routes.json. Its two seed-reason cases then stopped seeding and the file
+failed. The route was restored to the pilot hy4 route, and the file passed
+again (21 passed, 6 skipped). No adversarial file changed in this round. The
+move of those seed-reason cases to a non-pilot route is left in the handoff.
+After the last run: pgrep -af 'fake-opencod[e]|quota-serve[r]|node .*fake'
+printed no process of this role. No production file changed.
+
+=== r5, gap closing after Green r4 (2026-11-20) ===
+role_base_sha: 0f6240796719f11afb15f468dd06732d6e5b3da2
+Green 2a7800c and 0f62407 landed the one deadline, the unset pilot base
+refusal, and newest-first answer selection. Three test conflicts were fixed
+in test files only. The isolated fixtures now name the synthetic non-pilot Go
+route opencode-go/isolated-nonpilot#high, written into each temp routes.json.
+That route keeps the Go quota windows and the D22 region rule. The live
+fixtures get one native completed answer by default when a case does not
+name a message page. R10 now checks that a 2 MiB read leaves no oversized raw
+file, because Green stores the plain decoded answer. L10 keeps the reachable
+probe through the default answer, while the r4 F13 empty-page case still
+expects unreachable.
+
+Targeted lines, one file at a time. Every line exits 0.
+  bun test harness/model-guide-tests/review-run.test.ts
+    exit 0; 128 pass, 0 fail, 913 expect() calls
+  cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0; Tests 16 passed (16)
+  cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0; Tests 12 passed (12)
+  cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0; Tests 13 passed (13)
+  cd harness && npx vitest run model-guide-tests/adversarial-p4d.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0; Tests 21 passed | 6 skipped (27)
+  cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0; Tests 59 passed (59); judge fixtures needed no change
+
+Breakage proofs by scratch neutralization, then restored and byte-compared:
+  1. Restoring the pilot route in review-run.test.ts made R1 fail with
+     `review-run: a pilot route needs BENCH_SERVER_BASE`.
+  2. Disabling the default native answer made L1 hit the 20 s spawn timeout.
+  3. Giving the L10 ok probe an empty page made its reachable assertion fail.
+After the last run: pgrep -af 'fake-opencod[e]|quota-serve[r]|node .*fake'
+printed no process of this role. No production file changed.
+
+=== r6, Review A r3 deadline expiry, newest partial, and R10 (2026-11-20) ===
+role_base_sha: a87c29c5ded286f9e315020ca09ed14636548d77
+Source: measure/runs/model_guide/review-a-4.16-a87c29c.json, findings F13,
+F20, and F21, read in full. Only review-run.test.ts and judge-run.test.ts
+changed.
+
+F13: the fake server now records a request timestamp in a separate log. A
+new case makes the answer available at 1.5 s under a 1 s budget, so the first
+GET after expiry holds the completed answer. The case asserts exit 2, the
+timeout text, no pass or judge file, and no request after expiry. At the base
+the runner returns 0 and accepts the late answer.
+
+F20: the inverse ordering case puts a NEW PARTIAL first and an EARLY complete
+message second. The case asserts that the older completed answer is not
+accepted. At the base the runner selects EARLY and records a complete result.
+
+F21: R10's first case is restored to the r4 contract of test-strategy.md:695.
+It uses the non-pilot route of the isolated fixture, asserts the tail marker
+in the stored output, and asserts the whole size above 2 MiB minus 1 KiB. At
+the base the plain raw text is dropped and no tail-bearing file exists.
+
+Targeted lines, one file at a time.
+  bun test harness/model-guide-tests/review-run.test.ts
+  exit: 1
+  summary: 127 pass, 3 fail, 918 expect() calls, 130 tests
+  failed names:
+    R10 stores a 2 MiB raw output whole on the isolated path
+    F13 an answer due at 1.5 s is refused under a 1 s deadline, with no request after expiry
+    F20 a newest partial answer blocks an older completed answer
+  cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit: 1
+  summary: Tests 2 failed | 59 passed (61)
+  failed names:
+    F13 a verdict due at 1.5 s is refused under a 1 s deadline, with no request after expiry
+    F20 a newest partial verdict blocks an older completed verdict
+
+After the last run: pgrep -af 'fake-opencod[e]|quota-serve[r]|node .*fake'
+printed no process of this role. No production file changed.
+
+=== r7, adversarial findings P4E-1 to P4E-3 (2026-11-21) ===
+role_base_sha: 90edb7b7a136c8862ef4cc3f573efb32b3b21425
+Source: measure/runs/model_guide/adversarial-4.16-2bdf5cb.json, findings
+P4E-1, P4E-2, and P4E-3, read in full. The three it.skip cases in
+adversarial-p4e.test.ts are enabled with their asserts unchanged. P4E-2 binds
+freshness to the native time.created field. Each case runs for the review
+runner and the judge runner. The plan gains the PM judge-path line.
+
+  cd harness && npx vitest run model-guide-tests/adversarial-p4e.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+  exit: 1
+  summary (first run): Tests 7 failed | 47 passed (54)
+  intended failed names:
+    P4E review live runner > P4E-1 rejects a completed message of another session
+    P4E judge live runner > P4E-1 rejects a completed message of another session
+    P4E review live runner > P4E-2 rejects an old terminal answer that predates this prompt
+    P4E judge live runner > P4E-2 rejects an old terminal answer that predates this prompt
+    P4E review live runner > P4E-3 waits after a completed tool-calls step
+    P4E judge live runner > P4E-3 waits after a completed tool-calls step
+  All six fail because f.complete() is true where the assert expects false.
+  One unrelated timing guard also failed in each run (10,346 ms against a
+  10,000 ms bound, and on rerun a different 3 s deadline case). These are
+  load-sensitive elapsed-time assertions. No assert was weakened. The six
+  intended failures reproduced in both runs.
+
+After the last run: pgrep -af 'fake-opencod[e]|quota-serve[r]|node .*fake'
+printed no process of this role. No production file changed.
+
+=== r8, live fixtures stamp the call time (2026-11-21) ===
+role_base_sha: dabc9c3571a8b7e990d6ab3566f6c4e711f811b6
+Ruling: orchestrator 2026-11-21, option 1. Green r8 implemented P4E-1 to
+P4E-3. The current-call rule rejects the fixed past timestamp 1795048839000
+of the live fixtures. The two native message helpers now default created to
+the fixture time and completed to created + 1. An explicit created stays as
+given, so P4E-2 with created 1 is unchanged. Because a fixture is built before
+the runner call, the fake stamps the default time at message-read time, which
+is at or after the call start. The F20 ordering fixtures use a read stamp with
+a negative offset so both messages stay current and their order is kept.
+Only live-server helpers changed. JSON-stream timestamps of the isolated path
+stay unchanged. No assert was weakened. adversarial-p4e already used
+Date.now() and needed no change. decode-parity native lines feed the isolated
+decoders, not the live selector, and needed no change.
+
+(a) Green's working-tree runners. One file at a time, maxWorkers 1.
+  bun test harness/model-guide-tests/review-run.test.ts
+    exit 0; 130 pass, 0 fail, 922 expect() calls
+  cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0; Tests 61 passed (61)
+  cd harness && npx vitest run model-guide-tests/adversarial-p4e.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0; Tests 54 passed (54)
+  Before the final fixture fix, review-run failed 11 cases because the stub
+  time predated the call; the fix reduced this to the two F20 ordered cases,
+  then to zero. No failure remained after the fix.
+
+(b) Committed runners. A throwaway copy at /tmp/opencode/red-r8-check held a
+  copy of harness/ with git show HEAD of the two runners and the changed test
+  files. The same files ran there.
+  bun test harness/model-guide-tests/review-run.test.ts
+    exit 0; 130 pass, 0 fail, 922 expect() calls
+  cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 0; Tests 61 passed (61)
+  cd harness && npx vitest run model-guide-tests/adversarial-p4e.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+    exit 1; Tests 6 failed | 48 passed (54)
+    The six failures are the intended P4E-1, P4E-2, and P4E-3 cases, once per
+    runner. No other case failed at the committed runners.
+  The throwaway copy was deleted. Green's two runner files were not edited,
+  staged, reverted, stashed, or checked out at any point.
+
+After the last run: pgrep -af 'fake-opencod[e]|quota-serve[r]|node .*fake'
+printed no process of this role.

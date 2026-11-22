@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: red-complete
+track: model_guide
+phase: "Phase 4: The runner and the first track A results (by Sun 2026-11-22)"
+task: 4.13aa
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: f26965d
+baseline_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+resulting_head: 9e7672f4d79b1b6b2e799d111f862d7e47e46dd1
+commits: 62126e292b287b1fc4615f10b40f6066b4f651f9 test(model_guide): Red task 4.13aa failed scan and decoded-text scan; 9e7672f4d79b1b6b2e799d111f862d7e47e46dd1 measure(model_guide): record Red task 4.13aa
+red_test_command: bun test harness/model-guide-tests/review-run.test.ts; cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+failing_tests: review-run.test.ts 4 failed (AA1 failed scan probe prints raw line, AA2 failed scan pass region record holds raw line, AA3 escaped key reaches probe line and record, AA5 escaped key in region event reaches pass record) with 82 passed including guard AA4; judge-run.test.ts 3 failed (JA1 failed scan judge call prints raw line, JA2 failed scan start test prints raw line, JA3 escaped key reaches judge output and record) with 42 passed including guards JA4 and JA5; all earlier cases green (Y1-Y13, JY1, J13b)
+files: harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/judge-run.test.ts, measure/tracks/model_guide/plan.md
+handoff: Green 4.13ab implements in review-run.sh and judge-run.sh only: error_line_of prints the fixed text when scan_output exits 2, and scans the decoded error-event text in addition to the file bytes; guards AA4, JA4, JA5 must stay green
+END_MEASURE_AGENT_RESULT

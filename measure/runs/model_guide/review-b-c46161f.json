@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "summary": "Fail. The credential half of tasks 4.13m-4.13p holds: exactly one real-HOME call exists, its value never reaches a file, and the stderr files are mode 600 and removed. The daemon guard does not hold. F1: the guard matches the raw /proc/<pid>/cmdline string, so it never selects a real 'opencode.exe serve --service' daemon. F2: the job-root scoping compares raw path strings, so it can select a process outside the job root. Both are machine-verified on a synthetic process table. Three nonblocking gaps remain: no pid identity check before SIGKILL, a seed export cwd that follows the ambient TMPDIR into the repository, and a HOME guard that compares a constant.",
+  "blocking_findings": [
+    "F1: The daemon guard never matches a real daemon. harness/model-guide/review-run.sh:420 and harness/model-guide/judge-run.sh:315 test the raw /proc/<pid>/cmdline string for 'serve --service'. The kernel separates argv entries with NUL, so a real 'opencode.exe serve --service' process holds 'serve\\0--service'. A synthetic process table proved it: pid 1001 (three argv entries, HOME and cwd inside the job root) was not selected, while pid 1002 (the test fake's one argv0) was selected. The guard therefore cannot stop the stray daemon of the opencode_host_isolation fault (spec.md:28). The tests D1, D2, D3 and JD1 pass only because the fake spawns its daemon with 'exec -a \"fake-opencode serve --service <tag>\"' (fake-opencode:224-226, review-run.test.ts:226, judge-run.test.ts:205), a shape no real process has. Fix: join the argv entries before the match and let the fake use three argv entries.",
+    "F2: The job-root scoping can select a process outside the job root. The under() helper (review-run.sh:412, judge-run.sh:307) compares raw path strings. A process whose HOME string is '<job-root>/../outside/home' resolves outside the job root but still matches the prefix, so the guard sends TERM and then KILL to it. The synthetic table proved it: pid 3001 was selected for the job root. This breaks 4.13o contract item 2 and the plan row 4.13p claim that the guard never touches an outside process. Fix: resolve the HOME and cwd paths before the comparison."
+  ],
+  "nonblocking_findings": [
+    "F3: The KILL step has no pid identity check. daemon_pid_alive (review-run.sh:393-400, judge-run.sh:288-295) reads only the state field of /proc/<pid>/stat. If the daemon dies on TERM and the pid is reused inside the 5 s wait, the SIGKILL at review-run.sh:457 and judge-run.sh:352 hits an unrelated process. The pid_max of this host is 4194304, so the risk is low here. Fix: compare the starttime field of /proc/<pid>/stat before the KILL.",
+    "F4: The seed export cwd is not guaranteed to sit outside a git repository. provider-credential.sh:159 builds the folder with mktemp -d under the ambient TMPDIR. With TMPDIR set to the repository, the seed cwd became <repo>/measure/runs/mg-seed-export.Q06KCq, inside the git work tree. The PM condition in measure/runs/model_guide/proof-real-home-export.txt (Proof 2) needs a cwd outside any git repo, because a repo cwd makes the opencode CLI spawn git commands at boot. The S1 and JS1 assertions (review-run.test.ts:3006, judge-run.test.ts:2504) check only the cwd folder itself, so they cannot see a git ancestor. Fix: use a fixed root outside the repository, or check every ancestor for .git.",
+    "F5: The HOME guard compares a constant, so it can never refuse. check_job_home receives the literal '$FOLDER/home' (provider-credential.sh:87-97), and the runners compare the literal '$JOB/home' (review-run.sh:662-665, judge-run.sh:444-449). The invariant holds only because run_opencode hardcodes HOME. The guard never resolves a path, so a symlink at $FOLDER/home would send the job import into the operator's real HOME store without a refusal. An unset or relative HOME is not examined either. Fix: compare the resolved HOME with the resolved job root."
+  ],
+  "evidence": [
+    "Provenance: git rev-parse HEAD -> c46161fb858de0883cf304a7dfc40f0afd486e64, equal to the audited head of the brief. phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf (plan rows 4.13m to 4.13p), role_base_sha e35ccf6b966a10bf8fd87f69793ee8c47e5c4ae7 (plan row 4.13p), and the range start a3799bea45b5cd9fdca1b81c5495e0303c7cfaee are all commits in this repository. git status --porcelain shows no change to a tracked file, so the audited head is current.",
+    "Security applicability: applicable. The range a3799be..c46161f changes harness/model-guide/provider-credential.sh, harness/model-guide/review-run.sh and harness/model-guide/judge-run.sh. The change moves a credential through a pipe, guards a HOME, and kills processes, so input validation, secret handling and process scope decide the security state.",
+    "Scope: git diff --stat a3799be..c46161f -> 8 files, 1279 insertions, 67 deletions: harness/model-guide/judge-run.sh, harness/model-guide/provider-credential.sh, harness/model-guide/review-run.sh, harness/model-guide-tests/credential-provider.test.ts, harness/model-guide-tests/judge-run.test.ts, harness/model-guide-tests/review-run.test.ts, harness/model-guide-tests/fixtures/fakes/fake-opencode, measure/tracks/model_guide/plan.md. The list matches plan rows 4.13m to 4.13p. No production file outside the three planned scripts changed.",
+    "F1 proof (detection): the guard code was extracted verbatim from harness/model-guide/review-run.sh and run against a synthetic process table. Pid 1001 (argv entries opencode.exe, serve, --service; HOME and cwd inside the job root) was not selected. Pid 1002 (the fake's one argv0 'fake-opencode serve --service mg-daemon-D1') was selected. The matched list for the job root was [\"1002\"].",
+    "F1 proof (real argv shape): od -c of /proc/3250773/cmdline, a live opencode server, shows NUL separators: '.../opencode\\0serve\\0--hostname\\0'. measure/runs/opencode_host_isolation/record-3.1.log:21 records the stray daemon as '3179063 .../opencode.exe serve --service' from ps -eo pid,args, so its argv holds three entries and the raw cmdline holds 'serve\\0--service'.",
+    "F1 proof (fake shape): harness/model-guide-tests/fixtures/fakes/fake-opencode:224-226 starts the daemon child with 'exec -a \"fake-opencode serve --service $2\" sleep 120'. The live cmdline of that child reads 'fake-opencode serve --service mg-daemon-D3', one argv0 with spaces. The guard test proves only this shape.",
+    "F2 proof (scoping): with the same guard code and a synthetic table, a pid whose HOME string is '<job-root>/../outside/home' (it resolves to /tmp/opencode/review-b/proofA/outside/home, outside the job root) was selected for the job root. The matched list was [\"3001\",\"3002\"]. A sibling prefix '<job-root>-other/home' was not selected, so the plain prefix trap is avoided.",
+    "F2 proof (scope of the risk): the OpenChamber server (pid 3250773) has HOME=/home/daniebo, cwd=/home/daniebo and the argv 'opencode serve --hostname 127.0.0.1 --port 33227'. The job root is <repo>/.tmp/opencode-host-model-guide-<pid>, so neither the HOME nor the cwd of that server is under the job root and its argv holds no 'serve --service'. The guard cannot kill that server, and it cannot kill the real HOME service.",
+    "F3 proof (identity): harness/model-guide/review-run.sh:393-400 reads /proc/<pid>/stat and matches only the state field; the KILL loop at :457 sends SIGKILL to the pid list captured before the TERM. No starttime comparison exists. /proc/sys/kernel/pid_max on this host is 4194304.",
+    "F4 proof (cwd): with TMPDIR=<repo>/measure/runs, the seed export cwd was /home/daniebo/Desktop/lending-desk-bench/measure/runs/mg-seed-export.Q06KCq and 'git -C measure/runs rev-parse --show-toplevel' returns /home/daniebo/Desktop/lending-desk-bench, so the cwd was inside the git work tree. The helper removed the folder at the end of the run.",
+    "Check 1 (the seed export cannot print or store a value) holds: the real provider-credential.sh was run in seed mode against a fake opencode that prints the marker FAKE-SECRET-MARKER-0001. The helper wrote 0 bytes to stdout. Exactly two calls ran: 'auth export opencode-go --standalone' with the real HOME and the cwd /tmp/mg-seed-export.fbyT0K, then 'auth import --standalone' with the job HOME. The import stdin held 149 bytes with the marker and with refresh replaced by inert. After the run the job tree held no file, and the marker appeared only in the fake's own source file.",
+    "Check 1 (the stderr file) holds: the three helper files provider-credential-export.<pid>.err, provider-credential-import.<pid>.err and provider-credential-select.<pid>.err had mode 600 at the moment of the call, and the EXIT trap removed them, so the job tree was empty after the run.",
+    "Check 2 (the cwd folder) holds in part: the folder came from mktemp -d, and no /tmp/mg-seed-export.* folder stayed after either run, so the removal runs on every path. The git-repository part fails, see F4.",
+    "Check 3 (the HOME guard) holds only by construction, see F5. The measured calls show the invariant itself: one call with the real HOME and every other call with the job HOME.",
+    "Check 5 (no other real-HOME call form) holds: the only opencode binary calls are review-run.sh:692 ('run --standalone', HOME=$JOB/home), judge-run.sh:476 (the same), provider-credential.sh:108 (HOME=$FOLDER/home) and provider-credential.sh:161 (the one exempt real-HOME export). harness/opencode-host.sh:200-210 sets HOME=$folder/home, and no model-guide script calls opencode_host_run. harness/model-guide/preview.sh and update.sh hold no opencode call, and the model-guide TypeScript files spawn no opencode binary.",
+    "Every real opencode call carries --standalone: review-run.sh:692, judge-run.sh:476, provider-credential.sh:161, provider-credential.sh:204 and provider-credential.sh:212 all hold the flag.",
+    "Gate 1: bun test harness/model-guide-tests/review-run.test.ts -> EXIT 0, 62 pass, 0 fail, 473 expect() calls, 107.65 s. pgrep -af 'fake-opencod[e]' and pgrep -af 'quota-serve[r]' right after printed nothing.",
+    "Gate 2: cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, Test Files 1 passed, Tests 34 passed (34), 61.91 s.",
+    "Gate 3: cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> the first run at 04:29:19 failed only the afterAll orphan scan, because a concurrent session ran 'bun test harness/model-guide-tests/review-run.test.ts' (pids 395576, 408235, 462739, 468934, parent 3250773, not mine) and its live quota servers matched the scan pattern 'mg-.*quota-server'. The rerun at 04:32:50 gave EXIT 0, Test Files 1 passed (1), Tests 16 passed (16).",
+    "Process hygiene: no fake-opencode and no quota-server of mine stayed alive after any of my three test files. Every quota-server line seen between the checks came from the concurrent session named above. No driver, no real opencode CLI and no heavy-run.sh was run, and no process was signalled by this review.",
+    "A2 (consent-blind publish gate): not applicable. The range changes no draft-to-published status and publishes no named subject.",
+    "A6 (registry overstatement): not triggered in the registry, because measure/tracks.md:34 lists model_guide as pending and no security state is marked resolved. The plan row 4.13p is marked done and claims that the job-root scoping never touches an outside process; the F2 proof contradicts that claim, so the plan text outruns the code.",
+    "Plan accuracy: plan row 4.13p records 'bun test harness/model-guide-tests/review-run.test.ts 62 pass (62)', 'judge-run.test.ts 34 passed (34)' and 'credential-provider.test.ts 16 passed (16)'. My independent gates confirm all three numbers."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> c46161fb858de0883cf304a7dfc40f0afd486e64; git status --porcelain -> no tracked change",
+    "git diff --stat a3799bea45b5cd9fdca1b81c5495e0303c7cfaee..c46161fb858de0883cf304a7dfc40f0afd486e64 -> 8 files",
+    "git diff a3799be..c46161f -- harness/model-guide/provider-credential.sh harness/model-guide/review-run.sh harness/model-guide/judge-run.sh -> the standalone flags, the seed export, the HOME guard and the daemon guard",
+    "node -e (guard snippet extracted verbatim from review-run.sh, run on a synthetic /proc table) -> F1 pids 1001 and 1002, F2 pids 3001, 3002, 3003",
+    "od -c /proc/3250773/cmdline -> NUL separated argv of a live opencode server",
+    "tr '\\0' ' ' < /proc/<pid>/cmdline of the fake daemon child -> 'fake-opencode serve --service mg-daemon-D3'",
+    "grep -n 'serve --service|const under|daemon_pid_alive|kill -KILL|mktemp -d|check_job_home' on the three scripts -> the cited line numbers",
+    "env HOME=<temp> BENCH_OPENCODE_HOME=<temp job> BENCH_OPENCODE_BIN=<fake> BENCH_CREDENTIAL_SEED_DELAYS=0 bash harness/model-guide/provider-credential.sh seed opencode-go -> exit 0, 0 bytes of stdout, two calls in the fake log",
+    "node -e (same helper run with TMPDIR=<repo>/measure/runs) -> seed cwd inside the git work tree",
+    "bun test harness/model-guide-tests/review-run.test.ts -> EXIT 0, 62 pass, 0 fail",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, 34 passed",
+    "cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> EXIT 0, 16 passed (rerun)",
+    "pgrep -af 'fake-opencod[e]' and pgrep -af 'quota-serve[r]' after each test file -> nothing of mine"
+  ],
+  "changed_files": [
+    "harness/model-guide/provider-credential.sh",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/fixtures/fakes/fake-opencode",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/credential-provider.test.ts",
+    "measure/tracks/model_guide/plan.md"
+  ],
+  "test_strategy_violations": [
+    "The daemon-guard tests exercise a fake whose daemon argv is one entry with spaces (fake-opencode:224-226, review-run.test.ts:226, judge-run.test.ts:205). The real daemon has three argv entries, so D1, D2, D3 and JD1 prove nothing about the real fault and pass while the guard is broken (F1). The fake must spawn the daemon with separate argv entries.",
+    "The S1 and JS1 assertions (review-run.test.ts:3006, judge-run.test.ts:2504) check only that the seed cwd folder holds no .git. A git-repository ancestor cannot fail these tests (F4)."
+  ],
+  "live_contract_violations": [
+    "4.13o contract item 1 (stop every serve --service process under the job root): the guard selects no real daemon, because the raw /proc/<pid>/cmdline separates the argv entries with NUL (F1).",
+    "4.13o contract item 2 (never touch a process outside the job root): the HOME comparison is a raw string prefix, so a HOME string that resolves outside the job root is selected and killed (F2).",
+    "4.13o guard point 3 (the seed export cwd in an empty folder outside any git repo): the cwd follows the ambient TMPDIR and can land inside the repository (F4)."
+  ],
+  "prod_wiring_violations": [
+    "harness/model-guide/review-run.sh:420 and harness/model-guide/judge-run.sh:315 match the raw cmdline string, so the guard never matches a real opencode.exe serve --service daemon (F1).",
+    "harness/model-guide/review-run.sh:412 and harness/model-guide/judge-run.sh:307 compare unnormalized path strings, so the guard can select a process outside the job root (F2).",
+    "harness/model-guide/provider-credential.sh:87-97, harness/model-guide/review-run.sh:662-665 and harness/model-guide/judge-run.sh:444-449 compare a constant literal, so the HOME guard can never refuse and never resolves a symlink (F5).",
+    "harness/model-guide/review-run.sh:393-400 and harness/model-guide/judge-run.sh:288-295 check only the process state, so a pid reused during the 5 s TERM-to-KILL wait receives SIGKILL (F3)."
+  ],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "e35ccf6b966a10bf8fd87f69793ee8c47e5c4ae7",
+  "audited_head_sha": "c46161fb858de0883cf304a7dfc40f0afd486e64",
+  "security_applicability": "applicable: the range moves a credential through a pipe, guards the HOME of every opencode call, and stops processes by pid, so secret handling and process scope decide the security state",
+  "route": "minimax-cn-coding-plan/MiniMax-M3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "The credential half is right (one real-HOME call, value on the pipe only, stderr files mode 600), but review-run.sh:420 matches no real daemon and review-run.sh:412 can select an outside process (F1, F2)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 2,
+      "evidence": "The seed tests (S1 to S5, R1, JS1, JS2, JR1) are real and failing-first, but the daemon tests D1, D2, D3 and JD1 run against a fake argv shape that no real process has, so they stay green while the guard is broken."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat a3799be..c46161f names the three planned scripts, the three test files, the fake and plan.md, with no unrelated change."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every gate number in plan row 4.13p matched my own runs (62, 34, 16), but the row's claim that the guard never touches an outside process has no test and no proof behind it, and the F2 proof contradicts it."
+    }
+  ]
+}

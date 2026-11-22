@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "model_guide",
+  "phase": "Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)",
+  "phase_base_sha": "c22f313603108585f8bb45996057627acfbc78ae",
+  "role_base_sha": "12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916",
+  "audited_head_sha": "12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916",
+  "reviewer_model": "qwen3.8-max",
+  "route": "bailian-token-plan/qwen3.8-max#high",
+  "security_applicability": "applicable",
+  "status": "pass",
+  "summary": "Round 3: P2B2-1 is closed. The update.sh symlink guard now refuses all eight components it writes through (docs, docs/assets, docs/assets/data, both docs target files, the preview folder, both preview target files) with exit 2 before any write, pinned by update.test.ts P2B2-1a/1b/1c with byte-identical outside and repo checks. P2B2-2 is closed in both scripts: the stat-based whole-path -nt comparison picks the truly newest file, verified empirically against newline, space, leading-dash, and glob names and pinned by two Red-first tests. All four suites green (135 tests). No new write path, all paths quoted. Three nits carried or added, no blockers.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "P2B3-1 [Nit] review-b: the -L guard loop (update.sh:55-62) does not include the $ROOT/.tmp parent of $PREVIEW_ABS. If .tmp itself is a planted symlink, mkdir -p and the two preview copies resolve through it and land in an attacker-chosen folder, with the two fixed file names real-work.json and model-guide.json. The primitive is weaker than the refused cases: a file-level link inside the redirected folder is still refused, because the -L checks on $PREVIEW_ABS/real-work.json and $PREVIEW_ABS/model-guide.json resolve through the linked parent, so no arbitrary-name overwrite remains. Fix suggestion: add \"$ROOT/.tmp\" to the loop, or resolve PREVIEW_ABS with realpath and re-check the components.",
+    "P2B3-2 [Nit] review-b: carryover of P2B2-3, still open per the round 3 brief: guide.ts readTrackARank defaults a missing or non-finite pass.blocker_recall to 0 instead of refusing, while a missing or non-finite date or score refuses with `input-check: scores`. The silent 0 only affects the first D13 tie-break key and Phase 4 writes recall per pass, but the strictness is inconsistent inside one validator. guide.ts did not change in round 3.",
+    "P2B3-3 [Nit] review-b: carryover of P2B2-4 (round 1 P2B1-2, adversarial record P2ADV-7), still open per the round 3 brief: print-audit.ts reads the input file twice (text for the JSON parse at print-audit.ts:134, bytes for the SHA-256 at print-audit.ts:135), so the verified hash and the parsed content can come from different file states. Not exploitable in the hand-off threat model. print-audit.ts did not change in round 3."
+  ],
+  "evidence": [
+    "Provenance: HEAD confirmed 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916 before and after the audit; the round 3 diff 3d42bf8..12e753b touches exactly update.test.ts and preview-gate.test.ts (62b7433), update.sh and preview.sh (38d1071), and plan.md records (313ab94, 12e753b). guide.ts, print-audit.ts, fixtures, and docs/ are unchanged; git status --short docs/ empty.",
+    "P2B2-1 closure, code: the refusal loop at update.sh:55-62 lists all eight written-through components ($ROOT/docs, $ROOT/docs/assets, $DATA_ABS, $REAL_WORK_OUT, $MODEL_GUIDE_OUT, $PREVIEW_ABS, $PREVIEW_ABS/real-work.json, $PREVIEW_ABS/model-guide.json) and runs before the mktemp staging (:66), before both tool runs (:71, :107), and before every mkdir and cp (:115-123). One stdout line `update: refused path <path>`, exit 2. The header (:18-24) now states the full coverage and matches the code.",
+    "P2B2-1 closure, tests: update.test.ts P2B2-1a plants a link at each docs target file after approval, P2B2-1b a link at the preview folder, P2B2-1c a link at each preview target file; each case asserts exit 2, exactly one refusal line, byte-identical outside tree (treeHashes), byte-identical repo tree, and no new commit. red-2.12.txt records all four failing at 3d42bf8 for the right reason (the run followed the link and the outside bytes moved).",
+    "Check-then-write window: a gap of a few seconds sits between the guard and the cp writes, because real-work.ts and guide.ts run in between. A persistently planted link is refused; using the window needs a concurrent planter with timed write access to the same worktree during the run, which is the same capability that lets it rewrite the data files or the script directly, so the race adds no practical escalation. The posture matches preview.sh's check-then-write symlink refusal, accepted since round 1. P2B2-1 judged closed in practice.",
+    "P2B2-2 closure, code: newest_score_file in update.sh:83-94 and the identical body in preview.sh iterate the glob word-wise, keep the whole path, compare with -nt, and printf the result; no line parsing remains. A name with a newline cannot split the choice; a non-matching glob leaves the literal pattern, which fails [ -f ] and yields the empty string.",
+    "P2B2-2 closure, empirical: in /tmp/opencode/p2b3-scores with mg-old.json, evil.json, `evil.json\\nmg-2026-11a.json` (newest mtime), `with space and * star ?.json`, and `-leading-dash.json`, the function returned the whole newline path (exists: yes); a missing folder and an empty folder each returned the empty string. The round 2 steering scenario no longer applies.",
+    "P2B2-2 closure, tests: update.test.ts P2B2-2 and preview-gate.test.ts P2B2-2 preview plant the same newline-named newest file beside an older incomplete-route file; both pin that the pick comes from the truly newest file (new-model) and, in the preview case, that the page shows it. red-2.12.txt records the update half failing 4 and the preview half failing 1 at 3d42bf8.",
+    "Tests at HEAD, single-file runs, exit 0 each: update 7/7, preview-gate 99/99, adversarial-p2 14/14, guide 15/15 (135 tests). Matches green-p2-313ab94.log, which also records the other five suites green and the task 2.9 preview rows unchanged.",
+    "No new write path and quoting: the round 3 production diff changes only the guard loop and the selection function; the write branches are untouched. Every expansion stays quoted, including \"$folder\", \"$candidate\", \"$newest\", the guard loop paths, and \"$SCORES\" inside GUIDE_ARGS. The [-f] and [-nt] tests follow symlinks inside the review-scores folder, which is tool-written and read-only for the scripts; guide.ts still shape-validates whatever file is chosen.",
+    "A2 gate unchanged: the docs write branch still requires measure/tracks/model_guide/publish-approval.md, which does not exist at HEAD. A6: measure/tracks.md unchanged, no resolved security claim. Plan records for tasks 2.12 and 2.13 exist with the evidence files red-2.12.txt and green-p2-313ab94.log; task 2.8 stays open and is not counted as a finding, this round serves as its code check of the round 3 diff.",
+    "Round 2 blocker and major are both withdrawn as fixed: P2B2-1 by the eight-component guard plus three pinning tests, P2B2-2 by the stat-based whole-path pick plus two pinning tests and an empirical reproduction of the old attack that now selects correctly."
+  ],
+  "commands": [
+    "git rev-parse HEAD (12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916, before and after)",
+    "git log --oneline 3d42bf8d84359364392f473d9ac6d9b9bef466d2..HEAD",
+    "git diff 3d42bf8d84359364392f473d9ac6d9b9bef466d2..HEAD -- harness/model-guide/update.sh harness/model-guide/preview.sh",
+    "git diff 3d42bf8d84359364392f473d9ac6d9b9bef466d2..HEAD -- harness/model-guide-tests/update.test.ts harness/model-guide-tests/preview-gate.test.ts",
+    "read harness/model-guide/update.sh lines 48-127 (guard scope, ordering before every write, quoting)",
+    "read measure/runs/model_guide/red-2.12.txt and measure/runs/model_guide/green-p2-313ab94.log",
+    "python3 /tmp/opencode/p2b3-scores hostile-name setup (newline, space, glob, leading dash) + bash newest_score_file selection (whole newline path selected; empty on missing folder and on no match)",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot (7 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot (99 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot (14 passed, exit 0)",
+    "cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, exit 0)",
+    "git status --short docs/ (empty)",
+    "ls measure/tracks/model_guide/ (no publish-approval.md)"
+  ],
+  "changed_files": [
+    "docs/assets/data/benchmark.json",
+    "docs/assets/data/bugfix.json",
+    "docs/assets/data/tracks.json",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/fixtures/guide/benchmark-mini.json",
+    "harness/model-guide-tests/fixtures/guide/review-scores-mini.json",
+    "harness/model-guide-tests/fixtures/guide/tracks-mini.json",
+    "harness/model-guide-tests/fixtures/page-guard/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/page-guard/real-work-page.json",
+    "harness/model-guide-tests/fixtures/print-audit/MANIFEST.txt",
+    "harness/model-guide-tests/fixtures/print-audit/print-audit-mini.json",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/print-audit.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/data/print-audit-2026-11.json",
+    "harness/model-guide/guide.ts",
+    "harness/model-guide/pages/guide-section.html",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/print-audit.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The guard refuses all eight written-through components before any write (update.sh:55-62, verified by reading HEAD) and the stat-based pick returns the truly newest whole path in the empirical /tmp/opencode/p2b3-scores run."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "Each fix has a Red-first pin: update.test.ts P2B2-1a/1b/1c and P2B2-2 plus preview-gate P2B2-2 failed at 3d42bf8 for the recorded right reasons (red-2.12.txt) and pass at HEAD (7/7, 99/99)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only 3d42bf8..12e753b holds exactly the two production files, the two test files, and plan.md; no docs, fixture, or unrelated change."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim carries a command result: four single-file vitest runs with exit codes, the empirical hostile-name selection output, and file:line citations for the guard and the function bodies."
+    }
+  ]
+}

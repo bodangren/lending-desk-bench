@@ -1,0 +1,137 @@
+Final result: PASS under the PM round cap.
+F13, F20, and F21 are withdrawn. All eleven test files pass.
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+The exact phase diff contains 19 files, 5001 insertions, and 124 deletions.
+The remediation diff contains five files, 293 insertions, and 95 deletions.
+HEAD matches before and after verification.
+
+F13 withdrawn
+The remaining-time helper no longer clamps expired budgets to one second.
+The request helper returns 126 without a request after expiry.
+Create and send map that result to deadline failure.
+Both wait helpers check expiry before GET and before accepting completion.
+The near-deadline fixture returns exit 2 after 2637 ms with no record and no request after 1500 ms.
+Both extracted wait helpers reject a late-only reply after one GET.
+Both reject a completed GET that crosses the deadline.
+The two-second poll sleep adds return latency, but it accepts no late answer.
+
+F20 withdrawn
+The newest assistant governs both selectors.
+The inverse-order fixture returns exit 2 with no pass record and no EARLY output.
+Both actual selectors return partial for a newer partial ahead of an older tool-calls step.
+Existing newest-final and native token assertions pass in both full runner files.
+
+F21 withdrawn
+Only the live path decodes plain text before storage.
+The isolated path moves the raw staging output unchanged.
+R10 restores the tail-presence and whole-size assertions from test-strategy.md:695.
+The independent fixture stores exactly 2097152 bytes with one tail-bearing output.
+A separate plain isolated answer keeps all 28 bytes.
+A4 fixture: after I remove the synthetic stored output, the restored presence assertion rejects it.
+No production or test file changed for that fixture.
+
+F15 [Major, nonblocking], caller work only
+The runtime guard remains correct, and probe-4.10.sh:15 exports BENCH_SERVER_BASE.
+night-4.11.sh:14-16 exports no BENCH_SERVER_BASE.
+Its pilot routes will refuse unless the orchestrator adds that export.
+Add and verify the export before the 2026-11-22 night run.
+This caller lies outside the audited HEAD. The orchestrator already plans the change.
+
+F-B1 [Low, nonblocking], reported timing flake
+Review B reports one L5 failure on this HEAD, followed by a passing full run.
+My full review-run command passes with 130 pass and 0 fail.
+The one-second budget can expire before the send, changing the fixed error line.
+The fixture needs to distinguish send timeout from prior deadline expiry.
+Route the fixture correction to the orchestrator for Red. No new runtime failure reproduced.
+
+Earlier items and security handoff
+F12, F14, F16, F17, F18, and F19 remain withdrawn.
+Their native shapes, errors, config refusals, URL validation, and probe assertions remain covered.
+Review B F-B2 [Major] duplicates the remaining F15 night caller item.
+Review B F-B3 [Low] concerns optional PEM scan hardening and remains with security.
+No configured provider uses that key type. No real-key leak was found.
+I did not repeat Green's private leak-check fixture.
+
+Plan and architecture checks
+I read the Measure index, track metadata, Phase 4b, D14, test-strategy section 14.12, and the strategy routing record.
+I checked the r6 Red and Green records against the current code and tests.
+All latest plan counts match my completed commands. Earlier failed rounds remain explicit.
+A3 uses labeled counts and actual exits. A5 finds no false current pass claim.
+The isolated fixture migrations retain their provider, quota, region, seed, process, and scan contracts.
+No r6 assertion was weakened. R10 regained its positive preservation checks.
+No exported TypeScript signature changed.
+Source caller checks cover both scorer decoders and the quota reader.
+Graph Caller Check: Skipped. build-graph is available, but graph.db is absent.
+I created no database because this role may write only the supplied artifacts.
+The six checked live and error helpers match byte-for-byte between runners.
+The remediation adds no new abstraction or unrelated production change.
+
+Tests, one file at a time
+bun test harness/model-guide-tests/review-run.test.ts
+exit 0; 130 pass; 0 fail; 922 expect calls; 228.54 seconds.
+
+cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 61 passed (61).
+
+bun test harness/model-guide-tests/decode-parity.test.ts
+exit 0; 8 pass; 0 fail; 49 expect calls.
+
+cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 32 passed (32).
+
+cd harness && npx vitest run model-guide-tests/credential-provider.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 24 passed (24).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 16 passed (16).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4b.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 12 passed (12).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4c.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 13 passed (13).
+
+cd harness && npx vitest run model-guide-tests/adversarial-p4d.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+exit 0; Tests 21 passed | 6 skipped (27). The skips predate this remediation.
+
+bun test harness/model-guide-tests/adjudicate.test.ts
+exit 0; 23 pass; 0 fail; 205 expect calls.
+
+bun test harness/model-guide-tests/review-score.test.ts
+exit 0; 27 pass; 0 fail; 249 expect calls.
+
+Limits and final checks
+No full suite ran. No test command used shell redirection.
+bash -n on both runners and git diff --check pass.
+The phase diff is empty for docs, frozen host files, provenance.ts, harness/tests, and harness/package.json.
+No Measure orchestration script, framework contract test, or registry changed.
+I did not apply framework-wide anti-pattern checks.
+I made no real-server request and no real model call in this re-audit.
+The earlier GET-only permission proof remains prior evidence, not a fresh readiness check.
+No real key, credential store, private seeded diff, or live message body was read.
+No opencode CLI, openchamber CLI, commit, or push ran.
+Only these two result artifacts were written. Synthetic helper fixtures were removed.
+No fake-opencode, quota-server, or live-server child remained at the final check.
+The four pre-existing untracked paths remain. HEAD still matches the audited SHA.
+No formal CONTEST item was supplied. Facts changed: none.
+
+Handoff
+Pass applies under the PM round cap. No blocker is routed to Green.
+Add and verify the night caller export before the night run.
+Keep the reported timing flake with the orchestrator for Red.
+This result does not accept Phase 4b or prove live account readiness.
+
+MEASURE_AGENT_RESULT
+role: measure-review-a-correctness
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+role_base_sha: 2bdf5cb2eda4cccb982476919bdd5bd74fb1e6f9
+commits: none
+tests_run: All eleven files passed separately. Deadline, newest-partial, whole-output, and missing-deliverable fixtures passed.
+files_changed: measure/runs/model_guide/review-a-4.16-2bdf5cb.json; measure/runs/model_guide/review-a-4.16-2bdf5cb.log
+plan_updates: none
+known_failures: F15 [Major, nonblocking] needs the night caller export. Review B reports F-B1 [Low, nonblocking], an L5 timing flake.
+handoff: F13, F20, and F21 are withdrawn. Add and verify the night export before the night run. Route the reported L5 fixture issue to the orchestrator for Red. No blocker is routed to Green. Pass applies under the PM cap only.
+END_MEASURE_AGENT_RESULT

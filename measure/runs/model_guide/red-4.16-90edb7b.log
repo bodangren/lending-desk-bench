@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+track: model_guide
+phase: 4b
+role: measure-mid-red
+task: 4.16
+status: pass
+baseline_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 90edb7b7a136c8862ef4cc3f573efb32b3b21425
+red_commit_sha: 9d0afd3539c0c07229d3be96372652036810cc6f
+resulting_head: dabc9c3571a8b7e990d6ab3566f6c4e711f811b6
+commits: 9d0afd3539c0c07229d3be96372652036810cc6f test(model_guide): Red task 4.16 foreign session, stale answer, tool-calls step; dabc9c3571a8b7e990d6ab3566f6c4e711f811b6 measure(model_guide): record Red task 4.16 r7
+tests: three skipped cases enabled in adversarial-p4e.test.ts, each running for both runners; P4E-1 foreign sessionID, P4E-2 stale native time.created, P4E-3 finish=tool-calls
+files: harness/model-guide-tests/adversarial-p4e.test.ts, measure/tracks/model_guide/plan.md
+red_command_results: vitest adversarial-p4e exit 1; Tests 7 failed | 47 passed (54) on the first run and Tests 7 failed | 47 passed (54) on rerun, with all six intended P4E failures in both runs
+remaining_failures: P4E-1, P4E-2, and P4E-3 for each of the review and judge runners. One unrelated 10 s elapsed-time guard flaked once per run; no assert was weakened. No fake process remains.
+handoff: Green must reject an answer with an explicit foreign sessionID, bind the answer to the current call through native time.created, and refuse finish=tool-calls as a final answer in both runners. The plan now names the PM judge-path ruling. The scheduled callers still need BENCH_SERVER_BASE exports, an orchestrator task. No deferred task was created.
+END_MEASURE_AGENT_RESULT

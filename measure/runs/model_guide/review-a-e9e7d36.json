@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "route": "opencode-go/glm-5.3#high",
+  "summary": "The three routed findings are fixed and the live read works: quota.ts reads the weekly key (F1), skips a null, non-number, or negative window and stops only when no usable window is left (F2), the spec D15 example and doc comment hold the live keys (N3), and the live read at 127.0.0.1:38307 gives state ready on the live window set with the null credits_balance skipped. All four suites pass one file at a time (quota 24, review-run 53, judge-run 30, adversarial 14, all exit 0) and the plan evidence of rows 4.13g-4.13j matches what I reproduced, including the Red record red-4.13i.txt. Green decision (a) N1 is accepted: both runners now key the Go rule, the quota read, and the credential seed on quota_provider, the one field quota.ts reads, so the rule cannot disagree with the read, and a bogus provider fails closed. But Green decision (b) B2 is a blocker: the Go required-window check at quota.ts:319-324 keys on raw window names (answer.names, built at quota.ts:273) instead of usable values, so a Go answer whose weekly window is present but unusable (null, a string, or negative) gives ready beside a usable 5h. I reproduced this against the real binary: weekly null, -1, and \"10\" beside 5h 50 all give state ready. Plan row 4.13j orders \"both 5h and weekly must be finite numbers, else stopped\", and Review B cc8afbd B2 names this exact fail-open (a partial or damaged answer starts a Go pass, probe, or judge call). Q13 pins the unsafe behavior as correct (quota.test.ts:648-662). The night driver night-4.11.sh:83-87 and the probe probe-4.10.sh:68-72 both refuse a Go route when 5h or weekly is not usable, so the readers of the same source disagree with quota.ts. Two cross-session events contaminated my first runs (a sibling monitor shell whose command text contains the scan strings, and sibling leftover fake servers); clean re-runs pass with empty pgrep scans.",
+  "blocking_findings": [
+    {
+      "id": "F3",
+      "severity": "blocking",
+      "file": "harness/model-guide/quota.ts:319-324",
+      "finding": "The Go required-window check keys on raw window names, not usable values: main() tests answer.names.has(\"5h\") and answer.names.has(\"weekly\"), and answer.names (built at quota.ts:273) holds every window name, usable or not. So an opencode-go answer whose weekly window is present but unusable gives ready beside a usable 5h. Reproduced against the real binary with a loopback fake: weekly usedPercent null, -1, and \"10\" beside 5h 50 and monthly 10 all give {\"state\":\"ready\",\"windows\":{\"5h\":50,\"monthly\":10}} with no weekly value at all. The runner trusts only the state, so a damaged or shape-changed Go answer starts a pass, a probe, or a judge call with no verified week budget (fail open). Plan row 4.13j (measure/tracks/model_guide/plan.md:2285-2287) orders: \"B2: for opencode-go, both 5h and weekly must be finite numbers, else stopped\" — null and a string are not finite numbers, and N2 of the same row makes -1 unusable, so the ordered rule gives stopped where the code gives ready. Review B cc8afbd B2 names this exact effect. Q13 (harness/model-guide-tests/quota.test.ts:648-662) pins the unsafe behavior: expectState(negative, \"ready\", \"negative beside usable windows\") for weekly -1 beside a usable 5h, and the same code path gives ready for a null weekly, unpinned by any test. The night driver night-4.11.sh:83-87 and the probe probe-4.10.sh:68-72 both treat a not-usable 5h or weekly as a failure and skip the route, so the readers of the same source disagree. Green's own plan evidence (plan.md:2298-2300) discloses the narrowing (\"a present but unusable window is skipped, as Q13 pins\"), which contradicts the row's own directive.",
+      "fix": "In quota.ts main(), require both Go windows in the usable set instead of the name set: check GO_FIVEH_WINDOW and GO_WEEK_WINDOW in answer.windows (drop the names set or keep it only for a distinct stop reason), so a present but unusable 5h or weekly gives stopped. Flip Q13's negative-weekly sub-case to expectStopped and add a case with weekly null beside a usable 5h -> stopped. The live read is unaffected: the live 5h and weekly are usable numbers. Add the same required-window wording to the D15 sentence (spec.md:749-750) so the spec names usability, not just name presence, and fix FR-15 in the same pass (see N4)."
+    }
+  ],
+  "nonblocking_findings": [
+    {
+      "id": "N1",
+      "severity": "minor",
+      "file": "harness/model-guide/judge-run.sh:671-699",
+      "finding": "Carried from review-a-cc8afbd: the comment at lines 671-673 still says a window of 70 % or more stops the run and a window of 80 % or more stops it after the previous group, but the wait branch at line 684 stops the run at 70 first, so the QUOTA_MAX >= 80 branch at line 692 is dead for every sourced route. The new IS_GO_ROUTE guard keeps the dead branch. Pre-existing, no behavior change from this range.",
+      "fix": "Either drop the dead branch or fix the comment to say the wait state covers it. No behavior change is needed."
+    },
+    {
+      "id": "N4",
+      "severity": "minor",
+      "file": "measure/tracks/model_guide/spec.md:1331-1338",
+      "finding": "FR-15 still says the tool gives stopped \"for a source with no value, a missing field, or a value that is not a number\", but the rewritten D15 (spec.md:746-750) and the pinned behavior skip such a window and stop only when no usable window is left. Q12 and Q14 pin the skip on kimi and Go. The spec contradicts itself between D15 and FR-15 after this range rewrote only D15.",
+      "fix": "Update the FR-15 sentence to the D15 wording (skip an unusable window; stop when no usable window is left; for Go, stop when 5h or weekly is absent or unusable) when Green fixes F3."
+    },
+    {
+      "id": "N5",
+      "severity": "minor",
+      "file": "harness/model-guide-tests/review-run.test.ts:174-179",
+      "finding": "The liveness and orphan scans match any command line whose text contains \"fake-opencode\", \"quota-server\", or \"mg-\". A sibling session's monitor shell (PID 2510184, `bash -c sleep 120; uptime; pgrep -af 'mg-review-run|mg-judge-run|fake-opencode|quota-server' ...`) made review-run's afterAll fail once and judge-run fail three checks (J14, J14b, and the suite afterAll) without any defect in the code under review; both suites pass with empty scans once the monitor exits. Under the same load, review-run P4 failed once on a real liveness race (two fake processes inside my own fixture tree still alive at the assertion; both died right after). All three resolved on clean re-runs. Pre-existing pattern, but the gates are fragile on this shared machine.",
+      "fix": "Filter the scan matches to the run's own temp tree (the fixture repo path) instead of any line that mentions \"mg-\", and give P4's liveness check a short retry window. No behavior change."
+    }
+  ],
+  "evidence": [
+    "F1 fixed: quota.ts:68 sets GO_WEEK_WINDOW = \"weekly\" and stateOf reads windows[\"weekly\"] (quota.ts:291). Every fake that serves opencode-go now uses the live set \"5h\", \"weekly\", \"monthly\", plus a null credits_balance: quota.test.ts (Q11, and the Q9/Q10 label assertions read [\"weekly\"]), review-run.test.ts:506-517 (live set on /opencode-go paths), judge-run.test.ts:547-559, adversarial-p4-runner.test.ts:186-193.",
+    "F2 fixed: parseAnswer (quota.ts:272-281) skips a window whose usedPercent is null, not a number, or negative, and stops with \"the quota answer holds no usable window\" only when none is left. Q12 pins the null skip and the all-null stop; Q13 pins the string skip and the only-window stop.",
+    "N3 fixed: spec D15 (spec.md:746-750) names the live windows and the null credits_balance, and the quota.ts doc comment (lines 30-43) matches.",
+    "Live read works: `cd harness && npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307` gives {\"state\":\"ready\",\"windows\":{\"5h\":5.43,\"weekly\":2.17,\"monthly\":1.09}} (read-only GET, values rounded here). The null credits_balance window is skipped and the read gives ready, so the F2 break of the last review is gone. The plan row 4.13j live claim (ready, live window set) matches.",
+    "F3 reproduction (loopback fake, real binary, no driver, no opencode CLI): opencode-go answers with 5h 50, monthly 10, and weekly usedPercent null, -1, and \"10\" each give {\"state\":\"ready\",\"windows\":{\"5h\":50,\"monthly\":10}}, exit 0, no stderr line. The live-shape control (weekly 97, null credits_balance) gives ready with weekly 97. The required-window check passed on the name \"weekly\" while the emitted windows hold no weekly value.",
+    "Green decision (a) N1 accepted: review-run.sh:256-264 and judge-run.sh:238-247 key the Go rule on QUOTA_PROVIDER; the quota read runs `quota.ts --provider \"$QUOTA_PROVIDER\"` (review-run.sh:459, judge-run.sh:312) and the credential seed uses the same field (review-run.sh:571, judge-run.sh:355-356), so the rule, the read, and the source id all derive from one field and cannot disagree. quota.ts:304 refuses a provider outside the spec D15 table (exit 2), which read_quota turns into stopped, so a bad row fails closed. routes.json holds quota_provider = quota_source on every sourced row today. The residual QUOTA_SOURCE use (one-pass-per-night guard, review-run.sh:437) is the stricter direction on a mismatch.",
+    "Driver agreement (read-only, never run): night-4.11.sh:74-87 reads windows[\"5h\"] and windows[\"weekly\"], stops at five >= 95 or week >= 100, and marks the route skipped when either value is not usable. probe-4.10.sh:59-73 does the same and comments \"the 'weekly' key of the quota answer\". My earlier N2 (probe stricter at week > 90) is withdrawn as fixed: both drivers now use >= 95 and >= 100. The remaining disagreement is F3: both drivers fail closed on an unusable weekly while quota.ts gives ready.",
+    "Red record verified: measure/runs/model_guide/red-4.13i.txt holds the live shape (no \"week\" or \"day\" key), the failing-first runs (quota 7 failed | 17 passed, review-run 52 pass 1 fail with G4), and the named reasons (F1, F2, B2). The conversion evidence matches the plan row 4.13i.",
+    "All four suites pass at HEAD e9e7d36, one file at a time, fakes only: quota.test.ts Tests 24 passed (24) exit 0; review-run.test.ts 53 pass 0 fail exit 0 (bun); judge-run.test.ts Tests 30 passed (30) exit 0; adversarial-p4-runner.test.ts Tests 14 passed (14) exit 0. Plan rows 4.13h and 4.13j claim 17/52/30/14 at 94fef2f and 24/53/30/14 at 34d6be2; I reproduced the 4.13j counts at HEAD.",
+    "Cross-session contamination, reported per the brief: (i) during my quota run a leftover /tmp/mg-review-fake-GbsG66/quota-server.js (the review-run suite prefix, which I had not yet run) belonged to a sibling session and died on its own; (ii) a sibling monitor shell (PID 2510184, `sleep 120; ... pgrep -af 'mg-review-run|mg-judge-run|fake-opencode|quota-server' ...`) tripped review-run's afterAll once and judge-run's J14, J14b, and afterAll once each, because its own command text contains the scan strings; I waited for it to exit and re-ran both suites clean; (iii) after my last review-run run a sibling /tmp/mg-judge-fake-KldGuV/quota-server.js line appeared (the judge-suite prefix; my judge run had already ended with empty scans). My own runs left nothing: each clean run's pgrep scans printed nothing beyond these cross-session lines.",
+    "Scope check: git diff --stat 66fe1accf71c0f881fffa58ff05bb0a94407477f..e9e7d366719e3b00ad27c299809772e72941fd70 lists only the nine planned files (quota.ts, review-run.sh, judge-run.sh, the three Red test files, adversarial-p4-runner.test.ts, plan.md, spec.md). HEAD is e9e7d366719e3b00ad27c299809772e72941fd70 and equals the audited head.",
+    "Vacuous-pass check (A4): expectState and expectStopped (quota.test.ts:419-433) assert the state, the exit code, and one stderr line that starts with \"quota:\"; Q15's day-only case asserts stopped through expectStopped, so a missing deliverable cannot pass. Count assertions are labeled integer parses, not bare-digit matches (A3). Plan claims match the actual exits (A5): rows 4.13g-4.13j hold the counts and commands I reproduced above."
+  ],
+  "commands": [
+    "cd harness && npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 -> {\"state\":\"ready\",\"windows\":{\"5h\":5.427...,\"weekly\":2.170...,\"monthly\":1.085...}}, exit 0",
+    "node -e (loopback fake server + real quota.ts) -> weekly null / -1 / \"10\" beside 5h 50: state ready, no weekly in windows; live-shape control: ready with weekly 97",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 24 passed (24), exit 0; one cross-session leftover line in the scan (mg-review-fake prefix of a sibling, died on its own)",
+    "bun test harness/model-guide-tests/review-run.test.ts -> run 1: 52 pass 1 fail (P4 liveness race under sibling load, processes died right after); run 2: 53 pass, afterAll fail from the sibling monitor's command text; run 3 (monitor gone): 53 pass 0 fail, exit 0, my scan empty",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> run 1: 2 failed | 28 passed, all three failures match the sibling monitor shell PID 2510184; run 2 (monitor gone): Tests 30 passed (30), exit 0, scans empty",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 14 passed (14), exit 0, both scans empty",
+    "git rev-parse HEAD -> e9e7d366719e3b00ad27c299809772e72941fd70 (equals the audited head); git diff --stat 66fe1ac..e9e7d36 -> only the nine planned files"
+  ],
+  "changed_files": [
+    "harness/model-guide/quota.ts",
+    "harness/model-guide/review-run.sh",
+    "harness/model-guide/judge-run.sh",
+    "harness/model-guide-tests/quota.test.ts",
+    "harness/model-guide-tests/review-run.test.ts",
+    "harness/model-guide-tests/judge-run.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [
+    "F3: the Go required-window check at quota.ts:319-324 tests raw window names, so an opencode-go answer with a present but unusable weekly (null, string, or negative) beside a usable 5h gives ready (reproduced against the binary). Plan row 4.13j orders stopped (\"both 5h and weekly must be finite numbers, else stopped\"), Review B cc8afbd B2 names the fail-open, Q13 pins the unsafe behavior, and the night driver and the probe refuse the same answer, so the readers of the quota source disagree."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The live read and all gates pass (live state ready at 127.0.0.1:38307; 24/53/30/14 suites exit 0), but the Go required-window rule fails open on an unusable weekly: my loopback reproduction gives state ready for weekly null, -1, and \"10\" beside a usable 5h."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "red-4.13i.txt shows failing-first runs with named reasons, and Q11-Q15 pin the live shape with real helpers (quota.test.ts:419-433), but Q13 pins the defect itself (quota.test.ts:661-662 expects ready for weekly -1) and no case pins a null weekly beside a usable 5h."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 66fe1ac..e9e7d36 lists only the nine planned files of rows 4.13g-4.13j, and the drivers outside the repo are not in the range."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Plan rows 4.13g-4.13j carry commands and counts I reproduced (quota 24, review-run 53, judge-run 30, adversarial 14, live read ready), and the 4.13j evidence honestly discloses the Q13 choice, but that disclosure contradicts the row's own B2 directive (plan.md:2285-2287)."
+    }
+  ]
+}

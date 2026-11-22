@@ -1,0 +1,16 @@
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: model_guide
+phase: Phase 3: The track A review set and the scorer (by Thu 2026-11-19)
+baseline_sha: 39d50779524c1082bf72f6f64642989d38402da2
+role_base_sha: 5eeceabe61fb9af7145cda10907ff21917b329d8
+head_sha: 6e4963085bd8a289d9834e752fcab03ba68500c5
+commits: fd42d41ee7d39ee733b6d901a9f2c6112145263b, 6e4963085bd8a289d9834e752fcab03ba68500c5
+tests_run: `cd harness && npx vitest run model-guide-tests/adjudicate.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  13 passed (13)`; `cd harness && npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  21 passed (21)`; `cd harness && npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  16 passed (16)`; `cd harness && npx vitest run model-guide-tests/review-set.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  15 passed (15)`; `cd harness && npx vitest run model-guide-tests/pick-diffs.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  17 passed (17)`; `cd harness && npx vitest run model-guide-tests/leak-guard.test.ts --configLoader native --maxWorkers=1 --reporter=dot` exit 0, `Test Files  1 passed (1)`, `Tests  2 passed (2)`; `git status --short docs/` printed nothing. The six runs also pass at HEAD 6e49630.
+files_changed: harness/model-guide/adjudicate.ts (new file, 419 lines); measure/tracks/model_guide/plan.md (task lines only). No test file changed. No fixture changed. New files added: harness/model-guide/adjudicate.ts. Untracked evidence: measure/runs/model_guide/green-p3-5eeceab.log.
+plan_updates: 3.9 changed [~] to `[x] fd42d41` with an Evidence line that cites measure/runs/model_guide/green-p3-5eeceab.log and gives no test count. 3.10 changed [ ] to [~]. Both in commit 6e49630.
+tasks_flipped_x: 3.9 (SHA fd42d41). tasks_flipped_b: none.
+dispositions: none
+handoff: Green 3.9 wrote only harness/model-guide/adjudicate.ts. The Red test and the fixtures/review corpus stayed unchanged. The command is `adjudicate.ts queue <set_id> --private <dir> --raw <dir>` and `adjudicate.ts apply <set_id> --private <dir> --judge-a <file> --judge-b <file>`. A missing flag value gives exit 2 and one line `queue: --<flag> needs a value` or `apply: --<flag> needs a value`. The queue writes `<private>/sets/<set_id>/adjudication/queue.json` with exactly set_id and groups. Each group holds id, diff_id, file, window, and items. Each item holds id, line, and the claim text. The queue holds no route name and no verdict. The apply writes verdicts.json and real-defects.json, and it adds a real defect to the key of its diff. The finding ids and the three verdict words match review-score.ts, so the scorer reads the verdicts map of the apply. The apply never marks a plant found. Task 3.10 is [~] for the next Green role. The next role should write harness/model-guide/leak-check.ts and touch no other file.
+END_MEASURE_AGENT_RESULT

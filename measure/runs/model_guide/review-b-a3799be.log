@@ -1,0 +1,29 @@
+MEASURE_AGENT_RESULT
+schema_version: 1
+status: pass
+summary: Pass. Both contested items from review-b-e9e7d36 are fixed and withdrawn. B2 fixed in 8ce8964 (quota.ts drops the names check, adds usableWindow(), and the Go gate at :325-330 requires usable 5h and weekly values, else stopped). Red 4.13k (afef66e) is failing-first; Q13 pins stopped for negative, string, and null weekly or 5h beside a usable window; Q15 keeps the missing-name stop. Inline repro of all five defect shapes gives stopped; a null credits_balance still gives ready (Q12 stays); a non-Go source still skips an unusable window. Live read at 127.0.0.1:38307 gives state ready. Spec D15 and FR-15 match the code; plan rows 4.13k and 4.13l are accurate. ND1 fixed in both drivers (usable() now requires value >= 0), read only. Gates: quota 26 passed (26) (vitest), review-run 53 pass 0 fail (bun); pgrep after each test file printed nothing. A2 and A6 do not apply.
+blocking_findings: none
+nonblocking_findings: none
+evidence_count: 15
+evidence_f_b2: withdrawn - quota.ts:106-109, 262-286, 325-330; Q13 quota.test.ts:626-783; inline repro negative weekly -> stopped
+evidence_f_nd1: withdrawn - night-4.11.sh and probe-4.10.sh usable() require value >= 0
+evidence_lc2: resolved - spec.md D15 :746-751 and FR-15 :1336-1344 match the usable-value rule
+commands_count: 11
+gates: quota.test.ts 26 passed (26) EXIT 0; review-run.test.ts 53 pass 0 fail EXIT 0
+live_read: state ready, windows 5h 9.54 / weekly 3.82 / monthly 1.91
+process_hygiene: no leftover fake after each gate; two transient foreign quota-server lines from a concurrent session, each exited; my inline fake on 127.0.0.1:18653 closed
+provenance: HEAD a3799bea45b5cd9fdca1b81c5495e0303c7cfaee equals audited_head_sha; phase_base 57baaaa, role_base 5085d9b, prior head e9e7d36 all ancestors
+scope: 4 files, 162 insertions, 30 deletions, matches plan rows 4.13k and 4.13l
+test_strategy_violations: none
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+retry_recommendation: none
+confidence: 0.95
+phase_base_sha: 57baaaa364f968a2f44c6e14eb96f8a9d68beebf
+role_base_sha: 5085d9b162a60559e4bf415fb0f33cb91a627b98
+audited_head_sha: a3799bea45b5cd9fdca1b81c5495e0303c7cfaee
+security_applicability: applicable - the range changes quota.ts, the quota gate in front of every model call
+route: kimi-code-plan-cn/kimi-for-coding
+ratings: correctness 5, test_meaning 5, scope_discipline 5, evidence_quality 5
+END_MEASURE_AGENT_RESULT

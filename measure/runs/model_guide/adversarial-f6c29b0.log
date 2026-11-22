@@ -1,0 +1,17 @@
+MEASURE_AGENT_RESULT
+role: measure-adversarial-testing
+track: model_guide
+audited_head: f6c29b0d87c1095174f05f685688e2f969d2efd5
+commit: c9caed55b34a7012445db365b240ade0aa783b9b
+file: harness/model-guide-tests/adversarial-p4-runner.test.ts
+command: cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+result: exit 1, Tests 1 failed | 12 passed (13); the one failure is the new ADV-R-13 on the slug-collision lock defect
+orphan_check: pgrep -af 'mg-.*quota-server' prints no test process (orphan count 0); ps fake-opencode read prints nothing; /tmp/mg-adv-r-* is gone
+frozen_paths: production code unchanged at f6c29b0; this role touched one test file only
+probes_reverted: stale flock holder (group SIGKILL frees the lock, next run proceeds; no defect) and unwritable lock folder (exit 2 refusal; no defect)
+blocking_findings:
+- ADV-R-13 [Major] harness/model-guide/review-run.sh:201-212 | Routes `t/one#c` and `t-one#c` fold to one RUN_SLUG and share one lock file, so route B exits 2 with the lock line while route A runs, instead of proceeding. The 2026-11-18 decision wants a lock per route + set + date. No D12 pair collides. | Kept failing in c9caed5. | Fix scope: Green (make the lock name injective, for example append a short hash of the full route).
+nonblocking_findings: none
+status: fail
+retry_recommendation: none
+END_MEASURE_AGENT_RESULT

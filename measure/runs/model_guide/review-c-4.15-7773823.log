@@ -1,0 +1,46 @@
+Final audit: pass under the PM round cap. This audit does not accept the live phase.
+Provenance: phase_base_sha 7d7d218d00a95d9d619d2856173b8136b6ace4a5; role_base_sha and audited_head_sha 7773823d66b376065d4f4e26c01461538e720a7c.
+git rev-parse HEAD matched the audited SHA at the start and after all checks.
+Contract applicability: applicable at the CLI only, per test-strategy.md:2215 and the exact 15-file phase diff.
+All test commands ran through /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh without shell redirection.
+The Vitest commands used --configLoader native --maxWorkers=1 --reporter=dot, one file at a time.
+adversarial-p4c.test.ts: exit 0; Tests 13 passed (13).
+judge-run.test.ts -t 'JA1|JA2|N30|P4B-J': exit 0; Tests 7 passed, 43 skipped (50).
+credential-provider.test.ts: exit 0; Tests 24 passed (24).
+quota.test.ts: exit 0; Tests 31 passed (31).
+decode-parity.test.ts: exit 0; Tests 5 passed (5).
+adversarial-p4-runner.test.ts baseline: exit 0; Tests 16 passed (16).
+bun test harness/model-guide-tests/review-run.test.ts -t 'N26|N28|N31|N30/F1|R-SR1': 9 pass, 91 filtered out, 0 fail; 55 assertions.
+The first Bun attempt exceeded the outer shell timeout before output. The retry passed with that timeout disabled.
+The actual probe parser passed six cases for seed refusal, quota refusal, failed scan, found value, region error, and success.
+Both external driver lists still name opencode/hy4-flash-free. The current row is opencode-go/hy4-flash-free#high.
+ADV-R-12 reproduction: a foreign marked process caused the expected failure. Vitest reported 1 failed and 15 skipped.
+The reproduction stopped PID 911696 in finally. The final kill check confirms that the process is absent.
+F1 remains open: the marker filter fixes daemon_pids, not the liveFakeOpencode orphan check.
+F2 remains open: Build must update both route lists, the obsolete free-route comments, D12, and current pilot instructions.
+F3 remains open: stopped quota records repeat the quota prefix.
+F4 remains open: direct runner N32 cases and judge seed-refusal cases are absent.
+Quota server cleanup passes. The child registers before startup awaits. afterEach kills children and awaits close on failure paths.
+The final process scan found no matching fake or quota server.
+The new reason texts require no driver parser change. The night driver still reads the pass record state.
+Static checks passed: bash -n, git diff --check, identical shared runner helpers, and empty frozen-path and public-page diffs.
+No real credential store, private key, seeded diff, raw model output, model, browser, or CLI server was used.
+Only the supplied result JSON and log were authored. No implementation, test, plan, or registry changed. No commit or push ran.
+No CONTEST item was supplied. No question needs human escalation. Facts changed: none.
+MEASURE_AGENT_RESULT
+role: measure-review-c-ux-api
+status: complete
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+commits: none
+tests_run: Seven file-level checks passed; six parser cases passed; the foreign-process check reproduced the expected ADV-R-12 failure.
+files_changed: supplied result JSON and log only
+plan_updates: none
+known_failures: Nonblocking F1 orphan guard; F2 Hy driver routes; F3 repeated quota prefix; F4 caller coverage gaps.
+handoff: Build owns F2. Green owns F1, F3, and F4. Quota server cleanup passes. No reason parser change is needed. No live phase acceptance.
+role_base_sha: 7773823d66b376065d4f4e26c01461538e720a7c
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+audited_head_sha: 7773823d66b376065d4f4e26c01461538e720a7c
+dispositions: none
+END_MEASURE_AGENT_RESULT
+RESULT: PASS

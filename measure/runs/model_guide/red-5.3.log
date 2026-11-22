@@ -1,0 +1,39 @@
+Red 5.3 r4 log, 2026-11-22. Failing-first for the data files under assets/data.
+Role base f1aa8d0c1c6acf1c2075d6f69e3e2bf3d173d82b (HEAD before this round).
+No production file changed.
+Commit a7e99651e4730584479b7c706ffc160647abaaa2 holds the two new cases
+and the plan sentence.
+
+Option A (PM 2026-11-22): publish.ts copies <preview>/<path> to
+docs/<path>, while spec EV12/D19 and update.sh (DATA_ABS) place the data
+in docs/assets/data/. The preview must therefore also hold real-work.json,
+model-guide.json, and review.json under <preview>/assets/data/,
+byte-identical to the root copies (the root copies stay), and the copied
+docs files under preview/assets/data stay unchanged. An approval record
+row "<sha>  assets/data/model-guide.json" must publish the preview file
+into docs/assets/data/model-guide.json.
+
+Red command (run alone, one file at a time):
+cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 1, Tests 2 failed | 120 passed (122).
+The two failures are the new R4 cases, each for the missing behavior:
+R4 fails with "real-work.json under assets/data is missing"; R4-publish
+fails with "publish: sha256 assets/data/model-guide.json". A focused
+rerun (-t "R4") confirms the same two failures. All other cases pass, so
+no declared guard was needed.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+track: model_guide
+phase: Phase 5
+task: 5.3
+baseline_sha: 8fd8882a8539d051129eb106e46974a934df5223
+role_base_sha: f1aa8d0c1c6acf1c2075d6f69e3e2bf3d173d82b
+head: a7e99651e4730584479b7c706ffc160647abaaa2
+commits: a7e9965
+tests: harness/model-guide-tests/preview-gate.test.ts
+files: harness/model-guide-tests/preview-gate.test.ts, measure/tracks/model_guide/plan.md
+red_command: cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+red_result: exit 1, Tests 2 failed | 120 passed (122)
+failures: R4 preview assets/data copies missing; R4-publish sha256 refusal for assets/data/model-guide.json
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,66 @@
+Review B security audit — model_guide task 4.16 (live-server path, Green r8)
+Session: Review B · 4b 4.16 · model_guide
+Route: opencode-go/hy4-flash-free#high
+
+PROVENANCE
+- git rev-parse HEAD before and after the audit: 33374182f4798169e8c3e2dc676f8a4a2f9327a6
+- The audited HEAD is current and equals role_base_sha and audited_head_sha.
+- phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+- Scope: git diff 2bdf5cb..3337418 (six files, all planned). No edit outside measure/runs/model_guide/.
+- Commits in scope: 90edb7b, 9d0afd3, c35c381 (Red tests), dabc9c3, 672e85a (Red records), a1a5312 (Green), 3337418 (Green record).
+
+APPLICABILITY
+- test-strategy.md:2466 assigns Review B security to row 4.16. security_applicability = applicable.
+- The PM round cap allows a pass when no real key reaches a committed file or a public page.
+
+SECURITY FINDINGS
+- Session scoping: review-run.sh:1218-1219 and the byte-identical judge-run.sh helper reject a message whose explicit sessionID differs from the created session. P4E-1 passes.
+- Freshness: review-run.sh:1220-1221 requires a native time.created at or after LIVE_CALL_START*1000. P4E-2 passes.
+- Terminal state: review-run.sh:1235-1237 never treats finish=tool-calls as final, even with time.completed. P4E-3 passes.
+- Argument safety: session and start reach node as quoted argv and are used only in comparisons. No new file write. No key, token, or message text is passed as an argument.
+- Deny check unchanged: eight denies written and checked before the first call (review-run.sh:411-431). adversarial-p4e.test.ts:278 confirms no request before a passed deny.
+- Endpoints unchanged: POST /api/session, POST /api/session/$session/prompt, GET /api/session/$session/message. No DELETE. P4E request-list assertion passes.
+- Key scan unchanged: LIVE_KEY_SHAPE and scan_output run in both runners. adversarial-p4e.test.ts:345 and :356 confirm a planted shape is not stored or printed.
+- Route parity: live_synthesize body sha256 50df8d900766fd671b172cf49119127b3be1baaa7b7d1baffef5d57647a56b6c in both runners.
+
+KEY SCAN
+- git diff 7d7d218..3337418 grep for sk-, AKIA, ghp_, github_pat_, xox, and PEM -> three hits.
+- All hits are synthetic constants in diff context (sk-adv-runner-secret-..., sk-test-credential-value-...). No real key in a committed file or a public page.
+
+TESTS (one file at a time)
+- adversarial-p4e: Tests 54 passed (54), 158.65s. Includes P4E-1, P4E-2, P4E-3 for both runners.
+- review-run: 130 pass / 0 fail, 922 expect calls, 210.75s.
+- judge-run: Tests 61 passed (61), 92.67s.
+- Test-file diff re-stamps fixture time at message read, keeps an explicit created old, and raises one timeout from 2 to 10. No assertion weakened.
+- Every fixture clears detached children in afterEach. No fake left running.
+
+ANTI-PATTERNS
+- A2 does not apply: test-strategy.md:2477, row 4.16 flips no draft to published.
+- A6 satisfied: measure/tracks.md:34 marks model_guide pending and names no resolved security state; row 4.16 is open.
+
+NONBLOCKING FINDINGS
+- F-B4 [Low, nonblocking] A foreign message with no sessionID passes the owner check. Freshness and server-side scoping still apply. No test plants this case. Route to backlog row 4.15.
+
+MEASURE_AGENT_RESULT
+role: measure-review-b-security
+track: model_guide
+phase: Phase 4b: The live runs and the first track A results (by Sun 2026-11-22)
+task: 4.16
+session: Review B · 4b 4.16 · model_guide
+route: opencode-go/hy4-flash-free#high
+status: pass
+phase_base_sha: 7d7d218d00a95d9d619d2856173b8136b6ace4a5
+role_base_sha: 33374182f4798169e8c3e2dc676f8a4a2f9327a6
+audited_head_sha: 33374182f4798169e8c3e2dc676f8a4a2f9327a6
+audited_head_current: yes
+security_applicability: applicable
+test_strategy_violations: none
+live_contract_violations: none
+prod_wiring_violations: none
+route_parity_violations: none
+blocking_findings: none
+nonblocking_findings: F-B4 Low a foreign message with no sessionID passes the owner check; route to backlog row 4.15
+confidence: high
+retry_recommendation: none
+handoff: Pass under the PM round cap. No real-key leak and all violation arrays are empty. The Green r8 session, freshness, and tool-calls checks are present in both byte-identical helpers with green failing-first tests. F-B4 is one low residual gap for row 4.15. No blocker is routed to Green. This result does not accept Phase 4b.
+END_MEASURE_AGENT_RESULT

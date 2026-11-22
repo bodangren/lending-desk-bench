@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "route": "opencode-go/glm-5.3#high",
+  "summary": "Re-review of tasks 4.13k and 4.13l at a3799be (range e9e7d36..a3799be, phase_base_sha 57baaaa364f968a2f44c6e14eb96f8a9d68beebf, role_base_sha e9e7d366719e3b00ad27c299809772e72941fd70): F3 is fixed and N4 is fixed. quota.ts now requires usable values, not names, for the Go 5h and weekly windows: parseAnswer keeps only usable windows (quota.ts:269-279), the new usableWindow helper (quota.ts:283-287) gates the Go required check (quota.ts:323-328), and the stop reason names usability. Red 4.13k failed first on exactly the two new Q13 cases (2 failed | 24 passed, labeled line in red-4.13k.log), and at HEAD Q13 pins stopped for negative, string, and null weekly beside a usable 5h and for negative, string, and null 5h beside a usable weekly, while the moved non-Go cases keep the skip on kimi and Q15 keeps stopped for an absent window. Spec D15 (spec.md:749-753) and FR-15 (spec.md:1340-1344) both say usable values now, so the N4 contradiction is gone. No caller broke: the range touches only quota.ts, its Red test, plan.md, and spec.md; review-run.sh and judge-run.sh parse only the state and the numeric windows of the quota line (review-run.sh:455-475), not the changed stop-reason text, and both runner suites plus the adversarial suite copy the new quota.ts into their temp repos and pass. The live read of 127.0.0.1:38307 gives state ready on usable 5h 10.01 and weekly 4.00. All four gates pass one file at a time, fakes only (quota 26, review-run 53 bun, judge-run 30, adversarial 14, each exit 0, each pgrep scan empty). My first quota run tripped once on a sibling session's review-run fake children (PIDs 2691277/2691282 under /tmp/mg-review-run-Lvy5oa, dead right after) and a sibling quota-server (PID 2693211) was live before it; both scans were empty after the sibling finished, and every clean re-run passed. Nonblocking: the Green 4.13l evidence omits the adversarial-p4-runner gate that 4.13j listed, and my earlier N1 and N5 stay open, both pre-existing and outside this range.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "N6 minor (measure/tracks/model_guide/plan.md:2312-2325): the Green 4.13l evidence lists three gates (quota 26, review-run 53, judge-run 30) but omits adversarial-p4-runner.test.ts, which the 4.13j row listed and which copies the changed quota.ts into its temp repos (test-strategy 3.4), so the suite is in the blast radius of this change; the suite passes at HEAD (14 passed, exit 0, my run), so this is an evidence gap, not a false claim, and green-4.13l.log omits the same suite; fix: add the adversarial-p4-runner gate line (14 passed) to the 4.13l evidence when the plan next changes, no behavior change.",
+    "N1 minor (harness/model-guide/judge-run.sh:671-699), carried from review-a-e9e7d36 (kept, pre-existing, unchanged in this range): the comment at lines 671-673 says a window of 70 % or more stops the run and 80 % or more stops it after the previous group, but the wait branch at line 684 stops at 70 first, so the QUOTA_MAX >= 80 branch at line 692 stays dead | CONTEST kept: the file is untouched by e9e7d36..a3799be and the dead branch and comment mismatch are still in the code at HEAD; fix: drop the dead branch or fix the comment, no behavior change.",
+    "N5 minor (harness/model-guide-tests/review-run.test.ts:174-179 and harness/model-guide-tests/quota.test.ts:165-171), carried from review-a-e9e7d36 (kept, pre-existing, unchanged in this range): the liveness and orphan scans match any command line whose text holds fake-opencode or quota-server, so a sibling session's processes trip them, and today my first quota run failed its afterAll orphan scan on a sibling's review-run fake children (PIDs 2691277/2691282 under /tmp/mg-review-run-Lvy5oa, dead moments later) while all 26 tests passed; the clean re-run passed with empty scans | CONTEST kept: the pattern re-tripped during this re-review on a sibling's processes, which proves the gates are still fragile on this shared machine, and no fix landed in this range; fix: filter the scan matches to the run's own temp tree instead of any line that holds the scan strings, no behavior change."
+  ],
+  "evidence": [
+    "F3 withdrawn (fixed): quota.ts:269-279 builds windows from usable values only, usableWindow (quota.ts:283-287) requires a present, finite, non-negative value, and main() (quota.ts:323-328) stops with \"the Go answer holds no usable 5h or weekly window\" when either Go window is not usable. The names set is gone. Q13 pins stopped for each unusable case: negative, string, and null weekly beside a usable 5h (quota.test.ts:627-679) and negative, string, and null 5h beside a usable weekly (quota.test.ts:681-720). Red 4.13k failed first on exactly those two cases (red-4.13k.log: failing_tests Q13 x2, \"Tests 2 failed | 24 passed (26)\", labeled).",
+    "N4 withdrawn (fixed): spec D15 (spec.md:749-753) now says a Go answer needs a usable 5h value and a usable weekly value and gives stopped otherwise, and FR-15 (spec.md:1340-1344) says an unusable window is skipped, stopped comes only when no usable window is left, and the Go source requires a usable 5-hour and weekly value. The D15 and FR-15 texts agree now.",
+    "Caller coverage: git diff --name-only e9e7d36..a3799be lists only harness/model-guide/quota.ts, harness/model-guide-tests/quota.test.ts, measure/tracks/model_guide/plan.md, measure/tracks/model_guide/spec.md. review-run.sh and judge-run.sh are outside the range and parse only the state, cap, and numeric windows of the quota stdout line (review-run.sh:455-475), so the changed stop-reason text and the dropped names set break no caller. The three runner suites copy the new quota.ts into their temp repos (test-strategy 3.4) and pass, so the changed contract has caller coverage. stateOf for Go reads windows[\"5h\"] and windows[\"weekly\"] (quota.ts:294-298) only after the usable check, so the state is well defined at emit.",
+    "Live read (read-only GET, state line only): {\"provider\":\"opencode-go\",\"source\":\"opencode-go\",\"state\":\"ready\",\"cap\":3,\"windows\":{\"5h\":10.008601645833332,\"weekly\":4.003440658333333,\"monthly\":2.0017203291666665}}. Both Go windows are usable and below the wait thresholds, matching the plan 4.13l claim of state ready with an empty stderr.",
+    "Gates at HEAD a3799be, one file at a time, fakes only: quota.test.ts Tests 26 passed (26) exit 0; review-run.test.ts 53 pass 0 fail exit 0 (bun, 83.10s); judge-run.test.ts Tests 30 passed (30) exit 0; adversarial-p4-runner.test.ts Tests 14 passed (14) exit 0. After each run, pgrep for fake-opencod[e] and quota-serve[r] printed nothing.",
+    "Cross-session contamination, reported per the brief: my first quota run failed only its afterAll orphan scan on two fake-opencode children under /tmp/mg-review-run-Lvy5oa (PIDs 2691277 and 2691282, a sibling session's review-run temp repo, both dead when I checked seconds later) while all 26 quota tests passed; a sibling quota-server (PID 2693211, /tmp/mg-review-fake-pDBExI, a suite I had not run) was live before my re-run. After the sibling finished, both scans were empty and every gate passed clean. No line in any clean scan belonged to my runs.",
+    "Scope and protection: git rev-parse HEAD -> a3799bea45b5cd9fdca1b81c5495e0303c7cfaee (equals the audited head). git status --short docs/ prints nothing. git diff --stat 57baaaa..HEAD -- harness/provenance.ts harness/tests harness/opencode-host.sh harness/opencode-credential.sh prints nothing. The Red commit afef66e changed only quota.test.ts and plan.md; the Green commit 8ce8964 changed only quota.ts, so the plan row's \"No test file changed\" is true for the Green step; the record commit a3799be changed only plan.md and spec.md.",
+    "Anti-pattern checks: A4 - expectState and expectStopped (quota.test.ts:419-433) assert the state, the exit code, and one stderr line that starts with \"quota:\", and the new Q13 cases use expectStopped, so a missing deliverable fails (proved by the Red run's 2 failures). A3 - every count I read is a labeled \"Tests N passed\" line, and the Red record holds the labeled \"2 failed | 24 passed (26)\". A5 - the 4.13l plan claims (quota 26, review-run 53 pass 0 fail, judge-run 30, scans empty, live read ready) all match what I reproduced; the only evidence gap is the omitted adversarial gate (N6)."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> a3799bea45b5cd9fdca1b81c5495e0303c7cfaee (equals the audited head)",
+    "git diff --name-only e9e7d36..a3799be -> quota.ts, quota.test.ts, plan.md, spec.md only",
+    "cd harness && npx tsx model-guide/quota.ts --provider opencode-go --base http://127.0.0.1:38307 -> state ready, windows 5h 10.01 / weekly 4.00 / monthly 2.00, exit 0",
+    "cd harness && npx vitest run model-guide-tests/quota.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> run 1: Tests 26 passed (26) but the afterAll orphan scan failed on a sibling's fake children (PIDs 2691277/2691282, /tmp/mg-review-run-Lvy5oa); run 2 (sibling gone): Tests 26 passed (26), exit 0, scans empty",
+    "bun test harness/model-guide-tests/review-run.test.ts -> 53 pass, 0 fail, exit 0; both pgrep scans empty",
+    "cd harness && npx vitest run model-guide-tests/judge-run.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 30 passed (30), exit 0; both pgrep scans empty",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p4-runner.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> Tests 14 passed (14), exit 0; both pgrep scans empty",
+    "pgrep -af 'fake-opencod[e]' and pgrep -af 'quota-serve[r]' after each file -> empty on every clean run; the only lines ever seen belonged to a sibling session and are named in the evidence"
+  ],
+  "changed_files": [
+    "harness/model-guide/quota.ts",
+    "harness/model-guide-tests/quota.test.ts",
+    "measure/tracks/model_guide/plan.md",
+    "measure/tracks/model_guide/spec.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "quota.ts:323-328 requires usableWindow on both Go windows (reproduced stopped by Q13's six cases, quota.test.ts:627-720), the non-Go skip is unchanged, and the live read at 127.0.0.1:38307 gives state ready on usable 5h 10.01 and weekly 4.00."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 5,
+      "evidence": "Red 4.13k failed first on exactly the two new Q13 cases (red-4.13k.log: Tests 2 failed | 24 passed (26)), and at HEAD Q13 pins stopped for every unusable Go combination while Q15 (quota.test.ts:833) keeps the absent-window stop and the moved kimi cases keep the skip."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only e9e7d36..a3799be lists only the four planned files, the drivers and runners are untouched, and the protected-path diff 57baaaa..HEAD prints nothing."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every 4.13l plan claim reproduced (quota 26, review-run 53, judge-run 30, live read ready, empty scans), but the row omits the adversarial-p4-runner gate that 4.13j listed (N6), which I ran myself: 14 passed, exit 0."
+    }
+  ]
+}

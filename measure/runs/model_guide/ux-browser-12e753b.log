@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: ux-browser
+track: model_guide
+phase: Phase 2: The print-audit block and the overview table (by Wed 2026-11-18)
+status: fail
+audited_head_sha: 12e753b450fdda3e7cf3ecf10aaa29fd8ffcf916
+result_file: measure/runs/model_guide/ux-browser-12e753b.json
+retry_recommendation: escalate_human
+summary: The browser review at 12e753b fails check 6: the print-audit block omits the bias note (P2U1-1, same defect as ux-browser-b4fba01.json, fixed at 70ebfc5 and verified at e13413f); all other checks pass at both widths.
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,116 @@
+adjudicate-4.13 evidence, set mg-2026-11a, 2026-11-22
+
+queue
+  command: npx tsx model-guide/adjudicate.ts queue mg-2026-11a --private <private> --raw <private>/outputs/mg-2026-11a
+  exit: 0
+  groups: 22
+  queued findings: 27
+  diffs with a queued group: 11 (forge-02, forge-03, forge-05, forge-06, forge-07, mono-01, mono-03, mono-04, mono-05, mono-06, mono-07)
+  source passes: opencode-go/deepseek-v4.1-flash pass 1 (complete), opencode-go/hy4-flash-free#high pass 1 (complete)
+  no pass record: opencode-go/mimo-v2.6-flash (state none, one invalid output, no queue entry)
+  route names in the queue: 0
+
+judge a
+  family: OpenAI Sol
+  route: openai/gpt-6.1-sol#high
+  command: BENCH_SERVER_BASE=http://127.0.0.1:38307 BENCH_QUOTA_BASE=http://127.0.0.1:38307 heavy-run.sh harness/model-guide/judge-run.sh --set mg-2026-11a --route openai/gpt-6.1-sol#high --judge a
+  exit: 0
+  state: complete, 22 of 22 groups
+  findings judged: 27 of 27
+  verdicts: {"real-defect":19,"false-claim":2,"unclear":6}
+  tokens: {"input":183316,"output":771,"reasoning":641,"cache_read":71168,"cache_write":0,"total":255896}, complete true
+  judged_by: 27 findings, route openai/gpt-6.1-sol#high
+  log: measure/runs/model_guide/adjudicate-judge-a.log
+  the run stopped twice on the quota read timeout of the live server; the two stops are in the log
+
+judge b
+  family: Go
+  route: opencode-go/muse-spark-1.3-contributor#high
+  command: BENCH_SERVER_BASE=http://127.0.0.1:38307 BENCH_QUOTA_BASE=http://127.0.0.1:38307 heavy-run.sh harness/model-guide/judge-run.sh --set mg-2026-11a --route opencode-go/muse-spark-1.3-contributor#high --judge b
+  exit: 0
+  state: complete, 22 of 22 groups
+  findings judged: 27 of 27
+  verdicts: {"real-defect":21,"unclear":6}
+  tokens: {"input":300542,"output":2418,"reasoning":43964,"cache_read":1017,"cache_write":0,"total":347941}, complete true
+  judged_by: 27 findings, route opencode-go/muse-spark-1.3-contributor#high
+  log: measure/runs/model_guide/adjudicate-judge-b.log
+  the second judge never read the verdicts of the first judge; the queue holds no verdict
+
+agreed verdicts (the rule of two)
+  real-defect: 19
+  false-claim: 0
+  unclear: 8
+  disagreements: 2
+
+left out findings (unclear, no route penalized)
+  forge-06#C551b0e488abe  the judges disagree (a false-claim, b real-defect)
+  forge-06#C613e9cb84301  the judges disagree (a false-claim, b real-defect)
+  forge-07#C6dfdff52af70  both judges said unclear
+  forge-07#C8185b54c491a  both judges said unclear
+  mono-07#C07284f306558  both judges said unclear
+  mono-07#C6a3b6061181f  both judges said unclear
+  mono-07#C511aaa3c4073  both judges said unclear
+  mono-07#Cd70cf9729a7d  both judges said unclear
+
+passes (dry run of the scorer into a temp folder; the public score file is row 4.14)
+  opencode-go/deepseek-v4.1-flash pass 1: provisional, score 78.6, found 38, missed 3, false claims 0, real defects 13
+  opencode-go/hy4-flash-free#high pass 1: provisional, score 75.4, found 36, missed 3, false claims 0, real defects 6
+  rank: none; both routes hold 1 pass of 3 (incomplete)
+
+apply
+  command: npx tsx model-guide/adjudicate.ts apply mg-2026-11a --private <private> --judge-a <judge-a.json> --judge-b <judge-b.json>
+  exit: 0
+  wrote: verdicts.json, real-defects.json, and the real_defects of 10 keys (4 keys stayed byte-identical)
+
+lint
+  command: npx tsx harness/model-guide/review-set.ts lint mg-2026-11a --private <private> --created 2026-11-16
+  exit: 0
+  manifest: harness/model-guide/data/sets/mg-2026-11a.json
+  key sha256 values matching the private key files: 14 of 14
+
+leak check
+  command: npx tsx harness/model-guide/leak-check.ts --private <private> --repo <repo> --preview <preview>
+  exit: 0
+
+manifest commit
+  8ea05c3 feat(model_guide): the mg-2026-11a manifest after the adjudication apply
+
+PM hand-off: the real defects (19)
+  forge-02#Ca32670588aa0  forge-02  tests/storytime-book-pictures.test.ts:2287  C4 minor  the worker error is discarded
+      When the worker raises an uncaught error, the handler resolves undefined instead of the error, so the test sees a missing report rather than a crash.
+  forge-02#C86292965c332  forge-02  tests/storytime-book-pictures.test.ts:2372  C8 minor  error-content check is too weak
+      An error message that also carries the credential still matches /api-key-prefix/, so the check named 'the error names only the pattern' passes when the secret leaks.
+  forge-02#Ccf2959a42222  forge-02  tests/storytime-book-pictures.test.ts:2372  C8 minor  the error-message check does not enforce 'only'
+      A refusal message that echoes the decoded credential still matches /api-key-prefix/, so the test passes and the leak stays undetected.
+  forge-03#Ce9bc2e0534af  forge-03  src/storytime/book-pictures.ts:3665  C3 blocker  the decoded credential findings are discarded
+      The comma operator throws away the decodedAnswerFindings result, so decodedFindings is always empty and an answer with a credential is accepted and written.
+  forge-03#Cf89e84e958f5  forge-03  src/storytime/book-pictures.ts:3665  C3 blocker  Kimi credential check disabled by comma operator
+      Any output containing a credential passes the Kimi check because the comma operator discards the findings array and leaves it empty.
+  forge-05#C6debe4c68bb6  forge-05  scripts/storytime-book-pictures.ts:45  C3 blocker  entry returns an object instead of the exit code
+      An injected `pipeline` makes `runStorytimeBookPicturesEntry` resolve to `{ code: number }` instead of a number, so the declared `Promise<number>` contract is broken and the build fails to type-check.
+  forge-06#Cb6fb498fd81f  forge-06  tests/storytime-book-pictures.test.ts:829  C8 minor  any thrown error counts as a refusal
+      An unrelated crash also returns true, so the tests cannot tell the credential or length check from another failure.
+  forge-06#Cd93786806da5  forge-06  tests/storytime-book-pictures.test.ts:969  C8 minor  the log check misses the escaped credential
+      The payload holds the credential in escape form, so a log that echoes the payload passes the raw-value check.
+  forge-06#Cb58c19a9904e  forge-06  tests/storytime-book-pictures.test.ts:1035  C8 minor  the served bytes do not prove the real path is read
+      The symlink and its target hold the same bytes, so serve can read the unchecked path and still pass.
+  forge-06#C94fb96a27809  forge-06  tests/storytime-book-pictures.test.ts:1042  C8 minor  the protected stage case does not use a symlink
+      The test writes a regular file in the protected directory, so a check that does not resolve symlinks still passes.
+  forge-07#Ca02d172ebd7c  forge-07  src/storytime/book-pictures.ts:2306  C4 minor  a throwing refusal handler leaves the request open
+      A refusal handler that throws skips the 404 response write, so the request never ends and the middleware produces an unhandled rejection.
+  mono-01#C31391599bc17  mono-01  apps/codecamp-advantage/lib/__tests__/review-worker-scheduler-script.test.ts:47  C8 minor  the describe stub ignores --format=none
+      The describe branch writes an `Authorization` header before it checks `--format=none`, so the output test reports a leak even when the script asks gcloud to suppress the resource.
+  mono-03#Cc1298f34306b  mono-03  apps/accounting/app/lib/drive-document-source.ts:109  C3 blocker  the dynamic import is not awaited
+      The `googleapis` dynamic import returns a Promise, so the destructured `google` is undefined and `google.auth` throws when the client is created.
+  mono-03#Ce9de94d6cd9b  mono-03  apps/accounting/app/lib/drive-document-source.ts:109  C3 blocker  import promise destructured without await
+      createDriveClient destructures google from the unresolved import() promise, so google is undefined and google.drive throws on every fallback call.
+  mono-04#C001501c1cdb9  mono-04  apps/accounting/app/lib/intake-runner.ts:241  C3 blocker  dynamic import not awaited
+      The `import()` promise is destructured without `await`, so `readIntakeFolderId` is undefined and calling it throws, crashing the poll entry.
+  mono-04#C1d7a6c433664  mono-04  apps/accounting/app/lib/intake-runner.ts:241  C3 blocker  the dynamic import is not awaited
+      The dynamic import returns a Promise, so `readIntakeFolderId` and `createDriveDocumentSource` are undefined and the first call throws a TypeError on every poll.
+  mono-05#Cad4c4f4eea31  mono-05  packages/backend/src/modules/accounting/intake.ts:857  C3 blocker  wrong property name in markDuplicate call
+      The call passes `submissionId`, but markDuplicate requires `duplicateOfSubmissionId`, so the inserted duplicate row never stores the earlier submission id.
+  mono-06#C19976d76ceeb  mono-06  apps/accounting/app/lib/__tests__/intake-runner-image.red.test.ts:504  C8 minor  the push-file check omits the guard step
+      A push file that still contains `id: "guard-intake-values"` passes because the check rejects only the deploy and schedule ids.
+  mono-06#C6b5b97bcc971  mono-06  apps/accounting/app/lib/__tests__/intake-runner-image.red.test.ts:539  C8 minor  the default check ignores quoted keys
+      A default written as `"_ACCOUNTING_IMAGE": "value"` does not match the line regex and passes the test.

@@ -1,0 +1,19 @@
+Task 1.13: the task 1.9 preview re-run at the final code HEAD (F21).
+
+Command:
+  harness/model-guide/preview.sh --export ~/Desktop/handoff/real-work-outcomes/real-work-outcomes-2026-11-14.json
+Exit code: 0.
+Code HEAD: d26213904165d195a2ecbd4c95b9747b17913aea.
+
+Checked values in .tmp/model-guide-preview/real-work.html (lines 33, 38):
+  source SHA-256: dae855cad4bcd29b0623d8a0b8d4eb75aa16a7ddd6688455735bf312df5464f2
+  generated_on: 2026-11-14
+  runs: 1,798
+  date range: 2026-06-06 to 2026-11-13
+  share with a known model: 50.6 %
+  share with a result: 71.7 %
+
+All values match the pinned task 1.9 values.
+
+`git status --short docs/` prints nothing (no write under docs/).
+No real export byte was copied into the repository.

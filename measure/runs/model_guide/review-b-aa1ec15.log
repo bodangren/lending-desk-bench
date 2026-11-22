@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+status: pass
+role: measure-review-b-security
+track: model_guide
+audited_head: aa1ec1572c794f96caba9064ed17975cb73ee91e
+blocking_findings: 0
+nonblocking_findings: 0
+tests: 134 passed in 3 suites (real-work 14, preview-gate 102, adversarial-p4 18)
+notes: New checker sort has no prototype path; escapes_total selects static or numeric-gated output; new labels escaped, sentences static, no script.
+END_MEASURE_AGENT_RESULT

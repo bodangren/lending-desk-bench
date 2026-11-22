@@ -1,0 +1,101 @@
+Review A: correctness and architecture
+phase_base_sha: 8fd8882a8539d051129eb106e46974a934df5223
+role_base_sha: f1aa8d0c1c6acf1c2075d6f69e3e2bf3d173d82b
+audited_head_sha: f1aa8d0c1c6acf1c2075d6f69e3e2bf3d173d82b
+route: openai/gpt-6.1-sol#high
+
+The initial and final HEAD checks match the supplied SHA.
+The audit covers the exact phase diff.
+The provisional artifacts preceded the final checks.
+The active Measure track is domain_trust. This role follows the explicit model_guide assignment.
+
+Read the routing artifacts, track specification, Phase 5 plan, approval record, test strategy, and Red/Green logs.
+Red uses Muse. Green uses Hy4. The brief authorizes the review route substitution.
+
+Each targeted file ran separately through heavy-run.sh with --maxWorkers=1.
+No audit command uses shell output redirection.
+
+Command: npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 120 passed (120).
+Command: npx vitest run model-guide-tests/review-score.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 33 passed (33).
+Command: npx vitest run model-guide-tests/adversarial-p4g.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 4 passed (4).
+Command: npx vitest run model-guide-tests/guide.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit 0; Test Files 1 passed (1); Tests 18 passed (18).
+Targeted total: 175 passed across four files.
+
+The score structure equals the phase base after removal of the three incomplete_reason fields.
+DeepSeek keeps score 78.6, found 38, missed 3, false claims 0, and real defects 13.
+Hy4 keeps score 75.4, found 36, missed 3, false claims 0, and real defects 6.
+MiMo has 24 dash cells across its class and severity tables.
+The DeepSeek and Hy4 tables each retain 24 numeric cells.
+MiMo shows dashes in both main-row sum cells. DeepSeek keeps 0 / 13. Hy4 keeps 0 / 6.
+All three route marks occupy their own line.
+The route column has min-width: 10rem. The table retains overflow-x: auto.
+The three reviewed public files contain no internal reason text.
+The public score contains no private detail field or finding text.
+The seven existing preview hashes match the latest Green log.
+review.json equals the committed score file byte for byte.
+The Code review row retains the no-pick result.
+
+V10, V11, F1-preview, and the hostile case now enforce the PM reason-text prohibition.
+The hostile-route escaping assertions remain.
+The PM1 assertions compare exact labeled cells and preserve real zeros for routes with passes.
+The PM3 guard reads the generated JSON file and requires its existence.
+The new assertions introduce no bare-digit count check.
+
+build-graph identifies readTrackARank and readApproval but supplies no caller edges.
+Direct reads establish the affected consumers at guide.ts:458-464 and publish.ts:154.
+No changed TypeScript symbol is exported.
+guide.ts excludes incomplete routes and preserves provisional passes toward the three-pass threshold.
+fromTrackA retains no pick when no complete rank exists.
+
+Supplemental command: heavy-run.sh node -e with the actual helper and parser source.
+The shared runner delayed this command.
+Its wait diagnostic quoted another job's command. This audit did not execute that quoted command.
+The supplemental command completed these expected assertions:
+A4 missing-deliverable fixture: reviewPage rejects the missing file with AssertionError.
+A4 missing-deliverable fixture: reviewJson rejects the missing file with AssertionError.
+Read-only approval parser: the committed record produces publish: bad approval record.
+No publish entry point ran. The supplemental check wrote no file.
+
+Nonblocking F1: The approval record lacks approved_by:, date:, and files: headers.
+publish.ts:98-105 requires those exact headers.
+The isolated parser confirms the refusal before any hash check.
+score-impact: no.
+The orchestrator must prepare a parser-compatible record after the PM GO.
+This finding differs from the intentionally deferred review hashes.
+The JSON contains the full routed finding.
+
+A read-only scan loaded 39 private seeded lines.
+It found no match in the changed production records or three reviewed preview files.
+No real-key leak was found.
+The phase adds no real-defect detail.
+The PM cap makes F1 nonblocking.
+
+The latest targeted results reproduce the current Green plan claims.
+Historical Green hashes remain historical; the r2 evidence names the current hashes.
+Task 5.3 remains in progress. Task 5.4 remains open.
+The audit does not claim the first publish or weekly update is complete.
+The phase changes no Measure orchestration script, framework contract test, registry, frozen harness path, or docs path.
+bash -n and the exact scoped git diff --check pass.
+No full suite, browser, model call, publish entry point, or preview rebuild ran.
+Only the two supplied result artifacts were written.
+No production file, test file, plan, registry, or private record was edited.
+No commit was made.
+Facts changed: none.
+
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: model_guide
+phase: Phase 5: The publish gate and the weekly update
+commits: none
+tests_run: preview-gate 120 pass; review-score 33 pass; adversarial-p4g 4 pass; guide 18 pass; missing-deliverable and isolated parser checks pass
+files_changed: measure/runs/model_guide/review-a-5-f1aa8d0.json; measure/runs/model_guide/review-a-5-f1aa8d0.log
+plan_updates: none
+known_failures: F1 is nonblocking under the PM cap; the approval record lacks the required publish headers; score-impact: no
+handoff: Pass under the PM cap. Carry F1 to the orchestrator for the approval update after the PM GO. This audit authorizes no publication.
+route: openai/gpt-6.1-sol#high
+END_MEASURE_AGENT_RESULT

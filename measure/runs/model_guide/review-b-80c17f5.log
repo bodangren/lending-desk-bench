@@ -1,0 +1,10 @@
+MEASURE_AGENT_RESULT
+role: review-b
+track: model_guide
+phase: Phase 1: Page B in the preview folder (by Wed 2026-11-18)
+status: pass
+audited_head_sha: 80c17f5979b632a38e2a6797ff20504b418e198c
+result_file: measure/runs/model_guide/review-b-80c17f5.json
+retry_recommendation: none
+summary: Delta 2a9d421..80c17f5 is safe: the work-type name in aria-label goes through html.escape (quote=True), the style value is static, no new write path, no export leak; B5-1 to B5-3 stay nonblocking Nits; preview-gate 88, adversarial 49, leak-guard 2 pass.
+END_MEASURE_AGENT_RESULT

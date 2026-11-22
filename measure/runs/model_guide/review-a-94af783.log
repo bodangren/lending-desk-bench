@@ -1,0 +1,11 @@
+Review A of Phase 4 tasks 4.1e and 4.1f at 94af783: fail. One blocking finding (RA-1 [Blocker]): the overview pick cells show raw route keys, and spec D18 requires plain names. Page B merges, ranks, marks, footer, and top lines match an independent oracle on the real data; 32 of 35 mutants fail the Red tests.
+MEASURE_AGENT_RESULT
+role: review-a
+track: model_guide
+phase: Phase 4: The runner and the first track A results (by Sun 2026-11-22)
+status: fail
+audited_head_sha: 94af783e15f6f73590a2f59ba1a27cee8159bf84
+result_file: measure/runs/model_guide/review-a-94af783.json
+retry_recommendation: retry_implementation
+summary: Verdict: fail. One blocking finding. RA-1 [Blocker]: the overview table shows raw route keys in the pick and second cells. Spec D18 requires plain names from model-names.json. No Red test covers this rule, and guide.ts never reads the names file. The rest of page B is correct. An independent Python oracle, written from the spec text, checked the real data. It matches the tool output with 0 differences. It covers both tables, both rank orders, the footer coverage, and the ten top lines. All nine test files pass at HEAD with the counts that the plan claims. 32 of 35 wrong-implementation mutants fail the Red tests. The 3 survivors show two test gaps (RA-2, RA-6). The input check accepts file names that do not carry the manifest date (RA-3). Two Major findings (RA-2, RA-3) and three Nit findings (RA-4, RA-5, RA-6) carry as non-blocking. Not run: the closeout leak-check on the real files, because the shell rule denied the private-folder argument.
+END_MEASURE_AGENT_RESULT

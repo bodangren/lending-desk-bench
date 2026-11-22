@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "summary": "Verdict: fail. One blocking finding. RA-1 [Blocker]: the overview table shows raw route keys in the pick and second cells. Spec D18 requires plain names from model-names.json. No Red test covers this rule, and guide.ts never reads the names file. The rest of page B is correct. An independent Python oracle, written from the spec text, checked the real data. It matches the tool output with 0 differences. It covers both tables, both rank orders, the footer coverage, and the ten top lines. All nine test files pass at HEAD with the counts that the plan claims. 32 of 35 wrong-implementation mutants fail the Red tests. The 3 survivors show two test gaps (RA-2, RA-6). The input check accepts file names that do not carry the manifest date (RA-3). Two Major findings (RA-2, RA-3) and three Nit findings (RA-4, RA-5, RA-6) carry as non-blocking. Not run: the closeout leak-check on the real files, because the shell rule denied the private-folder argument.",
+  "blocking_findings": [
+    "RA-1 [Blocker] review-a: harness/model-guide/preview.sh:344-357 (overview_rows) and harness/model-guide/guide.ts:367-373, 394-399, 413-419. Evidence: the live preview builds with exit 0 (preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview /tmp/ra-review-pv). The overview table in index.html shows raw keys: test writing pick opencode-go/deepseek-v4.1-flash, second opencode-go/hy4-flash-free; print-book audit pick claude-code/claude-sonnet-5-5#high, second kimi-code-plan-cn/k3.1-pro. overview_rows escapes row.pick and row.second with html.escape and calls no name function. guide.ts writes pick: best.model and best.route as raw keys and never reads model-names.json (grep: only preview.sh:421-441 and the tests DS17 and G10 name the file). The page B tables of the same preview show plain names, so the two tables disagree. guide.test.ts:379-380, 451-452, and 586-587 pin raw keys in model-guide.json, and no case reads a pick cell of the rendered overview for a name. Spec D18 'Names (accepted by the PM 2026-11-17 after audit)' requires plain names from model-names.json, with the plan prefix dropped for an unnamed key. FR-2 says guide.ts and real-work.ts read the names file. D17 and Q-S13 map route keys at render time and map a #variant suffix to its model key. Fix scope: Red adds a preview-level test that asserts the overview pick and second cells for a named key, an unnamed key (no plan prefix), and a #variant route (maps to its model key), and that the no-pick words stay unchanged. Green maps the pick and second cells in preview.sh overview_rows with the model_name and audit_name helpers that page B uses. The orchestrator decides whether guide.ts or the render holds the mapping. The model-guide.json keys stay raw unless the orchestrator decides otherwise."
+  ],
+  "nonblocking_findings": [
+    "RA-2 [Major] review-a: harness/model-guide-tests/guide.test.ts:579-591 and harness/model-guide/guide.ts:352-363. Evidence: two executed mutants survive guide.test.ts with 15 passed (15) each. G2 changes row.tasks >= 5 to >= 4 in guide.ts, and G3 replaces row.allowed !== false with true. The red rows of the page B fixture are t1/prod-one[1m]#high (5 tasks, rate 1.0) and t1/prod-nine (8 tasks); both models are in allowedRoutes. No red row is not allowed, and no red row has 4 tasks, so the filters never change a result. Spec D18 pick rule: a producer row qualifies with 5 tasks or more, and a model that is not allowed never picks (test-strategy RS3). Fix scope: Red adds a guide-level case with a not-allowed red rank 1 and a 4-task red row that has a rate. The pick and the second choice must skip both.",
+    "RA-3 [Major] review-a: harness/model-guide/real-work.ts:171-230 (readManifest), 186-187, 214-227. Evidence: executed probe with a folder that holds ra-outcomes-1999-01-01.json, zzz.json (the AA fixture), and allowed-routes-2026-10-20.json, and a MANIFEST-2026-11-30.txt with the right SHA-256 and size of each file. real-work.ts exits 0 and writes real-work.json. The footer shows read date and export date 2026-11-30 and lists the names ra-outcomes-1999-01-01.json and zzz.json. Cause: a line with no kind prefix fills a free kind, a prefix match accepts any suffix, and the date part of a file name is never compared with the date of the MANIFEST name. D19 sets the stale mark from this date (Q-S4), so a manifest with a new date over old files shows a fresh evidence date and no stale mark. No test covers it. Spec Q-S2 allows one line for each of ra-outcomes-<date>.json, aa-reliability-<date>.json, and allowed-routes-<date>.json, for the three dated files only. DS2 gives manifest <file name> for a missing line. Fix scope: Red adds cases for an extra or misnamed line and for a file name with another date. Each case gives exit 2, input-check: manifest <file name>, and no output file. Green accepts only the three exact names <prefix><date>.json.",
+    "RA-4 [Nit] review-a: harness/model-guide/real-work.ts:331-332. Evidence: GATE_ROLES does not hold spec-review. The checker merge counts the decided runs of a spec-review row (kind gate), but the Roles cell of the More columns view omits the role. On the 2026-11-17 data both spec-review rows hold decided 0, so the page is not wrong today. The fixture t1/gate-two has 5 spec-review runs, but no test reads its Roles cell. Spec D16: rows of kind gate merge over the routes and the gate roles. Fix scope: Green adds every gate role of a merged row to roles, or adds spec-review to GATE_ROLES without a top line.",
+    "RA-5 [Nit] review-a: harness/model-guide/update.sh:31-32. Evidence: the header says a failed input check prints the input-check line of the tool on stdout. real-work.ts:87 writes the line on stderr, and spec Q-S3 and the executed mutant M27 (stdout) agree with stderr. The comment is false. Fix scope: Green changes the header comment to say stderr.",
+    "RA-6 [Nit] review-a: harness/model-guide-tests/real-work.test.ts:489-509 (DS11) and harness/model-guide-tests/fixtures/page-b/ra-outcomes-2026-10-20.json rows 16-18. Evidence: the executed mutant M36a (netScoreOf takes the first route, not the busiest) survives real-work.test.ts with 12 passed (12). For t1/gate-one the variant high is the first route in the file (row 16) and also the busiest (6 decided, 8 runs; low has 4, no variant has 5), so DS11 cannot tell the busiest route from the first route. Spec D16 AA net score: a merged row uses the variant of its route with the most counted runs. Fix scope: Red reorders the fixture rows so that the busiest variant is not the first route in the data order."
+  ],
+  "evidence": [
+    "HEAD check: git rev-parse HEAD returned 94af783e15f6f73590a2f59ba1a27cee8159bf84 before the audit and after the audit. The tracked files are unchanged; git status shows only the six untracked paths that existed at the start.",
+    "Oracle: a Python script written from the spec text (not from the TypeScript) read the real ra-outcomes, aa-reliability, and allowed-routes files. It compared the producer table (16 models), the checker table (37 models), both rank orders, the coverage (rows 217, routes 53, unknown 6, share 2.8), and the ten top lines with the real-work.json of the live preview. TOTAL DIFFS 0.",
+    "Test counts at HEAD, one file at a time with --configLoader native --maxWorkers=1 --reporter=dot: input-check 20 passed (20); real-work 12 passed (12); guide 15 passed (15); update 9 passed (9); leak-check 22 passed (22); preview-gate 99 passed (99); adversarial 47 passed (47); adversarial-p2 13 passed (13); adversarial-p3 34 passed (34). Each exit code is 0 and each count equals the plan claim (A5: no false claim).",
+    "Mutation run in a scratch copy at /tmp/ra-mut (outside the repository; baseline 12 passed (12)): 35 wrong-implementation mutants, 32 killed, 3 survived. Killed: unweighted first-round rate (DS5, DS9, DS13), null cleanup as zero (DS5, DS6), minimum 4 and minimum 6 (DS8, DS9, DS10, DS13), no rework tie-break (DS9), no escapes tie-break (DS10, DS13), AA without byEffort, without alias, or without the -free strip (DS11), mark at <= 20 and pick at <= 20 (DS12, DS13), gate pick without net score or without allowed (DS13), top block from table rows (DS13), rework weighted by accepted and tokens weighted by tasks (DS5), unknown rows in the tables (DS10), gate Runs from runs (DS7, DS10), producer rows without not-for-verdicts (DS12), allowed by the last path part (DS12), no sha check for one file, no size check, JSON parse before hash, a path in the manifest, usage line on stdout, and refusal line on stdout (input-check), test writing from role green (guide.test.ts, 3 cases), raw model name in the page, percent truncation, and raw key in the print-audit block (G10, DS5, DS20). Survivors: M36a (RA-6), G2 and G3 (RA-2).",
+    "A3 and A4: the DS cases read data-mg hooks and labeled values. The empty-page mutant (no row read) fails all 12 real-work.test.ts cases and 6 of 8 cases of the DS14 to DS21 and FX2 group, so a missing deliverable does not pass. DS14 (no work type) and the CSS case DS19 pass on an empty page by design; the other cases of the group catch it.",
+    "Gate items of test-strategy 13.2: the MANIFEST loop prints nothing; bash -n preview.sh and update.sh exit 0; git status --short docs/ prints nothing; the diff of provenance.ts, harness/tests, opencode-host.sh, and opencode-credential.sh over 57baaaa..HEAD prints nothing; grep for guide-bound in the tests prints nothing (no tag exists, as red-4.1e.txt records).",
+    "Real data: aa-reliability-2026-11-17.json has the same SHA-256 as the source in advantage-pr/measure/reference. allowed-routes-2026-11-17.json holds only allowedRoutes and orchestratorRoutes, and both equal the fields of ~/.config/ra-quota/routes.json. The read-only ra-quota outcomes --json output has the same 217 row keys as the committed file; 11 rows differ in open and run counts and in the 7-day task window, which is drift after the capture.",
+    "Live page: 10 picks, 2 default tables, 6 table-wrap boxes, 0 work-type hooks, footer values (3 file names with SHA-256, read and export date 2026-11-17, rows 217, routes 53, unknown rows 6, share 2.8 %), and no raw route key in the print-audit block. Plain names show for Kimi K3.1 Pro 11 of 13 and Claude Sonnet 5.5 13 of 13.",
+    "Callers: no file outside harness/model-guide/ and harness/model-guide-tests/ calls real-work.ts or guide.ts as code. The matches are tech-debt.md, measure files, and harness/results.json text. review-score.test.ts:681-703 calls guide.ts and passes with the new schema. The no-rank evidence text 'track A: no complete rank (n=0)' comes from commit 9ecfa60 (task 2.5), not from this diff.",
+    "Not run: the closeout leak-check on the committed real files. The shell rule denied the private-folder argument of leak-check.ts. The guards LG1 to LG3 (22 passed) and the Green record cover it; the orchestrator can run the closeout check of test-strategy 13.7."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> 94af783e15f6f73590a2f59ba1a27cee8159bf84 (before and after)",
+    "bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview /tmp/ra-review-pv -> exit 0",
+    "python3 -I (oracle from the spec text over the real data) -> TOTAL DIFFS 0",
+    "cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot for input-check (20), real-work (12), guide (15), update (9), leak-check (22), preview-gate (99), adversarial (47), adversarial-p2 (13), adversarial-p3 (34) -> each exit 0",
+    "MANIFEST loop of test-strategy 13.2 -> prints nothing; bash -n preview.sh and update.sh -> ok; git status --short docs/ -> empty; frozen-path git diff --stat -> empty; grep guide-bound -> empty",
+    "sha256sum of the AA source and copy -> equal; python compare of routes.json fields -> equal",
+    "advantage-pr/scripts/jobs/ra-quota outcomes --json (read-only) compared with the committed outcomes file -> same 217 keys, 11 rows with drift",
+    "python3 -I probe in /tmp/ra-probe: MANIFEST-2026-11-30.txt with ra-outcomes-1999-01-01.json, zzz.json, allowed-routes-2026-10-20.json -> real-work.ts exit 0 (RA-3)",
+    "python3 -I mutation driver in /tmp/ra-mut/harness (copy of harness/, node_modules linked): 35 mutants of real-work.ts, guide.ts, and preview.sh run against real-work, input-check, guide, and preview-gate test files -> 32 killed, 3 survived"
+  ],
+  "changed_files": [],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "role": "review-a",
+  "track": "model_guide",
+  "phase": "Phase 4: The runner and the first track A results (by Sun 2026-11-22)",
+  "audited_head": "94af783e15f6f73590a2f59ba1a27cee8159bf84",
+  "audited_head_sha": "94af783e15f6f73590a2f59ba1a27cee8159bf84",
+  "phase_base_sha": "57baaaa364f968a2f44c6e14eb96f8a9d68beebf",
+  "role_base_sha": "330d20fbc5611a7f0a631f699e85e7b0e55db485",
+  "route": "claude-code/claude-sonnet-5-5#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The oracle matches real-work.json on the real data with 0 differences, but preview.sh:344-357 shows raw route keys in the D18 pick cells."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "32 of 35 mutants fail real-work, input-check, guide, and preview-gate tests, but guide.test.ts has no case for D18 names or a not-allowed red row (G2 and G3 survive)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "The change stays in the planned files; real-work.ts:214-227 adds a manifest fallback that the spec does not name."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "All nine plan test counts reproduce at HEAD, but the plan record has no check of the D18 pick-cell names."
+    }
+  ]
+}
