@@ -201,6 +201,10 @@ function runPublish(root: string, preview = previewFolder(root)) {
 }
 
 function writeRecordText(root: string, text: string): void {
+  // Both paths: the stable path the tools read (written after the harness
+  // copy, so the fixture rows win over any copied real record) and the old
+  // track path the previous contract used.
+  writeFileSync(join(root, "harness", "model-guide", "publish-approval.md"), text);
   writeFileSync(join(root, "measure", "tracks", "model_guide", "publish-approval.md"), text);
 }
 

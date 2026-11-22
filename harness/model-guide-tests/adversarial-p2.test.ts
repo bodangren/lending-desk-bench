@@ -76,7 +76,8 @@ const TODAY = "2026-11-14";
 const HOSTILE_ROUTE = 'y/"><img src=x onerror=alert(1)>';
 const DATA_DIR = join("docs", "assets", "data");
 const PREVIEW_DIR = join(".tmp", "model-guide-preview");
-const APPROVAL = join("measure", "tracks", "model_guide", "publish-approval.md");
+const APPROVAL = join("harness", "model-guide", "publish-approval.md");
+const OLD_APPROVAL = join("measure", "tracks", "model_guide", "publish-approval.md");
 
 const INDEX_HTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Overview</title>
@@ -298,8 +299,13 @@ function toolRepo(tag: string, exportPath?: string): { root: string; exportCopy:
 }
 
 function approve(root: string): void {
-  writeFileSync(join(root, APPROVAL), ["approved_by: Daniel", "date: 2026-11-15", ""].join("\n"));
-  git(root, ["add", APPROVAL]);
+  const text = ["approved_by: Daniel", "date: 2026-11-15", ""].join("\n");
+  // Both paths: the stable path the tools read (written after the harness
+  // copy, so the fixture record wins over any copied real record) and the
+  // old track path the previous contract used.
+  writeFileSync(join(root, APPROVAL), text);
+  writeFileSync(join(root, OLD_APPROVAL), text);
+  git(root, ["add", APPROVAL, OLD_APPROVAL]);
   git(root, ["commit", "-q", "-m", "approval record"]);
 }
 
@@ -365,13 +371,13 @@ describe("adversarial phase 2: guide tie-break, score freshness, rerun, flags, s
   it("P2ADV-3 rerun (spec D19): a weekly update with unchanged data exits 0", () => {
     const { root, exportCopy } = toolRepo("rerun");
     approve(root);
-    const first = spawnSync("bash", [join(root, "harness", "model-guide", "update.sh"), exportCopy], {
+    const first = spawnSync("bash", [join(root, "harness", "model-guide", "update.sh"), "--docs", exportCopy], {
       cwd: root, env: env(), encoding: "utf8", timeout: 180_000,
     });
     expect(first.status, `${first.stdout}\n${first.stderr}`).toBe(0);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const second = spawnSync("bash", [join(root, "harness", "model-guide", "update.sh"), exportCopy], {
+    const second = spawnSync("bash", [join(root, "harness", "model-guide", "update.sh"), "--docs", exportCopy], {
       cwd: root, env: env(), encoding: "utf8", timeout: 180_000,
     });
     expect(second.status, `a no-change week must still exit 0: ${second.stdout}\n${second.stderr}`).toBe(0);
