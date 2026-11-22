@@ -329,6 +329,59 @@ describe("weekly update adversarial boundary tests", () => {
     expectPrivateRefusal(root, result, before, headBefore, countBefore, seed.line, `relative private input ${value}`);
   });
 
+  it("refuses a seeded diff when its line also appears in the matching source diff", () => {
+    const { root, manifest } = repo("private-line-in-source");
+    const seed = privateSeed("line-in-source");
+    writeFileSync(
+      join(seed.path, "sets", "synthetic", "src", "seed.diff"),
+      `@@ -1 +1 @@\nL1 +${seed.line}\n`,
+    );
+    const before = treeHash(root);
+    const headBefore = git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean);
+    const countBefore = commits(root);
+    const result = run(root, manifest, seed.path);
+    expectPrivateRefusal(root, result, before, headBefore, countBefore, seed.line, "source-matched private line");
+  });
+
+  it("refuses private input when its only diff line is shorter than 20 characters", () => {
+    const { root, manifest } = repo("private-short-line");
+    const seed = privateSeed("short-line");
+    const shortLine = "short-seed-line";
+    writeFileSync(
+      join(seed.path, "sets", "synthetic", "diffs", "seed.diff"),
+      `@@ -1 +1 @@\nL1 +${shortLine}\n`,
+    );
+    const before = treeHash(root);
+    const headBefore = git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean);
+    const countBefore = commits(root);
+    const result = run(root, manifest, seed.path);
+    expectPrivateRefusal(root, result, before, headBefore, countBefore, shortLine, "short private line");
+  });
+
+  it("refuses private input when a set folder has no diff files", () => {
+    const { root, manifest } = repo("private-empty-diffs");
+    const seed = privateSeed("empty-diffs");
+    rmSync(join(seed.path, "sets", "synthetic", "diffs"), { recursive: true });
+    mkdirSync(join(seed.path, "sets", "synthetic", "diffs"), { recursive: true });
+    const before = treeHash(root);
+    const headBefore = git(root, ["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean);
+    const countBefore = commits(root);
+    const result = run(root, manifest, seed.path);
+    expectPrivateRefusal(root, result, before, headBefore, countBefore, seed.line, "empty private diffs");
+  });
+
+  it("accepts a private-input symlink to a valid folder and completes the docs update", () => {
+    const { root, manifest } = repo("private-symlink-valid");
+    const seed = privateSeed("symlink-valid");
+    const link = join(temp("private-link"), "model-guide-private");
+    symlinkSync(seed.path, link, "dir");
+    const result = run(root, manifest, link);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(commits(root)).toBe("2");
+    expect(git(root, ["show", "--name-only", "--format=", "HEAD"])).toContain("docs/index.html");
+    expect(readFileSync(join(root, "docs", "index.html"), "utf8")).not.toContain(seed.line);
+  });
+
   it("the default synthetic private input still refuses a planted seeded line in a candidate", () => {
     const { root, manifest } = repo("default-scan");
     const line = seededLine("default");
