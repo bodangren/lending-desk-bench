@@ -3545,9 +3545,10 @@ describe("F1-preview the zero-pass route row (Review A F1, PM 2026-11-22 fix rou
 
 describe("PM page look 2026-11-22 (NO GO fix round, task 5.3)", () => {
   // Item 1: a route with 0 complete passes (all score fields null) shows
-  // "–", not 0, in every count cell of its class table and its severity
-  // table. Routes with passes keep their numbers.
-  it("PM1: a zero-pass route shows dashes in every count cell of its class and severity tables", () => {
+  // "–", not 0, in every count cell of its class table, its severity
+  // table, and its main review table row (false claims, real defects).
+  // Routes with passes keep their numbers, including a real 0.
+  it("PM1: a zero-pass route shows dashes in every count cell of its class and severity tables and its main row sums", () => {
     const zero = "route/pm-zero";
     const doc = vScoreDoc();
     doc.routes.push({
@@ -3558,6 +3559,19 @@ describe("PM page look 2026-11-22 (NO GO fix round, task 5.3)", () => {
       median: null,
       best: null,
       worst_blocker_recall: null,
+      rank: null,
+    });
+    const solo = "route/pm1-solo";
+    const soloPass = vSoloPass(solo, 78.6);
+    doc.passes.push(soloPass);
+    doc.routes.push({
+      route: solo,
+      state: "incomplete",
+      passes: [soloPass],
+      worst: 78.6,
+      median: 78.6,
+      best: 78.6,
+      worst_blocker_recall: 1,
       rank: null,
     });
     const root = buildVRepo("pm1", doc);
@@ -3597,6 +3611,33 @@ describe("PM page look 2026-11-22 (NO GO fix round, task 5.3)", () => {
       String(expected.found),
       String(expected.missed),
     ]);
+    const zeroRow = vRouteRow(page, zero);
+    expect(zeroRow, `the page holds a row for ${zero}`).not.toBeNull();
+    expect(vRowCell(zeroRow as string, "review-false-claims"), "the zero-pass false-claims cell").toBe(
+      "–",
+    );
+    expect(vRowCell(zeroRow as string, "review-real-defects"), "the zero-pass real-defects cell").toBe(
+      "–",
+    );
+    const rankedRow = vRouteRow(page, V_RANKED);
+    expect(
+      vRowCell(rankedRow as string, "review-false-claims"),
+      "a route with passes keeps its false-claims sum",
+    ).toBe(String(vPassSum(doc, V_RANKED, "false_claims")));
+    expect(
+      vRowCell(rankedRow as string, "review-real-defects"),
+      "a route with passes keeps its real-defects sum",
+    ).toBe(String(vPassSum(doc, V_RANKED, "real_defects")));
+    const soloRow = vRouteRow(page, solo);
+    expect(soloRow, `the page holds a row for ${solo}`).not.toBeNull();
+    expect(
+      vRowCell(soloRow as string, "review-false-claims"),
+      "a one-pass route with no false claims keeps 0",
+    ).toBe("0");
+    expect(
+      vRowCell(soloRow as string, "review-real-defects"),
+      "a one-pass route with no real defects keeps 0",
+    ).toBe("0");
   });
 
   // Item 2: the route cell holds the route name, then the mark on its own
