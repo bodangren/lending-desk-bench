@@ -36,7 +36,7 @@ File map (every new file of this track):
 
 Spec FR-1 to FR-5, EV1 to EV4.
 
-- [x] c4d70a19f655817b6cf8aecf25a6f304b4a8f262 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
+- [~] 1.1 Red and Green. The approval path and the named refusal (spec FR-1, FR-2).
   - Red: write `harness/model-guide-tests/update-approval.test.ts` and no other file.
     Pin that `update.sh` and `publish.ts` read `harness/model-guide/publish-approval.md`,
     that the old `measure/tracks/model_guide/` path appears in neither tool, and that
@@ -70,8 +70,11 @@ Spec FR-1 to FR-5, EV1 to EV4.
     writing their own fixture record. Red r5 (2026-11-22): changed A5 to
     the PM weekly refresh contract, so the stable record keeps the archived
     consent lines and rows and carries the rule text with its provenance;
-    A5 fails for the missing rule text while A1-A4 pass.
-- [x] 53510bb184ef9575ebf833509560021d0820d61a 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
+    A5 fails for the missing rule text while A1-A4 pass. Red r6
+    (2026-11-22): added F1 to pin the flag-selected branch in both record
+    states and switched U2 to `--docs`; F1 fails because a flagless
+    approved run still writes docs, while A1-A4 and U2 pass.
+- [~] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
     through `preview.sh` and `guide.ts`, that the commit holds the two data files plus
@@ -93,7 +96,12 @@ Spec FR-1 to FR-5, EV1 to EV4.
     fixture of adversarial-p2.test.ts to the stable path as well, and
     P2ADV-3 now passes `--docs` for its docs write. P2ADV-3 fails at HEAD
     until Green wires `--docs`, while every other case of the file passes.
-- [x] 53510bb184ef9575ebf833509560021d0820d61a 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
+    Red r6 (2026-11-22): added F2a and F2b for the score-change rebuild
+    rule with exact commit sets and the rendered score, F7 for the
+    missing-overview refusal that also pins the F5 renderer half, and F9a
+    and F9b for the commit log lines; all five fail for the missing
+    behavior while P1-P5 pass.
+- [~] 1.3 Red and Green. The leak check (spec FR-4, Review B 5 F1).
   - Red: write `harness/model-guide-tests/update-leak.test.ts` and no other file.
     Pin that `update.sh` runs `leak-check.ts` over the files it is about to commit and
     that a leak hit refuses with one line, exit 2, and no commit. Record the failed
@@ -107,7 +115,13 @@ Spec FR-1 to FR-5, EV1 to EV4.
     exits non-zero: all four fail. L1, L2, and L4 see no `update: leak`
     refusal, and L3 sees no commit, because `update.sh` has no `--docs`
     flag and no leak-check wiring. The plants use key fields only, so no
-    private folder is needed.
+    private folder is needed. Red r6 (2026-11-22): rewrote L1, L2, and L4
+    because the scan now covers exactly the candidate files, so hits moved
+    into the committed review.json through the score chain and the
+    unrelated staged hit must pass; added F4a and F4b for the env private
+    input and its missing-input refusal; L1, L2, L4, F4a, and F4b fail for
+    the missing wiring while L3 passes, and L1 also pins docs/
+    byte-identical for the F5 leak half.
 - [x] c4d70a19f655817b6cf8aecf25a6f304b4a8f262 1.4 Red and Green. The executable bit and the README wording (spec FR-5,
   Review C 5 F1, Review A 5 F3).
   - Red: write `harness/model-guide-tests/update-exec.test.ts` and no other file.

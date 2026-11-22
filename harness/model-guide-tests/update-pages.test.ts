@@ -87,6 +87,7 @@ function tempDir(tag: string): string {
 function env(): NodeJS.ProcessEnv {
   const copy = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
   copy.HOME = tempDir("home");
+  copy.MODEL_GUIDE_PRIVATE_DIR = tempDir("private-empty");
   delete copy.BENCH_TRACK;
   return copy;
 }
@@ -159,6 +160,80 @@ function scoreDoc(): string {
   )}\n`;
 }
 
+/** A complete-route score: the published baseline shape. */
+function scoreComplete(): string {
+  return `${JSON.stringify(
+    {
+      schema: "model-guide-review-scores/1",
+      set_id: "mg-2026-11a",
+      routes: [
+        {
+          route: "s1-model",
+          state: "complete",
+          passes: [90.0, 91.0, 92.0].map((score, index) => ({
+            date: `2026-11-1${index + 1}`,
+            score,
+            state: "complete",
+          })),
+        },
+      ],
+    },
+    null,
+    2,
+  )}\n`;
+}
+
+/** A changed incomplete-route score: one pass, no rank. */
+function scoreIncomplete(): string {
+  return `${JSON.stringify(
+    {
+      schema: "model-guide-review-scores/1",
+      set_id: "mg-2026-11a",
+      routes: [
+        {
+          route: "s2-model",
+          state: "incomplete",
+          passes: [
+            {
+              date: "2026-11-12",
+              score: 78.6,
+              state: "complete",
+              false_claims: 0,
+              real_defects: 0,
+            },
+          ],
+        },
+      ],
+    },
+    null,
+    2,
+  )}\n`;
+}
+
+function scoresDirOf(root: string): string {
+  const dir = join(root, "harness", "model-guide", "data", "review-scores");
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+/** SHA-256 of every file of the temp tree, used to prove a refused run
+ * changes nothing. */
+function treeHashes(root: string): Record<string, string> {
+  const hidden = [".git", "harness/node_modules"];
+  const out: Record<string, string> = {};
+  const walk = (dir: string, rel: string): void => {
+    for (const name of readdirSync(dir).sort()) {
+      const full = join(dir, name);
+      const path = rel ? `${rel}/${name}` : name;
+      if (hidden.some((item) => path === item || path.startsWith(`${item}/`))) continue;
+      const info = lstatSync(full);
+      if (info.isDirectory()) walk(full, path);
+      else out[path] = sha256(full);
+    }
+  };
+  walk(root, "");
+  return out;
+}
 /** A temp repo with docs pages, data files, and the export pair. */
 function updateRepo(tag: string, withScores: boolean): { root: string; manifest: string } {
   const root = tempDir(tag);
@@ -320,5 +395,126 @@ describe("the weekly update page refresh (spec FR-3)", () => {
       [...DATA_PATHS, ...PAGE_PATHS].sort(),
     );
     expect(git(root, ["status", "--short"])).toBe(" M docs/methodology.html");
+  });
+
+  it("F2a: a changed incomplete score file rebuilds review.html and review.json with the new rendering", () => {
+    const { root, manifest } = updateRepo("pages-changed-score", false);
+    approve(root);
+    const scoreFile = join(scoresDirOf(root), "mg-2026-11a.json");
+    writeFileSync(scoreFile, scoreComplete());
+    const first = runDocsUpdate(root, manifest);
+    expect(first.status, `${first.stdout}\n${first.stderr}`).toBe(0);
+    // The published baseline: the rendered page from the first run plus
+    // the score data the fixed weekly job commits beside it.
+    copyFileSync(scoreFile, join(root, DATA_DIR, "review.json"));
+    git(root, ["add", join(DATA_DIR, "review.json")]);
+    if (git(root, ["status", "--short"]) !== "") {
+      git(root, ["commit", "-q", "-m", "published score baseline"]);
+    }
+    // The score changes to an incomplete route set.
+    writeFileSync(scoreFile, scoreIncomplete());
+    const changed = scoreIncomplete();
+
+    const result = runDocsUpdate(root, manifest);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+
+    const review = readFileSync(join(root, "docs", "review.html"), "utf8");
+    expect(review, "the rebuilt page shows the new incomplete route").toContain("s2-model");
+    expect(review, "the rebuilt page shows the incomplete mark").toContain(
+      "incomplete: 1 of 3 passes",
+    );
+    expect(review, "the rebuilt page shows the new worst score").toContain("78.6");
+    expect(review, "the old rendering is gone").not.toContain("s1-model");
+    expect(
+      readFileSync(join(root, DATA_DIR, "review.json"), "utf8"),
+      "review.json is byte-equal to the consumed score",
+    ).toBe(changed);
+    expect(commitPaths(root), "the commit holds data, pages, and the score data").toEqual(
+      [
+        join(DATA_DIR, "real-work.json"),
+        join(DATA_DIR, "model-guide.json"),
+        join(DATA_DIR, "review.json"),
+        join("docs", "index.html"),
+        join("docs", "real-work.html"),
+        join("docs", "review.html"),
+      ].sort(),
+    );
+  });
+
+  it("F2b: an unchanged complete score file leaves the published review page alone", () => {
+    const { root, manifest } = updateRepo("pages-same-score", false);
+    approve(root);
+    const scoreFile = join(scoresDirOf(root), "mg-2026-11a.json");
+    const score = scoreComplete();
+    writeFileSync(scoreFile, score);
+    // Publish the rendered page through the preview path, then mark it.
+    const previewTmp = tempDir("preview-baseline");
+    const built = spawnSync(
+      "bash",
+      [join(root, "harness", "model-guide", "preview.sh"), "--manifest", manifest, "--preview", previewTmp],
+      { cwd: root, env: env(), encoding: "utf8", timeout: 180_000 },
+    );
+    expect(built.status, `${built.stdout}\n${built.stderr}`).toBe(0);
+    const published = `${readFileSync(join(previewTmp, "review.html"), "utf8")}<!-- published-baseline -->\n`;
+    writeFileSync(join(root, "docs", "review.html"), published);
+    copyFileSync(scoreFile, join(root, DATA_DIR, "review.json"));
+    git(root, ["add", join("docs", "review.html"), join(DATA_DIR, "review.json")]);
+    git(root, ["commit", "-q", "-m", "published baseline"]);
+
+    const result = runDocsUpdate(root, manifest);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+
+    expect(
+      readFileSync(join(root, "docs", "review.html"), "utf8"),
+      "the published page is not rebuilt",
+    ).toBe(published);
+    expect(
+      readFileSync(join(root, DATA_DIR, "review.json"), "utf8"),
+      "the published score data is untouched",
+    ).toBe(score);
+    expect(commitPaths(root), "the review outputs stay out of the commit").toEqual(
+      [...DATA_PATHS, ...PAGE_PATHS].sort(),
+    );
+    expect(git(root, ["status", "--short"]), "the tree is clean").toBe("");
+  });
+
+  it("F7: a missing overview template refuses before any commit", () => {
+    const { root, manifest } = updateRepo("pages-no-overview", false);
+    approve(root);
+    rmSync(join(root, "harness", "model-guide", "pages", "guide-section.html"));
+    const before = treeHashes(root);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+    const result = runDocsUpdate(root, manifest);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(treeHashes(root), "no file of the repo changes").toEqual(before);
+    expect(git(root, ["rev-list", "--count", "HEAD"]), "no commit").toBe(commits);
+  });
+
+  it("F9a: a commit prints one update: committed line per committed path", () => {
+    const { root, manifest } = updateRepo("pages-log", false);
+    approve(root);
+
+    const result = runDocsUpdate(root, manifest);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+
+    const lines = result.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
+    expect(lines).toEqual(
+      [...DATA_PATHS, ...PAGE_PATHS].sort().map((path) => `update: committed ${path}`),
+    );
+  });
+
+  it("F9b: a no-op prints update: no change and exits 0", () => {
+    const { root, manifest } = updateRepo("pages-noop", false);
+    approve(root);
+
+    const first = runDocsUpdate(root, manifest);
+    expect(first.status, `${first.stdout}\n${first.stderr}`).toBe(0);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+    const second = runDocsUpdate(root, manifest);
+    expect(second.status, `${second.stdout}\n${second.stderr}`).toBe(0);
+    expect(second.stdout, "the no-op line").toBe("update: no change\n");
+    expect(git(root, ["rev-list", "--count", "HEAD"]), "no commit").toBe(commits);
   });
 });

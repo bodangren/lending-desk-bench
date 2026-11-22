@@ -91,6 +91,7 @@ function tempDir(tag: string): string {
 function env(): NodeJS.ProcessEnv {
   const copy = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
   copy.HOME = tempDir("home");
+  copy.MODEL_GUIDE_PRIVATE_DIR = tempDir("private-empty");
   delete copy.BENCH_TRACK;
   return copy;
 }
@@ -279,6 +280,27 @@ describe("the weekly update approval path (spec FR-1, FR-2)", () => {
     expect(existsSync(join(root, PREVIEW_DIR)), "no preview folder appears").toBe(false);
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
     expect(git(root, ["status", "--short"])).toBe("");
+  });
+
+  it("F1: a flagless run with the stable record stays preview-only", () => {
+    const { root, manifest } = updateRepo("flagless-approved");
+    copyFileSync(ARCHIVED_APPROVAL, join(root, "harness", "model-guide", "publish-approval.md"));
+    git(root, ["add", join("harness", "model-guide", "publish-approval.md")]);
+    git(root, ["commit", "-q", "-m", "approval record"]);
+    const before = treeHashes(root, [PREVIEW_DIR]);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+    const result = runUpdate(root, [manifest]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+
+    const preview = join(root, PREVIEW_DIR);
+    expect(existsSync(join(preview, "real-work.json")), "real-work.json in the preview").toBe(true);
+    expect(existsSync(join(preview, "model-guide.json")), "model-guide.json in the preview").toBe(true);
+    expect(treeHashes(root, [PREVIEW_DIR])).toEqual(before);
+    expect(existsSync(join(root, DATA_DIR, "real-work.json")), "no docs write").toBe(false);
+    expect(existsSync(join(root, DATA_DIR, "model-guide.json")), "no docs write").toBe(false);
+    expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
+    expect(git(root, ["status", "--short"]), "no file changed under docs/").toBe("");
   });
 
   it("A4: a plain run without --docs keeps the preview-only branch", () => {

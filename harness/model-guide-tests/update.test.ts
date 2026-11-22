@@ -146,6 +146,7 @@ function requireProduction(): void {
 
 function env(): NodeJS.ProcessEnv {
   const copy = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
+  copy.MODEL_GUIDE_PRIVATE_DIR = tempDir("private-empty");
   delete copy.BENCH_TRACK;
   return copy;
 }
@@ -278,10 +279,10 @@ function approve(root: string): void {
   git(root, ["commit", "-q", "-m", "approval record"]);
 }
 
-function runUpdate(root: string, manifestPath: string) {
+function runUpdate(root: string, args: string[]) {
   return spawnSync(
     "bash",
-    [join(root, "harness", "model-guide", "update.sh"), manifestPath],
+    [join(root, "harness", "model-guide", "update.sh"), ...args],
     { cwd: root, env: env(), encoding: "utf8", timeout: 180_000 },
   );
 }
@@ -298,7 +299,7 @@ describe("the weekly update (spec D19, D21)", () => {
     const before = treeHashes(root, [PREVIEW_DIR]);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, manifest);
+    const result = runUpdate(root, [manifest]);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 
     const preview = join(root, PREVIEW_DIR);
@@ -329,7 +330,7 @@ describe("the weekly update (spec D19, D21)", () => {
     expect(git(root, ["status", "--short"])).toContain("docs/methodology.html");
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, manifest);
+    const result = runUpdate(root, ["--docs", manifest]);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
 
     const realWork = dataFile(root, REAL_WORK_JSON);
@@ -367,7 +368,7 @@ describe("the weekly update (spec D19, D21)", () => {
     const before = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, manifest);
+    const result = runUpdate(root, [manifest]);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
     const lines = `${result.stdout}${result.stderr}`.split("\n").map((line) => line.trim()).filter(Boolean);
     expect(lines, `one line of a refused run: ${result.stdout}\n${result.stderr}`).toHaveLength(1);
@@ -462,7 +463,7 @@ describe("review B round 2: symlinked write targets and newline score names", ()
       const treeBefore = treeHashes(root);
       const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-      const result = runUpdate(root, manifest);
+      const result = runUpdate(root, [manifest]);
       expectRefusal(result, `a symlink at docs/assets/data/${name}`);
       expect(treeHashes(outside), `no write outside the repo (${name})`).toEqual(outsideBefore);
       expect(treeHashes(root), `the repo stays byte-identical (${name})`).toEqual(treeBefore);
@@ -480,7 +481,7 @@ describe("review B round 2: symlinked write targets and newline score names", ()
     const treeBefore = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, manifest);
+    const result = runUpdate(root, [manifest]);
     expectRefusal(result, "a symlinked preview folder");
     expect(treeHashes(outside), "no write outside the repo").toEqual(outsideBefore);
     expect(treeHashes(root), "the repo stays byte-identical").toEqual(treeBefore);
@@ -498,7 +499,7 @@ describe("review B round 2: symlinked write targets and newline score names", ()
       const treeBefore = treeHashes(root);
       const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-      const result = runUpdate(root, manifest);
+      const result = runUpdate(root, [manifest]);
       expectRefusal(result, `a symlink at ${PREVIEW_DIR}/${name}`);
       expect(treeHashes(outside), `no write outside the repo (${name})`).toEqual(outsideBefore);
       expect(treeHashes(root), `the repo stays byte-identical (${name})`).toEqual(treeBefore);
@@ -518,7 +519,7 @@ describe("review B round 2: symlinked write targets and newline score names", ()
     const treeBefore = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runUpdate(root, manifest);
+    const result = runUpdate(root, [manifest]);
     expect(
       result.status,
       `a symlinked .tmp parent must exit 2: ${result.stdout}\n${result.stderr}`,
@@ -553,7 +554,7 @@ describe("review B round 2: symlinked write targets and newline score names", ()
     utimesSync(older, old, old);
     utimesSync(hostile, now, now);
 
-    const result = runUpdate(root, manifest);
+    const result = runUpdate(root, [manifest]);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const page = JSON.parse(readFileSync(join(root, PREVIEW_DIR, MODEL_GUIDE_JSON), "utf8"));
     const row = page.rows.find((item: any) => item.kind === "Code review");

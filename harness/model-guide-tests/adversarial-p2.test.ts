@@ -109,6 +109,7 @@ function requireProduction(): void {
 
 function env(): NodeJS.ProcessEnv {
   const copy = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
+  copy.MODEL_GUIDE_PRIVATE_DIR = tempDir("private-empty");
   delete copy.BENCH_TRACK;
   return copy;
 }

@@ -1,10 +1,13 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   copyFileSync,
   cpSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -16,16 +19,20 @@ import { afterAll, describe, expect, it } from "vitest";
 /**
  * Red tests for plan task 1.3: the leak check (spec FR-4, Review B 5 F1).
  *
- * New contract: after the copy and before `git add`, `update.sh --docs`
- * runs `leak-check.ts` over the files it is about to commit. A leak hit
- * refuses with one line, exit 2, and no commit: `update: leak <path>`.
- * The raw `leak-check:` finding never reaches stdout. A clean commit set
- * passes and commits.
+ * New contract: `update.sh --docs` runs `leak-check.ts` over exactly the
+ * candidate files of the commit, using the private input named by
+ * `MODEL_GUIDE_PRIVATE_DIR` (default: the real location). A hit in a
+ * candidate refuses with one line, exit 2, and no commit:
+ * `update: leak <path>`. The raw `leak-check:` finding never reaches
+ * stdout. A hit in an unrelated file outside the commit does not refuse.
+ * A missing private input on `--docs` refuses with one named line instead
+ * of a silent empty scan. A clean commit set passes and commits.
  *
- * The leak plants use key fields (`new_lines`, `witness`, `operator`),
- * which need no private folder. Every git action runs in a temp repo
- * under the system temp folder. No case reads the network, a model, the
- * real private folder, or the real repo history.
+ * A hit reaches a candidate through the score chain: the test plants the
+ * marker in the synthetic score file, `preview.sh` copies it to
+ * `review.json`, and the weekly job commits that copy. Every git action
+ * runs in a temp repo under the system temp folder. No case reads the
+ * network, a model, the real private folder, or the real repo history.
  */
 
 const HARNESS = resolve(import.meta.dirname, "..");
@@ -71,8 +78,13 @@ function tempDir(tag: string): string {
 function env(): NodeJS.ProcessEnv {
   const copy = { ...process.env, NO_COLOR: "1", npm_config_loglevel: "silent" };
   copy.HOME = tempDir("home");
+  copy.MODEL_GUIDE_PRIVATE_DIR = tempDir("private-empty");
   delete copy.BENCH_TRACK;
   return copy;
+}
+
+function sha256(file: string): string {
+  return createHash("sha256").update(readFileSync(file)).digest("hex");
 }
 
 function manifestShaOf(file: string): string {
@@ -156,12 +168,80 @@ function updateRepo(tag: string): { root: string; manifest: string } {
   return { root, manifest: join(root, MANIFEST_COPY) };
 }
 
-function runDocsUpdate(root: string, manifest: string) {
+function runDocsUpdate(root: string, manifest: string, privateDir?: string) {
+  const runEnv = env();
+  if (privateDir !== undefined) runEnv.MODEL_GUIDE_PRIVATE_DIR = privateDir;
   return spawnSync(
     "bash",
     [join(root, "harness", "model-guide", "update.sh"), "--docs", manifest],
-    { cwd: root, env: env(), encoding: "utf8", timeout: 180_000 },
+    { cwd: root, env: runEnv, encoding: "utf8", timeout: 180_000 },
   );
+}
+
+/** A synthetic score file with one complete route plus extra top-level
+ * fields. The tools ignore the extras; the weekly job copies them into
+ * the committed review.json byte for byte. */
+function scoreWith(extra: Record<string, unknown>): string {
+  return `${JSON.stringify(
+    {
+      schema: "model-guide-review-scores/1",
+      set_id: "mg-2026-11a",
+      routes: [
+        {
+          route: "leak-model",
+          state: "complete",
+          passes: [90.0, 91.0, 92.0].map((score, index) => ({
+            date: `2026-11-1${index + 1}`,
+            score,
+            state: "complete",
+          })),
+        },
+      ],
+      ...extra,
+    },
+    null,
+    2,
+  )}\n`;
+}
+
+function writeScore(root: string, text: string): void {
+  const dir = join(root, "harness", "model-guide", "data", "review-scores");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "mg-2026-11a.json"), text);
+}
+
+/** A synthetic private input with one seeded line: the diffs file holds
+ * the line, the source file does not. */
+function seededPrivateDir(tag: string, seeded: string): string {
+  const dir = tempDir(`private-${tag}`);
+  const set = join(dir, "sets", "mg-2026-11a");
+  mkdirSync(join(set, "diffs"), { recursive: true });
+  mkdirSync(join(set, "src"), { recursive: true });
+  writeFileSync(join(set, "diffs", "seed-01.diff"), `@@ -1,1 +1,1 @@\nL1 +${seeded}\n`);
+  writeFileSync(
+    join(set, "src", "seed-01.diff"),
+    "@@ -1,1 +1,1 @@\nL1 -  const different base content;\n",
+  );
+  return dir;
+}
+
+/** SHA-256 of every file of the temp tree: a refused run must leave the
+ * repo byte-identical, including docs/. */
+function treeHashes(root: string): Record<string, string> {
+  const hidden = [".git", "harness/node_modules"];
+  const out: Record<string, string> = {};
+  const walk = (dir: string, rel: string): void => {
+    for (const name of readdirSync(dir).sort()) {
+      const full = join(dir, name);
+      const path = rel ? `${rel}/${name}` : name;
+      if (hidden.some((item) => path === item || path.startsWith(`${item}/`))) continue;
+      const info = lstatSync(full);
+      if (info.isDirectory()) walk(full, path);
+      else out[path] = sha256(full);
+    }
+  };
+  walk(root, "");
+  return out;
 }
 
 function expectLeakRefusal(
@@ -180,27 +260,25 @@ function expectLeakRefusal(
 }
 
 describe("the weekly update leak check (spec FR-4)", () => {
-  it("L1: a new_lines key in the commit set refuses with one line, exit 2, and no commit", () => {
+  it("L1: a new_lines key in a candidate file refuses with one line, exit 2, and leaves docs/ byte-identical with no commit", () => {
     const { root, manifest } = updateRepo("leak-new-lines");
-    writeFileSync(
-      join(root, "docs", "leak-new-lines.json"),
-      `${JSON.stringify({ new_lines: ["seeded-by-red-test"] }, null, 2)}\n`,
-    );
+    writeScore(root, scoreWith({ new_lines: ["seeded-by-red-test"] }));
+    const before = treeHashes(root);
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
     const result = runDocsUpdate(root, manifest);
     expectLeakRefusal(result, root, commits);
+    expect(treeHashes(root), "a refused run leaves docs/ byte-identical").toEqual(before);
   });
 
-  it("L2: a witness key refuses without the raw finding and without a commit", () => {
-    const { root, manifest } = updateRepo("leak-witness");
-    writeFileSync(
-      join(root, "docs", "leak-witness.json"),
-      `${JSON.stringify({ witness: "seeded-by-red-test" }, null, 2)}\n`,
-    );
+  it("L2: a private-path string in a candidate file refuses without the raw finding and without a commit", () => {
+    const { root, manifest } = updateRepo("leak-private-path");
+    const priv = tempDir("private-l2");
+    mkdirSync(join(priv, "sets"), { recursive: true });
+    writeScore(root, scoreWith({ note: priv }));
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
-    const result = runDocsUpdate(root, manifest);
+    const result = runDocsUpdate(root, manifest, priv);
     expectLeakRefusal(result, root, commits);
   });
 
@@ -213,7 +291,7 @@ describe("the weekly update leak check (spec FR-4)", () => {
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(String(Number(commits) + 1));
   });
 
-  it("L4: an operator key in a staged file refuses with one line, exit 2, and no commit", () => {
+  it("L4: a hit in a staged file outside the commit does not refuse", () => {
     const { root, manifest } = updateRepo("leak-staged");
     writeFileSync(
       join(root, "docs", "staged-leak.json"),
@@ -223,6 +301,37 @@ describe("the weekly update leak check (spec FR-4)", () => {
     const commits = git(root, ["rev-list", "--count", "HEAD"]);
 
     const result = runDocsUpdate(root, manifest);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(String(Number(commits) + 1));
+    const committed = git(root, ["show", "--name-only", "--format=", "HEAD"]);
+    expect(committed, "the unrelated file stays out of the commit").not.toContain(
+      join("docs", "staged-leak.json"),
+    );
+  });
+
+  it("F4a: the scan uses the env private input, so a seeded line in a candidate refuses", () => {
+    const seeded = "  const seeded leak marker one;";
+    const priv = seededPrivateDir("f4a", seeded);
+    const { root, manifest } = updateRepo("leak-seeded");
+    writeScore(root, scoreWith({ note: seeded }));
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+    const result = runDocsUpdate(root, manifest, priv);
     expectLeakRefusal(result, root, commits);
+  });
+
+  it("F4b: a missing private input on --docs refuses with a named line and no write or commit", () => {
+    const { root, manifest } = updateRepo("leak-no-private");
+    const missing = join(tempDir("private-missing"), "no-such-dir");
+    const before = treeHashes(root);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+
+    const result = runDocsUpdate(root, manifest, missing);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stdout, "the named private-input refusal on stdout").toBe(
+      "update: no private input\n",
+    );
+    expect(treeHashes(root), "no file of the repo changes").toEqual(before);
+    expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
   });
 });
