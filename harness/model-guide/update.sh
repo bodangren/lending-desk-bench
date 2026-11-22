@@ -1,46 +1,41 @@
 #!/usr/bin/env bash
-# The weekly update of the model guide (spec D19, D21).
+# The weekly update of the model guide (spec D19, D21; PM refresh rule).
 #
-# Usage: update.sh <path of MANIFEST-<date>.txt>
-# Run it with cwd <repo> (FR-5). <repo> is three levels above this script.
-# The manifest is the `MANIFEST-<date>.txt` of spec D16 (Q-S1, Q-S2). The
-# script reads the three dated data files next to it; the date in its name is
-# the read date and the export date (Q-S4).
+# Usage: update.sh [--docs] <path of MANIFEST-<date>.txt>
+# Run it with cwd <repo>. <repo> is three levels above this script. The
+# manifest is the `MANIFEST-<date>.txt` of spec D16 (Q-S1, Q-S2). The script
+# reads the three dated data files next to it; the date in its name is the
+# read date and the export date (Q-S4).
 #
-# The script runs the input check of real-work.ts first, into a temp folder
-# outside the repo. It then writes real-work.json there, runs guide.ts to
-# write model-guide.json there, and copies the two files to one folder.
+# A flagless run is preview-only in both record states. The two data files go
+# into <repo>/.tmp/model-guide-preview; no file under docs/ changes and no
+# commit runs. --docs asks for the docs write. With no stable record it refuses
+# with `update: no approval record` on stdout, exit 2, and no write. With no
+# private input it refuses with `update: no private input` on stdout, exit 2.
 #
-# Before the approval record exists, the two files go into the preview
-# folder only (<repo>/.tmp/model-guide-preview). The script reads no field
-# of the approval record. The gate is the existence of the stable record
-# <repo>/harness/model-guide/publish-approval.md (spec D21).
+# The stable record is <repo>/harness/model-guide/publish-approval.md (the
+# archived consent copy). The script reads no field of the record; the gate is
+# its existence. The private input defaults to
+# $HOME/.local/share/lending-desk-bench/model-guide and MODEL_GUIDE_PRIVATE_DIR
+# overrides it.
 #
-# The --docs flag asks for the docs write. With no stable record, --docs
-# refuses with `update: no approval record` on stdout, exit 2, and no write.
-# A plain run without --docs keeps the preview-only branch.
+# A docs run builds the full candidate set in a staging folder: the two data
+# files, index.html, real-work.html, and the two review outputs when the
+# consumed score differs from the published baseline. It renders through
+# preview.sh and guide.ts. A missing overview template refuses before any
+# write. leak-check.ts scans exactly the candidate files. Only after the render
+# and leak checks pass does the script copy candidates into docs/. A refusal
+# leaves docs/ byte-identical and makes no commit.
 #
-# After the approval, the two files go into <repo>/docs/assets/data/, and
-# preview.sh and guide.ts rebuild docs/index.html and docs/real-work.html.
-# docs/review.html joins them only when a score file changed. One git commit
-# holds the data files plus the rebuilt pages, staged with explicit paths.
-# Another dirty file stays uncommitted. The script never pushes. A rerun
-# with unchanged data exits 0 and makes no commit.
-#
-# Before the commit, leak-check.ts scans the files of the run. A hit refuses
-# with one `update: leak <path>` line on stdout, exit 2, and no commit.
+# One git commit holds the data files plus the rebuilt pages, staged with
+# explicit paths. An unrelated dirty file stays uncommitted. The script never
+# pushes. A commit prints `update: committed <path>` per committed path; a
+# no-op prints `update: no change` and exits 0.
 #
 # A symlink on any path this script writes through is refused with
-# `update: refused path <path>` on stdout, exit 2, before any write, the
-# same way preview.sh refuses a symlink under docs/. The paths are
-# <repo>/docs, <repo>/docs/assets, <repo>/docs/assets/data, the two docs
-# target files, the preview folder and each parent of it inside the repo,
-# and its two target files.
-#
-# A failed input check prints the one `input-check: <check> <file>` line of
-# the tool on stderr, exits 2, and writes no file into the repo: no docs
-# write, no preview folder, no commit. A failed guide.ts run also writes
-# nothing into the repo.
+# `update: refused path <path>` on stdout, exit 2, before any write. A failed
+# input check prints the one `input-check: <check> <file>` line of the tool on
+# stderr, exits 2, and writes no file into the repo.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -69,21 +64,28 @@ GUIDE_DATA="$ROOT/harness/model-guide/data"
 APPROVAL="$ROOT/harness/model-guide/publish-approval.md"
 REAL_WORK_OUT="$ROOT/docs/assets/data/real-work.json"
 MODEL_GUIDE_OUT="$ROOT/docs/assets/data/model-guide.json"
+REVIEW_JSON_OUT="$ROOT/docs/assets/data/review.json"
 INDEX_OUT="$ROOT/docs/index.html"
 REAL_WORK_PAGE="$ROOT/docs/real-work.html"
 REVIEW_PAGE="$ROOT/docs/review.html"
+PRIVATE_DIR="${MODEL_GUIDE_PRIVATE_DIR:-$HOME/.local/share/lending-desk-bench/model-guide}"
 
-# A docs write needs the stable consent record. Refuse before any write.
+# A docs write needs the consent record, a real private input, and the guide
+# section template. Refuse before any write.
 if [ "$DOCS" -eq 1 ] && [ ! -f "$APPROVAL" ]; then
   echo "update: no approval record"
   exit 2
 fi
+if [ "$DOCS" -eq 1 ] && [ ! -d "$PRIVATE_DIR" ]; then
+  echo "update: no private input"
+  exit 2
+fi
+if [ "$DOCS" -eq 1 ] && [ ! -f "$SCRIPT_DIR/pages/guide-section.html" ]; then
+  echo "update: no overview template"
+  exit 2
+fi
 
-# Refuse a symlink on any path this script writes through, before any write
-# (spec D21), the same way preview.sh refuses a symlink under docs/: the
-# three data folders, the two docs target files, the preview folder and each
-# parent of it inside the repo, and its two target files. A linked name
-# takes a write outside its folder.
+# Refuse a symlink on any path this script writes through, before any write.
 PREVIEW_CHAIN=()
 NEXT="$PREVIEW_ABS"
 while [ "$NEXT" != "$ROOT" ] && [ "$NEXT" != "/" ] && [ "$NEXT" != "." ]; do
@@ -91,7 +93,8 @@ while [ "$NEXT" != "$ROOT" ] && [ "$NEXT" != "/" ] && [ "$NEXT" != "." ]; do
   NEXT="${NEXT%/*}"
 done
 for path in "$ROOT/docs" "$ROOT/docs/assets" "$DATA_ABS" "$REAL_WORK_OUT" \
-  "$MODEL_GUIDE_OUT" "${PREVIEW_CHAIN[@]}" "$PREVIEW_ABS/real-work.json" \
+  "$MODEL_GUIDE_OUT" "$REVIEW_JSON_OUT" "$INDEX_OUT" "$REAL_WORK_PAGE" \
+  "$REVIEW_PAGE" "${PREVIEW_CHAIN[@]}" "$PREVIEW_ABS/real-work.json" \
   "$PREVIEW_ABS/model-guide.json"; do
   if [ -L "$path" ]; then
     echo "update: refused path $path"
@@ -113,11 +116,8 @@ if [ "$STATUS" -ne 0 ]; then
   exit "$STATUS"
 fi
 
-# The newest review score file, when Phase 4 wrote one. Without one track A
-# has no rank, which guide.ts accepts. These lines are the shared rule with
-# preview.sh: the file with the newest modification time wins, and a name
-# that holds a newline cannot split the choice, because the test compares
-# whole paths.
+# The newest review score file wins. The whole-path comparison keeps a name
+# with a newline from splitting the choice.
 newest_score_file() {
   local folder="$1"
   local candidate newest=""
@@ -132,9 +132,6 @@ newest_score_file() {
 }
 SCORES="$(newest_score_file "$GUIDE_DATA/review-scores")"
 
-# The review page joins the commit only when the newest score file holds a new
-# result: a route with three complete passes. A file with only incomplete
-# routes keeps the old review page out of the weekly commit.
 score_has_complete_route() {
   local file="$1"
   [ -n "$file" ] && [ -f "$file" ] || return 1
@@ -154,10 +151,6 @@ raise SystemExit(0 if any(
 ) else 1)
 PY
 }
-INCLUDE_REVIEW=0
-if score_has_complete_route "$SCORES"; then
-  INCLUDE_REVIEW=1
-fi
 
 GUIDE_ARGS=(--real-work "$STAGING/real-work.json"
   --print-audit "$GUIDE_DATA/print-audit-2026-11.json"
@@ -176,20 +169,31 @@ if [ "$GUIDE_STATUS" -ne 0 ]; then
   exit "$GUIDE_STATUS"
 fi
 
-if [ ! -f "$APPROVAL" ]; then
+# A flagless run keeps the preview-only branch in both record states.
+if [ "$DOCS" -eq 0 ]; then
   mkdir -p "$PREVIEW_ABS"
   cp "$STAGING/real-work.json" "$PREVIEW_ABS/real-work.json"
   cp "$STAGING/model-guide.json" "$PREVIEW_ABS/model-guide.json"
   exit 0
 fi
 
-mkdir -p "$DATA_ABS"
-cp "$STAGING/real-work.json" "$REAL_WORK_OUT"
-cp "$STAGING/model-guide.json" "$MODEL_GUIDE_OUT"
+# The review outputs join the candidate set when the consumed score differs
+# from the published baseline. Without a published score, a complete route is
+# the new result worth publishing.
+PUBLISH_REVIEW=0
+PUBLISH_SCORE=0
+if [ -n "$SCORES" ]; then
+  if [ -f "$REVIEW_JSON_OUT" ]; then
+    if ! cmp -s "$SCORES" "$REVIEW_JSON_OUT"; then
+      PUBLISH_REVIEW=1
+      PUBLISH_SCORE=1
+    fi
+  elif score_has_complete_route "$SCORES"; then
+    PUBLISH_REVIEW=1
+  fi
+fi
 
-# Rebuild the affected pages through the first-publish path. preview.sh reads
-# the same export and tools and writes only into the staging preview folder,
-# so the docs branch adds no untracked folder to the repo.
+# Render the full candidate set in staging. preview.sh writes only there.
 PAGES_PREVIEW="$STAGING/preview"
 set +e
 bash "$SCRIPT_DIR/preview.sh" --manifest "$MANIFEST_ABS" --preview "$PAGES_PREVIEW"
@@ -198,8 +202,7 @@ set -e
 if [ "$PREVIEW_STATUS" -ne 0 ]; then
   exit "$PREVIEW_STATUS"
 fi
-# A second preview over an already built index leaves blank lines before the
-# guide section. Collapse them so a rerun with unchanged data is byte-stable.
+# A second preview over a built index leaves blank lines before the section.
 python3 - "$PAGES_PREVIEW/index.html" <<'PY'
 import re
 import sys
@@ -215,20 +218,41 @@ text = re.sub(
 with open(path, "w", encoding="utf-8") as handle:
     handle.write(text)
 PY
-cp "$PAGES_PREVIEW/index.html" "$INDEX_OUT"
-cp "$PAGES_PREVIEW/real-work.html" "$REAL_WORK_PAGE"
-REVIEW_PATH=""
-if [ "$INCLUDE_REVIEW" -eq 1 ] && [ -f "$PAGES_PREVIEW/review.html" ]; then
-  cp "$PAGES_PREVIEW/review.html" "$REVIEW_PAGE"
-  REVIEW_PATH="$REVIEW_PAGE"
+if ! grep -q 'id="model-guide"' "$PAGES_PREVIEW/index.html"; then
+  echo "update: no overview template"
+  exit 2
 fi
 
-# Run the leak check over the commit set before git add. The raw finding never
+CAND="$STAGING/candidates"
+mkdir -p "$CAND/docs/assets/data"
+cp "$STAGING/real-work.json" "$CAND/docs/assets/data/real-work.json"
+cp "$STAGING/model-guide.json" "$CAND/docs/assets/data/model-guide.json"
+cp "$PAGES_PREVIEW/index.html" "$CAND/docs/index.html"
+cp "$PAGES_PREVIEW/real-work.html" "$CAND/docs/real-work.html"
+COMMIT_REL=(
+  "docs/assets/data/model-guide.json"
+  "docs/assets/data/real-work.json"
+  "docs/index.html"
+  "docs/real-work.html"
+)
+if [ "$PUBLISH_REVIEW" -eq 1 ]; then
+  cp "$PAGES_PREVIEW/review.html" "$CAND/docs/review.html"
+  COMMIT_REL+=("docs/review.html")
+fi
+if [ "$PUBLISH_SCORE" -eq 1 ]; then
+  cp "$PAGES_PREVIEW/review.json" "$CAND/docs/assets/data/review.json"
+  COMMIT_REL+=("docs/assets/data/review.json")
+elif [ "$PUBLISH_REVIEW" -eq 1 ]; then
+  # The rendered score is still a candidate for the leak scan before it
+  # becomes a published baseline.
+  cp "$PAGES_PREVIEW/review.json" "$CAND/docs/assets/data/review.json"
+fi
+
+# Scan exactly the candidate files in a throwaway repo. The raw finding never
 # reaches stdout: one `update: leak <path>` line is the public refusal.
-PRIVATE_DIR="$ROOT/.tmp/model-guide-private"
 set +e
 LEAK_OUT="$(cd "$ROOT/harness" && npx tsx model-guide/leak-check.ts \
-  --private "$PRIVATE_DIR" --repo "$ROOT" --preview "$PAGES_PREVIEW" 2>/dev/null)"
+  --private "$PRIVATE_DIR" --repo "$CAND" 2>/dev/null)"
 LEAK_STATUS=$?
 set -e
 if [ "$LEAK_STATUS" -ne 0 ]; then
@@ -240,15 +264,25 @@ if [ "$LEAK_STATUS" -ne 0 ]; then
   exit 2
 fi
 
+# All checks passed. Change docs/ only now, by explicit path.
+mkdir -p "$DATA_ABS"
+for rel in "${COMMIT_REL[@]}"; do
+  cp "$CAND/$rel" "$ROOT/$rel"
+done
+COMMIT_PATHS=()
+for rel in "${COMMIT_REL[@]}"; do
+  COMMIT_PATHS+=("$ROOT/$rel")
+done
+
 cd "$ROOT"
-COMMIT_PATHS=("$REAL_WORK_OUT" "$MODEL_GUIDE_OUT" "$INDEX_OUT" "$REAL_WORK_PAGE")
-if [ -n "$REVIEW_PATH" ]; then
-  COMMIT_PATHS+=("$REVIEW_PATH")
-fi
 git add -- "${COMMIT_PATHS[@]}"
-# A weekly rerun with unchanged data exits 0 and makes no commit (spec D19).
-if git diff --cached --quiet -- "${COMMIT_PATHS[@]}"; then
+CHANGED="$(git diff --cached --name-only -- "${COMMIT_PATHS[@]}" | LC_ALL=C sort)"
+if [ -z "$CHANGED" ]; then
+  echo "update: no change"
   exit 0
 fi
 git commit -q -m "data(model-guide): weekly model guide update" \
   -- "${COMMIT_PATHS[@]}"
+while IFS= read -r path; do
+  echo "update: committed $path"
+done <<< "$CHANGED"

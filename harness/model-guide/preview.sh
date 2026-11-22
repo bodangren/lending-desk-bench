@@ -915,6 +915,14 @@ def review_route_rows(scores, pilot_gate):
     claims and the real defects are sums over the passes.
     """
     passes = scores.get("passes") or []
+    if not passes:
+        # A score file may hold the passes inside each route. Use them so an
+        # incomplete route shows its real pass count.
+        for record in scores.get("routes") or []:
+            for item in record.get("passes") or []:
+                row = dict(item)
+                row.setdefault("route", str(record.get("route") or ""))
+                passes.append(row)
     by_route = {}
     for item in passes:
         by_route.setdefault(str(item.get("route") or ""), []).append(item)
@@ -1025,6 +1033,12 @@ def write_review(scores_path):
         review = handle.read()
     routes = [str(record.get("route") or "") for record in (scores.get("routes") or [])]
     passes = scores.get("passes") or []
+    if not passes:
+        for record in scores.get("routes") or []:
+            for item in record.get("passes") or []:
+                row = dict(item)
+                row.setdefault("route", str(record.get("route") or ""))
+                passes.append(row)
 
     def route_passes(route):
         return [item for item in passes if str(item.get("route") or "") == route]
@@ -1045,7 +1059,7 @@ def write_review(scores_path):
         "<!--MODEL-GUIDE:REVIEW-ROWS-->": "\n".join(review_route_rows(scores, PILOT_GATE)),
         "<!--MODEL-GUIDE:REVIEW-CLASSES-->": "\n".join(class_tables),
         "<!--MODEL-GUIDE:REVIEW-SEVERITIES-->": "\n".join(severity_tables),
-        "<!--MODEL-GUIDE:REVIEW-PASSES-->": "\n".join(review_pass_items(scores)),
+        "<!--MODEL-GUIDE:REVIEW-PASSES-->": "\n".join(review_pass_items({"passes": passes})),
         "<!--MODEL-GUIDE:REVIEW-SET-COUNTS-->": (
             f'<li data-mg="review-set-diffs">{counts["diffs"]} diffs</li>\n'
             f'<li data-mg="review-set-plants">{counts["plants"]} plants</li>\n'
