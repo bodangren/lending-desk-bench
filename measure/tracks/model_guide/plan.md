@@ -2805,11 +2805,13 @@ Verify (Phase 4b): the track A first results are in the preview folder by Sun 20
 
 Spec D19, D21.
 
-- [ ] 5.1 The gate package. The orchestrator sends the preview to the PM for
+- [x] 5.1 (8fd8882) The gate package. The orchestrator sends the preview to the PM for
   Daniel: the folder path, the SHA-256 of each new or changed file, and the
   open owner questions.
   - Verify: the PM confirms the receipt.
-- [ ] 5.2 [b] Daniel's word. Waits for Daniel.
+  - Evidence: the PM confirmed receipt on 2026-11-22 (8fd8882, 7 files with SHA-256).
+- [x] 5.2 (8fd8882) Daniel's word. Waits for Daniel.
+  - Recorded in publish-approval.md: PM decision 2026-11-22 under Daniel's standing site-push word of 2026-11-06; push waits for the PM GO line after the page look.
   - The orchestrator writes `measure/tracks/model_guide/publish-approval.md`
     with his words, the date, and the SHA-256 values. Commit it with an
     explicit path.
