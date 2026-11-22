@@ -4,6 +4,9 @@ Date: 2026-11-22.
 
 Approver: PM under Daniel's standing site-push word of 2026-11-06.
 
+approved_by: PM under Daniel standing site-push word 2026-11-06
+date: 2026-11-22
+
 Daniel's words (2026-11-06, the standing site-push word):
 
 "Yes, of course. That is supposed to happen."
@@ -16,16 +19,12 @@ PM decision (2026-11-22):
 
 Push condition: no push runs until the PM GO line after the PM page look.
 
-Preview: folder `.tmp/model-guide-preview/`, built from HEAD 8fd8882.
+Preview: folder `.tmp/model-guide-preview/`, rebuilt on 2026-11-22 after commit 2147dcd.
 
-Approved files (SHA-256 checked on 2026-11-22):
-
-| File | State | SHA-256 |
-|---|---|---|
-| index.html | changed | 52c294b30668020b25dcccbf436e92a1162b542a9af006505ba94f19b056f1f1 |
-| review.html | new | 5c373364f4408ea754d058d20eb0c8019fa8c414ba04b8387335740d4891a28d9 |
-| review.json | new | 8407f108ecefce1088fe9e252ef5e479a8338577c534fcc753c7ca11f1a1b62e |
-| real-work.html | new | 35a71c804547dd87c2389f92f57578423c6c1e3d9ea6c056ec0a3d9f0502509d |
-| real-work.json | new | a5ab25a5e09a8679e3956534441d41e722391e109a11bfac2f350ee10fde1e52 |
-| model-guide.json | new | d667f5ff7c380f2683d6918a0ed3f91e4504fc193392bc1e730191abf6c0d669 |
-| preview-base.json | new | 3a6fbeae705bba4e4c84d2e9a8e4dc6d10922849690c6463409547d64db4ebf |
+files:
+52c294b30668020b25dcccbf436e92a1162b542a9af006505ba94f19b056f1f1  index.html
+e6ed8ff7c77a5dd2fdf4bf507a2faf78ac4934ceb53855132229bcd2ef08af90  review.html
+35a71c804547dd87c2389f92f57578423c6c1e3d9ea6c056ec0a3d9f0502509d  real-work.html
+a5ab25a5e09a8679e3956534441d41e722391e109a11bfac2f350ee10fde1e52  assets/data/real-work.json
+d667f5ff7c380f2683d6918a0ed3f91e4504fc193392bc1e730191abf6c0d669  assets/data/model-guide.json
+dedd725a0e39e8ad57159b3ae0a72bc1b3fd6318ed515b6326ab73dcfee6c003  assets/data/review.json
