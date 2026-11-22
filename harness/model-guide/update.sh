@@ -177,6 +177,14 @@ if [ "$DOCS" -eq 1 ] && [ ! -f "$APPROVAL" ]; then
   echo "update: no approval record"
   exit 2
 fi
+# An explicitly set private input must be an absolute path. A relative path
+# resolves from the caller folder, not from harness/, so refuse it without
+# printing the value. An unset variable keeps the default location.
+if [ "$DOCS" -eq 1 ] && [ -n "${MODEL_GUIDE_PRIVATE_DIR:-}" ] \
+  && [[ "$MODEL_GUIDE_PRIVATE_DIR" != /* ]]; then
+  echo "update: no private input"
+  exit 2
+fi
 if [ "$DOCS" -eq 1 ] && ! private_has_seeded_input "$PRIVATE_DIR"; then
   echo "update: no private input"
   exit 2
