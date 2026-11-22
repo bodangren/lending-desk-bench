@@ -63,7 +63,11 @@ describe("the weekly update executable bit and README wording (spec FR-5)", () =
   it("E2: the README command runs as written, without a bash prefix", () => {
     const root = tempDir("exec-copy");
     mkdirSync(join(root, "harness"), { recursive: true });
-    cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
+    cpSync(SOURCE, join(root, "harness", "model-guide"), {
+      recursive: true,
+      // The real approval record stays out of every fixture.
+      filter: (source) => !source.endsWith("publish-approval.md"),
+    });
     symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
     // No shell, no bash prefix: the documented form executes directly and
     // stops at the usage line when it gets no argument.

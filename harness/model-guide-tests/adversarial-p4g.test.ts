@@ -129,7 +129,11 @@ describe("Phase 4b adversarial score and quota edges", () => {
     const root = temp("preview");
     const repo = join(root, "repo");
     mkdirSync(join(repo, "harness"), { recursive: true });
-    cpSync(join(HARNESS, "model-guide"), join(repo, "harness/model-guide"), { recursive: true });
+    cpSync(join(HARNESS, "model-guide"), join(repo, "harness/model-guide"), {
+      recursive: true,
+      // The real approval record stays out of every fixture.
+      filter: (source) => !source.endsWith("publish-approval.md"),
+    });
     cpSync(join(HARNESS, "..", "docs"), join(repo, "docs"), { recursive: true });
     symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"), "dir");
     const guide = join(repo, "harness/model-guide");

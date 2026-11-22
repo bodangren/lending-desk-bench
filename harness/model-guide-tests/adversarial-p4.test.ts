@@ -232,7 +232,8 @@ function makeRepo(tag: string, options: RepoOptions = {}): string {
     recursive: true,
     filter: (source) => {
       const name = basename(source);
-      return name !== "sets" && !REAL_DATED.test(name);
+      // The real approval record stays out of every fixture.
+      return name !== "sets" && name !== "publish-approval.md" && !REAL_DATED.test(name);
     },
   });
   mkdirSync(join(root, "docs", "assets", "css"), { recursive: true });

@@ -112,7 +112,12 @@ function snap(dir: string): string[] {
 
 function populateRepo(root: string): void {
   mkdirSync(join(root, "harness"), { recursive: true });
-  cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
+  cpSync(SOURCE, join(root, "harness", "model-guide"), {
+    recursive: true,
+    // The real approval record stays out of every fixture; a case that
+    // needs consent writes its own record after the copy.
+    filter: (source) => !source.endsWith("publish-approval.md"),
+  });
   mkdirSync(join(root, "docs", "assets", "css"), { recursive: true });
   mkdirSync(join(root, "docs", "assets", "data"), { recursive: true });
   writeFileSync(join(root, "docs", "index.html"), INDEX_HTML);

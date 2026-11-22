@@ -275,7 +275,12 @@ function toolRepo(tag: string, exportPath?: string): { root: string; exportCopy:
   requireProduction();
   const root = tempDir(tag);
   mkdirSync(join(root, "harness"), { recursive: true });
-  cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
+  cpSync(SOURCE, join(root, "harness", "model-guide"), {
+    recursive: true,
+    // The real approval record stays out of every fixture; a case that
+    // needs consent writes its own record after the copy.
+    filter: (source) => !source.endsWith("publish-approval.md"),
+  });
   mkdirSync(join(root, "docs", "assets", "css"), { recursive: true });
   mkdirSync(join(root, "docs", "assets", "data"), { recursive: true });
   writeFileSync(join(root, "docs", "index.html"), INDEX_HTML);
@@ -642,7 +647,11 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
     const spaced = join(base, "repo with space");
     mkdirSync(spaced, { recursive: true });
     mkdirSync(join(spaced, "harness"), { recursive: true });
-    cpSync(SOURCE, join(spaced, "harness", "model-guide"), { recursive: true });
+    cpSync(SOURCE, join(spaced, "harness", "model-guide"), {
+      recursive: true,
+      // The real approval record stays out of every fixture.
+      filter: (source) => !source.endsWith("publish-approval.md"),
+    });
     mkdirSync(join(spaced, "docs", "assets", "css"), { recursive: true });
     mkdirSync(join(spaced, "docs", "assets", "data"), { recursive: true });
     writeFileSync(join(spaced, "docs", "index.html"), INDEX_HTML);

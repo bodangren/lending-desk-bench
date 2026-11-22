@@ -159,7 +159,12 @@ function printAuditData(tag: string): string {
 function updateRepo(tag: string): { root: string; manifest: string } {
   const root = tempDir(tag);
   mkdirSync(join(root, "harness"), { recursive: true });
-  cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
+  cpSync(SOURCE, join(root, "harness", "model-guide"), {
+    recursive: true,
+    // The real approval record stays out of every fixture; a case that
+    // needs consent writes its own record after the copy.
+    filter: (source) => !source.endsWith("publish-approval.md"),
+  });
   mkdirSync(join(root, "docs", "assets", "css"), { recursive: true });
   mkdirSync(join(root, "docs", "assets", "data"), { recursive: true });
   writeFileSync(join(root, "docs", "index.html"), INDEX_HTML);
@@ -223,7 +228,12 @@ describe("the weekly update approval path (spec FR-1, FR-2)", () => {
   it("A2: publish.ts refuses when the stable record is absent, even with an old-path record", () => {
     const root = tempDir("publish-no-stable");
     mkdirSync(join(root, "harness"), { recursive: true });
-    cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
+    cpSync(SOURCE, join(root, "harness", "model-guide"), {
+    recursive: true,
+    // The real approval record stays out of every fixture; a case that
+    // needs consent writes its own record after the copy.
+    filter: (source) => !source.endsWith("publish-approval.md"),
+  });
     symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"));
     // An old-path record only: the new tool must not read it.
     const oldDir = join(root, "measure", "tracks", "model_guide");

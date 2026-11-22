@@ -788,7 +788,7 @@ describe("ADV-R runner block: concurrency, hostile review data, and filter words
     mkdirSync(guideDir, { recursive: true });
     copyIfPresent(PREVIEW_SOURCE, join(guideDir, "preview.sh"), 0o755);
     for (const name of readdirSync(join(HARNESS, "model-guide"))) {
-      if (["sets", "data"].includes(name)) continue;
+      if (["sets", "data", "publish-approval.md"].includes(name)) continue;
       const from = join(HARNESS, "model-guide", name);
       const to = join(guideDir, name);
       try {

@@ -32,7 +32,12 @@ function sha256(path: string): string {
 function repo(tag: string): string {
   const root = temp(tag);
   mkdirSync(join(root, "harness"), { recursive: true });
-  cpSync(SOURCE, join(root, "harness", "model-guide"), { recursive: true });
+  cpSync(SOURCE, join(root, "harness", "model-guide"), {
+    recursive: true,
+    // The real approval record stays out of every fixture; a case that
+    // needs consent writes its own record after the copy.
+    filter: (source) => !source.endsWith("publish-approval.md"),
+  });
   symlinkSync(join(HARNESS, "node_modules"), join(root, "harness", "node_modules"), "dir");
   mkdirSync(join(root, "docs", "assets", "css"), { recursive: true });
   mkdirSync(join(root, "docs", "assets", "data"), { recursive: true });

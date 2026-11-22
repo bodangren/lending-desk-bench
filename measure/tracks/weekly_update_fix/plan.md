@@ -62,7 +62,10 @@ Spec FR-1 to FR-5, EV1 to EV4.
     the stable write, as Green's proof showed. Red r3 (2026-11-22): moved
     the publish fixtures of adversarial.test.ts to the stable path as well,
     so all 46 cases pass at HEAD and the neutralized run fails with the
-    shadowing sha256 refusal.
+    shadowing sha256 refusal. Red r4 (2026-11-22): excluded the real
+    approval record from every tool-folder fixture copy, so no-record cases
+    still see no record once Green adds the real record; consent cases keep
+    writing their own fixture record.
 - [~] 1.2 Red and Green. The HTML refresh (spec FR-3, Review A 5 F2).
   - Red: write `harness/model-guide-tests/update-pages.test.ts` and no other file.
     Pin that after the approval `update.sh` rebuilds `index.html` and `real-work.html`
