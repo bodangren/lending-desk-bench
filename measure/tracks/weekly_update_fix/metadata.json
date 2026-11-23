@@ -1,1 +1,48 @@
-{"actual_tasks":null,"author_model":"opencode-go/muse-spark-1.3-contributor#high (Muse)","created":"2026-11-22","deadline":"2026-11-23","description":"Weekly update fix: the stable approval path, the HTML refresh, the leak check, and the executable bit. The track also carries the moved model_guide rows 4.11 (deferred pilot gate) and 5.4 (the first weekly update).","estimated_tasks":6,"id":"weekly_update_fix","source":{"dependencies":["model_guide"],"evidence":"spec.md EV1-EV5, measured 2026-11-22 at HEAD 0b75b9c","method":"PM 2026-11-22: fix the weekly update before the next weekly export (expected about 2026-11-24)","related_tracks":[]},"status":"new","title":"Weekly update fix: approval path, page refresh, leak check, and executable bit"}
+{
+  "actual_tasks": null,
+  "author_model": "opencode-go/muse-spark-1.3-contributor#high (Muse)",
+  "created": "2026-11-22",
+  "deadline": "2026-11-23",
+  "description": "Weekly update fix: the stable approval path, the HTML refresh, the leak check, and the executable bit. The track also carries the moved model_guide rows 4.11 (deferred pilot gate) and 5.4 (the first weekly update).",
+  "estimated_tasks": 6,
+  "id": "weekly_update_fix",
+  "source": {
+    "dependencies": [
+      "model_guide"
+    ],
+    "evidence": "spec.md EV1-EV5, measured 2026-11-22 at HEAD 0b75b9c",
+    "method": "PM 2026-11-22: fix the weekly update before the next weekly export (expected about 2026-11-24)",
+    "related_tracks": []
+  },
+  "status": "new",
+  "title": "Weekly update fix: approval path, page refresh, leak check, and executable bit",
+  "escalation": {
+    "rounds": [
+      {
+        "round": "r6",
+        "reason": "Routed Review A pass-1 nits F1-F6 and Review C nits F7-F9: flag-selected docs branch, score-change rebuild, candidate-set leak scan, seeded private input, refusal ordering, commit log lines.",
+        "implementation": "00d9013",
+        "evidence": "a4e85da"
+      },
+      {
+        "round": "r7",
+        "reason": "Review A F15: a missing review template with a changed score published a fresh score beside a stale page.",
+        "implementation": "60e24f1",
+        "evidence": "c7862a2"
+      },
+      {
+        "round": "r9",
+        "reason": "Adversarial F1: an empty private dir passed the guard and shipped a planted seed; added the seeded-input guard and synthetic private fixtures.",
+        "implementation": "dbed5ee",
+        "evidence": "5905296"
+      },
+      {
+        "round": "r10",
+        "reason": "Review B F1: a relative private dir split the guard and the scan. PM ruling in the Red r10 log: refuse a relative value, do not resolve it.",
+        "implementation": "3911952",
+        "evidence": "ddd82b5"
+      }
+    ],
+    "pm_decision": "2026-11-23: Phase 2 tasks 2.1 and 2.2 stay deferred; closeout runs with the frozen board."
+  }
+}

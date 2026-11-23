@@ -312,3 +312,31 @@ These findings were raised after the round cap. Each source JSON records score-i
 - UX 5 F2: at 390 px the named table region takes focus, but ArrowRight and ArrowLeft do not scroll it. Pointer and touch scrolling work (`ux-browser-5-3ba285f.json`).
 
 None of these findings is a key leak into a committed file or a public page. None has score impact: none can hide a wrong result in the current scores or the published page.
+
+## 2026-11-23 — weekly_update_fix Phase 1 late findings (routed 2026-11-23, PM 2026-11-23)
+
+Phase 1 closed with these nonblocking findings. Fixed items name the Green commit that closed them. Open items wait for a future round. Each source JSON records its own score impact.
+
+- F1 (Review B pass 3, fixed): a relative `MODEL_GUIDE_PRIVATE_DIR` split the guard and the scan, so a seeded plant could ship. Green r10 (3911952) refuses a non-absolute value before any write. Score-impact was yes, now none (`review-b-p1-5905296.json`, `review-b-p1-ddd82b5.json`).
+- F2 (adversarial pass 1, fixed): an empty private dir passed the guard and shipped a planted seed into `docs/index.html`. Green r9 (dbed5ee) added the seeded-input guard. Score-impact was yes, now none (`adversarial-p1-6c95b51.json`).
+- F16 (Review A): a first publication without a baseline publishes the page but not the score file. The real repo tracks the file, so the weekly run takes the other branch. Score-impact: no (`review-a-p1-a4e85da.json`).
+- F16 (Review C): the README and task 2.1 omit `update: committed <path>`, `update: no change`, and the score-change `review.json` commit. Score-impact: no (`review-c-p1-6c95b51.json`).
+- F18 (Review A): the README omits the review outputs and the new refusals. The run log still names every committed path. Score-impact: no (`review-a-p1-a4e85da.json`).
+- F19 (Review A): the guard counts Unicode code points while `leak-check.ts` counts UTF-16 units. Ten astral characters fail the guard before any write. It fails closed. Score-impact: no (`review-a-p1-5905296.json`).
+- F20 (Review A): an empty-string `MODEL_GUIDE_PRIVATE_DIR` falls back to the guarded default instead of refusing. It fails closed. Score-impact: no (`review-a-p1-ddd82b5.json`).
+- F21 (Review C): the README and task 2.1 omit the private-input contract (absolute path, seeded line shape, default location, refusal). Score-impact: no (`review-c-p1-ddd82b5.json`).
+- F22 (phase acceptance): the P2B2-2 mtime race also fails at base 35a059c (2 of 4 ext4 runs), so Phase 1 did not cause it. Score-impact: no (`phase-acceptance-p1-019568c.json`).
+- F23 (phase acceptance): test-strategy case 7 (`BENCH_TRACK=change`) has no test. No tool reads the variable. Score-impact: no (`phase-acceptance-p1-019568c.json`).
+- F24 (phase acceptance): the record gaps. The plan now holds Late finding lines and `metadata.json` holds the `escalation` key. Score-impact: no (`phase-acceptance-p1-019568c.json`).
+- F25 (phase acceptance): spec D4 and test-strategy L1 describe a scan after the copy, while `update.sh` scans the staged set before the copy, which is safer. Score-impact: no. The spec owner updates the wording (`phase-acceptance-p1-019568c.json`).
+- F6 (Review A): the FR-1 to FR-5 claim exceeds the proven cases. Score-impact: no (`review-a-p1-8ceb628.json`).
+- Review B pass-1 nit: a scanner error with empty stdout yields `update: leak ` with an empty path. It fails closed. Score-impact: no (`review-b-p1-8ceb628.json`).
+- Review B F2 (pass 3): a `--`-prefixed private path prints a false leak line. The run still refuses before any write. Score-impact: no (`review-b-p1-5905296.json`).
+- Review B stale-verify (pass 2): plan.md:180 and test-strategy.md:201 name the old leak-check invocation. The old command over-scans, so it never under-scans. Score-impact: no (`review-b-p1-6c95b51.json`).
+- Review C F10: the usage line omits the supported `--docs` flag. Score-impact: no (`review-c-p1-8ceb628.json`).
+- Review C F11: the README names docs-relative data paths for a preview-only run. Score-impact: no (`review-c-p1-8ceb628.json`).
+- Review C F12: the Phase 2 precheck changes directory, so the next line in the same shell exits 127. Score-impact: no (`review-c-p1-8ceb628.json`).
+- Review C F13: a rerun on a later calendar date can commit only the date field. Score-impact: no (`review-c-p1-8ceb628.json`).
+- Review C F14: `publish.ts` prints one line per drifted path against its one-line promise. It predates the phase. Score-impact: no (`review-c-p1-8ceb628.json`).
+- 2.1 The first weekly update (row 5.4, deferred): it waits for the PM export. Reopen trigger: the board unfreezes. Score-impact: none yet; the run has not happened.
+- 2.2 The pilot gate (row 4.11, deferred): it waits for the PM word for new nights. Reopen trigger: the board unfreezes. Score-impact: none; one pass per route on `mg-2026-11a` already shows incomplete 1 of 3 passes.

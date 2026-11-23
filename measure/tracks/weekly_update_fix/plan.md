@@ -176,6 +176,30 @@ Green r6 evidence (2026-11-23, implementation commit 00d9013c8f7ae1b9b29db9dfd50
 
 Green r7 evidence (2026-11-23, implementation commit 60e24f163ec4bcd393c6415d0424a0d978dc6fee): the nine files of the Green line each exited 0 with `--maxWorkers=1 --reporter=dot`. `update-pages` 12 passed, `update-approval` 6 passed, `update-leak` 6 passed, `update-exec` 6 passed, `update` 9 passed, `preview-gate` 122 passed on its first run, `adversarial-p5` 5 passed, `adversarial` 46 passed, `adversarial-p2` 13 passed. `bash -n` on `update.sh` and `preview.sh` exited 0. The index still shows mode `100755`. `preview.sh` did not change in this round. No `docs/` change and no push.
 
+### Late findings (routed 2026-11-23; nonblocking findings go to tech debt)
+
+- Late finding F1: Review B pass 3 (`review-b-p1-5905296.json`) found that a relative `MODEL_GUIDE_PRIVATE_DIR` splits the guard and the scan. Green r10 fixed it (3911952) by refusing a non-absolute value. Score-impact: yes before the fix, none after.
+- Late finding F2: adversarial pass 1 (`adversarial-p1-6c95b51.json`) found that an empty private dir passes the guard and ships a planted seed. Green r9 fixed it (dbed5ee) with the seeded-input guard. Score-impact: yes before the fix, none after.
+- Late finding F16 (Review A, `review-a-p1-a4e85da.json`): a first publication without a baseline publishes the page but not the score file. The real repo tracks the file, so the weekly run takes the other branch. Score-impact: no. Tech debt.
+- Late finding F16 (Review C, `review-c-p1-6c95b51.json`): the README and task 2.1 omit `update: committed <path>`, `update: no change`, and the score-change `review.json` commit. Score-impact: no. Tech debt.
+- Late finding F18: Review A (`review-a-p1-a4e85da.json`) found that the README omits the review outputs and the new refusals. The run log still names every committed path. Score-impact: no. Tech debt.
+- Late finding F19: Review A (`review-a-p1-5905296.json`) found that the guard counts Unicode code points while `leak-check.ts` counts UTF-16 units. Ten astral characters fail the guard with `update: no private input` before any write. It fails closed. Score-impact: no. Tech debt.
+- Late finding F20: Review A (`review-a-p1-ddd82b5.json`) found that an empty-string `MODEL_GUIDE_PRIVATE_DIR` falls back to the guarded default instead of refusing. No path shows a skipped scan. It fails closed. Score-impact: no. Tech debt.
+- Late finding F21: Review C (`review-c-p1-ddd82b5.json`) found that the README and task 2.1 omit the private-input contract. Score-impact: no. Tech debt.
+- Late finding F22: phase acceptance (`phase-acceptance-p1-019568c.json`) found the P2B2-2 mtime race. It exists at base 35a059c (2 of 4 ext4 runs failed there). Score-impact: no. Tech debt.
+- Late finding F23: phase acceptance found that test-strategy case 7 (`BENCH_TRACK=change`) has no test. No tool reads the variable. Score-impact: no. Tech debt.
+- Late finding F24: phase acceptance found record gaps. This edit adds the Late finding lines, and the fix-round record fills the `escalation` key. Score-impact: no.
+- Late finding F25: phase acceptance found that spec D4 and test-strategy L1 describe a scan after the copy. `update.sh` scans the staged set before the copy, which is safer. Score-impact: no. The spec owner updates the wording.
+- Late finding F6: Review A (`review-a-p1-8ceb628.json`) found that the FR-1 to FR-5 claim exceeds the proven cases. Score-impact: no. Tech debt.
+- Late finding B-nit (pass 1, `review-b-p1-8ceb628.json`): a scanner error with empty stdout yields `update: leak ` with an empty path. It fails closed. Score-impact: no. Tech debt.
+- Late finding B-F2 (pass 3, `review-b-p1-5905296.json`): a `--`-prefixed private path prints a false leak line. The run still refuses before any write. Score-impact: no. Tech debt.
+- Late finding B-stale-verify (pass 2, `review-b-p1-6c95b51.json`): plan.md:180 and test-strategy.md:201 name the old leak-check invocation. The old command over-scans, so it never under-scans. Score-impact: no. Tech debt.
+- Late finding C-F10: the usage line omits `--docs` (`review-c-p1-8ceb628.json`). Score-impact: no. Tech debt.
+- Late finding C-F11: the README names docs-relative data paths for a preview-only run. Score-impact: no. Tech debt.
+- Late finding C-F12: the Phase 2 precheck changes directory, so the next line in the same shell exits 127. Score-impact: no. Tech debt.
+- Late finding C-F13: a rerun on a later date can commit only the date field. Score-impact: no. Tech debt.
+- Late finding C-F14: `publish.ts` prints one line per drifted path against its one-line promise. It predates the phase. Score-impact: no. Tech debt.
+
 ## Phase 2: The first weekly update and the deferred pilot gate
 
 Moved rows 4.11 and 5.4 of `measure/archive/model_guide/plan.md` (PM 2026-11-22).
@@ -190,6 +214,7 @@ Moved rows 4.11 and 5.4 of `measure/archive/model_guide/plan.md` (PM 2026-11-22)
     and the commit holds only the data files plus those pages by explicit path. The
     command is `cd harness && npx tsx model-guide/leak-check.ts --private <private> --repo .. --preview ../.tmp/model-guide-preview`,
     then the `update.sh` run.
+  - deferred (PM 2026-11-23): reopen when the board unfreezes. The benchmark board is frozen, and the daily benchmark has not run since 2026-11-16.
 - [b] 2.2 Deferred: the pilot gate (row 4.11). It needs the PM word for new nights
   before it runs. Copied text from `measure/archive/model_guide/plan.md`:
   - [b] 4.11 deferred (PM 2026-11-22) The pilot gate (spec D13, OD7). The pilot set `mg-2026-11p` runs (deferred:PM)
@@ -225,6 +250,7 @@ Moved rows 4.11 and 5.4 of `measure/archive/model_guide/plan.md` (PM 2026-11-22)
       and runs the pilot again. After 2 reseeds the orchestrator sends the set
       to the PM.
     - Deferred (PM 2026-11-22): the pilot set mg-2026-11p never got its 2 passes per route (nights 1 and 2 gave no pass: probe refusals, then the BENCH_SERVER_BASE refusal). The PM ruled no extra nights; one pass per route on mg-2026-11a is enough to see if a route is far off, and each route shows incomplete: 1 of 3 passes. The D13 spread check and the D4 change did not run; they wait for the next set.
+  - deferred (PM 2026-11-23): reopen when the board unfreezes. The benchmark board is frozen, and the daily benchmark has not run since 2026-11-16.
 
 Verify (Phase 2): the first weekly update ran with the fixed `update.sh`, and row 4.11
 stays deferred until the PM gives the word for new nights.
