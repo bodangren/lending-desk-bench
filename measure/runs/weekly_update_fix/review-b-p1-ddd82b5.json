@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "role": "review-b",
+  "track": "weekly_update_fix",
+  "phase": "Phase 1: Red and Green for items 1 to 4",
+  "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "audited_head_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "status": "pass",
+  "security_applicability": "applicable",
+  "applicable_reason": "The range since pass 3 adds a private-input relativity guard in update.sh, three adversarial cases that pin it, and plan evidence; the whole range wires a gate in front of a leak scan that protects private data, so the security and data-handling flows apply.",
+  "summary": "Fourth security and data-handling pass over 35a059c..ddd82b5. HEAD equals the supplied shas and is current. The pass-3 blocking finding F1 is closed. Green 3911952 makes update.sh:183-187 refuse a set MODEL_GUIDE_PRIVATE_DIR that does not start with / on --docs, exit 2, before any write or commit, and the refusal prints no value. The guard (update.sh:188) and the leak scan (update.sh:316-317) read the identical $PRIVATE_DIR string, so no env value splits the two roots. The test file passed all 20 cases at HEAD, including the three relative-value refusals. A 75-check probe run in throwaway temp repos confirmed the refusals for relative, tilde, space-only, trailing-newline, and unresolvable-dotdot values, the leak refusal for a resolvable dotdot value, a symlinked private dir, and a clean absolute run that commits. No new blocking or nonblocking finding.",
+  "evidence": [
+    "git rev-parse HEAD = ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d, equal to role_base_sha and audited_head_sha; git status --short prints only the untracked .opencode/ and harness/wt.txt, both outside the range; the audited HEAD is current.",
+    "Range since pass 3: 1414c09 (adversarial-wuf.test.ts + plan.md, three relative cases), 3911952 (update.sh only, +8 lines: the relative guard and its comment), ddd82b5 (plan.md evidence, +1 line). git diff --stat 35a059c..ddd82b5 -- docs/ is empty: no docs/ change in the range.",
+    "F1 closure, guard: update.sh:183-187 refuses a set, non-empty MODEL_GUIDE_PRIVATE_DIR that does not start with / on --docs with 'update: no private input', exit 2, before the staging folder (update.sh:221) and before any write or commit; the refusal line prints no part of the value.",
+    "F1 closure, single root: update.sh:71 captures PRIVATE_DIR once; the guard at update.sh:188 and the scan call at update.sh:316-317 pass the identical string, so no value can make the guard and the scan read two folders. The relative guard sits above both, so every non-absolute value is refused first.",
+    "F1 closure, tests: adversarial-wuf.test.ts:306-316 (bare 'private-input' under the repo root) and 318-330 (./private and ../wuf-rel-x) assert exit 2, stdout exactly 'update: no private input', a byte-identical temp tree, unchanged HEAD count, unchanged commit set, the planted seed absent from docs, and the seed and the value never printed. The full file passed 20 cases at HEAD with --maxWorkers=1.",
+    "Probe run (node measure/runs/weekly_update_fix/wuf-probe-b.mjs, 75 checks, all passed, every temp folder removed at the end): relative values 'private-input', './private-input', '../wuf-probe-x-<pid>' with valid seeded folders under the repo root each refuse with exit 2, docs byte-identical, no commit, no value or seed printed; '~/wuf-probe-private' and a space-only value refuse the same way; an absolute value with a trailing newline refuses fail-closed; an unresolvable 'x/../private' absolute value refuses fail-closed; a resolvable 'x/../private' absolute value passes the guard and a planted seeded line is refused with 'update: leak docs/index.html'; a symlinked private dir passes the guard and the plant is refused the same way; an absolute valid value with a plant refuses with 'update: leak docs/index.html' and no raw seed printed; an absolute valid clean run exits 0, commits once, prints 'update: committed docs/index.html', and never prints the private path.",
+    "Guard and scan equivalence: private_has_seeded_input (update.sh:128-171) parses '^L(\\d+|---) [-+](.*)$', needs 20 characters, and compares against the src body set; leak-check.ts seededLines (leak-check.ts:115-137) parses the same shape with bodyTexts (leak-check.ts:104-111) and the same 20-character rule. Both follow symlinks through the OS with the same literal, and a leak-check crash or unreadable diff file exits non-zero, which update.sh:320-327 turns into a refusal before any write. The only way the scan can read zero secrets after the guard passed is a mid-run swap of the private folder by another process on the operator's own machine; no tool input or test path reaches it.",
+    "No key shape or private path in the committed range: git diff 35a059c..ddd82b5 --no-color -G '(sk-[A-Za-z0-9]|api[_-]?key|BEGIN [A-Z ]*PRIVATE|\\.local/share/lending)' matches only update.sh comment lines that document the default location and the env override; every fixture seed line is a synthetic marker of the form 'private-seed-<tag>-must-not-ship'.",
+    "Push boundary: grep 'push' harness/model-guide/update.sh finds only the comment 'The script never pushes.' (update.sh:31-33); the git calls of the run are add, diff --cached, and commit only (update.sh:340-347).",
+    "A2 consent gate: update.sh:176-179 still refuses --docs without the stable consent record before any write or commit; publish-approval.md is unchanged in the range since pass 3, so the pass-2 byte-equal verification against the archived record stands; the flagless branch stays preview-only (update.sh:251-256).",
+    "A6 registry: measure/tracks.md:17-18 and :34 list weekly_update_fix with status 'new', due Mon 2026-11-23; no resolved security claim exists. The plan r10 evidence (plan.md:125) claims 20 adversarial cases passed and matches the observed run of 20."
+  ],
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "prior_findings_status": "Pass-3 F1 (blocking) is closed by Green 3911952 and pinned by Red 1414c09; this pass confirmed the closure with the suite run and the probe run. The pass-3 F2 nit (a private path that starts with '--' prints a false leak line) stays routed to tech debt per the PM 2026-11-23 rule and is not re-raised. Review A F19 and F20 stay routed nonblocking tech-debt; F20 (an explicitly empty value falls back to the guarded default) is unchanged and still validated by the seeded-input guard. No CONTEST items reached this pass, so no finding was kept or withdrawn.",
+  "A2_consent_gate_check": "pass: the --docs write needs the stable consent record before any write or commit (update.sh:176-179); the record is unchanged since pass 3 and the flagless run stays preview-only.",
+  "A6_registry_overstatement_check": "pass: measure/tracks.md claims only status 'new' for weekly_update_fix; the plan r10 evidence claims 20 adversarial cases and the observed run passed 20.",
+  "commands": [
+    "git rev-parse HEAD (ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d)",
+    "git status --short (only untracked .opencode/ and harness/wt.txt)",
+    "git log --oneline 35a059c..ddd82b5 (24 commits)",
+    "git diff --stat 35a059c..ddd82b5 (23 files, 2478 insertions)",
+    "git diff --stat 35a059c..ddd82b5 -- docs/ (empty)",
+    "git show 1414c09 --stat (test file + plan.md)",
+    "git show 3911952 --stat (update.sh only, +8)",
+    "git show ddd82b5 --stat (plan.md only, +1)",
+    "npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot (20 passed, exit 0)",
+    "node measure/runs/weekly_update_fix/wuf-probe-b.mjs (75 probe checks, all passed, temp folders removed)",
+    "git diff 35a059c..ddd82b5 --no-color -G '(sk-[A-Za-z0-9]|api[_-]?key|BEGIN [A-Z ]*PRIVATE|\\.local/share/lending)' (only documented default-path comments in update.sh)",
+    "grep push harness/model-guide/update.sh (comment only, update.sh:32)"
+  ],
+  "changed_files": [
+    "README.md",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4.test.ts",
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "harness/model-guide-tests/adversarial-p5.test.ts",
+    "harness/model-guide-tests/adversarial-wuf.test.ts",
+    "harness/model-guide-tests/adversarial.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/update-approval.test.ts",
+    "harness/model-guide-tests/update-exec.test.ts",
+    "harness/model-guide-tests/update-leak.test.ts",
+    "harness/model-guide-tests/update-pages.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish-approval.md",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/weekly_update_fix/plan.md",
+    "measure/tracks/weekly_update_fix/spec.md",
+    "measure/tracks/weekly_update_fix/test-strategy.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "update.sh:183-187 refuses every set non-absolute MODEL_GUIDE_PRIVATE_DIR before any write, and the probe run shows a resolvable dotdot value, a symlinked dir, and a clean absolute value all pass the same guard root the scan reads, with the planted seeds refused (update: leak docs/index.html)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "adversarial-wuf.test.ts:306-330 pins the three relative refusals end to end (exit 2, byte-identical tree, unchanged HEAD, never-printed value) and Red 1414c09 failed first, but no in-suite case covers the tilde, space, newline, or dotdot-inside values that only the /tmp probe checked."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git show --stat: 1414c09 touched only the test file and plan evidence, 3911952 touched only update.sh (+8 lines), ddd82b5 touched only plan.md; git diff --stat 35a059c..ddd82b5 -- docs/ is empty."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim has a command result: the suite run (20 passed), the 75-check probe run with cleanup, the range diff greps, and file reads at update.sh:71-347 and leak-check.ts:115-137."
+    }
+  ]
+}

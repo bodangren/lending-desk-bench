@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "weekly_update_fix",
+  "phase": "Phase 1: Red and Green for items 1 to 4",
+  "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "019568c7cf3098a68238aa236c08a8309e122953",
+  "audited_head_sha": "019568c7cf3098a68238aa236c08a8309e122953",
+  "audited_head": "019568c7cf3098a68238aa236c08a8309e122953",
+  "allowed_test_only_commits": [
+    "019568c7cf3098a68238aa236c08a8309e122953 test(weekly_update_fix): adversarial phase 1 round 2 (changes harness/model-guide-tests/adversarial-wuf.test.ts only)"
+  ],
+  "status": "pass",
+  "summary": "Phase 1 passes acceptance at HEAD 019568c. All four tasks carry [x] and a commit SHA inside the phase range. Nine of the ten listed test files exit 0 in place. The preview-gate file fails in place on case P2B2-2 in both allowed runs. The same race fails at phase base 35a059c on the same filesystem, so Phase 1 did not cause it. Four nonblocking findings go to tech debt.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F22 [Nit] phase-acceptance: Case P2B2-2 of preview-gate.test.ts failed in both in-place runs, with 121 passed and 1 failed. populateRepo (preview-gate.test.ts:246-253) copies the real score file mg-2026-11a.json into each temp repo with a fresh mtime. The case plants its own score file with new Date(), so the copied file can tie or win newest_score_file (preview.sh:168-180, unchanged by this phase). Case V2 of the same file fails the same way. The race exists at base 35a059c: 2 of 4 ext4 runs failed there. Fix later: leave data/review-scores out of the fixture copy, or plant a future mtime. score-impact: no.",
+    "F23 [Nit] phase-acceptance: Test-strategy section 6 case 7 (a run under BENCH_TRACK=change) has no test. No tool of the update chain reads BENCH_TRACK, and each fixture deletes it, so no wrong result follows. Route to tech debt, or amend the strategy. score-impact: no.",
+    "F24 [Nit] phase-acceptance: Record gaps for the closeout. plan.md holds no `Late finding <id>:` line. metadata.json holds no `escalation` key, although Green made fix rounds r6, r7, r9, and r10, and the PM ruling for r10 appears only in the Red r10 log. Finding ids F1, F2, and F16 repeat across roles, so F16 names two findings (review-a at a4e85da and review-c at 6c95b51). The first-line sha of task 1.3 (00d9013) predates its r9 and r10 evidence lines. score-impact: no.",
+    "F25 [Nit] phase-acceptance: Spec D4 and test-strategy L1 say the leak scan runs after the copy and before git add. update.sh:313-333 scans the staged candidate set before any copy into docs/. This order is safer, and L1 pins a byte-identical docs/. The spec owner updates the wording. score-impact: no."
+  ],
+  "evidence": [
+    "git rev-parse HEAD and git rev-parse 019568c both print 019568c7cf3098a68238aa236c08a8309e122953. git status --short prints only the untracked .opencode/ and harness/wt.txt.",
+    "The phase base 35a059c7d4e1e13a4a20c16342f0136bb609225f is the test-strategy commit and an ancestor of HEAD. The phase diff holds 23 files and none under docs/.",
+    "Tasks 1.1 to 1.4 carry [x] with the shas 00d9013, 60e24f1, 00d9013, and c4d70a1. Each sha resolves to a commit inside 35a059c..HEAD. The checker reports incomplete_phases 0.",
+    "Seven distinct commits cited in the Phase 1 plan block resolve inside the range: 00d9013, 3911952, 53510bb, 60e24f1, 8fdbcf1, c4d70a1, and dbed5ee. Each subject matches the claim that cites it.",
+    "The four prerequisite results (review-a, review-b, review-c, adversarial) target ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d. Each has status pass, no blocking finding, and empty violation lists.",
+    "git diff --stat ddd82b5 HEAD shows one file: harness/model-guide-tests/adversarial-wuf.test.ts, 53 insertions. Commit 019568c is the only test-only commit that this acceptance allows. No production file changed after the four results.",
+    "Three blockers occurred in this phase: review-a F15, adversarial F1, and review-b F1. Green fixed them in 60e24f1, dbed5ee, and 3911952. The final reviews at ddd82b5 passed with no open blocker.",
+    "Test runs at HEAD, one file at a time with --configLoader native --maxWorkers=1 --reporter=dot, all exit 0: update-pages 12 passed, update-approval 6, update-leak 6, update-exec 6, update 9.",
+    "Same method, all exit 0: adversarial-p5 5 passed, adversarial 46, adversarial-p2 13, and adversarial-wuf 24 (20 at ddd82b5 plus 4 added in 019568c).",
+    "Files that the phase edited or the strategy lists, all exit 0: adversarial-p4g 4 passed, guide 18, real-work 16, adversarial-p4 24, adversarial-p4-runner 16, leak-check 22.",
+    "preview-gate in place: the first run and the one rerun both exit 1 with 121 passed and 1 failed (case P2B2-2). Case P2B2-2 alone passed in 6 of 6 runs.",
+    "preview-gate on tmpfs exports of HEAD and of base 35a059c: 122 passed in 3 of 3 runs each. On ext4 exports, HEAD failed 2 of 3 runs on P2B2-2.",
+    "On ext4 exports of base 35a059c, preview-gate failed 2 of 4 runs: case V2 once and case P2B2-2 once. The race therefore exists before Phase 1.",
+    "Mechanism: preview-gate.test.ts:246-253 copies the real harness/model-guide/ tree, including data/review-scores/mg-2026-11a.json, with a fresh mtime. Case P2B2-2 (line 2217) plants its score file with new Date().",
+    "Phase 1 changed preview-gate.test.ts only in the approval fixtures. newest_score_file (preview.sh:168-180) did not change. The ext4 and tmpfs results differ, which points to filesystem timing and not to product code.",
+    "bash -n exits 0 for update.sh and preview.sh. The PROJECT_LINT loop over the five harness/model-guide/*.sh files exits 0.",
+    "git ls-files -s harness/model-guide/update.sh prints mode 100755. rg finds no old approval path in harness/model-guide/ and no 'only those two paths' line in README.md.",
+    "git status --short docs/ prints nothing. git diff --stat 35a059c HEAD prints nothing for docs/ and for harness/tests. No commit in the range touches docs/.",
+    "preview.sh changed only in commit 00d9013. A read-only preview run into a temp folder produced review.html and review.json byte-identical to docs/review.html and docs/assets/data/review.json.",
+    "Role separation holds. Red commits touch test files and plan.md evidence only. Green commits touch no test file. Commit c4d70a1 also edits spec.md (the D3 PM rule text).",
+    "FR-1: update.sh:64 and publish.ts:62 read harness/model-guide/publish-approval.md. FR-2: update.sh:176-179 refuses --docs without the record, and a flagless run stays preview-only (update.sh:251-256).",
+    "FR-3 and FR-4: update.sh renders candidates in staging (258-311), scans them with leak-check.ts (313-327), and copies into docs/ only after both pass (329-333).",
+    "update.sh stages and commits by explicit path (340-347) and holds no push command. The update-pages and update-leak tests pin the commit sets and byte-identical refusals.",
+    "FR-5: README.md:285-293 states the preview-only branch and the docs branch separately, names the command without a bash prefix, and holds the PM weekly rule. Tests E1 to E6 pass.",
+    "The stable record has the same files: block as the archived record. publish.ts:95-115 reads approved_by, date, and the six rows, and ignores the added text above files:.",
+    "Failing-first records: red-1.1.txt (4 failed, 1 passed), red-1.2.txt (6 failed), red-1.3.txt (4 failed), red-1.4.txt (4 failed, 1 passed), and red-p1.log for r10 (3 failed, 17 passed).",
+    "A5: each count in the Phase 1 plan block names its commit. The r7 counts at 60e24f1 equal the HEAD counts for eight files. The r10 count of 20 plus 4 added cases equals the observed 24.",
+    "A3: no added test line uses a digit-only count pattern, and commit counts compare exact values. A4, A6, and A7 do not apply: the diff changes no contract test, banned-term filter, or registry file.",
+    "Strategy section 6: cases 1 to 6 map to tests A3, A1, L1, F4a, P5, and P2a with P2b. Case 8 maps to the tree hashes that include ignored files. Case 7 has no test (F23).",
+    "UX browser review does not apply (test-strategy.md:162). ux-paths with --baseline 35a059c and --track weekly_update_fix prints no path. The browser check belongs to Phase 2.",
+    "A mutation run of update.sh in a temp copy was declined by the shell permission rule. No independent mutant result exists. The Red failing-first records and the reviewer breakage runs stand as the proof.",
+    "Five temp folders remain because rm -rf was declined: /tmp/wuf-acc-base.NtWXEb, /tmp/wuf-acc-head.rYnRFG, /tmp/wuf-acc-preview.UNWu6u, /var/tmp/wuf-acc-base-ext4.0tc7TZ, and /var/tmp/wuf-acc-head-ext4.afKIQ0. They hold public repo files only.",
+    "The status tool lists weekly_update_fix as a closeout candidate although tasks 2.1 and 2.2 are [b] (anti-pattern A12). measure/tracks.md makes no resolved claim for this track.",
+    "Model families: Red Muse, Green Hy4, review-a and review-c and adversarial openai, review-b glm, this role claude. Final acceptance needs a family other than openai and claude."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git rev-parse 019568c -> 019568c7cf3098a68238aa236c08a8309e122953 (equal)",
+    "git status --short -> ?? .opencode/ and ?? harness/wt.txt only",
+    "git diff --stat ddd82b5 HEAD -> harness/model-guide-tests/adversarial-wuf.test.ts, 53 insertions",
+    "git diff --stat 35a059c HEAD -- docs/ -> empty; git diff --stat 35a059c HEAD -- harness/tests -> empty",
+    "git ls-files -s harness/model-guide/update.sh -> 100755 174f6800c78a8736695e50b120324dd8eff4c9a7",
+    "rg -n \"measure/tracks/model_guide/publish-approval\" harness/model-guide/ -> no line",
+    "rg -n \"only those two paths\" README.md -> no line",
+    "bash -n harness/model-guide/update.sh; bash -n harness/model-guide/preview.sh -> exit 0",
+    "for f in harness/model-guide/*.sh; do bash -n \"$f\" || exit 1; done -> exit 0",
+    "cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 12 passed",
+    "cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 6 passed",
+    "cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 6 passed",
+    "cd harness && npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 6 passed",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 9 passed",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 1, 121 passed, 1 failed (P2B2-2); one rerun -> exit 1, 121 passed, 1 failed (P2B2-2)",
+    "cd harness && npx vitest run model-guide-tests/preview-gate.test.ts -t \"P2B2-2\" --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 1 passed, six runs",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p5.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 5 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 46 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial-p2.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 13 passed",
+    "cd harness && npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0, 24 passed",
+    "cd harness && npx vitest run model-guide-tests/<adversarial-p4g|guide|real-work|leak-check|adversarial-p4|adversarial-p4-runner>.test.ts --configLoader native --maxWorkers=1 --reporter=dot, one file at a time -> exit 0, 4, 18, 16, 22, 24, 16 passed",
+    "git archive 35a059c harness | tar -x -C <temp>; git archive HEAD harness | tar -x -C <temp>; preview-gate full file in each export, on tmpfs (3 runs each) and ext4 (HEAD 3 runs, base 4 runs) -> tmpfs 122 passed in all six runs; ext4 HEAD failed 2 of 3, base failed 2 of 4",
+    "bash harness/model-guide/preview.sh --manifest harness/model-guide/data/MANIFEST-2026-11-17.txt --preview <temp>/p -> exit 0; cmp review.html docs/review.html and cmp review.json docs/assets/data/review.json -> SAME, SAME",
+    "python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py status --repo . --track weekly_update_fix -> incomplete_phases 0, closeout_candidates 1",
+    "python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py ux-paths --repo . --baseline 35a059c7d4e1e13a4a20c16342f0136bb609225f --track weekly_update_fix -> no path, exit 0",
+    "python3 -m json.tool measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.json -> exit 0",
+    "python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role phase-acceptance --track weekly_update_fix --phase \"Phase 1: Red and Green for items 1 to 4\" --baseline 35a059c7d4e1e13a4a20c16342f0136bb609225f --result-file measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.json --log-file measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.log -> PASS: phase-acceptance gate passed"
+  ],
+  "changed_files": [
+    "measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.json",
+    "measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-agent/sonnet#max",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "update.sh:176-200 refuses before any write and 30 tests in the four target files pass, but the usage line still omits --docs (update.sh:46)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Live subprocess tests pin refusals, commit sets, and byte-identical trees (update-leak.test.ts:250-263), but strategy case 7 has no test (F23)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "The 23-file diff holds the planned change plus fixture filters in five regression tests; commit c4d70a1 also edited spec.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Plan evidence names its commits and matches 15 full-file preview-gate runs, but its flake claim cites base 8fdbcf1, not the phase base 35a059c."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I re-checked F20 at update.sh:71 and update.sh:183-184, and I re-ran update-approval (6), update-pages (12), update-leak (6), and adversarial-wuf with the counts it reported."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "opencode-go/glm-5.3#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I re-checked its cited lines update.sh:183-187, :188, and :316-317, which read the same $PRIVATE_DIR string, and adversarial-wuf passed."
+    },
+    {
+      "reviewer_role": "review-c",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I re-checked F21: README.md:285-293 and plan.md:183-192 omit the private-input contract, and its five cited test files pass at HEAD."
+    },
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 4,
+      "evidence": "adversarial-wuf passed 24 tests and its cited cases at lines 332, 346, 361, and 373 exist, but strategy case 7 has no test."
+    }
+  ]
+}

@@ -204,7 +204,7 @@ Green r7 evidence (2026-11-23, implementation commit 60e24f163ec4bcd393c6415d042
 
 Moved rows 4.11 and 5.4 of `measure/archive/model_guide/plan.md` (PM 2026-11-22).
 
-- [b] 2.1 The first weekly update (row 5.4). When the PM sends the next export, run
+- [b] 2.1 The first weekly update (row 5.4). When the PM sends the next export, run (deferred:PM)
   `harness/model-guide/update.sh --docs <path of MANIFEST-<date>.txt>`.
   - PM 2026-11-22: the track does not wait for a recurring task. The weekly update job runs `harness/model-guide/update.sh --docs <path of MANIFEST-<date>.txt>` when the PM sends an export; README.md section 'Model guide weekly update' records the job.
   - Row 5.4 is the closing task of this track: the first weekly update run with the
@@ -215,7 +215,7 @@ Moved rows 4.11 and 5.4 of `measure/archive/model_guide/plan.md` (PM 2026-11-22)
     command is `cd harness && npx tsx model-guide/leak-check.ts --private <private> --repo .. --preview ../.tmp/model-guide-preview`,
     then the `update.sh` run.
   - deferred (PM 2026-11-23): reopen when the board unfreezes. The benchmark board is frozen, and the daily benchmark has not run since 2026-11-16.
-- [b] 2.2 Deferred: the pilot gate (row 4.11). It needs the PM word for new nights
+- [b] 2.2 Deferred: the pilot gate (row 4.11). It needs the PM word for new nights (deferred:PM)
   before it runs. Copied text from `measure/archive/model_guide/plan.md`:
   - [b] 4.11 deferred (PM 2026-11-22) The pilot gate (spec D13, OD7). The pilot set `mg-2026-11p` runs (deferred:PM)
     on the three pilot routes with 2 passes each, on the nights of 2026-11-20 and

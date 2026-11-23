@@ -38,9 +38,10 @@
 | Implementation Plan (model_guide) | measure/archive/model_guide/plan.md |
 | Spec Review (model_guide) | measure/archive/model_guide/spec-review.md |
 | Track metadata (model_guide) | measure/archive/model_guide/metadata.json |
-| Specification (weekly_update_fix) | measure/tracks/weekly_update_fix/spec.md |
-| Implementation Plan (weekly_update_fix) | measure/tracks/weekly_update_fix/plan.md |
-| Track metadata (weekly_update_fix) | measure/tracks/weekly_update_fix/metadata.json |
+| Specification (weekly_update_fix) | measure/archive/weekly_update_fix/spec.md |
+| Implementation Plan (weekly_update_fix) | measure/archive/weekly_update_fix/plan.md |
+| Track metadata (weekly_update_fix) | measure/archive/weekly_update_fix/metadata.json |
+| Closeout manifest (weekly_update_fix) | measure/archive/weekly_update_fix/automation-supervisor-closeout-manifest.json |
 | Scoring contract | SCORING.md |
 | Model-visible spec (build) | fixture/measure/tracks/lending_desk/spec.md |
 | Model-visible spec (bugfix) | harness/bugfix/model-visible/track/spec.md |

@@ -1,0 +1,9 @@
+post-move project test gate (A9), run through heavy-run wrapper in real mode
+command: HEAVY_LOCK_WAIT_S=30 HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot'
+date: 2026-11-23
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Duration  2.24s (transform 23ms, setup 0ms, import 35ms, tests 2.11s, environment 0ms)
+
+EXIT=0. No check failed because of the archive move. A9 pre-move scan found no tests/*.sh and no code reference to measure/tracks/weekly_update_fix/.

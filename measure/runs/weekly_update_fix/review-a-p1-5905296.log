@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+commits: none
+tests_run: adversarial-wuf 17 passed; update-leak 6 passed; update-pages 12 passed; update-approval 6 passed; /tmp guard probe reproduced fail-closed Unicode mismatch; JSON validation passed
+files_changed: measure/runs/weekly_update_fix/review-a-p1-5905296.json; measure/runs/weekly_update_fix/review-a-p1-5905296.log
+plan_updates: none
+known_failures: F19 is nonblocking tech debt; the guard fails closed before any write or commit on rare Unicode input
+handoff: Keep F19 as a nonblocking finding. It has score-impact: no because the named refusal prevents stale pages and private data from reaching a commit or public page. Fix: count UTF-16 code units in the guard, as leak-check.ts does.
+END_MEASURE_AGENT_RESULT

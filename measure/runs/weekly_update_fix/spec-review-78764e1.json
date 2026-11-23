@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "role": "spec-review",
+  "track": "weekly_update_fix",
+  "phase": "track setup",
+  "baseline_sha": "78764e18ea371cd8fc96883d6d3ac8f41db5e670",
+  "audited_head_sha": "78764e18ea371cd8fc96883d6d3ac8f41db5e670",
+  "status": "pass",
+  "summary": "Round 2 re-review passes. All four round 1 findings are verified fixed in commit 78764e1 and withdrawn with evidence. The amend introduces no new Blocker or Major finding and no defect in the changed lines.",
+  "paraphrase": {
+    "proposes": "This track fixes four defects in the weekly model-guide update: the approval path moved by closeout, stale public HTML pages, a missing leak check, and a missing executable bit with wrong README wording. It adds a stable approval record beside the tools and a named refusal when that record is missing. It rebuilds index.html, real-work.html, and conditionally review.html through preview.sh and guide.ts, runs leak-check.ts before the commit, and stages only explicit paths. The weekly update runs under the first publish's standing site-push word, needs no new PM approval, and never pushes. Phase 2 runs the first weekly update on the next PM export with --docs and keeps the pilot gate deferred.",
+    "current_system": "update.sh and publish.ts both read the moved path measure/tracks/model_guide/publish-approval.md, so update.sh silently takes the preview-only branch and publish.ts refuses. update.sh writes real-work.json and model-guide.json into docs/assets/data/ and commits only those two paths, leaving docs/index.html and docs/real-work.html static. It never runs leak-check.ts, and its index mode is 100644, so the README command without bash cannot execute."
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "git rev-parse HEAD returned 78764e18ea371cd8fc96883d6d3ac8f41db5e670; it equals the supplied role_base_sha, so the re-review proceeded. Time 21:57 +07 is outside 02:00-06:00.",
+    "git diff a7b8d78 78764e1 -- measure/tracks/weekly_update_fix/ changes only spec.md (9 lines) and plan.md (17 lines); no other track file changed.",
+    "F1 withdrawn: plan.md:92-94 now invokes `harness/model-guide/update.sh --docs <path of MANIFEST-<date>.txt>` in both the closing task command and the PM note, so the task enters the docs branch and can meet its Verify; spec FR-2 still gates every docs write on --docs.",
+    "F2 withdrawn: plan.md:74-84 now pins that the README commit claim names the two data files plus the rebuilt pages, requires Green to fix the commit-path claim, and adds `rg -n \"only those two paths\" README.md` prints no line to the Verify.",
+    "F3 withdrawn: plan.md:53-58 now pins in the update-pages Red case that `docs/review.html` rebuilds only when the score file changed, so the conditional affected page has a named test case.",
+    "F4 withdrawn: spec.md D3 at lines 86-91 now states the standing site-push word from the first publish (Daniel 2026-11-06; archived D19/D21), that no new PM approval is needed, that update.sh never pushes, and that the orchestrator pushes with safe-push. The Stable record definition at lines 63-65 states the archive provenance and the consent-artifact role.",
+    "Recheck of the unchanged sections found no new defect: FR-1 to FR-5 keep their verify commands, plan task 2.2 stays deferred, the leak check still covers the commit set, and no finding quotes a secret value."
+  ],
+  "commands": [
+    "git rev-parse HEAD; date; git diff --stat a7b8d78 78764e1 -- measure/tracks/weekly_update_fix/",
+    "git --no-pager diff a7b8d78 78764e1 -- measure/tracks/weekly_update_fix/",
+    "read the full amended spec.md and plan.md once each for this round"
+  ],
+  "changed_files": [
+    "measure/runs/weekly_update_fix/spec-review-78764e1.json",
+    "measure/runs/weekly_update_fix/spec-review-78764e1.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high"
+}

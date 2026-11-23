@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Security and consent audit of 35a059c..8ceb628 for track weekly_update_fix Phase 1. HEAD matches the audited sha. The leak gate refuses before git add with one 'update: leak <path>' line, exit 2, and no commit (update.sh:228-248), and the raw leak-check line never reaches stdout (update.sh:235-239; update-leak.test.ts:173-178, L1-L4 green). The stable approval record harness/model-guide/publish-approval.md holds approved_by, date, the PM weekly-refresh rule, provenance above 'files:', and six rows byte-equal to measure/archive/model_guide/publish-approval.md (both row blocks sha256 bde211e0...); the publish.ts parser still accepts it (publish.ts:95-115 reads approved_by, date, and the files rows; only the record path changed in the range). The --docs refusal without the record is update.sh:77-80 and test A3. update.sh holds no push: its only git calls are add, diff --cached, and commit (update.sh:248-254). No key shape, key value, or private data path appears in the range diff; .gitignore:23 covers .tmp/ so the private folder cannot enter a commit. No docs/ file changed in the range (git diff --stat -- docs/ is empty). Review A findings F1 to F6 were checked and confirmed still present at this HEAD; they stay with the routed fix round and are not repeated here. One new nonblocking nit: a scanner error with empty stdout yields an empty-path refusal line; it fails closed. tracks.md claims no resolved security state for this track, so A6 needs no adversarial check; the plan's Green r4 evidence lines match my runs.",
+  "evidence": [
+    "git rev-parse HEAD = 8ceb628202fbacf3ddb688a2a043f2db7f3968b6, equal to the audited HEAD.",
+    "update.sh:77-80: --docs with no record prints 'update: no approval record' and exits 2 before any write; update-approval.test.ts A3 green (5 passed, command: npx vitest run model-guide-tests/update-approval.test.ts --maxWorkers=1).",
+    "update.sh:228-241: the leak check runs before git add; a hit prints only 'update: leak <path>' and exits 2; update-leak.test.ts L1-L4 green (4 passed, command: npx vitest run model-guide-tests/update-leak.test.ts --maxWorkers=1); expectLeakRefusal asserts no 'leak-check:' text on stdout, one refusal line, and no commit count change.",
+    "cd harness && npx tsx model-guide/leak-check.ts with no args prints 'leak-check: --private needs a value' and exits 2; the tool writes no file on a refusal.",
+    "harness/model-guide/publish-approval.md:7-8 holds approved_by and date; lines 24-26 hold provenance and the PM weekly-refresh rule above 'files:' (line 28); the six rows at lines 29-34 and the archive rows at measure/archive/model_guide/publish-approval.md:25-30 hash equal (sha256 bde211e01f8fb46fd75517532ef0af7c012d73c6e1e3ccbf28616ccb1bfbed50 for both blocks; diff of the blocks is empty).",
+    "publish.ts range diff changes only APPROVAL from measure/tracks/model_guide/ to harness/model-guide/; the parser at publish.ts:98-114 accepts the record: approved_by line 7, date line 8, files: line 28 with six well-formed sha rows and nothing after them.",
+    "update.sh:243-254 (file read): the only git calls are 'git add --', 'git diff --cached --quiet --', and 'git commit -q -m ... --'; no remote command exists in the file.",
+    "git diff 35a059c..8ceb628 | grep -E 'sk-|ghp_|gho_|AKIA|AIza|xox|BEGIN.*PRIVATE' prints no line; the only private-folder text is the scanner argument PRIVATE_DIR at update.sh:228, and .gitignore:23 ignores .tmp/ (git check-ignore confirms both .tmp folders).",
+    "git diff --stat 35a059c..8ceb628 -- docs/ prints nothing; no docs/ file changed in the range.",
+    "Review A F1-F6 confirmed: read measure/runs/weekly_update_fix/review-a-p1-8ceb628.json; each defect still holds at this HEAD (flagless docs commit at update.sh:179; stale review.html; scan scope; private dir; copy-before-check; plan claim). They are already routed to the fix round.",
+    "measure/tracks.md:34 lists weekly_update_fix as 'new', with no resolved security claim; plan.md:136-138 evidence lines match my test runs for update-approval and update-leak."
+  ],
+  "security_applicability": "applicable",
+  "applicable_reason": "The range wires the leak gate into update.sh, adds the stable consent record publish-approval.md, moves the publish.ts record path, and adds the approval and leak test files: all security and consent data flows.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Nit] review-b: A leak-check error with empty stdout yields a refusal line with an empty path. update.sh:230-240 takes the first stdout line of the run; a scanner crash (for example an unreadable file under docs/ at leak-check.ts:245) exits non-zero with empty stdout, so the public line becomes 'update: leak ' with no path. The run still fails closed: exit 2, no commit, no found value printed. Distinct from routed F3, which covers over-scanning of clean files. score-impact: no"
+  ],
+  "A2_consent_gate_check": "pass: the docs write needs the stable record (update.sh:77-80) and publish needs approved_by, date, and sha rows (publish.ts:96-167); the record carries Daniel's standing site-push word (2026-11-06) and the PM decision (2026-11-22) with the six approved file rows; no named-subject publish runs without the consent artifact.",
+  "A6_registry_overstatement_check": "pass: measure/tracks.md:34 claims only status 'new' for weekly_update_fix; no 'resolved' security claim exists, so no adversarial test is required beyond the green runs I made; plan.md:136-138 Green evidence matches the runs I executed.",
+  "confirmed_prior_findings": [
+    "Review A F1: flagless run with a record still commits docs (update.sh:179). Confirmed at this HEAD; routed.",
+    "Review A F2: changed incomplete score leaves review.html stale (update.sh:135-160). Confirmed; routed.",
+    "Review A F3: leak scan scope differs from the commit set (update.sh:228-248, leak-check.ts:237-253). Confirmed; routed.",
+    "Review A F4: wrong private dir for the scan (.tmp/model-guide-private). Confirmed; routed.",
+    "Review A F5: docs changed before render and leak checks can pass or refuse (update.sh:186-240). Confirmed; routed.",
+    "Review A F6: plan FR-1 to FR-5 claim broader than the proof (plan.md:134). Confirmed; routed."
+  ],
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "changed_files": [
+    "README.md",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4.test.ts",
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "harness/model-guide-tests/adversarial-p5.test.ts",
+    "harness/model-guide-tests/adversarial.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/update-approval.test.ts",
+    "harness/model-guide-tests/update-exec.test.ts",
+    "harness/model-guide-tests/update-leak.test.ts",
+    "harness/model-guide-tests/update-pages.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/publish-approval.md",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/weekly_update_fix/plan.md",
+    "measure/tracks/weekly_update_fix/spec.md"
+  ],
+  "contract_violations": [],
+  "test_isolation_violations": [],
+  "provenance_violations": [],
+  "evidence_violations": [],
+  "commands": [
+    "git rev-parse HEAD",
+    "git diff --stat 35a059c..8ceb628",
+    "git diff --stat 35a059c..8ceb628 -- docs/",
+    "diff <(rows of archive record) <(rows of stable record) && sha256sum of both blocks",
+    "cd harness && npx tsx model-guide/leak-check.ts (read usage; exit 2, no write)",
+    "git diff 35a059c..8ceb628 | grep -E 'sk-|ghp_|gho_|AKIA|AIza|xox|BEGIN.*PRIVATE|model-guide-private'",
+    "git check-ignore -v .tmp/model-guide-private .tmp/model-guide-preview",
+    "cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot (4 passed)",
+    "cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot (5 passed)",
+    "git diff 35a059c..8ceb628 -- harness/model-guide/publish.ts"
+  ],
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The leak gate, consent gate, and no-push rule hold (update.sh:77-80, 228-254; publish.ts:96-167); the edges stay open only in routed F1-F5 and the empty-path refusal nit at update.sh:235-239."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "update-leak.test.ts L1-L4 and update-approval.test.ts A1-A5 prove the refusals with temp repos and no-commit counts; no test pins the never-push rule itself."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "git diff --stat 35a059c..8ceb628 shows the 20 planned files only; the test refreshes of preview-gate and adversarial files are contract moves inside the same track, and no docs/ file changed."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim in this audit has a command result (leak-check usage exit 2, two green vitest runs, sha256 row comparison, empty docs/ diff stat) or a file:line read."
+    }
+  ],
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "8ceb628202fbacf3ddb688a2a043f2db7f3968b6",
+  "audited_head_sha": "8ceb628202fbacf3ddb688a2a043f2db7f3968b6"
+}

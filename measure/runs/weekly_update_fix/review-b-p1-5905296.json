@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "summary": "Third security and data-handling pass over 35a059c..5905296 for track weekly_update_fix Phase 1. HEAD equals the supplied audited sha and is current. The range since the last pass (294a0ad, 5b4d210, dbed5ee, 5905296) adds the seeded-input guard, the adversarial test file, and the synthetic private fixtures. The guard wiring is correct for the documented invocation: update.sh:176-186 refuses a missing consent record, a private input without a seeded line, and the templates before the staging folder and before any repo write; private_has_seeded_input (update.sh:127-170) mirrors the leak-check.ts rule exactly (same L-prefix parse, same 20-character rule, same src-set comparison). The adversarial file pins the empty, file-shaped, and missing private input (exact refusal line, tree hash unchanged, commit set unchanged, planted seed absent from docs), the six planted-candidate refusals with the seeded value never printed, the symlink refusal, the hostile manifest name, and the staging cleanup. No docs/ file changed in the range; no real key shape, secret, or private path appears in the range diff; the fixture seed lines are synthetic markers only; update.sh still never pushes. One new blocking hole: a relative MODEL_GUIDE_PRIVATE_DIR splits the guard and the leak scan across two folders, so the scan can run empty again through an env value. One new nonblocking nit: a private path that starts with '--' prints a false 'update: leak --private' line. The test suite could not be re-run this pass: the local clock read 02:03, inside the 02:00-06:00 test window, so the green claims rest on the static case count, the run log, and code reading.",
+  "evidence": [
+    "git rev-parse HEAD = 5905296730e2751760926ea5c5139c2dd7b4180b, equal to role_base_sha and audited_head_sha. git status --short prints only the untracked .opencode/ and harness/wt.txt, both outside the range; the audited HEAD is current.",
+    "git diff --stat 6c95b51..5905296 shows 8 paths: adversarial-wuf.test.ts (new, 373 lines), the seeded-fixture env change in adversarial-p2, update-approval, update-leak, update-pages, and update tests, the update.sh guard (+50 lines), and plan.md evidence. git diff --stat 35a059c..5905296 -- docs/ is empty: no docs/ change in the range.",
+    "Guard order: update.sh:176-186 holds the four refusal gates (approval record, private input, overview template, review template); the mktemp staging folder comes later at update.sh:213, so a refusal runs before any write and before any commit. bash -n harness/model-guide/update.sh passes.",
+    "Guard equivalence: private_has_seeded_input (update.sh:127-170) parses '^L(\\d+|---) [-+](.*)$', needs 20 characters, and compares against the src body set; leak-check.ts:106-125 parses the same shape with the same 20-character rule and the same src comparison. The guard cannot accept a folder the scan reads as empty, and it refuses a folder without a sets/ tree that leak-check.ts:118 would read as empty.",
+    "Empty, missing, and file-shaped refusals: adversarial-wuf.test.ts:234-263 (it.each over empty, file, missing) asserts exit 2, stdout exactly 'update: no private input', the whole temp tree hash unchanged, the commit count unchanged, the pre-run HEAD commit set unchanged, and (empty case) the planted seed absent from docs/index.html.",
+    "Planted-candidate refusals: adversarial-wuf.test.ts:292-310 (it.each over the six candidate paths) asserts exit 2, stdout exactly 'update: leak <path>', result.stdout not containing the seeded value, the tree hash unchanged, and no new commit. The raw leak-check line never prints: update.sh:308-309 captures the tool stdout and drops stderr; update.sh:312-318 prints only the target repo-relative path. The default-input scan case (adversarial-wuf.test.ts:264-274) pins the same refusal without any MODEL_GUIDE_PRIVATE_DIR override.",
+    "Blocking finding proof (static chain, no run possible in the test window): update.sh:71 takes MODEL_GUIDE_PRIVATE_DIR verbatim and never makes it absolute; the guard at update.sh:180 runs with the caller cwd, which the usage block fixes at <repo>; the leak scan at update.sh:308-309 runs only after 'cd $ROOT/harness' (update.sh:216 starts the cd chain), so a relative value resolves against harness/. When <repo>/<value> holds a valid seeded input and harness/<value> is missing, leak-check.ts:118 returns an empty secret list and the scan exits 0 with zero secrets checked; the private-path strings (leak-check.ts:222-224) also miss the real folder. The guard passes, the scan runs empty, and a seeded private line in any candidate commits with no refusal. grep -rn MODEL_GUIDE_PRIVATE_DIR harness/model-guide-tests/ shows every fixture sets an absolute temp path, so no test pins a relative value.",
+    "Fixture seed lines are synthetic: git diff 35a059c..5905296 -- harness/ | grep -c 'private-seed\\|synthetic .* seed line' = 7, all inside test code as planted markers ('private-seed-<tag>-must-not-ship', 'synthetic <tag> seed line one;'); no committed output file holds them (the range touches no docs/ file).",
+    "No real key shape or private path in the range: git diff 35a059c..5905296 -- harness/ measure/ | grep for 'home/daniebo', '.local/share', 'sk-', 'api_key', 'token' prints only the documented default-location constant in update.sh:19 and update.sh:71.",
+    "Push boundary: update.sh:331-339 holds the only git calls of the run (git add --, git diff --cached --name-only --, git commit -q -m --); no push or remote command exists in the file, and update.test.ts U2 pins an empty 'git remote'.",
+    "A2 consent gate: update.sh:176-179 refuses '--docs' without the stable consent record before any write; harness/model-guide/publish-approval.md is unchanged since the last pass (absent from the 6c95b51..5905296 diff stat), so the pass-2 record verification stands; the adversarial publish case (adversarial-wuf.test.ts:276-289) keeps an approval row that points outside docs refused.",
+    "A6 registry: measure/tracks.md:34 lists weekly_update_fix with status 'new', due Mon 2026-11-23; no resolved security claim exists, so no marketing outruns the implementation. The plan r9 evidence (plan.md Green r9 line) claims 17 adversarial cases passed; the file holds exactly 17 cases (grep counts 8 'it(' plus it.each sets of 3 and 6), and the claim matches the guard code at update.sh:127-186.",
+    "Test window: the command 'date' printed 'Mon Nov 23 02:03:59 AM +07 2026', inside the forbidden 02:00-06:00 window, so no vitest run and no update.sh run executed this pass; the /tmp repo copy was not needed and was not created.",
+    "Symlinked private input: update.sh:130 '[ -d $dir ]' follows a link; a dangling or empty target refuses through the same walk, and a valid target behaves as the folder itself, so no empty-scan hole opens through a symlinked private input."
+  ],
+  "security_applicability": "applicable",
+  "applicable_reason": "The range adds a private-input gate in front of the leak scan, rewires the scan invocation, and adds adversarial tests for refusal paths: all security and data-handling flows.",
+  "blocking_findings": [
+    "F1 review-b: A relative MODEL_GUIDE_PRIVATE_DIR splits the private-input guard and the leak scan across two folders. update.sh:71 takes the env value verbatim and never makes it absolute. The guard at update.sh:180 runs with the caller cwd (the usage block fixes the run cwd at <repo>), but the leak scan at update.sh:308-309 runs only after 'cd $ROOT/harness', so the same relative value resolves against harness/. When <repo>/<value> holds a valid seeded input and harness/<value> is missing, the guard passes, leak-check.ts:118 reads zero secrets from the missing folder, the private-path strings miss the real folder too, and every candidate commits with no scan. A seeded private line in a candidate file then reaches a committed docs file with no refusal: the F1 empty-scan hole reopens through an env value. The reverse mismatch (the folder exists only under harness/) refuses fail-closed, so only the leak direction harms. No test pins a relative value; every fixture sets an absolute temp path (grep of the seven MODEL_GUIDE_PRIVATE_DIR call sites). Fix: resolve PRIVATE_DIR once with 'realpath -m --' beside MANIFEST_ABS at update.sh:60, or refuse a relative value, and add one adversarial case with a relative private dir. score-impact: yes"
+  ],
+  "nonblocking_findings": [
+    "F2 [Nit] review-b: A private folder path that starts with '--' prints a false leak line. leak-check.ts:76 refuses a value that starts with '--' with '--private needs a value', and update.sh:312-318 turns that usage refusal into 'update: leak --private', exit 2. The run still refuses before any write, but the line names a leak that never ran. Message bug only; no wrong public result and no data path opens. Route to tech debt with the PM round cap. score-impact: no"
+  ],
+  "A2_consent_gate_check": "pass: the --docs write needs the stable consent record (update.sh:176-179, gate before any write or commit); publish-approval.md is unchanged since the last pass and the pass-2 byte-equal verification against the archived record stands; the adversarial publish case still refuses an approval row that points outside docs.",
+  "A6_registry_overstatement_check": "pass with a run-log caveat: measure/tracks.md:34 claims only status 'new' for weekly_update_fix; no resolved security claim exists. The plan r9 evidence claims 17 adversarial cases passed; the file holds exactly 17 cases and the guard code matches every claim, but the suite could not be re-run because the local clock read 02:03 inside the 02:00-06:00 test window.",
+  "prior_findings_status": "The pass-2 nonblocking nit (a scanner crash with empty stdout yields an 'update: leak' line with an empty path) stays routed to tech debt per the PM 2026-11-23 rule and is not re-raised. F16, F18, F19, A F6, the B nits, and C F10-C F14 are already routed to tech debt and were not re-checked. No CONTEST items reached this pass.",
+  "confidence": "medium",
+  "retry_recommendation": "fix",
+  "changed_files": [
+    "README.md",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4.test.ts",
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "harness/model-guide-tests/adversarial-p5.test.ts",
+    "harness/model-guide-tests/adversarial-wuf.test.ts",
+    "harness/model-guide-tests/adversarial.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/update-approval.test.ts",
+    "harness/model-guide-tests/update-exec.test.ts",
+    "harness/model-guide-tests/update-leak.test.ts",
+    "harness/model-guide-tests/update-pages.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish-approval.md",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/weekly_update_fix/plan.md",
+    "measure/tracks/weekly_update_fix/spec.md",
+    "measure/tracks/weekly_update_fix/test-strategy.md"
+  ],
+  "contract_violations": [],
+  "test_isolation_violations": [],
+  "provenance_violations": [],
+  "evidence_violations": [],
+  "commands": [
+    "git rev-parse HEAD (5905296730e2751760926ea5c5139c2dd7b4180b)",
+    "git log --oneline 35a059c..5905296 (20 commits, HEAD = 5905296)",
+    "git status --short (only untracked .opencode/ and harness/wt.txt)",
+    "git diff --stat 6c95b51..5905296 (8 paths)",
+    "git diff --stat 35a059c..5905296 -- docs/ (empty)",
+    "git diff --name-only 35a059c..5905296 (23 paths)",
+    "git diff 6c95b51..5905296 -- harness/model-guide/update.sh (guard added)",
+    "sed -n 1,400p harness/model-guide/update.sh (read-only)",
+    "sed -n 1,280p harness/model-guide/leak-check.ts (read-only)",
+    "sed -n 1,373p harness/model-guide-tests/adversarial-wuf.test.ts (read-only)",
+    "grep -n 'PRIVATE_DIR\\|cd \\\"\\$ROOT/harness\\\"\\|leak-check.ts\\|realpath' harness/model-guide/update.sh (71, 180, 216, 308-309; realpath only for the manifest at 60)",
+    "grep -rn MODEL_GUIDE_PRIVATE_DIR harness/model-guide-tests/ (7 call sites, all absolute temp paths)",
+    "grep -n 'return \\[\\]\\|startsWith(\\\"--\\\")\\|function seededLines\\|function parseArgs' harness/model-guide/leak-check.ts (118, 76, 115, 67)",
+    "grep -n 'weekly_update_fix' measure/tracks.md (line 34, status new)",
+    "grep -n '^\\s*it(' harness/model-guide-tests/adversarial-wuf.test.ts (8 cases) and grep -n '^\\s*it\\.\\?each\\?(' (2 each-blocks: 3 + 6 = 17 total)",
+    "git diff 35a059c..5905296 -- harness/ measure/ | grep 'home/daniebo\\|\\.local/share\\|sk-\\|api[_-]key\\|token' (only the documented default path at update.sh:19 and 71)",
+    "git diff 35a059c..5905296 -- harness/ | grep -c 'private-seed\\|synthetic .* seed line' (7, all in test code)",
+    "bash -n harness/model-guide/update.sh (passes)",
+    "date (Mon Nov 23 02:03:59 AM +07 2026: inside the 02:00-06:00 test window, so no test run)"
+  ],
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "The guard mirrors the leak-check rule exactly and refuses empty, file-shaped, and missing inputs before any write (update.sh:127-186), but a relative MODEL_GUIDE_PRIVATE_DIR makes the scan read a different folder than the guard checked (update.sh:71,180,308 against leak-check.ts:118)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "adversarial-wuf.test.ts holds 17 cases that pin the refusal lines, the unchanged tree hashes, and the never-printed seeded values (lines 234-310), but no case sets a relative MODEL_GUIDE_PRIVATE_DIR."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 6c95b51..5905296 shows only the guard, its tests, and plan evidence; git diff --stat 35a059c..5905296 -- docs/ is empty."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 3,
+      "evidence": "Every claim has a file:line read or a grep result, but the 02:03 local time inside the 02:00-06:00 window blocked any test or update.sh run, so the green-run claims rest on run logs and a static case count."
+    }
+  ],
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "5905296730e2751760926ea5c5139c2dd7b4180b",
+  "audited_head_sha": "5905296730e2751760926ea5c5139c2dd7b4180b"
+}

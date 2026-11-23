@@ -1,0 +1,9 @@
+Red 2026-11-22, task 1.3, base 35a059c7d4e1e13a4a20c16342f0136bb609225f.
+Command: cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit non-zero. Tests 4 failed (4).
+Failed (update.sh has no --docs flag and no leak-check wiring; usage error leaves stdout empty, so no `update: leak <path>` line appears):
+- L1: a new_lines key in the commit set refuses with one line, exit 2, and no commit
+- L2: a witness key refuses without the raw finding and without a commit
+- L3: a clean commit set passes the check and commits (no --docs support yet, so no commit)
+- L4: an operator key in a staged file refuses with one line, exit 2, and no commit
+All plants use JSON key fields under docs/ or staged, so no private folder is needed.

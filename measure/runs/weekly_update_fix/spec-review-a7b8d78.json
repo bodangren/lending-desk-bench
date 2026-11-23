@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "role": "spec-review",
+  "track": "weekly_update_fix",
+  "phase": "track setup",
+  "baseline_sha": "a7b8d78fe7477530a54282d344a6f85617a8fb4d",
+  "audited_head_sha": "a7b8d78fe7477530a54282d344a6f85617a8fb4d",
+  "status": "fail",
+  "summary": "Round 1 spec review fails on one Blocker. Plan task 2.1 invokes update.sh without the required --docs flag, so the due-date closing task takes the preview-only branch and cannot meet its own Verify. Three nonblocking findings cover a false README commit claim, an untested conditional review.html rebuild, and an unstated standing-push outcome.",
+  "paraphrase": {
+    "proposes": "This track fixes four defects in the weekly model-guide update: the approval path moved by closeout, stale public HTML pages, a missing leak check, and a missing executable bit with wrong README wording. It adds a stable approval record beside the tools and a named refusal when that record is missing. It rebuilds index.html and real-work.html through preview.sh and guide.ts, runs leak-check.ts before the commit, and stages only explicit paths. Phase 2 runs the first weekly update on the next PM export and keeps the pilot gate deferred.",
+    "current_system": "update.sh and publish.ts both read measure/tracks/model_guide/publish-approval.md, which closeout moved to the archive; update.sh then silently takes the preview-only branch and publish.ts refuses. update.sh writes real-work.json and model-guide.json into docs/assets/data/ and commits only those two paths, leaving docs/index.html and docs/real-work.html static. It never runs leak-check.ts, and its index mode is 100644, so the README command without bash cannot execute."
+  },
+  "blocking_findings": [
+    "F1 [Blocker] plan task 2.1 / spec FR-2: The closing first-weekly-update command omits the required --docs flag, so it takes the preview-only branch and cannot meet its own Verify. Rationale: The 'Docs update request' definition and FR-2 say a plain run without --docs keeps the preview-only branch; plan task 2.1, its PM note, and the README command all omit the flag, so the due-dated deliverable writes no docs file and makes no commit."
+  ],
+  "nonblocking_findings": [
+    "F2 [Major] spec FR-5 / plan task 1.4: The spec does not require correcting the README sentence that the commit holds only two paths, which becomes false when the HTML refresh adds two pages. Rationale: Task 1.4 verifies only the command form and the two branches, so a passing test can leave a false public claim; Review A 5 F2 changes the commit from two paths to four.",
+    "F3 [Major] spec 'Affected pages' definition / FR-3 / plan task 1.2: The conditional rebuild of docs/review.html when the score file changed has no test case or verify command. Rationale: The definition adds review.html as an affected page and FR-3 says rebuild the affected pages, but task 1.2 pins only index.html and real-work.html, so the edge case is untested.",
+    "F4 [Nit] spec D3 / FR-3: The spec never states that the first publish already happened and the standing push rule now applies, so a reader cannot tell that the weekly update needs no new PM approval. Rationale: Archived D21 and D19 make the standing rule the governing condition after the first publish; naming it keeps the HTML refresh from being read as a new publish."
+  ],
+  "evidence": [
+    "git rev-parse HEAD returned a7b8d78fe7477530a54282d344a6f85617a8fb4d; it equals the supplied role_base_sha, so review proceeded.",
+    "spec.md:63-66 defines the stable record and the Docs update request; line 66 says a run without --docs keeps the preview-only branch. FR-2 at spec.md:105-108 repeats the rule.",
+    "plan.md:89-98 task 2.1 invokes 'harness/model-guide/update.sh <path of MANIFEST-<date>.txt>' with no --docs, yet its Verify requires docs data, rebuilt pages, leak-check exit 0, and a commit with data files plus pages.",
+    "plan.md:91 repeats the flagless command in the PM note; README.md:287 names the same flagless command.",
+    "update.sh:51 and publish.ts:62 read measure/tracks/model_guide/publish-approval.md; update.sh:125-129 is the silent preview-only branch; update.sh:132-143 commits only the two data files and calls no leak-check.ts.",
+    "git ls-tree reports mode 100644 for update.sh and stat reports mode 664; README.md:287 names the script without bash. Review artifacts review-a-5-a8835be.json, review-b-5-a8835be.json, and review-c-5-a8835be.json carry F2, F1, and F1 as nonblocking with score-impact no.",
+    "docs/index.html:44-49 and docs/real-work.html hold static results with no JSON load; preview.sh copies docs/ into the preview folder and refuses a preview path under docs/ at lines 120-129.",
+    "measure/archive/model_guide/spec.md:1208-1247 (D19, D21) says the standing push rule applies after the first publish; measure/archive/model_guide/publish-approval.md:5-20 records the first-publish consent under Daniel's standing site-push word of 2026-11-06 and a PM GO condition for that publish only.",
+    "The paraphrase sections are paraphrases only; no finding quotes a secret value."
+  ],
+  "commands": [
+    "git rev-parse HEAD; date (21:52 +07, outside 02:00-06:00)",
+    "read spec-review standard and audit contracts; read spec.md and plan.md once before any strategy",
+    "read harness/model-guide/update.sh, publish.ts, preview.sh, guide.ts and README.md:285-287",
+    "read measure/archive/model_guide/spec.md D19/D21, the archived approval record, docs/index.html and docs/real-work.html",
+    "read measure/runs/model_guide/review-a-5-a8835be.json, review-b-5-a8835be.json, review-c-5-a8835be.json",
+    "git ls-tree HEAD harness/model-guide/update.sh; stat -c '%a %n' harness/model-guide/update.sh; sed of archive plan rows 4.11 and 5.4"
+  ],
+  "changed_files": [
+    "measure/runs/weekly_update_fix/spec-review-a7b8d78.json",
+    "measure/runs/weekly_update_fix/spec-review-a7b8d78.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "escalate_human",
+  "confidence": "high"
+}

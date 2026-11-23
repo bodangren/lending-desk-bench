@@ -1,0 +1,20 @@
+Review B (security and data handling) — second pass, Phase 1, track weekly_update_fix.
+Route: opencode-go/glm-5.3#high
+Range: 35a059c7d4e1e13a4a20c16342f0136bb609225f..6c95b51587318827ca81fb2c184f0fc2111bb3f2
+Result artifact: measure/runs/weekly_update_fix/review-b-p1-6c95b51.json (validated with python3 -m json.tool).
+
+MEASURE_AGENT_RESULT
+route: opencode-go/glm-5.3#high
+status: pass
+summary: Second security and consent pass over 35a059c..6c95b51. HEAD equals the audited sha. The leak check scans exactly the candidate files: COMMIT_REL is the only source of the commit paths and every entry is copied into the staging folder $CAND/docs before the scan, which runs before the first docs/ write and before git add; a committed-but-unscanned path is impossible. An end-to-end planted run in a /tmp repo copy refused with one line 'update: leak docs/assets/data/review.json', exit 2, no seeded value, no private path, no commit, and docs/ unchanged; the /tmp copy was removed. The private input defaults to the real location with a MODEL_GUIDE_PRIVATE_DIR override and a named missing-input refusal. Staging is removed by an EXIT trap; symlink refusals hold in update.sh and preview.sh; the new output lines are repo-relative; update.sh still never pushes. The consent record, the README, and publish.ts changed nothing since pass 1; the record rows equal the archive rows and the PM weekly-refresh rule text is identical in the record and the README. No key shape, key value, or private path appears in the range diff; no docs/ or harness/tests file changed. Five targeted test files ran green (update-leak 6, update-pages 12, update-approval 6, update 9, update-exec 6) and match the plan Green r7 evidence.
+blocking_findings: none
+nonblocking_findings: F1 [Nit] review-b: The Phase 2 verify commands in plan.md:180 and test-strategy.md:201 still name the old leak-check invocation (--repo .. --preview ../.tmp/model-guide-preview). The command still runs and over-scans the real repo, so it can only over-refuse, never under-scan. Stale verify text only. Route to tech debt. score-impact: no
+prior_findings: The pass-1 empty-path refusal nit stays routed to tech debt and is not re-raised. Review A F1-F6 were fixed and Review A passed at this HEAD. F16, F18, A F6, and C F10-F14 are already routed and were not re-checked.
+A2_consent_gate: pass — the docs write needs the stable record with Daniel's standing word, the PM decision, and six archive-equal rows.
+A6_registry_overstatement: pass — tracks.md claims only status 'new'; the plan Green r7 evidence matches my runs.
+confidence: high
+retry_recommendation: none
+phase_base_sha: 35a059c7d4e1e13a4a20c16342f0136bb609225f
+role_base_sha: 6c95b51587318827ca81fb2c184f0fc2111bb3f2
+audited_head_sha: 6c95b51587318827ca81fb2c184f0fc2111bb3f2
+END_MEASURE_AGENT_RESULT

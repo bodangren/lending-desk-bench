@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "weekly_update_fix",
+  "phase": "Phase 1: Red and Green for items 1 to 4",
+  "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "5905296730e2751760926ea5c5139c2dd7b4180b",
+  "audited_head_sha": "5905296730e2751760926ea5c5139c2dd7b4180b",
+  "status": "pass",
+  "summary": "The audited work passes its gate. F19 remains nonblocking tech debt: the Unicode length mismatch causes a named refusal before writes or commits.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F19 [Nit] review-a: update.sh private-input guard counts Unicode characters with Python len(), while leak-check.ts counts UTF-16 code units with JavaScript string.length. Ten astral characters meet the scanner's 20-character threshold but fail the guard, which prints update: no private input before any write or commit. This fails closed; score-impact: no. Fix: count UTF-16 code units in the guard, as leak-check.ts does."
+  ],
+  "evidence": [
+    "HEAD equals audited_head_sha 5905296730e2751760926ea5c5139c2dd7b4180b.",
+    "The exact 35a059c7d4e1e13a4a20c16342f0136bb609225f..5905296730e2751760926ea5c5139c2dd7b4180b diff has 23 files. It does not change orchestration scripts, contract tests, or the registry.",
+    "harness/model-guide/update.sh:167 uses Python len(text) >= 20. harness/model-guide/leak-check.ts:132 uses JavaScript text.length >= 20.",
+    "The /tmp private-guard probe passed empty, missing, file-shaped, and valid ASCII cases. Its Unicode fixture made update.sh refuse with update: no private input while leak-check.ts returned leak-check: seeded-line: docs/index.html.",
+    "adversarial-wuf.test.ts passed 17 tests, including empty, missing, file-shaped, default-seed leak, and flagless behavior cases.",
+    "update-leak.test.ts passed 6 tests. update-pages.test.ts passed 12 tests. update-approval.test.ts passed 6 tests.",
+    "The six docs fixtures provide synthetic private inputs. Their setup uses a separate matching src diff and does not weaken the empty, missing, or planted-line cases."
+  ],
+  "commands": [
+    "git rev-parse HEAD (5905296730e2751760926ea5c5139c2dd7b4180b)",
+    "git diff --stat 35a059c7d4e1e13a4a20c16342f0136bb609225f 5905296730e2751760926ea5c5139c2dd7b4180b",
+    "git diff --name-only 35a059c7d4e1e13a4a20c16342f0136bb609225f 5905296730e2751760926ea5c5139c2dd7b4180b",
+    "python3 measure/runs/weekly_update_fix/private-guard-probe.py (empty, missing, and file-shaped inputs refused; valid ASCII passed guard; Unicode mismatch reproduced)",
+    "cd harness && npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot (17 passed)",
+    "cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot (6 passed)",
+    "cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot (12 passed)",
+    "cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot (6 passed)"
+  ],
+  "changed_files": [
+    "README.md",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4.test.ts",
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "harness/model-guide-tests/adversarial-p5.test.ts",
+    "harness/model-guide-tests/adversarial-wuf.test.ts",
+    "harness/model-guide-tests/adversarial.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/update-approval.test.ts",
+    "harness/model-guide-tests/update-exec.test.ts",
+    "harness/model-guide-tests/update-leak.test.ts",
+    "harness/model-guide-tests/update-pages.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish-approval.md",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/weekly_update_fix/plan.md",
+    "measure/tracks/weekly_update_fix/spec.md",
+    "measure/tracks/weekly_update_fix/test-strategy.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The /tmp probe showed update.sh refuses a ten-emoji seed while leak-check.ts detects it as a seeded line."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "adversarial-wuf.test.ts passed 17 cases but does not cover astral Unicode length parity."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The 23-file phase diff stays within weekly update implementation, tests, and Measure records."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The /tmp probe reproduced the mismatch and four targeted Vitest files passed with --maxWorkers=1."
+    }
+  ]
+}

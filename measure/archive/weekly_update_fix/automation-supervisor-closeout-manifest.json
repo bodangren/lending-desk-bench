@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "track": "weekly_update_fix",
+  "title": "Weekly update fix: approval path, page refresh, leak check, and executable bit",
+  "status": "complete",
+  "closed_out": "2026-11-23",
+  "closed_by": "measure-closeout",
+  "route": "opencode-go/hy4-flash-free#high",
+  "pre_closeout_head": "ae0c1163a625ef3153ab78510d36940faa6933db",
+  "archive_move": {
+    "from": "measure/tracks/weekly_update_fix",
+    "to": "measure/archive/weekly_update_fix",
+    "method": "git mv",
+    "note": "The deferred-owner format fix in plan.md was made before the move. The evidence folder measure/runs/weekly_update_fix/ stays at its path and is committed explicitly."
+  },
+  "audits": [
+    {
+      "role": "measure-final-acceptance",
+      "kind": "quality acceptance",
+      "path": "measure/runs/weekly_update_fix/final-acceptance-ae0c116.json",
+      "status": "pass",
+      "provenance_match": true,
+      "audited_head": "ae0c1163a625ef3153ab78510d36940faa6933db",
+      "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+      "scope_note": "audited_head_sha, audited_head and role_base_sha all equal ae0c1163a625ef3153ab78510d36940faa6933db, which equals the current pre-closeout HEAD. blocking_findings is empty. Phase 2 is honestly deferred under the PM 2026-11-23 decision."
+    },
+    {
+      "role": "measure-phase-acceptance",
+      "kind": "Phase 1 acceptance",
+      "path": "measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.json",
+      "status": "pass",
+      "audited_head": "019568c7cf3098a68238aa236c08a8309e122953",
+      "note": "One passing Phase 1 result. Phase 2 has no implementation to accept; both tasks are PM-deferred."
+    },
+    {
+      "role": "measure-review-a, measure-review-b, measure-review-c, measure-adversarial-testing",
+      "kind": "Phase 1 audits, latest passing round at ddd82b5",
+      "paths": [
+        "measure/runs/weekly_update_fix/review-a-p1-ddd82b5.json",
+        "measure/runs/weekly_update_fix/review-b-p1-ddd82b5.json",
+        "measure/runs/weekly_update_fix/review-c-p1-ddd82b5.json",
+        "measure/runs/weekly_update_fix/adversarial-p1-ddd82b5.json"
+      ],
+      "status": "pass",
+      "audited_head": "ddd82b5",
+      "note": "Earlier rounds at 5905296, 6c95b51 and 8ceb628 are retained as historical records. Their nonblocking findings are routed to tech-debt.md."
+    },
+    {
+      "role": "measure-closeout",
+      "kind": "closeout gate",
+      "command": "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track weekly_update_fix",
+      "status": "pass",
+      "result": "PASS: closeout checks passed"
+    }
+  ],
+  "record_fixes": [
+    {
+      "id": "Phase 2 deferred owner field",
+      "source": "PM decision 2026-11-23 as recorded in metadata.json escalation.pm_decision and final-acceptance-ae0c116.json",
+      "file": "measure/archive/weekly_update_fix/plan.md",
+      "before": "- [b] 2.1 The first weekly update (row 5.4). When the PM sends the next export, run",
+      "after": "- [b] 2.1 The first weekly update (row 5.4). When the PM sends the next export, run (deferred:PM)",
+      "reason": "The measure-guard closeout guard and the pre-closeout state rule require a trailing deferred:<owner> field on every [b] task. The nested deferred line and reopen trigger 'the board unfreezes' stay unchanged. The owner is the PM, who made both rulings."
+    },
+    {
+      "id": "Phase 2 deferred owner field, second row",
+      "source": "PM decision 2026-11-23 as recorded in metadata.json escalation.pm_decision and final-acceptance-ae0c116.json",
+      "file": "measure/archive/weekly_update_fix/plan.md",
+      "before": "- [b] 2.2 Deferred: the pilot gate (row 4.11). It needs the PM word for new nights",
+      "after": "- [b] 2.2 Deferred: the pilot gate (row 4.11). It needs the PM word for new nights (deferred:PM)",
+      "reason": "Same owner-field format fix. The deferral text, the nested deferred line and the reopen trigger stay unchanged."
+    }
+  ],
+  "plan_evidence": {
+    "task_lines_top_level": 6,
+    "all_non_deferred_complete": true,
+    "in_progress_markers": 0,
+    "space_markers": 0,
+    "blocked_markers": 2,
+    "blocked_rows": [
+      "2.1 The first weekly update (row 5.4). When the PM sends the next export, run (deferred:PM)",
+      "2.2 Deferred: the pilot gate (row 4.11). It needs the PM word for new nights (deferred:PM)"
+    ],
+    "owner_informed": "The PM made both deferral rulings on 2026-11-23. The nested deferred line names the PM and the reopen trigger 'the board unfreezes'. metadata.json:46 and final-acceptance-ae0c116.json record the decision. The measure-guard allow note lists both [b] tasks for the user report.",
+    "commit_shas": "All four completed Phase 1 task rows carry a SHA anchor: 00d9013, 60e24f1, 00d9013 and c4d70a1. The final acceptance verified each anchor resolves and is an ancestor of the pre-closeout HEAD.",
+    "sha_count_note": "The four [x] rows and two [b] rows are the six Phase 1 and Phase 2 tasks. The two [b] rows are deferred, not complete."
+  },
+  "gates": [
+    {
+      "name": "plan markers",
+      "command": "python3/grep: count top-level [x], [~], [ ], [b] in measure/archive/weekly_update_fix/plan.md",
+      "result": "4 [x], 0 [~], 0 [ ], 2 [b] with (deferred:PM) on each [b] row; no legacy space marker; no in-progress marker"
+    },
+    {
+      "name": "A5 false-claim text",
+      "command": "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass|all tests pass|completely fixed' measure/archive/weekly_update_fix/plan.md measure/tracks.md",
+      "result": "no match"
+    },
+    {
+      "name": "A6 registry note",
+      "command": "grep -nE 'resolved|completely fixed|fully solved|all (checks |tests )?pass' measure/tracks.md; awk '/^## Archived Tracks/{a=1} !a && /weekly_update_fix/{print}' measure/tracks.md",
+      "result": "no overstatement hit; no weekly_update_fix mention in the active registry section; one Archived Tracks entry whose description equals metadata.json"
+    },
+    {
+      "name": "A9 archived-track path, before the move",
+      "command": "grep -rn 'measure/tracks/weekly_update_fix/' --include='*.sh' --include='*.ts' --include='*.js' --include='*.py' --include='*.cjs' --include='*.mjs' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=runs --exclude-dir=.opencode .",
+      "result": "no hit; the repository has no root tests/*.sh files and no test or script references measure/tracks/weekly_update_fix/"
+    },
+    {
+      "name": "A9 post-move project test gate",
+      "command": "HEAVY_LOCK_WAIT_S=30 HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot'",
+      "result": "EXIT=0; Test Files 1 passed (1); Tests 6 passed (6); 0 fail; no failure caused by the archive move",
+      "summary_file": "measure/runs/weekly_update_fix/closeout-gate-summary.log"
+    },
+    {
+      "name": "closeout interphase check",
+      "command": "measure_interphase_checks.py closeout --track weekly_update_fix --repo .",
+      "result": "PASS: closeout checks passed"
+    }
+  ],
+  "a9_hits": [],
+  "a9_additional_references": [
+    {
+      "path": "measure/archive/weekly_update_fix/{plan.md,spec.md,test-strategy.md}",
+      "disposition": "Track documents that may quote their own pre-archive path. They moved with the track and no gate reads them by that path."
+    },
+    {
+      "path": "measure/runs/weekly_update_fix/*.json, *.log, *.txt",
+      "disposition": "Historical audit records that quote pre-archive paths. Retained unchanged as provenance-bound evidence."
+    }
+  ],
+  "a9_scope_note": "No tests/*.sh exists at the repo root. No code or script references measure/tracks/weekly_update_fix/. The post-move gate passed in real mode through the heavy-run wrapper. The archived approval references in the model-guide tests are intentional fixture inputs for model_guide, not weekly_update_fix, and are not affected by this move.",
+  "open_nonblocking_findings": [
+    {
+      "id": "2.1",
+      "source": "final-acceptance-ae0c116.json; plan.md 2.1; tech-debt.md 2026-11-23 section",
+      "text": "The first weekly update waits for the PM export. Reopen trigger: the board unfreezes. Score-impact: none; the run has not happened.",
+      "disposition": "Open by PM ruling 2026-11-23. Marked [b] with (deferred:PM)."
+    },
+    {
+      "id": "2.2",
+      "source": "final-acceptance-ae0c116.json; plan.md 2.2; tech-debt.md 2026-11-23 section",
+      "text": "The pilot gate waits for the PM word for new nights. Reopen trigger: the board unfreezes. Score-impact: none; one pass per route on mg-2026-11a shows incomplete 1 of 3 passes.",
+      "disposition": "Open by PM ruling 2026-11-23. Marked [b] with (deferred:PM)."
+    },
+    {
+      "id": "Phase 1 late findings",
+      "source": "nine Phase 1 review, adversarial and phase-acceptance JSONs",
+      "text": "F16, F18-F25, Review A F6, Review B nits and F2, Review C F10-F14 are carried in tech-debt.md. F1 and F2 were fixed in Green r9 and r10. None is a key leak and none has current score impact.",
+      "disposition": "Nonblocking under the PM late-findings rule. Recorded in tech-debt.md:316-342 before closeout; no text debt update was warranted."
+    }
+  ],
+  "metadata_status_note": "The closeout checker requires the literal value done and a completed date. The archived metadata.json holds status done, completed 2026-11-23, actual_tasks 4, and keeps the escalation block with the PM 2026-11-23 decision.",
+  "retained_evidence": [
+    "measure/runs/weekly_update_fix/final-acceptance-ae0c116.json",
+    "measure/runs/weekly_update_fix/final-acceptance-ae0c116.log",
+    "measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.json",
+    "measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.log",
+    "measure/runs/weekly_update_fix/review-a-p1-ddd82b5.json",
+    "measure/runs/weekly_update_fix/review-b-p1-ddd82b5.json",
+    "measure/runs/weekly_update_fix/review-c-p1-ddd82b5.json",
+    "measure/runs/weekly_update_fix/adversarial-p1-ddd82b5.json",
+    "measure/runs/weekly_update_fix/red-1.1.txt",
+    "measure/runs/weekly_update_fix/red-1.2.txt",
+    "measure/runs/weekly_update_fix/red-1.3.txt",
+    "measure/runs/weekly_update_fix/red-1.4.txt",
+    "measure/runs/weekly_update_fix/closeout-ae0c116.json",
+    "measure/runs/weekly_update_fix/closeout-ae0c116.log",
+    "measure/runs/weekly_update_fix/closeout-gate-summary.log",
+    "measure/archive/weekly_update_fix/plan.md",
+    "measure/archive/weekly_update_fix/spec.md",
+    "measure/archive/weekly_update_fix/test-strategy.md",
+    "measure/archive/weekly_update_fix/metadata.json",
+    "measure/archive/weekly_update_fix/automation-supervisor-closeout-manifest.json"
+  ],
+  "artifact_cleanup": {
+    "deleted": [],
+    "note": "The orchestrator named no bulky run artifacts. All evidence under measure/runs/weekly_update_fix/ is retained and committed. The Python __pycache__/.audit-harness.cpython-314.pyc file under that folder is an untracked cache artifact and is not staged."
+  },
+  "registry": {
+    "moved_from_active": true,
+    "archived_section_entry": true,
+    "description_source": "metadata.json description",
+    "description_matches": true,
+    "index_paths_updated": true
+  },
+  "staged_paths": [
+    "measure/archive/weekly_update_fix/",
+    "measure/runs/weekly_update_fix/",
+    "measure/index.md",
+    "measure/tracks.md"
+  ],
+  "unstaged_by_order": [
+    ".opencode/",
+    "harness/wt.txt",
+    "measure/runs/weekly_update_fix/__pycache__/",
+    ".tmp/",
+    "docs/",
+    "harness/model-guide/data/sets/",
+    "every other measure/runs/<track>/ folder"
+  ]
+}

@@ -1,0 +1,10 @@
+Red 2026-11-22, task 1.4, base 35a059c7d4e1e13a4a20c16342f0136bb609225f.
+Command: cd harness && npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit non-zero. Tests 4 failed | 1 passed (5).
+Failed (each fails for the missing FR-5 behavior):
+- E1: harness/model-guide/update.sh carries mode 100755 in the index (index shows 100644)
+- E2: the README command runs as written, without a bash prefix (direct exec fails with EACCES)
+- E3: the README states the preview-only branch and the docs branch separately (neither preview-only nor --docs appears)
+- E4: the README commit claim names the two data files plus the rebuilt pages (the old "only those two paths" claim is still present)
+Passed (already true, kept as a pin):
+- E5: the README names the command without a bash prefix

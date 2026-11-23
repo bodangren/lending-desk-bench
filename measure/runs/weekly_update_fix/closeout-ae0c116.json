@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "role": "measure-closeout",
+  "track": "weekly_update_fix",
+  "phase": "closeout",
+  "route": "opencode-go/hy4-flash-free#high",
+  "baseline_sha": "ae0c1163a625ef3153ab78510d36940faa6933db",
+  "audited_head_sha": "ae0c1163a625ef3153ab78510d36940faa6933db",
+  "status": "pass",
+  "summary": "weekly_update_fix is archived. Final acceptance passes at ae0c116, and its audited_head_sha equals the pre-closeout HEAD. The plan holds four completed Phase 1 tasks with SHA anchors and two PM-deferred Phase 2 tasks marked [b] with (deferred:PM). No [~] or [ ] task remains. metadata.json holds status done and completion date 2026-11-23. The registry lists the track only in Archived Tracks, and measure/index.md points to the archive. A5, A6 and the A9 pre-move scan are clean. The post-move project test gate passes through the real heavy-run wrapper. The closeout interphase check passes. The late findings stay in tech-debt.md with no score impact. No code, test, docs or published data changed. No push ran.",
+  "final_acceptance": {
+    "path": "measure/runs/weekly_update_fix/final-acceptance-ae0c116.json",
+    "status": "pass",
+    "audited_head_sha": "ae0c1163a625ef3153ab78510d36940faa6933db",
+    "provenance_match": true,
+    "scope_note": "Final acceptance passes at the pre-closeout HEAD. Its audited_head_sha, audited_head and role_base_sha all equal the current HEAD."
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "2.1 stays deferred under the PM 2026-11-23 ruling. Marked [b] with (deferred:PM). Reopen trigger: the board unfreezes.",
+    "2.2 stays deferred under the PM 2026-11-23 ruling. Marked [b] with (deferred:PM). Reopen trigger: the board unfreezes.",
+    "The Phase 1 late findings F16, F18-F25, Review A F6, Review B nits and F2, and Review C F10-F14 are carried in tech-debt.md. None is a key leak and none has current score impact.",
+    "The closeout added a trailing (deferred:PM) owner field to the two [b] plan rows to satisfy the measure-guard closeout rule and the pre-closeout state requirement. The deferral text and reopen trigger stay unchanged."
+  ],
+  "evidence": [
+    "git rev-parse HEAD printed ae0c1163a625ef3153ab78510d36940faa6933db, equal to role_base_sha and to final-acceptance-ae0c116.json audited_head_sha. git status showed only the pre-existing untracked .opencode/ and harness/wt.txt before any closeout edit.",
+    "Final acceptance status is pass with an empty blocking_findings list. Phase acceptance P1 passes at 019568c with an empty blocker list. The latest review A, B, C and adversarial results pass at ddd82b5.",
+    "git mv moved measure/tracks/weekly_update_fix to measure/archive/weekly_update_fix. The evidence folder measure/runs/weekly_update_fix/ stayed at its path.",
+    "The archived plan holds four top-level [x] tasks, zero [~], zero [ ], and two [b] tasks. Each [x] row carries a SHA anchor. Each [b] row carries a trailing (deferred:PM) field after the closeout record fix.",
+    "The measure-guard closeout guard initially denied the [x] registry marker because the two [b] rows lacked a deferred:<owner> field. The closeout added (deferred:PM) to both rows. The guard then allowed the edit and listed both [b] tasks for the user report.",
+    "A5: grep for PASS=N FAIL=0, all checks pass, all tests pass and completely fixed in the archived plan and measure/tracks.md found no hit.",
+    "A6: grep for resolved, completely fixed, fully solved and pass claims in measure/tracks.md found no hit. weekly_update_fix appears only in the Archived Tracks section after removal from the Tracks in progress section and the All tracks table.",
+    "A9 before the move: grep for measure/tracks/weekly_update_fix/ in code and scripts found no hit. The repository has no root tests/*.sh files. No test reads the pre-archive path of this track.",
+    "A9 after the move: the project test gate ran in real mode as 'cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot' through the heavy-run wrapper, EXIT=0, Test Files 1 passed (1), Tests 6 passed (6), 0 fail. No check failed because of the move. The summary is in measure/runs/weekly_update_fix/closeout-gate-summary.log.",
+    "The closeout interphase check printed 'INFO: no measure/generated folder, skipping the generated freshness check' then 'PASS: closeout checks passed' with EXIT=0. On its first run it failed with 'track is still listed in the active section of measure/tracks.md' because the All tracks table sat before the Archived Tracks heading; removing the row fixed it.",
+    "metadata.json holds status done, completed 2026-11-23, actual_tasks 4, and keeps the escalation block with the PM 2026-11-23 decision. The registry description equals the metadata description.",
+    "The Phase 1 late findings were already in tech-debt.md:316-342 before closeout. No lessons-learned file exists at project level, so no lessons update was warranted. No bulky run artifact was deleted.",
+    "Untracked user paths .opencode/, harness/wt.txt and the __pycache__ folder under the run directory were not staged. No code, test, docs or published data path changed. No push ran."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short",
+    "python3: read final-acceptance-ae0c116.json and confirm audited_head_sha equals HEAD",
+    "grep -c '^- \\[[x~ b]\\]' measure/archive/weekly_update_fix/plan.md",
+    "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass|all tests pass|completely fixed' measure/archive/weekly_update_fix/plan.md measure/tracks.md",
+    "grep -nE 'resolved|completely fixed|fully solved|all (checks |tests )?pass' measure/tracks.md",
+    "grep -rn 'measure/tracks/weekly_update_fix/' --include='*.sh' --include='*.ts' --include='*.js' --include='*.py' --include='*.cjs' --include='*.mjs' --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=runs --exclude-dir=.opencode .",
+    "git mv measure/tracks/weekly_update_fix measure/archive/weekly_update_fix",
+    "HEAVY_LOCK_WAIT_S=30 HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot'",
+    "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track weekly_update_fix",
+    "git add -- <explicit measure paths>; git commit -m 'measure(weekly_update_fix): closeout'"
+  ],
+  "changed_files": [
+    "measure/archive/weekly_update_fix/metadata.json",
+    "measure/archive/weekly_update_fix/plan.md",
+    "measure/archive/weekly_update_fix/spec.md",
+    "measure/archive/weekly_update_fix/test-strategy.md",
+    "measure/archive/weekly_update_fix/automation-supervisor-closeout-manifest.json",
+    "measure/index.md",
+    "measure/tracks.md",
+    "measure/runs/weekly_update_fix/closeout-ae0c116.json",
+    "measure/runs/weekly_update_fix/closeout-ae0c116.log",
+    "measure/runs/weekly_update_fix/closeout-gate-summary.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "weekly_update_fix is closed out and archived. The PM owns the two open deferred rows 2.1 and 2.2; both are marked [b] with (deferred:PM) and the reopen trigger 'the board unfreezes'. The Phase 1 late findings are in tech-debt.md with no score impact and no key leak. No test or script referenced the pre-archive path, so A9 is clean and the post-move gate passed through the real heavy-run wrapper. The closeout added the trailing deferred owner fields required by measure-guard. No push ran. facts changed: track path to measure/archive/weekly_update_fix/, metadata status done and completion date, registry entry moved to Archived Tracks, index paths, and the (deferred:PM) fields on two plan rows."
+}

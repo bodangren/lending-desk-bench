@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "status": "fail",
+  "summary": "The adversarial suite found that an empty private input directory is accepted. A planted seeded line then reaches docs/index.html and the weekly update commit. Fifteen cases pass; the empty-directory case fails.",
+  "role": "adversarial-testing",
+  "track": "weekly_update_fix",
+  "phase": "Phase 1: Red and Green for items 1 to 4",
+  "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "6c95b51587318827ca81fb2c184f0fc2111bb3f2",
+  "audited_head_sha": "6c95b51587318827ca81fb2c184f0fc2111bb3f2",
+  "blocking_findings": [
+    "F1 [Blocker] adversarial-testing: update.sh accepts an empty MODEL_GUIDE_PRIVATE_DIR because it checks only that the path is a directory. leak-check.ts then finds no seeded lines and commits a candidate containing a planted seeded line. adversarial-wuf.test.ts case `fails closed when the private input is a empty` observes the line in docs/index.html and HEAD; score-impact: yes"
+  ],
+  "nonblocking_findings": [],
+  "evidence": [
+    "Before the test commit, git rev-parse HEAD returned 6c95b51587318827ca81fb2c184f0fc2111bb3f2, matching role_base_sha.",
+    "The weekly_update_fix test strategy marks Phase 1 adversarial testing applicable and requires the new adversarial-wuf.test.ts test file, its targeted test command, and a test-only commit.",
+    "The exact production diff from phase_base_sha to role_base_sha changes update.sh, publish.ts, and preview.sh; it adds the staged candidate leak scan, conditional review candidates, explicit commit paths, and the score-route fallback.",
+    "The worktree has unrelated untracked .opencode/ and harness/wt.txt entries. Neither was changed or staged.",
+    "The supplied Review A, B, and C artifacts exist at the audited HEAD and report pass.",
+    "The targeted adversarial suite passed 15 tests and failed only the empty-private-directory refusal case; file and missing private paths refuse as required.",
+    "Commit 294a0addf001c537462235c4bb64cb6c73353b20 has subject `test(weekly_update_fix): adversarial phase 1` and changes only harness/model-guide-tests/adversarial-wuf.test.ts.",
+    "pgrep found no build-graph, Vitest, model-guide update, or npx tsx process from this role; the listed matches belonged to unrelated jobs."
+  ],
+  "commands": [
+    "git rev-parse HEAD before test commit (6c95b51587318827ca81fb2c184f0fc2111bb3f2)",
+    "git status --short (untracked .opencode/ and harness/wt.txt)",
+    "git diff --stat 35a059c7d4e1e13a4a20c16342f0136bb609225f..6c95b51587318827ca81fb2c184f0fc2111bb3f2 (22 tracked paths)",
+    "git diff 35a059c7d4e1e13a4a20c16342f0136bb609225f..6c95b51587318827ca81fb2c184f0fc2111bb3f2 -- harness/model-guide/update.sh harness/model-guide/publish.ts harness/model-guide/preview.sh harness/model-guide/leak-check.ts",
+    "cd harness && npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot (15 passed, 1 failed: empty private directory allowed a planted line into docs/index.html and the commit)",
+    "git commit -m \"test(weekly_update_fix): adversarial phase 1\" -- harness/model-guide-tests/adversarial-wuf.test.ts; amended with --no-edit and the same explicit path; final commit 294a0addf001c537462235c4bb64cb6c73353b20",
+    "git show --stat --oneline --summary HEAD (one changed path: harness/model-guide-tests/adversarial-wuf.test.ts)",
+    "git rev-parse HEAD after test commit (294a0addf001c537462235c4bb64cb6c73353b20)",
+    "pgrep -af 'build-graph|vitest|model-guide/update.sh|npx tsx' (no matching process from this role)"
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-wuf.test.ts",
+    "measure/runs/weekly_update_fix/adversarial-p1-6c95b51.json",
+    "measure/runs/weekly_update_fix/adversarial-p1-6c95b51.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [
+    "F1: update.sh accepts an empty private input directory, so leak-check.ts scans no seeded lines and the update can proceed."
+  ],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 2,
+      "evidence": "adversarial-wuf.test.ts fails when update.sh accepts an empty private directory without a named refusal."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The targeted suite exercises the real update script in temp repositories; 15 tests pass and the empty-directory test fails against the current code."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The only implementation-scope change is the requested adversarial test file; unrelated .opencode/ and harness/wt.txt remain unstaged."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The targeted Vitest output names the single failing empty-private-directory case, and update.sh:132-134 only checks directory existence."
+    }
+  ]
+}

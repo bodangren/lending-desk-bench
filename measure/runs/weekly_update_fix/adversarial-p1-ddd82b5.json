@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "The private-input guard refused source-matched, short, and empty diff inputs. A valid directory symlink completed the temp-repo update.",
+  "role": "adversarial-testing",
+  "track": "weekly_update_fix",
+  "phase": "Phase 1: Red and Green for items 1 to 4",
+  "baseline_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "audited_head_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "evidence": [
+    "HEAD at audit start matched role_base_sha ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d.",
+    "adversarial-wuf.test.ts:332,346,361 cover source-matched lines, lines shorter than 20 characters, and set folders without diffs.",
+    "adversarial-wuf.test.ts:373 verifies a valid private-input symlink completes a temp-repo docs update.",
+    "All four added tests exercised update.sh in temporary repositories. No real docs, private folder, or approval record was used.",
+    "Commit 019568c contains only harness/model-guide-tests/adversarial-wuf.test.ts."
+  ],
+  "commands": [
+    "cd harness && npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot — exit 0; 24 passed."
+  ],
+  "changed_files": [
+    "harness/model-guide-tests/adversarial-wuf.test.ts",
+    "measure/runs/weekly_update_fix/adversarial-p1-ddd82b5.json",
+    "measure/runs/weekly_update_fix/adversarial-p1-ddd82b5.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "The four new live subprocess cases passed in adversarial-wuf.test.ts."},
+    {"axis": "test_meaning", "score": 4, "evidence": "The new cases verify refusal status, stdout, unchanged tree, and commit state through expectPrivateRefusal."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "Commit 019568c changes only harness/model-guide-tests/adversarial-wuf.test.ts."},
+    {"axis": "evidence_quality", "score": 5, "evidence": "The targeted Vitest command passed with 24 tests at the audited implementation HEAD."}
+  ]
+}

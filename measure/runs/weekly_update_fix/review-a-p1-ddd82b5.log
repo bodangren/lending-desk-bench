@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+commits: none
+tests_run: adversarial-wuf.test.ts 20 passed; update-approval.test.ts 6 passed; update-pages.test.ts 12 passed; update-leak.test.ts 6 passed; git rev-parse HEAD matched supplied audited_head_sha
+files_changed: measure/runs/weekly_update_fix/review-a-p1-ddd82b5.json; measure/runs/weekly_update_fix/review-a-p1-ddd82b5.log
+plan_updates: none
+known_failures: F20 is nonblocking tech debt; no concrete path shows an empty scan or private data reaching a commit
+handoff: F20 does not block this phase. The default private directory is checked for seeded input before the scan. F19 remains routed to tech-debt; this result does not reopen it.
+route: openai/gpt-6-luna#high
+END_MEASURE_AGENT_RESULT

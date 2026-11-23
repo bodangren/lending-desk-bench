@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: spec-review
+status: complete
+track: weekly_update_fix
+phase: track setup
+commits: none
+tests_run: none (read-only review; no test file executed)
+files_changed: measure/runs/weekly_update_fix/spec-review-a7b8d78.json, measure/runs/weekly_update_fix/spec-review-a7b8d78.log
+plan_updates: none
+known_failures: none
+handoff: Round 1 spec review fails on one Blocker. F1: plan task 2.1 runs update.sh without --docs, but spec FR-2 and the Docs update request definition require --docs for any docs write; the closing task would take preview-only and miss its Verify. F2/F3 Major: README commit-path claim left false, and conditional review.html rebuild has no test. F4 Nit: standing push rule unstated. Standing-word answer: the weekly update runs under the standing word from the first publish (archived D19 and D21); the stable record is the first-publish consent artifact and update.sh never pushes, so no new PM approval is needed. Route hy4 is a substitution for the Muse author family.
+route: opencode-go/hy4-flash-free#high (substitution for Muse author family)
+END_MEASURE_AGENT_RESULT

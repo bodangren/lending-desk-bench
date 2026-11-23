@@ -1,0 +1,33 @@
+Phase acceptance, track weekly_update_fix, Phase 1. Audited HEAD 019568c7cf3098a68238aa236c08a8309e122953.
+Phase base 35a059c7d4e1e13a4a20c16342f0136bb609225f. Result artifact: measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.json.
+The tree held only the untracked .opencode/ and harness/wt.txt. I edited no file outside measure/runs/.
+
+What passed:
+- All four tasks carry [x] and a commit SHA inside the phase range.
+- The four prerequisite results target ddd82b5 and pass. The only later commit, 019568c, changes one test file.
+- Nine of the ten listed test files exit 0 in place. Six more files that the phase edited, or the strategy lists, also exit 0.
+- bash -n, PROJECT_LINT, mode 100755, the empty docs/ diff, and the empty harness/tests diff all hold.
+- A read-only preview run matches docs/review.html and docs/assets/data/review.json byte for byte.
+- Anti-pattern A5 holds for the plan claims. A3 holds. A4, A6, and A7 do not apply to this diff.
+
+What failed:
+- preview-gate case P2B2-2 fails in place in both allowed runs (121 passed, 1 failed).
+- The same race fails at the phase base 35a059c on an ext4 export (2 of 4 runs). Tmpfs exports of base and HEAD pass 122 of 122 in 3 of 3 runs.
+- The failure is not a Phase 1 defect. Finding F22 records the cause and the fix for tech debt.
+
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+commits: none
+tests_run: update-pages 12, update-approval 6, update-leak 6, update-exec 6, update 9, adversarial-p5 5, adversarial 46, adversarial-p2 13, adversarial-wuf 24 passed, each file exit 0; adversarial-p4g 4, guide 18, real-work 16, leak-check 22, adversarial-p4 24, adversarial-p4-runner 16 passed, each file exit 0; preview-gate exit 1 twice (121 passed, 1 failed on P2B2-2); bash -n and PROJECT_LINT exit 0
+files_changed: measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.json; measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.log
+plan_updates: none
+known_failures: preview-gate case P2B2-2 fails in place in both allowed runs (121 passed, 1 failed). The race exists at base 35a059c (F22). Tmpfs exports pass 122 of 122.
+handoff: Phase 1 passes at HEAD 019568c7cf3098a68238aa236c08a8309e122953 with 0 blocking findings. Record in plan.md: Late finding F22: tech-debt (a test fixture race; no delivered file or public output is wrong). Record F23, F24, and F25 the same way as tech-debt (a test gap, record keeping, spec wording). Do not close out the track: tasks 2.1 and 2.2 stay [b], and the status tool lists the track as a closeout candidate (A12). Run final acceptance with a family other than openai and claude. Rerun this acceptance on any new HEAD that changes a production file. Five temp folders remain because rm -rf was declined: /tmp/wuf-acc-base.NtWXEb, /tmp/wuf-acc-head.rYnRFG, /tmp/wuf-acc-preview.UNWu6u, /var/tmp/wuf-acc-base-ext4.0tc7TZ, /var/tmp/wuf-acc-head-ext4.afKIQ0.
+route: claude-agent/sonnet#max
+confidence: high
+retry_recommendation: none
+result_artifact: measure/runs/weekly_update_fix/phase-acceptance-p1-019568c.json
+END_MEASURE_AGENT_RESULT

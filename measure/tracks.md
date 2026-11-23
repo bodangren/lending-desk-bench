@@ -14,9 +14,6 @@
 - [ ] **Track: Grader browser: grade with the system Chrome and regrade the stale scores**
   - *Link: [grader_system_chrome](tracks/grader_system_chrome/)*
 
-- [ ] **Track: Weekly update fix: approval path, page refresh, leak check, and executable bit**
-  - *Link: [weekly_update_fix](tracks/weekly_update_fix/)*
-
 ## All tracks
 
 | ID | Title | Type | Status | Created |
@@ -31,7 +28,6 @@
 | daily_model_schedule | Daily model schedule: one model per day, untested first, then the stalest | Feature | pending — O1 approved with 3 conditions 2026-10-31 (spec D11–D14); Phase 4b reviews next (task 4b.4); Phase 4 Review C and acceptance run with Phase 4b | 2026-10-25 |
 | grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | pending | 2026-11-04 |
 | opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | pending — spec check 1.0 next; deadline Sat 2026-11-07 23:00 +07; owner question O1 open | 2026-11-06 |
-| weekly_update_fix | Weekly update fix: approval path, page refresh, leak check, and executable bit | Bug | new — due Mon 2026-11-23, before the next weekly export (expected about 2026-11-24) | 2026-11-22 |
 
 ## Backlog
 
@@ -60,3 +56,8 @@ These items have no date and no track yet.
 - [x] **Track: Model guide: seeded-defect review, real-work outcomes, and the use-this-model table**
   *Link: [model_guide](./archive/model_guide/)*
   *Model guide: seeded-defect review, real-work outcomes, and the use-this-model table. Track A scored seeded defects from real diffs; page B published sanitized real-work outcomes; the overview table holds the use-this-model rows. Final acceptance passed at 3ba285f. The pilot gate (4.11) and the first weekly update (5.4) stay PM-deferred.*
+
+- [x] **Track: Weekly update fix: approval path, page refresh, leak check, and executable bit**
+  *Link: [weekly_update_fix](./archive/weekly_update_fix/)*
+  *Weekly update fix: the stable approval path, the HTML refresh, the leak check, and the executable bit. The track also carries the moved model_guide rows 4.11 (deferred pilot gate) and 5.4 (the first weekly update).*
+  *Closeout 2026-11-23: Phase 1 FR-1 to FR-5 passed; final acceptance at ae0c116. Phase 2 rows 2.1 and 2.2 stay PM-deferred until the board unfreezes. No push ran.*

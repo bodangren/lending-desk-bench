@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "role": "final-acceptance",
+  "track": "weekly_update_fix",
+  "phase": "track review",
+  "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "track_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "ae0c1163a625ef3153ab78510d36940faa6933db",
+  "audited_head_sha": "ae0c1163a625ef3153ab78510d36940faa6933db",
+  "audited_head": "ae0c1163a625ef3153ab78510d36940faa6933db",
+  "status": "pass",
+  "summary": "Final acceptance passes at ae0c116. Phase 1 meets FR-1 through FR-5. Phase 2 is honestly deferred under the PM decision. All scoped tests and configured checks pass.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "FA-NB1 [Nit] final-acceptance: The carried findings remain in tech-debt.md:316-342. They include F16, F18-F25, Review A F6, Review B nits and F2, and Review C F10-F14. Each recorded item has no current score impact.",
+    "FA-NB2 [Setup] measure/doctor.sh is absent, so its command exits 127. The repository's prior live-gate ruling treats the supplied project gates as the doctor equivalent. This audit ran the track strategy's lint and test gates plus git diff --check.",
+    "FA-NB3 [Push state] origin/main contains f75c800 but not ae0c116. The latter changes only Measure records and tech-debt.md. Closeout should preserve and push the record commits."
+  ],
+  "evidence": [
+    "git rev-parse HEAD prints ae0c1163a625ef3153ab78510d36940faa6933db. This equals role_base_sha and audited_head_sha.",
+    "git status --short lists only the pre-existing untracked .opencode/ and harness/wt.txt paths. Neither path belongs to this audit.",
+    "git merge-base --is-ancestor 35a059c7d4e1e13a4a20c16342f0136bb609225f 019568c7cf3098a68238aa236c08a8309e122953 exits 0.",
+    "git merge-base --is-ancestor 019568c7cf3098a68238aa236c08a8309e122953 ae0c1163a625ef3153ab78510d36940faa6933db exits 0.",
+    "git merge-base --is-ancestor 35a059c7d4e1e13a4a20c16342f0136bb609225f ae0c1163a625ef3153ab78510d36940faa6933db exits 0.",
+    "Exactly one phase-acceptance result exists. It passes Phase 1 at 019568c with empty blocker and violation lists.",
+    "Phase 2 has no implementation to accept. Both tasks are deferred, and metadata.json:46 records the PM closeout decision.",
+    "git diff --name-only ae0c1163a625ef3153ab78510d36940faa6933db HEAD prints no path. The final audited HEAD equals current HEAD.",
+    "git diff --name-only 019568c7cf3098a68238aa236c08a8309e122953 ae0c1163a625ef3153ab78510d36940faa6933db prints five paths: two docs files, metadata.json, plan.md, and tech-debt.md.",
+    "git diff --name-only 019568c7cf3098a68238aa236c08a8309e122953 ae0c1163a625ef3153ab78510d36940faa6933db -- harness README.md prints no path. No production code changed after Phase 1 acceptance.",
+    "git show --stat --oneline f75c800 shows only docs/assets/data/model-guide.json and docs/index.html. git branch -r --contains f75c800 lists origin/main.",
+    "git show --stat --oneline ae0c116 shows only metadata.json, plan.md, and tech-debt.md. The PM deferral and finding routes are record-only changes.",
+    "git diff --name-only 35a059c7d4e1e13a4a20c16342f0136bb609225f ae0c1163a625ef3153ab78510d36940faa6933db -- docs prints only model-guide.json and index.html.",
+    "The docs diff changes the model-guide date to 2026-11-23 and removes whitespace before the model-guide section. It adds no public claim or private value.",
+    "The plan has four [x] Phase 1 tasks and two [b] Phase 2 tasks. It has no [~] or legacy open task.",
+    "The four Phase 1 task SHAs resolve and are ancestors of HEAD. Their commits are 00d9013, 60e24f1, 00d9013, and c4d70a1.",
+    "The deferral is honest. plan.md:217 and plan.md:253 name the reopen trigger, while tech-debt.md:341-342 says neither deferred run happened.",
+    "FR-1 holds at update.sh:64 and publish.ts:62. The old approval path search returns no match in harness/model-guide/.",
+    "FR-2 holds at update.sh:176-179 and update.sh:250-256. update-approval passes six tests, including both record states and the named refusal.",
+    "FR-3 holds at update.sh:258-311 and update.sh:329-350. update-pages passes twelve tests, including exact commit sets and no-op behavior.",
+    "FR-4 holds at update.sh:313-327. update-leak passes six tests, leak-check passes twenty-two tests, and adversarial-wuf passes twenty-four tests.",
+    "FR-5 holds. git ls-files -s harness/model-guide/update.sh reports mode 100755, and update-exec passes six tests.",
+    "README.md:287-293 separates preview and docs branches. The obsolete 'only those two paths' search returns no match.",
+    "The failing-first records show real Red failures. red-1.1.txt records four failures, red-1.2.txt six, red-1.3.txt four, and red-1.4.txt four.",
+    "The latest Review A, Review B, Review C, and adversarial results pass at ddd82b5. Phase acceptance covers the later test-only commit 019568c.",
+    "The six requested Vitest files pass at HEAD with --maxWorkers=1. Their counts are 24, 12, 6, 6, 6, and 9 in the brief's order.",
+    "The configured leak-check regression file also passes twenty-two tests. Each of the five model-guide shell files passes bash -n.",
+    "git diff --check 35a059c7d4e1e13a4a20c16342f0136bb609225f ae0c1163a625ef3153ab78510d36940faa6933db exits 0.",
+    "A5 holds. The plan has no PASS=N/FAIL=0 or all-checks-pass claim, and the final targeted counts match the replayed tests.",
+    "A6 holds. measure/tracks.md:17-18 and :34 keep the pre-closeout new state and make no adversarial-test overstatement.",
+    "A9 holds. The repository has no root tests/*.sh files. The archived approval references in update-approval.test.ts are intentional fixture inputs.",
+    "The committed docs contain no matched key shape, private path, synthetic seed, new_lines field, or witness field. The docs diff contains only date and whitespace changes.",
+    "The known preview-gate P2B2-2 race remains nonblocking. Phase acceptance reproduced it at base 35a059c and routed it as F22.",
+    "The status command reports zero incomplete phases and one closeout candidate. This is the recorded A12 blind spot because two tasks remain deferred.",
+    "This role wrote only its two artifacts under measure/runs/weekly_update_fix/. It ran no real update, publish, push, browser, or CLI server."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> ae0c1163a625ef3153ab78510d36940faa6933db",
+    "git status --short -> ?? .opencode/ and ?? harness/wt.txt",
+    "git diff --stat 019568c HEAD -> five files; no harness or README change",
+    "git diff --name-only ae0c1163a625ef3153ab78510d36940faa6933db HEAD -> empty",
+    "git diff --name-only 019568c7cf3098a68238aa236c08a8309e122953 ae0c1163a625ef3153ab78510d36940faa6933db -> docs/assets/data/model-guide.json; docs/index.html; measure/tracks/weekly_update_fix/metadata.json; measure/tracks/weekly_update_fix/plan.md; tech-debt.md",
+    "git diff --name-only 019568c7cf3098a68238aa236c08a8309e122953 ae0c1163a625ef3153ab78510d36940faa6933db -- harness README.md -> empty",
+    "git diff --name-only 35a059c7d4e1e13a4a20c16342f0136bb609225f ae0c1163a625ef3153ab78510d36940faa6933db -- docs -> docs/assets/data/model-guide.json; docs/index.html",
+    "git diff --name-only 35a059c7d4e1e13a4a20c16342f0136bb609225f ae0c1163a625ef3153ab78510d36940faa6933db -- harness/tests -> empty",
+    "git merge-base --is-ancestor 35a059c7d4e1e13a4a20c16342f0136bb609225f 019568c7cf3098a68238aa236c08a8309e122953 -> exit 0",
+    "git merge-base --is-ancestor 019568c7cf3098a68238aa236c08a8309e122953 ae0c1163a625ef3153ab78510d36940faa6933db -> exit 0",
+    "git merge-base --is-ancestor 35a059c7d4e1e13a4a20c16342f0136bb609225f ae0c1163a625ef3153ab78510d36940faa6933db -> exit 0",
+    "git show --stat --oneline f75c8007f44a7a19f0adcd104400f947cee04770 -> two docs files only",
+    "git show --stat --oneline ae0c1163a625ef3153ab78510d36940faa6933db -> metadata.json, plan.md, and tech-debt.md only",
+    "git branch -r --contains f75c8007f44a7a19f0adcd104400f947cee04770 -> origin/main",
+    "git ls-files -s harness/model-guide/update.sh -> 100755 174f6800c78a8736695e50b120324dd8eff4c9a7",
+    "git diff --check 35a059c7d4e1e13a4a20c16342f0136bb609225f ae0c1163a625ef3153ab78510d36940faa6933db -> exit 0",
+    "cd harness && npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 24 passed",
+    "cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 12 passed",
+    "cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 6 passed",
+    "cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 6 passed",
+    "cd harness && npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 6 passed",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 9 passed",
+    "cd harness && npx vitest run model-guide-tests/leak-check.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> exit 0; 22 passed",
+    "bash -n for review-run.sh, preview.sh, judge-run.sh, update.sh, and provider-credential.sh -> exit 0 for each file",
+    "python3 measure_interphase_checks.py status --repo . --track weekly_update_fix -> incomplete_phases 0; closeout_candidates 1",
+    "bash measure/doctor.sh -> exit 127; file absent; prior repository live-gate ruling applies",
+    "python3 -m json.tool measure/runs/weekly_update_fix/final-acceptance-ae0c116.json -> exit 0; JSON valid"
+  ],
+  "changed_files": [
+    "measure/runs/weekly_update_fix/final-acceptance-ae0c116.json",
+    "measure/runs/weekly_update_fix/final-acceptance-ae0c116.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "kimi-code-plan-cn/k3.1-pro#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "FR-1 through FR-5 pass their live temporary-repository tests, while the recorded nonblocking edge cases remain in tech-debt.md:316-342."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The four Red records prove failing-first behavior, and 85 targeted tests pass; strategy case 7 remains uncovered as F23."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The exact diff contains the planned tools, tests, records, and the two expected docs outputs from f75c800."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every final claim has a command or file reference, but the stale Phase 2 verification text remains routed to tech debt."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I agree with its pass and F20 disposition; update.sh:71 and :183-190 keep the guarded default, and its cited tests pass."
+    },
+    {
+      "reviewer_role": "review-b",
+      "reviewer_route": "opencode-go/glm-5.3#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I agree with its pass; update.sh:183-190 and :316-317 use one validated private root, and adversarial-wuf passes 24 tests."
+    },
+    {
+      "reviewer_role": "review-c",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "I agree with its pass and F21 documentation nit; README.md:287-293 omits the private-input contract recorded in tech-debt.md."
+    },
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "openai/gpt-6-luna#high",
+      "agreed": true,
+      "score": 4,
+      "evidence": "Its four added cases pass within the 24-test replay, but strategy case 7 remains untested and the result predates test-only commit 019568c."
+    }
+  ]
+}

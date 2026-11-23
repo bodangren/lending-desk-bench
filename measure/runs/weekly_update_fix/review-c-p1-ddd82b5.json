@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "role": "review-c",
+  "track": "weekly_update_fix",
+  "phase": "Phase 1: Red and Green for items 1 to 4",
+  "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "audited_head_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "contract_applicability": "applicable",
+  "summary": "The private-input refusals and prior CLI behavior pass targeted temporary-copy tests; the README and Phase 2 task omit the new private-input requirement.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F21 [Nit] review-c: README.md section 'Model guide weekly update' and plan.md Phase 2 task 2.1 do not name the private-input contract: an absolute MODEL_GUIDE_PRIVATE_DIR, a seeded line of at least 20 characters under sets/<set>/diffs/*.diff that is absent from src/, the default location, or the `update: no private input` exit-2 refusal. This is a late finding and does not name a delivered public output or a wrong weekly-update result, so it goes to tech debt under the last-round rule; score-impact: no."
+  ],
+  "evidence": [
+    "Provenance: `git rev-parse HEAD` returned ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d, matching role_base_sha and audited_head_sha.",
+    "Applicability: test-strategy.md:160 marks Review C applicable for CLI and exit codes; the phase diff includes update.sh, its tests, README.md, and plan.md.",
+    "harness/model-guide-tests/adversarial-wuf.test.ts passed 20 tests in a /tmp repository copy. It asserts exit 2 and the exact refusal line for empty, missing, file-shaped, and relative private inputs, plus the seeded-line scan and `update: no change`.",
+    "harness/model-guide-tests/update-approval.test.ts passed 6 tests in the /tmp copy, including the flagless preview-only behavior and no-approval refusal.",
+    "harness/model-guide-tests/update-exec.test.ts passed 6 tests in the /tmp copy, including the exact usage line, executable mode, and direct invocation.",
+    "harness/model-guide-tests/update-pages.test.ts passed 12 tests and update-leak.test.ts passed 6 tests in the /tmp copy; prior refusal lines and commit/no-op paths remain covered.",
+    "The exact phase diff from phase_base_sha includes harness/model-guide/update.sh and the documentation files, so this CLI audit applies.",
+    "README.md:285-293 documents the weekly update but omits the absolute-path requirement, seeded-line shape, default location, and `update: no private input` refusal.",
+    "plan.md:183-192 names the Phase 2 update and leak-check commands but does not state the private-input requirements or refusal.",
+    "The temporary copy at /tmp/review-c-weekly-update was removed after testing."
+  ],
+  "commands": [
+    "git rev-parse HEAD -> ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+    "git diff --name-status 35a059c7d4e1e13a4a20c16342f0136bb609225f..ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+    "git diff 6c95b51587318827ca81fb2c184f0fc2111bb3f2..ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d -- harness/model-guide/update.sh",
+    "npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 20 passed",
+    "npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 6 passed",
+    "npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 6 passed",
+    "npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 12 passed",
+    "npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 6 passed"
+  ],
+  "changed_files": [
+    "measure/runs/weekly_update_fix/review-c-p1-ddd82b5.json",
+    "measure/runs/weekly_update_fix/review-c-p1-ddd82b5.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "adversarial-wuf.test.ts passed 20 cases covering the new refusal classes and seeded-line scan."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Five targeted test files passed in the temporary copy and cover CLI behavior, prior refusals, and no-op output."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The phase diff changes the planned update script, its tests, README.md, and weekly_update_fix plan.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The five targeted Vitest commands passed, and README.md:285-293 plus plan.md:183-192 support F21."
+    }
+  ]
+}

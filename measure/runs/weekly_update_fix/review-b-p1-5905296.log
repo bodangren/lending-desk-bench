@@ -1,0 +1,36 @@
+Review B pass 3, track weekly_update_fix, Phase 1.
+Audited range: 35a059c7d4e1e13a4a20c16342f0136bb609225f..5905296730e2751760926ea5c5139c2dd7b4180b.
+HEAD matched the supplied sha; the tree held only untracked files outside the range.
+The local clock read 02:03 (inside the 02:00-06:00 test window), so no test or
+update.sh run executed this pass; the audit ran on read-only git and file reads.
+Result artifact: measure/runs/weekly_update_fix/review-b-p1-5905296.json.
+
+What passed:
+- The new private-input guard (update.sh:127-186) mirrors the leak-check rule
+  exactly and refuses empty, missing, and file-shaped inputs before any write.
+- The adversarial file pins the refusal lines, the unchanged tree hashes, the
+  never-printed seeded values, the six planted-candidate refusals, and the
+  symlink refusal.
+- No docs/ change in the range; no real key shape or private path in the range
+  diff; fixture seed lines are synthetic markers only; update.sh never pushes.
+- A2 consent gate: pass. A6 registry: pass (no resolved claim).
+
+What failed:
+- F1 (blocking): a relative MODEL_GUIDE_PRIVATE_DIR splits the guard
+  (update.sh:180, caller cwd) from the leak scan (update.sh:308-309, after
+  cd $ROOT/harness), so the scan can run empty again through an env value.
+- F2 (nonblocking nit): a private path that starts with '--' prints a false
+  'update: leak --private' line; fail-closed message bug only.
+
+MEASURE_AGENT_RESULT
+role: review-b (security and data handling)
+route: opencode-go/glm-5.3#high
+status: fail
+confidence: medium
+security_applicability: applicable
+blocking_findings: 1 (F1 relative MODEL_GUIDE_PRIVATE_DIR splits the guard from the scan; the empty-scan hole reopens through an env value; fix: realpath -m on PRIVATE_DIR or refuse a relative value, plus one adversarial case)
+nonblocking_findings: 1 (F2 nit: a private path starting with '--' prints a false leak line; tech debt)
+retry_recommendation: fix
+changed_files: 23 (range 35a059c..5905296)
+result_artifact: measure/runs/weekly_update_fix/review-b-p1-5905296.json
+END_MEASURE_AGENT_RESULT

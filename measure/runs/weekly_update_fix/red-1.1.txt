@@ -1,0 +1,11 @@
+Red 2026-11-22, task 1.1, base 35a059c7d4e1e13a4a20c16342f0136bb609225f.
+Command: cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit non-zero. Tests 4 failed | 1 passed (5).
+Failed (each fails for the missing FR-1/FR-2 behavior):
+- A1: neither update.sh nor publish.ts names the old approval path (both tools still name measure/tracks/model_guide/publish-approval.md)
+- A2: publish.ts refuses when the stable record is absent, even with an old-path record (tool reads the old path, prints publish: sha256 index.html)
+- A3: update.sh --docs with no stable record refuses, writes nothing, and makes no commit (--docs is unrecognized; usage error on stderr, empty stdout)
+- A5: the stable record holds the same six rows as the archived record (harness/model-guide/publish-approval.md is missing)
+Passed (regression pin, correct in both contracts):
+- A4: a plain run without --docs keeps the preview-only branch
+update.test.ts refresh for task 1.1: APPROVAL and approve() now point at harness/model-guide/publish-approval.md (old path contradicts FR-1); U1, U3, UP1 unchanged. Refreshed U2 fails (tool reads the old path, takes the preview-only branch); all other cases pass.

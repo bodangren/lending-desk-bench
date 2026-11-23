@@ -1,0 +1,34 @@
+Review A: correctness and architecture
+phase_base_sha: 35a059c7d4e1e13a4a20c16342f0136bb609225f
+role_base_sha: 8ceb628202fbacf3ddb688a2a043f2db7f3968b6
+audited_head_sha: 8ceb628202fbacf3ddb688a2a043f2db7f3968b6
+
+The audit covers the exact supplied range. Both HEAD checks matched.
+The range leaves docs/ and the framework unchanged.
+The stable record parses and keeps the approved owner, date, and six rows.
+All six approved hashes match the committed public files.
+
+The 15 scoped Vitest files each exited 0. The commands ran one file at a time without shell redirection.
+The shell syntax check and git diff --check exited 0.
+P1 rejected a fixture with a missing page. P4 accepted an in-memory no-op.
+The score decision skipped a changed incomplete fixture and selected an unchanged complete fixture.
+U2 reproduced the flagless docs commit in a temp repo.
+The current test counts match the latest Green record. The FR summary still overstates what the tests prove.
+
+The PM round cap allows no blocker without a confirmed real-key leak. The review found none in the audited changes.
+The audit did not run a real update, publish, or private-data scan.
+Facts changed: none.
+
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+commits: none
+tests_run: 15 scoped Vitest files passed (316 tests); shell syntax and git diff checks passed; missing-page, score-decision, and approval-parser fixtures ran
+files_changed: measure/runs/weekly_update_fix/review-a-p1-8ceb628.json, measure/runs/weekly_update_fix/review-a-p1-8ceb628.log
+plan_updates: none
+known_failures: F1-F6 are nonblocking under the PM round cap. The JSON records the exact findings.
+handoff: Route F1-F5 to Green in one fix round under the weekly correctness exception. Record F6 and the credential-shape gap as tech debt.
+route: openai/gpt-6.2-sol#high
+END_MEASURE_AGENT_RESULT

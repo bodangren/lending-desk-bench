@@ -1,0 +1,31 @@
+Review A: correctness and architecture
+phase_base_sha: 35a059c7d4e1e13a4a20c16342f0136bb609225f
+role_base_sha: a4e85da47f12669aa904f4d9280b01ca9b2046fa
+audited_head_sha: a4e85da47f12669aa904f4d9280b01ca9b2046fa
+
+The audit covers the exact supplied range. Both HEAD checks matched.
+The range leaves docs/ and the Measure registry unchanged.
+The nine scoped Vitest files each exited 0. Their labeled counts match plan.md:160.
+Each new Red case fails at the base 8ceb628 and passes at HEAD.
+The routed findings F1 to F5, C F7, and C F9 are fixed.
+The preview.sh fallback leaves the published review output byte-identical.
+A temp run of the real tree commits only the files whose bytes changed.
+One defect stays in the changed lines. A missing review template publishes a fresh score file beside a stale public review page.
+The track test strategy still requires an unchanged preview.sh.
+The PM round cap allows no blocker without a confirmed real-key leak. The review found none in the audited changes.
+The audit did not run a real update, publish, or private-data scan.
+Facts changed: none.
+
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+commits: none
+tests_run: 9 scoped Vitest files passed (224 tests); the new cases failed at the base 8ceb628; a read-only preview.sh run matched the published review output byte for byte; six temp-repo runs of update.sh checked the branch, the score rule, the scan scope, the refusals, and the commit set
+files_changed: measure/runs/weekly_update_fix/review-a-p1-a4e85da.json, measure/runs/weekly_update_fix/review-a-p1-a4e85da.log
+plan_updates: none
+known_failures: F15 is blocking under the re-review scope. A missing review template leaves the public review page stale beside a fresh published score. The JSON records the exact finding.
+handoff: Route F15 to Green in one fix round under the wrong-result exception. Guard the review template beside the overview guard and add a Red case. Ask the user or a build session to refresh the track test strategy for the preview.sh change and the new scan scope. Record F16, F17, and F18 as tech debt.
+route: minimax-cn-coding-plan/MiniMax-M3.1-Flash
+END_MEASURE_AGENT_RESULT

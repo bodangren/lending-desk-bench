@@ -1,0 +1,21 @@
+Green r10 (Review B F1, relative private dir) log, 2026-11-23, 06:12 +07. Immutable phase base 35a059c7d4e1e13a4a20c16342f0136bb609225f. Role base 1414c092915c829875565738ae32373056371775. Final Green HEAD ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d.
+MEASURE_AGENT_RESULT
+status: pass
+role: mid-green
+route: opencode-go/hy4-flash-free#high (PM 2026-11-22, Hy4 free for Green); Red model of this phase opencode-go/muse-spark-1.3-contributor#high
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4 (Green r10, Review B F1)
+phase_base_sha: 35a059c7d4e1e13a4a20c16342f0136bb609225f
+role_base_sha: 1414c092915c829875565738ae32373056371775
+red_commit_in_range: 1414c09 test(weekly_update_fix): red for a relative private dir
+commits: 391195212e7c8412280f58d2702212724d2fe1be fix(weekly_update_fix): refuse a relative private dir; ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d measure(weekly_update_fix): green r10 evidence
+head_sha: ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d
+tasks_flipped_x: none in this round; task 1.3 gained an evidence line
+tasks_flipped_b: none; 2.1 and 2.2 stay [b] as deferred Phase 2 work
+new_files_added: none; only harness/model-guide/update.sh changed in the implementation commit
+implementation: an explicitly set MODEL_GUIDE_PRIVATE_DIR that does not start with `/` now refuses on --docs with `update: no private input` and exit 2 before any write or commit. The refusal prints no private path and no value. An unset variable keeps the default location and behavior.
+green_line: one file at a time with --configLoader native --maxWorkers=1 --reporter=dot; adversarial-wuf 20 passed; update-pages 12 passed; update-approval 6 passed; update-leak 6 passed; update-exec 6 passed; update 9 passed; preview-gate 122 passed; adversarial-p5 5 passed; adversarial 46 passed; adversarial-p2 13 passed; every file exited 0 in its final run
+flake_report: preview-gate failed its first run on the P2B2-2 preview mtime-tie case (121 passed, 1 failed) and passed on the single allowed rerun with 122 passed. No other case failed.
+lint_gate: bash -n harness/model-guide/update.sh harness/model-guide/preview.sh exit 0
+other_gates: git ls-files -s harness/model-guide/update.sh shows 100755; git status --short docs/ prints nothing; docs diff from phase base is empty; no push; no update.sh or publish.ts run touched the real repo; the pre-existing untracked .opencode/ and harness/wt.txt stayed unstaged
+END_MEASURE_AGENT_RESULT

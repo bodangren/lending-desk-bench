@@ -1,0 +1,50 @@
+Review B pass 4, track weekly_update_fix, Phase 1.
+Audited range: 35a059c7d4e1e13a4a20c16342f0136bb609225f..ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d.
+HEAD matched the supplied sha; the tree held only untracked files outside the range.
+The local clock was past 06:00, so the test file ran and update.sh ran in
+throwaway temp repos only. All temp state was removed after the runs.
+Result artifact: measure/runs/weekly_update_fix/review-b-p1-ddd82b5.json.
+Probe script kept as evidence: measure/runs/weekly_update_fix/wuf-probe-b.mjs.
+
+What passed:
+- Pass-3 F1 is closed. update.sh:183-187 refuses a set MODEL_GUIDE_PRIVATE_DIR
+  that does not start with /, exit 2, before any write or commit, and prints
+  no part of the value. Red 1414c09 pins the bare, dot, and dot-dot cases.
+- The guard (update.sh:188) and the leak scan (update.sh:316-317) read the
+  identical $PRIVATE_DIR string, so no value splits the two roots.
+- adversarial-wuf.test.ts passed 20 cases at HEAD.
+- A 75-check probe run in temp repos confirmed: relative, tilde, space-only,
+  trailing-newline, and unresolvable-dotdot values refuse fail-closed; a
+  resolvable dotdot value, a symlinked private dir, and a clean absolute
+  value pass the guard, and a planted seeded line is refused with
+  'update: leak docs/index.html'; the clean run commits and never prints
+  the private path.
+- No docs/ change in the range; no key shape or real private path in the
+  range diff; fixture seed lines are synthetic markers; update.sh never
+  pushes.
+- A2 consent gate: pass. A6 registry: pass (no resolved claim; the plan
+  r10 claim of 20 cases matches the observed run).
+
+What failed:
+- Nothing. No new blocking or nonblocking finding. The pass-3 F2 nit and
+  Review A F19/F20 stay routed tech debt; no CONTEST items reached this pass.
+
+MEASURE_AGENT_RESULT
+role: review-b (security and data handling)
+route: opencode-go/glm-5.3#high
+status: complete
+confidence: high
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+commits: 1414c09, 3911952, ddd82b5 (audited HEAD)
+tests_run: npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot (20 passed, exit 0); node measure/runs/weekly_update_fix/wuf-probe-b.mjs (75 probe checks, all passed, temp repos removed)
+files_changed: none by this role; audited range holds update.sh, adversarial-wuf.test.ts, and plan evidence only
+plan_updates: none
+known_failures: none; pass-3 F1 closed, pass-3 F2 nit stays routed tech debt
+security_applicability: applicable
+blocking_findings: 0
+nonblocking_findings: 0
+retry_recommendation: none
+result_artifact: measure/runs/weekly_update_fix/review-b-p1-ddd82b5.json
+handoff: The F1 relative-private-dir hole is closed and verified by suite run plus probe run. Phase 1 security gate passes for Review B; the pass-3 F2 nit and Review A F19/F20 remain routed tech debt and need no new fix round.
+END_MEASURE_AGENT_RESULT

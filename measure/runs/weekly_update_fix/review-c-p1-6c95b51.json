@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "role": "review-c",
+  "track": "weekly_update_fix",
+  "phase": "Phase 1: Red and Green for items 1 to 4",
+  "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "6c95b51587318827ca81fb2c184f0fc2111bb3f2",
+  "audited_head_sha": "6c95b51587318827ca81fb2c184f0fc2111bb3f2",
+  "contract_applicability": "applicable",
+  "status": "pass",
+  "summary": "The routed F7, F8, and F9 behaviors pass in temporary-repository tests. The docs and Phase 2 notes omit output lines and the score-change review.json commit condition.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F16 [Nit] review-c: README.md and Phase 2 task 2.1 do not state the full CLI output and conditional commit contract: the README omits `update: committed <path>` and `update: no change`, and names only `docs/review.html` for a score change, while update.sh also commits `docs/assets/data/review.json`; Phase 2 task 2.1 says only `data files plus those pages`. The README names the real `--docs` invocation and the PM rule, but the Phase 2 task does not state the executable-bit requirement or the PM rule. Tech debt under the last Phase 1 fix round; score-impact: no."
+  ],
+  "evidence": [
+    "Applicability is applicable: the exact phase diff from 35a059c7d4e1e13a4a20c16342f0136bb609225f includes harness/model-guide/update.sh, README.md, and harness/model-guide-tests/update-pages.test.ts; these implement and document CLI behavior.",
+    "F7 withdrawn: checked update.sh:137 and update-pages.test.ts F7; the missing overview template exits 2 before any write or commit.",
+    "F8 withdrawn: checked update.sh:89-99, 245-255 and update-pages.test.ts F2a; a changed score rebuilds review.html and review.json and commits both when bytes change.",
+    "F7/F8/F9 contract is in harness/model-guide/update.sh:129-142 refuses approval, private input, overview template, and review template before writes; lines 228-229 reject a missing rendered overview; lines 258-270 emit the leak refusal; lines 287-293 report no-op or committed paths.",
+    "harness/model-guide-tests/update-pages.test.ts passes 12 tests in a /tmp clone. F7 proves missing overview refusal with exit 2 and no changes or commit; F15 proves missing review template refusal with exit 2 and no changes or commit; F2a checks review.html and review.json rebuild and commit after a score change; F9a/F9b check output lines.",
+    "harness/model-guide-tests/update-approval.test.ts passes 6 tests in a /tmp clone, including exact `update: no approval record` output and flagless preview-only behavior.",
+    "harness/model-guide-tests/update-leak.test.ts passes 6 tests in a /tmp clone, including exact `update: no private input` output, one leak refusal line, and exit 2.",
+    "harness/model-guide-tests/update-exec.test.ts passes 6 tests in a /tmp clone, including executable mode 100755, direct invocation, and the usage output. The source usage line at update.sh:46,54 still omits `--docs`; that is the previously routed F10 and is not repeated.",
+    "README.md:287-293 names the correct --docs invocation, preview-only run, and PM weekly refresh rule. It omits the two script output lines and the score-change review.json file.",
+    "measure/tracks/weekly_update_fix/plan.md:172-181 names the --docs invocation but leaves the final update as `then the update.sh run`; it does not state output lines, the conditional review-pair commit, the executable bit, or the PM rule.",
+    "The /tmp test clone was removed when the runner exited. No implementation, tests, plan, registry, docs, or live update files were changed."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short",
+    "git diff --name-status 35a059c7d4e1e13a4a20c16342f0136bb609225f..6c95b51587318827ca81fb2c184f0fc2111bb3f2",
+    "git diff --stat 35a059c7d4e1e13a4a20c16342f0136bb609225f..6c95b51587318827ca81fb2c184f0fc2111bb3f2",
+    "git ls-files -s -- harness/model-guide/update.sh",
+    "python3 measure/runs/weekly_update_fix/review-c-temp-check.py (temporary clone; update-pages 12 passed, update-approval 6 passed, update-leak 6 passed, update-exec 6 passed; exit 0)"
+  ],
+  "changed_files": [
+    "measure/runs/weekly_update_fix/review-c-p1-6c95b51.json",
+    "measure/runs/weekly_update_fix/review-c-p1-6c95b51.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "update-pages.test.ts verifies the F7 refusal, the F8 review pair rebuild, and F9 commit/no-op output in temporary repositories."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "Four targeted suites pass in the /tmp clone, but template refusal tests do not assert exact stdout text."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The phase diff is the planned CLI, user-flow, page, test, and documentation scope; this audit changed only its result artifacts."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The temporary test run reports 12, 6, 6, and 6 passing tests, and README.md:287-293 and plan.md:172-181 support F16."
+    }
+  ]
+}

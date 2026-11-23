@@ -1,0 +1,35 @@
+Review B (security and data handling) — track weekly_update_fix, Phase 1.
+Audited range: 35a059c7d4e1e13a4a20c16342f0136bb609225f..8ceb628202fbacf3ddb688a2a043f2db7f3968b6.
+Run date: 2026-11-22 23:32-23:40 (test window allowed; no 02:00-06:00 run).
+
+Commands run:
+- git rev-parse HEAD -> 8ceb628202fbacf3ddb688a2a043f2db7f3968b6 (matches audited HEAD).
+- git diff --stat 35a059c..8ceb628 -> 20 files, no docs/ file.
+- git diff --stat 35a059c..8ceb628 -- docs/ -> empty output.
+- Row-block diff of the stable record against the archive record -> empty; both blocks sha256 bde211e01f8fb46fd75517532ef0af7c012d73c6e1e3ccbf28616ccb1bfbed50.
+- cd harness && npx tsx model-guide/leak-check.ts (no args) -> 'leak-check: --private needs a value', exit 2, no file write.
+- git check-ignore -v .tmp/model-guide-private .tmp/model-guide-preview -> .gitignore:23 covers both.
+- git diff 35a059c..8ceb628 | grep -E 'sk-|ghp_|gho_|AKIA|AIza|xox|BEGIN.*PRIVATE' -> no key shape or key value hit.
+- cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 4 passed.
+- cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot -> 5 passed.
+- git diff 35a059c..8ceb628 -- harness/model-guide/publish.ts -> only the APPROVAL path moved to harness/model-guide/publish-approval.md.
+
+Findings:
+- Blocking: none. The round cap holds: no real-key leak in any committed file and no leak on a public page.
+- Nonblocking: F1 [Nit] a leak-check crash with empty stdout makes update.sh print 'update: leak ' with an empty path (update.sh:230-240); it fails closed with exit 2 and no commit. score-impact: no.
+- Review A F1-F6 confirmed still present at this HEAD; they stay with the routed fix round and are not repeated as new findings.
+- A2 consent gate: pass. The docs write needs the stable record; publish needs approved_by, date, and six sha rows; the record carries Daniel's standing word and the PM decision.
+- A6 registry overstatement: pass. measure/tracks.md claims only status 'new' for this track; the plan's Green evidence lines match the runs I made.
+
+MEASURE_AGENT_RESULT
+status: pass
+summary: Security audit of 35a059c..8ceb628 passes. The leak gate refuses before the commit with one line and no found value; the approval record matches the archived consent; the --docs refusal, the no-push rule, and the no-docs-change rule hold. One new nonblocking nit; Review A F1-F6 confirmed and stay routed.
+blocking_findings: 0
+nonblocking_findings: 1
+retry_recommendation: none
+route: opencode-go/glm-5.3#high
+phase_base_sha: 35a059c7d4e1e13a4a20c16342f0136bb609225f
+role_base_sha: 8ceb628202fbacf3ddb688a2a043f2db7f3968b6
+audited_head_sha: 8ceb628202fbacf3ddb688a2a043f2db7f3968b6
+result_path: measure/runs/weekly_update_fix/review-b-p1-8ceb628.json
+END_MEASURE_AGENT_RESULT

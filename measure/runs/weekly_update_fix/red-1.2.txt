@@ -1,0 +1,11 @@
+Red 2026-11-22, task 1.2, base 35a059c7d4e1e13a4a20c16342f0136bb609225f.
+Command: cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+Result: exit non-zero. Tests 6 failed (6).
+Failed (each fails because update.sh rejects --docs with the usage error, exit 2, so no docs write and no commit):
+- P1: the approved run commits the two data files plus index.html and real-work.html
+- P2a: with a changed score file docs/review.html joins the commit
+- P2b: with no score file docs/review.html stays out of the commit
+- P3: the rebuild runs through preview.sh and guide.ts, so fixture data reaches the pages
+- P4: a rerun with unchanged data exits 0 and makes no commit
+- P5: staging uses explicit paths, so an unrelated dirty file stays uncommitted
+update.test.ts refresh for task 1.2: U2 now expects the two data files plus docs/index.html and docs/real-work.html, and the unrelated dirty file is docs/methodology.html (Green rebuilds index.html, so dirty index.html contradicts FR-3). Refreshed U2 fails; U1, U3, UP1, P2B2-1a-d, P2B2-2 pass.

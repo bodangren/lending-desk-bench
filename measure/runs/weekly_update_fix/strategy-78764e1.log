@@ -1,0 +1,34 @@
+MEASURE_AGENT_RESULT
+role: measure-strategy
+track: weekly_update_fix
+route: opencode-go/hy4-flash-free#high
+phase: track setup (strategy for Phase 1 and Phase 2)
+status: pass
+role_base_sha: 78764e18ea371cd8fc96883d6d3ac8f41db5e670
+head_at_start: 78764e18ea371cd8fc96883d6d3ac8f41db5e670
+track_base_sha: 0b75b9c
+spec_review: measure/runs/weekly_update_fix/spec-review-78764e1.json (pass, round 2)
+commits: 35a059c7d4e1e13a4a20c16342f0136bb609225f
+commit_subject: measure(weekly_update_fix): test strategy
+files_committed: measure/tracks/weekly_update_fix/test-strategy.md
+phase1_risk: high
+phase2_risk: critical
+red_test_command: cd harness && npx vitest run model-guide-tests/<file> --configLoader native --maxWorkers=1 --reporter=dot (one file at a time)
+phase1_red_files: update-approval.test.ts update-pages.test.ts update-leak.test.ts update-exec.test.ts
+phase2_red_command: PHASE2_READY_CHECK fail-closed guard; both tasks stay [b]; Red writes no test file
+green_gate: four targeted files green; old approval path absent; mode 100755; README claim updated; git status --short docs/ empty
+closeout_gate: Green gate; PROJECT_LINT; real docs/ range empty in Phase 1; no harness/tests change; [b] count; review records
+project_tests: four targeted files plus update.test.ts and leak-check.test.ts regression, one file at a time; no full suite
+project_lint: for f in harness/model-guide/*.sh; do bash -n "$f" || exit 1; done
+project_lint_result: pass at 2026-11-22 22:02 +07
+review_b_security: yes in both phases (leak wiring, approval consent record)
+review_c_cli: yes in both phases (--docs flag, exit codes, mode, README command, commit paths)
+review_a_correctness: yes in both phases (approval path, page refresh, README wording)
+adversarial: yes in Phase 1; no new cases in Phase 2 (reuse Phase 1 cases)
+ux_browser: no in Phase 1 (temp-repo HTML only, real pages unchanged); yes in Phase 2 (first live write of public pages)
+changed_contract_risk: committed update.test.ts pins the old approval path and the two-path commit; orchestrator must widen tasks 1.1 and 1.2 before Red so the Red role refreshes that file
+anti_patterns_covered: A2 A3 A4 A5 A6 A7 A9 A11 A12 A13 A14
+phase_base_sha_capture_point: directly after commit 35a059c7d4e1e13a4a20c16342f0136bb609225f and before Red task 1.1 starts; orchestrator runs git rev-parse HEAD once and stores the value; no value predating that commit is valid
+pushed: no
+time_window: 2026-11-22 21:59 to 22:03 +07; no full suite; no heavy gate in 02:00-06:00
+END_MEASURE_AGENT_RESULT

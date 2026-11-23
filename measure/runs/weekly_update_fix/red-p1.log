@@ -1,0 +1,20 @@
+Red r10 failing-first log, 2026-11-23. Phase base 35a059c7d4e1e13a4a20c16342f0136bb609225f. Role base and pre-commit HEAD 5905296730e2751760926ea5c5139c2dd7b4180b. Post-commit HEAD 1414c092915c829875565738ae32373056371775.
+MEASURE_AGENT_RESULT
+role: mid-red
+route: opencode-go/muse-spark-1.3-contributor#high (Red r10 failing-first for task 1.3, finding F1)
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+baseline_sha: 35a059c7d4e1e13a4a20c16342f0136bb609225f
+role_base_sha: 5905296730e2751760926ea5c5139c2dd7b4180b
+head_sha: 1414c092915c829875565738ae32373056371775
+commits: 1414c09 test(weekly_update_fix): red for a relative private dir
+tests: harness/model-guide-tests/adversarial-wuf.test.ts
+files: harness/model-guide-tests/adversarial-wuf.test.ts, measure/tracks/weekly_update_fix/plan.md
+gaps: a relative MODEL_GUIDE_PRIVATE_DIR resolves against the caller folder in the guard but against harness/ in the leak scan, so a valid seeded folder under the repo root passes the guard while the scan runs empty and a planted seeded line ships
+breakage_proof: the three new cases fail at HEAD with exit 0 and a commit carrying the planted seed line, because the guard finds the seeds under the repo root while the scan misses them under harness/. Every other case passes, including the seeded-input guard cases and the default-input scan case.
+red_command: cd harness && npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot
+red_result: failing-first round. adversarial-wuf.test.ts 3 failed (bare, dot, and dot-dot relative private dir) | 17 passed (all other cases). The shared refusal helper pins exit 2, the update: no private input line, unchanged HEAD commit set, byte-identical tree, and the seed nowhere in docs or stdout. No other assertion changed.
+remaining_failures: relative private dir (needs the fail-closed refusal with update: no private input before any write or commit); task 1.3 keeps its [x] marker and Green owns the guard
+handoff: the PM ruling fixes by refusing a relative value, not by resolving it. The valid absolute seeded input still passes the guard; existing cases cover that. No production file changed.
+unrelated_user_work: none touched; pre-existing untracked .opencode/ and harness/wt.txt left unstaged
+END_MEASURE_AGENT_RESULT

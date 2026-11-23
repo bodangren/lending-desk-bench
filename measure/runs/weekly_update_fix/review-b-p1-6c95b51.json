@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Second security and consent pass over 35a059c..6c95b51 for track weekly_update_fix Phase 1. HEAD equals the supplied audited sha. The leak check now scans exactly the candidate files: every COMMIT_REL path is copied into the staging folder $CAND/docs before the scan (update.sh:232-255), leak-check.ts walks every file under $CAND/docs recursively (leak-check.ts:244-247), and the scan runs before the first docs/ write and before git add (update.sh:259-277 against 284). A committed path that is not scanned is impossible: COMMIT_REL is the only source of COMMIT_PATHS, and each entry is a cp target under $CAND. The private input defaults to $HOME/.local/share/lending-desk-bench/model-guide with a MODEL_GUIDE_PRIVATE_DIR override (update.sh:71); a missing input refuses with 'update: no private input' and no path (update.sh:132-134). An end-to-end planted run in a /tmp repo copy refused with exactly 'update: leak docs/assets/data/review.json', exit 2: no seeded value, no raw leak-check line, no private path, no commit, and docs/ byte-identical. Staging is a mktemp folder removed by an EXIT trap, so a refusal leaves no file behind; preview.sh refuses a symlink under docs/ before any write, and update.sh refuses a symlink on every write path. The new output lines hold repo-relative paths only. update.sh still never pushes: its only git calls are add, diff --cached, and commit. The stable approval record and the README changed nothing since pass 1; the record rows equal the archive rows byte for byte, the PM weekly-refresh rule text is identical in the record and the README, and publish.ts is unchanged since pass 1. No key shape, key value, or private path appears in the range diff; no docs/ file changed; no harness/tests file changed. Review A passed at this HEAD with F15 fixed; the plan Green r7 evidence lines match my runs exactly. One new nonblocking nit: the Phase 2 verify commands in plan.md and test-strategy.md still name the old leak-check invocation; that command over-scans the real repo, so it cannot under-scan. The pass-1 empty-path refusal nit stays routed to tech debt and is not re-raised.",
+  "evidence": [
+    "git rev-parse HEAD = 6c95b51587318827ca81fb2c184f0fc2111bb3f2, equal to role_base_sha and audited_head_sha. git status --short shows only the unrelated untracked .opencode/ and harness/wt.txt, both outside the range.",
+    "Scan-set equality: update.sh:238-255 builds COMMIT_REL and copies each entry into $CAND before the scan; update.sh:275-281 reuses COMMIT_REL alone for the copy into docs/ and for COMMIT_PATHS; leak-check.ts:243-247 scans every file under join($CAND,'docs') recursively. The conditional review.json is scanned even when it is not committed (update.sh:251-255), so the scan never holds less than the commit.",
+    "Planted-key run: rsync copy of the repo into /tmp/lb-review-b (runs/, .tmp/, fixture/ excluded), a synthetic score file with a seeded line of 20+ characters, and a planted private input under /tmp/lb-review-b-priv. Command: env MODEL_GUIDE_PRIVATE_DIR=/tmp/lb-review-b-priv bash harness/model-guide/update.sh --docs fixture-b/MANIFEST-2026-10-20.txt. Output: one line 'update: leak docs/assets/data/review.json', exit 2. git rev-list --count HEAD stayed 808 and git status --short -- docs/ stayed empty. The seeded value and the private path never printed. The /tmp copy and the private input were removed after the run.",
+    "cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot: 6 passed (L1-L4, F4a, F4b). expectLeakRefusal asserts no 'leak-check:' text on stdout, one refusal line, and no commit count change; L1 also asserts the whole temp tree hash is unchanged, so no staging folder survives a refusal.",
+    "cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot: 12 passed, including F9a (one 'update: committed <repo-relative path>' line per committed path) and F15 (missing review template with a changed score refuses with no write and no commit).",
+    "cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot: 6 passed; cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot: 9 passed (U2 asserts the temp repo has no remote and no push); cd harness && npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot: 6 passed. All five counts equal the plan Green r7 evidence lines (plan.md:166).",
+    "cd harness && npx tsx model-guide/leak-check.ts prints 'leak-check: --private needs a value' and exits 2; the tool writes no file on a refusal.",
+    "update.sh:284-291 holds the only git calls of the run: git add --, git diff --cached --name-only --, and git commit -q -m ... --. No remote or push command exists in the file.",
+    "Staging and symlink handling: update.sh:165-166 (mktemp -d plus an EXIT trap) and update.sh:147-161 (symlink refusal on every write path); preview.sh:215-291 refuses a symlink or non-regular entry under docs/ before any write. Cases P2B2-1a to P2B2-1d in update.test.ts are green in my 9-pass run.",
+    "Private input handling: update.sh:71 sets the default and the override; update.sh:132-134 refuses a missing input by directory existence only and prints no path; leak-check.ts:224 checks the private path as given, resolved, and realpath, and its refusal lines (leak-check.ts:203-214) print the target path only, never the private path or a found value.",
+    "git diff 8ceb628..6c95b51 -- harness/model-guide/publish-approval.md README.md is empty: the consent record and the README are unchanged since pass 1. diff of the record against measure/archive/model_guide/publish-approval.md shows only the added provenance line and the PM weekly-refresh rule above 'files:'; the six rows are byte-equal. The rule text in the record (line 26) is identical to README.md:293.",
+    "git diff 8ceb628..6c95b51 -- harness/model-guide/publish.ts is empty; the pass-1 verification of the publish.ts parser (publish.ts:95-115 reads approved_by, date, and the files rows) still stands.",
+    "git diff 35a059c..6c95b51 | grep for sk-, ghp_, gho_, AKIA, AIza, xox, BEGIN PRIVATE, and .local/share prints only the two default-location lines in update.sh (comment and code); 'model-guide-private' prints 0 lines. git check-ignore confirms .gitignore:23 covers .tmp/.",
+    "git diff --stat 35a059c..6c95b51 -- docs/ is empty (no docs/ change in the range) and git diff --stat 35a059c..6c95b51 -- harness/tests is empty (no suite file moved). git ls-files -s shows mode 100755 for update.sh and preview.sh; bash -n passes on both.",
+    "measure/tracks.md:34 lists weekly_update_fix with status 'new' and no resolved security claim, so A6 needs no adversarial check beyond my green runs. Review A at this HEAD (review-a-p1-6c95b51.json) passed with F15 fixed and no findings."
+  ],
+  "security_applicability": "applicable",
+  "applicable_reason": "The range rewires the leak gate (candidate-only scan in a staging repo), adds the private-input location with an env override and a missing-input refusal, adds staging and template guards, adds the committed-path output lines, and narrows the preview.sh route-pass fallback: all security and consent data flows.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F1 [Nit] review-b: The Phase 2 verify commands still name the old leak-check invocation. measure/tracks/weekly_update_fix/plan.md:180 and measure/tracks/weekly_update_fix/test-strategy.md:201 run leak-check.ts with --repo .. --preview ../.tmp/model-guide-preview, the shape from before the Green rework. The command still runs (leak-check.ts still accepts --preview) and it over-scans the real repo docs/ and the preview folder, so it can only over-refuse, never under-scan against the candidate set. Stale verify text only; no wrong or stale public result and no key path opens. Route to tech debt with the PM round cap. score-impact: no"
+  ],
+  "A2_consent_gate_check": "pass: the docs write needs the stable record (update.sh:128-131) and the record carries Daniel's standing site-push word (2026-11-06), the PM decision (2026-11-22), the PM weekly-refresh rule, and six approved rows byte-equal to the archived record; publish needs approved_by, date, and sha rows (publish.ts, unchanged since pass 1). No publish runs without the consent artifact, and the README rule text matches the record word for word.",
+  "A6_registry_overstatement_check": "pass: measure/tracks.md:34 claims only status 'new' for weekly_update_fix; no resolved security claim exists. The plan Green r7 evidence (plan.md:166) names update-pages 12, update-approval 6, update-leak 6, update-exec 6, update 9, and my runs of those five files returned exactly those counts.",
+  "prior_findings_status": "The pass-1 nit (a scanner crash with empty stdout yields an 'update: leak' line with an empty path) still holds at update.sh:264-270 and stays routed to tech debt per the PM 2026-11-23 rule; it is not re-raised. Review A F1-F6 from pass 1 were fixed in the 00d9013 and 60e24f1 rounds and Review A passed at this HEAD. F16, F18, A F6, and C F10-F14 are already routed to tech debt and were not re-checked."
+  ,
+  "confidence": "high",
+  "retry_recommendation": "none",
+  "changed_files": [
+    "README.md",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4.test.ts",
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "harness/model-guide-tests/adversarial-p5.test.ts",
+    "harness/model-guide-tests/adversarial.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/update-approval.test.ts",
+    "harness/model-guide-tests/update-exec.test.ts",
+    "harness/model-guide-tests/update-leak.test.ts",
+    "harness/model-guide-tests/update-pages.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish-approval.md",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/weekly_update_fix/plan.md",
+    "measure/tracks/weekly_update_fix/spec.md",
+    "measure/tracks/weekly_update_fix/test-strategy.md"
+  ],
+  "contract_violations": [],
+  "test_isolation_violations": [],
+  "provenance_violations": [],
+  "evidence_violations": [],
+  "commands": [
+    "git rev-parse HEAD",
+    "git status --short",
+    "git diff --stat 35a059c..6c95b51",
+    "git log --oneline 35a059c..6c95b51",
+    "git diff 8ceb628..6c95b51 -- harness/model-guide/update.sh",
+    "git diff 8ceb628..6c95b51 -- harness/model-guide/preview.sh harness/model-guide/publish.ts",
+    "git diff 8ceb628..6c95b51 -- harness/model-guide/publish-approval.md README.md (empty)",
+    "diff measure/archive/model_guide/publish-approval.md harness/model-guide/publish-approval.md (only the provenance and rule lines added)",
+    "git diff 35a059c..6c95b51 | grep -E 'sk-[A-Za-z0-9]|ghp_|gho_|AKIA|AIza|xox|BEGIN.*PRIVATE|\\.local/share'",
+    "git diff 35a059c..6c95b51 | grep -c model-guide-private (0)",
+    "git check-ignore -v .tmp/model-guide-preview .tmp/model-guide-private",
+    "git diff --stat 35a059c..6c95b51 -- docs/ (empty)",
+    "git diff --stat 35a059c..6c95b51 -- harness/tests (empty)",
+    "git ls-files -s harness/model-guide/update.sh harness/model-guide/preview.sh (both 100755)",
+    "bash -n harness/model-guide/update.sh; bash -n harness/model-guide/preview.sh",
+    "cd harness && npx tsx model-guide/leak-check.ts (exit 2, usage refusal, no write)",
+    "cd harness && npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot (6 passed)",
+    "cd harness && npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot (12 passed)",
+    "cd harness && npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot (6 passed)",
+    "cd harness && npx vitest run model-guide-tests/update.test.ts --configLoader native --maxWorkers=1 --reporter=dot (9 passed)",
+    "cd harness && npx vitest run model-guide-tests/update-exec.test.ts --configLoader native --maxWorkers=1 --reporter=dot (6 passed)",
+    "rsync copy of the repo (runs/, .tmp/, fixture/ excluded) into /tmp/lb-review-b; planted private input at /tmp/lb-review-b-priv; env MODEL_GUIDE_PRIVATE_DIR=/tmp/lb-review-b-priv bash harness/model-guide/update.sh --docs fixture-b/MANIFEST-2026-10-20.txt (exit 2, 'update: leak docs/assets/data/review.json'); git rev-list --count HEAD (808 unchanged); git status --short -- docs/ (empty); python3 shutil.rmtree of both /tmp folders"
+  ],
+  "route": "opencode-go/glm-5.3#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "My planted-key run in a /tmp repo copy refused with exit 2, one repo-relative line, no value printed, no commit, and docs/ unchanged; the scan-set equality (COMMIT_REL copied into $CAND before the scan) closes the bypass question at update.sh:232-281."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "update-leak 6, update-pages 12, update-approval 6, update 9, update-exec 6 all passed with temp-repo subprocess proof and tree-hash assertions; the never-push rule is pinned only by the no-remote check in U2, not by a push attempt."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --stat 35a059c..6c95b51 shows 22 tracked paths, all in the track plan; the docs/ and harness/tests diff stats are both empty."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Every claim in this audit has a command result (five green vitest counts, the planted-run refusal with exit 2 and unchanged commit count 808, empty docs/ diff) or a file:line read."
+    }
+  ],
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "6c95b51587318827ca81fb2c184f0fc2111bb3f2",
+  "audited_head_sha": "6c95b51587318827ca81fb2c184f0fc2111bb3f2"
+}

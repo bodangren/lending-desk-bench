@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: adversarial-testing
+status: complete
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+commits: 019568c
+route: openai/gpt-6-luna#high
+tests_run: `cd harness && npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot` — exit 0; 24 passed.
+files_changed: harness/model-guide-tests/adversarial-wuf.test.ts; audit JSON and log
+plan_updates: none
+known_failures: none
+handoff: The added private-input boundary cases passed. No implementation defect was found. Commit 019568c changes only the adversarial test file. Unrelated .opencode/ and harness/wt.txt remain untouched.
+END_MEASURE_AGENT_RESULT

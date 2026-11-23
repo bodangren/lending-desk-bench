@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "weekly_update_fix",
+  "phase": "Phase 1: Red and Green for items 1 to 4",
+  "baseline_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "phase_base_sha": "35a059c7d4e1e13a4a20c16342f0136bb609225f",
+  "role_base_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "audited_head_sha": "ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+  "status": "pass",
+  "summary": "The relative-path fix and regression tests pass. An explicitly empty MODEL_GUIDE_PRIVATE_DIR falls back to a valid, checked default, so it does not bypass the private-data scan; F20 is nonblocking tech debt.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "F20 [Nit] review-a: An explicitly set empty MODEL_GUIDE_PRIVATE_DIR falls back to the real default at harness/model-guide/update.sh:71 rather than refusing. The default is validated by the seeded-input guard, so no concrete path shows an empty scan or private data reaching a commit; score-impact: no. Fix: treat a set-but-empty value as a refusal."
+  ],
+  "evidence": [
+    "git rev-parse HEAD returned ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d, matching audited_head_sha and role_base_sha.",
+    "The exact phase diff 35a059c7d4e1e13a4a20c16342f0136bb609225f..ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d contains 23 files. No orchestration script, contract test, or registry changed.",
+    "harness/model-guide/update.sh:71 uses ${MODEL_GUIDE_PRIVATE_DIR:-default}; line 184 tests only a non-empty value for relativity. An explicitly empty value therefore falls back to the default instead of refusing.",
+    "The default private directory still passes private_has_seeded_input before the candidate scan. No concrete path was identified where an empty environment value produces an empty scan or lets a seeded line reach a commit.",
+    "adversarial-wuf.test.ts:318-330 covers ./private and ../wuf-rel-x, but no explicit empty-string or space-containing private-dir fixture exists.",
+    "adversarial-wuf.test.ts passed 20 tests, including the bare relative path, dot-relative path, dot-dot path, absolute synthetic default scan, refusal without tree or commit changes, and other phase cases.",
+    "update-approval.test.ts passed 6 tests; update-pages.test.ts passed 12 tests; update-leak.test.ts passed 6 tests.",
+    "Plan evidence for Green r10 says adversarial-wuf.test.ts passed 20 tests and accurately describes the non-empty relative-path guard. No current-phase plan claim conflicts with the observed run."
+  ],
+  "commands": [
+    "git rev-parse HEAD (ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d)",
+    "git diff --stat 35a059c7d4e1e13a4a20c16342f0136bb609225f..ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+    "git diff --name-status 35a059c7d4e1e13a4a20c16342f0136bb609225f..ddd82b540e3fa7c3ca5c6b17a4a54fcf383c113d",
+    "npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot (20 passed)",
+    "npx vitest run model-guide-tests/update-approval.test.ts --configLoader native --maxWorkers=1 --reporter=dot (6 passed)",
+    "npx vitest run model-guide-tests/update-pages.test.ts --configLoader native --maxWorkers=1 --reporter=dot (12 passed)",
+    "npx vitest run model-guide-tests/update-leak.test.ts --configLoader native --maxWorkers=1 --reporter=dot (6 passed)"
+  ],
+  "changed_files": [
+    "README.md",
+    "harness/model-guide-tests/adversarial-p2.test.ts",
+    "harness/model-guide-tests/adversarial-p4-runner.test.ts",
+    "harness/model-guide-tests/adversarial-p4.test.ts",
+    "harness/model-guide-tests/adversarial-p4g.test.ts",
+    "harness/model-guide-tests/adversarial-p5.test.ts",
+    "harness/model-guide-tests/adversarial-wuf.test.ts",
+    "harness/model-guide-tests/adversarial.test.ts",
+    "harness/model-guide-tests/guide.test.ts",
+    "harness/model-guide-tests/preview-gate.test.ts",
+    "harness/model-guide-tests/real-work.test.ts",
+    "harness/model-guide-tests/update-approval.test.ts",
+    "harness/model-guide-tests/update-exec.test.ts",
+    "harness/model-guide-tests/update-leak.test.ts",
+    "harness/model-guide-tests/update-pages.test.ts",
+    "harness/model-guide-tests/update.test.ts",
+    "harness/model-guide/preview.sh",
+    "harness/model-guide/publish-approval.md",
+    "harness/model-guide/publish.ts",
+    "harness/model-guide/update.sh",
+    "measure/tracks/weekly_update_fix/plan.md",
+    "measure/tracks/weekly_update_fix/spec.md",
+    "measure/tracks/weekly_update_fix/test-strategy.md"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "openai/gpt-6-luna#high",
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "harness/model-guide/update.sh:71 falls back to the real default for an explicitly empty private-directory variable."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "adversarial-wuf.test.ts passed 20 tests, but it has no explicit empty-string or space-containing private-dir case."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The exact phase diff contains implementation, tests, and Measure records for weekly_update_fix."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The exact diff and four targeted Vitest files were checked, with 44 tests passing."
+    }
+  ]
+}

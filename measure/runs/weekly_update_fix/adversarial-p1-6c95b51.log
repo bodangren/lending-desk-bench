@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: adversarial-testing
+status: fail
+track: weekly_update_fix
+phase: Phase 1: Red and Green for items 1 to 4
+commits: 294a0addf001c537462235c4bb64cb6c73353b20
+tests_run: cd harness && npx vitest run model-guide-tests/adversarial-wuf.test.ts --configLoader native --maxWorkers=1 --reporter=dot; 15 passed, 1 failed because an empty private directory allowed a seeded line into docs/index.html and the commit
+files_changed: harness/model-guide-tests/adversarial-wuf.test.ts; measure/runs/weekly_update_fix/adversarial-p1-6c95b51.json; measure/runs/weekly_update_fix/adversarial-p1-6c95b51.log
+plan_updates: none
+known_failures: F1 [Blocker] update.sh accepts an empty MODEL_GUIDE_PRIVATE_DIR and commits a planted seeded line; score-impact: yes
+handoff: Green: reject an empty private directory with a named refusal before writes. Commit 294a0addf001c537462235c4bb64cb6c73353b20 contains only the adversarial test file. Any implementation commit invalidates this result and requires this adversarial gate to rerun.
+route: openai/gpt-6-luna#high
+END_MEASURE_AGENT_RESULT
