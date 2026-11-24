@@ -90,13 +90,19 @@ Gate commands:
   `246d2be6b7d5e16efad170bcc22f8401c0678053a78669dc00833b45607ab051`.
   - Verify: `git show --name-only --format= 22f1a0d` lists `measure/tracks/domain_trust/test-strategy.md`.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track domain_trust --log-file measure/runs/domain_trust/strategy.log` prints `PASS: strategy gate passed`.
-- [~] 1.3 Worktree. Create `../lending-desk-bench-trust` on the new branch
+- [x] 1.3 Worktree. Create `../lending-desk-bench-trust` on the new branch
   `domain-trust` from the current `main` HEAD, and record that SHA as
   `BASE_COMMIT` in this task. Link `runs` to the `runs/`
   of `main`. Install the harness dependencies from the lockfile. Run the
   export in the worktree at the base, and record `LEADERBOARD_SHA` and
   `SIDE_SHA`. Record `BASE_HASH` and the `plan-work.ts --all` classes in
   `main`. Run `PI_SHA base` in `main`, and record its two lines.
+  `BASE_COMMIT=6a237beb44c4cd49c91237fb85efb7f657c49d98`.
+  `LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff`.
+  `SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb`.
+  `BASE_HASH=8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0 cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7`.
+  Work-list classes: `120 row(s) over 4 track(s) — new 45, failing 75, current 0`.
+  `PI_RUNS=95`. `PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d`.
   - Verify: `git -C ../lending-desk-bench-trust rev-parse --abbrev-ref HEAD` prints `domain-trust`.
   - Verify: this task holds the five base values: `LEADERBOARD_SHA`, `SIDE_SHA`, `BASE_HASH`, the work-list classes, and the `PI_RUNS` and `PI_SHA` lines.
   - Verify: `STATUS_CHECK` prints `STATUS_CHECK=pass blocked=<n> open=1`.
@@ -105,9 +111,9 @@ Gate commands:
 
 Run in the worktree. Red commits on the branch `domain-trust`.
 
-- [b] 2.1 Test file `harness/site-tests/domain-trust.test.ts` with the cases
+- [~] 2.1 Test file `harness/site-tests/domain-trust.test.ts` with the cases
   of the test strategy. It spawns `python3` on a temporary root, as
-  `harness/tests/meta/bench-incremental.test.ts` does. — deferred:mid-red
+  `harness/tests/meta/bench-incremental.test.ts` does.
   - Verify: `TRUST_TEST` fails, and each failure names a missing function of `harness/domain_trust.py` or a missing field of the export block.
   - Verify: `PATH_CHECK` prints `PATH_CHECK=pass`.
 - [b] 2.2 Red evidence. Run `TRUST_TEST`. Record the start time, the end
