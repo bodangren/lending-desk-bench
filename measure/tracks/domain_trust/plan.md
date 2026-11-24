@@ -147,7 +147,8 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   - Verify: the FR-1 and FR-2 cases of `TRUST_TEST` pass.
   - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
 - [x] 3.2 Export: the `domain_trust` block and the `since` rule in be5a8a8 7c5a825
-  `load_entry` (spec FR-3, FR-4).
+  `load_entry` (spec FR-3, FR-4). faa4103
+
   - Verify: `TRUST_TEST` exits 0.
   - Verify: after `python3 harness/export-site-data.py` in the worktree, `FR3_GUARD` and `FR3_CHECK` print `true`, `PREVIEW_CHECK` prints `PREVIEW_CHECK=pass models=14 cells=112`, and `LEADERBOARD_SHA` and `SIDE_SHA` equal the values of task 1.3.
   - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
@@ -158,8 +159,17 @@ Run in the worktree. Green commits on the branch `domain-trust`.
     both equal to task 1.3. Commit be5a8a8 holds the module and the export
     block. Commit 7c5a825 holds the preview refresh from 58 stored runs. Green
     did not edit `preview.json`.
+  - Review A fix A-P3-1 (faa4103): the exporter loads `domain_trust.py` from
+    its own directory by path. When the companion is absent in a partial
+    workspace, the export keeps its old byte-identical output and writes no
+    `domain_trust` block. `bench-incremental.test.ts` exits 0 with
+    `Tests 5 passed (5)`. `daily-pick-board-filter.test.ts` exits 0 with
+    `Tests 2 passed (2)`. A partial-root run compared with the export at
+    `c4560f2` printed `PARTIAL_NO_BLOCK=true` and
+    `PARTIAL_BYTE_IDENTICAL=true`. `TRUST_TEST` still exits 0 with
+    `Tests 17 passed (17)`.
 - [x] 3.3 Page and text: the section of `docs/results.html`, and the text in a1d3be9
-  `docs/methodology.html` and `README.md` (spec FR-5, FR-6). The
+  `docs/methodology.html` and `README.md` (spec FR-5, FR-6). faa4103 The
   methodology section has `id="domain-trust"` and holds the rule as static
   HTML. It gives the verdict rule as an ordered list and the probe map as
   a table. Record the `METHOD_CHECK` line in this task.
@@ -167,6 +177,14 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   - Verify: `rg -n 'Domain trust' docs/results.html` prints at least 1 line.
   - Evidence 2026-11-24: `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3` with
     exit 0. `rg -n 'Domain trust' docs/results.html` prints 3 lines.
+  - Review A fix A-P3-2 (faa4103): the failure list reads `rule.n_min` and the
+    `checks` map from the export. It prints the kind and meaning with the
+    graded count and the threshold as separate values. No graded check is
+    called "not graded". The hy3 C line is
+    `P.n-plus-one — performance: per-row query inside the list render — graded 1 of 2 needed — failed 1`.
+    All 17 cells with sub-threshold failures or gaps use the same form.
+    `PAGE_DESCRIBE_CHECK=pass`, `AFFECTED_CELLS=17`, `COVERAGE_LABELS=251`.
+    Words stay in every cell, so color never carries the meaning alone.
 - [x] 3.4 Green gate. Run `TRUST_TEST` and `PATH_CHECK` in the worktree. 96a9197
   Run `BASE_HASH` and `cd harness && npx tsx plan-work.ts --all` in `main`.
   Run `PI_SHA green` and `PI_CHECK base green` in `main`.
