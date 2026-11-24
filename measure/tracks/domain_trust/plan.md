@@ -227,15 +227,16 @@ Run in the worktree. Green commits on the branch `domain-trust`.
  - Round r5 (Review A blocker A-P3-8 fixed at e6039b7). Baseline 890d5a412e5c3d2a451acbdcc157fa6ba37f552d, GREEN_TEST_COMMAND = TRUST_TEST, log measure/runs/domain_trust/green-p3-r5.log.
  - jr-green gate run 1, HEAD 75e98c1a1b26f7486ff82e9c837a19e6069be5fd, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks.
  - jr-green gate run 2, HEAD 7b1a6343d87e5adafca09ecb988d4d2fca3e2887, 3.5 marked [b] deferred:review-a: PASS: jr-green gate passed.
+ - Review A gate (PM deviation): role-gate review-a, baseline 1036decc01c6e65f7464f290b934aa737e502ea2, result measure/runs/domain_trust/review-a-p3-1036dec.json. Run 1, HEAD 1036decc01c6e65f7464f290b934aa737e502ea2, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks. Run 2, HEAD c3e1e15bb9644b9e1317ce45f17ae7f3b4350d58, 3.5 [x] and 3.6 [b] deferred: PASS: review-a gate passed.
+ - Reviews B and C: skipped, test-strategy.md section 10 marks both not applicable.
 - [x] 3.5 Review A. Check the probe map against each probe test, and the 1036dec
   verdict rule against the spec. Check `P.dedup-item` on two candidate trees
   (spec R2, R6). The role writes
   `measure/runs/domain_trust/review-a-<short head>.json`.
   - Verify: the review file shows `status: pass`, or each finding has a fix commit on the branch.
-- [b] 3.6 Adversarial tests. Write synthetic records that try to make the
+- [~] 3.6 Adversarial tests. Write synthetic records that try to make the
   matrix lie. Examples: `safe` on missing evidence, an unstated check as a
   failure, rows in score order, and a dropped probe.
-  — deferred:adversarial-testing
   - Verify: the role writes `measure/runs/domain_trust/adversarial-<short head>.json`, and `TRUST_TEST` exits 0 with the added cases.
 - [b] 3.7 UX browser review of `docs/results.html` at desktop and mobile
   widths (spec FR-5, NFR-6). — deferred:ux-browser-review
