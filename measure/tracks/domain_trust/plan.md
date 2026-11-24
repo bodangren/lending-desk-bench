@@ -250,18 +250,28 @@ Run in the worktree. Green commits on the branch `domain-trust`.
 
 ## Phase 4: Owner gate and merge
 
-- [~] 4.1 Owner decisions O1 and O2. Show the owner the matrix of the branch
+- [x] 4.1 Owner decisions O1 and O2. Show the owner the matrix of the branch 7a633a7
   export and the screenshots of task 3.7. Record each answer and its date in
   the spec table.
   - Verify: `rg -n '^\| O1 \|.*\| [0-9]+ 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/domain_trust/spec.md` prints 1 line.
   - Verify: `rg -n '^\| O2 \|.*\| (approved|declined) 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/domain_trust/spec.md` prints 1 line.
-- [b] 4.2 Merge and export. When O2 is approved, set `n_min` to the O1
+  - O1 `n_min` 2 approved 2026-10-25. O2 Publish approved 2026-11-25 (Daniel). Both Verify commands printed 1 line on `main` at 7a633a7.
+- [x] 4.2 Merge and export. When O2 is approved, set `n_min` to the O1 9667d25
   answer. In `main`, run the export at the old code and record
   `LEADERBOARD_SHA`. Merge `domain-trust`. Run the export again. Run
-  `PI_SHA merged` and `PI_CHECK base merged`. — deferred:orchestrator
+  `PI_SHA merged` and `PI_CHECK base merged`.
   - Verify: `LEADERBOARD_SHA` is equal before and after the merge. `jq -r '.domain_trust.rule.n_min' docs/assets/data/benchmark.json` prints the O1 answer.
   - Verify: `BASE_HASH` in `main` is equal before and after the merge.
   - Verify: `PI_CHECK base merged` prints `PI_CHECK=pass` (spec FR-7).
-- [b] 4.3 Doctor. In `main`, run `TRUST_TEST` and
-  `cd harness && npm run test:meta:logic`. — deferred:jr-green
+  - Recorded 2026-11-25, merge commit 9667d25 (`git merge --no-ff domain-trust`, no conflict).
+  - `LEADERBOARD_SHA` before and after: 36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff.
+  - `SIDE_SHA` before and after: 82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb.
+  - `BASE_HASH` before and after: 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0 cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7.
+  - `jq -r '.domain_trust.rule.n_min'` printed 2.
+  - `PI_RUNS=95`, `PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d` (`measure/runs/domain_trust/pi-merged.txt`), `PI_CHECK=pass`.
+  - Export at the merged code wrote `generated_at` 2026-11-25T04:48:27 in `docs/assets/data/benchmark.json`.
+- [x] 4.3 Doctor. In `main`, run `TRUST_TEST` and 9667d25
+  `cd harness && npm run test:meta:logic`.
   - Verify: both commands exit 0.
+  - `TRUST_TEST` exit 0 on 2026-11-25 at 06:01: 1 file, 17 tests passed.
+  - `npm run test:meta:logic` exit 0 on 2026-11-25: 30 files, 238 tests passed.
