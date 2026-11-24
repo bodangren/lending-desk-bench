@@ -20,6 +20,11 @@ python3 harness/generate-model-pages.py
 
 GitHub Pages is served from the `docs/` folder on `main`.
 
+The results page also publishes a Domain trust matrix. It gives each model one verdict for each
+domain A–H, with the failed checks behind each risk verdict. The matrix reads stored records only
+and does not send a model call. `safe` means no failure in the checks that ran, not proof that a
+defect is absent.
+
 ## Layout
 
 | Path | Purpose |

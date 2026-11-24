@@ -130,6 +130,58 @@
       </div>
     </section>
 
+    <section class="card" id="domain-trust">
+      <h2>Domain trust</h2>
+      <p class="section-lede">
+        The results page publishes one verdict for each model and each domain A–H.
+        The matrix reads stored records only. It sends no model call.
+      </p>
+      <h3 style="margin:1.3rem 0 0.5rem">Three kinds of checks</h3>
+      <p>
+        A <code>spec</code> check grades a checkbox of the task spec.
+        A <code>robustness</code> check grades a hidden defect that the spec does not list.
+        A <code>performance</code> check grades wasted work, such as a repeated read.
+        A check that the fixture revision does not state is not graded.
+        A missing result or a non-boolean value is also not graded.
+      </p>
+      <h3 style="margin:1.3rem 0 0.5rem">Verdict rule</h3>
+      <p>
+        <code>N_MIN</code> is the coverage that <code>safe</code> needs for each check.
+        Coverage is the number of graded results of a check.
+        The first rule that applies gives the verdict:
+      </p>
+      <ol style="padding-left:1.3rem">
+        <li><strong>risk</strong>: at least one failure of kind <code>spec</code> or <code>robustness</code>.</li>
+        <li><strong>unproven</strong>: no such failure, and at least one check has coverage below <code>N_MIN</code>.</li>
+        <li><strong>unoptimized</strong> ("Safe, not optimized"): every check has coverage of <code>N_MIN</code> or more, and a <code>performance</code> check fails.</li>
+        <li><strong>safe</strong>: every check has coverage of <code>N_MIN</code> or more, and no check fails. <code>safe</code> means no failure in the checks that ran, not proof that a defect is absent.</li>
+      </ol>
+      <h3 style="margin:1.3rem 0 0.5rem">Probe map</h3>
+      <p>Each probe has one domain and one kind.</p>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Probe</th><th>Domain</th><th>Kind</th></tr></thead>
+          <tbody>
+            <tr><td>P.action-race</td><td>F</td><td>robustness</td></tr>
+            <tr><td>P.auth-before-parse</td><td>G</td><td>robustness</td></tr>
+            <tr><td>P.axe-clean</td><td>B</td><td>robustness</td></tr>
+            <tr><td>P.concurrent-checkout</td><td>G</td><td>robustness</td></tr>
+            <tr><td>P.concurrent-return</td><td>G</td><td>robustness</td></tr>
+            <tr><td>P.dedup-item</td><td>D</td><td>performance</td></tr>
+            <tr><td>P.filter-literal</td><td>C</td><td>robustness</td></tr>
+            <tr><td>P.hydration-clean</td><td>C</td><td>robustness</td></tr>
+            <tr><td>P.malformed-json</td><td>G</td><td>robustness</td></tr>
+            <tr><td>P.n-plus-one</td><td>C</td><td>performance</td></tr>
+            <tr><td>P.no-key-leak</td><td>F</td><td>robustness</td></tr>
+            <tr><td>P.retry-after-error</td><td>E</td><td>robustness</td></tr>
+            <tr><td>P.searchparams-async</td><td>C</td><td>robustness</td></tr>
+            <tr><td>P.stale-after-mutate</td><td>F</td><td>robustness</td></tr>
+            <tr><td>P.validate-before-io</td><td>G</td><td>performance</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="card" id="sources">
       <h2>Sources behind the harness</h2>
       <p class="section-lede">

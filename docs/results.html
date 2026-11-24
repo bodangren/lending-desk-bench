@@ -103,6 +103,18 @@
           <div class="chart-box tall mt-2"><canvas id="chart-domains"></canvas></div>
         </section>
 
+        <section class="card" id="domain-trust">
+          <h2>Domain trust</h2>
+          <p class="section-lede">
+            One verdict for each model and each domain A–H. <code>safe</code> means no failure in the
+            checks that ran, not proof that a defect is absent.
+            <a href="./methodology.html#domain-trust">How the verdict rule works</a>.
+          </p>
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Domain trust matrix"><table class="matrix" id="trust-table"></table></div>
+          <p class="scroll-hint">Scroll sideways for more →</p>
+          <div id="trust-failures" class="mt-2"></div>
+        </section>
+
         <section class="card" id="arm-b-note"></section>
       `;
 
@@ -223,6 +235,58 @@
           `).join("")}
         </tbody>
       `;
+
+      // Domain trust. The page reads only data.domain_trust and escapes every value.
+      const trust = data.domain_trust;
+      if (trust) {
+        const trustWord = {
+          safe: "safe",
+          unproven: "unproven",
+          unoptimized: "Safe, not optimized",
+          risk: "risk",
+        };
+        const trustClass = {
+          safe: "cell-good",
+          unproven: "cell-dead",
+          unoptimized: "cell-mid",
+          risk: "cell-bad",
+        };
+        const letters = "ABCDEFGH".split("");
+        document.getElementById("trust-table").innerHTML = `
+          <thead><tr><th scope="col">Model</th>${letters.map((d) => `<th scope="col">${d}</th>`).join("")}</tr></thead>
+          <tbody>
+            ${trust.models.map((m) => `
+              <tr>
+                <th scope="row">${escapeHtml(m.name)}
+                  <div class="subline">${m.runs.opencode} OpenCode · ${m.runs.pi} Pi · ${m.runs.total} runs</div>
+                </th>
+                ${letters.map((d) => {
+                  const cell = m.cells[d];
+                  const word = trustWord[cell.verdict] || cell.verdict;
+                  return `<td class="${trustClass[cell.verdict] || ""}">${escapeHtml(word)}</td>`;
+                }).join("")}
+              </tr>
+            `).join("")}
+          </tbody>
+        `;
+        const modes = [];
+        for (const m of trust.models) {
+          for (const d of letters) {
+            const cell = m.cells[d];
+            if (cell.verdict === "safe") continue;
+            const failed = cell.failures.map((f) => `${escapeHtml(f.id)} failed ${f.failed} of ${f.graded}`).join(", ");
+            const gaps = cell.gaps.map((g) => `${escapeHtml(g.id)} not graded (${g.graded})`).join(", ");
+            const parts = [`${d} ${escapeHtml(trustWord[cell.verdict] || cell.verdict)}`];
+            if (failed) parts.push(failed);
+            if (gaps) parts.push(gaps);
+            modes.push(`<li><strong>${escapeHtml(m.name)}</strong> — ${parts.join(" · ")}</li>`);
+          }
+        }
+        document.getElementById("trust-failures").innerHTML = `
+          <h3>Failure modes</h3>
+          <ul class="muted" style="padding-left:1.15rem">${modes.join("") || "<li>No failure modes.</li>"}</ul>
+        `;
+      }
 
       const note = document.getElementById("arm-b-note");
       const delta = data.benchmark.skills_delta;

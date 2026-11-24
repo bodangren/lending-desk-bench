@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-16T13:26:29",
+  "generated_at": "2026-11-24T16:24:59",
   "benchmark": {
     "name": "Lending Desk Bench",
     "tagline": "Can an OpenCode Go High Usage model finish a real App Router feature under a strict contract?",
@@ -10399,13 +10399,11 @@
               "rate": 1.0
             },
             "E": {
-              "pass": 11,
+              "pass": 9,
               "fail": 0,
               "failed": [],
               "passed": [
-                "E.error-announced",
                 "E.error-shown",
-                "E.labels",
                 "E.member-options",
                 "E.optimistic",
                 "E.pending",
@@ -12865,24 +12863,22 @@
               "rate": 1.0
             },
             "E": {
-              "pass": 7,
-              "fail": 4,
+              "pass": 6,
+              "fail": 3,
               "failed": [
-                "E.error-announced",
                 "E.pending",
                 "E.return-pending",
                 "E.return-submits"
               ],
               "passed": [
                 "E.error-shown",
-                "E.labels",
                 "E.member-options",
                 "E.optimistic",
                 "E.return-error",
                 "E.return-optimistic",
                 "E.submits"
               ],
-              "rate": 0.6364
+              "rate": 0.6667
             },
             "F": {
               "pass": 9,
@@ -13581,13 +13577,11 @@
               "rate": 1.0
             },
             "E": {
-              "pass": 11,
+              "pass": 9,
               "fail": 0,
               "failed": [],
               "passed": [
-                "E.error-announced",
                 "E.error-shown",
-                "E.labels",
                 "E.member-options",
                 "E.optimistic",
                 "E.pending",
@@ -14295,10 +14289,9 @@
               "rate": 1.0
             },
             "E": {
-              "pass": 3,
-              "fail": 8,
+              "pass": 2,
+              "fail": 7,
               "failed": [
-                "E.error-announced",
                 "E.error-shown",
                 "E.optimistic",
                 "E.pending",
@@ -14308,11 +14301,10 @@
                 "E.submits"
               ],
               "passed": [
-                "E.labels",
                 "E.member-options",
                 "E.return-submits"
               ],
-              "rate": 0.2727
+              "rate": 0.2222
             },
             "F": {
               "pass": 2,
@@ -14658,24 +14650,22 @@
               "rate": 1.0
             },
             "E": {
-              "pass": 6,
-              "fail": 5,
+              "pass": 5,
+              "fail": 4,
               "failed": [
-                "E.error-announced",
                 "E.error-shown",
                 "E.pending",
                 "E.return-error",
                 "E.return-pending"
               ],
               "passed": [
-                "E.labels",
                 "E.member-options",
                 "E.optimistic",
                 "E.return-optimistic",
                 "E.return-submits",
                 "E.submits"
               ],
-              "rate": 0.5455
+              "rate": 0.5556
             },
             "F": {
               "pass": 2,
@@ -15034,14 +15024,11 @@
               "rate": 1.0
             },
             "E": {
-              "pass": 10,
-              "fail": 1,
-              "failed": [
-                "E.error-announced"
-              ],
+              "pass": 9,
+              "fail": 0,
+              "failed": [],
               "passed": [
                 "E.error-shown",
-                "E.labels",
                 "E.member-options",
                 "E.optimistic",
                 "E.pending",
@@ -15051,7 +15038,7 @@
                 "E.return-submits",
                 "E.submits"
               ],
-              "rate": 0.9091
+              "rate": 1.0
             },
             "F": {
               "pass": 7,
@@ -15410,13 +15397,11 @@
               "rate": 1.0
             },
             "E": {
-              "pass": 11,
+              "pass": 9,
               "fail": 0,
               "failed": [],
               "passed": [
-                "E.error-announced",
                 "E.error-shown",
-                "E.labels",
                 "E.member-options",
                 "E.optimistic",
                 "E.pending",
@@ -15947,6 +15932,3004 @@
     ]
   },
   "experiments": {},
+  "domain_trust": {
+    "schema": 1,
+    "rule": {
+      "n_min": 2,
+      "verdicts": [
+        "risk",
+        "unproven",
+        "unoptimized",
+        "safe"
+      ],
+      "kinds": {
+        "spec": "A spec failure means the model missed a checkbox that the task spec states.",
+        "robustness": "A robustness failure means a hidden probe found a defect that the spec does not list.",
+        "performance": "A performance failure means a probe found wasted work, such as a repeated read."
+      }
+    },
+    "checks": {
+      "A": [
+        {
+          "id": "A.returned",
+          "kind": "spec",
+          "text": "returned status"
+        },
+        {
+          "id": "A.overdue",
+          "kind": "spec",
+          "text": "overdue status"
+        },
+        {
+          "id": "A.due-soon",
+          "kind": "spec",
+          "text": "due-soon status"
+        },
+        {
+          "id": "A.ok",
+          "kind": "spec",
+          "text": "ok status"
+        },
+        {
+          "id": "A.boundary",
+          "kind": "spec",
+          "text": "due-at-now boundary"
+        }
+      ],
+      "B": [
+        {
+          "id": "B.name-category",
+          "kind": "spec",
+          "text": "card name and category"
+        },
+        {
+          "id": "B.badge",
+          "kind": "spec",
+          "text": "availability badge"
+        },
+        {
+          "id": "B.link",
+          "kind": "spec",
+          "text": "card item link"
+        },
+        {
+          "id": "B.image-alt",
+          "kind": "spec",
+          "text": "item image alternative text"
+        },
+        {
+          "id": "B.image-response",
+          "kind": "spec",
+          "text": "B.4 \u2014 split: the alt text is B.image-alt, the response is this"
+        },
+        {
+          "id": "P.axe-clean",
+          "kind": "robustness",
+          "text": "unnamed controls or invalid ARIA"
+        }
+      ],
+      "C": [
+        {
+          "id": "C.renders",
+          "kind": "spec",
+          "text": "Items heading"
+        },
+        {
+          "id": "C.renders-all",
+          "kind": "spec",
+          "text": "all catalogue items and open loans"
+        },
+        {
+          "id": "C.filter-q",
+          "kind": "spec",
+          "text": "case-insensitive q filter"
+        },
+        {
+          "id": "C.filter-case",
+          "kind": "spec",
+          "text": "C.3 \u2014 split: case-insensitive matching of the same q filter"
+        },
+        {
+          "id": "C.filter-category",
+          "kind": "spec",
+          "text": "exact category filter"
+        },
+        {
+          "id": "C.filter-both",
+          "kind": "spec",
+          "text": "intersecting q and category filters"
+        },
+        {
+          "id": "C.empty",
+          "kind": "spec",
+          "text": "empty catalogue result"
+        },
+        {
+          "id": "C.parallel-reads",
+          "kind": "spec",
+          "text": "parallel count and category reads"
+        },
+        {
+          "id": "P.searchparams-async",
+          "kind": "robustness",
+          "text": "searchParams not awaited"
+        },
+        {
+          "id": "P.hydration-clean",
+          "kind": "robustness",
+          "text": "nondeterministic render"
+        },
+        {
+          "id": "P.filter-literal",
+          "kind": "robustness",
+          "text": "search text compiled as a pattern"
+        },
+        {
+          "id": "P.n-plus-one",
+          "kind": "performance",
+          "text": "per-row query inside the list render"
+        }
+      ],
+      "D": [
+        {
+          "id": "D.renders",
+          "kind": "spec",
+          "text": "detail name category and description"
+        },
+        {
+          "id": "D.history-order",
+          "kind": "spec",
+          "text": "newest-first loan history and statuses"
+        },
+        {
+          "id": "D.history-status",
+          "kind": "spec",
+          "text": "D.2 \u2014 split: the order is D.history-order, the status is this"
+        },
+        {
+          "id": "D.notfound",
+          "kind": "spec",
+          "text": "unknown item not-found"
+        },
+        {
+          "id": "D.form-hidden",
+          "kind": "spec",
+          "text": "checkout only when available"
+        },
+        {
+          "id": "D.return-visible",
+          "kind": "spec",
+          "text": "return only when on loan"
+        },
+        {
+          "id": "D.metadata",
+          "kind": "spec",
+          "text": "item metadata title"
+        },
+        {
+          "id": "P.dedup-item",
+          "kind": "performance",
+          "text": "same record read twice in one request"
+        }
+      ],
+      "E": [
+        {
+          "id": "E.submits",
+          "kind": "spec",
+          "text": "checkout action submission"
+        },
+        {
+          "id": "E.error-shown",
+          "kind": "spec",
+          "text": "checkout action error"
+        },
+        {
+          "id": "E.member-options",
+          "kind": "spec",
+          "text": "all member options and due-date input"
+        },
+        {
+          "id": "E.return-submits",
+          "kind": "spec",
+          "text": "return control and action submission"
+        },
+        {
+          "id": "E.return-error",
+          "kind": "spec",
+          "text": "return action error"
+        },
+        {
+          "id": "E.labels",
+          "kind": "spec",
+          "text": "accessible names on the checkout inputs"
+        },
+        {
+          "id": "E.pending",
+          "kind": "spec",
+          "text": "checkout pending control"
+        },
+        {
+          "id": "E.optimistic",
+          "kind": "spec",
+          "text": "checkout optimistic update"
+        },
+        {
+          "id": "E.return-pending",
+          "kind": "spec",
+          "text": "return pending control"
+        },
+        {
+          "id": "E.return-optimistic",
+          "kind": "spec",
+          "text": "return optimistic update"
+        },
+        {
+          "id": "E.error-announced",
+          "kind": "spec",
+          "text": "announced form errors"
+        },
+        {
+          "id": "P.retry-after-error",
+          "kind": "robustness",
+          "text": "form unusable after a rejected action"
+        }
+      ],
+      "F": [
+        {
+          "id": "F.auth-checkout",
+          "kind": "spec",
+          "text": "checkout action authorization"
+        },
+        {
+          "id": "F.auth-return",
+          "kind": "spec",
+          "text": "F.3 \u2014 split: checkout auth is F.auth-checkout, return auth is this"
+        },
+        {
+          "id": "F.checkout-record",
+          "kind": "spec",
+          "text": "checkout records now and due date"
+        },
+        {
+          "id": "F.return-record",
+          "kind": "spec",
+          "text": "return records now"
+        },
+        {
+          "id": "F.checkout-conflict",
+          "kind": "spec",
+          "text": "checkout on-loan conflict"
+        },
+        {
+          "id": "F.return-not-on-loan",
+          "kind": "spec",
+          "text": "return no-open-loan guard"
+        },
+        {
+          "id": "F.future-due-date",
+          "kind": "spec",
+          "text": "checkout future due-date guard"
+        },
+        {
+          "id": "F.post-mutation-state",
+          "kind": "spec",
+          "text": "post-mutation list and detail state"
+        },
+        {
+          "id": "F.lifecycle",
+          "kind": "spec",
+          "text": "F.1 and F.2 \u2014 split: the two records combined over one item"
+        },
+        {
+          "id": "P.no-key-leak",
+          "kind": "robustness",
+          "text": "staff credential serialized to the client"
+        },
+        {
+          "id": "P.stale-after-mutate",
+          "kind": "robustness",
+          "text": "missing revalidation"
+        },
+        {
+          "id": "P.action-race",
+          "kind": "robustness",
+          "text": "losing concurrent checkout action throws"
+        }
+      ],
+      "G": [
+        {
+          "id": "G.get200",
+          "kind": "spec",
+          "text": "GET 200 loans shape"
+        },
+        {
+          "id": "G.401",
+          "kind": "spec",
+          "text": "all methods require staff"
+        },
+        {
+          "id": "G.filter-item",
+          "kind": "spec",
+          "text": "GET item filter"
+        },
+        {
+          "id": "G.filter-overdue",
+          "kind": "spec",
+          "text": "GET overdue filter"
+        },
+        {
+          "id": "G.filter-both",
+          "kind": "spec",
+          "text": "GET intersecting filters"
+        },
+        {
+          "id": "G.post201",
+          "kind": "spec",
+          "text": "POST 201 loan"
+        },
+        {
+          "id": "G.post-fields",
+          "kind": "spec",
+          "text": "G.5 \u2014 split: the status is G.post201, the record shape is this"
+        },
+        {
+          "id": "G.400",
+          "kind": "spec",
+          "text": "POST field validation"
+        },
+        {
+          "id": "G.409",
+          "kind": "spec",
+          "text": "POST on-loan conflict"
+        },
+        {
+          "id": "G.fresh",
+          "kind": "spec",
+          "text": "fresh API responses"
+        },
+        {
+          "id": "G.patch200",
+          "kind": "spec",
+          "text": "PATCH 200 close"
+        },
+        {
+          "id": "G.patch409",
+          "kind": "spec",
+          "text": "PATCH no-open-loan conflict"
+        },
+        {
+          "id": "G.patch400",
+          "kind": "spec",
+          "text": "PATCH field validation"
+        },
+        {
+          "id": "P.concurrent-checkout",
+          "kind": "robustness",
+          "text": "check-then-write, losing write unhandled"
+        },
+        {
+          "id": "P.concurrent-return",
+          "kind": "robustness",
+          "text": "double return; the losing close unhandled"
+        },
+        {
+          "id": "P.validate-before-io",
+          "kind": "performance",
+          "text": "store reads before validating the request"
+        },
+        {
+          "id": "P.auth-before-parse",
+          "kind": "robustness",
+          "text": "request body parsed before the staff check"
+        },
+        {
+          "id": "P.malformed-json",
+          "kind": "robustness",
+          "text": "unguarded request.json() answers 500"
+        }
+      ],
+      "H": [
+        {
+          "id": "H.loading",
+          "kind": "spec",
+          "text": "streamed loading heading and six tiles"
+        },
+        {
+          "id": "H.error",
+          "kind": "spec",
+          "text": "error boundary retry"
+        }
+      ]
+    },
+    "models": [
+      {
+        "id": "claude-haiku-5-5",
+        "name": "Claude Haiku 5.5",
+        "runs": {
+          "total": 2,
+          "opencode": 2,
+          "pi": 0,
+          "arm_a": 1,
+          "arm_b": 1,
+          "run_ids": [
+            "a-claude-haiku-5-5-2026w43-r1",
+            "b-claude-haiku-5-5-2026w43-r1"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 2,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "deepseek-v4.1-flash",
+        "name": "DeepSeek V4.1 Flash",
+        "runs": {
+          "total": 4,
+          "opencode": 2,
+          "pi": 2,
+          "arm_a": 3,
+          "arm_b": 1,
+          "run_ids": [
+            "a-deepseek-v4-1-flash-2026w37",
+            "a-deepseek-v4-1-flash-2026w38",
+            "a-deepseek-v4-1-flash-2026w43-r1",
+            "b-deepseek-v4-1-flash-2026w43-r1"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 4,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "safe",
+            "min_coverage": 4,
+            "failures": [],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "safe",
+            "min_coverage": 4,
+            "failures": [],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 4,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 4,
+                "graded": 4
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "safe",
+            "min_coverage": 4,
+            "failures": [],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "safe",
+            "min_coverage": 4,
+            "failures": [],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 4,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "glm-5.3-flash",
+        "name": "GLM-5.3-Flash",
+        "runs": {
+          "total": 9,
+          "opencode": 6,
+          "pi": 3,
+          "arm_a": 5,
+          "arm_b": 4,
+          "run_ids": [
+            "a-glm-5-3-flash-2026w37",
+            "a-glm-5-3-flash-2026w38",
+            "a-glm-5-3-flash-2026w46-r1",
+            "a-glm-5-3-flash-2026w46-r2",
+            "a-glm-5-3-flash-2026w46-r3",
+            "b-glm-5-3-flash-2026w38",
+            "b-glm-5-3-flash-2026w46-r1",
+            "b-glm-5-3-flash-2026w46-r2",
+            "b-glm-5-3-flash-2026w46-r3"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 9,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "safe",
+            "min_coverage": 8,
+            "failures": [],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "unoptimized",
+            "min_coverage": 9,
+            "failures": [
+              {
+                "id": "P.n-plus-one",
+                "kind": "performance",
+                "text": "per-row query inside the list render",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "risk",
+            "min_coverage": 9,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 8,
+                "graded": 9
+              },
+              {
+                "id": "D.form-hidden",
+                "kind": "spec",
+                "text": "checkout only when available",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "D.return-visible",
+                "kind": "spec",
+                "text": "return only when on loan",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "risk",
+            "min_coverage": 6,
+            "failures": [
+              {
+                "id": "E.pending",
+                "kind": "spec",
+                "text": "checkout pending control",
+                "failed": 2,
+                "graded": 9
+              },
+              {
+                "id": "E.return-pending",
+                "kind": "spec",
+                "text": "return pending control",
+                "failed": 2,
+                "graded": 9
+              },
+              {
+                "id": "E.return-submits",
+                "kind": "spec",
+                "text": "return control and action submission",
+                "failed": 2,
+                "graded": 9
+              },
+              {
+                "id": "E.error-shown",
+                "kind": "spec",
+                "text": "checkout action error",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.member-options",
+                "kind": "spec",
+                "text": "all member options and due-date input",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.optimistic",
+                "kind": "spec",
+                "text": "checkout optimistic update",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.return-error",
+                "kind": "spec",
+                "text": "return action error",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.return-optimistic",
+                "kind": "spec",
+                "text": "return optimistic update",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.submits",
+                "kind": "spec",
+                "text": "checkout action submission",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 8,
+            "failures": [
+              {
+                "id": "F.auth-checkout",
+                "kind": "spec",
+                "text": "checkout action authorization",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.auth-return",
+                "kind": "spec",
+                "text": "F.3 \u2014 split: checkout auth is F.auth-checkout, return auth is this",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.checkout-conflict",
+                "kind": "spec",
+                "text": "checkout on-loan conflict",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.future-due-date",
+                "kind": "spec",
+                "text": "checkout future due-date guard",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.post-mutation-state",
+                "kind": "spec",
+                "text": "post-mutation list and detail state",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.return-not-on-loan",
+                "kind": "spec",
+                "text": "return no-open-loan guard",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.return-record",
+                "kind": "spec",
+                "text": "return records now",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "P.stale-after-mutate",
+                "kind": "robustness",
+                "text": "missing revalidation",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "safe",
+            "min_coverage": 8,
+            "failures": [],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "risk",
+            "min_coverage": 9,
+            "failures": [
+              {
+                "id": "H.error",
+                "kind": "spec",
+                "text": "error boundary retry",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "H.loading",
+                "kind": "spec",
+                "text": "streamed loading heading and six tiles",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "gpt-5.6-luna",
+        "name": "GPT 5.6 Luna",
+        "runs": {
+          "total": 2,
+          "opencode": 0,
+          "pi": 2,
+          "arm_a": 1,
+          "arm_b": 1,
+          "run_ids": [
+            "a-gpt-5-6-luna-2026w37",
+            "b-gpt-5-6-luna-2026w38"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "P.axe-clean",
+                "graded": 1
+              }
+            ]
+          },
+          "C": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 2,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "unproven",
+            "min_coverage": 0,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "E.error-announced",
+                "graded": 0
+              },
+              {
+                "id": "E.labels",
+                "graded": 0
+              },
+              {
+                "id": "P.retry-after-error",
+                "graded": 1
+              }
+            ]
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 2,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "P.auth-before-parse",
+                "graded": 1
+              },
+              {
+                "id": "P.malformed-json",
+                "graded": 1
+              }
+            ]
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "gpt-6-luna",
+        "name": "GPT 6 Luna",
+        "runs": {
+          "total": 2,
+          "opencode": 2,
+          "pi": 0,
+          "arm_a": 1,
+          "arm_b": 1,
+          "run_ids": [
+            "a-gpt-6-luna-2026w43-r1",
+            "b-gpt-6-luna-2026w43-r1"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 2,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "hy3",
+        "name": "Hy3",
+        "runs": {
+          "total": 1,
+          "opencode": 0,
+          "pi": 1,
+          "arm_a": 1,
+          "arm_b": 0,
+          "run_ids": [
+            "a-hy3-2026w37"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "A.boundary",
+                "graded": 1
+              },
+              {
+                "id": "A.due-soon",
+                "graded": 1
+              },
+              {
+                "id": "A.ok",
+                "graded": 1
+              },
+              {
+                "id": "A.overdue",
+                "graded": 1
+              },
+              {
+                "id": "A.returned",
+                "graded": 1
+              }
+            ]
+          },
+          "B": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "B.badge",
+                "graded": 1
+              },
+              {
+                "id": "B.image-alt",
+                "graded": 1
+              },
+              {
+                "id": "B.image-response",
+                "graded": 1
+              },
+              {
+                "id": "B.link",
+                "graded": 1
+              },
+              {
+                "id": "B.name-category",
+                "graded": 1
+              },
+              {
+                "id": "P.axe-clean",
+                "graded": 1
+              }
+            ]
+          },
+          "C": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "P.n-plus-one",
+                "kind": "performance",
+                "text": "per-row query inside the list render",
+                "failed": 1,
+                "graded": 1
+              }
+            ],
+            "gaps": [
+              {
+                "id": "C.empty",
+                "graded": 1
+              },
+              {
+                "id": "C.filter-both",
+                "graded": 1
+              },
+              {
+                "id": "C.filter-case",
+                "graded": 1
+              },
+              {
+                "id": "C.filter-category",
+                "graded": 1
+              },
+              {
+                "id": "C.filter-q",
+                "graded": 1
+              },
+              {
+                "id": "C.parallel-reads",
+                "graded": 1
+              },
+              {
+                "id": "C.renders",
+                "graded": 1
+              },
+              {
+                "id": "C.renders-all",
+                "graded": 1
+              },
+              {
+                "id": "P.filter-literal",
+                "graded": 1
+              },
+              {
+                "id": "P.hydration-clean",
+                "graded": 1
+              },
+              {
+                "id": "P.n-plus-one",
+                "graded": 1
+              },
+              {
+                "id": "P.searchparams-async",
+                "graded": 1
+              }
+            ]
+          },
+          "D": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 1,
+                "graded": 1
+              }
+            ],
+            "gaps": [
+              {
+                "id": "D.form-hidden",
+                "graded": 1
+              },
+              {
+                "id": "D.history-order",
+                "graded": 1
+              },
+              {
+                "id": "D.history-status",
+                "graded": 1
+              },
+              {
+                "id": "D.metadata",
+                "graded": 1
+              },
+              {
+                "id": "D.notfound",
+                "graded": 1
+              },
+              {
+                "id": "D.renders",
+                "graded": 1
+              },
+              {
+                "id": "D.return-visible",
+                "graded": 1
+              },
+              {
+                "id": "P.dedup-item",
+                "graded": 1
+              }
+            ]
+          },
+          "E": {
+            "verdict": "unproven",
+            "min_coverage": 0,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "E.error-announced",
+                "graded": 0
+              },
+              {
+                "id": "E.error-shown",
+                "graded": 1
+              },
+              {
+                "id": "E.labels",
+                "graded": 0
+              },
+              {
+                "id": "E.member-options",
+                "graded": 1
+              },
+              {
+                "id": "E.optimistic",
+                "graded": 1
+              },
+              {
+                "id": "E.pending",
+                "graded": 1
+              },
+              {
+                "id": "E.return-error",
+                "graded": 1
+              },
+              {
+                "id": "E.return-optimistic",
+                "graded": 1
+              },
+              {
+                "id": "E.return-pending",
+                "graded": 1
+              },
+              {
+                "id": "E.return-submits",
+                "graded": 1
+              },
+              {
+                "id": "E.submits",
+                "graded": 1
+              },
+              {
+                "id": "P.retry-after-error",
+                "graded": 1
+              }
+            ]
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 1,
+                "graded": 1
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 1,
+                "graded": 1
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "risk",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "P.concurrent-return",
+                "kind": "robustness",
+                "text": "double return; the losing close unhandled",
+                "failed": 1,
+                "graded": 1
+              }
+            ],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "H.error",
+                "graded": 1
+              },
+              {
+                "id": "H.loading",
+                "graded": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "longcat-2.0",
+        "name": "LongCat-2.0",
+        "runs": {
+          "total": 3,
+          "opencode": 0,
+          "pi": 3,
+          "arm_a": 2,
+          "arm_b": 1,
+          "run_ids": [
+            "a-longcat-2-0-2026w37",
+            "a-longcat-2-0-2026w38",
+            "b-longcat-2-0-2026w38"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 3,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "P.axe-clean",
+                "graded": 1
+              }
+            ]
+          },
+          "C": {
+            "verdict": "risk",
+            "min_coverage": 3,
+            "failures": [
+              {
+                "id": "C.parallel-reads",
+                "kind": "spec",
+                "text": "parallel count and category reads",
+                "failed": 1,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 3,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 3,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "risk",
+            "min_coverage": 0,
+            "failures": [
+              {
+                "id": "E.pending",
+                "kind": "spec",
+                "text": "checkout pending control",
+                "failed": 2,
+                "graded": 3
+              },
+              {
+                "id": "E.optimistic",
+                "kind": "spec",
+                "text": "checkout optimistic update",
+                "failed": 1,
+                "graded": 3
+              },
+              {
+                "id": "E.return-error",
+                "kind": "spec",
+                "text": "return action error",
+                "failed": 1,
+                "graded": 3
+              },
+              {
+                "id": "E.return-optimistic",
+                "kind": "spec",
+                "text": "return optimistic update",
+                "failed": 1,
+                "graded": 3
+              },
+              {
+                "id": "E.return-pending",
+                "kind": "spec",
+                "text": "return pending control",
+                "failed": 1,
+                "graded": 3
+              },
+              {
+                "id": "E.submits",
+                "kind": "spec",
+                "text": "checkout action submission",
+                "failed": 1,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 2,
+                "graded": 3
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 2,
+                "graded": 3
+              },
+              {
+                "id": "F.auth-return",
+                "kind": "spec",
+                "text": "F.3 \u2014 split: checkout auth is F.auth-checkout, return auth is this",
+                "failed": 1,
+                "graded": 3
+              },
+              {
+                "id": "F.return-not-on-loan",
+                "kind": "spec",
+                "text": "return no-open-loan guard",
+                "failed": 1,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "risk",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "G.401",
+                "kind": "spec",
+                "text": "all methods require staff",
+                "failed": 3,
+                "graded": 3
+              },
+              {
+                "id": "P.concurrent-checkout",
+                "kind": "robustness",
+                "text": "check-then-write, losing write unhandled",
+                "failed": 1,
+                "graded": 3
+              },
+              {
+                "id": "P.concurrent-return",
+                "kind": "robustness",
+                "text": "double return; the losing close unhandled",
+                "failed": 1,
+                "graded": 3
+              },
+              {
+                "id": "P.malformed-json",
+                "kind": "robustness",
+                "text": "unguarded request.json() answers 500",
+                "failed": 1,
+                "graded": 1
+              }
+            ],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 3,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "mimo-v2.5",
+        "name": "MiMo V2.5",
+        "runs": {
+          "total": 3,
+          "opencode": 0,
+          "pi": 3,
+          "arm_a": 2,
+          "arm_b": 1,
+          "run_ids": [
+            "a-mimo-v2-5-2026w37",
+            "a-mimo-v2-5-2026w38",
+            "b-mimo-v2-5-2026w38"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 3,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "P.axe-clean",
+                "graded": 1
+              }
+            ]
+          },
+          "C": {
+            "verdict": "unoptimized",
+            "min_coverage": 3,
+            "failures": [
+              {
+                "id": "P.n-plus-one",
+                "kind": "performance",
+                "text": "per-row query inside the list render",
+                "failed": 1,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 3,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 3,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "risk",
+            "min_coverage": 0,
+            "failures": [
+              {
+                "id": "E.optimistic",
+                "kind": "spec",
+                "text": "checkout optimistic update",
+                "failed": 3,
+                "graded": 3
+              },
+              {
+                "id": "E.return-optimistic",
+                "kind": "spec",
+                "text": "return optimistic update",
+                "failed": 3,
+                "graded": 3
+              },
+              {
+                "id": "E.submits",
+                "kind": "spec",
+                "text": "checkout action submission",
+                "failed": 3,
+                "graded": 3
+              },
+              {
+                "id": "E.pending",
+                "kind": "spec",
+                "text": "checkout pending control",
+                "failed": 2,
+                "graded": 3
+              },
+              {
+                "id": "E.return-pending",
+                "kind": "spec",
+                "text": "return pending control",
+                "failed": 2,
+                "graded": 3
+              },
+              {
+                "id": "E.return-submits",
+                "kind": "spec",
+                "text": "return control and action submission",
+                "failed": 2,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 2,
+                "graded": 3
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 2,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "risk",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "P.concurrent-return",
+                "kind": "robustness",
+                "text": "double return; the losing close unhandled",
+                "failed": 1,
+                "graded": 3
+              }
+            ],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 3,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "mimo-v2.6-flash",
+        "name": "MiMo V2.6 Flash",
+        "runs": {
+          "total": 8,
+          "opencode": 6,
+          "pi": 2,
+          "arm_a": 4,
+          "arm_b": 4,
+          "run_ids": [
+            "a-mimo-v2-6-flash-2026w39",
+            "a-mimo-v2-6-flash-2026w46-r1",
+            "a-mimo-v2-6-flash-2026w46-r2",
+            "a-mimo-v2-6-flash-2026w46-r3",
+            "b-mimo-v2-6-flash-2026w39",
+            "b-mimo-v2-6-flash-2026w46-r1",
+            "b-mimo-v2-6-flash-2026w46-r2",
+            "b-mimo-v2-6-flash-2026w46-r3"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 8,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "risk",
+            "min_coverage": 6,
+            "failures": [
+              {
+                "id": "B.badge",
+                "kind": "spec",
+                "text": "availability badge",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "B.image-alt",
+                "kind": "spec",
+                "text": "item image alternative text",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "B.image-response",
+                "kind": "spec",
+                "text": "B.4 \u2014 split: the alt text is B.image-alt, the response is this",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "B.link",
+                "kind": "spec",
+                "text": "card item link",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "B.name-category",
+                "kind": "spec",
+                "text": "card name and category",
+                "failed": 1,
+                "graded": 8
+              }
+            ],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "risk",
+            "min_coverage": 8,
+            "failures": [
+              {
+                "id": "P.n-plus-one",
+                "kind": "performance",
+                "text": "per-row query inside the list render",
+                "failed": 2,
+                "graded": 8
+              },
+              {
+                "id": "C.empty",
+                "kind": "spec",
+                "text": "empty catalogue result",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "C.filter-both",
+                "kind": "spec",
+                "text": "intersecting q and category filters",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "C.filter-case",
+                "kind": "spec",
+                "text": "C.3 \u2014 split: case-insensitive matching of the same q filter",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "C.filter-category",
+                "kind": "spec",
+                "text": "exact category filter",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "C.filter-q",
+                "kind": "spec",
+                "text": "case-insensitive q filter",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "C.parallel-reads",
+                "kind": "spec",
+                "text": "parallel count and category reads",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "C.renders",
+                "kind": "spec",
+                "text": "Items heading",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "C.renders-all",
+                "kind": "spec",
+                "text": "all catalogue items and open loans",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "P.filter-literal",
+                "kind": "robustness",
+                "text": "search text compiled as a pattern",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "P.searchparams-async",
+                "kind": "robustness",
+                "text": "searchParams not awaited",
+                "failed": 1,
+                "graded": 8
+              }
+            ],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "risk",
+            "min_coverage": 8,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 7,
+                "graded": 8
+              },
+              {
+                "id": "D.form-hidden",
+                "kind": "spec",
+                "text": "checkout only when available",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "D.history-order",
+                "kind": "spec",
+                "text": "newest-first loan history and statuses",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "D.history-status",
+                "kind": "spec",
+                "text": "D.2 \u2014 split: the order is D.history-order, the status is this",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "D.metadata",
+                "kind": "spec",
+                "text": "item metadata title",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "D.notfound",
+                "kind": "spec",
+                "text": "unknown item not-found",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "D.renders",
+                "kind": "spec",
+                "text": "detail name category and description",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "D.return-visible",
+                "kind": "spec",
+                "text": "return only when on loan",
+                "failed": 1,
+                "graded": 8
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "risk",
+            "min_coverage": 6,
+            "failures": [
+              {
+                "id": "E.error-shown",
+                "kind": "spec",
+                "text": "checkout action error",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "E.member-options",
+                "kind": "spec",
+                "text": "all member options and due-date input",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "E.optimistic",
+                "kind": "spec",
+                "text": "checkout optimistic update",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "E.pending",
+                "kind": "spec",
+                "text": "checkout pending control",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "E.return-error",
+                "kind": "spec",
+                "text": "return action error",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "E.return-optimistic",
+                "kind": "spec",
+                "text": "return optimistic update",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "E.return-pending",
+                "kind": "spec",
+                "text": "return pending control",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "E.return-submits",
+                "kind": "spec",
+                "text": "return control and action submission",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "E.submits",
+                "kind": "spec",
+                "text": "checkout action submission",
+                "failed": 1,
+                "graded": 8
+              }
+            ],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 6,
+            "failures": [
+              {
+                "id": "F.auth-checkout",
+                "kind": "spec",
+                "text": "checkout action authorization",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "F.auth-return",
+                "kind": "spec",
+                "text": "F.3 \u2014 split: checkout auth is F.auth-checkout, return auth is this",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "F.checkout-conflict",
+                "kind": "spec",
+                "text": "checkout on-loan conflict",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "F.future-due-date",
+                "kind": "spec",
+                "text": "checkout future due-date guard",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "F.post-mutation-state",
+                "kind": "spec",
+                "text": "post-mutation list and detail state",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "F.return-not-on-loan",
+                "kind": "spec",
+                "text": "return no-open-loan guard",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "F.return-record",
+                "kind": "spec",
+                "text": "return records now",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "P.no-key-leak",
+                "kind": "robustness",
+                "text": "staff credential serialized to the client",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "P.stale-after-mutate",
+                "kind": "robustness",
+                "text": "missing revalidation",
+                "failed": 1,
+                "graded": 8
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "risk",
+            "min_coverage": 6,
+            "failures": [
+              {
+                "id": "G.400",
+                "kind": "spec",
+                "text": "POST field validation",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.401",
+                "kind": "spec",
+                "text": "all methods require staff",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.409",
+                "kind": "spec",
+                "text": "POST on-loan conflict",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.filter-both",
+                "kind": "spec",
+                "text": "GET intersecting filters",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.filter-item",
+                "kind": "spec",
+                "text": "GET item filter",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.filter-overdue",
+                "kind": "spec",
+                "text": "GET overdue filter",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.fresh",
+                "kind": "spec",
+                "text": "fresh API responses",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.get200",
+                "kind": "spec",
+                "text": "GET 200 loans shape",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.patch200",
+                "kind": "spec",
+                "text": "PATCH 200 close",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.patch400",
+                "kind": "spec",
+                "text": "PATCH field validation",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.patch409",
+                "kind": "spec",
+                "text": "PATCH no-open-loan conflict",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.post-fields",
+                "kind": "spec",
+                "text": "G.5 \u2014 split: the status is G.post201, the record shape is this",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "G.post201",
+                "kind": "spec",
+                "text": "POST 201 loan",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "P.concurrent-checkout",
+                "kind": "robustness",
+                "text": "check-then-write, losing write unhandled",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "P.concurrent-return",
+                "kind": "robustness",
+                "text": "double return; the losing close unhandled",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "P.validate-before-io",
+                "kind": "performance",
+                "text": "store reads before validating the request",
+                "failed": 1,
+                "graded": 8
+              }
+            ],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "risk",
+            "min_coverage": 8,
+            "failures": [
+              {
+                "id": "H.error",
+                "kind": "spec",
+                "text": "error boundary retry",
+                "failed": 1,
+                "graded": 8
+              },
+              {
+                "id": "H.loading",
+                "kind": "spec",
+                "text": "streamed loading heading and six tiles",
+                "failed": 1,
+                "graded": 8
+              }
+            ],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "minimax-m3.1-flash",
+        "name": "MiniMax M3.1 Flash",
+        "runs": {
+          "total": 2,
+          "opencode": 2,
+          "pi": 0,
+          "arm_a": 1,
+          "arm_b": 1,
+          "run_ids": [
+            "a-minimax-m3-1-flash-2026w43-r1",
+            "b-minimax-m3-1-flash-2026w43-r1"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 2,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "muse-spark-1.2-contributor",
+        "name": "Muse Spark 1.2 Contributor",
+        "runs": {
+          "total": 2,
+          "opencode": 0,
+          "pi": 2,
+          "arm_a": 2,
+          "arm_b": 0,
+          "run_ids": [
+            "a-muse-spark-1-2-contributor-2026w37",
+            "a-muse-spark-1-2-contributor-2026w38"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "P.axe-clean",
+                "graded": 1
+              }
+            ]
+          },
+          "C": {
+            "verdict": "unoptimized",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.n-plus-one",
+                "kind": "performance",
+                "text": "per-row query inside the list render",
+                "failed": 1,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 2,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "unproven",
+            "min_coverage": 0,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "E.error-announced",
+                "graded": 0
+              },
+              {
+                "id": "E.labels",
+                "graded": 0
+              },
+              {
+                "id": "P.retry-after-error",
+                "graded": 1
+              }
+            ]
+          },
+          "F": {
+            "verdict": "unproven",
+            "min_coverage": 1,
+            "failures": [],
+            "gaps": [
+              {
+                "id": "P.action-race",
+                "graded": 1
+              }
+            ]
+          },
+          "G": {
+            "verdict": "risk",
+            "min_coverage": 1,
+            "failures": [
+              {
+                "id": "P.concurrent-return",
+                "kind": "robustness",
+                "text": "double return; the losing close unhandled",
+                "failed": 1,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "muse-spark-1.3-contributor",
+        "name": "Muse Spark 1.3 Contributor",
+        "runs": {
+          "total": 9,
+          "opencode": 6,
+          "pi": 3,
+          "arm_a": 5,
+          "arm_b": 4,
+          "run_ids": [
+            "a-muse-spark-1-3-contributor-2026w37",
+            "a-muse-spark-1-3-contributor-2026w38",
+            "a-muse-spark-1-3-contributor-2026w46-r1",
+            "a-muse-spark-1-3-contributor-2026w46-r2",
+            "a-muse-spark-1-3-contributor-2026w46-r3",
+            "b-muse-spark-1-3-contributor-2026w38",
+            "b-muse-spark-1-3-contributor-2026w46-r1",
+            "b-muse-spark-1-3-contributor-2026w46-r2",
+            "b-muse-spark-1-3-contributor-2026w46-r3"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 9,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "safe",
+            "min_coverage": 7,
+            "failures": [],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "safe",
+            "min_coverage": 9,
+            "failures": [],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 9,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 9,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "safe",
+            "min_coverage": 6,
+            "failures": [],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 7,
+            "failures": [
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "risk",
+            "min_coverage": 7,
+            "failures": [
+              {
+                "id": "P.concurrent-return",
+                "kind": "robustness",
+                "text": "double return; the losing close unhandled",
+                "failed": 9,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 9,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "qwen3.7-plus",
+        "name": "Qwen3.7 Plus",
+        "runs": {
+          "total": 2,
+          "opencode": 0,
+          "pi": 2,
+          "arm_a": 1,
+          "arm_b": 1,
+          "run_ids": [
+            "a-qwen3-7-plus-2026w37",
+            "b-qwen3-7-plus-2026w37"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "risk",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.axe-clean",
+                "kind": "robustness",
+                "text": "unnamed controls or invalid ARIA",
+                "failed": 1,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "unoptimized",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.n-plus-one",
+                "kind": "performance",
+                "text": "per-row query inside the list render",
+                "failed": 1,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "unoptimized",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 2,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "risk",
+            "min_coverage": 0,
+            "failures": [
+              {
+                "id": "E.error-shown",
+                "kind": "spec",
+                "text": "checkout action error",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "E.pending",
+                "kind": "spec",
+                "text": "checkout pending control",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "E.return-error",
+                "kind": "spec",
+                "text": "return action error",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "E.return-pending",
+                "kind": "spec",
+                "text": "return pending control",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "P.retry-after-error",
+                "kind": "robustness",
+                "text": "form unusable after a rejected action",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "E.optimistic",
+                "kind": "spec",
+                "text": "checkout optimistic update",
+                "failed": 1,
+                "graded": 2
+              },
+              {
+                "id": "E.return-optimistic",
+                "kind": "spec",
+                "text": "return optimistic update",
+                "failed": 1,
+                "graded": 2
+              },
+              {
+                "id": "E.submits",
+                "kind": "spec",
+                "text": "checkout action submission",
+                "failed": 1,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "F.auth-checkout",
+                "kind": "spec",
+                "text": "checkout action authorization",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "F.auth-return",
+                "kind": "spec",
+                "text": "F.3 \u2014 split: checkout auth is F.auth-checkout, return auth is this",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "F.checkout-conflict",
+                "kind": "spec",
+                "text": "checkout on-loan conflict",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "F.future-due-date",
+                "kind": "spec",
+                "text": "checkout future due-date guard",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "F.return-not-on-loan",
+                "kind": "spec",
+                "text": "return no-open-loan guard",
+                "failed": 2,
+                "graded": 2
+              },
+              {
+                "id": "P.action-race",
+                "kind": "robustness",
+                "text": "losing concurrent checkout action throws",
+                "failed": 2,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "risk",
+            "min_coverage": 2,
+            "failures": [
+              {
+                "id": "P.concurrent-return",
+                "kind": "robustness",
+                "text": "double return; the losing close unhandled",
+                "failed": 1,
+                "graded": 2
+              }
+            ],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "safe",
+            "min_coverage": 2,
+            "failures": [],
+            "gaps": []
+          }
+        }
+      },
+      {
+        "id": "qwen3.8-flash",
+        "name": "Qwen3.8 Flash",
+        "runs": {
+          "total": 9,
+          "opencode": 6,
+          "pi": 3,
+          "arm_a": 4,
+          "arm_b": 5,
+          "run_ids": [
+            "a-qwen3-8-flash-2026w37",
+            "a-qwen3-8-flash-2026w47-r1",
+            "a-qwen3-8-flash-2026w47-r2",
+            "a-qwen3-8-flash-2026w47-r3",
+            "b-qwen3-8-flash-2026w37",
+            "b-qwen3-8-flash-2026w38",
+            "b-qwen3-8-flash-2026w47-r1",
+            "b-qwen3-8-flash-2026w47-r2",
+            "b-qwen3-8-flash-2026w47-r3"
+          ]
+        },
+        "cells": {
+          "A": {
+            "verdict": "safe",
+            "min_coverage": 9,
+            "failures": [],
+            "gaps": []
+          },
+          "B": {
+            "verdict": "safe",
+            "min_coverage": 8,
+            "failures": [],
+            "gaps": []
+          },
+          "C": {
+            "verdict": "safe",
+            "min_coverage": 9,
+            "failures": [],
+            "gaps": []
+          },
+          "D": {
+            "verdict": "risk",
+            "min_coverage": 9,
+            "failures": [
+              {
+                "id": "P.dedup-item",
+                "kind": "performance",
+                "text": "same record read twice in one request",
+                "failed": 8,
+                "graded": 9
+              },
+              {
+                "id": "D.form-hidden",
+                "kind": "spec",
+                "text": "checkout only when available",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "D.return-visible",
+                "kind": "spec",
+                "text": "return only when on loan",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "E": {
+            "verdict": "risk",
+            "min_coverage": 6,
+            "failures": [
+              {
+                "id": "E.error-shown",
+                "kind": "spec",
+                "text": "checkout action error",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.member-options",
+                "kind": "spec",
+                "text": "all member options and due-date input",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.optimistic",
+                "kind": "spec",
+                "text": "checkout optimistic update",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.pending",
+                "kind": "spec",
+                "text": "checkout pending control",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.return-error",
+                "kind": "spec",
+                "text": "return action error",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.return-optimistic",
+                "kind": "spec",
+                "text": "return optimistic update",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.return-pending",
+                "kind": "spec",
+                "text": "return pending control",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.return-submits",
+                "kind": "spec",
+                "text": "return control and action submission",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "E.submits",
+                "kind": "spec",
+                "text": "checkout action submission",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "F": {
+            "verdict": "risk",
+            "min_coverage": 8,
+            "failures": [
+              {
+                "id": "F.auth-checkout",
+                "kind": "spec",
+                "text": "checkout action authorization",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.auth-return",
+                "kind": "spec",
+                "text": "F.3 \u2014 split: checkout auth is F.auth-checkout, return auth is this",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.checkout-conflict",
+                "kind": "spec",
+                "text": "checkout on-loan conflict",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.checkout-record",
+                "kind": "spec",
+                "text": "checkout records now and due date",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.future-due-date",
+                "kind": "spec",
+                "text": "checkout future due-date guard",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.lifecycle",
+                "kind": "spec",
+                "text": "F.1 and F.2 \u2014 split: the two records combined over one item",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.post-mutation-state",
+                "kind": "spec",
+                "text": "post-mutation list and detail state",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.return-not-on-loan",
+                "kind": "spec",
+                "text": "return no-open-loan guard",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "F.return-record",
+                "kind": "spec",
+                "text": "return records now",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "P.stale-after-mutate",
+                "kind": "robustness",
+                "text": "missing revalidation",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "G": {
+            "verdict": "risk",
+            "min_coverage": 8,
+            "failures": [
+              {
+                "id": "P.concurrent-return",
+                "kind": "robustness",
+                "text": "double return; the losing close unhandled",
+                "failed": 2,
+                "graded": 9
+              },
+              {
+                "id": "G.400",
+                "kind": "spec",
+                "text": "POST field validation",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.401",
+                "kind": "spec",
+                "text": "all methods require staff",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.409",
+                "kind": "spec",
+                "text": "POST on-loan conflict",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.filter-both",
+                "kind": "spec",
+                "text": "GET intersecting filters",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.filter-item",
+                "kind": "spec",
+                "text": "GET item filter",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.filter-overdue",
+                "kind": "spec",
+                "text": "GET overdue filter",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.fresh",
+                "kind": "spec",
+                "text": "fresh API responses",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.get200",
+                "kind": "spec",
+                "text": "GET 200 loans shape",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.patch200",
+                "kind": "spec",
+                "text": "PATCH 200 close",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.patch400",
+                "kind": "spec",
+                "text": "PATCH field validation",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.patch409",
+                "kind": "spec",
+                "text": "PATCH no-open-loan conflict",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.post-fields",
+                "kind": "spec",
+                "text": "G.5 \u2014 split: the status is G.post201, the record shape is this",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "G.post201",
+                "kind": "spec",
+                "text": "POST 201 loan",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "P.concurrent-checkout",
+                "kind": "robustness",
+                "text": "check-then-write, losing write unhandled",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "P.validate-before-io",
+                "kind": "performance",
+                "text": "store reads before validating the request",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          },
+          "H": {
+            "verdict": "risk",
+            "min_coverage": 9,
+            "failures": [
+              {
+                "id": "H.error",
+                "kind": "spec",
+                "text": "error boundary retry",
+                "failed": 1,
+                "graded": 9
+              },
+              {
+                "id": "H.loading",
+                "kind": "spec",
+                "text": "streamed loading heading and six tiles",
+                "failed": 1,
+                "graded": 9
+              }
+            ],
+            "gaps": []
+          }
+        }
+      }
+    ]
+  },
   "pricing": {
     "source": "https://opencode.ai/docs/go/",
     "retrieved": "2026-10-24",
