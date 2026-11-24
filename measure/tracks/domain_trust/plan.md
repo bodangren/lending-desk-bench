@@ -90,7 +90,7 @@ Gate commands:
   `246d2be6b7d5e16efad170bcc22f8401c0678053a78669dc00833b45607ab051`.
   - Verify: `git show --name-only --format= 22f1a0d` lists `measure/tracks/domain_trust/test-strategy.md`.
   - Verify: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track domain_trust --log-file measure/runs/domain_trust/strategy.log` prints `PASS: strategy gate passed`.
-- [x] 1.3 Worktree. Create `../lending-desk-bench-trust` on the new branch
+- [x] 1.3 Worktree. be540e9 Create `../lending-desk-bench-trust` on the new branch
   `domain-trust` from the current `main` HEAD, and record that SHA as
   `BASE_COMMIT` in this task. Link `runs` to the `runs/`
   of `main`. Install the harness dependencies from the lockfile. Run the
