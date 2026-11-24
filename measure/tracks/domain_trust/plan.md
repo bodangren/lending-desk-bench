@@ -234,12 +234,15 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   (spec R2, R6). The role writes
   `measure/runs/domain_trust/review-a-<short head>.json`.
   - Verify: the review file shows `status: pass`, or each finding has a fix commit on the branch.
-- [~] 3.6 Adversarial tests. Write synthetic records that try to make the
+- [x] 3.6 Adversarial tests. Write synthetic records that try to make the b7e5092
   matrix lie. Examples: `safe` on missing evidence, an unstated check as a
   failure, rows in score order, and a dropped probe.
   - Verify: the role writes `measure/runs/domain_trust/adversarial-<short head>.json`, and `TRUST_TEST` exits 0 with the added cases.
-- [b] 3.7 UX browser review of `docs/results.html` at desktop and mobile
-  widths (spec FR-5, NFR-6). — deferred:ux-browser-review
+  - Adversarial result measure/runs/domain_trust/adversarial-p3-901cac0.json.
+  - Role gate adversarial PASS at baseline 901cac065be157755bd7387a159cf395213e4722.
+  - 8 nonblocking findings ADV-P3-1..8 go to tech-debt.
+- [~] 3.7 UX browser review of `docs/results.html` at desktop and mobile
+  widths (spec FR-5, NFR-6).
   - Verify: the review file in `measure/runs/domain_trust/` shows `status: pass` and names its screenshots.
 
 ## Phase 4: Owner gate and merge
