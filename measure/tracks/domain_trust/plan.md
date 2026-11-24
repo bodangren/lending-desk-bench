@@ -206,7 +206,10 @@ Run in the worktree. Green commits on the branch `domain-trust`.
  - jr-green gate run 1, HEAD 6faaf42834588cf58796b8bfd245d161e8f44108, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks.
  - jr-green gate run 2, HEAD d967f349eda33bef164710cf3bc741245c0c1da4, 3.5 marked [b] deferred:review-a: PASS: jr-green gate passed.
  - Both runs: baseline c4560f2e3078ef2b0b1869a4fe0597df792f3372, GREEN_TEST_COMMAND = TRUST_TEST, log measure/runs/domain_trust/green-p3-r3.log.
-- [b] 3.5 Review A. Check the probe map against each probe test, and the — deferred:review-a
+ - Round r4 (Review A blockers A-P3-1, A-P3-2 fixed at faa4103). Baseline e2a625968dd3dc2489e7062c8aa1a0ff9c1a5a39, GREEN_TEST_COMMAND = TRUST_TEST, log measure/runs/domain_trust/green-p3-r4.log.
+ - jr-green gate run 1, HEAD e5cf49a1c16fc8fcdee763abac0547085380767a, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks.
+ - jr-green gate run 2, HEAD a6e8d0935bfea9e93bcbb9855e221ea3d5d10060, 3.5 marked [b] deferred:review-a: PASS: jr-green gate passed.
+- [~] 3.5 Review A. Check the probe map against each probe test, and the
   verdict rule against the spec. Check `P.dedup-item` on two candidate trees
   (spec R2, R6). The role writes
   `measure/runs/domain_trust/review-a-<short head>.json`.
