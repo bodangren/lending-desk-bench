@@ -146,8 +146,8 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   standard library only.
   - Verify: the FR-1 and FR-2 cases of `TRUST_TEST` pass.
   - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
-- [x] 3.2 Export: the `domain_trust` block and the `since` rule in
-  `load_entry` (spec FR-3, FR-4). be5a8a8 7c5a825
+- [x] 3.2 Export: the `domain_trust` block and the `since` rule in be5a8a8 7c5a825
+  `load_entry` (spec FR-3, FR-4).
   - Verify: `TRUST_TEST` exits 0.
   - Verify: after `python3 harness/export-site-data.py` in the worktree, `FR3_GUARD` and `FR3_CHECK` print `true`, `PREVIEW_CHECK` prints `PREVIEW_CHECK=pass models=14 cells=112`, and `LEADERBOARD_SHA` and `SIDE_SHA` equal the values of task 1.3.
   - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
