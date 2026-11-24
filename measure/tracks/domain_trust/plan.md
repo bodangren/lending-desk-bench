@@ -184,7 +184,7 @@ Run in the worktree. Green commits on the branch `domain-trust`.
     `PI_CHECK=pass`. `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3`.
     Commit 96a9197 holds the export output that closes this gate. The plan
     evidence is committed in a separate commit after this edit.
-- [~] 3.5 Review A. Check the probe map against each probe test, and the
+- [b] 3.5 Review A. Check the probe map against each probe test, and the — deferred:review-a
   verdict rule against the spec. Check `P.dedup-item` on two candidate trees
   (spec R2, R6). The role writes
   `measure/runs/domain_trust/review-a-<short head>.json`.
