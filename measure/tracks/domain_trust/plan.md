@@ -184,7 +184,11 @@ Run in the worktree. Green commits on the branch `domain-trust`.
     `PI_CHECK=pass`. `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3`.
     Commit 96a9197 holds the export output that closes this gate. The plan
     evidence is committed in a separate commit after this edit.
-- [b] 3.5 Review A. Check the probe map against each probe test, and the — deferred:review-a
+ - Gate deviation (PM 2026-11-24, option A): the checker counts a task as deferred only when its first line holds "deferred". The plan rule A12 forbids that word on the open task. The two rules conflict (PM routes the checker fix to Measure).
+ - jr-green gate run 1, HEAD 6faaf42834588cf58796b8bfd245d161e8f44108, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks.
+ - jr-green gate run 2, HEAD d967f349eda33bef164710cf3bc741245c0c1da4, 3.5 marked [b] deferred:review-a: PASS: jr-green gate passed.
+ - Both runs: baseline c4560f2e3078ef2b0b1869a4fe0597df792f3372, GREEN_TEST_COMMAND = TRUST_TEST, log measure/runs/domain_trust/green-p3-r3.log.
+- [~] 3.5 Review A. Check the probe map against each probe test, and the
   verdict rule against the spec. Check `P.dedup-item` on two candidate trees
   (spec R2, R6). The role writes
   `measure/runs/domain_trust/review-a-<short head>.json`.
