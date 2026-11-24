@@ -241,15 +241,18 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   - Adversarial result measure/runs/domain_trust/adversarial-p3-901cac0.json.
   - Role gate adversarial PASS at baseline 901cac065be157755bd7387a159cf395213e4722.
   - 8 nonblocking findings ADV-P3-1..8 go to tech-debt.
-- [~] 3.7 UX browser review of `docs/results.html` at desktop and mobile
+- [x] 3.7 UX browser review of `docs/results.html` at desktop and mobile 6f7451b
   widths (spec FR-5, NFR-6).
   - Verify: the review file in `measure/runs/domain_trust/` shows `status: pass` and names its screenshots.
+  - UX browser result measure/runs/domain_trust/ux-browser-review-r2-6f7451b.json (route claude-agent/sonnet#max, status pass, 11 nonblocking findings UX-P3-1..11 go to tech-debt).
+  - Role gate ux-browser-review PASS at baseline 6f7451be5013c7d4e6ffc30db92b0205984baaac.
+  - The earlier UX run ux-browser-review-6f7451b.json/.log is VOID (wrong route, OpenAI, PM order 2026-11-24).
 
 ## Phase 4: Owner gate and merge
 
-- [b] 4.1 Owner decisions O1 and O2. Show the owner the matrix of the branch
+- [~] 4.1 Owner decisions O1 and O2. Show the owner the matrix of the branch
   export and the screenshots of task 3.7. Record each answer and its date in
-  the spec table. — deferred:owner
+  the spec table.
   - Verify: `rg -n '^\| O1 \|.*\| [0-9]+ 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/domain_trust/spec.md` prints 1 line.
   - Verify: `rg -n '^\| O2 \|.*\| (approved|declined) 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/domain_trust/spec.md` prints 1 line.
 - [b] 4.2 Merge and export. When O2 is approved, set `n_min` to the O1
