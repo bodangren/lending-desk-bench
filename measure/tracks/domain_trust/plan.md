@@ -118,6 +118,12 @@ Run in the worktree. Red commits on the branch `domain-trust`.
   - Verify: `PATH_CHECK` prints `PATH_CHECK=pass`.
 - [b] 2.2 Red evidence. Run `TRUST_TEST`. Record the start time, the end
   time, the exit code, and the Vitest summary line in this task.
+  Red run started 2026-11-24T09:07:55Z and ended 2026-11-24T09:07:57Z with
+  exit code 1. Vitest summary: `Test Files 1 failed (1)` and
+  `Tests 17 failed (17)`. Command: `cd harness && npx vitest run
+  site-tests/domain-trust.test.ts --maxWorkers=1`. All 17 failures name
+  `harness/domain_trust.py` (`PROBE_MAP`, `domain_cells`) or the
+  `domain_trust` export block.
   — deferred:mid-red
   - Verify: the recorded exit code is not 0, and the recorded failures are only those of task 2.1.
 
