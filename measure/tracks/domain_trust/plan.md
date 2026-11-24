@@ -111,12 +111,12 @@ Gate commands:
 
 Run in the worktree. Red commits on the branch `domain-trust`.
 
-- [~] 2.1 Test file `harness/site-tests/domain-trust.test.ts` with the cases
+- [x] 2.1 Test file `harness/site-tests/domain-trust.test.ts` with the cases c0ee4a4
   of the test strategy. It spawns `python3` on a temporary root, as
   `harness/tests/meta/bench-incremental.test.ts` does.
   - Verify: `TRUST_TEST` fails, and each failure names a missing function of `harness/domain_trust.py` or a missing field of the export block.
   - Verify: `PATH_CHECK` prints `PATH_CHECK=pass`.
-- [b] 2.2 Red evidence. Run `TRUST_TEST`. Record the start time, the end
+- [x] 2.2 Red evidence c0ee4a4. Run `TRUST_TEST`. Record the start time, the end
   time, the exit code, and the Vitest summary line in this task.
   Red run started 2026-11-24T09:07:55Z and ended 2026-11-24T09:07:57Z with
   exit code 1. Vitest summary: `Test Files 1 failed (1)` and
@@ -124,16 +124,15 @@ Run in the worktree. Red commits on the branch `domain-trust`.
   site-tests/domain-trust.test.ts --maxWorkers=1`. All 17 failures name
   `harness/domain_trust.py` (`PROBE_MAP`, `domain_cells`) or the
   `domain_trust` export block.
-  — deferred:mid-red
   - Verify: the recorded exit code is not 0, and the recorded failures are only those of task 2.1.
 
 ## Phase 3: Implement (Green)
 
 Run in the worktree. Green commits on the branch `domain-trust`.
 
-- [b] 3.1 Module `harness/domain_trust.py`: the probe map, the kinds, the
+- [~] 3.1 Module `harness/domain_trust.py`: the probe map, the kinds, the
   text sources, and the verdict function (spec FR-1, FR-2). Use the Python
-  standard library only. — deferred:jr-green
+  standard library only.
   - Verify: the FR-1 and FR-2 cases of `TRUST_TEST` pass.
 - [b] 3.2 Export: the `domain_trust` block and the `since` rule in
   `load_entry` (spec FR-3, FR-4). — deferred:jr-green
