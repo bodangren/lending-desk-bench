@@ -7,13 +7,25 @@ Export presentation data for the GitHub Pages site.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import statistics
 import time
 from pathlib import Path
 
-import domain_trust
+# Load the companion from this file's own directory by path. A bare import
+# fails under `python3 -I` (isolated import callers) and in a partial workspace
+# that copies only this script. When the companion is absent, the export keeps
+# its old output: no domain_trust block and no revision cutoff in domains.
+_HERE = Path(__file__).resolve().parent
+_DOMAIN_TRUST_PATH = _HERE / "domain_trust.py"
+domain_trust = None
+if _DOMAIN_TRUST_PATH.is_file():
+    _spec = importlib.util.spec_from_file_location("domain_trust", _DOMAIN_TRUST_PATH)
+    if _spec is not None and _spec.loader is not None:
+        domain_trust = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(domain_trust)
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "assets" / "data" / "benchmark.json"
@@ -366,7 +378,7 @@ def load_entry(spec: dict) -> dict | None:
                     record_revision = revision
             except (OSError, json.JSONDecodeError):
                 pass
-    since_by_criterion = domain_trust.criterion_since()
+    since_by_criterion = domain_trust.criterion_since() if domain_trust else {}
     by_domain = {}
     for cid, ok in results.items():
         if since_by_criterion.get(cid, 1) > record_revision:
@@ -858,7 +870,11 @@ def main() -> None:
         "models": models,
         "history": history,
         "experiments": {},
-        "domain_trust": domain_trust_block(pricing),
+        **(
+            {"domain_trust": domain_trust_block(pricing)}
+            if domain_trust is not None
+            else {}
+        ),
         "pricing": {
             "source": pricing.get("source"),
             "retrieved": pricing.get("retrieved"),

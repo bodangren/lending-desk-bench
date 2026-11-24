@@ -269,13 +269,29 @@
             `).join("")}
           </tbody>
         `;
+        const checkInfo = {};
+        for (const list of Object.values(trust.checks || {})) {
+          for (const c of list) checkInfo[c.id] = c;
+        }
+        const nMin = trust.rule.n_min;
+        // Coverage and the threshold are separate values. A check with one
+        // graded result is graded, even when it is below N_MIN. The export
+        // supplies the kind and the meaning of every check.
+        const describe = (id, graded, failed) => {
+          const info = checkInfo[id] || {};
+          const parts = [escapeHtml(id)];
+          if (info.kind) parts.push(`${escapeHtml(info.kind)}: ${escapeHtml(info.text || "")}`);
+          parts.push(`graded ${graded} of ${nMin} needed`);
+          if (failed !== undefined) parts.push(`failed ${failed}`);
+          return parts.join(" — ");
+        };
         const modes = [];
         for (const m of trust.models) {
           for (const d of letters) {
             const cell = m.cells[d];
             if (cell.verdict === "safe") continue;
-            const failed = cell.failures.map((f) => `${escapeHtml(f.id)} failed ${f.failed} of ${f.graded}`).join(", ");
-            const gaps = cell.gaps.map((g) => `${escapeHtml(g.id)} not graded (${g.graded})`).join(", ");
+            const failed = cell.failures.map((f) => describe(f.id, f.graded, f.failed)).join(", ");
+            const gaps = cell.gaps.map((g) => describe(g.id, g.graded)).join(", ");
             const parts = [`${d} ${escapeHtml(trustWord[cell.verdict] || cell.verdict)}`];
             if (failed) parts.push(failed);
             if (gaps) parts.push(gaps);
