@@ -111,63 +111,148 @@ Gate commands:
 
 Run in the worktree. Red commits on the branch `domain-trust`.
 
-- [~] 2.1 Test file `harness/site-tests/domain-trust.test.ts` with the cases
+- [x] 2.1 Test file `harness/site-tests/domain-trust.test.ts` with the cases c0ee4a4
   of the test strategy. It spawns `python3` on a temporary root, as
   `harness/tests/meta/bench-incremental.test.ts` does.
   - Verify: `TRUST_TEST` fails, and each failure names a missing function of `harness/domain_trust.py` or a missing field of the export block.
   - Verify: `PATH_CHECK` prints `PATH_CHECK=pass`.
-- [b] 2.2 Red evidence. Run `TRUST_TEST`. Record the start time, the end
+- [x] 2.2 Red evidence c0ee4a4. Run `TRUST_TEST`. Record the start time, the end
   time, the exit code, and the Vitest summary line in this task.
-  — deferred:mid-red
+  Red run started 2026-11-24T09:07:55Z and ended 2026-11-24T09:07:57Z with
+  exit code 1. Vitest summary: `Test Files 1 failed (1)` and
+  `Tests 17 failed (17)`. Command: `cd harness && npx vitest run
+  site-tests/domain-trust.test.ts --maxWorkers=1`. All 17 failures name
+  `harness/domain_trust.py` (`PROBE_MAP`, `domain_cells`) or the
+  `domain_trust` export block.
+  Retry r2: Green found two test defects. D1: `requireProbeMap` read
+  `sys.argv[1]` with no argument, so FR-1 cases raised IndexError before the
+  import. The fix embeds the harness path in the script text. D2: the arm-a
+  revision 1 record used an OpenCode executor, so the history entry came from
+  the revision 2 record and the FR-3 assertion contradicted the spec. The fix
+  makes the arm-a revision 1 record a Pi record with `E.submits: false` and
+  keeps the arm-b revision 2 record as OpenCode. Red rerun in a clean copy
+  (`git archive HEAD` plus the fixed test, no `domain_trust.py`): start
+  2026-11-24T09:20:53Z, end 2026-11-24T09:20:55Z, exit 1, `Test Files
+  1 failed (1)`, `Tests 17 failed (17)`, no IndexError. Against Green's
+  uncommitted module the fixed test passes 17/17 (report only).
   - Verify: the recorded exit code is not 0, and the recorded failures are only those of task 2.1.
 
 ## Phase 3: Implement (Green)
 
 Run in the worktree. Green commits on the branch `domain-trust`.
 
-- [b] 3.1 Module `harness/domain_trust.py`: the probe map, the kinds, the
+- [x] 3.1 Module `harness/domain_trust.py`: the probe map, the kinds, the be5a8a8
   text sources, and the verdict function (spec FR-1, FR-2). Use the Python
-  standard library only. — deferred:jr-green
+  standard library only.
   - Verify: the FR-1 and FR-2 cases of `TRUST_TEST` pass.
-- [b] 3.2 Export: the `domain_trust` block and the `since` rule in
-  `load_entry` (spec FR-3, FR-4). — deferred:jr-green
+  - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
+- [x] 3.2 Export: the `domain_trust` block and the `since` rule in be5a8a8 7c5a825
+  `load_entry` (spec FR-3, FR-4). faa4103 e6039b7
+
   - Verify: `TRUST_TEST` exits 0.
   - Verify: after `python3 harness/export-site-data.py` in the worktree, `FR3_GUARD` and `FR3_CHECK` print `true`, `PREVIEW_CHECK` prints `PREVIEW_CHECK=pass models=14 cells=112`, and `LEADERBOARD_SHA` and `SIDE_SHA` equal the values of task 1.3.
-- [b] 3.3 Page and text: the section of `docs/results.html`, and the text in
-  `docs/methodology.html` and `README.md` (spec FR-5, FR-6). The
+  - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
+    `python3 harness/export-site-data.py` exits 0. `FR3_GUARD=true` and
+    `FR3_CHECK=true`. `PREVIEW_CHECK=pass models=14 cells=112` with exit 0.
+    `LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff`
+    and `SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb`,
+    both equal to task 1.3. Commit be5a8a8 holds the module and the export
+    block. Commit 7c5a825 holds the preview refresh from 58 stored runs. Green
+    did not edit `preview.json`.
+  - Review A fix A-P3-1 (faa4103): the exporter loads `domain_trust.py` from
+    its own directory by path. When the companion is absent in a partial
+    workspace, the export keeps its old byte-identical output and writes no
+    `domain_trust` block. `bench-incremental.test.ts` exits 0 with
+    `Tests 5 passed (5)`. `daily-pick-board-filter.test.ts` exits 0 with
+    `Tests 2 passed (2)`. A partial-root run compared with the export at
+    `c4560f2` printed `PARTIAL_NO_BLOCK=true` and
+    `PARTIAL_BYTE_IDENTICAL=true`. `TRUST_TEST` still exits 0 with
+    `Tests 17 passed (17)`.
+  - Review A fix A-P3-8 (e6039b7): the legacy fallback now applies only when
+    no companion is present and `harness/generate-model-pages.py` is absent.
+    That file is the full-harness marker. weekly.sh:89 and cron-daily.sh run
+    it beside the exporter. The legacy partial fixture copies only the
+    exporter, criteria.ts and go-pricing.json, so it cannot trip the marker by
+    accident. The isolated importlib caller loads the exporter from the full
+    harness, where the companion is present. A full harness with no companion,
+    or with a companion that raises on import, exits 1, names
+    `domain_trust.py` in its message, and leaves all three output files
+    unchanged. Five workspace shapes were run. Full harness with companion:
+    exit 0, block present. Full harness without companion: exit 1, outputs
+    unchanged. Full harness with broken companion: exit 1, outputs unchanged.
+    Partial fixture without companion: exit 0, no block, byte-identical to the
+    base export. Isolated importlib load: exit 0, 15 models.
+    `PARTIAL_BYTE_IDENTICAL=true` and `PARTIAL_NO_BLOCK=true`.
+- [x] 3.3 Page and text: the section of `docs/results.html`, and the text in a1d3be9
+  `docs/methodology.html` and `README.md` (spec FR-5, FR-6). faa4103 The
   methodology section has `id="domain-trust"` and holds the rule as static
   HTML. It gives the verdict rule as an ordered list and the probe map as
   a table. Record the `METHOD_CHECK` line in this task.
-  — deferred:jr-green
   - Verify: `METHOD_CHECK` exits 0 and prints `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3` (spec FR-6, AC-6).
   - Verify: `rg -n 'Domain trust' docs/results.html` prints at least 1 line.
-- [b] 3.4 Green gate. Run `TRUST_TEST` and `PATH_CHECK` in the worktree.
+  - Evidence 2026-11-24: `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3` with
+    exit 0. `rg -n 'Domain trust' docs/results.html` prints 3 lines.
+  - Review A fix A-P3-2 (faa4103): the failure list reads `rule.n_min` and the
+    `checks` map from the export. It prints the kind and meaning with the
+    graded count and the threshold as separate values. No graded check is
+    called "not graded". The hy3 C line is
+    `P.n-plus-one — performance: per-row query inside the list render — graded 1 of 2 needed — failed 1`.
+    All 17 cells with sub-threshold failures or gaps use the same form.
+    `PAGE_DESCRIBE_CHECK=pass`, `AFFECTED_CELLS=17`, `COVERAGE_LABELS=251`.
+    Words stay in every cell, so color never carries the meaning alone.
+- [x] 3.4 Green gate. Run `TRUST_TEST` and `PATH_CHECK` in the worktree. 96a9197
   Run `BASE_HASH` and `cd harness && npx tsx plan-work.ts --all` in `main`.
   Run `PI_SHA green` and `PI_CHECK base green` in `main`.
-  — deferred:jr-green
   - Verify: `TRUST_TEST` exits 0, and `PATH_CHECK` prints `PATH_CHECK=pass`.
   - Verify: `BASE_HASH` in `main` prints the value of task 1.3, or the orchestrator names the other track that changed it. The work-list class of each track, arm, and model equals the class at task 1.3.
   - Verify: `PI_CHECK base green` prints `PI_CHECK=pass` (spec FR-7).
-- [b] 3.5 Review A. Check the probe map against each probe test, and the
+  - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
+    `PATH_CHECK=pass`. In `main`, `BASE_HASH` prints
+    `8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0
+    cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7`,
+    equal to task 1.3. `plan-work.ts --all` prints `120 row(s) over 4
+    track(s) — new 45, failing 75, current 0`, equal to task 1.3.
+    `PI_RUNS=95` and
+    `PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d`.
+    `PI_CHECK=pass`. `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3`.
+    Commit 96a9197 holds the export output that closes this gate. The plan
+    evidence is committed in a separate commit after this edit.
+ - Gate deviation (PM 2026-11-24, option A): the checker counts a task as deferred only when its first line holds "deferred". The plan rule A12 forbids that word on the open task. The two rules conflict (PM routes the checker fix to Measure).
+ - jr-green gate run 1, HEAD 6faaf42834588cf58796b8bfd245d161e8f44108, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks.
+ - jr-green gate run 2, HEAD d967f349eda33bef164710cf3bc741245c0c1da4, 3.5 marked [b] deferred:review-a: PASS: jr-green gate passed.
+ - Both runs: baseline c4560f2e3078ef2b0b1869a4fe0597df792f3372, GREEN_TEST_COMMAND = TRUST_TEST, log measure/runs/domain_trust/green-p3-r3.log.
+ - Round r4 (Review A blockers A-P3-1, A-P3-2 fixed at faa4103). Baseline e2a625968dd3dc2489e7062c8aa1a0ff9c1a5a39, GREEN_TEST_COMMAND = TRUST_TEST, log measure/runs/domain_trust/green-p3-r4.log.
+ - jr-green gate run 1, HEAD e5cf49a1c16fc8fcdee763abac0547085380767a, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks.
+ - jr-green gate run 2, HEAD a6e8d0935bfea9e93bcbb9855e221ea3d5d10060, 3.5 marked [b] deferred:review-a: PASS: jr-green gate passed.
+ - Round r5 (Review A blocker A-P3-8 fixed at e6039b7). Baseline 890d5a412e5c3d2a451acbdcc157fa6ba37f552d, GREEN_TEST_COMMAND = TRUST_TEST, log measure/runs/domain_trust/green-p3-r5.log.
+ - jr-green gate run 1, HEAD 75e98c1a1b26f7486ff82e9c837a19e6069be5fd, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks.
+ - jr-green gate run 2, HEAD 7b1a6343d87e5adafca09ecb988d4d2fca3e2887, 3.5 marked [b] deferred:review-a: PASS: jr-green gate passed.
+ - Review A gate (PM deviation): role-gate review-a, baseline 1036decc01c6e65f7464f290b934aa737e502ea2, result measure/runs/domain_trust/review-a-p3-1036dec.json. Run 1, HEAD 1036decc01c6e65f7464f290b934aa737e502ea2, 3.5 marked [~]: FAIL: current phase still has 1 non-deferred incomplete tasks. Run 2, HEAD c3e1e15bb9644b9e1317ce45f17ae7f3b4350d58, 3.5 [x] and 3.6 [b] deferred: PASS: review-a gate passed.
+ - Reviews B and C: skipped, test-strategy.md section 10 marks both not applicable.
+- [x] 3.5 Review A. Check the probe map against each probe test, and the 1036dec
   verdict rule against the spec. Check `P.dedup-item` on two candidate trees
   (spec R2, R6). The role writes
   `measure/runs/domain_trust/review-a-<short head>.json`.
-  — deferred:review-a
   - Verify: the review file shows `status: pass`, or each finding has a fix commit on the branch.
-- [b] 3.6 Adversarial tests. Write synthetic records that try to make the
+- [x] 3.6 Adversarial tests. Write synthetic records that try to make the b7e5092
   matrix lie. Examples: `safe` on missing evidence, an unstated check as a
   failure, rows in score order, and a dropped probe.
-  — deferred:adversarial-testing
   - Verify: the role writes `measure/runs/domain_trust/adversarial-<short head>.json`, and `TRUST_TEST` exits 0 with the added cases.
-- [b] 3.7 UX browser review of `docs/results.html` at desktop and mobile
-  widths (spec FR-5, NFR-6). — deferred:ux-browser-review
+  - Adversarial result measure/runs/domain_trust/adversarial-p3-901cac0.json.
+  - Role gate adversarial PASS at baseline 901cac065be157755bd7387a159cf395213e4722.
+  - 8 nonblocking findings ADV-P3-1..8 go to tech-debt.
+- [x] 3.7 UX browser review of `docs/results.html` at desktop and mobile 6f7451b
+  widths (spec FR-5, NFR-6).
   - Verify: the review file in `measure/runs/domain_trust/` shows `status: pass` and names its screenshots.
+  - UX browser result measure/runs/domain_trust/ux-browser-review-r2-6f7451b.json (route claude-agent/sonnet#max, status pass, 11 nonblocking findings UX-P3-1..11 go to tech-debt).
+  - Role gate ux-browser-review PASS at baseline 6f7451be5013c7d4e6ffc30db92b0205984baaac.
+  - The earlier UX run ux-browser-review-6f7451b.json/.log is VOID (wrong route, OpenAI, PM order 2026-11-24).
 
 ## Phase 4: Owner gate and merge
 
-- [b] 4.1 Owner decisions O1 and O2. Show the owner the matrix of the branch
+- [~] 4.1 Owner decisions O1 and O2. Show the owner the matrix of the branch
   export and the screenshots of task 3.7. Record each answer and its date in
-  the spec table. — deferred:owner
+  the spec table.
   - Verify: `rg -n '^\| O1 \|.*\| [0-9]+ 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/domain_trust/spec.md` prints 1 line.
   - Verify: `rg -n '^\| O2 \|.*\| (approved|declined) 20[0-9]{2}-[0-9]{2}-[0-9]{2}' measure/tracks/domain_trust/spec.md` prints 1 line.
 - [b] 4.2 Merge and export. When O2 is approved, set `n_min` to the O1

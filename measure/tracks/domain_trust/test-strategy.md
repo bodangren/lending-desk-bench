@@ -347,7 +347,7 @@ The UX role runs `SITE_SERVE` in the worktree after the export, and opens
    - longcat-2.0 G is `risk`, and its list shows `G.401` failed 3 of 3.
 5. Each row shows the run count for each executor.
 6. The failure-mode list names each cell that is not `safe`. The preview
-   has 63 such cells.
+   has 61 such cells (58-run preview of 2026-11-24).
 7. The rule paragraph links to `methodology.html`. It says that `safe` means
    "no failure in the checks that ran".
 8. The score table shows the same rows, order, and totals as the base

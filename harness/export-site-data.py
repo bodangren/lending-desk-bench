@@ -7,11 +7,43 @@ Export presentation data for the GitHub Pages site.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import statistics
 import time
 from pathlib import Path
+
+# Load the companion from this file's own directory by path. A bare import
+# fails under `python3 -I` (isolated import callers) and in a partial workspace
+# that copies only this script.
+#
+# A full harness must never publish an export without the companion. The legacy
+# partial fixture of tests/meta/bench-incremental.test.ts copies only the
+# exporter, criteria.ts and go-pricing.json. It never copies
+# generate-model-pages.py, which weekly.sh:89 and cron-daily.sh run beside the
+# exporter. That file is the full-harness marker. A partial fixture cannot trip
+# it by accident, because its copy list is fixed. The isolated importlib caller
+# loads the exporter from the real harness, where the companion is present, so
+# it takes the normal path.
+_HERE = Path(__file__).resolve().parent
+_DOMAIN_TRUST_PATH = _HERE / "domain_trust.py"
+_FULL_HARNESS_MARKER = _HERE / "generate-model-pages.py"
+domain_trust = None
+if _DOMAIN_TRUST_PATH.is_file():
+    try:
+        _spec = importlib.util.spec_from_file_location("domain_trust", _DOMAIN_TRUST_PATH)
+        if _spec is None or _spec.loader is None:
+            raise ImportError("no module spec for domain_trust.py")
+        domain_trust = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(domain_trust)
+    except Exception as exc:
+        raise SystemExit(f"harness/domain_trust.py failed to import: {exc}") from exc
+elif _FULL_HARNESS_MARKER.is_file():
+    raise SystemExit(
+        "harness/domain_trust.py is required for a full export; "
+        "refusing to write an export without the domain trust block"
+    )
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "assets" / "data" / "benchmark.json"
@@ -350,8 +382,25 @@ def load_entry(spec: dict) -> dict | None:
     metrics = soft_score(results)
     scored_pass = sum(1 for i in SCORED if results.get(i) is True)
     scored_fail = sum(1 for i in SCORED if results.get(i) is False)
+    # FR-3: a criterion stated only under a later fixture revision is not
+    # graded for this record. The score record carries the revision. A probe
+    # counts under every revision.
+    record_revision = 1
+    if spec.get("agent"):
+        early_score = ROOT / spec["agent"] / "artifacts" / "score.json"
+        if early_score.exists():
+            try:
+                early = json.loads(early_score.read_text(encoding="utf8"))
+                revision = early.get("fixture_revision", 1)
+                if isinstance(revision, int) and not isinstance(revision, bool):
+                    record_revision = revision
+            except (OSError, json.JSONDecodeError):
+                pass
+    since_by_criterion = domain_trust.criterion_since() if domain_trust else {}
     by_domain = {}
     for cid, ok in results.items():
+        if since_by_criterion.get(cid, 1) > record_revision:
+            continue
         d = domain_of(cid)
         b = by_domain.setdefault(d, {"pass": 0, "fail": 0, "failed": [], "passed": []})
         if ok:
@@ -617,6 +666,79 @@ def load_track_rows(track: str, series: str = RANKED_SERIES) -> list[dict]:
     return rows
 
 
+def trust_records(pricing: dict) -> dict[str, list[dict]]:
+    """The counted records of the domain matrix, grouped by catalog model.
+
+    Every week, both arms, and both executors count. A record needs a valid
+    score and a results.json (spec design decision 2).
+    """
+    grouped: dict[str, list[dict]] = {}
+    for model_id, spec in batch_models(pricing):
+        slug = slugify(model_id)
+        for arm in ("a", "b"):
+            for run in find_arm_runs(arm, slug):
+                score = load_score(run)
+                if not score or score.get("valid") is not True:
+                    continue
+                results_path = run / "artifacts" / "results.json"
+                if not results_path.exists():
+                    continue
+                try:
+                    results = json.loads(results_path.read_text(encoding="utf8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                revision = score.get("fixture_revision", 1)
+                if not isinstance(revision, int) or isinstance(revision, bool):
+                    revision = 1
+                grouped.setdefault(model_id, []).append({
+                    "run_id": run.name,
+                    "arm": arm,
+                    "executor": run_series(run),
+                    "revision": revision,
+                    "results": results,
+                })
+    return grouped
+
+
+def domain_trust_block(pricing: dict) -> dict:
+    """Build the FR-4 block from stored records. Rows sort by model id."""
+    checks = domain_trust.build_checks()
+    records = trust_records(pricing)
+    models = []
+    for model_id, spec in batch_models(pricing):
+        recs = records.get(model_id) or []
+        if not recs:
+            continue
+        verdict_input = [
+            {"revision": r["revision"], "results": r["results"]}
+            for r in recs
+        ]
+        models.append({
+            "id": model_id,
+            "name": spec["name"],
+            "runs": {
+                "total": len(recs),
+                "opencode": sum(1 for r in recs if r["executor"] == EXECUTOR_OPENCODE),
+                "pi": sum(1 for r in recs if r["executor"] == EXECUTOR_PI),
+                "arm_a": sum(1 for r in recs if r["arm"] == "a"),
+                "arm_b": sum(1 for r in recs if r["arm"] == "b"),
+                "run_ids": sorted(r["run_id"] for r in recs),
+            },
+            "cells": domain_trust.domain_cells(checks, verdict_input, domain_trust.N_MIN),
+        })
+    models.sort(key=lambda row: row["id"])
+    return {
+        "schema": 1,
+        "rule": {
+            "n_min": domain_trust.N_MIN,
+            "verdicts": list(domain_trust.VERDICTS),
+            "kinds": dict(domain_trust.KIND_SENTENCES),
+        },
+        "checks": domain_trust.load_checks(checks),
+        "models": models,
+    }
+
+
 def main() -> None:
     pricing = load_go_pricing()
     models = []
@@ -766,6 +888,11 @@ def main() -> None:
         "models": models,
         "history": history,
         "experiments": {},
+        **(
+            {"domain_trust": domain_trust_block(pricing)}
+            if domain_trust is not None
+            else {}
+        ),
         "pricing": {
             "source": pricing.get("source"),
             "retrieved": pricing.get("retrieved"),
