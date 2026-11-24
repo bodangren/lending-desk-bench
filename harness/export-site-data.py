@@ -16,16 +16,34 @@ from pathlib import Path
 
 # Load the companion from this file's own directory by path. A bare import
 # fails under `python3 -I` (isolated import callers) and in a partial workspace
-# that copies only this script. When the companion is absent, the export keeps
-# its old output: no domain_trust block and no revision cutoff in domains.
+# that copies only this script.
+#
+# A full harness must never publish an export without the companion. The legacy
+# partial fixture of tests/meta/bench-incremental.test.ts copies only the
+# exporter, criteria.ts and go-pricing.json. It never copies
+# generate-model-pages.py, which weekly.sh:89 and cron-daily.sh run beside the
+# exporter. That file is the full-harness marker. A partial fixture cannot trip
+# it by accident, because its copy list is fixed. The isolated importlib caller
+# loads the exporter from the real harness, where the companion is present, so
+# it takes the normal path.
 _HERE = Path(__file__).resolve().parent
 _DOMAIN_TRUST_PATH = _HERE / "domain_trust.py"
+_FULL_HARNESS_MARKER = _HERE / "generate-model-pages.py"
 domain_trust = None
 if _DOMAIN_TRUST_PATH.is_file():
-    _spec = importlib.util.spec_from_file_location("domain_trust", _DOMAIN_TRUST_PATH)
-    if _spec is not None and _spec.loader is not None:
+    try:
+        _spec = importlib.util.spec_from_file_location("domain_trust", _DOMAIN_TRUST_PATH)
+        if _spec is None or _spec.loader is None:
+            raise ImportError("no module spec for domain_trust.py")
         domain_trust = importlib.util.module_from_spec(_spec)
         _spec.loader.exec_module(domain_trust)
+    except Exception as exc:
+        raise SystemExit(f"harness/domain_trust.py failed to import: {exc}") from exc
+elif _FULL_HARNESS_MARKER.is_file():
+    raise SystemExit(
+        "harness/domain_trust.py is required for a full export; "
+        "refusing to write an export without the domain trust block"
+    )
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "assets" / "data" / "benchmark.json"
