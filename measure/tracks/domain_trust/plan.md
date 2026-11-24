@@ -124,6 +124,17 @@ Run in the worktree. Red commits on the branch `domain-trust`.
   site-tests/domain-trust.test.ts --maxWorkers=1`. All 17 failures name
   `harness/domain_trust.py` (`PROBE_MAP`, `domain_cells`) or the
   `domain_trust` export block.
+  Retry r2: Green found two test defects. D1: `requireProbeMap` read
+  `sys.argv[1]` with no argument, so FR-1 cases raised IndexError before the
+  import. The fix embeds the harness path in the script text. D2: the arm-a
+  revision 1 record used an OpenCode executor, so the history entry came from
+  the revision 2 record and the FR-3 assertion contradicted the spec. The fix
+  makes the arm-a revision 1 record a Pi record with `E.submits: false` and
+  keeps the arm-b revision 2 record as OpenCode. Red rerun in a clean copy
+  (`git archive HEAD` plus the fixed test, no `domain_trust.py`): start
+  2026-11-24T09:20:53Z, end 2026-11-24T09:20:55Z, exit 1, `Test Files
+  1 failed (1)`, `Tests 17 failed (17)`, no IndexError. Against Green's
+  uncommitted module the fixed test passes 17/17 (report only).
   - Verify: the recorded exit code is not 0, and the recorded failures are only those of task 2.1.
 
 ## Phase 3: Implement (Green)

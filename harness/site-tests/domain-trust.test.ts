@@ -33,7 +33,7 @@ function pyModule(code: string, stdinValue?: unknown): ReturnType<typeof spawnSy
 
 function requireProbeMap(): Record<string, { domain: string; kind: string }> {
   const res = pyModule(
-    "import sys, json; sys.path.insert(0, sys.argv[1]); import domain_trust; print(json.dumps(domain_trust.PROBE_MAP, sort_keys=True))",
+    `import sys, json; sys.path.insert(0, ${JSON.stringify(HARNESS)}); import domain_trust; print(json.dumps(domain_trust.PROBE_MAP, sort_keys=True))`,
   );
   expect(
     res.status,
@@ -329,20 +329,21 @@ function seedTrustRoot(root: string): void {
     "P.no-key-leak": true,
   };
   // Revision 1 Pi record: unstated E.labels / E.error-announced must not count as failures.
+  // E.submits (since 1) fails here, so the entry must list exactly that failure.
   writeRun(root, "a-trust-alpha-2026w40-r1", {
     model: "trust-alpha",
     arm: "a",
-    pi: false,
+    pi: true,
     revision: 1,
     valid: true,
     total: 70,
-    results: { ...base, "E.labels": false, "E.error-announced": false },
+    results: { ...base, "E.submits": false, "E.labels": false, "E.error-announced": false },
   });
-  // Revision 2 Pi record in the other arm: pooling keeps both executors.
+  // Revision 2 OpenCode record in the other arm: pooling keeps both executors.
   writeRun(root, "b-trust-alpha-2026w40-r1", {
     model: "trust-alpha",
     arm: "b",
-    pi: true,
+    pi: false,
     revision: 2,
     valid: true,
     total: 72,
@@ -421,6 +422,10 @@ describe("domain trust export (FR-3, FR-4)", () => {
         failed.includes("E.labels") || failed.includes("E.error-announced"),
         "FR-3 since rule needs harness/domain_trust.py load_entry fix: revision 1 domains.E.failed must not list E.labels or E.error-announced",
       ).toBe(false);
+      expect(
+        failed,
+        "FR-3 since rule needs harness/domain_trust.py load_entry fix: revision 1 domains.E.failed must list only the countable E.submits failure",
+      ).toEqual(["E.submits"]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
