@@ -147,7 +147,7 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   - Verify: the FR-1 and FR-2 cases of `TRUST_TEST` pass.
   - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
 - [x] 3.2 Export: the `domain_trust` block and the `since` rule in be5a8a8 7c5a825
-  `load_entry` (spec FR-3, FR-4). faa4103
+  `load_entry` (spec FR-3, FR-4). faa4103 e6039b7
 
   - Verify: `TRUST_TEST` exits 0.
   - Verify: after `python3 harness/export-site-data.py` in the worktree, `FR3_GUARD` and `FR3_CHECK` print `true`, `PREVIEW_CHECK` prints `PREVIEW_CHECK=pass models=14 cells=112`, and `LEADERBOARD_SHA` and `SIDE_SHA` equal the values of task 1.3.
@@ -168,6 +168,21 @@ Run in the worktree. Green commits on the branch `domain-trust`.
     `c4560f2` printed `PARTIAL_NO_BLOCK=true` and
     `PARTIAL_BYTE_IDENTICAL=true`. `TRUST_TEST` still exits 0 with
     `Tests 17 passed (17)`.
+  - Review A fix A-P3-8 (e6039b7): the legacy fallback now applies only when
+    no companion is present and `harness/generate-model-pages.py` is absent.
+    That file is the full-harness marker. weekly.sh:89 and cron-daily.sh run
+    it beside the exporter. The legacy partial fixture copies only the
+    exporter, criteria.ts and go-pricing.json, so it cannot trip the marker by
+    accident. The isolated importlib caller loads the exporter from the full
+    harness, where the companion is present. A full harness with no companion,
+    or with a companion that raises on import, exits 1, names
+    `domain_trust.py` in its message, and leaves all three output files
+    unchanged. Five workspace shapes were run. Full harness with companion:
+    exit 0, block present. Full harness without companion: exit 1, outputs
+    unchanged. Full harness with broken companion: exit 1, outputs unchanged.
+    Partial fixture without companion: exit 0, no block, byte-identical to the
+    base export. Isolated importlib load: exit 0, 15 models.
+    `PARTIAL_BYTE_IDENTICAL=true` and `PARTIAL_NO_BLOCK=true`.
 - [x] 3.3 Page and text: the section of `docs/results.html`, and the text in a1d3be9
   `docs/methodology.html` and `README.md` (spec FR-5, FR-6). faa4103 The
   methodology section has `id="domain-trust"` and holds the rule as static
