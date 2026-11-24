@@ -141,22 +141,33 @@ Run in the worktree. Red commits on the branch `domain-trust`.
 
 Run in the worktree. Green commits on the branch `domain-trust`.
 
-- [~] 3.1 Module `harness/domain_trust.py`: the probe map, the kinds, the
+- [x] 3.1 Module `harness/domain_trust.py`: the probe map, the kinds, the be5a8a8
   text sources, and the verdict function (spec FR-1, FR-2). Use the Python
   standard library only.
   - Verify: the FR-1 and FR-2 cases of `TRUST_TEST` pass.
-- [b] 3.2 Export: the `domain_trust` block and the `since` rule in
-  `load_entry` (spec FR-3, FR-4). — deferred:jr-green
+  - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
+- [~] 3.2 Export: the `domain_trust` block and the `since` rule in
+  `load_entry` (spec FR-3, FR-4). Open. It waits for the refreshed preview.
   - Verify: `TRUST_TEST` exits 0.
   - Verify: after `python3 harness/export-site-data.py` in the worktree, `FR3_GUARD` and `FR3_CHECK` print `true`, `PREVIEW_CHECK` prints `PREVIEW_CHECK=pass models=14 cells=112`, and `LEADERBOARD_SHA` and `SIDE_SHA` equal the values of task 1.3.
-- [b] 3.3 Page and text: the section of `docs/results.html`, and the text in
+  - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
+    `FR3_GUARD=true` and `FR3_CHECK=true`.
+    `LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff`
+    and `SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb`,
+    both equal to task 1.3. `PREVIEW_CHECK` exits 1. `preview.json` holds 34
+    runs from 2026-10-25. The export of the committed code finds 58 runs. The
+    24 extra runs are in 2026w46 and 2026w47. Test strategy section 6 forbids
+    Green from editing `preview.json`. A Build session refreshes the preview
+    from commit a1d3be9 before this task closes.
+- [x] 3.3 Page and text: the section of `docs/results.html`, and the text in a1d3be9
   `docs/methodology.html` and `README.md` (spec FR-5, FR-6). The
   methodology section has `id="domain-trust"` and holds the rule as static
   HTML. It gives the verdict rule as an ordered list and the probe map as
   a table. Record the `METHOD_CHECK` line in this task.
-  — deferred:jr-green
   - Verify: `METHOD_CHECK` exits 0 and prints `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3` (spec FR-6, AC-6).
   - Verify: `rg -n 'Domain trust' docs/results.html` prints at least 1 line.
+  - Evidence 2026-11-24: `METHOD_CHECK=pass probes=15 verdicts=4 kinds=3` with
+    exit 0. `rg -n 'Domain trust' docs/results.html` prints 3 lines.
 - [b] 3.4 Green gate. Run `TRUST_TEST` and `PATH_CHECK` in the worktree.
   Run `BASE_HASH` and `cd harness && npx tsx plan-work.ts --all` in `main`.
   Run `PI_SHA green` and `PI_CHECK base green` in `main`.
@@ -164,6 +175,16 @@ Run in the worktree. Green commits on the branch `domain-trust`.
   - Verify: `TRUST_TEST` exits 0, and `PATH_CHECK` prints `PATH_CHECK=pass`.
   - Verify: `BASE_HASH` in `main` prints the value of task 1.3, or the orchestrator names the other track that changed it. The work-list class of each track, arm, and model equals the class at task 1.3.
   - Verify: `PI_CHECK base green` prints `PI_CHECK=pass` (spec FR-7).
+  - Evidence 2026-11-24: `TRUST_TEST` exits 0 with `Tests 17 passed (17)`.
+    `PATH_CHECK=pass`. In `main`, `BASE_HASH` prints
+    `8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0
+    cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7`,
+    equal to task 1.3. `plan-work.ts --all` prints `120 row(s) over 4
+    track(s) — new 45, failing 75, current 0`, equal to task 1.3.
+    `PI_RUNS=95` and
+    `PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d`.
+    `PI_CHECK=pass`. This task stays open until task 3.2 closes on the
+    refreshed preview.
 - [b] 3.5 Review A. Check the probe map against each probe test, and the
   verdict rule against the spec. Check `P.dedup-item` on two candidate trees
   (spec R2, R6). The role writes
