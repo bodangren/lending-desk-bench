@@ -1,6 +1,7 @@
 # Queue
 Product work only, in order. One line each. Work top-down.
 
+- [ ] Real-world ingest, every day on the daily timer with the scored runs: read the outcomes database read-only, write the dated ra-outcomes export and the matching aa-reliability and allowed-routes files into the private model-guide input, rebuild model-guide.json and real-work.json, and publish. The guide then shows benchmark scores and real accept and reject outcomes per model and role.
 - [ ] Code review row of the model guide: complete three review passes for each route in harness/model-guide/routes.json, rank the routes, and refresh model-guide.json.
 - [ ] App code row: let the guide pick from the build-track scores, run the build track for the routes that sessions use (Go flash models, MiniMax, DeepSeek, Claude Sonnet, Codex), and refresh model-guide.json.
 - [ ] Docs and ops row: add a docs-and-ops track with a fixture and a grader, run it on the same routes, and refresh model-guide.json.
