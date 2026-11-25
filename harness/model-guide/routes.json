@@ -40,5 +40,12 @@
     "kind": "plan",
     "quota_provider": "opencode-go",
     "quota_source": "opencode-go"
+  },
+  {
+    "family": "GPT Sol",
+    "route": "openai/gpt-6.2-sol#high",
+    "kind": "plan",
+    "quota_provider": "openai",
+    "quota_source": "codex"
   }
 ]
