@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "domain_trust",
+  "phase": "Phase 3: Implement (Green)",
+  "baseline_sha": "4f53364437a633f523b1f6143ac7d060dcfcb19a",
+  "phase_base_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "role_base_sha": "4f53364437a633f523b1f6143ac7d060dcfcb19a",
+  "audited_head_sha": "4f53364437a633f523b1f6143ac7d060dcfcb19a",
+  "audited_head": "4f53364437a633f523b1f6143ac7d060dcfcb19a",
+  "allowed_test_only_commits": [
+    "b7e5092 test(domain_trust): adversarial phase 3 (harness/site-tests/domain-trust-adversarial.test.ts only)"
+  ],
+  "allowed_docs_only_commits": [
+    "c3e1e15 (plan.md only)",
+    "901cac0 (plan.md only)",
+    "6f7451b (plan.md only)",
+    "4f53364 (plan.md and test-strategy.md only)"
+  ],
+  "status": "pass",
+  "summary": "Phase 3 passes at 4f53364. Every gate reproduces at the audited HEAD. An independent recompute from runs/ matches all 112 published cells and the original 34-run golden preview. No blocking finding exists. Five nonblocking record or gate findings remain.",
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-agent/sonnet#max",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "PA-P3-1 [Nit] phase-acceptance: Record the late findings before closeout. plan.md holds no `Late finding <id>:` line. Tasks 3.6 and 3.7 hold one summary line each, and A-P3-9 has no line. Root tech-debt.md holds none of A-P3-3 to A-P3-7, A-P3-9, ADV-P3-1 to ADV-P3-8, or UX-P3-1 to UX-P3-11. The path measure/tech-debt.md does not exist. Fix: add one plan line and one tech-debt entry for each finding. Score-impact: no.",
+    "PA-P3-2 [Nit] phase-acceptance: The preview refresh left old counts in four places. plan.md:82 (task 1.1 Verify) says `prints 34`, and the command now prints 58. test-strategy.md:302-303 gives 34 runs, 49 safe, 32 risk, and 17 unproven; the preview now has 58 runs with 51 safe, 33 risk, 14 unoptimized, and 14 unproven. spec.md:81 (EV5) and the `evidence` field of metadata.json still describe the 34-run preview. Fix: update or date-stamp each line before final acceptance. Score-impact: no.",
+    "PA-P3-3 [Major] phase-acceptance: No standing gate runs the adversarial file. TRUST_TEST (plan.md:36) runs only site-tests/domain-trust.test.ts. The 48 cases of site-tests/domain-trust-adversarial.test.ts hold the regression tests for A-P3-1 and A-P3-8 and the FR-1 drift guards. No npm script, plan gate, or task 4.3 runs them. Task 3.6 Verify says `TRUST_TEST exits 0 with the added cases`, and the literal command omits them. The file also needs commit 6a237be reachable (lines 29 and 1298). ADV-P3-1 shares this cause. Fix: before task 4.3, set TRUST_TEST to both files. Score-impact: no today.",
+    "PA-P3-4 [Nit] phase-acceptance: Some plan evidence has no command. Tasks 3.2 and 3.3 quote PAGE_DESCRIBE_CHECK=pass, AFFECTED_CELLS=17, COVERAGE_LABELS=251, PARTIAL_NO_BLOCK=true, and PARTIAL_BYTE_IDENTICAL=true without the command (test-strategy.md section 11, A5). Task 3.4 records only the aggregate work-list line, so no one can compare per-row classes. I reproduced each claim with committed tests or a recount. Fix: record the command next to each labeled line. Score-impact: no.",
+    "PA-P3-5 [Nit] phase-acceptance: Two Phase 4 gate details need a fix. (a) The 4.1 O1 Verify regex needs the text `| 2 2026-10-25`, and the spec cell reads `2, approved by the owner 2026-10-25`, so the command prints 0 lines today. (b) PI_SHA depends on the sort locale: LC_ALL=C gives aa8b2421b629487089da8af9310cf31eb597f193cff15cf1e3a4844d70efd8fe, and en_US.UTF-8 gives the base value 7af106ad.... Run `PI_SHA merged` in the same locale as `base`. Fix: pin the locale in the plan command. Score-impact: no."
+  ],
+  "evidence": [
+    "HEAD matched 4f53364437a633f523b1f6143ac7d060dcfcb19a at the start and at the end of the run. The main repo stayed at 08c020f with only .opencode/ and harness/wt.txt untracked. I merged nothing.",
+    "HEAD chain: Review A passed at 1036dec, adversarial at 901cac0, and UX at 6f7451b. No later commit touches an implementation path (harness/domain_trust.py, harness/export-site-data.py, docs/, README.md, preview.json). Allowed test-only commit: b7e5092. Allowed docs-only commits: c3e1e15, 901cac0, 6f7451b, 4f53364. I treat plan.md and test-strategy.md bookkeeping as non-implementation, although the brief names only test files and measure/runs/.",
+    "Review rounds: Review A failed at e2a6259 (A-P3-1, A-P3-2), failed at 890d5a4 (A-P3-8), and passed at 1036dec. Two remediation rounds ran (r4, r5) and no third round started. Reviews B and C are skipped by test-strategy.md section 10. The void files ux-browser-review-6f7451b.json and .log were not counted.",
+    "Red proof reproduced. A clean copy of 8857045 with no domain_trust.py gives exit 1, Test Files 1 failed (1), Tests 17 failed (17). The failures are 12 ModuleNotFoundError, 4 missing export block, and 1 FR-3 since failure. No IndexError appears. The Red test file has not changed since 8857045, and the r2 edit strengthened it.",
+    "Test runs at HEAD, one file at a time with --maxWorkers=1: domain-trust.test.ts exit 0 (17 passed); domain-trust-adversarial.test.ts exit 0 (48 passed); tests/meta/bench-incremental.test.ts with BENCH_META=1 exit 0 (5 passed); schedule-tests/daily-pick-board-filter.test.ts exit 0 (2 passed). Neither site-tests file holds skip, todo, only, fails, or retry.",
+    "Failing-first proof for the two blockers. At 890d5a4, 4 of the 10 A-P3-8 regression tests fail and all pass at HEAD. At e2a6259, bench-incremental fails with ModuleNotFoundError (1 failed, 4 passed), and the isolated-importlib and partial-equals-full A-P3-1 tests fail. At e2a6259, docs/results.html:278 held `not graded (N)`, and HEAD holds no such text.",
+    "PATH_CHECK: the shell denied the nested substitution of the plan text. I ran the same filter as a pipeline. The merge-base of main and HEAD is 08c020f, and grep found no path outside the allowed set (exit 1). An end-anchored allow-list over c4560f2..HEAD also leaves no path, so ADV-P3-7 has no effect on this diff.",
+    "Equivalent forms. The shell rules of this role denied the literal text of FR3_GUARD, FR3_CHECK, PREVIEW_CHECK, and METHOD_CHECK. I ran line-for-line equivalents. Each equivalent fails on bad input: 7 tampered blocks for PREVIEW_CHECK, 6 tampered inputs for METHOD_CHECK, and the phase-base export for FR3_CHECK (false, 4 bad entries).",
+    "Gate output on a fresh export of the real runs/: PREVIEW_CHECK=pass models=14 cells=112. METHOD_CHECK=pass probes=15 verdicts=4 kinds=3. FR3_GUARD true (19 revision 1 history entries). FR3_CHECK true. LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff. SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb. Both equal task 1.3.",
+    "The fresh export differs from the committed docs only in generated_at (3 files). Against the phase base, the only other differences are domains.E in 7 history entries and the new domain_trust block. No difference exists outside a domains block or domain_trust.",
+    "Independent recompute with my own code from the spec.md probe table, the TypeScript registry, go-pricing.json, and runs/: 14 models, 58 runs, 112 cells (safe 51, risk 33, unoptimized 14, unproven 14). It differs from the published block in 0 verdicts, failures (kind, failed, graded, order), gaps, min_coverage values, run IDs, executor counts, and arm counts.",
+    "The same recompute on the 34 runs of the original golden preview (c4560f2, written before any code existed) differs in 0 of 112 cells. The refreshed preview.json came from the exporter output at 7c5a825, so PREVIEW_CHECK alone is circular since then. These two recomputes remove that concern.",
+    "Registry differential: the published check texts, kinds, and since values equal the TypeScript registry (60 criteria, 15 probes, 0 differences). The list sizes are A 5, B 6, C 12, D 8, E 12, F 12, G 18, and H 2. Only E.labels and E.error-announced have since 2.",
+    "Data facts behind the page: 61 non-safe cells, 251 coverage labels, and 17 cells with a sub-threshold result. Each row has opencode plus pi equal to total, and arm_a plus arm_b equal to total. The 58 run IDs are unique. I read ux-p3-r2-1280.png and ux-p3-r2-failure-modes.png, and both agree with the data.",
+    "BASE_HASH in main prints 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0 and cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7, equal to task 1.3. Clean archives of 08c020f and 4f53364 print the same pair (8985c00f... and aa8666dd...). Adding the one ignored file fixture/tsconfig.tsbuildinfo of main to the HEAD archive gives cda02445.... No hashed input changed.",
+    "plan-work.ts --all in main prints `120 row(s) over 4 track(s) — new 45, failing 75, current 0`, equal to task 1.3. The plan never recorded per-row classes (PA-P3-4). The hash proof above shows that this branch cannot change a class.",
+    "PI_SHA recomputed in main without redirection (en_US.UTF-8 sort): PI_RUNS=95 and PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d. The files pi-base.txt and pi-green.txt hold the same two lines, and PI_CHECK=pass. STATUS_CHECK=pass blocked=2 open=1.",
+    "Scope and isolation: git diff --name-only c4560f2..HEAD lists 13 paths, all inside the PATH_CHECK set. git diff --check is clean. The branch holds 25 commits that are not in main (NFR-7). No file under runs/ entered a commit (NFR-8). The phase changes no Measure script, contract test, or registry file.",
+    "Leak scan of every added line outside measure/, and of the measure/ diff: no home path, e-mail address, token pattern, private key marker, or credential literal. No literal from fixture/src/lib/auth.ts appears in docs/ or README.md.",
+    "A5: plan.md holds no PASS=n FAIL=0 or all-checks-pass text. Every Phase 3 claim reproduced. All 40-character SHAs of plan.md resolve to commits with matching subjects. `rg -n 'Domain trust' docs/results.html` prints 3 lines. Tasks 3.1 to 3.7 are [x] with a SHA on the first line.",
+    "A3, A4, A6, and A7 do not apply: the diff changes no framework script, contract test, filter, or tracks registry. Track gates use labeled lines (A3). PREVIEW_CHECK, FR3_GUARD, and PI_SHA stop on empty input (A4).",
+    "Callers: the rg search for export-site-data matches the Green r4 table (weekly.sh:88, cron-daily.sh:808, three rerun scripts, bench-incremental, daily-pick-board-filter). The companion sits beside the exporter. weekly.sh and cron-weekly.sh use set -euo pipefail. cron-daily.sh uses only set -u, which confirms A-P3-9.",
+    "Late-findings rule applied. A-P3-9: old wrapper behavior, and the exporter writes nothing on failure. ADV-P3-1 and ADV-P3-2: each needs a future registry edit, FR-1 puts the guard in the test, and the registry parses exactly today. ADV-P3-3, ADV-P3-4, ADV-P3-5: contrived input or an edit of N_MIN, and each fails closed or stays unreachable (O1 is 2). ADV-P3-6 and ADV-P3-7: test and gate tooling. ADV-P3-8 and UX-P3-10: only a stale or partial data file reaches them.",
+    "UX-P3-1 to UX-P3-9 and UX-P3-11 are wording, layout, contrast, or hardening items. The exporter writes integers only, and the page escapes every string value. No item shows a wrong or stale result, breaks the update, or exposes a key or private data. A-P3-3 to A-P3-7 are round 1 nits that Review A routed to tech debt.",
+    "Known PM deviations, not findings: the A12 marker conflict (gate runs with the open task marked [b] deferred, recorded in task 3.4), the preview.json refresh at 7c5a825, the jr-green gate r1 failure from the marker conflict only, and the mid-red gate that could not run for r2. The clean-copy Red run above replaces that gate.",
+    "DEVIATION (independence): this role runs on claude-agent/sonnet#max, the route of the adversarial and UX roles. The adversarial role wrote harness/site-tests/domain-trust-adversarial.test.ts, which is in the audited diff. I judge this a mild conflict. Every pass judgment here rests on a command I ran. I read that test file for names and results only, not line by line. Red is Muse, Green is hy, and Review A is OpenAI, so the Red-family rule holds.",
+    "DEVIATION (worktree state): the instructed export run changed generated_at in docs/assets/data/benchmark.json, bugfix.json, and tracks.json. The shell denied `git checkout -- docs/`, so the three files stay modified and uncommitted. Nothing else changed. Restore: git -C /home/daniebo/Desktop/lending-desk-bench-trust checkout -- docs/",
+    "Process incident to relay: the adversarial role says its glob cleanup in /tmp deleted 25 files of another session (list in adversarial-p3-901cac0.json). No repository file is involved. The UX role left four scratch .cjs files in the ignored measure/runs/domain_trust/.",
+    "Scratch left in place, because delete was not allowed: /tmp/dt-accept-p3-base, /tmp/dt-accept-p3-head, /tmp/dt-accept-p3-red, /tmp/dt-accept-p3-r1, /tmp/dt-accept-p3-r2. They hold git archives, one copied build file, and node_modules links. Use rm -rf, which does not follow the links."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short; git log --oneline 08c020f..HEAD; git diff --name-status c4560f2..HEAD; git diff --check c4560f2..HEAD",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 (exit 0, 17 passed)",
+    "cd harness && npx vitest run site-tests/domain-trust-adversarial.test.ts --maxWorkers=1 (exit 0, 48 passed)",
+    "cd harness && BENCH_META=1 npx vitest run tests/meta/bench-incremental.test.ts --maxWorkers=1 (exit 0, 5 passed); npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 (exit 0, 2 passed)",
+    "git archive 8857045 into /tmp/dt-accept-p3-red; npx vitest run --root /tmp/dt-accept-p3-red/harness site-tests/domain-trust.test.ts --maxWorkers=1 (exit 1, 17 failed)",
+    "git archive e2a6259 and 890d5a4 plus the HEAD adversarial test; npx vitest run --root <copy> -t A-P3-1 and -t A-P3-8 (failing-first proof); BENCH_META=1 vitest run tests/meta/bench-incremental.test.ts in the e2a6259 copy (1 failed)",
+    "PATH_CHECK filter as a pipeline: git diff --name-only 08c020f HEAD | grep -vE the allowed set (exit 1); end-anchored allow-list over c4560f2..HEAD (exit 1)",
+    "python3 harness/export-site-data.py in the worktree (exit 0), then git diff -U0 -- docs/ (generated_at only)",
+    "FR3_GUARD and FR3_CHECK as jq with a min-form revision test; LEADERBOARD_SHA and SIDE_SHA as in plan.md (equal to task 1.3)",
+    "PREVIEW_CHECK and METHOD_CHECK as python3 -I -c equivalents, plus in-memory negative controls (7 and 6 tampered inputs)",
+    "tsx dump of the TypeScript registry piped to python3 -I -c: registry differential, since differential, independent recompute on 58 runs, and recompute on the 34 golden runs",
+    "main: cd harness && npx tsx provenance.ts --shell; npx tsx plan-work.ts --all; PI_SHA pipeline without redirection in en_US.UTF-8 and C locales; PI_CHECK base green",
+    "Clean archives of 08c020f and 4f53364: tsx provenance.ts --shell (equal pairs); HEAD archive plus main's fixture/tsconfig.tsbuildinfo reproduces the main hash",
+    "STATUS_CHECK as in plan.md in the worktree; rg -n 'Domain trust' docs/results.html; git cat-file and git log -1 for every SHA of plan.md",
+    "python3 -I -c ast.parse of harness/domain_trust.py and harness/export-site-data.py; python3 audit-result on the five prerequisite JSON files",
+    "Leak scans with grep over git diff and docs/; python3 -I -c scan for auth.ts literals in docs/ and README.md; jq consistency checks of the published rows",
+    "Denied by the shell rules and not run as written: the literal PATH_CHECK, FR3_GUARD, FR3_CHECK, PREVIEW_CHECK, METHOD_CHECK, cp, and git checkout -- docs/"
+  ],
+  "changed_files": [
+    "measure/runs/domain_trust/phase-acceptance-p3-4f53364.json",
+    "measure/runs/domain_trust/phase-acceptance-p3-4f53364.log",
+    "docs/assets/data/benchmark.json (worktree, uncommitted, generated_at only, restore pending)",
+    "docs/assets/data/bugfix.json (worktree, uncommitted, generated_at only, restore pending)",
+    "docs/assets/data/tracks.json (worktree, uncommitted, generated_at only, restore pending)"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "An independent recompute from runs/ matches all 112 cells (14 models, 58 runs) and the 34-run golden preview, while the edge gaps ADV-P3-1, ADV-P3-2, ADV-P3-4, and ADV-P3-5 stay open."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The Red run fails 17 of 17 in a clean copy and the A-P3-1 and A-P3-8 regression tests fail at e2a6259 and 890d5a4, but no standing gate runs the adversarial file (PA-P3-3)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff --name-only c4560f2..HEAD lists 13 paths inside the PATH_CHECK set, and clean archives of base and HEAD give the same suite and runner hashes."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "Every Phase 3 claim reproduced with a command, but plan.md:82 and test-strategy.md:302 hold old counts and several labeled lines have no command (PA-P3-2, PA-P3-4)."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.2-sol#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Result e2a6259 (fail): both blockers reproduce, since bench-incremental fails with ModuleNotFoundError at e2a6259 and results.html:278 held `not graded (N)`; HEAD fixes both."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.2-sol#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Result 890d5a4 (fail): A-P3-8 reproduces, since 4 of the 10 A-P3-8 regression tests fail at 890d5a4 and all pass at HEAD."
+    },
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.2-sol#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Result 1036dec (pass): I re-ran the callers and every gate it lists and found no blocker, and A-P3-9 matches cron-daily.sh:27 (set -u) against weekly.sh:9 (set -euo pipefail)."
+    },
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "claude-agent/sonnet#max",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its 48 tests pass here, and my independent recompute reproduces its figures (safe 51, risk 33, unoptimized 14, unproven 14); its /tmp deletion incident concerns conduct and not accuracy."
+    }
+  ]
+}

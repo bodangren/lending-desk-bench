@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: adversarial-testing
+status: complete
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: b7e5092
+tests_run: cd harness && npx vitest run site-tests/domain-trust-adversarial.test.ts --maxWorkers=1: 48 passed, exit 0. site-tests/domain-trust.test.ts: 17 passed, exit 0. Both files in one command: 65 passed, exit 0. bench-incremental: 5 passed. daily-pick-board-filter: 2 passed. PATH_CHECK=pass. Mutation run: 84 mutants, 83 killed by the new file, 26 by the Red file, 1 equivalent survivor.
+files_changed: harness/site-tests/domain-trust-adversarial.test.ts (new, committed). measure/runs/domain_trust/adversarial-p3-901cac0.json and .log (untracked evidence).
+plan_updates: none
+known_failures: none. No test fails and no blocking finding exists. The result JSON holds 8 nonblocking findings, ADV-P3-1 to ADV-P3-8.
+handoff: Gate with PROJECT_TESTS set to TRUST_TEST plus the new file. All 8 findings are late (round 4), and none meets the wrong-result bar: send them to measure/tech-debt.md. ADV-P3-1 weighs most: nothing at export time compares PROBE_MAP with PROBES. The new test pins the base exporter at track base 6a237be, so that commit must stay reachable. Cleanup error of mine: my glob cleanup of scratch directories in /tmp also deleted 25 files of another session: 21 base-*.sha, base-*.log, and base-files.txt baselines (ball, kite, render, sprites, sprout-pip), fmt-forge.ts, fmt-page.ts, full-suite.log, and full-suite-2.log. The matching after-* files remain, and the exact names are in the result JSON evidence. No repository file was touched. I cannot restore them. Tell the PM orchestrator so the owner can regenerate the baselines.
+END_MEASURE_AGENT_RESULT

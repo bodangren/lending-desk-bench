@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "role": "final-acceptance",
+  "track": "domain_trust",
+  "phase": "final acceptance",
+  "track_base_sha": "e9fb565da5cef13658749aa0eb425fc641069625",
+  "phase_base_sha": "7aeaba8328a1d9929c4a1b5c39203f8d99d640b5",
+  "role_base_sha": "7aeaba8328a1d9929c4a1b5c39203f8d99d640b5",
+  "baseline_sha": "7aeaba8328a1d9929c4a1b5c39203f8d99d640b5",
+  "audited_head_sha": "7aeaba8328a1d9929c4a1b5c39203f8d99d640b5",
+  "status": "pass",
+  "summary": "Final acceptance passes at 7aeaba8, which equals origin/main. All 15 plan tasks are [x] with SHAs. Phase 3 and Phase 4 each have one passing phase acceptance, and the Phase 4 result audits HEAD. The 112 published cells match the spec verdict rule with 0 mismatches, and the live site serves the same bytes as the committed files. The gate tests, the two export caller tests, and the 30 meta files all pass. No blocking finding remains. Two judgment calls are open for the orchestrator: Phases 1 and 2 have no separate phase acceptance (FA-2 ruling), and the test files read a path that closeout moves (FA2-N1). Both are recorded below. This role ran on the claude family under a PM-approved substitution.",
+  "retry_recommendation": "none",
+  "confidence": "medium",
+  "route": "claude-agent/sonnet#xhigh",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "FA2-N1 [Major] final-acceptance A9 forward hazard: harness/site-tests/domain-trust.test.ts:14 and harness/site-tests/domain-trust-adversarial.test.ts:24 read measure/tracks/domain_trust/preview.json at import, and the adversarial file copies it again at lines 1496-1501. Closeout moves that folder to measure/archive/domain_trust, so both files then fail with ENOENT. The literal A9 check passes: the repo has no tests directory, and the only archived-path text in a test is a negative assertion at harness/model-guide-tests/update-approval.test.ts:248. No script or cron runs site-tests, and vitest.config.ts does not exclude them. The fix is small: copy preview.json under harness/site-tests and repoint the two readers. Precedent: harness/model-guide/publish-approval.md, a copy of the archived file (PM 2026-11-22). This is test tooling, so it fails the wrong-result exception of the late-finding rule. The Round limit also blocks a third Green round without an escalation key. Route to tech-debt unless the PM wants the fix before the archive move.",
+    "FA2-N2 [Nit] final-acceptance plan truthfulness (PA-P3-2): the preview refresh left 34-run counts. plan.md:82 says its jq prints 34, and it prints 58. spec.md:81 (EV5), test-strategy.md:302, and metadata.json:11 also say 34 runs. Route to tech-debt.",
+    "FA2-N3 [Nit] final-acceptance plan evidence without a command (PA-P3-4): plan.md tasks 3.2 and 3.3 quote PAGE_DESCRIBE_CHECK=pass, AFFECTED_CELLS=17, COVERAGE_LABELS=251, PARTIAL_NO_BLOCK=true, and PARTIAL_BYTE_IDENTICAL=true with no command. I reproduced AFFECTED_CELLS=17 and COVERAGE_LABELS=251 with jq on the export. Route to tech-debt.",
+    "FA2-N4 [Nit] final-acceptance late findings not recorded: tech-debt.md holds no entry for A-P3-3 to A-P3-7, A-P3-9, ADV-P3-1 to ADV-P3-8, UX-P3-1 to UX-P3-11, PA-P3-1 to PA-P3-5, or PA-P4-1. plan.md holds no 'Late finding <id>:' line. Tasks 3.5 to 3.7 say these findings go to tech-debt. Route to tech-debt as a closeout input.",
+    "FA2-N5 [Nit] final-acceptance gate text (PA-P3-3): plan.md:36 defines TRUST_TEST as one file. The 48 adversarial tests run only when a role names the file by path. No plan gate, npm script, or cron names that file. Route to tech-debt.",
+    "FA2-N6 [Nit] final-acceptance gate strength: PROJECT_LINT and PROJECT_CHECKS are the shell word true, so both pass with no check. I used them only to run the checker. The repo has no lint script in harness/package.json, no measure/doctor.sh, and no measure/gates.json. The track changes no dependency file, so the earlier npm audit result stands.",
+    "FA2-N7 [Nit] final-acceptance result identity (NB-3 of r1): the phase-acceptance, review-a, adversarial, and ux results hold track_base_sha null. They bind a phase base, not the track base. Route to tech-debt.",
+    "FA2-N8 [Nit] final-acceptance scope: commit 07b4df8 also changes measure/tracks/opencode_executor/plan.md and the rigor_a_h track files. All paths sit inside the measure/ allow-set of PATH_CHECK, and no implementation file is affected.",
+    "FA3-CLOSEOUT [Nit] final-acceptance closeout inputs (r1 FA-3, closeout role owns them): measure/tracks.md:27 still reads 'pending — strategy done; Phase 1 worktree next; owner decisions O1 and O2 open'. That row understates the track. The A6 detection grep has no hit, and the row makes no adversarial claim. metadata.json holds status pending, actual_tasks null, and source.evidence '34 stored runs'. Closeout must set status done with a date, write actual_tasks, fix the evidence text, and make the registry description equal the metadata description.",
+    "DEV-1 [Nit] final-acceptance independence deviation (PM-approved 2026-11-25, logged): SKILL.md:144-145 says final acceptance uses a family other than Review A and phase acceptance. The independence route opencode/deepseek-v4.1-flash-free#high hit its free limit. This role ran on claude-agent/sonnet#xhigh. The Phase 3 phase acceptance, the adversarial role, and the UX role ran on claude-agent/sonnet#max, so the family matches. Review A and Phase 4 acceptance ran on openai. Red is Muse and Green is hy. Every pass judgment here rests on a command that this role ran.",
+    "DEV-2 [Nit] final-acceptance phase coverage (FA-2 ruling of the orchestrator): the role text asks for one passing phase acceptance for each plan phase. Phases 1 and 2 have none. The orchestrator ruled to block only when SKILL.md or contracts.md requires a separate result. I searched both files and dsh.md for 'phase acceptance' and found no such line (SKILL.md lines 8, 35, 65, 78, 144-145, 160 and contracts.md lines 98 and 202 only name the role, its order, or its finding scope). The checker closeout check requires only a passing final-acceptance JSON. In substance, the Phase 3 result covers both phases: it reproduced the Red proof and the task 1.3 base values, and I checked that the Red test is unchanged since 8857045. Precedent: weekly_update_fix passed final acceptance with one phase result (final-acceptance-ae0c116.json). The PM can overrule this call."
+  ],
+  "evidence": [
+    "git rev-parse HEAD origin/main -> 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5 and 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5. git status --short -> only ?? .opencode/ and ?? harness/wt.txt, before and after my test runs.",
+    "git diff --name-only 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5 HEAD -> no output, exit 0. The audited HEAD of this role and of the latest result (Phase 4) each equal current HEAD, so no later commit needs a coverage check.",
+    "git diff --name-only 4f53364437a633f523b1f6143ac7d060dcfcb19a HEAD -> docs/assets/data/benchmark.json, docs/assets/data/bugfix.json, docs/assets/data/tracks.json, measure/tracks/domain_trust/plan.md, measure/tracks/domain_trust/spec.md. The Phase 4 audit starts at 4f53364, so it covers these commits. git diff --stat -> 5 files changed, 20 insertions(+), 10 deletions(-). git diff -U0 -- docs/assets/data -> 3 lines '-generated_at 2026-11-24T18:11:47' and 3 lines '+generated_at 2026-11-25T04:48:27'. The spec.md change is the O1 wording and the O2 'approved 2026-11-25' cell only.",
+    "git merge-base --is-ancestor checks, all exit 0: c4560f2 of 4f53364 (Phase 3 baseline of audited HEAD); 4f53364 of 7aeaba8 (Phase 4 baseline of audited HEAD); 4f53364 of HEAD; 7aeaba8 of HEAD; e9fb565 (parent of 07b4df8, the track base) of c4560f2.",
+    "git log --reverse --format='%h' --grep='domain_trust' e449c63..HEAD -> 34 commits. git diff-tree -r --root --cc --no-renames --name-only for each commit, merged and sorted -> 26 paths: docs/assets/data/benchmark.json, bugfix.json, tracks.json, docs/methodology.html, docs/results.html, harness/domain_trust.py, harness/export-site-data.py, harness/site-tests/domain-trust-adversarial.test.ts, harness/site-tests/domain-trust.test.ts, README.md, measure/anti-patterns.md, measure/index.md, measure/tracks.md, 6 files in measure/tracks/domain_trust/, measure/tracks/opencode_executor/plan.md, and 6 files in measure/tracks/rigor_a_h/. A grep for paths outside the PATH_CHECK allow-set prints nothing (rc 1). A grep for harness/tests/, fixture/, reference, and runs/ prints nothing (rc 1).",
+    "git diff --name-only 6a237be HEAD -- harness/tests fixture reference reference-variant reference-change harness/provenance.ts harness/score-calculation.ts -> no output. No hash input or scoring file changed since the track base commit.",
+    "ls measure/runs/domain_trust shows exactly two phase-acceptance results: phase-acceptance-p3-4f53364.json (Phase 3, status pass, route claude-agent/sonnet#max, audited HEAD 4f53364) and phase-acceptance-p4-7aeaba8.json (Phase 4, status pass, route openai/gpt-6.2-sol#high, audited HEAD 7aeaba8, baseline 4f53364). measure_interphase_checks.py audit-result printed 'PASS: audit result is valid' for both, and for review-a-p3-1036dec.json, adversarial-p3-901cac0.json, and ux-browser-review-r2-6f7451b.json.",
+    "Review chain: review-a-p3-1036dec.json status pass. The earlier review-a-p3-890d5a4.json and review-a-p3-e2a6259.json are status fail and superseded by the fixes faa4103 and e6039b7. ux-browser-review-6f7451b.json is status inconclusive with route null, the void pair, and I did not count it. Reviews B and C are not applicable per test-strategy.md section 10 (the Phase 4 result cites lines 383-389).",
+    "FA-1 withdrawn: the Phase 4 result audits HEAD 7aeaba8 and covers the commits after 4f53364. The path diff above shows no later commit.",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 -> Test Files 1 passed (1), Tests 17 passed (17). site-tests/domain-trust-adversarial.test.ts -> Test Files 1 passed (1), Tests 48 passed (48), including 'passes on an unchanged copy, so a failure below comes from the mutation'. A grep for .skip, .only, .todo, .fails, retry, xit, and xdescribe in both files prints nothing.",
+    "Export callers: BENCH_META=1 npx vitest run tests/meta/bench-incremental.test.ts --maxWorkers=1 -> 5 passed. npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 -> 2 passed. The callers of export-site-data.py are weekly.sh:88, cron-daily.sh:808, finalize-rerun.sh, rerun-suite2-finalize.sh, regrade-w38-inplace.sh, and rerun-deepseek-v41-w38.sh. Each runs it from the harness directory, where domain_trust.py sits beside it. export-site-data.py:30-44 fails closed when a full harness lacks the companion.",
+    "A5: grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass' measure/tracks/*/plan.md -> no hit (rc 1). Plan task 4.3 says test:meta:logic passes 30 files and 238 tests. I ran each of the 30 files of that script (same two excludes) one at a time with BENCH_META=1 and --maxWorkers=1. All 30 passed, and the test counts sum to 238. The TRUST_TEST claim of 17 tests also reproduces.",
+    "Plan state: grep -c '^- \\[x\\]' plan.md -> 15. The counts of '[~]', '[b]', and '[ ]' are each 0. measure_interphase_checks.py status --track '^domain_trust$' -> incomplete_phases: 0, closeout_candidates: 1 [C1] domain_trust. The 15 distinct SHAs cited on task lines (07b4df8, 22f1a0d, be540e9, c0ee4a4, be5a8a8, 7c5a825, faa4103, e6039b7, a1d3be9, 96a9197, 1036dec, b7e5092, 6f7451b, 7a633a7, 9667d25) each resolve with a matching subject and are ancestors of HEAD. Every 7-to-40 character hex token in plan.md that resolves as a commit is an ancestor of HEAD.",
+    "A6: grep -nE 'API-key encryption (was )?resolved|encryption.*resolved|completely fixed|fully solved|all (checks |tests )?pass' measure/tracks.md -> no hit (rc 1). measure/tracks.md:27 holds the stale 'pending' row and makes no adversarial claim. See FA3-CLOSEOUT.",
+    "A9: ls tests -> no such directory. rg for 'measure/tracks/<archived id>/(plan|spec|metadata)' over harness for change_bench, deps_refresh, go_catalog_w43, model_guide, tests_bench, and weekly_update_fix -> no hit. The only archived-path text in a test is OLD_PATH_TOKEN at harness/model-guide-tests/update-approval.test.ts:59, used as not.toContain at line 248. See FA2-N1 for the forward hazard.",
+    "Verdict rule re-derivation with jq over docs/assets/data/benchmark.json: for each of 112 cells, risk if a spec or robustness failure exists, else unproven if gaps exist, else unoptimized if a performance failure exists, else safe -> 0 mismatches. Counts: risk 33, safe 51, unoptimized 14, unproven 14. Models 14, sorted and unique. Total runs 58. For each row, total equals opencode plus pi, equals arm_a plus arm_b, equals the run_ids length, and run_ids are sorted. Failures sort by failed descending, then id (0 violations). Gaps all have graded below n_min, and each failure has failed between 1 and graded (0 violations).",
+    "11 cells have min_coverage below n_min and an empty gaps list. All 11 are risk cells (gpt-5.6-luna F, hy3 F and G, longcat-2.0 E, F, G, mimo-v2.5 E, F, G, muse-spark-1.2-contributor G, qwen3.7-plus E). harness/domain_trust.py:165-167 clears gaps on risk, and the spec lists gaps for unproven cells. No non-risk cell has a gap mismatch.",
+    "Raw-record spot check against runs/<id>/artifacts/results.json for longcat-2.0 (run ids a-longcat-2-0-2026w37, a-longcat-2-0-2026w38, b-longcat-2-0-2026w38): G.401 is false in 3 of 3 (published failed 3 graded 3). P.concurrent-return is false only in b-longcat-2-0-2026w38 (published failed 1 graded 3). P.malformed-json is false in w37 and null in the other two (published failed 1 graded 1, so null is not graded). All three score.json files hold valid true. The earlier Phase 3 result did the full independent recompute over 58 runs, and I did not repeat it.",
+    "FR-3: FR3_GUARD jq -> true (nonempty set of revision 1 history entries). FR3_CHECK jq -> true (no E.labels or E.error-announced failure in a revision 1 entry).",
+    "FR-7: LEADERBOARD_SHA jq pipeline -> 36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff. SIDE_SHA pipeline -> 82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb. Both equal plan task 1.3 and task 4.2. BASE_HASH and plan-work.ts were not rerun here: npx tsx is outside my command classes. The Phase 4 result recomputed BASE_HASH, and the hash-input path diff above is empty.",
+    "Plan counts of the page: jq on the export -> 61 non-safe cells, 251 failure-plus-gap labels in them (equals COVERAGE_LABELS=251), and 17 cells with a gap or a failure graded below n_min (equals AFFECTED_CELLS=17).",
+    "Live site (curl GET): benchmark.json sha256 prefix 7c366c5425df1a69 equals the committed file. results.html prefix f5cec6cd15dc302d equals the committed file. results.html returns HTTP 200 and holds 3 'Domain trust' matches. methodology.html holds 1 id=\"domain-trust\". The live export has generated_at 2026-11-25T04:48:27, 14 models, and n_min 2.",
+    "Page and text: git diff --numstat 6a237be HEAD -> docs/results.html 80 added 0 removed, docs/methodology.html 52 added 0 removed, README.md 5 added 0 removed, so the score table markup is unchanged. docs/methodology.html:133-183 holds the three kinds, an ordered list of risk, unproven, unoptimized, safe, 15 probe rows that match PROBE_MAP, the N_MIN text, and the 'not graded' text. README.md:23 names the Domain trust matrix.",
+    "AC-8: spec.md:343-344 holds O1 '2 2026-10-25' and O2 'approved 2026-11-25'. Both plan 4.1 regexes print 1 line. git log shows 7a633a7 at 2026-11-25 04:48:16 and the merge 9667d25 at 04:48:25, so the O2 record precedes the merge. 9667d25 has parents 7a633a7 and 4f53364.",
+    "Red proof (Phase 2): git ls-tree --name-only 8857045 harness/domain_trust.py -> no output, so the module did not exist at the Red commit. git diff --stat 8857045 HEAD -- harness/site-tests/domain-trust.test.ts -> no output, so the Red test is unchanged. The Phase 3 result reproduced 17 failed tests in a clean copy of 8857045.",
+    "FA-2 and FA-3: see DEV-2 and FA3-CLOSEOUT. The registry and metadata edits belong to the closeout role."
+  ],
+  "commands": [
+    "git rev-parse HEAD origin/main; git status --short",
+    "git diff --name-only 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5 HEAD",
+    "git diff --name-only 4f53364437a633f523b1f6143ac7d060dcfcb19a HEAD; git diff --stat 4f53364437a633f523b1f6143ac7d060dcfcb19a HEAD; git diff -U0 4f53364 HEAD -- docs/assets/data measure/tracks/domain_trust/spec.md",
+    "git merge-base --is-ancestor <baseline> <audited head> (five pairs)",
+    "git log --reverse --format=%h --grep=domain_trust e449c63..HEAD; git diff-tree -r --root --cc --no-renames --name-only --no-commit-id <sha> (each commit)",
+    "git diff --name-only 6a237be HEAD -- harness/tests fixture reference reference-variant reference-change harness/provenance.ts harness/score-calculation.ts",
+    "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py audit-result --role <role> --file measure/runs/domain_trust/<result>.json (five files)",
+    "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py status --repo . --track '^domain_trust$'",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1",
+    "cd harness && npx vitest run site-tests/domain-trust-adversarial.test.ts --maxWorkers=1",
+    "cd harness && BENCH_META=1 npx vitest run tests/meta/bench-incremental.test.ts --maxWorkers=1",
+    "cd harness && npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1",
+    "cd harness && for f in the 30 tests/meta/*.test.ts files except runtime-isolation* and run-executor-provenance.test.ts: BENCH_META=1 npx vitest run $f --maxWorkers=1",
+    "jq verdict rule re-derivation, min_coverage and gaps check, failure order check, runs arithmetic check, and verdict counts over docs/assets/data/benchmark.json",
+    "jq on runs/<id>/artifacts/results.json and score.json for the three longcat-2.0 runs",
+    "jq FR3_GUARD and FR3_CHECK over docs/assets/data/benchmark.json",
+    "jq -S 'del(.generated_at, .domain_trust) | walk(if type == \"object\" then del(.domains) else . end)' docs/assets/data/benchmark.json | sha256sum; for f in tracks bugfix; do jq -S 'del(.generated_at)' docs/assets/data/$f.json; done | sha256sum",
+    "curl -s https://bodangren.github.io/lending-desk-bench/assets/data/benchmark.json | jq and sha256sum; curl -s .../results.html and .../methodology.html with grep -c and sha256sum",
+    "git diff --numstat 6a237be HEAD -- docs/results.html docs/methodology.html README.md",
+    "grep -nE 'PASS=[0-9]+.*FAIL=0|all checks pass' measure/tracks/*/plan.md; grep -nE '<A6 pattern>' measure/tracks.md; ls tests; grep for archived track ids in harness",
+    "grep -n 'preview.json|measure/tracks/domain_trust' harness/site-tests/domain-trust.test.ts harness/site-tests/domain-trust-adversarial.test.ts; cat harness/vitest.config.ts; jq .scripts harness/package.json"
+  ],
+  "changed_files": [
+    "measure/runs/domain_trust/final-acceptance-r2-7aeaba8.json",
+    "measure/runs/domain_trust/final-acceptance-r2-7aeaba8.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "A jq re-derivation of the verdict rule over all 112 published cells gives 0 mismatches, and a raw-record check of longcat-2.0 (runs/*/artifacts/results.json) matches harness/domain_trust.py:120-185."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "harness/site-tests/domain-trust-adversarial.test.ts runs an unchanged-copy case plus per-mutation failures, 65 gate tests pass, but both files read measure/tracks/domain_trust/preview.json at import (FA2-N1)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 4,
+      "evidence": "All 26 paths of the 34 track commits sit inside the PATH_CHECK allow-set with none in harness/tests, fixture, or reference, but 07b4df8 also edits measure/tracks/opencode_executor/plan.md."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 3,
+      "evidence": "plan.md:82 still says the jq prints 34 where it prints 58, plan.md tasks 3.2 and 3.3 quote labeled results with no command, and tech-debt.md holds no entry for the findings that tasks 3.5 to 3.7 route there."
+    }
+  ],
+  "reviewer_ratings": [
+    {
+      "reviewer_role": "review-a",
+      "reviewer_route": "openai/gpt-6.2-sol#high",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its A-P3-1, A-P3-2, and A-P3-8 fixes sit at faa4103 and e6039b7, and bench-incremental (5 passed) and the 48-test adversarial file pass at HEAD."
+    },
+    {
+      "reviewer_role": "adversarial",
+      "reviewer_route": "claude-agent/sonnet#max",
+      "agreed": true,
+      "score": 5,
+      "evidence": "Its 48 cases pass in my run, including 'passes on an unchanged copy, so a failure below comes from the mutation'. I did not re-check its 8 nonblocking findings one by one."
+    }
+  ]
+}

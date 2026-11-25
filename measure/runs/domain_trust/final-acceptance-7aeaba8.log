@@ -1,0 +1,40 @@
+# Final acceptance — domain_trust — HEAD 7aeaba8
+
+Track base: e9fb565da5cef13658749aa0eb425fc641069625 (parent of 07b4df8).
+Audited HEAD: 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5.
+Role base: 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5.
+
+## Gates
+
+- PROJECT_TESTS: `cd harness && npx vitest run site-tests/domain-trust.test.ts site-tests/domain-trust-adversarial.test.ts --maxWorkers=1` -> 2 files, 65 tests passed, exit 0.
+- PROJECT_LINT: `git ls-files -z 'harness/*.sh' | xargs -0 -r -n1 bash -n` -> exit 0.
+- PROJECT_CHECKS: `cd harness && npm audit --audit-level=high` -> exit 0, 5 moderate, no high or critical.
+- The repo has no measure/doctor.sh and no measure/gates.json, so the configured project gates stand (PM 2026-11-25).
+
+## Track checks
+
+- TRUST_TEST: 17 tests passed.
+- FR3_GUARD: 19 revision-1 records. FR3_CHECK: 0 forbidden E failures.
+- PREVIEW_CHECK equivalent: 0 verdict, failure-count, gap, and run-list mismatches over 14 models and 112 cells; n_min 2; ids sorted.
+- LEADERBOARD_SHA and SIDE_SHA equal plan task 1.3 and 4.2.
+- BASE_HASH equals plan task 1.3. plan-work --all prints 120 rows, new 45, failing 75, current 0.
+- PI_CHECK base merged -> PI_CHECK=pass; PI_RUNS=95, PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d.
+- METHOD_CHECK content and FR-5 page rendering match the spec.
+- Live site serves domain_trust with n_min 2 and 14 models.
+
+## Verdict
+
+Fail. Three blockers: FA-1 later commits are not covered, FA-2 three phases have no phase acceptance, FA-3 the registry row and metadata describe an unfinished track. Six nonblocking gaps are in the result JSON.
+
+MEASURE_AGENT_RESULT
+role: measure-final-acceptance
+status: blocked
+track: domain_trust
+phase: final acceptance
+commits: none
+tests_run: cd harness && npx vitest run site-tests/domain-trust.test.ts site-tests/domain-trust-adversarial.test.ts --maxWorkers=1 (2 files, 65 tests passed, exit 0); git ls-files -z 'harness/*.sh' | xargs -0 -r -n1 bash -n (exit 0); cd harness && npm audit --audit-level=high (exit 0, 5 moderate)
+files_changed: measure/runs/domain_trust/final-acceptance-7aeaba8.json, measure/runs/domain_trust/final-acceptance-7aeaba8.log
+plan_updates: none
+known_failures: FA-1 the latest phase acceptance audits 4f53364, and git diff --name-only 4f53364 7aeaba8 lists docs/assets/data/benchmark.json, docs/assets/data/bugfix.json, docs/assets/data/tracks.json, plan.md, and spec.md, so the later commits are not covered; FA-2 plan.md has four phases and only Phase 3 has a passing phase acceptance; FA-3 measure/tracks.md:27 and metadata.json still say pending with O1 and O2 open.
+handoff: Run a phase acceptance at HEAD 7aeaba8 for Phase 4, add passing phase acceptances for Phase 1 and Phase 2, and fix measure/tracks.md:27 and metadata.json. Then re-run final acceptance. Also move the A-P3, ADV-P3, UX-P3, and PA-P3 findings into tech-debt.md and refresh the 34-run counts in plan.md:82, spec.md EV5, and test-strategy.md:302. Provide PROJECT_LINT, PROJECT_CHECKS, and PROJECT_TESTS to the gate; both unset gates fail before the result is read.
+END_MEASURE_AGENT_RESULT

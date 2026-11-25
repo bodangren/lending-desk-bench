@@ -1,0 +1,67 @@
+Mid Red retry r2 log — domain_trust
+Date: 2026-11-24
+Worktree: /home/daniebo/Desktop/lending-desk-bench-trust, branch domain-trust
+phase_base_sha: 08c020fb72d5fd925fcc790166dc6f298b1bea8e
+role_base_sha: c4560f2e3078ef2b0b1869a4fe0597df792f3372
+Worktree HEAD before work: c4560f2e3078ef2b0b1869a4fe0597df792f3372
+Worktree HEAD after work: 885704523ff407d99c5b5e6e1bde64c3ca67b9ee
+
+Green left uncommitted files in the worktree: harness/domain_trust.py (new)
+and harness/export-site-data.py (modified). This role did not edit, stage,
+stash, or revert them. Only the test and the plan were staged, by explicit
+path.
+
+Defect verification:
+- D1 confirmed. `pyModule` ran `python3 -c <code>` with no program argument,
+  so `sys.argv[1]` raised IndexError before `import domain_trust`. Spec FR-1
+  (spec.md) requires the test to fail when a probe id has no map entry or a
+  domain or kind is not valid. The fix embeds the harness path in the script
+  text, the same pattern `callDomainCells` already uses.
+- D2 confirmed, spec not ambiguous. Spec FR-3 requires an entry built from a
+  revision 1 record with `E.labels: false` to omit `E.labels` from
+  `domains.E.failed`. Test-strategy 5.3.1 requires a revision 1 Pi record and
+  reads its history entry. The old seed wrote the revision 1 record with an
+  OpenCode executor, so the history entry came from the revision 2 record,
+  where `E.labels: false` correctly counts as a failure. The fix makes the
+  arm-a revision 1 record a Pi record with `E.submits: false` and keeps the
+  arm-b revision 2 record as OpenCode. The assertion now requires exactly
+  `["E.submits"]`, which proves the entry source and the since rule.
+
+Red proof without the Green module (clean copy via `git archive HEAD` plus
+the fixed test, no `domain_trust.py`, worktree `harness/node_modules`
+symlinked):
+- Start: 2026-11-24T09:20:53Z, End: 2026-11-24T09:20:55Z, Exit: 1
+- Vitest summary: `Test Files 1 failed (1)`, `Tests 17 failed (17)`
+- No IndexError. FR-1 failures show `ModuleNotFoundError: No module named
+  'domain_trust'`. Export failures name the missing `domain_trust` block.
+
+Fixed test against Green's uncommitted module (real worktree, report only):
+- Exit 0, `Test Files 1 passed (1)`, `Tests 17 passed (17)`.
+
+Commit: 8857045 measure(domain_trust): fix red test D1 argv and D2 pi record
+(Test + plan note only.)
+PATH_CHECK (committed files only): PATH_CHECK=pass
+STATUS_CHECK: STATUS_CHECK=pass blocked=9 open=1
+Plan markers unchanged: 2.1 [x] c0ee4a4, 2.2 [x] c0ee4a4, 3.1 [~].
+
+Role-gate rehearsal (same flags, RED_TEST_COMMAND set): every leg passes
+except the expect-failure leg. The gate runs TRUST_TEST in the dirty
+worktree, where Green's uncommitted module makes the fixed test pass, so it
+reports `FAIL: RED_TEST_COMMAND failed (expected failure, exit 0)`. The
+committed scope holds test plus plan only. The clean-copy run above is the
+Red proof for this round.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+baseline_sha: c4560f2e3078ef2b0b1869a4fe0597df792f3372
+track: domain_trust
+phase: Phase 2: Test (Red)
+head: 885704523ff407d99c5b5e6e1bde64c3ca67b9ee
+commits: 8857045
+tests_run: clean-copy TRUST_TEST (git archive HEAD + fixed test, no domain_trust.py) -> FAIL exit 1, Test Files 1 failed (1), Tests 17 failed (17), no IndexError; worktree test vs Green module -> PASS 17/17 (report only); PATH_CHECK=pass; STATUS_CHECK=pass blocked=9 open=1
+files_changed: harness/site-tests/domain-trust.test.ts (D1 argv fix, D2 Pi record + exact-failure assertion), measure/tracks/domain_trust/plan.md (2.2 retry r2 note)
+plan_updates: 2.2 holds retry r2 reason and the clean-copy Red run (start 2026-11-24T09:20:53Z, end 2026-11-24T09:20:55Z, exit 1, summary line); markers unchanged
+known_failures: none in this role; TRUST_TEST fails 17/17 without the Green module as required and passes 17/17 with it
+handoff: Green reviews the fixed test, then continues Phase 3; Green's uncommitted files were not touched; note the in-worktree role gate cannot show a Red failure while Green's module sits there uncommitted, so the clean-copy run is the Red proof
+END_MEASURE_AGENT_RESULT

@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: none
+tests_run: TRUST_TEST 17 passed; bench-incremental 5 passed; daily-pick-board-filter 2 passed; all listed gates passed; full export with missing companion failed the audit
+files_changed: measure/runs/domain_trust/review-a-p3-890d5a4.json and .log
+plan_updates: none
+known_failures: A-P3-8 permits a full export without the matrix and restores false history failures
+handoff: Route A-P3-8 to Green. Preserve the legacy partial fixture behavior and frozen hash inputs. A-P3-3 through A-P3-7 remain tech debt.
+dispositions: A-P3-1=FIX; A-P3-2=FIX
+END_MEASURE_AGENT_RESULT

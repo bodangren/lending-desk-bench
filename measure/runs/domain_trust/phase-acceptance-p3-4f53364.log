@@ -1,0 +1,31 @@
+Phase acceptance, track domain_trust, Phase 3: Implement (Green). Audited HEAD 4f53364437a633f523b1f6143ac7d060dcfcb19a.
+Phase base c4560f2e3078ef2b0b1869a4fe0597df792f3372. Route claude-agent/sonnet#max. Result artifact: measure/runs/domain_trust/phase-acceptance-p3-4f53364.json.
+HEAD matched the brief at the start and at the end. I merged nothing and edited no file outside measure/runs/ and the export output named below.
+
+What passed:
+- All seven Phase 3 tasks carry [x] and a SHA on the first line. Every 40-character SHA of plan.md resolves, and each subject matches its claim.
+- The three passing prerequisite results (Review A at 1036dec, adversarial at 901cac0, UX at 6f7451b) cover the audited HEAD. The later commits are one test-only commit (b7e5092) and four plan or strategy bookkeeping commits. None touches an implementation path.
+- domain-trust.test.ts passes 17 of 17. domain-trust-adversarial.test.ts passes 48 of 48. bench-incremental passes 5 of 5. daily-pick-board-filter passes 2 of 2.
+- The Red proof reproduces in a clean copy of 8857045 with no domain_trust.py: 17 of 17 fail, and none is an IndexError.
+- The regression tests for A-P3-1 and A-P3-8 fail on the pre-fix trees e2a6259 and 890d5a4, and they pass at HEAD.
+- PATH_CHECK, PREVIEW_CHECK (models=14 cells=112), METHOD_CHECK (probes=15 verdicts=4 kinds=3), FR3_GUARD, FR3_CHECK, LEADERBOARD_SHA, SIDE_SHA, PI_CHECK, STATUS_CHECK, BASE_HASH, and plan-work all hold. I ran five of them as equivalent forms, because the shell denied the literal text.
+- My independent recompute from runs/ matches all 112 published cells, and it matches the original 34-run golden preview.
+- The suite and runner hashes of clean archives are equal at base and at HEAD. No file outside the PATH_CHECK set changed.
+- The leak scan found nothing. The late-findings rule gives no blocking item.
+
+What did not pass: nothing in the delivered work. Five nonblocking findings (PA-P3-1 to PA-P3-5) sit in the JSON.
+
+Worktree state: the instructed export run changed generated_at in three docs data files. The shell denied git checkout -- docs/. The files stay modified and uncommitted.
+
+MEASURE_AGENT_RESULT
+role: phase-acceptance
+status: complete
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: none
+tests_run: domain-trust.test.ts exit 0 (17 passed); domain-trust-adversarial.test.ts exit 0 (48 passed); bench-incremental exit 0 (5 passed); daily-pick-board-filter exit 0 (2 passed); Red clean copy of 8857045 exit 1 (17 failed, as required); A-P3-1 and A-P3-8 regression tests fail on e2a6259 and 890d5a4; PATH_CHECK pass; PREVIEW_CHECK=pass models=14 cells=112; METHOD_CHECK=pass probes=15 verdicts=4 kinds=3; FR3_GUARD true; FR3_CHECK true; LEADERBOARD_SHA and SIDE_SHA equal task 1.3; BASE_HASH and plan-work equal task 1.3; PI_CHECK=pass; STATUS_CHECK=pass blocked=2 open=1; independent recompute 112 of 112 cells equal, and 112 of 112 equal on the 34-run golden
+files_changed: measure/runs/domain_trust/phase-acceptance-p3-4f53364.json and .log; worktree docs/assets/data/benchmark.json, bugfix.json, and tracks.json changed in generated_at only by the instructed export run and stay uncommitted
+plan_updates: none
+known_failures: none in the delivered work; no blocking finding; nonblocking findings PA-P3-1 to PA-P3-5 are in the result JSON
+handoff: Phase 3 passes at 4f53364437a633f523b1f6143ac7d060dcfcb19a with 0 blocking findings. Before the next role, restore the worktree with git -C /home/daniebo/Desktop/lending-desk-bench-trust checkout -- docs/ (my restore command was denied). Record in plan.md under Phase 3 one line each, in the form `- Late finding <id>: tech-debt (<reason>)`, for A-P3-9, ADV-P3-1 to ADV-P3-8, and UX-P3-1 to UX-P3-11. Reason: no delivered file shows a wrong or stale result today, and each item needs a future edit or a malformed input, or it is cosmetic. Add the same items and A-P3-3 to A-P3-7 to the root tech-debt.md, because measure/tech-debt.md does not exist. Fix the old 34-run counts (PA-P3-2). Set TRUST_TEST to both site-tests files before task 4.3 (PA-P3-3). Run PI_SHA merged in en_US.UTF-8, the locale of the base value, and fix the 4.1 O1 Verify regex (PA-P3-5). Rerun this acceptance on any new HEAD that changes a production file. Plan-only commits need no rerun. Relay to the PM: the adversarial role deleted 25 files of another session in /tmp (names in adversarial-p3-901cac0.json). Deviation: this role shares the route claude-agent/sonnet#max with the adversarial and UX roles, and the adversarial role wrote a test file in the audited diff. Scratch folders remain because delete was not allowed: /tmp/dt-accept-p3-base, -head, -red, -r1, -r2. Use rm -rf, which does not follow their links.
+END_MEASURE_AGENT_RESULT

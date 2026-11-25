@@ -1,0 +1,69 @@
+Green P3 r4 log — Review A blockers A-P3-1 and A-P3-2 — 2026-11-24
+
+Invariants:
+- role_base_sha = e2a625968dd3dc2489e7062c8aa1a0ff9c1a5a39 = worktree HEAD at start.
+- phase_base_sha = c4560f2e3078ef2b0b1869a4fe0597df792f3372.
+- The committed Red test, harness/tests/, and preview.json were not edited.
+- Findings A-P3-3 to A-P3-7 were not acted on.
+
+Caller table: every caller of export-site-data.py (rg across harness/, scripts, cron-*.sh, batch.sh, tests)
+| Caller | How it loads the module | Files beside it |
+| README.md:17 and README.md:98 | python3 harness/export-site-data.py, direct script execution | whole harness, including domain_trust.py |
+| harness/cron-weekly.sh:46 -> weekly.sh:88 | python3 "$H/export-site-data.py", direct script path | whole harness, including domain_trust.py |
+| harness/cron-daily.sh:51,808 | python3 "$H/export-site-data.py", direct script path | whole harness, including domain_trust.py |
+| harness/regrade-w38-inplace.sh:91 | python3 ./export-site-data.py from harness | whole harness, including domain_trust.py |
+| harness/rerun-deepseek-v41-w38.sh:68 | python3 ./export-site-data.py from harness | whole harness, including domain_trust.py |
+| harness/finalize-rerun.sh:25 and rerun-suite2-finalize.sh:24 | python3 export-site-data.py from harness | whole harness, including domain_trust.py |
+| harness/batch.sh:268-284 | npm run test:meta:logic, which runs all tests/meta including bench-incremental.test.ts | whole harness for the real batch; partial root inside the test |
+| harness/site-tests/domain-trust.test.ts:284,393 | copies exporter and domain_trust.py into a temp root, then spawns python3 | exporter plus domain_trust.py, criteria, spec matrix, contract |
+| harness/tests/meta/bench-incremental.test.ts:527,534 | copies only the exporter into a temp root, then spawns python3 | exporter and criteria only; no domain_trust.py |
+| harness/schedule-tests/daily-pick-board-filter.test.ts:97-103 | importlib.util.spec_from_file_location under python3 -I, cwd ROOT | exporter path only; isolated sys.path |
+| harness/schedule-tests/daily-schedule.test.ts:741 and daily-schedule-green.test.ts:15 | name-only step assertions; no module load | none |
+| harness/regrade-all.sh:10, cleanup.sh:10, finalize-rerun.sh:7 | comments only; no module load | none |
+
+A-P3-1 before the fix:
+- bench-incremental.test.ts: exit 1, Test Files 1 failed (1), Tests 1 failed | 4 passed (5).
+- daily-pick-board-filter.test.ts: exit 1, Test Files 1 failed (1), Tests 1 failed | 1 passed (2), ModuleNotFoundError: No module named 'domain_trust'.
+
+A-P3-1 after the fix:
+- bench-incremental.test.ts: exit 0, Test Files 1 passed (1), Tests 5 passed (5).
+- daily-pick-board-filter.test.ts: exit 0, Test Files 1 passed (1), Tests 2 passed (2).
+- TRUST_TEST: exit 0, Test Files 1 passed (1), Tests 17 passed (17).
+- Partial-root run against the export at c4560f2: PARTIAL_NO_BLOCK=true, PARTIAL_BYTE_IDENTICAL=true, PARTIAL_TOP_KEYS=advisory_ids,benchmark,criteria_tiers,domains,experiments,history,models,pricing,probe_tiers,reference,schema.
+
+A-P3-2 after the fix:
+- PAGE_DESCRIBE_CHECK=pass; AFFECTED_CELLS=17; COVERAGE_LABELS=251.
+- HY3_C=P.n-plus-one — performance: per-row query inside the list render — graded 1 of 2 needed — failed 1
+- Cells with sub-threshold failures or gaps: gpt-5.6-luna B,E,G; hy3 A,B,C,D,E,F,G,H; longcat-2.0 B,G; mimo-v2.5 B; muse-spark-1.2-contributor B,E,F.
+- The same describe() form covers all 17 cells. No graded check is called "not graded".
+
+Gate output after both fixes:
+- python3 harness/export-site-data.py: exit 0.
+- PREVIEW_CHECK=pass models=14 cells=112 (exit 0).
+- FR3_GUARD: true (exit 0).
+- FR3_CHECK: true (exit 0).
+- LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff  -
+- SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb  -
+- TRUST_TEST: Test Files 1 passed (1), Tests 17 passed (17), exit 0.
+- PATH_CHECK=pass.
+- METHOD_CHECK=pass probes=15 verdicts=4 kinds=3 (exit 0).
+- STATUS_CHECK=pass blocked=5 open=1 (exit 0).
+
+Commits:
+- faa4103 fix(domain_trust): keep export callers and show graded coverage
+- e5cf49a measure(domain_trust): record Review A fix evidence for 3.2 and 3.3
+Final Green HEAD = e5cf49a1c16fc8fcdee763abac0547085380767a. Exactly one [~] remains: task 3.5.
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: faa4103, e5cf49a
+tests_run: bench-incremental.test.ts exit 0 with 5 passed; daily-pick-board-filter.test.ts exit 0 with 2 passed; TRUST_TEST exit 0 with 17 passed; PREVIEW_CHECK=pass models=14 cells=112; FR3_GUARD=true; FR3_CHECK=true; PATH_CHECK=pass; METHOD_CHECK=pass probes=15 verdicts=4 kinds=3; STATUS_CHECK=pass blocked=5 open=1
+files_changed: harness/export-site-data.py, docs/results.html, docs/assets/data/benchmark.json, docs/assets/data/tracks.json, docs/assets/data/bugfix.json, measure/tracks/domain_trust/plan.md
+plan_updates: task 3.2 and task 3.3 evidence record faa4103 for A-P3-1 and A-P3-2; markers unchanged, with exactly one [~] on task 3.5
+known_failures: none
+dispositions: A-P3-1=FIX; A-P3-2=FIX
+handoff: Both Review A blockers are fixed. The exporter loads its companion by path and degrades to byte-identical old output when the companion is absent. The results page shows graded count and n_min as separate values with kind and meaning for all 17 affected cells. The orchestrator must run the jr-green role gate. Green did not edit the committed Red test, harness/tests/, or preview.json.
+END_MEASURE_AGENT_RESULT

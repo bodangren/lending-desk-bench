@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "role": "phase-acceptance",
+  "track": "domain_trust",
+  "phase": "Phase 4: Owner gate and merge",
+  "baseline_sha": "4f53364437a633f523b1f6143ac7d060dcfcb19a",
+  "phase_base_sha": "4f53364437a633f523b1f6143ac7d060dcfcb19a",
+  "role_base_sha": "7aeaba8328a1d9929c4a1b5c39203f8d99d640b5",
+  "audited_head_sha": "7aeaba8328a1d9929c4a1b5c39203f8d99d640b5",
+  "allowed_test_only_commits": [
+    "b7e50926d16f2c219b3c313b7edef0f94fbcc4b4 (Phase 3 adversarial test only, inherited through passing Phase 3 acceptance)"
+  ],
+  "status": "pass",
+  "summary": "Phase 4 passes at the published HEAD. The owner approved publication before the merge. The live files match the committed files, and the preservation checks and tests pass.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "PA-P4-1 [Nit] phase-acceptance: Task 4.3 cites the merge SHA 9667d25, but the test results first appear in the publish commit 7aeaba8. Both trees have identical test and implementation files. Record 7aeaba8 as the evidence SHA in a future record update. Send to tech debt."
+  ],
+  "evidence": [
+    "HEAD and origin/main both equal 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5. The phase starts at the passing Phase 3 acceptance HEAD 4f53364437a633f523b1f6143ac7d060dcfcb19a.",
+    "The accepted Phase 3 chain contains passing Review A at 1036dec, adversarial at 901cac0 with test-only commit b7e5092, and UX at 6f7451b. Phase 3 acceptance lists their exact intervening plan and test-strategy commits. Review B and C do not apply per test-strategy.md:383-389.",
+    "Phase 4 introduces no implementation, test, or UI change relative to the accepted second merge parent. The diff from 6f7451b to HEAD contains only the three export timestamps and Measure records. The merge second parent is precisely 4f53364. The earlier audits are inherited through that accepted parent, not represented as new audits on HEAD.",
+    "Task 4.1: both O1 and O2 regex checks returned exactly one line. At 7a633a7 (the first merge parent), O1 was 2 on 2026-10-25 and O2 was approved on 2026-11-25. Git records 7a633a7 at 04:48:16 and the merge 9667d25 at 04:48:25.",
+    "Task 4.2: the merge has two parents, 7a633a7 and 4f53364. The publish commit 7aeaba8 follows it. The three data files change only generated_at from 2026-11-24T18:11:47 to 2026-11-25T04:48:27 relative to the second parent.",
+    "Recomputed LEADERBOARD_SHA at the first merge parent and HEAD: 36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff. Both equal plan task 1.3.",
+    "Recomputed SIDE_SHA at the first merge parent and HEAD: 82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb. Both equal task 1.3.",
+    "Read-only Python reproduction of provenance.ts currentHashes (including untracked hash inputs): BASE_HASH=8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0 cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7. Both match task 1.3. The hash inputs and runner are unchanged by the merge.",
+    "Recomputed Pi hashes from runs/ with en_US.UTF-8 ordering: PI_RUNS=95, PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d. All three reports equal the recomputed lines. PI_CHECK=pass.",
+    "PREVIEW_CHECK=pass models=14 cells=112. The check compared the probe map, each verdict, each failure count, each gap list and each run list. FR3_GUARD=true entries=19 FR3_CHECK=true. N_MIN=2 at domain_trust.py:38 and in the export.",
+    "METHOD_CHECK=pass probes=15 verdicts=4 kinds=3. The exact Python check from the strategy passes. The live results and methodology HTML match their committed bytes.",
+    "GET requests to the public site returned byte-identical results.html, methodology.html, benchmark.json, tracks.json and bugfix.json. Live benchmark data has n_min 2, 14 models and generated_at 2026-11-25T04:48:27.",
+    "Task 4.3: TRUST_TEST passes 17 tests; the adversarial suite passes 48 tests. Each file ran independently. The 30 meta logic test files used the same exclusions and environment as the npm script. All 238 tests passed.",
+    "A5: the current-phase TRUST_TEST and doctor pass claims reproduce. No current-phase all-checks-pass claim lacks a passing test. The phase changes no framework contract, filter, or registry, so A3, A4, A6 and A7 do not apply.",
+    "The tracked diff is clean. The phase and publication change only planned paths. No forbidden path under harness/tests, fixture or any reference tree changes since 6a237be.",
+    "A scan of docs/ found no common private key, token, bearer credential or home path pattern. The accepted Phase 3 scan found no fixture key, and Phase 4 changes only timestamps in docs/.",
+    "The prior final acceptance identifies missing phase records and stale registry status. This result closes only the Phase 4 coverage gap. Registry and metadata are outside this role.",
+    "The role gate does not run project commands for phase-acceptance in this checker version. The independently executed tests and live checks establish acceptance; the configured true lint/check values are not treated as proof.",
+    "The supplied role-gate command exited 0 and printed PASS: phase-acceptance gate passed."
+  ],
+  "commands": [
+    "git rev-parse 4f53364 HEAD origin/main; git status --short; git diff --stat 4f53364..HEAD; git diff --stat 6f7451b..HEAD; git diff --check 4f53364..HEAD",
+    "git log --format='%H %P %s' 4f53364..HEAD; git diff --stat 9667d25^1 9667d25; git diff --stat 9667d25^2 HEAD; git diff -U0 4f53364..HEAD -- docs/assets/data",
+    "git show 7a633a7:measure/tracks/domain_trust/spec.md | rg -n '^\\| O[12] \\|'; plan task 4.1 O1/O2 regex commands",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 (17 passed)",
+    "cd harness && npx vitest run site-tests/domain-trust-adversarial.test.ts --maxWorkers=1 (48 passed)",
+    "cd harness; for each tests/meta/*.test.ts except runtime-isolation*.ts and run-executor-provenance.test.ts, HEAVY_PRIORITY=p1 HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'BENCH_META=1 npx vitest run <file> --maxWorkers=1' (all 30 files pass)",
+    "python3 -B -c read-only PREVIEW_CHECK, FR3_GUARD, FR3_CHECK, jq canonical hashes from Git blobs at 9667d25^1 and HEAD, and Pi SHA recomputation",
+    "python3 -B -c read-only recreation of provenance.ts walkFiles and hashPaths on current tree",
+    "curl -fsS --max-time 25 https://bodangren.github.io/lending-desk-bench/assets/data/benchmark.json; curl GET results.html; Python byte comparison of five live files and the strategy METHOD_CHECK",
+    "rg -il --hidden -e '<private key, token, home path, bearer credential patterns>' docs (no hits)",
+    "env PROJECT_LINT=true PROJECT_CHECKS=true \"PROJECT_TESTS=cd harness && npx vitest run site-tests/domain-trust.test.ts site-tests/domain-trust-adversarial.test.ts --maxWorkers=1\" python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo /home/daniebo/Desktop/lending-desk-bench --role phase-acceptance --track domain_trust --phase \"Phase 4: Owner gate and merge\" --baseline 4f53364437a633f523b1f6143ac7d060dcfcb19a --result-file measure/runs/domain_trust/phase-acceptance-p4-7aeaba8.json --log-file measure/runs/domain_trust/phase-acceptance-p4-7aeaba8.log (exit 0)"
+  ],
+  "changed_files": [
+    "measure/runs/domain_trust/phase-acceptance-p4-7aeaba8.json",
+    "measure/runs/domain_trust/phase-acceptance-p4-7aeaba8.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "openai/gpt-6.2-sol#high",
+  "ratings": [
+    {"axis": "correctness", "score": 5, "evidence": "The live GET bytes match all five committed files, and all 112 preview cells match."},
+    {"axis": "test_meaning", "score": 5, "evidence": "Both site tests pass, including 48 adversarial tests with an unchanged-copy control."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "git diff 4f53364..HEAD lists only the three timestamp changes and two Measure records."},
+    {"axis": "evidence_quality", "score": 4, "evidence": "Plan task 4.3 cites the merge rather than the publish commit, but every current-phase test and hash claim was rechecked."}
+  ],
+  "reviewer_ratings": [
+    {"reviewer_role": "review-a", "reviewer_route": "openai/gpt-6.2-sol#high", "agreed": true, "score": 5, "evidence": "The accepted implementation remains byte-identical and the two site test files and bench-incremental test pass."},
+    {"reviewer_role": "adversarial", "reviewer_route": "claude-agent/sonnet#max", "agreed": true, "score": 5, "evidence": "The 48 adversarial tests pass on the merged tree and the PREVIEW_CHECK matches all 112 cells."}
+  ]
+}

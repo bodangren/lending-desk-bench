@@ -2,13 +2,15 @@
   "id": "domain_trust",
   "title": "Domain trust matrix: safe and risk domains for each model, with failure modes",
   "type": "Feature",
-  "status": "pending",
+  "description": "Domain trust matrix: safe and risk domains for each model, with failure modes. The track publishes one verdict for each model and domain A-H, with the failure mode, next to the leaderboard. Final acceptance passed at 7aeaba8; the owner approved publication on 2026-11-25.",
+  "status": "done",
   "created": "2026-10-25",
+  "completed": "2026-11-25",
   "estimated_tasks": 15,
-  "actual_tasks": null,
+  "actual_tasks": 15,
   "source": {
     "method": "owner requirement 2026-10-25: \"if A-H will likely remain saturated, we need to determine if the goal of this benchmark (implementation of jr dev level TS / React 19 / Next 16) is actually met with perfect fidelity or not. Is it error free? To spec? Optimized? Probably not, but it might be for certain domains, and that's fine. Then we know which cheap models can be assigned to which domains with certainty and which are a risk. Remember this benchmark's goals and use first principles.\" The strategy role of rigor_a_h split the publication into this track.",
-    "evidence": "preview.json: the verdict rule applied to 34 stored runs of 14 catalog models on 2026-10-25, N_MIN 2",
+    "evidence": "preview.json: the verdict rule applied to 58 stored runs of 14 catalog models, N_MIN 2. The first golden preview used 34 runs on 2026-10-25; the refresh at 7c5a825 used 58 runs.",
     "dependencies": [
       "bench_v2",
       "opencode_executor"

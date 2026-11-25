@@ -1,0 +1,47 @@
+# Final acceptance r2 — domain_trust — HEAD 7aeaba8
+
+Track base: e9fb565da5cef13658749aa0eb425fc641069625 (parent of 07b4df8).
+Audited HEAD: 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5 (equals origin/main).
+Role base: 7aeaba8328a1d9929c4a1b5c39203f8d99d640b5.
+Route: claude-agent/sonnet#xhigh. Substitution PM-approved 2026-11-25: the independence route hit its free limit.
+
+## Verdict
+
+Pass. No blocking finding. Result file: measure/runs/domain_trust/final-acceptance-r2-7aeaba8.json.
+
+## What I ran
+
+- Gate tests: site-tests/domain-trust.test.ts 17 passed; site-tests/domain-trust-adversarial.test.ts 48 passed.
+- Export callers: tests/meta/bench-incremental.test.ts 5 passed; schedule-tests/daily-pick-board-filter.test.ts 2 passed.
+- Plan task 4.3 claim: the 30 files of test:meta:logic, one at a time, all passed, 238 tests in total.
+- jq re-derivation of the verdict rule over 112 cells: 0 mismatches. Counts: risk 33, safe 51, unoptimized 14, unproven 14. 58 runs.
+- Raw-record spot check of longcat-2.0 against runs/*/artifacts/results.json: matches the export.
+- LEADERBOARD_SHA and SIDE_SHA equal plan tasks 1.3 and 4.2. FR3_GUARD and FR3_CHECK both true.
+- Live site: benchmark.json and results.html are byte-identical to the committed files. 14 models, n_min 2.
+- Path scope: 34 track commits, 26 paths, 0 outside the PATH_CHECK allow-set, 0 in harness/tests, fixture, or reference.
+- A5, A6, A9 detections: no hit. Details and one forward hazard (FA2-N1) are in the JSON.
+
+## Earlier blockers (r1)
+
+- FA-1: resolved. The Phase 4 result audits HEAD 7aeaba8.
+- FA-2: judged on the orchestrator ruling. SKILL.md and contracts.md hold no line that requires a separate phase acceptance for Phases 1 and 2. The Phase 3 result covers them in substance. Recorded as DEV-2 so the PM can overrule.
+- FA-3: closeout input. The registry row and metadata.json belong to the closeout role.
+
+## Not run here
+
+- npm audit and npx tsx provenance.ts: outside my command classes. The Phase 4 result recomputed BASE_HASH.
+- A full independent recompute of the 58 runs. The Phase 3 result did it.
+- PROJECT_LINT and PROJECT_CHECKS are the shell word true, so they carry no evidence.
+
+MEASURE_AGENT_RESULT
+role: measure-final-acceptance
+status: complete
+track: domain_trust
+phase: final acceptance
+commits: none
+tests_run: cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 (17 passed); site-tests/domain-trust-adversarial.test.ts (48 passed); tests/meta/bench-incremental.test.ts with BENCH_META=1 (5 passed); schedule-tests/daily-pick-board-filter.test.ts (2 passed); the 30 files of test:meta:logic, one at a time (238 passed in total); measure_interphase_checks.py audit-result on five prior results (all valid); the role-gate command from the brief with PROJECT_LINT=true PROJECT_CHECKS=true and PROJECT_TESTS set to both domain-trust files (exit 0, 'PASS: final-acceptance gate passed')
+files_changed: measure/runs/domain_trust/final-acceptance-r2-7aeaba8.json, measure/runs/domain_trust/final-acceptance-r2-7aeaba8.log
+plan_updates: none
+known_failures: none blocking. Open nonblocking items: FA2-N1 both test files read measure/tracks/domain_trust/preview.json and fail with ENOENT after the closeout move; FA2-N2 stale 34-run counts in plan.md:82, spec.md:81, test-strategy.md:302, metadata.json:11; FA2-N4 no tech-debt entries for the Phase 3 and Phase 4 late findings.
+handoff: DEVIATIONS: (1) this role ran on claude-agent/sonnet#xhigh, the same family as the Phase 3 phase acceptance, adversarial, and UX roles, under the PM-approved 2026-11-25 substitution; (2) Phases 1 and 2 have no separate phase acceptance, judged covered by the Phase 3 result per the FA-2 ruling, and neither SKILL.md nor contracts.md requires a separate one. DECISION FOR THE ORCHESTRATOR BEFORE CLOSEOUT: the closeout archive move makes both domain-trust test files fail with ENOENT (FA2-N1). Either accept that and log it in tech-debt, or route a bounded fix first: copy preview.json under harness/site-tests and repoint domain-trust.test.ts:14 and domain-trust-adversarial.test.ts:24 and :1496-1501. A fix commit makes every audit bound to an older HEAD stale, and the Round limit needs an escalation key in metadata.json for a third Green round, so I recommend tech-debt. CLOSEOUT INPUTS: measure/tracks.md:27 still says pending with O1 and O2 open; metadata.json holds status pending, actual_tasks null, and source.evidence '34 stored runs'; set status done with a date and make the registry description equal the metadata description; write the closeout manifest and move measure/tracks/domain_trust to measure/archive/domain_trust. TECH-DEBT INPUTS for root tech-debt.md: A-P3-3 to A-P3-7, A-P3-9, ADV-P3-1 to ADV-P3-8, UX-P3-1 to UX-P3-11, PA-P3-1 to PA-P3-5, PA-P4-1, FA2-N1 to FA2-N7. Add the Late finding lines to plan.md if the PM wants them.
+END_MEASURE_AGENT_RESULT

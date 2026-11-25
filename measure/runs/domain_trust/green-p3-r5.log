@@ -1,0 +1,60 @@
+Green P3 r5 log — Review A blocker A-P3-8 — 2026-11-24
+
+Invariants:
+- role_base_sha = 890d5a412e5c3d2a451acbdcc157fa6ba37f552d = worktree HEAD at start.
+- phase_base_sha = c4560f2e3078ef2b0b1869a4fe0597df792f3372.
+- The committed Red test, harness/tests/, and preview.json were not edited.
+- Findings A-P3-3 to A-P3-7 were not acted on. The jr-green role gate was not run.
+
+Rule chosen: the legacy fallback applies only when domain_trust.py is absent AND
+harness/generate-model-pages.py is absent beside the exporter. generate-model-pages.py
+is the full-harness marker. weekly.sh:89 and cron-daily.sh run it next to the exporter.
+The legacy partial fixture of tests/meta/bench-incremental.test.ts copies only
+export-site-data.py, tests/criteria.ts and go-pricing.json. It never copies
+generate-model-pages.py, so it cannot trip the marker by accident. The domain-trust
+fixture copies domain_trust.py, so it takes the normal path. The isolated importlib
+caller loads the exporter from the real harness, where the companion is present.
+A present companion that raises on import exits 1 and names domain_trust.py.
+
+Workspace shape table (all five rows were run):
+| Shape | Exit | Message / result | Output |
+| full harness with companion | 0 | none | domain_trust block present |
+| full harness without companion | 1 | harness/domain_trust.py is required for a full export; refusing to write an export without the domain trust block | outputs_unchanged=True |
+| full harness with broken companion | 1 | harness/domain_trust.py failed to import: broken companion | outputs_unchanged=True |
+| partial fixture without companion | 0 | none | domain_trust_present=False |
+| isolated importlib load | 0 | none | models=15 |
+PARTIAL_BYTE_IDENTICAL=true
+PARTIAL_NO_BLOCK=true
+
+Re-run output:
+- bench-incremental.test.ts: exit 0, Test Files 1 passed (1), Tests 5 passed (5).
+- daily-pick-board-filter.test.ts: exit 0, Test Files 1 passed (1), Tests 2 passed (2).
+- TRUST_TEST: exit 0, Test Files 1 passed (1), Tests 17 passed (17).
+- python3 harness/export-site-data.py: exit 0.
+- PREVIEW_CHECK=pass models=14 cells=112 (exit 0).
+- METHOD_CHECK=pass probes=15 verdicts=4 kinds=3 (exit 0).
+- FR3_GUARD: true (exit 0).
+- FR3_CHECK: true (exit 0).
+- PATH_CHECK=pass.
+- LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff  -
+- SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb  -
+- STATUS_CHECK=pass blocked=5 open=1 (exit 0).
+
+Commits:
+- e6039b7 fix(domain_trust): fail closed when a full export lacks its companion
+- 75e98c1 measure(domain_trust): record A-P3-8 fix evidence in task 3.2
+Final Green HEAD = 75e98c1a1b26f7486ff82e9c837a19e6069be5fd. Exactly one [~] remains: task 3.5.
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: e6039b7, 75e98c1
+tests_run: bench-incremental.test.ts exit 0 with 5 passed; daily-pick-board-filter.test.ts exit 0 with 2 passed; TRUST_TEST exit 0 with 17 passed; PREVIEW_CHECK=pass models=14 cells=112; METHOD_CHECK=pass probes=15 verdicts=4 kinds=3; FR3_GUARD=true; FR3_CHECK=true; PATH_CHECK=pass; STATUS_CHECK=pass blocked=5 open=1
+files_changed: harness/export-site-data.py, docs/assets/data/benchmark.json, docs/assets/data/tracks.json, docs/assets/data/bugfix.json, measure/tracks/domain_trust/plan.md
+plan_updates: task 3.2 evidence records e6039b7 for A-P3-8 with the five-shape table result; markers unchanged, with exactly one [~] on task 3.5
+known_failures: none
+dispositions: A-P3-8=FIX
+handoff: A full harness now fails closed when domain_trust.py is missing or broken. The legacy partial fixture and the isolated importlib caller keep byte-identical base behavior. All required gates pass. The orchestrator must run the jr-green role gate.
+END_MEASURE_AGENT_RESULT

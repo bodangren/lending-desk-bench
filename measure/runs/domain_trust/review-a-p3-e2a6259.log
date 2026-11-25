@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: none
+tests_run: TRUST_TEST passed (17); PATH_CHECK, METHOD_CHECK, PREVIEW_CHECK, FR3_GUARD, FR3_CHECK and PI_CHECK passed; two export caller reproductions failed
+files_changed: measure/runs/domain_trust/review-a-p3-e2a6259.json and .log
+plan_updates: none
+known_failures: A-P3-1 breaks the batch self-check; A-P3-2 misstates graded coverage
+handoff: Route A-P3-1 and A-P3-2 to Green. Keep the hash inputs frozen. The JSON records the late nonblocking findings.
+END_MEASURE_AGENT_RESULT

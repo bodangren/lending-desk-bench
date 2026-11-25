@@ -5,9 +5,6 @@
 - [~] **Track: Migrate the benchmark executor from Pi to OpenCode 2 with Console login**
   - *Link: [opencode_executor](tracks/opencode_executor/)*
 
-- [~] **Track: Domain trust matrix: safe and risk domains for each model, with failure modes**
-  - *Link: [domain_trust](tracks/domain_trust/)*
-
 - [~] **Track: Daily model schedule: one model per day, untested first, then the stalest**
   - *Link: [daily_model_schedule](tracks/daily_model_schedule/)*
 
@@ -24,7 +21,6 @@
 | bench_incremental | Incremental benchmark runs — new models and failures only | Feature | paused — superseded in part by opencode_executor (Pi executor staging in plan-work.ts) | 2026-10-17 |
 | opencode_executor | Migrate the benchmark executor from Pi to OpenCode 2 with Console login | Feature | in-progress | 2026-10-18 |
 | rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | paused — PM 2026-11-14: no new difficulty work on the build track | 2026-10-25 |
-| domain_trust | Domain trust matrix: safe and risk domains for each model, with failure modes | Feature | pending — strategy done; Phase 1 worktree next; owner decisions O1 and O2 open | 2026-10-25 |
 | daily_model_schedule | Daily model schedule: one model per day, untested first, then the stalest | Feature | pending — O1 approved with 3 conditions 2026-10-31 (spec D11–D14); Phase 4b reviews next (task 4b.4); Phase 4 Review C and acceptance run with Phase 4b | 2026-10-25 |
 | grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | pending | 2026-11-04 |
 | opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | pending — spec check 1.0 next; deadline Sat 2026-11-07 23:00 +07; owner question O1 open | 2026-11-06 |
@@ -61,3 +57,8 @@ These items have no date and no track yet.
   *Link: [weekly_update_fix](./archive/weekly_update_fix/)*
   *Weekly update fix: the stable approval path, the HTML refresh, the leak check, and the executable bit. The track also carries the moved model_guide rows 4.11 (deferred pilot gate) and 5.4 (the first weekly update).*
   *Closeout 2026-11-23: Phase 1 FR-1 to FR-5 passed; final acceptance at ae0c116. Phase 2 rows 2.1 and 2.2 stay PM-deferred until the board unfreezes. No push ran.*
+
+- [x] **Track: Domain trust matrix: safe and risk domains for each model, with failure modes**
+  *Link: [domain_trust](./archive/domain_trust/)*
+  *Domain trust matrix: safe and risk domains for each model, with failure modes. The track publishes one verdict for each model and domain A-H, with the failure mode, next to the leaderboard. Final acceptance passed at 7aeaba8; the owner approved publication on 2026-11-25.*
+  *Closeout 2026-11-25: 15 tasks complete with commit SHAs. Final acceptance passed at 7aeaba8 with 112 published cells verified. The 58-run preview replaced the first 34-run golden preview. Late findings are recorded in root tech-debt.md. The two site-test files read the old track path and need repointing (FA2-N1).*

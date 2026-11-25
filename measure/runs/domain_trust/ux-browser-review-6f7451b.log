@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: ux-browser-review
+status: blocked
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: none
+tests_run: git rev-parse HEAD: pass; browser review: pending
+files_changed: ux-browser-review-6f7451b.json; ux-browser-review-6f7451b.log
+plan_updates: none
+known_failures: Browser review evidence is pending.
+handoff: This result is provisional.
+END_MEASURE_AGENT_RESULT

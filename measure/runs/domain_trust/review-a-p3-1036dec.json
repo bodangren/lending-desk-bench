@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "domain_trust",
+  "phase": "Phase 3: Implement (Green)",
+  "baseline_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "phase_base_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "role_base_sha": "1036decc01c6e65f7464f290b934aa737e502ea2",
+  "audited_head_sha": "1036decc01c6e65f7464f290b934aa737e502ea2",
+  "status": "pass",
+  "summary": "All three routed fixes passed. Full exports reject a missing or broken companion without writing. The legacy fixture and isolated import still work.",
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "openai/gpt-6.2-sol#high",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "A-P3-9 [Nit] review-a: The unchanged daily wrapper does not act on an exporter error. harness/cron-daily.sh:27,803–811 does not stop after the exporter fails. Lines 856–874 check the batch exit, not the export exit. At line 913 the wrapper can stage other docs while the prior benchmark remains. Rationale: The repaired exporter writes nothing on failure. Wrapper error handling predates this phase and is outside its remediation. Send this finding to tech debt."
+  ],
+  "evidence": [
+    "HEAD matched 1036decc01c6e65f7464f290b934aa737e502ea2 at start and end. Audited c4560f2..1036dec and the focused diff from 890d5a4. Commits after e6039b7 change only plan.md.",
+    "Read the track spec, test strategy, Phase 3 plan, and green-p3-r5.log. The rerun confirms the workspace table recorded in plan.md:171–185.",
+    "A-P3-1=FIX verified. Full export: exit 0, three payloads with the matrix. Each payload matches the committed file after timestamp removal.",
+    "A-P3-1=FIX verified. Partial fixture: exit 0 with no domain_trust block. A fixed-clock comparison against c4560f2 matches benchmark.json, tracks.json and bugfix.json byte-for-byte.",
+    "A-P3-1=FIX verified. Isolated importlib under python3 -I: exit 0, 15 eligible catalog models, companion loaded. The two repository caller suites also pass.",
+    "A-P3-8=FIX verified. Full harness with the marker and no companion: exit 1, zero output writes. The error names domain_trust.py as required.",
+    "A-P3-8=FIX verified. Full harness with a present companion that raises on import: exit 1, zero output writes. The error names domain_trust.py and the import failure.",
+    "The repository tracks the exporter and marker side by side. weekly.sh:88–89 and cron-daily.sh:808–809 call both from that harness. cron-weekly.sh:53 invokes weekly.sh.",
+    "The regrade and rerun callers use the checked-out harness and also run the marker script. batch.sh does not run the exporter directly. Its meta self-check uses the partial fixture.",
+    "Repository search found two exporter-copy fixtures. bench-incremental.test.ts:525–534 copies neither marker nor companion. domain-trust.test.ts:280–288 copies the companion and does not copy the marker.",
+    "The schedule tests name the post steps without copying the generator. The board-filter test imports the real exporter by path. No maintained scheduled caller without the marker or conflicting fixture was found.",
+    "A-P3-2=FIX verified. The actual render block produced verdict words in all 112 cells. All 17 affected cells used the correct coverage label.",
+    "PAGE_DESCRIBE_CHECK matched 251 coverage labels in 61 failure-mode rows. It checked kind and meaning and confirmed that hy3 C says graded 1 of 2 needed and failed 1.",
+    "TRUST_TEST passed 17 tests. bench-incremental passed 5 tests. daily-pick-board-filter passed 2 tests. Each file ran alone.",
+    "PREVIEW_CHECK=pass models=14 cells=112. METHOD_CHECK=pass probes=15 verdicts=4 kinds=3. PATH_CHECK=pass. FR3_CHECK and FR3_GUARD both returned true.",
+    "PI_CHECK=pass. PI_RUNS=95 and PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d match both stored reports.",
+    "LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff. SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb. Both match task 1.3.",
+    "The phase changes no frozen hash input, Measure framework script, framework contract test or registry. The remediation changes no TypeScript export. The caller search uses the Python and shell source.",
+    "The completed build-graph query located PROBES in harness/tests/criteria.ts. It does not cover the changed Python loader.",
+    "A-P3-3 through A-P3-7 remain tech debt. The PM-approved marker deviation is not a finding.",
+    "The export checks captured all output in memory. No docs file was written. Worktree status still shows only the pre-existing runs link."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git diff --check c4560f2..1036dec; git diff --name-status c4560f2..1036dec; git diff 890d5a4..1036dec; git status --short",
+    "rg -n --hidden for generate-model-pages.py and export-site-data.py; git ls-files -s for exporter, companion and marker",
+    "python3 -B — run the exporter as __main__ in subprocesses with outputs captured in memory; full-present exits 0, full-missing and full-broken exit 1",
+    "python3 -B — run both exporters in a virtual partial workspace and compare exact bytes",
+    "python3 -I -B -c — import full exporter by path with importlib and call batch_models",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 — exit 0",
+    "cd harness && BENCH_META=1 npx vitest run tests/meta/bench-incremental.test.ts --maxWorkers=1 — exit 0",
+    "cd harness && npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 — exit 0",
+    "node -e — run the actual results rendering block against committed benchmark.json with a DOM stub",
+    "Plan PATH_CHECK, FR3_CHECK, FR3_GUARD, LEADERBOARD_SHA and SIDE_SHA; strategy PREVIEW_CHECK and METHOD_CHECK",
+    "python3 -B — recompute the main Pi hashes with the plan sort order and compare the base and Green reports",
+    "heavy-run.sh -c build-graph query — read the existing TypeScript graph for PROBES"
+  ],
+  "changed_files": [
+    "measure/runs/domain_trust/review-a-p3-1036dec.json",
+    "measure/runs/domain_trust/review-a-p3-1036dec.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 5,
+      "evidence": "The five caller checks preserve valid exports and prove zero writes for both full-export faults."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The legacy caller tests pass and the independent fault fixtures cover both errors, but the committed suite does not run those fixtures."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The focused diff changes only the exporter check, timestamps and plan evidence."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The five caller rows, required gates and page coverage each have a command result."
+    }
+  ]
+}

@@ -24,11 +24,11 @@
 | Test strategy (rigor_a_h) | measure/tracks/rigor_a_h/test-strategy.md |
 | Track metadata (rigor_a_h) | measure/tracks/rigor_a_h/metadata.json |
 | Corpus manifest (rigor_a_h) | measure/tracks/rigor_a_h/corpus.json |
-| Specification (domain_trust) | measure/tracks/domain_trust/spec.md |
-| Implementation Plan (domain_trust) | measure/tracks/domain_trust/plan.md |
-| Test strategy (domain_trust) | measure/tracks/domain_trust/test-strategy.md |
-| Track metadata (domain_trust) | measure/tracks/domain_trust/metadata.json |
-| Golden preview matrix (domain_trust) | measure/tracks/domain_trust/preview.json |
+| Specification (domain_trust) | measure/archive/domain_trust/spec.md |
+| Implementation Plan (domain_trust) | measure/archive/domain_trust/plan.md |
+| Test strategy (domain_trust) | measure/archive/domain_trust/test-strategy.md |
+| Track metadata (domain_trust) | measure/archive/domain_trust/metadata.json |
+| Golden preview matrix (domain_trust) | measure/archive/domain_trust/preview.json |
 | Specification (daily_model_schedule) | measure/tracks/daily_model_schedule/spec.md |
 | Implementation Plan (daily_model_schedule) | measure/tracks/daily_model_schedule/plan.md |
 | Test strategy (daily_model_schedule) | measure/tracks/daily_model_schedule/test-strategy.md |

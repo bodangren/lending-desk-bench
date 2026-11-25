@@ -1,0 +1,44 @@
+Green P3 log — domain_trust — 2026-11-24
+
+Invariants checked at start:
+- worktree HEAD = c4560f2e3078ef2b0b1869a4fe0597df792f3372 (phase_base_sha)
+- role_base_sha = c4560f2e3078ef2b0b1869a4fe0597df792f3372 (same as HEAD)
+- Red test tracked at HEAD; last commit c0ee4a4; no diff against HEAD.
+- phase_base_sha..HEAD is empty because HEAD is the phase base. The Red commit
+  c0ee4a4 is in the ancestry of phase_base.
+
+Initial targeted Red command:
+- cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1
+- exit 1; Test Files 1 failed (1); Tests 17 failed (17).
+
+Implementation done (uncommitted):
+- harness/domain_trust.py (new): PROBE_MAP, KINDS, VERDICTS, registry text
+  readers, build_checks, domain_cells, load_checks. Standard library only.
+- harness/export-site-data.py: imports domain_trust; skips criteria whose since
+  exceeds the record revision in load_entry; adds trust_records,
+  domain_trust_block, and the top-level domain_trust payload key.
+- Generated docs files restored to HEAD after the export checks.
+
+Later targeted Red command:
+- exit 1; 13 passed, 4 failed. A temporary corrected copy of the test (not the
+  committed file) passes 17/17 against this implementation.
+
+Real-record gate outputs after export:
+- FR3_GUARD: true
+- FR3_CHECK: true
+- PREVIEW_CHECK: exits 1, 24 new runs since the preview was built.
+- LEADERBOARD_SHA: 36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff
+- SIDE_SHA: 82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: blocked
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: none
+tests_run: TRUST_TEST exits 1 with 13 passed and 4 failed; corrected temporary copy exits 0 with 17 passed; FR3_GUARD=true; FR3_CHECK=true; PREVIEW_CHECK exits 1; LEADERBOARD_SHA and SIDE_SHA match task 1.3
+files_changed: harness/domain_trust.py new uncommitted; harness/export-site-data.py modified uncommitted; generated docs restored to HEAD
+plan_updates: none; no marker moved because no gate passed
+known_failures: FR-1 cases 1-3 fail with IndexError at Red line 36 (sys.argv[1] is absent from the python3 -c process); FR-3 case at Red lines 405-427 reads the arm-b revision 2 history entry and asserts that E.labels is absent even though since 2 at revision 2 counts it; PREVIEW_CHECK fails because preview.json holds 34 runs and the current export finds 58 (24 runs added in 2026w46 and 2026w47 after preview creation)
+handoff: QUESTION 1 request Mid Red retry of harness/site-tests/domain-trust.test.ts only. Defect A: line 36 inserts sys.argv[1] but pyModule at lines 25-32 spawns python3 -c with no argument, so all FR-1 cases raise IndexError before import. Defect B: seedTrustRoot lines 331-350 calls the arm-a revision 1 record a Pi run but sets pi false, so it is OpenCode and never becomes the history entry; the history entry is the arm-b revision 2 record where E.labels correctly counts as a failure. Options: A recommended Mid Red fixes the test only by embedding HARNESS instead of sys.argv[1] and by making arm-a revision 1 a Pi record with a countable E result such as E.submits false while arm-b revision 2 stays OpenCode for pooling; a corrected copy of the test then passes 17/17 against the current implementation. B change spec FR-3 and test-strategy 5.3 to match the test (not recommended). C escalate to owner. QUESTION 2 PREVIEW_CHECK cannot pass because preview.json is stale: 34 preview runs versus 58 current runs, and test-strategy section 6 forbids Green from editing preview.json. Options: A recommended orchestrator refreshes preview.json from the current 58 runs in a write-capable workflow and Green reruns PREVIEW_CHECK. B orchestrator records a documented exception and waives task 3.2 (weakens AC-4). C owner defines a week cutoff and the preview is rebuilt for that cutoff. Tasks 3.3 and 3.4 are not started. Uncommitted implementation files remain in the worktree for the next Green role.
+END_MEASURE_AGENT_RESULT

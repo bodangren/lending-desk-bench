@@ -1,0 +1,87 @@
+Green P3 r2 log — domain_trust — 2026-11-24
+
+Invariants:
+- role_base_sha = 885704523ff407d99c5b5e6e1bde64c3ca67b9ee = worktree HEAD at start.
+- phase_base_sha = c4560f2e3078ef2b0b1869a4fe0597df792f3372.
+- Red fix 8857045 is inside phase_base_sha..HEAD.
+- Uncommitted implementation files from r1 were intact and are now committed.
+- Committed Red test not edited.
+
+Commits on branch domain-trust:
+- be5a8a8 feat(domain_trust): add the domain trust module and export block
+- a1d3be9 docs(domain_trust): publish the domain trust matrix and text
+- 5cf2060 measure(domain_trust): record green r2 evidence and markers
+
+Test and gate output:
+- TRUST_TEST: exit 0, Test Files 1 passed (1), Tests 17 passed (17).
+- PATH_CHECK=pass.
+- METHOD_CHECK=pass probes=15 verdicts=4 kinds=3, exit 0.
+- FR3_GUARD=true; FR3_CHECK=true.
+- LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff
+- SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb
+- BASE_HASH in main = 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0 cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7
+- plan-work.ts --all in main = 120 row(s) over 4 track(s) — new 45, failing 75, current 0
+- PI_SHA green: PI_RUNS=95, PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d
+- PI_CHECK=pass
+- STATUS_CHECK=pass blocked=7 open=1
+- PREVIEW_CHECK still exits 1 on the stale preview: 34 preview runs vs 58 export runs.
+
+Build-session command to rebuild preview.json from the committed export block.
+Run from the repo root at commit 5cf2060495f918eb53db52a650021a471228f9f7.
+A verification run wrote only /home/daniebo/.cache/opencode/preview-new.json;
+the committed preview.json is untouched. PREVIEW_CHECK against the rebuilt file
+printed PREVIEW_CHECK=pass models=14 cells=112.
+
+```bash
+cd /home/daniebo/Desktop/lending-desk-bench-trust
+git rev-parse HEAD          # must print 5cf2060495f918eb53db52a650021a471228f9f7
+python3 - docs/assets/data/benchmark.json measure/tracks/domain_trust/preview.json <<'PY'
+import json, sys
+from pathlib import Path
+
+export_path, old_preview_path = sys.argv[1:3]
+out = json.load(open(export_path))["domain_trust"]
+old = json.load(open(old_preview_path))
+
+probe_map = {}
+for domain, checks in out["checks"].items():
+    for c in checks:
+        if c["id"].startswith("P."):
+            probe_map[c["id"]] = {"domain": domain, "kind": c["kind"]}
+
+models = {}
+for m in out["models"]:
+    cells = {}
+    for d in "ABCDEFGH":
+        cell = m["cells"][d]
+        cells[d] = {
+            "verdict": cell["verdict"],
+            "failures": {f["id"]: f"{f['failed']}/{f['graded']}" for f in cell["failures"]},
+            "gaps": sorted(g["id"] for g in cell["gaps"]),
+        }
+    models[m["id"]] = {"runs": sorted(m["runs"]["run_ids"]), "cells": cells}
+
+preview = {
+    "schema": 1,
+    "created": "2026-11-24",
+    "method": old["method"],
+    "n_min": out["rule"]["n_min"],
+    "probe_map": probe_map,
+    "models": models,
+}
+Path("measure/tracks/domain_trust/preview.json").write_text(json.dumps(preview, indent=2) + "\n")
+PY
+```
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: partial
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: be5a8a8, a1d3be9, 5cf2060
+tests_run: TRUST_TEST exit 0 with 17 passed; PATH_CHECK=pass; METHOD_CHECK=pass probes=15 verdicts=4 kinds=3; FR3_GUARD=true; FR3_CHECK=true; PREVIEW_CHECK exits 1 on stale preview; BASE_HASH and work-list classes match task 1.3; PI_CHECK=pass; STATUS_CHECK=pass blocked=7 open=1
+files_changed: harness/domain_trust.py, harness/export-site-data.py, docs/results.html, docs/methodology.html, README.md, docs/assets/data/benchmark.json, docs/assets/data/tracks.json, docs/assets/data/bugfix.json, measure/tracks/domain_trust/plan.md
+plan_updates: 3.1 marked [x] be5a8a8; 3.3 marked [x] a1d3be9; 3.2 marked [~] with the stale-preview reason; 3.4 stays [b] with recorded gate values
+known_failures: PREVIEW_CHECK exits 1 because preview.json holds 34 runs from 2026-10-25 while the export finds 58 runs; tasks 3.2 and 3.4 remain incomplete by design until the Build session refreshes preview.json
+handoff: Build session must build from commit 5cf2060495f918eb53db52a650021a471228f9f7 and run the preview rebuild command in this log. The command derives probe_map from checks, maps failures to failed/graded strings, and maps gaps to ids. A verification run passed PREVIEW_CHECK=pass models=14 cells=112. After the Build commit, rerun PREVIEW_CHECK, then close task 3.2 and task 3.4. No committed Red test was edited. preview.json is untouched.
+END_MEASURE_AGENT_RESULT

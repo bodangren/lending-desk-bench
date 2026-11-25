@@ -1,0 +1,40 @@
+Mid Red Phase 2 log — domain_trust
+Date: 2026-11-24
+Worktree: /home/daniebo/Desktop/lending-desk-bench-trust, branch domain-trust
+phase_base_sha: 08c020fb72d5fd925fcc790166dc6f298b1bea8e
+role_base_sha: 08c020fb72d5fd925fcc790166dc6f298b1bea8e
+Worktree HEAD before work: 08c020fb72d5fd925fcc790166dc6f298b1bea8e (after git merge --ff-only main)
+Worktree HEAD after work: c4560f2e3078ef2b0b1869a4fe0597df792f3372
+
+Commits on branch domain-trust since role_base_sha:
+- c0ee4a42d17487d182b166c6a2236209921b7ccf measure(domain_trust): red tests for phase 2 (harness/site-tests/domain-trust.test.ts + plan evidence)
+- c4560f2e3078ef2b0b1869a4fe0597df792f3372 measure(domain_trust): mark 2.1 and 2.2 done, open 3.1
+
+TRUST_TEST (task 2.2 evidence):
+- Command: cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1
+- Start: 2026-11-24T09:07:55Z, End: 2026-11-24T09:07:57Z, Exit: 1
+- Vitest summary: Test Files 1 failed (1); Tests 17 failed (17)
+- Every failure names harness/domain_trust.py (PROBE_MAP, domain_cells) or the domain_trust export block.
+
+PATH_CHECK (worktree, HEAD c4560f2): PATH_CHECK=pass
+STATUS_CHECK (worktree, after marker change): STATUS_CHECK=pass blocked=9 open=1
+
+Plan markers: 2.1 [x] c0ee4a4, 2.2 [x] c0ee4a4, 3.1 [~] (deferred trailer removed). No other marker changed.
+Unrelated dirty work: none. `runs` is an untracked symlink to main runs and was never staged. Files were staged by explicit path only.
+
+Handoff: Green owns 3.1 next. harness/domain_trust.py does not exist yet. TRUST_TEST fails 17/17 at HEAD for the expected reason.
+
+MEASURE_AGENT_RESULT
+role: mid-red
+status: complete
+baseline_sha: 08c020fb72d5fd925fcc790166dc6f298b1bea8e
+track: domain_trust
+phase: Phase 2: Test (Red)
+head: c4560f2e3078ef2b0b1869a4fe0597df792f3372
+commits: c0ee4a4, c4560f2
+tests_run: cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 -> FAIL (exit 1, Test Files 1 failed (1), Tests 17 failed (17)); PATH_CHECK=pass; STATUS_CHECK=pass blocked=9 open=1
+files_changed: harness/site-tests/domain-trust.test.ts (new), measure/tracks/domain_trust/plan.md (2.2 evidence + markers 2.1/2.2 [x] c0ee4a4, 3.1 [~])
+plan_updates: 2.2 holds start 2026-11-24T09:07:55Z, end 2026-11-24T09:07:57Z, exit 1, Vitest summary line; 2.1 and 2.2 marked [x] c0ee4a4; 3.1 marked [~]
+known_failures: all 17 TRUST_TEST cases fail at HEAD as required for Red: probe-map cases name missing harness/domain_trust.py PROBE_MAP; verdict cases name missing domain_cells; export cases name the missing domain_trust block or the FR-3 since rule in load_entry
+handoff: Green implements harness/domain_trust.py (3.1) then the export block and since rule (3.2); TRUST_TEST must fail until Green lands; no unrelated dirty work remains
+END_MEASURE_AGENT_RESULT

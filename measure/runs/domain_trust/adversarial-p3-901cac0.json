@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "role": "adversarial-testing",
+  "track": "domain_trust",
+  "phase": "Phase 3: Implement (Green)",
+  "baseline_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "phase_base_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "role_base_sha": "901cac065be157755bd7387a159cf395213e4722",
+  "audited_head_sha": "901cac065be157755bd7387a159cf395213e4722",
+  "commit_sha": "b7e50926d16f2c219b3c313b7edef0f94fbcc4b4",
+  "status": "pass",
+  "summary": "The matrix did not lie in any adversarial case. The new test file holds 48 passing tests and kills 83 of 84 mutants, and the survivor is equivalent. Eight nonblocking findings go to tech debt. No blocker was found.",
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "route": "claude-agent/sonnet#max",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "ADV-P3-1 [Major] adversarial-testing: Nothing at export time compares PROBE_MAP with PROBES. A probe that joins PROBES with no map entry reaches no check list. With that probe failing in 2 of 2 records, the export exits 0 and all 8 cells read safe. A probe that leaves PROBES stays in the lists as a check whose text is its id. Evidence: harness/domain_trust.py:110-116, harness/export-site-data.py:703-705, and two temp-root runs. The FR-1 test is the only guard, and no script runs harness/site-tests/. Rationale: Nonblocking. The map equals PROBES today. Spec FR-1 puts the check in the test. The paused rigor_a_h track adds criteria, and criteria join the lists with no map entry. Send to tech debt: add an export-time equality check that exits before any write, or run TRUST_TEST in a scheduled self-check.",
+    "ADV-P3-2 [Nit] adversarial-testing: The regexes that read the TypeScript registry fail open on legal input (harness/domain_trust.py:57,70-71,81,88). A closing brace inside a comment before since: 2 makes E.labels read since 1, so a revision 1 record counts its unstated false value as a failure. A backslash-quote in a SPEC_MATRIX text drops the row, and the text becomes the id. A backslash-quote in an UNMAPPED_CRITERIA text or a catches text cuts the text at the backslash. Evidence: three temp copies of the registry files. Rationale: Nonblocking. The real registry parses exactly: 60 criteria, 15 probes, 0 differences. The new differential test fails on such an edit when someone runs it.",
+    "ADV-P3-3 [Nit] adversarial-testing: The handler at harness/export-site-data.py:40 catches Exception, so a SystemExit from the companion passes. A domain_trust.py that calls sys.exit(0) at import makes the exporter exit 0 and write nothing. The cron then sees success while the pages stay old. Evidence: a full-harness temp run gave exit 0 with three unchanged outputs. Rationale: Nonblocking. The input is contrived. Fix: catch SystemExit with the other errors.",
+    "ADV-P3-4 [Nit] adversarial-testing: trust_records reads results.json of every counted run, but the base exporter read it only for the newest week (harness/export-site-data.py:687-698). A valid old run whose results.json holds a JSON scalar (5 or true) makes domain_cells raise TypeError (harness/domain_trust.py:143-144), and the whole export exits 1. A string, a list, null, or an empty object adds to runs.total and gives no graded result. Rationale: Nonblocking. The scorer writes objects only (SCORING.md), and the failure closes with no write. Fix: skip a results.json that is not an object.",
+    "ADV-P3-5 [Nit] adversarial-testing: domain_cells has no lower bound for n_min. With n_min 0 or -1 and no record, a domain with checks reads safe with min_coverage 0 (harness/domain_trust.py:161). Rationale: Nonblocking. Only an edit of N_MIN reaches it (owner decision O1, task 4.2). Fix: require n_min of 1 or more.",
+    "ADV-P3-6 [Nit] adversarial-testing: Three weak spots in harness/site-tests/domain-trust.test.ts. Lines 90-98 compare registry-derived counts with literal sizes, so a new criterion fails the test, although strategy 5.1 says no test edit is needed. The module's own check lists are never read. Lines 144-175 assert the verdict only, but strategy 5.2 asks for the full cell. No export test asserts a cell value. Rationale: Nonblocking test quality. The new file closes the gaps, and 57 of 84 mutants die only there.",
+    "ADV-P3-7 [Nit] adversarial-testing: PATH_CHECK (plan line 39) has no end anchors. The paths harness/export-site-data.py.bak, harness/domain_trust.pyc, and README.md.orig pass the filter. Rationale: Nonblocking. It is a plan gate command and not delivered product.",
+    "ADV-P3-8 [Nit] adversarial-testing: When benchmark.json holds no domain_trust block, docs/results.html still shows the heading, the line One verdict for each model and each domain A-H, and an empty table (lines 106-116 and 239-240). Rationale: Nonblocking. Only a stale or partial data file reaches that state. The page could hide the section."
+  ],
+  "evidence": [
+    "HEAD matched 901cac065be157755bd7387a159cf395213e4722 at start. The worktree held only the runs link. The new file is the only change: git diff 901cac0..HEAD lists one path, and PATH_CHECK=pass.",
+    "Late-finding count: Review A ran 3 rounds on e2a6259, 890d5a4, and 1036dec. This pass is round 4, so every new finding is late. The PM rule of 2026-11-23 puts all 8 below the blocking bar, and all 8 go to tech debt.",
+    "TRUST_TEST before any edit: 17 passed. After the commit: 17 passed (exit 0). The new file alone: 48 passed (exit 0). Both files in one command, with and without --maxWorkers=1: 65 passed (exit 0).",
+    "Independent recomputation from raw runs/ with my own run discovery and rule: 14 models, 58 counted records, 112 cells. 0 differences from the published block and 0 from preview.json. Verdict mix: safe 51, risk 33, unoptimized 14, unproven 14.",
+    "Registry differential: the Python parse of criteria.ts, spec-matrix.ts, and spec-matrix-contract.ts matches the TypeScript import for all 60 A-H criteria (since and text) and all 15 probe texts. 0 differences.",
+    "A5 reproduced in a temp tree, with no tracked file touched: a fresh export equals the committed benchmark.json, tracks.json, and bugfix.json after timestamp removal. LEADERBOARD_SHA and SIDE_SHA equal the values of task 1.3.",
+    "A5 gates on the fresh export: FR3_GUARD true, FR3_CHECK true, PREVIEW_CHECK=pass models=14 cells=112, METHOD_CHECK=pass probes=15 verdicts=4 kinds=3. PATH_CHECK=pass in the worktree.",
+    "A4: PREVIEW_CHECK exits non-zero on 7 bad blocks: no block, one flipped verdict, one wrong failure count, one dropped run id, one dropped probe, empty models, one dropped row. FR3_GUARD exits 1 on an empty history.",
+    "A7: the PATH_CHECK filter has no end anchors. Three lookalike paths pass it (ADV-P3-7). No other filter of the plan was found.",
+    "All 35 published entries: the 19 revision 1 entries list no unstated check in domains, and the 16 revision 2 entries keep both. FR3_CHECK reads only history, so this covers the ranked and Skills entries too.",
+    "Two of the 58 counted records carry host.under_load true. SCORING.md calls the flag advisory and says it never demotes a score, so counting them matches the rules. Not a finding.",
+    "No duplicate runs among the counted records: identical result vectors occur only among repeats of one week, and no two records share a token total. No slug collision or prefix pair in the 15 catalog ids.",
+    "Key and private data scan of the files that the branch changes outside measure/: 0 hits for the fixture key value and for token-like patterns, and the export block holds no home path.",
+    "A-P3-8 workspace shapes run on temp roots: full harness with companion (exit 0); without companion, syntax error, import error, merge conflict marker, missing dependency, empty file, missing function, directory, and dangling link (all exit 1 with outputs unchanged); partial (exit 0, no block).",
+    "A-P3-1: the partial export equals the base exporter byte for byte under a fixed clock, at revision 1 and 2. The exporter blob is the same at 6a237be and c4560f2. The importlib -I caller loads the exporter and the companion by path.",
+    "bench-incremental.test.ts: 5 passed. daily-pick-board-filter.test.ts: 2 passed. Each file ran alone with --maxWorkers=1.",
+    "Mutation proof on temp copies: 84 mutants of domain_trust.py, export-site-data.py, results.html, site.js, methodology.html, and the published JSON. The new file kills 83. The Red file kills 26. 57 die only in the new file. 26 die in both.",
+    "The one survivor is DT23. It adds ADV ids to the criterion parser, but ADV ids are not in the parsed CRITERIA text, so the mutant changes nothing. The first 28 mutants ran on the 44-test version of the file and the rest on the 48-test version. DT25 first survived, because two calls undid the change. I fixed the check and the mutant died.",
+    "Three more mutants weaken the Red test itself (key equality made truthy, golden map comparison removed, FR-1 test skipped). The guard tests of the new file kill all three.",
+    "Registry drift runs on temp roots: a new unmapped probe that fails in 2 of 2 records leaves all 8 cells safe with exit 0. A probe dropped from PROBES leaves a ghost check with its id as text, and its old failure keeps D at unoptimized. No script runs harness/site-tests/.",
+    "Companion that calls sys.exit(0) at import: exit 0 and three outputs unchanged. Old valid run with results.json of 5 or true: exit 1 with TypeError. N_MIN 0 or -1 with no record: safe with min_coverage 0.",
+    "Page harness: the real results.html script and the real site.js run under Vitest against a document stub, with no browser. A model name, a check text, a split text, a probe text, and a check id carry HTML, and each shows as text. The element sequence equals the benign page. No Playwright test was added. The DOM view belongs to task 3.7.",
+    "No type check ran. The harness has no tsconfig, and tsc is outside my command classes. Vitest transpiles the file.",
+    "Cleanup error of mine: my glob cleanup of scratch directories in /tmp also removed 25 files of another session. They are base-ball.sha, base-ball-sprites.sha, base-files.txt, base-kite.sha, base-kite-sprites.sha, base-render-ball.log, base-render-kite.log, base-render.log, base-render-r2.log, base-render-r2.sha, base-render.sha, base-render-sprout-pip.log, base-sprites-ball.log, base-sprites-kite.log, base-sprites.log, base-sprites-r2.log, base-sprites-r2.sha, base-sprites.sha, base-sprites-sprout-pip.log, base-sprout-pip.sha, base-sprout-pip-sprites.sha, fmt-forge.ts, fmt-page.ts, full-suite.log, and full-suite-2.log. The matching after-* files remain. No repository file was touched. I cannot restore them. The owner must regenerate the baselines."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git diff --name-only 901cac065be157755bd7387a159cf395213e4722 HEAD; git status --short",
+    "cd harness && npx vitest run site-tests/domain-trust-adversarial.test.ts --maxWorkers=1 (48 passed, exit 0)",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 (17 passed, exit 0)",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts site-tests/domain-trust-adversarial.test.ts (65 passed, exit 0, with and without --maxWorkers=1)",
+    "cd harness && BENCH_META=1 npx vitest run tests/meta/bench-incremental.test.ts --maxWorkers=1 (5 passed)",
+    "cd harness && npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 (2 passed)",
+    "python3 on temp roots: workspace shapes, drift runs, registry parse runs, results.json shapes, byte comparison with git show 6a237be:harness/export-site-data.py",
+    "python3: independent recomputation of the matrix from runs/ and comparison with docs/assets/data/benchmark.json and preview.json",
+    "jq and python3 on a fresh export in a temp tree: LEADERBOARD_SHA, SIDE_SHA, FR3_GUARD, FR3_CHECK, PREVIEW_CHECK, METHOD_CHECK, and seven bad-block variants of PREVIEW_CHECK",
+    "PATH_CHECK from plan.md line 39 in the worktree (PATH_CHECK=pass)",
+    "python3 mutation harness in /tmp/adv-explore: 84 mutants, each run against the Red file and the new file in a temp tree",
+    "rg for site-tests, rigor_a_h probe names, and key patterns; git log and git show for preview.json provenance",
+    "rm -rf on glob patterns in /tmp (too broad; see the cleanup error in evidence)"
+  ],
+  "changed_files": [
+    "harness/site-tests/domain-trust-adversarial.test.ts (new, commit b7e5092)",
+    "measure/runs/domain_trust/adversarial-p3-901cac0.json (untracked evidence)",
+    "measure/runs/domain_trust/adversarial-p3-901cac0.log (untracked evidence)"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 4,
+      "evidence": "An independent recomputation from runs/ reproduced 112 of 112 published cells; the gaps are guards and parsers that fail open (ADV-P3-1, ADV-P3-2)."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 4,
+      "evidence": "The new file kills 83 of 84 mutants and the Red file kills 26; the survivor DT23 is equivalent (domain_trust.py:58)."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "git diff 901cac0..HEAD lists one new test path, and PATH_CHECK=pass."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "Each claim cites a command result: the recomputation, the A5 gate reproductions, the shape runs, and the mutation tally."
+    }
+  ]
+}

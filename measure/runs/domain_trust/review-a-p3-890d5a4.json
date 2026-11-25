@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "domain_trust",
+  "phase": "Phase 3: Implement (Green)",
+  "baseline_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "phase_base_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "role_base_sha": "890d5a412e5c3d2a451acbdcc157fa6ba37f552d",
+  "audited_head_sha": "890d5a412e5c3d2a451acbdcc157fa6ba37f552d",
+  "status": "fail",
+  "summary": "Both earlier fixes pass their checks. The new fallback lets a scheduled export omit the matrix and restore false history failures.",
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "openai/gpt-6.2-sol#high",
+  "blocking_findings": [
+    "A-P3-8 [Blocker] review-a: A full export succeeds when the companion is missing. harness/export-site-data.py:21–28 does not distinguish the legacy test fixture from a full harness. Lines 381 and 873–886 skip the revision cutoff and omit the matrix. With only domain_trust.py absent in the full workspace, the exporter returned success and produced all three payloads. It omitted domain_trust and restored four false revision-1 history failures. A present companion that raises an error already stops before any output. Rationale: harness/weekly.sh:88 and harness/cron-daily.sh:808 use this path. harness/cron-weekly.sh:56–59 stages the changed docs after a successful export. Require the companion for a full export and preserve the byte-identical legacy fixture behavior."
+  ],
+  "nonblocking_findings": [],
+  "evidence": [
+    "HEAD matched 890d5a412e5c3d2a451acbdcc157fa6ba37f552d at the start and end. The audit covered c4560f2..890d5a4 and focused on the remediation diff from e2a6259.",
+    "Reviewed the Phase 3 plan, the spec, the test strategy and green-p3-r4.log. Commits after faa4103 changed only plan.md. The known PM-approved marker deviation is not a finding.",
+    "A-P3-1=FIX verified for the original callers. The bench-incremental fixture passes all five tests. The isolated importlib caller passes both daily-pick-board-filter tests. A direct run with a complete harness writes the matrix.",
+    "The partial fixture ran the base and current exporter with identical inputs and a fixed timestamp. benchmark.json, tracks.json and bugfix.json each matched byte-for-byte. No domain_trust block appeared.",
+    "A-P3-2=FIX verified. The actual rendering code produced a written verdict for all 112 cells. All 17 affected cells used the graded-count label, not the not-graded label.",
+    "The render check matched the kind, meaning and coverage in 251 descriptions across 61 failure-mode rows. The hy3 C line read graded 1 of 2 needed and failed 1.",
+    "A-P3-3 through A-P3-7 stay nonblocking in the prior review. This audit did not reopen them.",
+    "The full-workspace fault fixture suppressed only the companion file check. Result: status=0, files=3, domain_trust=False, revision1_false_failure_entries=4. With a present companion that raises RuntimeError, the error propagated with zero writes.",
+    "With the full harness intact, read-only direct script execution produced the committed benchmark payload after timestamp normalization. No docs file was changed.",
+    "TRUST_TEST passed all 17 tests. PREVIEW_CHECK=pass models=14 cells=112. METHOD_CHECK=pass probes=15 verdicts=4 kinds=3. PATH_CHECK=pass. FR3_CHECK and FR3_GUARD both returned true.",
+    "PI_CHECK=pass. The 95 Pi records reproduce the base and Green hash 7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d.",
+    "LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff. SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb. Both match task 1.3.",
+    "The phase diff changes no frozen hash input. The remediation does not change the test files, probe module, preview or test strategy.",
+    "The phase changes no Measure framework script, framework contract test or registry. The observed test exits and labeled counts match the plan.",
+    "The existing build-graph located PROBES in criteria.ts. The changed exporter and HTML are outside its TypeScript analysis. Direct source review confirmed the caller table.",
+    "The audit left the pre-existing untracked runs link unchanged. It ran no model calls."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git status --short; git diff --check c4560f2..890d5a4; git diff c4560f2..890d5a4; git diff e2a6259..890d5a4",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 — exit 0, 17 passed",
+    "cd harness && BENCH_META=1 npx vitest run tests/meta/bench-incremental.test.ts --maxWorkers=1 — exit 0, 5 passed",
+    "cd harness && npx vitest run schedule-tests/daily-pick-board-filter.test.ts --maxWorkers=1 — exit 0, 2 passed",
+    "python3 -B — read-only script execution with captured output; complete, absent and broken companion cases",
+    "python3 -B — byte comparison of the phase-base and current exporters in a virtual partial workspace",
+    "node -e — execute the actual trust rendering block with the committed JSON and a DOM stub",
+    "Plan PATH_CHECK, FR3_CHECK, FR3_GUARD, LEADERBOARD_SHA and SIDE_SHA; strategy PREVIEW_CHECK and METHOD_CHECK",
+    "python3 -B — recompute the main Pi record hashes with the plan sort order and compare both evidence files",
+    "heavy-run.sh -c build-graph query — inspect the existing TypeScript registry graph"
+  ],
+  "changed_files": [
+    "measure/runs/domain_trust/review-a-p3-890d5a4.json",
+    "measure/runs/domain_trust/review-a-p3-890d5a4.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The complete export and partial fixture work, but FULL_MISSING returns success without domain_trust."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "The three targeted suites pass, but they do not detect the full-workspace fallback."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "The remediation diff changes the exporter, results page, export timestamps and plan only."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 5,
+      "evidence": "The caller tests, byte comparison, full-workspace fault fixture and rendering check each produced independent results."
+    }
+  ]
+}

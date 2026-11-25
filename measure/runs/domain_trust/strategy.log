@@ -1,0 +1,40 @@
+strategy role log — domain_trust — 2026-10-25
+role base: 2d45b17 (main; worktree dirty with other untracked paths: .opencode/, tech-debt.md)
+
+Inputs read (read-only):
+- measure/tracks/domain_trust/{spec.md,plan.md,preview.json,metadata.json,index.md}
+- measure/tracks/rigor_a_h/test-strategy.md, measure/runs/rigor_a_h/strategy.log
+- ~/.agents/skills/measure-orchestrator/{SKILL.md,references/contracts.md,scripts/measure_interphase_checks.py}
+- harness/export-site-data.py (load_criteria, find_arm_runs, load_entry, main), harness/tests/criteria.ts (CRITERIA, PROBES, CHANGE_CRITERIA, ADVISORY), harness/tests/spec-matrix.ts, harness/tests/meta/spec-matrix-contract.ts (UNMAPPED_CRITERIA), harness/score-calculation.ts (statedUnder), harness/tests/meta/bench-incremental.test.ts (export test on a temporary root), harness/vitest.config.ts, docs/results.html, docs/assets/js/site.js
+
+Evidence produced (no benchmark run, no model call, no write under harness/, fixture/, or docs/):
+- PREVIEW_CHECK command written and dry-run on scratch files in /tmp/opencode/dt.
+- Base check-list sizes from the registry: A 5, B 6, C 12, D 8, E 12, F 12, G 18, H 2 (60 A-H criteria, 15 probes).
+- Preview totals: 14 models, 34 runs, 112 cells: safe 49, unoptimized 14, risk 32, unproven 17.
+- A4 gap found: FR3_CHECK prints true on an empty history. Added FR3_GUARD to the strategy and to plan task 3.2.
+- The page loads benchmark.json with fetch, so the browser review needs an HTTP server (SITE_SERVE), not a file URL.
+
+Commands and results:
+1. PREVIEW_CHECK on a block built from preview.json -> PREVIEW_CHECK=pass models=14 cells=112 (exit 0)
+2. PREVIEW_CHECK on four bad blocks (changed verdict, changed failure count, dropped run id, dropped probe) -> exit 1 each, with the named cell
+3. PREVIEW_CHECK on docs/assets/data/benchmark.json of main -> exit 1, "PREVIEW_CHECK=fail no domain_trust block"
+4. FR3_GUARD on main export -> true (exit 0); on {"history":{"models":[]}} -> false (exit 1)
+5. FR3_CHECK on main export -> false (exit 1); this is the EV2 defect that Green fixes
+6. LEADERBOARD_SHA on main export -> 0a05930b528abc1eaebd5a7b3e889aa1935ad2c379cb0caf3d318d4c5bff128d (information only; task 1.3 records the worktree base value)
+7. SIDE_SHA on main export -> 340951b530d9058a2cfe481c89b03da810b8826aece70833985e4559abfc6200 (information only)
+8. Plan marker check -> 15 tasks: 1 [x] (1.1), 1 [~] (1.2), 13 [b] with deferred:<owner>, 0 legacy [ ]; metadata estimated_tasks 15
+9. Sentence-length check (python; code blocks, tables, inline code, quotes, and Verify lines excluded) over test-strategy.md and plan.md -> 0 sentences over 25 words
+10. python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo . --role strategy --track domain_trust --log-file measure/runs/domain_trust/strategy.log -> PASS: strategy gate passed
+
+MEASURE_AGENT_RESULT
+role: strategy
+status: complete
+track: domain_trust
+phase: Phase 1: Contract and setup (task 1.2)
+commits: none (the orchestrator commits; plan task 1.2 records the SHA)
+tests_run: role-gate --role strategy --track domain_trust -> PASS; read-only dry runs of PREVIEW_CHECK (1 pass case, 5 fail cases), FR3_GUARD (pass and fail case), FR3_CHECK, LEADERBOARD_SHA, SIDE_SHA; no product test, no meta test, no benchmark run, no model call
+files_changed: measure/tracks/domain_trust/test-strategy.md (new); measure/tracks/domain_trust/plan.md (task 1.2 [~], FR3_GUARD gate command, task 3.2 Verify line); measure/tracks/domain_trust/index.md (test strategy link); measure/runs/domain_trust/strategy.log (this file)
+plan_updates: task 1.2 from [b] deferred:strategy to [~], waiting for the orchestrator commit; FR3_GUARD added to the gate commands and to task 3.2; task count stays 15, estimated_tasks 15
+known_failures: none
+handoff: (1) Commit test-strategy.md, plan.md, and index.md by explicit path; record the SHA in task 1.2 and mark it [x]. (2) Task 1.3 creates the worktree from that commit. (3) Red uses the module names of strategy section 4 (PROBE_MAP, KINDS, VERDICTS, domain_cells). (4) PREVIEW_CHECK assumes n_min 2 and the current runs/; a new catalog run changes the matrix, and the orchestrator then decides on a preview update. (5) Review B and Review C do not apply (strategy section 10). (6) O1 and O2 stay open; no new owner decision.
+END_MEASURE_AGENT_RESULT

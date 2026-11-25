@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "domain_trust",
+  "phase": "Phase 3: Implement (Green)",
+  "baseline_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "phase_base_sha": "c4560f2e3078ef2b0b1869a4fe0597df792f3372",
+  "role_base_sha": "e2a625968dd3dc2489e7062c8aa1a0ff9c1a5a39",
+  "audited_head_sha": "e2a625968dd3dc2489e7062c8aa1a0ff9c1a5a39",
+  "status": "fail",
+  "summary": "The export matches the independent preview, and the Pi hashes match. The exporter breaks a batch self-check. The results page misstates coverage.",
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "openai/gpt-6.2-sol#high",
+  "blocking_findings": [
+    "A-P3-1 [Blocker] review-a: Preserve the existing export callers. The unconditional import at harness/export-site-data.py:16 fails in the partial workspace of harness/tests/meta/bench-incremental.test.ts:521–538. The fixture copies only the exporter and criteria. The equivalent Python invocation exits 1 with ModuleNotFoundError. The isolated import at harness/schedule-tests/daily-pick-board-filter.test.ts:93–106 also exits 1 with the same error. Rationale: harness/cron-weekly.sh:46 and harness/cron-daily.sh:51 default to the logic self-check. harness/batch.sh:268–284 exits 3 on that failure. The scheduled update cannot collect new results. Keep the frozen hash inputs unchanged in the fix.",
+    "A-P3-2 [Blocker] review-a: The FR-4 page consumer gives a false coverage label at docs/results.html:277–278. The committed hy3 C cell has one run. P.n-plus-one failed in that run and has graded=1. The page says both failed 1 of 1 and not graded (1). Rationale: The run was graded, but coverage is below n_min=2. Show the graded count and threshold as separate values. The failure list at line 277 also omits the kind and meaning that the export supplies."
+  ],
+  "nonblocking_findings": [
+    "A-P3-3 [Nit] review-a: Keep the spec map, but note its shared probe surfaces. P.hydration-clean also visits D. P.no-key-leak checks the D detail payload for a defect assigned to F. P.stale-after-mutate checks the C list for the F action. P.action-race uses E forms to observe the F conflict. P.retry-after-error also relies on F validation and persistence. P.axe-clean scans D detail and E controls as well as B. Evidence: harness/tests/e2e/catalogue.spec.ts:136–145, e2e/detail.spec.ts:190–200, and e2e/probes.spec.ts:42–57,110–155,185–192.",
+    "A-P3-4 [Nit] review-a: METHOD_CHECK accepts a methodology table with no probe rows when the preview probe_map is empty. The missing-row fixture prints METHOD_CHECK=pass probes=0 verdicts=4 kinds=3. Evidence: measure/tracks/domain_trust/test-strategy.md:60–66. The committed table and map each have all rows.",
+    "A-P3-5 [Nit] review-a: The export test does not check that load_entry retains E.labels for revision 2. Its F.auth-return assertion also accepts the ID fallback. Evidence: harness/site-tests/domain-trust.test.ts:407–428,496–503. The committed code applies the revision cutoff and uses the registry text on the actual records.",
+    "A-P3-6 [Nit] review-a: The refreshed preview invalidates the count in the browser review instructions. The new preview has 51 safe cells and 61 other cells. Evidence: measure/tracks/domain_trust/test-strategy.md:349–350 still expects 63 non-safe cells. Use the preview to derive the expectation.",
+    "A-P3-7 [Nit] review-a: The unchanged P.dedup-item probe accepts zero traced reads. Evidence: harness/tests/e2e/probes.spec.ts:27–38,98–107. The checked passing candidate uses one read, and the checked failing candidate calls getItem twice. The zero-read case has no observed bad verdict in this audit."
+  ],
+  "evidence": [
+    "HEAD matched e2a625968dd3dc2489e7062c8aa1a0ff9c1a5a39 at the start and end. Audited the exact phase diff from c4560f2e3078ef2b0b1869a4fe0597df792f3372.",
+    "Read the Measure and track indexes, metadata, FR-1 through FR-7, Phase 3, test-strategy.md sections 2, 5, 7 and 10, and the Green and Pi records.",
+    "P.searchparams-async — C, robustness: e2e/catalogue.spec.ts:95–100 checks the empty state after a no-match query (C.2, C.6).",
+    "P.hydration-clean — C, robustness: e2e/catalogue.spec.ts:136–145 checks hydration errors on catalogue and detail renders (C.1, D.1).",
+    "P.filter-literal — C, robustness: e2e/catalogue.spec.ts:102–111 checks literal text in the q filter (C.2).",
+    "P.n-plus-one — C, performance: e2e/probes.spec.ts:60–76 limits per-row and total reads for one catalogue render (C.7).",
+    "P.dedup-item — D, performance: e2e/probes.spec.ts:98–107 limits getItem reads for detail and metadata (D.1, D.6).",
+    "P.retry-after-error — E, robustness: e2e/probes.spec.ts:138–155 checks that the checkout form accepts a retry and clears its error (E.2, E.5).",
+    "P.no-key-leak — F, robustness: e2e/probes.spec.ts:42–57 checks that the detail response renders without exposing the fixture credential (F.3).",
+    "P.stale-after-mutate — F, robustness: e2e/detail.spec.ts:190–200 checks the catalogue badge after a checkout commits (F.7).",
+    "P.action-race — F, robustness: e2e/probes.spec.ts:110–135 checks one successful checkout and one displayed conflict from concurrent actions (F.4).",
+    "P.concurrent-checkout — G, robustness: api/loans.test.ts:137–150 checks one 201 and four 409 responses from concurrent POST requests (G.8).",
+    "P.concurrent-return — G, robustness: api/loans.test.ts:188–196 checks one 200 and four 409 responses from concurrent PATCH requests (G.10).",
+    "P.validate-before-io — G, performance: e2e/probes.spec.ts:79–95 verifies no store calls before the POST returns 400 (G.7).",
+    "P.auth-before-parse — G, robustness: api/loans.test.ts:242–249 checks that anonymous malformed requests get 401 (G.6).",
+    "P.malformed-json — G, robustness: api/loans.test.ts:232–239 checks that malformed POST and PATCH bodies get 400 with an error string (G.7, G.11).",
+    "P.axe-clean — B, robustness: e2e/probes.spec.ts:158–192 checks names, labels and ARIA on catalogue and detail pages (B.4, E.10).",
+    "P.dedup-item: a-glm-5-3-flash-2026w37 stored true; candidate/app/items/[id]/page.tsx:12,23,34 uses one React-cached loader. a-gpt-6-luna-2026w43-r1 stored false; the equivalent file calls getItem at lines 16 and 26. reference/app/items/[id]/page.tsx:13,21,32 uses cache(getItem). No grade ran.",
+    "harness/domain_trust.py:118–184 applies the FR-2 verdict order and excludes missing keys and non-booleans. Lines 8–11 import only standard-library modules. The file has no model call.",
+    "The committed export has registry text for every check. A.returned, F.auth-return and P.no-key-leak match SPEC_MATRIX, UNMAPPED_CRITERIA and catches, respectively.",
+    "The committed history has 19 revision-1 entries. FR3_CHECK found no E.labels or E.error-announced failure in them. FR3_GUARD exits 1 on empty history.",
+    "Commit 7c5a825 changes only preview.json. It preserves registry-order gaps, unlike the exporter. A separate calculation read the spec map, criteria, catalog, and stored records without importing either implementation file. All run lists and 112 cells match after gap-order normalization. It counted 14 models and 58 runs.",
+    "Read-only execution captured the phase-base and audited exports in memory. All three normalized payloads match. The current payloads also match the committed docs after timestamp removal.",
+    "LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff; SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb. Both match task 1.3.",
+    "Recomputed PI_RUNS=95 and PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d over 277 files. The plan locale sort reproduces the hash. Both stored Pi reports match byte-for-byte.",
+    "green-p3-r3.log:20–24 records the BASE_HASH and work-list totals from main. They match plan tasks 1.3 and 3.4. No suite or runner hash input changed in this phase diff. The log does not preserve per-row work-list classes.",
+    "TRUST_TEST, PATH_CHECK, FR3_GUARD, FR3_CHECK, PREVIEW_CHECK and METHOD_CHECK passed against the audited HEAD. The missing-block and missing-section fixtures each fail. The missing-map case is A-P3-4.",
+    "The phase changes no Measure framework script, framework contract test or registry. A3 count assertions use parsed fields or labeled lines. The observed Phase 3 test exits match the plan claims.",
+    "The PM-approved task 3.5 marker deviation is not a finding. The audit left the pre-existing untracked runs link unchanged.",
+    "build-graph read the existing TypeScript graph and located PROBES in criteria.ts. It cannot inspect the changed Python code or HTML. Direct caller reads found the export contract regressions."
+  ],
+  "commands": [
+    "git rev-parse HEAD; git diff --check c4560f2..e2a6259; git diff --name-status c4560f2..e2a6259; git log c4560f2..e2a6259; git show --stat 7c5a825; git status --short",
+    "cd harness && npx vitest run site-tests/domain-trust.test.ts --maxWorkers=1 — exit 0; 17 tests passed",
+    "Plan PATH_CHECK, FR3_CHECK and FR3_GUARD; strategy PREVIEW_CHECK and METHOD_CHECK — all exit 0",
+    "Plan LEADERBOARD_SHA and SIDE_SHA via jq and sha256sum — match task 1.3",
+    "python3 -B — read-only base and HEAD export comparison with captured writes; independent stored-record preview calculation; Pi hash with the plan sort order",
+    "python3 -B — in-memory missing-deliverable fixtures using the plan and strategy checks",
+    "python3 -I -B -c — execute the exporter without the companion, then load by path with importlib in a separate invocation; each exits 1",
+    "heavy-run.sh -c build-graph query — read the existing TypeScript graph for PROBES"
+  ],
+  "changed_files": [
+    "measure/runs/domain_trust/review-a-p3-e2a6259.json",
+    "measure/runs/domain_trust/review-a-p3-e2a6259.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "ratings": [
+    {
+      "axis": "correctness",
+      "score": 3,
+      "evidence": "The independent preview matches all 112 cells, but the partial export import fails and docs/results.html:278 misstates coverage."
+    },
+    {
+      "axis": "test_meaning",
+      "score": 3,
+      "evidence": "TRUST_TEST passes 17 cases, but the isolated export caller and the revision-2 domain result lack coverage in that gate."
+    },
+    {
+      "axis": "scope_discipline",
+      "score": 5,
+      "evidence": "PATH_CHECK passes, and the exact diff changes no frozen hash input or existing Pi record."
+    },
+    {
+      "axis": "evidence_quality",
+      "score": 4,
+      "evidence": "The Phase 3 commands match the plan, but green-p3-r3.log:22 stores aggregate work-list counts only."
+    }
+  ]
+}

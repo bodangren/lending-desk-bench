@@ -1,0 +1,66 @@
+Green P3 r3 log — domain_trust — 2026-11-24
+
+Invariants:
+- role_base_sha = 7c5a825ea86f90d5b293fd50b01ef7acac1b34cd = worktree HEAD at start.
+- phase_base_sha = c4560f2e3078ef2b0b1869a4fe0597df792f3372.
+- Commit 7c5a825 refreshed preview.json from 58 stored runs. Green did not edit preview.json.
+
+Worktree command output:
+- python3 harness/export-site-data.py: exit 0.
+- Generated docs differed only in generated_at. Committed by explicit path in 96a9197.
+- PREVIEW_CHECK=pass models=14 cells=112 (exit 0).
+- FR3_GUARD: true (exit 0).
+- FR3_CHECK: true (exit 0).
+- LEADERBOARD_SHA=36f72b340703ec87bf641b2807319cf61a18195ba38e011b0f83127bdbb773ff  -
+- SIDE_SHA=82c2566b731eabd763094d9a820177f09525ba181fb09019ed6a9f3d465111bb  -
+- TRUST_TEST: Test Files 1 passed (1); Tests 17 passed (17); exit 0.
+- PATH_CHECK=pass.
+- METHOD_CHECK=pass probes=15 verdicts=4 kinds=3 (exit 0).
+
+Main command output. Main HEAD = 08c020fb72d5fd925fcc790166dc6f298b1bea8e:
+- BASE_HASH: 8985c00fffce2659005d6e020cf5befb683ce7776d92611d10ddbbcd6621a2a0	cda02445726e6821f7afdc862dd3787e4a275f4d38e674bd1d350502febf4cb7 (exit 0).
+- plan-work.ts --all: 120 row(s) over 4 track(s) — new 45, failing 75, current 0 (exit 0).
+- PI_SHA green: PI_RUNS=95; PI_SHA=7af106ad9198808345513e893633ea8dbf07eedc8f65defb8c3ccc1d606a771d.
+- PI_CHECK base green: PI_CHECK=pass (exit 0).
+- Main status stayed unchanged: untracked .opencode/ and harness/wt.txt preserved.
+
+Plan marker output:
+- 3.1 [x] be5a8a8.
+- 3.2 [x] be5a8a8 7c5a825.
+- 3.3 [x] a1d3be9.
+- 3.4 [x] 96a9197.
+- 3.5 [~].
+- STATUS_CHECK=pass blocked=5 open=1 (exit 0).
+
+Commits this round:
+- 96a9197 data(domain_trust): refresh export timestamps from the stored runs
+- d8da01a measure(domain_trust): close green tasks 3.2 and 3.4
+- 6faaf42 measure(domain_trust): put 3.2 sha evidence on its marker line
+
+Final Green HEAD = 6faaf42834588cf58796b8bfd245d161e8f44108.
+The checker reads a task SHA from the marker line only. Therefore 3.2 holds
+both SHAs on that line. Phase counts after the fix: total=5, complete=4,
+in_progress=1, incomplete=1, with_sha=4.
+The remaining incomplete task is 3.5, marked [~] for Review A as instructed.
+The plan marker rule forbids the word "deferred" on that first line. The
+jr-green role gate counts that [~] task as incomplete. This is expected.
+GREEN_TEST_COMMAND passes under the role gate.
+
+Role gate output (GREEN_TEST_COMMAND='cd harness && npx vitest run site-tests/domain-trust.test.ts'):
+INFO: no heavy-run wrapper found; running gate commands directly
+FAIL: current phase still has 1 non-deferred incomplete tasks
+ROLE_GATE_EXIT=1
+GREEN_TEST_COMMAND produced no failure line.
+
+MEASURE_AGENT_RESULT
+role: jr-green
+status: complete
+track: domain_trust
+phase: Phase 3: Implement (Green)
+commits: 96a9197, d8da01a, 6faaf42
+tests_run: TRUST_TEST exit 0 with 17 passed; PATH_CHECK=pass; METHOD_CHECK=pass probes=15 verdicts=4 kinds=3; PREVIEW_CHECK=pass models=14 cells=112; FR3_GUARD=true; FR3_CHECK=true; BASE_HASH and work-list classes match task 1.3; PI_CHECK=pass; STATUS_CHECK=pass blocked=5 open=1
+files_changed: docs/assets/data/benchmark.json, docs/assets/data/tracks.json, docs/assets/data/bugfix.json, measure/tracks/domain_trust/plan.md
+plan_updates: 3.2 marked [x] with be5a8a8 and 7c5a825; 3.4 marked [x] with 96a9197; 3.5 marked [~] with its deferred trailer removed; all check lines recorded
+known_failures: none
+handoff: Green phase tasks 3.1 through 3.4 are complete. Commit 6faaf42 is the final Green HEAD. Task 3.5 is open for Review A. preview.json was not edited by Green. The committed docs equal the export output. Main-side checks ran on main HEAD 08c020f and matched task 1.3. The role gate reports one incomplete task because 3.5 is [~] for the next role.
+END_MEASURE_AGENT_RESULT
