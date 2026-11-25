@@ -51,8 +51,10 @@
  * `stopped`, stderr holds exactly one line `quota: <reason>`. The tool
  * exits 0 for every state. Exit 2 is for a bad flag.
  *
- * The read has a timeout of 5 s, below the 10 s bound of the contract. The
- * whole answer is parsed, so a 2 MiB body with 200 windows works.
+ * The read has a default timeout of 5 s, below the 10 s bound of the
+ * contract. BENCH_QUOTA_TIMEOUT_MS overrides it when it holds a whole number
+ * from 1000 to 120000 milliseconds. The whole answer is parsed, so a 2 MiB
+ * body with 200 windows works.
  *
  * This tool reads no credential and no real home folder. It sends one
  * loopback request to the quota source and nothing else.
@@ -80,8 +82,14 @@ const GO_WEEK_WINDOW = "weekly";
 /** The week window value that moves a Go route to `wait` (spec D15, PM 2026-11-19). */
 const GO_WEEK_PERCENT = 100;
 
-/** The bound of one quota read, in milliseconds. */
-const READ_TIMEOUT_MS = 5_000;
+/** The bound of one quota read, in milliseconds. BENCH_QUOTA_TIMEOUT_MS
+ * overrides the 5 s default when it holds a whole number from 1000 to 120000. */
+function readTimeoutMs(): number {
+  const raw = process.env.BENCH_QUOTA_TIMEOUT_MS ?? "";
+  if (!/^\d+$/.test(raw)) return 5_000;
+  const value = Number(raw);
+  return value >= 1_000 && value <= 120_000 ? value : 5_000;
+}
 
 /** The bound of the port source, in milliseconds. */
 const PORT_TIMEOUT_MS = 10_000;
@@ -234,7 +242,7 @@ function readQuota(url: string): Promise<QuotaRead> {
       finish({ ok: false, reason: "the quota source URL is invalid" });
       return;
     }
-    req.setTimeout(READ_TIMEOUT_MS, () => {
+    req.setTimeout(readTimeoutMs(), () => {
       req.destroy();
       finish({ ok: false, reason: "the quota read timed out" });
     });

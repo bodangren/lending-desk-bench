@@ -315,6 +315,16 @@ function neverAnswer(): QuotaHandler {
   return () => {};
 }
 
+/** An answer after a delay, for the timeout seam of Q5b. */
+function delayedResponse(body: string, delayMs: number): QuotaHandler {
+  return (_req, res) => {
+    setTimeout(() => {
+      res.writeHead(200, { "content-type": "application/json", connection: "close" });
+      res.end(body);
+    }, delayMs);
+  };
+}
+
 /** The body of a source whose windows all hold one value. Non-Go fakes
  * keep these key names. The opencode-go fakes use liveGoBody (task 4.13i):
  * the live endpoint has no "day" or "week" key. */
@@ -1004,6 +1014,46 @@ describe("Q5 the read timeout", () => {
       sandbox.close();
     }
   });
+});
+
+describe("Q5b the quota read timeout seam", () => {
+  it("Q5b BENCH_QUOTA_TIMEOUT_MS=8000 lets a 2 s answer give ready, and the unset env times out a 6 s answer", async () => {
+    const raised = makeSandbox();
+    raised.env.BENCH_QUOTA_TIMEOUT_MS = "8000";
+    const slow = await startQuotaServer(delayedResponse(windowsBody(50), 2_000));
+    try {
+      const result = await runQuota(raised, ["--provider", "kimi-code-plan-cn", "--base", slow.base]);
+      expectState(result, "ready", "an 8 s bound lets the 2 s answer through");
+      expect(quotaDoc(result).source, "the source is named").toBe("kimi-for-coding");
+    } finally {
+      await slow.close();
+      raised.close();
+    }
+
+    const plain = makeSandbox();
+    delete plain.env.BENCH_QUOTA_TIMEOUT_MS;
+    const later = await startQuotaServer(delayedResponse(windowsBody(50), 6_000));
+    try {
+      const result = await runQuota(plain, ["--provider", "kimi-code-plan-cn", "--base", later.base]);
+      expectStopped(result, "the default 5 s bound times out the 6 s answer");
+      expect(stderrLines(result)[0], "the named line").toBe("quota: the quota read timed out");
+    } finally {
+      await later.close();
+      plain.close();
+    }
+
+    const bad = makeSandbox();
+    bad.env.BENCH_QUOTA_TIMEOUT_MS = "abc";
+    const never = await startQuotaServer(neverAnswer());
+    try {
+      const result = await runQuota(bad, ["--provider", "kimi-code-plan-cn", "--base", never.base]);
+      expectStopped(result, "an invalid value keeps the 5 s default");
+      expect(stderrLines(result)[0], "the named line").toBe("quota: the quota read timed out");
+    } finally {
+      await never.close();
+      bad.close();
+    }
+  }, 90_000);
 });
 
 describe("Q6 a large body on a non-Go source", () => {
