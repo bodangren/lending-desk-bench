@@ -3,11 +3,10 @@
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { boardStanding, BOARD_FROZEN_NOTE } from "../../../docs/assets/js/site.js";
+import { resolve } from "node:path";
+import { boardStanding, BOARD_FROZEN_NOTE } from "../../docs/assets/js/site.js";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const ROOT = resolve(import.meta.dirname, "../..");
 
 // The published board date. Its ISO week is 2026w47.
 const BOARD_NOW = "2026-11-16T13:26:29";
