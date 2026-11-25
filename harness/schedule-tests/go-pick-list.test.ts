@@ -3,10 +3,11 @@
 // The case reads the REAL `harness/go-pricing.json` and applies the D26
 // on-list rule: a model is on the list when `requests_unlimited` is true or
 // `requests_per_month` is more than `pick_min_requests_per_month`, and the
-// model holds no `superseded_by`. The on-list set must equal the 13 models
-// of EV32 in the EV32 order: unlimited first, then the counts highest
-// first, with equal counts in `page_order` order. It fails on the stale
-// table and passes after the Green data update of task 7.2.
+// model holds no `superseded_by`. The on-list set must equal the 14 models
+// in EV32 order: unlimited first, then the counts highest first, with equal
+// counts in `page_order` order. hungerg-free joins the unlimited group by
+// PM order 2026-11-26. It fails on the stale table and passes after the
+// Green data update of task 7.2.
 //
 // G3 applies the board filter of D26 (PM ruling 2026-11-16, task 7.9):
 // against the public-board fixture the oracle picks the first high-use,
@@ -23,7 +24,7 @@ const PRICING = join(HARNESS, "go-pricing.json");
 const TMP_ROOT = "/tmp/opencode";
 
 const ON_LIST_IN_ORDER = [
-  "beam-free", "iceman-contributor-free", "longcat-2.5-free",
+  "beam-free", "iceman-contributor-free", "longcat-2.5-free", "hungerg-free",
   "muse-spark-1.3-contributor", "deepseek-v4.1-flash", "mimo-v2.6-flash",
   "glm-5.3-flash", "qwen3.8-flash", "gpt-6-luna", "minimax-m3.1-flash",
   "claude-haiku-5-5", "mimo-v2.6-pro", "hy4",
@@ -88,7 +89,7 @@ function onList(pricing: Record<string, any>): string[] {
 
 describe("go pick list", () => {
   it("computes the D26 on-list set from the real table", () => {
-    console.log("=== G1 the on-list set equals the 13 models of EV32 in order ===");
+    console.log("=== G1 the on-list set equals the 14 models in EV32 order ===");
     const root = mkdtempSync(join(TMP_ROOT, "go-pick-list-"));
     try {
       const pricing = JSON.parse(readFileSync(PRICING, "utf8"));
@@ -96,7 +97,7 @@ describe("go pick list", () => {
       if (JSON.stringify(onListIds) !== JSON.stringify(ON_LIST_IN_ORDER)) {
         throw new Error(`on-list mismatch:\n  got:  ${onListIds.join(", ")}\n  want: ${ON_LIST_IN_ORDER.join(", ")}`);
       }
-      pass("G1 the on-list set equals the 13 models of EV32 in order");
+      pass("G1 the on-list set equals the 14 models in EV32 order");
 
       console.log("=== G2 the superseded and under-limit models are off the list ===");
       for (const id of [...SUPERSEDED, ...UNDER_LIMIT]) {

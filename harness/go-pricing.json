@@ -31,6 +31,7 @@
     "opencode-go/step-5-preview": "step-5-preview",
     "opencode-go/qwen3.7-max": "qwen3.7-max",
     "opencode-go/beam-free": "beam-free",
+    "opencode-go/hungerg-free": "hungerg-free",
     "xiaomi/mimo-v2.5": "mimo-v2.5",
     "opencode-go/mimo-v2.5": "mimo-v2.5",
     "xiaomi/mimo-v2.6-flash": "mimo-v2.6-flash",
@@ -438,6 +439,17 @@
       "page_order": 6,
       "monthly_usage_usd": 0,
       "rates": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+    },
+    "hungerg-free": {
+      "name": "HungerG Free",
+      "api": "openai-completions",
+      "high_usage": false,
+      "batch": false,
+      "requests_per_month": 0,
+      "monthly_usage_usd": 0,
+      "rates": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+      "page_order": 19,
+      "requests_unlimited": true
     }
   }
 }
