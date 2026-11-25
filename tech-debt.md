@@ -340,3 +340,65 @@ Phase 1 closed with these nonblocking findings. Fixed items name the Green commi
 - Review C F14: `publish.ts` prints one line per drifted path against its one-line promise. It predates the phase. Score-impact: no (`review-c-p1-8ceb628.json`).
 - 2.1 The first weekly update (row 5.4, deferred): it waits for the PM export. Reopen trigger: the board unfreezes. Score-impact: none yet; the run has not happened.
 - 2.2 The pilot gate (row 4.11, deferred): it waits for the PM word for new nights. Reopen trigger: the board unfreezes. Score-impact: none; one pass per route on `mg-2026-11a` already shows incomplete 1 of 3 passes.
+
+## 2026-11-25 — domain_trust late findings (routed 2026-11-25, PM late-findings rule)
+
+The `domain_trust` track closed at 7aeaba8 with these nonblocking findings. No finding hides a wrong result in the published matrix. Each source JSON sits in `measure/archive/domain_trust/` or `measure/runs/domain_trust/`. The tags in this entry name the source role and the finding id.
+
+### Phase 3 Review A (late findings)
+
+- A-P3-3 (Nit): the spec map keeps shared probe surfaces. P.hydration-clean also visits D. P.no-key-leak checks the D detail payload for a defect assigned to F. P.stale-after-mutate, P.action-race, P.retry-after-error, and P.axe-clean also read other domains. Fix: note the shared surfaces in the spec map (`review-a-p3-e2a6259.json`).
+- A-P3-4 (Nit): METHOD_CHECK accepts a methodology table with no probe rows when the preview `probe_map` is empty. It prints `METHOD_CHECK=pass probes=0`. The committed table and map hold all rows (`review-a-p3-e2a6259.json`).
+- A-P3-5 (Nit): the export test does not check that `load_entry` keeps `E.labels` for revision 2. Its F.auth-return assertion also accepts the id fallback (`review-a-p3-e2a6259.json`).
+- A-P3-6 (Nit): the refreshed preview holds 51 safe cells and 61 other cells. `test-strategy.md:349-350` still expects 63 non-safe cells. Fix: derive the expectation from the preview (`review-a-p3-e2a6259.json`).
+- A-P3-7 (Nit): the unchanged P.dedup-item probe accepts zero traced reads. No bad verdict was observed (`review-a-p3-e2a6259.json`).
+- A-P3-9 (Nit): the daily wrapper does not act on an exporter error. `harness/cron-daily.sh` checks the batch exit and not the export exit. The wrapper can stage other docs while the prior benchmark remains. The exporter writes nothing on failure, and the wrapper handling predates the phase (`review-a-p3-1036dec.json`).
+
+### Phase 3 adversarial testing
+
+- ADV-P3-1 (Major): nothing at export time compares `PROBE_MAP` with `PROBES`. A new probe with no map entry reaches no check list. If that probe fails in 2 of 2 records, the export exits 0 and all 8 cells read safe. A probe that leaves `PROBES` stays in the lists as a check named by its id. The FR-1 test is the only guard, and no script runs `harness/site-tests/`. The map equals `PROBES` today. The paused `rigor_a_h` track adds criteria. Fix: add an export-time equality check that exits before any write, or run TRUST_TEST in a scheduled self-check (`adversarial-p3-901cac0.json`).
+- ADV-P3-2 (Nit): the regexes that read the TypeScript registry fail open on legal input (`harness/domain_trust.py:57,70-71,81,88`). A closing brace in a comment before `since: 2` makes E.labels read since 1. A backslash-quote in a SPEC_MATRIX text drops the row. A backslash-quote in an UNMAPPED_CRITERIA text or a catches text cuts the text. The real registry parses exactly (`adversarial-p3-901cac0.json`).
+- ADV-P3-3 (Nit): the handler at `harness/export-site-data.py:40` catches `Exception`. A `SystemExit` from the companion passes. A `domain_trust.py` that calls `sys.exit(0)` at import makes the exporter exit 0 and write nothing. Fix: catch `SystemExit` with the other errors (`adversarial-p3-901cac0.json`).
+- ADV-P3-4 (Nit): `trust_records` reads `results.json` of every counted run. A valid old run whose `results.json` holds a JSON scalar makes `domain_cells` raise TypeError and the whole export exits 1. The scorer writes objects only. Fix: skip a `results.json` that is not an object (`adversarial-p3-901cac0.json`).
+- ADV-P3-5 (Nit): `domain_cells` has no lower bound for `n_min`. With `n_min` 0 or -1 and no record, a domain with checks reads safe with `min_coverage` 0. Only an edit of `N_MIN` reaches it. Fix: require `n_min` of 1 or more (`adversarial-p3-901cac0.json`).
+- ADV-P3-6 (Nit): three weak spots in `harness/site-tests/domain-trust.test.ts`. Lines 90-98 compare registry-derived counts with literal sizes, so a new criterion fails the test. Lines 144-175 assert the verdict only, and strategy 5.2 asks for the full cell. The adversarial file closes the gaps (`adversarial-p3-901cac0.json`).
+- ADV-P3-7 (Nit): PATH_CHECK (plan line 39) has no end anchors. The paths `harness/export-site-data.py.bak`, `harness/domain_trust.pyc`, and `README.md.orig` pass the filter. It is a plan gate command and not delivered product (`adversarial-p3-901cac0.json`).
+- ADV-P3-8 (Nit): when `benchmark.json` holds no `domain_trust` block, `docs/results.html` still shows the heading, the lede line, and an empty table. Only a stale or partial data file reaches that state. Fix: hide the section (`adversarial-p3-901cac0.json`).
+
+### Phase 3 UX browser review
+
+- UX-P3-1 (Nit): the domain column headers show only the letters A to H. No title, tooltip, or legend names a domain. `data.domains` holds the titles (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-2 (Nit): the link "How the verdict rule works" has no underline. Its contrast with the paragraph text is 1.2 to 1. Axe reports `link-in-text-block` (serious, WCAG 1.4.1) at both widths. The global rule `a { text-decoration: none }` in `docs/assets/css/site.css` causes this (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-3 (Nit): the link to `methodology.html#domain-trust` lands with the heading under the sticky bar. `site.css` has no `scroll-margin-top` or `scroll-padding-top`. The older `#sources` anchor behaves the same (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-4 (Nit): the failure-mode list is flat, with one long entry for each cell. The longest entry has 1,371 characters. A check prints twice when it failed and has coverage below N_MIN. At 390 px the section is about 19,000 px high. Fix: one heading for each model with a nested list (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-5 (Nit): some list wording is unclear. A check graded above the threshold reads "graded 9 of 2 needed". Five checks show registry split notes that name internal criterion ids. Fix: rewrite the display text in `harness/domain_trust.py`, not at the source (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-6 (Nit): the scroll hint has no CSS on `results.html`. It shows as a 16 px body paragraph. It also shows at 1280 px, where the matrix fits (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-7 (Nit): at 390 px the Model column is not sticky. After a scroll to columns E to H, the model names leave the view. The heatmap has the same pattern (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-8 (Nit): the verdict `unproven` uses the class `cell-dead`, a dull red-brown close to the risk color. The word separates the two verdicts. Fix: use a neutral grey (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-9 (Nit): the Hy3 row reads "1 runs". The methodology section does not state the N_MIN value, 2 (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-10 (Nit): the domain_trust code shares the try/catch of the whole results page. A block without a models list replaces the score table with an error. The exporter writes none of these shapes at this head (`ux-browser-review-r2-6f7451b.json`).
+- UX-P3-11 (Nit): the page inserts six numeric fields into HTML without `escapeHtml`: `runs.opencode`, `runs.pi`, `runs.total`, `failed`, `graded`, and `rule.n_min`. The exporter writes integers only. Fix: escape the six fields (`ux-browser-review-r2-6f7451b.json`).
+
+### Phase acceptance
+
+- PA-P3-1 (Nit): `plan.md` holds no `Late finding <id>:` line for these findings. This entry closes the tech-debt half. The plan lines stay open (`phase-acceptance-p3-4f53364.json`).
+- PA-P3-2 (Nit): the preview refresh left old counts in four places. `plan.md:82` says `prints 34` and the command prints 58. `test-strategy.md:302-303`, `spec.md:81` (EV5), and `metadata.json` still describe the 34-run preview. Fix: update or date-stamp each line (`phase-acceptance-p3-4f53364.json`).
+- PA-P3-3 (Major): no standing gate runs the adversarial file. TRUST_TEST (`plan.md:36`) runs only `site-tests/domain-trust.test.ts`. The 48 cases of `domain-trust-adversarial.test.ts` hold the regression tests for A-P3-1, A-P3-8, and the FR-1 drift guards. The file also needs commit 6a237be reachable. Fix: set TRUST_TEST to both files (`phase-acceptance-p3-4f53364.json`).
+- PA-P3-4 (Nit): some plan evidence has no command. Tasks 3.2 and 3.3 quote PAGE_DESCRIBE_CHECK, AFFECTED_CELLS=17, COVERAGE_LABELS=251, PARTIAL_NO_BLOCK, and PARTIAL_BYTE_IDENTICAL without a command. Task 3.4 records only the aggregate work-list line. Fix: record the command next to each labeled line (`phase-acceptance-p3-4f53364.json`).
+- PA-P3-5 (Nit): two Phase 4 gate details need a fix. (a) The 4.1 O1 Verify regex needs the text `| 2 2026-10-25`. The spec cell reads `2, approved by the owner 2026-10-25`. The command prints 0 lines. (b) PI_SHA depends on the sort locale. `LC_ALL=C` gives `aa8b2421...` and `en_US.UTF-8` gives `7af106ad...`. Fix: pin the locale in the plan command (`phase-acceptance-p3-4f53364.json`).
+- PA-P4-1 (Nit): task 4.3 cites the merge SHA 9667d25. The test results first appear in the publish commit 7aeaba8. Both trees hold identical test and implementation files. Fix: record 7aeaba8 as the evidence SHA (`phase-acceptance-p4-7aeaba8.json`).
+
+### Final acceptance (round 2)
+
+- FA2-N1 (Major): `harness/site-tests/domain-trust.test.ts` and `domain-trust-adversarial.test.ts` read `measure/tracks/domain_trust/preview.json` at import. The archive move put the file at `measure/archive/domain_trust/preview.json`. Both test files now fail with ENOENT. No script or cron runs `site-tests`, so the failure shows only in a manual run. Exact fix: copy `preview.json` under `harness/site-tests`. Repoint `domain-trust.test.ts:14`, `domain-trust-adversarial.test.ts:24`, and the copy target at lines 1496-1501 of the adversarial file. Precedent: `harness/model-guide/publish-approval.md` (`final-acceptance-r2-7aeaba8.json`).
+- FA2-N2 (Nit): the preview refresh left 34-run counts. `plan.md:82`, `spec.md:81` (EV5), `test-strategy.md:302`, and `metadata.json:11` still say 34 runs. The same finding as PA-P3-2 (`final-acceptance-r2-7aeaba8.json`).
+- FA2-N3 (Nit): `plan.md` tasks 3.2 and 3.3 quote labeled results with no command. The same finding as PA-P3-4 (`final-acceptance-r2-7aeaba8.json`).
+- FA2-N4 (Nit): at final acceptance, `tech-debt.md` held no entry for the late findings, and `plan.md` held no `Late finding <id>:` line. This entry closes the tech-debt half (`final-acceptance-r2-7aeaba8.json`).
+- FA2-N5 (Nit): `plan.md:36` defines TRUST_TEST as one file. The 48 adversarial tests run only when a role names the file by path. The same finding as PA-P3-3 (`final-acceptance-r2-7aeaba8.json`).
+- FA2-N6 (Nit): PROJECT_LINT and PROJECT_CHECKS are the shell word `true`, so both pass with no check. The repo has no lint script in `harness/package.json`, no `measure/doctor.sh`, and no `measure/gates.json` (`final-acceptance-r2-7aeaba8.json`).
+- FA2-N7 (Nit): the phase-acceptance, review-a, adversarial, and ux results hold `track_base_sha` null. They bind a phase base and not the track base (`final-acceptance-r2-7aeaba8.json`).
+
+### Deviations
+
+- Final acceptance ran on `claude-agent/sonnet#xhigh`. `SKILL.md:144-145` asks for a family other than Review A and phase acceptance. The route `opencode/deepseek-v4.1-flash-free#high` hit its free limit. The PM approved the substitution on 2026-11-25 (`final-acceptance-r2-7aeaba8.json`, DEV-1).
+- Phases 1 and 2 have no separate phase acceptance. Neither `SKILL.md` nor `contracts.md` requires one. The Phase 3 result reproduced the Red proof and the task 1.1 base values. Precedent: `weekly_update_fix` passed final acceptance with one phase result (`final-acceptance-r2-7aeaba8.json`, DEV-2).
