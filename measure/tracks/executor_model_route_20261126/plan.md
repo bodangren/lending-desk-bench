@@ -62,7 +62,7 @@ Marker use:
   - Red evidence: gate `cd harness && ./node_modules/.bin/vitest run tests/meta/executor-model-route.test.ts --configLoader native --maxWorkers=1` exits 1 with 14 failed / 7 passed (21 checks); base commit `147a5f8`; role base `64c36e2`; Red commit `c108b2e`.
   - Test-maintenance note (Red r3): `preflight-model-api.test.ts` and `opencode-executor.test.ts` give their fake binaries the catalog needle for the model under test (JS comment, inert on base), so the Green route takes the present-model path and preflight retry counts and exact config bytes stay unchanged. No assertion weakened.
 
-- [~] 1.2 The Green implementation (spec FR1 to FR5).
+- [x] 1.2 The Green implementation (spec FR1 to FR5); role base `615a3c5`; Green commit `68cfaaa`.
   Add the entry mode to `harness/model-api-refs.py`. Change only the config
   generation block of `harness/run.sh`. Follow decisions D1 to D5.
   - Keep the binary check, the version check, the ripgrep check, the credential
@@ -79,8 +79,13 @@ Marker use:
       exits 0.
   - Verify: `bash -n harness/run.sh` exits 0. No `curl` call appears in the
     config block. The helper prints no `baseURL`, header, or token.
-  - Green evidence: record the gate outputs, the role base SHA, and the Green
-    commit SHA on this task line when Green ends.
+  - Green evidence: role base `615a3c5`; Green commit `68cfaaa`.
+    - `executor-model-route.test.ts`: exit 0 with 21 passing tests.
+    - `preflight-model-api.test.ts`: exit 0 with 35 passing tests.
+    - `opencode-executor.test.ts`: exit 0 with 21 passing tests.
+    - `execution-identity.test.ts`: exit 0 with 1 passing test.
+    - `bash -n harness/run.sh`: exit 0.
+    - `python3 -I -m py_compile harness/model-api-refs.py`: exit 0.
 
 - [ ] 1.3 Evidence and phase acceptance (light lane).
   Check the phase on the immutable HEAD. Check that each completed task line
