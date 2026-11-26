@@ -1,6 +1,5 @@
 import { spawn, spawnSync, type SpawnSyncReturns } from "node:child_process";
 import {
-  appendFileSync,
   chmodSync,
   copyFileSync,
   cpSync,
@@ -686,13 +685,10 @@ type PreflightBatch = {
 };
 
 function preparePreflightBatch(model: string, helperMode = "delegate"): PreflightBatch {
-  const run = prepareOpencodeRun("a");
-  // The executor route scans BENCH_OPENCODE_BIN for the catalog needle. Give
-  // the fake binary the needle for the model under test, so the run takes the
-  // present-model path: no entry call, and the preflight retry counts stay
-  // exactly as specified. A JS comment keeps the fake executable; the base
-  // code never scans these bytes, so this is inert there.
-  appendFileSync(run.fake.path, `\n// catalog needle for the executor route: "${model}":{"id":"${model}"}\n`);
+  // D9: the shared fixture defaults to a catalog-present fake binary for this
+  // model, so the executor route stays off and the preflight retry counts
+  // stay exactly as specified.
+  const run = prepareOpencodeRun("a", { model });
   const root = resolve(run.temp, "batch-root");
   const harness = resolve(root, "harness");
   const bin = resolve(root, "bin");

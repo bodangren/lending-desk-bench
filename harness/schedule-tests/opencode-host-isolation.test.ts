@@ -202,6 +202,7 @@ function fixture(): Fixture {
   const apiFile = join(root, "model-api.json");
   writeFileSync(apiFile, JSON.stringify({ location: { directory: "fake" }, data: [{
     providerID: "opencode-go", modelID: MODEL, enabled: true, status: "active",
+    name: "Fake Model", limit: { context: 1000000, input: 1000000, output: 65536 },
   }] }));
   return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl"), meminfo: join(root, "meminfo"), apiFile };
 }

@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createFakeOpencode, TEST_MODEL } from "./schema4-fixtures";
 
@@ -12,11 +12,66 @@ export function jsonIfPresent(path: string): any {
   return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
 }
 
+/** A catalog state of the fake binary. The default is catalog-present. */
+export type ExecutorCatalog = "present" | "missing" | "missing-provider";
+
+export type ExecutorFixtureOptions = {
+  /** The model the fixture runs. Defaults to TEST_MODEL. */
+  model?: string;
+  /** The catalog state of the fake binary. A missing-model case is explicit. */
+  catalog?: ExecutorCatalog;
+  /** Full control of the local API data array. Defaults to one active row. */
+  apiData?: unknown[];
+};
+
+function catalogEntry(model: string): string {
+  return `"${model}":{"id":"${model}","name":"${model}","limit":{"context":1000000,"input":1000000,"output":65536}}`;
+}
+
+/**
+ * The fake-binary catalog object, per spec D2. The fake binary stays an
+ * executable script; the catalog object rides in one comment line, so the
+ * bytes carry a provider-scoped models map in the shape of the installed
+ * catalog: {"<provider>":{"models":{"<model>":{"id":...},...}}}.
+ */
+export function catalogComment(mode: ExecutorCatalog, provider: string, model: string): string {
+  let catalog: string;
+  if (mode === "present") catalog = `{"${provider}":{"models":{${catalogEntry(model)}}}}`;
+  else if (mode === "missing") catalog = `{"${provider}":{"models":{"unrelated-model":{"id":"unrelated-model"}}}}`;
+  else catalog = `{"other-provider":{"models":{${catalogEntry(model)}}}}`;
+  return `\n// EXECUTOR_CATALOG ${catalog}\n`;
+}
+
+export function activeApiRow(provider: string, model: string): Record<string, unknown> {
+  return {
+    id: `id-${model}`,
+    modelID: model,
+    providerID: provider,
+    type: "language",
+    name: `${model} Name`,
+    limit: { context: 1000000, input: 1000000, output: 65536 },
+    enabled: true,
+    status: "active",
+  };
+}
+
 /** Runs the real runner with canaries and a Podman recorder. No container starts. */
-export function prepareOpencodeRun(arm: "a" | "b") {
+export function prepareOpencodeRun(arm: "a" | "b", opts: ExecutorFixtureOptions = {}) {
   mkdirSync("/tmp/opencode", { recursive: true });
   const temp = mkdtempSync("/tmp/opencode/executor-red-");
   const fake = createFakeOpencode(temp);
+  const model = opts.model ?? TEST_MODEL;
+  const provider = "opencode-go";
+  // D9: the default fake binary is catalog-present for the run model, so the
+  // route stays off unless the case asks for a miss. The comment keeps the
+  // fake executable; the bytes also satisfy the legacy global needle.
+  appendFileSync(fake.path, catalogComment(opts.catalog ?? "present", provider, model));
+  // FR3: a local API seam is the default. No fixture run touches the real API.
+  const apiFile = resolve(temp, "model-api.json");
+  writeFileSync(apiFile, JSON.stringify({
+    location: { directory: "fake" },
+    data: opts.apiData ?? [activeApiRow(provider, model)],
+  }));
   const id = `meta-opencode-${arm}-${process.pid}-${Date.now()}`;
   const work = resolve(ROOT, "runs", id);
   const out = resolve(work, "artifacts");
@@ -99,15 +154,17 @@ else {
     BENCH_TRACK: "build", BENCH_IGNORE_LOAD: "1", BENCH_WAIT_FOR_IDLE: "0",
     BENCH_OPENCODE_BIN: fake.path, BENCH_SKILL_ROOT: skillRoot,
     BENCH_AGENT_IMAGE: IMAGE, XDG_RUNTIME_DIR: runtime, AGENT_TIMEOUT: "2",
+    BENCH_MODEL_API_BASE: apiFile,
     // A canary exercises the old API-key forwarding path without a real credential.
     OPENCODE_API_KEY: "CANARY-ACCESS-99", THINKING: "xhigh",
   };
   return {
     arm, temp, fake, id, work, out, runtime, skillRoot, opencodeHit, podmanCapture, podmanControl, env,
-    execute() { return spawnSync(resolve(HARNESS, "run.sh"), ["opencode-go", TEST_MODEL, arm, id], {
-      cwd: HARNESS, env, encoding: "utf8", timeout: 25_000, maxBuffer: 8 * 1024 * 1024,
+    model, apiFile,
+    execute(execModel: string = model) { return spawnSync(resolve(HARNESS, "run.sh"), [provider, execModel, arm, id], {
+      cwd: HARNESS, env, encoding: "utf8", timeout: 120_000, maxBuffer: 8 * 1024 * 1024,
     }); },
-    start() { return spawn(resolve(HARNESS, "run.sh"), ["opencode-go", TEST_MODEL, arm, id], {
+    start(execModel: string = model) { return spawn(resolve(HARNESS, "run.sh"), [provider, execModel, arm, id], {
       cwd: HARNESS, env, detached: true, stdio: "ignore",
     }); },
     cleanup() { rmSync(work, { recursive: true, force: true }); rmSync(temp, { recursive: true, force: true }); },
