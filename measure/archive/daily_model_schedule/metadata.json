@@ -1,9 +1,11 @@
 {
   "id": "daily_model_schedule",
   "title": "Daily model schedule: one model per day, untested first, then the stalest",
+  "description": "Daily model schedule: one model per day, untested first, then the stalest. Closed by PM 2026-11-27: not needed.",
   "type": "Feature",
-  "status": "pending",
+  "status": "done",
   "created": "2026-10-25",
+  "completed": "2026-11-27",
   "estimated_tasks": 23,
   "actual_tasks": null,
   "source": {

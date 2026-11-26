@@ -16,9 +16,9 @@
 | Implementation Plan (change_bench) | measure/archive/change_bench/plan.md |
 | Specification (bench_incremental) | measure/tracks/bench_incremental/spec.md |
 | Implementation Plan (bench_incremental) | measure/tracks/bench_incremental/plan.md |
-| Specification (opencode_executor) | measure/tracks/opencode_executor/spec.md |
-| Implementation Plan (opencode_executor) | measure/tracks/opencode_executor/plan.md |
-| Design note (opencode_executor) | measure/tracks/opencode_executor/design.md |
+| Specification (opencode_executor) | measure/archive/opencode_executor/spec.md |
+| Implementation Plan (opencode_executor) | measure/archive/opencode_executor/plan.md |
+| Design note (opencode_executor) | measure/archive/opencode_executor/design.md |
 | Specification (rigor_a_h) | measure/tracks/rigor_a_h/spec.md |
 | Implementation Plan (rigor_a_h) | measure/tracks/rigor_a_h/plan.md |
 | Test strategy (rigor_a_h) | measure/tracks/rigor_a_h/test-strategy.md |
@@ -29,11 +29,11 @@
 | Test strategy (domain_trust) | measure/archive/domain_trust/test-strategy.md |
 | Track metadata (domain_trust) | measure/archive/domain_trust/metadata.json |
 | Golden preview matrix (domain_trust) | measure/archive/domain_trust/preview.json |
-| Specification (daily_model_schedule) | measure/tracks/daily_model_schedule/spec.md |
-| Implementation Plan (daily_model_schedule) | measure/tracks/daily_model_schedule/plan.md |
-| Test strategy (daily_model_schedule) | measure/tracks/daily_model_schedule/test-strategy.md |
-| Track metadata (daily_model_schedule) | measure/tracks/daily_model_schedule/metadata.json |
-| Selection oracle (daily_model_schedule) | measure/tracks/daily_model_schedule/pick-oracle.py |
+| Specification (daily_model_schedule) | measure/archive/daily_model_schedule/spec.md |
+| Implementation Plan (daily_model_schedule) | measure/archive/daily_model_schedule/plan.md |
+| Test strategy (daily_model_schedule) | measure/archive/daily_model_schedule/test-strategy.md |
+| Track metadata (daily_model_schedule) | measure/archive/daily_model_schedule/metadata.json |
+| Selection oracle (daily_model_schedule) | measure/archive/daily_model_schedule/pick-oracle.py |
 | Specification (model_guide) | measure/archive/model_guide/spec.md |
 | Implementation Plan (model_guide) | measure/archive/model_guide/plan.md |
 | Spec Review (model_guide) | measure/archive/model_guide/spec-review.md |

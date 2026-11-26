@@ -1137,7 +1137,7 @@ explicit live flag.
     task 6.8.
   - Deviation: measure-guard denies `[~]` while an earlier phase holds no
     checkpoint, so the task went from `[ ]` to `[x]`.
-- [ ] 6.8 The timer run of Sun 2026-11-15 01:00. The role records the
+- [x] 6.8 not needed (PM 2026-11-27): the timer run of Sun 2026-11-15 01:00. The role records the
   `DAILY PUSH`, `DAILY PUBLISH`, and `DAILY NOTIFY` lines and the public
   `generated_at` value. The monthly Go use is 84.06 percent, so the monthly
   limit of 95 lets all four track batches run. The run exits 0, prints one
@@ -1267,7 +1267,7 @@ This phase adds the nightly timer, catch-up rule, board-aware pick order, D24 he
   - Evidence: `is-enabled` prints `enabled`, `is-active` prints `active`, and `show -p TimersCalendar` prints `OnCalendar=*-*-* 01:00:00 ; next_elapse=Mon 2026-11-16 01:00:00 +07`. `list-timers` prints the next run Mon 2026-11-16 01:00:00 +07. The service unit stays `inactive`.
   - Deviation: the timer install happened at 00:48, after the catch-up unit ended at 00:19 (the D9 lock), and before the 01:00 deadline.
   - Lane: light lane. One Build session.
-- [ ] 7.6 Record the first catch-up night and the PM line. The role records the CATCHUP line, the board and due counts, the picked group, the heavy-run result, the notice result, and the PM line. The role also records the public board change.
+- [x] 7.6 not needed (PM 2026-11-27): record the first catch-up night and the PM line. The role records the CATCHUP line, the board and due counts, the picked group, the heavy-run result, the notice result, and the PM line. The role also records the public board change.
   - Verify: the first catch-up night adds one new model to the leaderboard.
   - Verify: the PM line names the model, new flag, board length, and due count.
   - Note: PM stop 2026-11-16 04:40:56: the orchestrator stopped lending-desk-daily.service by PM order at the model boundary after the iceman-contributor-free publish f6c2920; the next pick (qwen3.8-flash) had started no run; the unit ended failed with exit 143 and sent a FAIL notice that names the stop.

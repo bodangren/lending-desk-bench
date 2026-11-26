@@ -1,9 +1,11 @@
 {
   "id": "opencode_executor",
   "title": "Migrate the benchmark executor from Pi to OpenCode 2 with Console login",
+  "description": "Migrate the benchmark executor from Pi to OpenCode 2 with Console login. Closed by PM 2026-11-27: not needed.",
   "type": "Feature",
-  "status": "pending",
+  "status": "done",
   "created": "2026-10-18",
+  "completed": "2026-11-27",
   "deadline": "2026-10-25T01:00:00+08:00",
   "estimated_tasks": 32,
   "actual_tasks": null,

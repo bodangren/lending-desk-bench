@@ -330,19 +330,19 @@ model, no real credential (NFR-3).
   parser, and a missing or empty export makes the run invalid
   (spec FR-7). (deferred:owner — the Green work in task 3.6 carries this
   contract; the Red test is skipped under the 2026-10-24 deadline)
-- [b] 2.6 History and site: the rescore and the regrade print a SKIP line for (deferred:owner)
+- [x] 2.6 not needed (PM 2026-11-27): history and site: the rescore and the regrade print a SKIP line for (deferred:owner)
   legacy Pi runs and keep their `score.json` bytes. The runs stay out of the
   work list, the ranking, the trend, and the Skills delta. `run.sh` refuses
   to replace a Pi run directory. Site rows show the executor name and version
   (spec FR-8). (deferred:owner — the Green work in tasks 3.7 and 3.8 carries
   this contract; the Red test is skipped under the 2026-10-24 deadline)
-- [b] 2.7 Cron and preflight: the weekly toolchain setup resolves `node`, (deferred:owner)
+- [x] 2.7 not needed (PM 2026-11-27): cron and preflight: the weekly toolchain setup resolves `node`, (deferred:owner)
   `npm`, and `opencode` independently of the crontab PATH. A missing binary
   or a missing Console credential stops the batch before the first agent run.
   No run directory is created (spec FR-2, FR-9). (deferred:owner — the Green
   work in tasks 3.1 and 3.8 carries this contract; the Red test is skipped
   under the 2026-10-24 deadline)
-- [b] 2.8 Red evidence: run both gate commands. Record the start time, the end (deferred:owner)
+- [x] 2.8 not needed (PM 2026-11-27): red evidence: run both gate commands. Record the start time, the end (deferred:owner)
   time, the exit codes, and the Vitest summaries in this plan. Record the
   failing tests per task. (deferred:owner — the gate evidence lands in task
   3.9)
@@ -486,7 +486,7 @@ model, no real credential (NFR-3).
     added `/workspace/AGENTS.md` record) give no output and exit code 1.
     The 3 archived files have the hashes of the evidence file. The closeout
     runs are in the 2026-10-31 section of the evidence file.
-- [ ] 4.3 Live smoke after 2026-10-21 21:44 (+08:00): one build-track run per
+- [x] 4.3 not needed (PM 2026-11-27): live smoke after 2026-10-21 21:44 (+08:00): one build-track run per
   arm with one low-cost batch model. Check the valid score, the schema 7
   provenance, and the recost. Check that the secret scan is clean and that
   the host Console login works (spec acceptance criteria). Run the 10
@@ -500,7 +500,7 @@ model, no real credential (NFR-3).
   - The live runs happened: six build-track runs and three tests-track runs
     graded valid, trusted, publishable scores on 2026-10-25. The enforce
     probe records are still open.
-- [ ] 4.4 Host dry run: `BENCH_DRY_RUN=1 ./batch.sh` per track prints the
+- [x] 4.4 not needed (PM 2026-11-27): host dry run: `BENCH_DRY_RUN=1 ./batch.sh` per track prints the
   OpenCode work list. The executor preflight passes on the host. `WEEK=all
   ./rescore-doctor.sh` prints SKIP for legacy Pi runs, and their `score.json`
   checksums do not change.
@@ -546,7 +546,7 @@ model, no real credential (NFR-3).
     provenance schema 7, the recorded-executor attestation, the version
     policy, and the two score series. `docs/methodology.html` states the
     executor change with its date and its reason.
-- [ ] 4.6 Go/no-go by 2026-10-24 18:00 (+08:00): the owner confirms cron
+- [x] 4.6 not needed (PM 2026-11-27): go/no-go by 2026-10-24 18:00 (+08:00): the owner confirms cron
   readiness, and this plan records the decision. On no-go, the preflight
   keeps the Sunday batch fail-closed: no Pi traffic and no agent runs.
   - The deadline passed. The Sunday cron ran the OpenCode executor and
