@@ -145,7 +145,7 @@ Marker use:
     exits 0.
   - Verify: each blocking finding has a fix in a later commit.
 
-- [~] 1.4 Phase acceptance (light lane).
+- [x] 1.4 Phase acceptance (light lane). Audited HEAD cab1a87; artifact measure/runs/preflight_model_api/phase-acceptance-cab1a87-r2.json (product audit pass).
   Check the phase on the immutable HEAD. Check that each completed task line
   carries a commit SHA. Check the staged paths against the allowed file list.
   - Gate: `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
