@@ -352,7 +352,7 @@ describe("preflight model list from the OpenChamber API (spec FR1 to FR4)", () =
   });
 });
 
-const ALLOWED_LINE = /^[A-Za-z0-9._:@+-]+\/[A-Za-z0-9._:@+/-]+$/;
+const ALLOWED_LINE = /^[A-Za-z0-9._:@+~-]+\/[A-Za-z0-9._:@+~\/\[\]-]+$/;
 
 /** A fake server that always answers one fixed payload on /api/model. */
 function servePayload(payload: string, status = 200): Promise<{ server: Server; url: string; hits: () => number }> {
@@ -587,6 +587,53 @@ describe("Review A F3: provider and model IDs are validated before print", () =>
   });
 });
 
+describe("Review A r2 F8: the helper prints the real catalog ID classes", () => {
+  it("a tilde alias, a multi-segment model, a bracketed model, and the batch refs each print once", () => {
+    // Character classes observed live on 2026-11-26 (470 entries): providers use
+    // letters, digits, and . _ : @ + -; models add / and ~ (18 openrouter
+    // aliases such as ~anthropic/claude-opus-latest) and may carry [ ] (for
+    // example claude-opus-5-5[1m]). The synthetic last entry covers _ : @ +.
+    const entries = [
+      activeEntry("opencode-go/hungerg-free"),
+      activeEntry("opencode-go/hy4-flash-free"),
+      { ...activeEntry("minimax-cn-coding-plan/x"), providerID: "minimax-cn-coding-plan", modelID: "MiniMax-M3.1-Flash" },
+      { ...activeEntry("openrouter/x"), providerID: "openrouter", modelID: "~anthropic/claude-opus-latest" },
+      { ...activeEntry("nvidia/x"), providerID: "nvidia", modelID: "google/google-paligemma" },
+      { ...activeEntry("openrouter/y"), providerID: "openrouter", modelID: "vendor/claude-opus-5-5[1m]" },
+      { ...activeEntry("test_provider/x"), providerID: "test_provider", modelID: "a+b:c@d_e" },
+    ];
+    const apiFile = resolve(makeTempRoot(), "api.json");
+    mkdirSync(dirname(apiFile), { recursive: true });
+    writeFileSync(apiFile, payloadData(entries));
+    const run = runHelperCopy({ envBase: apiFile });
+    expect(run.status, "F8: catalog IDs are valid, so the helper must exit 0").toBe(0);
+    const expected = [
+      "opencode-go/hungerg-free",
+      "opencode-go/hy4-flash-free",
+      "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
+      "openrouter/~anthropic/claude-opus-latest",
+      "nvidia/google/google-paligemma",
+      "openrouter/vendor/claude-opus-5-5[1m]",
+      "test_provider/a+b:c@d_e",
+    ];
+    expect(stdoutLines(run.stdout), "F8: every real catalog ID class must print once as provider/model").toEqual(expected);
+    for (const line of stdoutLines(run.stdout)) {
+      expect(ALLOWED_LINE.test(line), `F8: every printed line keeps the delimiter validation (got ${JSON.stringify(line)})`).toBe(true);
+    }
+  });
+});
+
+describe("Review A r2 F9: a malformed base URL fails closed with exit 2", () => {
+  for (const base of ["http://[::1", "http://[bad]/"]) {
+    it(`the helper rejects ${base} with exit 2, empty stdout, and one stderr line`, () => {
+      const run = runHelperCopy({ envBase: base });
+      expect(run.status, `F9: the malformed base ${base} must exit 2, not traceback`).toBe(2);
+      expect(run.stdout, `F9: the malformed base ${base} must print nothing on stdout`).toBe("");
+      expect(run.stderr.trim().split("\n").length, `F9: the malformed base ${base} must write one short reason to stderr`).toBe(1);
+    });
+  }
+});
+
 describe("Review A F4: read, parse, and print failures exit 2 with one short line", () => {
   function d3(run: { status: number; stdout: string; stderr: string }, label: string): void {
     expect(run.status, `${label}: the failure must exit 2`).toBe(2);
@@ -819,4 +866,23 @@ describe("Review A F6: the real batch preflight block", () => {
       batch.run.cleanup();
     }
   }, 150_000);
+
+  it("F9: a malformed base URL retries the helper three times, then exit 3 and the D6 message", () => {
+    const batch = preparePreflightBatch("fake-model");
+    try {
+      const base = "http://[bad]/";
+      const result = batch.execute({ BENCH_MODEL_API_BASE: base });
+      const lines = outputLines(result);
+      expect(result.status, `F9: a malformed base must stop with exit 3\n${result.stdout}\n${result.stderr}`).toBe(3);
+      expect(lines, "F9: a malformed base is a fetch failure, so the batch must print the D6 message").toContain(
+        `executor preflight failed: the model API is unreachable at ${base}`,
+      );
+      expect(helperAttempts(batch), "F9: a malformed base normalizes to exit 2, so the batch retries three times").toBe(3);
+      expect(sleepArgs(batch), "F9: the batch itself must record two five-second delays between three attempts").toEqual(["5", "5"]);
+      expect(batch.runDirs(), "F9: a failed preflight must create no run directory").toEqual([]);
+      expect(existsSync(resolve(batch.run.temp, "podman-calls.jsonl")), "F9: a failed preflight must start no agent").toBe(false);
+    } finally {
+      batch.run.cleanup();
+    }
+  }, 120_000);
 });
