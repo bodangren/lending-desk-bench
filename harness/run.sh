@@ -613,121 +613,236 @@ run_agent_container() {
 
   # FR-4: resolve the catalog route and write the config before FR-3 staging.
   # Catalog models keep their exact bytes. A route failure exits the script.
-  local model_missing=0 model_entry_file="" config_tmp config_path catalog_rc=0 config_generator
+  local model_missing=0 model_entry_file="" config_tmp config_path catalog_rc=0 config_generator catalog_scanner
   config_path="$OUT/executor/opencode.json"
   config_tmp="$OUT/executor/opencode.json.tmp"
   mkdir -p "$OUT/executor" || { echo "could not create OpenCode config directory" >&2; exit 2; }
-  OPENCODE_BIN_PATH="$opencode_real" MODEL_REF="$PROVIDER/$MODEL" node -e '
+  catalog_scanner='
 const fs = require("node:fs");
 const ref = process.env.MODEL_REF;
 const separator = ref.indexOf("/");
 const provider = ref.slice(0, separator);
 const modelID = ref.slice(separator + 1);
-const providerKey = Buffer.from(`"${provider}"`);
-const modelsKey = Buffer.from("\"models\"");
-const keep = Math.max(providerKey.length, modelsKey.length) + 8;
+const modelsNeedle = Buffer.from("\"models\"");
+const idNeedle = Buffer.from("\"id\"");
+const lookahead = 4096;
 const maxObject = 8 * 1024 * 1024;
 let pending = Buffer.alloc(0);
 let active = null;
-let sawModels = false;
+let root = null;
+let sawProvider = false;
+let catalogSeen = false;
+let requestedResult = null;
 function fail(message) { console.error(message); process.exit(2); }
 function space(byte) { return byte === 32 || byte === 9 || byte === 10 || byte === 13; }
-function objectStart(buffer, index, keyLength) {
-  let at = index + keyLength;
+function plain(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
+function validProvider(value) {
+  if (!plain(value) || !plain(value.models)) return false;
+  for (const model of Object.values(value.models)) {
+    if (!plain(model) || !Object.hasOwn(model, "id")) return false;
+  }
+  return true;
+}
+function rootStart(buffer, index) {
+  let at = index + 1;
   while (at < buffer.length && space(buffer[at])) at++;
   if (at >= buffer.length) return -2;
-  if (buffer[at] !== 58) return -1;
+  if (buffer[at] !== 34) return -1;
+  let escaped = false;
+  for (at++; at < buffer.length; at++) {
+    const byte = buffer[at];
+    if (escaped) { escaped = false; continue; }
+    if (byte === 92) { escaped = true; continue; }
+    if (byte === 34) break;
+  }
+  if (at >= buffer.length) return -2;
   at++;
   while (at < buffer.length && space(buffer[at])) at++;
   if (at >= buffer.length) return -2;
-  return buffer[at] === 123 ? at : -1;
+  return buffer[at] === 58 ? index : -1;
 }
-function keyPosition(buffer, index) {
-  let at = index - 1;
-  while (at >= 0 && space(buffer[at])) at--;
-  return at >= 0 ? buffer[at] : -1;
+function stringEnd(buffer, start) {
+  let escaped = false;
+  for (let at = start + 1; at < buffer.length; at++) {
+    const byte = buffer[at];
+    if (escaped) { escaped = false; continue; }
+    if (byte === 92) { escaped = true; continue; }
+    if (byte === 34) return at;
+  }
+  return -1;
 }
-function feed(chunk) {
+function processValue(key, value) {
+  if (key === provider) {
+    if (!validProvider(value)) fail("OpenCode provider catalog is malformed");
+    return Object.hasOwn(value.models, modelID) ? 0 : 1;
+  }
+  if (validProvider(value)) sawProvider = true;
+  return null;
+}
+function finishRoot() {
+  if (requestedResult !== null) {
+    const result = requestedResult;
+    requestedResult = null;
+    sawProvider = false;
+    root = null;
+    return result;
+  }
+  if (!sawProvider) { root = null; return null; }
+  catalogSeen = true;
+  sawProvider = false;
+  root = null;
+  return null;
+}
+function startValue(key) {
+  const first = pending[0];
+  if (first === 123 || first === 91) {
+    active = { key, kind: "composite", bytes: pending, pos: 0, stack: [], inString: false, escaped: false };
+  } else if (first === 34) {
+    active = { key, kind: "string", bytes: pending, pos: 1 };
+  } else {
+    active = { key, kind: "primitive", bytes: pending, pos: 0 };
+  }
+  pending = Buffer.alloc(0);
+}
+function scanActive(final) {
+  if (active.bytes.length > maxObject) fail("OpenCode catalog object exceeds the size limit");
+  let end = -1;
+  if (active.kind === "composite") {
+    for (; active.pos < active.bytes.length; active.pos++) {
+      const byte = active.bytes[active.pos];
+      if (active.inString) {
+        if (active.escaped) active.escaped = false;
+        else if (byte === 92) active.escaped = true;
+        else if (byte === 34) active.inString = false;
+        continue;
+      }
+      if (byte === 34) { active.inString = true; continue; }
+      if (byte === 123 || byte === 91) { active.stack.push(byte); continue; }
+      if (byte === 125 || byte === 93) {
+        const open = active.stack.pop();
+        if ((byte === 125 && open !== 123) || (byte === 93 && open !== 91)) {
+          fail("OpenCode catalog is not valid JSON");
+        }
+        if (active.stack.length === 0) { end = active.pos; break; }
+      }
+    }
+  } else if (active.kind === "string") {
+    end = stringEnd(active.bytes, 0);
+  } else {
+    for (; active.pos < active.bytes.length; active.pos++) {
+      const byte = active.bytes[active.pos];
+      if (space(byte) || byte === 44 || byte === 125) { end = active.pos - 1; break; }
+    }
+    if (end < 0 && final) end = active.bytes.length - 1;
+  }
+  return end;
+}
+function feed(chunk, final) {
   if (active) active.bytes = Buffer.concat([active.bytes, chunk]);
   else pending = pending.length ? Buffer.concat([pending, chunk]) : chunk;
   while (true) {
     if (active) {
-      if (active.bytes.length > maxObject) fail("OpenCode catalog object exceeds the size limit");
-      let end = -1;
-      for (; active.pos < active.bytes.length; active.pos++) {
-        const byte = active.bytes[active.pos];
-        if (active.inString) {
-          if (active.escaped) active.escaped = false;
-          else if (byte === 92) active.escaped = true;
-          else if (byte === 34) active.inString = false;
-          continue;
-        }
-        if (byte === 34) { active.inString = true; continue; }
-        if (byte === 123) active.depth++;
-        else if (byte === 125) {
-          active.depth--;
-          if (active.depth === 0) { end = active.pos; break; }
-        }
-      }
+      const end = scanActive(final);
       if (end < 0) return null;
-      const kind = active.kind;
+      const key = active.key;
       const text = active.bytes.subarray(0, end + 1).toString("utf8");
       pending = active.bytes.subarray(end + 1);
       active = null;
       let value;
       try { value = JSON.parse(text); }
       catch { fail("OpenCode catalog is not valid JSON"); }
-      if (kind === "provider" && value && typeof value === "object" && Object.hasOwn(value, "models")) {
-        if (!value.models || typeof value.models !== "object" || Array.isArray(value.models)) {
-          fail("OpenCode provider catalog is malformed");
-        }
-        return Object.hasOwn(value.models, modelID) ? 0 : 1;
-      }
-      if (kind === "models") sawModels = true;
+      const result = processValue(key, value);
+      if (result !== null) return result;
+      root.expect = "comma";
       continue;
     }
-    const providerIndex = pending.indexOf(providerKey);
-    const modelsIndex = pending.indexOf(modelsKey);
-    if (providerIndex < 0 && modelsIndex < 0) {
-      if (pending.length > keep) pending = pending.subarray(pending.length - keep);
+    if (root) {
+      let skipped = 0;
+      while (skipped < pending.length && space(pending[skipped])) skipped++;
+      if (skipped) pending = pending.subarray(skipped);
+      if (!pending.length) return null;
+      if (root.expect === "key") {
+        if (pending[0] === 125) {
+          pending = pending.subarray(1);
+          const result = finishRoot();
+          if (result !== null) return result;
+          continue;
+        }
+        if (pending[0] !== 34) fail("OpenCode catalog is malformed");
+        const end = stringEnd(pending, 0);
+        if (end < 0) {
+          if (pending.length > maxObject) fail("OpenCode catalog key exceeds the size limit");
+          return null;
+        }
+        let key;
+        try { key = JSON.parse(pending.subarray(0, end + 1).toString("utf8")); }
+        catch { fail("OpenCode catalog is not valid JSON"); }
+        pending = pending.subarray(end + 1);
+        root.key = key;
+        root.expect = "colon";
+        continue;
+      }
+      if (root.expect === "colon") {
+        if (pending[0] !== 58) fail("OpenCode catalog is malformed");
+        pending = pending.subarray(1);
+        root.expect = "value";
+        continue;
+      }
+      if (root.expect === "value") {
+        startValue(root.key);
+        continue;
+      }
+      if (pending[0] === 44) {
+        pending = pending.subarray(1);
+        root.expect = "key";
+        continue;
+      }
+      if (pending[0] === 125) {
+        pending = pending.subarray(1);
+        const result = finishRoot();
+        if (result !== null) return result;
+        continue;
+      }
+      fail("OpenCode catalog is malformed");
+    }
+    const index = pending.indexOf(123);
+    if (index < 0) {
+      if (pending.length > 512) pending = pending.subarray(pending.length - 512);
       return null;
     }
-    const useProvider = providerIndex >= 0 && (modelsIndex < 0 || providerIndex <= modelsIndex);
-    const index = useProvider ? providerIndex : modelsIndex;
-    const key = useProvider ? providerKey : modelsKey;
-    const before = keyPosition(pending, index);
-    if (before !== 123 && before !== 44) {
-      pending = pending.subarray(index + 1);
-      continue;
-    }
-    const start = objectStart(pending, index, key.length);
-    if (start === -2) {
+    const start = rootStart(pending, index);
+    if (start === -2) { pending = pending.subarray(index); return null; }
+    if (start === -1) { pending = pending.subarray(index + 1); continue; }
+    if (!final && pending.length < index + lookahead) {
       pending = pending.subarray(index);
       return null;
     }
-    if (start === -1) {
+    const head = pending.subarray(index, Math.min(pending.length, index + lookahead));
+    if (head.indexOf(modelsNeedle) < 0 || head.indexOf(idNeedle) < 0) {
       pending = pending.subarray(index + 1);
       continue;
     }
-    active = {
-      kind: useProvider ? "provider" : "models",
-      bytes: pending.subarray(start), pos: 0, depth: 0, inString: false, escaped: false,
-    };
-    pending = Buffer.alloc(0);
+    root = { expect: "key", key: "" };
+    sawProvider = false;
+    requestedResult = null;
+    pending = pending.subarray(index + 1);
   }
 }
 const stream = fs.createReadStream(process.env.OPENCODE_BIN_PATH, { highWaterMark: 65536 });
 stream.on("error", () => fail("cannot read OpenCode binary"));
 stream.on("data", (chunk) => {
-  const result = feed(chunk);
+  const result = feed(chunk, false);
   if (result !== null) { stream.destroy(); process.exit(result); }
 });
 stream.on("end", () => {
-  if (active) fail("OpenCode catalog is truncated");
-  if (sawModels) process.exit(1);
+  if (active || root) fail("OpenCode catalog is truncated");
+  const result = feed(Buffer.alloc(0), true);
+  if (result !== null) process.exit(result);
+  if (catalogSeen) process.exit(1);
   fail("OpenCode catalog is unavailable");
 });
-' || catalog_rc=$?
+'
+  OPENCODE_BIN_PATH="$opencode_real" MODEL_REF="$PROVIDER/$MODEL" node -e "$catalog_scanner" || catalog_rc=$?
   case "$catalog_rc" in
     0) model_missing=0 ;;
     1) model_missing=1 ;;

@@ -12,9 +12,11 @@ fails. It never starts an opencode process, follows a redirect, or prints a
 ref before the whole payload is validated.
 """
 
+import http.client
 import json
 import os
 import re
+import signal
 import sys
 import time
 import urllib.parse
@@ -23,6 +25,7 @@ import urllib.request
 DEFAULT_BASE = "http://127.0.0.1:38307"
 MAX_BYTES = 4 * 1024 * 1024
 MAX_ENTRY_BYTES = 64 * 1024
+MAX_SAFE_INTEGER = 2 ** 53 - 1
 FETCH_TIMEOUT = 4
 FETCH_DEADLINE = 10
 PROVIDER_RE = re.compile(r"^[A-Za-z0-9._:@+-]+$")
@@ -35,6 +38,10 @@ def fail(reason):
     text = " ".join(str(reason).split())
     sys.stderr.write(text.encode("utf-8", "backslashreplace").decode("utf-8") + "\n")
     raise SystemExit(2)
+
+
+class DeadlineExceeded(Exception):
+    """The single monotonic deadline expired."""
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -87,9 +94,8 @@ def decode(raw):
         fail("model API payload is not valid UTF-8: %s" % exc)
 
 
-def read_payload(base):
+def _read_payload(base, deadline):
     """Return the JSON payload text from a regular file or an http(s) base."""
-    deadline = time.monotonic() + FETCH_DEADLINE
     if os.path.isfile(base):
         try:
             with open(base, "rb") as handle:
@@ -112,16 +118,34 @@ def read_payload(base):
         if remaining <= 0:
             fail("model API fetch exceeded the time limit")
         response = opener.open(url, timeout=min(FETCH_TIMEOUT, remaining))
-    except Exception as exc:
+    except (OSError, http.client.HTTPException, ValueError) as exc:
         fail("cannot read model API at %s: %s" % (url, exc))
-    with response:
-        try:
+    try:
+        with response:
             raw = read_bounded(response, deadline)
-        except OSError as exc:
-            fail("cannot read model API at %s: %s" % (url, exc))
+    except (OSError, http.client.HTTPException, ValueError) as exc:
+        fail("cannot read model API at %s: %s" % (url, exc))
     if time.monotonic() >= deadline:
         fail("model API fetch exceeded the time limit")
     return decode(raw)
+
+
+def read_payload(base):
+    """Read one payload under a single deadline for every blocking phase."""
+    deadline = time.monotonic() + FETCH_DEADLINE
+
+    def expire(signum, frame):
+        raise DeadlineExceeded()
+
+    previous = signal.signal(signal.SIGALRM, expire)
+    signal.setitimer(signal.ITIMER_REAL, FETCH_DEADLINE)
+    try:
+        return _read_payload(base, deadline)
+    except DeadlineExceeded:
+        fail("model API fetch exceeded the time limit")
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
 
 
 def collect_refs(payload):
@@ -168,7 +192,7 @@ def validate_entry(entry, ref):
         fail("model API entry has an invalid limit for " + ref)
     for key in LIMIT_KEYS:
         value = limit[key]
-        if type(value) is not int or value < 0:
+        if type(value) is not int or value < 0 or value > MAX_SAFE_INTEGER:
             fail("model API entry has an invalid limit for " + ref)
     result = {"modelID": entry["modelID"], "name": name, "limit": limit}
     try:
