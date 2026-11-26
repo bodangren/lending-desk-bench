@@ -163,7 +163,7 @@ signal_agent_cleanup() {
   release_port_locks
   exit $((128 + sig))
 }
-trap 'release_port_locks; opencode_host_cleanup' EXIT
+trap 'release_port_locks; cleanup_credential_staging; opencode_host_cleanup' EXIT
 trap 'release_port_locks' INT
 trap 'release_port_locks' TERM
 
@@ -611,51 +611,137 @@ run_agent_container() {
   [ -n "$opencode_version" ] || { echo "OpenCode did not report a version" >&2; return 2; }
   opencode_sha256="$(sha256sum "$opencode_real" | awk '{print $1}')"
 
-  # FR-3: stage the access-only Console credential under $XDG_RUNTIME_DIR.
-  runtime_base="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-  mkdir -p "$runtime_base/lending-desk-bench"
-  chmod 700 "$runtime_base/lending-desk-bench"
-  staging="$runtime_base/lending-desk-bench/$RUN_ID"
-  mkdir -p "$staging"
-  chmod 700 "$staging"
-  CRED_STAGING="$staging"
-  payload="$staging/payload"
-  if ! "$H/opencode-credential.sh" export > "$payload"; then
-    echo "[$RUN_ID] Console credential export failed" >&2
-    return 2
-  fi
-  chmod 600 "$payload"
-  mapfile -t scan_values < <("$H/opencode-credential.sh" scan-values)
-  if [ "${#scan_values[@]}" -eq 0 ]; then
-    echo "[$RUN_ID] Console credential scan values are unavailable" >&2
-    return 2
-  fi
-  scan_values_json=$(json_array "${scan_values[@]}")
-
-  # FR-4: one generated OpenCode config per run; no secret, no MCP server, no
-  # plugin. The arm difference is the skill rules, the Arm B skills.paths and
-  # instructions entries, and the candidate AGENTS.md presence.
-  # A Console model can be active but absent from the pinned binary catalog.
-  # Resolve that entry before the config write. Catalog models keep their bytes.
-  local model_missing=0 model_entry=""
-  if ! OPENCODE_BIN_PATH="$opencode_real" MODEL_REF="$PROVIDER/$MODEL" node -e '
+  # FR-4: resolve the catalog route and write the config before FR-3 staging.
+  # Catalog models keep their exact bytes. A route failure exits the script.
+  local model_missing=0 model_entry_file="" config_tmp config_path catalog_rc=0 config_generator
+  config_path="$OUT/executor/opencode.json"
+  config_tmp="$OUT/executor/opencode.json.tmp"
+  mkdir -p "$OUT/executor" || { echo "could not create OpenCode config directory" >&2; exit 2; }
+  OPENCODE_BIN_PATH="$opencode_real" MODEL_REF="$PROVIDER/$MODEL" node -e '
 const fs = require("node:fs");
-const modelID = process.env.MODEL_REF.slice(process.env.MODEL_REF.indexOf("/") + 1);
-const needle = Buffer.from(`"${modelID}":{"id":"${modelID}"`);
-process.exit(fs.readFileSync(process.env.OPENCODE_BIN_PATH).includes(needle) ? 0 : 1);
-'; then
-    model_missing=1
-  fi
+const ref = process.env.MODEL_REF;
+const separator = ref.indexOf("/");
+const provider = ref.slice(0, separator);
+const modelID = ref.slice(separator + 1);
+const providerKey = Buffer.from(`"${provider}"`);
+const modelsKey = Buffer.from("\"models\"");
+const keep = Math.max(providerKey.length, modelsKey.length) + 8;
+const maxObject = 8 * 1024 * 1024;
+let pending = Buffer.alloc(0);
+let active = null;
+let sawModels = false;
+function fail(message) { console.error(message); process.exit(2); }
+function space(byte) { return byte === 32 || byte === 9 || byte === 10 || byte === 13; }
+function objectStart(buffer, index, keyLength) {
+  let at = index + keyLength;
+  while (at < buffer.length && space(buffer[at])) at++;
+  if (at >= buffer.length) return -2;
+  if (buffer[at] !== 58) return -1;
+  at++;
+  while (at < buffer.length && space(buffer[at])) at++;
+  if (at >= buffer.length) return -2;
+  return buffer[at] === 123 ? at : -1;
+}
+function keyPosition(buffer, index) {
+  let at = index - 1;
+  while (at >= 0 && space(buffer[at])) at--;
+  return at >= 0 ? buffer[at] : -1;
+}
+function feed(chunk) {
+  if (active) active.bytes = Buffer.concat([active.bytes, chunk]);
+  else pending = pending.length ? Buffer.concat([pending, chunk]) : chunk;
+  while (true) {
+    if (active) {
+      if (active.bytes.length > maxObject) fail("OpenCode catalog object exceeds the size limit");
+      let end = -1;
+      for (; active.pos < active.bytes.length; active.pos++) {
+        const byte = active.bytes[active.pos];
+        if (active.inString) {
+          if (active.escaped) active.escaped = false;
+          else if (byte === 92) active.escaped = true;
+          else if (byte === 34) active.inString = false;
+          continue;
+        }
+        if (byte === 34) { active.inString = true; continue; }
+        if (byte === 123) active.depth++;
+        else if (byte === 125) {
+          active.depth--;
+          if (active.depth === 0) { end = active.pos; break; }
+        }
+      }
+      if (end < 0) return null;
+      const kind = active.kind;
+      const text = active.bytes.subarray(0, end + 1).toString("utf8");
+      pending = active.bytes.subarray(end + 1);
+      active = null;
+      let value;
+      try { value = JSON.parse(text); }
+      catch { fail("OpenCode catalog is not valid JSON"); }
+      if (kind === "provider" && value && typeof value === "object" && Object.hasOwn(value, "models")) {
+        if (!value.models || typeof value.models !== "object" || Array.isArray(value.models)) {
+          fail("OpenCode provider catalog is malformed");
+        }
+        return Object.hasOwn(value.models, modelID) ? 0 : 1;
+      }
+      if (kind === "models") sawModels = true;
+      continue;
+    }
+    const providerIndex = pending.indexOf(providerKey);
+    const modelsIndex = pending.indexOf(modelsKey);
+    if (providerIndex < 0 && modelsIndex < 0) {
+      if (pending.length > keep) pending = pending.subarray(pending.length - keep);
+      return null;
+    }
+    const useProvider = providerIndex >= 0 && (modelsIndex < 0 || providerIndex <= modelsIndex);
+    const index = useProvider ? providerIndex : modelsIndex;
+    const key = useProvider ? providerKey : modelsKey;
+    const before = keyPosition(pending, index);
+    if (before !== 123 && before !== 44) {
+      pending = pending.subarray(index + 1);
+      continue;
+    }
+    const start = objectStart(pending, index, key.length);
+    if (start === -2) {
+      pending = pending.subarray(index);
+      return null;
+    }
+    if (start === -1) {
+      pending = pending.subarray(index + 1);
+      continue;
+    }
+    active = {
+      kind: useProvider ? "provider" : "models",
+      bytes: pending.subarray(start), pos: 0, depth: 0, inString: false, escaped: false,
+    };
+    pending = Buffer.alloc(0);
+  }
+}
+const stream = fs.createReadStream(process.env.OPENCODE_BIN_PATH, { highWaterMark: 65536 });
+stream.on("error", () => fail("cannot read OpenCode binary"));
+stream.on("data", (chunk) => {
+  const result = feed(chunk);
+  if (result !== null) { stream.destroy(); process.exit(result); }
+});
+stream.on("end", () => {
+  if (active) fail("OpenCode catalog is truncated");
+  if (sawModels) process.exit(1);
+  fail("OpenCode catalog is unavailable");
+});
+' || catalog_rc=$?
+  case "$catalog_rc" in
+    0) model_missing=0 ;;
+    1) model_missing=1 ;;
+    *) exit 2 ;;
+  esac
   if [ "$model_missing" = "1" ]; then
-    if ! model_entry="$(BENCH_MODEL_API_BASE="${BENCH_MODEL_API_BASE:-http://127.0.0.1:38307}" python3 -I "$H/model-api-refs.py" "$PROVIDER/$MODEL")"; then
-      return 2
+    model_entry_file="$OUT/executor/model-entry.json"
+    if ! BENCH_MODEL_API_BASE="${BENCH_MODEL_API_BASE:-http://127.0.0.1:38307}" \
+      python3 -I "$H/model-api-refs.py" "$PROVIDER/$MODEL" > "$model_entry_file"; then
+      rm -f "$model_entry_file"
+      exit 2
     fi
   fi
-  mkdir -p "$OUT/executor"
-  ARM_B="$([ "$ARM" = "b" ] && echo 1 || echo 0)" MODEL_REF="$PROVIDER/$MODEL" \
-    MODEL_MISSING="$model_missing" MODEL_ENTRY="$model_entry" \
-    CONFIG_PATH="$OUT/executor/opencode.json" \
-    node -e '
+  config_generator='
 const fs = require("node:fs");
 const armB = process.env.ARM_B === "1";
 const config = {
@@ -677,10 +763,46 @@ if (process.env.MODEL_MISSING === "1") {
   const separator = process.env.MODEL_REF.indexOf("/");
   const providerID = process.env.MODEL_REF.slice(0, separator);
   const modelID = process.env.MODEL_REF.slice(separator + 1);
-  config.providers = { [providerID]: { models: { [modelID]: JSON.parse(process.env.MODEL_ENTRY) } } };
+  const entry = JSON.parse(fs.readFileSync(process.env.MODEL_ENTRY_PATH, "utf8"));
+  config.providers = { [providerID]: { models: { [modelID]: entry } } };
 }
-fs.writeFileSync(process.env.CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
+fs.writeFileSync(process.env.CONFIG_TMP, JSON.stringify(config, null, 2) + "\n");
 '
+  if ! ARM_B="$([ "$ARM" = "b" ] && echo 1 || echo 0)" MODEL_REF="$PROVIDER/$MODEL" \
+    MODEL_MISSING="$model_missing" MODEL_ENTRY_PATH="$model_entry_file" CONFIG_TMP="$config_tmp" \
+    node -e "$config_generator" 2>/dev/null; then
+    rm -f "$model_entry_file" "$config_tmp" "$config_path"
+    echo "could not generate OpenCode config" >&2
+    exit 2
+  fi
+  rm -f "$model_entry_file"
+  if ! mv "$config_tmp" "$config_path"; then
+    rm -f "$config_tmp" "$config_path"
+    echo "could not install OpenCode config" >&2
+    exit 2
+  fi
+
+  # FR-3: stage the access-only Console credential under $XDG_RUNTIME_DIR.
+  runtime_base="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  mkdir -p "$runtime_base/lending-desk-bench"
+  chmod 700 "$runtime_base/lending-desk-bench"
+  staging="$runtime_base/lending-desk-bench/$RUN_ID"
+  mkdir -p "$staging"
+  chmod 700 "$staging"
+  CRED_STAGING="$staging"
+  payload="$staging/payload"
+  if ! "$H/opencode-credential.sh" export > "$payload"; then
+    echo "[$RUN_ID] Console credential export failed" >&2
+    return 2
+  fi
+  chmod 600 "$payload"
+  mapfile -t scan_values < <("$H/opencode-credential.sh" scan-values)
+  if [ "${#scan_values[@]}" -eq 0 ]; then
+    echo "[$RUN_ID] Console credential scan values are unavailable" >&2
+    return 2
+  fi
+  scan_values_json=$(json_array "${scan_values[@]}")
+
 
   # Arm B mounts a per-run skill snapshot; the host folders are never mounted.
   if [ "$ARM" = "b" ]; then

@@ -22,10 +22,12 @@ import urllib.request
 
 DEFAULT_BASE = "http://127.0.0.1:38307"
 MAX_BYTES = 4 * 1024 * 1024
+MAX_ENTRY_BYTES = 64 * 1024
 FETCH_TIMEOUT = 4
 FETCH_DEADLINE = 10
 PROVIDER_RE = re.compile(r"^[A-Za-z0-9._:@+-]+$")
 MODEL_RE = re.compile(r"^[A-Za-z0-9._:@+/~\[\]-]+$")
+LIMIT_KEYS = {"context", "input", "output"}
 
 
 def fail(reason):
@@ -42,6 +44,16 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         fail("model API redirected the request")
 
 
+def set_deadline_timeout(handle, deadline):
+    """Apply the remaining whole-read deadline to a blocking socket read."""
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        fail("model API fetch exceeded the time limit")
+    raw = getattr(getattr(getattr(handle, "fp", None), "raw", None), "_sock", None)
+    if raw is not None:
+        raw.settimeout(remaining)
+
+
 def read_bounded(handle, deadline):
     """Read at most MAX_BYTES bytes before the total deadline.
 
@@ -52,15 +64,18 @@ def read_bounded(handle, deadline):
     total = 0
     reader = getattr(handle, "read1", None) or handle.read
     while True:
+        set_deadline_timeout(handle, deadline)
+        chunk = reader(65536)
         if time.monotonic() >= deadline:
             fail("model API fetch exceeded the time limit")
-        chunk = reader(65536)
         if not chunk:
             break
         total += len(chunk)
         if total > MAX_BYTES:
             fail("model API payload exceeds the size limit")
         chunks.append(chunk)
+    if time.monotonic() >= deadline:
+        fail("model API fetch exceeded the time limit")
     return b"".join(chunks)
 
 
@@ -93,7 +108,10 @@ def read_payload(base):
     except Exception as exc:
         fail("cannot parse model API base %s: %s" % (base, exc))
     try:
-        response = opener.open(url, timeout=FETCH_TIMEOUT)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            fail("model API fetch exceeded the time limit")
+        response = opener.open(url, timeout=min(FETCH_TIMEOUT, remaining))
     except Exception as exc:
         fail("cannot read model API at %s: %s" % (url, exc))
     with response:
@@ -101,6 +119,8 @@ def read_payload(base):
             raw = read_bounded(response, deadline)
         except OSError as exc:
             fail("cannot read model API at %s: %s" % (url, exc))
+    if time.monotonic() >= deadline:
+        fail("model API fetch exceeded the time limit")
     return decode(raw)
 
 
@@ -138,8 +158,30 @@ def parse_entry_ref(ref):
     return provider, model
 
 
+def validate_entry(entry, ref):
+    """Validate the three config fields and bound their serialized size."""
+    name = entry.get("name")
+    if not isinstance(name, str) or not name:
+        fail("model API entry has an invalid name for " + ref)
+    limit = entry.get("limit")
+    if not isinstance(limit, dict) or set(limit) != LIMIT_KEYS:
+        fail("model API entry has an invalid limit for " + ref)
+    for key in LIMIT_KEYS:
+        value = limit[key]
+        if type(value) is not int or value < 0:
+            fail("model API entry has an invalid limit for " + ref)
+    result = {"modelID": entry["modelID"], "name": name, "limit": limit}
+    try:
+        text = json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(",", ":"))
+    except (TypeError, ValueError, RecursionError) as exc:
+        fail("model API entry cannot be printed: %s" % exc)
+    if len(text.encode("utf-8")) > MAX_ENTRY_BYTES:
+        fail("model API entry exceeds the size limit")
+    return text
+
+
 def collect_entry(payload, provider, model):
-    """Return the three config fields from the matching active API entry."""
+    """Return the three config fields from the first active API entry."""
     data = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(data, list):
         fail("model API payload has no data list")
@@ -149,21 +191,9 @@ def collect_entry(payload, provider, model):
             continue
         if entry.get("providerID") != provider or entry.get("modelID") != model:
             continue
-        if entry.get("enabled") is not True:
-            fail("model API entry is disabled for " + ref)
-        if entry.get("status") != "active":
-            fail("model API entry is inactive for " + ref)
-        try:
-            result = {
-                "modelID": entry["modelID"],
-                "name": entry["name"],
-                "limit": entry["limit"],
-            }
-            return json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(",", ":"))
-        except KeyError:
-            fail("model API entry is incomplete for " + ref)
-        except (TypeError, ValueError, RecursionError) as exc:
-            fail("model API entry cannot be printed: %s" % exc)
+        if entry.get("enabled") is not True or entry.get("status") != "active":
+            continue
+        return validate_entry(entry, ref)
     fail("no active model API entry for " + ref)
 
 
