@@ -39,7 +39,7 @@ Marker use:
 
 ## Phase 1: Executor model route for catalog-missing models (spec FR1 to FR5)
 
-- [ ] 1.1 The Red tests (spec FR1 to FR5).
+- [~] 1.1 The Red tests (spec FR1 to FR5).
   Write `harness/tests/meta/executor-model-route.test.ts`. Put the file beside
   `harness/tests/meta/preflight-model-api.test.ts`. Touch this test file and
   no other file.
@@ -59,8 +59,7 @@ Marker use:
     FR1 to FR5.
   - Verify: no test calls Podman, a real API, a real `opencode` binary, a
     browser, or a model.
-  - Red evidence: record the gate output, the base commit SHA, and the Red
-    commit SHA on this task line when Red ends.
+  - Red evidence: gate `cd harness && ./node_modules/.bin/vitest run tests/meta/executor-model-route.test.ts --configLoader native --maxWorkers=1` exits 1 with 14 failed / 7 passed (21 checks); base commit `147a5f8`; role base `64c36e2`; Red commit `a6284ef`.
 
 - [ ] 1.2 The Green implementation (spec FR1 to FR5).
   Add the entry mode to `harness/model-api-refs.py`. Change only the config
