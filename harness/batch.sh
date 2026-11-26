@@ -348,19 +348,23 @@ else
   fi
 fi
 
-# FR-2: the first scheduled model must be listed by `opencode models`. A
-# transient exit 1 retries up to 2 times with a 5 s delay; a successful list
-# without the model stops the batch at once (a missing model is not transient).
+# FR-2: the first scheduled model must be listed by the OpenChamber model API.
+# A transient helper exit 2 retries up to 2 times with a 5 s delay; a successful
+# list without the model stops the batch at once (a missing model is not
+# transient). An API that stays unreachable uses the distinct D6 message.
 IFS='|' read -r first_provider first_model _first_slug <<< "${MODELS[0]:-}"
 FIRST_MODEL_REF="${first_provider:-opencode-go}/${first_model:-}"
+MODEL_API_BASE="${BENCH_MODEL_API_BASE:-http://127.0.0.1:38307}"
 models_listed=""
+model_api_reached=""
 if ! "$PWD/opencode-credential.sh" seed; then
   echo "executor preflight failed: the Console credential seed failed" >&2
   exit 3
 fi
 for attempt in 1 2 3; do
-  if MODELS_OUT="$(opencode_host_run models --standalone 2>/dev/null)"; then
-    if printf '%s\n' "$MODELS_OUT" | grep -qF "$FIRST_MODEL_REF"; then
+  if MODELS_OUT="$(python3 -I "$PWD/model-api-refs.py" 2>/dev/null)"; then
+    model_api_reached=1
+    if printf '%s\n' "$MODELS_OUT" | grep -qFx "$FIRST_MODEL_REF"; then
       models_listed=1
     fi
     break
@@ -368,7 +372,11 @@ for attempt in 1 2 3; do
   [ "$attempt" -lt 3 ] && sleep 5
 done
 if [ "$models_listed" != "1" ]; then
-  echo "executor preflight failed: opencode models does not list $FIRST_MODEL_REF" >&2
+  if [ "$model_api_reached" = "1" ]; then
+    echo "executor preflight failed: the model API does not list $FIRST_MODEL_REF" >&2
+  else
+    echo "executor preflight failed: the model API is unreachable at $MODEL_API_BASE" >&2
+  fi
   exit 3
 fi
 echo "EXECUTOR PREFLIGHT PASS $(date -Is)"

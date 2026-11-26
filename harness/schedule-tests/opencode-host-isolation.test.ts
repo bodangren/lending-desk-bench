@@ -30,7 +30,7 @@ const MODEL_REF = `opencode-go/${MODEL}`;
 const SCRIPTS = [
   "cron-daily.sh", "batch.sh", "run.sh", "env.sh", "toolchain.sh",
   "preflight.sh", "opencode-credential.sh", "opencode-entry.sh",
-  "summarize.sh", "opencode-host.sh",
+  "summarize.sh", "opencode-host.sh", "model-api-refs.py",
 ];
 
 type Call = {
@@ -52,6 +52,7 @@ type Fixture = {
   sharedHome: string;
   record: string;
   meminfo: string;
+  apiFile: string;
 };
 
 /** The fake Console export. The values are inert strings. */
@@ -197,7 +198,12 @@ function fixture(): Fixture {
   writeFileSync(join(sharedHome, ".local", "share", "opencode", "fake-auth.json"), fakeExport());
   // The D28 memory seam: a fixture file, never the real /proc/meminfo.
   writeFileSync(join(root, "meminfo"), "MemTotal: 16384000 kB\nMemAvailable: 16000000 kB\n");
-  return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl"), meminfo: join(root, "meminfo") };
+  // The preflight reads the model list from the API helper, not from opencode.
+  const apiFile = join(root, "model-api.json");
+  writeFileSync(apiFile, JSON.stringify({ location: { directory: "fake" }, data: [{
+    providerID: "opencode-go", modelID: MODEL, enabled: true, status: "active",
+  }] }));
+  return { root, repo, harness, bin, sharedHome, record: join(root, "calls.jsonl"), meminfo: join(root, "meminfo"), apiFile };
 }
 
 /**
@@ -219,6 +225,7 @@ function testEnv(f: Fixture, extra: Record<string, string>): Record<string, stri
     FAKE_OPENCODE_RECORD: f.record,
     OPENCODE_DB: join(f.sharedHome, ".local", "share", "opencode", "opencode.db"),
     BENCH_MEMINFO: f.meminfo,
+    BENCH_MODEL_API_BASE: f.apiFile,
     ...extra,
   };
 }
@@ -370,8 +377,9 @@ describe("the OpenCode host isolation of FR-7", () => {
       expect(calls.some((call) => call.argv.length === 1 && call.argv[0] === "--version"),
         "the batch made no --version call").toBe(true);
       expect(calls.filter((call) => isSeed(call, f.sharedHome)).length, "the batch made no seed call").toBe(1);
-      expect(calls.some((call) => call.argv.includes("models")),
-        "the batch made no models call").toBe(true);
+      expect(result.status, `the batch preflight must pass\n${result.stdout}\n${result.stderr}`).toBe(0);
+      expect(result.stdout, "the batch must accept the ref from the model API list")
+        .toContain("EXECUTOR PREFLIGHT PASS");
     } finally { rmSync(f.root, { recursive: true, force: true }); }
   }, TIMEOUT);
 

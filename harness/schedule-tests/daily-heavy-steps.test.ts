@@ -134,7 +134,7 @@ function baseFixture(): Fixture {
 }
 
 function copyHarnessFiles(f: Fixture): void {
-  for (const name of ["env.sh", "opencode-host.sh"]) {
+  for (const name of ["env.sh", "opencode-host.sh", "model-api-refs.py"]) {
     copyFileSync(join(HARNESS, name), join(f.repo, "harness", name));
     chmodSync(join(f.repo, "harness", name), 0o755);
   }
@@ -176,6 +176,12 @@ exit "\${GRADE_EXIT:-0}"
         requests_per_month: 100, monthly_usage_usd: 15,
         rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
     },
+  }));
+  // The preflight reads the model list from the API helper. A local JSON payload
+  // keeps this fixture off the real API and off the opencode binary.
+  writeFileSync(join(f.repo, "harness/model-api.json"), JSON.stringify({
+    location: { directory: "fake" },
+    data: [{ providerID: "opencode-go", modelID: MODEL, enabled: true, status: "active" }],
   }));
   const fixturePath = join(f.repo, "fixture");
   mkdirSync(join(fixturePath, "src"), { recursive: true });
@@ -220,6 +226,7 @@ function baseEnv(f: Fixture): Record<string, string> {
     GRADE_LOG: join(f.root, "grade.log"),
     BENCH_OPENCODE_BIN: join(f.bin, "opencode"),
     BENCH_PRICING_PATH: join(f.repo, "harness/go-pricing.json"),
+    BENCH_MODEL_API_BASE: join(f.repo, "harness/model-api.json"),
     BENCH_RUNS_ROOT: join(f.repo, "runs"),
   };
 }

@@ -39,7 +39,7 @@ export function prepareCredentialBatch(run: CredentialRun, reps = 1) {
   const root = resolve(run.temp, "batch-root"), harness = resolve(root, "harness");
   mkdirSync(harness, { recursive: true });
   for (const entry of readdirSync(HARNESS, { withFileTypes: true })) {
-    if (entry.isFile() && /\.(sh|ts|json|cjs)$/.test(entry.name)) cpSync(resolve(HARNESS, entry.name), resolve(harness, entry.name));
+    if (entry.isFile() && /\.(sh|ts|json|cjs|py)$/.test(entry.name)) cpSync(resolve(HARNESS, entry.name), resolve(harness, entry.name));
     else if (entry.isDirectory() && ["node_modules", "tests", "bugfix", "tests-track", "change"].includes(entry.name)) symlinkSync(resolve(HARNESS, entry.name), resolve(harness, entry.name), "dir");
   }
   cpSync(resolve(ROOT,"fixture"),resolve(root,"fixture"),{recursive:true,filter:source=>!["node_modules",".next",".git"].includes(basename(source)) && !source.endsWith(".tsbuildinfo")});
@@ -50,11 +50,17 @@ export function prepareCredentialBatch(run: CredentialRun, reps = 1) {
     [TEST_MODEL]: { name: TEST_MODEL, api: "openai-completions", high_usage: true, batch: true, requests_per_month: 10000, monthly_usage_usd: 15,
       rates: { input: 0.1, output: 0.2, cacheRead: 0, cacheWrite: 0 } },
   } }));
+  // The batch preflight reads its model list from the API helper. A local JSON
+  // payload keeps this fixture off the real API and off the opencode binary.
+  const modelApi = resolve(harness, "model-api.json");
+  writeFileSync(modelApi, JSON.stringify({ location: { directory: "fake" }, data: [{
+    providerID: "opencode-go", modelID: TEST_MODEL, enabled: true, status: "active",
+  }] }));
   return {
     root, harness,
     execute() { return spawnSync("/bin/bash", [resolve(harness, "batch.sh")], {
       cwd: harness, encoding: "utf8", timeout: 45_000, maxBuffer: 8 * 1024 * 1024,
-      env: { ...run.env, BENCH_PRICING_PATH: pricing, BENCH_SELFCHECK: "skip", BENCH_CANARY: "0", FORCE: "1", ARMS: "a", REPS: String(reps), WEEK: "2099w01" },
+      env: { ...run.env, BENCH_PRICING_PATH: pricing, BENCH_MODEL_API_BASE: modelApi, BENCH_SELFCHECK: "skip", BENCH_CANARY: "0", FORCE: "1", ARMS: "a", REPS: String(reps), WEEK: "2099w01" },
     }); },
     runDirectories() { const path = resolve(root, "runs"); return existsSync(path) ? readdirSync(path).filter(name => name !== ".port-locks") : []; },
   };
