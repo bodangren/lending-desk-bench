@@ -443,8 +443,8 @@
     "hungerg-free": {
       "name": "HungerG Free",
       "api": "openai-completions",
-      "high_usage": false,
-      "batch": false,
+      "high_usage": true,
+      "batch": true,
       "requests_per_month": 0,
       "monthly_usage_usd": 0,
       "rates": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
