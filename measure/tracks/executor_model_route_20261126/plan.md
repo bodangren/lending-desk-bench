@@ -39,7 +39,7 @@ Marker use:
 
 ## Phase 1: Executor model route for catalog-missing models (spec FR1 to FR5)
 
-- [~] 1.1 The Red tests (spec FR1 to FR5).
+- [x] 1.1 The Red tests (spec FR1 to FR5); tests `c108b2e`; evidence `bca5ced`; regression fixtures `615a3c5`; phase base `147a5f8`; role base `64c36e2`.
   Write `harness/tests/meta/executor-model-route.test.ts`. Put the file beside
   `harness/tests/meta/preflight-model-api.test.ts`. Touch this test file and
   no other file.
@@ -87,7 +87,7 @@ Marker use:
     - `bash -n harness/run.sh`: exit 0.
     - `python3 -I -m py_compile harness/model-api-refs.py`: exit 0.
 
-- [ ] 1.3 Evidence and phase acceptance (light lane).
+- [~] 1.3 Evidence and phase acceptance (light lane).
   Check the phase on the immutable HEAD. Check that each completed task line
   carries a commit SHA. Check the staged paths against the allowed file list.
   The orchestrator runs one real probe after Green. The probe uses the same
