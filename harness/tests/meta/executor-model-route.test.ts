@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  appendFileSync,
   chmodSync,
   copyFileSync,
   existsSync,
@@ -16,11 +17,13 @@ import { createServer, type Server } from "node:http";
 import { createServer as createTcpServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   activeApiRow,
+  catalogComment,
   HARNESS,
-  prepareOpencodeRun,
+  IMAGE,
+  podmanRecorderScript,
   ROOT,
   type ExecutorCatalog,
 } from "./opencode-run-fixtures";
@@ -69,10 +72,10 @@ function realPython3(): string {
 }
 
 /** Counts every helper call through a PATH shim that delegates to real python3. */
-function installPythonCounter(run: { temp: string; env: NodeJS.ProcessEnv }): string {
-  const shimDir = resolve(run.temp, "pyshim");
+function installPythonCounter(run: { repo: string; env: NodeJS.ProcessEnv }): string {
+  const shimDir = resolve(run.repo, "pyshim");
   mkdirSync(shimDir, { recursive: true });
-  const log = resolve(run.temp, "python3-calls.jsonl");
+  const log = resolve(run.repo, "python3-calls.jsonl");
   writeFileSync(
     resolve(shimDir, "python3"),
     `#!/usr/bin/env bash\nprintf '%s\\n' "$*" >> ${JSON.stringify(log)}\nexec ${JSON.stringify(realPython3())} "$@"\n`,
@@ -91,9 +94,92 @@ function entryCalls(log: string): string[] {
   return helperCalls(log).filter((line) => line.includes(`${PROVIDER}/`));
 }
 
-type FixtureRun = ReturnType<typeof prepareOpencodeRun>;
+type TempRun = {
+  repo: string;
+  harness: string;
+  bin: string;
+  runtime: string;
+  fake: { path: string; capture: string; control: string };
+  apiFile: string;
+  podmanControl: string;
+  podmanCapture: string;
+  podmanCalls: string;
+  id: string;
+  out: string;
+  env: NodeJS.ProcessEnv;
+  cleanup(): void;
+};
+
+/**
+ * Stages a temp repo that stands in for the project root: the harness
+ * scripts, a node_modules link, the fixture app, a fake binary with a catalog
+ * comment, a local API seam, and the fake Podman recorder. Every run.sh path
+ * (runs, .tmp, port locks, job folders) resolves under this repo. Nothing
+ * here touches the real ROOT/runs, ROOT/reports, or ROOT/.tmp.
+ */
+function stageTempRepo(opts: {
+  model?: string;
+  catalog?: ExecutorCatalog;
+  apiData?: unknown[];
+}): TempRun {
+  const repo = makeTempRoot();
+  const harness = resolve(repo, "harness");
+  mkdirSync(harness, { recursive: true });
+  for (const entry of readdirSync(HARNESS, { withFileTypes: true })) {
+    if (entry.isFile() && /\.(sh|ts|json|cjs|py)$/.test(entry.name)) {
+      copyFileSync(resolve(HARNESS, entry.name), resolve(harness, entry.name));
+    } else if (entry.isDirectory() && entry.name === "node_modules") {
+      symlinkSync(resolve(HARNESS, entry.name), resolve(harness, entry.name), "dir");
+    }
+  }
+  symlinkSync(resolve(ROOT, "fixture"), resolve(repo, "fixture"), "dir");
+  const bin = resolve(repo, "bin");
+  mkdirSync(bin, { recursive: true });
+  const fake = createFakeOpencode(repo);
+  const model = opts.model ?? TEST_MODEL;
+  appendFileSync(fake.path, catalogComment(opts.catalog ?? "present", PROVIDER, model));
+  const apiFile = resolve(repo, "model-api.json");
+  writeFileSync(apiFile, JSON.stringify({
+    location: { directory: "fake" },
+    data: opts.apiData ?? [activeApiRow(PROVIDER, model)],
+  }));
+  const podmanControl = resolve(repo, "podman-control.json");
+  writeFileSync(podmanControl, JSON.stringify({ mode: "entry" }));
+  const podmanCapture = resolve(repo, "podman.json");
+  const podmanCalls = resolve(repo, "podman-calls.jsonl");
+  const id = `route-${process.pid}-${Date.now()}`;
+  const out = resolve(repo, "runs", id, "artifacts");
+  const runtime = resolve(repo, "runtime");
+  mkdirSync(runtime, { recursive: true });
+  writeFileSync(resolve(bin, "podman"), podmanRecorderScript({
+    temp: repo, out, runtime, podmanCapture, podmanControl,
+    binDir: bin, nodePath: process.execPath,
+  }));
+  chmodSync(resolve(bin, "podman"), 0o755);
+  const home = resolve(repo, "home");
+  mkdirSync(home, { recursive: true });
+  const skillRoot = resolve(repo, "skills");
+  mkdirSync(skillRoot, { recursive: true });
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+    HOME: home, LANG: "C.UTF-8", _BENCH_ENV_LOADED: "1",
+    BENCH_TRACK: "build", BENCH_IGNORE_LOAD: "1", BENCH_WAIT_FOR_IDLE: "0",
+    BENCH_OPENCODE_BIN: fake.path, BENCH_SKILL_ROOT: skillRoot,
+    BENCH_AGENT_IMAGE: IMAGE, BENCH_MODEL_API_BASE: apiFile,
+    XDG_RUNTIME_DIR: runtime, AGENT_TIMEOUT: "2",
+    MAX_LOAD_PER_CPU: "1000000", MIN_AVAIL_MB: "0", MAX_SWAP_USED_MB: "100000000",
+    OPENCODE_API_KEY: "CANARY-ACCESS-99", THINKING: "xhigh",
+  };
+  return {
+    repo, harness, bin, runtime, fake, apiFile, podmanControl, podmanCapture,
+    podmanCalls, id, out, env,
+    cleanup() { rmSync(repo, { recursive: true, force: true }); },
+  };
+}
+
 type RouteResult = {
-  run: FixtureRun;
+  run: TempRun;
   status: number | null;
   stdout: string;
   stderr: string;
@@ -101,22 +187,24 @@ type RouteResult = {
   staging: string;
 };
 
-/** Builds the fixture, installs the helper-call shim, applies the seam, and runs the real run.sh. */
-async function runRoute(opts: {
+/** Stages a temp repo, installs the helper-call shim, applies the seam, and runs the real run.sh. */
+async function runTempRoute(opts: {
   model?: string;
   catalog?: ExecutorCatalog;
   apiData?: unknown[];
   apiBase?: string;
-  prep?: (run: FixtureRun) => void;
+  prep?: (run: TempRun) => void;
   execModel?: string;
 }): Promise<RouteResult> {
-  const run = prepareOpencodeRun("a", { model: opts.model, catalog: opts.catalog, apiData: opts.apiData });
+  const run = stageTempRepo({ model: opts.model, catalog: opts.catalog, apiData: opts.apiData });
   const log = installPythonCounter(run);
   if (opts.apiBase !== undefined) run.env.BENCH_MODEL_API_BASE = opts.apiBase;
   if (opts.prep) opts.prep(run);
   const execModel = opts.execModel ?? opts.model ?? TEST_MODEL;
   const staging = resolve(run.runtime, "lending-desk-bench", run.id);
-  const result = run.execute(execModel);
+  const result = spawnSync("/bin/bash", [resolve(run.harness, "run.sh"), PROVIDER, execModel, "a", run.id], {
+    cwd: run.harness, env: run.env, encoding: "utf8", timeout: 120_000, maxBuffer: 16 * 1024 * 1024,
+  });
   return { run, status: result.status, stdout: String(result.stdout ?? ""), stderr: String(result.stderr ?? ""), log, staging };
 }
 
@@ -170,8 +258,8 @@ function expectFullAgentTrap(r: RouteResult, label: string): void {
  * to the real binary. It prints nothing, so the run.sh reason stays the only
  * stderr line. It works no matter how often run.sh recreates $WORK.
  */
-function installFailingGeneratorShim(run: FixtureRun): void {
-  const shimDir = resolve(run.temp, "nodeshim");
+function installFailingGeneratorShim(run: TempRun): void {
+  const shimDir = resolve(run.repo, "nodeshim");
   mkdirSync(shimDir, { recursive: true });
   const realNode = resolve(dirname(process.execPath), "node");
   writeFileSync(
@@ -198,7 +286,7 @@ function expectEntryFailure(r: RouteResult, label: string, entry: "attempted" | 
   }
 }
 
-function configPath(run: FixtureRun): string {
+function configPath(run: TempRun): string {
   return resolve(run.out, "executor/opencode.json");
 }
 
@@ -212,7 +300,7 @@ function inactiveRow(): Record<string, unknown> {
 
 describe("F2/FR2: the real run.sh keeps the catalog model unchanged", () => {
   it("a catalog-present model gets exact config bytes, no providers key, and no API call", async () => {
-    const r = await runRoute({ model: PRESENT_MODEL, catalog: "present" });
+    const r = await runTempRoute({ model: PRESENT_MODEL, catalog: "present" });
     try {
       expectFullAgentTrap(r, "F2/FR2: the present-model run");
       const bytes = readFileSync(configPath(r.run), "utf8");
@@ -232,7 +320,7 @@ describe("F2/FR2: the real run.sh keeps the catalog model unchanged", () => {
 
 describe("F2/FR1: the real run.sh routes a catalog-missing model through the helper", () => {
   it("a catalog-missing model gets the three-field provider block with exact bytes", async () => {
-    const r = await runRoute({ model: MISSING_MODEL, catalog: "missing" });
+    const r = await runTempRoute({ model: MISSING_MODEL, catalog: "missing" });
     try {
       expectFullAgentTrap(r, "F2/FR1: the missing-model run");
       const entry = entryValue(MISSING_MODEL);
@@ -285,7 +373,7 @@ describe("F1/F2: every failure class exits 2 through the real run.sh", () => {
   ];
   for (const failure of cases) {
     it(`${failure.name} exits 2 with one reason and no config, staging, provenance, or score`, async () => {
-      const r = await runRoute(failure.opts);
+      const r = await runTempRoute(failure.opts);
       try {
         expectEntryFailure(r, `F1/FR1: ${failure.name}`);
       } finally {
@@ -344,7 +432,7 @@ setTimeout(() => process.exit(0), 25000).unref();
   it("a redirect exits 2 and never calls the valid redirect target", async () => {
     const redirector = await startRedirector();
     try {
-      const r = await runRoute({
+      const r = await runTempRoute({
         model: MISSING_MODEL, catalog: "missing", apiBase: `http://127.0.0.1:${redirector.port}/redir`,
       });
       try {
@@ -361,7 +449,7 @@ setTimeout(() => process.exit(0), 25000).unref();
 
 describe("F6/D2: the catalog test is scoped to the requested provider object", () => {
   it("a model ID present only under another provider is a miss with the provider block", async () => {
-    const r = await runRoute({ model: MISSING_MODEL, catalog: "missing-provider" });
+    const r = await runTempRoute({ model: MISSING_MODEL, catalog: "missing-provider" });
     try {
       expectFullAgentTrap(r, "F6/D2: the other-provider run");
       const entry = entryValue(MISSING_MODEL);
@@ -376,7 +464,7 @@ describe("F6/D2: the catalog test is scoped to the requested provider object", (
   }, 120_000);
 
   it("a binary with no parseable catalog exits 2 instead of taking the miss path", async () => {
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => {
         const kept = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG"));
@@ -391,7 +479,7 @@ describe("F6/D2: the catalog test is scoped to the requested provider object", (
   }, 120_000);
 
   it("a binary with a truncated catalog object exits 2 instead of taking the miss path", async () => {
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => {
         const kept = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG"));
@@ -406,7 +494,7 @@ describe("F6/D2: the catalog test is scoped to the requested provider object", (
   }, 120_000);
 
   it("a missing provider object is a miss, or exits 2 with one reason", async () => {
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => {
         const kept = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG"));
@@ -429,9 +517,9 @@ describe("F6/D2: the catalog test is scoped to the requested provider object", (
   }, 120_000);
 });
 
-describe("F3/D9: the shared fixture defaults to a present binary and a local seam", () => {
+describe("F3/D9: the temp repo defaults to a present binary and a local seam", () => {
   it("the default fake binary is catalog-present and the default seam is a local file", () => {
-    const run = prepareOpencodeRun("a");
+    const run = stageTempRepo({ model: PRESENT_MODEL, catalog: "present" });
     try {
       const binary = readFileSync(run.fake.path, "utf8");
       expect(binary.includes(`"${PROVIDER}":{"models"`), "F3/D9: the default binary carries a provider catalog object").toBe(true);
@@ -444,7 +532,7 @@ describe("F3/D9: the shared fixture defaults to a present binary and a local sea
   });
 
   it("a missing-model case is an explicit catalog option", () => {
-    const run = prepareOpencodeRun("a", { model: MISSING_MODEL, catalog: "missing" });
+    const run = stageTempRepo({ model: MISSING_MODEL, catalog: "missing" });
     try {
       const binary = readFileSync(run.fake.path, "utf8");
       expect(binary.includes(`"${MISSING_MODEL}":{"id":"${MISSING_MODEL}"`), "F3/D9: the missing option drops the model").toBe(false);
@@ -757,58 +845,36 @@ describe("FR1: the helper keeps the ID grammar of the ref-list mode", () => {
   });
 });
 
-describe("F9/FR3: a temp-repo run writes only under the temp dir", () => {
-  it("leaves nothing under the real ROOT/runs", async () => {
-    const realRuns = resolve(ROOT, "runs");
-    const before = new Set(existsSync(realRuns) ? readdirSync(realRuns) : []);
-    const repo = makeTempRoot();
+function listNames(dir: string): string[] {
+  return existsSync(dir) ? readdirSync(dir).sort() : [];
+}
+
+const watchedRoots = [resolve(ROOT, "runs"), resolve(ROOT, "reports"), resolve(ROOT, ".tmp")];
+let rootsBefore = "";
+
+beforeAll(() => {
+  rootsBefore = JSON.stringify(watchedRoots.map((dir) => [dir, listNames(dir)]));
+});
+
+afterAll(() => {
+  const after = JSON.stringify(watchedRoots.map((dir) => [dir, listNames(dir)]));
+  expect(after, "F9/FR3: the suite adds no entries under the real ROOT runs, reports, or .tmp").toBe(rootsBefore);
+});
+
+describe("F9/FR3: the route runs in a temp repo with a Podman tripwire", () => {
+  it("a missing-model run writes its run, config, and Podman record under the temp repo", async () => {
+    const r = await runTempRoute({ model: MISSING_MODEL, catalog: "missing" });
     try {
-      const harness = resolve(repo, "harness");
-      mkdirSync(harness, { recursive: true });
-      for (const entry of readdirSync(HARNESS, { withFileTypes: true })) {
-        if (entry.isFile() && /\.(sh|ts|json|cjs|py)$/.test(entry.name)) {
-          copyFileSync(resolve(HARNESS, entry.name), resolve(harness, entry.name));
-        } else if (entry.isDirectory() && ["node_modules", "tests"].includes(entry.name)) {
-          symlinkSync(resolve(HARNESS, entry.name), resolve(harness, entry.name), "dir");
-        }
-      }
-      mkdirSync(resolve(repo, "fixture"), { recursive: true });
-      symlinkSync(resolve(ROOT, "fixture", "node_modules"), resolve(repo, "fixture", "node_modules"), "dir");
-      const fake = createFakeOpencode(repo);
-      const apiFile = resolve(repo, "model-api.json");
-      writeFileSync(apiFile, JSON.stringify({ location: { directory: "fake" }, data: [activeApiRow(PROVIDER, "other-model")] }));
-      const runId = `iso-${process.pid}-${Date.now()}`;
-      const runtime = resolve(repo, "runtime");
-      for (const dir of [runtime, resolve(repo, "tmp"), resolve(repo, "home"), resolve(repo, "skills")]) {
-        mkdirSync(dir, { recursive: true });
-      }
-      const env: NodeJS.ProcessEnv = {
-        ...process.env,
-        PATH: `${resolve(repo, "bin")}:${dirname(process.execPath)}:/usr/bin:/bin`,
-        HOME: resolve(repo, "home"),
-        LANG: "C.UTF-8",
-        TMPDIR: resolve(repo, "tmp"),
-        XDG_RUNTIME_DIR: runtime,
-        BENCH_TRACK: "build",
-        BENCH_IGNORE_LOAD: "1",
-        BENCH_WAIT_FOR_IDLE: "0",
-        BENCH_OPENCODE_BIN: fake.path,
-        BENCH_MODEL_API_BASE: apiFile,
-        BENCH_SKILL_ROOT: resolve(repo, "skills"),
-        AGENT_TIMEOUT: "2",
-        MAX_LOAD_PER_CPU: "1000000",
-        MIN_AVAIL_MB: "0",
-        MAX_SWAP_USED_MB: "100000000",
-      };
-      const result = spawnSync("/bin/bash", [resolve(harness, "run.sh"), PROVIDER, "iso-model", "a", runId], {
-        cwd: harness, env, encoding: "utf8", timeout: 120_000, maxBuffer: 16 * 1024 * 1024,
-      });
-      expect(result.error, "F9/FR3: the temp-repo run must finish").toBeUndefined();
-      const after = existsSync(realRuns) ? readdirSync(realRuns) : [];
-      expect(after.filter((name) => !before.has(name)), "F9/FR3: no run directory may appear under the real ROOT/runs").toEqual([]);
-      expect(existsSync(resolve(repo, "runs", runId)), "F9/FR3: the temp repo holds the run").toBe(true);
+      expectFullAgentTrap(r, "F9/FR3: the temp-repo run completes the route");
+      const entry = entryValue(MISSING_MODEL);
+      expect(readFileSync(configPath(r.run), "utf8"), "F9/FR3: the temp run writes the provider-block config").toBe(
+        expectedConfigBytes(MISSING_REF, providersBlock(PROVIDER, MISSING_MODEL, entry)),
+      );
+      expect(existsSync(resolve(r.run.repo, "runs", r.run.id)), "F9/FR3: the temp repo holds the run").toBe(true);
+      expect(existsSync(r.run.podmanCalls), "F9/FR3: the fake-Podman tripwire records the agent call").toBe(true);
+      expect(existsSync(r.run.podmanCapture), "F9/FR3: the tripwire captures the agent argv").toBe(true);
     } finally {
-      rmSync(repo, { recursive: true, force: true });
+      r.run.cleanup();
     }
   }, 120_000);
 });
@@ -872,7 +938,7 @@ describe("F5/FR1: a slow-header response ends at the ten-second deadline", () =>
 });
 
 describe("F10/D2: the catalog scan validates the provider object", () => {
-  function setCatalogComment(run: FixtureRun, catalogJson: string): void {
+  function setCatalogComment(run: TempRun, catalogJson: string): void {
     const kept = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG"));
     writeFileSync(run.fake.path, `${kept.join("\n")}\n// EXECUTOR_CATALOG ${catalogJson}\n`);
   }
@@ -880,7 +946,7 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   const otherEntry = '{"id":"x","name":"x","limit":{"context":1,"input":1,"output":1}}';
 
   it("a null provider object with an unrelated models object exits 2", async () => {
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
       prep: (run) => setCatalogComment(run, `{"opencode-go":null,"other":{"models":{"x":${otherEntry}}}}`),
     });
@@ -892,7 +958,7 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   }, 120_000);
 
   it("an empty requested provider object exits 2", async () => {
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
       prep: (run) => setCatalogComment(run, `{"other":{"models":{"x":${otherEntry}}},"opencode-go":{}}`),
     });
@@ -904,7 +970,7 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   }, 120_000);
 
   it("a truncated provider value after a valid unrelated object exits 2", async () => {
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
       prep: (run) => setCatalogComment(run, `{"other":{"models":{"x":${otherEntry}}},"opencode-go":`),
     });
@@ -918,7 +984,7 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   it("a nested settings object holding the provider and models keys is not the catalog", async () => {
     const entry = entryValue(MISSING_MODEL);
     const nested = `{"settings":{"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}}}`;
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => setCatalogComment(run, nested),
     });
@@ -937,7 +1003,7 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
 
   it("a valid provider object split across the 64 KiB chunk boundary reads present", async () => {
     const entry = entryValue(MISSING_MODEL);
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => {
         const script = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG")).join("\n");
@@ -960,7 +1026,7 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   }, 120_000);
 
   it("a valid provider object split across the chunk boundary reads missing", async () => {
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => {
         const script = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG")).join("\n");
@@ -978,6 +1044,83 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
         providersBlock(PROVIDER, MISSING_MODEL, entryValue(MISSING_MODEL)),
       );
       expect(entryCalls(r.log).length, "F10/D2: the missing model resolves one helper entry").toBe(1);
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+  it("a complete provider with a missing final root brace exits 2 for a present model", async () => {
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => setCatalogComment(run,
+        `{"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a missing final root brace", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a complete provider with a missing final root brace exits 2 for a missing model", async () => {
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [],
+      prep: (run) => setCatalogComment(run,
+        `{"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}}`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a missing final root brace for a missing model", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a root that never closes exits 2 for a present model", async () => {
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => setCatalogComment(run,
+        `{"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}},"other":{"models":{"x":`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a root that never closes", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a root that never closes exits 2 for a missing model", async () => {
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [],
+      prep: (run) => setCatalogComment(run,
+        `{"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}},"other":{"models":{"x":`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a root that never closes for a missing model", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a root that closes early exits 2 for a present model", async () => {
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => setCatalogComment(run,
+        `{"unrelated":{"models":{"x":${otherEntry}}}},"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a root that closes early", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a root that closes early exits 2 for a missing model", async () => {
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [],
+      prep: (run) => setCatalogComment(run,
+        `{"unrelated":{"models":{"x":${otherEntry}}},"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}}`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a root that closes early for a missing model", "none");
     } finally {
       r.run.cleanup();
     }
@@ -1029,7 +1172,7 @@ describe("F11/FR4: the helper and the config keep integer limits exact", () => {
 
   it("the generated config limit equals the entry values exactly", async () => {
     const limit = { context: 9007199254740991, input: 9007199254740991, output: 9007199254740991 };
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       apiData: [{ ...activeApiRow(PROVIDER, MISSING_MODEL), limit }],
     });
@@ -1047,13 +1190,22 @@ describe("F11/FR4: the helper and the config keep integer limits exact", () => {
 });
 
 describe("F12/FR1: a malformed HTTP response exits 2 without a traceback", () => {
-  function startFramingServer(mode: "badsize" | "trunc"): Promise<{ port: number; kill: () => void }> {
+  function startFramingServer(mode: "badsize" | "trunc" | "shortlen"): Promise<{ port: number; kill: () => void }> {
     const dir = makeTempRoot();
+    const shortPayload = JSON.stringify({ location: { directory: "fake" }, data: [activeApiRow(PROVIDER, MISSING_MODEL)] });
     writeFileSync(resolve(dir, "framing.cjs"), `
 const net = require("node:net");
 const mode = ${JSON.stringify(mode)};
+const shortPayload = ${JSON.stringify(shortPayload)};
 const server = net.createServer((socket) => {
   socket.once("data", () => {
+    if (mode === "shortlen") {
+      const head = "HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nContent-Length: " + (Buffer.byteLength(shortPayload) + 20) + "\\r\\nConnection: close\\r\\n\\r\\n";
+      socket.write(head + shortPayload);
+      setTimeout(() => socket.destroy(), 500);
+      socket.on("error", () => {});
+      return;
+    }
     const head = "HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nTransfer-Encoding: chunked\\r\\nConnection: close\\r\\n\\r\\n";
     if (mode === "badsize") {
       socket.write(head + "ZZZ\\r\\nboom\\r\\n0\\r\\n\\r\\n");
@@ -1127,8 +1279,9 @@ setTimeout(() => process.exit(0), 25000).unref();
     expect(run.stderr.trim().split("\n").length, `${label}: F12/D1 requires one short reason`).toBe(1);
   }
 
-  for (const mode of ["badsize", "trunc"] as const) {
-    it(`an invalid ${mode === "badsize" ? "chunk size" : "truncated chunk"} exits 2 in entry mode`, async () => {
+  const modeLabel = { badsize: "chunk size", trunc: "truncated chunk", shortlen: "short Content-Length body" } as const;
+  for (const mode of ["badsize", "trunc", "shortlen"] as const) {
+    it(`an invalid ${modeLabel[mode]} exits 2 in entry mode`, async () => {
       const framing = await startFramingServer(mode);
       try {
         const run = await runHelperRaw(MISSING_REF, `http://127.0.0.1:${framing.port}`);
@@ -1138,7 +1291,7 @@ setTimeout(() => process.exit(0), 25000).unref();
       }
     });
 
-    it(`an invalid ${mode === "badsize" ? "chunk size" : "truncated chunk"} exits 2 in ref-list mode`, async () => {
+    it(`an invalid ${modeLabel[mode]} exits 2 in ref-list mode`, async () => {
       const framing = await startFramingServer(mode);
       try {
         const run = await runHelperRaw(undefined, `http://127.0.0.1:${framing.port}`);
@@ -1152,9 +1305,23 @@ setTimeout(() => process.exit(0), 25000).unref();
   it("a malformed response exits 2 through the real run.sh with one reason", async () => {
     const framing = await startFramingServer("badsize");
     try {
-      const r = await runRoute({ model: MISSING_MODEL, catalog: "missing", apiBase: `http://127.0.0.1:${framing.port}` });
+      const r = await runTempRoute({ model: MISSING_MODEL, catalog: "missing", apiBase: `http://127.0.0.1:${framing.port}` });
       try {
         expectEntryFailure(r, "F12/FR1: malformed response through run.sh");
+      } finally {
+        r.run.cleanup();
+      }
+    } finally {
+      framing.kill();
+    }
+  }, 120_000);
+
+  it("a short Content-Length body exits 2 through the real run.sh with one reason", async () => {
+    const framing = await startFramingServer("shortlen");
+    try {
+      const r = await runTempRoute({ model: MISSING_MODEL, catalog: "missing", apiBase: `http://127.0.0.1:${framing.port}` });
+      try {
+        expectEntryFailure(r, "F12/FR1: short Content-Length through run.sh");
       } finally {
         r.run.cleanup();
       }
@@ -1166,7 +1333,7 @@ setTimeout(() => process.exit(0), 25000).unref();
 
 describe("F13/D3: a config generator failure exits 2 with no artifacts", () => {
   it("a failing config generator exits 2 with absent config, staging, identity, and provenance", async () => {
-    const r = await runRoute({
+    const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => installFailingGeneratorShim(run),
     });
