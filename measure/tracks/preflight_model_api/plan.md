@@ -65,7 +65,7 @@ Marker use:
     fake-server case uses async spawn so its in-process server can answer.
     The other 11 assertions still name the missing FR rules on base code.
 
-- [x] 1.2 The Green implementation (spec FR1 to FR4). Commits 394eac7 and 04d3950c.
+- [x] 1.2 The Green implementation (spec FR1 to FR4). Commits 394eac7, 04d3950c, and 7857f41.
   Add `harness/model-api-refs.py`. Run it as `python3 -I`. Change only the
   model-list block of `harness/batch.sh`. Follow decisions D1 to D9. The same
   commit adapts three callers of the copied batch:
@@ -111,8 +111,10 @@ Marker use:
   - Green r3 evidence (2026-11-26, phase_base_sha f377765, role_base_sha 1730380,
     implementation commit 04d3950c): F1 restricts the source to a regular file
     or an http(s) base and rejects redirects and other schemes. F2 caps file
-    and HTTP reads at 4 MiB and bounds the whole fetch with a total deadline;
-    HTTP reads use `read1` so a slow drip cannot block a buffered fill. F3
+    and HTTP reads at 4 MiB and checks a 10 s deadline between reads. Connection
+    setup stays bounded by the socket timeout, so this is not a strict wall-clock
+    limit on the whole fetch. HTTP reads use `read1` so a slow drip cannot block
+    a buffered fill. F3
     validates both IDs before printing and skips a malformed entry. F4 treats
     decode, nesting, and encoding failures as exit 2 with empty stdout and one
     stderr line, and prints no ref until the whole payload is validated. F5
@@ -122,6 +124,18 @@ Marker use:
     `measure/runs/preflight_model_api/green-1730380.log` for the full output.
     No fixture changed in 04d3950c; the three fixture adaptations belong to
     394eac7 and are listed in the scope of this task.
+  - Green r4 evidence (2026-11-26, phase_base_sha f377765, role_base_sha c6e83ae,
+    implementation commit 7857f41): F8 widens the model ID pattern to letters,
+    digits, `. _ : @ + - / ~ [ ]`. The provider pattern stays unchanged. The F3
+    exclusions for control characters, whitespace, empty IDs, and line forging
+    stay in force. F9 wraps URL parsing, so a malformed base exits 2 with empty
+    stdout and one stderr line; the batch then retries three times with two
+    five-second delays and prints the D6 line. F10 is kept as a nit: the r3
+    wording above now says the deadline is checked between reads and that
+    connection setup stays bounded by the socket timeout, not by a strict
+    wall-clock limit. No code changed for F10. The targeted command exits 0
+    with no uncaught error. See `measure/runs/preflight_model_api/green-c6e83ae.log`
+    for the full output. No fixture changed in 7857f41.
 
 - [~] 1.3 Review A (light lane).
   A reviewer audits the diff against FR1 to FR4 and decisions D1 to D9. The
