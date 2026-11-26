@@ -322,7 +322,7 @@ model, no real credential (NFR-3).
     `Test Files  4 failed | 26 passed (30)`; `Tests  65 failed | 173 passed (238)`.
     Both JSON reports contain the same 65 failing names. Every failure is an expected assertion failure.
     All 170 existing tests pass. The OpenCode tripwire stays unhit in both runs.
-- [x] 2.5 Not needed (PM 2026-11-26): plan cost comes from `ra-quota`. Cost: `usage.ts` parses the fixed session export, plain and (deferred:owner)
+- [x] 2.5 Not needed (PM 2026-11-26): plan cost comes from `ra-quota`. Cost: `usage.ts` parses the fixed session export, plain and (deferred:owner) b005307
   `.gz`, with the FR-7 mapping of `design.md` section 4 (reasoning counts
   as output; no subagent mapping — O3 denies `subagent`). The event
   stream stays a cross-check. The recost equals the

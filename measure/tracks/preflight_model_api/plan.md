@@ -137,7 +137,7 @@ Marker use:
     with no uncaught error. See `measure/runs/preflight_model_api/green-c6e83ae.log`
     for the full output. No fixture changed in 7857f41.
 
-- [~] 1.3 Review A (light lane).
+- [x] 1.3 Review A (light lane). Audited HEAD 68c00d3; artifact measure/runs/preflight_model_api/review-a-68c00d3.json (verdict pass). Review A fix commits 04d3950 and 7857f41.
   A reviewer audits the diff against FR1 to FR4 and decisions D1 to D9. The
   reviewer changes no code. The reviewer reports each finding with the fix or
   the reason to keep it.
@@ -145,7 +145,7 @@ Marker use:
     exits 0.
   - Verify: each blocking finding has a fix in a later commit.
 
-- [ ] 1.4 Phase acceptance (light lane).
+- [~] 1.4 Phase acceptance (light lane).
   Check the phase on the immutable HEAD. Check that each completed task line
   carries a commit SHA. Check the staged paths against the allowed file list.
   - Gate: `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
