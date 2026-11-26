@@ -1,0 +1,22 @@
+{
+  "id": "executor_model_route_20261126",
+  "title": "Executor model route for catalog-missing Console models",
+  "type": "Chore",
+  "status": "in-progress",
+  "created": "2026-11-26",
+  "estimated_tasks": 3,
+  "actual_tasks": null,
+  "author_model": "opencode-go/hy4-flash-free",
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-26: give harness/run.sh a route for Console models absent from the pinned binary catalog. Read the active entry through the bounded model API helper. Do not start Red or Green. One real probe only after Green.",
+    "evidence": "spec.md EV1-EV6. The pinned opencode v2.3.2 bundles 42 opencode-go models and omits hungerg-free. OPENCODE_DISABLE_MODELS_FETCH=1 stops the container from learning it. Run a-hungerg-free-2026w48-r1 wrote provider.no-route. GET http://127.0.0.1:38307/api/model lists hungerg-free as active and enabled. One Podman probe with a minimal provider entry returned a reply at cost zero; the control returned the same provider.no-route error.",
+    "dependencies": [
+      "preflight_model_api"
+    ],
+    "related_tracks": [
+      "opencode_executor",
+      "daily_model_schedule"
+    ]
+  }
+}
