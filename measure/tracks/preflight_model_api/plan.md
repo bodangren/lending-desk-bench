@@ -33,7 +33,7 @@ Marker use:
 
 ## Phase 1: Preflight model list from the OpenChamber API (spec FR1 to FR4)
 
-- [ ] 1.1 The Red tests (spec FR1 to FR4).
+- [~] 1.1 The Red tests (spec FR1 to FR4).
   Write `harness/tests/meta/preflight-model-api.test.ts`. Put the file beside
   `harness/tests/meta/opencode-credential.test.ts`. Touch this test file and no
   other file.
@@ -53,6 +53,14 @@ Marker use:
     FR1 to FR4.
   - Verify: no test calls a real API, a real `opencode` binary, a browser, or a
     model.
+  - Red evidence (2026-11-26, base `f377765`): the gate above exits 1 with
+    `Test Files 1 failed (1)` and `Tests 12 failed (12)`. Every failure names
+    its FR rule (FR1 helper/default, FR2/D4 exact match, FR2/D5 disabled omit,
+    FR2/D6 unreachable message, FR2/D7 retry/exit-2, FR3 no-models-call plus
+    unchanged checks, FR4 file/fake-server seam, AC6 hungerg-free). The helper
+    `harness/model-api-refs.py` does not exist yet and `harness/batch.sh` still
+    calls `opencode_host_run models --standalone`, so the failures are the
+    expected missing-behavior proofs, not broken tests.
 
 - [ ] 1.2 The Green implementation (spec FR1 to FR4).
   Add `harness/model-api-refs.py`. Run it as `python3 -I`. Change only the
