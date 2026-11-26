@@ -357,6 +357,7 @@ FIRST_MODEL_REF="${first_provider:-opencode-go}/${first_model:-}"
 MODEL_API_BASE="${BENCH_MODEL_API_BASE:-http://127.0.0.1:38307}"
 models_listed=""
 model_api_reached=""
+helper_failed=""
 if ! "$PWD/opencode-credential.sh" seed; then
   echo "executor preflight failed: the Console credential seed failed" >&2
   exit 3
@@ -368,11 +369,20 @@ for attempt in 1 2 3; do
       models_listed=1
     fi
     break
+  else
+    helper_rc=$?
+    # D7: only exit 2 is transient. Any other failure stops at once.
+    if [ "$helper_rc" -ne 2 ]; then
+      helper_failed=$helper_rc
+      break
+    fi
   fi
   [ "$attempt" -lt 3 ] && sleep 5
 done
 if [ "$models_listed" != "1" ]; then
-  if [ "$model_api_reached" = "1" ]; then
+  if [ -n "$helper_failed" ]; then
+    echo "executor preflight failed: the model API helper exited $helper_failed" >&2
+  elif [ "$model_api_reached" = "1" ]; then
     echo "executor preflight failed: the model API does not list $FIRST_MODEL_REF" >&2
   else
     echo "executor preflight failed: the model API is unreachable at $MODEL_API_BASE" >&2
