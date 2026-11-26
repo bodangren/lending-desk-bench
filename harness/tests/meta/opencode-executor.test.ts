@@ -1,10 +1,21 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { captureOpencodeRun, HARNESS, IMAGE, jsonIfPresent, ROOT, SKILLS } from "./opencode-run-fixtures";
+import { HARNESS, IMAGE, jsonIfPresent, prepareOpencodeRun, ROOT, SKILLS } from "./opencode-run-fixtures";
 import { TEST_MODEL } from "./schema4-fixtures";
 
-type Run = ReturnType<typeof captureOpencodeRun>;
+/** Same as captureOpencodeRun, but the fake binary carries the catalog needle
+ * for TEST_MODEL, so the executor route takes the present-model path: no
+ * entry call, no API call, and the config keeps its exact bytes. A JS comment
+ * keeps the fake executable; the base code never scans these bytes. */
+function captureOpencodeRunWithCatalog(arm: "a" | "b") {
+  const fixture = prepareOpencodeRun(arm);
+  appendFileSync(fixture.fake.path, `\n// catalog needle for the executor route: "${TEST_MODEL}":{"id":"${TEST_MODEL}"}\n`);
+  const result = fixture.execute();
+  return { ...fixture, result, podman: jsonIfPresent(fixture.podmanCapture) };
+}
+
+type Run = ReturnType<typeof captureOpencodeRunWithCatalog>;
 const runs: Run[] = [];
 const PROMPT = 'Read measure/tracks/lending_desk/spec.md and measure/tracks/lending_desk/plan.md, then implement the plan. Mark each plan task complete as you finish it. Run "npm run typecheck" and "npm run build" and make sure both pass before you stop.';
 const DENIES = [
@@ -67,7 +78,7 @@ function expectedPodman(run: Run): string[] {
 
 describe("OpenCode executor and isolation contract", () => {
   beforeAll(() => {
-    runs.push(captureOpencodeRun("a"), captureOpencodeRun("b"));
+    runs.push(captureOpencodeRunWithCatalog("a"), captureOpencodeRunWithCatalog("b"));
   }, 60_000);
   afterAll(() => { for (const run of runs) run.cleanup(); });
 

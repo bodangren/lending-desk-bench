@@ -60,8 +60,9 @@ Marker use:
   - Verify: no test calls Podman, a real API, a real `opencode` binary, a
     browser, or a model.
   - Red evidence: gate `cd harness && ./node_modules/.bin/vitest run tests/meta/executor-model-route.test.ts --configLoader native --maxWorkers=1` exits 1 with 14 failed / 7 passed (21 checks); base commit `147a5f8`; role base `64c36e2`; Red commit `c108b2e`.
+  - Test-maintenance note (Red r3): `preflight-model-api.test.ts` and `opencode-executor.test.ts` give their fake binaries the catalog needle for the model under test (JS comment, inert on base), so the Green route takes the present-model path and preflight retry counts and exact config bytes stay unchanged. No assertion weakened.
 
-- [ ] 1.2 The Green implementation (spec FR1 to FR5).
+- [~] 1.2 The Green implementation (spec FR1 to FR5).
   Add the entry mode to `harness/model-api-refs.py`. Change only the config
   generation block of `harness/run.sh`. Follow decisions D1 to D5.
   - Keep the binary check, the version check, the ripgrep check, the credential
