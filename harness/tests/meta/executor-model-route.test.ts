@@ -115,10 +115,23 @@ async function runRoute(opts: {
   return { run, status: result.status, stdout: String(result.stdout ?? ""), stderr: String(result.stderr ?? ""), log, staging };
 }
 
-/** D3: one short reason. An empty stderr never counts as a reason. */
-function expectOneReason(stderr: string, label: string): void {
-  expect(stderr.trim().length, `${label}: F1/D3 requires one stderr reason, and an empty stderr is a failure`).toBeGreaterThan(0);
-  expect(stderr.trim().split("\n").length, `${label}: F1/D3 requires exactly one short stderr reason`).toBe(1);
+const ROUTE_REASON = /model API|providerID\/modelID|OpenCode catalog|cannot read OpenCode/i;
+const ROUTE_WORD = /entry|helper|config|opencode\.json/i;
+
+/**
+ * D3: one short reason. An empty stderr never counts as a reason. Exactly one
+ * line names the model-route failure; no other line may mention the entry,
+ * the helper, or the config. Unrelated host diagnostics stay allowed.
+ */
+function expectSingleRouteReason(stderr: string, label: string): void {
+  const lines = stderr.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+  expect(lines.length, `${label}: F1/D3 requires stderr, and an empty stderr is a failure`).toBeGreaterThan(0);
+  const naming = lines.filter((line) => ROUTE_REASON.test(line));
+  expect(naming.length, `${label}: F1/D3 requires exactly one line naming the model-route reason`).toBe(1);
+  for (const line of lines) {
+    if (naming.includes(line)) continue;
+    expect(ROUTE_WORD.test(line), `${label}: F1/D3 forbids route words outside the reason line`).toBe(false);
+  }
 }
 
 /**
@@ -132,17 +145,25 @@ function expectFullAgentTrap(r: RouteResult, label: string): void {
   expect(r.stderr, `${label}: the NFR-1 gate names the credential leak`).toContain("Console credential reached run output");
 }
 
-/** F1/D3: the failure contract of the entry route through the real run.sh. */
-function expectEntryFailure(r: RouteResult, label: string): void {
+/**
+ * F1/D3: the failure contract of the entry route through the real run.sh.
+ * A catalog scan error exits before the entry, so no helper call happens;
+ * every other failure attempts the entry first.
+ */
+function expectEntryFailure(r: RouteResult, label: string, entry: "attempted" | "none" = "attempted"): void {
   expect(r.status, `${label}: F1/D3 requires the script to exit 2, not continue into provenance and grading`).toBe(2);
-  expectOneReason(r.stderr, label);
+  expectSingleRouteReason(r.stderr, label);
   expect(existsSync(resolve(r.run.out, "executor/opencode.json")), `${label}: F1/D3 writes no partial config`).toBe(false);
   expect(existsSync(resolve(r.run.out, "execution-identity.json")), `${label}: F1 builds no identity on the failure path`).toBe(false);
   expect(existsSync(resolve(r.run.out, "executor-cohort.json")), `${label}: F1 builds no cohort on the failure path`).toBe(false);
   expect(existsSync(resolve(r.run.out, "provenance.json")), `${label}: F1 exits before provenance`).toBe(false);
   expect(existsSync(resolve(r.run.out, "score.json")), `${label}: F1 exits before grading`).toBe(false);
   expect(existsSync(r.staging), `${label}: F1 leaves no credential staging under CRED_STAGING`).toBe(false);
-  expect(entryCalls(r.log).length, `${label}: F1 attempts the helper entry`).toBeGreaterThan(0);
+  if (entry === "attempted") {
+    expect(entryCalls(r.log).length, `${label}: F1 attempts the helper entry`).toBeGreaterThan(0);
+  } else {
+    expect(helperCalls(r.log).length, `${label}: F6/D2 a scan error makes no API call`).toBe(0);
+  }
 }
 
 function configPath(run: FixtureRun): string {
@@ -330,7 +351,7 @@ describe("F6/D2: the catalog test is scoped to the requested provider object", (
       },
     });
     try {
-      expectEntryFailure(r, "F6/D2: an unparsable binary");
+      expectEntryFailure(r, "F6/D2: an unparsable binary", "none");
     } finally {
       r.run.cleanup();
     }
@@ -345,7 +366,7 @@ describe("F6/D2: the catalog test is scoped to the requested provider object", (
       },
     });
     try {
-      expectEntryFailure(r, "F6/D2: a truncated catalog");
+      expectEntryFailure(r, "F6/D2: a truncated catalog", "none");
     } finally {
       r.run.cleanup();
     }

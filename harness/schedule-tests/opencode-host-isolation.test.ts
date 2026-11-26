@@ -103,6 +103,10 @@ if (argv[0] === "auth") {
 }
 process.exit(96);
 `);
+// D2: the fake binary carries a provider-scoped catalog object for the model
+// under test, in the shared catalog-present shape. The comment keeps the fake
+// executable; a catalog-less binary is an error, not a miss.
+  writeFileSync(path, `\n// EXECUTOR_CATALOG {"opencode-go":{"models":{"${MODEL}":{"id":"${MODEL}"}}}}\n`, { flag: "a" });
   chmodSync(path, 0o755);
   return path;
 }

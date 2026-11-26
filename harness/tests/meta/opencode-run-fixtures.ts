@@ -155,6 +155,10 @@ else {
     BENCH_OPENCODE_BIN: fake.path, BENCH_SKILL_ROOT: skillRoot,
     BENCH_AGENT_IMAGE: IMAGE, XDG_RUNTIME_DIR: runtime, AGENT_TIMEOUT: "2",
     BENCH_MODEL_API_BASE: apiFile,
+    // Quiet the busy-host preflight so failure-path stderr is deterministic.
+    // The thresholds make any host read as quiet; the "host ok" line goes to
+    // stdout and never names a credential, so no assertion can match it.
+    MAX_LOAD_PER_CPU: "1000000", MIN_AVAIL_MB: "0", MAX_SWAP_USED_MB: "100000000",
     // A canary exercises the old API-key forwarding path without a real credential.
     OPENCODE_API_KEY: "CANARY-ACCESS-99", THINKING: "xhigh",
   };
