@@ -635,8 +635,25 @@ run_agent_container() {
   # FR-4: one generated OpenCode config per run; no secret, no MCP server, no
   # plugin. The arm difference is the skill rules, the Arm B skills.paths and
   # instructions entries, and the candidate AGENTS.md presence.
+  # A Console model can be active but absent from the pinned binary catalog.
+  # Resolve that entry before the config write. Catalog models keep their bytes.
+  local model_missing=0 model_entry=""
+  if ! OPENCODE_BIN_PATH="$opencode_real" MODEL_REF="$PROVIDER/$MODEL" node -e '
+const fs = require("node:fs");
+const modelID = process.env.MODEL_REF.slice(process.env.MODEL_REF.indexOf("/") + 1);
+const needle = Buffer.from(`"${modelID}":{"id":"${modelID}"`);
+process.exit(fs.readFileSync(process.env.OPENCODE_BIN_PATH).includes(needle) ? 0 : 1);
+'; then
+    model_missing=1
+  fi
+  if [ "$model_missing" = "1" ]; then
+    if ! model_entry="$(BENCH_MODEL_API_BASE="${BENCH_MODEL_API_BASE:-http://127.0.0.1:38307}" python3 -I "$H/model-api-refs.py" "$PROVIDER/$MODEL")"; then
+      return 2
+    fi
+  fi
   mkdir -p "$OUT/executor"
   ARM_B="$([ "$ARM" = "b" ] && echo 1 || echo 0)" MODEL_REF="$PROVIDER/$MODEL" \
+    MODEL_MISSING="$model_missing" MODEL_ENTRY="$model_entry" \
     CONFIG_PATH="$OUT/executor/opencode.json" \
     node -e '
 const fs = require("node:fs");
@@ -656,6 +673,12 @@ const config = {
       .map((resource) => ({ action: "skill", resource, effect: "allow" })) : []),
   ],
 };
+if (process.env.MODEL_MISSING === "1") {
+  const separator = process.env.MODEL_REF.indexOf("/");
+  const providerID = process.env.MODEL_REF.slice(0, separator);
+  const modelID = process.env.MODEL_REF.slice(separator + 1);
+  config.providers = { [providerID]: { models: { [modelID]: JSON.parse(process.env.MODEL_ENTRY) } } };
+}
 fs.writeFileSync(process.env.CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
 '
 

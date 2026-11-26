@@ -5,8 +5,9 @@ BENCH_MODEL_API_BASE names the source. An existing regular file supplies the
 JSON payload; an http(s) value is a base URL and the helper reads
 ${base%/}/api/model. An unset or empty value uses http://127.0.0.1:38307.
 
-The helper prints one ref per line and nothing else on stdout. It exits 2 with
-one short reason on stderr when the source, read, parse, or payload check
+The helper prints one ref per line in ref-list mode. With one providerID/modelID
+argument, it prints one JSON object with modelID, name, and limit. It exits 2
+with one short reason on stderr when the source, read, parse, or payload check
 fails. It never starts an opencode process, follows a redirect, or prints a
 ref before the whole payload is validated.
 """
@@ -129,13 +130,56 @@ def collect_refs(payload):
     return refs
 
 
+def parse_entry_ref(ref):
+    """Validate one providerID/modelID argument with the existing ID grammar."""
+    provider, separator, model = ref.partition("/")
+    if not separator or not PROVIDER_RE.fullmatch(provider) or not MODEL_RE.fullmatch(model):
+        fail("providerID/modelID argument is invalid")
+    return provider, model
+
+
+def collect_entry(payload, provider, model):
+    """Return the three config fields from the matching active API entry."""
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(data, list):
+        fail("model API payload has no data list")
+    ref = provider + "/" + model
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("providerID") != provider or entry.get("modelID") != model:
+            continue
+        if entry.get("enabled") is not True:
+            fail("model API entry is disabled for " + ref)
+        if entry.get("status") != "active":
+            fail("model API entry is inactive for " + ref)
+        try:
+            result = {
+                "modelID": entry["modelID"],
+                "name": entry["name"],
+                "limit": entry["limit"],
+            }
+            return json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(",", ":"))
+        except KeyError:
+            fail("model API entry is incomplete for " + ref)
+        except (TypeError, ValueError, RecursionError) as exc:
+            fail("model API entry cannot be printed: %s" % exc)
+    fail("no active model API entry for " + ref)
+
+
 def main():
+    if len(sys.argv) > 2:
+        fail("expected at most one providerID/modelID argument")
+    entry_ref = parse_entry_ref(sys.argv[1]) if len(sys.argv) == 2 else None
     base = os.environ.get("BENCH_MODEL_API_BASE") or DEFAULT_BASE
     raw = read_payload(base)
     try:
         payload = json.loads(raw)
     except (ValueError, UnicodeDecodeError, RecursionError) as exc:
         fail("cannot parse model API payload: %s" % exc)
+    if entry_ref is not None:
+        print(collect_entry(payload, *entry_ref))
+        raise SystemExit(0)
     refs = collect_refs(payload)
     try:
         for ref in refs:
