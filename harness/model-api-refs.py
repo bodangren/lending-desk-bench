@@ -123,6 +123,9 @@ def _read_payload(base, deadline):
     try:
         with response:
             raw = read_bounded(response, deadline)
+            declared = response.length
+            if declared is not None and len(raw) != declared:
+                fail("model API response body is incomplete")
     except (OSError, http.client.HTTPException, ValueError) as exc:
         fail("cannot read model API at %s: %s" % (url, exc))
     if time.monotonic() >= deadline:

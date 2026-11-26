@@ -674,7 +674,8 @@ function stringEnd(buffer, start) {
 function processValue(key, value) {
   if (key === provider) {
     if (!validProvider(value)) fail("OpenCode provider catalog is malformed");
-    return Object.hasOwn(value.models, modelID) ? 0 : 1;
+    requestedResult = Object.hasOwn(value.models, modelID) ? 0 : 1;
+    return null;
   }
   if (validProvider(value)) sawProvider = true;
   return null;
