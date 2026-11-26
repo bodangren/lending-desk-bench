@@ -122,8 +122,16 @@ def _read_payload(base, deadline):
         fail("cannot read model API at %s: %s" % (url, exc))
     try:
         with response:
+            declared_header = response.getheader("Content-Length")
+            declared = None
+            if declared_header is not None:
+                try:
+                    declared = int(declared_header)
+                except (TypeError, ValueError):
+                    fail("model API Content-Length is invalid")
+                if declared < 0:
+                    fail("model API Content-Length is invalid")
             raw = read_bounded(response, deadline)
-            declared = response.length
             if declared is not None and len(raw) != declared:
                 fail("model API response body is incomplete")
     except (OSError, http.client.HTTPException, ValueError) as exc:

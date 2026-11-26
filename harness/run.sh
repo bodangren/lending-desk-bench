@@ -762,8 +762,9 @@ function feed(chunk, final) {
       while (skipped < pending.length && space(pending[skipped])) skipped++;
       if (skipped) pending = pending.subarray(skipped);
       if (!pending.length) return null;
-      if (root.expect === "key") {
+      if (root.expect === "key" || root.expect === "member") {
         if (pending[0] === 125) {
+          if (root.expect === "member") fail("OpenCode catalog has a trailing comma");
           pending = pending.subarray(1);
           const result = finishRoot();
           if (result !== null) return result;
@@ -795,7 +796,7 @@ function feed(chunk, final) {
       }
       if (pending[0] === 44) {
         pending = pending.subarray(1);
-        root.expect = "key";
+        root.expect = "member";
         continue;
       }
       if (pending[0] === 125) {
@@ -838,6 +839,7 @@ stream.on("data", (chunk) => {
 stream.on("end", () => {
   if (active || root) fail("OpenCode catalog is truncated");
   const result = feed(Buffer.alloc(0), true);
+  if (active || root) fail("OpenCode catalog is truncated");
   if (result !== null) process.exit(result);
   if (catalogSeen) process.exit(1);
   fail("OpenCode catalog is unavailable");
