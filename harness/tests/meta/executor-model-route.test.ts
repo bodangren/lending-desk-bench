@@ -4,6 +4,7 @@ import {
   appendFileSync,
   chmodSync,
   copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -16,7 +17,7 @@ import {
 import { createServer, type Server } from "node:http";
 import { createServer as createTcpServer } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   activeApiRow,
@@ -132,7 +133,35 @@ function stageTempRepo(opts: {
       symlinkSync(resolve(HARNESS, entry.name), resolve(harness, entry.name), "dir");
     }
   }
-  symlinkSync(resolve(ROOT, "fixture"), resolve(repo, "fixture"), "dir");
+  // F15: the provenance step resolves track bindings through the bugfix,
+  // tests-track, change, and tests trees. Copy those small trees so the
+  // temp run reaches the leak gate instead of aborting on a missing module.
+  for (const tree of ["bugfix", "tests-track", "change", "tests"]) {
+    cpSync(resolve(HARNESS, tree), resolve(harness, tree), { recursive: true });
+  }
+  // F15: provenance hashes the reference overlays from the repo root. Copy
+  // those small trees so the temp run reaches the leak gate instead of
+  // aborting on a missing directory.
+  for (const tree of ["reference", "reference-variant", "reference-change"]) {
+    cpSync(resolve(ROOT, tree), resolve(repo, tree), { recursive: true });
+  }
+  // F15: the temp fixture root is a real directory. The candidate contract
+  // rejects a symlinked fixture root ("fixture root must be a real
+  // directory") before the leak gate, which misattributes the exit-3 abort.
+  // The copy skips node_modules (plus .next and .git); the seeder tar and
+  // the contract walk skip those names too, so a node_modules symlink keeps
+  // the staging fast without tripping either check.
+  const fixtureDir = resolve(repo, "fixture");
+  mkdirSync(fixtureDir, { recursive: true });
+  const fixtureSrc = resolve(ROOT, "fixture");
+  cpSync(fixtureSrc, fixtureDir, {
+    recursive: true,
+    filter: (src) => {
+      const rel = relative(fixtureSrc, src);
+      return rel === "" || !/^(node_modules|\.next|\.git)(\/|$)/.test(rel);
+    },
+  });
+  symlinkSync(resolve(fixtureSrc, "node_modules"), resolve(fixtureDir, "node_modules"), "dir");
   const bin = resolve(repo, "bin");
   mkdirSync(bin, { recursive: true });
   const fake = createFakeOpencode(repo);
@@ -241,9 +270,18 @@ function expectSingleRouteReason(stderr: string, label: string): void {
  * route assertions below observe the config, identity, and cohort artifacts;
  * the status assertion pins that deterministic trap, not a route failure.
  */
-function expectFullAgentTrap(r: RouteResult, label: string): void {
-  expect(r.status, `${label}: the route completes, then the fixture canary export trips the leak gate`).toBe(3);
+function expectFullAgentTrap(r: RouteResult, label: string): void {  expect(r.status, `${label}: the route completes, then the fixture canary export trips the leak gate`).toBe(3);
   expect(r.stderr, `${label}: the NFR-1 gate names the credential leak`).toContain("Console credential reached run output");
+  // F15: the final abort must name the leak gate. With a symlinked fixture
+  // root the run aborted at the candidate contract instead, while the scan
+  // line above still printed, so the status alone attributed exit 3 to the
+  // wrong gate.
+  expect(r.stderr, `${label}: the final abort names the leak gate, not the candidate contract`).toContain(
+    "ABORT: Console credential reached run output",
+  );
+  expect(r.stderr, `${label}: the candidate contract accepts the real fixture root`).not.toContain(
+    "candidate violates the filesystem contract",
+  );
 }
 
 /**
@@ -344,7 +382,7 @@ describe("F2/FR1: the real run.sh routes a catalog-missing model through the hel
 });
 
 describe("F1/F2: every failure class exits 2 through the real run.sh", () => {
-  const cases: { name: string; opts: Parameters<typeof runRoute>[0] }[] = [
+  const cases: { name: string; opts: Parameters<typeof runTempRoute>[0] }[] = [
     { name: "a disabled entry", opts: { model: MISSING_MODEL, catalog: "missing", apiData: [disabledRow()] } },
     { name: "an inactive entry", opts: { model: MISSING_MODEL, catalog: "missing", apiData: [inactiveRow()] } },
     {
@@ -1133,6 +1171,112 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
       r.run.cleanup();
     }
   }, 120_000);
+
+  it("a root with a trailing comma exits 2 for a present model", async () => {
+    // Structure: a single root holding the complete requested provider object
+    // with a comma after the final member. The comma must not close the root.
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
+      prep: (run) => setCatalogComment(run,
+        `{"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}},}`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a trailing comma for a present model", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a root with a trailing comma exits 2 for a missing model", async () => {
+    // Structure: a single root holding the unrelated-model provider object
+    // with a comma after the final member. The comma must not close the root.
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
+      prep: (run) => setCatalogComment(run,
+        `{"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}},}`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a trailing comma for a missing model", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a valid unrelated root followed by a truncated requested root exits 2 for a present model", async () => {
+    // Structure: a complete unrelated root, then a requested-provider root
+    // cut off mid-entry. The truncation is a parse error, not a miss.
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
+      prep: (run) => setCatalogComment(run,
+        `{"other":{"models":{"x":${otherEntry}}}}` +
+        `{"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}",`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a truncated requested root after a valid root for a present model", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a valid unrelated root followed by a truncated requested root exits 2 for a missing model", async () => {
+    // Structure: a complete unrelated root, then an unrelated-model provider
+    // root cut off mid-entry. The truncation is a parse error, not a miss.
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
+      prep: (run) => setCatalogComment(run,
+        `{"other":{"models":{"x":${otherEntry}}}}` +
+        `{"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model",`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a truncated requested root after a valid root for a missing model", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a root closed before the requested provider member is a miss for a present model", async () => {
+    // F10/D2 decision: the requested provider member sits outside every
+    // complete catalog root, so no closed root contains the provider. Every
+    // root that opens also closes, so this is a missing provider object (a
+    // miss, exit 1), not a truncated parse error (exit 2).
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => setCatalogComment(run,
+        `{"unrelated":{"models":{"x":${otherEntry}}}}` +
+        `,"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}`),
+    });
+    try {
+      expectFullAgentTrap(r, "F10/D2: the closed-before-member present model");
+      const entry = entryValue(MISSING_MODEL);
+      expect(readFileSync(configPath(r.run), "utf8"), "F10/D2: the closed-before-member miss takes the entry route").toBe(
+        expectedConfigBytes(MISSING_REF, providersBlock(PROVIDER, MISSING_MODEL, entry)),
+      );
+      expect(entryCalls(r.log).length, "F10/D2: the closed-before-member miss resolves one helper entry").toBe(1);
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a root closed before the requested provider member is a miss for a missing model", async () => {
+    // F10/D2 decision: as above, the trailing provider object is outside any
+    // complete catalog root, so the provider object is missing (exit 1).
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => setCatalogComment(run,
+        `{"unrelated":{"models":{"x":${otherEntry}}}}` +
+        `,"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}}`),
+    });
+    try {
+      expectFullAgentTrap(r, "F10/D2: the closed-before-member missing model");
+      const entry = entryValue(MISSING_MODEL);
+      expect(readFileSync(configPath(r.run), "utf8"), "F10/D2: the closed-before-member miss takes the entry route").toBe(
+        expectedConfigBytes(MISSING_REF, providersBlock(PROVIDER, MISSING_MODEL, entry)),
+      );
+      expect(entryCalls(r.log).length, "F10/D2: the closed-before-member miss resolves one helper entry").toBe(1);
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
 });
 
 describe("F11/FR4: the helper and the config keep integer limits exact", () => {
@@ -1198,7 +1342,12 @@ describe("F11/FR4: the helper and the config keep integer limits exact", () => {
 });
 
 describe("F12/FR1: a malformed HTTP response exits 2 without a traceback", () => {
-  function startFramingServer(mode: "badsize" | "trunc" | "shortlen"): Promise<{ port: number; kill: () => void }> {
+  // F12: the sent body is always valid JSON. complete declares its exact
+  // length; half declares twice the sent length (the sent body is exactly
+  // half the declared length); short20 declares the sent length plus 20 but
+  // sends 20 bytes short; shortlen declares short and sends long. chunkedok
+  // and closedelim carry the same valid body without Content-Length framing.
+  function startFramingServer(mode: "badsize" | "trunc" | "shortlen" | "complete" | "half" | "short20" | "chunkedok" | "closedelim"): Promise<{ port: number; kill: () => void }> {
     const dir = makeTempRoot();
     const shortPayload = JSON.stringify({ location: { directory: "fake" }, data: [activeApiRow(PROVIDER, MISSING_MODEL)] });
     writeFileSync(resolve(dir, "framing.cjs"), `
@@ -1211,6 +1360,29 @@ const server = net.createServer((socket) => {
       const head = "HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nContent-Length: " + (Buffer.byteLength(shortPayload) + 20) + "\\r\\nConnection: close\\r\\n\\r\\n";
       socket.write(head + shortPayload);
       setTimeout(() => socket.destroy(), 500);
+      socket.on("error", () => {});
+      return;
+    }
+    if (mode === "complete" || mode === "half" || mode === "short20") {
+      const sent = mode === "short20" ? shortPayload.slice(0, shortPayload.length - 20) : shortPayload;
+      const declared = mode === "complete" ? Buffer.byteLength(shortPayload) : mode === "half" ? 2 * Buffer.byteLength(shortPayload) : Buffer.byteLength(shortPayload) + 20;
+      const head = "HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nContent-Length: " + declared + "\\r\\nConnection: close\\r\\n\\r\\n";
+      if (mode === "short20") {
+        socket.write(head + sent);
+        setTimeout(() => socket.destroy(), 500);
+      } else {
+        socket.end(head + sent);
+      }
+      socket.on("error", () => {});
+      return;
+    }
+    if (mode === "chunkedok" || mode === "closedelim") {
+      if (mode === "chunkedok") {
+        const head = "HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nTransfer-Encoding: chunked\\r\\nConnection: close\\r\\n\\r\\n";
+        socket.end(head + Buffer.byteLength(shortPayload).toString(16) + "\\r\\n" + shortPayload + "\\r\\n0\\r\\n\\r\\n");
+      } else {
+        socket.end("HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nConnection: close\\r\\n\\r\\n" + shortPayload);
+      }
       socket.on("error", () => {});
       return;
     }
@@ -1287,6 +1459,20 @@ setTimeout(() => process.exit(0), 25000).unref();
     expect(run.stderr.trim().split("\n").length, `${label}: F12/D1 requires one short reason`).toBe(1);
   }
 
+  function expectCompleteEntry(run: { status: number; stdout: string; stderr: string }, label: string): void {
+    expect(run.status, `${label}: F12/FR1 requires a complete response to exit 0`).toBe(0);
+    expect(Object.keys(JSON.parse(run.stdout)).sort(), `${label}: F12/FR1 requires the complete response to print only the entry fields`).toEqual([
+      "limit", "modelID", "name",
+    ]);
+  }
+
+  function expectCompleteRefList(run: { status: number; stdout: string; stderr: string }, label: string): void {
+    expect(run.status, `${label}: F12/FR1 requires a complete response to exit 0`).toBe(0);
+    expect(run.stdout.split("\n").filter((line) => line.length > 0), `${label}: F12/FR1 requires the complete response to list the active ref`).toEqual([
+      MISSING_REF,
+    ]);
+  }
+
   const modeLabel = { badsize: "chunk size", trunc: "truncated chunk", shortlen: "short Content-Length body" } as const;
   for (const mode of ["badsize", "trunc", "shortlen"] as const) {
     it(`an invalid ${modeLabel[mode]} exits 2 in entry mode`, async () => {
@@ -1304,6 +1490,59 @@ setTimeout(() => process.exit(0), 25000).unref();
       try {
         const run = await runHelperRaw(undefined, `http://127.0.0.1:${framing.port}`);
         expectCleanFailure(run, `F12/FR1: ${mode} ref-list`);
+      } finally {
+        framing.kill();
+      }
+    });
+  }
+
+  // F12 regression: HTTPResponse.length is the remaining length after the
+  // read, so the current check rejects a complete Content-Length response
+  // and accepts a half-length one. The complete and half cases fail on the
+  // current code; short20 fails on every code; the two controls succeed.
+  const lengthLabel = { complete: "complete Content-Length body", half: "half-length body", short20: "body 20 bytes short" } as const;
+  for (const mode of ["complete", "half", "short20"] as const) {
+    const check = mode === "complete" ? "succeeds" : "exits 2";
+    it(`a ${lengthLabel[mode]} ${check} in entry mode`, async () => {
+      const framing = await startFramingServer(mode);
+      try {
+        const run = await runHelperRaw(MISSING_REF, `http://127.0.0.1:${framing.port}`);
+        if (mode === "complete") expectCompleteEntry(run, `F12/FR1: ${mode} entry`);
+        else expectCleanFailure(run, `F12/FR1: ${mode} entry`);
+      } finally {
+        framing.kill();
+      }
+    });
+
+    it(`a ${lengthLabel[mode]} ${check} in ref-list mode`, async () => {
+      const framing = await startFramingServer(mode);
+      try {
+        const run = await runHelperRaw(undefined, `http://127.0.0.1:${framing.port}`);
+        if (mode === "complete") expectCompleteRefList(run, `F12/FR1: ${mode} ref-list`);
+        else expectCleanFailure(run, `F12/FR1: ${mode} ref-list`);
+      } finally {
+        framing.kill();
+      }
+    });
+  }
+
+  const framingLabel = { chunkedok: "valid chunked body", closedelim: "close-delimited body" } as const;
+  for (const mode of ["chunkedok", "closedelim"] as const) {
+    it(`a ${framingLabel[mode]} succeeds in entry mode`, async () => {
+      const framing = await startFramingServer(mode);
+      try {
+        const run = await runHelperRaw(MISSING_REF, `http://127.0.0.1:${framing.port}`);
+        expectCompleteEntry(run, `F12/FR1: ${mode} entry`);
+      } finally {
+        framing.kill();
+      }
+    });
+
+    it(`a ${framingLabel[mode]} succeeds in ref-list mode`, async () => {
+      const framing = await startFramingServer(mode);
+      try {
+        const run = await runHelperRaw(undefined, `http://127.0.0.1:${framing.port}`);
+        expectCompleteRefList(run, `F12/FR1: ${mode} ref-list`);
       } finally {
         framing.kill();
       }
@@ -1330,6 +1569,39 @@ setTimeout(() => process.exit(0), 25000).unref();
       const r = await runTempRoute({ model: MISSING_MODEL, catalog: "missing", apiBase: `http://127.0.0.1:${framing.port}` });
       try {
         expectEntryFailure(r, "F12/FR1: short Content-Length through run.sh");
+      } finally {
+        r.run.cleanup();
+      }
+    } finally {
+      framing.kill();
+    }
+  }, 120_000);
+
+  it("a complete Content-Length response succeeds through the real run.sh", async () => {
+    const framing = await startFramingServer("complete");
+    try {
+      const r = await runTempRoute({ model: MISSING_MODEL, catalog: "missing", apiBase: `http://127.0.0.1:${framing.port}` });
+      try {
+        expectFullAgentTrap(r, "F12/FR1: complete response through run.sh");
+        const entry = entryValue(MISSING_MODEL);
+        expect(readFileSync(configPath(r.run), "utf8"), "F12/FR1: the complete response takes the entry route").toBe(
+          expectedConfigBytes(MISSING_REF, providersBlock(PROVIDER, MISSING_MODEL, entry)),
+        );
+        expect(entryCalls(r.log).length, "F12/FR1: the complete response resolves one helper entry").toBe(1);
+      } finally {
+        r.run.cleanup();
+      }
+    } finally {
+      framing.kill();
+    }
+  }, 120_000);
+
+  it("a half-length body exits 2 through the real run.sh with one reason", async () => {
+    const framing = await startFramingServer("half");
+    try {
+      const r = await runTempRoute({ model: MISSING_MODEL, catalog: "missing", apiBase: `http://127.0.0.1:${framing.port}` });
+      try {
+        expectEntryFailure(r, "F12/FR1: half-length body through run.sh");
       } finally {
         r.run.cleanup();
       }
