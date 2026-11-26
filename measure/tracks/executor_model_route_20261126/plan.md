@@ -88,7 +88,7 @@ Marker use:
 Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.json`
 (verdict fail). The amended `spec.md` is the source of truth for this section.
 
-- [x] 1.4 Red round (tests: F2, F3, F4, F5, F6, F7, F1 behavioural via the real `run.sh` with fake executors); red `3605150`; evidence `bbda943`; fixtures `9d9c07a`; r6 `16f6be2`
+- [x] 1.4 Red round (tests: F2, F3, F4, F5, F6, F7, F1 behavioural via the real `run.sh` with fake executors); red `3605150`; evidence `bbda943`; fixtures `9d9c07a`; r6 `16f6be2`; role base `4a54a36`; r7 `9accdb3`
   Extend `harness/tests/meta/executor-model-route.test.ts`. Update the shared
   fake executor in `harness/tests/meta/opencode-run-fixtures.ts` and its direct
   callers. Touch no production code.
@@ -124,7 +124,7 @@ Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.
     same catalog shape. The recorded session export trips the NFR-1 leak gate,
     so full agent runs exit after the route completes.
 
-- [x] 1.5 Green round (code: F1, F4, F5, F6, F7, F8); role base `9d9c07a`; Green commit `dc157c4`
+- [x] 1.5 Green round (code: F1, F4, F5, F6, F7, F8); role base `9accdb3`; Green commit `9bfb0a1`
   Change `harness/model-api-refs.py` and the config block of `harness/run.sh`.
   Follow the amended FR1 to FR5 and D1 to D9.
   - Resolve the entry and write the config before credential staging. Install
@@ -151,9 +151,9 @@ Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.
   - Verify: `bash -n harness/run.sh` exits 0.
     `python3 -I -m py_compile harness/model-api-refs.py` exits 0. No `curl`
     call appears in the config block.
-  - Green evidence: role base `9d9c07a`; Green commit `dc157c4`. Every required
-    gate and both syntax checks exit 0. See
-    `measure/runs/executor_model_route_20261126/green-r4-bbda943.log`.
+  - Green evidence: role base `9accdb3`; Green commit `9bfb0a1`. Every required
+    gate, syntax check, real-catalog scan, and FR2 hash check passes. See
+    `measure/runs/executor_model_route_20261126/green-r6-4a54a36.log`.
   - FR2 evidence: catalog-present config bytes keep the audited hashes for both
     arms. A catalog-missing config has another hash, so the derived cohort ID
     can change.
