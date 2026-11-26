@@ -1010,7 +1010,8 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
         const unrelated = `{"other":{"models":{"x":${otherEntry}}}}`;
         const fillerLen = 65478 - script.length - unrelated.length;
         const providerObj = `{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}`;
-        const catalog = `${unrelated}${"x".repeat(Math.max(fillerLen, 0))}{${" ".repeat(60)}"${PROVIDER}":${providerObj}`;
+        // Structure: a complete unrelated root, filler bytes, then a closed requested-provider root straddling the 64 KiB chunk boundary; reads present.
+        const catalog = `${unrelated}${"x".repeat(Math.max(fillerLen, 0))}{${" ".repeat(60)}"${PROVIDER}":${providerObj}}`;
         writeFileSync(run.fake.path, `${script}\n// EXECUTOR_CATALOG ${catalog}\n`);
       },
     });
@@ -1033,7 +1034,8 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
         const unrelated = `{"other":{"models":{"x":${otherEntry}}}}`;
         const fillerLen = 65478 - script.length - unrelated.length;
         const providerObj = `{"models":{"unrelated-model":{"id":"unrelated-model"}}}`;
-        const catalog = `${unrelated}${"x".repeat(Math.max(fillerLen, 0))}{${" ".repeat(60)}"${PROVIDER}":${providerObj}`;
+        // Structure: a complete unrelated root, filler bytes, then a closed provider root without the model straddling the 64 KiB chunk boundary; reads missing.
+        const catalog = `${unrelated}${"x".repeat(Math.max(fillerLen, 0))}{${" ".repeat(60)}"${PROVIDER}":${providerObj}}`;
         writeFileSync(run.fake.path, `${script}\n// EXECUTOR_CATALOG ${catalog}\n`);
       },
     });
@@ -1049,6 +1051,7 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
     }
   }, 120_000);
   it("a complete provider with a missing final root brace exits 2 for a present model", async () => {
+    // Structure: a single root holding the complete requested provider object with the final root brace removed, so the root never closes; exits 2.
     const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => setCatalogComment(run,
@@ -1062,10 +1065,11 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   }, 120_000);
 
   it("a complete provider with a missing final root brace exits 2 for a missing model", async () => {
+    // Structure: a single root holding the unrelated-model provider object with the final root brace removed, so the root never closes; exits 2.
     const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing", apiData: [],
       prep: (run) => setCatalogComment(run,
-        `{"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}}`),
+        `{"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}`),
     });
     try {
       expectEntryFailure(r, "F10/D2: a missing final root brace for a missing model", "none");
@@ -1075,6 +1079,7 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   }, 120_000);
 
   it("a root that never closes exits 2 for a present model", async () => {
+    // Structure: a single root holding the complete requested provider object plus a truncated "other" value, so the root never closes; exits 2.
     const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => setCatalogComment(run,
@@ -1088,10 +1093,11 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   }, 120_000);
 
   it("a root that never closes exits 2 for a missing model", async () => {
+    // Structure: a single root holding the unrelated-model provider object plus a truncated "other" value, so the root never closes; exits 2.
     const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing", apiData: [],
       prep: (run) => setCatalogComment(run,
-        `{"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}},"other":{"models":{"x":`),
+        `{"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}},"other":{"models":{"x":`),
     });
     try {
       expectEntryFailure(r, "F10/D2: a root that never closes for a missing model", "none");
@@ -1101,10 +1107,11 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   }, 120_000);
 
   it("a root that closes early exits 2 for a present model", async () => {
+    // Structure: a single root holding the unrelated object first and the complete requested provider object second, with the final root brace removed, so the root never closes; exits 2.
     const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing",
       prep: (run) => setCatalogComment(run,
-        `{"unrelated":{"models":{"x":${otherEntry}}}},"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}`),
+        `{"unrelated":{"models":{"x":${otherEntry}}},"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}`),
     });
     try {
       expectEntryFailure(r, "F10/D2: a root that closes early", "none");
@@ -1114,10 +1121,11 @@ describe("F10/D2: the catalog scan validates the provider object", () => {
   }, 120_000);
 
   it("a root that closes early exits 2 for a missing model", async () => {
+    // Structure: a single root holding the unrelated object and the requested provider object with the final root brace removed, so the root never closes; exits 2.
     const r = await runTempRoute({
       model: MISSING_MODEL, catalog: "missing", apiData: [],
       prep: (run) => setCatalogComment(run,
-        `{"unrelated":{"models":{"x":${otherEntry}}},"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}}`),
+        `{"unrelated":{"models":{"x":${otherEntry}}},"opencode-go":{"models":{"unrelated-model":{"id":"unrelated-model"}}}`),
     });
     try {
       expectEntryFailure(r, "F10/D2: a root that closes early for a missing model", "none");
