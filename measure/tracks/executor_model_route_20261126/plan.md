@@ -39,7 +39,7 @@ Marker use:
 
 ## Phase 1: Executor model route for catalog-missing models (spec FR1 to FR5)
 
-- [x] 1.1 The Red tests (spec FR1 to FR5); tests `c108b2e`; evidence `bca5ced`; regression fixtures `615a3c5`; phase base `147a5f8`; role base `64c36e2`.
+- [x] 1.1 The Red tests (spec FR1 to FR5); tests `c108b2e`; evidence `bca5ced`; regression fixtures `615a3c5`; phase base `147a5f8`; role base `64c36e2`
   Write `harness/tests/meta/executor-model-route.test.ts`. Put the file beside
   `harness/tests/meta/preflight-model-api.test.ts`. Touch this test file and
   no other file.
@@ -62,7 +62,7 @@ Marker use:
   - Red evidence: base commit `147a5f8`; role base `64c36e2`; Red commit `c108b2e`. The gate exits non-zero on the base code. See `measure/runs/executor_model_route_20261126/red-64c36e2.log`.
   - Test-maintenance note (Red r3): `preflight-model-api.test.ts` and `opencode-executor.test.ts` give their fake binaries the catalog needle for the model under test (JS comment, inert on base), so the Green route takes the present-model path and preflight retry counts and exact config bytes stay unchanged. No assertion weakened.
 
-- [x] 1.2 The Green implementation (spec FR1 to FR5); role base `615a3c5`; Green commit `68cfaaa`.
+- [x] 1.2 The Green implementation (spec FR1 to FR5); role base `615a3c5`; Green commit `68cfaaa`
   Add the entry mode to `harness/model-api-refs.py`. Change only the config
   generation block of `harness/run.sh`. Follow decisions D1 to D5.
   - Keep the binary check, the version check, the ripgrep check, the credential
@@ -83,13 +83,12 @@ Marker use:
     - The four gate commands exit 0. See `measure/runs/executor_model_route_20261126/green-bca5ced.log` for each command and its output.
     - `bash -n harness/run.sh` and `python3 -I -m py_compile harness/model-api-refs.py` exit 0.
 
-## Review A r1 remediation (F1-F8)
+## Phase 1: Review A r1 remediation (F1-F8)
 
 Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.json`
 (verdict fail). The amended `spec.md` is the source of truth for this section.
 
-- [x] 1.4 Red round (tests: F2, F3, F4, F5, F6, F7, F1 behavioural via the real
-  `run.sh` with fake executors); red `3605150`.
+- [x] 1.4 Red round (tests: F2, F3, F4, F5, F6, F7, F1 behavioural via the real `run.sh` with fake executors); red `3605150`; evidence `bbda943`; fixtures `9d9c07a`
   Extend `harness/tests/meta/executor-model-route.test.ts`. Update the shared
   fake executor in `harness/tests/meta/opencode-run-fixtures.ts` and its direct
   callers. Touch no production code.
@@ -116,16 +115,16 @@ Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.
   - Verify: no test runs Podman, calls a real model, or calls the real API.
   - Red evidence: record the gate logs under
     `measure/runs/executor_model_route_20261126/`. Pin no test counts.
-  - Red evidence (r4): `cd harness && ./node_modules/.bin/vitest run tests/meta/executor-model-route.test.ts --configLoader native --maxWorkers=1`
-    exits 1 with 19 failed / 13 passed (32 checks). Failures name F1 (8 run.sh failure-path checks), F4 (5 entry-validation checks),
-    F5 (finite slow response exits 0), F6 (other-provider miss, unparsable and truncated catalogs), and F7 (2 duplicate-row checks).
-    Passing checks lock F2 coverage (real run.sh for both catalog states), F3 seams, the redirect and infinite-drip rules, and the ID grammar.
-    Affected suites all pass on the current code: preflight-model-api 35, opencode-executor 21, opencode-credential 21, opencode-fixture 2,
-    opencode-recorded 24, execution-identity 1, host-isolation 11. See `measure/runs/executor_model_route_20261126/red-r4-1c78039.log`.
-    Fixture note: the shared fake executor defaults to a provider-scoped catalog object for the run model plus a local API seam file;
-    the recorded session export trips the NFR-1 leak gate, so full agent runs deterministically exit 3 after the route completes.
+  - Red evidence: the route gate failed on the pre-Green code. The failures
+    covered F1, F4, F5, F6, and F7. The affected suites passed on that code.
+    See `measure/runs/executor_model_route_20261126/red-r4-1c78039.log` and
+    `measure/runs/executor_model_route_20261126/red-r5-bbda943.log`.
+  - Fixture note: the shared fake executor defaults to a provider-scoped
+    catalog object and a local API seam. The host-isolation fake carries the
+    same catalog shape. The recorded session export trips the NFR-1 leak gate,
+    so full agent runs exit after the route completes.
 
-- [ ] 1.5 Green round (code: F1, F4, F5, F6, F7, F8).
+- [x] 1.5 Green round (code: F1, F4, F5, F6, F7, F8); role base `9d9c07a`; Green commit `dc157c4`
   Change `harness/model-api-refs.py` and the config block of `harness/run.sh`.
   Follow the amended FR1 to FR5 and D1 to D9.
   - Resolve the entry and write the config before credential staging. Install
@@ -152,9 +151,11 @@ Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.
   - Verify: `bash -n harness/run.sh` exits 0.
     `python3 -I -m py_compile harness/model-api-refs.py` exits 0. No `curl`
     call appears in the config block.
-  - Green evidence: record the gate logs under
-    `measure/runs/executor_model_route_20261126/`. Pin no test counts. State
-    that a catalog-missing config has another hash, so the derived cohort ID
+  - Green evidence: role base `9d9c07a`; Green commit `dc157c4`. Every required
+    gate and both syntax checks exit 0. See
+    `measure/runs/executor_model_route_20261126/green-r4-bbda943.log`.
+  - FR2 evidence: catalog-present config bytes keep the audited hashes for both
+    arms. A catalog-missing config has another hash, so the derived cohort ID
     can change.
 
 - [~] 1.6 Evidence and phase acceptance (light lane).
