@@ -1,0 +1,20 @@
+{
+  "id": "ingest_daily_20261127",
+  "title": "Daily real-world ingest",
+  "type": "Chore",
+  "status": "in-progress",
+  "created": "2026-11-27",
+  "estimated_tasks": 5,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-27: run real-world ingest each day on the daily timer with trust rule A.",
+    "evidence": "Archived queue: measure/archive/QUEUE-2026-11-27.md.",
+    "dependencies": [],
+    "related_tracks": [
+      "daily_model_schedule",
+      "model_guide"
+    ]
+  }
+}

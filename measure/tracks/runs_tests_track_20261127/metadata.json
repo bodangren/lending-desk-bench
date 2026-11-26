@@ -1,0 +1,19 @@
+{
+  "id": "runs_tests_track_20261127",
+  "title": "Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash",
+  "type": "Chore",
+  "status": "pending",
+  "created": "2026-11-27",
+  "estimated_tasks": 4,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-27: add Tests track runs for the named models with the assigned arms.",
+    "evidence": "Archived queue: measure/archive/QUEUE-2026-11-27.md.",
+    "dependencies": [],
+    "related_tracks": [
+      "daily_model_schedule"
+    ]
+  }
+}

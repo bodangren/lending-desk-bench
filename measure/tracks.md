@@ -2,6 +2,30 @@
 
 ## Tracks in progress
 
+- [~] **Track: Daily real-world ingest**
+  - *Link: [ingest_daily_20261127](tracks/ingest_daily_20261127/)*
+
+- [~] **Track: Model guide code review row**
+  - *Link: [guide_code_review_20261127](tracks/guide_code_review_20261127/)*
+
+- [ ] **Track: Model guide app code row**
+  - *Link: [guide_app_code_20261127](tracks/guide_app_code_20261127/)*
+
+- [ ] **Track: Model guide docs and ops row**
+  - *Link: [guide_docs_ops_20261127](tracks/guide_docs_ops_20261127/)*
+
+- [ ] **Track: Publish the 2026-11-25 daily results**
+  - *Link: [publish_daily_1125_20261127](tracks/publish_daily_1125_20261127/)*
+
+- [ ] **Track: Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5**
+  - *Link: [runs_current_4models_20261127](tracks/runs_current_4models_20261127/)*
+
+- [ ] **Track: Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash**
+  - *Link: [runs_tests_track_20261127](tracks/runs_tests_track_20261127/)*
+
+- [ ] **Track: Current runs for new Go models**
+  - *Link: [runs_go_new_models_20261127](tracks/runs_go_new_models_20261127/)*
+
 - [~] **Track: Preflight model list from the OpenChamber API**
   - *Link: [preflight_model_api](tracks/preflight_model_api/)*
 
@@ -15,6 +39,14 @@
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
+| ingest_daily_20261127 | Daily real-world ingest | Chore | in-progress | 2026-11-27 |
+| guide_code_review_20261127 | Model guide code review row | Chore | in-progress | 2026-11-27 |
+| guide_app_code_20261127 | Model guide app code row | Chore | pending | 2026-11-27 |
+| guide_docs_ops_20261127 | Model guide docs and ops row | Chore | pending | 2026-11-27 |
+| publish_daily_1125_20261127 | Publish the 2026-11-25 daily results | Chore | pending | 2026-11-27 |
+| runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | pending | 2026-11-27 |
+| runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | pending | 2026-11-27 |
+| runs_go_new_models_20261127 | Current runs for new Go models | Chore | pending | 2026-11-27 |
 | harness_audit | Harness audit — verified grading defects | Bug | pending | 2026-08-30 |
 | bugfix_bench | Bug-fixing benchmark — lending_desk_bugfix | Feature | in-progress — sources committed at e9fb565; task 6.5 is open and no [x] task carries a SHA | 2026-09-11 |
 | bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | in-progress | 2026-09-24 |

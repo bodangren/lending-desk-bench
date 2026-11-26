@@ -1,0 +1,21 @@
+{
+  "id": "guide_code_review_20261127",
+  "title": "Model guide code review row",
+  "type": "Chore",
+  "status": "in-progress",
+  "created": "2026-11-27",
+  "estimated_tasks": 4,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-27: complete the code review passes, rank the routes, and publish the model guide row.",
+    "evidence": "Archived queue: measure/archive/QUEUE-2026-11-27.md. Route list: harness/model-guide/routes.json.",
+    "dependencies": [
+      "preflight_model_api"
+    ],
+    "related_tracks": [
+      "model_guide"
+    ]
+  }
+}

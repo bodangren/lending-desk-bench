@@ -1,0 +1,19 @@
+{
+  "id": "runs_current_4models_20261127",
+  "title": "Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5",
+  "type": "Chore",
+  "status": "pending",
+  "created": "2026-11-27",
+  "estimated_tasks": 4,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-27: add current Lending, Bugfix, and Change runs for the named models.",
+    "evidence": "Archived queue: measure/archive/QUEUE-2026-11-27.md.",
+    "dependencies": [],
+    "related_tracks": [
+      "daily_model_schedule"
+    ]
+  }
+}

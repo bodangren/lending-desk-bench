@@ -1,0 +1,20 @@
+{
+  "id": "publish_daily_1125_20261127",
+  "title": "Publish the 2026-11-25 daily results",
+  "type": "Chore",
+  "status": "pending",
+  "created": "2026-11-27",
+  "estimated_tasks": 2,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-27: publish the mimo-v2.6-pro daily results for 2026-11-25 and check the live site.",
+    "evidence": "Archived queue: measure/archive/QUEUE-2026-11-27.md.",
+    "dependencies": [],
+    "related_tracks": [
+      "daily_model_schedule",
+      "model_guide"
+    ]
+  }
+}

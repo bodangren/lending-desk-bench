@@ -1,0 +1,20 @@
+{
+  "id": "runs_go_new_models_20261127",
+  "title": "Current runs for new Go models",
+  "type": "Chore",
+  "status": "pending",
+  "created": "2026-11-27",
+  "estimated_tasks": 1,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-27: run each new Go model from the daily list refresh, publish each batch, and check the live site.",
+    "evidence": "Archived queue: measure/archive/QUEUE-2026-11-27.md.",
+    "dependencies": [],
+    "related_tracks": [
+      "daily_model_schedule",
+      "model_guide"
+    ]
+  }
+}

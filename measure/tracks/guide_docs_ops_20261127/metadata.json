@@ -1,0 +1,19 @@
+{
+  "id": "guide_docs_ops_20261127",
+  "title": "Model guide docs and ops row",
+  "type": "Chore",
+  "status": "pending",
+  "created": "2026-11-27",
+  "estimated_tasks": 3,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-27: add the docs-and-ops fixture and grader, run the session routes, and refresh the docs and ops row.",
+    "evidence": "Archived queue: measure/archive/QUEUE-2026-11-27.md.",
+    "dependencies": [],
+    "related_tracks": [
+      "model_guide"
+    ]
+  }
+}
