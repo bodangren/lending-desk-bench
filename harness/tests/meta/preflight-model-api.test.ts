@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   chmodSync,
   copyFileSync,
@@ -92,6 +92,73 @@ function runHelperCopy(opts: {
 
 function stdoutLines(stdout: string): string[] {
   return stdout.split("\n").filter((line) => line.length > 0);
+}
+
+/** Stages a temp repo with copies of the scripts under test and a fake opencode on the PATH. */
+function stageHelperRun(opts: {
+  envBase?: string;
+  unsetBase?: boolean;
+  files?: Record<string, string>;
+}): { root: string; helperCopy: string; env: NodeJS.ProcessEnv } {
+  const root = makeTempRoot();
+  const harness = resolve(root, "harness");
+  mkdirSync(harness, { recursive: true });
+  copyFileSync(BATCH, resolve(harness, "batch.sh"));
+  const helperCopy = resolve(harness, "model-api-refs.py");
+  if (existsSync(HELPER)) copyFileSync(HELPER, helperCopy);
+  for (const [name, content] of Object.entries(opts.files ?? {})) {
+    writeFileSync(resolve(root, name), content);
+  }
+  // A fake opencode on the PATH records each call. The helper must never call it (FR4).
+  const bin = resolve(root, "bin");
+  mkdirSync(bin, { recursive: true });
+  const opencodeLog = resolve(root, "opencode-calls.jsonl");
+  const opencode = resolve(bin, "opencode");
+  writeFileSync(
+    opencode,
+    `#!${process.execPath}\nrequire("node:fs").appendFileSync(${JSON.stringify(opencodeLog)}, JSON.stringify(process.argv.slice(2)) + "\\n");\nconsole.log("fake opencode");\n`,
+  );
+  chmodSync(opencode, 0o755);
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+  };
+  if (opts.unsetBase) delete env.BENCH_MODEL_API_BASE;
+  else if (opts.envBase !== undefined) env.BENCH_MODEL_API_BASE = opts.envBase;
+  return { root, helperCopy, env };
+}
+
+/**
+ * Async variant of runHelperCopy for cases where a local fake server must answer
+ * while the helper runs. spawnSync blocks the event loop, so a node:http fake server
+ * in the same process can never reply; async spawn keeps the loop alive.
+ */
+function runHelperCopyAsync(opts: {
+  envBase?: string;
+  unsetBase?: boolean;
+  files?: Record<string, string>;
+}): Promise<{ status: number; stdout: string; stderr: string; root: string }> {
+  const { root, helperCopy, env } = stageHelperRun(opts);
+  if (!existsSync(HELPER)) {
+    return Promise.resolve({ status: 127, stdout: "", stderr: "FR1: harness/model-api-refs.py is missing", root });
+  }
+  return new Promise((resolveDone) => {
+    const child = spawn("python3", ["-I", helperCopy], { cwd: root, env });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      resolveDone({ status: 99, stdout, stderr: `${stderr}FR2/D3: the helper timed out`, root });
+    }, 20_000);
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolveDone({ status: code ?? 99, stdout, stderr, root });
+    });
+  });
 }
 
 describe("preflight model list from the OpenChamber API (spec FR1 to FR4)", () => {
@@ -193,7 +260,7 @@ describe("preflight model list from the OpenChamber API (spec FR1 to FR4)", () =
     expect(source.includes("opencode-credential.sh") && source.includes("seed"), "FR3: the opencode-credential.sh seed call must stay unchanged").toBe(true);
   });
 
-  it("FR4: BENCH_MODEL_API_BASE names a local JSON file or a local fake server, never the real API", () => {
+  it("FR4: BENCH_MODEL_API_BASE names a local JSON file or a local fake server, never the real API", async () => {
     const source = batchSource();
     expect(source.includes("BENCH_MODEL_API_BASE"), "FR4: the preflight must honour the BENCH_MODEL_API_BASE test seam").toBe(true);
     const apiFile = resolve(makeTempRoot(), "api.json");
@@ -203,7 +270,11 @@ describe("preflight model list from the OpenChamber API (spec FR1 to FR4)", () =
     expect(fromFile.status, "FR4: BENCH_MODEL_API_BASE must accept a local JSON file").toBe(0);
     expect(stdoutLines(fromFile.stdout), "FR4: the file seam must list the same refs as a server").toEqual(["opencode-go/hy4-flash-free"]);
     const payload = payloadData([activeEntry("opencode-go/hungerg-free")]);
+    // Requests are recorded here and asserted after the run: no assertion may
+    // throw inside the server callback.
+    const requests: string[] = [];
     const server = createServer((req, res) => {
+      requests.push(String(req.url));
       if (req.url === "/api/model") {
         res.writeHead(200, { "content-type": "application/json" });
         res.end(payload);
@@ -212,20 +283,18 @@ describe("preflight model list from the OpenChamber API (spec FR1 to FR4)", () =
         res.end();
       }
     });
-    return new Promise<void>((resolveDone) => {
-      server.listen(0, "127.0.0.1", () => {
-        const address = server.address();
-        const port = typeof address === "object" && address ? address.port : 0;
-        const run = runHelperCopy({ envBase: `http://127.0.0.1:${port}` });
-        try {
-          expect(run.status, "FR4: BENCH_MODEL_API_BASE must accept a local fake server").toBe(0);
-          expect(stdoutLines(run.stdout), "FR4: the fake-server seam must list the API refs").toEqual(["opencode-go/hungerg-free"]);
-          expect(existsSync(resolve(HARNESS, "model-api-refs.py")) || true, "FR4: no test calls a real API or a real opencode binary").toBe(true);
-        } finally {
-          server.close(() => resolveDone());
-        }
-      });
-    });
+    await new Promise<void>((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+    try {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      // Async spawn keeps the event loop alive, so the fake server answers while the helper runs (FR4).
+      const run = await runHelperCopyAsync({ envBase: `http://127.0.0.1:${port}` });
+      expect(run.status, "FR4: BENCH_MODEL_API_BASE must accept a local fake server").toBe(0);
+      expect(stdoutLines(run.stdout), "FR4: the fake-server seam must list the API refs").toEqual(["opencode-go/hungerg-free"]);
+      expect(requests, "FR4: the helper must read the list from the local fake server").toContain("/api/model");
+    } finally {
+      await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
+    }
   });
 
   it("FR4/D9: the helper makes no opencode call and the delay seam uses a fake sleep", () => {
