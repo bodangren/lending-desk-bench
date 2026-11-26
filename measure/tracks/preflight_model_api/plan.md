@@ -1,0 +1,82 @@
+# Implementation plan — preflight_model_api
+
+PM 2026-11-26: light lane.
+
+This plan moves the batch preflight model list to the OpenChamber API. The
+batch keeps its fail-closed check. The batch no longer reads the local binary
+catalog for the model list. Spec: `spec.md`. Base commit: `162c7a2`.
+
+Order: Red tests, Green code, Review A, Phase acceptance.
+
+Constraints for every role:
+
+- The lane is light. There is no Review B. There is no Review C. There is no
+  adversarial test. There is no final acceptance. There is no closeout.
+- No role runs the `opencode` or `openchamber` CLI. No role updates the
+  OpenCode binary. No role reads the shared OpenCode store.
+- No role edits `harness/cron-daily.sh`. The served-list call at line 472 needs
+  the same source in a follow-up (spec D10).
+- No role touches these uncommitted files: `harness/model-guide/ingest.py`,
+  `harness/model-guide/ingest.sh`, `harness/schedule-tests/ingest.test.ts`,
+  `harness/model-guide/update.sh`, `harness/model-guide-tests/update.test.ts`,
+  `harness/cron-daily.sh`, `README.md`, `docs/assets/data/*`, `.opencode/`,
+  `harness/wt.txt`.
+- Stage files by explicit path. No role pushes the commit.
+- Each gate runs one test file with `--maxWorkers=1`. Every task in this phase
+  uses the same gate command:
+  `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
+
+Marker use:
+
+- `[ ]` marks an open task. The orchestrator adds `[~]` to the one open task.
+- `[x]` needs a commit SHA on the first line of the task.
+
+## Phase 1: Preflight model list from the OpenChamber API (spec FR1 to FR4)
+
+- [ ] 1.1 The Red tests (spec FR1 to FR4).
+  Write `harness/tests/meta/preflight-model-api.test.ts`. Put the file beside
+  `harness/tests/meta/opencode-credential.test.ts`. Touch this test file and no
+  other file.
+  - The test copies the scripts that it runs into a temp repo. The test sets
+    `BENCH_MODEL_API_BASE` to a local JSON file or a local fake server. A fake
+    `opencode` on the PATH records each call. A fake `sleep` records the delay
+    argument. The test writes nothing under the real `.tmp/`, `runs/`, or
+    `reports/`.
+  - Cover these behaviours: one listed active ref passes; a ref with
+    `enabled: false` fails; a ref with a different `status` fails; a reachable
+    API without the ref prints the FR2 message; a transient failure retries up
+    to three times with a five-second delay; a failed API after the retries
+    prints the D6 message; no `opencode models` call appears; the version
+    check, the ripgrep check, and the credential calls stay in place.
+  - Gate: `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
+    exits non-zero on the base code. Each failure names a missing rule of
+    FR1 to FR4.
+  - Verify: no test calls a real API, a real `opencode` binary, a browser, or a
+    model.
+
+- [ ] 1.2 The Green implementation (spec FR1 to FR4).
+  Add `harness/model-api-refs.py`. Run it as `python3 -I`. Change only the
+  model-list block of `harness/batch.sh`. Follow decisions D1 to D9.
+  - Keep the binary check, the version check, the ripgrep check,
+    `opencode-credential.sh preflight`, and `opencode-credential.sh seed`
+    unchanged.
+  - Gate: `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
+    exits 0.
+  - Verify: `grep -n "models --standalone" harness/batch.sh` prints no line.
+    The helper prints refs only and uses exit 2 for a failed read. No other
+    file changed. `harness/cron-daily.sh` is untouched.
+
+- [ ] 1.3 Review A (light lane).
+  A reviewer audits the diff against FR1 to FR4 and decisions D1 to D9. The
+  reviewer changes no code. The reviewer reports each finding with the fix or
+  the reason to keep it.
+  - Gate: `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
+    exits 0.
+  - Verify: each blocking finding has a fix in a later commit.
+
+- [ ] 1.4 Phase acceptance (light lane).
+  Check the phase on the immutable HEAD. Check that each completed task line
+  carries a commit SHA. Check the staged paths against the allowed file list.
+  - Gate: `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
+    exits 0.
+  - Verify: no staged file lies outside this phase. No push ran.

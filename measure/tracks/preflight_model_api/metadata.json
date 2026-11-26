@@ -1,0 +1,21 @@
+{
+  "id": "preflight_model_api",
+  "title": "Preflight model list from the OpenChamber API",
+  "type": "Chore",
+  "status": "in-progress",
+  "created": "2026-11-26",
+  "estimated_tasks": 4,
+  "actual_tasks": null,
+  "author_model": "opencode-go/hy4-flash-free",
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-26: read the model list from the OpenChamber API on port 38307 instead of the local binary. Never update the opencode binary. Never run the opencode CLI for the list.",
+    "evidence": "spec.md EV1-EV5. The batch preflight at harness/batch.sh:362 calls opencode_host_run models --standalone. reports/batch-hungerg-free-2026w48.log shows exit 3 with 'opencode models does not list opencode-go/hungerg-free'. GET http://127.0.0.1:38307/api/model returned 470 entries on 2026-11-26; opencode-go/hungerg-free and opencode-go/hy4-flash-free are present with status active and enabled true.",
+    "dependencies": [
+      "opencode_executor"
+    ],
+    "related_tracks": [
+      "daily_model_schedule"
+    ]
+  }
+}
