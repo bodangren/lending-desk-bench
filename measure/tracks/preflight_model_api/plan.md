@@ -33,7 +33,7 @@ Marker use:
 
 ## Phase 1: Preflight model list from the OpenChamber API (spec FR1 to FR4)
 
-- [~] 1.1 The Red tests (spec FR1 to FR4).
+- [x] 1.1 The Red tests (spec FR1 to FR4). Red commits 9c9b6ed and 4f4e3ad (r2 fake-server harness fix).
   Write `harness/tests/meta/preflight-model-api.test.ts`. Put the file beside
   `harness/tests/meta/opencode-credential.test.ts`. Touch this test file and no
   other file.
@@ -61,8 +61,11 @@ Marker use:
     `harness/model-api-refs.py` does not exist yet and `harness/batch.sh` still
     calls `opencode_host_run models --standalone`, so the failures are the
     expected missing-behavior proofs, not broken tests.
+  - Red r2 evidence (2026-11-26, commit 4f4e3ad, test file only): the FR4
+    fake-server case uses async spawn so its in-process server can answer.
+    The other 11 assertions still name the missing FR rules on base code.
 
-- [ ] 1.2 The Green implementation (spec FR1 to FR4).
+- [x] 1.2 The Green implementation (spec FR1 to FR4). Commit 394eac7.
   Add `harness/model-api-refs.py`. Run it as `python3 -I`. Change only the
   model-list block of `harness/batch.sh`. Follow decisions D1 to D9.
   - Keep the binary check, the version check, the ripgrep check,
@@ -73,6 +76,36 @@ Marker use:
   - Verify: `grep -n "models --standalone" harness/batch.sh` prints no line.
     The helper prints refs only and uses exit 2 for a failed read. No other
     file changed. `harness/cron-daily.sh` is untouched.
+  - Green evidence (2026-11-26, phase_base_sha f377765, role_base_sha 4f4e3ad,
+    implementation commit 394eac7): `harness/model-api-refs.py` reads
+    BENCH_MODEL_API_BASE as a local file or a base URL, prints only refs that
+    are active and enabled, and exits 2 with one stderr line on a failed read.
+    The batch model-list block runs it as `python3 -I`, retries helper exit 2
+    in `for attempt in 1 2 3` with `sleep 5`, matches with `grep -qFx`, and
+    prints the FR2 or D6 message. The binary, version, ripgrep, credential
+    preflight, and credential seed checks stay unchanged.
+    The targeted command exits 0 with `Test Files 1 passed (1)` and
+    `Tests 12 passed (12)`, and no uncaught error.
+    `grep -n "models --standalone" harness/batch.sh` prints no line.
+    `bash -n harness/batch.sh` exits 0.
+  - Fixture adaptations in commit 394eac7, with the reason for each:
+    `harness/tests/meta/opencode-credential-fixtures.ts` now copies `.py`
+    helpers and sets BENCH_MODEL_API_BASE to a local JSON payload. Reason: the
+    batch reads the list through the helper, so a fixture that copies batch.sh
+    must copy the helper and supply the seam. Without both, the batch exits 3
+    before the agent runs.
+    `harness/schedule-tests/daily-heavy-steps.test.ts` copies the helper in
+    copyHarnessFiles and sets the same seam. The reason is the same.
+    `harness/schedule-tests/opencode-host-isolation.test.ts` copies the helper,
+    sets the seam, and replaces its old assertion that the batch called
+    `opencode models` with an assertion that the batch exits 0 and prints
+    `EXECUTOR PREFLIGHT PASS` from the API list. Reason: FR3 removes that call.
+    The isolation, `--version`, and seed assertions stay unchanged.
+  - Other batch-related tests were run one file at a time with --maxWorkers=1;
+    each exits 0: opencode-credential.test.ts 21 passed,
+    daily-heavy-steps.test.ts 7 passed, opencode-host-isolation.test.ts 11
+    passed, bench-incremental.test.ts 5 passed, selfcheck-env.test.ts 2 passed,
+    publication-freshness.test.ts 4 passed, daily-schedule.test.ts 109 passed.
 
 - [ ] 1.3 Review A (light lane).
   A reviewer audits the diff against FR1 to FR4 and decisions D1 to D9. The
