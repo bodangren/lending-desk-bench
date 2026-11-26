@@ -59,7 +59,7 @@ Marker use:
     FR1 to FR5.
   - Verify: no test calls Podman, a real API, a real `opencode` binary, a
     browser, or a model.
-  - Red evidence: gate `cd harness && ./node_modules/.bin/vitest run tests/meta/executor-model-route.test.ts --configLoader native --maxWorkers=1` exits 1 with 14 failed / 7 passed (21 checks); base commit `147a5f8`; role base `64c36e2`; Red commit `a6284ef`.
+  - Red evidence: gate `cd harness && ./node_modules/.bin/vitest run tests/meta/executor-model-route.test.ts --configLoader native --maxWorkers=1` exits 1 with 14 failed / 7 passed (21 checks); base commit `147a5f8`; role base `64c36e2`; Red commit `c108b2e`.
 
 - [ ] 1.2 The Green implementation (spec FR1 to FR5).
   Add the entry mode to `harness/model-api-refs.py`. Change only the config
