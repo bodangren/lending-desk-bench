@@ -53,9 +53,9 @@ Marker use:
     FR1 to FR4.
   - Verify: no test calls a real API, a real `opencode` binary, a browser, or a
     model.
-  - Red evidence (2026-11-26, base `f377765`): the gate above exits 1 with
-    `Test Files 1 failed (1)` and `Tests 12 failed (12)`. Every failure names
-    its FR rule (FR1 helper/default, FR2/D4 exact match, FR2/D5 disabled omit,
+  - Red evidence (2026-11-26, base `f377765`): the gate above exits 1. See
+    `measure/runs/preflight_model_api/red-f377765.log` for the full output.
+    Every failure names its FR rule (FR1 helper/default, FR2/D4 exact match, FR2/D5 disabled omit,
     FR2/D6 unreachable message, FR2/D7 retry/exit-2, FR3 no-models-call plus
     unchanged checks, FR4 file/fake-server seam, AC6 hungerg-free). The helper
     `harness/model-api-refs.py` does not exist yet and `harness/batch.sh` still
@@ -65,17 +65,21 @@ Marker use:
     fake-server case uses async spawn so its in-process server can answer.
     The other 11 assertions still name the missing FR rules on base code.
 
-- [x] 1.2 The Green implementation (spec FR1 to FR4). Commit 394eac7.
+- [x] 1.2 The Green implementation (spec FR1 to FR4). Commits 394eac7 and 04d3950c.
   Add `harness/model-api-refs.py`. Run it as `python3 -I`. Change only the
-  model-list block of `harness/batch.sh`. Follow decisions D1 to D9.
+  model-list block of `harness/batch.sh`. Follow decisions D1 to D9. The same
+  commit adapts three callers of the copied batch:
+  `harness/tests/meta/opencode-credential-fixtures.ts`,
+  `harness/schedule-tests/daily-heavy-steps.test.ts`, and
+  `harness/schedule-tests/opencode-host-isolation.test.ts`.
   - Keep the binary check, the version check, the ripgrep check,
     `opencode-credential.sh preflight`, and `opencode-credential.sh seed`
     unchanged.
   - Gate: `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
     exits 0.
   - Verify: `grep -n "models --standalone" harness/batch.sh` prints no line.
-    The helper prints refs only and uses exit 2 for a failed read. No other
-    file changed. `harness/cron-daily.sh` is untouched.
+    The helper prints refs only and uses exit 2 for a failed read.
+    `harness/cron-daily.sh` is untouched.
   - Green evidence (2026-11-26, phase_base_sha f377765, role_base_sha 4f4e3ad,
     implementation commit 394eac7): `harness/model-api-refs.py` reads
     BENCH_MODEL_API_BASE as a local file or a base URL, prints only refs that
@@ -84,8 +88,8 @@ Marker use:
     in `for attempt in 1 2 3` with `sleep 5`, matches with `grep -qFx`, and
     prints the FR2 or D6 message. The binary, version, ripgrep, credential
     preflight, and credential seed checks stay unchanged.
-    The targeted command exits 0 with `Test Files 1 passed (1)` and
-    `Tests 12 passed (12)`, and no uncaught error.
+    The targeted command exits 0 with no uncaught error. See
+    `measure/runs/preflight_model_api/green-4f4e3ad.log` for the full output.
     `grep -n "models --standalone" harness/batch.sh` prints no line.
     `bash -n harness/batch.sh` exits 0.
   - Fixture adaptations in commit 394eac7, with the reason for each:
@@ -102,12 +106,24 @@ Marker use:
     `EXECUTOR PREFLIGHT PASS` from the API list. Reason: FR3 removes that call.
     The isolation, `--version`, and seed assertions stay unchanged.
   - Other batch-related tests were run one file at a time with --maxWorkers=1;
-    each exits 0: opencode-credential.test.ts 21 passed,
-    daily-heavy-steps.test.ts 7 passed, opencode-host-isolation.test.ts 11
-    passed, bench-incremental.test.ts 5 passed, selfcheck-env.test.ts 2 passed,
-    publication-freshness.test.ts 4 passed, daily-schedule.test.ts 109 passed.
+    each exits 0. See `measure/runs/preflight_model_api/green-4f4e3ad.log` for
+    the file list and the full output.
+  - Green r3 evidence (2026-11-26, phase_base_sha f377765, role_base_sha 1730380,
+    implementation commit 04d3950c): F1 restricts the source to a regular file
+    or an http(s) base and rejects redirects and other schemes. F2 caps file
+    and HTTP reads at 4 MiB and bounds the whole fetch with a total deadline;
+    HTTP reads use `read1` so a slow drip cannot block a buffered fill. F3
+    validates both IDs before printing and skips a malformed entry. F4 treats
+    decode, nesting, and encoding failures as exit 2 with empty stdout and one
+    stderr line, and prints no ref until the whole payload is validated. F5
+    retries only helper exit 2; any other nonzero exit stops at once with no
+    delay and the distinct message `the model API helper exited <code>`.
+    The targeted command exits 0 with no uncaught error. See
+    `measure/runs/preflight_model_api/green-1730380.log` for the full output.
+    No fixture changed in 04d3950c; the three fixture adaptations belong to
+    394eac7 and are listed in the scope of this task.
 
-- [ ] 1.3 Review A (light lane).
+- [~] 1.3 Review A (light lane).
   A reviewer audits the diff against FR1 to FR4 and decisions D1 to D9. The
   reviewer changes no code. The reviewer reports each finding with the fix or
   the reason to keep it.
