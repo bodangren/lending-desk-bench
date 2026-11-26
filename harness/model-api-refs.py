@@ -24,7 +24,7 @@ MAX_BYTES = 4 * 1024 * 1024
 FETCH_TIMEOUT = 4
 FETCH_DEADLINE = 10
 PROVIDER_RE = re.compile(r"^[A-Za-z0-9._:@+-]+$")
-MODEL_RE = re.compile(r"^[A-Za-z0-9._:@+/-]+$")
+MODEL_RE = re.compile(r"^[A-Za-z0-9._:@+/~\[\]-]+$")
 
 
 def fail(reason):
@@ -81,11 +81,16 @@ def read_payload(base):
         except OSError as exc:
             fail("cannot read model API payload file: %s" % exc)
         return decode(raw)
-    scheme = urllib.parse.urlsplit(base).scheme.lower()
-    if scheme not in ("http", "https"):
-        fail("model API base must be a file path or an http(s) URL")
-    url = base.rstrip("/") + "/api/model"
-    opener = urllib.request.build_opener(NoRedirect())
+    try:
+        scheme = urllib.parse.urlsplit(base).scheme.lower()
+        if scheme not in ("http", "https"):
+            fail("model API base must be a file path or an http(s) URL")
+        url = base.rstrip("/") + "/api/model"
+        opener = urllib.request.build_opener(NoRedirect())
+    except SystemExit:
+        raise
+    except Exception as exc:
+        fail("cannot parse model API base %s: %s" % (base, exc))
     try:
         response = opener.open(url, timeout=FETCH_TIMEOUT)
     except Exception as exc:
