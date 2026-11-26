@@ -38,3 +38,10 @@ tmp/
 # Python bytecode cache
 __pycache__/
 *.pyc
+
+# Raw real-world ingest exports (route notes stay out of git)
+harness/model-guide/data/ra-outcomes-*.json
+harness/model-guide/data/aa-reliability-*.json
+harness/model-guide/data/allowed-routes-*.json
+harness/model-guide/data/MANIFEST-*.txt
+harness/model-guide/data/ingest-*.log

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The weekly update of the model guide (spec D19, D21; PM refresh rule).
 #
-# Usage: update.sh [--docs] <path of MANIFEST-<date>.txt>
+# Usage: update.sh [--docs] [--no-commit] <path of MANIFEST-<date>.txt>
 # Run it with cwd <repo>. <repo> is three levels above this script. The
 # manifest is the `MANIFEST-<date>.txt` of spec D16 (Q-S1, Q-S2). The script
 # reads the three dated data files next to it; the date in its name is the
@@ -27,6 +27,9 @@
 # and leak checks pass does the script copy candidates into docs/. A refusal
 # leaves docs/ byte-identical and makes no commit.
 #
+# --no-commit needs --docs. It writes and leak-checks the same candidates,
+# prints `update: written <path>` per file, and makes no git commit and no push.
+# The daily job uses it so that its own publish block owns the commit.
 # One git commit holds the data files plus the rebuilt pages, staged with
 # explicit paths. An unrelated dirty file stays uncommitted. The script never
 # pushes. A commit prints `update: committed <path>` per committed path; a
@@ -42,16 +45,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 DOCS=0
-if [ $# -eq 0 ]; then
+NO_COMMIT=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --docs) DOCS=1; shift ;;
+    --no-commit) NO_COMMIT=1; shift ;;
+    *) break ;;
+  esac
+done
+if [ $# -ne 1 ]; then
   echo "usage: update.sh <path of MANIFEST-<date>.txt>" >&2
   exit 2
 fi
-if [ "$1" = "--docs" ]; then
-  DOCS=1
-  shift
-fi
-if [ $# -ne 1 ]; then
-  echo "usage: update.sh <path of MANIFEST-<date>.txt>" >&2
+if [ "$NO_COMMIT" -eq 1 ] && [ "$DOCS" -ne 1 ]; then
+  echo "update: --no-commit needs --docs"
   exit 2
 fi
 
@@ -337,6 +344,14 @@ for rel in "${COMMIT_REL[@]}"; do
 done
 
 cd "$ROOT"
+# The daily job passes --no-commit: it writes and leak-checks the same
+# candidates, then its own publish block commits docs/ after the branch gate.
+if [ "$NO_COMMIT" -eq 1 ]; then
+  for rel in "${COMMIT_REL[@]}"; do
+    echo "update: written $rel"
+  done
+  exit 0
+fi
 git add -- "${COMMIT_PATHS[@]}"
 CHANGED="$(git diff --cached --name-only -- "${COMMIT_PATHS[@]}" | LC_ALL=C sort)"
 if [ -z "$CHANGED" ]; then

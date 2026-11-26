@@ -81,6 +81,8 @@ LOCAL_DATE=""
 EXCLUDED=""
 MODELS_RAN=0
 NOTICE_SENT=0
+# The ingest runs at most once per live job, before the first publish commit.
+INGEST_DONE=0
 LAST_START="${BENCH_DAILY_LAST_START:-20:00}"
 MAX_MODELS="${BENCH_DAILY_MAX_MODELS:-12}"
 
@@ -904,6 +906,22 @@ fs.writeFileSync(process.argv[5], JSON.stringify(rec, null, 2) + "\n");
     echo "DAILY END $(date -Is)"
     if [ -n "$SKIP_REASON" ]; then exit 3; fi
     exit 0
+  fi
+
+  # ---- Real-world ingest (soft hook) -------------------------------------------
+  # The publish block sits inside the model loop. Moving the call outside it
+  # would need a loop rewrite, so a one-shot guard gives one call per job.
+  # The ingest never fails the daily job, and a dry run skips it.
+  # The timer enables it here; a direct run refuses by default.
+  if [ "$DRY_RUN" != "1" ] && [ "$INGEST_DONE" -eq 0 ] && [ -f "$H/model-guide/ingest.sh" ]; then
+    INGEST_DONE=1
+    INGEST_LOG="$(INGEST_ENABLED=1 INGEST_NO_COMMIT=1 bash "$H/model-guide/ingest.sh" 2>&1)" && INGEST_RC=0 || INGEST_RC=$?
+    if [ "$INGEST_RC" -eq 0 ]; then
+      echo "DAILY INGEST OK $(date -u +%F)"
+    else
+      INGEST_REASON="${INGEST_LOG##*$'\n'}"
+      echo "DAILY INGEST FAIL ${INGEST_REASON:-unknown}"
+    fi
   fi
 
 # ---- Publish (FR-8, D10, D15, D16) --------------------------------------------

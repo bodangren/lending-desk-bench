@@ -289,7 +289,9 @@ Other known limits:
 
 ## Model guide weekly update
 
-The PM sends a new export when fresh model data arrives, and the export manifest is `MANIFEST-<date>.txt`. An operator runs `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>` by hand when the export arrives; the job is not scheduled.
+The PM sends a new export when fresh model data arrives, and the export manifest is `MANIFEST-<date>.txt`. An operator runs `harness/model-guide/update.sh <path of MANIFEST-<date>.txt>` by hand when the export arrives. The daily job refreshes the guide from the current outcomes. An operator can run `INGEST_ENABLED=1 harness/model-guide/ingest.sh` by hand.
+
+The daily job runs the real-world ingest with each daily publish. The ingest reads the outcomes database read-only. It writes the dated files and manifest into the private model-guide input outside the repository. The private input holds the outcomes, reliability and routes files. It then rebuilds the guide with `update.sh --docs --no-commit`, so the daily publish owns the commit. `INGEST_ENABLED=1 harness/model-guide/ingest.sh --dry-run` writes to a temporary folder and makes no repo change.
 
 A plain run is the preview-only branch. It writes `docs/assets/data/real-work.json` and `docs/assets/data/model-guide.json` into `.tmp/model-guide-preview` only. It writes no file under `docs/` and makes no commit.
 

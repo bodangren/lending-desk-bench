@@ -360,6 +360,7 @@ describe("the weekly update (spec D19, D21)", () => {
         join(DATA_DIR, REAL_WORK_JSON),
         join("docs", "index.html"),
         join("docs", "real-work.html"),
+        join("docs", "review.html"),
       ].sort(),
     );
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(String(Number(commits) + 1));
@@ -393,6 +394,48 @@ describe("the weekly update (spec D19, D21)", () => {
     expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
     expect(git(root, ["status", "--short"]), "the refused run changes no status")
       .toBe(dirty);
+  });
+
+  it("U4: --no-commit writes the docs files, prints written lines, and makes no commit", () => {
+    const { root, manifest } = updateRepo("no-commit");
+    approve(root);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+    const head = git(root, ["rev-parse", "HEAD"]);
+
+    const result = runUpdate(root, ["--docs", "--no-commit", manifest]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+
+    const published = [
+      join(DATA_DIR, MODEL_GUIDE_JSON),
+      join(DATA_DIR, REAL_WORK_JSON),
+      join("docs", "index.html"),
+      join("docs", "real-work.html"),
+      join("docs", "review.html"),
+    ];
+    const lines = result.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
+    expect(lines, "one written line per published path")
+      .toEqual(published.map((path) => `update: written ${path}`));
+    expect(result.stdout, "no commit line").not.toContain("update: committed");
+    for (const path of published) {
+      expect(existsSync(join(root, path)), `wrote ${path}`).toBe(true);
+    }
+    expect(git(root, ["rev-list", "--count", "HEAD"]), "no new commit").toBe(commits);
+    expect(git(root, ["rev-parse", "HEAD"]), "HEAD is unchanged").toBe(head);
+    expect(git(root, ["diff", "--cached", "--name-only"]), "nothing is staged").toBe("");
+    expect(git(root, ["status", "--short"]), "the changes stay for the caller")
+      .toContain(join(DATA_DIR, REAL_WORK_JSON));
+  });
+
+  it("U5: --no-commit without --docs refuses on one stdout line and writes nothing", () => {
+    const { root, manifest } = updateRepo("no-commit-without-docs");
+    const before = treeHashes(root);
+    const commits = git(root, ["rev-list", "--count", "HEAD"]);
+    const result = runUpdate(root, ["--no-commit", manifest]);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(2);
+    expect(result.stderr).toBe("");
+    expect(result.stdout).toBe("update: --no-commit needs --docs\n");
+    expect(treeHashes(root)).toEqual(before);
+    expect(git(root, ["rev-list", "--count", "HEAD"])).toBe(commits);
   });
 
   it("UP1: update.sh with no argument gives the usage line on stderr, exit 2, and writes no file", () => {
