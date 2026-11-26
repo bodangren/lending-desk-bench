@@ -88,7 +88,7 @@ Marker use:
 Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.json`
 (verdict fail). The amended `spec.md` is the source of truth for this section.
 
-- [x] 1.4 Red round (tests: F2, F3, F4, F5, F6, F7, F1 behavioural via the real `run.sh` with fake executors); red `3605150`; evidence `bbda943`; fixtures `9d9c07a`
+- [x] 1.4 Red round (tests: F2, F3, F4, F5, F6, F7, F1 behavioural via the real `run.sh` with fake executors); red `3605150`; evidence `bbda943`; fixtures `9d9c07a`; r6 `R6SHA`
   Extend `harness/tests/meta/executor-model-route.test.ts`. Update the shared
   fake executor in `harness/tests/meta/opencode-run-fixtures.ts` and its direct
   callers. Touch no production code.

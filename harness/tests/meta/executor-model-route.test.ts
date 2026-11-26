@@ -7,19 +7,24 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { createServer, type Server } from "node:http";
+import { createServer as createTcpServer } from "node:net";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   activeApiRow,
   HARNESS,
   prepareOpencodeRun,
+  ROOT,
   type ExecutorCatalog,
 } from "./opencode-run-fixtures";
-import { TEST_MODEL } from "./schema4-fixtures";
+import { createFakeOpencode, TEST_MODEL } from "./schema4-fixtures";
 
 const PROVIDER = "opencode-go";
 const PRESENT_MODEL = TEST_MODEL;
@@ -115,22 +120,30 @@ async function runRoute(opts: {
   return { run, status: result.status, stdout: String(result.stdout ?? ""), stderr: String(result.stderr ?? ""), log, staging };
 }
 
-const ROUTE_REASON = /model API|providerID\/modelID|OpenCode catalog|cannot read OpenCode/i;
-const ROUTE_WORD = /entry|helper|config|opencode\.json/i;
+const ROUTE_REASON = /model API|providerID\/modelID|OpenCode catalog|cannot read OpenCode|OpenCode config/;
+const KNOWN_HOST_DIAGNOSTIC = [
+  /HOST NOT READY/,
+  /host busy/,
+  /preflight exited/,
+  /^\s{2}/,
+];
 
 /**
- * D3: one short reason. An empty stderr never counts as a reason. Exactly one
- * line names the model-route failure; no other line may mention the entry,
- * the helper, or the config. Unrelated host diagnostics stay allowed.
+ * D3/F13: one short reason. An empty stderr never counts as a reason. Exactly
+ * one line names the model-route failure; every other line must match the
+ * explicit allow-list of known host diagnostics.
  */
 function expectSingleRouteReason(stderr: string, label: string): void {
   const lines = stderr.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
   expect(lines.length, `${label}: F1/D3 requires stderr, and an empty stderr is a failure`).toBeGreaterThan(0);
   const naming = lines.filter((line) => ROUTE_REASON.test(line));
-  expect(naming.length, `${label}: F1/D3 requires exactly one line naming the model-route reason`).toBe(1);
+  expect(naming.length, `${label}: F13/D3 requires exactly one line naming the model-route reason`).toBe(1);
   for (const line of lines) {
     if (naming.includes(line)) continue;
-    expect(ROUTE_WORD.test(line), `${label}: F1/D3 forbids route words outside the reason line`).toBe(false);
+    expect(
+      KNOWN_HOST_DIAGNOSTIC.some((known) => known.test(line)),
+      `${label}: F13/D3 allows only the route reason and known host diagnostics (got: ${line})`,
+    ).toBe(true);
   }
 }
 
@@ -284,6 +297,7 @@ const server = http.createServer((req, res) => {
   }
 });
 server.listen(0, "127.0.0.1", () => console.log("REDIRECTOR_PORT=" + server.address().port));
+setTimeout(() => process.exit(0), 25000).unref();
 `);
     return new Promise((resolveDone, reject) => {
       const child = spawn(process.execPath, [resolve(dir, "redirector.cjs")], { stdio: ["ignore", "pipe", "inherit"] });
@@ -427,7 +441,7 @@ function makeTempRoot(): string {
 const HELPER = resolve(HARNESS, "model-api-refs.py");
 
 function runEntryCopy(opts: {
-  ref: string;
+  ref?: string;
   envBase?: string;
   unsetBase?: boolean;
   files?: Record<string, string>;
@@ -444,7 +458,8 @@ function runEntryCopy(opts: {
   const env: NodeJS.ProcessEnv = { ...process.env };
   if (opts.unsetBase) delete env.BENCH_MODEL_API_BASE;
   else if (opts.envBase !== undefined) env.BENCH_MODEL_API_BASE = opts.envBase;
-  const result = spawnSync("python3", ["-I", helperCopy, opts.ref], {
+  const args = opts.ref === undefined ? [] : [opts.ref];
+  const result = spawnSync("python3", ["-I", helperCopy, ...args], {
     cwd: root, env, encoding: "utf8", timeout: 20_000,
   });
   return { status: result.status ?? 99, stdout: String(result.stdout ?? ""), stderr: String(result.stderr ?? ""), root };
@@ -602,8 +617,11 @@ describe("F7/FR1: duplicate rows select the first active and enabled match in bo
       "limit", "modelID", "name",
     ]);
     expect(printed.name, "F7/FR1: the entry uses the active row").toBe(`${MISSING_MODEL} Name`);
-    const listed = runEntryCopy({ ref: MISSING_REF, envBase: apiFile });
-    expect(listed.status, "F7/FR1: the ref-list mode stays exit 0 on the same payload").toBe(0);
+    const listed = runEntryCopy({ envBase: apiFile });
+    expect(listed.status, "F9: the zero-argument mode lists the active refs").toBe(0);
+    expect(listed.stdout.split("\n").filter((line) => line.length > 0), "F9: ref-list mode prints the active ref").toEqual([
+      MISSING_REF,
+    ]);
   });
 
   it("an inactive first row and an active later row agree, and the entry succeeds", () => {
@@ -716,22 +734,427 @@ describe("FR1: the helper keeps the ID grammar of the ref-list mode", () => {
   });
 });
 
-describe("FR3: every check stays off Podman, real binaries, browsers, models, and the real API", () => {
-  it("the suite names only the temp, fake, and local seams", () => {
-    const self = readFileSync(resolve(import.meta.dirname, "executor-model-route.test.ts"), "utf8");
-    // Each banned shape is built by concatenation so this check never matches its own source text.
-    for (const banned of ["pod" + "man", "383" + "07", "/usr/local/bin/open" + "code", "play" + "wright", "pup" + "peteer"]) {
-      expect(self.includes(banned), `FR3: no check may touch ${banned}`).toBe(false);
+describe("F9/FR3: a temp-repo run writes only under the temp dir", () => {
+  it("leaves nothing under the real ROOT/runs", async () => {
+    const realRuns = resolve(ROOT, "runs");
+    const before = new Set(existsSync(realRuns) ? readdirSync(realRuns) : []);
+    const repo = makeTempRoot();
+    try {
+      const harness = resolve(repo, "harness");
+      mkdirSync(harness, { recursive: true });
+      for (const entry of readdirSync(HARNESS, { withFileTypes: true })) {
+        if (entry.isFile() && /\.(sh|ts|json|cjs|py)$/.test(entry.name)) {
+          copyFileSync(resolve(HARNESS, entry.name), resolve(harness, entry.name));
+        } else if (entry.isDirectory() && ["node_modules", "tests"].includes(entry.name)) {
+          symlinkSync(resolve(HARNESS, entry.name), resolve(harness, entry.name), "dir");
+        }
+      }
+      mkdirSync(resolve(repo, "fixture"), { recursive: true });
+      symlinkSync(resolve(ROOT, "fixture", "node_modules"), resolve(repo, "fixture", "node_modules"), "dir");
+      const fake = createFakeOpencode(repo);
+      const apiFile = resolve(repo, "model-api.json");
+      writeFileSync(apiFile, JSON.stringify({ location: { directory: "fake" }, data: [activeApiRow(PROVIDER, "other-model")] }));
+      const runId = `iso-${process.pid}-${Date.now()}`;
+      const runtime = resolve(repo, "runtime");
+      for (const dir of [runtime, resolve(repo, "tmp"), resolve(repo, "home"), resolve(repo, "skills")]) {
+        mkdirSync(dir, { recursive: true });
+      }
+      const env: NodeJS.ProcessEnv = {
+        ...process.env,
+        PATH: `${resolve(repo, "bin")}:${dirname(process.execPath)}:/usr/bin:/bin`,
+        HOME: resolve(repo, "home"),
+        LANG: "C.UTF-8",
+        TMPDIR: resolve(repo, "tmp"),
+        XDG_RUNTIME_DIR: runtime,
+        BENCH_TRACK: "build",
+        BENCH_IGNORE_LOAD: "1",
+        BENCH_WAIT_FOR_IDLE: "0",
+        BENCH_OPENCODE_BIN: fake.path,
+        BENCH_MODEL_API_BASE: apiFile,
+        BENCH_SKILL_ROOT: resolve(repo, "skills"),
+        AGENT_TIMEOUT: "2",
+        MAX_LOAD_PER_CPU: "1000000",
+        MIN_AVAIL_MB: "0",
+        MAX_SWAP_USED_MB: "100000000",
+      };
+      const result = spawnSync("/bin/bash", [resolve(harness, "run.sh"), PROVIDER, "iso-model", "a", runId], {
+        cwd: harness, env, encoding: "utf8", timeout: 120_000, maxBuffer: 16 * 1024 * 1024,
+      });
+      expect(result.error, "F9/FR3: the temp-repo run must finish").toBeUndefined();
+      const after = existsSync(realRuns) ? readdirSync(realRuns) : [];
+      expect(after.filter((name) => !before.has(name)), "F9/FR3: no run directory may appear under the real ROOT/runs").toEqual([]);
+      expect(existsSync(resolve(repo, "runs", runId)), "F9/FR3: the temp repo holds the run").toBe(true);
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
     }
-    expect(self.includes("BENCH_OPENCODE_BIN"), "FR3: the checks name the fake-binary seam").toBe(true);
-    expect(self.includes("BENCH_MODEL_API_BASE"), "FR3: the checks name the local-source seam").toBe(true);
+  }, 120_000);
+});
+
+describe("F5/FR1: a slow-header response ends at the ten-second deadline", () => {
+  it("exits 2 in about 10 s, not about 12 s", async () => {
+    const payload = entryPayload([activeApiRow(PROVIDER, MISSING_MODEL)]);
+    const server = createTcpServer((socket) => {
+      socket.once("data", () => {
+        socket.write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n");
+        let n = 0;
+        const timer = setInterval(() => {
+          n += 1;
+          socket.write(`X-Drip-${n}: yes\r\n`);
+        }, 3000);
+        setTimeout(() => {
+          clearInterval(timer);
+          socket.write(`\r\n${payload}`);
+          socket.end();
+        }, 12_000);
+        socket.on("error", () => { clearInterval(timer); });
+      });
+      socket.on("error", () => {});
+    });
+    await new Promise<void>((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+    try {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      const root = makeTempRoot();
+      const harness = resolve(root, "harness");
+      mkdirSync(harness, { recursive: true });
+      if (!existsSync(HELPER)) throw new Error("FR1: harness/model-api-refs.py is missing");
+      copyFileSync(HELPER, resolve(harness, "model-api-refs.py"));
+      const run: { status: number; stdout: string; stderr: string; ms: number } = await new Promise((resolveDone) => {
+        const started = Date.now();
+        const child = spawn("python3", ["-I", resolve(harness, "model-api-refs.py"), MISSING_REF], {
+          cwd: root, env: { ...process.env, BENCH_MODEL_API_BASE: `http://127.0.0.1:${port}` },
+        });
+        let stdout = "";
+        let stderr = "";
+        child.stdout.setEncoding("utf8");
+        child.stderr.setEncoding("utf8");
+        child.stdout.on("data", (chunk) => { stdout += chunk; });
+        child.stderr.on("data", (chunk) => { stderr += chunk; });
+        const timer = setTimeout(() => {
+          child.kill("SIGKILL");
+          resolveDone({ status: 99, stdout, stderr, ms: Date.now() - started });
+        }, 60_000);
+        child.on("close", (code) => {
+          clearTimeout(timer);
+          resolveDone({ status: code ?? 99, stdout, stderr, ms: Date.now() - started });
+        });
+      });
+      expect(run.status, "F5/FR1: a slow-header response must exit 2").toBe(2);
+      expect(run.ms, `F5/FR1: the whole read ends at 10 s, not 12 s (took ${run.ms} ms)`).toBeLessThan(11_000);
+      expect(run.stdout, "F5/FR1: a timed-out read prints nothing on stdout").toBe("");
+    } finally {
+      await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
+    }
+  }, 60_000);
+});
+
+describe("F10/D2: the catalog scan validates the provider object", () => {
+  function setCatalogComment(run: FixtureRun, catalogJson: string): void {
+    const kept = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG"));
+    writeFileSync(run.fake.path, `${kept.join("\n")}\n// EXECUTOR_CATALOG ${catalogJson}\n`);
+  }
+
+  const otherEntry = '{"id":"x","name":"x","limit":{"context":1,"input":1,"output":1}}';
+
+  it("a null provider object with an unrelated models object exits 2", async () => {
+    const r = await runRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
+      prep: (run) => setCatalogComment(run, `{"opencode-go":null,"other":{"models":{"x":${otherEntry}}}}`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a null provider object", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("an empty requested provider object exits 2", async () => {
+    const r = await runRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
+      prep: (run) => setCatalogComment(run, `{"other":{"models":{"x":${otherEntry}}},"opencode-go":{}}`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: an empty provider object", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a truncated provider value after a valid unrelated object exits 2", async () => {
+    const r = await runRoute({
+      model: MISSING_MODEL, catalog: "missing", apiData: [activeApiRow(PROVIDER, "other-model")],
+      prep: (run) => setCatalogComment(run, `{"other":{"models":{"x":${otherEntry}}},"opencode-go":`),
+    });
+    try {
+      expectEntryFailure(r, "F10/D2: a truncated provider value", "none");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a nested settings object holding the provider and models keys is not the catalog", async () => {
+    const entry = entryValue(MISSING_MODEL);
+    const nested = `{"settings":{"opencode-go":{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}}}`;
+    const r = await runRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => setCatalogComment(run, nested),
+    });
+    try {
+      const configExists = existsSync(configPath(r.run));
+      const viaMiss = configExists
+        && (JSON.parse(readFileSync(configPath(r.run), "utf8")) as Record<string, Record<string, Record<string, unknown>>>)
+          .providers?.[PROVIDER]?.models?.[MISSING_MODEL] !== undefined
+        && entryCalls(r.log).length === 1;
+      const viaError = !configExists && r.status === 2;
+      expect(viaMiss || viaError, "F10/D2: nested provider and models keys never count as the catalog").toBe(true);
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a valid provider object split across the 64 KiB chunk boundary reads present", async () => {
+    const entry = entryValue(MISSING_MODEL);
+    const r = await runRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => {
+        const script = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG")).join("\n");
+        const unrelated = `{"other":{"models":{"x":${otherEntry}}}}`;
+        const fillerLen = 65478 - script.length - unrelated.length;
+        const providerObj = `{"models":{"${MISSING_MODEL}":{"id":"${MISSING_MODEL}","name":"${MISSING_MODEL} Name","limit":{"context":1000000,"input":1000000,"output":65536}}}}`;
+        const catalog = `${unrelated}${"x".repeat(Math.max(fillerLen, 0))}{${" ".repeat(60)}"${PROVIDER}":${providerObj}`;
+        writeFileSync(run.fake.path, `${script}\n// EXECUTOR_CATALOG ${catalog}\n`);
+      },
+    });
+    try {
+      expectFullAgentTrap(r, "F10/D2: the chunk-boundary present model");
+      const bytes = readFileSync(configPath(r.run), "utf8");
+      expect(bytes, "F10/D2: the split provider object still reads present").toBe(expectedConfigBytes(MISSING_REF));
+      expect(JSON.parse(bytes), "F10/D2: the present model gets no providers key").not.toHaveProperty("providers");
+      expect(helperCalls(r.log).length, "F10/D2: a present model makes no API call").toBe(0);
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+
+  it("a valid provider object split across the chunk boundary reads missing", async () => {
+    const r = await runRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => {
+        const script = readFileSync(run.fake.path, "utf8").split("\n").filter((line) => !line.includes("EXECUTOR_CATALOG")).join("\n");
+        const unrelated = `{"other":{"models":{"x":${otherEntry}}}}`;
+        const fillerLen = 65478 - script.length - unrelated.length;
+        const providerObj = `{"models":{"unrelated-model":{"id":"unrelated-model"}}}`;
+        const catalog = `${unrelated}${"x".repeat(Math.max(fillerLen, 0))}{${" ".repeat(60)}"${PROVIDER}":${providerObj}`;
+        writeFileSync(run.fake.path, `${script}\n// EXECUTOR_CATALOG ${catalog}\n`);
+      },
+    });
+    try {
+      expectFullAgentTrap(r, "F10/D2: the chunk-boundary missing model");
+      const bytes = readFileSync(configPath(r.run), "utf8");
+      expect(JSON.parse(bytes).providers, "F10/D2: the split provider object still reads missing").toEqual(
+        providersBlock(PROVIDER, MISSING_MODEL, entryValue(MISSING_MODEL)),
+      );
+      expect(entryCalls(r.log).length, "F10/D2: the missing model resolves one helper entry").toBe(1);
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+});
+
+describe("F11/FR4: the helper and the config keep integer limits exact", () => {
+  function rawPayload(limitJson: string): string {
+    return `{"location":{"directory":"fake"},"data":[{"id":"x","providerID":"${PROVIDER}","modelID":"${MISSING_MODEL}","type":"language","name":"n","enabled":true,"status":"active","limit":${limitJson}}]}`;
+  }
+
+  function expectEntryRejectsRaw(limitJson: string, label: string): void {
+    const apiFile = resolve(makeTempRoot(), "api.json");
+    writeFileSync(apiFile, rawPayload(limitJson));
+    const run = runEntryCopy({ ref: MISSING_REF, envBase: apiFile });
+    expect(run.status, `${label}: F11/FR4 requires exit 2`).toBe(2);
+    expect(run.stdout, `${label}: F11/FR4 requires empty stdout`).toBe("");
+    expect(run.stderr.trim().length, `${label}: an empty stderr never counts as one reason`).toBeGreaterThan(0);
+    expect(run.stderr.trim().split("\n").length, `${label}: F11/FR4 requires one short stderr reason`).toBe(1);
+  }
+
+  function expectEntryPrintsRaw(limitJson: string, expectedLimit: Record<string, number>, label: string): void {
+    const apiFile = resolve(makeTempRoot(), "api.json");
+    writeFileSync(apiFile, rawPayload(limitJson));
+    const run = runEntryCopy({ ref: MISSING_REF, envBase: apiFile });
+    expect(run.status, `${label}: a range-valid entry exits 0`).toBe(0);
+    expect((JSON.parse(run.stdout) as Record<string, unknown>).limit, `${label}: the printed limit is exact`).toEqual(expectedLimit);
+  }
+
+  it("a 10^400 context exits 2", () => {
+    expectEntryRejectsRaw(`{"context":${"1" + "0".repeat(400)},"input":1000000,"output":65536}`, "F11/FR4: context 10^400");
   });
 
-  it("every check writes only under a temp repo, never the real runs tree", () => {
-    const self = readFileSync(resolve(import.meta.dirname, "executor-model-route.test.ts"), "utf8");
-    expect(self.includes("mkdtempSync"), "FR3: each check stages its files in a temp repo copy").toBe(true);
-    for (const real of ['"run' + 's/', '"report' + 's/']) {
-      expect(self.includes(real), `FR3: no check may write under the real ${real} tree`).toBe(false);
-    }
+  it("an input of 2^53+1 exits 2", () => {
+    expectEntryRejectsRaw(`{"context":1000000,"input":9007199254740993,"output":65536}`, "F11/FR4: input 2^53+1");
   });
+
+  it("the boundary 2^53-1 prints exactly", () => {
+    expectEntryPrintsRaw(
+      `{"context":9007199254740991,"input":9007199254740991,"output":9007199254740991}`,
+      { context: 9007199254740991, input: 9007199254740991, output: 9007199254740991 },
+      "F11/FR4: boundary 2^53-1",
+    );
+  });
+
+  it("zero limits print exactly", () => {
+    expectEntryPrintsRaw(`{"context":0,"input":0,"output":0}`, { context: 0, input: 0, output: 0 }, "F11/FR4: zero limits");
+  });
+
+  it("the generated config limit equals the entry values exactly", async () => {
+    const limit = { context: 9007199254740991, input: 9007199254740991, output: 9007199254740991 };
+    const r = await runRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      apiData: [{ ...activeApiRow(PROVIDER, MISSING_MODEL), limit }],
+    });
+    try {
+      expectFullAgentTrap(r, "F11/FR4: the boundary config run");
+      const config = JSON.parse(readFileSync(configPath(r.run), "utf8")) as Record<string, Record<string, Record<string, Record<string, unknown>>>>;
+      expect(config.providers?.[PROVIDER]?.models?.[MISSING_MODEL], "F11/FR4: the provider block holds the entry").toEqual({
+        modelID: MISSING_MODEL, name: `${MISSING_MODEL} Name`, limit,
+      });
+      expect(config.providers?.[PROVIDER]?.models?.[MISSING_MODEL], "F11/FR4: the limit equals the entry values exactly").toMatchObject({ limit });
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+});
+
+describe("F12/FR1: a malformed HTTP response exits 2 without a traceback", () => {
+  function startFramingServer(mode: "badsize" | "trunc"): Promise<{ port: number; kill: () => void }> {
+    const dir = makeTempRoot();
+    writeFileSync(resolve(dir, "framing.cjs"), `
+const net = require("node:net");
+const mode = ${JSON.stringify(mode)};
+const server = net.createServer((socket) => {
+  socket.once("data", () => {
+    const head = "HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nTransfer-Encoding: chunked\\r\\nConnection: close\\r\\n\\r\\n";
+    if (mode === "badsize") {
+      socket.write(head + "ZZZ\\r\\nboom\\r\\n0\\r\\n\\r\\n");
+      socket.end();
+    } else {
+      socket.write(head + "64\\r\\n0123456789");
+      setTimeout(() => socket.destroy(), 500);
+    }
+    socket.on("error", () => {});
+  });
+  socket.on("error", () => {});
+});
+server.listen(0, "127.0.0.1", () => console.log("FRAMING_PORT=" + server.address().port));
+setTimeout(() => process.exit(0), 25000).unref();
+`);
+    return new Promise((resolveDone, reject) => {
+      const child = spawn(process.execPath, [resolve(dir, "framing.cjs")], { stdio: ["ignore", "pipe", "inherit"] });
+      child.stdout.setEncoding("utf8");
+      let buf = "";
+      const timer = setTimeout(() => {
+        child.kill("SIGKILL");
+        reject(new Error("the framing server did not start"));
+      }, 10_000);
+      child.stdout.on("data", (chunk: string) => {
+        buf += chunk;
+        const m = buf.match(/FRAMING_PORT=(\d+)/);
+        if (m) {
+          clearTimeout(timer);
+          resolveDone({ port: Number(m[1]), kill: () => { child.kill("SIGKILL"); } });
+        }
+      });
+      child.on("error", (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+  }
+
+  async function runHelperRaw(ref: string | undefined, base: string): Promise<{ status: number; stdout: string; stderr: string }> {
+    const root = makeTempRoot();
+    const harness = resolve(root, "harness");
+    mkdirSync(harness, { recursive: true });
+    if (!existsSync(HELPER)) throw new Error("FR1: harness/model-api-refs.py is missing");
+    copyFileSync(HELPER, resolve(harness, "model-api-refs.py"));
+    return new Promise((resolveDone) => {
+      const args = ref === undefined ? [] : [ref];
+      const child = spawn("python3", ["-I", resolve(harness, "model-api-refs.py"), ...args], {
+        cwd: root, env: { ...process.env, BENCH_MODEL_API_BASE: base },
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.setEncoding("utf8");
+      child.stderr.setEncoding("utf8");
+      child.stdout.on("data", (chunk) => { stdout += chunk; });
+      child.stderr.on("data", (chunk) => { stderr += chunk; });
+      const timer = setTimeout(() => {
+        child.kill("SIGKILL");
+        resolveDone({ status: 99, stdout, stderr });
+      }, 20_000);
+      child.on("close", (code) => {
+        clearTimeout(timer);
+        resolveDone({ status: code ?? 99, stdout, stderr });
+      });
+    });
+  }
+
+  function expectCleanFailure(run: { status: number; stdout: string; stderr: string }, label: string): void {
+    expect(run.status, `${label}: F12/D1 requires exit 2, not a traceback exit`).toBe(2);
+    expect(run.stdout, `${label}: F12/D1 requires empty stdout`).toBe("");
+    expect(run.stderr.trim().length, `${label}: an empty stderr never counts as one reason`).toBeGreaterThan(0);
+    expect(run.stderr.trim().split("\n").length, `${label}: F12/D1 requires one short reason`).toBe(1);
+  }
+
+  for (const mode of ["badsize", "trunc"] as const) {
+    it(`an invalid ${mode === "badsize" ? "chunk size" : "truncated chunk"} exits 2 in entry mode`, async () => {
+      const framing = await startFramingServer(mode);
+      try {
+        const run = await runHelperRaw(MISSING_REF, `http://127.0.0.1:${framing.port}`);
+        expectCleanFailure(run, `F12/FR1: ${mode} entry`);
+      } finally {
+        framing.kill();
+      }
+    });
+
+    it(`an invalid ${mode === "badsize" ? "chunk size" : "truncated chunk"} exits 2 in ref-list mode`, async () => {
+      const framing = await startFramingServer(mode);
+      try {
+        const run = await runHelperRaw(undefined, `http://127.0.0.1:${framing.port}`);
+        expectCleanFailure(run, `F12/FR1: ${mode} ref-list`);
+      } finally {
+        framing.kill();
+      }
+    });
+  }
+
+  it("a malformed response exits 2 through the real run.sh with one reason", async () => {
+    const framing = await startFramingServer("badsize");
+    try {
+      const r = await runRoute({ model: MISSING_MODEL, catalog: "missing", apiBase: `http://127.0.0.1:${framing.port}` });
+      try {
+        expectEntryFailure(r, "F12/FR1: malformed response through run.sh");
+      } finally {
+        r.run.cleanup();
+      }
+    } finally {
+      framing.kill();
+    }
+  }, 120_000);
+});
+
+describe("F13/D3: a config generator failure exits 2 with no artifacts", () => {
+  it("an unwritable config temp exits 2 with absent config, staging, identity, and provenance", async () => {
+    const r = await runRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      prep: (run) => {
+        const tmp = resolve(run.out, "executor/opencode.json.tmp");
+        mkdirSync(dirname(tmp), { recursive: true });
+        symlinkSync(run.temp, tmp);
+      },
+    });
+    try {
+      expectEntryFailure(r, "F13/D3: the config generator");
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
 });
