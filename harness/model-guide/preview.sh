@@ -53,7 +53,7 @@
 # the read date, and the coverage numbers.
 # It runs guide.ts next, writes model-guide.json into the preview folder, and
 # renders the six rows of spec D18 from pages/guide-section.html inline into
-# the preview index.html, before the current hero (FR-7, acceptance 7). Each
+# the preview index.html, after the current hero (FR-7, acceptance 7). Each
 # row shows the pick or "no pick yet: not enough evidence", the second choice,
 # the evidence cell, the evidence date, and the base line beside the pick. A
 # stale table shows the stale mark. The table sits in a .table-wrap with
@@ -433,7 +433,7 @@ def overview_stale(page):
 
 
 def insert_overview(index_html):
-    """Put the overview section first, above the current hero."""
+    """Put the overview section after the current hero."""
     guide_path = os.path.join(preview, "model-guide.json")
     if not os.path.exists(guide_path) or not os.path.exists(guide_template_path):
         return index_html
@@ -455,11 +455,18 @@ def insert_overview(index_html):
         start = index_html.rfind("<section", 0, index_html.find(marker))
         end = index_html.find("</section>", start)
         if start != -1 and end != -1:
-            index_html = index_html[:start] + index_html[end + len("</section>"):]
+            before = index_html[:start].rstrip("\n")
+            after = index_html[end + len("</section>"):].lstrip("\n")
+            index_html = before + "\n\n" + after
     for anchor in ('<header class="hero', "<main", "</body>"):
         position = index_html.find(anchor)
-        if position != -1:
-            return index_html[:position] + section + "\n" + index_html[position:]
+        if position == -1:
+            continue
+        end = index_html.find("</header>", position)
+        if anchor == '<header class="hero' and end != -1:
+            end += len("</header>")
+            return index_html[:end] + "\n\n" + section + "\n\n" + index_html[end:].lstrip("\n")
+        return index_html[:position] + section + "\n" + index_html[position:]
     return index_html + "\n" + section
 
 

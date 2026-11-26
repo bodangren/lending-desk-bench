@@ -10,15 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./assets/css/site.css" />
   <style>
-    .page-head { padding: 2rem 0 0.6rem; }
-    .page-head h1 {
-      margin: 0 0 0.5rem;
-      font-family: var(--display);
-      font-weight: 400;
-      font-size: clamp(1.9rem, 3.4vw, 2.5rem);
-      line-height: 1.05;
-    }
-    .page-head .lede { font-size: 1rem; color: var(--muted); max-width: 66ch; margin: 0 0 0.4rem; }
     .picks { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.3rem; }
     .picks li {
       display: flex; flex-wrap: wrap; align-items: baseline;
@@ -100,7 +91,7 @@
         <a href="./">Overview</a>
         <a href="./methodology.html">Methodology</a>
         <a href="./results.html">Results</a>
-        <a class="active" href="./real-work.html" aria-current="page">Real work</a>
+        <a class="active" aria-current="page" href="./real-work.html">Real work</a>
         <a href="./review.html">Review</a>
         <a href="./models/">Models</a>
         <a href="./tracks.html">Tracks</a>
@@ -108,7 +99,7 @@
     </div>
   </nav>
 
-  <header class="wrap page-head">
+  <header class="hero wrap">
     <p class="kicker">Real work</p>
     <h1>Real work outcomes</h1>
     <p class="lede">This page shows how our role runs performed in real work. It merges routes by model. It ranks producers by first-round accept % and checkers by the AA net score, never by a self-graded rate.</p>

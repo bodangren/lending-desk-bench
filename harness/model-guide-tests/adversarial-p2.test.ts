@@ -464,8 +464,8 @@ describe("adversarial phase 2: boundaries, page contract, and input matrix", () 
     expect(page.stale, "45-day-old evidence is stale").toBe(true);
     const index = readFileSync(join(root, PREVIEW_DIR, "index.html"), "utf8");
     expect(index, "the page shows the stale mark").toContain('data-stale="true"');
-    expect(index, "the section sits above the hero").toBeDefined();
-    expect(index.indexOf('id="model-guide"') < index.indexOf('class="hero"'), "the overview section is above the hero").toBe(true);
+    expect(index, "the section sits below the hero").toBeDefined();
+    expect(index.indexOf('id="model-guide"') > index.indexOf('class="hero"'), "the overview section is below the hero").toBe(true);
     for (const header of ["Kind of work", "Use this model", "Second choice", "Evidence", "Evidence date"]) {
       expect(index, `the page shows the header ${header}`).toContain(`<th scope="col">${header}</th>`);
     }
