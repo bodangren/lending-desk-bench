@@ -88,8 +88,8 @@ Marker use:
 Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.json`
 (verdict fail). The amended `spec.md` is the source of truth for this section.
 
-- [ ] 1.4 Red round (tests: F2, F3, F4, F5, F6, F7, F1 behavioural via the real
-  `run.sh` with fake executors).
+- [x] 1.4 Red round (tests: F2, F3, F4, F5, F6, F7, F1 behavioural via the real
+  `run.sh` with fake executors); red `3605150`.
   Extend `harness/tests/meta/executor-model-route.test.ts`. Update the shared
   fake executor in `harness/tests/meta/opencode-run-fixtures.ts` and its direct
   callers. Touch no production code.
@@ -116,6 +116,14 @@ Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.
   - Verify: no test runs Podman, calls a real model, or calls the real API.
   - Red evidence: record the gate logs under
     `measure/runs/executor_model_route_20261126/`. Pin no test counts.
+  - Red evidence (r4): `cd harness && ./node_modules/.bin/vitest run tests/meta/executor-model-route.test.ts --configLoader native --maxWorkers=1`
+    exits 1 with 19 failed / 13 passed (32 checks). Failures name F1 (8 run.sh failure-path checks), F4 (5 entry-validation checks),
+    F5 (finite slow response exits 0), F6 (other-provider miss, unparsable and truncated catalogs), and F7 (2 duplicate-row checks).
+    Passing checks lock F2 coverage (real run.sh for both catalog states), F3 seams, the redirect and infinite-drip rules, and the ID grammar.
+    Affected suites all pass on the current code: preflight-model-api 35, opencode-executor 21, opencode-credential 21, opencode-fixture 2,
+    opencode-recorded 24, execution-identity 1, host-isolation 11. See `measure/runs/executor_model_route_20261126/red-r4-1c78039.log`.
+    Fixture note: the shared fake executor defaults to a provider-scoped catalog object for the run model plus a local API seam file;
+    the recorded session export trips the NFR-1 leak gate, so full agent runs deterministically exit 3 after the route completes.
 
 - [ ] 1.5 Green round (code: F1, F4, F5, F6, F7, F8).
   Change `harness/model-api-refs.py` and the config block of `harness/run.sh`.
