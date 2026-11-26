@@ -687,7 +687,7 @@ it is not an acceptance claim.
     - `TIMER_CHECK=pass` (exit 0, 12:43 ICT; the orchestrator ran it read-only).
     - `crontab -l | grep -c '^# DISABLED 2026-10-25 by owner request'` printed `1`. `crontab -l | grep -c 'cron-daily'` printed `0`.
     - Route deviation: `ra-quota pick record` gave `openai/gpt-6-luna#high`. `session.create` opened the session with the read-only orchestrator agent. That agent passed the brief to a build session on `minimax-cn-coding-plan/MiniMax-M3.1-Flash`. The PM orchestrator accepted the route (12:53 ICT 2026-11-02; an allowed route), so the install did not run again.
-- [b] 5.4 First live day. After the first job ends, run `DAY_CHECK <day>`,
+- [x] 5.4 First live day. PM 2026-11-26: first published day checked. After the first job ends, run `DAY_CHECK <day>`,
   `PUBLISH_CHECK <day>`, `PI_SHA day1`, and `PI_CHECK day0 day1` in `main`.
   Record each labeled line in this task. Check the guard and the push rule
   in `reports/cron-daily.log`: the day holds one `DAILY GO-GUARD
@@ -713,6 +713,38 @@ it is not an acceptance claim.
      - PM 2026-11-03: light lane
      - Blocker: the next live day needs a grader browser. Daniel decides through the PM: (a) restore the pinned build `chromium_headless_shell-1234`, which keeps all scores comparable; or (b) move to system Chrome (`channel: "chrome"`), which changes `runner_sha256` (`harness/browser-check.ts`) and `suite_sha256` (`harness/playwright.config.ts`) and makes every trusted score stale.
      - The timer stays enabled. Until Daniel decides, each day stops at this check with exit 2, before any batch, model call, or push.
+   - First published day, 2026-11-25 (PM decision 2026-11-26). Publish commit: `162c7a2` (`Publish daily 2026-11-25 OpenCode Go results: mimo-v2.6-pro (resume).`). The day-0 list in `.tmp/daily-runs-before.txt` holds the 2026-11-02 snapshot and cannot identify the runs of 2026-11-25. The check uses the run ids of `reports/daily/2026-11-25.json` and the canary directories whose mtime falls on that day. This is the exact command that ran in `main`:
+     ```bash
+     python3 -I - "2026-11-25" <<'PY'
+     import json, os, sys, time
+     day = sys.argv[1]
+     rec = json.load(open(f"reports/daily/{day}.json"))
+     canary = sorted(n for n in os.listdir("runs")
+                     if n.startswith("canary-") and not n.startswith(".")
+                     and time.strftime("%Y-%m-%d", time.localtime(os.path.getmtime(f"runs/{n}"))) == day)
+     new = sorted(set(rec["run_ids"]) | set(canary))
+     assert new, "DAY_CHECK=fail no new run directory"
+     models, harness, agent = set(), 0, []
+     for n in new:
+         if n.startswith("canary-"):
+             harness += 1
+             continue
+         p = f"runs/{n}/artifacts/provenance.json"
+         assert os.path.isfile(p), f"DAY_CHECK=fail missing provenance {n}"
+         pv = json.load(open(p))
+         if pv["model"].startswith("local/"):
+             harness += 1
+             continue
+         models.add(pv["model"].rsplit("/", 1)[-1])
+         agent.append(n)
+     assert models == {rec["model"]}, f"DAY_CHECK=fail models {sorted(models)}"
+     assert 1 <= len(agent) <= 12, f"DAY_CHECK=fail runs={len(agent)}"
+     assert sorted(rec["run_ids"]) == agent, "DAY_CHECK=fail run_ids"
+     print(f"DAY_CHECK=pass model={rec['model']} runs={len(agent)} harness={harness}")
+     PY
+     ```
+     - `DAY_CHECK 2026-11-25`: `DAY_CHECK=pass model=mimo-v2.6-pro runs=12 harness=3`; exit 0. All 12 run ids hold provenance for `opencode-go/mimo-v2.6-pro`. The three harness runs are `canary-build-2026w48-1795605926`, `canary-build-2026w48-1795606868`, and `canary-build-2026w48-1795607306`.
+     - `reports/cron-daily.log`: four `DAILY GO-GUARD` lines precede the four batches (weekly `26.739020908333334`, `30.016135475000004`, `31.900202158333336`, `33.776586325000004`), and the publish ends with `DAILY PUBLISH 162c7a2`.
 
   Recorded on 2026-10-25 in `main`:
   - `PHASE_BASE=3c2150271e435cfd8bac451e22f37264f8052aea`
