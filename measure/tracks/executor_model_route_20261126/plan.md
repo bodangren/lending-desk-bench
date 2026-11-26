@@ -159,7 +159,7 @@ Review A artifact: `measure/runs/executor_model_route_20261126/review-a-d426d0d.
     arms. A catalog-missing config has another hash, so the derived cohort ID
     can change.
 
-- [~] 1.6 Evidence and phase acceptance (light lane).
+- [x] 1.6 Evidence and phase acceptance (light lane). Audited HEAD 7b6f0639e1a22b7259863b0b92a505dfd6063f04; artifact measure/runs/executor_model_route_20261126/phase-acceptance-7b6f063.json (pass).
   Check the phase on the immutable HEAD. Check that each completed task line
   carries a commit SHA. Check the staged paths against the allowed file list.
   The orchestrator runs one real probe after Green. The probe uses the same

@@ -2,7 +2,7 @@
   "id": "executor_model_route_20261126",
   "title": "Executor model route for catalog-missing Console models",
   "type": "Chore",
-  "status": "in-progress",
+  "status": "complete",
   "created": "2026-11-26",
   "estimated_tasks": 3,
   "actual_tasks": null,

@@ -11,7 +11,7 @@
 - [~] **Track: Preflight model list from the OpenChamber API**
   - *Link: [preflight_model_api](tracks/preflight_model_api/)*
 
-- [~] **Track: Executor model route for catalog-missing Console models**
+- [x] **Track: Executor model route for catalog-missing Console models**
   - *Link: [executor_model_route_20261126](tracks/executor_model_route_20261126/)*
 
 - [ ] **Track: Grader browser: grade with the system Chrome and regrade the stale scores**
@@ -31,7 +31,7 @@
 | grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | pending | 2026-11-04 |
 | opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | pending — spec check 1.0 next; deadline Sat 2026-11-07 23:00 +07; owner question O1 open | 2026-11-06 |
 | preflight_model_api | Preflight model list from the OpenChamber API | Chore | in-progress — light lane, author `opencode-go/hy4-flash-free`; spec and plan written 2026-11-26 | 2026-11-26 |
-| executor_model_route_20261126 | Executor model route for catalog-missing Console models | Chore | in-progress — light lane, author `opencode-go/hy4-flash-free`; spec and plan written 2026-11-26 | 2026-11-26 |
+| executor_model_route_20261126 | Executor model route for catalog-missing Console models | Chore | complete — light lane, phase 1 accepted at 7b6f063; artifact measure/runs/executor_model_route_20261126/phase-acceptance-7b6f063.json | 2026-11-26 |
 
 ## Backlog
 

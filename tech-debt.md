@@ -402,3 +402,11 @@ The `domain_trust` track closed at 7aeaba8 with these nonblocking findings. No f
 
 - Final acceptance ran on `claude-agent/sonnet#xhigh`. `SKILL.md:144-145` asks for a family other than Review A and phase acceptance. The route `opencode/deepseek-v4.1-flash-free#high` hit its free limit. The PM approved the substitution on 2026-11-25 (`final-acceptance-r2-7aeaba8.json`, DEV-1).
 - Phases 1 and 2 have no separate phase acceptance. Neither `SKILL.md` nor `contracts.md` requires one. The Phase 3 result reproduced the Red proof and the task 1.1 base values. Precedent: `weekly_update_fix` passed final acceptance with one phase result (`final-acceptance-r2-7aeaba8.json`, DEV-2).
+
+## 2026-11-27 — executor_model_route phase 1 late findings (routed 2026-11-27, PM closure order)
+
+Source files: `measure/runs/executor_model_route_20261126/review-a-7b6f063.json` and `measure/runs/executor_model_route_20261126/phase-acceptance-7b6f063.json`. The track accepted at HEAD 7b6f0639e1a22b7259863b0b92a505dfd6063f04.
+
+- F16 (Minor, review-a): `harness/tests/meta/executor-model-route.test.ts:1345-1349,1367-1368`. The `short20` fixture sends 40 bytes fewer than declared. The `shortlen` fixture covers exactly 20 missing bytes. Fix: correct the fixture arithmetic and the comments.
+- F17 (Minor, review-a): `harness/tests/meta/executor-model-route.test.ts:1530-1549,1578-1611`. The chunked and close-delimited success controls cover both helper modes but not the real runner. Fix: retain both runner probes as regression tests.
+- F18 (Minor, phase-acceptance A11): `harness/tests/meta/executor-model-route.test.ts:193` inherits the caller environment. Line 377 asserts that `BENCH_EXECUTOR_COHORT_ID` is absent. Fix: use an explicit environment as in `harness/tests/meta/opencode-run-fixtures.ts:169-182`.
