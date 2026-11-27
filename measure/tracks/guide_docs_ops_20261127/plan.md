@@ -38,8 +38,8 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
   Run through `heavy-run.sh` with `BENCH_TRACK=docs-and-ops`, one batch at a time. Keep quota-wait routes open with their GO date. Record unsupported provider routes as `deferred:backlog` with the exact `run.sh` refusal.
   Touches: `runs/`, `reports/`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
 
-- [ ] 1.6 Refresh the docs and ops guide row and the public track page.
-  Green: waits for the Mid Red update of stale guide.test.ts expectations (lines 390, 413, 454-468, 686-688).
+- [~] 1.6 Refresh the docs and ops guide row and the public track page.
+  code done: 7923199; publication open (Daniel gate)
   Done when the guide picks from Arm A docs-and-ops scores and the live data and page match the published files.
   Read `tracks["docs-and-ops"].models`, rank by total, and keep the empty-table behavior. Use the tracks export date as the evidence date and the highest total as the base line.
   Touches: `harness/model-guide/guide.ts`, `harness/model-guide-tests/guide.test.ts`, `harness/model-guide-tests/fixtures/guide/tracks-mini.json`, `docs/tracks.html`, `docs/assets/data/tracks.json`, `docs/assets/data/model-guide.json`, `docs/index.html`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
