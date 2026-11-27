@@ -33,22 +33,22 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
   Use the `d1` frozen set and the standard non-build repeat default. Keep the track browserless. Leave weekly and daily automation unchanged.
   Touches: `harness/candidate-contract.ts`, `harness/run.sh`, `harness/grade.sh`, `harness/batch.sh`, `harness/plan-work.ts`, `harness/track-bindings.ts`, `harness/provenance.ts`, `harness/regrade-run.sh`, `harness/regrade-all.sh`, `harness/rescore-doctor.sh`, `harness/export-site-data.py`, `harness/tests/meta/schema4-fixtures.ts`, `harness/tests/meta/bench-v2.test.ts`, `harness/tests/meta/bench-incremental.test.ts`, `harness/schedule-tests/grader-browser-record.test.ts`, `harness/schedule-tests/rescore-guard.test.ts`.
 
-- [x] 1.5 Run the app-code session routes that the executor supports. Result: `2eb91c1`. Routes `opencode-go/hy4-flash-free` (`do-a-hy4-flash-free-2026w48-r1`, `do-b-hy4-flash-free-2026w48-r1`) and `opencode-go/muse-spark-1.3-contributor` (`do-a-muse-spark-1-3-contributor-2026w48-r1`, `do-b-muse-spark-1-3-contributor-2026w48-r1`); all four trusted; export freshness run to a temp path.
+- [x] 1.5 Run the app-code session routes that the executor supports. Result: `2eb91c1`. Routes `opencode-go/hy4-flash-free` (`do-a-hy4-flash-free-2026w48-r1`, `do-b-hy4-flash-free-2026w48-r1`) and `opencode-go/muse-spark-1.3-contributor` (`do-a-muse-spark-1-3-contributor-2026w48-r1`, `do-b-muse-spark-1-3-contributor-2026w48-r1`). Regraded after the grader fix `38bce9b` with `harness/regrade-run.sh`; totals A-Hy4 100, A-Muse 99.3, B-Hy4 100, B-Muse 100; no documentation deduction; every score reads fresh, trusted and rankable in the temp export. — c3c6eb8
   Done when each route allowed by the current quota has a current docs-and-ops score that passes freshness.
   Run through `heavy-run.sh` with `BENCH_TRACK=docs-and-ops`, one batch at a time. Keep quota-wait routes open with their GO date. Record unsupported provider routes as `deferred:backlog` with the exact `run.sh` refusal.
-  Route `opencode-go/hy4-flash-free`: both runs valid, trusted, publishable and rankable. Totals `96.5` and `96.5`. Mean per arm `96.5`.
-  Route `opencode-go/muse-spark-1.3-contributor`: both runs valid, trusted, publishable and rankable. Totals `97.6` and `98.3`. Mean per arm `97.95`.
-  Mean per arm over the two routes: arm a `97.05`, arm b `97.4`.
+  Route `opencode-go/hy4-flash-free`: both runs valid, trusted, publishable and rankable. Totals `100` and `100`. Mean per arm `100`.
+  Route `opencode-go/muse-spark-1.3-contributor`: both runs valid, trusted, publishable and rankable. Totals `99.3` and `100`. Mean per arm `99.65`.
+  Mean per arm over the two routes: arm a `99.65`, arm b `100`.
   Freshness: `harness/export-site-data.py` wrote to a temp path and the live freshness checker called every score `TRUSTED` and rankable.
   Touches: `runs/`, `reports/`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
 
-- [x] 1.6 Guide row code for the docs and ops row. Result: `7923199`, `47006fd`, `178e8ed`, `ef44461`, `9ff36eb`.
+- [x] 1.6 Guide row code for the docs and ops row. Result: `7923199`, `47006fd`, `178e8ed`, `ef44461`, `9ff36eb`
   Done when the guide picks from Arm A docs-and-ops scores and the live data and page match the published files.
   Read `tracks["docs-and-ops"].models`, rank by total, and keep the empty-table behavior. Use the tracks export date as the evidence date and the highest total as the base line.
   Touches: `harness/model-guide/guide.ts`, `harness/model-guide-tests/guide.test.ts`, `harness/model-guide-tests/fixtures/guide/tracks-mini.json`.
 
-- [b] 1.7 Publish the docs-and-ops guide row and the public track page. deferred:public with Task pending: the PM opens the Google Task.
-  Gate: new public track.
+- [ ] 1.7 Publish the docs-and-ops guide row and the public track page.
+  Done when the published guide row and the public track page carry the docs-and-ops data.
   Touches: `docs/tracks.html`, `docs/assets/data/tracks.json`, `docs/assets/data/model-guide.json`, `docs/index.html`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
 
 ## Backlog

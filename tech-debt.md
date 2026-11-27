@@ -240,6 +240,10 @@ Evidence lives in `measure/runs/deps_refresh/rescore-ab/r7/` and `r8/`.
 
 1. Add `executor` to the keep list.
 
+### Resolution (2026-11-27, guide_docs_ops regrade)
+
+Commit `c3c6eb8` adds `executor` to the keep list of `harness/regrade-run.sh`. A regrade of an opencode-executor run now keeps the config snapshot, the binary record, and the session export. The regrades of the four stored docs-and-ops runs returned valid scores.
+
 ## 2026-11-21 — Orphan collected criteria at HEAD make every regrade invalid (found by deps_refresh task 3.1, 2026-11-21)
 
 At HEAD `8437779` a regrade of `runs/a-deepseek-v4-1-flash-2026w43-r1` gives `valid=false` and `total=null`.
@@ -422,3 +426,22 @@ Source files: `measure/runs/executor_model_route_20261126/review-a-7b6f063.json`
 ## 2026-11-27 — Model API null input rejection test
 
 Add an explicit test that rejects a model API entry whose `input` value is `null`. Evidence: Review A F1 in `measure/runs/executor_input_limit_optional_20261127/review-a-a514336.json`.
+
+## 2026-11-27 — guide_docs_ops documentation grader clause recognition (routed 2026-11-27, PM closure order)
+
+Source files: `measure/runs/guide_docs_ops_20261127/review-a-fb5e0c3.json` and `measure/runs/guide_docs_ops_20261127/review-a-25133bf.json`.
+
+Precondition for any further docs-and-ops run: the documentation grader's clause-level recognisers pass natural wordings and reject inversions.
+
+### Major findings
+
+- F10: the release recogniser accepts a contrast that keeps the current release instead of returning to the previous release. It also accepts an instruction to deploy the new release and an unrelated release noun. Bind an affirmative restoration action to a previous release object in the same clause. Treat "rather than" and "instead of" as clause boundaries with opposite polarity.
+- F11: the preservation recogniser accepts the list item "Do not preserve the loan records." It also accepts a deletion instruction and an unrelated keep sentence. Apply the negation to the preservation verb itself. Require a preservation or no-deletion statement about loan records in the same clause.
+- F12: the boundary recogniser accepts a due-soon window of 48 minutes and a table row that classifies returned loans as overdue. Bind each status to its subject, comparison, and window in the same statement or table row. Require the duration with its unit. Reject a returned-loan overdue classification beside a correct separate rule.
+- F13: the rollback recogniser rejects correct instructions. The rejected wordings state a prior version with no removal, a switch back to a known-good release, a valid reverse contrast, and a prohibition against wiping or resetting loan records. Recognise common restoration paraphrases and scoped contrast. Accept correctly negated destruction verbs.
+- F14: the boundary recogniser rejects correct loan-state descriptions. The rejected wordings use "earlier than now", keep the returned status after the due date, and use an inclusive 48-hour window. Recognise the equivalent returned-state, strict comparison, and inclusive duration expressions. Keep the relation and the duration bound to their status.
+
+### Minor findings
+
+- F7: `harness/tests/meta/docs-ops-registration.test.ts:49-64` checks the canary and the regrade with source assertions. Add temporary-artifact integration coverage.
+- F9: `harness/docs-and-ops/grade-docs-ops.ts:415` writes a worker wrapper that reads a `.mutation` control file from the candidate workspace. Move the startup fault injection to a grader-owned test seam outside the candidate workspace.
