@@ -21,6 +21,9 @@ Pointer: `preflight_model_api` task 1.5 owns the review-data refresh for this ca
 - [x] 1.5 Migrate the Claude review route to the current Claude Agent integration.
   Evidence: `harness/model-guide/routes.json`, `harness/model-guide/data/review-scores/mg-2026-11a.json`, `docs/assets/data/model-guide.json`, and `measure/runs/model_guide/claude-agent-refresh-2026-11-27.log`.
 
+- [x] 1.6 Make preview-gate P2B2-2 independent of the real review data.
+  Evidence: `harness/model-guide-tests/preview-gate.test.ts`.
+
 Quota wait times:
 - `opencode-go/deepseek-v4.1-flash`: 2026-12-18T20:16:59+07:00
 - `opencode-go/mimo-v2.6-flash`: 2026-12-18T20:16:59+07:00

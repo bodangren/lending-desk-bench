@@ -2228,6 +2228,7 @@ describe("review B round 2 (P2B2-2): the newline score name in preview.sh", () =
       join(root, "docs", "assets", "data", "tracks.json"),
     );
     const scoresDir = join(root, "harness", "model-guide", "data", "review-scores");
+    rmSync(scoresDir, { recursive: true, force: true });
     mkdirSync(scoresDir, { recursive: true });
     // The older file has no complete route, so a pick from it shows no pick.
     const older = join(scoresDir, "evil.json");
