@@ -8,7 +8,7 @@
 - [ ] **Track: Model guide code review row**
   - *Link: [guide_code_review_20261127](tracks/guide_code_review_20261127/)*
 
-- [ ] **Track: Model guide app code row**
+- [x] **Track: Model guide app code row** — The app code row names its pick from the current Build scores.
   - *Link: [guide_app_code_20261127](tracks/guide_app_code_20261127/)*
 
 - [ ] **Track: Model guide docs and ops row**
@@ -44,7 +44,7 @@
 |---|---|---|---|---|
 | ingest_daily_20261127 | Daily real-world ingest | Chore | complete — daily ingest and live evidence in measure/tracks/ingest_daily_20261127/plan.md | 2026-11-27 |
 | guide_code_review_20261127 | Model guide code review row | Chore | in-progress | 2026-11-27 |
-| guide_app_code_20261127 | Model guide app code row | Chore | pending | 2026-11-27 |
+| guide_app_code_20261127 | Model guide app code row | Chore | complete — PM decision 2026-11-27; current Build scores kept | 2026-11-27 |
 | guide_docs_ops_20261127 | Model guide docs and ops row | Chore | pending | 2026-11-27 |
 | publish_daily_1125_20261127 | Publish the 2026-11-25 daily results | Chore | complete — daily results at 162c7a2; live evidence in measure/tracks/publish_daily_1125_20261127/plan.md | 2026-11-27 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | pending | 2026-11-27 |
