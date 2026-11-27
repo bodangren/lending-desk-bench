@@ -54,12 +54,15 @@ import { afterAll, describe, expect, it } from "vitest";
  *                 (n=<count>)", "print-audit: <x> of <y> (n=<y>)", and the
  *                 exact words "no pick yet" for a row with no source.
  *   evidence_date the export date of the outcomes file (the date in the
- *                 MANIFEST name, Q-S4), or the date of the last complete
- *                 track A pass for a track A pick (spec D18)
+ *                 MANIFEST name, Q-S4), the date of the last complete
+ *                 track A pass for a track A pick (spec D18), or the
+ *                 tracks export date for the docs and ops row (D1)
  *   base_line     null, except the highest build total of `--benchmark`
- *                 on the app code row and the highest tests total of
- *                 `--tracks` on the test writing row. The base line shows
- *                 beside the pick and never changes it (spec D18).
+ *                 on the app code row, the highest tests total of
+ *                 `--tracks` on the test writing row, and the highest
+ *                 docs-and-ops total of `--tracks` on the docs and ops
+ *                 row (D1). The base line shows beside the pick and never
+ *                 changes it (spec D18).
  *
  * Pick rule (spec D18, sources PM 2026-11-17): the first source gives the
  * first and second choice from its rank. A page B producer row qualifies
@@ -92,9 +95,9 @@ import { afterAll, describe, expect, it } from "vitest";
  * (assembled into the print-audit data shape that task 2.1 pinned), and
  * `fixtures/guide/` (`review-scores-mini.json` follows spec D13 with two
  * complete routes and one incomplete route that holds the best worst
- * score; `benchmark-mini.json` and `tracks-mini.json` hold the build and
- * tests base lines). No test reads the real export, the real hand-off file,
- * the real docs/, a model, the network, or the private folder.
+ * score; `benchmark-mini.json` and `tracks-mini.json` hold the build,
+ * tests, and docs-and-ops base lines). No test reads the real export, the
+ * real hand-off file, the real docs/, a model, the network, or the private folder.
  */
 
 const HARNESS = resolve(import.meta.dirname, "..");
@@ -495,7 +498,9 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
 
   it("T6: evidence 15 days old shows stale and 14 days shows none", () => {
     expect(main().guide.stale).toBe(false);
-    for (const [today, stale] of [["2026-11-28", true], ["2026-11-27", false]] as Array<
+    // The newest evidence_date is the 2026-11-14 tracks export (D1), so
+    // 2026-11-29 is 15 days out (stale) and 2026-11-28 is 14 (fresh).
+    for (const [today, stale] of [["2026-11-29", true], ["2026-11-28", false]] as Array<
       [string, boolean]
     >) {
       const run = runGuide({
