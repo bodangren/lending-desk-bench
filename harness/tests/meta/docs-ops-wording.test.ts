@@ -68,8 +68,8 @@ describe("acceptance F-PA1: the grader recognises documented facts", () => {
   it.each([
     ["restore the prior release tag", "Redeploy the prior release tag and keep every stored loan row."],
     ["roll back to the previous deployment", "Roll back to the previous deployment; stored loan data stays untouched."],
-    ["records are kept", "Return to the last good release. Loan records are kept: nothing is deleted."],
-    ["no data migration to undo", "Re-activate the previous release artifact; there is no data migration to undo."],
+    ["records are kept", "Return to the last good release. Loan records are kept and preserved: nothing is deleted."],
+    ["no data migration to undo", "Re-activate the previous release artifact; loan records are preserved and there is no data migration to undo."],
   ])("F-PA1 rollback: %s keeps D.sections.rollback", async (_label, body) => {
     const mod = await grader();
     const mutated = oracleWithSection("Rollback", body);
@@ -118,5 +118,64 @@ describe("acceptance F-PA1: omissions still fail their exact checks", () => {
     for (const failed of grade.failed) {
       expect(mod.declaredCheckIds(), `F-PA1: failure ${failed} is a declared check`).toContain(failed);
     }
+  });
+});
+
+describe("review-a r5 F10: contradictory rollback instructions fail", () => {
+  it.each([
+    ["negated restoration", "Do not return to the previous release. Keep the existing data store and loan records."],
+    ["new release instead", "Deploy the new release. The previous release is obsolete. Keep the existing data store and loan records."],
+    ["unrelated release noun", "Restore the previous settings. A release has a build number. Keep loan records."],
+    ["contradictory releases", "Deploy the previous release. Then deploy the new release instead and abandon the old artifact. Keep the existing data store and loan records."],
+  ])("F10 contradiction: %s fails D.sections.rollback", async (_label, body) => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(oracleWithSection("Rollback", body));
+    expect(grade.passed, `F10: a contradictory rollback passes`).toBe(false);
+    expect(grade.failed, `F10: the contradiction fails D.sections.rollback`).toContain("D.sections.rollback");
+  });
+});
+
+describe("review-a r5 F11: contradictory preservation instructions fail", () => {
+  it.each([
+    ["explicit deletion", "Deploy the previous release. Keep the server port unchanged. Delete the loan records."],
+    ["unrelated port keep", "Deploy the previous release. Keep the server port unchanged. The data store contains loan records."],
+    ["explicit truncation", "Restore the previous release. Truncate the loan records table before serving traffic."],
+    ["explicit reset", "Roll back to the previous deployment. Reset the loan records to the empty seed."],
+  ])("F11 contradiction: %s fails D.sections.rollback", async (_label, body) => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(oracleWithSection("Rollback", body));
+    expect(grade.passed, `F11: a contradictory preservation passes`).toBe(false);
+    expect(grade.failed, `F11: the contradiction fails D.sections.rollback`).toContain("D.sections.rollback");
+  });
+});
+
+describe("review-a r5: the review mutations that already behave stay pinned", () => {
+  it.each([
+    ["restoration sentence without any release object", "Rollback", "Restore everything quickly. Keep the existing data store and loan records.\n", "D.sections.rollback"],
+    ["deletion-only control without an unrelated keep sentence", "Rollback", "Deploy the previous release. Delete the loan records.\n", "D.sections.rollback"],
+    ["direct negation of the returned-state rule", "Loan state", "A returned loan does not stay returned after its due date. Overdue is strictly before now. Due-soon from now through 48 hours.\n", "D.loan.boundary"],
+  ])("r5 guard: %s still fails %s", async (_label, section, body, id) => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(oracleWithSection(section, body));
+    expect(grade.passed, `r5: the guarded mutation passes`).toBe(false);
+    expect(grade.failed, `r5: the guarded mutation names its check`).toContain(id);
+  });
+});
+
+describe("review-a r5 F12: contradictory loan boundaries fail", () => {
+  it.each([
+    ["returned classified as overdue", "A returned loan is overdue strictly before now. Due-soon runs from now through 48 hours."],
+    ["24-hour due-soon window", "A returned loan stays returned after its due date. Overdue is strictly before now. Due-soon runs from now through the next 24 hours."],
+    ["denied returned-state rule", "It is false that a returned loan stays returned after its due date. Overdue is strictly before now. Due-soon runs from now through 48 hours."],
+    ["negated returned-state rule", "A returned loan does not stay returned after its due date. Overdue is strictly before now. Due-soon runs from now through 48 hours."],
+    ["wrong comparison", "A returned loan stays returned after its due date. Overdue is strictly after now. Due-soon runs from now through 48 hours."],
+    ["status comparison split apart", "A returned loan stays returned after its due date. The comparison is strictly before now. Due-soon mentions 48 hours elsewhere."],
+    ["24-hour due-soon with 48 elsewhere", "A returned loan stays returned after its due date. Overdue is strictly before now. Due-soon runs from now through the next 24 hours. Later than 48 hours is ok."],
+    ["overdue classification beside the true rule", "A returned loan stays returned after its due date. A returned loan is overdue strictly before now. Due-soon from now through 48 hours."],
+  ])("F12 contradiction: %s fails D.loan.boundary", async (_label, body) => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(oracleWithSection("Loan state", body));
+    expect(grade.passed, `F12: a contradictory boundary passes`).toBe(false);
+    expect(grade.failed, `F12: the contradiction fails D.loan.boundary`).toContain("D.loan.boundary");
   });
 });
