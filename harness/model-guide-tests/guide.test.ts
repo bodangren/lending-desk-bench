@@ -386,8 +386,9 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(rowOf(guide, "print-book audit").evidence).toBe("print-audit: 13 of 13 (n=13)");
     expect(rowOf(guide, "test writing").evidence).toBe(TEST_WRITING_EVIDENCE);
     // A row with no source shows the no-pick words as its evidence text
-    // (orchestrator ruling on spec D18, 2026-11-17).
-    for (const kind of ["app code", "docs and ops", "tooling"]) {
+    // (orchestrator ruling on spec D18, 2026-11-17). The docs and ops row
+    // has its own track A source (D1), so it is not in this loop.
+    for (const kind of ["app code", "tooling"]) {
       expect(rowOf(guide, kind).evidence, `evidence of ${kind}`).toBe(NO_PICK_EVIDENCE);
     }
   });
@@ -396,8 +397,9 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     const data = main().guide;
     expect(rowOf(data, "Code review").evidence_date).toBe(TRACK_A_DATE);
     // Every other row takes the export date of the outcomes file (spec D18,
-    // the date in the MANIFEST file name, Q-S4).
-    for (const kind of KINDS.slice(1)) {
+    // the date in the MANIFEST file name, Q-S4). The docs and ops row takes
+    // the tracks export date instead (D1).
+    for (const kind of ["app code", "test writing", "print-book audit", "tooling"]) {
       expect(rowOf(data, kind).evidence_date, `date of ${kind}`).toBe(EXPORT_DATE);
     }
   });
@@ -405,12 +407,14 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
   it("T3: the base line shows beside the pick and never changes it", () => {
     const { guide } = main();
     // The build score sits on the app code row, the tests score on the
-    // test writing row, and nowhere else.
+    // test writing row, and nowhere else. The docs and ops base line is
+    // the highest docs-and-ops total (D1), so it is not in the null loop
+    // below.
     expect(rowOf(guide, "app code").base_line).toBe(maxBuildTotal(BENCHMARK));
     expect(rowOf(guide, "app code").base_line).toBe(95.0);
     expect(rowOf(guide, "test writing").base_line).toBe(maxTestsTotal(TRACKS));
     expect(rowOf(guide, "test writing").base_line).toBe(98.7);
-    for (const kind of ["Code review", "docs and ops", "print-book audit", "tooling"]) {
+    for (const kind of ["Code review", "print-book audit", "tooling"]) {
       expect(rowOf(guide, kind).base_line, `base line of ${kind}`).toBeNull();
     }
 
@@ -452,13 +456,15 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
   });
 
   it("T5: a row with no source shows the no-pick words", () => {
+    // The empty docs-and-ops table keeps the no-pick row (D1-keep), so
+    // this case runs on a tracks fixture with no docs-and-ops models.
     const run = runGuide({
       tag: "docs-and-ops",
       realWork: main().realWorkJson,
       scores: SCORES,
       printAudit: printAuditInput("docs-and-ops"),
       benchmark: BENCHMARK,
-      tracks: TRACKS,
+      tracks: tracksWithoutDocsAndOps(),
       today: TODAY,
     });
     const row = rowOf(run.data, "docs and ops");
@@ -645,6 +651,13 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
         doc.allowedRoutes.push("opencode-go/synthetic-unknown");
       },
     });
+    // This case is about hostile names, not the docs row: it empties the
+    // docs-and-ops table of the temp repo, so the empty-table behavior
+    // (D1-keep) keeps the no-pick words on that row.
+    const tracksFile = join(root, "docs", "assets", "data", "tracks.json");
+    const tracksDoc = JSON.parse(readFileSync(tracksFile, "utf8"));
+    tracksDoc.tracks["docs-and-ops"] = { models: [] };
+    writeFileSync(tracksFile, JSON.stringify(tracksDoc));
     // The print-audit source carries #variant routes as its keys, so the
     // overview must map each of them to the plain name of its model key
     // (RA2-2, RA3-2).
