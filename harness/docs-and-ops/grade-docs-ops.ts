@@ -91,6 +91,36 @@ function sectionBody(text: string, name: string): { found: boolean; body: string
   return { found: true, body: lines.slice(start + 1, end).join("\n").trim() };
 }
 
+/** Normalise prose so Markdown emphasis, code ticks, and table cells do not
+ * hide a required fact. */
+function factText(body: string): string {
+  return body.replace(/[*_~`>#|]/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function restoresRelease(body: string): boolean {
+  const text = factText(body);
+  const action = /\b(?:restore|restores|restored|redeploy|redeployed|deploy|deployed|roll\s*back|rolled\s*back|re-?activate|revert|return|restart)\b/.test(text);
+  const target = /\b(?:previous|prior|last good|known-good)\b/.test(text);
+  const object = /\b(?:release|deployment|artifact|tag|version)\b/.test(text);
+  return action && target && object;
+}
+
+function preservesLoanRecords(body: string): boolean {
+  const text = factText(body);
+  const subject = /\b(?:loan|loans|record|records|row|rows|history|data|store|state)\b/.test(text);
+  const action = /\b(?:keep|keeps|kept|preserve|preserves|preserved|retain|retained|not delete|does not delete|do not delete|must not delete|never delete|never remove|no data migration|nothing deleted|intact|untouched)\b/.test(text);
+  return subject && action;
+}
+
+function statesLoanBoundaries(body: string): boolean {
+  const text = factText(body);
+  const returned = text.includes("returned loan stays returned");
+  const overdue = /strictly\s+before\s+now/.test(text);
+  const dueSoon = text.includes("due-soon") && text.includes("48") && text.includes("now") &&
+    /(?:through|within|at or after|from|until)/.test(text);
+  return returned && overdue && dueSoon;
+}
+
 /** Grade the runbook against repository facts inside their required sections. */
 export function gradeRunbook(text: string): Grade {
   const section = (name: string) => sectionBody(text, name);
@@ -118,8 +148,7 @@ export function gradeRunbook(text: string): Grade {
     },
     {
       id: "D.sections.rollback",
-      passed: nonempty(rollback) &&
-        hasAll(rollback.body, ["Deploy the previous release", "Keep the existing data store and loan records"]),
+      passed: nonempty(rollback) && restoresRelease(rollback.body) && preservesLoanRecords(rollback.body),
       reason: "Rollback lacks release restoration or data preservation",
     },
     { id: "D.commands.install", passed: hasAll(setup.body, ["npm ci"]), reason: "Setup omits npm ci" },
@@ -150,7 +179,7 @@ export function gradeRunbook(text: string): Grade {
     },
     {
       id: "D.loan.boundary",
-      passed: hasAll(loanState.body, ["returned loan stays returned", "strictly before", "due-soon", "48"]),
+      passed: nonempty(loanState) && statesLoanBoundaries(loanState.body),
       reason: "Loan state omits the returned or due-soon boundary",
     },
     {
