@@ -4,14 +4,14 @@ PM decision 2026-11-27: light lane.
 
 ## Phase 1: Current Lending, Bugfix, and Change runs
 
-- [ ] 1.1 Add a current run for `deepseek-v4.1-flash` on Lending, Bugfix, and Change.
-  Done when each track has a current graded run for the model.
+- [b] 1.1 Add a current run for `deepseek-v4.1-flash` on Lending, Bugfix, and Change. deferred:pm: `model API entry has an invalid limit for opencode-go/deepseek-v4.1-flash`.
+  Quota GO time: `2026-12-18T20:16:59+07:00`.
 
 - [ ] 1.2 Add a current run for `gpt-6-luna` on Lending, Bugfix, and Change.
-  Done when each track has a current graded run for the model.
+  Run at `2026-12-18T20:16:59+07:00`, when `ra-quota` shows GO for `opencode-go`.
 
-- [ ] 1.3 Add a current run for `minimax-m3.1-flash` on Lending, Bugfix, and Change.
-  Done when each track has a current graded run for the model.
+- [b] 1.3 Add a current run for `minimax-m3.1-flash` on Lending, Bugfix, and Change. deferred:pm: `model API entry has an invalid limit for opencode-go/minimax-m3.1-flash`.
+  Quota GO time: `2026-12-18T20:16:59+07:00`.
 
-- [ ] 1.4 Add a current run for `claude-haiku-5-5` on Lending, Bugfix, and Change.
-  Done when each track has a current graded run for the model.
+- [b] 1.4 Add a current run for `claude-haiku-5-5` on Lending, Bugfix, and Change. deferred:pm: `no active model API entry for opencode-go/claude-haiku-5-5`.
+  Quota GO time: `2026-12-18T20:16:59+07:00`.
