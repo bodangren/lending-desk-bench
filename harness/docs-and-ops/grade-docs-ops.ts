@@ -97,27 +97,91 @@ function factText(body: string): string {
   return body.replace(/[*_~`>#|]/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
-function restoresRelease(body: string): boolean {
-  const text = factText(body);
-  const action = /\b(?:restore|restores|restored|redeploy|redeployed|deploy|deployed|roll\s*back|rolled\s*back|re-?activate|revert|return|restart)\b/.test(text);
-  const target = /\b(?:previous|prior|last good|known-good)\b/.test(text);
-  const object = /\b(?:release|deployment|artifact|tag|version)\b/.test(text);
-  return action && target && object;
+/** Statements, list items and table rows, normalised one at a time. */
+function factClauses(body: string): string[] {
+  const statements: string[] = [];
+  let prose = "";
+  let lastOwn = false;
+  const flush = () => {
+    if (prose) {
+      statements.push(prose);
+      lastOwn = false;
+    }
+    prose = "";
+  };
+  for (const raw of body.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) {
+      flush();
+      continue;
+    }
+    if (line.startsWith("|") || /^[-*]\s/.test(line) || /^\d+\.\s/.test(line)) {
+      flush();
+      statements.push(line);
+      lastOwn = true;
+    } else if (lastOwn && statements.length > 0) {
+      statements[statements.length - 1] += ` ${line}`;
+    } else {
+      prose = prose ? `${prose} ${line}` : line;
+    }
+  }
+  flush();
+  return statements
+    .flatMap((line) => line.startsWith("|") ? [line] : line.split(/;|(?<=\.)\s+(?=[A-Za-z0-9`*_])/))
+    .map((clause) => factText(clause))
+    .filter((clause) => clause.length > 0 && !/^[-:0-9. ]+$/.test(clause));
 }
 
+const RESTORE_ACTION = /\b(?:restore|restores|restored|redeploy|redeployed|deploy|deployed|roll\s*back|rolled\s*back|re-?activate|revert|return|restart)\b/;
+const RESTORE_TARGET = /\b(?:previous|prior|last good|known-good)\b/;
+const RELEASE_OBJECT = /\b(?:release|deployment|artifact|tag|version)\b/;
+const NEGATION = /\b(?:do not|does not|must not|never|without|not|false|no|nothing)\b/;
+const NEW_RELEASE = /\b(?:new|latest|next)\s+(?:release|deployment|artifact|tag|version)\b/;
+
+function restoresRelease(body: string): boolean {
+  let valid = false;
+  for (const clause of factClauses(body)) {
+    if (!RESTORE_ACTION.test(clause)) continue;
+    if (NEW_RELEASE.test(clause)) return false;
+    if (NEGATION.test(clause)) continue;
+    if (RESTORE_TARGET.test(clause) && RELEASE_OBJECT.test(clause)) valid = true;
+  }
+  return valid;
+}
+
+const LOAN_SUBJECT = /\bloans?\b/;
+const DESTROY_RECORDS = /\b(?:delete|deletes|deleted|truncate|truncates|reset|drop|wipe)\b/;
+const PRESERVE_RECORDS = /\b(?:keep|keeps|kept|preserve|preserves|preserved|retain|retained|intact|untouched|not delete|does not delete|do not delete|must not delete|never delete|no delete)\b/;
+
 function preservesLoanRecords(body: string): boolean {
-  const text = factText(body);
-  const subject = /\b(?:loan|loans|record|records|row|rows|history|data|store|state)\b/.test(text);
-  const action = /\b(?:keep|keeps|kept|preserve|preserves|preserved|retain|retained|not delete|does not delete|do not delete|must not delete|never delete|never remove|no data migration|nothing deleted|intact|untouched)\b/.test(text);
-  return subject && action;
+  let valid = false;
+  for (const clause of factClauses(body)) {
+    if (!LOAN_SUBJECT.test(clause)) continue;
+    if (DESTROY_RECORDS.test(clause) && !NEGATION.test(clause)) return false;
+    if (PRESERVE_RECORDS.test(clause)) valid = true;
+  }
+  return valid;
 }
 
 function statesLoanBoundaries(body: string): boolean {
-  const text = factText(body);
-  const returned = text.includes("returned loan stays returned");
-  const overdue = /strictly\s+before\s+now/.test(text);
-  const dueSoon = text.includes("due-soon") && text.includes("48") && text.includes("now") &&
-    /(?:through|within|at or after|from|until)/.test(text);
+  let returned = false;
+  let overdue = false;
+  let dueSoon = false;
+  for (const clause of factClauses(body)) {
+    if (/\breturned\b[^.;]*\b(?:is|as|means|classified\s+as|counts\s+as)\b[^.;]*\boverdue\b/.test(clause)) return false;
+    if (/\boverdue\b[^.;]*\bstrictly\s+after\s+now/.test(clause)) return false;
+    if (/\breturned\b[^.;]*\b(?:stays|stay|remains|remain)\s+returned\b/.test(clause)) {
+      if (NEGATION.test(clause)) return false;
+      returned = true;
+    }
+    if (/strictly\s+before\s+now/.test(clause) && !/\breturned\b/.test(clause)) overdue = true;
+    if (clause.includes("due-soon")) {
+      const wrongWindow = /\b(?:6|8|12|24|36|72)\s*(?:hours?|h)\b/.test(clause);
+      if (wrongWindow) return false;
+      if (clause.includes("48") && clause.includes("now") &&
+          /(?:through|within|at or after|from|until)/.test(clause)) dueSoon = true;
+    }
+  }
   return returned && overdue && dueSoon;
 }
 
