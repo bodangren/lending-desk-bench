@@ -20,7 +20,7 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
   Touches: `harness/docs-and-ops/model-visible/AGENTS.md`, `harness/docs-and-ops/model-visible/track/spec.md`, `harness/docs-and-ops/model-visible/track/plan.md`, `harness/docs-and-ops/model-visible/track/metadata.json`, `harness/docs-and-ops/model-visible/docs/runbook.md`, `harness/docs-and-ops/model-visible/ops/verify.ts`, `harness/docs-and-ops/sets/d1.json`, `harness/docs-and-ops/tasks.ts`, `harness/docs-and-ops/make-variant.ts`, `harness/docs-and-ops/oracle-overlay/docs/runbook.md`, `harness/docs-and-ops/oracle-overlay/ops/verify.ts`, `harness/candidate-contract.ts`.
 
 - [x] 1.3 Add the deterministic grader and score axes.
-  Green: 36ba742.
+  Green: 47006fd.
   Done when the oracle passes, each broken fixture fails its declared checks, and malformed result IDs invalidate the run.
   Grade documentation against required sections, repository commands, route names, and placeholder rejection.
   Grade the verifier against fixed valid and invalid manifests, deterministic output, exit codes, a clean environment, and a timeout.
@@ -39,7 +39,7 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
   Touches: `runs/`, `reports/`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
 
 - [~] 1.6 Refresh the docs and ops guide row and the public track page.
-  code done: 7923199; publication open (Daniel gate)
+  code done: 47006fd; publication open (Daniel gate)
   Done when the guide picks from Arm A docs-and-ops scores and the live data and page match the published files.
   Read `tracks["docs-and-ops"].models`, rank by total, and keep the empty-table behavior. Use the tracks export date as the evidence date and the highest total as the base line.
   Touches: `harness/model-guide/guide.ts`, `harness/model-guide-tests/guide.test.ts`, `harness/model-guide-tests/fixtures/guide/tracks-mini.json`, `docs/tracks.html`, `docs/assets/data/tracks.json`, `docs/assets/data/model-guide.json`, `docs/index.html`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
