@@ -27,9 +27,9 @@
 
   <header class="hero wrap">
     <p class="kicker">Tracks</p>
-    <h1>Bug fix, test writing, and change requests</h1>
+    <h1>Bug fix, test writing, change requests, and documentation</h1>
     <p class="lede">
-      The same models on three more tasks in the same app. Each total is the lower median of
+      The same models on more tasks in the same app. Each total is the lower median of
       the latest week's runs. Axes are shown as percentages of their maximum.
     </p>
   </header>
@@ -67,6 +67,13 @@
         lede: "Four new behaviors in the finished app. Change grades the requests; regression and robustness grade everything that must keep working. An untouched app scores about 35.",
         axes: ["change", "regression", "robustness", "adherence", "quality"],
         evidence: (row) => Object.entries(row.request_rates || {}).map(([k, v]) => `${k} ${pct(v)}`).join(" · "),
+      },
+      {
+        key: "docs-and-ops",
+        title: "Documentation and operations",
+        lede: "The model writes the runbook for the app and the verifier for its operations. Documentation and operations are the main axes; adherence and quality follow.",
+        axes: ["documentation", "operations", "adherence", "quality"],
+        evidence: (row) => row.churn_lines != null ? `${row.churn_lines} lines changed` : "",
       },
     ];
 

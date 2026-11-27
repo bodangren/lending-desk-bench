@@ -29,11 +29,11 @@
     },
     {
       "kind": "docs and ops",
-      "pick": "no pick yet: not enough evidence",
-      "second": null,
-      "evidence": "no pick yet",
+      "pick": "opencode-go/hy4-flash-free",
+      "second": "opencode-go/muse-spark-1.3-contributor",
+      "evidence": "track A: total 100.0 (n=1)",
       "evidence_date": "2026-11-27",
-      "base_line": null
+      "base_line": 100
     },
     {
       "kind": "print-book audit",
