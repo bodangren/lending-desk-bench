@@ -102,6 +102,8 @@ INGEST_ALLOW=(
   "docs/assets/data/real-work.json"
   "docs/assets/data/model-guide.json"
   "docs/assets/data/review.json"
+  "docs/index.html"
+  "docs/real-work.html"
   "docs/review.html"
 )
 PRIVATE_DIR="${MODEL_GUIDE_PRIVATE_DIR:-$HOME/.local/share/lending-desk-bench/model-guide}"
@@ -112,9 +114,35 @@ MAX_MODELS="${BENCH_DAILY_MAX_MODELS:-12}"
 # every exit path so a failed job leaves no branch or worktree behind.
 publication_worktree_remove() {
   if [ -n "$PUB_WT" ]; then
-    git worktree remove --force "$PUB_WT" 2>/dev/null || rm -rf "$PUB_WT"
+    git -C "$ROOT" worktree remove --force "$PUB_WT" 2>/dev/null || rm -rf -- "$PUB_WT"
     PUB_WT=""
   fi
+}
+
+publication_worktree_reconcile() {
+  local line worktrees
+  if ! git -C "$ROOT" worktree prune; then
+    echo "publish: worktree prune failed" >&2
+    return 1
+  fi
+  if ! worktrees="$(git -C "$ROOT" worktree list --porcelain)"; then
+    echo "publish: worktree list failed" >&2
+    return 1
+  fi
+  while IFS= read -r line; do
+    if [ "$line" = "worktree $PUBLISH_DIR" ]; then
+      if ! git -C "$ROOT" worktree remove --force "$PUBLISH_DIR"; then
+        echo "publish: stale worktree removal failed" >&2
+        return 1
+      fi
+      break
+    fi
+  done <<< "$worktrees"
+  if { [ -e "$PUBLISH_DIR" ] || [ -L "$PUBLISH_DIR" ]; } && ! rm -rf -- "$PUBLISH_DIR"; then
+    echo "publish: stale publication directory removal failed" >&2
+    return 1
+  fi
+  return 0
 }
 
 # A failure line. The notice of a failed run quotes the last one.
@@ -140,6 +168,8 @@ export WEEK
 
 TMP_DIR="$ROOT/.tmp"
 mkdir -p "$TMP_DIR"
+PUBLISH_DIR="$TMP_DIR/daily-publication"
+PUBLISH_DIFF="$TMP_DIR/daily-publish-diff-$$"
 PICK_OUT="$TMP_DIR/daily-pick-$$"
 RUNLIST_OUT="$TMP_DIR/daily-runlist-$$"
 CATALOG_TMP="$TMP_DIR/daily-catalog-$$"
@@ -236,7 +266,7 @@ try {
 # so a signal stop sends its line too.
 daily_exit() {
   local rc=$?
-  rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" 2>/dev/null
+  rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" "$PUBLISH_DIFF" 2>/dev/null
   rm -rf "$PUBLISH_SCAN"
   publication_worktree_remove
   opencode_host_cleanup
@@ -248,28 +278,37 @@ trap daily_exit EXIT
 # local commits and other staged files never enter the outgoing range.
 publication_worktree_add() {
   local base="$1"
-  PUB_WT="$(mktemp -d)"
-  rmdir "$PUB_WT"
+  PUB_WT="$PUBLISH_DIR"
   git worktree add -q --detach "$PUB_WT" "$base"
 }
 
 # Copy only the allowlisted generated files into the worktree, then stage them.
 publication_build() {
   local base="$1" rel dest
-  git -C "$PUB_WT" reset -q --hard "$base"
+  if ! git -C "$PUB_WT" reset -q --hard "$base"; then return 1; fi
   for rel in "${PUBLISH_PATHS[@]}"; do
     # A path that does not exist in the work tree is not a publish candidate.
     if [ ! -f "$ROOT/$rel" ]; then continue; fi
     dest="$PUB_WT/$rel"
-    mkdir -p "$(dirname "$dest")"
-    cp -- "$ROOT/$rel" "$dest"
+    if ! mkdir -p "${dest%/*}"; then return 1; fi
+    if ! cp -- "$ROOT/$rel" "$dest"; then return 1; fi
   done
   git -C "$PUB_WT" add -- "${PUBLISH_PATHS[@]}"
+}
+
+publication_diff_paths() {
+  local base="$1" commit="$2"
+  if ! git -C "$PUB_WT" diff --no-renames "$base".."$commit" --name-only -z > "$PUBLISH_DIFF"; then
+    echo "publish: outgoing diff failed" >&2
+    return 1
+  fi
+  return 0
 }
 
 # True when every changed path of the one outgoing commit is allowlisted.
 publication_paths_allowed() {
   local base="$1" commit="$2" path allow
+  if ! publication_diff_paths "$base" "$commit"; then return 1; fi
   while IFS= read -r -d '' path; do
     [ -z "$path" ] && continue
     for allow in "${PUBLISH_ALLOW[@]}"; do
@@ -277,7 +316,7 @@ publication_paths_allowed() {
     done
     echo "publish: path outside the allowlist: $path" >&2
     return 1
-  done < <(git -C "$PUB_WT" diff "$base".."$commit" --name-only -z)
+  done < "$PUBLISH_DIFF"
   return 0
 }
 
@@ -285,21 +324,25 @@ publication_paths_allowed() {
 # branch holds one commit, so this set is the staged diff and the full outgoing
 # range from origin/main. Every changed path and its full content are scanned.
 publication_candidate() {
-  local base="$1" commit="$2" path body
-  rm -rf "$PUBLISH_SCAN"
-  PUBLISH_SCAN="$(mktemp -d)"
+  local base="$1" commit="$2" path
+  if ! publication_diff_paths "$base" "$commit"; then return 1; fi
+  if ! rm -rf "$PUBLISH_SCAN"; then return 1; fi
+  if ! PUBLISH_SCAN="$(mktemp -d "$TMP_DIR/daily-publish-scan-XXXXXX")"; then return 1; fi
   while IFS= read -r -d '' path; do
     [ -z "$path" ] && continue
-    body="$(git -C "$PUB_WT" show "$commit:$path" 2>/dev/null)" || continue
-    mkdir -p "$PUBLISH_SCAN/$(dirname "$path")"
-    printf '%s\n' "$body" > "$PUBLISH_SCAN/$path"
-  done < <(git -C "$PUB_WT" diff "$base".."$commit" --name-only -z)
+    if ! mkdir -p "$PUBLISH_SCAN/${path%/*}"; then return 1; fi
+    if ! git -C "$PUB_WT" show "$commit:$path" > "$PUBLISH_SCAN/$path"; then
+      echo "publish: candidate blob failed: $path" >&2
+      return 1
+    fi
+  done < "$PUBLISH_DIFF"
+  return 0
 }
 
 # Scan the complete candidate before the push. A missing tool refuses the push.
 publication_scan() {
-  local base="$1" commit="$2" out rc
-  publication_candidate "$base" "$commit"
+  local base="$1" commit="$2" out rc first
+  if ! publication_candidate "$base" "$commit"; then return 1; fi
   if [ ! -f "$H/model-guide/leak-check.ts" ]; then
     echo "publish: leak check unavailable" >&2
     return 1
@@ -308,26 +351,33 @@ publication_scan() {
     --private "$PRIVATE_DIR" --repo "$PUBLISH_SCAN" 2>/dev/null)"
   rc=$?
   if [ "$rc" -ne 0 ]; then
-    FIRST="$(printf '%s\n' "$out" | head -n 1)"
-    echo "publish: leak ${FIRST##*: }" >&2
-    return 1
+    first="${out%%$'\n'*}"
+    echo "publish: leak ${first##*: }" >&2
+    return 3
   fi
   return 0
 }
 
 # Stage the allowlisted files, commit them, and check the complete outgoing
-# range. Exit 2 means no generated file changed; exit 1 means a failed check.
+# range. Exit 2 means no generated file changed; exit 3 means a leak; exit 1
+# means a failed check.
 publication_prepare() {
+  local rc
   if ! publication_build "$PUBLISH_BASE"; then return 1; fi
-  if git -C "$PUB_WT" diff --cached --quiet -- "${PUBLISH_PATHS[@]}"; then
-    return 2
-  fi
+  git -C "$PUB_WT" diff --cached --quiet -- "${PUBLISH_PATHS[@]}"
+  rc=$?
+  if [ "$rc" -eq 0 ]; then return 2; fi
+  if [ "$rc" -ne 1 ]; then return 1; fi
   if ! git -C "$PUB_WT" commit -q -F "$MSG_FILE" -- "${PUBLISH_PATHS[@]}"; then
     return 1
   fi
-  DOCS_SHA="$(git -C "$PUB_WT" rev-parse HEAD)"
-  if ! publication_paths_allowed "$PUBLISH_BASE" "$DOCS_SHA"; then return 1; fi
-  if ! publication_scan "$PUBLISH_BASE" "$DOCS_SHA"; then return 1; fi
+  if ! DOCS_SHA="$(git -C "$PUB_WT" rev-parse HEAD)"; then return 1; fi
+  publication_paths_allowed "$PUBLISH_BASE" "$DOCS_SHA"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then return "$rc"; fi
+  publication_scan "$PUBLISH_BASE" "$DOCS_SHA"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then return "$rc"; fi
   return 0
 }
 
@@ -455,6 +505,14 @@ if ! flock -n 9; then
   echo "DAILY END $(date -Is)"
   SKIP_REASON="lock held"
   exit "$SKIP_RC"
+fi
+
+if [ "$DRY_RUN" != "1" ] && [ "$PUBLISH" != "0" ]; then
+  if ! publication_worktree_reconcile; then
+    daily_fail "publish: stale worktree reconciliation failed"
+    echo "DAILY END $(date -Is)"
+    exit 1
+  fi
 fi
 
 # ---- Unit start gate (D28) ------------------------------------------------------
@@ -1143,7 +1201,7 @@ fi
 publication_prepare
 PREP_RC=$?
 if [ "$PREP_RC" -eq 2 ]; then publish_none_exit; fi
-if [ "$PREP_RC" -ne 0 ] && [ "$INGEST_PUBLISH" -eq 1 ] && [ "${#BENCH_PATHS[@]}" -gt 0 ]; then
+if [ "$PREP_RC" -eq 3 ] && [ "$INGEST_PUBLISH" -eq 1 ] && [ "${#BENCH_PATHS[@]}" -gt 0 ]; then
   echo "DAILY INGEST SKIPPED"
   INGEST_PUBLISH=0
   PUBLISH_PATHS=("${BENCH_PATHS[@]}")
@@ -1152,7 +1210,11 @@ if [ "$PREP_RC" -ne 0 ] && [ "$INGEST_PUBLISH" -eq 1 ] && [ "${#BENCH_PATHS[@]}"
 fi
 if [ "$PREP_RC" -eq 2 ]; then publish_none_exit; fi
 if [ "$PREP_RC" -ne 0 ]; then
-  daily_fail "publish: leak in the publication candidate"
+  if [ "$PREP_RC" -eq 3 ]; then
+    daily_fail "publish: leak in the publication candidate"
+  else
+    daily_fail "publish: candidate construction failed"
+  fi
   echo "DAILY END $(date -Is)"
   exit 1
 fi

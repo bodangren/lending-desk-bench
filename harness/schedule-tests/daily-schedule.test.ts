@@ -658,11 +658,11 @@ describe("artifacts", () => {
       expect(line, `${JOB}: every add is allowlisted`).toContain('"${PUBLISH_PATHS[@]}"');
     }
     const checks = cron.split(/\r?\n/).filter(line => line.includes("diff --cached --quiet"));
-    expect(checks, `${JOB}: the empty check must be limited to the allowlist`).toEqual(['  if git -C "$PUB_WT" diff --cached --quiet -- "${PUBLISH_PATHS[@]}"; then']);
+    expect(checks, `${JOB}: the empty check must be limited to the allowlist`).toEqual(['  git -C "$PUB_WT" diff --cached --quiet -- "${PUBLISH_PATHS[@]}"']);
     const commits = cron.split(/\r?\n/).filter(line => line.includes('git -C "$PUB_WT" commit'));
     expect(commits, `${JOB}: the publish commit must be limited to the allowlist`).toEqual(['  if ! git -C "$PUB_WT" commit -q -F "$MSG_FILE" -- "${PUBLISH_PATHS[@]}"; then']);
     expect(cron, `${JOB}: the worktree must start at origin/main`).toContain('git worktree add -q --detach "$PUB_WT" "$base"');
-    expect(cron, `${JOB}: the whole outgoing diff must be scanned`).toContain('git -C "$PUB_WT" diff "$base".."$commit" --name-only -z');
+    expect(cron, `${JOB}: the whole outgoing diff must be scanned`).toContain('git -C "$PUB_WT" diff --no-renames "$base".."$commit" --name-only -z');
     const pushes = cron.split(/\r?\n/).filter(line => line.includes("git push"));
     expect(pushes.some(line => /git push origin ["']?\$\{?[A-Za-z_][A-Za-z0-9_]*\}?:main/.test(line)), `${JOB}: missing D16 git push origin <sha>:main`).toBe(true);
     expect(cron.includes("git push origin main"), `${JOB}: D16 forbids git push origin main`).toBe(false);
@@ -768,7 +768,9 @@ describe("artifacts", () => {
 ROOT="$(cd "$(dirname "\${BASH_SOURCE[0]}")/../.." && pwd)"
 mkdir -p "$ROOT/docs/assets/data"
 printf '%s\\n' '{"note":"0123456789abcdefghijklmnopqrstuvwxyz"}' > "$ROOT/docs/assets/data/real-work.json"
-echo "update: written docs/assets/data/real-work.json"
+printf '%s\\n' '<html>0123456789abcdefghijklmnopqrstuvwxyz</html>' > "$ROOT/docs/index.html"
+printf '%s\\n' '<html>0123456789abcdefghijklmnopqrstuvwxyz</html>' > "$ROOT/docs/real-work.html"
+echo "update: written docs/index.html"
 exit 0
 `, { mode: 0o755 });
     writeFileSync(join(w.root, "publish-runner.cjs"), PUBLISH_RUNNER_SOURCE, { mode: 0o755 });
@@ -796,6 +798,8 @@ exit 0
     const pushed = git(["ls-tree", "-r", "--name-only", "main"], origin).split("\n").filter(Boolean).sort();
     expect(pushed, `${JOB}: the push holds only the benchmark output`)
       .toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
+    expect(git(["show", "origin/main:docs/index.html"]),
+      `${JOB}: the leaking ingest page must stay local`).toBe("<html></html>");
   });
   caseOf("6.4.7 a failing scan refuses the whole push", w => {
     jobSetup(w);
@@ -815,18 +819,101 @@ exit 0
   caseOf("6.4.8 a failed ingest still publishes the benchmark alone", w => {
     jobSetup(w);
     const { repo, origin, git } = pushRepo(w);
+    const privateDir = join(w.root, "private");
+    mkdirSync(join(privateDir, "sets/mg/diffs"), { recursive: true });
+    mkdirSync(join(privateDir, "sets/mg/src"), { recursive: true });
+    writeFileSync(join(privateDir, "sets/mg/diffs/seed.diff"),
+      "L1 +0123456789abcdefghijklmnopqrstuvwxyz\n");
+    writeFileSync(join(privateDir, "sets/mg/src/seed.diff"),
+      "L1 -base content only;\n");
     mkdirSync(join(repo, "docs/assets/data"), { recursive: true });
     writeFileSync(join(repo, "docs/assets/data/real-work.json"), "stale ingest output\n");
+    writeFileSync(join(repo, "docs/index.html"),
+      "<html>0123456789abcdefghijklmnopqrstuvwxyz</html>\n");
+    writeFileSync(join(repo, "docs/real-work.html"),
+      "<html>0123456789abcdefghijklmnopqrstuvwxyz</html>\n");
     writeFileSync(join(repo, "harness/model-guide/ingest.sh"),
       "#!/usr/bin/env bash\necho 'ingest: refused synthetic' >&2\nexit 7\n", { mode: 0o755 });
-    const { result } = runCopied(w, repo, true);
+    const { result } = runCopied(w, repo, true, { MODEL_GUIDE_PRIVATE_DIR: privateDir });
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     expect(lines(result, "DAILY INGEST FAIL "), `${JOB}: the failed ingest must be logged`).toHaveLength(1);
     expect(lines(result, "DAILY INGEST OK "), `${JOB}: no ingest success`).toEqual([]);
     expect(lines(result, "DAILY PUBLISH "), `${JOB}: the benchmark must publish`).toHaveLength(1);
     const pushed = git(["ls-tree", "-r", "--name-only", "main"], origin).split("\n").filter(Boolean).sort();
     expect(pushed, `${JOB}: no ingest path may leave`).toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
+    expect(git(["show", "origin/main:docs/index.html"]),
+      `${JOB}: the failed ingest page must stay local`).toBe("<html></html>");
     expect(git(["log", "-1", "--format=%s"], origin), `${JOB}: the remote tip is the publication`).toMatch(/^Publish daily /);
+  });
+  caseOf("6.4.9 a failed publication diff refuses the push", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    successfulIngest(repo);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    const wrap = publicationFaultGit(w, "diff");
+    const { result } = runCopied(w, repo, true, { PATH: wrap.path });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(1);
+    expect(lines(result, "DAILY PUBLISH "), `${JOB}: no publish after a failed diff`).toEqual([]);
+    expect(lines(result, "DAILY PUSH "), `${JOB}: no push after a failed diff`).toEqual([]);
+    expect(lines(result, "DAILY INGEST SKIPPED"), `${JOB}: a failed diff is not an ingest leak`).toEqual([]);
+    expect(readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push ")),
+      `${JOB}: no push command after a failed diff`).toEqual([]);
+    expect(git(["rev-parse", "main"], origin), `${JOB}: the remote stays unchanged`).toBe(remoteBefore);
+  });
+  caseOf("6.4.10 a failed blob extraction refuses the push", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    successfulIngest(repo);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    const wrap = publicationFaultGit(w, "show");
+    const { result } = runCopied(w, repo, true, { PATH: wrap.path });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(1);
+    expect(lines(result, "DAILY PUBLISH "), `${JOB}: no publish after a failed extraction`).toEqual([]);
+    expect(lines(result, "DAILY PUSH "), `${JOB}: no push after a failed extraction`).toEqual([]);
+    expect(lines(result, "DAILY INGEST SKIPPED"), `${JOB}: a failed extraction is not an ingest leak`).toEqual([]);
+    expect(readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push ")),
+      `${JOB}: no push command after a failed extraction`).toEqual([]);
+    expect(git(["rev-parse", "main"], origin), `${JOB}: the remote stays unchanged`).toBe(remoteBefore);
+  });
+  caseOf("6.4.11 a rename from outside the allowlist refuses the push", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    mkdirSync(join(repo, "notes"), { recursive: true });
+    writeFileSync(join(repo, "notes/old.txt"), "private source\n");
+    git(["add", "notes/old.txt"]);
+    git(["commit", "-q", "-m", "private source"]);
+    git(["push", "-q", "origin", "main"]);
+    successfulIngest(repo);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    const wrap = publicationFaultGit(w, "rename");
+    const { result } = runCopied(w, repo, true, { PATH: wrap.path });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(1);
+    expect(result.stderr, `${JOB}: both rename paths must be checked`)
+      .toContain("publish: path outside the allowlist: notes/old.txt");
+    expect(lines(result, "DAILY PUBLISH "), `${JOB}: no publish after a refused rename`).toEqual([]);
+    expect(lines(result, "DAILY PUSH "), `${JOB}: no push after a refused rename`).toEqual([]);
+    expect(lines(result, "DAILY INGEST SKIPPED"), `${JOB}: a refused rename is not an ingest leak`).toEqual([]);
+    expect(readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push ")),
+      `${JOB}: no push command after a refused rename`).toEqual([]);
+    expect(git(["rev-parse", "main"], origin), `${JOB}: the remote stays unchanged`).toBe(remoteBefore);
+  });
+  caseOf("6.4.12 stale publication worktree records do not break the next run", w => {
+    jobSetup(w);
+    const { repo, git } = pushRepo(w);
+    const publicationDir = join(repo, ".tmp/daily-publication");
+    git(["worktree", "add", "--detach", publicationDir, "HEAD"]);
+    rmSync(publicationDir, { recursive: true });
+    const first = runCopied(w, repo, true);
+    expect(first.result.status, `${first.result.stdout}\n${first.result.stderr}`).toBe(0);
+    expect(existsSync(publicationDir), `${JOB}: the first publication directory is removed`).toBe(false);
+
+    git(["worktree", "add", "--detach", publicationDir, "HEAD"]);
+    writeFileSync(join(publicationDir, "leftover.txt"), "leftover worktree\n");
+    const second = runCopied(w, repo, true);
+    expect(second.result.status, `${second.result.stdout}\n${second.result.stderr}`).toBe(0);
+    expect(existsSync(publicationDir), `${JOB}: the leftover publication directory is removed`).toBe(false);
+    expect(git(["worktree", "list", "--porcelain"]).split("worktree ").length - 1,
+      `${JOB}: no publication worktree record remains`).toBe(1);
   });
   caseOf("6.4.5 header: cron-daily.sh names the timer and Persistent=false", () => {
     const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");
@@ -1126,6 +1213,46 @@ function gitWrap(w: Work) {
   writeFileSync(join(bin, "git"), `#!/usr/bin/env bash\nprintf '%s\\n' "$*" >> ${JSON.stringify(log)}\nexec /usr/bin/git "$@"\n`, { mode: 0o755 });
   writeFileSync(join(bin, "sleep"), "#!/usr/bin/env bash\nexit 0\n", { mode: 0o755 });
   return { bin, log };
+}
+function publicationFaultGit(w: Work, fault: "diff" | "show" | "rename") {
+  const bin = join(w.root, `publication-${fault}-bin`);
+  const log = join(w.root, `publication-${fault}.log`);
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(log, "");
+  const diffFault = fault === "diff"
+    ? `name_only=0; for arg in "$@"; do [ "$arg" = --name-only ] && name_only=1; done
+if [ "$3" = diff ] && [ "$name_only" -eq 1 ]; then printf 'docs/assets/data/benchmark.json\\0'; exit 88; fi`
+    : ":";
+  const showFault = fault === "show"
+    ? `if [ "$3" = show ]; then case "$4" in :*) ;; *) printf 'partial blob'; exit 88;; esac; fi`
+    : ":";
+  const renameFault = fault === "rename"
+    ? `if [ "$rc" -eq 0 ] && [ "$3" = commit ]; then
+/usr/bin/git -C "$2" mv notes/old.txt docs/real-work.html || exit 89
+/usr/bin/git -C "$2" commit -q -m "injected rename" || exit 90
+fi`
+    : ":";
+  writeFileSync(join(bin, "git"), `#!/usr/bin/env bash
+printf '%s\\n' "$*" >> ${JSON.stringify(log)}
+if [ "$1" = "-C" ]; then
+${diffFault}
+${showFault}
+fi
+/usr/bin/git "$@"
+rc=$?
+${renameFault}
+exit $rc
+`, { mode: 0o755 });
+  writeFileSync(join(bin, "sleep"), "#!/usr/bin/env bash\nexit 0\n", { mode: 0o755 });
+  return { path: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`, log };
+}
+function successfulIngest(repo: string) {
+  writeFileSync(join(repo, "harness/model-guide/ingest.sh"), `#!/usr/bin/env bash
+ROOT="$(cd "$(dirname "\${BASH_SOURCE[0]}")/../.." && pwd)"
+mkdir -p "$ROOT/docs/assets/data"
+printf '%s\\n' '{"ok":true}' > "$ROOT/docs/assets/data/real-work.json"
+exit 0
+`, { mode: 0o755 });
 }
 function pushRepo(w: Work) {
   const repo = join(w.root, "pub");
