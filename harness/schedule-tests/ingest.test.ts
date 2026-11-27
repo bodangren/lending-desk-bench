@@ -525,6 +525,21 @@ print(json.dumps({"mapped": mapped, "producer": producers[0]["tasks"],
     }
   }, 180_000);
 
+  it("tightens owner-only modes on an existing dry-run destination", () => {
+    const f = fixture("dry-modes");
+    const out = join(f.root, "out");
+    mkdirSync(out, { recursive: true, mode: 0o700 });
+    const stale = join(out, `ra-outcomes-${DATE}.json`);
+    writeFileSync(stale, "stale content\n");
+    chmodSync(stale, 0o644);
+    const r = runIngest(f, out);
+    expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(statSync(stale).mode & 0o777, "the existing file becomes 0600").toBe(0o600);
+    for (const name of readdirSync(out)) {
+      expect(statSync(join(out, name)).mode & 0o777, `${name} is 0600`).toBe(0o600);
+    }
+  }, 180_000);
+
   it("refuses a destination that permits group or other access", () => {
     const f = fixture("loose-out");
     const out = join(f.root, "out");

@@ -223,6 +223,8 @@ function fixture(): Fixture {
     .replaceAll("/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh", join(root, "missing-real-heavy.sh"));
   writeFileSync(join(repo, "harness/cron-daily.sh"), cronSource, { mode: 0o755 });
   copyFileSync(join(HARNESS, "opencode-host.sh"), join(repo, "harness/opencode-host.sh"));
+  mkdirSync(join(repo, "harness/model-guide"), { recursive: true });
+  copyFileSync(join(HARNESS, "model-guide/leak-check.ts"), join(repo, "harness/model-guide/leak-check.ts"));
   for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
     symlinkSync(join(HARNESS, name), join(repo, "harness", name));
   symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"));

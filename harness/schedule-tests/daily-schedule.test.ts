@@ -651,16 +651,18 @@ describe("artifacts", () => {
   });
   caseOf("6.4.3 publish scope: cron-daily.sh commits only docs/", () => {
     const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");
-    const adds = cron.split(/\r?\n/).filter(line => line.includes("git add"));
+    const adds = cron.split(/\r?\n/).filter(line => line.includes(" add --"));
     expect(cron.includes("git add docs/"), `${JOB}: the job must not stage all of docs/`).toBe(false);
     expect(adds.length, `${JOB}: the job must stage explicit paths`).toBeGreaterThan(0);
     for (const line of adds) {
       expect(line, `${JOB}: every add is allowlisted`).toContain('"${PUBLISH_PATHS[@]}"');
     }
-    const checks = cron.split(/\r?\n/).filter(line => line.includes("git diff --cached --quiet"));
-    expect(checks, `${JOB}: the empty check must be limited to the allowlist`).toEqual(['if git diff --cached --quiet -- "${PUBLISH_PATHS[@]}"; then']);
-    const commits = cron.split(/\r?\n/).filter(line => line.includes("git commit"));
-    expect(commits, `${JOB}: the publish commit must be limited to the allowlist`).toEqual(['if ! git commit -F "$MSG_FILE" -- "${PUBLISH_PATHS[@]}"; then']);
+    const checks = cron.split(/\r?\n/).filter(line => line.includes("diff --cached --quiet"));
+    expect(checks, `${JOB}: the empty check must be limited to the allowlist`).toEqual(['  if git -C "$PUB_WT" diff --cached --quiet -- "${PUBLISH_PATHS[@]}"; then']);
+    const commits = cron.split(/\r?\n/).filter(line => line.includes('git -C "$PUB_WT" commit'));
+    expect(commits, `${JOB}: the publish commit must be limited to the allowlist`).toEqual(['  if ! git -C "$PUB_WT" commit -q -F "$MSG_FILE" -- "${PUBLISH_PATHS[@]}"; then']);
+    expect(cron, `${JOB}: the worktree must start at origin/main`).toContain('git worktree add -q --detach "$PUB_WT" "$base"');
+    expect(cron, `${JOB}: the whole outgoing diff must be scanned`).toContain('git -C "$PUB_WT" diff "$base".."$commit" --name-only -z');
     const pushes = cron.split(/\r?\n/).filter(line => line.includes("git push"));
     expect(pushes.some(line => /git push origin ["']?\$\{?[A-Za-z_][A-Za-z0-9_]*\}?:main/.test(line)), `${JOB}: missing D16 git push origin <sha>:main`).toBe(true);
     expect(cron.includes("git push origin main"), `${JOB}: D16 forbids git push origin main`).toBe(false);
@@ -683,10 +685,12 @@ describe("artifacts", () => {
     git(["config", "user.name", "Schedule Test"]);
     git(["remote", "add", "origin", origin]);
     mkdirSync(join(repo, "harness"), { recursive: true });
+    mkdirSync(join(repo, "harness/model-guide"), { recursive: true });
     mkdirSync(join(repo, "docs/assets/data"), { recursive: true });
     copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
     // cron-daily.sh sources opencode-host.sh (track opencode_host_isolation).
     copyFileSync(join(HARNESS, "opencode-host.sh"), join(repo, "harness/opencode-host.sh"));
+    copyFileSync(join(HARNESS, "model-guide/leak-check.ts"), join(repo, "harness/model-guide/leak-check.ts"));
     for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
       symlinkSync(join(HARNESS, name), join(repo, "harness", name));
     symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"));
@@ -719,12 +723,12 @@ describe("artifacts", () => {
     expect(published.length, JOB).toBe(1);
     expect(published[0], JOB).toMatch(/^DAILY PUBLISH [0-9a-f]{7,}$/);
     expect(lines(result, "DAILY FAIL "), JOB).toEqual([]);
-    const committed = git(["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean).sort();
+    const committed = git(["show", "--name-only", "--format=", "origin/main"]).split("\n").filter(Boolean).sort();
     expect(committed, `${JOB}: the publish commit must hold only docs/`).toEqual(["docs/assets/data/benchmark.json"]);
     const pushed = git(["ls-tree", "-r", "--name-only", "main"], origin).split("\n").filter(Boolean).sort();
     expect(pushed, `${JOB}: the push must hold only docs/`).toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
     expect(git(["ls-files", "--cached"]).split("\n"), JOB).toContain("secret.txt");
-    expect(git(["log", "-1", "--format=%s"]), JOB).toBe("Publish daily 2026-10-26 OpenCode Go results: glm-5.2 (untested).");
+    expect(git(["log", "-1", "--format=%s"], origin), JOB).toBe("Publish daily 2026-10-26 OpenCode Go results: glm-5.2 (untested).");
   });
   caseOf("6.4.6 a leaking ingest output is dropped; the benchmark still publishes", w => {
     jobSetup(w);
@@ -786,12 +790,43 @@ exit 0
     expect(lines(result, "DAILY INGEST OK "), result.stdout).toHaveLength(1);
     expect(lines(result, "DAILY INGEST SKIPPED"), result.stdout).toHaveLength(1);
     expect(lines(result, "DAILY PUBLISH "), result.stdout).toHaveLength(1);
-    const committed = git(["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean).sort();
+    const committed = git(["show", "--name-only", "--format=", "origin/main"]).split("\n").filter(Boolean).sort();
     expect(committed, `${JOB}: the leaking ingest output must not be committed`)
       .toEqual(["docs/assets/data/benchmark.json"]);
     const pushed = git(["ls-tree", "-r", "--name-only", "main"], origin).split("\n").filter(Boolean).sort();
     expect(pushed, `${JOB}: the push holds only the benchmark output`)
       .toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
+  });
+  caseOf("6.4.7 a failing scan refuses the whole push", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    writeFileSync(join(repo, "harness/model-guide/leak-check.ts"),
+      "process.stdout.write('leak-check: seeded-line: docs/assets/data/benchmark.json\\n');\nprocess.exit(2);\n");
+    const { result } = runCopied(w, repo, true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(1);
+    expect(lines(result, "DAILY FAIL publish:").map(line => line.split(": ").slice(0, 2).join(": ")),
+      `${JOB}: a failed scan must refuse the push`).toEqual(["DAILY FAIL publish: leak in the publication candidate"]);
+    expect(lines(result, "DAILY PUBLISH "), `${JOB}: a refused push prints no publish`).toEqual([]);
+    expect(lines(result, "DAILY PUSH "), `${JOB}: a refused push prints no push`).toEqual([]);
+    expect(git(["rev-parse", "main"], origin), `${JOB}: the remote must stay unchanged`).toBe(remoteBefore);
+    expect(git(["log", "--format=%s", "main"], origin), `${JOB}: no publication may reach the remote`).not.toContain("Publish daily");
+  });
+  caseOf("6.4.8 a failed ingest still publishes the benchmark alone", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    mkdirSync(join(repo, "docs/assets/data"), { recursive: true });
+    writeFileSync(join(repo, "docs/assets/data/real-work.json"), "stale ingest output\n");
+    writeFileSync(join(repo, "harness/model-guide/ingest.sh"),
+      "#!/usr/bin/env bash\necho 'ingest: refused synthetic' >&2\nexit 7\n", { mode: 0o755 });
+    const { result } = runCopied(w, repo, true);
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(lines(result, "DAILY INGEST FAIL "), `${JOB}: the failed ingest must be logged`).toHaveLength(1);
+    expect(lines(result, "DAILY INGEST OK "), `${JOB}: no ingest success`).toEqual([]);
+    expect(lines(result, "DAILY PUBLISH "), `${JOB}: the benchmark must publish`).toHaveLength(1);
+    const pushed = git(["ls-tree", "-r", "--name-only", "main"], origin).split("\n").filter(Boolean).sort();
+    expect(pushed, `${JOB}: no ingest path may leave`).toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
+    expect(git(["log", "-1", "--format=%s"], origin), `${JOB}: the remote tip is the publication`).toMatch(/^Publish daily /);
   });
   caseOf("6.4.5 header: cron-daily.sh names the timer and Persistent=false", () => {
     const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");
@@ -1107,10 +1142,12 @@ function pushRepo(w: Work) {
   git(["config", "user.name", "Schedule Test"]);
   git(["remote", "add", "origin", origin]);
   mkdirSync(join(repo, "harness"), { recursive: true });
+  mkdirSync(join(repo, "harness/model-guide"), { recursive: true });
   mkdirSync(join(repo, "docs"), { recursive: true });
   copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
   // cron-daily.sh sources opencode-host.sh (track opencode_host_isolation).
   copyFileSync(join(HARNESS, "opencode-host.sh"), join(repo, "harness/opencode-host.sh"));
+  copyFileSync(join(HARNESS, "model-guide/leak-check.ts"), join(repo, "harness/model-guide/leak-check.ts"));
   for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
     symlinkSync(join(HARNESS, name), join(repo, "harness", name));
   symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"));
@@ -1266,16 +1303,15 @@ describe("O1 conditions", () => {
     const { repo, origin, git } = pushRepo(w);
     const parent = git(["rev-parse", "HEAD"]);
     const { result, log } = runCopied(w, repo, true);
-    const head = git(["rev-parse", "HEAD"]);
+    const tip = git(["rev-parse", "main"], origin);
     const pushes = readFileSync(log, "utf8").split("\n").filter(line => line.startsWith("push "));
-    expect(pushes, `6.5.14: missing ${D16}`).toContain(`push origin ${head}:main`);
+    expect(pushes, `6.5.14: missing ${D16}`).toContain(`push origin ${tip}:main`);
     expect(pushes, `6.5.14: ${D16} forbids git push origin main`).not.toContain("push origin main");
-    expect(git(["rev-parse", "main"], origin), `6.5.14: the remote tip must equal the docs commit`).toBe(head);
-    expect(head, `6.5.14: the docs commit parent must be origin/main before the push`).not.toBe(parent);
+    expect(git(["rev-parse", "main^"], origin), `6.5.14: the docs commit parent must be origin/main before the push`).toBe(parent);
     expect(result.status, `6.5.14: missing ${D16} exit 0`).toBe(0);
     expect(lines(result, "DAILY PUBLISH ")[0], `6.5.14: missing ${D16} DAILY PUBLISH`).toMatch(/^DAILY PUBLISH [0-9a-f]{7,}$/);
   });
-  caseOf("6.5.15 other local commits: the push carries both commits", w => {
+  caseOf("6.5.15 other local commits: the push carries only the publication", w => {
     jobSetup(w);
     const { repo, origin, git } = pushRepo(w);
     writeFileSync(join(repo, "note.txt"), "other local commit\n");
@@ -1284,33 +1320,32 @@ describe("O1 conditions", () => {
     const parent = git(["rev-parse", "HEAD"]);
     const remoteBefore = git(["rev-parse", "main"], origin);
     const { result } = runCopied(w, repo, true);
-    const docs = git(["rev-parse", "HEAD"]);
-    expect(lines(result, "DAILY PUSH "), `6.5.15: missing ${D16}`).toEqual([
-      `DAILY PUSH ${git(["rev-parse", "--short", remoteBefore])}..${git(["rev-parse", "--short", docs])} commits=2`,
-    ]);
+    const tip = git(["rev-parse", "main"], origin);
     expect(result.status, `6.5.15: missing ${D16} exit 0`).toBe(0);
+    expect(lines(result, "DAILY PUSH "), `6.5.15: missing ${D16}`).toEqual([
+      `DAILY PUSH ${git(["rev-parse", "--short", remoteBefore])}..${git(["rev-parse", "--short", tip])} commits=1`,
+    ]);
     expect(lines(result, "DAILY PUSH skipped:"), `6.5.15: ${D16} retires the skip lines`).toEqual([]);
-    expect(git(["rev-parse", "main"], origin), `6.5.15: ${D16} must move the remote to the docs commit`).toBe(docs);
-    expect(git(["rev-parse", "HEAD^"]), `6.5.15: the other local commit must sit before the docs commit`).toBe(parent);
-    expect(git(["log", "--format=%s", "main"], origin), `6.5.15: ${D16} must carry the other local commit`).toContain("other local");
+    expect(git(["log", "-1", "--format=%s"], origin), `6.5.15: the remote tip must be the publication`).toMatch(/^Publish daily /);
+    expect(git(["log", "--format=%s", "main"], origin), `6.5.15: no local commit may leave`).not.toContain("other local");
+    expect(git(["ls-tree", "-r", "--name-only", "main"], origin), `6.5.15: no local path may leave`).not.toContain("note.txt");
+    expect(git(["rev-parse", "HEAD"]), `6.5.15: local main keeps its own commit`).toBe(parent);
+    expect(lines(result, "DAILY PUBLISH ")[0], `6.5.15: missing ${D16} DAILY PUBLISH`).toBe(`DAILY PUBLISH ${git(["rev-parse", "--short", tip])}`);
   });
-  caseOf("6.5.16 origin/main moved: the push fails and the remote stays unchanged", w => {
+  caseOf("6.5.16 origin/main moved: the publication starts at the fresh remote", w => {
     jobSetup(w);
     const { repo, origin, git } = pushRepo(w);
     git(["checkout", "-q", "-b", "side"]);
-    writeFileSync(join(repo, "side.txt"), "moved\n");
-    git(["add", "side.txt"]);
-    git(["commit", "-q", "-m", "origin moved"]);
+    git(["commit", "-q", "--allow-empty", "-m", "origin moved"]);
     git(["push", "-q", "origin", "side:main"]);
     git(["checkout", "-q", "main"]);
-    const remoteBefore = git(["rev-parse", "main"], origin);
+    const fresh = git(["rev-parse", "main"], origin);
     const { result } = runCopied(w, repo, true);
-    expect(lines(result, "DAILY FAIL push:"), `6.5.16: missing ${D16}`).toEqual([
-      "DAILY FAIL push: origin/main is not an ancestor of the docs commit; the commit is local",
-    ]);
-    expect(result.status, `6.5.16: missing ${D16} exit 1`).toBe(1);
-    expect(lines(result, "DAILY PUSH skipped:"), `6.5.16: ${D16} retires the skip lines`).toEqual([]);
-    expect(git(["rev-parse", "main"], origin), `6.5.16: ${D16} must not push`).toBe(remoteBefore);
+    expect(result.status, `6.5.16: missing ${D16} exit 0`).toBe(0);
+    expect(lines(result, "DAILY FAIL push:"), `6.5.16: no push failure`).toEqual([]);
+    expect(git(["rev-parse", "main^"], origin), `6.5.16: the publication must sit on the fresh remote`).toBe(fresh);
+    expect(git(["log", "--format=%s", "main"], origin), `6.5.16: the fresh remote commit stays`).toContain("origin moved");
+    expect(git(["rev-parse", "HEAD"]), `6.5.16: local main is not fast-forwarded onto a diverged remote`).not.toBe(fresh);
   });
   caseOf("6.5.17 failed fetch: the push fails and the commit stays local", w => {
     jobSetup(w);
@@ -1324,7 +1359,9 @@ describe("O1 conditions", () => {
     expect(result.status, `6.5.17: missing ${D16} exit 1`).toBe(1);
     expect(lines(result, "DAILY PUSH skipped:"), `6.5.17: ${D16} retires the skip lines`).toEqual([]);
     expect(git(["rev-parse", "main"], origin), `6.5.17: ${D16} must not change the remote`).toBe(remoteBefore);
-    expect(git(["log", "-1", "--format=%s"]), `6.5.17: the docs commit must stay local`).toMatch(/^Publish daily /);
+    expect(git(["log", "-1", "--format=%s"]), `6.5.17: no publication commit is made`).toBe("initial");
+    expect(git(["worktree", "list", "--porcelain"]).split("worktree ").length - 1,
+      `6.5.17: no publication worktree is left`).toBe(1);
   });
   caseOf("6.5.18 selector exit 1: the job must not take the no-pick path", w => {
     jobSetup(w);
@@ -1378,13 +1415,13 @@ describe("O1 conditions", () => {
     jobSetup(w);
     inputs(w, { "glm-5.2": 100 }, ["z-unpriced", "glm-5.2"], ["z-unpriced", "glm-5.2"]);
     json(w.catalog, { live: ["z-unpriced", "glm-5.2"], requests_per_month: { "z-unpriced": 99999 } });
-    const { repo, git } = pushRepo(w);
-    runCopied(w, repo, false);
+    const { repo, origin, git } = pushRepo(w);
+    runCopied(w, repo, true);
     expect(existsSync(join(w.days, `${DATE}.json`)), "6.5.23 fixture: the first run must write a day record").toBe(true);
     const first = record(w);
     expect(first.excluded?.unpriced, "6.5.23 fixture: the first record must list the unpriced model").toEqual(["z-unpriced"]);
     const kept = { counts: first.counts, excluded: first.excluded, order: first.order, last_test: first.last_test };
-    const second = runCopied(w, repo, false);
+    const second = runCopied(w, repo, true);
     const again = record(w);
     expect(
       { counts: again.counts, excluded: again.excluded, order: again.order, last_test: again.last_test },
@@ -1393,7 +1430,7 @@ describe("O1 conditions", () => {
     expect(lines(second.result, "DAILY_PICK "), "6.5.23: the selector line stays the short resume object").toEqual([
       `DAILY_PICK date=${DATE} model=glm-5.2 reason=resume`,
     ]);
-    expect(git(["log", "-1", "--format=%B"]), "6.5.23: the publish body must name the unpriced model").toContain("z-unpriced");
+    expect(git(["log", "-1", "--format=%B"], origin), "6.5.23: the publish body must name the unpriced model").toContain("z-unpriced");
   });
   caseOf("6.5.24 value 80.0001: the skip line keeps the full number", w => {
     jobSetup(w);
@@ -1715,27 +1752,27 @@ describe("adversarial 4b", () => {
     const remoteBefore = git(["rev-parse", "main"], origin);
     const wrap = advGit(w, "reject");
     const { result } = runCopied(w, repo, true, { PATH: wrap.path });
-    const head = git(["rev-parse", "HEAD"]);
     const pushes = readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push "));
-    expect(pushes, `12.12: ${D16} must try the push three times`).toEqual(Array(3).fill(`push origin ${head}:main`));
+    const docs = pushes[0]?.split(" ")[2]?.replace(/:main$/, "") ?? "";
+    expect(docs, `12.12: missing ${D16} publication sha`).toMatch(/^[0-9a-f]{40}$/);
+    expect(pushes, `12.12: ${D16} must try the push three times`).toEqual(Array(3).fill(`push origin ${docs}:main`));
     expect(result.status, `12.12: ${D16} exit 1`).toBe(1);
     expect(lines(result, "DAILY FAIL publish:"), `12.12: missing ${D16} fail line`).toEqual(["DAILY FAIL publish: git push failed after 3 attempts; the commit is local"]);
     expect(lines(result, "DAILY PUBLISH "), `12.12: a failed push must not print DAILY PUBLISH`).toEqual([]);
     expect(git(["rev-parse", "main"], origin), `12.12: the remote must stay unchanged`).toBe(remoteBefore);
-    expect(git(["log", "-1", "--format=%s"]), `12.12: the docs commit must stay local`).toMatch(/^Publish daily /);
+    expect(git(["log", "-1", "--format=%s"]), `12.12: local main must not take the publication commit`).toBe("initial");
   });
   caseOf("12.13 push race: the remote tip is the docs commit, not a later local commit", w => {
     jobSetup(w);
     const { repo, origin, git } = pushRepo(w);
     const wrap = advGit(w, "race");
     const { result } = runCopied(w, repo, true, { PATH: wrap.path });
+    const pushes = readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push "));
+    const docs = pushes[0]?.split(" ")[2]?.replace(/:main$/, "") ?? "";
     expect(git(["log", "-1", "--format=%s"]), `12.13 fixture: the wrapper must add the extra commit after the fetch`).toBe("race extra");
-    const docs = git(["rev-parse", "HEAD^"]);
-    expect(git(["log", "-1", "--format=%s", docs]), `12.13 fixture: HEAD^ is the docs commit`).toMatch(/^Publish daily /);
     const tip = git(["rev-parse", "main"], origin);
     expect(tip, `12.13: ${D16} must push the docs commit, not the extra commit`).toBe(docs);
     expect(git(["log", "--format=%s", "main"], origin), `12.13: the extra commit must not reach the remote`).not.toContain("race extra");
-    const pushes = readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push "));
     expect(pushes, `12.13: missing ${D16}`).toEqual([`push origin ${docs}:main`]);
     expect(result.status, `12.13: missing ${D16} exit 0`).toBe(0);
     expect(lines(result, "DAILY PUBLISH ")[0], `12.13: missing ${D16} DAILY PUBLISH`).toBe(`DAILY PUBLISH ${git(["rev-parse", "--short", docs])}`);

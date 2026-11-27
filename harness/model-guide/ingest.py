@@ -436,10 +436,11 @@ def main():
         os.makedirs(target, exist_ok=True, mode=0o700)
         data = file_set(args.date, rows, aa_raw, routes_raw, skipped, mapped)
         for name, body in data.items():
-            fd = os.open(os.path.join(target, name),
-                         os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            file_path = os.path.join(target, name)
+            fd = os.open(file_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
             with os.fdopen(fd, "wb") as handle:
                 handle.write(body)
+            os.chmod(file_path, 0o600)
         scan_staged(data, f"MANIFEST-{args.date}.txt")
         if stage is not None:
             os.makedirs(out, exist_ok=True, mode=0o700)

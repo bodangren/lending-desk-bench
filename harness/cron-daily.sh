@@ -85,6 +85,7 @@ NOTICE_SENT=0
 INGEST_DONE=0
 INGEST_PUBLISH=0
 PUBLISH_SCAN=""
+PUB_WT=""
 # Only these generated paths may enter a publish commit.
 PUBLISH_ALLOW=(
   "docs/assets/data/benchmark.json"
@@ -106,6 +107,15 @@ INGEST_ALLOW=(
 PRIVATE_DIR="${MODEL_GUIDE_PRIVATE_DIR:-$HOME/.local/share/lending-desk-bench/model-guide}"
 LAST_START="${BENCH_DAILY_LAST_START:-20:00}"
 MAX_MODELS="${BENCH_DAILY_MAX_MODELS:-12}"
+
+# The publication worktree holds one commit on top of origin/main. Remove it on
+# every exit path so a failed job leaves no branch or worktree behind.
+publication_worktree_remove() {
+  if [ -n "$PUB_WT" ]; then
+    git worktree remove --force "$PUB_WT" 2>/dev/null || rm -rf "$PUB_WT"
+    PUB_WT=""
+  fi
+}
 
 # A failure line. The notice of a failed run quotes the last one.
 daily_fail() {
@@ -228,36 +238,72 @@ daily_exit() {
   local rc=$?
   rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" 2>/dev/null
   rm -rf "$PUBLISH_SCAN"
+  publication_worktree_remove
   opencode_host_cleanup
   daily_notify "$rc"
 }
 trap daily_exit EXIT
 
-# Build one candidate folder from the staged set and the outgoing commits.
-publication_candidate() {
-  local path body
-  rm -rf "$PUBLISH_SCAN"
-  PUBLISH_SCAN="$(mktemp -d)"
-  mkdir -p "$PUBLISH_SCAN/docs"
-  while IFS= read -r -d '' path; do
-    case "$path" in docs/*) ;; *) continue ;; esac
-    body="$(git show ":$path" 2>/dev/null)" || continue
-    mkdir -p "$PUBLISH_SCAN/$(dirname "$path")"
-    printf '%s\n' "$body" > "$PUBLISH_SCAN/$path"
-  done < <(git diff --cached --name-only -z -- "${PUBLISH_PATHS[@]}")
-  while IFS= read -r -d '' path; do
-    case "$path" in docs/*) ;; *) continue ;; esac
-    body="$(git show "HEAD:$path" 2>/dev/null)" || continue
-    mkdir -p "$PUBLISH_SCAN/$(dirname "$path")"
-    printf '%s\n' "$body" > "$PUBLISH_SCAN/$path"
-  done < <(git diff "$REMOTE_SHA"..HEAD --name-only -z)
+# The publication starts on a detached worktree of origin/main. Local history,
+# local commits and other staged files never enter the outgoing range.
+publication_worktree_add() {
+  local base="$1"
+  PUB_WT="$(mktemp -d)"
+  rmdir "$PUB_WT"
+  git worktree add -q --detach "$PUB_WT" "$base"
 }
 
-# Scan the complete publication candidate. A missing tool is not a leak.
+# Copy only the allowlisted generated files into the worktree, then stage them.
+publication_build() {
+  local base="$1" rel dest
+  git -C "$PUB_WT" reset -q --hard "$base"
+  for rel in "${PUBLISH_PATHS[@]}"; do
+    # A path that does not exist in the work tree is not a publish candidate.
+    if [ ! -f "$ROOT/$rel" ]; then continue; fi
+    dest="$PUB_WT/$rel"
+    mkdir -p "$(dirname "$dest")"
+    cp -- "$ROOT/$rel" "$dest"
+  done
+  git -C "$PUB_WT" add -- "${PUBLISH_PATHS[@]}"
+}
+
+# True when every changed path of the one outgoing commit is allowlisted.
+publication_paths_allowed() {
+  local base="$1" commit="$2" path allow
+  while IFS= read -r -d '' path; do
+    [ -z "$path" ] && continue
+    for allow in "${PUBLISH_ALLOW[@]}"; do
+      if [ "$path" = "$allow" ]; then continue 2; fi
+    done
+    echo "publish: path outside the allowlist: $path" >&2
+    return 1
+  done < <(git -C "$PUB_WT" diff "$base".."$commit" --name-only -z)
+  return 0
+}
+
+# Build one candidate folder from the complete outgoing diff. The throwaway
+# branch holds one commit, so this set is the staged diff and the full outgoing
+# range from origin/main. Every changed path and its full content are scanned.
+publication_candidate() {
+  local base="$1" commit="$2" path body
+  rm -rf "$PUBLISH_SCAN"
+  PUBLISH_SCAN="$(mktemp -d)"
+  while IFS= read -r -d '' path; do
+    [ -z "$path" ] && continue
+    body="$(git -C "$PUB_WT" show "$commit:$path" 2>/dev/null)" || continue
+    mkdir -p "$PUBLISH_SCAN/$(dirname "$path")"
+    printf '%s\n' "$body" > "$PUBLISH_SCAN/$path"
+  done < <(git -C "$PUB_WT" diff "$base".."$commit" --name-only -z)
+}
+
+# Scan the complete candidate before the push. A missing tool refuses the push.
 publication_scan() {
-  if [ ! -f "$H/model-guide/leak-check.ts" ]; then return 0; fi
-  publication_candidate
-  local out rc
+  local base="$1" commit="$2" out rc
+  publication_candidate "$base" "$commit"
+  if [ ! -f "$H/model-guide/leak-check.ts" ]; then
+    echo "publish: leak check unavailable" >&2
+    return 1
+  fi
   out="$(cd "$H" && npx tsx model-guide/leak-check.ts \
     --private "$PRIVATE_DIR" --repo "$PUBLISH_SCAN" 2>/dev/null)"
   rc=$?
@@ -269,17 +315,28 @@ publication_scan() {
   return 0
 }
 
-# True when an outgoing commit holds a path outside the generated allowlist.
-outgoing_outside_allow() {
-  local path allow
-  while IFS= read -r path; do
-    [ -z "$path" ] && continue
-    for allow in "${PUBLISH_ALLOW[@]}"; do
-      if [ "$path" = "$allow" ]; then continue 2; fi
-    done
-    return 0
-  done < <(git diff "$REMOTE_SHA"..HEAD --name-only)
-  return 1
+# Stage the allowlisted files, commit them, and check the complete outgoing
+# range. Exit 2 means no generated file changed; exit 1 means a failed check.
+publication_prepare() {
+  if ! publication_build "$PUBLISH_BASE"; then return 1; fi
+  if git -C "$PUB_WT" diff --cached --quiet -- "${PUBLISH_PATHS[@]}"; then
+    return 2
+  fi
+  if ! git -C "$PUB_WT" commit -q -F "$MSG_FILE" -- "${PUBLISH_PATHS[@]}"; then
+    return 1
+  fi
+  DOCS_SHA="$(git -C "$PUB_WT" rev-parse HEAD)"
+  if ! publication_paths_allowed "$PUBLISH_BASE" "$DOCS_SHA"; then return 1; fi
+  if ! publication_scan "$PUBLISH_BASE" "$DOCS_SHA"; then return 1; fi
+  return 0
+}
+
+publish_none_exit() {
+  echo "DAILY PUBLISH none"
+  if [ -z "$SKIP_REASON" ]; then SKIP_REASON="no docs change"; fi
+  if [ "$LIST_MODE" = "1" ]; then send_notice 3; fi
+  echo "DAILY END $(date -Is)"
+  exit 3
 }
 
 # ---- Night rule helpers (D22, D26) ----------------------------------------------
@@ -997,42 +1054,26 @@ fs.writeFileSync(process.argv[5], JSON.stringify(rec, null, 2) + "\n");
   fi
 
 # ---- Publish (FR-8, D10, D15, D16) --------------------------------------------
-# This section sits at column 0 inside the loop. Only generated output paths
-# enter the publication candidate; unrelated docs changes stay out.
+# This section sits at column 0 inside the loop. The benchmark paths come from
+# the benchmark allowlist; the ingest paths are added only after a successful
+# ingest. The publication is built in a worktree on origin/main, so no local
+# commit, staged file, or other path can leave the machine.
 cd "$ROOT"
-PUBLISH_PATHS=()
+BENCH_PATHS=()
 for rel in "${PUBLISH_ALLOW[@]}"; do
-  if [ -e "$rel" ]; then PUBLISH_PATHS+=("$rel"); fi
+  DROP=0
+  for ing in "${INGEST_ALLOW[@]}"; do
+    if [ "$rel" = "$ing" ]; then DROP=1; break; fi
+  done
+  if [ "$DROP" -eq 0 ] && [ -e "$rel" ]; then BENCH_PATHS+=("$rel"); fi
 done
+PUBLISH_PATHS=("${BENCH_PATHS[@]}")
 if [ "$INGEST_PUBLISH" -eq 1 ]; then
   for rel in "${INGEST_ALLOW[@]}"; do
-    if [ -e "$rel" ] && [[ " ${PUBLISH_PATHS[*]} " != *" $rel "* ]]; then
-      PUBLISH_PATHS+=("$rel")
-    fi
+    if [ -e "$rel" ]; then PUBLISH_PATHS+=("$rel"); fi
   done
 fi
-if [ "${#PUBLISH_PATHS[@]}" -eq 0 ] || ! git add -- "${PUBLISH_PATHS[@]}"; then
-  echo "DAILY PUBLISH none"
-  if [ -z "$SKIP_REASON" ]; then SKIP_REASON="no docs change"; fi
-  if [ "$LIST_MODE" = "1" ]; then
-    send_notice 3
-    echo "DAILY END $(date -Is)"
-    exit 3
-  fi
-  echo "DAILY END $(date -Is)"
-  exit 3
-fi
-if git diff --cached --quiet -- "${PUBLISH_PATHS[@]}"; then
-  echo "DAILY PUBLISH none"
-  if [ -z "$SKIP_REASON" ]; then SKIP_REASON="no docs change"; fi
-  if [ "$LIST_MODE" = "1" ]; then
-    send_notice 3
-    echo "DAILY END $(date -Is)"
-    exit 3
-  fi
-  echo "DAILY END $(date -Is)"
-  exit 3
-fi
+if [ "${#PUBLISH_PATHS[@]}" -eq 0 ]; then publish_none_exit; fi
 
 # The publish runs on main only. A detached HEAD counts as the branch `detached`.
 BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || true)"
@@ -1077,84 +1118,71 @@ if ((ex[key] ?? []).length) lines.push(key.charAt(0).toUpperCase() + key.slice(1
 fs.writeFileSync(process.argv[3], lines.join("\n") + "\n");
 ' "$RECORD" "$PICK_OUT" "$MSG_FILE" "$N_RUNS" "$GUARD_STOP" "$RUNLIST_OUT" "$RUNS_ROOT"
 
-# Scan the complete candidate before the commit. The benchmark publication
-# is independent: a bad ingest drops only its own generated paths.
-REMOTE_SHA="$(git rev-parse --verify origin/main 2>/dev/null || true)"
-if [ -z "$REMOTE_SHA" ]; then
-  REMOTE_SHA="$(git rev-list --max-parents=0 HEAD | head -n 1)"
-fi
-if [ "$INGEST_PUBLISH" -eq 1 ]; then
-  if ! publication_scan || outgoing_outside_allow; then
-    echo "DAILY INGEST SKIPPED"
-    INGEST_PUBLISH=0
-    REMAINING=()
-    for rel in "${PUBLISH_PATHS[@]}"; do
-      DROP=0
-      for ing in "${INGEST_ALLOW[@]}"; do
-        if [ "$rel" = "$ing" ]; then DROP=1; break; fi
-      done
-      if [ "$DROP" -eq 0 ]; then REMAINING+=("$rel"); fi
-    done
-    PUBLISH_PATHS=("${REMAINING[@]}")
-    if [ "${#PUBLISH_PATHS[@]}" -eq 0 ]; then
-      echo "DAILY PUBLISH none"
-      if [ -z "$SKIP_REASON" ]; then SKIP_REASON="no docs change"; fi
-      if [ "$LIST_MODE" = "1" ]; then
-        send_notice 3
-        echo "DAILY END $(date -Is)"
-        exit 3
-      fi
-      echo "DAILY END $(date -Is)"
-      exit 3
-    fi
-    git reset -q -- "${INGEST_ALLOW[@]}" 2>/dev/null || true
-    git add -- "${PUBLISH_PATHS[@]}"
-  fi
-fi
-
-if ! git commit -F "$MSG_FILE" -- "${PUBLISH_PATHS[@]}"; then
-  daily_fail "publish: the commit of docs/ failed"
-  echo "DAILY PUBLISH none"
-  echo "DAILY END $(date -Is)"
-  exit 1
-fi
-
-# The push is a fast-forward (D16). It carries every local commit between
-# origin/main and the docs commit, and it never forces.
-DOCS_SHA="$(git rev-parse HEAD)"
+# Fetch before the worktree, so the publication starts at origin/main and no
+# local commit enters the outgoing range.
 if ! git fetch origin; then
   daily_fail "push: fetch failed; the commit is local"
   echo "DAILY END $(date -Is)"
   exit 1
 fi
-REMOTE_SHA="$(git rev-parse --verify origin/main 2>/dev/null || true)"
-if [ -z "$REMOTE_SHA" ] || ! git merge-base --is-ancestor "$REMOTE_SHA" "$DOCS_SHA"; then
-  daily_fail "push: origin/main is not an ancestor of the docs commit; the commit is local"
+PUBLISH_BASE="$(git rev-parse --verify origin/main 2>/dev/null || true)"
+if [ -z "$PUBLISH_BASE" ]; then
+  daily_fail "push: no origin/main"
   echo "DAILY END $(date -Is)"
   exit 1
 fi
-# Scan the outgoing range again, now that the publication commit is in it.
-if ! publication_scan; then
+if ! publication_worktree_add "$PUBLISH_BASE"; then
+  daily_fail "publish: the publication worktree failed"
+  echo "DAILY END $(date -Is)"
+  exit 1
+fi
+
+# Stage, commit, and scan the whole outgoing range before the push. A failed
+# ingest or a leaking ingest output drops only the ingest paths; the benchmark
+# publication still goes out.
+publication_prepare
+PREP_RC=$?
+if [ "$PREP_RC" -eq 2 ]; then publish_none_exit; fi
+if [ "$PREP_RC" -ne 0 ] && [ "$INGEST_PUBLISH" -eq 1 ] && [ "${#BENCH_PATHS[@]}" -gt 0 ]; then
+  echo "DAILY INGEST SKIPPED"
+  INGEST_PUBLISH=0
+  PUBLISH_PATHS=("${BENCH_PATHS[@]}")
+  publication_prepare
+  PREP_RC=$?
+fi
+if [ "$PREP_RC" -eq 2 ]; then publish_none_exit; fi
+if [ "$PREP_RC" -ne 0 ]; then
   daily_fail "publish: leak in the publication candidate"
   echo "DAILY END $(date -Is)"
   exit 1
 fi
+
+# The push is a fast-forward of the publication commit (D16). It never forces,
+# and it carries no other local commit.
 PUSHED=""
 for _ in 1 2 3; do
   if git push origin "${DOCS_SHA}:main"; then PUSHED=1; break; fi
   sleep 60
-  done
-  if [ -z "$PUSHED" ]; then
-    daily_fail "publish: git push failed after 3 attempts; the commit is local"
-    echo "DAILY END $(date -Is)"
-    exit 1
-  fi
-  PUSH_OLD="$(git rev-parse --short "$REMOTE_SHA")"
-  PUSH_NEW="$(git rev-parse --short "$DOCS_SHA")"
-  PUSH_COMMITS="$(git rev-list --count "$REMOTE_SHA..$DOCS_SHA")"
-  PUSH_DONE=1
-  echo "DAILY PUSH $PUSH_OLD..$PUSH_NEW commits=$PUSH_COMMITS"
-  echo "DAILY PUBLISH $PUSH_NEW"
+done
+if [ -z "$PUSHED" ]; then
+  daily_fail "publish: git push failed after 3 attempts; the commit is local"
+  echo "DAILY END $(date -Is)"
+  exit 1
+fi
+publication_worktree_remove
+# A normal fetch and fast-forward brings local main up to date when it has no
+# local commits of its own. Otherwise local main stays as it was.
+git fetch origin >/dev/null 2>&1 || true
+CURRENT_REMOTE="$(git rev-parse --verify origin/main 2>/dev/null || true)"
+if [ -n "$CURRENT_REMOTE" ] && git merge-base --is-ancestor HEAD "$CURRENT_REMOTE"; then
+  git merge --ff-only "$CURRENT_REMOTE" >/dev/null 2>&1 || true
+fi
+PUSH_OLD="$(git rev-parse --short "$PUBLISH_BASE")"
+PUSH_NEW="$(git rev-parse --short "$DOCS_SHA")"
+PUSH_COMMITS="$(git rev-list --count "$PUBLISH_BASE..$DOCS_SHA")"
+PUSH_DONE=1
+echo "DAILY PUSH $PUSH_OLD..$PUSH_NEW commits=$PUSH_COMMITS"
+echo "DAILY PUBLISH $PUSH_NEW"
   if [ -n "$SKIP_REASON" ]; then
     if [ "$LIST_MODE" = "1" ]; then
       send_notice 3
