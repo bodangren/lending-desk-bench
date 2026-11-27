@@ -2,7 +2,7 @@
   "id": "preflight_model_api",
   "title": "Preflight model list from the OpenChamber API",
   "type": "Chore",
-  "status": "in-progress",
+  "status": "complete",
   "created": "2026-11-26",
   "estimated_tasks": 4,
   "actual_tasks": null,

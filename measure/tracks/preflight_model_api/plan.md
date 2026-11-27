@@ -151,3 +151,6 @@ Marker use:
   - Gate: `cd harness && ./node_modules/.bin/vitest run tests/meta/preflight-model-api.test.ts --configLoader native --maxWorkers=1`
     exits 0.
   - Verify: no staged file lies outside this phase. No push ran.
+
+- [x] 1.5 Review-data refresh. Result: fbb72b3, c86efd1, 80fd940 (review ranking refresh, live check passed).
+  Refresh the model-guide review ranking and check the live data.
