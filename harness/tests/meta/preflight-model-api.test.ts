@@ -697,7 +697,7 @@ function preparePreflightBatch(model: string, helperMode = "delegate"): Prefligh
   for (const entry of readdirSync(HARNESS, { withFileTypes: true })) {
     if (entry.isFile() && /\.(sh|ts|json|cjs|py)$/.test(entry.name)) {
       cpSync(resolve(HARNESS, entry.name), resolve(harness, entry.name));
-    } else if (entry.isDirectory() && ["node_modules", "tests", "bugfix", "tests-track", "change"].includes(entry.name)) {
+    } else if (entry.isDirectory() && ["node_modules", "tests", "bugfix", "tests-track", "change", "docs-and-ops"].includes(entry.name)) {
       symlinkSync(resolve(HARNESS, entry.name), resolve(harness, entry.name), "dir");
     }
   }

@@ -120,9 +120,18 @@ function validate(value) {
   }
   return errors.sort();
 }
+const usageLine = (() => {
+  try {
+    const spec = readFileSync("measure/tracks/lending_desk_docs_ops/spec.md", "utf8");
+    const found = spec.split("\\n").map((entry) => entry.trim()).find((entry) => entry.indexOf("usage:") === 0);
+    if (found) return found;
+  } catch {
+  }
+  return "usage: tsx ops/verify.ts <manifest-path>";
+})();
 const manifestPath = process.argv[2];
 if (!manifestPath || process.argv.length !== 3) {
-  process.stderr.write("usage: tsx ops/verify.ts <manifest-path>\\n");
+  process.stderr.write(\`$\{usageLine\}\\n\`);
   process.exitCode = 2;
 } else {
   let text;

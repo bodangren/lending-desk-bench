@@ -51,7 +51,9 @@ import { afterAll, describe, expect, it } from "vitest";
  *                 these forms (spec D18 PM 2026-11-17, orchestrator
  *                 2026-11-17): "page B producer: accept <n> %, <count>
  *                 tasks" for the test writing row, "track A: worst <n>
- *                 (n=<count>)", "print-audit: <x> of <y> (n=<y>)", and the
+ *                 (n=<count>)" for a track A rank, "track A: total <n>
+ *                 (n=<count>)" for the docs and ops Arm A rank (F6),
+ *                 "print-audit: <x> of <y> (n=<y>)", and the
  *                 exact words "no pick yet" for a row with no source.
  *   evidence_date the export date of the outcomes file (the date in the
  *                 MANIFEST name, Q-S4), the date of the last complete
@@ -136,7 +138,7 @@ const KINDS = [
 const ROOT_KEYS = ["rows", "schema", "stale", "today"].sort();
 const ROW_KEYS = ["base_line", "evidence", "evidence_date", "kind", "pick", "second"].sort();
 const EVIDENCE_RE =
-  /^(page B producer: accept \d+ %, \d+ tasks|track A: worst [\d.]+ \(n=\d+\)|print-audit: \d+ of \d+ \(n=\d+\)|no pick yet)$/;
+  /^(page B producer: accept \d+ %, \d+ tasks|track A: (worst|total) [\d.]+ \(n=\d+\)|print-audit: \d+ of \d+ \(n=\d+\)|no pick yet)$/;
 const TEST_WRITING_EVIDENCE = "page B producer: accept 100 %, 5 tasks";
 const NO_PICK_EVIDENCE = "no pick yet";
 const HOSTILE_ROUTE = 't1/"><img src=x onerror=alert(1)>';

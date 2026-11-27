@@ -40,7 +40,7 @@ export function prepareCredentialBatch(run: CredentialRun, reps = 1) {
   mkdirSync(harness, { recursive: true });
   for (const entry of readdirSync(HARNESS, { withFileTypes: true })) {
     if (entry.isFile() && /\.(sh|ts|json|cjs|py)$/.test(entry.name)) cpSync(resolve(HARNESS, entry.name), resolve(harness, entry.name));
-    else if (entry.isDirectory() && ["node_modules", "tests", "bugfix", "tests-track", "change"].includes(entry.name)) symlinkSync(resolve(HARNESS, entry.name), resolve(harness, entry.name), "dir");
+    else if (entry.isDirectory() && ["node_modules", "tests", "bugfix", "tests-track", "change", "docs-and-ops"].includes(entry.name)) symlinkSync(resolve(HARNESS, entry.name), resolve(harness, entry.name), "dir");
   }
   cpSync(resolve(ROOT,"fixture"),resolve(root,"fixture"),{recursive:true,filter:source=>!["node_modules",".next",".git"].includes(basename(source)) && !source.endsWith(".tsbuildinfo")});
   symlinkSync(resolve(ROOT,"fixture/node_modules"),resolve(root,"fixture/node_modules"),"dir");

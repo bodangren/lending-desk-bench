@@ -142,9 +142,10 @@ function stageTempRepo(opts: {
     }
   }
   // F15: the provenance step resolves track bindings through the bugfix,
-  // tests-track, change, and tests trees. Copy those small trees so the
-  // temp run reaches the leak gate instead of aborting on a missing module.
-  for (const tree of ["bugfix", "tests-track", "change", "tests"]) {
+  // tests-track, change, docs-and-ops, and tests trees. Copy those small
+  // trees so the temp run reaches the leak gate instead of aborting on a
+  // missing module.
+  for (const tree of ["bugfix", "tests-track", "change", "docs-and-ops", "tests"]) {
     cpSync(resolve(HARNESS, tree), resolve(harness, tree), { recursive: true });
   }
   // F15: provenance hashes the reference overlays from the repo root. Copy

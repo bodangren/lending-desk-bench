@@ -15,7 +15,6 @@ import { afterAll, describe, expect, it } from "vitest";
 import { isWritableForTrack, writablePathsForTrack } from "../../candidate-contract.js";
 import { writeVariant } from "../../bugfix/make-variant.js";
 import { generateDocsOpsVariant } from "../../docs-and-ops/make-variant.js";
-import { VALID_MANIFEST } from "../../docs-and-ops/grade-docs-ops.js";
 
 const HARNESS = resolve(import.meta.dirname, "../..");
 const ROOT = resolve(HARNESS, "..");
@@ -83,6 +82,21 @@ afterAll(() => {
   for (const root of F3_ROOTS) rmSync(root, { recursive: true, force: true });
 });
 
+/** The fixed valid manifest, parsed from the candidate spec itself so the
+ * F3 case tracks the documented contract instead of a module export the
+ * remediation may refactor. The spec shows the schema-1 manifest first. */
+function fixedValidManifest(): unknown {
+  const spec = readTrackFile("docs-and-ops/model-visible/track/spec.md");
+  const blocks = [...spec.matchAll(/```json\n([\s\S]*?)```/g)].map((match) => match[1]);
+  expect(blocks.length, "F3: the spec documents fixed manifests").toBeGreaterThan(0);
+  const parsed = blocks.map((block) => JSON.parse(block));
+  const valid = parsed.find(
+    (value) => typeof value === "object" && value !== null && (value as { schema?: unknown }).schema === 1,
+  );
+  expect(valid, "F3: the spec documents a schema-1 fixed manifest").toBeDefined();
+  return valid;
+}
+
 /** The verifier command the candidate spec documents, parsed from the spec
  * itself so the test follows the documented command exactly. */
 function documentedVerifierCommand(): string[] {
@@ -106,7 +120,7 @@ describe("review-a F3: the documented verifier command works in a built candidat
     // fallback may satisfy the documented command.
     symlinkSync(join(ROOT, "fixture", "node_modules"), join(candidate, "node_modules"));
     const manifest = join(candidate, "docs-ops-fixed-valid.json");
-    writeFileSync(manifest, `${JSON.stringify(VALID_MANIFEST, null, 2)}\n`);
+    writeFileSync(manifest, `${JSON.stringify(fixedValidManifest(), null, 2)}\n`);
     const template = documentedVerifierCommand();
     const argv = template.map((entry) => (entry === "<manifest-path>" ? manifest : entry));
     const argvWithManifest = argv.some((entry) => entry === manifest) ? argv : [...argv, manifest];

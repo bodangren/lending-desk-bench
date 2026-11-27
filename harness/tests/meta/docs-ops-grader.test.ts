@@ -164,7 +164,22 @@ function moveLineOutOfSection(text: string, line: string, target: string): strin
 const RETURNED_STAYS = "A returned loan stays returned after its due date.";
 const DUE_SOON_BOUNDARY = "An open loan is `due-soon` from `now` through the next 48 hours.";
 const ROLLBACK_PRESERVATION = "Keep the existing data store and loan records.";
-const VERIFIER_LINE = "Run `./node_modules/.bin/tsx ops/verify.ts <manifest-path>` against the fixed manifests.";
+
+/** Every Verification-section line that names the operations verifier,
+ * read from the oracle itself. The F2 case tracks the documented command
+ * (F3) instead of pinning a stale tsx string, so the two findings agree
+ * whatever runtime the remediation documents. */
+function verifierMentionLines(oracle: string): string[] {
+  const marker = "## Verification\n";
+  const start = oracle.indexOf(marker);
+  expect(start, "the oracle runbook has a Verification section").toBeGreaterThanOrEqual(0);
+  const bodyStart = start + marker.length;
+  const next = oracle.indexOf("\n## ", bodyStart);
+  const body = next === -1 ? oracle.slice(bodyStart) : oracle.slice(bodyStart, next + 1);
+  const lines = body.split("\n").filter((line) => /verif/i.test(line));
+  expect(lines.length, "the oracle Verification names the operations verifier").toBeGreaterThan(0);
+  return lines;
+}
 
 describe("review-a F2: required facts live inside their sections", () => {
   it("F2: an empty Verification body fails D.sections.verification", async () => {
@@ -215,8 +230,12 @@ describe("review-a F2: required facts live inside their sections", () => {
   it("F2: a Verification section without the operations verifier fails D.sections.verification", async () => {
     const mod = await grader();
     const oracle = readFileSync(ORACLE_RUNBOOK, "utf8");
-    expect(oracle, "the oracle names the operations verifier").toContain(VERIFIER_LINE);
-    const grade = mod.gradeRunbook(oracle.replace(`${VERIFIER_LINE}\n`, ""));
+    let mutated = oracle;
+    for (const line of verifierMentionLines(oracle)) {
+      expect(mutated, "the oracle names the operations verifier").toContain(`${line}\n`);
+      mutated = mutated.replace(`${line}\n`, "");
+    }
+    const grade = mod.gradeRunbook(mutated);
     expect(grade.passed, "F2: verification without the verifier passes").toBe(false);
     expect(grade.failed, "F2: the omission names its check").toContain("D.sections.verification");
   });
@@ -330,8 +349,17 @@ const mutation = (() => {
   }
 })();
 const manifestPath = process.argv[2];
+const usageLine = (() => {
+  try {
+    const specText = readFileSync("measure/tracks/lending_desk_docs_ops/spec.md", "utf8");
+    const found = specText.split("\\n").map((entry) => entry.trim()).find((entry) => entry.indexOf("usage:") === 0);
+    if (found) return found;
+  } catch (ignored) {
+  }
+  return "usage: tsx ops/verify.ts <manifest-path>";
+})();
 if (!manifestPath || process.argv.length !== 3) {
-  process.stderr.write("usage: tsx ops/verify.ts <manifest-path>\\n");
+  process.stderr.write(usageLine + "\\n");
   process.exitCode = 2;
 } else {
   let text = null;
