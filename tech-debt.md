@@ -418,3 +418,7 @@ Source files: `measure/runs/executor_model_route_20261126/review-a-7b6f063.json`
 - F10: The direct dry-run CLI at `harness/model-guide/ingest.py:435-442` accepts existing files without owner-only modes. Require a fresh private dry-run destination. Evidence: `measure/runs/ingest_daily_20261127/review-b-8b6b5bb.json`.
 - F12: Publication cleanup at `harness/cron-daily.sh:113-117,238-245,504-505` can remove its directory while a Git worktree record remains. Use a dedicated publication directory, and reconcile stale worktree records before the next run. Evidence: `measure/runs/ingest_daily_20261127/review-b-ee5c223.json`.
 - F13: The no-renames diff at `harness/cron-daily.sh:301` omits the unchanged source of a copy. Add a checked copy-aware name-status diff, and validate each reported path. Evidence: `measure/runs/ingest_daily_20261127/review-b-a0752a7.json`.
+
+## 2026-11-27 — Model API null input rejection test
+
+Add an explicit test that rejects a model API entry whose `input` value is `null`. Evidence: Review A F1 in `measure/runs/executor_input_limit_optional_20261127/review-a-a514336.json`.

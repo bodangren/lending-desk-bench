@@ -2,7 +2,7 @@
   "id": "executor_input_limit_optional_20261127",
   "title": "Executor model API input limit is optional",
   "type": "Chore",
-  "status": "in-progress",
+  "status": "complete",
   "created": "2026-11-27",
   "estimated_tasks": 4,
   "actual_tasks": null,

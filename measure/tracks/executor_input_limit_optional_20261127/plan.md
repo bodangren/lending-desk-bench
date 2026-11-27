@@ -29,8 +29,9 @@ PM decision 2026-11-27: light lane.
 - [x] 1.4 Real probe: omit.
   - Evidence: not needed, light lane; the change is covered by Green commit 3d90121 and the Red tests d9defb9.
 
-- [ ] 1.5 Review A (light lane).
-  - Review A checks the card's FR contract against the committed change.
+- [x] 1.5 Review A (light lane). Result: `review-a-4a727d4.json` audited at `4a727d4`; earlier pass `review-a-a514336.json` at `a514336`.
+  - Artifacts: `measure/runs/executor_input_limit_optional_20261127/review-a-4a727d4.json` and `measure/runs/executor_input_limit_optional_20261127/review-a-a514336.json`.
 
-- [ ] 1.6 Phase acceptance (light lane).
-  - Phase acceptance checks that the gates exit 0 and no staged file lies outside harness/model-api-refs.py, harness/tests/meta/executor-model-route.test.ts, and the track files.
+- [x] 1.6 Phase acceptance (light lane). Result: `phase-acceptance-4a727d4.json` at `4a727d4`.
+  - Artifact: `measure/runs/executor_input_limit_optional_20261127/phase-acceptance-4a727d4.json`.
+  - The Review A re-run was needed because the plan-only commit `4a727d4` moved HEAD.
