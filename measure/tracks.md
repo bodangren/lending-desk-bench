@@ -8,7 +8,7 @@
 - [ ] **Track: Model guide code review row**
   - *Link: [guide_code_review_20261127](tracks/guide_code_review_20261127/)*
 
-- [~] **Track: Model guide app code row**
+- [ ] **Track: Model guide app code row**
   - *Link: [guide_app_code_20261127](tracks/guide_app_code_20261127/)*
 
 - [ ] **Track: Model guide docs and ops row**
