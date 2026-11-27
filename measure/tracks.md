@@ -5,7 +5,7 @@
 - [x] **Track: Daily real-world ingest**
   - *Link: [ingest_daily_20261127](tracks/ingest_daily_20261127/)*
 
-- [~] **Track: Model guide code review row**
+- [ ] **Track: Model guide code review row**
   - *Link: [guide_code_review_20261127](tracks/guide_code_review_20261127/)*
 
 - [ ] **Track: Model guide app code row**
@@ -23,7 +23,7 @@
 - [ ] **Track: Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash**
   - *Link: [runs_tests_track_20261127](tracks/runs_tests_track_20261127/)*
 
-- [ ] **Track: Current runs for new Go models**
+- [~] **Track: Current runs for new Go models**
   - *Link: [runs_go_new_models_20261127](tracks/runs_go_new_models_20261127/)*
 
 - [x] **Track: Executor model API input limit is optional** — The helper accepts a model API entry whose limit holds context and output only.
@@ -49,7 +49,7 @@
 | publish_daily_1125_20261127 | Publish the 2026-11-25 daily results | Chore | complete — daily results at 162c7a2; live evidence in measure/tracks/publish_daily_1125_20261127/plan.md | 2026-11-27 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | pending | 2026-11-27 |
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | pending | 2026-11-27 |
-| runs_go_new_models_20261127 | Current runs for new Go models | Chore | pending | 2026-11-27 |
+| runs_go_new_models_20261127 | Current runs for new Go models | Chore | in-progress | 2026-11-27 |
 | executor_input_limit_optional_20261127 | Executor model API input limit is optional | Chore | complete — light lane, phase 1 accepted at 4a727d4; artifact measure/runs/executor_input_limit_optional_20261127/phase-acceptance-4a727d4.json | 2026-11-27 |
 | harness_audit | Harness audit — verified grading defects | Bug | pending | 2026-08-30 |
 | bugfix_bench | Bug-fixing benchmark — lending_desk_bugfix | Feature | in-progress — sources committed at e9fb565; task 6.5 is open and no [x] task carries a SHA | 2026-09-11 |

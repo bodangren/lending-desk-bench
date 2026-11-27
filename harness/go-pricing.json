@@ -31,6 +31,7 @@
     "opencode-go/step-5-preview": "step-5-preview",
     "opencode-go/qwen3.7-max": "qwen3.7-max",
     "opencode-go/beam-free": "beam-free",
+    "opencode-go/hy4-flash-free": "hy4-flash-free",
     "opencode-go/hungerg-free": "hungerg-free",
     "xiaomi/mimo-v2.5": "mimo-v2.5",
     "opencode-go/mimo-v2.5": "mimo-v2.5",
@@ -449,6 +450,17 @@
       "monthly_usage_usd": 0,
       "rates": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
       "page_order": 19,
+      "requests_unlimited": true
+    },
+    "hy4-flash-free": {
+      "name": "Hy4 Flash Free",
+      "api": "openai-completions",
+      "high_usage": true,
+      "batch": true,
+      "requests_per_month": 0,
+      "monthly_usage_usd": 0,
+      "rates": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+      "page_order": 24,
       "requests_unlimited": true
     }
   }
