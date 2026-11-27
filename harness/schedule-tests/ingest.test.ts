@@ -8,8 +8,8 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
-  rmSync, symlinkSync, writeFileSync,
+  chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync,
+  readdirSync, rmSync, statSync, symlinkSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -279,10 +279,56 @@ print(json.dumps({"rows": len(rows), "kept": len(kept),
       encoding: "utf8", timeout: 30_000,
     });
     expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(0);
+    const reference = JSON.parse(readFileSync(REFERENCE, "utf8"));
+    const legacy = /^(?:claude-sonnet-5-5|muse-spark-1\.3-contributor)(?:\[1m\])?(?:#[a-z0-9]{1,12})?$/;
+    const mappedCount = reference.filter((row: any) => legacy.test(row.route)).length;
     expect(JSON.parse(r.stdout)).toEqual({
-      rows: 217, kept: 217, skipped: 0, mapped: 2,
+      rows: reference.length, kept: reference.length, skipped: 0,
+      mapped: mappedCount,
     });
   }, 30_000);
+
+  it("bounds the route length and the provider-aware segment grammar", () => {
+    const code = `
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location("ingest", sys.argv[1])
+ingest = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ingest)
+provider = "a" * 33
+last = ingest.ROUTE_MAX - 33 - 1 - 49 - 1
+core = provider + "/" + "b" * 49 + "/" + "c" * last
+assert len(core) == ingest.ROUTE_MAX, len(core)
+assert ingest.valid_route(core), "the boundary length is valid"
+assert not ingest.valid_route(core + "d"), "one more character is too long"
+for bad in ("Opencode-go/model", "opencode-go/a/b/c", "opencode-go/model@x",
+            "opencode-go/"):
+    assert not ingest.valid_route(bad), bad
+rows = [dict(route=core, role="coder"),
+        dict(route=core + "d", role="coder"),
+        dict(route="Opencode-go/model", role="coder"),
+        dict(route="opencode-go/a/b/c", role="coder")]
+kept, skipped, mapped = ingest.normalize_routes(rows)
+assert (len(kept), skipped, mapped) == (1, 3, 0), (len(kept), skipped, mapped)
+ingest.check_rows(kept)
+print(json.dumps({"max": ingest.ROUTE_MAX, "kept": len(kept)}))
+`;
+    const r = spawnSync("python3", ["-c", code, INGEST_PY], {
+      env: { ...process.env, INGEST_SCHEMA_REFERENCE: REFERENCE },
+      encoding: "utf8", timeout: 30_000,
+    });
+    expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(JSON.parse(r.stdout)).toEqual({ max: 128, kept: 1 });
+  }, 30_000);
+
+  it("refuses an allowed route beyond the length boundary", () => {
+    const f = fixture("long-allowed-route");
+    writeFileSync(f.routes, routesDoc("z".repeat(200)));
+    const out = join(f.root, "out");
+    const r = runIngest(f, out);
+    expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(2);
+    expect(r.stdout).toBe("ingest: invalid allowedRoutes\n");
+    expect(existsSync(join(out, `ra-outcomes-${DATE}.json`))).toBe(false);
+  }, 90_000);
 
   it("accepts a context suffix and the unknown route", () => {
     const f = fixture("context-unknown");
@@ -325,6 +371,48 @@ print(json.dumps({"rows": len(rows), "kept": len(kept),
     expect(readFileSync(join(out, `ingest-${DATE}.log`), "utf8")).toBe(
       "ingest: skipped routes 0; mapped legacy routes 1\n");
   }, 90_000);
+
+  it("associates metrics by the original route before legacy normalization", () => {
+    const code = `
+import importlib.util, json, sys
+sys.path.insert(0, sys.argv[2])
+spec = importlib.util.spec_from_file_location("ingest", sys.argv[1])
+ingest = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ingest)
+import outcomes_tasks
+legacy, canon = "claude-sonnet-5-5", "claude-code/claude-sonnet-5-5"
+def metrics(tasks):
+    return {"tasks": tasks, "accepted": tasks, "first_round_rate": 0.5,
+            "mean_rework_rounds": 1.0, "cleanup_share": 0.25,
+            "tokens_per_accepted": 100}
+rows = [
+    {"route": legacy, "role": "coder", "recorded_rate": 0.5, "decided": 4},
+    {"route": canon, "role": "coder", "recorded_rate": 0.5, "decided": 4},
+    {"route": legacy, "role": "review-a", "recorded_rate": 0.5, "decided": 4},
+    {"route": canon, "role": "review-a", "recorded_rate": 0.5, "decided": 4},
+]
+downstream = {(legacy, "coder"): metrics(7), (canon, "coder"): metrics(9)}
+escapes = {(legacy, "review-a"): 3, (canon, "review-a"): 5}
+kept, skipped, mapped = ingest.merge_then_normalize(
+    outcomes_tasks, rows, downstream, escapes)
+assert (skipped, mapped) == (0, 2), (skipped, mapped)
+producers = [row for row in kept if row["kind"] == "producer"]
+gates = [row for row in kept if row["kind"] == "gate"]
+assert producers[0]["tasks"] == 7, producers[0]
+assert producers[1]["tasks"] == 9, producers[1]
+assert gates[0]["escapes"] == 3, gates[0]
+assert gates[1]["escapes"] == 5, gates[1]
+assert all(row["route"] == canon for row in kept)
+print(json.dumps({"mapped": mapped, "producer": producers[0]["tasks"],
+                  "gate": gates[0]["escapes"]}))
+`;
+    const r = spawnSync("python3", ["-c", code, INGEST_PY, JOBS], {
+      env: { ...process.env, INGEST_SCHEMA_REFERENCE: REFERENCE },
+      encoding: "utf8", timeout: 30_000,
+    });
+    expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(JSON.parse(r.stdout)).toEqual({ mapped: 2, producer: 7, gate: 3 });
+  }, 30_000);
 
   it("succeeds when every outcome row is skipped", () => {
     const f = fixture("only-skipped", [
@@ -408,21 +496,45 @@ print(json.dumps({"rows": len(rows), "kept": len(kept),
     const report = join(f.root, "stage.txt");
     const ok = runIngestFull(f, out, { INGEST_STAGE_REPORT: report });
     expect(ok.status, `${ok.stdout}\n${ok.stderr}`).toBe(0);
-    const stage = readFileSync(report, "utf8").trim();
-    expect(dirname(stage), "the stage shares the destination filesystem")
-      .toBe(dirname(out));
-    expect(existsSync(stage), "the stage is removed after success").toBe(false);
+    expect(existsSync(report), "the stage-report override is gone").toBe(false);
+    expect(readdirSync(f.root).filter((name) => name.startsWith(".ingest-stage-")),
+      "the stage is removed after success").toEqual([]);
+    expect(readdirSync(dirname(out)).sort()).toContain("out");
 
     const bad = fixture("stage-refuse");
     newDb(bad.db, [{ role: "bad@role", route: GOOD_ROUTE, result: "pass" }]);
     const badOut = join(bad.root, "out");
-    const badReport = join(bad.root, "stage.txt");
-    const refused = runIngestFull(bad, badOut, { INGEST_STAGE_REPORT: badReport });
+    const refused = runIngestFull(bad, badOut);
     expect(refused.status, `${refused.stdout}\n${refused.stderr}`).toBe(2);
-    const badStage = readFileSync(badReport, "utf8").trim();
-    expect(dirname(badStage)).toBe(dirname(badOut));
-    expect(existsSync(badStage), "the stage is removed after refusal").toBe(false);
+    expect(readdirSync(bad.root).filter((name) => name.startsWith(".ingest-stage-")),
+      "the stage is removed after refusal").toEqual([]);
+    expect(existsSync(badOut), "no destination after refusal").toBe(false);
   }, 240_000);
+
+  it("writes private files with owner-only modes", () => {
+    const f = fixture("modes");
+    const out = join(f.root, "out");
+    const r = runIngestFull(f, out);
+    expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(0);
+    expect(statSync(out).mode & 0o777, "the destination is 0700").toBe(0o700);
+    const names = readdirSync(out);
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) {
+      expect(statSync(join(out, name)).mode & 0o777, `${name} is 0600`)
+        .toBe(0o600);
+    }
+  }, 180_000);
+
+  it("refuses a destination that permits group or other access", () => {
+    const f = fixture("loose-out");
+    const out = join(f.root, "out");
+    mkdirSync(out, { recursive: true, mode: 0o777 });
+    chmodSync(out, 0o777);
+    const r = runIngestFull(f, out);
+    expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(2);
+    expect(r.stdout).toBe("ingest: output path must be private\n");
+    expect(readdirSync(out), "no file is written").toEqual([]);
+  }, 90_000);
 
   refusalCase("a leaking role refuses", (f) => {
     newDb(f.db, [{ role: "bad@role", route: GOOD_ROUTE, result: "pass" }]);
@@ -628,7 +740,7 @@ function noCommitRepo(f: ReturnType<typeof fixture>, tag: string): {
     const out = join(f.root, "out");
     const names = [
       "INGEST_OUTCOMES_JOBS", "INGEST_SCHEMA_REFERENCE", "INGEST_AA_SOURCE",
-      "INGEST_ROUTES_CONFIG", "MODEL_GUIDE_PRIVATE_DIR", "INGEST_STAGE_REPORT",
+      "INGEST_ROUTES_CONFIG", "MODEL_GUIDE_PRIVATE_DIR",
       "RA_QUOTA_OUTCOMES", "OUTCOMES_OPENCODE_DB", "TASK_COST_DB", "TMPDIR",
     ];
     for (const name of names) {

@@ -652,11 +652,15 @@ describe("artifacts", () => {
   caseOf("6.4.3 publish scope: cron-daily.sh commits only docs/", () => {
     const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");
     const adds = cron.split(/\r?\n/).filter(line => line.includes("git add"));
-    expect(adds, `${JOB}: the job must stage only docs/`).toEqual(["git add docs/"]);
+    expect(cron.includes("git add docs/"), `${JOB}: the job must not stage all of docs/`).toBe(false);
+    expect(adds.length, `${JOB}: the job must stage explicit paths`).toBeGreaterThan(0);
+    for (const line of adds) {
+      expect(line, `${JOB}: every add is allowlisted`).toContain('"${PUBLISH_PATHS[@]}"');
+    }
     const checks = cron.split(/\r?\n/).filter(line => line.includes("git diff --cached --quiet"));
-    expect(checks, `${JOB}: the empty check must be limited to docs/`).toEqual(["if git diff --cached --quiet -- docs/; then"]);
+    expect(checks, `${JOB}: the empty check must be limited to the allowlist`).toEqual(['if git diff --cached --quiet -- "${PUBLISH_PATHS[@]}"; then']);
     const commits = cron.split(/\r?\n/).filter(line => line.includes("git commit"));
-    expect(commits, `${JOB}: the publish commit must be path-limited to docs/`).toEqual(['if ! git commit -F "$MSG_FILE" -- docs/; then']);
+    expect(commits, `${JOB}: the publish commit must be limited to the allowlist`).toEqual(['if ! git commit -F "$MSG_FILE" -- "${PUBLISH_PATHS[@]}"; then']);
     const pushes = cron.split(/\r?\n/).filter(line => line.includes("git push"));
     expect(pushes.some(line => /git push origin ["']?\$\{?[A-Za-z_][A-Za-z0-9_]*\}?:main/.test(line)), `${JOB}: missing D16 git push origin <sha>:main`).toBe(true);
     expect(cron.includes("git push origin main"), `${JOB}: D16 forbids git push origin main`).toBe(false);
@@ -721,6 +725,73 @@ describe("artifacts", () => {
     expect(pushed, `${JOB}: the push must hold only docs/`).toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
     expect(git(["ls-files", "--cached"]).split("\n"), JOB).toContain("secret.txt");
     expect(git(["log", "-1", "--format=%s"]), JOB).toBe("Publish daily 2026-10-26 OpenCode Go results: glm-5.2 (untested).");
+  });
+  caseOf("6.4.6 a leaking ingest output is dropped; the benchmark still publishes", w => {
+    jobSetup(w);
+    const repo = join(w.root, "pub");
+    const origin = join(w.root, "origin.git");
+    const gitEnv = { PATH: "/usr/bin:/bin", HOME: w.home, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_SYSTEM: "/dev/null" };
+    const git = (args: string[], cwd = repo) => {
+      const r = spawnSync("git", args, { cwd, env: gitEnv, encoding: "utf8" });
+      if (r.status !== 0) throw new Error(`git ${args.join(" ")}: ${r.stderr}`);
+      return r.stdout.trim();
+    };
+    git(["init", "-q", "-b", "main", repo], w.root);
+    git(["init", "-q", "--bare", "-b", "main", origin], w.root);
+    git(["config", "user.email", "schedule@example.invalid"]);
+    git(["config", "user.name", "Schedule Test"]);
+    git(["remote", "add", "origin", origin]);
+    mkdirSync(join(repo, "harness/model-guide"), { recursive: true });
+    mkdirSync(join(repo, "docs/assets/data"), { recursive: true });
+    copyFileSync(join(HARNESS, "cron-daily.sh"), join(repo, "harness/cron-daily.sh"));
+    copyFileSync(join(HARNESS, "opencode-host.sh"), join(repo, "harness/opencode-host.sh"));
+    copyFileSync(join(HARNESS, "model-guide/leak-check.ts"), join(repo, "harness/model-guide/leak-check.ts"));
+    for (const name of ["daily-pick.ts", "go-cost.ts", "candidate-contract.ts", "package.json", "toolchain.sh"])
+      symlinkSync(join(HARNESS, name), join(repo, "harness", name));
+    symlinkSync(join(HARNESS, "node_modules"), join(repo, "harness/node_modules"));
+    writeFileSync(join(repo, "docs/index.html"), "<html></html>\n");
+    git(["add", "docs/"]);
+    git(["commit", "-q", "-m", "initial"]);
+    git(["push", "-q", "origin", "main"]);
+    const privateDir = join(w.root, "private");
+    mkdirSync(join(privateDir, "sets/mg/diffs"), { recursive: true });
+    mkdirSync(join(privateDir, "sets/mg/src"), { recursive: true });
+    writeFileSync(join(privateDir, "sets/mg/diffs/seed.diff"),
+      "L1 +0123456789abcdefghijklmnopqrstuvwxyz\n");
+    writeFileSync(join(privateDir, "sets/mg/src/seed.diff"),
+      "L1 -base content only;\n");
+    writeFileSync(join(repo, "harness/model-guide/ingest.sh"), `#!/usr/bin/env bash
+ROOT="$(cd "$(dirname "\${BASH_SOURCE[0]}")/../.." && pwd)"
+mkdir -p "$ROOT/docs/assets/data"
+printf '%s\\n' '{"note":"0123456789abcdefghijklmnopqrstuvwxyz"}' > "$ROOT/docs/assets/data/real-work.json"
+echo "update: written docs/assets/data/real-work.json"
+exit 0
+`, { mode: 0o755 });
+    writeFileSync(join(w.root, "publish-runner.cjs"), PUBLISH_RUNNER_SOURCE, { mode: 0o755 });
+    const r = spawnSync("bash", [join(repo, "harness/cron-daily.sh")], {
+      cwd: repo, encoding: "utf8", timeout: 30_000,
+      env: { PATH: `${dirname(process.execPath)}:/usr/bin:/bin`, HOME: w.home, TMPDIR: w.root,
+        TSX_DISABLE_CACHE: "1", _BENCH_ENV_LOADED: "1", GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_SYSTEM: "/dev/null",
+        BENCH_RUNS_ROOT: w.runs, BENCH_PRICING_PATH: w.pricing, BENCH_DAILY_DIR: w.days,
+        BENCH_DAILY_DATE: DATE, BENCH_DAILY_CATALOG: w.catalog, BENCH_DAILY_SERVED: w.served,
+        BENCH_DAILY_BATCH: join(w.root, "publish-runner.cjs"), BENCH_DAILY_POST: "0",
+        BENCH_DAILY_QUOTA_CMD: join(w.root, "quota.cjs"), BENCH_DAILY_PUBLISH: "1",
+        BENCH_DAILY_NOTIFY_CMD: notifySink(w.root),
+        BENCH_DAILY_LOCK: join(w.root, "publish.lock"), STUB_LOG: join(w.root, "publish-stub.jsonl"),
+        BENCH_MEMINFO: w.meminfo, MODEL_GUIDE_PRIVATE_DIR: privateDir,
+        STUB_DOCS_DIR: join(repo, "docs") },
+    });
+    const result: Result = { status: r.status, stdout: r.stdout, stderr: r.stderr };
+    expect(result.status, `${JOB}: the benchmark must still publish\n${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(lines(result, "DAILY INGEST OK "), result.stdout).toHaveLength(1);
+    expect(lines(result, "DAILY INGEST SKIPPED"), result.stdout).toHaveLength(1);
+    expect(lines(result, "DAILY PUBLISH "), result.stdout).toHaveLength(1);
+    const committed = git(["show", "--name-only", "--format=", "HEAD"]).split("\n").filter(Boolean).sort();
+    expect(committed, `${JOB}: the leaking ingest output must not be committed`)
+      .toEqual(["docs/assets/data/benchmark.json"]);
+    const pushed = git(["ls-tree", "-r", "--name-only", "main"], origin).split("\n").filter(Boolean).sort();
+    expect(pushed, `${JOB}: the push holds only the benchmark output`)
+      .toEqual(["docs/assets/data/benchmark.json", "docs/index.html"]);
   });
   caseOf("6.4.5 header: cron-daily.sh names the timer and Persistent=false", () => {
     const cron = readFileSync(join(HARNESS, "cron-daily.sh"), "utf8");

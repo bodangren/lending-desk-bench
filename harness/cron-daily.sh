@@ -83,6 +83,27 @@ MODELS_RAN=0
 NOTICE_SENT=0
 # The ingest runs at most once per live job, before the first publish commit.
 INGEST_DONE=0
+INGEST_PUBLISH=0
+PUBLISH_SCAN=""
+# Only these generated paths may enter a publish commit.
+PUBLISH_ALLOW=(
+  "docs/assets/data/benchmark.json"
+  "docs/assets/data/tracks.json"
+  "docs/assets/data/real-work.json"
+  "docs/assets/data/model-guide.json"
+  "docs/assets/data/review.json"
+  "docs/index.html"
+  "docs/real-work.html"
+  "docs/review.html"
+)
+# The ingest-generated subset is dropped when the ingest is skipped.
+INGEST_ALLOW=(
+  "docs/assets/data/real-work.json"
+  "docs/assets/data/model-guide.json"
+  "docs/assets/data/review.json"
+  "docs/review.html"
+)
+PRIVATE_DIR="${MODEL_GUIDE_PRIVATE_DIR:-$HOME/.local/share/lending-desk-bench/model-guide}"
 LAST_START="${BENCH_DAILY_LAST_START:-20:00}"
 MAX_MODELS="${BENCH_DAILY_MAX_MODELS:-12}"
 
@@ -206,10 +227,60 @@ try {
 daily_exit() {
   local rc=$?
   rm -f "$PICK_OUT" "$RUNLIST_OUT" "$CATALOG_TMP" "$SERVED_TMP" "$MSG_FILE" "$RECORD_TMP" "$SELFCHECK_MARKER" 2>/dev/null
+  rm -rf "$PUBLISH_SCAN"
   opencode_host_cleanup
   daily_notify "$rc"
 }
 trap daily_exit EXIT
+
+# Build one candidate folder from the staged set and the outgoing commits.
+publication_candidate() {
+  local path body
+  rm -rf "$PUBLISH_SCAN"
+  PUBLISH_SCAN="$(mktemp -d)"
+  mkdir -p "$PUBLISH_SCAN/docs"
+  while IFS= read -r -d '' path; do
+    case "$path" in docs/*) ;; *) continue ;; esac
+    body="$(git show ":$path" 2>/dev/null)" || continue
+    mkdir -p "$PUBLISH_SCAN/$(dirname "$path")"
+    printf '%s\n' "$body" > "$PUBLISH_SCAN/$path"
+  done < <(git diff --cached --name-only -z -- "${PUBLISH_PATHS[@]}")
+  while IFS= read -r -d '' path; do
+    case "$path" in docs/*) ;; *) continue ;; esac
+    body="$(git show "HEAD:$path" 2>/dev/null)" || continue
+    mkdir -p "$PUBLISH_SCAN/$(dirname "$path")"
+    printf '%s\n' "$body" > "$PUBLISH_SCAN/$path"
+  done < <(git diff "$REMOTE_SHA"..HEAD --name-only -z)
+}
+
+# Scan the complete publication candidate. A missing tool is not a leak.
+publication_scan() {
+  if [ ! -f "$H/model-guide/leak-check.ts" ]; then return 0; fi
+  publication_candidate
+  local out rc
+  out="$(cd "$H" && npx tsx model-guide/leak-check.ts \
+    --private "$PRIVATE_DIR" --repo "$PUBLISH_SCAN" 2>/dev/null)"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    FIRST="$(printf '%s\n' "$out" | head -n 1)"
+    echo "publish: leak ${FIRST##*: }" >&2
+    return 1
+  fi
+  return 0
+}
+
+# True when an outgoing commit holds a path outside the generated allowlist.
+outgoing_outside_allow() {
+  local path allow
+  while IFS= read -r path; do
+    [ -z "$path" ] && continue
+    for allow in "${PUBLISH_ALLOW[@]}"; do
+      if [ "$path" = "$allow" ]; then continue 2; fi
+    done
+    return 0
+  done < <(git diff "$REMOTE_SHA"..HEAD --name-only)
+  return 1
+}
 
 # ---- Night rule helpers (D22, D26) ----------------------------------------------
 # The board length: the length of `models` in the board file. A missing board
@@ -918,6 +989,7 @@ fs.writeFileSync(process.argv[5], JSON.stringify(rec, null, 2) + "\n");
     INGEST_LOG="$(INGEST_ENABLED=1 INGEST_NO_COMMIT=1 bash "$H/model-guide/ingest.sh" 2>&1)" && INGEST_RC=0 || INGEST_RC=$?
     if [ "$INGEST_RC" -eq 0 ]; then
       echo "DAILY INGEST OK $(date -u +%F)"
+      INGEST_PUBLISH=1
     else
       INGEST_REASON="${INGEST_LOG##*$'\n'}"
       echo "DAILY INGEST FAIL ${INGEST_REASON:-unknown}"
@@ -925,11 +997,32 @@ fs.writeFileSync(process.argv[5], JSON.stringify(rec, null, 2) + "\n");
   fi
 
 # ---- Publish (FR-8, D10, D15, D16) --------------------------------------------
-# This section sits at column 0 inside the loop: case 6.4.3 pins the exact
-# text of the three commands below.
+# This section sits at column 0 inside the loop. Only generated output paths
+# enter the publication candidate; unrelated docs changes stay out.
 cd "$ROOT"
-git add docs/
-if git diff --cached --quiet -- docs/; then
+PUBLISH_PATHS=()
+for rel in "${PUBLISH_ALLOW[@]}"; do
+  if [ -e "$rel" ]; then PUBLISH_PATHS+=("$rel"); fi
+done
+if [ "$INGEST_PUBLISH" -eq 1 ]; then
+  for rel in "${INGEST_ALLOW[@]}"; do
+    if [ -e "$rel" ] && [[ " ${PUBLISH_PATHS[*]} " != *" $rel "* ]]; then
+      PUBLISH_PATHS+=("$rel")
+    fi
+  done
+fi
+if [ "${#PUBLISH_PATHS[@]}" -eq 0 ] || ! git add -- "${PUBLISH_PATHS[@]}"; then
+  echo "DAILY PUBLISH none"
+  if [ -z "$SKIP_REASON" ]; then SKIP_REASON="no docs change"; fi
+  if [ "$LIST_MODE" = "1" ]; then
+    send_notice 3
+    echo "DAILY END $(date -Is)"
+    exit 3
+  fi
+  echo "DAILY END $(date -Is)"
+  exit 3
+fi
+if git diff --cached --quiet -- "${PUBLISH_PATHS[@]}"; then
   echo "DAILY PUBLISH none"
   if [ -z "$SKIP_REASON" ]; then SKIP_REASON="no docs change"; fi
   if [ "$LIST_MODE" = "1" ]; then
@@ -983,7 +1076,43 @@ if ((ex[key] ?? []).length) lines.push(key.charAt(0).toUpperCase() + key.slice(1
 }
 fs.writeFileSync(process.argv[3], lines.join("\n") + "\n");
 ' "$RECORD" "$PICK_OUT" "$MSG_FILE" "$N_RUNS" "$GUARD_STOP" "$RUNLIST_OUT" "$RUNS_ROOT"
-if ! git commit -F "$MSG_FILE" -- docs/; then
+
+# Scan the complete candidate before the commit. The benchmark publication
+# is independent: a bad ingest drops only its own generated paths.
+REMOTE_SHA="$(git rev-parse --verify origin/main 2>/dev/null || true)"
+if [ -z "$REMOTE_SHA" ]; then
+  REMOTE_SHA="$(git rev-list --max-parents=0 HEAD | head -n 1)"
+fi
+if [ "$INGEST_PUBLISH" -eq 1 ]; then
+  if ! publication_scan || outgoing_outside_allow; then
+    echo "DAILY INGEST SKIPPED"
+    INGEST_PUBLISH=0
+    REMAINING=()
+    for rel in "${PUBLISH_PATHS[@]}"; do
+      DROP=0
+      for ing in "${INGEST_ALLOW[@]}"; do
+        if [ "$rel" = "$ing" ]; then DROP=1; break; fi
+      done
+      if [ "$DROP" -eq 0 ]; then REMAINING+=("$rel"); fi
+    done
+    PUBLISH_PATHS=("${REMAINING[@]}")
+    if [ "${#PUBLISH_PATHS[@]}" -eq 0 ]; then
+      echo "DAILY PUBLISH none"
+      if [ -z "$SKIP_REASON" ]; then SKIP_REASON="no docs change"; fi
+      if [ "$LIST_MODE" = "1" ]; then
+        send_notice 3
+        echo "DAILY END $(date -Is)"
+        exit 3
+      fi
+      echo "DAILY END $(date -Is)"
+      exit 3
+    fi
+    git reset -q -- "${INGEST_ALLOW[@]}" 2>/dev/null || true
+    git add -- "${PUBLISH_PATHS[@]}"
+  fi
+fi
+
+if ! git commit -F "$MSG_FILE" -- "${PUBLISH_PATHS[@]}"; then
   daily_fail "publish: the commit of docs/ failed"
   echo "DAILY PUBLISH none"
   echo "DAILY END $(date -Is)"
@@ -1001,6 +1130,12 @@ fi
 REMOTE_SHA="$(git rev-parse --verify origin/main 2>/dev/null || true)"
 if [ -z "$REMOTE_SHA" ] || ! git merge-base --is-ancestor "$REMOTE_SHA" "$DOCS_SHA"; then
   daily_fail "push: origin/main is not an ancestor of the docs commit; the commit is local"
+  echo "DAILY END $(date -Is)"
+  exit 1
+fi
+# Scan the outgoing range again, now that the publication commit is in it.
+if ! publication_scan; then
+  daily_fail "publish: leak in the publication candidate"
   echo "DAILY END $(date -Is)"
   exit 1
 fi

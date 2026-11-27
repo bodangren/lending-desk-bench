@@ -345,7 +345,7 @@ done
 
 cd "$ROOT"
 # The daily job passes --no-commit: it writes and leak-checks the same
-# candidates, then its own publish block commits docs/ after the branch gate.
+# candidates, then its own publish block commits the allowlisted paths.
 if [ "$NO_COMMIT" -eq 1 ]; then
   for rel in "${COMMIT_REL[@]}"; do
     echo "update: written $rel"

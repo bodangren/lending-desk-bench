@@ -23,21 +23,23 @@ import tempfile
 BANNED = re.compile(
     r"/home/|/Users/|ses_[A-Za-z0-9]{6,}|@|://|sk-[A-Za-z0-9]{8,}"
     r"|Bearer\s|BEGIN [A-Z ]*KEY|AKIA[0-9A-Z]{8,}|ghp_[A-Za-z0-9]{8,}")
-PROVIDER_RE = r"[a-z0-9][a-z0-9.-]{0,40}"
-MODEL_SEG_RE = r"[A-Za-z0-9][A-Za-z0-9._:-]{0,80}"
-MODEL_RE = MODEL_SEG_RE + r"(?:/" + MODEL_SEG_RE + r")*"
+ROUTE_MAX = 128
+PROVIDER_RE = r"[a-z0-9][a-z0-9.-]{0,32}"
+MODEL_SEG_RE = r"[A-Za-z0-9][A-Za-z0-9._:-]{0,48}"
+MODEL_RE = MODEL_SEG_RE + r"(?:/" + MODEL_SEG_RE + r")?"
 VARIANT_RE = r"[a-z0-9]{1,12}"
 ROUTE_RE = re.compile(
-    rf"{PROVIDER_RE}/{MODEL_RE}(?:\[1m\])?(?:#{VARIANT_RE})?")
-LEGACY_ROUTE_RE = re.compile(r"^([^\[#]+)(\[1m\])?(#[a-z0-9]{1,12})?$")
+    rf"(?P<provider>{PROVIDER_RE})/(?P<model>{MODEL_RE})"
+    rf"(?:\[1m\])?(?:#{VARIANT_RE})?")
+LEGACY_ROUTE_RE = re.compile(r"([^\[#]+)(\[1m\])?(#[a-z0-9]{1,12})?")
 LEGACY_ROUTES = {
     "claude-sonnet-5-5": "claude-code/claude-sonnet-5-5",
     "muse-spark-1.3-contributor": "opencode-go/muse-spark-1.3-contributor",
 }
-LABEL_RE = re.compile(r"^[a-z][a-z0-9-]{0,40}$")
-AXIS_RE = re.compile(r"^[a-z][a-z0-9_-]{0,40}$")
+LABEL_RE = re.compile(r"[a-z][a-z0-9-]{0,40}")
+AXIS_RE = re.compile(r"[a-z][a-z0-9_-]{0,40}")
 AA_LINK_RE = re.compile(r"https://artificialanalysis\.ai/\S*")
-DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 JOBS_DEFAULT = "/home/daniebo/Desktop/advantage-pr/scripts/jobs"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -53,7 +55,7 @@ def refuse(reason):
 
 PATH_VARS = (
     "INGEST_OUTCOMES_JOBS", "INGEST_SCHEMA_REFERENCE", "INGEST_AA_SOURCE",
-    "INGEST_ROUTES_CONFIG", "MODEL_GUIDE_PRIVATE_DIR", "INGEST_STAGE_REPORT",
+    "INGEST_ROUTES_CONFIG", "MODEL_GUIDE_PRIVATE_DIR",
     "RA_QUOTA_OUTCOMES", "OUTCOMES_OPENCODE_DB", "TASK_COST_DB", "TMPDIR",
 )
 
@@ -145,6 +147,11 @@ def route_parts(route):
     return core, note
 
 
+def valid_route(core):
+    return (isinstance(core, str) and len(core) <= ROUTE_MAX
+            and ROUTE_RE.fullmatch(core) is not None)
+
+
 def legacy_route(core):
     match = LEGACY_ROUTE_RE.fullmatch(core)
     if match is None:
@@ -169,7 +176,7 @@ def normalize_routes(rows):
             skipped += 1
             continue
         core, note = parts
-        if core == "unknown" or ROUTE_RE.fullmatch(core):
+        if core == "unknown" or valid_route(core):
             kept.append(row)
             continue
         canonical = legacy_route(core)
@@ -180,6 +187,11 @@ def normalize_routes(rows):
         mapped += 1
         kept.append(row)
     return kept, skipped, mapped
+
+
+def merge_then_normalize(outcomes_tasks, rows, downstream, escapes):
+    outcomes_tasks.merge(rows, downstream, escapes)
+    return normalize_routes(rows)
 
 
 def check_rows(rows):
@@ -197,12 +209,12 @@ def check_rows(rows):
         if parts is None:
             refuse("invalid route")
         core, _note = parts
-        if core != "unknown" and not ROUTE_RE.fullmatch(core):
+        if core != "unknown" and not valid_route(core):
             refuse("invalid route")
 
         role = row.get("role")
         if not isinstance(role, str) or BANNED.search(role) \
-                or not LABEL_RE.match(role):
+                or not LABEL_RE.fullmatch(role):
             refuse("invalid role")
 
         for key, value in row.items():
@@ -213,7 +225,7 @@ def check_rows(rows):
                     refuse("invalid ratings")
                 for axis, score in value.items():
                     if not isinstance(axis, str) or BANNED.search(axis) \
-                            or not AXIS_RE.match(axis):
+                            or not AXIS_RE.fullmatch(axis):
                         refuse("invalid rating key")
                     if not is_number(score):
                         refuse("invalid rating value")
@@ -312,7 +324,7 @@ def load_routes():
         routes = []
         for route in value:
             if not isinstance(route, str) or BANNED.search(route) \
-                    or not ROUTE_RE.fullmatch(route):
+                    or not valid_route(route):
                 refuse(f"invalid {key}")
             routes.append(route)
         out[key] = routes
@@ -377,6 +389,10 @@ def require_private_output(out):
     target = os.path.realpath(out)
     if os.path.commonpath((root, target)) == root:
         refuse("output path must be private")
+    if os.path.exists(target):
+        stat = os.stat(target)
+        if stat.st_uid != os.getuid() or stat.st_mode & 0o077:
+            refuse("output path must be private")
 
 
 def main():
@@ -387,7 +403,11 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     require_absolute_paths(args.out)
-    if not DATE_RE.match(args.date):
+    if not DATE_RE.fullmatch(args.date):
+        refuse("invalid date")
+    try:
+        datetime.date.fromisoformat(args.date)
+    except ValueError:
         refuse("invalid date")
     out = args.out
     if not out and args.dry_run:
@@ -403,16 +423,12 @@ def main():
         parent = os.path.dirname(os.path.abspath(out))
         os.makedirs(parent, exist_ok=True)
         stage = tempfile.mkdtemp(dir=parent, prefix=".ingest-stage-")
-        report = os.environ.get("INGEST_STAGE_REPORT")
-        if report:
-            with open(report, "w", encoding="utf-8") as handle:
-                handle.write(f"{stage}\n")
 
     try:
         outcomes_db, outcomes_tasks = load_jobs()
         rows, downstream, escapes = assemble(outcomes_db, outcomes_tasks)
-        rows, skipped, mapped = normalize_routes(rows)
-        outcomes_tasks.merge(rows, downstream, escapes)
+        rows, skipped, mapped = merge_then_normalize(
+            outcomes_tasks, rows, downstream, escapes)
         check_rows(rows)
         aa_raw = load_aa()
         routes_raw = load_routes()
@@ -420,7 +436,9 @@ def main():
         os.makedirs(target, exist_ok=True, mode=0o700)
         data = file_set(args.date, rows, aa_raw, routes_raw, skipped, mapped)
         for name, body in data.items():
-            with open(os.path.join(target, name), "wb") as handle:
+            fd = os.open(os.path.join(target, name),
+                         os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "wb") as handle:
                 handle.write(body)
         scan_staged(data, f"MANIFEST-{args.date}.txt")
         if stage is not None:
