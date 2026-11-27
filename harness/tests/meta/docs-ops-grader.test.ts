@@ -164,6 +164,7 @@ function moveLineOutOfSection(text: string, line: string, target: string): strin
 const RETURNED_STAYS = "A returned loan stays returned after its due date.";
 const DUE_SOON_BOUNDARY = "An open loan is `due-soon` from `now` through the next 48 hours.";
 const ROLLBACK_PRESERVATION = "Keep the existing data store and loan records.";
+const ROLLBACK_RESTORE = "Deploy the previous release.";
 
 /** Every Verification-section line that names the operations verifier,
  * read from the oracle itself. The F2 case tracks the documented command
@@ -239,6 +240,49 @@ describe("review-a F2: required facts live inside their sections", () => {
     expect(grade.passed, "F2: verification without the verifier passes").toBe(false);
     expect(grade.failed, "F2: the omission names its check").toContain("D.sections.verification");
   });
+
+  it("F2: the catalogue row removed fails D.routes.items", async () => {
+    const mod = await grader();
+    const oracle = readFileSync(ORACLE_RUNBOOK, "utf8");
+    const apiMarker = "## API routes\n";
+    const at = oracle.indexOf(apiMarker);
+    expect(at, "the oracle runbook has an API routes section").toBeGreaterThanOrEqual(0);
+    const catalogueLine = oracle.split("\n").find((line) => line.includes("| `/items` |") || line.includes("`/items`"));
+    expect(catalogueLine, "the oracle API routes table holds the catalogue row").toBeDefined();
+    const grade = mod.gradeRunbook(oracle.replace(`${catalogueLine}\n`, ""));
+    expect(grade.passed, "F2 r2: a missing catalogue route passes").toBe(false);
+    expect(grade.failed, "F2 r2: the omission names its check").toContain("D.routes.items");
+  });
+});
+
+describe("review-a r2 F2: rollback holds real restoration instructions", () => {
+  it("F2 r2: removing the release restoration instruction fails D.sections.rollback", async () => {
+    const mod = await grader();
+    const oracle = readFileSync(ORACLE_RUNBOOK, "utf8");
+    expect(oracle, "the oracle states the release restoration instruction").toContain(`${ROLLBACK_RESTORE}\n`);
+    // The noun stays ("previous release") but the deploy instruction goes.
+    const mutated = oracle.replace(
+      `${ROLLBACK_RESTORE}\n`,
+      "The previous release is ancient history.\n",
+    );
+    const grade = mod.gradeRunbook(mutated);
+    expect(grade.passed, "F2 r2: rollback without release restoration passes").toBe(false);
+    expect(grade.failed, "F2 r2: the omission names its check").toContain("D.sections.rollback");
+  });
+
+  it("F2 r2: removing the data preservation instruction fails D.sections.rollback", async () => {
+    const mod = await grader();
+    const oracle = readFileSync(ORACLE_RUNBOOK, "utf8");
+    expect(oracle, "the oracle states the data preservation instruction").toContain(`${ROLLBACK_PRESERVATION}\n`);
+    // Both nouns stay ("data store", "loan records") but the keep instruction goes.
+    const mutated = oracle.replace(
+      `${ROLLBACK_PRESERVATION}\n`,
+      "The data store and loan records are somewhere.\n",
+    );
+    const grade = mod.gradeRunbook(mutated);
+    expect(grade.passed, "F2 r2: rollback without data preservation passes").toBe(false);
+    expect(grade.failed, "F2 r2: the omission names its check").toContain("D.sections.rollback");
+  });
 });
 
 function stageF4Oracle(tag: string): { candidate: string; artifacts: string } {
@@ -288,6 +332,38 @@ describe("review-a F4: absent deliverables fail their execution checks", () => {
 
 function stageF5Oracle(tag: string): { candidate: string; artifacts: string } {
   return stageF4Oracle(`f5-${tag}`);
+}
+
+const FIXED_ENVIRONMENT = ["BENCH_NOW", "BENCH_LATENCY_MS"];
+
+/** The valid manifest with a non-string environment, built from the fixed
+ * array so the input cannot drift from the contract. */
+function nonStringEnvironmentManifest(kind: "nested" | "number" | "object" | "swapped"): string {
+  const invalids: Record<string, unknown[]> = {
+    nested: [["BENCH_NOW"], "BENCH_LATENCY_MS"],
+    number: ["BENCH_NOW", 7],
+    object: ["BENCH_NOW", { name: "BENCH_LATENCY_MS" }],
+    swapped: [...FIXED_ENVIRONMENT].reverse(),
+  };
+  return JSON.stringify({
+    schema: 1,
+    service: "lending-desk",
+    commands: {
+      install: "npm ci",
+      develop: "npm run dev",
+      typecheck: "npm run typecheck",
+      build: "npm run build",
+      start: "npm run start",
+    },
+    routes: {
+      home: "/",
+      catalogue: "/items",
+      detail: "/items/[id]",
+      members: "/members",
+      loans: "/api/loans",
+    },
+    environment: invalids[kind],
+  });
 }
 
 /** A verifier that is exactly correct except for one manifest case. The
@@ -405,9 +481,29 @@ if (!manifestPath || process.argv.length !== 3) {
       const errors = validate(value);
       const requiredKeys = ["schema", "service", "commands", "routes", "environment"];
       const missingKeys = requiredKeys.filter((key) => !(key in value));
+      const envMutation = mutation.indexOf("env-") === 0 ? mutation.slice(4) : null;
       if (missingKeys.length > 0 && mutation === "missing-fields") {
         process.stdout.write(\`$\{JSON.stringify([])}\\n\`);
         process.exitCode = 0;
+      } else if (envMutation !== null) {
+        // F5 r2: this verifier mishandles a non-string or reordered
+        // environment by reporting a clean pass for that one input. Only
+        // the environment array is compared; the rest of the manifest is
+        // validated exactly.
+        const envCases = {
+          nested: [["BENCH_NOW"], "BENCH_LATENCY_MS"],
+          number: ["BENCH_NOW", 7],
+          object: ["BENCH_NOW", { name: "BENCH_LATENCY_MS" }],
+          swapped: ["BENCH_LATENCY_MS", "BENCH_NOW"],
+        };
+        const specialEnv = envCases[envMutation];
+        if (specialEnv !== undefined && JSON.stringify(value.environment) === JSON.stringify(specialEnv)) {
+          process.stdout.write(\`$\{JSON.stringify([])}\\n\`);
+          process.exitCode = 0;
+        } else {
+          process.stdout.write(\`$\{JSON.stringify(errors)}\\n\`);
+          process.exitCode = errors.length === 0 ? 0 : 1;
+        }
       } else {
         process.stdout.write(\`$\{JSON.stringify(errors)}\\n\`);
         process.exitCode = errors.length === 0 ? 0 : 1;
@@ -447,5 +543,82 @@ describe("review-a F5: the grader exercises every specified manifest case", () =
     F2_ROOTS.push(mutatedArtifacts);
     const grade = await gradeDocsOps(candidate, mutatedArtifacts);
     expect(grade.passed, `F5: a verifier that mishandles ${mutation} passes`).toBe(false);
+  }, 120_000);
+});
+
+const ENV_ERROR = "environment must equal the fixed environment list";
+
+describe("review-a r2 F5: the verifier rejects a non-string environment", () => {
+  // The number and object cases already pass at HEAD (join mismatch); they
+  // stay as already-satisfied guards for the same required error contract.
+  // The nested-array case is the r2 gap: array coercion accepts it.
+  it.each([
+    ["a nested array", "nested"],
+    ["a number entry", "number"],
+    ["an object entry", "object"],
+  ])("F5 r2: the oracle rejects %s with the required error and a nonzero exit", async (_label, kind) => {
+    const { spawnSync } = await import("node:child_process");
+    const node = process.execPath;
+    const manifest = mkdtempSync(join(tmpdir(), `docs-ops-f5r2-${kind}-`));
+    F2_ROOTS.push(manifest);
+    const manifestPath = join(manifest, "env.json");
+    writeFileSync(manifestPath, nonStringEnvironmentManifest(kind as "nested" | "number" | "object"));
+    const run = spawnSync(node, ["--no-warnings", join(HARNESS, "docs-and-ops", "oracle-overlay", "ops", "verify.ts"), manifestPath], {
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    expect(run.error ?? null, "F5 r2: the oracle verifier runs").toBeNull();
+    expect(JSON.parse(run.stdout), "F5 r2: the oracle prints the required error").toEqual([ENV_ERROR]);
+    expect(String(run.stdout).endsWith("\n"), "F5 r2: the oracle prints one newline").toBe(true);
+    expect(run.status, "F5 r2: the oracle exits nonzero").toBe(1);
+  }, 120_000);
+
+  // Already satisfied at HEAD: gradeVerifier already enforces the strict
+  // environment list, so these pin the contract as guards. The r2 gap is
+  // the oracle verifier and the real-grader exercise, pinned below.
+  it("F5 r2: the grader fails O.result.errors and O.exit-code for an invalid element type", async () => {
+    const mod = await grader();
+    const grade = mod.gradeVerifier({
+      manifest: nonStringEnvironmentManifest("number"),
+      resultJson: "[]",
+      exitCode: 0,
+      cleanEnv: true,
+      timedOut: false,
+    });
+    expect(grade.passed, "F5 r2: a clean pass for a bad environment passes").toBe(false);
+    expect(grade.failed, "F5 r2: the invalid type fails O.result.errors").toContain("O.result.errors");
+    expect(grade.failed, "F5 r2: the invalid type fails O.exit-code").toContain("O.exit-code");
+  });
+
+  it("F5 r2: the grader fails O.result.errors and O.exit-code for an invalid order", async () => {
+    const mod = await grader();
+    const grade = mod.gradeVerifier({
+      manifest: nonStringEnvironmentManifest("swapped"),
+      resultJson: "[]",
+      exitCode: 0,
+      cleanEnv: true,
+      timedOut: false,
+    });
+    expect(grade.passed, "F5 r2: a clean pass for a reordered environment passes").toBe(false);
+    expect(grade.failed, "F5 r2: the invalid order fails O.result.errors").toContain("O.result.errors");
+    expect(grade.failed, "F5 r2: the invalid order fails O.exit-code").toContain("O.exit-code");
+  });
+
+  it.each([
+    ["a nested array", "nested"],
+    ["a number entry", "number"],
+    ["an object entry", "object"],
+    ["a swapped order", "swapped"],
+  ])("F5 r2: the real grader rejects %s through the full grade", async (_label, kind) => {
+    const { candidate, artifacts } = stageF5Oracle(`env-${kind}`);
+    const control = await gradeDocsOps(candidate, artifacts);
+    expect(control.passed, `F5 r2 control: the oracle passes (${control.reasons.join("; ")})`).toBe(true);
+    writeFileSync(join(candidate, "ops", "verify.ts"), mutatedVerifier());
+    writeFileSync(join(candidate, ".mutation"), `env-${kind}\n`);
+    const mutatedArtifacts = mkdtempSync(join(tmpdir(), `docs-ops-f5r2-${kind}-broken-`));
+    F2_ROOTS.push(mutatedArtifacts);
+    const grade = await gradeDocsOps(candidate, mutatedArtifacts);
+    expect(grade.passed, `F5 r2: a verifier that accepts ${kind} passes`).toBe(false);
+    expect(grade.failed, `F5 r2: accepting ${kind} fails O.result.errors`).toContain("O.result.errors");
   }, 120_000);
 });
