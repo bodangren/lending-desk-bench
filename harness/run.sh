@@ -30,16 +30,18 @@ if [ "$PROVIDER" != "opencode-go" ] && [ "$PROVIDER" != "local" ] && [ "${AGENT_
   exit 2
 fi
 
-# Track: build (default), bugfix, tests, or change. Every track except build
-# seeds the candidate from a deterministic variant of the clean tree:
-#   bugfix  seeded defects to repair (BENCH_BUG_SET, default v1)
-#   tests   the correct app; the candidate writes tests (BENCH_MUTANT_SET, default m1)
-#   change  the correct app plus change requests (BENCH_CHANGE_SET, default c1)
+# Track: build (default), bugfix, tests, change, or docs-and-ops. Every track
+# except build seeds the candidate from a deterministic variant of the clean tree:
+#   bugfix      seeded defects to repair (BENCH_BUG_SET, default v1)
+#   tests       the correct app; the candidate writes tests (BENCH_MUTANT_SET, default m1)
+#   change      the correct app plus change requests (BENCH_CHANGE_SET, default c1)
+#   docs-and-ops the correct app plus documentation and verifier stubs (BENCH_DOCS_OPS_SET, default d1)
 BENCH_TRACK="${BENCH_TRACK:-build}"
-case "$BENCH_TRACK" in build|bugfix|tests|change) ;; *) echo "BENCH_TRACK must be build, bugfix, tests, or change" >&2; exit 2 ;; esac
+case "$BENCH_TRACK" in build|bugfix|tests|change|docs-and-ops) ;; *) echo "BENCH_TRACK must be build, bugfix, tests, change, or docs-and-ops" >&2; exit 2 ;; esac
 BUG_SET="${BENCH_BUG_SET:-v1}"
 MUTANT_SET="${BENCH_MUTANT_SET:-m1}"
 CHANGE_SET="${BENCH_CHANGE_SET:-c1}"
+DOCS_OPS_SET="${BENCH_DOCS_OPS_SET:-d1}"
 
 RUNTIME_PROBE="${BENCH_RUNTIME_PROBE:-}"
 case "$RUNTIME_PROBE" in
@@ -1097,6 +1099,7 @@ if [ "$BENCH_TRACK" != "build" ]; then
     bugfix) generator="$H/bugfix/make-variant.ts";      set_arg="$BUG_SET";    sets_dir="$H/bugfix/sets";      set_copy="bug-set.json" ;;
     tests)  generator="$H/tests-track/make-variant.ts"; set_arg="$MUTANT_SET"; sets_dir="$H/tests-track/sets"; set_copy="mutant-set.json" ;;
     change) generator="$H/change/make-variant.ts";      set_arg="$CHANGE_SET"; sets_dir="$H/change/sets";      set_copy="change-set.json" ;;
+    docs-and-ops) generator="$H/docs-and-ops/make-variant.ts"; set_arg="$DOCS_OPS_SET"; sets_dir="$H/docs-and-ops/sets"; set_copy="docs-ops-set.json" ;;
   esac
   "$H/node_modules/.bin/tsx" "$generator" --out "$WORK/variant" --set "$set_arg" \
     > "$OUT/variant-manifest.json" || { echo "[$RUN_ID] variant generation failed" >&2; exit 2; }
@@ -1118,6 +1121,8 @@ elif [ "$BENCH_TRACK" = "change" ]; then
   PROMPT='Read measure/tracks/lending_desk_change/spec.md and measure/tracks/lending_desk_change/plan.md, then implement the change requests. Every existing behavior in the spec must keep working. Do not add, rename, change, or remove any exported symbol or type signature. Do not edit spec.md. Mark each plan task complete as you finish it. Run "npm run typecheck" and "npm run build" and make sure both pass before you stop.'
 elif [ "$BENCH_TRACK" = "bugfix" ]; then
   PROMPT='Read measure/tracks/lending_desk_bugfix/spec.md. This application is defective: it violates some of the acceptance criteria. Find and repair the defects. Do not add, rename, change, or remove any exported symbol or type signature. Do not edit spec.md. Do not modify src/db/, src/lib/auth.ts, app/members/, or src/components/member-card.tsx. Add no files and no dependencies. Run "npm run typecheck" and "npm run build" and make sure both pass before you stop.'
+elif [ "$BENCH_TRACK" = "docs-and-ops" ]; then
+  PROMPT='Read measure/tracks/lending_desk_docs_ops/spec.md and measure/tracks/lending_desk_docs_ops/plan.md, then complete both tasks. Edit only docs/runbook.md and ops/verify.ts, plus the plan and metadata. Keep every application file unchanged. Run "npm run typecheck", "npm run build", and the verifier against both fixed manifests before you stop.'
 else
   PROMPT='Read measure/tracks/lending_desk/spec.md and measure/tracks/lending_desk/plan.md, then implement the plan. Mark each plan task complete as you finish it. Run "npm run typecheck" and "npm run build" and make sure both pass before you stop.'
 fi

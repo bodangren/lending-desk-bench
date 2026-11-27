@@ -1,5 +1,5 @@
 /** Pure result-to-score arithmetic shared by scoring and live attestation. */
-import { ADVISORY, CHANGE_CRITERIA, CRITERIA, PROBES, criterionWeight, type Criterion, type Tier } from "./tests/criteria.js";
+import { ADVISORY, CHANGE_CRITERIA, CRITERIA, DOCS_OPS_CRITERIA, PROBES, criterionWeight, type Criterion, type Tier } from "./tests/criteria.js";
 import { PENALTY_FULL, type DoctorReport } from "./doctor.js";
 import type { BugEntry } from "./bugfix/registry.js";
 import { FIXTURE_REVISION } from "./revisions.js";
@@ -51,6 +51,12 @@ export const CHANGE_QUALITY_GATE = 0.6;
 /** Test-writing track axes (tests_bench FR-5). */
 export const TESTS_AXIS_WEIGHTS = { kill: 0.6, validity: 0.2, adherence: 0.1, quality: 0.1 };
 export const TESTS_QUALITY_GATE = 0.6;
+
+/** Docs-and-ops axes. The task axes carry the score; secondary axes need both. */
+export const DOCS_OPS_AXIS_WEIGHTS = { documentation: 0.4, operations: 0.4, adherence: 0.1, quality: 0.1 };
+export const DOCS_OPS_SECONDARY_GATE = 0.6;
+export const gateDocsOpsSecondary = (primaryMean: number): number =>
+  softTiercale(primaryMean, DOCS_OPS_SECONDARY_GATE);
 
 /**
  * Contract adherence. Each soft violation class the agent committed (an added
@@ -405,6 +411,57 @@ export function deriveTestsScoreMetrics(input: {
   return {
     axes,
     mutation: { axes, mutants: outcomes, class_rates: classRates, tests },
+    raw,
+  };
+}
+
+/** Docs-and-ops metrics. Adherence and quality use the mean of both task axes. */
+export function deriveDocsOpsScoreMetrics(input: {
+  passed: Record<string, boolean>;
+  doctorReport: DoctorReport;
+  penalty: number;
+  contract?: number;
+}) {
+  const { passed, doctorReport, penalty, contract = 1 } = input;
+  const criteria = Object.fromEntries(Object.keys(DOCS_OPS_CRITERIA).map((id) => [id, Boolean(passed[id])]));
+  const entries = Object.entries(DOCS_OPS_CRITERIA);
+  const rateOf = (axis: "documentation" | "operations") => {
+    const atAxis = entries.filter(([, criterion]) => criterion.axis === axis);
+    const totalWeight = atAxis.reduce((sum, [, criterion]) => sum + criterionWeight(criterion), 0);
+    const earned = atAxis.reduce(
+      (sum, [id, criterion]) => sum + (criteria[id] ? criterionWeight(criterion) : 0),
+      0,
+    );
+    return totalWeight > 0 ? earned / totalWeight : 0;
+  };
+  const documentation = rateOf("documentation");
+  const operations = rateOf("operations");
+  const primaryMean = (documentation + operations) / 2;
+  const secondaryGate = gateDocsOpsSecondary(primaryMean);
+  const adherence = contract * secondaryGate;
+  const quality = doctorReport.ok
+    ? secondaryGate * Math.max(0, 1 - penalty / PENALTY_FULL)
+    : 0;
+  const raw = 100 * (
+    DOCS_OPS_AXIS_WEIGHTS.documentation * documentation +
+    DOCS_OPS_AXIS_WEIGHTS.operations * operations +
+    DOCS_OPS_AXIS_WEIGHTS.adherence * adherence +
+    DOCS_OPS_AXIS_WEIGHTS.quality * quality
+  );
+  const axes = {
+    documentation,
+    operations,
+    adherence,
+    quality,
+    weights: DOCS_OPS_AXIS_WEIGHTS,
+  };
+  return {
+    criteria,
+    probes: {},
+    advisory: {},
+    tiers: tierScaled(entries, criteria).tiers,
+    axes,
+    docsOps: { axes, primary_mean: primaryMean, results: criteria },
     raw,
   };
 }

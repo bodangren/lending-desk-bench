@@ -1,0 +1,9 @@
+{
+  "track_id": "lending_desk_docs_ops",
+  "type": "chore",
+  "status": "pending",
+  "created": "generated",
+  "estimated_tasks": 14,
+  "actual_tasks": null,
+  "notes": "Model-visible documentation and operations track."
+}

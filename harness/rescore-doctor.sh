@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rescore runs for one week with current harness code: rewrite provenance with
 # the current runner/suite hashes, then rebuild score.json from the persisted
-# results.json — no agent re-runs, no test re-runs. Covers all four tracks.
+# results.json — no agent re-runs, no test re-runs. Covers each benchmark track.
 #
 #   WEEK=2026w36 ./rescore-doctor.sh
 #
@@ -30,8 +30,8 @@ process.stdout.write("unknown");' "$1"
 }
 
 # The browser that graded one run (spec D3). The check reads the track of the
-# run first. A tests-track run launches no browser, so it holds no record and
-# needs none. A run of the build, bugfix, or change track passes only with a
+# run first. A tests-track or docs-and-ops run launches no browser, so it holds
+# no record and needs none. A build, bugfix, or change run passes only with a
 # record whose channel is chrome. Any other run keeps its score.json bytes and
 # waits for a regrade.
 run_browser_state() {
@@ -43,7 +43,7 @@ const record=read(dir+"/artifacts/grader-browser.json");
 if (record && record.channel==="chrome") { process.stdout.write("chrome"); process.exit(0); }
 const provenance=read(dir+"/artifacts/provenance.json");
 const track=provenance ? provenance.track : null;
-if (track==="tests" || id.startsWith("tt-")) { process.stdout.write("none"); process.exit(0); }
+if (track==="tests" || track==="docs-and-ops" || id.startsWith("tt-") || id.startsWith("do-")) { process.stdout.write("none"); process.exit(0); }
 process.stdout.write("legacy");' "$1" "$2"
 }
 
@@ -66,9 +66,9 @@ fi
 shopt -s nullglob
 for ART in "${RUN_GLOBS[@]}"; do
   RUN_ID="$(basename "$(dirname "$ART")")"
-  if [[ "$RUN_ID" =~ ^(bf-|tt-|ch-)?([ab])-(.+)-$WEEK_PATTERN(-r[0-9]+)?$ ]]; then
+  if [[ "$RUN_ID" =~ ^(bf-|tt-|ch-|do-)?([ab])-(.+)-$WEEK_PATTERN(-r[0-9]+)?$ ]]; then
     case "${BASH_REMATCH[1]}" in
-      bf-) TRACK=bugfix ;; tt-) TRACK=tests ;; ch-) TRACK=change ;; *) TRACK=build ;;
+      bf-) TRACK=bugfix ;; tt-) TRACK=tests ;; ch-) TRACK=change ;; do-) TRACK=docs-and-ops ;; *) TRACK=build ;;
     esac
   else
     echo "SKIP $RUN_ID (run id not [prefix]<arm>-<slug>-$WEEK_PATTERN[-rN])"; continue

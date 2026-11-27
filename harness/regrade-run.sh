@@ -42,6 +42,7 @@ case "$RUN_ID" in
   bf-*) TRACK=bugfix; SET_FILE=bug-set.json;    SET_DEFAULT="$H/bugfix/sets/v1.json";      GENERATOR="$H/bugfix/make-variant.ts" ;;
   tt-*) TRACK=tests;  SET_FILE=mutant-set.json; SET_DEFAULT="$H/tests-track/sets/m1.json"; GENERATOR="$H/tests-track/make-variant.ts" ;;
   ch-*) TRACK=change; SET_FILE=change-set.json; SET_DEFAULT="$H/change/sets/c1.json";      GENERATOR="$H/change/make-variant.ts" ;;
+  do-*) TRACK=docs-and-ops; SET_FILE=docs-ops-set.json; SET_DEFAULT="$H/docs-and-ops/sets/d1.json"; GENERATOR="$H/docs-and-ops/make-variant.ts" ;;
   *)    TRACK=build;  SET_FILE="";              SET_DEFAULT="";                            GENERATOR="" ;;
 esac
 

@@ -180,6 +180,8 @@ export function currentSchema4Provenance({
     mutant_set_sha256: null,
     change_set_id: null,
     change_set_sha256: null,
+    docs_ops_set_id: null,
+    docs_ops_set_sha256: null,
     registry_sha256: null,
     variant_sha256: null,
     contract_violation_sha256: null,

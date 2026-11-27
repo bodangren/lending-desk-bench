@@ -82,7 +82,7 @@ runtime_server_probe() {
 }
 
 BENCH_TRACK="${BENCH_TRACK:-build}"
-case "$BENCH_TRACK" in build|bugfix|tests|change) ;; *) echo "BENCH_TRACK must be build, bugfix, tests, or change" >&2; exit 2 ;; esac
+case "$BENCH_TRACK" in build|bugfix|tests|change|docs-and-ops) ;; *) echo "BENCH_TRACK must be build, bugfix, tests, change, or docs-and-ops" >&2; exit 2 ;; esac
 CONTRACT_ROOT="$ROOT/fixture"
 CONTRACT_ARGS=(--track "$BENCH_TRACK")
 if [ "$BENCH_TRACK" != "build" ]; then
@@ -143,8 +143,9 @@ GRADE_START=$(date +%s)
 # A browser that cannot launch fails every browser-graded criterion inside a
 # record that would otherwise stay valid (w36-w38: ~20 build, ~49 bugfix). That
 # is a harness failure, so it must produce an invalid record, never a score.
-# The tests track runs no browser suite, so its grade writes no browser record.
-if [ "$BENCH_TRACK" != "tests" ]; then
+# The tests and docs-and-ops tracks run no browser suite, so their grades write
+# no browser record.
+if [ "$BENCH_TRACK" != "tests" ] && [ "$BENCH_TRACK" != "docs-and-ops" ]; then
   if ! "$TSX" "$H/browser-check.ts" > "$OUT/browser-check.log" 2>&1; then
     echo "[$RUN_ID] $(tail -1 "$OUT/browser-check.log")" >&2
     write_invalid "browser unavailable: the system Chrome did not launch"
@@ -206,6 +207,17 @@ if [ "$BENCH_TRACK" = "tests" ]; then
   if ! CANDIDATE="$CAND" ARTIFACTS="$OUT" PORT="$API_PORT" "$TSX" "$H/tests-track/grade-tests.ts" \
       > "$OUT/tests-grade.log" 2>&1; then
     write_invalid "tests-track grading failed; see tests-grade.log"
+    exit 4
+  fi
+  printf '{"valid":true,"status":"collected"}\n' > "$OUT/collection.json"
+  if score_record && score_is_valid; then exit 0; else exit 1; fi
+fi
+
+# The docs-and-ops grader writes its deterministic result map directly.
+if [ "$BENCH_TRACK" = "docs-and-ops" ]; then
+  if ! CANDIDATE="$CAND" ARTIFACTS="$OUT" "$TSX" "$H/docs-and-ops/grade-docs-ops.ts" \
+      > "$OUT/docs-ops-grade.log" 2>&1; then
+    write_invalid "docs-and-ops grading failed; see docs-ops-grade.log"
     exit 4
   fi
   printf '{"valid":true,"status":"collected"}\n' > "$OUT/collection.json"

@@ -43,7 +43,7 @@ type WorkRow = Json & {
 
 const TRACKS: readonly BenchTrack[] = ["build", "bugfix", "tests", "change"];
 const ARMS: readonly Arm[] = ["a", "b"];
-const REPS: Record<BenchTrack, number> = { build: 3, bugfix: 1, tests: 1, change: 1 };
+const REPS: Record<BenchTrack, number> = { build: 3, bugfix: 1, tests: 1, change: 1, "docs-and-ops": 1 };
 
 function writeJson(path: string, value: unknown): void {
   writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
@@ -289,6 +289,7 @@ function planWork(workspace: Workspace, extra: NodeJS.ProcessEnv = {}): ReturnTy
       REPS_BUGFIX: "1",
       REPS_TESTS: "1",
       REPS_CHANGE: "1",
+      REPS_DOCS_AND_OPS: undefined,
       ...extra,
     }),
     maxBuffer: 4 * 1024 * 1024,

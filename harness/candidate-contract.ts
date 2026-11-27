@@ -60,8 +60,16 @@ export const TESTS_WRITABLE_CANDIDATE_PATHS = [
 export const TEST_FILE_PATTERN = /^tests\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_.-]+\.test\.ts$/;
 export const TEST_FILE_LIMITS = { files: 20, bytes: 200_000 };
 
-export type BenchTrack = "build" | "bugfix" | "tests" | "change";
-export const BENCH_TRACKS: readonly BenchTrack[] = ["build", "bugfix", "tests", "change"];
+/** The docs-and-ops variant protects the application and the track contract. */
+export const DOCS_OPS_WRITABLE_CANDIDATE_PATHS = [
+  "docs/runbook.md",
+  "ops/verify.ts",
+  "measure/tracks/lending_desk_docs_ops/plan.md",
+  "measure/tracks/lending_desk_docs_ops/metadata.json",
+] as const;
+
+export type BenchTrack = "build" | "bugfix" | "tests" | "change" | "docs-and-ops";
+export const BENCH_TRACKS: readonly BenchTrack[] = ["build", "bugfix", "tests", "change", "docs-and-ops"];
 
 export function resolveTrack(value: string | undefined | null): BenchTrack {
   return BENCH_TRACKS.includes(value as BenchTrack) ? (value as BenchTrack) : "build";
@@ -73,6 +81,7 @@ export function writablePathsForTrack(track: BenchTrack): readonly string[] {
     case "bugfix": return BUGFIX_WRITABLE_CANDIDATE_PATHS;
     case "change": return CHANGE_WRITABLE_CANDIDATE_PATHS;
     case "tests": return TESTS_WRITABLE_CANDIDATE_PATHS;
+    case "docs-and-ops": return DOCS_OPS_WRITABLE_CANDIDATE_PATHS;
     default: return WRITABLE_CANDIDATE_PATHS;
   }
 }
@@ -325,7 +334,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   } else {
     const fixtureRoot = command;
     if (!fixtureRoot || !candidateRoot) {
-      throw new Error("usage: candidate-contract.ts <root> <candidate-root> [--track build|bugfix|tests|change]");
+      throw new Error("usage: candidate-contract.ts <root> <candidate-root> [--track build|bugfix|tests|change|docs-and-ops]");
     }
     const contract = assessCandidateContract(fixtureRoot, candidateRoot, { track });
     console.log(JSON.stringify(contract, null, 2));

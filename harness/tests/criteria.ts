@@ -19,7 +19,7 @@ export type Criterion = {
    * "adherence": the criterion grades process instructions (Measure closeout),
    * not the product. It feeds the adherence axis and leaves completion.
    */
-  axis?: "adherence";
+  axis?: "adherence" | "documentation" | "operations";
   /**
    * Fixture revision whose spec first states this criterion (default 1). A record
    * made under an older revision is not scored on it: its agent never saw it.
@@ -144,6 +144,45 @@ export const CHANGE_CRITERIA: Record<string, Criterion & { cr: string }> = {
   "X.due-limit-boundary":  { tier: 1, spec: "CR-3", cr: "CR-3" },
   "X.due-limit-action":    { tier: 1, spec: "CR-3", cr: "CR-3" },
   "X.detail-borrower":     { tier: 1, spec: "CR-4", cr: "CR-4" },
+};
+
+/** Docs-and-ops criteria. The two task axes stay separate from product completion. */
+export const DOCS_OPS_CRITERIA: Record<string, Criterion> = {
+  "D.sections.setup":        { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.sections.scripts":      { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.sections.environment":  { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.sections.api-routes":   { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.sections.loan-state":   { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.sections.verification": { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.sections.rollback":     { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.commands.install":      { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.commands.dev":          { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.commands.typecheck":    { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.commands.build":        { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.commands.start":        { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.routes.home":           { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.routes.items":          { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.routes.detail":         { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.routes.members":        { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.routes.loans":          { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.environment.variables": { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.api.methods":           { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.api.auth":              { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.loan.statuses":         { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.loan.boundary":         { tier: 1, spec: "Documentation", axis: "documentation" },
+  "D.placeholders":          { tier: 0, spec: "Documentation", axis: "documentation" },
+  "O.manifest.parse":        { tier: 0, spec: "Operations", axis: "operations" },
+  "O.result.json":           { tier: 0, spec: "Operations", axis: "operations" },
+  "O.result.errors":         { tier: 0, spec: "Operations", axis: "operations" },
+  "O.exit-code":             { tier: 0, spec: "Operations", axis: "operations" },
+  "O.errors.sorted":         { tier: 1, spec: "Operations", axis: "operations" },
+  "O.environment.clean":     { tier: 1, spec: "Operations", axis: "operations" },
+  "O.timeout":               { tier: 1, spec: "Operations", axis: "operations" },
+  "O.valid.behavior":        { tier: 0, spec: "Operations", axis: "operations" },
+  "O.invalid.behavior":      { tier: 0, spec: "Operations", axis: "operations" },
+  "O.valid.deterministic":   { tier: 1, spec: "Operations", axis: "operations" },
+  "O.invalid.deterministic": { tier: 1, spec: "Operations", axis: "operations" },
+  "O.usage":                 { tier: 2, spec: "Operations", axis: "operations" },
 };
 
 /** Advisory only — never folded into the weighted total. */

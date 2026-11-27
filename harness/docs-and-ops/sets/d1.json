@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "id": "d1",
+  "tasks": ["documentation", "operations"],
+  "notes": "Frozen set for the docs-and-ops track."
+}

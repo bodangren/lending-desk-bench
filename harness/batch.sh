@@ -20,6 +20,7 @@
 #   REPS_BUGFIX    default 1
 #   REPS_TESTS     default 1
 #   REPS_CHANGE    default 1
+#   REPS_DOCS_AND_OPS default 1
 #
 # The model list comes from harness/go-pricing.json (high_usage && batch).
 # Incremental scheduling (bench_incremental): by default the batch runs the
@@ -113,16 +114,17 @@ process.stdin.on("end", () => {
 
 ARMS="${ARMS:-a b}"
 WEEK="${WEEK:-$(date -u +%Gw%V)}"
-# Track: build (default), bugfix, tests, or change. One batch grades one track;
-# the weekly script runs all four. Each non-build track has a run-id prefix so
-# the tracks can coexist in runs/.
+# Track: build (default), bugfix, tests, change, or docs-and-ops. One batch grades
+# one track; the weekly script keeps its current track list. Each non-build track
+# has a run-id prefix so the tracks can coexist in runs/.
 TRACK="${BENCH_TRACK:-build}"
 case "$TRACK" in
   build)  TRACK_PREFIX="";    TRACK_REPS="${REPS_BUILD:-3}" ;;
   bugfix) TRACK_PREFIX="bf-"; TRACK_REPS="${REPS_BUGFIX:-1}" ;;
   tests)  TRACK_PREFIX="tt-"; TRACK_REPS="${REPS_TESTS:-1}" ;;
   change) TRACK_PREFIX="ch-"; TRACK_REPS="${REPS_CHANGE:-1}" ;;
-  *) echo "BENCH_TRACK must be build, bugfix, tests, or change" >&2; exit 2 ;;
+  docs-and-ops) TRACK_PREFIX="do-"; TRACK_REPS="${REPS_DOCS_AND_OPS:-1}" ;;
+  *) echo "BENCH_TRACK must be build, bugfix, tests, change, or docs-and-ops" >&2; exit 2 ;;
 esac
 export BENCH_TRACK="$TRACK"
 REPS="${REPS:-$TRACK_REPS}"
@@ -273,7 +275,7 @@ else
   # The repeat-count variables are scrubbed for the same reason: the suite
   # asserts the default repeat counts.
   if [ -n "${BENCH_HEAVY:-}" ]; then SELFCHECK_HEAVY=1; fi
-  if ! env -u BENCH_TRACK -u REPS -u REPS_BUILD -u REPS_BUGFIX -u REPS_TESTS -u REPS_CHANGE npm run --silent "$meta_script" > "meta-selfcheck.log" 2>&1; then
+  if ! env -u BENCH_TRACK -u REPS -u REPS_BUILD -u REPS_BUGFIX -u REPS_TESTS -u REPS_CHANGE -u REPS_DOCS_AND_OPS npm run --silent "$meta_script" > "meta-selfcheck.log" 2>&1; then
     if [ -n "${BENCH_HEAVY:-}" ]; then
       echo "harness self-check failed: heavy-run exited $SELFCHECK_HEAVY_RC" >&2
     else
@@ -414,6 +416,8 @@ else
                 "$BENCH_HEAVY" env AGENT_SKIP=1 OVERLAY="$PWD/tests-track/oracle-overlay" ./run.sh local oracle a "$canary_id" > "canary.log" 2>&1 || CANARY_RC=$? ;;
       change) HEAVY_MIN_AVAIL_MB="$HEAVY_MEM_FLOOR_MB" HEAVY_PRIORITY="$HEAVY_PRIORITY_TOKEN" HEAVY_RUN_TIMEOUT_S="$HEAVY_TIMEOUT_S" \
                 "$BENCH_HEAVY" env AGENT_SKIP=1 OVERLAY="$PWD/../reference-change" ./run.sh local reference-change a "$canary_id" > "canary.log" 2>&1 || CANARY_RC=$? ;;
+      docs-and-ops) HEAVY_MIN_AVAIL_MB="$HEAVY_MEM_FLOOR_MB" HEAVY_PRIORITY="$HEAVY_PRIORITY_TOKEN" HEAVY_RUN_TIMEOUT_S="$HEAVY_TIMEOUT_S" \
+                "$BENCH_HEAVY" env AGENT_SKIP=1 OVERLAY="$PWD/docs-and-ops/oracle-overlay" ./run.sh local oracle a "$canary_id" > "canary.log" 2>&1 || CANARY_RC=$? ;;
     esac
     if [ "$CANARY_RC" -ne 0 ]; then
       echo "canary failed: heavy-run exited $CANARY_RC for $canary_id" >&2
@@ -425,6 +429,7 @@ else
       bugfix) AGENT_SKIP=1 BENCH_BUG_SET=clean ./run.sh local reference a "$canary_id" > "canary.log" 2>&1 ;;
       tests)  AGENT_SKIP=1 OVERLAY="$PWD/tests-track/oracle-overlay" ./run.sh local oracle a "$canary_id" > "canary.log" 2>&1 ;;
       change) AGENT_SKIP=1 OVERLAY="$PWD/../reference-change" ./run.sh local reference-change a "$canary_id" > "canary.log" 2>&1 ;;
+      docs-and-ops) AGENT_SKIP=1 OVERLAY="$PWD/docs-and-ops/oracle-overlay" ./run.sh local oracle a "$canary_id" > "canary.log" 2>&1 ;;
     esac
   fi
   canary_score="../runs/$canary_id/artifacts/score.json"

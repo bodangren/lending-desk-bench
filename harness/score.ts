@@ -213,6 +213,7 @@ export async function buildScoreRecord(input: ScoreEnv): Promise<Record<string, 
     track === "bugfix" ? { track, bugs: [] }
       : track === "change" ? { track, changeIds: [], superseded: [] }
       : track === "tests" ? { track, mutants: [], tests: { total: 0, valid: 0 } }
+      : track === "docs-and-ops" ? { track }
       : { track: "build" }
   );
   const declared = declaredIds(context);

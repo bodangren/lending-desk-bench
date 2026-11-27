@@ -47,6 +47,11 @@ export function currentHashes() {
     ...walkFiles("harness/tests-track/oracle-overlay"),
   ];
   const changeTrackFiles = [...walkFiles("harness/change/model-visible"), ...walkFiles("harness/change/sets")];
+  const docsOpsTrackFiles = [
+    ...walkFiles("harness/docs-and-ops/model-visible"),
+    ...walkFiles("harness/docs-and-ops/sets"),
+    ...walkFiles("harness/docs-and-ops/oracle-overlay"),
+  ];
   return {
     runner_sha256: hashPaths([
       "harness/run.sh",
@@ -91,8 +96,12 @@ export function currentHashes() {
       "harness/tests-track/grade-tests.ts",
       "harness/change/requests.ts",
       "harness/change/make-variant.ts",
+      "harness/docs-and-ops/tasks.ts",
+      "harness/docs-and-ops/make-variant.ts",
+      "harness/docs-and-ops/grade-docs-ops.ts",
       ...testsTrackFiles,
       ...changeTrackFiles,
+      ...docsOpsTrackFiles,
     ]),
     suite_sha256: hashPaths([
       ...testFiles,

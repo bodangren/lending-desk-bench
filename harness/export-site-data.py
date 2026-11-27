@@ -184,7 +184,7 @@ def grader_browser(run: Path) -> str:
         record = None
     if isinstance(record, dict) and record.get("channel") == GRADER_BROWSER_CHROME:
         return GRADER_BROWSER_CHROME
-    if run_track(run) == "tests" or run.name.startswith("tt-"):
+    if run_track(run) in ("tests", "docs-and-ops") or run.name.startswith(("tt-", "do-")):
         return GRADER_BROWSER_NONE
     return GRADER_BROWSER_LEGACY
 
@@ -594,8 +594,8 @@ def paired_skills_delta(models: list[dict]) -> dict | None:
     }
 
 
-TRACK_PREFIXES = {"bugfix": "bf-", "tests": "tt-", "change": "ch-"}
-TRACK_EVIDENCE = {"bugfix": "repair", "tests": "mutation", "change": "change"}
+TRACK_PREFIXES = {"bugfix": "bf-", "tests": "tt-", "change": "ch-", "docs-and-ops": "do-"}
+TRACK_EVIDENCE = {"bugfix": "repair", "tests": "mutation", "change": "change", "docs-and-ops": "docs_ops"}
 
 
 def load_track_rows(track: str, series: str = RANKED_SERIES) -> list[dict]:
@@ -907,6 +907,7 @@ def main() -> None:
         "bugfix": {"repair": 0.45, "regression": 0.2, "robustness": 0.15, "adherence": 0.1, "quality": 0.1},
         "tests": {"kill": 0.6, "validity": 0.2, "adherence": 0.1, "quality": 0.1},
         "change": {"change": 0.45, "regression": 0.25, "robustness": 0.1, "adherence": 0.1, "quality": 0.1},
+        "docs-and-ops": {"documentation": 0.4, "operations": 0.4, "adherence": 0.1, "quality": 0.1},
     }
     tracks = {track: load_track_rows(track) for track in TRACK_PREFIXES}
     track_history = {track: load_track_rows(track, EXECUTOR_PI) for track in TRACK_PREFIXES}

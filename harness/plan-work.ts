@@ -47,7 +47,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_RUNS_ROOT = resolve(HERE, "..", "runs");
 const DEFAULT_PRICING_PATH = resolve(HERE, "go-pricing.json");
 const ARMS = ["a", "b"] as const;
-const DEFAULT_REPS: Record<BenchTrack, number> = { build: 3, bugfix: 1, tests: 1, change: 1 };
+const DEFAULT_REPS: Record<BenchTrack, number> = { build: 3, bugfix: 1, tests: 1, change: 1, "docs-and-ops": 1 };
 
 type Arm = (typeof ARMS)[number];
 type WorkClass = "new" | "failing" | "current";

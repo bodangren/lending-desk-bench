@@ -32,7 +32,7 @@ for week in $WEEKS; do
   for dir in "$ROOT"/runs/*-"$week" "$ROOT"/runs/*-"$week"-r[0-9]*; do
     [ -d "$dir" ] || continue
     run_id="$(basename "$dir")"
-    [[ "$run_id" =~ ^(bf-|tt-|ch-)?[ab]-.+-${week}(-r[0-9]+)?$ ]] || continue
+    [[ "$run_id" =~ ^(bf-|tt-|ch-|do-)?[ab]-.+-${week}(-r[0-9]+)?$ ]] || continue
     if [ -n "${ONLY:-}" ] && [[ "$run_id" != "$ONLY"* ]]; then continue; fi
     if [ "$(executor_kind "$dir/artifacts/provenance.json")" = "pi" ]; then
       echo "SKIP $run_id (legacy Pi executor; artifacts left unchanged)"

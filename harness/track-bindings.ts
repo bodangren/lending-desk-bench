@@ -16,6 +16,7 @@ import { loadSet, validateSet } from "./bugfix/set-loader.js";
 import { hashTreeOnDisk } from "./bugfix/make-variant.js";
 import { loadMutantSet, mutantSetHash, validateMutantSet } from "./tests-track/set-loader.js";
 import { changeRegistryHash, loadChangeSet, validateChangeSet } from "./change/requests.js";
+import { docsOpsRegistryHash, loadDocsOpsSet, validateDocsOpsSet } from "./docs-and-ops/tasks.js";
 
 type Binding = {
   /** Provenance field that carries the set id / the set file hash. */
@@ -59,12 +60,22 @@ export const TRACK_BINDINGS: Record<Exclude<BenchTrack, "build">, Binding> = {
     validate: (set) => validateChangeSet(set as ReturnType<typeof loadChangeSet>),
     registry: () => changeRegistryHash(),
   },
+  "docs-and-ops": {
+    idField: "docs_ops_set_id",
+    shaField: "docs_ops_set_sha256",
+    label: "docs-and-ops",
+    setFile: "docs-ops-set.json",
+    load: loadDocsOpsSet,
+    validate: (set) => validateDocsOpsSet(set as ReturnType<typeof loadDocsOpsSet>),
+    registry: () => docsOpsRegistryHash(),
+  },
 };
 
 /** Provenance fields every schema-6 record carries, null where the track has none. */
 export const TRACK_BINDING_FIELDS = [
   "bug_set_id", "bug_set_sha256", "mutant_set_id", "mutant_set_sha256",
-  "change_set_id", "change_set_sha256", "registry_sha256", "variant_sha256",
+  "change_set_id", "change_set_sha256", "docs_ops_set_id", "docs_ops_set_sha256",
+  "registry_sha256", "variant_sha256",
 ] as const;
 
 const hex64 = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);

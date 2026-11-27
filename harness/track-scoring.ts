@@ -9,16 +9,18 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { BenchTrack, CandidateContract, SoftViolation } from "./candidate-contract.js";
 import type { DoctorReport } from "./doctor.js";
-import { ADVISORY, CRITERIA, PROBES } from "./tests/criteria.js";
+import { ADVISORY, CRITERIA, DOCS_OPS_CRITERIA, PROBES } from "./tests/criteria.js";
 import { loadSet, setBugs, validateSet } from "./bugfix/set-loader.js";
 import type { BugEntry } from "./bugfix/registry.js";
 import { FIXTURE_REVISION } from "./revisions.js";
 import { loadChangeSet, setChangeCriteria, setSuperseded, validateChangeSet } from "./change/requests.js";
 import { loadMutantSet, setMutants, validateMutantSet } from "./tests-track/set-loader.js";
+import { loadDocsOpsSet, validateDocsOpsSet } from "./docs-and-ops/tasks.js";
 import {
   contractAdherence,
   deriveBugfixScoreMetrics,
   deriveChangeScoreMetrics,
+  deriveDocsOpsScoreMetrics,
   deriveScoreMetrics,
   deriveTestsScoreMetrics,
 } from "./score-calculation.js";
@@ -33,7 +35,8 @@ export type TrackContext =
   | { track: "build" }
   | { track: "bugfix"; bugs: BugEntry[] }
   | { track: "change"; changeIds: string[]; superseded: string[] }
-  | { track: "tests"; mutants: { id: string; class: string }[]; tests: { total: number; valid: number } };
+  | { track: "tests"; mutants: { id: string; class: string }[]; tests: { total: number; valid: number } }
+  | { track: "docs-and-ops" };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -66,6 +69,14 @@ export function loadTrackContext(track: BenchTrack, artifacts: string): { contex
       const mutants = setMutants(set).map((mutant) => ({ id: mutant.id, class: mutant.class }));
       return { context: { track, mutants, tests: readTestsSummary(artifacts) }, reasons: [] };
     }
+    if (track === "docs-and-ops") {
+      const path = join(artifacts, "docs-ops-set.json");
+      if (!existsSync(path)) throw new Error("missing docs-ops-set file");
+      const set = loadDocsOpsSet(path);
+      const reasons = validateDocsOpsSet(set);
+      if (reasons.length) throw new Error(`invalid docs-and-ops set: ${reasons.join("; ")}`);
+      return { context: { track }, reasons: [] };
+    }
     return { context: { track: "build" }, reasons: [] };
   } catch (error) {
     return { reasons: [error instanceof Error ? error.message : String(error)] };
@@ -97,6 +108,8 @@ export function declaredIds(context: TrackContext): string[] {
       return [...product, ...Object.keys(PROBES), ...ADVISORY, ...context.changeIds].sort();
     case "tests":
       return context.mutants.map((mutant) => killId(mutant.id)).sort();
+    case "docs-and-ops":
+      return Object.keys(DOCS_OPS_CRITERIA).sort();
   }
 }
 
@@ -149,6 +162,14 @@ export function trackMetrics(
         criteria: {}, probes: {}, advisory: {}, tiers: {},
         axes: metrics.axes, raw: metrics.raw,
         evidence: { mutation: metrics.mutation }, primary: metrics.axes.kill,
+      };
+    }
+    case "docs-and-ops": {
+      const metrics = deriveDocsOpsScoreMetrics({ passed, doctorReport, penalty, contract });
+      return {
+        criteria: metrics.criteria, probes: {}, advisory: {}, tiers: metrics.tiers,
+        axes: metrics.axes, raw: metrics.raw,
+        evidence: { docs_ops: metrics.docsOps }, primary: metrics.docsOps.primary_mean,
       };
     }
   }
