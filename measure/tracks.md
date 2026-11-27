@@ -23,7 +23,7 @@
 - [ ] **Track: Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash**
   - *Link: [runs_tests_track_20261127](tracks/runs_tests_track_20261127/)*
 
-- [~] **Track: Current runs for new Go models**
+- [ ] **Track: Current runs for new Go models**
   - *Link: [runs_go_new_models_20261127](tracks/runs_go_new_models_20261127/)*
 
 - [x] **Track: Executor model API input limit is optional** — The helper accepts a model API entry whose limit holds context and output only.

@@ -7,9 +7,16 @@ PM decision 2026-11-27: light lane.
 - [x] 1.1 Add a current run for `hungerg-free`.
   Result: `71ab861`; live `docs/models/hungerg-free.html` and `docs/assets/data/benchmark.json`.
 
-- [~] 1.2 Add a current run for `hy4-flash-free`.
-  Route: `opencode-go/hy4-flash-free`. Quota plan `opencode-go-hy-free` shows GO.
-  Run the Build batch with arms a and b through `heavy-run.sh`, publish the generated files, and check the live site.
+- [x] 1.2 Add a current run for `hy4-flash-free`.
+  Result: publish commit `575f36bb084522e7ce9ba2dd260ff9f2402edd3d`; live `generated_at` `2026-11-27T13:07:21`.
+  - Route: `opencode-go/hy4-flash-free`. Quota plan `opencode-go-hy-free` shows GO.
+  - Trusted Build totals: `a-hy4-flash-free-2026w48-r1` `92.8`; `a-hy4-flash-free-2026w48-r2` `71.9`; `a-hy4-flash-free-2026w48-r3` `63.3`.
+  - Trusted Build totals: `b-hy4-flash-free-2026w48-r1` `98.3`; `b-hy4-flash-free-2026w48-r2` `97.7`; `b-hy4-flash-free-2026w48-r3` `97.2`.
+  - Arm means: arm a `76.0`; arm b `97.7333`.
+  - Published medians: Build `71.9`; Skills `97.7`.
+  - Publication gates: preview gate and complete-candidate leak check preceded the push.
+  - Live evidence: `benchmark.json`, `tracks.json`, `bugfix.json`, `model-guide.json`, `real-work.json`, `review.json`, `index.html`, `real-work.html`, `review.html`, and `models/hy4-flash-free.html` match the published bytes.
+  - Batch log: `reports/batch-hy4-flash-free-2026w48.log`.
 
 - [ ] 1.3 Add a current run for `qwen4-max`.
   Runs when `ra-quota` shows GO for `opencode-go`: `2026-12-18T20:16:59+07:00`.
