@@ -54,7 +54,7 @@ function validate(value: unknown): string[] {
 function main(): void {
   const manifestPath = process.argv[2];
   if (!manifestPath || process.argv.length !== 3) {
-    process.stderr.write("usage: tsx ops/verify.ts <manifest-path>\n");
+    process.stderr.write("usage: node --no-warnings ops/verify.ts <manifest-path>\n");
     process.exitCode = 2;
     return;
   }

@@ -1,6 +1,7 @@
-/** Deterministic grader for the docs-and-ops candidate deliverables. */
-import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+/** Deterministic, isolated grader for the docs-and-ops candidate deliverables. */
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOCS_OPS_CRITERIA } from "../tests/criteria.js";
@@ -14,7 +15,8 @@ export type Grade = { passed: boolean; failed: string[]; reasons: string[] };
 
 const RESULT_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
 const PLACEHOLDER_RE = /\b(?:TODO|TBD|FIXME|XXX|HACK|PLACEHOLDER)\b|\[insert[^\]]*\]|<fill[^>]*>/i;
-const USAGE = "usage: tsx ops/verify.ts <manifest-path>";
+const WORKER_TIMEOUT_MS = 15_000;
+const MAX_OUTPUT_BYTES = 1_048_576;
 
 const EXPECTED_COMMANDS = {
   install: "npm ci",
@@ -50,6 +52,10 @@ export const INVALID_MANIFEST = {
   environment: ["BENCH_LATENCY_MS"],
 };
 
+const MALFORMED_MANIFEST = "{not json";
+const NON_OBJECT_MANIFEST = "[]";
+const MISSING_FIELDS_MANIFEST = "{}";
+
 export function declaredCheckIds(): string[] {
   return Object.keys(DOCS_OPS_CRITERIA).sort();
 }
@@ -70,52 +76,82 @@ function result(passed: boolean, failed: string[], reasons: string[]): Grade {
   };
 }
 
-/** Grade the runbook against the repository facts stated by the candidate spec. */
+function sectionBody(text: string, name: string): { found: boolean; body: string } {
+  const lines = text.split(/\r?\n/);
+  const heading = new RegExp(`^##\\s+${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i");
+  const start = lines.findIndex((line) => heading.test(line));
+  if (start < 0) return { found: false, body: "" };
+  let end = start + 1;
+  while (end < lines.length && !/^##\s+/.test(lines[end])) end += 1;
+  return { found: true, body: lines.slice(start + 1, end).join("\n").trim() };
+}
+
+/** Grade the runbook against repository facts inside their required sections. */
 export function gradeRunbook(text: string): Grade {
-  const lower = text.toLowerCase();
-  const hasHeading = (name: string) =>
-    new RegExp(`^#{1,6}\\s+.*\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "im").test(text);
-  const hasAll = (values: readonly string[]) => values.every((value) => lower.includes(value.toLowerCase()));
+  const section = (name: string) => sectionBody(text, name);
+  const setup = section("Setup");
+  const scripts = section("Scripts");
+  const environment = section("Environment");
+  const api = section("API routes");
+  const loanState = section("Loan state");
+  const verification = section("Verification");
+  const rollback = section("Rollback");
+  const lower = (value: string) => value.toLowerCase();
+  const hasAll = (body: string, values: readonly string[]) =>
+    values.every((value) => lower(body).includes(value.toLowerCase()));
+  const nonempty = (value: { found: boolean; body: string }) => value.found && value.body.length > 0;
   const checks: Array<{ id: string; passed: boolean; reason: string }> = [
-    { id: "D.sections.setup", passed: hasHeading("setup"), reason: "runbook lacks a Setup section" },
-    { id: "D.sections.scripts", passed: hasHeading("scripts"), reason: "runbook lacks a Scripts section" },
-    { id: "D.sections.environment", passed: hasHeading("environment"), reason: "runbook lacks an Environment section" },
-    { id: "D.sections.api-routes", passed: hasHeading("API routes"), reason: "runbook lacks an API routes section" },
-    { id: "D.sections.loan-state", passed: hasHeading("loan state"), reason: "runbook lacks a Loan state section" },
-    { id: "D.sections.verification", passed: hasHeading("verification"), reason: "runbook lacks a Verification section" },
-    { id: "D.sections.rollback", passed: hasHeading("rollback"), reason: "runbook lacks a Rollback section" },
-    { id: "D.commands.install", passed: lower.includes("npm ci"), reason: "runbook omits npm ci" },
-    { id: "D.commands.dev", passed: lower.includes("npm run dev"), reason: "runbook omits npm run dev" },
-    { id: "D.commands.typecheck", passed: lower.includes("npm run typecheck"), reason: "runbook omits npm run typecheck" },
-    { id: "D.commands.build", passed: lower.includes("npm run build"), reason: "runbook omits npm run build" },
-    { id: "D.commands.start", passed: lower.includes("npm run start"), reason: "runbook omits npm run start" },
-    { id: "D.routes.home", passed: /(?:^|[\s`|])\/(?:[\s`|]|$)/m.test(text), reason: "runbook omits the home route" },
-    { id: "D.routes.items", passed: text.includes("/items"), reason: "runbook omits the catalogue route" },
-    { id: "D.routes.detail", passed: text.includes("/items/[id]"), reason: "runbook omits the item detail route" },
-    { id: "D.routes.members", passed: text.includes("/members"), reason: "runbook omits the members route" },
-    { id: "D.routes.loans", passed: text.includes("/api/loans"), reason: "runbook omits the loans API route" },
+    { id: "D.sections.setup", passed: nonempty(setup), reason: "runbook lacks a Setup body" },
+    { id: "D.sections.scripts", passed: nonempty(scripts), reason: "runbook lacks a Scripts body" },
+    { id: "D.sections.environment", passed: nonempty(environment), reason: "runbook lacks an Environment body" },
+    { id: "D.sections.api-routes", passed: nonempty(api), reason: "runbook lacks an API routes body" },
+    { id: "D.sections.loan-state", passed: nonempty(loanState), reason: "runbook lacks a Loan state body" },
+    {
+      id: "D.sections.verification",
+      passed: nonempty(verification) && hasAll(verification.body, ["npm run typecheck", "npm run build", "ops/verify.ts"]),
+      reason: "Verification lacks typecheck, build, or the operations verifier",
+    },
+    {
+      id: "D.sections.rollback",
+      passed: nonempty(rollback) && hasAll(rollback.body, ["previous release", "data store", "loan records"]),
+      reason: "Rollback lacks release restoration or data preservation",
+    },
+    { id: "D.commands.install", passed: hasAll(setup.body, ["npm ci"]), reason: "Setup omits npm ci" },
+    { id: "D.commands.dev", passed: hasAll(scripts.body, ["npm run dev"]), reason: "Scripts omits npm run dev" },
+    { id: "D.commands.typecheck", passed: hasAll(scripts.body, ["npm run typecheck"]), reason: "Scripts omits npm run typecheck" },
+    { id: "D.commands.build", passed: hasAll(scripts.body, ["npm run build"]), reason: "Scripts omits npm run build" },
+    { id: "D.commands.start", passed: hasAll(scripts.body, ["npm run start"]), reason: "Scripts omits npm run start" },
+    { id: "D.routes.home", passed: /(?:^|[\s`|])\/(?:[\s`|]|$)/m.test(api.body), reason: "API routes omits the home route" },
+    { id: "D.routes.items", passed: api.body.includes("/items"), reason: "API routes omits the catalogue route" },
+    { id: "D.routes.detail", passed: api.body.includes("/items/[id]"), reason: "API routes omits the item detail route" },
+    { id: "D.routes.members", passed: api.body.includes("/members"), reason: "API routes omits the members route" },
+    { id: "D.routes.loans", passed: api.body.includes("/api/loans"), reason: "API routes omits the loans API route" },
     {
       id: "D.environment.variables",
-      passed: hasAll(["BENCH_NOW", "BENCH_LATENCY_MS", "BENCH_FAIL_ITEMS", "BENCH_TRACE_FILE"]),
-      reason: "runbook omits a repository environment variable",
+      passed: hasAll(environment.body, ["BENCH_NOW", "BENCH_LATENCY_MS", "BENCH_FAIL_ITEMS", "BENCH_TRACE_FILE"]),
+      reason: "Environment omits a repository variable",
     },
-    { id: "D.api.methods", passed: hasAll(["GET", "POST", "PATCH"]), reason: "runbook omits a loans API method" },
+    { id: "D.api.methods", passed: hasAll(api.body, ["GET", "POST", "PATCH"]), reason: "API routes omits a loans API method" },
     {
       id: "D.api.auth",
-      passed: hasAll(["x-staff-key", "staff_key"]),
-      reason: "runbook omits the staff header or cookie",
+      passed: hasAll(`${environment.body}\n${api.body}`, ["x-staff-key", "staff_key"]),
+      reason: "the runbook omits the staff header or cookie",
     },
     {
       id: "D.loan.statuses",
-      passed: hasAll(["returned", "overdue", "due-soon", "ok"]),
-      reason: "runbook omits a loan status",
+      passed: hasAll(loanState.body, ["returned", "overdue", "due-soon", "ok"]),
+      reason: "Loan state omits a loan status",
     },
     {
       id: "D.loan.boundary",
-      passed: lower.includes("48") && lower.includes("strictly before") && lower.includes("returned"),
-      reason: "runbook omits the loan status boundaries",
+      passed: hasAll(loanState.body, ["returned loan stays returned", "strictly before", "due-soon", "48"]),
+      reason: "Loan state omits the returned or due-soon boundary",
     },
-    { id: "D.placeholders", passed: !PLACEHOLDER_RE.test(text), reason: "runbook contains a placeholder" },
+    {
+      id: "D.placeholders",
+      passed: text.trim().length > 0 && !PLACEHOLDER_RE.test(text),
+      reason: "runbook is empty or contains a placeholder",
+    },
   ];
   const failed = checks.filter((check) => !check.passed);
   return result(
@@ -125,14 +161,29 @@ export function gradeRunbook(text: string): Grade {
   );
 }
 
-function expectedManifestErrors(text: string): { parsed: boolean; errors: string[] } {
+type ExpectedInvocation = {
+  parsed: boolean;
+  parseErrors: string[];
+  errors: string[];
+  exitCode: number;
+};
+
+function expectedInvocation(manifest: string, readError: boolean): ExpectedInvocation {
+  if (readError) {
+    const errors = ["manifest file could not be read"];
+    return { parsed: false, parseErrors: errors, errors, exitCode: 2 };
+  }
   let value: unknown;
   try {
-    value = JSON.parse(text);
+    value = JSON.parse(manifest);
   } catch {
-    return { parsed: false, errors: ["manifest must be valid JSON"] };
+    const errors = ["manifest must be valid JSON"];
+    return { parsed: false, parseErrors: errors, errors, exitCode: 2 };
   }
-  if (!isObject(value)) return { parsed: true, errors: ["manifest must be an object"] };
+  if (!isObject(value)) {
+    const errors = ["manifest must be an object"];
+    return { parsed: true, parseErrors: [], errors, exitCode: 1 };
+  }
   const errors: string[] = [];
   if (value.schema !== 1) errors.push("schema must be 1");
   if (value.service !== "lending-desk") errors.push("service must be lending-desk");
@@ -154,10 +205,12 @@ function expectedManifestErrors(text: string): { parsed: boolean; errors: string
       errors.push(`routes.${key} must equal ${expected}`);
     }
   }
-  if (!Array.isArray(value.environment) || value.environment.join("\0") !== EXPECTED_ENVIRONMENT.join("\0")) {
+  if (!Array.isArray(value.environment) || value.environment.length !== EXPECTED_ENVIRONMENT.length ||
+      !value.environment.every((entry, index) => entry === EXPECTED_ENVIRONMENT[index])) {
     errors.push("environment must equal the fixed environment list");
   }
-  return { parsed: true, errors: errors.sort() };
+  errors.sort();
+  return { parsed: true, parseErrors: [], errors, exitCode: errors.length === 0 ? 0 : 1 };
 }
 
 function parsedResult(text: string): string[] | null {
@@ -178,19 +231,19 @@ export function gradeVerifier(input: {
   exitCode: number;
   cleanEnv: boolean;
   timedOut: boolean;
+  readError?: boolean;
+  requireNewline?: boolean;
 }): Grade {
-  const expected = expectedManifestErrors(input.manifest);
+  const expected = expectedInvocation(input.manifest, input.readError === true);
   const errors = parsedResult(input.resultJson);
-  const expectedExit = expected.parsed ? (expected.errors.length === 0 ? 0 : 1) : 2;
+  const formatted = input.resultJson === `${JSON.stringify(expected.errors)}\n` ||
+    (input.requireNewline !== true && input.resultJson === JSON.stringify(expected.errors));
+  const parseHandled = expected.parsed || (errors !== null && JSON.stringify(errors) === JSON.stringify(expected.parseErrors));
   const checks: Array<{ id: string; passed: boolean; reason: string }> = [
-    { id: "O.manifest.parse", passed: expected.parsed, reason: "manifest is not valid JSON" },
+    { id: "O.manifest.parse", passed: parseHandled, reason: "verifier did not handle manifest parsing" },
     { id: "O.result.json", passed: errors !== null, reason: "verifier output is not a JSON string array" },
-    {
-      id: "O.result.errors",
-      passed: errors !== null && JSON.stringify(errors) === JSON.stringify(expected.errors),
-      reason: "verifier errors do not match the manifest",
-    },
-    { id: "O.exit-code", passed: input.exitCode === expectedExit, reason: "verifier exit code is wrong" },
+    { id: "O.result.errors", passed: errors !== null && formatted, reason: "verifier output does not match the required JSON" },
+    { id: "O.exit-code", passed: input.exitCode === expected.exitCode, reason: "verifier exit code is wrong" },
     {
       id: "O.errors.sorted",
       passed: errors !== null && JSON.stringify(errors) === JSON.stringify([...errors].sort()),
@@ -213,7 +266,11 @@ type VerifierRun = {
   stderr: string;
   timedOut: boolean;
   cleanEnv: boolean;
+  completed: boolean;
+  isolationError: string | null;
 };
+
+type Isolation = { bwrap: string; node: string; manifests: string };
 
 function cleanEnvironment(): NodeJS.ProcessEnv {
   return {
@@ -225,11 +282,56 @@ function cleanEnvironment(): NodeJS.ProcessEnv {
   };
 }
 
-function runVerifier(tsx: string, candidate: string, manifestPath?: string): Promise<VerifierRun> {
-  const args = manifestPath ? ["ops/verify.ts", manifestPath] : ["ops/verify.ts"];
+function usageLine(): string {
+  const spec = readFileSync(resolve(import.meta.dirname, "model-visible", "track", "spec.md"), "utf8");
+  return spec.split(/\r?\n/).map((line) => line.trim()).find((line) => line.startsWith("usage:")) ??
+    "usage: node --no-warnings ops/verify.ts <manifest-path>";
+}
+
+function resolveIsolation(): { bwrap: string; node: string } {
+  const probe = spawnSync("bwrap", [
+    "--unshare-all", "--ro-bind", "/", "/", "--", "/bin/true",
+  ], { env: cleanEnvironment(), stdio: "ignore", timeout: 5_000 });
+  if (probe.error || probe.status !== 0) {
+    throw new Error(`verifier isolation is unavailable: ${probe.error?.message ?? `bwrap exited ${probe.status}`}`);
+  }
+  return { bwrap: "bwrap", node: process.execPath };
+}
+
+function stageManifests(): { dir: string; texts: Record<string, string> } {
+  const dir = mkdtempSync(join(tmpdir(), "docs-ops-manifests-"));
+  const texts: Record<string, string> = {
+    "valid.json": `${JSON.stringify(VALID_MANIFEST, null, 2)}\n`,
+    "invalid.json": `${JSON.stringify(INVALID_MANIFEST, null, 2)}\n`,
+    "malformed.json": MALFORMED_MANIFEST,
+    "non-object.json": NON_OBJECT_MANIFEST,
+    "missing-fields.json": MISSING_FIELDS_MANIFEST,
+  };
+  for (const [name, text] of Object.entries(texts)) writeFileSync(join(dir, name), text);
+  return { dir, texts };
+}
+
+function runVerifier(isolation: Isolation, candidate: string, manifestName?: string): Promise<VerifierRun> {
+  const args = [
+    "--unshare-all", "--die-with-parent", "--new-session",
+    "--ro-bind", candidate, "/workspace",
+    "--ro-bind", isolation.manifests, "/manifests",
+    "--ro-bind", "/usr", "/usr",
+    "--ro-bind", "/bin", "/bin",
+    "--ro-bind", "/lib", "/lib",
+    "--ro-bind", "/lib64", "/lib64",
+    "--ro-bind", isolation.node, "/runtime/node",
+    "--tmpfs", "/tmp",
+    "--proc", "/proc",
+    "--dev", "/dev",
+    "--setenv", "PATH", "/runtime:/usr/bin:/bin",
+    "--setenv", "HOME", "/tmp",
+    "--chdir", "/workspace",
+    "/runtime/node", "--no-warnings", "ops/verify.ts",
+    ...(manifestName ? [`/manifests/${manifestName}`] : []),
+  ];
   return new Promise((resolveRun) => {
-    const child = spawn(tsx, args, {
-      cwd: candidate,
+    const child = spawn(isolation.bwrap, args, {
       env: cleanEnvironment(),
       stdio: ["ignore", "pipe", "pipe"],
       detached: true,
@@ -237,12 +339,19 @@ function runVerifier(tsx: string, candidate: string, manifestPath?: string): Pro
     let stdout = "";
     let stderr = "";
     let timedOut = false;
+    let isolationError: string | null = null;
     let settled = false;
+    let timer: NodeJS.Timeout | undefined;
     const finish = (status: number | null) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
-      resolveRun({ status, stdout, stderr, timedOut, cleanEnv: true });
+      if (timer) clearTimeout(timer);
+      resolveRun({
+        status, stdout, stderr, timedOut,
+        cleanEnv: isolationError === null,
+        completed: status !== null && !timedOut && isolationError === null,
+        isolationError,
+      });
     };
     const stop = () => {
       if (child.pid && process.platform !== "win32") {
@@ -251,26 +360,53 @@ function runVerifier(tsx: string, candidate: string, manifestPath?: string): Pro
         child.kill("SIGKILL");
       }
     };
-    const timer = setTimeout(() => {
+    timer = setTimeout(() => {
       timedOut = true;
       stop();
-    }, 15_000);
+    }, WORKER_TIMEOUT_MS);
     child.stdout.on("data", (chunk: Buffer) => {
       stdout += chunk.toString("utf8");
-      if (stdout.length + stderr.length > 1_048_576) stop();
+      if (stdout.length + stderr.length > MAX_OUTPUT_BYTES) {
+        timedOut = true;
+        stop();
+      }
     });
     child.stderr.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
-      if (stdout.length + stderr.length > 1_048_576) stop();
+      if (stdout.length + stderr.length > MAX_OUTPUT_BYTES) {
+        timedOut = true;
+        stop();
+      }
     });
-    child.on("error", () => finish(null));
+    child.on("error", (error) => {
+      isolationError = error.message;
+      finish(null);
+    });
     child.on("close", (status) => finish(status));
   });
 }
 
 function sameRun(left: VerifierRun, right: VerifierRun): boolean {
-  return left.status === right.status && left.stdout === right.stdout &&
-    left.stderr === right.stderr && !left.timedOut && !right.timedOut;
+  return left.completed && right.completed && left.status === right.status &&
+    left.stdout === right.stdout && left.stderr === right.stderr;
+}
+
+function invocationGrade(run: VerifierRun, manifest: string, readError = false): Grade {
+  return gradeVerifier({
+    manifest,
+    resultJson: run.stdout,
+    exitCode: run.status ?? -1,
+    cleanEnv: run.cleanEnv,
+    timedOut: run.timedOut,
+    readError,
+    requireNewline: true,
+  });
+}
+
+const OPERATION_IDS = declaredCheckIds().filter((id) => id.startsWith("O."));
+
+function missingVerifierGrade(): Grade {
+  return { passed: false, failed: OPERATION_IDS, reasons: ["verifier is missing"] };
 }
 
 export type DocsOpsGrade = {
@@ -283,6 +419,7 @@ export type DocsOpsGrade = {
   verifier: {
     valid: Grade;
     invalid: Grade;
+    cases: Record<string, Grade>;
     deterministic: boolean;
     usage: boolean;
   };
@@ -293,81 +430,95 @@ export async function gradeDocsOps(candidate: string, artifacts: string): Promis
   mkdirSync(artifacts, { recursive: true });
   const runbookPath = join(candidate, "docs", "runbook.md");
   const runbook = gradeRunbook(existsSync(runbookPath) ? readFileSync(runbookPath, "utf8") : "");
-  const validPath = join(artifacts, "docs-ops-valid.json");
-  const invalidPath = join(artifacts, "docs-ops-invalid.json");
-  const validText = `${JSON.stringify(VALID_MANIFEST, null, 2)}\n`;
-  const invalidText = `${JSON.stringify(INVALID_MANIFEST, null, 2)}\n`;
-  writeFileSync(validPath, validText);
-  writeFileSync(invalidPath, invalidText);
-
-  const localTsx = join(candidate, "node_modules", ".bin", "tsx");
-  const tsx = existsSync(localTsx) ? localTsx : resolve(import.meta.dirname, "..", "node_modules", ".bin", "tsx");
-  const [validRun, validRepeat, invalidRun, invalidRepeat, usageRun] = await Promise.all([
-    runVerifier(tsx, candidate, validPath),
-    runVerifier(tsx, candidate, validPath),
-    runVerifier(tsx, candidate, invalidPath),
-    runVerifier(tsx, candidate, invalidPath),
-    runVerifier(tsx, candidate),
-  ]);
-  const valid = gradeVerifier({
-    manifest: validText,
-    resultJson: validRun.stdout,
-    exitCode: validRun.status ?? -1,
-    cleanEnv: validRun.cleanEnv,
-    timedOut: validRun.timedOut,
-  });
-  const invalid = gradeVerifier({
-    manifest: invalidText,
-    resultJson: invalidRun.stdout,
-    exitCode: invalidRun.status ?? -1,
-    cleanEnv: invalidRun.cleanEnv,
-    timedOut: invalidRun.timedOut,
-  });
-  const common = [
-    "O.manifest.parse",
-    "O.result.json",
-    "O.result.errors",
-    "O.exit-code",
-    "O.errors.sorted",
-    "O.environment.clean",
-    "O.timeout",
-  ];
   const checks: Record<string, boolean> = {};
   for (const id of declaredCheckIds()) checks[id] = false;
-  for (const check of runbook.failed.length === 0
-    ? Object.keys(DOCS_OPS_CRITERIA).filter((id) => id.startsWith("D."))
-    : Object.keys(DOCS_OPS_CRITERIA).filter((id) => id.startsWith("D.") && !runbook.failed.includes(id))) {
-    checks[check] = true;
+  for (const id of Object.keys(DOCS_OPS_CRITERIA).filter((entry) => entry.startsWith("D."))) {
+    checks[id] = !runbook.failed.includes(id);
   }
-  for (const id of common) checks[id] = !valid.failed.includes(id) && !invalid.failed.includes(id);
-  checks["O.valid.behavior"] = valid.passed;
-  checks["O.invalid.behavior"] = invalid.passed;
-  checks["O.valid.deterministic"] = sameRun(validRun, validRepeat);
-  checks["O.invalid.deterministic"] = sameRun(invalidRun, invalidRepeat);
-  checks["O.environment.clean"] = [validRun, validRepeat, invalidRun, invalidRepeat, usageRun]
-    .every((run) => run.cleanEnv);
-  checks["O.timeout"] = [validRun, validRepeat, invalidRun, invalidRepeat, usageRun]
-    .every((run) => !run.timedOut);
-  checks["O.usage"] = usageRun.status === 2 && usageRun.stdout === "" && usageRun.stderr.trim() === USAGE;
+
+  const verifierPath = join(candidate, "ops", "verify.ts");
+  const verifierPresent = existsSync(verifierPath);
+  const reasons = [...runbook.reasons];
+  let valid: Grade = missingVerifierGrade();
+  let invalid: Grade = missingVerifierGrade();
+  const cases: Record<string, Grade> = {};
+  let deterministic = false;
+  let usage = false;
+
+  if (verifierPresent) {
+    const isolation = resolveIsolation();
+    const staged = stageManifests();
+    try {
+      writeFileSync(join(artifacts, "docs-ops-valid.json"), staged.texts["valid.json"]);
+      writeFileSync(join(artifacts, "docs-ops-invalid.json"), staged.texts["invalid.json"]);
+      writeFileSync(join(artifacts, "docs-ops-malformed.json"), staged.texts["malformed.json"]);
+      writeFileSync(join(artifacts, "docs-ops-non-object.json"), staged.texts["non-object.json"]);
+      writeFileSync(join(artifacts, "docs-ops-missing-fields.json"), staged.texts["missing-fields.json"]);
+      const worker: Isolation = { ...isolation, manifests: staged.dir };
+      const [validRun, validRepeat, invalidRun, invalidRepeat, malformedRun, readRun, nonObjectRun, missingRun, usageRun] =
+        await Promise.all([
+          runVerifier(worker, candidate, "valid.json"),
+          runVerifier(worker, candidate, "valid.json"),
+          runVerifier(worker, candidate, "invalid.json"),
+          runVerifier(worker, candidate, "invalid.json"),
+          runVerifier(worker, candidate, "malformed.json"),
+          runVerifier(worker, candidate, "not-found.json"),
+          runVerifier(worker, candidate, "non-object.json"),
+          runVerifier(worker, candidate, "missing-fields.json"),
+          runVerifier(worker, candidate),
+        ]);
+      valid = invocationGrade(validRun, staged.texts["valid.json"]);
+      invalid = invocationGrade(invalidRun, staged.texts["invalid.json"]);
+      cases.malformed = invocationGrade(malformedRun, staged.texts["malformed.json"]);
+      cases.readError = invocationGrade(readRun, "", true);
+      cases.nonObject = invocationGrade(nonObjectRun, staged.texts["non-object.json"]);
+      cases.missingFields = invocationGrade(missingRun, staged.texts["missing-fields.json"]);
+      const manifestRuns = [validRun, invalidRun, malformedRun, readRun, nonObjectRun, missingRun];
+      const manifestGrades = [valid, invalid, ...Object.values(cases)];
+      const common = [
+        "O.manifest.parse",
+        "O.result.json",
+        "O.result.errors",
+        "O.exit-code",
+        "O.errors.sorted",
+      ];
+      for (const id of common) {
+        checks[id] = manifestRuns.every((run) => run.completed) &&
+          manifestGrades.every((grade) => !grade.failed.includes(id));
+      }
+      checks["O.valid.behavior"] = validRun.completed && valid.passed;
+      checks["O.invalid.behavior"] = invalidRun.completed && invalid.passed;
+      deterministic = sameRun(validRun, validRepeat) && sameRun(invalidRun, invalidRepeat);
+      checks["O.valid.deterministic"] = sameRun(validRun, validRepeat);
+      checks["O.invalid.deterministic"] = sameRun(invalidRun, invalidRepeat);
+      const allRuns = [validRun, validRepeat, invalidRun, invalidRepeat, malformedRun, readRun, nonObjectRun, missingRun, usageRun];
+      checks["O.environment.clean"] = allRuns.every((run) => run.completed && run.cleanEnv);
+      checks["O.timeout"] = allRuns.every((run) => run.completed && !run.timedOut);
+      usage = usageRun.completed && usageRun.status === 2 && usageRun.stdout === "" &&
+        usageRun.stderr === `${usageLine()}\n`;
+      checks["O.usage"] = usage;
+      if (!deterministic) reasons.push("verifier output is not deterministic");
+      if (!usage) reasons.push("verifier usage contract is wrong");
+      for (const grade of [valid, invalid, ...Object.values(cases)]) reasons.push(...grade.reasons);
+      for (const run of allRuns) {
+        if (run.isolationError) reasons.push(`verifier isolation failed: ${run.isolationError}`);
+      }
+    } finally {
+      rmSync(staged.dir, { recursive: true, force: true });
+    }
+  } else {
+    reasons.push(...missingVerifierGrade().reasons);
+  }
+
   const failed = declaredCheckIds().filter((id) => !checks[id]);
-  const reasons = [...runbook.reasons, ...valid.reasons, ...invalid.reasons];
-  if (!checks["O.valid.deterministic"]) reasons.push("valid verifier output is not deterministic");
-  if (!checks["O.invalid.deterministic"]) reasons.push("invalid verifier output is not deterministic");
-  if (!checks["O.usage"]) reasons.push("verifier usage contract is wrong");
-  reasons.sort();
   const report: DocsOpsGrade = {
     schema: 1,
     passed: failed.length === 0,
     failed,
-    reasons,
+    reasons: [...new Set(reasons)].sort(),
     checks,
     runbook,
-    verifier: {
-      valid,
-      invalid,
-      deterministic: checks["O.valid.deterministic"] && checks["O.invalid.deterministic"],
-      usage: checks["O.usage"],
-    },
+    verifier: { valid, invalid, cases, deterministic, usage },
   };
   writeFileSync(join(artifacts, "results.json"), `${JSON.stringify(checks, null, 2)}\n`);
   writeFileSync(join(artifacts, "docs-ops-grade.json"), `${JSON.stringify(report, null, 2)}\n`);

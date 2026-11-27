@@ -48,7 +48,7 @@ An open loan due later than 48 hours is `ok`.
 ## Verification
 
 Run `npm run typecheck` and `npm run build`.
-Run `./node_modules/.bin/tsx ops/verify.ts <manifest-path>` against the fixed manifests.
+Run `node --no-warnings ops/verify.ts <manifest-path>` against the fixed manifests.
 The verifier prints sorted JSON errors and exits 0 for a valid manifest.
 
 ## Rollback

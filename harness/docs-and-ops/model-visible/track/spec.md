@@ -44,7 +44,7 @@ Implement `ops/verify.ts` as a deterministic manifest verifier.
 ### Command
 
 ```bash
-./node_modules/.bin/tsx ops/verify.ts <manifest-path>
+node --no-warnings ops/verify.ts <manifest-path>
 ```
 
 The command reads one JSON manifest from the given path.
@@ -58,7 +58,7 @@ Use exit code 2 for a usage error, a read error, or malformed JSON.
 For a usage error, print this line to stderr:
 
 ```text
-usage: tsx ops/verify.ts <manifest-path>
+usage: node --no-warnings ops/verify.ts <manifest-path>
 ```
 
 For a read error, print `["manifest file could not be read"]` to stdout.

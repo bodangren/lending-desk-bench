@@ -445,7 +445,12 @@ run_container_probe() {
   local probe_host_home_path="${BENCH_RUNTIME_PROBE_HOST_HOME_PATH:-${HOME}}"
   local probe_sibling_run_path="${BENCH_RUNTIME_PROBE_SIBLING_RUN_PATH:-$ROOT/runs}"
   local skill arm_a_agents_backup="" probe_contract=phase9 probe_rc
-  local -a podman_args
+  local -a podman_args probe_env=(
+    -u ANTHROPIC_API_KEY -u OPENAI_API_KEY -u OPENROUTER_API_KEY -u GOOGLE_API_KEY
+    -u GEMINI_API_KEY -u DEEPSEEK_API_KEY -u GROQ_API_KEY -u MISTRAL_API_KEY
+    -u XAI_API_KEY -u TOGETHER_API_KEY -u CEREBRAS_API_KEY -u FIREWORKS_API_KEY
+    -u XIAOMI_API_KEY -u OPENCODE_API_KEY -u BENCH_PROVIDER_ENV
+  )
 
   command -v podman >/dev/null || { echo "podman is required for isolated runtime probes" >&2; return 2; }
   [ -d "$ROOT/fixture/node_modules" ] || { echo "fixture node_modules is unavailable" >&2; return 2; }
@@ -503,7 +508,7 @@ run_container_probe() {
     mv "$CAND/AGENTS.md" "$arm_a_agents_backup"
   fi
 
-  if podman "${podman_args[@]}" "$probe_image" node /opt/runtime-container-probe.cjs; then
+  if env "${probe_env[@]}" podman "${podman_args[@]}" "$probe_image" node /opt/runtime-container-probe.cjs; then
     probe_rc=0
   else
     probe_rc=$?

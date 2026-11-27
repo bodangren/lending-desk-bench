@@ -439,12 +439,16 @@ function readTrackTables(file: string, fallbackDate: string): TrackTables {
   const date = asDate(doc.generated_at);
   if (date === null) refuse("tracks");
   const best = armA[0];
+  const repeats = isObject(best.repeats) ? best.repeats : null;
+  const repeatCount = repeats && Number.isInteger(repeats.n) && (repeats.n as number) >= 1
+    ? repeats.n as number
+    : 1;
   return {
     testsBaseLine,
     docsAndOps: {
       pick: best.model,
       second: armA.length > 1 ? armA[1].model : null,
-      evidence: `track A: worst ${best.total.toFixed(1)} (n=${armA.length})`,
+      evidence: `track A: total ${best.total.toFixed(1)} (n=${repeatCount})`,
       date,
     },
     docsAndOpsBaseLine,
