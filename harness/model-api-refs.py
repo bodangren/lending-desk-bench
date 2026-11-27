@@ -30,7 +30,8 @@ FETCH_TIMEOUT = 4
 FETCH_DEADLINE = 10
 PROVIDER_RE = re.compile(r"^[A-Za-z0-9._:@+-]+$")
 MODEL_RE = re.compile(r"^[A-Za-z0-9._:@+/~\[\]-]+$")
-LIMIT_KEYS = {"context", "input", "output"}
+REQUIRED_LIMIT_KEYS = {"context", "output"}
+LIMIT_KEYS = REQUIRED_LIMIT_KEYS | {"input"}
 
 
 def fail(reason):
@@ -199,10 +200,9 @@ def validate_entry(entry, ref):
     if not isinstance(name, str) or not name:
         fail("model API entry has an invalid name for " + ref)
     limit = entry.get("limit")
-    if not isinstance(limit, dict) or set(limit) != LIMIT_KEYS:
+    if not isinstance(limit, dict) or not REQUIRED_LIMIT_KEYS.issubset(limit) or not set(limit).issubset(LIMIT_KEYS):
         fail("model API entry has an invalid limit for " + ref)
-    for key in LIMIT_KEYS:
-        value = limit[key]
+    for value in limit.values():
         if type(value) is not int or value < 0 or value > MAX_SAFE_INTEGER:
             fail("model API entry has an invalid limit for " + ref)
     result = {"modelID": entry["modelID"], "name": name, "limit": limit}
