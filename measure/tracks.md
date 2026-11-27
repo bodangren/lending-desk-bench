@@ -11,7 +11,7 @@
 - [x] **Track: Model guide app code row** — The app code row names its pick from the current Build scores.
   - *Link: [guide_app_code_20261127](tracks/guide_app_code_20261127/)*
 
-- [ ] **Track: Model guide docs and ops row**
+- [~] **Track: Model guide docs and ops row**
   - *Link: [guide_docs_ops_20261127](tracks/guide_docs_ops_20261127/)*
 
 - [x] **Track: Publish the 2026-11-25 daily results**

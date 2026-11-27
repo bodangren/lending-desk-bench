@@ -6,9 +6,10 @@ PM decision 2026-11-27: light lane.
 
 Red/Green order: write the fixture, grader, registration, and guide tests first. Start Green only after the named tests fail for the missing track. Add no spec or review gate.
 
-- [ ] 1.1 Add Red tests for the docs-and-ops contract.
+- [~] 1.1 Add Red tests for the docs-and-ops contract.
   Done when the tests fail for the missing track and pin the fixture, grader, registration, and guide behavior.
   Touches: `harness/tests/meta/docs-ops-fixture.test.ts`, `harness/tests/meta/docs-ops-grader.test.ts`, `harness/tests/meta/docs-ops-registration.test.ts`, `harness/model-guide-tests/guide.test.ts`, `harness/model-guide-tests/fixtures/guide/tracks-mini.json`.
+  Red evidence: tests at f8d55d5 fail for the missing track (missing modules, unknown track lookups, guide ignores docs-and-ops); sibling suites pass; full gate record in measure/runs/guide_docs_ops_20261127/red-f8d55d5.log.
 
 - [ ] 1.2 Add the docs-and-ops fixture.
   Done when the generated candidate holds the correct app, the track contract, and writable runbook and verifier stubs.
