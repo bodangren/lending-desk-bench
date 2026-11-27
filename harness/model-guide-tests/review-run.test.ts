@@ -2398,7 +2398,7 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
     }
   });
 
-  it("J1 the committed routes.json holds none of the three removed routes and holds the pilot routes", () => {
+  it("J1 the committed routes.json holds the allowed review routes", () => {
     const file = join(HARNESS, "model-guide", "routes.json");
     expect(existsSync(file), `routes.json is missing: ${file}`).toBe(true);
     const doc = JSON.parse(readFileSync(file, "utf8"));
@@ -2420,6 +2420,7 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
       "opencode-go/hy4-flash-free#high",
       "opencode-go/deepseek-v4.1-flash",
       "opencode-go/mimo-v2.6-flash",
+      "opencode-go/hungerg-free",
     ];
     for (const route of kept) {
       expect(routes, `${route} must stay in routes.json`).toContain(route);
@@ -2432,6 +2433,14 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
     expect(hy4?.kind, "the hy4 kind").toBe("plan");
     expect(hy4?.quota_provider, "the hy4 quota provider").toBe("opencode-go");
     expect(hy4?.quota_source, "the hy4 quota source").toBe("opencode-go");
+    const hungerg = rows.find((row: { route?: unknown }) => row.route === "opencode-go/hungerg-free") as
+      | Record<string, unknown>
+      | undefined;
+    expect(hungerg, "the Hungerg route row is missing").toBeDefined();
+    expect(hungerg?.family, "the Hungerg family").toBe("Hungerg");
+    expect(hungerg?.kind, "the Hungerg kind").toBe("plan");
+    expect(hungerg?.quota_provider, "the Hungerg quota provider").toBe("opencode-go");
+    expect(hungerg?.quota_source, "the Hungerg quota source").toBe("opencode-go-hungerg-free");
   });
 });
 
@@ -4754,7 +4763,7 @@ describe("P4b row 4.15 r7: the N26 and G2 runner paths", () => {
 
 /** A synthetic non-pilot opencode-go route. The old seed cases of the isolated
  * path use it, so those cases keep covering the seed and stay green after row
- * 4.16. It is not one of the four Go pilot routes of D14. */
+ * 4.16. It is not a D14 live-server route. */
 const ISOLATED_ROUTE = "opencode-go/isolated-nonpilot#high";
 function isolatedOverride(): Partial<Scenario> {
   return { route: ISOLATED_ROUTE, routes: routesFile(ISOLATED_ROUTE) };
@@ -4918,6 +4927,7 @@ function nativeAssistant(text: string, opts: {
 }
 
 const PILOT_ROUTE = "opencode-go/hy4-flash-free#high";
+const HUNGERG_ROUTE = "opencode-go/hungerg-free";
 
 /** A key with no plant makes one diff the control of a probe run. The runner
  * refuses a probe when the set holds no control diff. */
@@ -5419,6 +5429,33 @@ describe("P4b row 4.16r3 the real API contract of the review runner", () => {
     }
   }, 60_000);
 
+  it("F15 the Hungerg route uses the live-server path and never the isolated seed", async () => {
+    const fixture = await buildFixture({
+      route: HUNGERG_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, HUNGERG_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the Hungerg route used the isolated seed").toEqual([]);
+      expect(modelCalls(logEntries(fixture.logPath)), "the Hungerg route used the isolated model call").toEqual([]);
+      const requests = live.requests().join("\n");
+      expect(requests, "the Hungerg route made no live session").toContain("POST /api/session ");
+      expect(requests, "the Hungerg route sent no live prompt").toContain("POST /api/session/ses_live_1/prompt ");
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the Hungerg route wrote no pass record").toHaveLength(1);
+      expect(records[0].state, "the Hungerg pass is not complete").toBe("complete");
+    } finally {
+      live.close();
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
   it("F16 a failed message GET leaves the pass not complete", async () => {
     const fixture = await buildFixture({
       route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
@@ -5695,14 +5732,14 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
     }
   }, 60_000);
 
-  it("F20 the newest terminal answer and its tokens win on a newest-first page", async () => {
+  it("F20 the newest terminal answer wins and current-call tokens are summed", async () => {
     const fixture = await buildFixture({
       route: PILOT_ROUTE, diffs: ["d-01"], calls: [{ value: '{"findings":[]}' }],
     });
     const live = await startLiveServer(fixture.fakeRoot, {
       messages: [
         nativeAssistant(FINAL, { id: "msg_final", tokens: BIG_TOKENS }),
-        nativeAssistant(EARLY, { id: "msg_early", tokens: SMALL_TOKENS, stampOffsetMs: -1000 }),
+        nativeAssistant(EARLY, { id: "msg_early", tokens: SMALL_TOKENS }),
       ],
     });
     try {
@@ -5714,10 +5751,10 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
       const outputsDir = join(fixture.privateDir, "outputs");
       const stored = filesUnder(outputsDir).filter((file) => file.endsWith(".txt") || file.endsWith(".out"));
       const allStored = stored.map((file) => readFileSync(file, "utf8")).join("\n");
-      expect(allStored, "the stored answer is the older one").toContain('"findings":[]');
+      expect(allStored, "the stored answer is not the newest one").toContain('"findings":[]');
       expect(allStored, "the stored answer is the older one").not.toContain('"early":true');
-      expect(records[0].tokens, "the older token bundle was recorded").toEqual({
-        input: 7, output: 8, reasoning: 9, cache_read: 10, cache_write: 11, total: 45,
+      expect(records[0].tokens, "the current-call token bundles were not summed").toEqual({
+        input: 8, output: 10, reasoning: 9, cache_read: 10, cache_write: 11, total: 48,
       });
     } finally {
       live.close();
@@ -5733,7 +5770,7 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
       messages: [
         nativeAssistant(FINAL, { id: "msg_final", tokens: BIG_TOKENS }),
         nativeAssistant("partial without completion", {
-          id: "msg_partial", complete: false, tokens: SMALL_TOKENS, stampOffsetMs: -1000,
+          id: "msg_partial", complete: false, tokens: SMALL_TOKENS,
         }),
       ],
     });
@@ -5747,8 +5784,8 @@ describe("P4b row 4.16r4 deadline, unset base, and newest answer", () => {
       const records = passRecords(fixture.privateDir);
       expect(records, "the newer final answer did not complete the pass").toHaveLength(1);
       expect(records.length > 0 && records[0].state === "complete", "the newer final answer was not complete").toBe(true);
-      expect(records[0].tokens, "the older partial token bundle was recorded").toEqual({
-        input: 7, output: 8, reasoning: 9, cache_read: 10, cache_write: 11, total: 45,
+      expect(records[0].tokens, "the current-call token bundles were not summed").toEqual({
+        input: 8, output: 10, reasoning: 9, cache_read: 10, cache_write: 11, total: 48,
       });
     } finally {
       live.close();

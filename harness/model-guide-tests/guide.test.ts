@@ -619,6 +619,10 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     // (b) the preview index page. The temp preview repo has no score
     // file, so it has no complete track A route either.
     const { root, manifest } = pageRepo("code-review-nopick");
+    rmSync(join(root, "harness", "model-guide", "data", "review-scores"), {
+      recursive: true,
+      force: true,
+    });
     const result = runPreview(root, manifest);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     const index = readFileSync(previewIndex(root), "utf8");

@@ -42,6 +42,13 @@
     "quota_source": "opencode-go"
   },
   {
+    "family": "Hungerg",
+    "route": "opencode-go/hungerg-free",
+    "kind": "plan",
+    "quota_provider": "opencode-go",
+    "quota_source": "opencode-go-hungerg-free"
+  },
+  {
     "family": "GPT Sol",
     "route": "openai/gpt-6.2-sol#high",
     "kind": "plan",

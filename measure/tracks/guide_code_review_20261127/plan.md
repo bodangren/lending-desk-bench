@@ -6,14 +6,14 @@ Pointer: `preflight_model_api` task 1.5 owns the review-data refresh for this ca
 
 ## Phase 1: Model guide code review row
 
-- [~] 1.1 Complete three review passes for each route in `harness/model-guide/routes.json`.
-  Done when each route has three complete pass records.
+- [x] 1.1 Complete three review passes for each GO route in `harness/model-guide/routes.json`.
+  Evidence: `harness/model-guide/data/review-scores/mg-2026-11a.json` and `measure/runs/model_guide/review-refresh-2026-11-27.log`.
 
-- [ ] 1.2 Rank the routes from the complete review passes.
-  Done when the review data holds the route ranking.
+- [x] 1.2 Rank the routes from the complete review passes.
+  Evidence: `harness/model-guide/data/review-scores/mg-2026-11a.json`.
 
-- [ ] 1.3 Publish the review-data refresh from `preflight_model_api` task 1.5.
-  Done when `docs/assets/data/model-guide.json` contains the ranked code review row.
+- [x] 1.3 Publish the review-data refresh from `preflight_model_api` task 1.5.
+  Evidence: `docs/assets/data/model-guide.json` and `docs/assets/data/review.json`.
 
-- [ ] 1.4 Publish the model guide and check the live site.
+- [~] 1.4 Publish the model guide and check the live site.
   Done when the live code review row matches the published route ranking.
