@@ -30,4 +30,6 @@ Pointer: `preflight_model_api` task 1.5 owns the review-data refresh for this ca
   Result: 69db7b1.
   Evidence: `harness/model-guide-tests/preview-gate.test.ts`.
 
+## Backlog
+
 - [ ] 1.7 Passes for `deepseek-v4.1-flash` and `mimo-v2.6-flash`: run when `ra-quota` shows GO for `opencode-go`.

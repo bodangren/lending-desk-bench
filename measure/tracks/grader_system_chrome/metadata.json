@@ -2,7 +2,7 @@
   "id": "grader_system_chrome",
   "title": "Grader browser: grade with the system Chrome and regrade the stale scores",
   "type": "Chore",
-  "status": "pending",
+  "status": "shelved, not done (PM 2026-11-27)",
   "created": "2026-11-04",
   "estimated_tasks": 17,
   "actual_tasks": null,

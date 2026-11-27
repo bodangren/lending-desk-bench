@@ -2,20 +2,8 @@
 
 ## Tracks in progress
 
-- [x] **Track: Daily real-world ingest**
-  - *Link: [ingest_daily_20261127](tracks/ingest_daily_20261127/)*
-
-- [ ] **Track: Model guide code review row**
-  - *Link: [guide_code_review_20261127](tracks/guide_code_review_20261127/)*
-
-- [x] **Track: Model guide app code row** — The app code row names its pick from the current Build scores.
-  - *Link: [guide_app_code_20261127](tracks/guide_app_code_20261127/)*
-
 - [~] **Track: Model guide docs and ops row**
   - *Link: [guide_docs_ops_20261127](tracks/guide_docs_ops_20261127/)*
-
-- [x] **Track: Publish the 2026-11-25 daily results**
-  - *Link: [publish_daily_1125_20261127](tracks/publish_daily_1125_20261127/)*
 
 - [ ] **Track: Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5**
   - *Link: [runs_current_4models_20261127](tracks/runs_current_4models_20261127/)*
@@ -23,49 +11,53 @@
 - [ ] **Track: Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash**
   - *Link: [runs_tests_track_20261127](tracks/runs_tests_track_20261127/)*
 
-- [ ] **Track: Current runs for new Go models**
-  - *Link: [runs_go_new_models_20261127](tracks/runs_go_new_models_20261127/)*
-
-- [x] **Track: Executor model API input limit is optional** — The helper accepts a model API entry whose limit holds context and output only.
-  - *Link: [executor_input_limit_optional_20261127](tracks/executor_input_limit_optional_20261127/)*
-
-- [x] **Track: Preflight model list from the OpenChamber API**
-  - *Link: [preflight_model_api](tracks/preflight_model_api/)*
-
-- [x] **Track: Executor model route for catalog-missing Console models**
-  - *Link: [executor_model_route_20261126](tracks/executor_model_route_20261126/)*
-
-- [ ] **Track: Grader browser: grade with the system Chrome and regrade the stale scores**
-  - *Link: [grader_system_chrome](tracks/grader_system_chrome/)*
-
 ## All tracks
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
-| ingest_daily_20261127 | Daily real-world ingest | Chore | complete — daily ingest and live evidence in measure/tracks/ingest_daily_20261127/plan.md | 2026-11-27 |
-| guide_code_review_20261127 | Model guide code review row | Chore | in-progress | 2026-11-27 |
-| guide_app_code_20261127 | Model guide app code row | Chore | complete — PM decision 2026-11-27; current Build scores kept | 2026-11-27 |
 | guide_docs_ops_20261127 | Model guide docs and ops row | Chore | pending | 2026-11-27 |
-| publish_daily_1125_20261127 | Publish the 2026-11-25 daily results | Chore | complete — daily results at 162c7a2; live evidence in measure/tracks/publish_daily_1125_20261127/plan.md | 2026-11-27 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | pending | 2026-11-27 |
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | pending | 2026-11-27 |
-| runs_go_new_models_20261127 | Current runs for new Go models | Chore | in-progress | 2026-11-27 |
-| executor_input_limit_optional_20261127 | Executor model API input limit is optional | Chore | complete — light lane, phase 1 accepted at 4a727d4; artifact measure/runs/executor_input_limit_optional_20261127/phase-acceptance-4a727d4.json | 2026-11-27 |
-| harness_audit | Harness audit — verified grading defects | Bug | pending | 2026-08-30 |
-| bugfix_bench | Bug-fixing benchmark — lending_desk_bugfix | Feature | in-progress — sources committed at e9fb565; task 6.5 is open and no [x] task carries a SHA | 2026-09-11 |
-| bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | in-progress | 2026-09-24 |
-| bench_incremental | Incremental benchmark runs — new models and failures only | Feature | paused — superseded in part by opencode_executor (Pi executor staging in plan-work.ts) | 2026-10-17 |
-| rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | paused — PM 2026-11-14: no new difficulty work on the build track | 2026-10-25 |
-| grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | pending | 2026-11-04 |
-| opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | pending — spec check 1.0 next; deadline Sat 2026-11-07 23:00 +07; owner question O1 open | 2026-11-06 |
-| preflight_model_api | Preflight model list from the OpenChamber API | Chore | complete — review-data refresh at fbb72b3; live evidence 80fd940 | 2026-11-26 |
-| executor_model_route_20261126 | Executor model route for catalog-missing Console models | Chore | complete — light lane, phase 1 accepted at 7b6f063; artifact measure/runs/executor_model_route_20261126/phase-acceptance-7b6f063.json | 2026-11-26 |
+| runs_go_new_models_20261127 | Current runs for new Go models | Chore | shelved, not done (PM 2026-11-27) | 2026-11-27 |
+| grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | shelved, not done (PM 2026-11-27) | 2026-11-04 |
+| bench_incremental | Incremental benchmark runs — new models and failures only | Feature | shelved, not done (PM 2026-11-27) | 2026-10-17 |
+| bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | shelved, not done (PM 2026-11-27) | 2026-09-24 |
+| bugfix_bench | Bug-fixing benchmark — lending_desk_bugfix | Feature | shelved, not done (PM 2026-11-27) | 2026-09-11 |
+| harness_audit | Harness audit — verified grading defects | Bug | shelved, not done (PM 2026-11-27) | 2026-08-30 |
+| opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | shelved, not done (PM 2026-11-27) | 2026-11-06 |
+| rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | shelved, not done (PM 2026-11-27) | 2026-10-25 |
 
 ## Backlog
 
 These items have no date and no track yet.
 
 - **Replay track:** real past tasks with hidden tests (PM 2026-11-14, order item 7). No date.
+
+## Shelved Tracks
+
+- [ ] **Track: Current runs for new Go models** — Status: shelved, not done (PM 2026-11-27)
+  - *Link: [runs_go_new_models_20261127](./tracks/runs_go_new_models_20261127/)*
+
+- [ ] **Track: Grader browser: grade with the system Chrome and regrade the stale scores** — Status: shelved, not done (PM 2026-11-27)
+  - *Link: [grader_system_chrome](./tracks/grader_system_chrome/)*
+
+- [ ] **Track: Incremental benchmark runs — new models and failures only** — Status: shelved, not done (PM 2026-11-27)
+  - *Link: [bench_incremental](./tracks/bench_incremental/)*
+
+- [ ] **Track: Benchmark v2 — validity, fixture r2, scoring rebalance** — Status: shelved, not done (PM 2026-11-27)
+  - *Link: [bench_v2](./tracks/bench_v2/)*
+
+- [ ] **Track: Bug-fixing benchmark — lending_desk_bugfix** — Status: shelved, not done (PM 2026-11-27)
+  - *Link: [bugfix_bench](./tracks/bugfix_bench/)*
+
+- [ ] **Track: Harness audit — verified grading defects** — Status: shelved, not done (PM 2026-11-27)
+  - *Link: [harness_audit](./tracks/harness_audit/)*
+
+- [ ] **Track: OpenCode host isolation: no benchmark opencode uses the shared store** — Status: shelved, not done (PM 2026-11-27)
+  - *Link: [opencode_host_isolation](./tracks/opencode_host_isolation/)*
+
+- [ ] **Track: Harder A–H criteria from interleavings, state sequences, and robustness variants** — Status: shelved, not done (PM 2026-11-27)
+  - *Link: [rigor_a_h](./tracks/rigor_a_h/)*
 
 ## Archived Tracks
 
@@ -106,3 +98,31 @@ These items have no date and no track yet.
 - [x] **Track: Daily model schedule: one model per day, untested first, then the stalest**
   *Link: [daily_model_schedule](./archive/daily_model_schedule/)*
   *Daily model schedule: one model per day, untested first, then the stalest. Closed by PM 2026-11-27: not needed.*
+
+- [x] **Track: Daily real-world ingest**
+  *Link: [ingest_daily_20261127](./archive/ingest_daily_20261127/)*
+  *Daily real-world ingest: the ingest code, trust rule A, legacy outcome mapping, timer enablement, and the live guide check. Live evidence in plan.md. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
+
+- [x] **Track: Model guide app code row** — The app code row names its pick from the current Build scores.
+  *Link: [guide_app_code_20261127](./archive/guide_app_code_20261127/)*
+  *Model guide app code row: route selection from the current Build scores and the refreshed app code row. Closed by PM decision 2026-11-27 and archived 2026-11-27 by the PM board review.*
+
+- [x] **Track: Publish the 2026-11-25 daily results**
+  *Link: [publish_daily_1125_20261127](./archive/publish_daily_1125_20261127/)*
+  *Publish the 2026-11-25 daily results: publication for mimo-v2.6-pro and the live site check. Daily results at 162c7a2; live evidence in plan.md. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
+
+- [x] **Track: Executor model API input limit is optional** — The helper accepts a model API entry whose limit holds context and output only.
+  *Link: [executor_input_limit_optional_20261127](./archive/executor_input_limit_optional_20261127/)*
+  *Executor model API input limit is optional: light lane, phase acceptance at 4a727d4; artifact measure/runs/executor_input_limit_optional_20261127/phase-acceptance-4a727d4.json. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
+
+- [x] **Track: Preflight model list from the OpenChamber API**
+  *Link: [preflight_model_api](./archive/preflight_model_api/)*
+  *Preflight model list from the OpenChamber API: review-data refresh at fbb72b3 and live evidence at 80fd940. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
+
+- [x] **Track: Executor model route for catalog-missing Console models**
+  *Link: [executor_model_route_20261126](./archive/executor_model_route_20261126/)*
+  *Executor model route for catalog-missing Console models: light lane, phase acceptance at 7b6f063; artifact measure/runs/executor_model_route_20261126/phase-acceptance-7b6f063.json. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
+
+- [x] **Track: Model guide code review row**
+  *Link: [guide_code_review_20261127](./archive/guide_code_review_20261127/)*
+  *Model guide code review row: review passes, route ranking, publication, and the live site check. The deepseek-v4.1-flash and mimo-v2.6-flash passes sit in the plan Backlog and run when ra-quota shows GO for opencode-go. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*

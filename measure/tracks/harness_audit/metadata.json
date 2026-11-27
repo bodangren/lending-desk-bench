@@ -2,7 +2,7 @@
   "id": "harness_audit",
   "title": "Harness audit \u2014 verified grading defects",
   "type": "Bug",
-  "status": "in_progress",
+  "status": "shelved, not done (PM 2026-11-27)",
   "created": "2026-08-30",
   "estimated_tasks": 39,
   "actual_tasks": 35,
