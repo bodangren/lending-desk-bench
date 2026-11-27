@@ -11,8 +11,11 @@
 # r1 tree with the r2 fixture would report the revision's own edits as violations.
 #
 # The previous artifacts move to artifacts.prev-<stamp>/. The transcript,
-# execution identity, executor cohort, and diff are copied forward. If grading
-# fails for a harness reason (grade.sh exit 4), the previous artifacts come back.
+# execution identity, executor cohort, executor snapshot, and diff are copied
+# forward. The executor snapshot holds the config snapshot and the session
+# export that the score record and the executor attestation read. Without it
+# the new score reads invalid. If grading fails for a harness reason
+# (grade.sh exit 4), the previous artifacts come back.
 # Runs whose agent produced nothing, or whose tree has a hard violation, are
 # skipped and keep their record. A legacy Pi run keeps every artifact byte:
 # the regrade prints one SKIP line and leaves the run untouched (spec FR-8).
@@ -90,7 +93,7 @@ STAMP=$(date +%Y%m%d%H%M%S)
 PREV="$WORK/artifacts.prev-$STAMP"
 mv "$OUT" "$PREV"
 mkdir -p "$OUT"
-for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json candidate.diff pi-agent; do
+for keep in session.json.gz session.json session.err execution-identity.json executor-cohort.json executor candidate.diff pi-agent; do
   [ -e "$PREV/$keep" ] && cp -a "$PREV/$keep" "$OUT/$keep"
 done
 [ -s "$WORK/.regrade-violation.json" ] && mv "$WORK/.regrade-violation.json" "$OUT/contract-violation.json"
