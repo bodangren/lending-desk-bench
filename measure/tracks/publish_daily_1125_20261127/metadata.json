@@ -2,7 +2,7 @@
   "id": "publish_daily_1125_20261127",
   "title": "Publish the 2026-11-25 daily results",
   "type": "Chore",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-11-27",
   "estimated_tasks": 2,
   "actual_tasks": null,

@@ -14,7 +14,7 @@
 - [ ] **Track: Model guide docs and ops row**
   - *Link: [guide_docs_ops_20261127](tracks/guide_docs_ops_20261127/)*
 
-- [ ] **Track: Publish the 2026-11-25 daily results**
+- [x] **Track: Publish the 2026-11-25 daily results**
   - *Link: [publish_daily_1125_20261127](tracks/publish_daily_1125_20261127/)*
 
 - [ ] **Track: Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5**
@@ -43,7 +43,7 @@
 | guide_code_review_20261127 | Model guide code review row | Chore | in-progress | 2026-11-27 |
 | guide_app_code_20261127 | Model guide app code row | Chore | pending | 2026-11-27 |
 | guide_docs_ops_20261127 | Model guide docs and ops row | Chore | pending | 2026-11-27 |
-| publish_daily_1125_20261127 | Publish the 2026-11-25 daily results | Chore | pending | 2026-11-27 |
+| publish_daily_1125_20261127 | Publish the 2026-11-25 daily results | Chore | complete — daily results at 162c7a2; live evidence in measure/tracks/publish_daily_1125_20261127/plan.md | 2026-11-27 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | pending | 2026-11-27 |
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | pending | 2026-11-27 |
 | runs_go_new_models_20261127 | Current runs for new Go models | Chore | pending | 2026-11-27 |
