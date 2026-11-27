@@ -45,7 +45,8 @@ function validate(value: unknown): string[] {
       errors.push(`routes.${key} must equal ${expected}`);
     }
   }
-  if (!Array.isArray(value.environment) || value.environment.join("\0") !== EXPECTED_ENVIRONMENT.join("\0")) {
+  if (!Array.isArray(value.environment) || value.environment.length !== EXPECTED_ENVIRONMENT.length ||
+      !value.environment.every((entry, index) => entry === EXPECTED_ENVIRONMENT[index])) {
     errors.push("environment must equal the fixed environment list");
   }
   return errors.sort();

@@ -55,6 +55,10 @@ export const INVALID_MANIFEST = {
 const MALFORMED_MANIFEST = "{not json";
 const NON_OBJECT_MANIFEST = "[]";
 const MISSING_FIELDS_MANIFEST = "{}";
+const ENV_NESTED_MANIFEST = JSON.stringify({ ...VALID_MANIFEST, environment: [["BENCH_NOW"], "BENCH_LATENCY_MS"] });
+const ENV_NUMBER_MANIFEST = JSON.stringify({ ...VALID_MANIFEST, environment: ["BENCH_NOW", 7] });
+const ENV_OBJECT_MANIFEST = JSON.stringify({ ...VALID_MANIFEST, environment: ["BENCH_NOW", { name: "BENCH_LATENCY_MS" }] });
+const ENV_SWAPPED_MANIFEST = JSON.stringify({ ...VALID_MANIFEST, environment: [...EXPECTED_ENVIRONMENT].reverse() });
 
 export function declaredCheckIds(): string[] {
   return Object.keys(DOCS_OPS_CRITERIA).sort();
@@ -113,7 +117,8 @@ export function gradeRunbook(text: string): Grade {
     },
     {
       id: "D.sections.rollback",
-      passed: nonempty(rollback) && hasAll(rollback.body, ["previous release", "data store", "loan records"]),
+      passed: nonempty(rollback) &&
+        hasAll(rollback.body, ["Deploy the previous release", "Keep the existing data store and loan records"]),
       reason: "Rollback lacks release restoration or data preservation",
     },
     { id: "D.commands.install", passed: hasAll(setup.body, ["npm ci"]), reason: "Setup omits npm ci" },
@@ -122,7 +127,7 @@ export function gradeRunbook(text: string): Grade {
     { id: "D.commands.build", passed: hasAll(scripts.body, ["npm run build"]), reason: "Scripts omits npm run build" },
     { id: "D.commands.start", passed: hasAll(scripts.body, ["npm run start"]), reason: "Scripts omits npm run start" },
     { id: "D.routes.home", passed: /(?:^|[\s`|])\/(?:[\s`|]|$)/m.test(api.body), reason: "API routes omits the home route" },
-    { id: "D.routes.items", passed: api.body.includes("/items"), reason: "API routes omits the catalogue route" },
+    { id: "D.routes.items", passed: /(?:^|[|\s`])\/items(?:`|\s|\||$)/m.test(api.body), reason: "API routes omits the catalogue route" },
     { id: "D.routes.detail", passed: api.body.includes("/items/[id]"), reason: "API routes omits the item detail route" },
     { id: "D.routes.members", passed: api.body.includes("/members"), reason: "API routes omits the members route" },
     { id: "D.routes.loans", passed: api.body.includes("/api/loans"), reason: "API routes omits the loans API route" },
@@ -267,6 +272,8 @@ type VerifierRun = {
   timedOut: boolean;
   cleanEnv: boolean;
   completed: boolean;
+  started: boolean;
+  infrastructureFailure: string | null;
   isolationError: string | null;
 };
 
@@ -306,8 +313,15 @@ function stageManifests(): { dir: string; texts: Record<string, string> } {
     "malformed.json": MALFORMED_MANIFEST,
     "non-object.json": NON_OBJECT_MANIFEST,
     "missing-fields.json": MISSING_FIELDS_MANIFEST,
+    "env-nested.json": ENV_NESTED_MANIFEST,
+    "env-number.json": ENV_NUMBER_MANIFEST,
+    "env-object.json": ENV_OBJECT_MANIFEST,
+    "env-swapped.json": ENV_SWAPPED_MANIFEST,
+    "verify-worker.sh": "#!/bin/sh\nprintf 'started\\n' >&3\nexec /runtime/node --no-warnings ops/verify.ts \"$@\"\n",
   };
-  for (const [name, text] of Object.entries(texts)) writeFileSync(join(dir, name), text);
+  for (const [name, text] of Object.entries(texts)) {
+    writeFileSync(join(dir, name), text, { mode: name === "verify-worker.sh" ? 0o755 : 0o644 });
+  }
   return { dir, texts };
 }
 
@@ -327,17 +341,19 @@ function runVerifier(isolation: Isolation, candidate: string, manifestName?: str
     "--setenv", "PATH", "/runtime:/usr/bin:/bin",
     "--setenv", "HOME", "/tmp",
     "--chdir", "/workspace",
-    "/runtime/node", "--no-warnings", "ops/verify.ts",
+    "--ro-bind", join(isolation.manifests, "verify-worker.sh"), "/verify-worker",
+    "/verify-worker",
     ...(manifestName ? [`/manifests/${manifestName}`] : []),
   ];
   return new Promise((resolveRun) => {
     const child = spawn(isolation.bwrap, args, {
       env: cleanEnvironment(),
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["ignore", "pipe", "pipe", "pipe"],
       detached: true,
     });
     let stdout = "";
     let stderr = "";
+    let startup = "";
     let timedOut = false;
     let isolationError: string | null = null;
     let settled = false;
@@ -346,10 +362,16 @@ function runVerifier(isolation: Isolation, candidate: string, manifestName?: str
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
+      const started = startup === "started\n";
+      const setupFailure = isolationError ??
+        (status === 3 ? "worker setup exited with an infrastructure status" : null) ??
+        (status !== null && !started && !timedOut ? "worker did not report a trusted startup" : null);
       resolveRun({
         status, stdout, stderr, timedOut,
         cleanEnv: isolationError === null,
-        completed: status !== null && !timedOut && isolationError === null,
+        completed: status !== null && status <= 2 && started && !timedOut && isolationError === null,
+        started,
+        infrastructureFailure: setupFailure,
         isolationError,
       });
     };
@@ -370,6 +392,9 @@ function runVerifier(isolation: Isolation, candidate: string, manifestName?: str
         timedOut = true;
         stop();
       }
+    });
+    child.stdio[3]?.on("data", (chunk: Buffer) => {
+      startup += chunk.toString("utf8");
     });
     child.stderr.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
@@ -454,8 +479,13 @@ export async function gradeDocsOps(candidate: string, artifacts: string): Promis
       writeFileSync(join(artifacts, "docs-ops-malformed.json"), staged.texts["malformed.json"]);
       writeFileSync(join(artifacts, "docs-ops-non-object.json"), staged.texts["non-object.json"]);
       writeFileSync(join(artifacts, "docs-ops-missing-fields.json"), staged.texts["missing-fields.json"]);
+      writeFileSync(join(artifacts, "docs-ops-env-nested.json"), staged.texts["env-nested.json"]);
+      writeFileSync(join(artifacts, "docs-ops-env-number.json"), staged.texts["env-number.json"]);
+      writeFileSync(join(artifacts, "docs-ops-env-object.json"), staged.texts["env-object.json"]);
+      writeFileSync(join(artifacts, "docs-ops-env-swapped.json"), staged.texts["env-swapped.json"]);
       const worker: Isolation = { ...isolation, manifests: staged.dir };
-      const [validRun, validRepeat, invalidRun, invalidRepeat, malformedRun, readRun, nonObjectRun, missingRun, usageRun] =
+      const [validRun, validRepeat, invalidRun, invalidRepeat, malformedRun, readRun, nonObjectRun, missingRun,
+        envNestedRun, envNumberRun, envObjectRun, envSwappedRun, usageRun] =
         await Promise.all([
           runVerifier(worker, candidate, "valid.json"),
           runVerifier(worker, candidate, "valid.json"),
@@ -465,6 +495,10 @@ export async function gradeDocsOps(candidate: string, artifacts: string): Promis
           runVerifier(worker, candidate, "not-found.json"),
           runVerifier(worker, candidate, "non-object.json"),
           runVerifier(worker, candidate, "missing-fields.json"),
+          runVerifier(worker, candidate, "env-nested.json"),
+          runVerifier(worker, candidate, "env-number.json"),
+          runVerifier(worker, candidate, "env-object.json"),
+          runVerifier(worker, candidate, "env-swapped.json"),
           runVerifier(worker, candidate),
         ]);
       valid = invocationGrade(validRun, staged.texts["valid.json"]);
@@ -473,7 +507,12 @@ export async function gradeDocsOps(candidate: string, artifacts: string): Promis
       cases.readError = invocationGrade(readRun, "", true);
       cases.nonObject = invocationGrade(nonObjectRun, staged.texts["non-object.json"]);
       cases.missingFields = invocationGrade(missingRun, staged.texts["missing-fields.json"]);
-      const manifestRuns = [validRun, invalidRun, malformedRun, readRun, nonObjectRun, missingRun];
+      cases.envNested = invocationGrade(envNestedRun, staged.texts["env-nested.json"]);
+      cases.envNumber = invocationGrade(envNumberRun, staged.texts["env-number.json"]);
+      cases.envObject = invocationGrade(envObjectRun, staged.texts["env-object.json"]);
+      cases.envSwapped = invocationGrade(envSwappedRun, staged.texts["env-swapped.json"]);
+      const manifestRuns = [validRun, invalidRun, malformedRun, readRun, nonObjectRun, missingRun,
+        envNestedRun, envNumberRun, envObjectRun, envSwappedRun];
       const manifestGrades = [valid, invalid, ...Object.values(cases)];
       const common = [
         "O.manifest.parse",
@@ -491,7 +530,14 @@ export async function gradeDocsOps(candidate: string, artifacts: string): Promis
       deterministic = sameRun(validRun, validRepeat) && sameRun(invalidRun, invalidRepeat);
       checks["O.valid.deterministic"] = sameRun(validRun, validRepeat);
       checks["O.invalid.deterministic"] = sameRun(invalidRun, invalidRepeat);
-      const allRuns = [validRun, validRepeat, invalidRun, invalidRepeat, malformedRun, readRun, nonObjectRun, missingRun, usageRun];
+      const allRuns = [validRun, validRepeat, invalidRun, invalidRepeat, malformedRun, readRun,
+        nonObjectRun, missingRun, envNestedRun, envNumberRun, envObjectRun, envSwappedRun, usageRun];
+      const setupFailures = allRuns
+        .map((run) => run.infrastructureFailure)
+        .filter((reason): reason is string => reason !== null);
+      if (setupFailures.length > 0) {
+        throw new Error(`verifier worker setup failed: ${setupFailures[0]}`);
+      }
       checks["O.environment.clean"] = allRuns.every((run) => run.completed && run.cleanEnv);
       checks["O.timeout"] = allRuns.every((run) => run.completed && !run.timedOut);
       usage = usageRun.completed && usageRun.status === 2 && usageRun.stdout === "" &&
