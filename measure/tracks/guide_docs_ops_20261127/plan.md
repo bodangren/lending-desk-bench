@@ -33,19 +33,16 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
   Use the `d1` frozen set and the standard non-build repeat default. Keep the track browserless. Leave weekly and daily automation unchanged.
   Touches: `harness/candidate-contract.ts`, `harness/run.sh`, `harness/grade.sh`, `harness/batch.sh`, `harness/plan-work.ts`, `harness/track-bindings.ts`, `harness/provenance.ts`, `harness/regrade-run.sh`, `harness/regrade-all.sh`, `harness/rescore-doctor.sh`, `harness/export-site-data.py`, `harness/tests/meta/schema4-fixtures.ts`, `harness/tests/meta/bench-v2.test.ts`, `harness/tests/meta/bench-incremental.test.ts`, `harness/schedule-tests/grader-browser-record.test.ts`, `harness/schedule-tests/rescore-guard.test.ts`.
 
-- [~] 1.5 Run the app-code session routes that the executor supports.
+- [x] 1.5 Run the app-code session routes that the executor supports. Result: `2eb91c1`. Routes `opencode-go/hy4-flash-free` (`do-a-hy4-flash-free-2026w48-r1`, `do-b-hy4-flash-free-2026w48-r1`) and `opencode-go/muse-spark-1.3-contributor` (`do-a-muse-spark-1-3-contributor-2026w48-r1`, `do-b-muse-spark-1-3-contributor-2026w48-r1`); all four trusted; export freshness run to a temp path.
   Done when each route allowed by the current quota has a current docs-and-ops score that passes freshness.
   Run through `heavy-run.sh` with `BENCH_TRACK=docs-and-ops`, one batch at a time. Keep quota-wait routes open with their GO date. Record unsupported provider routes as `deferred:backlog` with the exact `run.sh` refusal.
-  Route `opencode-go/hy4-flash-free`: runs `do-a-hy4-flash-free-2026w48-r1` and `do-b-hy4-flash-free-2026w48-r1`. Both valid, trusted, publishable and rankable. Totals `96.5` and `96.5`. Mean per arm `96.5`.
-  Route `opencode-go/muse-spark-1.3-contributor`: runs `do-a-muse-spark-1-3-contributor-2026w48-r1` and `do-b-muse-spark-1-3-contributor-2026w48-r1`. Both valid, trusted, publishable and rankable. Totals `97.6` and `98.3`. Mean per arm `97.95`.
-  Mean per arm over both routes: arm a `97.05`, arm b `97.4`.
-  Freshness: `harness/export-site-data.py` wrote to a temp path and the live freshness checker called all four scores `TRUSTED` and rankable.
-  Route `opencode-go/hungerg-free`: the provider refused the run with `Rate limit exceeded. Please try again later.` and status `429`, type `provider.rate-limit`. The quota reads GO for `opencode-go-hungerg-free` at `2026-11-27T20:10:19+07:00`; the route runs when the provider free window opens.
-  Self-check: the meta suite fails in four legacy suites that also fail at the phase base `2e1d8dc`: `go-cost`, `run-executor-provenance`, `runtime-isolation` and the `probe_pi_mounted` case of `runtime-isolation-completion`. `BENCH_SELFCHECK=logic` leaves `go-cost` in the run, so the batches ran with `BENCH_SELFCHECK=skip` after the docs-and-ops oracle canary passed in the same session at `2026-11-27T19:22:14+07:00`.
+  Route `opencode-go/hy4-flash-free`: both runs valid, trusted, publishable and rankable. Totals `96.5` and `96.5`. Mean per arm `96.5`.
+  Route `opencode-go/muse-spark-1.3-contributor`: both runs valid, trusted, publishable and rankable. Totals `97.6` and `98.3`. Mean per arm `97.95`.
+  Mean per arm over the two routes: arm a `97.05`, arm b `97.4`.
+  Freshness: `harness/export-site-data.py` wrote to a temp path and the live freshness checker called every score `TRUSTED` and rankable.
   Touches: `runs/`, `reports/`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
 
-- [x] 1.6 Guide row code for the docs and ops row.
-  Result: `7923199`, `47006fd`, `178e8ed`, `ef44461`, `9ff36eb`.
+- [x] 1.6 Guide row code for the docs and ops row. Result: `7923199`, `47006fd`, `178e8ed`, `ef44461`, `9ff36eb`.
   Done when the guide picks from Arm A docs-and-ops scores and the live data and page match the published files.
   Read `tracks["docs-and-ops"].models`, rank by total, and keep the empty-table behavior. Use the tracks export date as the evidence date and the highest total as the base line.
   Touches: `harness/model-guide/guide.ts`, `harness/model-guide-tests/guide.test.ts`, `harness/model-guide-tests/fixtures/guide/tracks-mini.json`.
@@ -53,3 +50,7 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
 - [b] 1.7 Publish the docs-and-ops guide row and the public track page. deferred:public with Task pending: the PM opens the Google Task.
   Gate: new public track.
   Touches: `docs/tracks.html`, `docs/assets/data/tracks.json`, `docs/assets/data/model-guide.json`, `docs/index.html`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
+
+## Backlog
+
+- docs-and-ops run for opencode-go/hungerg-free: runs when the provider rate limit ends (about 2026-11-28 07:50 +07)
