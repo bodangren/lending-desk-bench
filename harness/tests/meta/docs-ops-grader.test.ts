@@ -336,6 +336,30 @@ function stageF5Oracle(tag: string): { candidate: string; artifacts: string } {
 
 const FIXED_ENVIRONMENT = ["BENCH_NOW", "BENCH_LATENCY_MS"];
 
+/** The valid manifest with a short but otherwise valid environment, built
+ * from the fixed array prefix so the input cannot drift from the contract. */
+function shortEnvironmentManifest(): string {
+  return JSON.stringify({
+    schema: 1,
+    service: "lending-desk",
+    commands: {
+      install: "npm ci",
+      develop: "npm run dev",
+      typecheck: "npm run typecheck",
+      build: "npm run build",
+      start: "npm run start",
+    },
+    routes: {
+      home: "/",
+      catalogue: "/items",
+      detail: "/items/[id]",
+      members: "/members",
+      loans: "/api/loans",
+    },
+    environment: FIXED_ENVIRONMENT.slice(0, 1),
+  });
+}
+
 /** The valid manifest with a non-string environment, built from the fixed
  * array so the input cannot drift from the contract. */
 function nonStringEnvironmentManifest(kind: "nested" | "number" | "object" | "swapped"): string {
@@ -485,6 +509,20 @@ if (!manifestPath || process.argv.length !== 3) {
       if (missingKeys.length > 0 && mutation === "missing-fields") {
         process.stdout.write(\`$\{JSON.stringify([])}\\n\`);
         process.exitCode = 0;
+      } else if (mutation === "env-short") {
+        // F5 r3: this verifier lost its length comparison. It still
+        // rejects wrong element types, but it accepts a short valid
+        // prefix with a clean pass.
+        if (value.environment !== null && value.environment !== undefined && Array.isArray(value.environment) &&
+            value.environment.length < EXPECTED_ENVIRONMENT.length &&
+            EXPECTED_ENVIRONMENT.slice(0, value.environment.length).every((entry, index) => entry === value.environment[index]) &&
+            value.environment.every((entry) => typeof entry === "string")) {
+          process.stdout.write(\`$\{JSON.stringify([])}\\n\`);
+          process.exitCode = 0;
+        } else {
+          process.stdout.write(\`$\{JSON.stringify(errors)}\\n\`);
+          process.exitCode = errors.length === 0 ? 0 : 1;
+        }
       } else if (envMutation !== null) {
         // F5 r2: this verifier mishandles a non-string or reordered
         // environment by reporting a clean pass for that one input. Only
@@ -547,6 +585,15 @@ describe("review-a F5: the grader exercises every specified manifest case", () =
 });
 
 const ENV_ERROR = "environment must equal the fixed environment list";
+
+describe("review-a r3 F5: the grader exercises a wrong-length environment", () => {
+  // The r3 cases live in docs-ops-env.test.ts: the pure-grader and oracle
+  // checks above already passed at HEAD, and only the full-grade
+  // length-removal mutation still fails (see that file for the Red case).
+  it("F5 r3: the short-prefix manifest is covered by the dedicated env suite", () => {
+    expect(shortEnvironmentManifest(), "F5 r3: the short fixture is defined here").toContain("BENCH_NOW");
+  });
+});
 
 describe("review-a r2 F5: the verifier rejects a non-string environment", () => {
   // The number and object cases already pass at HEAD (join mismatch); they
