@@ -25,8 +25,8 @@
  *               string family or route
  *   benchmark   the file is missing, is not JSON, or holds no model with a
  *               numeric `score.total`
- *   tracks      the file is missing, is not JSON, or holds no tests model
- *               with a numeric `total`
+ *   tracks      the file is missing, is not JSON, holds no tests model with
+ *               a numeric `total`, or has a malformed docs-and-ops table
  *
  * `--scores` may be absent, or it may name a file that does not exist.
  * Both mean "track A has no rank" and give exit 0, because the preview
@@ -49,14 +49,13 @@
  *                 <x> of <y> (n=<y>)", "build routes: <family>=<route>
  *                 [<score>]; ...", or the exact words "no pick yet" for
  *                 a row with no source.
- *   evidence_date the export date of the outcomes file (the date in the
- *                 MANIFEST name, Q-S4), the date of the last complete
- *                 track A pass for the track A pick, or the Build data date
- *                 for the app code pick
- *   base_line     null, except the highest build total of `--benchmark` on
- *                 the app code row and the highest tests total of
- *                 `--tracks` on the test writing row. The base line never
- *                 picks and never changes a pick (spec D18).
+ *   evidence_date the outcomes export date, the last complete track A pass
+ *                 date, the Build data date, or the tracks export date for
+ *                 the docs and ops pick
+ *   base_line     null, except the highest build total on the app code row,
+ *                 the highest tests total on the test writing row, and the
+ *                 highest docs-and-ops total on the docs and ops row. The
+ *                 base line never picks and never changes a pick.
  *
  * `real-work.json` is the output of `real-work.ts --manifest` (schema
  * `model-guide-real-work/2`). It holds the producer and the checker table
@@ -72,8 +71,9 @@
  * Ruling Q2 (PM, 2026-11-15): with no complete track A rank the code review
  * pick is the exact no-pick words, even when the page B checker table holds
  * a qualified model. The app code row reads the Build scores through the
- * session route families. The rows "docs and ops" and "tooling" have no
- * source, so they show the no-pick words.
+ * session route families. The docs and ops row ranks Arm A models by total
+ * from its track table. The tooling row has no source and shows the no-pick
+ * words.
  *
  * The print-audit second source reads the tool output of task 2.4b: a route
  * name maps to its "x of y" result, and the rank orders the blockers found,
@@ -398,7 +398,14 @@ function modelId(route: string): string {
   return base.slice(base.indexOf("/") + 1).toLowerCase();
 }
 
-function readTestsBaseLine(file: string): number {
+interface TrackTables {
+  testsBaseLine: number;
+  docsAndOps: Source;
+  docsAndOpsBaseLine: number | null;
+}
+
+/** Read the tests base line and the optional docs-and-ops rank from tracks.json. */
+function readTrackTables(file: string, fallbackDate: string): TrackTables {
   const doc = readJsonFile(file, "tracks");
   const models = isObject(doc) && isObject(doc.tracks) && isObject(doc.tracks.tests)
     ? doc.tracks.tests.models
@@ -408,7 +415,40 @@ function readTestsBaseLine(file: string): number {
     .map((model: any) => (isObject(model) ? model.total : undefined))
     .filter((total: unknown) => typeof total === "number" && Number.isFinite(total));
   if (totals.length === 0) refuse("tracks");
-  return Math.max(...totals);
+  const testsBaseLine = Math.max(...totals);
+
+  const docsTrack = isObject(doc) && isObject(doc.tracks) && Object.hasOwn(doc.tracks, "docs-and-ops")
+    ? doc.tracks["docs-and-ops"]
+    : null;
+  if (docsTrack === null) {
+    return { testsBaseLine, docsAndOps: noSource(fallbackDate), docsAndOpsBaseLine: null };
+  }
+  if (!isObject(docsTrack) || !Array.isArray(docsTrack.models)) refuse("tracks");
+  const allTotals = docsTrack.models
+    .map((model: any) => (isObject(model) ? model.total : undefined))
+    .filter((total: unknown) => typeof total === "number" && Number.isFinite(total));
+  const docsAndOpsBaseLine = allTotals.length > 0 ? Math.max(...allTotals) : null;
+  const armA = docsTrack.models
+    .filter((model: any) =>
+      isObject(model) && model.arm === "a" && typeof model.model === "string" &&
+      typeof model.total === "number" && Number.isFinite(model.total))
+    .sort((a: any, b: any) => b.total - a.total || a.model.localeCompare(b.model));
+  if (armA.length === 0) {
+    return { testsBaseLine, docsAndOps: noSource(fallbackDate), docsAndOpsBaseLine };
+  }
+  const date = asDate(doc.generated_at);
+  if (date === null) refuse("tracks");
+  const best = armA[0];
+  return {
+    testsBaseLine,
+    docsAndOps: {
+      pick: best.model,
+      second: armA.length > 1 ? armA[1].model : null,
+      evidence: `track A: worst ${best.total.toFixed(1)} (n=${armA.length})`,
+      date,
+    },
+    docsAndOpsBaseLine,
+  };
 }
 
 /** One pick source: the model, the second choice, the evidence cell, and
@@ -593,24 +633,23 @@ function main(): void {
   const audit = readPrintAudit(args.printAudit);
   const routes = readRoutes(args.routes);
   const build = readBuild(args.benchmark);
-  const testsBaseLine = readTestsBaseLine(args.tracks);
 
   const exportDate = realWork.exportDate;
+  const trackTables = readTrackTables(args.tracks, exportDate);
   const codeReview = fromTrackA(rank, exportDate);
   // The app code row reads the Build scores through the session route families.
-  // The new export has no work-type split, so docs and ops and tooling keep
-  // their no-pick rows. The print-book audit row falls to the print-audit data.
+  // The docs and ops row reads its own track table. Tooling keeps its no-pick row.
   const appCode = fromBuildRoutes(routes, build, exportDate);
   const testWriting = fromProducerRole(realWork.byRole.get("red"), exportDate);
-  const docsAndOps = noSource(exportDate);
+  const docsAndOps = trackTables.docsAndOps;
   const printBooks = fromPrintAudit(audit, exportDate);
   const tooling = noSource(exportDate);
 
   const rows: Row[] = [
     rowOf(KINDS[0], codeReview, null),
     rowOf(KINDS[1], appCode, build.baseLine),
-    rowOf(KINDS[2], testWriting, testsBaseLine),
-    rowOf(KINDS[3], docsAndOps, null),
+    rowOf(KINDS[2], testWriting, trackTables.testsBaseLine),
+    rowOf(KINDS[3], docsAndOps, trackTables.docsAndOpsBaseLine),
     rowOf(KINDS[4], printBooks, null),
     rowOf(KINDS[5], tooling, null),
   ];
