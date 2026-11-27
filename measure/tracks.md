@@ -130,3 +130,7 @@ These items have no date and no track yet.
 - [x] **Track: Go price table for the new Go models** — The price table holds gemini-4-argon, longcat-2.5, and qwen4-max.
   *Link: [go_pricing_3models_20261128](./archive/go_pricing_3models_20261128/)*
   *Go price table for the new Go models: the live rates, the monthly usage, the flags, the source URL, the read date, and the alias lines. The price table commit is a6b0b99; the dry run for 2026-11-29 names no model. The LongCat 2.5 route needs the Global region in the workspace privacy settings. Closed 2026-11-28 and archived 2026-11-28 by the PM board review.*
+
+- [x] **Track: Repair the schedule tests after the price table and archive moves**
+  *Link: [schedule_test_repair_20261128](./archive/schedule_test_repair_20261128/)*
+  *The schedule tests follow the archived oracle path and the current on-list data.*

@@ -1,0 +1,20 @@
+{
+  "id": "schedule_test_repair_20261128",
+  "title": "Repair the schedule tests after the price table and archive moves",
+  "type": "Bug",
+  "status": "complete",
+  "created": "2026-11-28",
+  "estimated_tasks": 1,
+  "actual_tasks": 2,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM handoff 2026-11-28: two schedule tests fail for reasons outside the behavior they test.",
+    "evidence": "Gates: schedule-tests/daily-pick-board.test.ts and schedule-tests/go-pick-list.test.ts.",
+    "dependencies": [],
+    "related_tracks": [
+      "daily_model_schedule",
+      "go_pricing_3models_20261128"
+    ]
+  }
+}
