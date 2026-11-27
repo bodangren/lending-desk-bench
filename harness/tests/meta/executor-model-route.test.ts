@@ -36,6 +36,9 @@ const MISSING_MODEL = "hungerg-free";
 const PRESENT_REF = `${PROVIDER}/${PRESENT_MODEL}`;
 const MISSING_REF = `${PROVIDER}/${MISSING_MODEL}`;
 const LIMIT = { context: 1000000, input: 1000000, output: 65536 };
+// N1: the real Console API entries for catalog-listed Go models carry only
+// context and output. The OpenCode config accepts input as an optional key.
+const TWO_KEY_LIMIT = { context: 1000000, output: 384000 };
 
 const DENIES = [
   { action: "question", resource: "*", effect: "deny" },
@@ -58,6 +61,11 @@ function expectedConfigBytes(modelRef: string, providers?: Record<string, unknow
 
 function entryValue(model: string, name?: string): Record<string, unknown> {
   return { modelID: model, name: name ?? `${model} Name`, limit: { ...LIMIT } };
+}
+
+/** N1: the entry printed for a limit that omits optional input. */
+function entryValueWithLimit(model: string, limit: Record<string, number>): Record<string, unknown> {
+  return { modelID: model, name: `${model} Name`, limit: { ...limit } };
 }
 
 function providersBlock(provider: string, model: string, entry: unknown): Record<string, unknown> {
@@ -1335,6 +1343,97 @@ describe("F11/FR4: the helper and the config keep integer limits exact", () => {
         modelID: MISSING_MODEL, name: `${MISSING_MODEL} Name`, limit,
       });
       expect(config.providers?.[PROVIDER]?.models?.[MISSING_MODEL], "F11/FR4: the limit equals the entry values exactly").toMatchObject({ limit });
+    } finally {
+      r.run.cleanup();
+    }
+  }, 120_000);
+});
+
+describe("N1/FR4: a model API limit without input is accepted end to end", () => {
+  // The former contract rejected a limit that held only context and output.
+  // The new contract accepts that shape and prints it unchanged: the helper
+  // invents no input key and writes no null, and run.sh copies the same two
+  // keys into the generated config. A three-key limit keeps all three keys.
+
+  it("entry mode accepts a context-and-output-only limit and prints exactly those keys", () => {
+    const apiFile = resolve(makeTempRoot(), "api.json");
+    writeFileSync(apiFile, entryPayload([{ ...activeApiRow(PROVIDER, MISSING_MODEL), limit: TWO_KEY_LIMIT }]));
+    const run = runEntryCopy({ ref: MISSING_REF, envBase: apiFile });
+    expect(run.status, "N1/FR4: a two-key limit is accepted in entry mode").toBe(0);
+    const printed = JSON.parse(run.stdout) as Record<string, unknown>;
+    expect(Object.keys(printed).sort(), "N1/FR4: the entry still prints only modelID, name, and limit").toEqual([
+      "limit", "modelID", "name",
+    ]);
+    expect(printed.limit, "N1/FR4: the printed limit holds exactly context and output").toEqual(TWO_KEY_LIMIT);
+    expect(Object.keys(printed.limit as object).sort(), "N1/FR4: the printed limit invents no input key").toEqual([
+      "context", "output",
+    ]);
+    expect(run.stdout, "N1/FR4: the printed limit writes no null input key").not.toContain("null");
+  });
+
+  it("entry mode keeps a three-key limit exactly", () => {
+    const limit = { context: 1000000, input: 7, output: 384000 };
+    const apiFile = resolve(makeTempRoot(), "api.json");
+    writeFileSync(apiFile, entryPayload([{ ...activeApiRow(PROVIDER, MISSING_MODEL), limit }]));
+    const run = runEntryCopy({ ref: MISSING_REF, envBase: apiFile });
+    expect(run.status, "N1/FR4: a three-key limit is still accepted").toBe(0);
+    const printed = JSON.parse(run.stdout) as Record<string, unknown>;
+    expect(Object.keys(printed.limit as object).sort(), "N1/FR4: all three limit keys stay").toEqual([
+      "context", "input", "output",
+    ]);
+    expect(printed.limit, "N1/FR4: the three limit values stay exact").toEqual(limit);
+  });
+
+  it("a missing required key, an extra key, or an invalid value exits 2 with one reason", () => {
+    const cases: { name: string; limit: unknown }[] = [
+      { name: "a limit with only output", limit: { output: 384000 } },
+      { name: "a limit with only context", limit: { context: 1000000 } },
+      { name: "context and input without output", limit: { context: 1000000, input: 1 } },
+      { name: "an extra key beside all three keys", limit: { context: 1000000, input: 1, output: 384000, extra: 0 } },
+      { name: "an extra key beside context and output", limit: { context: 1000000, output: 384000, extra: 0 } },
+      { name: "a non-object limit", limit: "big" },
+      { name: "a boolean context", limit: { context: true, output: 384000 } },
+      { name: "a fractional output", limit: { context: 1000000, output: 1.5 } },
+      { name: "a string context", limit: { context: "1000000", output: 384000 } },
+      { name: "a negative output", limit: { context: 1000000, output: -1 } },
+      { name: "a 2^53 context", limit: { context: 9007199254740992, output: 384000 } },
+      { name: "an invalid input beside context and output", limit: { context: 1000000, output: 384000, input: false } },
+    ];
+    for (const item of cases) {
+      expectEntryRejects(MISSING_REF, [{ ...activeApiRow(PROVIDER, MISSING_MODEL), limit: item.limit }], `N1/FR4: ${item.name}`);
+    }
+  });
+
+  it("ref-list mode still lists the ref for a two-key limit", () => {
+    const apiFile = resolve(makeTempRoot(), "api.json");
+    writeFileSync(apiFile, entryPayload([{ ...activeApiRow(PROVIDER, MISSING_MODEL), limit: TWO_KEY_LIMIT }]));
+    const run = runEntryCopy({ envBase: apiFile });
+    expect(run.status, "N1/FR1: zero-argument mode is unchanged").toBe(0);
+    expect(run.stdout.split("\n").filter((line) => line.length > 0), "N1/FR1: the active ref is still listed").toEqual([MISSING_REF]);
+  });
+
+  it("run.sh routes a two-key limit and the config holds exactly those keys", async () => {
+    const r = await runTempRoute({
+      model: MISSING_MODEL, catalog: "missing",
+      apiData: [{ ...activeApiRow(PROVIDER, MISSING_MODEL), limit: TWO_KEY_LIMIT }],
+    });
+    try {
+      expect(existsSync(configPath(r.run)), "N1/FR1: a two-key limit must let the route reach config generation").toBe(true);
+      expectFullAgentTrap(r, "N1/FR1: the two-key limit route");
+      const entry = entryValueWithLimit(MISSING_MODEL, TWO_KEY_LIMIT);
+      const bytes = readFileSync(configPath(r.run), "utf8");
+      expect(bytes, "N1/FR1: the config holds the exact two-key provider block").toBe(
+        expectedConfigBytes(MISSING_REF, providersBlock(PROVIDER, MISSING_MODEL, entry)),
+      );
+      const config = JSON.parse(bytes) as Record<string, Record<string, Record<string, Record<string, unknown>>>>;
+      const written = config.providers?.[PROVIDER]?.models?.[MISSING_MODEL];
+      expect(Object.keys((written as { limit: object }).limit).sort(), "N1/FR1: the config limit invents no input key").toEqual([
+        "context", "output",
+      ]);
+      expect(written, "N1/FR1: the provider block holds only the two-key limit").toEqual(entry);
+      expect(entryCalls(r.log).length, "N1/FR1: the run resolves one helper entry").toBe(1);
+      const identity = JSON.parse(readFileSync(resolve(r.run.out, "execution-identity.json"), "utf8"));
+      expect(identity.config_sha256, "N1/FR5: the identity hashes the exact two-key config").toBe(sha256Hex(bytes));
     } finally {
       r.run.cleanup();
     }
