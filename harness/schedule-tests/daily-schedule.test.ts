@@ -860,6 +860,63 @@ exit 0
       `${JOB}: no push command after a failed diff`).toEqual([]);
     expect(git(["rev-parse", "main"], origin), `${JOB}: the remote stays unchanged`).toBe(remoteBefore);
   });
+  caseOf("6.4.13 a failed path-list read refuses the push", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    successfulIngest(repo);
+    const remoteBefore = git(["rev-parse", "main"], origin);
+    const wrap = publicationFaultGit(w, "path-read");
+    expect(existsSync(join(w.root, "path-read-failed")), `${JOB}: the path-list read fault starts clean`).toBe(false);
+    const { result } = runCopied(w, repo, true, { PATH: wrap.path });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(1);
+    expect(lines(result, "DAILY FAIL publish:").map(line => line.split(": ").slice(0, 2).join(": ")),
+      `${JOB}: a failed path-list read must refuse the push`).toEqual(["DAILY FAIL publish: candidate construction failed"]);
+    const loader = exec(w, "bash", ["-c", `eval "$(sed -n '/^publication_load_paths() {/,/^}/p; /^publication_paths_allowed() {/,/^}/p; /^publication_candidate() {/,/^}/p' ${JSON.stringify(join(HARNESS, "cron-daily.sh"))})"
+publication_diff_paths() { return 0; }
+publication_load_paths() { return 1; }
+PUBLISH_DIFF=${JSON.stringify(join(w.root, "path-read-failed"))}
+PUBLISH_PATHS_LIST=(docs/assets/data/benchmark.json)
+if publication_paths_allowed base commit 2> ${JSON.stringify(join(w.root, "allowlist-error"))}; then rc=0; else rc=$?; fi
+if publication_candidate base commit 2>> ${JSON.stringify(join(w.root, "allowlist-error"))}; then candidate_rc=0; else candidate_rc=$?; fi
+printf '%s %s\\n' "$rc" "$candidate_rc"
+exit 0`]);
+    expect(loader.status, `${loader.stderr}`).toBe(0);
+    expect(loader.stdout.trim(), `${JOB}: both publication functions must reject a path-list read failure`).toBe("1 1");
+    expect(readFileSync(join(w.root, "allowlist-error"), "utf8"),
+      `${JOB}: each function must print one path-list read failure`).toBe("publish: path list read failed\npublish: path list read failed\n");
+    expect(lines(result, "DAILY PUBLISH "), `${JOB}: no publish after a failed path-list read`).toEqual([]);
+    expect(lines(result, "DAILY PUSH "), `${JOB}: no push after a failed path-list read`).toEqual([]);
+    expect(lines(result, "DAILY INGEST SKIPPED"), `${JOB}: a failed path-list read is not an ingest leak`).toEqual([]);
+    expect(readFileSync(wrap.log, "utf8").split("\n").filter(line => line.startsWith("push ")),
+      `${JOB}: no push command after a failed path-list read`).toEqual([]);
+    expect(readFileSync(wrap.log, "utf8").split("\n").filter(line => line.includes(" show ")),
+      `${JOB}: no candidate blob extraction after a failed path-list read`).toEqual([]);
+    expect(existsSync(join(w.root, "path-read-failed")), `${JOB}: the path-list read must fail`).toBe(true);
+    expect(git(["rev-parse", "main"], origin), `${JOB}: the remote stays unchanged`).toBe(remoteBefore);
+  });
+  caseOf("6.4.14 a copy from the remote base still publishes", w => {
+    jobSetup(w);
+    const { repo, origin, git } = pushRepo(w);
+    mkdirSync(join(repo, "notes"), { recursive: true });
+    writeFileSync(join(repo, "notes/source.txt"), "public source\n");
+    git(["add", "notes/source.txt"]);
+    git(["commit", "-q", "-m", "public source"]);
+    git(["push", "-q", "origin", "main"]);
+    successfulIngest(repo);
+    const wrap = publicationFaultGit(w, "copy");
+    const { result } = runCopied(w, repo, true, { PATH: wrap.path });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(lines(result, "DAILY FAIL "), `${result.stderr}`).toEqual([]);
+    expect(lines(result, "DAILY PUBLISH "), JOB).toHaveLength(1);
+    expect(lines(result, "DAILY PUSH "), JOB).toHaveLength(1);
+    const pushed = git(["ls-tree", "-r", "--name-only", "main"], origin).split("\n").filter(Boolean).sort();
+    expect(pushed, `${JOB}: the copy destination must publish`).toEqual([
+      "docs/assets/data/benchmark.json", "docs/assets/data/real-work.json", "docs/index.html", "docs/real-work.html", "notes/source.txt",
+    ]);
+    expect(git(["show", "origin/main:docs/real-work.html"]), `${JOB}: the copied content must publish`).toBe("public source");
+    expect(git(["diff-tree", "--no-commit-id", "--name-status", "-r", "--find-copies-harder", "origin/main"]).split("\n"),
+      `${JOB}: the destination is listed as a copy`).toContain("C100\tnotes/source.txt\tdocs/real-work.html");
+  });
   caseOf("6.4.10 a failed blob extraction refuses the push", w => {
     jobSetup(w);
     const { repo, origin, git } = pushRepo(w);
@@ -1214,7 +1271,7 @@ function gitWrap(w: Work) {
   writeFileSync(join(bin, "sleep"), "#!/usr/bin/env bash\nexit 0\n", { mode: 0o755 });
   return { bin, log };
 }
-function publicationFaultGit(w: Work, fault: "diff" | "show" | "rename") {
+function publicationFaultGit(w: Work, fault: "diff" | "show" | "rename" | "path-read" | "copy") {
   const bin = join(w.root, `publication-${fault}-bin`);
   const log = join(w.root, `publication-${fault}.log`);
   mkdirSync(bin, { recursive: true });
@@ -1232,15 +1289,45 @@ if [ "$3" = diff ] && [ "$name_only" -eq 1 ]; then printf 'docs/assets/data/benc
 /usr/bin/git -C "$2" commit -q -m "injected rename" || exit 90
 fi`
     : ":";
+  const pathReadFault = fault === "path-read"
+    ? `name_only=0; for arg in "$@"; do [ "$arg" = --name-only ] && name_only=1; done
+if [ "$3" = diff ] && [ "$name_only" -eq 1 ]; then
+  captured=\$(mktemp)
+  count=0
+  if /usr/bin/git "$@" > "$captured"; then
+    count=\$(tr -cd '\\0' < "$captured" | wc -c)
+  fi
+  if [ "$count" -gt 1 ]; then
+    dd if="$captured" bs=1 count=\$(stat -c %s "$captured") status=none
+    rm -f "$captured"
+    printf 'PATH_READ_FAULT\\n' >> ${JSON.stringify(join(w.root, "path-read-failed"))}
+    exit 88
+  fi
+  cat "$captured"
+  rm -f "$captured"
+  exit 88
+fi`
+    : ":";
+  const copyFault = fault === "copy"
+    ? `if [ "$3" = commit ]; then
+/usr/bin/git -C "$2" config diff.renames copies
+/usr/bin/git -C "$2" config diff.renameLimit 1000
+blob=$(/usr/bin/git -C "$2" rev-parse HEAD:notes/source.txt) || exit 89
+/usr/bin/git -C "$2" update-index --add --cacheinfo 100644,"$blob",docs/real-work.html || exit 89
+/usr/bin/git -C "$2" commit -q -m "injected copy" || exit 90
+fi`
+    : ":";
   writeFileSync(join(bin, "git"), `#!/usr/bin/env bash
 printf '%s\\n' "$*" >> ${JSON.stringify(log)}
 if [ "$1" = "-C" ]; then
 ${diffFault}
 ${showFault}
+${pathReadFault}
 fi
 /usr/bin/git "$@"
 rc=$?
 ${renameFault}
+${copyFault}
 exit $rc
 `, { mode: 0o755 });
   writeFileSync(join(bin, "sleep"), "#!/usr/bin/env bash\nexit 0\n", { mode: 0o755 });

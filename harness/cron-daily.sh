@@ -305,18 +305,32 @@ publication_diff_paths() {
   return 0
 }
 
+publication_load_paths() {
+  local size nul
+  PUBLISH_PATHS_LIST=()
+  if ! size=$(wc -c < "$PUBLISH_DIFF"); then return 1; fi
+  if ! mapfile -d '' -t PUBLISH_PATHS_LIST < "$PUBLISH_DIFF"; then return 1; fi
+  if ! nul=$(tr -cd '\0' < "$PUBLISH_DIFF" | wc -c); then return 1; fi
+  if [ "$nul" -ne "${#PUBLISH_PATHS_LIST[@]}" ]; then return 1; fi
+  return 0
+}
+
 # True when every changed path of the one outgoing commit is allowlisted.
 publication_paths_allowed() {
   local base="$1" commit="$2" path allow
   if ! publication_diff_paths "$base" "$commit"; then return 1; fi
-  while IFS= read -r -d '' path; do
+  if ! publication_load_paths; then
+    echo "publish: path list read failed" >&2
+    return 1
+  fi
+  for path in "${PUBLISH_PATHS_LIST[@]}"; do
     [ -z "$path" ] && continue
     for allow in "${PUBLISH_ALLOW[@]}"; do
       if [ "$path" = "$allow" ]; then continue 2; fi
     done
     echo "publish: path outside the allowlist: $path" >&2
     return 1
-  done < "$PUBLISH_DIFF"
+  done
   return 0
 }
 
@@ -326,16 +340,20 @@ publication_paths_allowed() {
 publication_candidate() {
   local base="$1" commit="$2" path
   if ! publication_diff_paths "$base" "$commit"; then return 1; fi
+  if ! publication_load_paths; then
+    echo "publish: path list read failed" >&2
+    return 1
+  fi
   if ! rm -rf "$PUBLISH_SCAN"; then return 1; fi
   if ! PUBLISH_SCAN="$(mktemp -d "$TMP_DIR/daily-publish-scan-XXXXXX")"; then return 1; fi
-  while IFS= read -r -d '' path; do
+  for path in "${PUBLISH_PATHS_LIST[@]}"; do
     [ -z "$path" ] && continue
     if ! mkdir -p "$PUBLISH_SCAN/${path%/*}"; then return 1; fi
     if ! git -C "$PUB_WT" show "$commit:$path" > "$PUBLISH_SCAN/$path"; then
       echo "publish: candidate blob failed: $path" >&2
       return 1
     fi
-  done < "$PUBLISH_DIFF"
+  done
   return 0
 }
 
