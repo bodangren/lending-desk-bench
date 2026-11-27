@@ -21,9 +21,13 @@
  * Every test fails while the track is missing: the grader module does not
  * exist and the oracle overlay it reads is absent.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
+import { writeVariant } from "../../bugfix/make-variant.js";
+import { generateDocsOpsVariant } from "../../docs-and-ops/make-variant.js";
+import { gradeDocsOps } from "../../docs-and-ops/grade-docs-ops.js";
 
 const HARNESS = resolve(import.meta.dirname, "../..");
 const ORACLE_RUNBOOK = join(HARNESS, "docs-and-ops", "oracle-overlay", "docs", "runbook.md");
@@ -128,4 +132,292 @@ describe("docs-and-ops grader contract", () => {
     expect(second, "identical inputs grade identically").toEqual(first);
     expect(first.reasons, "reasons come back sorted").toEqual([...first.reasons].sort());
   });
+});
+
+const F2_ROOTS: string[] = [];
+afterAll(() => {
+  for (const root of F2_ROOTS) rmSync(root, { recursive: true, force: true });
+});
+
+/** Replace the body of one `## <name>` section, keeping its heading. */
+function setSectionBody(text: string, name: string, body: string): string {
+  const marker = `## ${name}\n`;
+  const start = text.indexOf(marker);
+  expect(start, `the oracle runbook has a ${name} section`).toBeGreaterThanOrEqual(0);
+  const bodyStart = start + marker.length;
+  const next = text.indexOf("\n## ", bodyStart);
+  const end = next === -1 ? text.length : next + 1;
+  return text.slice(0, bodyStart) + body + text.slice(end);
+}
+
+/** Move one exact line out of its section to sit under another heading. */
+function moveLineOutOfSection(text: string, line: string, target: string): string {
+  expect(text, `the oracle runbook holds: ${line}`).toContain(`${line}\n`);
+  const removed = text.replace(`${line}\n`, "");
+  const marker = `## ${target}\n`;
+  const at = removed.indexOf(marker);
+  expect(at, `the oracle runbook has a ${target} section`).toBeGreaterThanOrEqual(0);
+  const insertAt = at + marker.length;
+  return `${removed.slice(0, insertAt)}\n${line}\n${removed.slice(insertAt)}`;
+}
+
+const RETURNED_STAYS = "A returned loan stays returned after its due date.";
+const DUE_SOON_BOUNDARY = "An open loan is `due-soon` from `now` through the next 48 hours.";
+const ROLLBACK_PRESERVATION = "Keep the existing data store and loan records.";
+const VERIFIER_LINE = "Run `./node_modules/.bin/tsx ops/verify.ts <manifest-path>` against the fixed manifests.";
+
+describe("review-a F2: required facts live inside their sections", () => {
+  it("F2: an empty Verification body fails D.sections.verification", async () => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(setSectionBody(readFileSync(ORACLE_RUNBOOK, "utf8"), "Verification", "\n"));
+    expect(grade.passed, "F2: an empty Verification body passes").toBe(false);
+    expect(grade.failed, "F2: the omission names its check").toContain("D.sections.verification");
+  });
+
+  it("F2: an empty Rollback body fails D.sections.rollback", async () => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(setSectionBody(readFileSync(ORACLE_RUNBOOK, "utf8"), "Rollback", "\n"));
+    expect(grade.passed, "F2: an empty Rollback body passes").toBe(false);
+    expect(grade.failed, "F2: the omission names its check").toContain("D.sections.rollback");
+  });
+
+  it("F2: the returned-loan fact moved out of Loan state fails D.loan.boundary", async () => {
+    const mod = await grader();
+    const moved = moveLineOutOfSection(readFileSync(ORACLE_RUNBOOK, "utf8"), RETURNED_STAYS, "Environment");
+    const grade = mod.gradeRunbook(moved);
+    expect(grade.passed, "F2: a relocated returned-loan fact passes").toBe(false);
+    expect(grade.failed, "F2: the omission names its check").toContain("D.loan.boundary");
+    for (const id of grade.failed) {
+      expect(mod.declaredCheckIds(), `F2: failure ${id} is a declared check`).toContain(id);
+    }
+  });
+
+  it("F2: the due-soon boundary moved out of Loan state fails D.loan.boundary", async () => {
+    const mod = await grader();
+    const moved = moveLineOutOfSection(readFileSync(ORACLE_RUNBOOK, "utf8"), DUE_SOON_BOUNDARY, "API routes");
+    const grade = mod.gradeRunbook(moved);
+    expect(grade.passed, "F2: a relocated due-soon boundary passes").toBe(false);
+    expect(grade.failed, "F2: the omission names its check").toContain("D.loan.boundary");
+    for (const id of grade.failed) {
+      expect(mod.declaredCheckIds(), `F2: failure ${id} is a declared check`).toContain(id);
+    }
+  });
+
+  it("F2: a Rollback section without data preservation fails D.sections.rollback", async () => {
+    const mod = await grader();
+    const oracle = readFileSync(ORACLE_RUNBOOK, "utf8");
+    expect(oracle, "the oracle states rollback preservation").toContain(ROLLBACK_PRESERVATION);
+    const grade = mod.gradeRunbook(oracle.replace(`${ROLLBACK_PRESERVATION}\n`, ""));
+    expect(grade.passed, "F2: rollback without data preservation passes").toBe(false);
+    expect(grade.failed, "F2: the omission names its check").toContain("D.sections.rollback");
+  });
+
+  it("F2: a Verification section without the operations verifier fails D.sections.verification", async () => {
+    const mod = await grader();
+    const oracle = readFileSync(ORACLE_RUNBOOK, "utf8");
+    expect(oracle, "the oracle names the operations verifier").toContain(VERIFIER_LINE);
+    const grade = mod.gradeRunbook(oracle.replace(`${VERIFIER_LINE}\n`, ""));
+    expect(grade.passed, "F2: verification without the verifier passes").toBe(false);
+    expect(grade.failed, "F2: the omission names its check").toContain("D.sections.verification");
+  });
+});
+
+function stageF4Oracle(tag: string): { candidate: string; artifacts: string } {
+  const variant = generateDocsOpsVariant("d1");
+  const candidate = mkdtempSync(join(tmpdir(), `docs-ops-f4-${tag}-`));
+  F2_ROOTS.push(candidate);
+  writeVariant(variant, candidate);
+  cpSync(join(HARNESS, "docs-and-ops", "oracle-overlay"), candidate, { recursive: true });
+  const artifacts = mkdtempSync(join(tmpdir(), `docs-ops-f4-${tag}-artifacts-`));
+  F2_ROOTS.push(artifacts);
+  return { candidate, artifacts };
+}
+
+describe("review-a F4: absent deliverables fail their execution checks", () => {
+  it("F4: a missing verifier fails O.environment.clean, O.manifest.parse, O.timeout, and determinism", async () => {
+    const { candidate, artifacts } = stageF4Oracle("missing-verifier");
+    const control = await gradeDocsOps(candidate, artifacts);
+    expect(control.passed, `F4 control: the oracle passes (${control.reasons.join("; ")})`).toBe(true);
+    rmSync(join(candidate, "ops", "verify.ts"));
+    const brokenArtifacts = mkdtempSync(join(tmpdir(), "docs-ops-f4-missing-verifier-broken-"));
+    F2_ROOTS.push(brokenArtifacts);
+    const grade = await gradeDocsOps(candidate, brokenArtifacts);
+    expect(grade.passed, "F4: a missing verifier passes overall").toBe(false);
+    for (const id of [
+      "O.environment.clean",
+      "O.manifest.parse",
+      "O.timeout",
+      "O.valid.deterministic",
+      "O.invalid.deterministic",
+    ]) {
+      expect(grade.failed, `F4: a missing verifier must fail ${id}`).toContain(id);
+    }
+  }, 120_000);
+
+  it("F4: an empty runbook fails D.placeholders", async () => {
+    const { candidate, artifacts } = stageF4Oracle("empty-runbook");
+    const control = await gradeDocsOps(candidate, artifacts);
+    expect(control.passed, `F4 control: the oracle passes (${control.reasons.join("; ")})`).toBe(true);
+    writeFileSync(join(candidate, "docs", "runbook.md"), "");
+    const brokenArtifacts = mkdtempSync(join(tmpdir(), "docs-ops-f4-empty-runbook-broken-"));
+    F2_ROOTS.push(brokenArtifacts);
+    const grade = await gradeDocsOps(candidate, brokenArtifacts);
+    expect(grade.passed, "F4: an empty runbook passes overall").toBe(false);
+    expect(grade.failed, "F4: an empty runbook must fail D.placeholders").toContain("D.placeholders");
+  }, 120_000);
+});
+
+function stageF5Oracle(tag: string): { candidate: string; artifacts: string } {
+  return stageF4Oracle(`f5-${tag}`);
+}
+
+/** A verifier that is exactly correct except for one manifest case. The
+ * `.mutation` file in the candidate selects the mishandled case:
+ * malformed JSON, a read error, a non-object manifest, or missing fields. */
+function mutatedVerifier(): string {
+  return `import { readFileSync } from "node:fs";
+const EXPECTED_COMMANDS = {
+  install: "npm ci",
+  develop: "npm run dev",
+  typecheck: "npm run typecheck",
+  build: "npm run build",
+  start: "npm run start",
+};
+const EXPECTED_ROUTES = {
+  home: "/",
+  catalogue: "/items",
+  detail: "/items/[id]",
+  members: "/members",
+  loans: "/api/loans",
+};
+const EXPECTED_ENVIRONMENT = ["BENCH_NOW", "BENCH_LATENCY_MS"];
+function isObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function validate(value) {
+  if (!isObject(value)) return ["manifest must be an object"];
+  const errors = [];
+  if (value.schema !== 1) errors.push("schema must be 1");
+  if (value.service !== "lending-desk") errors.push("service must be lending-desk");
+  if (isObject(value.commands)) {
+    for (const [key, expected] of Object.entries(EXPECTED_COMMANDS)) {
+      if (value.commands[key] !== expected) errors.push(\`commands.$\{key} must equal $\{expected}\`);
+    }
+  } else {
+    for (const [key, expected] of Object.entries(EXPECTED_COMMANDS)) {
+      errors.push(\`commands.$\{key} must equal $\{expected}\`);
+    }
+  }
+  if (isObject(value.routes)) {
+    for (const [key, expected] of Object.entries(EXPECTED_ROUTES)) {
+      if (value.routes[key] !== expected) errors.push(\`routes.$\{key} must equal $\{expected}\`);
+    }
+  } else {
+    for (const [key, expected] of Object.entries(EXPECTED_ROUTES)) {
+      errors.push(\`routes.$\{key} must equal $\{expected}\`);
+    }
+  }
+  if (!Array.isArray(value.environment) || value.environment.join("\\0") !== EXPECTED_ENVIRONMENT.join("\\0")) {
+    errors.push("environment must equal the fixed environment list");
+  }
+  return errors.sort();
+}
+const mutation = (() => {
+  try {
+    return readFileSync(".mutation", "utf8").trim();
+  } catch {
+    return "";
+  }
+})();
+const manifestPath = process.argv[2];
+if (!manifestPath || process.argv.length !== 3) {
+  process.stderr.write("usage: tsx ops/verify.ts <manifest-path>\\n");
+  process.exitCode = 2;
+} else {
+  let text = null;
+  let readFailed = false;
+  try {
+    text = readFileSync(manifestPath, "utf8");
+  } catch {
+    readFailed = true;
+  }
+  if (readFailed) {
+    if (mutation === "read-error") {
+      process.stdout.write(\`$\{JSON.stringify([])}\\n\`);
+      process.exitCode = 0;
+    } else {
+      process.stdout.write(\`$\{JSON.stringify(["manifest file could not be read"])}\\n\`);
+      process.exitCode = 2;
+    }
+  } else {
+    let value;
+    let malformed = false;
+    try {
+      value = JSON.parse(text);
+    } catch {
+      malformed = true;
+    }
+    if (malformed) {
+      if (mutation === "malformed") {
+        process.stdout.write(\`$\{JSON.stringify([])}\\n\`);
+        process.exitCode = 0;
+      } else {
+        process.stdout.write(\`$\{JSON.stringify(["manifest must be valid JSON"])}\\n\`);
+        process.exitCode = 2;
+      }
+    } else if (!isObject(value)) {
+      if (mutation === "non-object") {
+        process.stdout.write(\`$\{JSON.stringify([])}\\n\`);
+        process.exitCode = 0;
+      } else {
+        process.stdout.write(\`$\{JSON.stringify(["manifest must be an object"])}\\n\`);
+        process.exitCode = 1;
+      }
+    } else {
+      const errors = validate(value);
+      const requiredKeys = ["schema", "service", "commands", "routes", "environment"];
+      const missingKeys = requiredKeys.filter((key) => !(key in value));
+      if (missingKeys.length > 0 && mutation === "missing-fields") {
+        process.stdout.write(\`$\{JSON.stringify([])}\\n\`);
+        process.exitCode = 0;
+      } else {
+        process.stdout.write(\`$\{JSON.stringify(errors)}\\n\`);
+        process.exitCode = errors.length === 0 ? 0 : 1;
+      }
+    }
+  }
+}
+`;
+}
+
+describe("review-a F5: the grader exercises every specified manifest case", () => {
+  it("F5: a correct malformed-JSON response passes O.manifest.parse", async () => {
+    const mod = await grader();
+    const grade = mod.gradeVerifier({
+      manifest: "{not json",
+      resultJson: `["manifest must be valid JSON"]`,
+      exitCode: 2,
+      cleanEnv: true,
+      timedOut: false,
+    });
+    expect(grade.failed, `F5: the correct malformed-JSON response fails (${grade.failed.join(", ")})`).toEqual([]);
+    expect(grade.passed, "F5: the correct malformed-JSON response does not pass").toBe(true);
+  });
+
+  it.each([
+    ["malformed JSON", "malformed"],
+    ["a read error", "read-error"],
+    ["a non-object manifest", "non-object"],
+    ["missing fields", "missing-fields"],
+  ])("F5: the grader exercises %s", async (_label, mutation) => {
+    const { candidate, artifacts } = stageF5Oracle(String(mutation));
+    const control = await gradeDocsOps(candidate, artifacts);
+    expect(control.passed, `F5 control: the oracle passes (${control.reasons.join("; ")})`).toBe(true);
+    writeFileSync(join(candidate, "ops", "verify.ts"), mutatedVerifier());
+    writeFileSync(join(candidate, ".mutation"), `${mutation}\n`);
+    const mutatedArtifacts = mkdtempSync(join(tmpdir(), `docs-ops-f5-${mutation}-broken-`));
+    F2_ROOTS.push(mutatedArtifacts);
+    const grade = await gradeDocsOps(candidate, mutatedArtifacts);
+    expect(grade.passed, `F5: a verifier that mishandles ${mutation} passes`).toBe(false);
+  }, 120_000);
 });

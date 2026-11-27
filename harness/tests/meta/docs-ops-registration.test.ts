@@ -9,7 +9,8 @@
  * run IDs, the d1 frozen set, the standard non-build repeat default of one,
  * a browserless grade, and a tracks.json entry.
  */
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BENCH_TRACKS, resolveTrack } from "../../candidate-contract.js";
@@ -63,4 +64,27 @@ describe("docs-and-ops registration contract", () => {
     expect(source("export-site-data.py")).toContain("docs-and-ops");
     expect(source("export-site-data.py")).toMatch(/"docs-and-ops":\s*"do-"/);
   });
+
+  it("F7: a dry run plans do- run IDs without executing runs", () => {
+    // Behavioral check for the F7 nit (already satisfied: the dry run works
+    // and writes nothing under runs/). It pins the registered behavior
+    // instead of the batch.sh source strings above.
+    const runsDir = resolve(HARNESS, "..", "runs");
+    const before = existsSync(runsDir) ? readdirSync(runsDir).sort() : [];
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    for (const key of ["REPS", "REPS_BUILD", "REPS_BUGFIX", "REPS_TESTS", "REPS_CHANGE", "REPS_DOCS_AND_OPS", "FORCE"]) {
+      delete env[key];
+    }
+    const run = spawnSync("bash", ["batch.sh", "--dry-run", "--model", "grok-4.6"], {
+      cwd: HARNESS,
+      env: { ...env, BENCH_TRACK: "docs-and-ops", WEEK: "2099w01", ARMS: "a b" },
+      encoding: "utf8",
+      timeout: 120_000,
+    });
+    expect(run.status, `F7: the dry run exits 0: ${run.stderr}`).toBe(0);
+    expect(run.stdout, "F7: the dry run plans the Arm A do- run ID").toContain("-> do-a-grok-4-6-2099w01-r1");
+    expect(run.stdout, "F7: the dry run plans the Arm B do- run ID").toContain("-> do-b-grok-4-6-2099w01-r1");
+    const after = existsSync(runsDir) ? readdirSync(runsDir).sort() : [];
+    expect(after, "F7: the dry run writes nothing under runs/").toEqual(before);
+  }, 180_000);
 });

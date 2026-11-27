@@ -942,3 +942,40 @@ describe("the docs and ops row from the docs-and-ops track (task 1.6)", () => {
     expect(row.evidence).toBe(NO_PICK_EVIDENCE);
   });
 });
+
+/** Tracks fixture variant whose docs-and-ops models carry unequal repeat
+ * totals across several models, so the selected model repeat count cannot
+ * be confused with the Arm A model count. */
+function tracksWithRepeatTotals(): string {
+  const dir = tempDir("tracks-repeat-totals");
+  const doc = JSON.parse(readFileSync(TRACKS, "utf8"));
+  doc.tracks["docs-and-ops"] = {
+    models: [
+      { model: "r/m", arm: "b", total: 99.9, repeats: { n: 1, totals: [99.9] } },
+      { model: "p/m", arm: "a", total: 91.2, repeats: { n: 4, totals: [89.0, 90.5, 91.2, 93.1] } },
+      { model: "q/m", arm: "a", total: 87.5, repeats: { n: 2, totals: [87.5, 88.0] } },
+      { model: "s/m", arm: "a", total: 85.0, repeats: { n: 1, totals: [85.0] } },
+    ],
+  };
+  const file = join(dir, "tracks-mini.json");
+  writeFileSync(file, JSON.stringify(doc));
+  return file;
+}
+
+describe("the docs and ops evidence label and repeat count (review-a F6)", () => {
+  it("F6: the picked total is labeled as the Arm A total with the selected model repeat count", () => {
+    const run = runGuide({
+      tag: "docs-and-ops-repeat-totals",
+      realWork: main().realWorkJson,
+      scores: SCORES,
+      printAudit: printAuditInput("docs-and-ops-repeat-totals"),
+      benchmark: BENCHMARK,
+      tracks: tracksWithRepeatTotals(),
+      today: TODAY,
+    });
+    const row = rowOf(run.data, "docs and ops");
+    expect(row.pick, "F6: the pick is the Arm A rank 1").toBe("p/m");
+    expect(row.evidence, "F6: the value is labeled as the Arm A total").toBe("track A: total 91.2 (n=4)");
+    expect(row.evidence, "F6: the value is not labeled worst").not.toContain("worst");
+  });
+});

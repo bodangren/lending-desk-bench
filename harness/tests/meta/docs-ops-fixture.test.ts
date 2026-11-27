@@ -7,12 +7,18 @@
  * are absent. Green satisfies them by adding the task 1.2 files; no test
  * pins fixture content beyond the task text.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { isWritableForTrack, writablePathsForTrack } from "../../candidate-contract.js";
+import { writeVariant } from "../../bugfix/make-variant.js";
+import { generateDocsOpsVariant } from "../../docs-and-ops/make-variant.js";
+import { VALID_MANIFEST } from "../../docs-and-ops/grade-docs-ops.js";
 
 const HARNESS = resolve(import.meta.dirname, "../..");
+const ROOT = resolve(HARNESS, "..");
 const TRACK_DIR = join(HARNESS, "docs-and-ops");
 
 function readTrackFile(relative: string): string {
@@ -70,4 +76,53 @@ describe("docs-and-ops fixture contract", () => {
   it("names the track in the candidate contract sources", () => {
     expect(readTrackFile("candidate-contract.ts")).toContain("docs-and-ops");
   });
+});
+
+const F3_ROOTS: string[] = [];
+afterAll(() => {
+  for (const root of F3_ROOTS) rmSync(root, { recursive: true, force: true });
+});
+
+/** The verifier command the candidate spec documents, parsed from the spec
+ * itself so the test follows the documented command exactly. */
+function documentedVerifierCommand(): string[] {
+  const spec = readTrackFile("docs-and-ops/model-visible/track/spec.md");
+  const fenced = spec.match(/```bash\n([\s\S]*?)```/);
+  expect(fenced, "F3: the spec documents a bash verifier command").not.toBeNull();
+  const line = fenced![1].split("\n").find((entry) => entry.includes("ops/verify.ts"));
+  expect(line, "F3: the documented command runs ops/verify.ts").toBeDefined();
+  return line!.trim().split(/\s+/);
+}
+
+describe("review-a F3: the documented verifier command works in a built candidate", () => {
+  it("F3: the spec-documented command verifies the fixed manifest after dependency install", () => {
+    const candidate = mkdtempSync(join(tmpdir(), "docs-ops-f3-candidate-"));
+    F3_ROOTS.push(candidate);
+    writeVariant(generateDocsOpsVariant("d1"), candidate);
+    cpSync(join(HARNESS, "docs-and-ops", "oracle-overlay"), candidate, { recursive: true });
+    // Mirror run.sh: the built candidate carries the installed dependency
+    // tree (a symlink stands in for run.sh's cp -a of the 568 MB tree;
+    // command resolution through it is identical). No hidden grader
+    // fallback may satisfy the documented command.
+    symlinkSync(join(ROOT, "fixture", "node_modules"), join(candidate, "node_modules"));
+    const manifest = join(candidate, "docs-ops-fixed-valid.json");
+    writeFileSync(manifest, `${JSON.stringify(VALID_MANIFEST, null, 2)}\n`);
+    const template = documentedVerifierCommand();
+    const argv = template.map((entry) => (entry === "<manifest-path>" ? manifest : entry));
+    const argvWithManifest = argv.some((entry) => entry === manifest) ? argv : [...argv, manifest];
+    const run = spawnSync(argvWithManifest[0], argvWithManifest.slice(1), {
+      cwd: candidate,
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    expect(
+      run.error ?? null,
+      `F3: the documented command does not run in a built candidate: ${String(run.error ?? "")}`,
+    ).toBeNull();
+    expect(run.status, `F3: the documented command fails: ${run.stderr}`).toBe(0);
+    expect(
+      JSON.parse(run.stdout),
+      "F3: the documented command prints the valid JSON error array",
+    ).toEqual([]);
+  }, 180_000);
 });
