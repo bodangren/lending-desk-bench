@@ -18,7 +18,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 const HARNESS = join(ROOT, "harness");
-const ORACLE = join(ROOT, "measure/tracks/daily_model_schedule/pick-oracle.py");
+const ORACLE = join(ROOT, "measure/archive/daily_model_schedule/pick-oracle.py");
 const REAL_PRICING = join(HARNESS, "go-pricing.json");
 const TMP_ROOT = "/tmp/opencode";
 const DATE = "2026-11-16";
@@ -210,7 +210,7 @@ describe("daily pick board order", () => {
 
   caseOf("P3 the Python oracle selects the first new model in the list order", f => {
     const result = runOracle(f, f.board);
-    expect(result.error, `${D23}: measure/tracks/daily_model_schedule/pick-oracle.py must run`).toBe("");
+    expect(result.error, `${D23}: measure/archive/daily_model_schedule/pick-oracle.py must run`).toBe("");
     expect(result.status, `${D23}: the oracle must accept the board argument\n${result.stderr}`).toBe(0);
     expect(result.stdout, `${D23}: the oracle line must end with the group fields`).toBe(
       "PICK_ORACLE date=2026-11-16 model=history-model reason=untested last_test=none candidates=3 eligible=2 untested=2 group=2 new=yes\n",
