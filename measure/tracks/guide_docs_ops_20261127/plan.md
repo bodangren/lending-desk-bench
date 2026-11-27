@@ -47,7 +47,7 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
   Read `tracks["docs-and-ops"].models`, rank by total, and keep the empty-table behavior. Use the tracks export date as the evidence date and the highest total as the base line.
   Touches: `harness/model-guide/guide.ts`, `harness/model-guide-tests/guide.test.ts`, `harness/model-guide-tests/fixtures/guide/tracks-mini.json`.
 
-- [ ] 1.7 Publish the docs-and-ops guide row and the public track page.
+- [~] 1.7 Publish the docs-and-ops guide row and the public track page.
   Done when the published guide row and the public track page carry the docs-and-ops data.
   Touches: `docs/tracks.html`, `docs/assets/data/tracks.json`, `docs/assets/data/model-guide.json`, `docs/index.html`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
 
