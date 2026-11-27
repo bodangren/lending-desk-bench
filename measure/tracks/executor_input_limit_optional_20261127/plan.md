@@ -27,4 +27,10 @@ PM decision 2026-11-27: light lane.
   - The repository has no measure/doctor.sh. The orchestrator supplied the light-lane gate list.
 
 - [x] 1.4 Real probe: omit.
-  - Evidence: not needed, light lane.
+  - Evidence: not needed, light lane; the change is covered by Green commit 3d90121 and the Red tests d9defb9.
+
+- [ ] 1.5 Review A (light lane).
+  - Review A checks the card's FR contract against the committed change.
+
+- [ ] 1.6 Phase acceptance (light lane).
+  - Phase acceptance checks that the gates exit 0 and no staged file lies outside harness/model-api-refs.py, harness/tests/meta/executor-model-route.test.ts, and the track files.
