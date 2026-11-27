@@ -15,5 +15,5 @@ Pointer: `preflight_model_api` task 1.5 owns the review-data refresh for this ca
 - [x] 1.3 Publish the review-data refresh from `preflight_model_api` task 1.5.
   Evidence: `docs/assets/data/model-guide.json` and `docs/assets/data/review.json`.
 
-- [~] 1.4 Publish the model guide and check the live site.
-  Done when the live code review row matches the published route ranking.
+- [x] 1.4 Publish the model guide and check the live site.
+  Evidence: `fbb72b3` and `https://bodangren.github.io/lending-desk-bench/assets/data/model-guide.json`.
