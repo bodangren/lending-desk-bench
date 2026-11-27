@@ -42,8 +42,13 @@ const BOARD_ON = [
 ];
 // Under the board filter of D26 (PM 2026-11-16) these are the on-list models
 // that are high_usage=true, batch=true, and have no board row: the oracle
-// must pick the first of them in list order, never a free model.
-const TO_RUN_OFF_BOARD = ["qwen3.8-flash", "mimo-v2.6-pro"];
+// must pick the first of them in list order, never beam-free.
+// 71ab861 made hungerg-free high_usage and batch; 34185cb and a6b0b99 added
+// hy4-flash-free and longcat-2.5. The public board holds the pinned rows.
+const EXPECTED_PICK = "hungerg-free";
+const TO_RUN_OFF_BOARD = [
+  "hungerg-free", "hy4-flash-free", "longcat-2.5", "qwen3.8-flash", "mimo-v2.6-pro",
+];
 
 let FAILED = 0;
 let PASS_COUNT = 0;
@@ -127,15 +132,15 @@ describe("go pick list", () => {
       });
       const line = (r.stdout ?? "").trim();
       if (r.status !== 0) throw new Error(`the oracle must exit 0, got ${r.status}: ${line}\n${r.stderr}`);
-      if (!line.includes("model=qwen3.8-flash")) {
-        throw new Error(`D26 board filter (PM 2026-11-16): the oracle must pick qwen3.8-flash, the first high-use batch model with no board row: ${line}`);
+      if (!line.includes(`model=${EXPECTED_PICK}`)) {
+        throw new Error(`D26 board filter (PM 2026-11-16): the oracle must pick ${EXPECTED_PICK}, the first high-use batch model with no board row: ${line}`);
       }
       if (line.includes("beam-free")) {
         throw new Error(`D26 board filter (PM 2026-11-16): the oracle must never pick beam-free (high_usage=false, batch=false): ${line}`);
       }
-      const qwen = (pricing.models as Record<string, any>)["qwen3.8-flash"];
-      if (!(qwen.high_usage === true && qwen.batch === true)) {
-        throw new Error(`the expected pick qwen3.8-flash must hold high_usage=true and batch=true in the real table`);
+      const expected = (pricing.models as Record<string, any>)[EXPECTED_PICK];
+      if (!(expected.high_usage === true && expected.batch === true)) {
+        throw new Error(`the expected pick ${EXPECTED_PICK} must hold high_usage=true and batch=true in the real table`);
       }
       const onBoardFilter = (id: string): boolean => {
         const spec = (pricing.models as Record<string, any>)[id];
