@@ -5,10 +5,10 @@
   "rows": [
     {
       "kind": "Code review",
-      "pick": "openai/gpt-6.2-sol#high",
-      "second": "opencode-go/hy4-flash-free#high",
+      "pick": "claude-agent/sonnet#high",
+      "second": "openai/gpt-6.2-sol#high",
       "evidence": "track A: worst 77.0 (n=3)",
-      "evidence_date": "2026-11-25",
+      "evidence_date": "2026-11-27",
       "base_line": null
     },
     {

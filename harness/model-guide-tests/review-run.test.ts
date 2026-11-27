@@ -2405,6 +2405,7 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
     const rows = Array.isArray(doc) ? doc : (doc.routes ?? []);
     const routes = rows.map((row: { route?: unknown }) => row.route);
     const gone = [
+      "claude-code/claude-sonnet-5-5#high",
       "kimi-code-plan-cn/kimi-for-coding#high",
       "bailian-token-plan/glm-5.3#high",
       "nvidia/stepfun-ai/step-5-preview#high",
@@ -2417,6 +2418,7 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
       );
     }
     const kept = [
+      "claude-agent/sonnet#high",
       "opencode-go/hy4-flash-free#high",
       "opencode-go/deepseek-v4.1-flash",
       "opencode-go/mimo-v2.6-flash",
@@ -2425,6 +2427,14 @@ describe("P4 probe mode, the token log, and routes.json (task 4.9a)", () => {
     for (const route of kept) {
       expect(routes, `${route} must stay in routes.json`).toContain(route);
     }
+    const claude = rows.find((row: { route?: unknown }) => row.route === "claude-agent/sonnet#high") as
+      | Record<string, unknown>
+      | undefined;
+    expect(claude, "the Claude Agent route row is missing").toBeDefined();
+    expect(claude?.family, "the Claude family").toBe("Claude Sonnet");
+    expect(claude?.kind, "the Claude kind").toBe("plan");
+    expect(claude?.quota_provider, "the Claude quota provider").toBe("claude-agent");
+    expect(claude?.quota_source, "the Claude quota source").toBe("claude");
     const hy4 = rows.find((row: { route?: unknown }) => row.route === "opencode-go/hy4-flash-free#high") as
       | Record<string, unknown>
       | undefined;
@@ -4927,6 +4937,7 @@ function nativeAssistant(text: string, opts: {
 }
 
 const PILOT_ROUTE = "opencode-go/hy4-flash-free#high";
+const CLAUDE_ROUTE = "claude-agent/sonnet#high";
 const HUNGERG_ROUTE = "opencode-go/hungerg-free";
 
 /** A key with no plant makes one diff the control of a probe run. The runner
@@ -5425,6 +5436,41 @@ describe("P4b row 4.16r3 the real API contract of the review runner", () => {
       const urls = existsSync(stub.log) ? readFileSync(stub.log, "utf8") : "";
       expect(urls, "the default loopback base was not used").toContain("http://127.0.0.1:38307");
     } finally {
+      dropFixture(fixture);
+    }
+  }, 60_000);
+
+  it("F15 the Claude Agent route uses the live-server path and the Claude quota source", async () => {
+    const fixture = await buildFixture({
+      route: CLAUDE_ROUTE,
+      quotaProvider: "claude-agent",
+      quotaSource: "claude",
+      diffs: ["d-01"],
+      calls: [{ value: '{"findings":[]}' }],
+    });
+    const live = await startLiveServer(fixture.fakeRoot);
+    try {
+      assertRunnerExists();
+      const result = runRunner(fixture, runArgs(fixture, CLAUDE_ROUTE), {
+        BENCH_SERVER_BASE: live.base,
+      });
+      expect(result.error, "the spawn hit the timeout").toBeUndefined();
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const auth = logEntries(fixture.logPath).filter((entry) => /^auth (export|import)/.test(entry.argv));
+      expect(auth.map((entry) => entry.argv), "the Claude route used the isolated seed").toEqual([]);
+      expect(modelCalls(logEntries(fixture.logPath)), "the Claude route used the isolated model call").toEqual([]);
+      expect(quotaRequests(fixture), "the Claude route read no Claude quota").toContain("/api/quota/claude");
+      const creates = live.requests().filter((line) => line.startsWith("POST /api/session "));
+      expect(creates, "the Claude route made no live session").toHaveLength(1);
+      const body = JSON.parse(creates[0].slice("POST /api/session ".length));
+      expect(body.model?.providerID, "the Claude provider").toBe("claude-agent");
+      expect(body.model?.id, "the Claude model").toBe("sonnet");
+      expect(body.model?.variant, "the Claude variant").toBe("high");
+      const records = passRecords(fixture.privateDir);
+      expect(records, "the Claude route wrote no pass record").toHaveLength(1);
+      expect(records[0].state, "the Claude pass is not complete").toBe("complete");
+    } finally {
+      live.close();
       dropFixture(fixture);
     }
   }, 60_000);

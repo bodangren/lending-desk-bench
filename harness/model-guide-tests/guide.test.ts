@@ -674,6 +674,9 @@ describe("the overview table (spec D18, D19, FR-6)", () => {
     expect(names["claude-code/claude-sonnet-5-5"], "model-names.json names the key").toBe(
       "Claude Sonnet 5.5",
     );
+    expect(names["claude-agent/sonnet"], "model-names.json names the Claude Agent key").toBe(
+      "Claude Sonnet 5.5",
+    );
     const pick = tds[1];
     const second = tds[2];
     expect(pick, "the pick cell shows the plain name").toContain("Claude Sonnet 5.5");

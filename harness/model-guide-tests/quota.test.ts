@@ -67,6 +67,7 @@ const TSX_BIN = join(HARNESS, "node_modules", ".bin", "tsx");
 
 /** The providers of spec D15 with a source, and the id of that source. */
 const SOURCED: Array<[provider: string, id: string]> = [
+  ["claude-agent", "claude"],
   ["claude-code", "claude"],
   ["kimi-code-plan-cn", "kimi-for-coding"],
   ["minimax-cn-coding-plan", "minimax-cn-coding-plan"],
@@ -454,7 +455,7 @@ async function closedPortBase(): Promise<string> {
 }
 
 describe("Q1 the source path of each provider", () => {
-  it("Q1 reads GET /api/quota/<id> for the four providers of spec D15 and gives ready", async () => {
+  it("Q1 reads GET /api/quota/<id> for each sourced provider and gives ready", async () => {
     const sandbox = makeSandbox();
     const server = await startQuotaServer(jsonResponse(windowsBody(10)));
     try {
@@ -470,6 +471,7 @@ describe("Q1 the source path of each provider", () => {
         expect(doc.windows?.["5h"], `${provider}: the window value is not labeled`).toBe(10);
       }
       expect(server.requests, "the server got the wrong request paths").toEqual([
+        "/api/quota/claude",
         "/api/quota/claude",
         "/api/quota/kimi-for-coding",
         "/api/quota/minimax-cn-coding-plan",

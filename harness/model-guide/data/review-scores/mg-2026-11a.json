@@ -2,6 +2,213 @@
   "set_id": "mg-2026-11a",
   "passes": [
     {
+      "route": "claude-agent/sonnet#high",
+      "pass": 1,
+      "date": "2026-11-27",
+      "state": "provisional",
+      "score": 81,
+      "weight": 126,
+      "found_weight": 102,
+      "found": 38,
+      "missed": 3,
+      "false_claims": 0,
+      "blockers": 19,
+      "blockers_found": 15,
+      "blocker_recall": 0.7895,
+      "invalid_reviews": 0,
+      "real_defects": 11,
+      "by_class": {
+        "C1": {
+          "found": 3,
+          "missed": 0
+        },
+        "C2": {
+          "found": 1,
+          "missed": 2
+        },
+        "C3": {
+          "found": 4,
+          "missed": 0
+        },
+        "C4": {
+          "found": 0,
+          "missed": 1
+        },
+        "C5": {
+          "found": 3,
+          "missed": 0
+        },
+        "C6": {
+          "found": 5,
+          "missed": 0
+        },
+        "C7": {
+          "found": 3,
+          "missed": 0
+        },
+        "C8": {
+          "found": 18,
+          "missed": 0
+        },
+        "C9": {
+          "found": 1,
+          "missed": 0
+        }
+      },
+      "by_severity": {
+        "blocker": {
+          "found": 15,
+          "missed": 1
+        },
+        "major": {
+          "found": 4,
+          "missed": 2
+        },
+        "minor": {
+          "found": 19,
+          "missed": 0
+        }
+      }
+    },
+    {
+      "route": "claude-agent/sonnet#high",
+      "pass": 2,
+      "date": "2026-11-27",
+      "state": "provisional",
+      "score": 77,
+      "weight": 126,
+      "found_weight": 97,
+      "found": 37,
+      "missed": 3,
+      "false_claims": 0,
+      "blockers": 19,
+      "blockers_found": 14,
+      "blocker_recall": 0.7368,
+      "invalid_reviews": 0,
+      "real_defects": 17,
+      "by_class": {
+        "C1": {
+          "found": 3,
+          "missed": 0
+        },
+        "C2": {
+          "found": 0,
+          "missed": 2
+        },
+        "C3": {
+          "found": 4,
+          "missed": 0
+        },
+        "C4": {
+          "found": 0,
+          "missed": 1
+        },
+        "C5": {
+          "found": 3,
+          "missed": 0
+        },
+        "C6": {
+          "found": 5,
+          "missed": 0
+        },
+        "C7": {
+          "found": 3,
+          "missed": 0
+        },
+        "C8": {
+          "found": 18,
+          "missed": 0
+        },
+        "C9": {
+          "found": 1,
+          "missed": 0
+        }
+      },
+      "by_severity": {
+        "blocker": {
+          "found": 14,
+          "missed": 1
+        },
+        "major": {
+          "found": 4,
+          "missed": 2
+        },
+        "minor": {
+          "found": 19,
+          "missed": 0
+        }
+      }
+    },
+    {
+      "route": "claude-agent/sonnet#high",
+      "pass": 3,
+      "date": "2026-11-27",
+      "state": "provisional",
+      "score": 81,
+      "weight": 126,
+      "found_weight": 102,
+      "found": 38,
+      "missed": 3,
+      "false_claims": 0,
+      "blockers": 19,
+      "blockers_found": 15,
+      "blocker_recall": 0.7895,
+      "invalid_reviews": 0,
+      "real_defects": 14,
+      "by_class": {
+        "C1": {
+          "found": 3,
+          "missed": 0
+        },
+        "C2": {
+          "found": 1,
+          "missed": 2
+        },
+        "C3": {
+          "found": 4,
+          "missed": 0
+        },
+        "C4": {
+          "found": 0,
+          "missed": 1
+        },
+        "C5": {
+          "found": 3,
+          "missed": 0
+        },
+        "C6": {
+          "found": 5,
+          "missed": 0
+        },
+        "C7": {
+          "found": 3,
+          "missed": 0
+        },
+        "C8": {
+          "found": 18,
+          "missed": 0
+        },
+        "C9": {
+          "found": 1,
+          "missed": 0
+        }
+      },
+      "by_severity": {
+        "blocker": {
+          "found": 15,
+          "missed": 1
+        },
+        "major": {
+          "found": 4,
+          "missed": 2
+        },
+        "minor": {
+          "found": 19,
+          "missed": 0
+        }
+      }
+    },
+    {
       "route": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
       "pass": 4,
       "date": "2026-11-25",
@@ -833,7 +1040,7 @@
       "route": "opencode-go/hungerg-free",
       "pass": 3,
       "date": "2026-11-27",
-      "state": "complete",
+      "state": "provisional",
       "score": 59.1,
       "weight": 126,
       "found_weight": 77,
@@ -844,7 +1051,7 @@
       "blockers_found": 10,
       "blocker_recall": 0.5263,
       "invalid_reviews": 0,
-      "real_defects": 10,
+      "real_defects": 9,
       "by_class": {
         "C1": {
           "found": 2,
@@ -1108,6 +1315,224 @@
   ],
   "routes": [
     {
+      "route": "claude-agent/sonnet#high",
+      "state": "complete",
+      "passes": [
+        {
+          "route": "claude-agent/sonnet#high",
+          "pass": 1,
+          "date": "2026-11-27",
+          "state": "provisional",
+          "score": 81,
+          "weight": 126,
+          "found_weight": 102,
+          "found": 38,
+          "missed": 3,
+          "false_claims": 0,
+          "blockers": 19,
+          "blockers_found": 15,
+          "blocker_recall": 0.7895,
+          "invalid_reviews": 0,
+          "real_defects": 11,
+          "by_class": {
+            "C1": {
+              "found": 3,
+              "missed": 0
+            },
+            "C2": {
+              "found": 1,
+              "missed": 2
+            },
+            "C3": {
+              "found": 4,
+              "missed": 0
+            },
+            "C4": {
+              "found": 0,
+              "missed": 1
+            },
+            "C5": {
+              "found": 3,
+              "missed": 0
+            },
+            "C6": {
+              "found": 5,
+              "missed": 0
+            },
+            "C7": {
+              "found": 3,
+              "missed": 0
+            },
+            "C8": {
+              "found": 18,
+              "missed": 0
+            },
+            "C9": {
+              "found": 1,
+              "missed": 0
+            }
+          },
+          "by_severity": {
+            "blocker": {
+              "found": 15,
+              "missed": 1
+            },
+            "major": {
+              "found": 4,
+              "missed": 2
+            },
+            "minor": {
+              "found": 19,
+              "missed": 0
+            }
+          }
+        },
+        {
+          "route": "claude-agent/sonnet#high",
+          "pass": 2,
+          "date": "2026-11-27",
+          "state": "provisional",
+          "score": 77,
+          "weight": 126,
+          "found_weight": 97,
+          "found": 37,
+          "missed": 3,
+          "false_claims": 0,
+          "blockers": 19,
+          "blockers_found": 14,
+          "blocker_recall": 0.7368,
+          "invalid_reviews": 0,
+          "real_defects": 17,
+          "by_class": {
+            "C1": {
+              "found": 3,
+              "missed": 0
+            },
+            "C2": {
+              "found": 0,
+              "missed": 2
+            },
+            "C3": {
+              "found": 4,
+              "missed": 0
+            },
+            "C4": {
+              "found": 0,
+              "missed": 1
+            },
+            "C5": {
+              "found": 3,
+              "missed": 0
+            },
+            "C6": {
+              "found": 5,
+              "missed": 0
+            },
+            "C7": {
+              "found": 3,
+              "missed": 0
+            },
+            "C8": {
+              "found": 18,
+              "missed": 0
+            },
+            "C9": {
+              "found": 1,
+              "missed": 0
+            }
+          },
+          "by_severity": {
+            "blocker": {
+              "found": 14,
+              "missed": 1
+            },
+            "major": {
+              "found": 4,
+              "missed": 2
+            },
+            "minor": {
+              "found": 19,
+              "missed": 0
+            }
+          }
+        },
+        {
+          "route": "claude-agent/sonnet#high",
+          "pass": 3,
+          "date": "2026-11-27",
+          "state": "provisional",
+          "score": 81,
+          "weight": 126,
+          "found_weight": 102,
+          "found": 38,
+          "missed": 3,
+          "false_claims": 0,
+          "blockers": 19,
+          "blockers_found": 15,
+          "blocker_recall": 0.7895,
+          "invalid_reviews": 0,
+          "real_defects": 14,
+          "by_class": {
+            "C1": {
+              "found": 3,
+              "missed": 0
+            },
+            "C2": {
+              "found": 1,
+              "missed": 2
+            },
+            "C3": {
+              "found": 4,
+              "missed": 0
+            },
+            "C4": {
+              "found": 0,
+              "missed": 1
+            },
+            "C5": {
+              "found": 3,
+              "missed": 0
+            },
+            "C6": {
+              "found": 5,
+              "missed": 0
+            },
+            "C7": {
+              "found": 3,
+              "missed": 0
+            },
+            "C8": {
+              "found": 18,
+              "missed": 0
+            },
+            "C9": {
+              "found": 1,
+              "missed": 0
+            }
+          },
+          "by_severity": {
+            "blocker": {
+              "found": 15,
+              "missed": 1
+            },
+            "major": {
+              "found": 4,
+              "missed": 2
+            },
+            "minor": {
+              "found": 19,
+              "missed": 0
+            }
+          }
+        }
+      ],
+      "worst": 77,
+      "median": 81,
+      "best": 81,
+      "worst_blocker_recall": 0.7368,
+      "rank": 1
+    },
+    {
       "route": "openai/gpt-6.2-sol#high",
       "state": "complete",
       "passes": [
@@ -1323,7 +1748,7 @@
       "median": 77,
       "best": 84.1,
       "worst_blocker_recall": 0.7368,
-      "rank": 1
+      "rank": 2
     },
     {
       "route": "opencode-go/hy4-flash-free#high",
@@ -1541,7 +1966,7 @@
       "median": 73,
       "best": 75.4,
       "worst_blocker_recall": 0.6842,
-      "rank": 2
+      "rank": 3
     },
     {
       "route": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
@@ -1759,7 +2184,7 @@
       "median": 74.6,
       "best": 78.6,
       "worst_blocker_recall": 0.5789,
-      "rank": 3
+      "rank": 4
     },
     {
       "route": "opencode-go/muse-spark-1.3-contributor#high",
@@ -1977,7 +2402,7 @@
       "median": 64.3,
       "best": 65.1,
       "worst_blocker_recall": 0.5789,
-      "rank": 4
+      "rank": 5
     },
     {
       "route": "opencode-go/hungerg-free",
@@ -2125,7 +2550,7 @@
           "route": "opencode-go/hungerg-free",
           "pass": 3,
           "date": "2026-11-27",
-          "state": "complete",
+          "state": "provisional",
           "score": 59.1,
           "weight": 126,
           "found_weight": 77,
@@ -2136,7 +2561,7 @@
           "blockers_found": 10,
           "blocker_recall": 0.5263,
           "invalid_reviews": 0,
-          "real_defects": 10,
+          "real_defects": 9,
           "by_class": {
             "C1": {
               "found": 2,
@@ -2195,7 +2620,7 @@
       "median": 60.3,
       "best": 61.1,
       "worst_blocker_recall": 0.5263,
-      "rank": 5
+      "rank": 6
     },
     {
       "route": "opencode-go/deepseek-v4.1-flash",
@@ -2275,16 +2700,6 @@
       "median": 76.6,
       "best": 76.6,
       "worst_blocker_recall": 0.7368,
-      "rank": null
-    },
-    {
-      "route": "claude-code/claude-sonnet-5-5#high",
-      "state": "incomplete",
-      "passes": [],
-      "worst": null,
-      "median": null,
-      "best": null,
-      "worst_blocker_recall": null,
       "rank": null
     },
     {

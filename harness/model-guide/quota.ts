@@ -16,8 +16,9 @@
  * `RA_QUOTA_LASTGOOD` stands in when ra-quota gives no usable entry. A stale
  * (>= 6 h) or missing reading gives `stopped` and names the reading.
  *
- * The four providers with a quota source read `GET /api/quota/<id>`:
+ * The providers with a quota source read `GET /api/quota/<id>`:
  *
+ *   claude-agent           -> claude
  *   claude-code            -> claude
  *   kimi-code-plan-cn      -> kimi-for-coding
  *   minimax-cn-coding-plan -> minimax-cn-coding-plan
@@ -114,6 +115,7 @@ const UNSOURCED_CAP = 1;
 
 /** The `<id>` of each provider with a quota source (spec D15). */
 const SOURCE_IDS: Record<string, string> = {
+  "claude-agent": "claude",
   "claude-code": "claude",
   "kimi-code-plan-cn": "kimi-for-coding",
   "minimax-cn-coding-plan": "minimax-cn-coding-plan",

@@ -3,6 +3,7 @@
   "bailian-token-plan/glm-5.3": "GLM-5.3",
   "bailian-token-plan/qwen3.8-flash": "Qwen3.8 Flash",
   "bailian-token-plan/qwen3.8-max": "Qwen3.8 Max",
+  "claude-agent/sonnet": "Claude Sonnet 5.5",
   "claude-code/claude-fable-5-2": "Claude Fable 5.2",
   "claude-code/claude-opus-5-5": "Claude Opus 5.5",
   "claude-code/claude-sonnet-5-5": "Claude Sonnet 5.5",
