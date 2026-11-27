@@ -6,7 +6,7 @@ Problem: the daily job skipped because the price table does not hold the new Go 
 
 ## Phase 1: Go price table for the new Go models
 
-- [x] 1.1 Add the new Go models to `harness/go-pricing.json` with source and read date. Result: `gemini-4-argon`, `longcat-2.5`, and `qwen4-max` with the live rates, the monthly usage, the flags, the source URL, and the read date `2026-11-28`.
+- [x] 1.1 Add the new Go models to `harness/go-pricing.json` with source and read date. Result: `gemini-4-argon`, `longcat-2.5`, and `qwen4-max` with the live rates, the monthly usage, the flags, the source URL, and the read date `2026-11-28`. Commit `a6b0b99`, push range `f506637..a6b0b99`. — a6b0b99
   Done when the table holds `gemini-4-argon`, `longcat-2.5`, and `qwen4-max` with the live rates, the monthly usage, the flags, the source URL, and the read date `2026-11-28`, and holds the `opencode-go/<id>` alias lines the other models have.
   Read the live model list at `https://opencode.ai/inference/go/v1/models` and the Go plan page at `https://opencode.ai/console/go`. Derive `high_usage` from `high_usage_min_requests_per_month` and `batch` from the pick list of the same table. Leave the Go quota guard of D12 unchanged.
   Live read 2026-11-28. Every value of the PM order matches the live source.
@@ -18,7 +18,7 @@ Problem: the daily job skipped because the price table does not hold the new Go 
   The api field names the native route of the model. No production code reads the field or the api map. The OpenCode Go provider catalog holds `longcat-2.5` and `qwen4-max`, and no entry for `gemini-4-argon`; the Console serves that model on the paid OpenCode route only.
   Gates, each alone through `heavy-run.sh`: `schedule-tests/go-pick-list.test.ts`, `schedule-tests/daily-pick-board.test.ts`, `schedule-tests/daily-pick-board-filter.test.ts`, `schedule-tests/daily-heavy-steps.test.ts`, `tests/meta/go-cost.test.ts`, `tests/meta/bench-incremental.test.ts`. Three fail at the phase base and at the parent commit, before the change. `go-pick-list` pins the on-list set of the table. `daily-pick-board` reads the oracle at the path `measure/tracks/daily_model_schedule/pick-oracle.py`, which the archive move removed. `go-cost` reads the request count of the unlimited free models, which hold zero. The change adds no failure to any gate.
 
-- [x] 1.2 Dry run `daily-pick.ts` and record the Sunday pick. Result: no model, candidates 8, eligible 0, untested 0, exit 3.
+- [x] 1.2 Dry run `daily-pick.ts` and record the Sunday pick. Result: no model, candidates 8, eligible 0, untested 0, exit 3. Commit `a6b0b99`, push range `f506637..a6b0b99`. — a6b0b99
   Done when the dry run for `2026-11-29` names the model, the candidate count, the eligible count, the Go quota guard result, and the reason for a skip. Start no batch.
   Command: `harness/node_modules/.bin/tsx harness/daily-pick.ts --catalog reports/go-catalog-2026w48.json --served reports/go-served-2026w48.txt --date 2026-11-29 --runs-root runs --pricing harness/go-pricing.json --day-dir reports/daily --board docs/assets/data/benchmark.json`. The pick reads only. It starts no run, no batch, and no push, and it writes no quota value.
   The Go quota guard of D12 passes. The weekly window reads 50.1 percent and the monthly window reads 70.5 percent, under the weekly stop at 80 and the monthly stop at 100.
@@ -26,5 +26,5 @@ Problem: the daily job skipped because the price table does not hold the new Go 
   The change moves `longcat-2.5` from the unpriced list to the unservable list. The Console serves `opencode-go/longcat-2.5-free`, and the Go docs ask for the Global region in the workspace privacy settings for LongCat 2.5, which is hosted in China. The change moves `gemini-4-argon` to the gone list, because the account catalog holds no Go entry for it. `qwen4-max` is priced, live, and served, and holds fewer requests than the pick floor, so it is not a candidate.
   The dry run with the parent table gives the same counts, with `longcat-2.5` and `qwen4-max` on the unpriced list.
 
-- [~] 1.3 Commit the price table and the card.
+- [x] 1.3 Commit the price table and the card. Result: commit `a6b0b99`, push range `f506637..a6b0b99`. — a6b0b99
   Done when the commit holds `harness/go-pricing.json` and the card files, and the task line holds the commit SHA.
