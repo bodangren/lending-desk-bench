@@ -4,11 +4,11 @@ PM decision 2026-11-27: light lane.
 
 ## Phase 1: Current runs for new Go models
 
-- [x] 1.1 Add a current run for `hungerg-free`.
-  Result: `71ab861`; live `docs/models/hungerg-free.html` and `docs/assets/data/benchmark.json`.
+- [x] 1.1 Add a current run for `hungerg-free`. Result: `71ab861`.
+  Live `docs/models/hungerg-free.html` and `docs/assets/data/benchmark.json`.
 
-- [x] 1.2 Add a current run for `hy4-flash-free`.
-  Result: publish commit `575f36bb084522e7ce9ba2dd260ff9f2402edd3d`; live `generated_at` `2026-11-27T13:07:21`.
+- [x] 1.2 Add a current run for `hy4-flash-free`. Result: `575f36b`.
+  Live `generated_at` `2026-11-27T13:07:21`.
   - Route: `opencode-go/hy4-flash-free`. Quota plan `opencode-go-hy-free` shows GO.
   - Trusted Build totals: `a-hy4-flash-free-2026w48-r1` `92.8`; `a-hy4-flash-free-2026w48-r2` `71.9`; `a-hy4-flash-free-2026w48-r3` `63.3`.
   - Trusted Build totals: `b-hy4-flash-free-2026w48-r1` `98.3`; `b-hy4-flash-free-2026w48-r2` `97.7`; `b-hy4-flash-free-2026w48-r3` `97.2`.
