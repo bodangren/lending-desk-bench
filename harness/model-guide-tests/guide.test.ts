@@ -852,3 +852,75 @@ function runPreview(root: string, manifest: string) {
     cwd: root, env: env(), encoding: "utf8", timeout: 120_000,
   });
 }
+
+/**
+ * The docs and ops row from the docs-and-ops track (task 1.6, Red).
+ * The guide reads tracks["docs-and-ops"].models and ranks Arm A by total;
+ * the fixture's Arm B leader (r/m, 99.9) must never pick. The evidence date
+ * is the tracks export date and the base line is the highest total. An
+ * empty docs-and-ops table keeps the no-pick words. All but the empty-table
+ * keep-behavior fail while the guide ignores the track.
+ */
+function docsAndOpsArmA(file: string): any[] {
+  const doc = JSON.parse(readFileSync(file, "utf8"));
+  expect(doc.tracks["docs-and-ops"], "the tracks fixture holds docs-and-ops").toBeDefined();
+  return doc.tracks["docs-and-ops"].models
+    .filter((item: any) => item.arm === "a")
+    .sort((a: any, b: any) => b.total - a.total);
+}
+
+function tracksExportDate(file: string): string {
+  const generated = JSON.parse(readFileSync(file, "utf8")).generated_at;
+  expect(generated, "the tracks fixture carries an export date").toMatch(/^\d{4}-\d{2}-\d{2}/);
+  return String(generated).slice(0, 10);
+}
+
+function tracksWithoutDocsAndOps(): string {
+  const dir = tempDir("tracks-no-docs-and-ops");
+  const doc = JSON.parse(readFileSync(TRACKS, "utf8"));
+  doc.tracks["docs-and-ops"] = { models: [] };
+  const file = join(dir, "tracks-mini.json");
+  writeFileSync(file, JSON.stringify(doc));
+  return file;
+}
+
+describe("the docs and ops row from the docs-and-ops track (task 1.6)", () => {
+  it("D1: the row ranks Arm A of tracks[docs-and-ops].models by total", () => {
+    const ranked = docsAndOpsArmA(TRACKS);
+    expect(ranked.length, "the fixture holds two Arm A models").toBe(2);
+    expect(ranked[0].total, "the Arm B leader never picks").toBeLessThan(99.9);
+    const row = rowOf(main().guide, "docs and ops");
+    expect(row.pick, "the pick is the Arm A rank 1").toBe(ranked[0].model);
+    expect(row.second, "the second choice is the Arm A rank 2").toBe(ranked[1].model);
+  });
+
+  it("D1: the evidence date is the tracks export date", () => {
+    const row = rowOf(main().guide, "docs and ops");
+    expect(row.evidence_date, "the evidence date is the tracks export date")
+      .toBe(tracksExportDate(TRACKS));
+  });
+
+  it("D1: the base line is the highest docs-and-ops total", () => {
+    const highest = Math.max(
+      ...JSON.parse(readFileSync(TRACKS, "utf8")).tracks["docs-and-ops"].models
+        .map((item: any) => item.total),
+    );
+    expect(rowOf(main().guide, "docs and ops").base_line).toBe(highest);
+  });
+
+  it("D1-keep: an empty docs-and-ops table keeps the no-pick words", () => {
+    const run = runGuide({
+      tag: "docs-and-ops-empty",
+      realWork: main().realWorkJson,
+      scores: SCORES,
+      printAudit: printAuditInput("docs-and-ops-empty"),
+      benchmark: BENCHMARK,
+      tracks: tracksWithoutDocsAndOps(),
+      today: TODAY,
+    });
+    const row = rowOf(run.data, "docs and ops");
+    expect(row.pick).toBe(NO_PICK);
+    expect(row.second).toBeNull();
+    expect(row.evidence).toBe(NO_PICK_EVIDENCE);
+  });
+});

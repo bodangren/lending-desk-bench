@@ -9,6 +9,13 @@
         { "model": "w/m", "arm": "a", "total": 90.9 },
         { "model": "z/m", "arm": "a", "total": 79.4 }
       ]
+    },
+    "docs-and-ops": {
+      "models": [
+        { "model": "r/m", "arm": "b", "total": 99.9 },
+        { "model": "p/m", "arm": "a", "total": 91.2 },
+        { "model": "q/m", "arm": "a", "total": 87.5 }
+      ]
     }
   }
 }
