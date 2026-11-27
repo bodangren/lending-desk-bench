@@ -2,6 +2,9 @@
 
 ## Tracks in progress
 
+- [~] **Track: Executor model API input limit is optional**
+  - *Link: [executor_input_limit_optional_20261127](tracks/executor_input_limit_optional_20261127/)*
+
 - [x] **Track: Daily real-world ingest**
   - *Link: [ingest_daily_20261127](tracks/ingest_daily_20261127/)*
 

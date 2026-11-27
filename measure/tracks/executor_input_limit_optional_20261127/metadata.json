@@ -1,0 +1,19 @@
+{
+  "id": "executor_input_limit_optional_20261127",
+  "title": "Executor model API input limit is optional",
+  "type": "Chore",
+  "status": "in-progress",
+  "created": "2026-11-27",
+  "estimated_tasks": 4,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-27: accept model API limit objects that hold context and output without input.",
+    "evidence": "The OpenCode model API entries for opencode-go/deepseek-v4.1-flash, opencode-go/minimax-m3.1-flash, and minimax-cn-coding-plan/MiniMax-M3.1-Flash hold context and output limits.",
+    "dependencies": [
+      "executor_model_route_20261126"
+    ],
+    "related_tracks": []
+  }
+}
