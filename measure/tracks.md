@@ -2,6 +2,9 @@
 
 ## Tracks in progress
 
+- [~] **Track: Go price table for the new Go models**
+  - *Link: [go_pricing_3models_20261128](tracks/go_pricing_3models_20261128/)*
+
 - [ ] **Track: Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5**
   - *Link: [runs_current_4models_20261127](tracks/runs_current_4models_20261127/)*
 
@@ -12,6 +15,7 @@
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
+| go_pricing_3models_20261128 | Go price table for the new Go models | Chore | pending | 2026-11-28 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | pending | 2026-11-27 |
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | pending | 2026-11-27 |
 | runs_go_new_models_20261127 | Current runs for new Go models | Chore | shelved, not done (PM 2026-11-27) | 2026-11-27 |

@@ -1,0 +1,19 @@
+{
+  "id": "go_pricing_3models_20261128",
+  "title": "Go price table for the new Go models",
+  "type": "Chore",
+  "status": "pending",
+  "created": "2026-11-28",
+  "estimated_tasks": 3,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-28: the daily job skipped because the price table does not hold the new Go models.",
+    "evidence": "Live Go model list read 2026-11-28 from https://opencode.ai/inference/go/v1/models and the Go plan page at https://opencode.ai/console/go.",
+    "dependencies": [],
+    "related_tracks": [
+      "daily_model_schedule"
+    ]
+  }
+}
