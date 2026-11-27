@@ -13,9 +13,9 @@
     },
     {
       "kind": "app code",
-      "pick": "no pick yet: not enough evidence",
-      "second": null,
-      "evidence": "no pick yet",
+      "pick": "opencode-go/hungerg-free",
+      "second": "opencode-go/deepseek-v4.1-flash",
+      "evidence": "build routes: Claude Sonnet=claude-agent/sonnet#high; MiniMax M3.1 Flash=opencode-go/minimax-m3.1-flash 91.1; DeepSeek Flash=opencode-go/deepseek-v4.1-flash 95.0; Hy=opencode-go/hy4-flash-free#high 71.9; Go=opencode-go/mimo-v2.6-flash 95.0; Hungerg=opencode-go/hungerg-free 95.2; GPT Sol=openai/gpt-6.2-sol#high",
       "evidence_date": "2026-11-27",
       "base_line": 95.2
     },
