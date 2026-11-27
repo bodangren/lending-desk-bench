@@ -40,16 +40,16 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
   Route `opencode-go/muse-spark-1.3-contributor`: both runs valid, trusted, publishable and rankable. Totals `99.3` and `100`. Mean per arm `99.65`.
   Mean per arm over the two routes: arm a `99.65`, arm b `100`.
   Freshness: `harness/export-site-data.py` wrote to a temp path and the live freshness checker called every score `TRUSTED` and rankable.
-  Touches: `runs/`, `reports/`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
+  Touches: `runs/`, `reports/`, `measure/archive/guide_docs_ops_20261127/plan.md`.
 
 - [x] 1.6 Guide row code for the docs and ops row. Result: `7923199`, `47006fd`, `178e8ed`, `ef44461`, `9ff36eb`
   Done when the guide picks from Arm A docs-and-ops scores and the live data and page match the published files.
   Read `tracks["docs-and-ops"].models`, rank by total, and keep the empty-table behavior. Use the tracks export date as the evidence date and the highest total as the base line.
   Touches: `harness/model-guide/guide.ts`, `harness/model-guide-tests/guide.test.ts`, `harness/model-guide-tests/fixtures/guide/tracks-mini.json`.
 
-- [~] 1.7 Publish the docs-and-ops guide row and the public track page.
+- [x] 1.7 Publish the docs-and-ops guide row and the public track page. Publication commit `656207d`, push range `4b6747e..656207d`. Published paths: `docs/assets/data/benchmark.json`, `docs/assets/data/model-guide.json`, `docs/assets/data/tracks.json`, `docs/index.html`, `docs/tracks.html`. Live `generated_at` `2026-11-27T23:36:59`. Live SHA-256 of `tracks.json` `5378be6ed27112d27034e15edf21f43ddad43e057f696a97066348106a0f42df` and of `model-guide.json` `e1f110ba0d265f098f2adc5629d46efc457b49d31f5356d18a7d6c9013f09fae`; every published path matches the commit bytes. — 656207d
   Done when the published guide row and the public track page carry the docs-and-ops data.
-  Touches: `docs/tracks.html`, `docs/assets/data/tracks.json`, `docs/assets/data/model-guide.json`, `docs/index.html`, `measure/tracks/guide_docs_ops_20261127/plan.md`.
+  Touches: `docs/tracks.html`, `docs/assets/data/tracks.json`, `docs/assets/data/model-guide.json`, `docs/index.html`, `measure/archive/guide_docs_ops_20261127/plan.md`.
 
 ## Backlog
 

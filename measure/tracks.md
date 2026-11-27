@@ -2,9 +2,6 @@
 
 ## Tracks in progress
 
-- [~] **Track: Model guide docs and ops row**
-  - *Link: [guide_docs_ops_20261127](tracks/guide_docs_ops_20261127/)*
-
 - [ ] **Track: Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5**
   - *Link: [runs_current_4models_20261127](tracks/runs_current_4models_20261127/)*
 
@@ -15,7 +12,6 @@
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
-| guide_docs_ops_20261127 | Model guide docs and ops row | Chore | pending | 2026-11-27 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | pending | 2026-11-27 |
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | pending | 2026-11-27 |
 | runs_go_new_models_20261127 | Current runs for new Go models | Chore | shelved, not done (PM 2026-11-27) | 2026-11-27 |
@@ -126,3 +122,7 @@ These items have no date and no track yet.
 - [x] **Track: Model guide code review row**
   *Link: [guide_code_review_20261127](./archive/guide_code_review_20261127/)*
   *Model guide code review row: review passes, route ranking, publication, and the live site check. The deepseek-v4.1-flash and mimo-v2.6-flash passes sit in the plan Backlog and run when ra-quota shows GO for opencode-go. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
+
+- [x] **Track: Model guide docs and ops row** — The guide has a docs and ops row from the docs-and-ops track.
+  *Link: [guide_docs_ops_20261127](./archive/guide_docs_ops_20261127/)*
+  *Model guide docs and ops row: the docs-and-ops fixture, grader and registration, the session routes, and the published docs and ops row. Phase acceptance passed at 071a4d1; publication at 656207d. The hungerg-free run sits in the plan Backlog. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
