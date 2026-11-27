@@ -19,7 +19,7 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
   The operations task completes `ops/verify.ts` to validate a fixed operations manifest, emit sorted JSON errors, and return the documented exit code.
   Touches: `harness/docs-and-ops/model-visible/AGENTS.md`, `harness/docs-and-ops/model-visible/track/spec.md`, `harness/docs-and-ops/model-visible/track/plan.md`, `harness/docs-and-ops/model-visible/track/metadata.json`, `harness/docs-and-ops/model-visible/docs/runbook.md`, `harness/docs-and-ops/model-visible/ops/verify.ts`, `harness/docs-and-ops/sets/d1.json`, `harness/docs-and-ops/tasks.ts`, `harness/docs-and-ops/make-variant.ts`, `harness/docs-and-ops/oracle-overlay/docs/runbook.md`, `harness/docs-and-ops/oracle-overlay/ops/verify.ts`, `harness/candidate-contract.ts`.
 
-- [x] 1.3 Add the deterministic grader and score axes. — 178e8ed
+- [x] 1.3 Add the deterministic grader and score axes. — 1da665b
   Green: 178e8ed.
   Done when the oracle passes, each broken fixture fails its declared checks, and malformed result IDs invalidate the run.
   Grade documentation against required sections, repository commands, route names, and placeholder rejection.
