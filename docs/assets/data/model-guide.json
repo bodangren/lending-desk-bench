@@ -16,15 +16,15 @@
       "pick": "no pick yet: not enough evidence",
       "second": null,
       "evidence": "no pick yet",
-      "evidence_date": "2026-11-17",
+      "evidence_date": "2026-11-27",
       "base_line": 95.2
     },
     {
       "kind": "test writing",
-      "pick": "opencode-go/deepseek-v4.1-flash",
-      "second": "opencode-go/hy4-flash-free",
-      "evidence": "page B producer: accept 60 %, 13 tasks",
-      "evidence_date": "2026-11-17",
+      "pick": "opencode-go/muse-spark-1.3-contributor",
+      "second": null,
+      "evidence": "page B producer: accept 45 %, 81 tasks",
+      "evidence_date": "2026-11-27",
       "base_line": 98.7
     },
     {
@@ -32,7 +32,7 @@
       "pick": "no pick yet: not enough evidence",
       "second": null,
       "evidence": "no pick yet",
-      "evidence_date": "2026-11-17",
+      "evidence_date": "2026-11-27",
       "base_line": null
     },
     {
@@ -40,7 +40,7 @@
       "pick": "claude-code/claude-sonnet-5-5#high",
       "second": "kimi-code-plan-cn/k3.1-pro",
       "evidence": "print-audit: 13 of 13 (n=13)",
-      "evidence_date": "2026-11-17",
+      "evidence_date": "2026-11-27",
       "base_line": null
     },
     {
@@ -48,7 +48,7 @@
       "pick": "no pick yet: not enough evidence",
       "second": null,
       "evidence": "no pick yet",
-      "evidence_date": "2026-11-17",
+      "evidence_date": "2026-11-27",
       "base_line": null
     }
   ]

@@ -2,7 +2,7 @@
 
 ## Tracks in progress
 
-- [~] **Track: Daily real-world ingest**
+- [x] **Track: Daily real-world ingest**
   - *Link: [ingest_daily_20261127](tracks/ingest_daily_20261127/)*
 
 - [~] **Track: Model guide code review row**
@@ -39,7 +39,7 @@
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
-| ingest_daily_20261127 | Daily real-world ingest | Chore | in-progress | 2026-11-27 |
+| ingest_daily_20261127 | Daily real-world ingest | Chore | complete — daily ingest and live evidence in measure/tracks/ingest_daily_20261127/plan.md | 2026-11-27 |
 | guide_code_review_20261127 | Model guide code review row | Chore | in-progress | 2026-11-27 |
 | guide_app_code_20261127 | Model guide app code row | Chore | pending | 2026-11-27 |
 | guide_docs_ops_20261127 | Model guide docs and ops row | Chore | pending | 2026-11-27 |

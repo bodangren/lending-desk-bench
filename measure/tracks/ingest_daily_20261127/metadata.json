@@ -2,7 +2,7 @@
   "id": "ingest_daily_20261127",
   "title": "Daily real-world ingest",
   "type": "Chore",
-  "status": "in-progress",
+  "status": "complete",
   "created": "2026-11-27",
   "estimated_tasks": 5,
   "actual_tasks": null,

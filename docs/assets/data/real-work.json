@@ -1,79 +1,43 @@
 {
   "schema": "model-guide-real-work/2",
   "source": {
-    "sha256": "0b09fecdb39501b6234e8c1832853c62a066441917b2fa202cd52f59032a49e9",
-    "generated_on": "2026-11-17",
-    "read_date": "2026-11-17",
-    "export_date": "2026-11-17",
+    "sha256": "e6b94bc9bb69213e3a1c97c144c3248353604a491f24475469c5a4d11fb319f7",
+    "generated_on": "2026-11-27",
+    "read_date": "2026-11-27",
+    "export_date": "2026-11-27",
     "files": [
       {
-        "name": "ra-outcomes-2026-11-17.json",
-        "sha256": "0b09fecdb39501b6234e8c1832853c62a066441917b2fa202cd52f59032a49e9",
-        "size": 94783
+        "name": "ra-outcomes-2026-11-27.json",
+        "sha256": "e6b94bc9bb69213e3a1c97c144c3248353604a491f24475469c5a4d11fb319f7",
+        "size": 159810
       },
       {
-        "name": "aa-reliability-2026-11-17.json",
-        "sha256": "1c29255cd87607dbb474f5a6068978d44d09e08228918ee4b991cf6e95840b7b",
-        "size": 25271
+        "name": "aa-reliability-2026-11-27.json",
+        "sha256": "0146cc4a63a1cb6f16766c87664926e24c8a012b0ba8e20a699bb650ef3ef6ba",
+        "size": 36763
       },
       {
-        "name": "allowed-routes-2026-11-17.json",
-        "sha256": "260c44c48011e74ee06c32769fec59dbed713a98f29a8c48e5019b0c3f4d9b30",
-        "size": 523
+        "name": "allowed-routes-2026-11-27.json",
+        "sha256": "7f9590e1a254beb711a5b85d4ea5250ed4e8027dadcbbaeaf03cdcb8de0cc477",
+        "size": 889
       }
     ]
   },
   "coverage": {
-    "rows": 217,
-    "routes": 53,
+    "rows": 348,
+    "routes": 67,
     "unknown_rows": 6,
-    "unknown_share": 2.7649769585253456,
-    "escapes_total": 0
+    "unknown_share": 1.7241379310344827,
+    "escapes_total": 81
   },
   "producer": [
     {
-      "model": "opencode-go/mimo-v2.6-flash",
+      "model": "opencode-go/hy4-flash-free",
       "kind": "producer",
       "routes": [
-        "opencode-go/mimo-v2.6-flash"
-      ],
-      "roles": [
-        "coder",
-        "green",
-        "red",
-        "strategy"
-      ],
-      "tasks": 22,
-      "accepted": 9,
-      "first_round": {
-        "value": 0.8,
-        "n": 5
-      },
-      "mean_rework": 0.045454545454545456,
-      "cleanup_share": 0,
-      "tokens_per_accepted": 278073.6666666667,
-      "runs": 36,
-      "pass": 8,
-      "fail": 0,
-      "error": 0,
-      "no_result": 28,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 8
-      },
-      "net_score": -10.83,
-      "allowed": true,
-      "not_for_verdicts": true,
-      "rank": 1,
-      "rate_count": 22
-    },
-    {
-      "model": "opencode-go/deepseek-v4.1-flash",
-      "kind": "producer",
-      "routes": [
-        "opencode-go/deepseek-v4.1-flash"
+        "opencode-go/hy4-flash-free#high",
+        "opencode-go/hy4-flash-free#medium",
+        "opencode-go/hy4-flash-free#none"
       ],
       "roles": [
         "coder",
@@ -83,31 +47,31 @@
         "small",
         "strategy"
       ],
-      "tasks": 80,
-      "accepted": 30,
+      "tasks": 156,
+      "accepted": 35,
       "first_round": {
-        "value": 0.7333333333333333,
-        "n": 30
+        "value": 0.6060606060606061,
+        "n": 33
       },
-      "mean_rework": 0.325,
-      "cleanup_share": 0.13049566903754917,
-      "tokens_per_accepted": 630601,
-      "runs": 119,
-      "pass": 45,
-      "fail": 2,
-      "error": 0,
-      "no_result": 58,
+      "mean_rework": 0.3525641025641026,
+      "cleanup_share": 0.041592180640954095,
+      "tokens_per_accepted": 1026485.5714285715,
+      "runs": 295,
+      "pass": 159,
+      "fail": 14,
+      "error": 1,
+      "no_result": 94,
       "blocking_findings": 0,
       "escapes": 0,
       "pass_rate": {
-        "value": 0.9574468085106383,
-        "n": 47
+        "value": 0.9137931034482759,
+        "n": 174
       },
-      "net_score": 0.9,
+      "net_score": null,
       "allowed": true,
-      "not_for_verdicts": false,
-      "rank": 2,
-      "rate_count": 80
+      "not_for_verdicts": true,
+      "rank": 1,
+      "rate_count": 156
     },
     {
       "model": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
@@ -123,296 +87,31 @@
         "small",
         "strategy"
       ],
-      "tasks": 55,
-      "accepted": 7,
+      "tasks": 42,
+      "accepted": 13,
       "first_round": {
-        "value": 0.6,
-        "n": 5
+        "value": 0.5833333333333334,
+        "n": 12
       },
-      "mean_rework": 0.6909090909090909,
-      "cleanup_share": 0.05951720332085564,
-      "tokens_per_accepted": 597564.8571428572,
-      "runs": 178,
-      "pass": 53,
-      "fail": 5,
-      "error": 0,
-      "no_result": 14,
+      "mean_rework": 0.2619047619047619,
+      "cleanup_share": 0.051035332393363254,
+      "tokens_per_accepted": 802958.6153846154,
+      "runs": 252,
+      "pass": 101,
+      "fail": 11,
+      "error": 4,
+      "no_result": 32,
       "blocking_findings": 0,
       "escapes": 0,
       "pass_rate": {
-        "value": 0.9137931034482759,
-        "n": 58
+        "value": 0.8706896551724138,
+        "n": 116
       },
       "net_score": -6.4,
       "allowed": true,
       "not_for_verdicts": true,
-      "rank": 3,
-      "rate_count": 55
-    },
-    {
-      "model": "opencode-go/hy4-flash-free",
-      "kind": "producer",
-      "routes": [
-        "opencode-go/hy4-flash-free#high"
-      ],
-      "roles": [
-        "green",
-        "record",
-        "red",
-        "small",
-        "strategy"
-      ],
-      "tasks": 12,
-      "accepted": 7,
-      "first_round": {
-        "value": 0.42857142857142855,
-        "n": 7
-      },
-      "mean_rework": 0.75,
-      "cleanup_share": 0.07073456832477114,
-      "tokens_per_accepted": 328146.71428571426,
-      "runs": 24,
-      "pass": 7,
-      "fail": 0,
-      "error": 0,
-      "no_result": 5,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 7
-      },
-      "net_score": null,
-      "allowed": true,
-      "not_for_verdicts": true,
-      "rank": 4,
-      "rate_count": 12
-    },
-    {
-      "model": "bailian-token-plan/qwen3.8-max",
-      "kind": "producer",
-      "routes": [
-        "bailian-token-plan/qwen3.8-max#high"
-      ],
-      "roles": [
-        "red"
-      ],
-      "tasks": 1,
-      "accepted": 1,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 0,
-      "cleanup_share": 0,
-      "tokens_per_accepted": 15822,
-      "runs": 1,
-      "pass": 1,
-      "fail": 0,
-      "error": 0,
-      "no_result": 0,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 1
-      },
-      "net_score": 10.47,
-      "allowed": false,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 1
-    },
-    {
-      "model": "claude-code/claude-sonnet-5-5",
-      "kind": "producer",
-      "routes": [
-        "claude-code/claude-sonnet-5-5#high",
-        "claude-code/claude-sonnet-5-5#max"
-      ],
-      "roles": [
-        "coder",
-        "green",
-        "record",
-        "red",
-        "small",
-        "strategy"
-      ],
-      "tasks": 81,
-      "accepted": 5,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 0.43209876543209874,
-      "cleanup_share": 0.3825162520101533,
-      "tokens_per_accepted": 1243065,
-      "runs": 81,
-      "pass": 29,
-      "fail": 0,
-      "error": 0,
-      "no_result": 17,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 29
-      },
-      "net_score": 18.73,
-      "allowed": true,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 81
-    },
-    {
-      "model": "deepseek/deepseek-flash",
-      "kind": "producer",
-      "routes": [
-        "deepseek/deepseek-flash#high"
-      ],
-      "roles": [
-        "coder",
-        "green",
-        "record",
-        "red",
-        "small",
-        "strategy"
-      ],
-      "tasks": 54,
-      "accepted": 0,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 0.46296296296296297,
-      "cleanup_share": 0.1548556879283899,
-      "tokens_per_accepted": null,
-      "runs": 104,
-      "pass": 15,
-      "fail": 0,
-      "error": 0,
-      "no_result": 4,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 15
-      },
-      "net_score": 1.53,
-      "allowed": false,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 54
-    },
-    {
-      "model": "kimi-code-plan-cn/kimi-for-coding",
-      "kind": "producer",
-      "routes": [
-        "kimi-code-plan-cn/kimi-for-coding"
-      ],
-      "roles": [
-        "coder",
-        "green",
-        "strategy"
-      ],
-      "tasks": 1,
-      "accepted": 0,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 1,
-      "cleanup_share": 0.0790716325652361,
-      "tokens_per_accepted": null,
-      "runs": 4,
-      "pass": 1,
-      "fail": 0,
-      "error": 0,
-      "no_result": 0,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 1
-      },
-      "net_score": null,
-      "allowed": false,
-      "not_for_verdicts": true,
-      "rank": null,
-      "rate_count": 1
-    },
-    {
-      "model": "nvidia/deepseek-ai/deepseek-v4.1-flash",
-      "kind": "producer",
-      "routes": [
-        "nvidia/deepseek-ai/deepseek-v4.1-flash#high"
-      ],
-      "roles": [
-        "green",
-        "red"
-      ],
-      "tasks": 3,
-      "accepted": 1,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 0.6666666666666666,
-      "cleanup_share": 0.09773542505554951,
-      "tokens_per_accepted": 215998,
-      "runs": 6,
-      "pass": 1,
-      "fail": 0,
-      "error": 1,
-      "no_result": 0,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 0.5,
-        "n": 2
-      },
-      "net_score": 1.53,
-      "allowed": false,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 3
-    },
-    {
-      "model": "nvidia/minimaxai/minimax-m3.1-flash",
-      "kind": "producer",
-      "routes": [
-        "nvidia/minimaxai/minimax-m3.1-flash#thinking"
-      ],
-      "roles": [
-        "coder",
-        "green",
-        "red"
-      ],
-      "tasks": 13,
-      "accepted": 3,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 0.23076923076923078,
-      "cleanup_share": 0.10075874254041829,
-      "tokens_per_accepted": 253432,
-      "runs": 9,
-      "pass": 2,
-      "fail": 0,
-      "error": 0,
-      "no_result": 7,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 2
-      },
-      "net_score": -6.4,
-      "allowed": false,
-      "not_for_verdicts": true,
-      "rank": null,
-      "rate_count": 13
+      "rank": 2,
+      "rate_count": 42
     },
     {
       "model": "opencode-go/muse-spark-1.3-contributor",
@@ -421,35 +120,151 @@
         "opencode-go/muse-spark-1.3-contributor#high"
       ],
       "roles": [
+        "coder",
         "green",
         "red",
-        "small"
+        "small",
+        "strategy"
       ],
-      "tasks": 4,
-      "accepted": 3,
+      "tasks": 218,
+      "accepted": 61,
       "first_round": {
-        "value": null,
-        "n": 0
+        "value": 0.44642857142857145,
+        "n": 56
       },
-      "mean_rework": 0.25,
-      "cleanup_share": 0,
-      "tokens_per_accepted": 128885,
-      "runs": 6,
-      "pass": 3,
-      "fail": 0,
-      "error": 0,
-      "no_result": 3,
+      "mean_rework": 0.536697247706422,
+      "cleanup_share": 0.2063209639809066,
+      "tokens_per_accepted": 1182877.8360655739,
+      "runs": 392,
+      "pass": 176,
+      "fail": 31,
+      "error": 4,
+      "no_result": 127,
       "blocking_findings": 0,
       "escapes": 0,
       "pass_rate": {
-        "value": 1,
-        "n": 3
+        "value": 0.8341232227488151,
+        "n": 211
       },
       "net_score": 22.4,
       "allowed": true,
       "not_for_verdicts": false,
+      "rank": 3,
+      "rate_count": 218
+    },
+    {
+      "model": "claude-agent/sonnet",
+      "kind": "producer",
+      "routes": [
+        "claude-agent/sonnet#high"
+      ],
+      "roles": [
+        "green"
+      ],
+      "tasks": 4,
+      "accepted": 1,
+      "first_round": {
+        "value": null,
+        "n": 0
+      },
+      "mean_rework": 0.5,
+      "cleanup_share": 0.44020065373061007,
+      "tokens_per_accepted": 30620,
+      "runs": 1,
+      "pass": 0,
+      "fail": 0,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 0,
+      "escapes": 0,
+      "pass_rate": {
+        "value": null,
+        "n": 0
+      },
+      "net_score": 18.73,
+      "allowed": true,
+      "not_for_verdicts": false,
       "rank": null,
       "rate_count": 4
+    },
+    {
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "kind": "producer",
+      "routes": [
+        "opencode-go/deepseek-v4.1-flash"
+      ],
+      "roles": [
+        "coder",
+        "green",
+        "record",
+        "red",
+        "small",
+        "strategy"
+      ],
+      "tasks": 6,
+      "accepted": 4,
+      "first_round": {
+        "value": null,
+        "n": 0
+      },
+      "mean_rework": 0.6666666666666666,
+      "cleanup_share": 0.061142666138025596,
+      "tokens_per_accepted": 315121,
+      "runs": 222,
+      "pass": 125,
+      "fail": 9,
+      "error": 0,
+      "no_result": 73,
+      "blocking_findings": 0,
+      "escapes": 0,
+      "pass_rate": {
+        "value": 0.9328358208955224,
+        "n": 134
+      },
+      "net_score": 0.9,
+      "allowed": true,
+      "not_for_verdicts": false,
+      "rank": null,
+      "rate_count": 6
+    },
+    {
+      "model": "opencode-go/hungerg-free",
+      "kind": "producer",
+      "routes": [
+        "opencode-go/hungerg-free"
+      ],
+      "roles": [
+        "coder",
+        "green",
+        "record",
+        "red",
+        "small"
+      ],
+      "tasks": 20,
+      "accepted": 4,
+      "first_round": {
+        "value": null,
+        "n": 0
+      },
+      "mean_rework": 0.15,
+      "cleanup_share": 0.05200106417812704,
+      "tokens_per_accepted": 1121167.5,
+      "runs": 38,
+      "pass": 5,
+      "fail": 0,
+      "error": 7,
+      "no_result": 12,
+      "blocking_findings": 0,
+      "escapes": 0,
+      "pass_rate": {
+        "value": 0.4166666666666667,
+        "n": 12
+      },
+      "net_score": null,
+      "allowed": true,
+      "not_for_verdicts": true,
+      "rank": null,
+      "rate_count": 20
     },
     {
       "model": "opencode/deepseek-v4.1-flash-free",
@@ -459,71 +274,36 @@
       ],
       "roles": [
         "green",
+        "record",
         "red",
         "small",
         "strategy"
       ],
-      "tasks": 6,
-      "accepted": 1,
+      "tasks": 7,
+      "accepted": 4,
       "first_round": {
         "value": null,
         "n": 0
       },
-      "mean_rework": 0.6666666666666666,
-      "cleanup_share": 0.6679775156191615,
-      "tokens_per_accepted": 226808,
-      "runs": 36,
-      "pass": 4,
-      "fail": 2,
+      "mean_rework": 2.4285714285714284,
+      "cleanup_share": 1,
+      "tokens_per_accepted": 741132.75,
+      "runs": 89,
+      "pass": 19,
+      "fail": 11,
       "error": 0,
-      "no_result": 8,
+      "no_result": 41,
       "blocking_findings": 0,
       "escapes": 0,
       "pass_rate": {
-        "value": 0.6666666666666666,
-        "n": 6
+        "value": 0.6333333333333333,
+        "n": 30
       },
       "net_score": 1.53,
       "allowed": true,
       "not_for_verdicts": false,
       "rank": null,
-      "rate_count": 6
-    },
-    {
-      "model": "opencode/glm-5.3-flash-free",
-      "kind": "producer",
-      "routes": [
-        "opencode/glm-5.3-flash-free#high"
-      ],
-      "roles": [
-        "green",
-        "red"
-      ],
-      "tasks": 3,
-      "accepted": 1,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 0,
-      "cleanup_share": 0,
-      "tokens_per_accepted": 66996,
-      "runs": 14,
-      "pass": 2,
-      "fail": 0,
-      "error": 0,
-      "no_result": 2,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 2
-      },
-      "net_score": 0.67,
-      "allowed": true,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 3
+      "rate_count": 7
     },
     {
       "model": "opencode/hy4-flash-free",
@@ -534,7 +314,7 @@
       "roles": [
         "coder"
       ],
-      "tasks": 11,
+      "tasks": 1,
       "accepted": 0,
       "first_round": {
         "value": null,
@@ -543,97 +323,22 @@
       "mean_rework": 0,
       "cleanup_share": 0,
       "tokens_per_accepted": null,
-      "runs": 12,
-      "pass": 4,
+      "runs": 28,
+      "pass": 8,
       "fail": 0,
       "error": 0,
-      "no_result": 5,
+      "no_result": 12,
       "blocking_findings": 0,
       "escapes": 0,
       "pass_rate": {
         "value": 1,
-        "n": 4
+        "n": 8
       },
       "net_score": null,
       "allowed": true,
       "not_for_verdicts": true,
       "rank": null,
-      "rate_count": 11
-    },
-    {
-      "model": "opencode/minimax-m3.1-flash-free",
-      "kind": "producer",
-      "routes": [
-        "opencode/minimax-m3.1-flash-free#high"
-      ],
-      "roles": [
-        "coder",
-        "green",
-        "record",
-        "red",
-        "small",
-        "strategy"
-      ],
-      "tasks": 28,
-      "accepted": 2,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 1.0357142857142858,
-      "cleanup_share": 0.45860994278362366,
-      "tokens_per_accepted": 1573513.5,
-      "runs": 70,
-      "pass": 16,
-      "fail": 0,
-      "error": 0,
-      "no_result": 20,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 16
-      },
-      "net_score": -6.4,
-      "allowed": true,
-      "not_for_verdicts": true,
-      "rank": null,
-      "rate_count": 28
-    },
-    {
-      "model": "volcengine-agent-plan/glm-5.3-flash",
-      "kind": "producer",
-      "routes": [
-        "volcengine-agent-plan/glm-5.3-flash#high"
-      ],
-      "roles": [
-        "green"
-      ],
-      "tasks": 13,
-      "accepted": 0,
-      "first_round": {
-        "value": null,
-        "n": 0
-      },
-      "mean_rework": 0.23076923076923078,
-      "cleanup_share": 0.28592073202092705,
-      "tokens_per_accepted": null,
-      "runs": 1,
-      "pass": 1,
-      "fail": 0,
-      "error": 0,
-      "no_result": 0,
-      "blocking_findings": 0,
-      "escapes": 0,
-      "pass_rate": {
-        "value": 1,
-        "n": 1
-      },
-      "net_score": 0.67,
-      "allowed": false,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 13
+      "rate_count": 1
     }
   ],
   "checker": [
@@ -677,29 +382,128 @@
         "claude-code/claude-opus-5-5[1m]#medium"
       ],
       "roles": [
+        "acceptance",
+        "adversarial",
         "phase-acceptance",
         "review-a",
         "review-b",
         "review-c"
       ],
-      "runs": 33,
-      "pass": 25,
-      "fail": 8,
+      "runs": 50,
+      "pass": 38,
+      "fail": 12,
       "error": 1,
-      "no_result": 0,
-      "blocking_findings": 240,
+      "no_result": 1,
+      "blocking_findings": 298,
       "escapes": 0,
-      "findings": 240,
-      "findings_per_run": 7.2727272727272725,
+      "findings": 298,
+      "findings_per_run": 5.96,
       "pass_rate": {
-        "value": 0.7575757575757576,
-        "n": 33
+        "value": 0.76,
+        "n": 50
+      },
+      "net_score": 42.37,
+      "allowed": false,
+      "not_for_verdicts": false,
+      "rank": 2,
+      "rate_count": 50
+    },
+    {
+      "model": "claude-agent/opus",
+      "kind": "gate",
+      "routes": [
+        "claude-agent/opus#high"
+      ],
+      "roles": [
+        "review-a"
+      ],
+      "runs": 14,
+      "pass": 11,
+      "fail": 3,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 38,
+      "escapes": 0,
+      "findings": 38,
+      "findings_per_run": 2.7142857142857144,
+      "pass_rate": {
+        "value": 0.7857142857142857,
+        "n": 14
       },
       "net_score": 42.37,
       "allowed": true,
       "not_for_verdicts": false,
-      "rank": 2,
-      "rate_count": 33
+      "rank": 3,
+      "rate_count": 14
+    },
+    {
+      "model": "openai/gpt-6.1-sol",
+      "kind": "gate",
+      "routes": [
+        "openai/gpt-6.1-sol#high"
+      ],
+      "roles": [
+        "adversarial",
+        "final-acceptance",
+        "phase-acceptance",
+        "review-a",
+        "review-b",
+        "review-c",
+        "spec-review"
+      ],
+      "runs": 187,
+      "pass": 115,
+      "fail": 72,
+      "error": 6,
+      "no_result": 28,
+      "blocking_findings": 270,
+      "escapes": 16,
+      "findings": 270,
+      "findings_per_run": 1.4438502673796791,
+      "pass_rate": {
+        "value": 0.6149732620320856,
+        "n": 187
+      },
+      "net_score": 41,
+      "allowed": false,
+      "not_for_verdicts": false,
+      "rank": 4,
+      "rate_count": 187
+    },
+    {
+      "model": "openai/gpt-6.2-sol",
+      "kind": "gate",
+      "routes": [
+        "openai/gpt-6.2-sol#high"
+      ],
+      "roles": [
+        "acceptance",
+        "adversarial",
+        "final-acceptance",
+        "phase-acceptance",
+        "review-a",
+        "review-b",
+        "review-c",
+        "spec-review"
+      ],
+      "runs": 189,
+      "pass": 89,
+      "fail": 100,
+      "error": 2,
+      "no_result": 18,
+      "blocking_findings": 481,
+      "escapes": 3,
+      "findings": 481,
+      "findings_per_run": 2.544973544973545,
+      "pass_rate": {
+        "value": 0.4708994708994709,
+        "n": 189
+      },
+      "net_score": 38.3,
+      "allowed": true,
+      "not_for_verdicts": false,
+      "rank": 5,
+      "rate_count": 189
     },
     {
       "model": "opencode-go/kimi-k3.1-pro",
@@ -726,7 +530,7 @@
       "net_score": 29.87,
       "allowed": false,
       "not_for_verdicts": false,
-      "rank": 3,
+      "rank": 6,
       "rate_count": 5
     },
     {
@@ -756,8 +560,68 @@
       "net_score": 29.87,
       "allowed": false,
       "not_for_verdicts": false,
-      "rank": 4,
+      "rank": 7,
       "rate_count": 12
+    },
+    {
+      "model": "kimi-code-plan-cn/k3.1-pro",
+      "kind": "gate",
+      "routes": [
+        "kimi-code-plan-cn/k3.1-pro",
+        "kimi-code-plan-cn/k3.1-pro#high"
+      ],
+      "roles": [
+        "final-acceptance",
+        "phase-acceptance",
+        "review-c"
+      ],
+      "runs": 15,
+      "pass": 12,
+      "fail": 3,
+      "error": 0,
+      "no_result": 6,
+      "blocking_findings": 16,
+      "escapes": 0,
+      "findings": 16,
+      "findings_per_run": 1.0666666666666667,
+      "pass_rate": {
+        "value": 0.8,
+        "n": 15
+      },
+      "net_score": 29.87,
+      "allowed": true,
+      "not_for_verdicts": false,
+      "rank": 8,
+      "rate_count": 15
+    },
+    {
+      "model": "openai/gpt-6.1-terra",
+      "kind": "gate",
+      "routes": [
+        "openai/gpt-6.1-terra#high"
+      ],
+      "roles": [
+        "spec-review",
+        "vision-review"
+      ],
+      "runs": 7,
+      "pass": 5,
+      "fail": 2,
+      "error": 0,
+      "no_result": 6,
+      "blocking_findings": 0,
+      "escapes": 0,
+      "findings": 0,
+      "findings_per_run": 0,
+      "pass_rate": {
+        "value": 0.7142857142857143,
+        "n": 7
+      },
+      "net_score": 27.77,
+      "allowed": true,
+      "not_for_verdicts": false,
+      "rank": 9,
+      "rate_count": 7
     },
     {
       "model": "opencode/muse-spark-1.3",
@@ -786,7 +650,7 @@
       "net_score": 22.4,
       "allowed": false,
       "not_for_verdicts": false,
-      "rank": 5,
+      "rank": 10,
       "rate_count": 6
     },
     {
@@ -799,65 +663,103 @@
       "roles": [
         "acceptance",
         "adversarial",
+        "final-acceptance",
         "phase-acceptance",
         "review-a",
         "review-b",
         "review-c",
-        "spec-review"
+        "spec-review",
+        "vision-review"
       ],
-      "runs": 92,
-      "pass": 75,
-      "fail": 17,
-      "error": 0,
-      "no_result": 15,
-      "blocking_findings": 184,
+      "runs": 171,
+      "pass": 141,
+      "fail": 30,
+      "error": 10,
+      "no_result": 36,
+      "blocking_findings": 271,
       "escapes": 0,
-      "findings": 184,
-      "findings_per_run": 2,
+      "findings": 271,
+      "findings_per_run": 1.5847953216374269,
       "pass_rate": {
-        "value": 0.8152173913043478,
-        "n": 92
+        "value": 0.8245614035087719,
+        "n": 171
       },
       "net_score": 22.4,
       "allowed": true,
       "not_for_verdicts": false,
-      "rank": 6,
-      "rate_count": 92
+      "rank": 11,
+      "rate_count": 171
+    },
+    {
+      "model": "claude-agent/sonnet",
+      "kind": "gate",
+      "routes": [
+        "claude-agent/sonnet#max",
+        "claude-agent/sonnet#xhigh"
+      ],
+      "roles": [
+        "adversarial",
+        "final-acceptance",
+        "phase-acceptance",
+        "review-b",
+        "spec-review",
+        "vision-review"
+      ],
+      "runs": 93,
+      "pass": 73,
+      "fail": 20,
+      "error": 0,
+      "no_result": 13,
+      "blocking_findings": 308,
+      "escapes": 0,
+      "findings": 308,
+      "findings_per_run": 3.3118279569892475,
+      "pass_rate": {
+        "value": 0.7849462365591398,
+        "n": 93
+      },
+      "net_score": 20.6,
+      "allowed": true,
+      "not_for_verdicts": false,
+      "rank": 12,
+      "rate_count": 93
     },
     {
       "model": "claude-code/claude-sonnet-5-5",
       "kind": "gate",
       "routes": [
+        "claude-code/claude-sonnet-5-5",
         "claude-code/claude-sonnet-5-5#high",
         "claude-code/claude-sonnet-5-5#max"
       ],
       "roles": [
         "acceptance",
         "adversarial",
+        "final-acceptance",
         "phase-acceptance",
         "review-a",
         "review-b",
         "review-c",
         "spec-review"
       ],
-      "runs": 178,
-      "pass": 132,
-      "fail": 46,
-      "error": 0,
-      "no_result": 17,
-      "blocking_findings": 559,
+      "runs": 301,
+      "pass": 231,
+      "fail": 70,
+      "error": 1,
+      "no_result": 27,
+      "blocking_findings": 1135,
       "escapes": 0,
-      "findings": 559,
-      "findings_per_run": 3.140449438202247,
+      "findings": 1135,
+      "findings_per_run": 3.770764119601329,
       "pass_rate": {
-        "value": 0.7415730337078652,
-        "n": 178
+        "value": 0.7674418604651163,
+        "n": 301
       },
       "net_score": 18.73,
-      "allowed": true,
+      "allowed": false,
       "not_for_verdicts": false,
-      "rank": 7,
-      "rate_count": 178
+      "rank": 13,
+      "rate_count": 301
     },
     {
       "model": "nvidia/stepfun-ai/step-5-preview",
@@ -880,10 +782,10 @@
       "fail": 4,
       "error": 1,
       "no_result": 4,
-      "blocking_findings": 121,
+      "blocking_findings": 126,
       "escapes": 0,
-      "findings": 121,
-      "findings_per_run": 1.8615384615384616,
+      "findings": 126,
+      "findings_per_run": 1.9384615384615385,
       "pass_rate": {
         "value": 0.9384615384615385,
         "n": 65
@@ -891,7 +793,7 @@
       "net_score": 16.43,
       "allowed": false,
       "not_for_verdicts": false,
-      "rank": 8,
+      "rank": 14,
       "rate_count": 65
     },
     {
@@ -908,24 +810,59 @@
         "review-b",
         "review-c"
       ],
-      "runs": 29,
-      "pass": 26,
+      "runs": 30,
+      "pass": 27,
       "fail": 3,
       "error": 1,
       "no_result": 6,
-      "blocking_findings": 86,
+      "blocking_findings": 97,
       "escapes": 0,
-      "findings": 86,
-      "findings_per_run": 2.9655172413793105,
+      "findings": 97,
+      "findings_per_run": 3.2333333333333334,
       "pass_rate": {
-        "value": 0.896551724137931,
-        "n": 29
+        "value": 0.9,
+        "n": 30
       },
       "net_score": 10.47,
       "allowed": false,
       "not_for_verdicts": false,
-      "rank": 9,
-      "rate_count": 29
+      "rank": 15,
+      "rate_count": 30
+    },
+    {
+      "model": "opencode-go/glm-5.3",
+      "kind": "gate",
+      "routes": [
+        "opencode-go/glm-5.3#high"
+      ],
+      "roles": [
+        "acceptance",
+        "adversarial",
+        "final-acceptance",
+        "phase-acceptance",
+        "review-a",
+        "review-b",
+        "review-c",
+        "spec-review"
+      ],
+      "runs": 257,
+      "pass": 199,
+      "fail": 58,
+      "error": 5,
+      "no_result": 52,
+      "blocking_findings": 532,
+      "escapes": 0,
+      "findings": 532,
+      "findings_per_run": 2.0700389105058368,
+      "pass_rate": {
+        "value": 0.77431906614786,
+        "n": 257
+      },
+      "net_score": 6.03,
+      "allowed": true,
+      "not_for_verdicts": false,
+      "rank": 16,
+      "rate_count": 257
     },
     {
       "model": "bailian-token-plan/glm-5.3",
@@ -955,7 +892,7 @@
       "net_score": 6.03,
       "allowed": false,
       "not_for_verdicts": false,
-      "rank": 10,
+      "rank": 17,
       "rate_count": 13
     },
     {
@@ -977,10 +914,10 @@
       "fail": 5,
       "error": 0,
       "no_result": 4,
-      "blocking_findings": 83,
+      "blocking_findings": 87,
       "escapes": 0,
-      "findings": 83,
-      "findings_per_run": 1.5961538461538463,
+      "findings": 87,
+      "findings_per_run": 1.6730769230769231,
       "pass_rate": {
         "value": 0.9038461538461539,
         "n": 52
@@ -988,8 +925,43 @@
       "net_score": 1.53,
       "allowed": false,
       "not_for_verdicts": false,
-      "rank": 11,
+      "rank": 18,
       "rate_count": 52
+    },
+    {
+      "model": "opencode/deepseek-v4.1-flash-free",
+      "kind": "gate",
+      "routes": [
+        "opencode/deepseek-v4.1-flash-free#high"
+      ],
+      "roles": [
+        "acceptance",
+        "adversarial",
+        "final-acceptance",
+        "phase-acceptance",
+        "review-a",
+        "review-b",
+        "review-c",
+        "spec-review"
+      ],
+      "runs": 48,
+      "pass": 14,
+      "fail": 34,
+      "error": 0,
+      "no_result": 33,
+      "blocking_findings": 11,
+      "escapes": 14,
+      "findings": 11,
+      "findings_per_run": 0.22916666666666666,
+      "pass_rate": {
+        "value": 0.2916666666666667,
+        "n": 48
+      },
+      "net_score": 1.53,
+      "allowed": true,
+      "not_for_verdicts": false,
+      "rank": 19,
+      "rate_count": 48
     },
     {
       "model": "opencode-go/deepseek-v4.1-flash",
@@ -1001,28 +973,30 @@
         "acceptance",
         "adversarial",
         "final-acceptance",
+        "phase-acceptance",
         "review-a",
         "review-b",
-        "review-c"
+        "review-c",
+        "spec-review"
       ],
-      "runs": 53,
-      "pass": 43,
-      "fail": 10,
+      "runs": 89,
+      "pass": 70,
+      "fail": 19,
       "error": 2,
-      "no_result": 37,
-      "blocking_findings": 134,
+      "no_result": 46,
+      "blocking_findings": 234,
       "escapes": 0,
-      "findings": 134,
-      "findings_per_run": 2.5283018867924527,
+      "findings": 234,
+      "findings_per_run": 2.6292134831460676,
       "pass_rate": {
-        "value": 0.8113207547169812,
-        "n": 53
+        "value": 0.7865168539325843,
+        "n": 89
       },
       "net_score": 0.9,
       "allowed": true,
       "not_for_verdicts": false,
-      "rank": 12,
-      "rate_count": 53
+      "rank": 20,
+      "rate_count": 89
     },
     {
       "model": "opencode/glm-5.3-flash-free",
@@ -1034,29 +1008,31 @@
       "roles": [
         "acceptance",
         "adversarial",
+        "final-acceptance",
         "phase-acceptance",
         "review-a",
         "review-b",
-        "review-c"
+        "review-c",
+        "spec-review"
       ],
-      "runs": 8,
-      "pass": 6,
-      "fail": 2,
-      "error": 0,
-      "no_result": 3,
-      "blocking_findings": 9,
+      "runs": 10,
+      "pass": 7,
+      "fail": 3,
+      "error": 3,
+      "no_result": 6,
+      "blocking_findings": 17,
       "escapes": 0,
-      "findings": 9,
-      "findings_per_run": 1.125,
+      "findings": 17,
+      "findings_per_run": 1.7,
       "pass_rate": {
-        "value": 0.75,
-        "n": 8
+        "value": 0.7,
+        "n": 10
       },
       "net_score": 0.67,
-      "allowed": true,
+      "allowed": false,
       "not_for_verdicts": false,
-      "rank": 13,
-      "rate_count": 8
+      "rank": 21,
+      "rate_count": 10
     },
     {
       "model": "volcengine-agent-plan/glm-5.3-flash",
@@ -1085,7 +1061,7 @@
       "net_score": 0.67,
       "allowed": false,
       "not_for_verdicts": false,
-      "rank": 14,
+      "rank": 22,
       "rate_count": 6
     },
     {
@@ -1101,24 +1077,56 @@
         "review-a",
         "review-b"
       ],
-      "runs": 8,
-      "pass": 8,
-      "fail": 0,
+      "runs": 30,
+      "pass": 24,
+      "fail": 6,
       "error": 0,
-      "no_result": 0,
-      "blocking_findings": 24,
+      "no_result": 4,
+      "blocking_findings": 58,
       "escapes": 0,
-      "findings": 24,
-      "findings_per_run": 3,
+      "findings": 58,
+      "findings_per_run": 1.9333333333333333,
       "pass_rate": {
-        "value": 1,
-        "n": 8
+        "value": 0.8,
+        "n": 30
       },
       "net_score": -5.5,
-      "allowed": false,
+      "allowed": true,
       "not_for_verdicts": true,
-      "rank": 15,
-      "rate_count": 8
+      "rank": 23,
+      "rate_count": 30
+    },
+    {
+      "model": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
+      "kind": "gate",
+      "routes": [
+        "minimax-cn-coding-plan/MiniMax-M3.1-Flash"
+      ],
+      "roles": [
+        "acceptance",
+        "adversarial",
+        "phase-acceptance",
+        "review-a",
+        "review-c"
+      ],
+      "runs": 94,
+      "pass": 67,
+      "fail": 27,
+      "error": 0,
+      "no_result": 1,
+      "blocking_findings": 308,
+      "escapes": 2,
+      "findings": 308,
+      "findings_per_run": 3.276595744680851,
+      "pass_rate": {
+        "value": 0.7127659574468085,
+        "n": 94
+      },
+      "net_score": -6.4,
+      "allowed": true,
+      "not_for_verdicts": true,
+      "rank": 24,
+      "rate_count": 94
     },
     {
       "model": "nvidia/minimaxai/minimax-m3.1-flash",
@@ -1149,40 +1157,8 @@
       "net_score": -6.4,
       "allowed": false,
       "not_for_verdicts": true,
-      "rank": 16,
+      "rank": 25,
       "rate_count": 16
-    },
-    {
-      "model": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
-      "kind": "gate",
-      "routes": [
-        "minimax-cn-coding-plan/MiniMax-M3.1-Flash"
-      ],
-      "roles": [
-        "acceptance",
-        "adversarial",
-        "phase-acceptance",
-        "review-a",
-        "review-c"
-      ],
-      "runs": 47,
-      "pass": 35,
-      "fail": 12,
-      "error": 0,
-      "no_result": 0,
-      "blocking_findings": 118,
-      "escapes": 0,
-      "findings": 118,
-      "findings_per_run": 2.5106382978723403,
-      "pass_rate": {
-        "value": 0.7446808510638298,
-        "n": 47
-      },
-      "net_score": -6.4,
-      "allowed": true,
-      "not_for_verdicts": true,
-      "rank": 17,
-      "rate_count": 47
     },
     {
       "model": "opencode/minimax-m3.1-flash-free",
@@ -1197,24 +1173,24 @@
         "review-a",
         "review-c"
       ],
-      "runs": 12,
-      "pass": 9,
-      "fail": 3,
+      "runs": 24,
+      "pass": 13,
+      "fail": 11,
       "error": 0,
-      "no_result": 2,
-      "blocking_findings": 22,
+      "no_result": 8,
+      "blocking_findings": 23,
       "escapes": 0,
-      "findings": 22,
-      "findings_per_run": 1.8333333333333333,
+      "findings": 23,
+      "findings_per_run": 0.9583333333333334,
       "pass_rate": {
-        "value": 0.75,
-        "n": 12
+        "value": 0.5416666666666666,
+        "n": 24
       },
       "net_score": -6.4,
-      "allowed": true,
+      "allowed": false,
       "not_for_verdicts": true,
-      "rank": 18,
-      "rate_count": 12
+      "rank": 26,
+      "rate_count": 24
     },
     {
       "model": "opencode-go/mimo-v2.6-flash",
@@ -1227,26 +1203,57 @@
         "adversarial",
         "phase-acceptance",
         "review-a",
+        "review-b",
         "review-c"
       ],
-      "runs": 64,
-      "pass": 47,
-      "fail": 17,
-      "error": 1,
-      "no_result": 14,
-      "blocking_findings": 192,
+      "runs": 113,
+      "pass": 90,
+      "fail": 23,
+      "error": 4,
+      "no_result": 20,
+      "blocking_findings": 275,
       "escapes": 0,
-      "findings": 192,
-      "findings_per_run": 3,
+      "findings": 275,
+      "findings_per_run": 2.433628318584071,
       "pass_rate": {
-        "value": 0.734375,
-        "n": 64
+        "value": 0.7964601769911505,
+        "n": 113
       },
       "net_score": -10.83,
       "allowed": true,
       "not_for_verdicts": true,
-      "rank": 19,
-      "rate_count": 64
+      "rank": 27,
+      "rate_count": 113
+    },
+    {
+      "model": "openai/gpt-6-luna",
+      "kind": "gate",
+      "routes": [
+        "openai/gpt-6-luna#high"
+      ],
+      "roles": [
+        "adversarial",
+        "review-a",
+        "review-c"
+      ],
+      "runs": 277,
+      "pass": 188,
+      "fail": 89,
+      "error": 6,
+      "no_result": 21,
+      "blocking_findings": 273,
+      "escapes": 18,
+      "findings": 273,
+      "findings_per_run": 0.9855595667870036,
+      "pass_rate": {
+        "value": 0.6787003610108303,
+        "n": 277
+      },
+      "net_score": -12.8,
+      "allowed": true,
+      "not_for_verdicts": true,
+      "rank": 28,
+      "rate_count": 277
     },
     {
       "model": "kimi-code-plan-cn/kimi-for-coding",
@@ -1261,54 +1268,114 @@
         "phase-acceptance",
         "review-a",
         "review-b",
-        "review-c"
+        "review-c",
+        "vision-review"
       ],
-      "runs": 67,
-      "pass": 57,
-      "fail": 10,
+      "runs": 153,
+      "pass": 127,
+      "fail": 26,
       "error": 0,
-      "no_result": 1,
-      "blocking_findings": 88,
-      "escapes": 0,
-      "findings": 88,
-      "findings_per_run": 1.3134328358208955,
+      "no_result": 13,
+      "blocking_findings": 194,
+      "escapes": 3,
+      "findings": 194,
+      "findings_per_run": 1.2679738562091503,
       "pass_rate": {
-        "value": 0.8507462686567164,
-        "n": 67
+        "value": 0.8300653594771242,
+        "n": 153
       },
       "net_score": null,
-      "allowed": false,
+      "allowed": true,
       "not_for_verdicts": true,
-      "rank": 20,
-      "rate_count": 67
+      "rank": 29,
+      "rate_count": 153
     },
     {
-      "model": "claude-sonnet-5-5",
+      "model": "opencode/beam-free",
       "kind": "gate",
       "routes": [
-        "claude-sonnet-5-5"
+        "opencode/beam-free"
+      ],
+      "roles": [
+        "review-b",
+        "review-c"
+      ],
+      "runs": 23,
+      "pass": 20,
+      "fail": 3,
+      "error": 0,
+      "no_result": 4,
+      "blocking_findings": 19,
+      "escapes": 10,
+      "findings": 19,
+      "findings_per_run": 0.8260869565217391,
+      "pass_rate": {
+        "value": 0.8695652173913043,
+        "n": 23
+      },
+      "net_score": null,
+      "allowed": true,
+      "not_for_verdicts": true,
+      "rank": 30,
+      "rate_count": 23
+    },
+    {
+      "model": "opencode-go/hy4-flash-free",
+      "kind": "gate",
+      "routes": [
+        "opencode-go/hy4-flash-free#high"
+      ],
+      "roles": [
+        "adversarial",
+        "review-b",
+        "vision-review"
+      ],
+      "runs": 79,
+      "pass": 60,
+      "fail": 19,
+      "error": 0,
+      "no_result": 45,
+      "blocking_findings": 33,
+      "escapes": 15,
+      "findings": 33,
+      "findings_per_run": 0.4177215189873418,
+      "pass_rate": {
+        "value": 0.759493670886076,
+        "n": 79
+      },
+      "net_score": null,
+      "allowed": true,
+      "not_for_verdicts": true,
+      "rank": 31,
+      "rate_count": 79
+    },
+    {
+      "model": "opencode/hy4-flash-free",
+      "kind": "gate",
+      "routes": [
+        "opencode/hy4-flash-free#high"
       ],
       "roles": [
         "review-c"
       ],
-      "runs": 1,
-      "pass": 1,
-      "fail": 0,
+      "runs": 13,
+      "pass": 3,
+      "fail": 10,
       "error": 0,
       "no_result": 0,
-      "blocking_findings": 7,
+      "blocking_findings": 3,
       "escapes": 0,
-      "findings": 7,
-      "findings_per_run": 7,
+      "findings": 3,
+      "findings_per_run": 0.23076923076923078,
       "pass_rate": {
-        "value": 1,
-        "n": 1
+        "value": 0.23076923076923078,
+        "n": 13
       },
-      "net_score": 30.47,
-      "allowed": false,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 1
+      "net_score": null,
+      "allowed": true,
+      "not_for_verdicts": true,
+      "rank": 32,
+      "rate_count": 13
     },
     {
       "model": "coding-plan/deepseek-v4-pro",
@@ -1409,10 +1476,10 @@
       "fail": 3,
       "error": 0,
       "no_result": 0,
-      "blocking_findings": 18,
+      "blocking_findings": 19,
       "escapes": 0,
-      "findings": 18,
-      "findings_per_run": 4.5,
+      "findings": 19,
+      "findings_per_run": 4.75,
       "pass_rate": {
         "value": 0.25,
         "n": 4
@@ -1424,91 +1491,32 @@
       "rate_count": 4
     },
     {
-      "model": "kimi-code-plan-cn/k3.1-pro",
+      "model": "nvidia/deepseek-ai/deepseek-v4.1-flash",
       "kind": "gate",
       "routes": [
-        "kimi-code-plan-cn/k3.1-pro",
-        "kimi-code-plan-cn/k3.1-pro#high"
-      ],
-      "roles": [
-        "final-acceptance",
-        "phase-acceptance",
-        "review-c"
-      ],
-      "runs": 3,
-      "pass": 1,
-      "fail": 2,
-      "error": 0,
-      "no_result": 1,
-      "blocking_findings": 11,
-      "escapes": 0,
-      "findings": 11,
-      "findings_per_run": 3.6666666666666665,
-      "pass_rate": {
-        "value": 0.3333333333333333,
-        "n": 3
-      },
-      "net_score": 29.87,
-      "allowed": false,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 3
-    },
-    {
-      "model": "muse-spark-1.3-contributor",
-      "kind": "gate",
-      "routes": [
-        "muse-spark-1.3-contributor"
+        "nvidia/deepseek-ai/deepseek-v4.1-flash#high"
       ],
       "roles": [
         "review-a"
       ],
-      "runs": 2,
+      "runs": 1,
       "pass": 1,
-      "fail": 1,
-      "error": 0,
-      "no_result": 0,
-      "blocking_findings": 6,
-      "escapes": 0,
-      "findings": 6,
-      "findings_per_run": 3,
-      "pass_rate": {
-        "value": 0.5,
-        "n": 2
-      },
-      "net_score": 22.4,
-      "allowed": false,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 2
-    },
-    {
-      "model": "openai/gpt-6-luna",
-      "kind": "gate",
-      "routes": [
-        "openai/gpt-6-luna#high"
-      ],
-      "roles": [
-        "review-a"
-      ],
-      "runs": 3,
-      "pass": 3,
       "fail": 0,
-      "error": 0,
+      "error": 2,
       "no_result": 0,
-      "blocking_findings": 2,
+      "blocking_findings": 0,
       "escapes": 0,
-      "findings": 2,
-      "findings_per_run": 0.6666666666666666,
+      "findings": 0,
+      "findings_per_run": 0,
       "pass_rate": {
         "value": 1,
-        "n": 3
+        "n": 1
       },
-      "net_score": -12.8,
+      "net_score": 1.53,
       "allowed": false,
-      "not_for_verdicts": true,
+      "not_for_verdicts": false,
       "rank": null,
-      "rate_count": 3
+      "rate_count": 1
     },
     {
       "model": "openai/gpt-6-sol",
@@ -1540,13 +1548,74 @@
       "rate_count": 4
     },
     {
-      "model": "opencode-go/hy4-flash-free",
+      "model": "opencode-go/hy4-preview",
       "kind": "gate",
       "routes": [
-        "opencode-go/hy4-flash-free#high"
+        "opencode-go/hy4-preview"
       ],
       "roles": [
-        "adversarial"
+        "adversarial",
+        "review-a",
+        "review-b"
+      ],
+      "runs": 3,
+      "pass": 3,
+      "fail": 0,
+      "error": 0,
+      "no_result": 0,
+      "blocking_findings": 6,
+      "escapes": 0,
+      "findings": 6,
+      "findings_per_run": 2,
+      "pass_rate": {
+        "value": 1,
+        "n": 3
+      },
+      "net_score": null,
+      "allowed": false,
+      "not_for_verdicts": true,
+      "rank": null,
+      "rate_count": 3
+    },
+    {
+      "model": "opencode/mimo-v2.6-flash-free",
+      "kind": "gate",
+      "routes": [
+        "opencode/mimo-v2.6-flash-free"
+      ],
+      "roles": [
+        "adversarial",
+        "review-a",
+        "review-b",
+        "review-c"
+      ],
+      "runs": 3,
+      "pass": 1,
+      "fail": 2,
+      "error": 0,
+      "no_result": 11,
+      "blocking_findings": 0,
+      "escapes": 0,
+      "findings": 0,
+      "findings_per_run": 0,
+      "pass_rate": {
+        "value": 0.3333333333333333,
+        "n": 3
+      },
+      "net_score": -10.83,
+      "allowed": true,
+      "not_for_verdicts": true,
+      "rank": null,
+      "rate_count": 3
+    },
+    {
+      "model": "opencode/nemotron-3.5-super-vl-free",
+      "kind": "gate",
+      "routes": [
+        "opencode/nemotron-3.5-super-vl-free"
+      ],
+      "roles": [
+        "vision-review"
       ],
       "runs": 0,
       "pass": 0,
@@ -1568,67 +1637,6 @@
       "rate_count": 0
     },
     {
-      "model": "opencode-go/hy4-preview",
-      "kind": "gate",
-      "routes": [
-        "opencode-go/hy4-preview"
-      ],
-      "roles": [
-        "adversarial",
-        "review-a",
-        "review-b"
-      ],
-      "runs": 3,
-      "pass": 3,
-      "fail": 0,
-      "error": 0,
-      "no_result": 0,
-      "blocking_findings": 5,
-      "escapes": 0,
-      "findings": 5,
-      "findings_per_run": 1.6666666666666667,
-      "pass_rate": {
-        "value": 1,
-        "n": 3
-      },
-      "net_score": null,
-      "allowed": false,
-      "not_for_verdicts": true,
-      "rank": null,
-      "rate_count": 3
-    },
-    {
-      "model": "opencode/deepseek-v4.1-flash-free",
-      "kind": "gate",
-      "routes": [
-        "opencode/deepseek-v4.1-flash-free#high"
-      ],
-      "roles": [
-        "adversarial",
-        "review-a",
-        "review-b",
-        "review-c"
-      ],
-      "runs": 2,
-      "pass": 2,
-      "fail": 0,
-      "error": 0,
-      "no_result": 4,
-      "blocking_findings": 2,
-      "escapes": 0,
-      "findings": 2,
-      "findings_per_run": 1,
-      "pass_rate": {
-        "value": 1,
-        "n": 2
-      },
-      "net_score": 1.53,
-      "allowed": true,
-      "not_for_verdicts": false,
-      "rank": null,
-      "rate_count": 2
-    },
-    {
       "model": "volcengine-agent-plan/ark-code-latest",
       "kind": "gate",
       "routes": [
@@ -1642,10 +1650,10 @@
       "fail": 0,
       "error": 0,
       "no_result": 0,
-      "blocking_findings": 2,
+      "blocking_findings": 3,
       "escapes": 0,
-      "findings": 2,
-      "findings_per_run": 1,
+      "findings": 3,
+      "findings_per_run": 1.5,
       "pass_rate": {
         "value": 1,
         "n": 2
@@ -1670,10 +1678,10 @@
       "fail": 0,
       "error": 0,
       "no_result": 0,
-      "blocking_findings": 8,
+      "blocking_findings": 9,
       "escapes": 0,
-      "findings": 8,
-      "findings_per_run": 2.6666666666666665,
+      "findings": 9,
+      "findings_per_run": 3,
       "pass_rate": {
         "value": 1,
         "n": 3
@@ -1775,10 +1783,10 @@
       "label": "Red",
       "kind": "producer",
       "pick": {
-        "model": "opencode-go/deepseek-v4.1-flash",
-        "rate": 0.6,
-        "count": 13,
-        "net_score": 0.9
+        "model": "opencode-go/muse-spark-1.3-contributor",
+        "rate": 0.44642857142857145,
+        "count": 81,
+        "net_score": 22.4
       }
     },
     {
@@ -1786,10 +1794,10 @@
       "label": "Green",
       "kind": "producer",
       "pick": {
-        "model": "opencode-go/mimo-v2.6-flash",
-        "rate": 0.8,
-        "count": 8,
-        "net_score": -10.83
+        "model": "opencode-go/hy4-flash-free",
+        "rate": 0.6060606060606061,
+        "count": 42,
+        "net_score": null
       }
     },
     {
@@ -1803,9 +1811,9 @@
       "label": "Review A",
       "kind": "gate",
       "pick": {
-        "model": "claude-code/claude-opus-5-5",
-        "rate": 0.5454545454545454,
-        "count": 11,
+        "model": "claude-agent/opus",
+        "rate": 0.7857142857142857,
+        "count": 14,
         "net_score": 42.37
       }
     },
@@ -1814,10 +1822,10 @@
       "label": "Review B",
       "kind": "gate",
       "pick": {
-        "model": "claude-code/claude-opus-5-5",
-        "rate": 1,
-        "count": 9,
-        "net_score": 42.37
+        "model": "openai/gpt-6.2-sol",
+        "rate": 0.4666666666666667,
+        "count": 15,
+        "net_score": 38.3
       }
     },
     {
@@ -1825,10 +1833,10 @@
       "label": "Review C",
       "kind": "gate",
       "pick": {
-        "model": "opencode-go/muse-spark-1.3-contributor",
-        "rate": 0.9411764705882353,
-        "count": 17,
-        "net_score": 22.4
+        "model": "openai/gpt-6.2-sol",
+        "rate": 0.4444444444444444,
+        "count": 27,
+        "net_score": 38.3
       }
     },
     {
@@ -1836,10 +1844,10 @@
       "label": "Adversarial",
       "kind": "gate",
       "pick": {
-        "model": "opencode-go/muse-spark-1.3-contributor",
-        "rate": 0.52,
-        "count": 25,
-        "net_score": 22.4
+        "model": "openai/gpt-6.2-sol",
+        "rate": 0.5789473684210527,
+        "count": 19,
+        "net_score": 38.3
       }
     },
     {
@@ -1847,10 +1855,10 @@
       "label": "Acceptance",
       "kind": "gate",
       "pick": {
-        "model": "claude-code/claude-sonnet-5-5",
-        "rate": 0.7777777777777778,
-        "count": 9,
-        "net_score": 18.73
+        "model": "opencode-go/muse-spark-1.3-contributor",
+        "rate": 1,
+        "count": 5,
+        "net_score": 22.4
       }
     },
     {
@@ -1858,90 +1866,60 @@
       "label": "Phase acceptance",
       "kind": "gate",
       "pick": {
-        "model": "claude-code/claude-opus-5-5",
-        "rate": 0.8,
-        "count": 10,
-        "net_score": 39.77
+        "model": "openai/gpt-6.2-sol",
+        "rate": 0.6122448979591837,
+        "count": 49,
+        "net_score": 38.3
       }
     },
     {
       "role": "final-acceptance",
       "label": "Final acceptance",
       "kind": "gate",
-      "pick": null
+      "pick": {
+        "model": "claude-agent/sonnet",
+        "rate": 0.8333333333333334,
+        "count": 6,
+        "net_score": 30.47
+      }
     }
   ],
   "by_role": {
     "red": [
       {
-        "model": "opencode-go/deepseek-v4.1-flash",
+        "model": "opencode-go/muse-spark-1.3-contributor",
         "kind": "producer",
         "routes": [
-          "opencode-go/deepseek-v4.1-flash"
+          "opencode-go/muse-spark-1.3-contributor#high"
         ],
         "roles": [
           "red"
         ],
-        "tasks": 13,
-        "accepted": 10,
+        "tasks": 81,
+        "accepted": 56,
         "first_round": {
-          "value": 0.6,
-          "n": 10
+          "value": 0.44642857142857145,
+          "n": 56
         },
-        "mean_rework": 0.8461538461538461,
-        "cleanup_share": 0.5472737043057538,
-        "tokens_per_accepted": 1250636.8,
-        "runs": 37,
-        "pass": 14,
-        "fail": 0,
-        "error": 0,
-        "no_result": 18,
+        "mean_rework": 1.0617283950617284,
+        "cleanup_share": 0.5248607304447944,
+        "tokens_per_accepted": 1165228.1607142857,
+        "runs": 205,
+        "pass": 123,
+        "fail": 9,
+        "error": 3,
+        "no_result": 52,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
-          "value": 1,
-          "n": 14
+          "value": 0.9111111111111111,
+          "n": 135
         },
-        "net_score": 0.9,
+        "net_score": 22.4,
         "allowed": true,
         "not_for_verdicts": false,
         "rank": 1,
-        "rate_count": 13
-      },
-      {
-        "model": "opencode-go/hy4-flash-free",
-        "kind": "producer",
-        "routes": [
-          "opencode-go/hy4-flash-free#high"
-        ],
-        "roles": [
-          "red"
-        ],
-        "tasks": 12,
-        "accepted": 7,
-        "first_round": {
-          "value": 0.42857142857142855,
-          "n": 7
-        },
-        "mean_rework": 0.75,
-        "cleanup_share": 0.07073456832477114,
-        "tokens_per_accepted": 328146.71428571426,
-        "runs": 12,
-        "pass": 3,
-        "fail": 0,
-        "error": 0,
-        "no_result": 1,
-        "blocking_findings": 0,
-        "escapes": 0,
-        "pass_rate": {
-          "value": 1,
-          "n": 3
-        },
-        "net_score": null,
-        "allowed": true,
-        "not_for_verdicts": true,
-        "rank": 2,
-        "rate_count": 12
+        "rate_count": 81
       },
       {
         "model": "bailian-token-plan/qwen3.8-flash",
@@ -1987,15 +1965,15 @@
         "roles": [
           "red"
         ],
-        "tasks": 1,
-        "accepted": 1,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
-        "tokens_per_accepted": 15822,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
         "runs": 1,
         "pass": 1,
         "fail": 0,
@@ -2011,7 +1989,7 @@
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 1
+        "rate_count": 0
       },
       {
         "model": "claude-code/claude-sonnet-5-5",
@@ -2022,15 +2000,15 @@
         "roles": [
           "red"
         ],
-        "tasks": 14,
-        "accepted": 2,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 1.8571428571428572,
-        "cleanup_share": 0.9024714680503493,
-        "tokens_per_accepted": 3057768.5,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
         "runs": 13,
         "pass": 2,
         "fail": 0,
@@ -2043,10 +2021,10 @@
           "n": 2
         },
         "net_score": 18.73,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 14
+        "rate_count": 0
       },
       {
         "model": "deepseek/deepseek-flash",
@@ -2057,14 +2035,14 @@
         "roles": [
           "red"
         ],
-        "tasks": 9,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.5555555555555556,
-        "cleanup_share": 0.5489413184418079,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 20,
         "pass": 6,
@@ -2081,7 +2059,7 @@
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 9
+        "rate_count": 0
       },
       {
         "model": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
@@ -2092,17 +2070,17 @@
         "roles": [
           "red"
         ],
-        "tasks": 18,
-        "accepted": 2,
+        "tasks": 1,
+        "accepted": 1,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.8888888888888888,
-        "cleanup_share": 0.15710173918869733,
-        "tokens_per_accepted": 966451.5,
-        "runs": 46,
-        "pass": 9,
+        "mean_rework": 2,
+        "cleanup_share": 0.40743039443155454,
+        "tokens_per_accepted": 344800,
+        "runs": 47,
+        "pass": 10,
         "fail": 0,
         "error": 0,
         "no_result": 10,
@@ -2110,13 +2088,13 @@
         "escapes": 0,
         "pass_rate": {
           "value": 1,
-          "n": 9
+          "n": 10
         },
         "net_score": -6.4,
         "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 18
+        "rate_count": 1
       },
       {
         "model": "nvidia/deepseek-ai/deepseek-v4.1-flash",
@@ -2162,15 +2140,15 @@
         "roles": [
           "red"
         ],
-        "tasks": 5,
-        "accepted": 2,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0.17961895253825047,
-        "tokens_per_accepted": 261731.5,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
         "runs": 4,
         "pass": 0,
         "fail": 0,
@@ -2186,7 +2164,112 @@
         "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 5
+        "rate_count": 0
+      },
+      {
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "kind": "producer",
+        "routes": [
+          "opencode-go/deepseek-v4.1-flash"
+        ],
+        "roles": [
+          "red"
+        ],
+        "tasks": 1,
+        "accepted": 1,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 0,
+        "cleanup_share": 0,
+        "tokens_per_accepted": 148075,
+        "runs": 44,
+        "pass": 22,
+        "fail": 2,
+        "error": 0,
+        "no_result": 18,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 0.9166666666666666,
+          "n": 24
+        },
+        "net_score": 0.9,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 1
+      },
+      {
+        "model": "opencode-go/hungerg-free",
+        "kind": "producer",
+        "routes": [
+          "opencode-go/hungerg-free"
+        ],
+        "roles": [
+          "red"
+        ],
+        "tasks": 4,
+        "accepted": 2,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 0.75,
+        "cleanup_share": 0.2600053208906352,
+        "tokens_per_accepted": 885109.5,
+        "runs": 1,
+        "pass": 0,
+        "fail": 0,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": null,
+          "n": 0
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": null,
+        "rate_count": 4
+      },
+      {
+        "model": "opencode-go/hy4-flash-free",
+        "kind": "producer",
+        "routes": [
+          "opencode-go/hy4-flash-free#high"
+        ],
+        "roles": [
+          "red"
+        ],
+        "tasks": 2,
+        "accepted": 1,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 10.5,
+        "cleanup_share": 0.47672850343776435,
+        "tokens_per_accepted": 2850063,
+        "runs": 35,
+        "pass": 19,
+        "fail": 1,
+        "error": 0,
+        "no_result": 11,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 0.95,
+          "n": 20
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": null,
+        "rate_count": 2
       },
       {
         "model": "opencode-go/mimo-v2.6-flash",
@@ -2197,15 +2280,15 @@
         "roles": [
           "red"
         ],
-        "tasks": 6,
-        "accepted": 4,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
-        "tokens_per_accepted": 285548.75,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
         "runs": 6,
         "pass": 3,
         "fail": 0,
@@ -2221,42 +2304,7 @@
         "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 6
-      },
-      {
-        "model": "opencode-go/muse-spark-1.3-contributor",
-        "kind": "producer",
-        "routes": [
-          "opencode-go/muse-spark-1.3-contributor#high"
-        ],
-        "roles": [
-          "red"
-        ],
-        "tasks": 1,
-        "accepted": 1,
-        "first_round": {
-          "value": null,
-          "n": 0
-        },
-        "mean_rework": 0,
-        "cleanup_share": 0,
-        "tokens_per_accepted": 94021,
-        "runs": 1,
-        "pass": 1,
-        "fail": 0,
-        "error": 0,
-        "no_result": 0,
-        "blocking_findings": 0,
-        "escapes": 0,
-        "pass_rate": {
-          "value": 1,
-          "n": 1
-        },
-        "net_score": 22.4,
-        "allowed": true,
-        "not_for_verdicts": false,
-        "rank": null,
-        "rate_count": 1
+        "rate_count": 0
       },
       {
         "model": "opencode/deepseek-v4.1-flash-free",
@@ -2267,14 +2315,14 @@
         "roles": [
           "red"
         ],
-        "tasks": 1,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0.7465379955811839,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 6,
         "pass": 1,
@@ -2291,7 +2339,7 @@
         "allowed": true,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 1
+        "rate_count": 0
       },
       {
         "model": "opencode/glm-5.3-flash-free",
@@ -2302,16 +2350,51 @@
         "roles": [
           "red"
         ],
-        "tasks": 2,
-        "accepted": 1,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
-        "tokens_per_accepted": 66996,
-        "runs": 2,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
+        "runs": 7,
+        "pass": 1,
+        "fail": 0,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 1,
+          "n": 1
+        },
+        "net_score": 0.67,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 0
+      },
+      {
+        "model": "opencode/mimo-v2.6-flash-free",
+        "kind": "producer",
+        "routes": [
+          "opencode/mimo-v2.6-flash-free"
+        ],
+        "roles": [
+          "red"
+        ],
+        "tasks": 0,
+        "accepted": 0,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
+        "runs": 1,
         "pass": 0,
         "fail": 0,
         "error": 0,
@@ -2322,11 +2405,11 @@
           "value": null,
           "n": 0
         },
-        "net_score": 0.67,
+        "net_score": -10.83,
         "allowed": true,
-        "not_for_verdicts": false,
+        "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 2
+        "rate_count": 0
       },
       {
         "model": "opencode/minimax-m3.1-flash-free",
@@ -2337,15 +2420,15 @@
         "roles": [
           "red"
         ],
-        "tasks": 13,
-        "accepted": 2,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 2,
-        "cleanup_share": 0.42813810400968033,
-        "tokens_per_accepted": 1573513.5,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
         "runs": 31,
         "pass": 4,
         "fail": 0,
@@ -2358,82 +2441,47 @@
           "n": 4
         },
         "net_score": -6.4,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 13
+        "rate_count": 0
       }
     ],
     "green": [
       {
-        "model": "opencode-go/mimo-v2.6-flash",
+        "model": "opencode-go/hy4-flash-free",
         "kind": "producer",
         "routes": [
-          "opencode-go/mimo-v2.6-flash"
+          "opencode-go/hy4-flash-free#high"
         ],
         "roles": [
           "green"
         ],
-        "tasks": 8,
-        "accepted": 5,
+        "tasks": 42,
+        "accepted": 33,
         "first_round": {
-          "value": 0.8,
-          "n": 5
+          "value": 0.6060606060606061,
+          "n": 33
         },
-        "mean_rework": 0.125,
-        "cleanup_share": 0,
-        "tokens_per_accepted": 272093.6,
-        "runs": 26,
-        "pass": 4,
-        "fail": 0,
+        "mean_rework": 0.7619047619047619,
+        "cleanup_share": 0.09653457160470764,
+        "tokens_per_accepted": 994862.303030303,
+        "runs": 120,
+        "pass": 61,
+        "fail": 8,
         "error": 0,
-        "no_result": 22,
+        "no_result": 46,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
-          "value": 1,
-          "n": 4
+          "value": 0.8840579710144928,
+          "n": 69
         },
-        "net_score": -10.83,
+        "net_score": null,
         "allowed": true,
         "not_for_verdicts": true,
         "rank": 1,
-        "rate_count": 8
-      },
-      {
-        "model": "opencode-go/deepseek-v4.1-flash",
-        "kind": "producer",
-        "routes": [
-          "opencode-go/deepseek-v4.1-flash"
-        ],
-        "roles": [
-          "green"
-        ],
-        "tasks": 44,
-        "accepted": 20,
-        "first_round": {
-          "value": 0.8,
-          "n": 20
-        },
-        "mean_rework": 0.3409090909090909,
-        "cleanup_share": 0.07557034925066211,
-        "tokens_per_accepted": 320583.1,
-        "runs": 40,
-        "pass": 13,
-        "fail": 0,
-        "error": 0,
-        "no_result": 20,
-        "blocking_findings": 0,
-        "escapes": 0,
-        "pass_rate": {
-          "value": 1,
-          "n": 13
-        },
-        "net_score": 0.9,
-        "allowed": true,
-        "not_for_verdicts": false,
-        "rank": 2,
-        "rate_count": 44
+        "rate_count": 42
       },
       {
         "model": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
@@ -2444,31 +2492,136 @@
         "roles": [
           "green"
         ],
-        "tasks": 27,
-        "accepted": 5,
+        "tasks": 15,
+        "accepted": 12,
         "first_round": {
-          "value": 0.6,
-          "n": 5
+          "value": 0.5833333333333334,
+          "n": 12
         },
-        "mean_rework": 0.7777777777777778,
-        "cleanup_share": 0.01650425471298179,
-        "tokens_per_accepted": 450010.2,
-        "runs": 56,
-        "pass": 14,
-        "fail": 2,
-        "error": 0,
-        "no_result": 2,
+        "mean_rework": 0.6,
+        "cleanup_share": 0.11573690440598013,
+        "tokens_per_accepted": 841138.5,
+        "runs": 118,
+        "pass": 53,
+        "fail": 7,
+        "error": 4,
+        "no_result": 18,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
-          "value": 0.875,
-          "n": 16
+          "value": 0.828125,
+          "n": 64
         },
         "net_score": -6.4,
         "allowed": true,
         "not_for_verdicts": true,
-        "rank": 3,
-        "rate_count": 27
+        "rank": 2,
+        "rate_count": 15
+      },
+      {
+        "model": "claude-agent/haiku",
+        "kind": "producer",
+        "routes": [
+          "claude-agent/haiku"
+        ],
+        "roles": [
+          "green"
+        ],
+        "tasks": 0,
+        "accepted": 0,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
+        "runs": 1,
+        "pass": 0,
+        "fail": 1,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 0,
+          "n": 1
+        },
+        "net_score": 12.3,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 0
+      },
+      {
+        "model": "claude-agent/sonnet",
+        "kind": "producer",
+        "routes": [
+          "claude-agent/sonnet#high"
+        ],
+        "roles": [
+          "green"
+        ],
+        "tasks": 4,
+        "accepted": 1,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 0.5,
+        "cleanup_share": 0.44020065373061007,
+        "tokens_per_accepted": 30620,
+        "runs": 1,
+        "pass": 0,
+        "fail": 0,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": null,
+          "n": 0
+        },
+        "net_score": 18.73,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 4
+      },
+      {
+        "model": "claude-code/claude-haiku-5-5",
+        "kind": "producer",
+        "routes": [
+          "claude-code/claude-haiku-5-5"
+        ],
+        "roles": [
+          "green"
+        ],
+        "tasks": 0,
+        "accepted": 0,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
+        "runs": 6,
+        "pass": 3,
+        "fail": 1,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 0.75,
+          "n": 4
+        },
+        "net_score": 12.3,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 0
       },
       {
         "model": "claude-code/claude-sonnet-5-5",
@@ -2479,15 +2632,15 @@
         "roles": [
           "green"
         ],
-        "tasks": 45,
-        "accepted": 3,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.2,
-        "cleanup_share": 0.40776035244705616,
-        "tokens_per_accepted": 33262.666666666664,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
         "runs": 24,
         "pass": 10,
         "fail": 0,
@@ -2500,10 +2653,10 @@
           "n": 10
         },
         "net_score": 18.73,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 45
+        "rate_count": 0
       },
       {
         "model": "deepseek/deepseek-flash",
@@ -2514,14 +2667,14 @@
         "roles": [
           "green"
         ],
-        "tasks": 6,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 3.3333333333333335,
-        "cleanup_share": 0.5702892136927972,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 58,
         "pass": 7,
@@ -2538,7 +2691,7 @@
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 6
+        "rate_count": 0
       },
       {
         "model": "kimi-code-plan-cn/kimi-for-coding",
@@ -2549,14 +2702,14 @@
         "roles": [
           "green"
         ],
-        "tasks": 1,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 1,
-        "cleanup_share": 0.0790716325652361,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 2,
         "pass": 0,
@@ -2570,10 +2723,10 @@
           "n": 0
         },
         "net_score": null,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 1
+        "rate_count": 0
       },
       {
         "model": "nvidia/deepseek-ai/deepseek-v4.1-flash",
@@ -2584,15 +2737,15 @@
         "roles": [
           "green"
         ],
-        "tasks": 3,
-        "accepted": 1,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.6666666666666666,
-        "cleanup_share": 0.09773542505554951,
-        "tokens_per_accepted": 215998,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
         "runs": 5,
         "pass": 1,
         "fail": 0,
@@ -2608,7 +2761,7 @@
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 3
+        "rate_count": 0
       },
       {
         "model": "nvidia/minimaxai/minimax-m3.1-flash",
@@ -2619,15 +2772,15 @@
         "roles": [
           "green"
         ],
-        "tasks": 3,
-        "accepted": 1,
+        "tasks": 0,
+        "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 1,
-        "cleanup_share": 0.13725629677806175,
-        "tokens_per_accepted": 236833,
+        "mean_rework": null,
+        "cleanup_share": null,
+        "tokens_per_accepted": null,
         "runs": 4,
         "pass": 2,
         "fail": 0,
@@ -2643,7 +2796,42 @@
         "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 3
+        "rate_count": 0
+      },
+      {
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "kind": "producer",
+        "routes": [
+          "opencode-go/deepseek-v4.1-flash"
+        ],
+        "roles": [
+          "green"
+        ],
+        "tasks": 4,
+        "accepted": 3,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 1,
+        "cleanup_share": 0.09171399920703839,
+        "tokens_per_accepted": 370803,
+        "runs": 123,
+        "pass": 81,
+        "fail": 5,
+        "error": 0,
+        "no_result": 32,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 0.9418604651162791,
+          "n": 86
+        },
+        "net_score": 0.9,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 4
       },
       {
         "model": "opencode-go/glm-5.3",
@@ -2675,16 +2863,51 @@
           "n": 0
         },
         "net_score": 6.03,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 0
       },
       {
-        "model": "opencode-go/hy4-flash-free",
+        "model": "opencode-go/hungerg-free",
         "kind": "producer",
         "routes": [
-          "opencode-go/hy4-flash-free#high"
+          "opencode-go/hungerg-free"
+        ],
+        "roles": [
+          "green"
+        ],
+        "tasks": 6,
+        "accepted": 2,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 0,
+        "cleanup_share": 0,
+        "tokens_per_accepted": 1357225.5,
+        "runs": 18,
+        "pass": 3,
+        "fail": 0,
+        "error": 6,
+        "no_result": 5,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 0.3333333333333333,
+          "n": 9
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": null,
+        "rate_count": 6
+      },
+      {
+        "model": "opencode-go/mimo-v2.6-flash",
+        "kind": "producer",
+        "routes": [
+          "opencode-go/mimo-v2.6-flash"
         ],
         "roles": [
           "green"
@@ -2698,18 +2921,18 @@
         "mean_rework": null,
         "cleanup_share": null,
         "tokens_per_accepted": null,
-        "runs": 3,
-        "pass": 2,
+        "runs": 27,
+        "pass": 5,
         "fail": 0,
         "error": 0,
-        "no_result": 1,
+        "no_result": 22,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
           "value": 1,
-          "n": 2
+          "n": 5
         },
-        "net_score": null,
+        "net_score": -10.83,
         "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
@@ -2724,31 +2947,31 @@
         "roles": [
           "green"
         ],
-        "tasks": 3,
-        "accepted": 2,
+        "tasks": 12,
+        "accepted": 3,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.3333333333333333,
-        "cleanup_share": 0,
-        "tokens_per_accepted": 146317,
-        "runs": 4,
-        "pass": 1,
-        "fail": 0,
-        "error": 0,
-        "no_result": 3,
+        "mean_rework": 2.3333333333333335,
+        "cleanup_share": 0.2053542484841077,
+        "tokens_per_accepted": 2222256.6666666665,
+        "runs": 99,
+        "pass": 23,
+        "fail": 22,
+        "error": 1,
+        "no_result": 35,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
-          "value": 1,
-          "n": 1
+          "value": 0.5,
+          "n": 46
         },
         "net_score": 22.4,
         "allowed": true,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 3
+        "rate_count": 12
       },
       {
         "model": "opencode/deepseek-v4.1-flash-free",
@@ -2759,31 +2982,31 @@
         "roles": [
           "green"
         ],
-        "tasks": 5,
-        "accepted": 1,
+        "tasks": 7,
+        "accepted": 4,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.8,
-        "cleanup_share": 0.652265419626757,
-        "tokens_per_accepted": 226808,
-        "runs": 17,
-        "pass": 1,
-        "fail": 1,
+        "mean_rework": 2.4285714285714284,
+        "cleanup_share": 1,
+        "tokens_per_accepted": 741132.75,
+        "runs": 53,
+        "pass": 12,
+        "fail": 5,
         "error": 0,
-        "no_result": 1,
+        "no_result": 26,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
-          "value": 0.5,
-          "n": 2
+          "value": 0.7058823529411765,
+          "n": 17
         },
         "net_score": 1.53,
         "allowed": true,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 5
+        "rate_count": 7
       },
       {
         "model": "opencode/glm-5.3-flash-free",
@@ -2794,14 +3017,14 @@
         "roles": [
           "green"
         ],
-        "tasks": 1,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 12,
         "pass": 2,
@@ -2815,10 +3038,10 @@
           "n": 2
         },
         "net_score": 0.67,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 1
+        "rate_count": 0
       },
       {
         "model": "opencode/minimax-m3.1-flash-free",
@@ -2829,31 +3052,31 @@
         "roles": [
           "green"
         ],
-        "tasks": 12,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.25,
-        "cleanup_share": 0.6062735871513014,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
-        "runs": 23,
+        "runs": 28,
         "pass": 8,
-        "fail": 0,
+        "fail": 1,
         "error": 0,
-        "no_result": 7,
+        "no_result": 11,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
-          "value": 1,
-          "n": 8
+          "value": 0.8888888888888888,
+          "n": 9
         },
         "net_score": -6.4,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 12
+        "rate_count": 0
       },
       {
         "model": "volcengine-agent-plan/glm-5.3-flash",
@@ -2864,14 +3087,14 @@
         "roles": [
           "green"
         ],
-        "tasks": 13,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.23076923076923078,
-        "cleanup_share": 0.28592073202092705,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 1,
         "pass": 1,
@@ -2888,7 +3111,7 @@
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 13
+        "rate_count": 0
       }
     ],
     "coder": [
@@ -2901,14 +3124,14 @@
         "roles": [
           "coder"
         ],
-        "tasks": 22,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 3,
         "pass": 1,
@@ -2922,10 +3145,10 @@
           "n": 1
         },
         "net_score": 18.73,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 22
+        "rate_count": 0
       },
       {
         "model": "deepseek/deepseek-flash",
@@ -2936,14 +3159,14 @@
         "roles": [
           "coder"
         ],
-        "tasks": 39,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 9,
         "pass": 0,
@@ -2960,7 +3183,7 @@
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 39
+        "rate_count": 0
       },
       {
         "model": "kimi-code-plan-cn/kimi-for-coding",
@@ -2992,7 +3215,7 @@
           "n": 0
         },
         "net_score": null,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
         "rate_count": 0
@@ -3006,16 +3229,16 @@
         "roles": [
           "coder"
         ],
-        "tasks": 10,
+        "tasks": 26,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0.1,
+        "mean_rework": 0,
         "cleanup_share": 0,
         "tokens_per_accepted": null,
-        "runs": 22,
+        "runs": 23,
         "pass": 3,
         "fail": 0,
         "error": 0,
@@ -3030,7 +3253,7 @@
         "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 10
+        "rate_count": 26
       },
       {
         "model": "nvidia/minimaxai/minimax-m3.1-flash",
@@ -3041,14 +3264,14 @@
         "roles": [
           "coder"
         ],
-        "tasks": 5,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 1,
         "pass": 0,
@@ -3065,7 +3288,7 @@
         "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 5
+        "rate_count": 0
       },
       {
         "model": "opencode-go/deepseek-v4.1-flash",
@@ -3076,7 +3299,7 @@
         "roles": [
           "coder"
         ],
-        "tasks": 23,
+        "tasks": 1,
         "accepted": 0,
         "first_round": {
           "value": null,
@@ -3085,11 +3308,11 @@
         "mean_rework": 0,
         "cleanup_share": 0,
         "tokens_per_accepted": null,
-        "runs": 9,
+        "runs": 10,
         "pass": 3,
         "fail": 0,
         "error": 0,
-        "no_result": 4,
+        "no_result": 5,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
@@ -3100,7 +3323,77 @@
         "allowed": true,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 23
+        "rate_count": 1
+      },
+      {
+        "model": "opencode-go/hungerg-free",
+        "kind": "producer",
+        "routes": [
+          "opencode-go/hungerg-free"
+        ],
+        "roles": [
+          "coder"
+        ],
+        "tasks": 10,
+        "accepted": 0,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 0,
+        "cleanup_share": 0,
+        "tokens_per_accepted": null,
+        "runs": 9,
+        "pass": 0,
+        "fail": 0,
+        "error": 1,
+        "no_result": 2,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 0,
+          "n": 1
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": null,
+        "rate_count": 10
+      },
+      {
+        "model": "opencode-go/hy4-flash-free",
+        "kind": "producer",
+        "routes": [
+          "opencode-go/hy4-flash-free#high"
+        ],
+        "roles": [
+          "coder"
+        ],
+        "tasks": 112,
+        "accepted": 1,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 0.017857142857142856,
+        "cleanup_share": 0.01321849255103204,
+        "tokens_per_accepted": 246476,
+        "runs": 14,
+        "pass": 7,
+        "fail": 2,
+        "error": 0,
+        "no_result": 3,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 0.7777777777777778,
+          "n": 9
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": null,
+        "rate_count": 112
       },
       {
         "model": "opencode-go/mimo-v2.6-flash",
@@ -3111,14 +3404,14 @@
         "roles": [
           "coder"
         ],
-        "tasks": 8,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
         "runs": 1,
         "pass": 0,
@@ -3135,7 +3428,42 @@
         "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 8
+        "rate_count": 0
+      },
+      {
+        "model": "opencode-go/muse-spark-1.3-contributor",
+        "kind": "producer",
+        "routes": [
+          "opencode-go/muse-spark-1.3-contributor#high"
+        ],
+        "roles": [
+          "coder"
+        ],
+        "tasks": 125,
+        "accepted": 2,
+        "first_round": {
+          "value": null,
+          "n": 0
+        },
+        "mean_rework": 0.024,
+        "cleanup_share": 0,
+        "tokens_per_accepted": 118000.5,
+        "runs": 82,
+        "pass": 26,
+        "fail": 0,
+        "error": 0,
+        "no_result": 40,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "pass_rate": {
+          "value": 1,
+          "n": 26
+        },
+        "net_score": 22.4,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 125
       },
       {
         "model": "opencode/hy4-flash-free",
@@ -3146,7 +3474,7 @@
         "roles": [
           "coder"
         ],
-        "tasks": 11,
+        "tasks": 1,
         "accepted": 0,
         "first_round": {
           "value": null,
@@ -3155,22 +3483,22 @@
         "mean_rework": 0,
         "cleanup_share": 0,
         "tokens_per_accepted": null,
-        "runs": 12,
-        "pass": 4,
+        "runs": 28,
+        "pass": 8,
         "fail": 0,
         "error": 0,
-        "no_result": 5,
+        "no_result": 12,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
           "value": 1,
-          "n": 4
+          "n": 8
         },
         "net_score": null,
         "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 11
+        "rate_count": 1
       },
       {
         "model": "opencode/minimax-m3.1-flash-free",
@@ -3181,20 +3509,20 @@
         "roles": [
           "coder"
         ],
-        "tasks": 3,
+        "tasks": 0,
         "accepted": 0,
         "first_round": {
           "value": null,
           "n": 0
         },
-        "mean_rework": 0,
-        "cleanup_share": 0,
+        "mean_rework": null,
+        "cleanup_share": null,
         "tokens_per_accepted": null,
-        "runs": 7,
+        "runs": 8,
         "pass": 1,
         "fail": 0,
         "error": 0,
-        "no_result": 0,
+        "no_result": 1,
         "blocking_findings": 0,
         "escapes": 0,
         "pass_rate": {
@@ -3202,10 +3530,10 @@
           "n": 1
         },
         "net_score": -6.4,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 3
+        "rate_count": 0
       }
     ],
     "review-a": [
@@ -3220,80 +3548,166 @@
         "roles": [
           "review-a"
         ],
-        "runs": 11,
-        "pass": 6,
-        "fail": 5,
+        "runs": 27,
+        "pass": 19,
+        "fail": 8,
         "error": 1,
-        "no_result": 0,
-        "blocking_findings": 94,
+        "no_result": 1,
+        "blocking_findings": 141,
         "escapes": 0,
-        "findings": 94,
-        "findings_per_run": 8.545454545454545,
+        "findings": 141,
+        "findings_per_run": 5.222222222222222,
         "pass_rate": {
-          "value": 0.5454545454545454,
-          "n": 11
+          "value": 0.7037037037037037,
+          "n": 27
+        },
+        "net_score": 42.37,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 1,
+        "rate_count": 27
+      },
+      {
+        "model": "claude-agent/opus",
+        "kind": "gate",
+        "routes": [
+          "claude-agent/opus#high"
+        ],
+        "roles": [
+          "review-a"
+        ],
+        "runs": 14,
+        "pass": 11,
+        "fail": 3,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 38,
+        "escapes": 0,
+        "findings": 38,
+        "findings_per_run": 2.7142857142857144,
+        "pass_rate": {
+          "value": 0.7857142857142857,
+          "n": 14
         },
         "net_score": 42.37,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 1,
-        "rate_count": 11
+        "rank": 2,
+        "rate_count": 14
+      },
+      {
+        "model": "openai/gpt-6.1-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.1-sol#high"
+        ],
+        "roles": [
+          "review-a"
+        ],
+        "runs": 100,
+        "pass": 58,
+        "fail": 42,
+        "error": 3,
+        "no_result": 7,
+        "blocking_findings": 166,
+        "escapes": 14,
+        "findings": 166,
+        "findings_per_run": 1.66,
+        "pass_rate": {
+          "value": 0.58,
+          "n": 100
+        },
+        "net_score": 41,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 3,
+        "rate_count": 100
+      },
+      {
+        "model": "openai/gpt-6.2-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.2-sol#high"
+        ],
+        "roles": [
+          "review-a"
+        ],
+        "runs": 73,
+        "pass": 24,
+        "fail": 49,
+        "error": 0,
+        "no_result": 5,
+        "blocking_findings": 201,
+        "escapes": 2,
+        "findings": 201,
+        "findings_per_run": 2.7534246575342465,
+        "pass_rate": {
+          "value": 0.3287671232876712,
+          "n": 73
+        },
+        "net_score": 38.3,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 4,
+        "rate_count": 73
       },
       {
         "model": "opencode-go/muse-spark-1.3-contributor",
         "kind": "gate",
         "routes": [
+          "opencode-go/muse-spark-1.3-contributor",
           "opencode-go/muse-spark-1.3-contributor#high"
         ],
         "roles": [
           "review-a"
         ],
-        "runs": 35,
-        "pass": 32,
-        "fail": 3,
-        "error": 0,
-        "no_result": 6,
-        "blocking_findings": 76,
+        "runs": 49,
+        "pass": 44,
+        "fail": 5,
+        "error": 7,
+        "no_result": 13,
+        "blocking_findings": 109,
         "escapes": 0,
-        "findings": 76,
-        "findings_per_run": 2.1714285714285713,
+        "findings": 109,
+        "findings_per_run": 2.2244897959183674,
         "pass_rate": {
-          "value": 0.9142857142857143,
-          "n": 35
+          "value": 0.8979591836734694,
+          "n": 49
         },
         "net_score": 22.4,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 2,
-        "rate_count": 35
+        "rank": 5,
+        "rate_count": 49
       },
       {
         "model": "claude-code/claude-sonnet-5-5",
         "kind": "gate",
         "routes": [
-          "claude-code/claude-sonnet-5-5#high"
+          "claude-code/claude-sonnet-5-5#high",
+          "claude-code/claude-sonnet-5-5#max"
         ],
         "roles": [
           "review-a"
         ],
-        "runs": 86,
-        "pass": 64,
-        "fail": 22,
+        "runs": 92,
+        "pass": 66,
+        "fail": 26,
         "error": 0,
         "no_result": 4,
-        "blocking_findings": 320,
+        "blocking_findings": 363,
         "escapes": 0,
-        "findings": 320,
-        "findings_per_run": 3.7209302325581395,
+        "findings": 363,
+        "findings_per_run": 3.9456521739130435,
         "pass_rate": {
-          "value": 0.7441860465116279,
-          "n": 86
+          "value": 0.717391304347826,
+          "n": 92
         },
         "net_score": 18.73,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
-        "rank": 3,
-        "rate_count": 86
+        "rank": 6,
+        "rate_count": 92
       },
       {
         "model": "nvidia/stepfun-ai/step-5-preview",
@@ -3310,10 +3724,10 @@
         "fail": 1,
         "error": 0,
         "no_result": 2,
-        "blocking_findings": 29,
+        "blocking_findings": 31,
         "escapes": 0,
-        "findings": 29,
-        "findings_per_run": 1.45,
+        "findings": 31,
+        "findings_per_run": 1.55,
         "pass_rate": {
           "value": 0.95,
           "n": 20
@@ -3321,8 +3735,36 @@
         "net_score": 16.43,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 4,
+        "rank": 7,
         "rate_count": 20
+      },
+      {
+        "model": "opencode-go/glm-5.3",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/glm-5.3#high"
+        ],
+        "roles": [
+          "review-a"
+        ],
+        "runs": 83,
+        "pass": 62,
+        "fail": 21,
+        "error": 2,
+        "no_result": 13,
+        "blocking_findings": 164,
+        "escapes": 0,
+        "findings": 164,
+        "findings_per_run": 1.9759036144578312,
+        "pass_rate": {
+          "value": 0.7469879518072289,
+          "n": 83
+        },
+        "net_score": 6.03,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 8,
+        "rate_count": 83
       },
       {
         "model": "bailian-token-plan/glm-5.3",
@@ -3349,7 +3791,7 @@
         "net_score": 6.03,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 5,
+        "rank": 9,
         "rate_count": 7
       },
       {
@@ -3366,10 +3808,10 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 38,
+        "blocking_findings": 41,
         "escapes": 0,
-        "findings": 38,
-        "findings_per_run": 2,
+        "findings": 41,
+        "findings_per_run": 2.1578947368421053,
         "pass_rate": {
           "value": 1,
           "n": 19
@@ -3377,8 +3819,36 @@
         "net_score": 1.53,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 6,
+        "rank": 10,
         "rate_count": 19
+      },
+      {
+        "model": "opencode/deepseek-v4.1-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/deepseek-v4.1-flash-free#high"
+        ],
+        "roles": [
+          "review-a"
+        ],
+        "runs": 10,
+        "pass": 1,
+        "fail": 9,
+        "error": 0,
+        "no_result": 8,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 0.1,
+          "n": 10
+        },
+        "net_score": 1.53,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 11,
+        "rate_count": 10
       },
       {
         "model": "opencode-go/deepseek-v4.1-flash",
@@ -3389,24 +3859,24 @@
         "roles": [
           "review-a"
         ],
-        "runs": 29,
-        "pass": 24,
-        "fail": 5,
+        "runs": 37,
+        "pass": 29,
+        "fail": 8,
         "error": 1,
-        "no_result": 14,
-        "blocking_findings": 79,
+        "no_result": 15,
+        "blocking_findings": 93,
         "escapes": 0,
-        "findings": 79,
-        "findings_per_run": 2.7241379310344827,
+        "findings": 93,
+        "findings_per_run": 2.5135135135135136,
         "pass_rate": {
-          "value": 0.8275862068965517,
-          "n": 29
+          "value": 0.7837837837837838,
+          "n": 37
         },
         "net_score": 0.9,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 7,
-        "rate_count": 29
+        "rank": 12,
+        "rate_count": 37
       },
       {
         "model": "minimax-cn-coding-plan/MiniMax-M3.1-Flash",
@@ -3417,24 +3887,24 @@
         "roles": [
           "review-a"
         ],
-        "runs": 27,
-        "pass": 19,
-        "fail": 8,
+        "runs": 58,
+        "pass": 41,
+        "fail": 17,
         "error": 0,
-        "no_result": 0,
-        "blocking_findings": 80,
+        "no_result": 1,
+        "blocking_findings": 185,
         "escapes": 0,
-        "findings": 80,
-        "findings_per_run": 2.962962962962963,
+        "findings": 185,
+        "findings_per_run": 3.189655172413793,
         "pass_rate": {
-          "value": 0.7037037037037037,
-          "n": 27
+          "value": 0.7068965517241379,
+          "n": 58
         },
         "net_score": -6.4,
         "allowed": true,
         "not_for_verdicts": true,
-        "rank": 8,
-        "rate_count": 27
+        "rank": 13,
+        "rate_count": 58
       },
       {
         "model": "nvidia/minimaxai/minimax-m3.1-flash",
@@ -3461,7 +3931,7 @@
         "net_score": -6.4,
         "allowed": false,
         "not_for_verdicts": true,
-        "rank": 9,
+        "rank": 14,
         "rate_count": 13
       },
       {
@@ -3473,24 +3943,24 @@
         "roles": [
           "review-a"
         ],
-        "runs": 9,
+        "runs": 15,
         "pass": 6,
-        "fail": 3,
+        "fail": 9,
         "error": 0,
-        "no_result": 0,
+        "no_result": 4,
         "blocking_findings": 12,
         "escapes": 0,
         "findings": 12,
-        "findings_per_run": 1.3333333333333333,
+        "findings_per_run": 0.8,
         "pass_rate": {
-          "value": 0.6666666666666666,
-          "n": 9
+          "value": 0.4,
+          "n": 15
         },
         "net_score": -6.4,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": true,
-        "rank": 10,
-        "rate_count": 9
+        "rank": 15,
+        "rate_count": 15
       },
       {
         "model": "opencode-go/mimo-v2.6-flash",
@@ -3501,24 +3971,52 @@
         "roles": [
           "review-a"
         ],
-        "runs": 46,
-        "pass": 38,
-        "fail": 8,
+        "runs": 70,
+        "pass": 58,
+        "fail": 12,
         "error": 1,
-        "no_result": 7,
-        "blocking_findings": 108,
+        "no_result": 9,
+        "blocking_findings": 163,
         "escapes": 0,
-        "findings": 108,
-        "findings_per_run": 2.347826086956522,
+        "findings": 163,
+        "findings_per_run": 2.3285714285714287,
         "pass_rate": {
-          "value": 0.8260869565217391,
-          "n": 46
+          "value": 0.8285714285714286,
+          "n": 70
         },
         "net_score": -10.83,
         "allowed": true,
         "not_for_verdicts": true,
-        "rank": 11,
-        "rate_count": 46
+        "rank": 16,
+        "rate_count": 70
+      },
+      {
+        "model": "openai/gpt-6-luna",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6-luna#high"
+        ],
+        "roles": [
+          "review-a"
+        ],
+        "runs": 182,
+        "pass": 113,
+        "fail": 69,
+        "error": 6,
+        "no_result": 12,
+        "blocking_findings": 186,
+        "escapes": 10,
+        "findings": 186,
+        "findings_per_run": 1.021978021978022,
+        "pass_rate": {
+          "value": 0.6208791208791209,
+          "n": 182
+        },
+        "net_score": -12.8,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 17,
+        "rate_count": 182
       },
       {
         "model": "kimi-code-plan-cn/kimi-for-coding",
@@ -3530,24 +4028,24 @@
         "roles": [
           "review-a"
         ],
-        "runs": 17,
-        "pass": 14,
-        "fail": 3,
+        "runs": 21,
+        "pass": 16,
+        "fail": 5,
         "error": 0,
-        "no_result": 1,
-        "blocking_findings": 18,
+        "no_result": 2,
+        "blocking_findings": 20,
         "escapes": 0,
-        "findings": 18,
-        "findings_per_run": 1.0588235294117647,
+        "findings": 20,
+        "findings_per_run": 0.9523809523809523,
         "pass_rate": {
-          "value": 0.8235294117647058,
-          "n": 17
+          "value": 0.7619047619047619,
+          "n": 21
         },
         "net_score": null,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
-        "rank": 12,
-        "rate_count": 17
+        "rank": 18,
+        "rate_count": 21
       },
       {
         "model": "bailian-token-plan/qwen3.8-max",
@@ -3619,10 +4117,10 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 4,
+        "blocking_findings": 5,
         "escapes": 0,
-        "findings": 4,
-        "findings_per_run": 4,
+        "findings": 5,
+        "findings_per_run": 5,
         "pass_rate": {
           "value": 1,
           "n": 1
@@ -3648,75 +4146,47 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 21,
+        "blocking_findings": 23,
         "escapes": 0,
-        "findings": 21,
-        "findings_per_run": 7,
+        "findings": 23,
+        "findings_per_run": 7.666666666666667,
         "pass_rate": {
           "value": 1,
           "n": 3
         },
         "net_score": -5.5,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
         "rate_count": 3
       },
       {
-        "model": "muse-spark-1.3-contributor",
+        "model": "nvidia/deepseek-ai/deepseek-v4.1-flash",
         "kind": "gate",
         "routes": [
-          "muse-spark-1.3-contributor"
+          "nvidia/deepseek-ai/deepseek-v4.1-flash#high"
         ],
         "roles": [
           "review-a"
         ],
-        "runs": 2,
+        "runs": 1,
         "pass": 1,
-        "fail": 1,
-        "error": 0,
+        "fail": 0,
+        "error": 2,
         "no_result": 0,
-        "blocking_findings": 6,
+        "blocking_findings": 0,
         "escapes": 0,
-        "findings": 6,
-        "findings_per_run": 3,
+        "findings": 0,
+        "findings_per_run": 0,
         "pass_rate": {
-          "value": 0.5,
-          "n": 2
+          "value": 1,
+          "n": 1
         },
-        "net_score": 22.4,
+        "net_score": 1.53,
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 2
-      },
-      {
-        "model": "openai/gpt-6-luna",
-        "kind": "gate",
-        "routes": [
-          "openai/gpt-6-luna#high"
-        ],
-        "roles": [
-          "review-a"
-        ],
-        "runs": 3,
-        "pass": 3,
-        "fail": 0,
-        "error": 0,
-        "no_result": 0,
-        "blocking_findings": 2,
-        "escapes": 0,
-        "findings": 2,
-        "findings_per_run": 0.6666666666666666,
-        "pass_rate": {
-          "value": 1,
-          "n": 3
-        },
-        "net_score": -12.8,
-        "allowed": false,
-        "not_for_verdicts": true,
-        "rank": null,
-        "rate_count": 3
+        "rate_count": 1
       },
       {
         "model": "opencode-go/hy4-preview",
@@ -3747,10 +4217,38 @@
         "rate_count": 1
       },
       {
-        "model": "opencode/deepseek-v4.1-flash-free",
+        "model": "opencode/glm-5.3-flash-free",
         "kind": "gate",
         "routes": [
-          "opencode/deepseek-v4.1-flash-free#high"
+          "opencode/glm-5.3-flash-free#high"
+        ],
+        "roles": [
+          "review-a"
+        ],
+        "runs": 3,
+        "pass": 2,
+        "fail": 1,
+        "error": 3,
+        "no_result": 2,
+        "blocking_findings": 8,
+        "escapes": 0,
+        "findings": 8,
+        "findings_per_run": 2.6666666666666665,
+        "pass_rate": {
+          "value": 0.6666666666666666,
+          "n": 3
+        },
+        "net_score": 0.67,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 3
+      },
+      {
+        "model": "opencode/mimo-v2.6-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/mimo-v2.6-flash-free"
         ],
         "roles": [
           "review-a"
@@ -3768,39 +4266,11 @@
           "value": 1,
           "n": 1
         },
-        "net_score": 1.53,
+        "net_score": -10.83,
         "allowed": true,
-        "not_for_verdicts": false,
+        "not_for_verdicts": true,
         "rank": null,
         "rate_count": 1
-      },
-      {
-        "model": "opencode/glm-5.3-flash-free",
-        "kind": "gate",
-        "routes": [
-          "opencode/glm-5.3-flash-free#high"
-        ],
-        "roles": [
-          "review-a"
-        ],
-        "runs": 2,
-        "pass": 2,
-        "fail": 0,
-        "error": 0,
-        "no_result": 1,
-        "blocking_findings": 0,
-        "escapes": 0,
-        "findings": 0,
-        "findings_per_run": 0,
-        "pass_rate": {
-          "value": 1,
-          "n": 2
-        },
-        "net_score": 0.67,
-        "allowed": true,
-        "not_for_verdicts": false,
-        "rank": null,
-        "rate_count": 2
       },
       {
         "model": "opencode/muse-spark-1.3",
@@ -3844,10 +4314,10 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 8,
+        "blocking_findings": 9,
         "escapes": 0,
-        "findings": 8,
-        "findings_per_run": 2.6666666666666665,
+        "findings": 9,
+        "findings_per_run": 3,
         "pass_rate": {
           "value": 1,
           "n": 3
@@ -3902,19 +4372,104 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 72,
+        "blocking_findings": 74,
         "escapes": 0,
-        "findings": 72,
-        "findings_per_run": 8,
+        "findings": 74,
+        "findings_per_run": 8.222222222222221,
         "pass_rate": {
           "value": 1,
           "n": 9
         },
         "net_score": 42.37,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": 1,
         "rate_count": 9
+      },
+      {
+        "model": "openai/gpt-6.1-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.1-sol#high"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 5,
+        "pass": 2,
+        "fail": 3,
+        "error": 1,
+        "no_result": 7,
+        "blocking_findings": 3,
+        "escapes": 0,
+        "findings": 3,
+        "findings_per_run": 0.6,
+        "pass_rate": {
+          "value": 0.4,
+          "n": 5
+        },
+        "net_score": 41,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 2,
+        "rate_count": 5
+      },
+      {
+        "model": "openai/gpt-6.2-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.2-sol#high"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 15,
+        "pass": 7,
+        "fail": 8,
+        "error": 0,
+        "no_result": 6,
+        "blocking_findings": 27,
+        "escapes": 0,
+        "findings": 27,
+        "findings_per_run": 1.8,
+        "pass_rate": {
+          "value": 0.4666666666666667,
+          "n": 15
+        },
+        "net_score": 38.3,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 3,
+        "rate_count": 15
+      },
+      {
+        "model": "claude-code/claude-sonnet-5-5",
+        "kind": "gate",
+        "routes": [
+          "claude-code/claude-sonnet-5-5#high",
+          "claude-code/claude-sonnet-5-5#max"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 40,
+        "pass": 34,
+        "fail": 6,
+        "error": 0,
+        "no_result": 11,
+        "blocking_findings": 180,
+        "escapes": 0,
+        "findings": 180,
+        "findings_per_run": 4.5,
+        "pass_rate": {
+          "value": 0.85,
+          "n": 40
+        },
+        "net_score": 30.47,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 4,
+        "rate_count": 40
       },
       {
         "model": "opencode-go/kimi-k3.1-pro",
@@ -3941,7 +4496,7 @@
         "net_score": 29.87,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 2,
+        "rank": 5,
         "rate_count": 5
       },
       {
@@ -3969,36 +4524,36 @@
         "net_score": 29.87,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 3,
+        "rank": 6,
         "rate_count": 8
       },
       {
-        "model": "claude-code/claude-sonnet-5-5",
+        "model": "opencode-go/muse-spark-1.3-contributor",
         "kind": "gate",
         "routes": [
-          "claude-code/claude-sonnet-5-5#high"
+          "opencode-go/muse-spark-1.3-contributor#high"
         ],
         "roles": [
           "review-b"
         ],
-        "runs": 18,
-        "pass": 17,
+        "runs": 25,
+        "pass": 24,
         "fail": 1,
         "error": 0,
-        "no_result": 11,
-        "blocking_findings": 36,
+        "no_result": 3,
+        "blocking_findings": 7,
         "escapes": 0,
-        "findings": 36,
-        "findings_per_run": 2,
+        "findings": 7,
+        "findings_per_run": 0.28,
         "pass_rate": {
-          "value": 0.9444444444444444,
-          "n": 18
+          "value": 0.96,
+          "n": 25
         },
-        "net_score": 18.73,
+        "net_score": 22.4,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 4,
-        "rate_count": 18
+        "rank": 7,
+        "rate_count": 25
       },
       {
         "model": "nvidia/stepfun-ai/step-5-preview",
@@ -4025,7 +4580,7 @@
         "net_score": 16.43,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 5,
+        "rank": 8,
         "rate_count": 15
       },
       {
@@ -4042,10 +4597,10 @@
         "fail": 2,
         "error": 0,
         "no_result": 4,
-        "blocking_findings": 58,
+        "blocking_findings": 62,
         "escapes": 0,
-        "findings": 58,
-        "findings_per_run": 3.411764705882353,
+        "findings": 62,
+        "findings_per_run": 3.6470588235294117,
         "pass_rate": {
           "value": 0.8823529411764706,
           "n": 17
@@ -4053,8 +4608,36 @@
         "net_score": 10.47,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 6,
+        "rank": 9,
         "rate_count": 17
+      },
+      {
+        "model": "opencode-go/glm-5.3",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/glm-5.3#high"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 33,
+        "pass": 29,
+        "fail": 4,
+        "error": 1,
+        "no_result": 8,
+        "blocking_findings": 59,
+        "escapes": 0,
+        "findings": 59,
+        "findings_per_run": 1.7878787878787878,
+        "pass_rate": {
+          "value": 0.8787878787878788,
+          "n": 33
+        },
+        "net_score": 6.03,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 10,
+        "rate_count": 33
       },
       {
         "model": "deepseek/deepseek-flash",
@@ -4081,8 +4664,121 @@
         "net_score": 1.53,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 7,
+        "rank": 11,
         "rate_count": 11
+      },
+      {
+        "model": "opencode/deepseek-v4.1-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/deepseek-v4.1-flash-free#high"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 13,
+        "pass": 5,
+        "fail": 8,
+        "error": 0,
+        "no_result": 3,
+        "blocking_findings": 2,
+        "escapes": 0,
+        "findings": 2,
+        "findings_per_run": 0.15384615384615385,
+        "pass_rate": {
+          "value": 0.38461538461538464,
+          "n": 13
+        },
+        "net_score": 1.53,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 12,
+        "rate_count": 13
+      },
+      {
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/deepseek-v4.1-flash"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 22,
+        "pass": 19,
+        "fail": 3,
+        "error": 0,
+        "no_result": 6,
+        "blocking_findings": 90,
+        "escapes": 0,
+        "findings": 90,
+        "findings_per_run": 4.090909090909091,
+        "pass_rate": {
+          "value": 0.8636363636363636,
+          "n": 22
+        },
+        "net_score": 0.9,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 13,
+        "rate_count": 22
+      },
+      {
+        "model": "minimax-cn-coding-plan/MiniMax-M3",
+        "kind": "gate",
+        "routes": [
+          "minimax-cn-coding-plan/MiniMax-M3",
+          "minimax-cn-coding-plan/MiniMax-M3#high"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 25,
+        "pass": 19,
+        "fail": 6,
+        "error": 0,
+        "no_result": 4,
+        "blocking_findings": 32,
+        "escapes": 0,
+        "findings": 32,
+        "findings_per_run": 1.28,
+        "pass_rate": {
+          "value": 0.76,
+          "n": 25
+        },
+        "net_score": -5.5,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 14,
+        "rate_count": 25
+      },
+      {
+        "model": "opencode-go/mimo-v2.6-flash",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/mimo-v2.6-flash"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 6,
+        "pass": 6,
+        "fail": 0,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 8,
+        "escapes": 0,
+        "findings": 8,
+        "findings_per_run": 1.3333333333333333,
+        "pass_rate": {
+          "value": 1,
+          "n": 6
+        },
+        "net_score": -10.83,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 15,
+        "rate_count": 6
       },
       {
         "model": "kimi-code-plan-cn/kimi-for-coding",
@@ -4094,24 +4790,80 @@
         "roles": [
           "review-b"
         ],
-        "runs": 35,
-        "pass": 30,
-        "fail": 5,
+        "runs": 94,
+        "pass": 85,
+        "fail": 9,
         "error": 0,
-        "no_result": 0,
-        "blocking_findings": 39,
+        "no_result": 8,
+        "blocking_findings": 93,
         "escapes": 0,
-        "findings": 39,
-        "findings_per_run": 1.1142857142857143,
+        "findings": 93,
+        "findings_per_run": 0.9893617021276596,
         "pass_rate": {
-          "value": 0.8571428571428571,
-          "n": 35
+          "value": 0.9042553191489362,
+          "n": 94
         },
         "net_score": null,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
-        "rank": 8,
-        "rate_count": 35
+        "rank": 16,
+        "rate_count": 94
+      },
+      {
+        "model": "opencode/beam-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/beam-free"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 21,
+        "pass": 18,
+        "fail": 3,
+        "error": 0,
+        "no_result": 3,
+        "blocking_findings": 19,
+        "escapes": 10,
+        "findings": 19,
+        "findings_per_run": 0.9047619047619048,
+        "pass_rate": {
+          "value": 0.8571428571428571,
+          "n": 21
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 17,
+        "rate_count": 21
+      },
+      {
+        "model": "opencode-go/hy4-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/hy4-flash-free#high"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 44,
+        "pass": 38,
+        "fail": 6,
+        "error": 0,
+        "no_result": 35,
+        "blocking_findings": 16,
+        "escapes": 12,
+        "findings": 16,
+        "findings_per_run": 0.36363636363636365,
+        "pass_rate": {
+          "value": 0.8636363636363636,
+          "n": 44
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 18,
+        "rate_count": 44
       },
       {
         "model": "bailian-token-plan/glm-5.3",
@@ -4142,33 +4894,33 @@
         "rate_count": 1
       },
       {
-        "model": "minimax-cn-coding-plan/MiniMax-M3",
+        "model": "claude-agent/sonnet",
         "kind": "gate",
         "routes": [
-          "minimax-cn-coding-plan/MiniMax-M3",
-          "minimax-cn-coding-plan/MiniMax-M3#high"
+          "claude-agent/sonnet#max",
+          "claude-agent/sonnet#xhigh"
         ],
         "roles": [
           "review-b"
         ],
-        "runs": 3,
-        "pass": 3,
-        "fail": 0,
+        "runs": 4,
+        "pass": 2,
+        "fail": 2,
         "error": 0,
-        "no_result": 0,
-        "blocking_findings": 0,
+        "no_result": 1,
+        "blocking_findings": 3,
         "escapes": 0,
-        "findings": 0,
-        "findings_per_run": 0,
+        "findings": 3,
+        "findings_per_run": 0.75,
         "pass_rate": {
-          "value": 1,
-          "n": 3
+          "value": 0.5,
+          "n": 4
         },
-        "net_score": -5.5,
-        "allowed": false,
-        "not_for_verdicts": true,
+        "net_score": 30.47,
+        "allowed": true,
+        "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 3
+        "rate_count": 4
       },
       {
         "model": "nvidia/minimaxai/minimax-m3.1-flash",
@@ -4227,34 +4979,6 @@
         "rate_count": 3
       },
       {
-        "model": "opencode-go/deepseek-v4.1-flash",
-        "kind": "gate",
-        "routes": [
-          "opencode-go/deepseek-v4.1-flash"
-        ],
-        "roles": [
-          "review-b"
-        ],
-        "runs": 4,
-        "pass": 4,
-        "fail": 0,
-        "error": 0,
-        "no_result": 3,
-        "blocking_findings": 9,
-        "escapes": 0,
-        "findings": 9,
-        "findings_per_run": 2.25,
-        "pass_rate": {
-          "value": 1,
-          "n": 4
-        },
-        "net_score": 0.9,
-        "allowed": true,
-        "not_for_verdicts": false,
-        "rank": null,
-        "rate_count": 4
-      },
-      {
         "model": "opencode-go/hy4-preview",
         "kind": "gate",
         "routes": [
@@ -4268,10 +4992,10 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 0,
+        "blocking_findings": 1,
         "escapes": 0,
-        "findings": 0,
-        "findings_per_run": 0,
+        "findings": 1,
+        "findings_per_run": 1,
         "pass_rate": {
           "value": 1,
           "n": 1
@@ -4279,62 +5003,6 @@
         "net_score": null,
         "allowed": false,
         "not_for_verdicts": true,
-        "rank": null,
-        "rate_count": 1
-      },
-      {
-        "model": "opencode-go/muse-spark-1.3-contributor",
-        "kind": "gate",
-        "routes": [
-          "opencode-go/muse-spark-1.3-contributor#high"
-        ],
-        "roles": [
-          "review-b"
-        ],
-        "runs": 2,
-        "pass": 1,
-        "fail": 1,
-        "error": 0,
-        "no_result": 0,
-        "blocking_findings": 0,
-        "escapes": 0,
-        "findings": 0,
-        "findings_per_run": 0,
-        "pass_rate": {
-          "value": 0.5,
-          "n": 2
-        },
-        "net_score": 22.4,
-        "allowed": true,
-        "not_for_verdicts": false,
-        "rank": null,
-        "rate_count": 2
-      },
-      {
-        "model": "opencode/deepseek-v4.1-flash-free",
-        "kind": "gate",
-        "routes": [
-          "opencode/deepseek-v4.1-flash-free#high"
-        ],
-        "roles": [
-          "review-b"
-        ],
-        "runs": 1,
-        "pass": 1,
-        "fail": 0,
-        "error": 0,
-        "no_result": 0,
-        "blocking_findings": 2,
-        "escapes": 0,
-        "findings": 2,
-        "findings_per_run": 2,
-        "pass_rate": {
-          "value": 1,
-          "n": 1
-        },
-        "net_score": 1.53,
-        "allowed": true,
-        "not_for_verdicts": false,
         "rank": null,
         "rate_count": 1
       },
@@ -4361,10 +5029,38 @@
           "n": 1
         },
         "net_score": 0.67,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 1
+      },
+      {
+        "model": "opencode/mimo-v2.6-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/mimo-v2.6-flash-free"
+        ],
+        "roles": [
+          "review-b"
+        ],
+        "runs": 0,
+        "pass": 0,
+        "fail": 0,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": null,
+          "n": 0
+        },
+        "net_score": -10.83,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": null,
+        "rate_count": 0
       },
       {
         "model": "volcengine-agent-plan/ark-code-latest",
@@ -4380,10 +5076,10 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 2,
+        "blocking_findings": 3,
         "escapes": 0,
-        "findings": 2,
-        "findings_per_run": 1,
+        "findings": 3,
+        "findings_per_run": 1.5,
         "pass_rate": {
           "value": 1,
           "n": 2
@@ -4453,6 +5149,62 @@
     ],
     "review-c": [
       {
+        "model": "openai/gpt-6.1-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.1-sol#high"
+        ],
+        "roles": [
+          "review-c"
+        ],
+        "runs": 30,
+        "pass": 24,
+        "fail": 6,
+        "error": 1,
+        "no_result": 11,
+        "blocking_findings": 36,
+        "escapes": 1,
+        "findings": 36,
+        "findings_per_run": 1.2,
+        "pass_rate": {
+          "value": 0.8,
+          "n": 30
+        },
+        "net_score": 41,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 1,
+        "rate_count": 30
+      },
+      {
+        "model": "openai/gpt-6.2-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.2-sol#high"
+        ],
+        "roles": [
+          "review-c"
+        ],
+        "runs": 27,
+        "pass": 12,
+        "fail": 15,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 66,
+        "escapes": 1,
+        "findings": 66,
+        "findings_per_run": 2.4444444444444446,
+        "pass_rate": {
+          "value": 0.4444444444444444,
+          "n": 27
+        },
+        "net_score": 38.3,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 2,
+        "rate_count": 27
+      },
+      {
         "model": "opencode-go/muse-spark-1.3-contributor",
         "kind": "gate",
         "routes": [
@@ -4461,53 +5213,54 @@
         "roles": [
           "review-c"
         ],
-        "runs": 17,
-        "pass": 16,
+        "runs": 26,
+        "pass": 25,
         "fail": 1,
-        "error": 0,
-        "no_result": 4,
-        "blocking_findings": 28,
+        "error": 3,
+        "no_result": 8,
+        "blocking_findings": 29,
         "escapes": 0,
-        "findings": 28,
-        "findings_per_run": 1.6470588235294117,
+        "findings": 29,
+        "findings_per_run": 1.1153846153846154,
         "pass_rate": {
-          "value": 0.9411764705882353,
-          "n": 17
+          "value": 0.9615384615384616,
+          "n": 26
         },
         "net_score": 22.4,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 1,
-        "rate_count": 17
+        "rank": 3,
+        "rate_count": 26
       },
       {
         "model": "claude-code/claude-sonnet-5-5",
         "kind": "gate",
         "routes": [
+          "claude-code/claude-sonnet-5-5",
           "claude-code/claude-sonnet-5-5#high",
           "claude-code/claude-sonnet-5-5#max"
         ],
         "roles": [
           "review-c"
         ],
-        "runs": 41,
-        "pass": 31,
-        "fail": 10,
+        "runs": 53,
+        "pass": 41,
+        "fail": 12,
         "error": 0,
         "no_result": 1,
-        "blocking_findings": 113,
+        "blocking_findings": 157,
         "escapes": 0,
-        "findings": 113,
-        "findings_per_run": 2.7560975609756095,
+        "findings": 157,
+        "findings_per_run": 2.9622641509433962,
         "pass_rate": {
-          "value": 0.7560975609756098,
-          "n": 41
+          "value": 0.7735849056603774,
+          "n": 53
         },
         "net_score": 18.73,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
-        "rank": 2,
-        "rate_count": 41
+        "rank": 4,
+        "rate_count": 53
       },
       {
         "model": "nvidia/stepfun-ai/step-5-preview",
@@ -4524,10 +5277,10 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 10,
+        "blocking_findings": 12,
         "escapes": 0,
-        "findings": 10,
-        "findings_per_run": 1.25,
+        "findings": 12,
+        "findings_per_run": 1.5,
         "pass_rate": {
           "value": 1,
           "n": 8
@@ -4535,7 +5288,7 @@
         "net_score": 16.43,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 3,
+        "rank": 5,
         "rate_count": 8
       },
       {
@@ -4552,10 +5305,10 @@
         "fail": 0,
         "error": 0,
         "no_result": 1,
-        "blocking_findings": 16,
+        "blocking_findings": 17,
         "escapes": 0,
-        "findings": 16,
-        "findings_per_run": 2.6666666666666665,
+        "findings": 17,
+        "findings_per_run": 2.8333333333333335,
         "pass_rate": {
           "value": 1,
           "n": 6
@@ -4563,8 +5316,36 @@
         "net_score": 10.47,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 4,
+        "rank": 6,
         "rate_count": 6
+      },
+      {
+        "model": "opencode-go/glm-5.3",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/glm-5.3#high"
+        ],
+        "roles": [
+          "review-c"
+        ],
+        "runs": 48,
+        "pass": 34,
+        "fail": 14,
+        "error": 0,
+        "no_result": 12,
+        "blocking_findings": 113,
+        "escapes": 0,
+        "findings": 113,
+        "findings_per_run": 2.3541666666666665,
+        "pass_rate": {
+          "value": 0.7083333333333334,
+          "n": 48
+        },
+        "net_score": 6.03,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 7,
+        "rate_count": 48
       },
       {
         "model": "deepseek/deepseek-flash",
@@ -4580,10 +5361,10 @@
         "fail": 1,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 15,
+        "blocking_findings": 16,
         "escapes": 0,
-        "findings": 15,
-        "findings_per_run": 1.5,
+        "findings": 16,
+        "findings_per_run": 1.6,
         "pass_rate": {
           "value": 0.9,
           "n": 10
@@ -4591,8 +5372,36 @@
         "net_score": 1.53,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 5,
+        "rank": 8,
         "rate_count": 10
+      },
+      {
+        "model": "opencode/deepseek-v4.1-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/deepseek-v4.1-flash-free#high"
+        ],
+        "roles": [
+          "review-c"
+        ],
+        "runs": 11,
+        "pass": 1,
+        "fail": 10,
+        "error": 0,
+        "no_result": 4,
+        "blocking_findings": 1,
+        "escapes": 14,
+        "findings": 1,
+        "findings_per_run": 0.09090909090909091,
+        "pass_rate": {
+          "value": 0.09090909090909091,
+          "n": 11
+        },
+        "net_score": 1.53,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 9,
+        "rate_count": 11
       },
       {
         "model": "opencode-go/deepseek-v4.1-flash",
@@ -4607,11 +5416,11 @@
         "pass": 5,
         "fail": 1,
         "error": 1,
-        "no_result": 10,
-        "blocking_findings": 21,
+        "no_result": 11,
+        "blocking_findings": 22,
         "escapes": 0,
-        "findings": 21,
-        "findings_per_run": 3.5,
+        "findings": 22,
+        "findings_per_run": 3.6666666666666665,
         "pass_rate": {
           "value": 0.8333333333333334,
           "n": 6
@@ -4619,7 +5428,7 @@
         "net_score": 0.9,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 6,
+        "rank": 10,
         "rate_count": 6
       },
       {
@@ -4631,24 +5440,24 @@
         "roles": [
           "review-c"
         ],
-        "runs": 6,
-        "pass": 6,
-        "fail": 0,
+        "runs": 21,
+        "pass": 16,
+        "fail": 5,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 8,
-        "escapes": 0,
-        "findings": 8,
-        "findings_per_run": 1.3333333333333333,
+        "blocking_findings": 86,
+        "escapes": 2,
+        "findings": 86,
+        "findings_per_run": 4.095238095238095,
         "pass_rate": {
-          "value": 1,
-          "n": 6
+          "value": 0.7619047619047619,
+          "n": 21
         },
         "net_score": -6.4,
         "allowed": true,
         "not_for_verdicts": true,
-        "rank": 7,
-        "rate_count": 6
+        "rank": 11,
+        "rate_count": 21
       },
       {
         "model": "opencode-go/mimo-v2.6-flash",
@@ -4659,24 +5468,52 @@
         "roles": [
           "review-c"
         ],
-        "runs": 6,
-        "pass": 3,
-        "fail": 3,
-        "error": 0,
-        "no_result": 4,
-        "blocking_findings": 23,
+        "runs": 22,
+        "pass": 18,
+        "fail": 4,
+        "error": 3,
+        "no_result": 8,
+        "blocking_findings": 38,
         "escapes": 0,
-        "findings": 23,
-        "findings_per_run": 3.8333333333333335,
+        "findings": 38,
+        "findings_per_run": 1.7272727272727273,
         "pass_rate": {
-          "value": 0.5,
-          "n": 6
+          "value": 0.8181818181818182,
+          "n": 22
         },
         "net_score": -10.83,
         "allowed": true,
         "not_for_verdicts": true,
-        "rank": 8,
-        "rate_count": 6
+        "rank": 12,
+        "rate_count": 22
+      },
+      {
+        "model": "openai/gpt-6-luna",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6-luna#high"
+        ],
+        "roles": [
+          "review-c"
+        ],
+        "runs": 56,
+        "pass": 47,
+        "fail": 9,
+        "error": 0,
+        "no_result": 8,
+        "blocking_findings": 43,
+        "escapes": 8,
+        "findings": 43,
+        "findings_per_run": 0.7678571428571429,
+        "pass_rate": {
+          "value": 0.8392857142857143,
+          "n": 56
+        },
+        "net_score": -12.8,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 13,
+        "rate_count": 56
       },
       {
         "model": "kimi-code-plan-cn/kimi-for-coding",
@@ -4702,10 +5539,38 @@
           "n": 5
         },
         "net_score": null,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
-        "rank": 9,
+        "rank": 14,
         "rate_count": 5
+      },
+      {
+        "model": "opencode/hy4-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/hy4-flash-free#high"
+        ],
+        "roles": [
+          "review-c"
+        ],
+        "runs": 13,
+        "pass": 3,
+        "fail": 10,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 3,
+        "escapes": 0,
+        "findings": 3,
+        "findings_per_run": 0.23076923076923078,
+        "pass_rate": {
+          "value": 0.23076923076923078,
+          "n": 13
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 15,
+        "rate_count": 13
       },
       {
         "model": "bailian-token-plan/glm-5.3",
@@ -4758,38 +5623,10 @@
           "n": 3
         },
         "net_score": 42.37,
-        "allowed": true,
-        "not_for_verdicts": false,
-        "rank": null,
-        "rate_count": 3
-      },
-      {
-        "model": "claude-sonnet-5-5",
-        "kind": "gate",
-        "routes": [
-          "claude-sonnet-5-5"
-        ],
-        "roles": [
-          "review-c"
-        ],
-        "runs": 1,
-        "pass": 1,
-        "fail": 0,
-        "error": 0,
-        "no_result": 0,
-        "blocking_findings": 7,
-        "escapes": 0,
-        "findings": 7,
-        "findings_per_run": 7,
-        "pass_rate": {
-          "value": 1,
-          "n": 1
-        },
-        "net_score": 30.47,
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 1
+        "rate_count": 3
       },
       {
         "model": "coding-plan/kimi-k3.1-pro",
@@ -4833,16 +5670,16 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 4,
+        "blocking_findings": 5,
         "escapes": 0,
-        "findings": 4,
-        "findings_per_run": 4,
+        "findings": 5,
+        "findings_per_run": 5,
         "pass_rate": {
           "value": 1,
           "n": 1
         },
         "net_score": 29.87,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 1
@@ -4876,16 +5713,16 @@
         "rate_count": 1
       },
       {
-        "model": "opencode/deepseek-v4.1-flash-free",
+        "model": "opencode/beam-free",
         "kind": "gate",
         "routes": [
-          "opencode/deepseek-v4.1-flash-free#high"
+          "opencode/beam-free"
         ],
         "roles": [
           "review-c"
         ],
-        "runs": 0,
-        "pass": 0,
+        "runs": 2,
+        "pass": 2,
         "fail": 0,
         "error": 0,
         "no_result": 1,
@@ -4894,14 +5731,14 @@
         "findings": 0,
         "findings_per_run": 0,
         "pass_rate": {
-          "value": null,
-          "n": 0
+          "value": 1,
+          "n": 2
         },
-        "net_score": 1.53,
+        "net_score": null,
         "allowed": true,
-        "not_for_verdicts": false,
+        "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 0
+        "rate_count": 2
       },
       {
         "model": "opencode/glm-5.3-flash-free",
@@ -4916,7 +5753,7 @@
         "pass": 2,
         "fail": 0,
         "error": 0,
-        "no_result": 2,
+        "no_result": 3,
         "blocking_findings": 3,
         "escapes": 0,
         "findings": 3,
@@ -4926,8 +5763,36 @@
           "n": 2
         },
         "net_score": 0.67,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 2
+      },
+      {
+        "model": "opencode/mimo-v2.6-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/mimo-v2.6-flash-free"
+        ],
+        "roles": [
+          "review-c"
+        ],
+        "runs": 2,
+        "pass": 0,
+        "fail": 2,
+        "error": 0,
+        "no_result": 7,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 0,
+          "n": 2
+        },
+        "net_score": -10.83,
+        "allowed": true,
+        "not_for_verdicts": true,
         "rank": null,
         "rate_count": 2
       },
@@ -4940,24 +5805,24 @@
         "roles": [
           "review-c"
         ],
-        "runs": 0,
-        "pass": 0,
-        "fail": 0,
+        "runs": 3,
+        "pass": 1,
+        "fail": 2,
         "error": 0,
-        "no_result": 0,
+        "no_result": 1,
         "blocking_findings": 0,
         "escapes": 0,
         "findings": 0,
         "findings_per_run": 0,
         "pass_rate": {
-          "value": null,
-          "n": 0
+          "value": 0.3333333333333333,
+          "n": 3
         },
         "net_score": -6.4,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 0
+        "rate_count": 3
       },
       {
         "model": "opencode/muse-spark-1.3",
@@ -5018,6 +5883,62 @@
     ],
     "adversarial": [
       {
+        "model": "openai/gpt-6.1-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.1-sol#high"
+        ],
+        "roles": [
+          "adversarial"
+        ],
+        "runs": 39,
+        "pass": 24,
+        "fail": 15,
+        "error": 1,
+        "no_result": 3,
+        "blocking_findings": 53,
+        "escapes": 1,
+        "findings": 53,
+        "findings_per_run": 1.358974358974359,
+        "pass_rate": {
+          "value": 0.6153846153846154,
+          "n": 39
+        },
+        "net_score": 41,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 1,
+        "rate_count": 39
+      },
+      {
+        "model": "openai/gpt-6.2-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.2-sol#high"
+        ],
+        "roles": [
+          "adversarial"
+        ],
+        "runs": 19,
+        "pass": 11,
+        "fail": 8,
+        "error": 1,
+        "no_result": 3,
+        "blocking_findings": 44,
+        "escapes": 0,
+        "findings": 44,
+        "findings_per_run": 2.3157894736842106,
+        "pass_rate": {
+          "value": 0.5789473684210527,
+          "n": 19
+        },
+        "net_score": 38.3,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 2,
+        "rate_count": 19
+      },
+      {
         "model": "opencode-go/muse-spark-1.3-contributor",
         "kind": "gate",
         "routes": [
@@ -5026,24 +5947,53 @@
         "roles": [
           "adversarial"
         ],
-        "runs": 25,
-        "pass": 13,
-        "fail": 12,
+        "runs": 36,
+        "pass": 19,
+        "fail": 17,
         "error": 0,
         "no_result": 4,
-        "blocking_findings": 42,
+        "blocking_findings": 54,
         "escapes": 0,
-        "findings": 42,
-        "findings_per_run": 1.68,
+        "findings": 54,
+        "findings_per_run": 1.5,
         "pass_rate": {
-          "value": 0.52,
-          "n": 25
+          "value": 0.5277777777777778,
+          "n": 36
         },
         "net_score": 22.4,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 1,
-        "rate_count": 25
+        "rank": 3,
+        "rate_count": 36
+      },
+      {
+        "model": "claude-agent/sonnet",
+        "kind": "gate",
+        "routes": [
+          "claude-agent/sonnet#max",
+          "claude-agent/sonnet#xhigh"
+        ],
+        "roles": [
+          "adversarial"
+        ],
+        "runs": 16,
+        "pass": 12,
+        "fail": 4,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 88,
+        "escapes": 0,
+        "findings": 88,
+        "findings_per_run": 5.5,
+        "pass_rate": {
+          "value": 0.75,
+          "n": 16
+        },
+        "net_score": 20.6,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 4,
+        "rate_count": 16
       },
       {
         "model": "claude-code/claude-sonnet-5-5",
@@ -5055,24 +6005,52 @@
         "roles": [
           "adversarial"
         ],
-        "runs": 19,
-        "pass": 9,
-        "fail": 10,
-        "error": 0,
-        "no_result": 1,
-        "blocking_findings": 60,
+        "runs": 25,
+        "pass": 14,
+        "fail": 11,
+        "error": 1,
+        "no_result": 2,
+        "blocking_findings": 95,
         "escapes": 0,
-        "findings": 60,
-        "findings_per_run": 3.1578947368421053,
+        "findings": 95,
+        "findings_per_run": 3.8,
         "pass_rate": {
-          "value": 0.47368421052631576,
-          "n": 19
+          "value": 0.56,
+          "n": 25
         },
         "net_score": 18.73,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 5,
+        "rate_count": 25
+      },
+      {
+        "model": "opencode-go/glm-5.3",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/glm-5.3#high"
+        ],
+        "roles": [
+          "adversarial"
+        ],
+        "runs": 50,
+        "pass": 33,
+        "fail": 17,
+        "error": 1,
+        "no_result": 5,
+        "blocking_findings": 90,
+        "escapes": 0,
+        "findings": 90,
+        "findings_per_run": 1.8,
+        "pass_rate": {
+          "value": 0.66,
+          "n": 50
+        },
+        "net_score": 6.03,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 2,
-        "rate_count": 19
+        "rank": 6,
+        "rate_count": 50
       },
       {
         "model": "deepseek/deepseek-flash",
@@ -5099,7 +6077,7 @@
         "net_score": 1.53,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 3,
+        "rank": 7,
         "rate_count": 10
       },
       {
@@ -5116,10 +6094,10 @@
         "fail": 4,
         "error": 0,
         "no_result": 3,
-        "blocking_findings": 25,
+        "blocking_findings": 27,
         "escapes": 0,
-        "findings": 25,
-        "findings_per_run": 2.0833333333333335,
+        "findings": 27,
+        "findings_per_run": 2.25,
         "pass_rate": {
           "value": 0.6666666666666666,
           "n": 12
@@ -5127,7 +6105,7 @@
         "net_score": 0.9,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 4,
+        "rank": 8,
         "rate_count": 12
       },
       {
@@ -5139,24 +6117,52 @@
         "roles": [
           "adversarial"
         ],
-        "runs": 10,
+        "runs": 11,
         "pass": 6,
-        "fail": 4,
+        "fail": 5,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 25,
+        "blocking_findings": 32,
         "escapes": 0,
-        "findings": 25,
-        "findings_per_run": 2.5,
+        "findings": 32,
+        "findings_per_run": 2.909090909090909,
         "pass_rate": {
-          "value": 0.6,
-          "n": 10
+          "value": 0.5454545454545454,
+          "n": 11
         },
         "net_score": -6.4,
         "allowed": true,
         "not_for_verdicts": true,
-        "rank": 5,
-        "rate_count": 10
+        "rank": 9,
+        "rate_count": 11
+      },
+      {
+        "model": "opencode/minimax-m3.1-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/minimax-m3.1-flash-free#high"
+        ],
+        "roles": [
+          "adversarial"
+        ],
+        "runs": 5,
+        "pass": 5,
+        "fail": 0,
+        "error": 0,
+        "no_result": 2,
+        "blocking_findings": 2,
+        "escapes": 0,
+        "findings": 2,
+        "findings_per_run": 0.4,
+        "pass_rate": {
+          "value": 1,
+          "n": 5
+        },
+        "net_score": -6.4,
+        "allowed": false,
+        "not_for_verdicts": true,
+        "rank": 10,
+        "rate_count": 5
       },
       {
         "model": "opencode-go/mimo-v2.6-flash",
@@ -5167,24 +6173,52 @@
         "roles": [
           "adversarial"
         ],
-        "runs": 6,
-        "pass": 1,
-        "fail": 5,
+        "runs": 8,
+        "pass": 2,
+        "fail": 6,
         "error": 0,
         "no_result": 3,
-        "blocking_findings": 44,
+        "blocking_findings": 49,
         "escapes": 0,
-        "findings": 44,
-        "findings_per_run": 7.333333333333333,
+        "findings": 49,
+        "findings_per_run": 6.125,
         "pass_rate": {
-          "value": 0.16666666666666666,
-          "n": 6
+          "value": 0.25,
+          "n": 8
         },
         "net_score": -10.83,
         "allowed": true,
         "not_for_verdicts": true,
-        "rank": 6,
-        "rate_count": 6
+        "rank": 11,
+        "rate_count": 8
+      },
+      {
+        "model": "openai/gpt-6-luna",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6-luna#high"
+        ],
+        "roles": [
+          "adversarial"
+        ],
+        "runs": 39,
+        "pass": 28,
+        "fail": 11,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 44,
+        "escapes": 0,
+        "findings": 44,
+        "findings_per_run": 1.1282051282051282,
+        "pass_rate": {
+          "value": 0.717948717948718,
+          "n": 39
+        },
+        "net_score": -12.8,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 12,
+        "rate_count": 39
       },
       {
         "model": "kimi-code-plan-cn/kimi-for-coding",
@@ -5196,24 +6230,52 @@
         "roles": [
           "adversarial"
         ],
-        "runs": 7,
-        "pass": 7,
-        "fail": 0,
+        "runs": 22,
+        "pass": 13,
+        "fail": 9,
         "error": 0,
-        "no_result": 0,
-        "blocking_findings": 8,
-        "escapes": 0,
-        "findings": 8,
-        "findings_per_run": 1.1428571428571428,
+        "no_result": 2,
+        "blocking_findings": 58,
+        "escapes": 3,
+        "findings": 58,
+        "findings_per_run": 2.6363636363636362,
         "pass_rate": {
-          "value": 1,
-          "n": 7
+          "value": 0.5909090909090909,
+          "n": 22
         },
         "net_score": null,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
-        "rank": 7,
-        "rate_count": 7
+        "rank": 13,
+        "rate_count": 22
+      },
+      {
+        "model": "opencode-go/hy4-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/hy4-flash-free#high"
+        ],
+        "roles": [
+          "adversarial"
+        ],
+        "runs": 34,
+        "pass": 21,
+        "fail": 13,
+        "error": 0,
+        "no_result": 6,
+        "blocking_findings": 17,
+        "escapes": 3,
+        "findings": 17,
+        "findings_per_run": 0.5,
+        "pass_rate": {
+          "value": 0.6176470588235294,
+          "n": 34
+        },
+        "net_score": null,
+        "allowed": true,
+        "not_for_verdicts": true,
+        "rank": 14,
+        "rate_count": 34
       },
       {
         "model": "bailian-token-plan/glm-5.3",
@@ -5238,6 +6300,34 @@
           "n": 1
         },
         "net_score": 6.03,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 1
+      },
+      {
+        "model": "claude-code/claude-opus-5-5",
+        "kind": "gate",
+        "routes": [
+          "claude-code/claude-opus-5-5[1m]#high"
+        ],
+        "roles": [
+          "adversarial"
+        ],
+        "runs": 1,
+        "pass": 0,
+        "fail": 1,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 9,
+        "escapes": 0,
+        "findings": 9,
+        "findings_per_run": 9,
+        "pass_rate": {
+          "value": 0,
+          "n": 1
+        },
+        "net_score": 42.37,
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
@@ -5322,7 +6412,7 @@
           "n": 1
         },
         "net_score": -5.5,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
         "rate_count": 1
@@ -5341,10 +6431,10 @@
         "fail": 0,
         "error": 0,
         "no_result": 0,
-        "blocking_findings": 2,
+        "blocking_findings": 3,
         "escapes": 0,
-        "findings": 2,
-        "findings_per_run": 0.6666666666666666,
+        "findings": 3,
+        "findings_per_run": 1,
         "pass_rate": {
           "value": 1,
           "n": 3
@@ -5354,34 +6444,6 @@
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 3
-      },
-      {
-        "model": "opencode-go/hy4-flash-free",
-        "kind": "gate",
-        "routes": [
-          "opencode-go/hy4-flash-free#high"
-        ],
-        "roles": [
-          "adversarial"
-        ],
-        "runs": 0,
-        "pass": 0,
-        "fail": 0,
-        "error": 0,
-        "no_result": 1,
-        "blocking_findings": 0,
-        "escapes": 0,
-        "findings": 0,
-        "findings_per_run": 0,
-        "pass_rate": {
-          "value": null,
-          "n": 0
-        },
-        "net_score": null,
-        "allowed": true,
-        "not_for_verdicts": true,
-        "rank": null,
-        "rate_count": 0
       },
       {
         "model": "opencode-go/hy4-preview",
@@ -5420,24 +6482,24 @@
         "roles": [
           "adversarial"
         ],
-        "runs": 0,
+        "runs": 3,
         "pass": 0,
-        "fail": 0,
+        "fail": 3,
         "error": 0,
-        "no_result": 1,
-        "blocking_findings": 0,
+        "no_result": 5,
+        "blocking_findings": 3,
         "escapes": 0,
-        "findings": 0,
-        "findings_per_run": 0,
+        "findings": 3,
+        "findings_per_run": 1,
         "pass_rate": {
-          "value": null,
-          "n": 0
+          "value": 0,
+          "n": 3
         },
         "net_score": 1.53,
         "allowed": true,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 0
+        "rate_count": 3
       },
       {
         "model": "opencode/glm-5.3-flash-free",
@@ -5462,38 +6524,38 @@
           "n": 1
         },
         "net_score": 0.67,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 1
       },
       {
-        "model": "opencode/minimax-m3.1-flash-free",
+        "model": "opencode/mimo-v2.6-flash-free",
         "kind": "gate",
         "routes": [
-          "opencode/minimax-m3.1-flash-free#high"
+          "opencode/mimo-v2.6-flash-free"
         ],
         "roles": [
           "adversarial"
         ],
-        "runs": 2,
-        "pass": 2,
+        "runs": 0,
+        "pass": 0,
         "fail": 0,
         "error": 0,
         "no_result": 1,
-        "blocking_findings": 1,
+        "blocking_findings": 0,
         "escapes": 0,
-        "findings": 1,
-        "findings_per_run": 0.5,
+        "findings": 0,
+        "findings_per_run": 0,
         "pass_rate": {
-          "value": 1,
-          "n": 2
+          "value": null,
+          "n": 0
         },
-        "net_score": -6.4,
+        "net_score": -10.83,
         "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 2
+        "rate_count": 0
       },
       {
         "model": "opencode/muse-spark-1.3",
@@ -5554,32 +6616,61 @@
         "rate_count": 7
       },
       {
-        "model": "claude-code/claude-sonnet-5-5",
+        "model": "opencode-go/muse-spark-1.3-contributor",
         "kind": "gate",
         "routes": [
-          "claude-code/claude-sonnet-5-5#high"
+          "opencode-go/muse-spark-1.3-contributor#high"
         ],
         "roles": [
           "acceptance"
         ],
-        "runs": 9,
-        "pass": 7,
-        "fail": 2,
+        "runs": 5,
+        "pass": 5,
+        "fail": 0,
         "error": 0,
-        "no_result": 0,
-        "blocking_findings": 18,
+        "no_result": 2,
+        "blocking_findings": 7,
         "escapes": 0,
-        "findings": 18,
-        "findings_per_run": 2,
+        "findings": 7,
+        "findings_per_run": 1.4,
         "pass_rate": {
-          "value": 0.7777777777777778,
-          "n": 9
+          "value": 1,
+          "n": 5
         },
-        "net_score": 18.73,
+        "net_score": 22.4,
         "allowed": true,
         "not_for_verdicts": false,
         "rank": 2,
-        "rate_count": 9
+        "rate_count": 5
+      },
+      {
+        "model": "claude-code/claude-sonnet-5-5",
+        "kind": "gate",
+        "routes": [
+          "claude-code/claude-sonnet-5-5#high",
+          "claude-code/claude-sonnet-5-5#max"
+        ],
+        "roles": [
+          "acceptance"
+        ],
+        "runs": 17,
+        "pass": 14,
+        "fail": 3,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 84,
+        "escapes": 0,
+        "findings": 84,
+        "findings_per_run": 4.9411764705882355,
+        "pass_rate": {
+          "value": 0.8235294117647058,
+          "n": 17
+        },
+        "net_score": 18.73,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 3,
+        "rate_count": 17
       },
       {
         "model": "nvidia/stepfun-ai/step-5-preview",
@@ -5606,7 +6697,7 @@
         "net_score": 16.43,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 3,
+        "rank": 4,
         "rate_count": 7
       },
       {
@@ -5636,6 +6727,34 @@
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 1
+      },
+      {
+        "model": "claude-code/claude-opus-5-5",
+        "kind": "gate",
+        "routes": [
+          "claude-code/claude-opus-5-5[1m]#high"
+        ],
+        "roles": [
+          "acceptance"
+        ],
+        "runs": 0,
+        "pass": 0,
+        "fail": 0,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": null,
+          "n": 0
+        },
+        "net_score": 42.37,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 0
       },
       {
         "model": "deepseek/deepseek-flash",
@@ -5688,7 +6807,7 @@
           "n": 2
         },
         "net_score": null,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
         "rate_count": 2
@@ -5750,6 +6869,34 @@
         "rate_count": 0
       },
       {
+        "model": "openai/gpt-6.2-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.2-sol#high"
+        ],
+        "roles": [
+          "acceptance"
+        ],
+        "runs": 0,
+        "pass": 0,
+        "fail": 0,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": null,
+          "n": 0
+        },
+        "net_score": 38.3,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 0
+      },
+      {
         "model": "opencode-go/deepseek-v4.1-flash",
         "kind": "gate",
         "routes": [
@@ -5778,6 +6925,34 @@
         "rate_count": 1
       },
       {
+        "model": "opencode-go/glm-5.3",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/glm-5.3#high"
+        ],
+        "roles": [
+          "acceptance"
+        ],
+        "runs": 0,
+        "pass": 0,
+        "fail": 0,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": null,
+          "n": 0
+        },
+        "net_score": 6.03,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 0
+      },
+      {
         "model": "opencode-go/mimo-v2.6-flash",
         "kind": "gate",
         "routes": [
@@ -5786,8 +6961,8 @@
         "roles": [
           "acceptance"
         ],
-        "runs": 1,
-        "pass": 1,
+        "runs": 2,
+        "pass": 2,
         "fail": 0,
         "error": 0,
         "no_result": 0,
@@ -5797,41 +6972,41 @@
         "findings_per_run": 0,
         "pass_rate": {
           "value": 1,
-          "n": 1
+          "n": 2
         },
         "net_score": -10.83,
         "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
-        "rate_count": 1
+        "rate_count": 2
       },
       {
-        "model": "opencode-go/muse-spark-1.3-contributor",
+        "model": "opencode/deepseek-v4.1-flash-free",
         "kind": "gate",
         "routes": [
-          "opencode-go/muse-spark-1.3-contributor#high"
+          "opencode/deepseek-v4.1-flash-free#high"
         ],
         "roles": [
           "acceptance"
         ],
-        "runs": 3,
-        "pass": 3,
+        "runs": 0,
+        "pass": 0,
         "fail": 0,
         "error": 0,
-        "no_result": 1,
+        "no_result": 0,
         "blocking_findings": 0,
         "escapes": 0,
         "findings": 0,
         "findings_per_run": 0,
         "pass_rate": {
-          "value": 1,
-          "n": 3
+          "value": null,
+          "n": 0
         },
-        "net_score": 22.4,
+        "net_score": 1.53,
         "allowed": true,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 3
+        "rate_count": 0
       },
       {
         "model": "opencode/glm-5.3-flash-free",
@@ -5856,7 +7031,7 @@
           "n": 1
         },
         "net_score": 0.67,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 1
@@ -5884,7 +7059,7 @@
           "n": 0
         },
         "net_score": -6.4,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
         "rate_count": 0
@@ -5976,6 +7151,34 @@
         "rate_count": 8
       },
       {
+        "model": "openai/gpt-6.1-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.1-sol#high"
+        ],
+        "roles": [
+          "phase-acceptance"
+        ],
+        "runs": 5,
+        "pass": 2,
+        "fail": 3,
+        "error": 0,
+        "no_result": 0,
+        "blocking_findings": 12,
+        "escapes": 0,
+        "findings": 12,
+        "findings_per_run": 2.4,
+        "pass_rate": {
+          "value": 0.4,
+          "n": 5
+        },
+        "net_score": 41,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 2,
+        "rate_count": 5
+      },
+      {
         "model": "claude-code/claude-opus-5-5",
         "kind": "gate",
         "routes": [
@@ -5999,39 +7202,38 @@
           "n": 10
         },
         "net_score": 39.77,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
-        "rank": 2,
+        "rank": 3,
         "rate_count": 10
       },
       {
-        "model": "opencode-go/muse-spark-1.3-contributor",
+        "model": "openai/gpt-6.2-sol",
         "kind": "gate",
         "routes": [
-          "opencode-go/muse-spark-1.3-contributor",
-          "opencode-go/muse-spark-1.3-contributor#high"
+          "openai/gpt-6.2-sol#high"
         ],
         "roles": [
           "phase-acceptance"
         ],
-        "runs": 10,
-        "pass": 10,
-        "fail": 0,
-        "error": 0,
-        "no_result": 0,
-        "blocking_findings": 38,
+        "runs": 49,
+        "pass": 30,
+        "fail": 19,
+        "error": 1,
+        "no_result": 1,
+        "blocking_findings": 143,
         "escapes": 0,
-        "findings": 38,
-        "findings_per_run": 3.8,
+        "findings": 143,
+        "findings_per_run": 2.9183673469387754,
         "pass_rate": {
-          "value": 1,
-          "n": 10
+          "value": 0.6122448979591837,
+          "n": 49
         },
-        "net_score": 22.4,
+        "net_score": 38.3,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 3,
-        "rate_count": 10
+        "rank": 4,
+        "rate_count": 49
       },
       {
         "model": "claude-code/claude-sonnet-5-5",
@@ -6043,24 +7245,110 @@
         "roles": [
           "phase-acceptance"
         ],
-        "runs": 5,
-        "pass": 4,
-        "fail": 1,
+        "runs": 71,
+        "pass": 59,
+        "fail": 12,
         "error": 0,
-        "no_result": 0,
-        "blocking_findings": 12,
+        "no_result": 6,
+        "blocking_findings": 256,
         "escapes": 0,
-        "findings": 12,
-        "findings_per_run": 2.4,
+        "findings": 256,
+        "findings_per_run": 3.6056338028169015,
         "pass_rate": {
-          "value": 0.8,
-          "n": 5
+          "value": 0.8309859154929577,
+          "n": 71
         },
-        "net_score": 18.73,
+        "net_score": 30.47,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": 5,
+        "rate_count": 71
+      },
+      {
+        "model": "kimi-code-plan-cn/k3.1-pro",
+        "kind": "gate",
+        "routes": [
+          "kimi-code-plan-cn/k3.1-pro#high"
+        ],
+        "roles": [
+          "phase-acceptance"
+        ],
+        "runs": 6,
+        "pass": 4,
+        "fail": 2,
+        "error": 0,
+        "no_result": 5,
+        "blocking_findings": 11,
+        "escapes": 0,
+        "findings": 11,
+        "findings_per_run": 1.8333333333333333,
+        "pass_rate": {
+          "value": 0.6666666666666666,
+          "n": 6
+        },
+        "net_score": 29.87,
         "allowed": true,
         "not_for_verdicts": false,
-        "rank": 4,
-        "rate_count": 5
+        "rank": 6,
+        "rate_count": 6
+      },
+      {
+        "model": "opencode-go/muse-spark-1.3-contributor",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/muse-spark-1.3-contributor",
+          "opencode-go/muse-spark-1.3-contributor#high"
+        ],
+        "roles": [
+          "phase-acceptance"
+        ],
+        "runs": 23,
+        "pass": 17,
+        "fail": 6,
+        "error": 0,
+        "no_result": 3,
+        "blocking_findings": 65,
+        "escapes": 0,
+        "findings": 65,
+        "findings_per_run": 2.8260869565217392,
+        "pass_rate": {
+          "value": 0.7391304347826086,
+          "n": 23
+        },
+        "net_score": 22.4,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 7,
+        "rate_count": 23
+      },
+      {
+        "model": "claude-agent/sonnet",
+        "kind": "gate",
+        "routes": [
+          "claude-agent/sonnet#max",
+          "claude-agent/sonnet#xhigh"
+        ],
+        "roles": [
+          "phase-acceptance"
+        ],
+        "runs": 60,
+        "pass": 48,
+        "fail": 12,
+        "error": 0,
+        "no_result": 6,
+        "blocking_findings": 217,
+        "escapes": 0,
+        "findings": 217,
+        "findings_per_run": 3.6166666666666667,
+        "pass_rate": {
+          "value": 0.8,
+          "n": 60
+        },
+        "net_score": 20.6,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 8,
+        "rate_count": 60
       },
       {
         "model": "nvidia/stepfun-ai/step-5-preview",
@@ -6087,8 +7375,64 @@
         "net_score": 16.43,
         "allowed": false,
         "not_for_verdicts": false,
-        "rank": 5,
+        "rank": 9,
         "rate_count": 11
+      },
+      {
+        "model": "opencode-go/glm-5.3",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/glm-5.3#high"
+        ],
+        "roles": [
+          "phase-acceptance"
+        ],
+        "runs": 43,
+        "pass": 41,
+        "fail": 2,
+        "error": 1,
+        "no_result": 7,
+        "blocking_findings": 106,
+        "escapes": 0,
+        "findings": 106,
+        "findings_per_run": 2.4651162790697674,
+        "pass_rate": {
+          "value": 0.9534883720930233,
+          "n": 43
+        },
+        "net_score": 6.03,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 10,
+        "rate_count": 43
+      },
+      {
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/deepseek-v4.1-flash"
+        ],
+        "roles": [
+          "phase-acceptance"
+        ],
+        "runs": 5,
+        "pass": 4,
+        "fail": 1,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 2,
+        "escapes": 0,
+        "findings": 2,
+        "findings_per_run": 0.4,
+        "pass_rate": {
+          "value": 0.8,
+          "n": 5
+        },
+        "net_score": 0.9,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 11,
+        "rate_count": 5
       },
       {
         "model": "opencode-go/mimo-v2.6-flash",
@@ -6115,7 +7459,7 @@
         "net_score": -10.83,
         "allowed": true,
         "not_for_verdicts": true,
-        "rank": 6,
+        "rank": 12,
         "rate_count": 5
       },
       {
@@ -6127,24 +7471,24 @@
         "roles": [
           "phase-acceptance"
         ],
-        "runs": 2,
-        "pass": 1,
+        "runs": 3,
+        "pass": 2,
         "fail": 1,
         "error": 1,
         "no_result": 0,
-        "blocking_findings": 12,
+        "blocking_findings": 18,
         "escapes": 0,
-        "findings": 12,
+        "findings": 18,
         "findings_per_run": 6,
         "pass_rate": {
-          "value": 0.5,
-          "n": 2
+          "value": 0.6666666666666666,
+          "n": 3
         },
         "net_score": 10.47,
         "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
-        "rate_count": 2
+        "rate_count": 3
       },
       {
         "model": "coding-plan/doubao-seed-evolving",
@@ -6203,34 +7547,6 @@
         "rate_count": 1
       },
       {
-        "model": "kimi-code-plan-cn/k3.1-pro",
-        "kind": "gate",
-        "routes": [
-          "kimi-code-plan-cn/k3.1-pro#high"
-        ],
-        "roles": [
-          "phase-acceptance"
-        ],
-        "runs": 1,
-        "pass": 0,
-        "fail": 1,
-        "error": 0,
-        "no_result": 0,
-        "blocking_findings": 7,
-        "escapes": 0,
-        "findings": 7,
-        "findings_per_run": 7,
-        "pass_rate": {
-          "value": 0,
-          "n": 1
-        },
-        "net_score": 29.87,
-        "allowed": false,
-        "not_for_verdicts": false,
-        "rank": null,
-        "rate_count": 1
-      },
-      {
         "model": "kimi-code-plan-cn/kimi-for-coding",
         "kind": "gate",
         "routes": [
@@ -6253,7 +7569,7 @@
           "n": 1
         },
         "net_score": null,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
         "rate_count": 1
@@ -6315,6 +7631,34 @@
         "rate_count": 1
       },
       {
+        "model": "opencode/deepseek-v4.1-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/deepseek-v4.1-flash-free#high"
+        ],
+        "roles": [
+          "phase-acceptance"
+        ],
+        "runs": 4,
+        "pass": 3,
+        "fail": 1,
+        "error": 0,
+        "no_result": 6,
+        "blocking_findings": 5,
+        "escapes": 0,
+        "findings": 5,
+        "findings_per_run": 1.25,
+        "pass_rate": {
+          "value": 0.75,
+          "n": 4
+        },
+        "net_score": 1.53,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 4
+      },
+      {
         "model": "opencode/glm-5.3-flash-free",
         "kind": "gate",
         "routes": [
@@ -6337,7 +7681,7 @@
           "n": 1
         },
         "net_score": 0.67,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 1
@@ -6365,13 +7709,98 @@
           "n": 1
         },
         "net_score": -6.4,
-        "allowed": true,
+        "allowed": false,
         "not_for_verdicts": true,
         "rank": null,
         "rate_count": 1
       }
     ],
     "final-acceptance": [
+      {
+        "model": "claude-agent/sonnet",
+        "kind": "gate",
+        "routes": [
+          "claude-agent/sonnet#max",
+          "claude-agent/sonnet#xhigh"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 6,
+        "pass": 5,
+        "fail": 1,
+        "error": 0,
+        "no_result": 3,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 0.8333333333333334,
+          "n": 6
+        },
+        "net_score": 30.47,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 1,
+        "rate_count": 6
+      },
+      {
+        "model": "kimi-code-plan-cn/k3.1-pro",
+        "kind": "gate",
+        "routes": [
+          "kimi-code-plan-cn/k3.1-pro#high"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 8,
+        "pass": 7,
+        "fail": 1,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 0.875,
+          "n": 8
+        },
+        "net_score": 29.87,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 2,
+        "rate_count": 8
+      },
+      {
+        "model": "opencode/deepseek-v4.1-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/deepseek-v4.1-flash-free#high"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 6,
+        "pass": 4,
+        "fail": 2,
+        "error": 0,
+        "no_result": 3,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 0.6666666666666666,
+          "n": 6
+        },
+        "net_score": 1.53,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": 3,
+        "rate_count": 6
+      },
       {
         "model": "bailian-token-plan/qwen3.8-max",
         "kind": "gate",
@@ -6429,6 +7858,34 @@
         "rate_count": 1
       },
       {
+        "model": "claude-code/claude-sonnet-5-5",
+        "kind": "gate",
+        "routes": [
+          "claude-code/claude-sonnet-5-5#max"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 2,
+        "pass": 2,
+        "fail": 0,
+        "error": 0,
+        "no_result": 2,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 1,
+          "n": 2
+        },
+        "net_score": 30.47,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 2
+      },
+      {
         "model": "deepseek/deepseek-flash",
         "kind": "gate",
         "routes": [
@@ -6457,34 +7914,6 @@
         "rate_count": 0
       },
       {
-        "model": "kimi-code-plan-cn/k3.1-pro",
-        "kind": "gate",
-        "routes": [
-          "kimi-code-plan-cn/k3.1-pro#high"
-        ],
-        "roles": [
-          "final-acceptance"
-        ],
-        "runs": 1,
-        "pass": 0,
-        "fail": 1,
-        "error": 0,
-        "no_result": 1,
-        "blocking_findings": 0,
-        "escapes": 0,
-        "findings": 0,
-        "findings_per_run": 0,
-        "pass_rate": {
-          "value": 0,
-          "n": 1
-        },
-        "net_score": 29.87,
-        "allowed": false,
-        "not_for_verdicts": false,
-        "rank": null,
-        "rate_count": 1
-      },
-      {
         "model": "minimax-cn-coding-plan/MiniMax-M3",
         "kind": "gate",
         "routes": [
@@ -6507,7 +7936,7 @@
           "n": 1
         },
         "net_score": -5.5,
-        "allowed": false,
+        "allowed": true,
         "not_for_verdicts": true,
         "rank": null,
         "rate_count": 1
@@ -6569,10 +7998,10 @@
         "rate_count": 1
       },
       {
-        "model": "opencode-go/deepseek-v4.1-flash",
+        "model": "openai/gpt-6.1-sol",
         "kind": "gate",
         "routes": [
-          "opencode-go/deepseek-v4.1-flash"
+          "openai/gpt-6.1-sol#high"
         ],
         "roles": [
           "final-acceptance"
@@ -6581,7 +8010,7 @@
         "pass": 1,
         "fail": 0,
         "error": 0,
-        "no_result": 3,
+        "no_result": 0,
         "blocking_findings": 0,
         "escapes": 0,
         "findings": 0,
@@ -6590,8 +8019,148 @@
           "value": 1,
           "n": 1
         },
+        "net_score": 41,
+        "allowed": false,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 1
+      },
+      {
+        "model": "openai/gpt-6.2-sol",
+        "kind": "gate",
+        "routes": [
+          "openai/gpt-6.2-sol#high"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 2,
+        "pass": 2,
+        "fail": 0,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 1,
+          "n": 2
+        },
+        "net_score": 38.3,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 2
+      },
+      {
+        "model": "opencode-go/deepseek-v4.1-flash",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/deepseek-v4.1-flash"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 4,
+        "pass": 3,
+        "fail": 1,
+        "error": 0,
+        "no_result": 5,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 0.75,
+          "n": 4
+        },
         "net_score": 0.9,
         "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 4
+      },
+      {
+        "model": "opencode-go/glm-5.3",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/glm-5.3#high"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 0,
+        "pass": 0,
+        "fail": 0,
+        "error": 0,
+        "no_result": 5,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": null,
+          "n": 0
+        },
+        "net_score": 6.03,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 0
+      },
+      {
+        "model": "opencode-go/muse-spark-1.3-contributor",
+        "kind": "gate",
+        "routes": [
+          "opencode-go/muse-spark-1.3-contributor#high"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 3,
+        "pass": 3,
+        "fail": 0,
+        "error": 0,
+        "no_result": 2,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 1,
+          "n": 3
+        },
+        "net_score": 22.4,
+        "allowed": true,
+        "not_for_verdicts": false,
+        "rank": null,
+        "rate_count": 3
+      },
+      {
+        "model": "opencode/glm-5.3-flash-free",
+        "kind": "gate",
+        "routes": [
+          "opencode/glm-5.3-flash-free#high"
+        ],
+        "roles": [
+          "final-acceptance"
+        ],
+        "runs": 1,
+        "pass": 1,
+        "fail": 0,
+        "error": 0,
+        "no_result": 1,
+        "blocking_findings": 0,
+        "escapes": 0,
+        "findings": 0,
+        "findings_per_run": 0,
+        "pass_rate": {
+          "value": 1,
+          "n": 1
+        },
+        "net_score": 0.67,
+        "allowed": false,
         "not_for_verdicts": false,
         "rank": null,
         "rate_count": 1

@@ -14,10 +14,10 @@ PM decision 2026-11-27: light lane.
 - [x] 1.3 Enable ingest in the daily timer.
   Result: ff8d906; `harness/cron-daily.sh` sets `INGEST_ENABLED=1` before the publish step.
 
-- [~] 1.4 Run the first daily ingest through the 01:00 timer or a manual run, and publish its outputs.
-  Done when the dated `ra-outcomes` export, `aa-reliability` data, `allowed-routes` data, `model-guide.json`, and `real-work.json` show real accept and reject outcomes for each model and role.
+- [x] 1.4 Run the first daily ingest through the 01:00 timer or a manual run, and publish its outputs.
+  Evidence: `docs/assets/data/model-guide.json` SHA-256 `32abec93033349d7861e76088b9d4c0edcf817a6fe95a856a50a53546fb94c28`; `docs/assets/data/real-work.json` SHA-256 `4c38722f3462eccda81ee8d6e2db58444dfbcff8e1a1bb2173bca6364e6432bb`.
 
-- [~] 1.5 Check the live model guide.
-  Done when the live accept and reject outcomes match the daily export for each model and role.
+- [x] 1.5 Check the live model guide.
+  Evidence: live `model-guide.json` SHA-256 `32abec93033349d7861e76088b9d4c0edcf817a6fe95a856a50a53546fb94c28`; live `real-work.json` SHA-256 `4c38722f3462eccda81ee8d6e2db58444dfbcff8e1a1bb2173bca6364e6432bb`.
 
 Deviation: Review B round limit reached at r4; F11 closed by the orchestrator through da0cb92 diff reading and the mechanical gates; Minor items F6, F8, F10, F12, F13 are tech-debt.
