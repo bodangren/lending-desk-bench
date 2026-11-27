@@ -24,7 +24,7 @@ import { afterAll, describe, expect, it } from "vitest";
  *   cd harness && npx tsx model-guide/guide.ts \
  *     --real-work <real-work.json> --scores <review-scores.json> \
  *     --print-audit <print-audit-2026-11.json> \
- *     --benchmark <benchmark.json> --tracks <tracks.json> \
+ *     --benchmark <benchmark.json> --tracks <tracks.json> [--routes <routes.json>] \
  *     --today <YYYY-MM-DD> --out <folder>
  * Exit 0 writes `<folder>/model-guide.json`.
  * `--scores` may be absent or may point at a missing file. Both mean
@@ -65,15 +65,11 @@ import { afterAll, describe, expect, it } from "vitest";
  * first and second choice from its rank. A page B producer row qualifies
  * with 5 tasks or more and a first-round rate; a page B gate row with 5
  * runs or more, an allowed model, and an AA net score above 0
- * (PM 2026-11-18); a
- * track A route with a complete state and 3 complete passes. When the
- * first source has no qualified model the second source picks. Sources per
- * row: Code review = track A rank, then page B checker table; app code =
- * none (the build base line never picks); test writing = the page B
- * producer table of role `red`, then the tests base line; docs and ops =
- * none; print-book audit = none, then the print-audit data point; tooling
- * = none. The new export has no work-type split, so no row reads a work
- * type (D18, PM 2026-11-17). The base line itself never picks.
+ * (PM 2026-11-18); a track A route with a complete state and 3 complete
+ * passes. The app code row ranks the session route families by Build
+ * score. A family without a Build score keeps its session route. When no
+ * session route has a Build score, the row shows the no-pick words. The
+ * base line itself never picks.
  *
  * Orchestrator rulings on spec D18, recorded under plan task 2.3 and 4.1e:
  *   Q1 the test writing row names its source "page B producer" and picks

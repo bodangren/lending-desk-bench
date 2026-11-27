@@ -239,6 +239,7 @@ fi
 
 GUIDE_ARGS=(--real-work "$STAGING/real-work.json"
   --print-audit "$GUIDE_DATA/print-audit-2026-11.json"
+  --routes "$SCRIPT_DIR/routes.json"
   --benchmark "$DATA_ABS/benchmark.json"
   --tracks "$DATA_ABS/tracks.json"
   --today "$(date +%F)" --out "$STAGING")

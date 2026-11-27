@@ -60,9 +60,10 @@
 # tabindex="0", role="region", and an aria-label, and long text wraps at
 # 390 px. Every model name and every data text is escaped with html.escape.
 # The guide needs docs/assets/data/benchmark.json, docs/assets/data/
-# tracks.json, and the print-audit data file. When one is absent the preview
-# keeps the page and omits the table; the real repo holds all three. It reads
-# the newest review score file under harness/model-guide/data/review-scores/
+# tracks.json, harness/model-guide/routes.json, and the print-audit data
+# file. When one is absent the preview keeps the page and omits the table;
+# the real repo holds these files. It reads the newest review score file
+# under harness/model-guide/data/review-scores/
 # when one exists, because Phase 4 creates that file. The newest file by
 # modification time wins, and a name that holds a newline cannot split the
 # choice. --today is the current date, so a live preview shows its own age.
@@ -181,12 +182,14 @@ SCORES="$(newest_score_file "$GUIDE_DATA/review-scores")"
 if [ -n "$OVERVIEW" ]; then
   GUIDE_ARGS=(--real-work "$STAGING/real-work.json"
     --print-audit "$GUIDE_DATA/print-audit-2026-11.json"
+    --routes "$SCRIPT_DIR/routes.json"
     --benchmark "$ROOT/docs/assets/data/benchmark.json"
     --tracks "$ROOT/docs/assets/data/tracks.json"
     --today "$(date +%F)" --out "$STAGING")
   if [ -n "$SCORES" ]; then
     GUIDE_ARGS=(--real-work "$STAGING/real-work.json" --scores "$SCORES"
       --print-audit "$GUIDE_DATA/print-audit-2026-11.json"
+      --routes "$SCRIPT_DIR/routes.json"
       --benchmark "$ROOT/docs/assets/data/benchmark.json"
       --tracks "$ROOT/docs/assets/data/tracks.json"
       --today "$(date +%F)" --out "$STAGING")

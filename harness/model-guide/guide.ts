@@ -4,13 +4,13 @@
  *   npx tsx model-guide/guide.ts \
  *     --real-work <real-work.json> --scores <review-scores.json> \
  *     --print-audit <print-audit-2026-11.json> \
- *     --benchmark <benchmark.json> --tracks <tracks.json> \
+ *     --benchmark <benchmark.json> --tracks <tracks.json> [--routes <routes.json>] \
  *     --today <YYYY-MM-DD> --out <folder>
  *
  * Exit 0 writes `<folder>/model-guide.json` with schema
  * `model-guide-overview/1`. Exit 2 writes no output file and prints one
  * line `input-check: <check>` on stdout. The checks run in this order:
- * args, today, real-work, scores, print-audit, benchmark, tracks.
+ * args, today, real-work, scores, print-audit, routes, benchmark, tracks.
  *   args        a required flag is missing, a flag holds no value, or a
  *               flag is unknown
  *   today       the `--today` value is not a real calendar date
@@ -21,6 +21,8 @@
  *               a numeric score
  *   print-audit the file is missing, is not JSON, or `routes` is not an
  *               object of `"x of y"` strings
+ *   routes      the file is missing, is not JSON, or an entry holds no
+ *               string family or route
  *   benchmark   the file is missing, is not JSON, or holds no model with a
  *               numeric `score.total`
  *   tracks      the file is missing, is not JSON, or holds no tests model
@@ -29,6 +31,10 @@
  * `--scores` may be absent, or it may name a file that does not exist.
  * Both mean "track A has no rank" and give exit 0, because the preview
  * must render before Phase 4 (spec D18, FR-6).
+ *
+ * `--routes` defaults to `routes.json` beside this tool. The app code row
+ * selects the highest Build score in each route family. A family without
+ * a score keeps its session route. The evidence cell names each selection.
  *
  * The output holds six rows in the spec D18 order: "Code review", "app
  * code", "test writing", "docs and ops", "print-book audit", "tooling".
@@ -40,11 +46,13 @@
  *   evidence      the source, the number, and the count (spec D18 PM
  *                 2026-11-17): "page B producer: accept <n> %, <count>
  *                 tasks", "track A: worst <n> (n=<count>)", "print-audit:
- *                 <x> of <y> (n=<y>)", or the exact words "no pick yet" for
+ *                 <x> of <y> (n=<y>)", "build routes: <family>=<route>
+ *                 [<score>]; ...", or the exact words "no pick yet" for
  *                 a row with no source.
  *   evidence_date the export date of the outcomes file (the date in the
- *                 MANIFEST name, Q-S4), or the date of the last complete
- *                 track A pass for the track A pick
+ *                 MANIFEST name, Q-S4), the date of the last complete
+ *                 track A pass for the track A pick, or the Build data date
+ *                 for the app code pick
  *   base_line     null, except the highest build total of `--benchmark` on
  *                 the app code row and the highest tests total of
  *                 `--tracks` on the test writing row. The base line never
@@ -63,8 +71,9 @@
  *
  * Ruling Q2 (PM, 2026-11-15): with no complete track A rank the code review
  * pick is the exact no-pick words, even when the page B checker table holds
- * a qualified model. The rows "app code", "docs and ops", and "tooling" have
- * no source, so they show the no-pick words.
+ * a qualified model. The app code row reads the Build scores through the
+ * session route families. The rows "docs and ops" and "tooling" have no
+ * source, so they show the no-pick words.
  *
  * The print-audit second source reads the tool output of task 2.4b: a route
  * name maps to its "x of y" result, and the rank orders the blockers found,
@@ -103,6 +112,7 @@ interface Args {
   realWork: string;
   scores: string | null;
   printAudit: string;
+  routes: string | null;
   benchmark: string;
   tracks: string;
   today: string;
@@ -113,6 +123,7 @@ const FLAGS: Record<string, keyof Args> = {
   "--real-work": "realWork",
   "--scores": "scores",
   "--print-audit": "printAudit",
+  "--routes": "routes",
   "--benchmark": "benchmark",
   "--tracks": "tracks",
   "--today": "today",
@@ -124,6 +135,7 @@ function parseArgs(argv: string[]): Args {
     realWork: "",
     scores: null,
     printAudit: "",
+    routes: null,
     benchmark: "",
     tracks: "",
     today: "",
@@ -314,15 +326,76 @@ function readPrintAudit(file: string): AuditRoute[] {
   return routes;
 }
 
-function readBuildBaseLine(file: string): number {
+interface SessionRoute {
+  family: string;
+  route: string;
+}
+
+interface BuildModel {
+  route: string;
+  total: number;
+}
+
+interface BuildData {
+  models: BuildModel[];
+  baseLine: number;
+  date: string | null;
+}
+
+/** The session route families. The default file sits beside this tool. */
+function readRoutes(file: string | null): SessionRoute[] {
+  const path = file ?? join(import.meta.dirname, "routes.json");
+  const doc = readJsonFile(path, "routes");
+  if (!Array.isArray(doc)) refuse("routes");
+  const routes: SessionRoute[] = [];
+  for (const row of doc) {
+    if (
+      !isObject(row) ||
+      typeof row.family !== "string" ||
+      row.family === "" ||
+      typeof row.route !== "string" ||
+      row.route === ""
+    ) {
+      refuse("routes");
+    }
+    routes.push({ family: row.family, route: row.route });
+  }
+  return routes;
+}
+
+function readBuild(file: string): BuildData {
   const doc = readJsonFile(file, "benchmark");
   if (!isObject(doc) || !Array.isArray(doc.models)) refuse("benchmark");
-  const totals = doc.models
-    .filter((model: any) => isObject(model) && isObject(model.score))
-    .map((model: any) => model.score.total)
-    .filter((total: unknown) => typeof total === "number" && Number.isFinite(total));
-  if (totals.length === 0) refuse("benchmark");
-  return Math.max(...totals);
+  const models: BuildModel[] = [];
+  for (const model of doc.models) {
+    if (
+      !isObject(model) ||
+      typeof model.provider_model !== "string" ||
+      !isObject(model.score) ||
+      typeof model.score.total !== "number" ||
+      !Number.isFinite(model.score.total)
+    ) {
+      continue;
+    }
+    models.push({ route: model.provider_model, total: model.score.total });
+  }
+  if (models.length === 0) refuse("benchmark");
+  return {
+    models,
+    baseLine: Math.max(...models.map((model) => model.total)),
+    date: asDate(doc.generated_at),
+  };
+}
+
+/** The route without its effort variant or context-key suffix. */
+function routeBase(route: string): string {
+  return route.split("#", 1)[0].replace(/\[[^\]]+\]$/, "");
+}
+
+/** The model id of a route. */
+function modelId(route: string): string {
+  const base = routeBase(route);
+  return base.slice(base.indexOf("/") + 1).toLowerCase();
 }
 
 function readTestsBaseLine(file: string): number {
@@ -378,6 +451,67 @@ function fromProducerRole(rows: any[] | undefined, date: string): Source {
 /** A row with no source: the no-pick words and no second choice. */
 function noSource(date: string): Source {
   return { pick: NO_PICK, second: null, evidence: NO_PICK_EVIDENCE, date };
+}
+
+interface RouteSelection {
+  family: string;
+  route: string;
+  score: number | null;
+  order: number;
+}
+
+/** The app code source. Each family keeps its highest Build score. An exact
+ * provider route wins; the same model id on another provider is the fallback.
+ * A family without a score keeps its session route. */
+function fromBuildRoutes(routes: SessionRoute[], build: BuildData, fallbackDate: string): Source {
+  const groups = new Map<string, { order: number; choices: RouteSelection[] }>();
+  routes.forEach((spec, order) => {
+    const base = routeBase(spec.route);
+    const exact = build.models.filter((model) => model.route === base);
+    const candidates = exact.length > 0
+      ? exact
+      : build.models.filter((model) => modelId(model.route) === modelId(base));
+    const best = candidates.reduce<BuildModel | null>(
+      (current, model) => current === null || model.total > current.total ? model : current,
+      null,
+    );
+    const choice: RouteSelection = {
+      family: spec.family,
+      route: exact.length > 0 ? spec.route : best?.route ?? spec.route,
+      score: best?.total ?? null,
+      order,
+    };
+    const group = groups.get(spec.family);
+    if (group === undefined) groups.set(spec.family, { order, choices: [choice] });
+    else group.choices.push(choice);
+  });
+  const selections = [...groups.values()]
+    .sort((a, b) => a.order - b.order)
+    .map((group) => {
+      const scoredChoices = group.choices.filter((choice) => choice.score !== null);
+      const best = scoredChoices.length === 0
+        ? group.choices[0]
+        : scoredChoices.reduce(
+            (current, choice) =>
+              (choice.score as number) > (current.score as number) ? choice : current,
+          );
+      return { ...best, order: group.order };
+    });
+  const scored = selections
+    .filter((selection) => selection.score !== null)
+    .sort((a, b) => (b.score as number) - (a.score as number) || a.order - b.order);
+  if (scored.length === 0) return noSource(fallbackDate);
+  const evidence = `build routes: ${selections
+    .map((selection) =>
+      `${selection.family}=${selection.route}${selection.score === null ? "" : ` ${selection.score.toFixed(1)}`}`,
+    )
+    .join("; ")}`;
+  return {
+    pick: scored[0].route,
+    second: scored.length > 1 ? scored[1].route : null,
+    evidence,
+    date: build.date ?? fallbackDate,
+  };
 }
 
 /** The track A rank. Ruling Q2: with no complete rank the pick is the
@@ -457,15 +591,16 @@ function main(): void {
   const realWork = readRealWork(args.realWork);
   const rank = readTrackARank(args.scores);
   const audit = readPrintAudit(args.printAudit);
-  const buildBaseLine = readBuildBaseLine(args.benchmark);
+  const routes = readRoutes(args.routes);
+  const build = readBuild(args.benchmark);
   const testsBaseLine = readTestsBaseLine(args.tracks);
 
   const exportDate = realWork.exportDate;
   const codeReview = fromTrackA(rank, exportDate);
-  // The new export has no work-type split (spec D16 "Data source"). The
-  // rows app code, docs and ops, and tooling have no source, and the
-  // print-book audit row falls to the print-audit data point.
-  const appCode = noSource(exportDate);
+  // The app code row reads the Build scores through the session route families.
+  // The new export has no work-type split, so docs and ops and tooling keep
+  // their no-pick rows. The print-book audit row falls to the print-audit data.
+  const appCode = fromBuildRoutes(routes, build, exportDate);
   const testWriting = fromProducerRole(realWork.byRole.get("red"), exportDate);
   const docsAndOps = noSource(exportDate);
   const printBooks = fromPrintAudit(audit, exportDate);
@@ -473,7 +608,7 @@ function main(): void {
 
   const rows: Row[] = [
     rowOf(KINDS[0], codeReview, null),
-    rowOf(KINDS[1], appCode, buildBaseLine),
+    rowOf(KINDS[1], appCode, build.baseLine),
     rowOf(KINDS[2], testWriting, testsBaseLine),
     rowOf(KINDS[3], docsAndOps, null),
     rowOf(KINDS[4], printBooks, null),
