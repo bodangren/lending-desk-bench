@@ -2,10 +2,10 @@
   "id": "grader_system_chrome",
   "title": "Grader browser: grade with the system Chrome and regrade the stale scores",
   "type": "Chore",
-  "status": "in_progress",
+  "status": "done",
   "created": "2026-11-04",
   "estimated_tasks": 17,
-  "actual_tasks": null,
+  "actual_tasks": 18,
   "source": {
     "method": "owner answer 2026-11-04: \"B\" (Tasks, 2026-11-04 05:29 ICT, relayed by the PM orchestrator). The grader browser moves to the system Chrome (channel \"chrome\"); runner_sha256 and suite_sha256 change, and every trusted score becomes stale and runs again.",
     "evidence": "spec.md EV1-EV16, measured read-only on 2026-11-04: Chrome 153.0.8010.52 with apt candidate 156.0.8078.79-1; BEFORE runner=3e5a4c64c9bcd0b30d6143389c8e96b9a80d955681df7b072c394db937ab29ea and suite=451652e5e03ee1d3030014c527bff7714740b96a38756853d5fc68276c522ae6; persisted flags, 2026-11-04: 547 run directories, 95 legacy Pi runs, 452 non-Pi runs, 335 non-Pi runs with a candidate tree, 17 non-Pi runs with all four flags true; 30 curable runs reachable by regrade-all.sh",
@@ -17,5 +17,8 @@
       "bench_v2",
       "rigor_a_h"
     ]
-  }
+  },
+  "lane": "light",
+  "description": "The grader uses the system Chrome. The regrade of the 82 reachable public runs is published on the live site.",
+  "completed": "2026-11-29"
 }
