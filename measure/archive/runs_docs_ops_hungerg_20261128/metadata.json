@@ -2,10 +2,10 @@
   "id": "runs_docs_ops_hungerg_20261128",
   "title": "Docs and ops runs for hungerg-free",
   "type": "Chore",
-  "status": "pending",
+  "status": "complete",
   "created": "2026-11-28",
   "estimated_tasks": 3,
-  "actual_tasks": null,
+  "actual_tasks": 6,
   "author_model": null,
   "lane": "light",
   "source": {
