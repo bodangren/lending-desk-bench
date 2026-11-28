@@ -203,7 +203,7 @@ Marker use:
   - The harness commit `96e4a48` holds the code of the check. The task made no
     code change.
 
-- [x] 2.2 (commit 2672686) The live days after `c50b836` graded on the system Chrome. The proof
+- [x] 2.2 `2672686` The live days after `c50b836` graded on the system Chrome. The proof
   is the live day of 2026-11-25 (published 2026-11-26 as `162c7a2`, model
   `mimo-v2.6-pro`). Run `a-mimo-v2-6-pro-2026w48-r1` holds
   `artifacts/grader-browser.json` written 2026-11-25 19:42 with
@@ -215,7 +215,7 @@ Marker use:
   `daily_model_schedule` on 2026-11-27 ("not needed"), so that track runs no
   day check.
   - Lane: light. This task records the evidence.
-- [x] 2.3 The pilot regrade. Regrade 1 public build run,
+- [x] 2.3 `13b970e` The pilot regrade. Regrade 1 public build run,
   `a-hy4-flash-free-2026w48-r2`, which shows 71.9 on the site now. The grader
   change `05c1975` changes the suite hash, so every stored grade before it is
   stale. Record the old total, the new total, and the wall time of the run.
@@ -248,22 +248,22 @@ Marker use:
     the old total is the 13 criteria and 3 probes of the due-date locator
     (`05c1975`), which now pass.
   - Lane: light. One heavy run.
-- [x] 2.4 (commit 2672686) The rescore SKIP lines. `grep -c "graded before the system Chrome move; regrade needed" reports/cron-daily.log` printed 139 on 2026-11-28 (above 0).
+- [x] 2.4 `2672686` The rescore SKIP lines. `grep -c "graded before the system Chrome move; regrade needed" reports/cron-daily.log` printed 139 on 2026-11-28 (above 0).
   - Lane: light. A read-only check.
 
 ## Phase 3: The human gates
 
-- [x] 3.1 (commit 2672686) The Chrome update. `google-chrome --version` printed
+- [x] 3.1 `2672686` The Chrome update. `google-chrome --version` printed
   `Google Chrome 157.0.8103.78` on 2026-11-28. The apt update had run. No
   `sudo` step was needed.
   - Lane: light. A read-only check.
-- [x] 3.2 (commit 2672686) The page text. Not needed. The regrade replaces the stale scores, so
+- [x] 3.2 `2672686` The page text. Not needed. The regrade replaces the stale scores, so
   no stale-mark text goes on the pages (PM 2026-11-28).
   - Lane: light. No change.
 
 ## Phase 4: The regrade (D7, D8)
 
-- [x] 4.1 (commit 2672686) The regrade list. Read on 2026-11-28 with no write to a run. The
+- [x] 4.1 `2672686` The regrade list. Read on 2026-11-28 with no write to a run. The
   runs are those that feed a public score in `docs/assets/data/`:
   `benchmark.json` (models, both arms, repeat runs, history rows),
   `tracks.json`, and `bugfix.json`. `real-work.json`, `review.json`, and
@@ -486,6 +486,45 @@ Marker use:
     b-glm-5-3-flash-2026w46-r2 | lock rc 0 | timer left 4h02m | REGRADED total=94.8 valid=true adherence=0.5 | old 93.8 | wall 124s
     a-mimo-v2-6-flash-2026w46-r1 | lock rc 0 | timer left 4h00m | REGRADED total=96.2 valid=true adherence=1 | old 95.7 | wall 174s
   - Stopped 2026-11-28 21:02 (+07): the timer left was 3h57m before `b-mimo-v2-6-flash-2026w46-r1`. 45 runs are done (including the pilot), 37 remain. No FAIL and no SKIP. The list continues after 06:00 (+07).
+  - PM order 2026-11-28 22:35: the 21:00 stop, the 02:00 to 06:00 stop, and the 4-hour timer rule no longer apply. The lock check stays before each call. Second block, 2026-11-28 22:32 to 23:43 (+07), one run for each `heavy-run.sh` call. No exit 75, no FAIL, no SKIP:
+    b-mimo-v2-6-flash-2026w46-r1 | lock rc 0 | REGRADED total=98.7 valid=true | old 97.7
+    a-muse-spark-1-3-contributor-2026w46-r1 | lock rc 0 | REGRADED total=94.8 valid=true | old 93.8
+    b-muse-spark-1-3-contributor-2026w46-r1 | lock rc 0 | REGRADED total=97.2 valid=true | old 96.2
+    a-glm-5-3-flash-2026w46-r1 | lock rc 0 | REGRADED total=92.4 valid=true | old 89.9
+    b-glm-5-3-flash-2026w46-r1 | lock rc 0 | REGRADED total=94.9 valid=true | old 93.4
+    bf-a-beam-free-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-b-beam-free-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-a-glm-5-3-flash-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-b-glm-5-3-flash-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-a-iceman-contributor-free-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-b-iceman-contributor-free-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-a-mimo-v2-6-flash-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-b-mimo-v2-6-flash-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-a-muse-spark-1-3-contributor-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-b-muse-spark-1-3-contributor-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    bf-b-kimi-k2-7-code-2026w46-r1 | lock rc 0 | REGRADED total=96.4 valid=true | old 96.4
+    bf-a-kimi-k2-7-code-2026w46-r1 | lock rc 0 | REGRADED total=92.9 valid=true | old 92.9
+    ch-a-beam-free-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-b-beam-free-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-a-glm-5-3-flash-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-b-glm-5-3-flash-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-a-iceman-contributor-free-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-b-iceman-contributor-free-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-a-kimi-k2-7-code-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-b-kimi-k2-7-code-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-a-mimo-v2-6-flash-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-b-mimo-v2-6-flash-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-a-muse-spark-1-3-contributor-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    ch-b-muse-spark-1-3-contributor-2026w46-r1 | lock rc 0 | REGRADED total=100 valid=true | old 100
+    a-deepseek-v4-1-flash-2026w43-r1 | lock rc 0 | REGRADED total=96 valid=true | old 95
+    b-deepseek-v4-1-flash-2026w43-r1 | lock rc 0 | REGRADED total=98.7 valid=true | old 97.7
+    a-gpt-6-luna-2026w43-r1 | lock rc 0 | REGRADED total=96 valid=true | old 94.5
+    b-gpt-6-luna-2026w43-r1 | lock rc 0 | REGRADED total=98.7 valid=true | old 98.7
+    a-minimax-m3-1-flash-2026w43-r1 | lock rc 0 | REGRADED total=92.4 valid=true | old 91.1
+    b-minimax-m3-1-flash-2026w43-r1 | lock rc 0 | REGRADED total=98.7 valid=true | old 96.7
+    a-claude-haiku-5-5-2026w43-r1 | lock rc 0 | REGRADED total=89.9 valid=true | old 88.9
+    b-claude-haiku-5-5-2026w43-r1 | lock rc 0 | REGRADED total=98.7 valid=true | old 97.7
+  - The 82 runs of the list are regraded, all `valid=true`. After the last run, `WEEK=all ./rescore-doctor.sh` ran through `heavy-run.sh` (log `.tmp/gsc/logs/rescore-doctor.log`). The totals of the 82 runs did not change in the rescore.
   - Lane: light. One heavy run for each regrade.
 - [ ] 4.3 The daily lock and the timer. A regrade must not hold the daily
   lock, because a held lock would stop the live day. Before each regrade
@@ -541,7 +580,7 @@ Marker use:
 - [ ] 5.2 The report to the PM. Send the report of task 4.4 to the PM.
   - Verify: the plan records the date of the send.
   - Lane: light. A text report.
-- [x] 5.3 (commit 2672686) The hand-off of the open tasks. Not needed. The PM closed
+- [x] 5.3 `2672686` The hand-off of the open tasks. Not needed. The PM closed
   `opencode_executor` on 2026-11-27.
   - Lane: light. No change.
 
