@@ -62,13 +62,5 @@
     "kind": "plan",
     "quota_provider": "volcengine-agent-plan",
     "quota_source": "arkcli"
-  },
-  {
-    "family": "Doubao Seed Evolving",
-    "route": "volcengine-agent-plan/doubao-seed-evolving",
-    "trial": true,
-    "kind": "plan",
-    "quota_provider": "volcengine-agent-plan",
-    "quota_source": "arkcli"
   }
 ]

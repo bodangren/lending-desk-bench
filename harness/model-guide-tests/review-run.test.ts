@@ -5909,10 +5909,10 @@ describe("P4b row 4.16r6 deadline expiry and newest partial in the review runner
 describe("Ark trial routes in the review runner", () => {
   const ROUTES = [
     "volcengine-agent-plan/glm-5.3-flash",
-    "volcengine-agent-plan/doubao-seed-evolving",
   ];
+  const SHUT_OFF = "volcengine-agent-plan/doubao-seed-evolving";
 
-  it("routes.json holds both Ark trial routes with the Ark quota provider", () => {
+  it("routes.json holds the glm-5.3-flash route with the Ark quota provider and no Doubao route", () => {
     const rows = JSON.parse(readFileSync(join(HARNESS, "model-guide", "routes.json"), "utf8"));
     for (const route of ROUTES) {
       const row = rows.find((entry: { route?: unknown }) => entry.route === route);
@@ -5921,13 +5921,15 @@ describe("Ark trial routes in the review runner", () => {
       expect(row.quota_provider, route).toBe("volcengine-agent-plan");
       expect(row.quota_source, route).toBe("arkcli");
     }
+    expect(rows.some((entry: { route?: unknown }) => entry.route === SHUT_OFF), `${SHUT_OFF} is shut off`).toBe(false);
   });
 
-  it("the pilot allowlist holds both Ark routes and the region rule stays Go-only", () => {
+  it("the pilot allowlist holds the glm-5.3-flash route, not the Doubao route, and the region rule stays Go-only", () => {
     const source = readFileSync(RUNNER_SOURCE, "utf8");
     for (const route of ROUTES) {
       expect(source, `${route} must be an allowed pilot route`).toContain(route);
     }
+    expect(source, `${SHUT_OFF} must not be an allowed pilot route`).not.toContain(SHUT_OFF);
     const exclusions = source.match(/volcengine-agent-plan\/\*\) return 1 ;;/g) ?? [];
     expect(exclusions, "both region checks must exclude the Ark provider").toHaveLength(2);
   });

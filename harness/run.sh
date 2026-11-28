@@ -25,7 +25,7 @@ case "$ARM" in a|b) ;; *) echo "arm must be a or b" >&2; exit 2 ;; esac
 # shellcheck source=ark-provider.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ark-provider.sh"
 # The Ark Agent Plan runs the same OpenCode container path as opencode-go, but
-# only the two trial routes are allowed. `local` keeps the overlay/calibration
+# only the glm-5.3-flash route is allowed. `local` keeps the overlay/calibration
 # path; runtime probes are harness checks, not agent runs.
 if [ "$PROVIDER" != "opencode-go" ] && [ "$PROVIDER" != "local" ] && \
    ! ark_is_route "$PROVIDER" "$MODEL" && \

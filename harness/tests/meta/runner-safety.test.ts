@@ -176,7 +176,6 @@ describe("Ark provider routes in the OpenCode runner", () => {
   const HELPER = resolve(HARNESS, "ark-provider.sh");
   const ROUTES = [
     "volcengine-agent-plan/glm-5.3-flash",
-    "volcengine-agent-plan/doubao-seed-evolving",
   ];
 
   function isTrialRoute(provider: string, model: string): number | null {
@@ -187,11 +186,12 @@ describe("Ark provider routes in the OpenCode runner", () => {
     ], { encoding: "utf8" }).status;
   }
 
-  it("accepts the two trial routes and rejects another volcengine model", () => {
+  it("accepts the glm-5.3-flash route and rejects another volcengine model", () => {
     for (const route of ROUTES) {
       const [provider, model] = route.split("/");
       expect(isTrialRoute(provider, model), route).toBe(0);
     }
+    expect(isTrialRoute("volcengine-agent-plan", "doubao-seed-evolving"), "doubao-seed-evolving is shut off").toBe(1);
     expect(isTrialRoute("volcengine-agent-plan", "glm-5.4"), "glm-5.4 is not a trial route").toBe(1);
     expect(isTrialRoute("opencode-go", "glm-5.3-flash"), "the Go route is not an Ark route").toBe(1);
   });

@@ -169,14 +169,12 @@ describe("app code route selection from Build scores", () => {
 describe("trial routes stay out of the public guide", () => {
   const ARK = [
     { family: "GLM Flash", route: "volcengine-agent-plan/glm-5.3-flash", trial: true },
-    { family: "Doubao Seed Evolving", route: "volcengine-agent-plan/doubao-seed-evolving", trial: true },
   ];
 
   it("skips a trial route even when the route holds the best Build score", () => {
     const models = [
       ...MODELS,
       { provider_model: "volcengine-agent-plan/glm-5.3-flash", score: { total: 99.9 } },
-      { provider_model: "volcengine-agent-plan/doubao-seed-evolving", score: { total: 99.8 } },
     ];
     const run = runGuide(fixture("trial-skip", [...ROUTES, ...ARK], models));
     expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);

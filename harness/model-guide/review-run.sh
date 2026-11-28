@@ -351,7 +351,7 @@ fi
 # Review A F15). A non-pilot route keeps the isolated path below.
 is_pilot_route() {
   case "$ROUTE" in
-    claude-agent/sonnet#high|opencode-go/deepseek-v4.1-flash|opencode-go/hy4-flash-free#high|opencode-go/mimo-v2.6-flash|opencode-go/muse-spark-1.3-contributor#high|opencode-go/hungerg-free|openai/gpt-6.1-sol#high|volcengine-agent-plan/glm-5.3-flash|volcengine-agent-plan/doubao-seed-evolving)
+    claude-agent/sonnet#high|opencode-go/deepseek-v4.1-flash|opencode-go/hy4-flash-free#high|opencode-go/mimo-v2.6-flash|opencode-go/muse-spark-1.3-contributor#high|opencode-go/hungerg-free|openai/gpt-6.1-sol#high|volcengine-agent-plan/glm-5.3-flash)
       return 0 ;;
   esac
   case "$ROUTE" in

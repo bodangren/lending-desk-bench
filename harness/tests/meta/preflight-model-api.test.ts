@@ -893,7 +893,6 @@ describe("Review A F6: the real batch preflight block", () => {
 describe("Ark route preflight (volcengine-agent-plan)", () => {
   const ROUTES = [
     "volcengine-agent-plan/glm-5.3-flash",
-    "volcengine-agent-plan/doubao-seed-evolving",
   ];
 
   function stageArk(five: number, week: number, models: Record<string, unknown>) {
@@ -931,7 +930,7 @@ describe("Ark route preflight (volcengine-agent-plan)", () => {
     expect(source, "the Ark preflight must read the Ark quota").toContain("ark_quota_check");
   });
 
-  it("preflight-only accepts both trial routes without an agent run", () => {
+  it("preflight-only accepts the glm-5.3-flash route without an agent run", () => {
     for (const route of ROUTES) {
       const { batch, config } = stageArk(10, 20, {
         "glm-5.3-flash": { name: "glm-5.3-flash" },
@@ -964,13 +963,27 @@ describe("Ark route preflight (volcengine-agent-plan)", () => {
       other.batch.run.cleanup();
     }
 
-    const unlisted = stageArk(10, 20, models);
+    const shutOff = stageArk(10, 20, {
+      ...models,
+      "doubao-seed-evolving": { name: "doubao-seed-evolving" },
+    });
     try {
-      const result = unlisted.batch.execute({ BENCH_ARK_CONFIG: unlisted.config }, [
+      const result = shutOff.batch.execute({ BENCH_ARK_CONFIG: shutOff.config }, [
         "--model", "volcengine-agent-plan/doubao-seed-evolving", "--preflight-only",
       ]);
+      expect(result.status, "doubao-seed-evolving is shut off even when the config lists it").toBe(2);
+      expect(result.stderr).toContain("--model must match");
+    } finally {
+      shutOff.batch.run.cleanup();
+    }
+
+    const unlisted = stageArk(10, 20, { "glm-latest": { name: "glm-latest" } });
+    try {
+      const result = unlisted.batch.execute({ BENCH_ARK_CONFIG: unlisted.config }, [
+        "--model", "volcengine-agent-plan/glm-5.3-flash", "--preflight-only",
+      ]);
       expect(result.status, "a route missing from opencode.json must stop").toBe(3);
-      expect(result.stderr).toContain("the opencode config does not list volcengine-agent-plan/doubao-seed-evolving");
+      expect(result.stderr).toContain("the opencode config does not list volcengine-agent-plan/glm-5.3-flash");
     } finally {
       unlisted.batch.run.cleanup();
     }
