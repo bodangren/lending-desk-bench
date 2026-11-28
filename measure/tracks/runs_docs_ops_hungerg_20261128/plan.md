@@ -18,7 +18,8 @@ The docs-and-ops track holds runs for the hy4-flash-free and muse routes. The hu
 - [x] 1.2a Add Red tests: the release restoration check of `harness/docs-and-ops/grade-docs-ops.ts` accepts the contract fact sentence of `harness/docs-and-ops/model-visible/track/spec.md:36` ("Rollback restores the previous release and does not delete loan records.") and keeps rejecting inversions (keeps the current release; does not restore the previous release; restores the previous release by deleting loan records). Done when the tests fail on the current grader for the contract sentence only. Red commit `10abaf0`. — 10abaf0
   Red: `harness/tests/meta/docs-ops-wording.test.ts` describe `review-a r6 F13`; restoration cases `contract sentence`, `contract sentence with never`, `restore joined with and` fail on `D.sections.rollback`; guard cases `current release kept`, `restoration denied`, `bare denial`, `restore by deleting`, `new release deployed` stay rejected. Log `measure/runs/runs_docs_ops_hungerg_20261128/red-1.2a.log`.
 
-- [~] 1.2b Repair the release recogniser (finding F13 of `tech-debt.md`, the case of 1.2a). Done when the 1.2a tests and the existing docs-and-ops grader tests pass. Result: `604d841`. Log: `measure/runs/runs_docs_ops_hungerg_20261128/green-1.2b.log`. — 604d841
+- [x] 1.2b Repair the release recogniser (finding F13 of `tech-debt.md`, the case of 1.2a). Done when the 1.2a tests and the existing docs-and-ops grader tests pass. Result: `604d841`. Log: `measure/runs/runs_docs_ops_hungerg_20261128/green-1.2b.log`. — 604d841
+  Remediation r2: `9f379df`. The loan-bound negation repair and Review A regressions are recorded in `measure/runs/runs_docs_ops_hungerg_20261128/green-1.2b.log`. — 9f379df
 
 - [ ] 1.2c Regrade every docs-and-ops run under `runs/` with `harness/regrade-run.sh` and record the totals. Done when each score reads fresh, trusted and rankable, and the plan holds the totals.
 

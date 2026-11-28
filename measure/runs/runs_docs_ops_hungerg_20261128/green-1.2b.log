@@ -3,10 +3,11 @@ role: green
 status: pass
 track: runs_docs_ops_hungerg_20261128
 phase: Phase 1: Docs and ops runs for hungerg-free
-commits: pending r2 implementation commit
+commits: 9f379df41f8186e77854a844d1a04a3fd8c59d65 (r2 implementation); plan evidence records this SHA
 tests_run: The r2 Red replay exited 1 on the five Review A regressions. The Green gates docs-ops-wording, docs-ops-grader, docs-ops-integration, and docs-ops-registration each exited 0 through heavy-run.sh. A read-only tsx call graded the six stored do-a/do-b runbooks with `failed=[]`. Typecheck was not run because the harness has no tsconfig or typecheck script.
 files_changed: harness/docs-and-ops/grade-docs-ops.ts; harness/tests/meta/docs-ops-wording.test.ts; measure/tracks/runs_docs_ops_hungerg_20261128/plan.md; measure/runs/runs_docs_ops_hungerg_20261128/green-1.2b.log
-plan_updates: task 1.2b stays [~] in the implementation commit. The plan-evidence commit restores [x] and records the r2 SHA on an indented line.
+plan_updates: task 1.2b stays [x]. Its indented remediation line records r2 commit `9f379df41f8186e77854a844d1a04a3fd8c59d65` and cites this log. No task is [b].
 known_failures: none
-handoff: The rollback check removes only loan-record preservation segments before it tests negation. The preservation alternatives bind negated destruction verbs to loan records. The deletion rejection stays unchanged. New regressions cover F1, F2, F3, and the six review controls. Immutable phase_base_sha: 1725af62c6b464ff4aebb4d2774c67fcefa4c455. role_base_sha: 71aa7fe62d09888f5e52563e61a09be635ba7089. Red commit: 10abaf068293492d5fa2d982b3cd4309c47b9424.
+handoff: Review A F1, F2, and F3 are repaired. The rollback check removes only loan-record preservation segments before it tests negation. The preservation alternatives bind negated destruction verbs to loan records. The deletion rejection stays unchanged. The new describe `review-a 1.2b r1 F1-F3` pins the review sentences and controls. Immutable phase_base_sha: 1725af62c6b464ff4aebb4d2774c67fcefa4c455. role_base_sha: 71aa7fe62d09888f5e52563e61a09be635ba7089. Red commit: 10abaf068293492d5fa2d982b3cd4309c47b9424. The final Green HEAD is the plan-evidence commit returned to the orchestrator.
+dispositions: F1=FIX; F2=FIX; F3=FIX
 END_MEASURE_AGENT_RESULT
