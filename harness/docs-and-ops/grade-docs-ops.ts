@@ -137,24 +137,23 @@ const RESTORE_TARGET = /\b(?:previous|prior|last good|known-good)\b/;
 const RELEASE_OBJECT = /\b(?:release|deployment|artifact|tag|version)\b/;
 const NEGATION = /\b(?:do not|does not|must not|never|without|not|false|no|nothing)\b/;
 const NEW_RELEASE = /\b(?:new|latest|next)\s+(?:release|deployment|artifact|tag|version)\b/;
+const LOAN_PRESERVATION_SEGMENT = /\b(?:and\s+)?(?:(?:do|does|must|will|should)\s+not|never|no)\s+(?:delete|deletes|deleted|drop|drops|truncate|truncates|reset|resets|wipe|wipes)\b(?:\s+\w+){0,3}?\s+loans?\b(?:\s+records?)?/g;
 
 function restoresRelease(body: string): boolean {
   let valid = false;
   for (const clause of factClauses(body)) {
     if (!RESTORE_ACTION.test(clause)) continue;
     if (NEW_RELEASE.test(clause)) return false;
-    for (const conjunct of clause.split(/\s+and\s+|,\s+/)) {
-      if (!RESTORE_ACTION.test(conjunct)) continue;
-      if (NEGATION.test(conjunct)) continue;
-      if (RESTORE_TARGET.test(conjunct) && RELEASE_OBJECT.test(conjunct)) valid = true;
-    }
+    const restorationClause = clause.replace(LOAN_PRESERVATION_SEGMENT, "");
+    if (NEGATION.test(restorationClause)) continue;
+    if (RESTORE_TARGET.test(restorationClause) && RELEASE_OBJECT.test(restorationClause)) valid = true;
   }
   return valid;
 }
 
 const LOAN_SUBJECT = /\bloans?\b/;
 const DESTROY_RECORDS = /\b(?:delete|deletes|deleted|truncate|truncates|reset|drop|wipe)\b/;
-const PRESERVE_RECORDS = /\b(?:keep|keeps|kept|preserve|preserves|preserved|retain|retained|intact|untouched|(?:(?:do|does|must|will|should)\s+)?not\s+(?:delete|deletes|deleted|drop|drops|truncate|truncates|reset|resets|wipe|wipes)|(?:never|no)\s+(?:delete|deletes|deleted|drop|drops|truncate|truncates|reset|resets|wipe|wipes))\b/;
+const PRESERVE_RECORDS = /\b(?:keep|keeps|kept|preserve|preserves|preserved|retain|retained|intact|untouched|not delete|does not delete|do not delete|must not delete|never delete|no delete|(?:(?:do|does|must|will|should)\s+not|never|no)\s+(?:delete|deletes|deleted|drop|drops|truncate|truncates|reset|resets|wipe|wipes)\b(?:\s+\w+){0,3}?\s+loans?\b(?:\s+records?)?)\b/;
 
 function preservesLoanRecords(body: string): boolean {
   let valid = false;

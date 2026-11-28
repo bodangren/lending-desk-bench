@@ -175,6 +175,70 @@ describe("review-a r6 F13: the contract rollback sentence keeps its check", () =
   });
 });
 
+describe("review-a 1.2b r1 F1-F3", () => {
+  it.each([
+    {
+      label: "F1 negated restoration with modifiers",
+      body: "Do not, under any circumstance, restore the previous release. Keep the loan records.",
+      failed: ["D.sections.rollback"],
+    },
+    {
+      label: "F1 shared negation across coordinated verbs",
+      body: "Do not roll back and restore the previous release. Keep the loan records.",
+      failed: ["D.sections.rollback"],
+    },
+    {
+      label: "F1 shared negation across a comma",
+      body: "Do not restore, or redeploy the previous release. Keep the loan records.",
+      failed: ["D.sections.rollback"],
+    },
+    {
+      label: "F2 release object keeps its comma",
+      body: "Restore the previous, known-good release. Keep the loan records.",
+      failed: [],
+    },
+    {
+      label: "F3 unrelated negated destruction does not preserve loans",
+      body: "Restore the previous release and do not drop the logs, but delete loan records.",
+      failed: ["D.sections.rollback"],
+    },
+    {
+      label: "control contract sentence",
+      body: "Rollback restores the previous release and does not delete loan records.",
+      failed: [],
+    },
+    {
+      label: "control never deletes loan records",
+      body: "Rollback restores the previous release and never deletes loan records.",
+      failed: [],
+    },
+    {
+      label: "control do not delete loan records",
+      body: "Restore the previous release and do not delete loan records.",
+      failed: [],
+    },
+    {
+      label: "control separate no-deletion sentence",
+      body: "Restore the previous release. No, do not delete loan records.",
+      failed: [],
+    },
+    {
+      label: "control do not reset the loan records",
+      body: "Restore the previous release and do not reset the loan records.",
+      failed: [],
+    },
+    {
+      label: "control do not wipe loan records",
+      body: "Restore the previous release and do not wipe loan records.",
+      failed: [],
+    },
+  ])("$label", async ({ body, failed }) => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(oracleWithSection("Rollback", body));
+    expect(grade.failed).toEqual(failed);
+  });
+});
+
 describe("review-a r5: the review mutations that already behave stay pinned", () => {
   it.each([
     ["restoration sentence without any release object", "Rollback", "Restore everything quickly. Keep the existing data store and loan records.\n", "D.sections.rollback"],
