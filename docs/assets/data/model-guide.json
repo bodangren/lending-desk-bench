@@ -1,6 +1,6 @@
 {
   "schema": "model-guide-overview/1",
-  "today": "2026-11-27",
+  "today": "2026-11-28",
   "stale": false,
   "rows": [
     {
@@ -16,7 +16,7 @@
       "pick": "opencode-go/hungerg-free",
       "second": "opencode-go/deepseek-v4.1-flash",
       "evidence": "build routes: Claude Sonnet=claude-agent/sonnet#high; MiniMax M3.1 Flash=opencode-go/minimax-m3.1-flash 91.1; DeepSeek Flash=opencode-go/deepseek-v4.1-flash 95.0; Hy=opencode-go/hy4-flash-free#high 71.9; Go=opencode-go/mimo-v2.6-flash 95.0; Hungerg=opencode-go/hungerg-free 95.2; GPT Sol=openai/gpt-6.2-sol#high",
-      "evidence_date": "2026-11-27",
+      "evidence_date": "2026-11-28",
       "base_line": 95.2
     },
     {
@@ -29,10 +29,10 @@
     },
     {
       "kind": "docs and ops",
-      "pick": "opencode-go/hy4-flash-free",
-      "second": "opencode-go/muse-spark-1.3-contributor",
+      "pick": "opencode-go/hungerg-free",
+      "second": "opencode-go/hy4-flash-free",
       "evidence": "track A: total 100.0 (n=1)",
-      "evidence_date": "2026-11-27",
+      "evidence_date": "2026-11-28",
       "base_line": 100
     },
     {
