@@ -165,3 +165,39 @@ describe("app code route selection from Build scores", () => {
     expect(existsSync(run.file)).toBe(false);
   });
 });
+
+describe("trial routes stay out of the public guide", () => {
+  const ARK = [
+    { family: "GLM Flash", route: "volcengine-agent-plan/glm-5.3-flash", trial: true },
+    { family: "Doubao Seed Evolving", route: "volcengine-agent-plan/doubao-seed-evolving", trial: true },
+  ];
+
+  it("skips a trial route even when the route holds the best Build score", () => {
+    const models = [
+      ...MODELS,
+      { provider_model: "volcengine-agent-plan/glm-5.3-flash", score: { total: 99.9 } },
+      { provider_model: "volcengine-agent-plan/doubao-seed-evolving", score: { total: 99.8 } },
+    ];
+    const run = runGuide(fixture("trial-skip", [...ROUTES, ...ARK], models));
+    expect(run.status, `${run.stdout}\n${run.stderr}`).toBe(0);
+    const text = readFileSync(run.file, "utf8");
+    for (const word of ["volcengine", "doubao", "GLM Flash", "Evolving"]) {
+      expect(text.toLowerCase(), `the guide holds ${word}`).not.toContain(word.toLowerCase());
+    }
+    expect(appCode(run.data).pick).toBe("opencode-go/hungerg-free");
+  });
+
+  it("builds the same guide with and without the trial rows", () => {
+    const withTrial = runGuide(fixture("trial-same-a", [...ROUTES, ...ARK], MODELS));
+    const without = runGuide(fixture("trial-same-b", ROUTES, MODELS));
+    expect(withTrial.status).toBe(0);
+    expect(appCode(withTrial.data)).toEqual(appCode(without.data));
+  });
+
+  it("flags every Ark route of the shipped routes.json as a trial route", () => {
+    const rows = JSON.parse(readFileSync(join(HARNESS, "model-guide", "routes.json"), "utf8"));
+    const ark = rows.filter((row: any) => String(row.route).startsWith("volcengine-agent-plan/"));
+    expect(ark.length).toBeGreaterThan(0);
+    for (const row of ark) expect(row.trial, row.route).toBe(true);
+  });
+});

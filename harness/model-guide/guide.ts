@@ -342,7 +342,9 @@ interface BuildData {
   date: string | null;
 }
 
-/** The session route families. The default file sits beside this tool. */
+/** The session route families. The default file sits beside this tool. A row
+ * with `"trial": true` stays usable by review-run.sh and never reaches the
+ * public guide. */
 function readRoutes(file: string | null): SessionRoute[] {
   const path = file ?? join(import.meta.dirname, "routes.json");
   const doc = readJsonFile(path, "routes");
@@ -358,6 +360,7 @@ function readRoutes(file: string | null): SessionRoute[] {
     ) {
       refuse("routes");
     }
+    if (row.trial === true) continue;
     routes.push({ family: row.family, route: row.route });
   }
   return routes;
