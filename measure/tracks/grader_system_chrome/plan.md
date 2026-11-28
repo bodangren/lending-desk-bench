@@ -202,149 +202,288 @@ Marker use:
   - The counts per executor kind: non-pi 218, pi 93.
   - The harness commit `96e4a48` holds the code of the check. The task made no
     code change.
-- [~] 2.2 The first live day. The live day grades with the system Chrome.
-  The self-check and the canary of the batch run inside the batch
-  (`harness/batch.sh:204-346`). The day record names the model and the run
-  ids. Right after this live day, the orchestrator runs the gates of
-  `daily_model_schedule` task 5.4 and closes it there.
-  - Verify: `reports/cron-daily.log` holds one `DAILY GO-GUARD weekly=<n>
-    monthly=<m>` line before each of the 4 batches.
-  - Verify: `reports/cron-daily.log` holds no `DAILY FAIL playwright` line.
-  - Verify: `DAY_CHECK <day>` prints `DAY_CHECK=pass model=<id> runs=<n>
-    harness=<n>` and exits 0.
-  - Verify: `PI_SHA day2` prints `PI_RUNS=95` and a `PI_SHA=` line with 64
-    hex characters. `PI_CHECK day0 day2` prints `PI_CHECK=pass`.
-  - Lane: light. The live day runs on its own timer. This task records it.
-- [ ] 2.3 The pilot regrade. Run the step 1 of D7. Regrade 1
-  persisted-rankable build run of week 2026w43. No trusted bugfix or change
-  run exists, and the tests track needs no browser proof. Record the old
-  total and the new total of the run.
-  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh <run-id>'`.
-  - Verify: the log holds one `[<run-id>] REGRADED total=<n> valid=true` line.
+
+- [x] 2.2 The live days after `c50b836` graded on the system Chrome. The proof
+  is the live day of 2026-11-25 (published 2026-11-26 as `162c7a2`, model
+  `mimo-v2.6-pro`). Run `a-mimo-v2-6-pro-2026w48-r1` holds
+  `artifacts/grader-browser.json` written 2026-11-25 19:42 with
+  `{"schema":1,"channel":"chrome","version":"157.0.8103.78"}`. Run
+  `b-mimo-v2-6-pro-2026w48-r1` holds the same record, written 2026-11-26 01:58.
+  `reports/cron-daily.log` holds one `DAILY FAIL playwright` line, at line 3
+  (2026-11-04), before the system Chrome move, and no such line after it.
+  The `DAY_CHECK` and `PI_SHA` verify lines are dropped: the PM closed
+  `daily_model_schedule` on 2026-11-27 ("not needed"), so that track runs no
+  day check.
+  - Lane: light. This task records the evidence.
+- [~] 2.3 The pilot regrade. Regrade 1 public build run,
+  `a-hy4-flash-free-2026w48-r2`, which shows 71.9 on the site now. The grader
+  change `05c1975` changes the suite hash, so every stored grade before it is
+  stale. Record the old total, the new total, and the wall time of the run.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh a-hy4-flash-free-2026w48-r2'`.
+  - `regrade-run.sh` was read on 2026-11-28. It moves the previous artifacts to
+    `runs/<run-id>/artifacts.prev-<stamp>/`, copies the transcript, execution
+    identity, executor files, and diff forward, and grafts the agent files on
+    the current fixture. It restores the previous artifacts when the graft or
+    `grade.sh` fails. It calls no model: it builds the candidate and runs the
+    local test suites.
+  - Verify: the log holds one `[a-hy4-flash-free-2026w48-r2] REGRADED total=<n> valid=true` line.
   - Verify: this task holds the old total and the new total of the run. The
     old total comes from the `score.json` of `artifacts.prev-<stamp>/`.
-  - Verify: this task holds the wall time of one regrade. The day count of
-    task 4.2 uses that value and the measured run count of spec EV16.
+  - Verify: this task holds the wall time of one regrade. The time of task 4.2
+    uses that value.
   - Lane: light. One heavy run.
-- [ ] 2.4 The rescore SKIP lines on that live day. The live day runs
-  `rescore-doctor.sh` twice (spec EV8). The guard holds each old build,
-  bugfix, or change score.
-  - Verify: `grep -c "graded before the system Chrome move; regrade needed"
-    reports/cron-daily.log` prints a count above 0.
-  - Verify: an old non-Pi BUILD run keeps the bytes of its `score.json` after
-    the live day.
-  - Verify: the legacy tests-track runs get a new `score.json` from the
-    rescore. That is expected, because their grade used no browser.
+- [x] 2.4 The rescore SKIP lines. `grep -c "graded before the system Chrome move; regrade needed" reports/cron-daily.log` printed 139 on 2026-11-28 (above 0).
   - Lane: light. A read-only check.
 
 ## Phase 3: The human gates
 
-- [ ] 3.1 The Chrome update. Ask Daniel, through the PM, to update the system
-  Chrome to 156.0.8078.79 or newer with `sudo`. The steps 2 and 3 of D7 wait
-  for it. The harness change and the live day do not wait for it.
-  - Verify: `google-chrome --version` prints a version of 156.0.8078.79 or
-    newer.
-  - Verify: this task records the date and the version of the update.
-  - Lane: light. The owner runs the command. No role runs `sudo`.
-- [ ] 3.2 The page text. The PM gives the visible text for the stale mark of
-  D5. Then Daniel reads the page and gives the look check. The pages change
-  nothing before both answers.
-  - Verify: the plan records the text of the PM and the date of the look
-    check.
-  - Verify: no push of `docs/` happened before that date.
-  - Lane: light. A human gate.
+- [x] 3.1 The Chrome update. `google-chrome --version` printed
+  `Google Chrome 157.0.8103.78` on 2026-11-28. The apt update had run. No
+  `sudo` step was needed.
+  - Lane: light. A read-only check.
+- [x] 3.2 The page text. Not needed. The regrade replaces the stale scores, so
+  no stale-mark text goes on the pages (PM 2026-11-28).
+  - Lane: light. No change.
 
 ## Phase 4: The regrade (D7, D8)
 
-- [ ] 4.1 The step 2 of D7. Regrade week 2026w43 and all its reachable runs.
-  Spec EV16 gives build 8 and tests 10. Those runs hold all 17
-  persisted-rankable runs of EV15. The task waits for the Chrome update of
-  task 3.1. The pilot run of task 2.3 is one of these runs, so it is graded
-  again.
-  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEKS=2026w43 ./regrade-all.sh'`.
-  - Verify: the log holds a `[<run-id>] REGRADED total=<n> valid=true` line
-    for each regraded run.
-  - Verify: the log holds a line
-    `REGRADE-ALL END <time> ok=<n> not-ok=<n> skipped=<n>`.
-  - Verify: `PI_CHECK <a> <b>` prints `PI_CHECK=pass`.
-  - Verify: this task holds the OK, FAIL, and SKIP counts of the week.
-  - Verify: the pilot wall time of task 2.3 times the run count of the week
-    is more than 80 minutes. Then the week runs as 3 calls: `ONLY=a-`,
-    `ONLY=b-`, and `ONLY=tt-`, one heavy-run call each.
-  - Lane: light. One heavy run, or 3 when the week splits.
-- [ ] 4.2 The step 3 of D7. Regrade all other curable weeks, newest first:
-  week 2026w39, then week 2026w38. Spec EV16 gives 2026w39 build 2 and
-  2026w38 build 10. The task waits for the Chrome update of task 3.1.
-  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEKS=<week> ./regrade-all.sh'` for each week.
-  - Verify: the log of each week holds a line
-    `REGRADE-ALL END <time> ok=<n> not-ok=<n> skipped=<n>`.
-  - Verify: `PI_CHECK <a> <b>` prints `PI_CHECK=pass` after each week.
-  - Verify: the pilot wall time of task 2.3 times the run count of the week
-    is more than 80 minutes. Then the week runs as 2 calls: `ONLY=a-` and
-    `ONLY=b-`, one heavy-run call each.
-  - Verify: this task holds the OK, FAIL, and SKIP counts of each week and
-    the day count of the whole regrade. The day count = the reachable run
-    count of spec EV16 (30) divided by the runs per day. The runs per day =
-    the hours of one heavy-run slot divided by the wall time of one regrade
-    from task 2.3.
-  - Lane: light. One heavy run per week, or 2 when the week splits.
+- [x] 4.1 The regrade list. Read on 2026-11-28 with no write to a run. The
+  runs are those that feed a public score in `docs/assets/data/`:
+  `benchmark.json` (models, both arms, repeat runs, history rows),
+  `tracks.json`, and `bugfix.json`. `real-work.json`, `review.json`, and
+  `model-guide.json` read no grade of a run; the model guide reads the Build
+  scores of `benchmark.json` and follows them. The stale check is
+  `harness/score-freshness.ts --many` on the score of each run, through
+  `heavy-run.sh`. It returned `STALE-PROVENANCE` (runner or suite hash does not
+  match) for each of the 145 runs.
+  - Measured wall time of a grade: 60 to 217 s, median 78 s (build log to
+    collection record) over 9 recent runs of 2026w48 and `rv-1128-*`. The
+    list of 82 runs is 1.8 to 4.9 hours of grade time before graft and doctor
+    time. The pilot of task 2.3 sets the real value.
+  - To regrade (82 runs, newest first). Columns: run id, track, public total now.
+    a-hungerg-free-2026w48-r3 | build | 95.7
+    b-hungerg-free-2026w48-r3 | build | 100.0
+    a-mimo-v2-6-pro-2026w48-r3 | build | 94.7
+    b-mimo-v2-6-pro-2026w48-r3 | build | 98.0
+    a-hy4-flash-free-2026w48-r3 | build | 92.8
+    b-hy4-flash-free-2026w48-r3 | build | 98.3
+    a-hungerg-free-2026w48-r2 | build | 95.2
+    b-hungerg-free-2026w48-r2 | build | 99.5
+    a-mimo-v2-6-pro-2026w48-r2 | build | 94.5
+    b-mimo-v2-6-pro-2026w48-r2 | build | 98.0
+    a-hy4-flash-free-2026w48-r2 | build | 71.9
+    b-hy4-flash-free-2026w48-r2 | build | 97.7
+    a-hungerg-free-2026w48-r1 | build | 92.8
+    b-hungerg-free-2026w48-r1 | build | 95.8
+    a-mimo-v2-6-pro-2026w48-r1 | build | 94.5
+    b-mimo-v2-6-pro-2026w48-r1 | build | 96.8
+    a-hy4-flash-free-2026w48-r1 | build | 63.3
+    b-hy4-flash-free-2026w48-r1 | build | 97.2
+    bf-a-mimo-v2-6-pro-2026w48-r1 | bugfix | 100.0
+    bf-b-mimo-v2-6-pro-2026w48-r1 | bugfix | 100.0
+    ch-a-mimo-v2-6-pro-2026w48-r1 | change | 100.0
+    ch-b-mimo-v2-6-pro-2026w48-r1 | change | 100.0
+    a-qwen3-8-flash-2026w47-r3 | build | 96.5
+    b-qwen3-8-flash-2026w47-r3 | build | 98.2
+    a-qwen3-8-flash-2026w47-r2 | build | 95.2
+    b-qwen3-8-flash-2026w47-r2 | build | 97.5
+    a-qwen3-8-flash-2026w47-r1 | build | 94.8
+    b-qwen3-8-flash-2026w47-r1 | build | 97.5
+    bf-a-qwen3-8-flash-2026w47-r1 | bugfix | 100.0
+    bf-b-qwen3-8-flash-2026w47-r1 | bugfix | 100.0
+    ch-a-qwen3-8-flash-2026w47-r1 | change | 100.0
+    ch-b-qwen3-8-flash-2026w47-r1 | change | 100.0
+    a-mimo-v2-6-flash-2026w46-r3 | build | 95.0
+    b-mimo-v2-6-flash-2026w46-r3 | build | 97.8
+    a-muse-spark-1-3-contributor-2026w46-r3 | build | 93.8
+    b-muse-spark-1-3-contributor-2026w46-r3 | build | 96.2
+    a-glm-5-3-flash-2026w46-r3 | build | 90.8
+    b-glm-5-3-flash-2026w46-r3 | build | 96.7
+    a-mimo-v2-6-flash-2026w46-r2 | build | 95.0
+    b-mimo-v2-6-flash-2026w46-r2 | build | 97.7
+    a-muse-spark-1-3-contributor-2026w46-r2 | build | 93.8
+    b-muse-spark-1-3-contributor-2026w46-r2 | build | 95.2
+    a-glm-5-3-flash-2026w46-r2 | build | 89.9
+    b-glm-5-3-flash-2026w46-r2 | build | 93.8
+    a-mimo-v2-6-flash-2026w46-r1 | build | 91.7
+    b-mimo-v2-6-flash-2026w46-r1 | build | 97.7
+    a-muse-spark-1-3-contributor-2026w46-r1 | build | 93.8
+    b-muse-spark-1-3-contributor-2026w46-r1 | build | 92.8
+    a-glm-5-3-flash-2026w46-r1 | build | 89.9
+    b-glm-5-3-flash-2026w46-r1 | build | 93.4
+    bf-a-beam-free-2026w46-r1 | bugfix | 100.0
+    bf-b-beam-free-2026w46-r1 | bugfix | 100.0
+    bf-a-glm-5-3-flash-2026w46-r1 | bugfix | 100.0
+    bf-b-glm-5-3-flash-2026w46-r1 | bugfix | 100.0
+    bf-a-iceman-contributor-free-2026w46-r1 | bugfix | 100.0
+    bf-b-iceman-contributor-free-2026w46-r1 | bugfix | 100.0
+    bf-a-mimo-v2-6-flash-2026w46-r1 | bugfix | 100.0
+    bf-b-mimo-v2-6-flash-2026w46-r1 | bugfix | 100.0
+    bf-a-muse-spark-1-3-contributor-2026w46-r1 | bugfix | 100.0
+    bf-b-muse-spark-1-3-contributor-2026w46-r1 | bugfix | 100.0
+    bf-b-kimi-k2-7-code-2026w46-r1 | bugfix | 96.4
+    bf-a-kimi-k2-7-code-2026w46-r1 | bugfix | 92.9
+    ch-a-beam-free-2026w46-r1 | change | 100.0
+    ch-b-beam-free-2026w46-r1 | change | 100.0
+    ch-a-glm-5-3-flash-2026w46-r1 | change | 100.0
+    ch-b-glm-5-3-flash-2026w46-r1 | change | 100.0
+    ch-a-iceman-contributor-free-2026w46-r1 | change | 100.0
+    ch-b-iceman-contributor-free-2026w46-r1 | change | 100.0
+    ch-a-kimi-k2-7-code-2026w46-r1 | change | 100.0
+    ch-b-kimi-k2-7-code-2026w46-r1 | change | 100.0
+    ch-a-mimo-v2-6-flash-2026w46-r1 | change | 100.0
+    ch-b-mimo-v2-6-flash-2026w46-r1 | change | 100.0
+    ch-a-muse-spark-1-3-contributor-2026w46-r1 | change | 100.0
+    ch-b-muse-spark-1-3-contributor-2026w46-r1 | change | 100.0
+    a-deepseek-v4-1-flash-2026w43-r1 | build | 95.0
+    b-deepseek-v4-1-flash-2026w43-r1 | build | 97.7
+    a-gpt-6-luna-2026w43-r1 | build | 94.5
+    b-gpt-6-luna-2026w43-r1 | build | 98.7
+    a-minimax-m3-1-flash-2026w43-r1 | build | 91.1
+    b-minimax-m3-1-flash-2026w43-r1 | build | 96.7
+    a-claude-haiku-5-5-2026w43-r1 | build | 88.9
+    b-claude-haiku-5-5-2026w43-r1 | build | 97.7
+  - Cannot be regraded (35 runs). Reason for each: legacy Pi executor.
+    `regrade-run.sh` prints one `SKIP` line and keeps every artifact byte.
+    b-mimo-v2-6-flash-2026w39 | build | 95.0
+    a-mimo-v2-6-flash-2026w39 | build | 7.9
+    b-qwen3-8-flash-2026w38 | build | 30.3
+    b-muse-spark-1-3-contributor-2026w38 | build | 93.7
+    b-mimo-v2-5-2026w38 | build | 91.0
+    b-longcat-2-0-2026w38 | build | 76.9
+    b-gpt-5-6-luna-2026w38 | build | 95.0
+    b-glm-5-3-flash-2026w38 | build | 57.2
+    a-muse-spark-1-3-contributor-2026w38 | build | 92.7
+    a-muse-spark-1-2-contributor-2026w38 | build | 89.3
+    a-mimo-v2-5-2026w38 | build | 86.1
+    a-longcat-2-0-2026w38 | build | 90.1
+    a-glm-5-3-flash-2026w38 | build | 90.4
+    a-deepseek-v4-1-flash-2026w38 | build | 90.9
+    bf-a-qwen3-8-flash-2026w37 | bugfix | 100.0
+    bf-a-qwen3-7-plus-2026w37 | bugfix | 89.4
+    bf-a-qwen3-6-plus-2026w37 | bugfix | 92.7
+    bf-a-omen-alpha-2026w37 | bugfix | 100.0
+    bf-a-muse-spark-1-3-contributor-2026w37 | bugfix | 98.9
+    bf-a-muse-spark-1-2-contributor-2026w37 | bugfix | 100.0
+    bf-a-minimax-m3-2026w37 | bugfix | 96.4
+    bf-a-minimax-m2-7-2026w37 | bugfix | 58.7
+    bf-a-minimax-m2-5-2026w37 | bugfix | 85.3
+    bf-a-mimo-v2-5-pro-2026w37 | bugfix | 76.9
+    bf-a-mimo-v2-5-2026w37 | bugfix | 96.4
+    bf-a-longcat-2-0-2026w37 | bugfix | 86.0
+    bf-a-gpt-5-6-luna-2026w37 | bugfix | 100.0
+    bf-a-glm-5-3-flash-2026w37 | bugfix | 96.4
+    bf-a-deepseek-v4-flash-vision-exp-2026w37 | bugfix | 100.0
+    bf-a-deepseek-v4-1-flash-2026w37 | bugfix | 100.0
+    b-qwen3-7-plus-2026w37 | build | 62.7
+    a-qwen3-8-flash-2026w37 | build | 94.3
+    a-qwen3-7-plus-2026w37 | build | 62.8
+    a-hy3-2026w37 | build | 84.3
+    a-gpt-5-6-luna-2026w37 | build | 89.5
+  - Needs no regrade (28 runs). The `tests` and `docs-and-ops` grades launch no
+    browser, and no changed test file reaches them, so their totals cannot
+    move. Their stale label clears with `rescore-doctor.sh`, which runs no
+    test and no browser (step of task 4.2).
+    tt-b-mimo-v2-6-pro-2026w48-r1 | tests | 94.1
+    tt-a-mimo-v2-6-pro-2026w48-r1 | tests | 96.7
+    tt-b-qwen3-8-flash-2026w47-r1 | tests | 28.3
+    tt-a-qwen3-8-flash-2026w47-r1 | tests | 96.8
+    tt-b-muse-spark-1-3-contributor-2026w46-r1 | tests | 92.5
+    tt-b-mimo-v2-6-flash-2026w46-r1 | tests | 96.0
+    tt-b-kimi-k2-7-code-2026w46-r1 | tests | 98.5
+    tt-b-iceman-contributor-free-2026w46-r1 | tests | 89.9
+    tt-b-glm-5-3-flash-2026w46-r1 | tests | 87.7
+    tt-a-muse-spark-1-3-contributor-2026w46-r1 | tests | 90.9
+    tt-a-mimo-v2-6-flash-2026w46-r1 | tests | 0.0
+    tt-a-kimi-k2-7-code-2026w46-r1 | tests | 0.0
+    tt-a-iceman-contributor-free-2026w46-r1 | tests | 80.1
+    tt-a-glm-5-3-flash-2026w46-r1 | tests | 0.0
+    tt-a-beam-free-2026w46-r1 | tests | 96.3
+    tt-b-muse-spark-1-2-contributor-2026w43-r1 | tests | 93.9
+    tt-b-mimo-v2-5-2026w43-r1 | tests | 91.6
+    tt-b-deepseek-v4-1-flash-2026w43-r1 | tests | 98.0
+    tt-a-minimax-m3-1-flash-2026w43-r1 | tests | 93.2
+    tt-a-gpt-6-luna-2026w43-r1 | tests | 93.5
+    tt-a-gpt-5-6-luna-2026w43-r1 | tests | 79.4
+    tt-a-claude-haiku-5-5-2026w43-r1 | tests | 98.7
+    do-b-muse-spark-1-3-contributor-2026w48-r1 | docs-and-ops | 100.0
+    do-b-hy4-flash-free-2026w48-r1 | docs-and-ops | 100.0
+    do-b-hungerg-free-2026w48-r1 | docs-and-ops | 100.0
+    do-a-muse-spark-1-3-contributor-2026w48-r1 | docs-and-ops | 99.3
+    do-a-hy4-flash-free-2026w48-r1 | docs-and-ops | 100.0
+    do-a-hungerg-free-2026w48-r1 | docs-and-ops | 100.0
+  - Lane: light. A read-only list.
+- [ ] 4.2 The regrade. Regrade the 82 runs of task 4.1, newest first, one run
+  for each `heavy-run.sh` call, with no model call. Keep the rule of task 4.3
+  before each call.
+  - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh <run-id>'`.
+  - Verify: the log of each run holds a `[<run-id>] REGRADED total=<n> valid=<bool>` line.
+  - After the last run: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && WEEK=all ./rescore-doctor.sh'`
+    clears the stale label of the 28 `tests` and `docs-and-ops` runs.
+  - Verify: `harness/score-freshness.ts --many` on the 4.1 list shows no
+    `STALE-PROVENANCE` for a regraded run, a `tests` run, or a `docs-and-ops` run.
+  - Verify: this task holds the OK, FAIL, and SKIP counts.
+  - Lane: light. One heavy run for each regrade.
 - [ ] 4.3 The daily lock and the timer. A regrade must not hold the daily
   lock, because a held lock would stop the live day. Before each regrade
   call, run `flock -n <lock> true`. The lock path is `BENCH_DAILY_LOCK`,
   which defaults to `$ROOT/.tmp/weekly-cron.lock`
   (`harness/cron-daily.sh:34`). The command must exit 0. Then read
   `systemctl --user list-timers lending-desk-daily.timer`, and start the
-  regrade only when the next start is more than 4 hours away. One
-  `heavy-run.sh` call stops at `HEAVY_RUN_TIMEOUT_S` (default 5400 s,
-  `/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh:38-43`).
+  regrade only when the next start is more than 4 hours away. Start no
+  regrade from 02:00 to 06:00 (+07). One `heavy-run.sh` call stops at
+  `HEAVY_RUN_TIMEOUT_S` (default 5400 s).
   - Verify: the plan records the lock check and the timer read of each
     regrade call.
   - Verify: no regrade held the daily lock, and no regrade started within 4
     hours of a live day.
   - Lane: light. A read-only check.
-- [ ] 4.4 The score change report of D8. For each regraded run, record the old
-  total and the new total. The new total comes from the
-  `[<run-id>] REGRADED total=<n> valid=<bool>` line of the log. The old
-  total comes from the `score.json` of `artifacts.prev-<stamp>/`. Per track,
-  record the mean change and the max absolute change. List each run with a
-  change of more than 5 points.
+- [ ] 4.4 The score change report. For each regraded public run, record the
+  old total and the new total. The new total comes from the
+  `[<run-id>] REGRADED total=<n> valid=<bool>` line of the log. The old total
+  comes from the `score.json` of `artifacts.prev-<stamp>/`. List each run with
+  a change of more than 5 points.
   - Verify: the report holds one old total and one new total for each
     regraded run.
   - Verify: the list of runs with a change of more than 5 points matches the
     report.
-  - Verify: the report reaches the PM before the next live day publishes the
-    regraded scores.
+  - Verify: the report reaches the PM, with each changed public score listed.
   - Lane: light. A text report.
+- [ ] 4.5 The publication. Rebuild the site data with the export the harness
+  uses: `python3 harness/export-site-data.py` and
+  `python3 harness/generate-model-pages.py`, then the model-guide builder
+  (`harness/model-guide/update.sh`, preview first, then `--docs --no-commit`),
+  which keeps the trial routes out (`guide.ts` skips them). Check that no Ark
+  or trial text reaches `docs/`: `rg -n -i "ark1128|doubao-seed-evolving" docs/`
+  prints no new line, and the trial routes stay out of the guide rows.
+  Commit `docs/` with explicit paths and push.
+  - Verify: the live `benchmark.json`
+    (`https://bodangren.github.io/lending-desk-bench/assets/data/benchmark.json`)
+    shows the new totals.
+  - Verify: the live `generated_at` is newer than the end of the last regrade.
+  - Lane: light. The PM order of 2026-11-28 16:35 covers the publication.
 
 ## Phase 5: The close
 
 - [ ] 5.1 The final counts. Count the regraded runs as OK, FAIL, and SKIP.
   Count the runs that keep their stale mark, and give the reason of each:
   no candidate tree, hard violation, Pi, or no reachable week.
-  - Verify: the four counts match the logs of task 4.1 and task 4.2.
+  - Verify: the four counts match the logs of task 4.2.
   - Verify: the reason of each stale run names one of the four reasons.
   - Lane: light. A read-only count.
-- [ ] 5.2 The report to the PM. Send the report of D8 to the PM.
+- [ ] 5.2 The report to the PM. Send the report of task 4.4 to the PM.
   - Verify: the plan records the date of the send.
   - Lane: light. A text report.
-- [ ] 5.3 The hand-off of the open tasks. The open tasks of spec EV13 are
-  `opencode_executor` task 4.4 part 2 and task 4.3. Both wait for a grader
-  browser. They start now, in this order: 4.4 part 2, then 4.3.
-  - Verify: the plan records the date of the hand-off to the PM.
-  - Verify: `opencode_executor` task 4.4 part 1 (dry run and preflight, no
-    browser) has started, because it waits only for this spec.
-  - Lane: light. A text hand-off.
+- [x] 5.3 The hand-off of the open tasks. Not needed. The PM closed
+  `opencode_executor` on 2026-11-27.
+  - Lane: light. No change.
 
 ## Human gates
 
-- **The Chrome update.** Daniel runs `sudo apt-get install -y
-  google-chrome-stable` after task 3.1 starts. No role runs `sudo`. The
-  steps 2 and 3 of D7 wait for it.
-- **Each push.** A push of `docs/` publishes the public site. Daniel scans the
-  range and says "push" once per push. No role pushes without that word.
-- **The page text.** The PM gives the visible text of D5. Daniel then reads
-  the page and gives the look check. The pages change nothing before both
-  answers.
+- **Daniel's rule of 2026-11-27.** Only money, deletion, a new public claim or
+  date, and Thai text stop work. The PM order of 2026-11-28 16:35 covers the
+  publication of the regraded scores. Each changed public score is listed to
+  the PM (task 4.4).
 - **Any deletion.** The removal of the old rerun scripts, of the headless
   shell cache, and of any run directory waits for Daniel. This track deletes
   no file.
@@ -371,9 +510,8 @@ Marker use:
 - **The tests track labels itself current.** On the first live day, the
   rescore labels the legacy tests-track runs as current. This is correct,
   because their grade used no browser.
-- **The site shows the old numbers.** The export copies the persisted flags.
-  The site keeps the old scores as rankable until a run writes a new
-  `score.json`. The gate of D5 holds the page text.
-- **The Chrome update waits.** The owner runs the update with `sudo`. The
-  steps 2 and 3 of D7 wait for it, so the regrade runs on one browser
-  version.
+- **The daily rescore relabels a Chrome grade.** `rescore-doctor.sh` rewrites
+  the provenance with the current hashes and reuses the old results. A run with
+  a Chrome record passes its guard, so a rescore can mark an old grade as
+  current after the suite change of `05c1975`. Regrade the Chrome-graded runs
+  of task 4.1 before the next run day.
