@@ -36,11 +36,17 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
       Deleting the array would remove the only regression test of that engine, so the
       module now carries a comment saying it is an engine fixture and grades no
       candidate.
-- [~] 1.5 Add a second correct implementation under `reference-variant/` that differs in
-      every incidental choice: `datetime-local`, no placeholder option, a different card
-      element order, a wrapped `<h1>`. Grade it in CI. It must score 100. This is the
-      only mechanism that catches a reference-coupled criterion before a model does.
-      Done when the variant is graded by the harness grade path with no model call, and each criterion it fails is fixed in the grader or recorded as not a grading defect with the reason.
+- [x] 1.5 Add a second correct implementation under `reference-variant/` — implementation e19d014.
+      The variant differs in the due-date control, member options, card order, headings,
+      wording, form state, reads, history markup, and API flow.
+      `BENCH_SELFCHECK=full` now grades it through `run.sh`. Default meta mode does not.
+      No-model grades: `rv-1128-1` scored 97; `rv-1128-2` scored 100; `rv-1128-3` scored 100.
+      Final score: valid 100 with a current suite and no doctor warnings.
+      Grader fixes: none. `M.closeout` was a variant defect, not a grading defect.
+      The variant had changed fixture plan task 6 from "handling to" to "handling in".
+      It restored the task text. The plain-image doctor warning was also removed.
+      Meta command: `cd harness && BENCH_META=1 ./node_modules/.bin/vitest run tests/meta/reference-variant.test.ts --maxWorkers=1`.
+      Evidence: `measure/runs/harness_audit/green-1.5-evidence.log`.
 
 ## Phase 2: The defects that decide the ranking
 
