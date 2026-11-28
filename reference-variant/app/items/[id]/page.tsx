@@ -33,14 +33,14 @@ export default async function ItemDetailPage({ params }: { params: DetailParams 
       <section aria-labelledby="history-heading" className="space-y-3">
         <h2 id="history-heading" className="text-xl font-semibold">Borrowing record</h2>
         <Suspense fallback={<p className="text-slate-500">Loading borrowing record…</p>}>
-          <LoanHistory itemId={item.id} />
+          <HistoryRecords itemId={item.id} />
         </Suspense>
       </section>
 
       <section aria-label="Loan action" className="rounded-xl bg-slate-50 p-4">
         {openLoan === null ? (
           <Suspense fallback={<p className="text-slate-500">Loading borrower list…</p>}>
-            <CheckoutSection itemId={item.id} />
+            <BorrowerPicker itemId={item.id} />
           </Suspense>
         ) : (
           <ReturnButton itemId={item.id} />
@@ -50,12 +50,12 @@ export default async function ItemDetailPage({ params }: { params: DetailParams 
   );
 }
 
-async function CheckoutSection({ itemId }: { itemId: string }) {
+async function BorrowerPicker({ itemId }: { itemId: string }) {
   const members = await listMembers();
   return <CheckoutForm itemId={itemId} members={members} />;
 }
 
-async function LoanHistory({ itemId }: { itemId: string }) {
+async function HistoryRecords({ itemId }: { itemId: string }) {
   const [loans, members] = await Promise.all([listLoansForItem(itemId), listMembers()]);
   if (loans.length === 0) return <p className="text-slate-500">No borrowing record.</p>;
 
