@@ -1052,9 +1052,11 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     2026-11-28 (lines 18164 to 18172, `opencode-host-daily-4084570`), and
     2026-11-29 (lines 18174 to 18182, `opencode-host-daily-3228359`).
   - Lane: light. The live day runs on its own timer. This task records it.
-- [ ] 3.3 The close. Mark the track complete in `measure/tracks.md` and
+- [x] 3.3 `a7650b9` The close. Mark the track complete in `measure/tracks.md` and
   `metadata.json`. Send the result to the PM with a "facts changed" list.
   - Verify: the plan records the date of the send.
+  - Send date: 2026-11-29. The orchestrator sends the result to the PM with the
+    facts changed list.
   - Lane: light. A text report.
 
 ## Phase 4: The seed back-off and the quiet environ read (spec D16 to D18)

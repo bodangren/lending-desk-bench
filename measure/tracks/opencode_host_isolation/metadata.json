@@ -2,10 +2,10 @@
   "id": "opencode_host_isolation",
   "title": "OpenCode host isolation: no benchmark opencode uses the shared store",
   "type": "Bug",
-  "status": "in_progress",
+  "status": "done",
   "created": "2026-11-06",
   "estimated_tasks": 12,
-  "actual_tasks": null,
+  "actual_tasks": 24,
   "author_model": "claude-code/claude-opus-5-5[1m]#high",
   "lane": {
     "name": "light",
@@ -13,6 +13,7 @@
     "code_checker": "claude-code/claude-sonnet-5-5#high",
     "spec_checker": "volcengine-agent-plan/glm-latest#high"
   },
+  "completed": "2026-11-29",
   "deadline": "2026-11-07T23:00:00+07:00",
   "source": {
     "method": "owner request relayed by the PM orchestrator, 2026-11-06: \"FAULT, act now.\" Every opencode that the benchmark starts uses its own data folder, never ~/.local/share/opencode; a trap stops the server at the end of the job; a test fails when the harness opencode would use the shared data folder. Done when no benchmark opencode uses the shared database, and the 11-08 01:00 run uses the new setting.",
