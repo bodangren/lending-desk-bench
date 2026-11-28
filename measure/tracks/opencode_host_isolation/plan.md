@@ -999,7 +999,7 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     A later change by a process without the `BENCH_OPENCODE_JOB` marker is
     outside the bench.
   - Lane: light. A read-only check.
-- [ ] 3.2 The live day uses the new setting (spec FR-10). Read the part of
+- [~] 3.2 The live day uses the new setting (spec FR-10). Read the part of
   `reports/cron-daily.log` from the line `DAILY START 2026-11-08T01:00` to
   the next `DAILY END` line.
   Note (2026-11-08): the run of 2026-11-08 01:00 stopped at the seed (spec EV16). This task reads the first live day after Phase 4, Wed 2026-11-11 01:00 or later.

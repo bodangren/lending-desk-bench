@@ -2,6 +2,9 @@
 
 ## Tracks in progress
 
+- [~] **Track: OpenCode host isolation: no benchmark opencode uses the shared store** — Status: in progress (PM 2026-11-29)
+  - *Link: [opencode_host_isolation](./tracks/opencode_host_isolation/)*
+
 ## All tracks
 
 | ID | Title | Type | Status | Created |
@@ -12,7 +15,7 @@
 | bench_incremental | Incremental benchmark runs — new models and failures only | Feature | shelved, not done (PM 2026-11-27) | 2026-10-17 |
 | bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | shelved, not done (PM 2026-11-27) | 2026-09-24 |
 | bugfix_bench | Bug-fixing benchmark — lending_desk_bugfix | Feature | shelved, not done (PM 2026-11-27) | 2026-09-11 |
-| opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | shelved, not done (PM 2026-11-27) | 2026-11-06 |
+| opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | in progress | 2026-11-06 |
 | rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | shelved, not done (PM 2026-11-27) | 2026-10-25 |
 
 ## Backlog
@@ -40,9 +43,6 @@ These items have no date and no track yet.
 
 - [ ] **Track: Bug-fixing benchmark — lending_desk_bugfix** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [bugfix_bench](./tracks/bugfix_bench/)*
-
-- [ ] **Track: OpenCode host isolation: no benchmark opencode uses the shared store** — Status: shelved, not done (PM 2026-11-27)
-  - *Link: [opencode_host_isolation](./tracks/opencode_host_isolation/)*
 
 - [ ] **Track: Harder A–H criteria from interleavings, state sequences, and robustness variants** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [rigor_a_h](./tracks/rigor_a_h/)*

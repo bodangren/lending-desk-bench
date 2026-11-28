@@ -2,7 +2,7 @@
   "id": "opencode_host_isolation",
   "title": "OpenCode host isolation: no benchmark opencode uses the shared store",
   "type": "Bug",
-  "status": "shelved, not done (PM 2026-11-27)",
+  "status": "in_progress",
   "created": "2026-11-06",
   "estimated_tasks": 12,
   "actual_tasks": null,
