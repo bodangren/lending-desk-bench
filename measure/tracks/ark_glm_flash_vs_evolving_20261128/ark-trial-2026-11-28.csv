@@ -1,4 +1,4 @@
-run_id,model,role,score,pass,agent_wall_s,batch_wall_s,tokens,credits_est,plan_delta_raw,note
-a-glm-5-3-flash-ark1128p-r1 (void),glm-5.3-flash,build,,false,1179,1452,3323837,166,973,agent ran; provenance record failed on the Ark credential descriptor (fixed in 8c2fe90); run voided and repeated
-a-glm-5-3-flash-ark1128p-r1,glm-5.3-flash,build,96.2,true,1228,1569,3917551,196,1104,pilot; plan_delta_raw includes other sessions on the same plan
-a-doubao-seed-evolving-ark1128p-r1,doubao-seed-evolving,build,92.7,true,1123,1589,3650228,913,2015,pilot; plan_delta_raw includes other sessions on the same plan
+run_id,model,role,score,pass,agent_wall_s,batch_wall_s,tokens,credits_by_reading,credits_formula_estimate,note
+a-glm-5-3-flash-ark1128p-r1 (void),glm-5.3-flash,build,,false,1179,1452,3323837,972.8,166,agent ran; provenance record failed on the Ark credential descriptor (fix 8c2fe90); void and repeated. Reading 4578.93 to 5551.72
+a-glm-5-3-flash-ark1128p-r1,glm-5.3-flash,build,96.2,true,1228,1569,3917551,1104.4,196,pilot. Reading 1606.02 to 2710.41 (5h window)
+a-doubao-seed-evolving-ark1128p-r1,doubao-seed-evolving,build,92.7,true,1123,1589,3650228,2014.6,913,pilot. Reading 2710.41 to 4724.98 (5h window)
