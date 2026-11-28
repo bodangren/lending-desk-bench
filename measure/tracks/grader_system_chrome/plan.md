@@ -553,7 +553,7 @@ Marker use:
     02:00 to 06:00 stop. Every regrade call passed the lock check with rc 0,
     and no regrade held the daily lock.
   - Lane: light. A read-only check.
-- [~] 4.4 The score change report. For each regraded public run, record the
+- [x] 4.4 `728f4cd` The score change report. For each regraded public run, record the
   old total and the new total. The new total comes from the
   `[<run-id>] REGRADED total=<n> valid=<bool>` line of the log. The old total
   comes from the `score.json` of `artifacts.prev-<stamp>/`. List each run with
@@ -566,9 +566,110 @@ Marker use:
     `a-mimo-v2-6-pro-2026w48-r2` 71.5 to 96.2, and the pilot
     `a-hy4-flash-free-2026w48-r2` 71.9 to 96. All other regraded runs moved
     3.2 points or less.
+  - Full report (2026-11-29). Old total is the stored total before the regrade
+    (`artifacts.prev-20261128*/score.json`). New total is the `score.json` after
+    the regrade. The largest change of the other 79 runs is 3.2 points
+    (`b-mimo-v2-6-pro-2026w48-r2`, 96.8 to 100).
+    2026w48 build (18 runs): run id | old total | new total
+    a-hungerg-free-2026w48-r3 | 95.7 | 96.2
+    b-hungerg-free-2026w48-r3 | 100 | 100
+    a-mimo-v2-6-pro-2026w48-r3 | 94.7 | 96.2
+    b-mimo-v2-6-pro-2026w48-r3 | 98 | 98.5
+    a-hy4-flash-free-2026w48-r3 | 63.3 | 91.1
+    b-hy4-flash-free-2026w48-r3 | 97.2 | 98.7
+    a-hungerg-free-2026w48-r2 | 95.2 | 96.2
+    b-hungerg-free-2026w48-r2 | 99.5 | 100
+    a-mimo-v2-6-pro-2026w48-r2 | 71.5 | 96.2
+    b-mimo-v2-6-pro-2026w48-r2 | 96.8 | 100
+    a-hy4-flash-free-2026w48-r2 | 71.9 | 96
+    b-hy4-flash-free-2026w48-r2 | 97.7 | 98.7
+    a-hungerg-free-2026w48-r1 | 92.8 | 94.8
+    b-hungerg-free-2026w48-r1 | 95.8 | 95.2
+    a-mimo-v2-6-pro-2026w48-r1 | 94.5 | 95
+    b-mimo-v2-6-pro-2026w48-r1 | 98.5 | 100
+    a-hy4-flash-free-2026w48-r1 | 92.8 | 93.8
+    b-hy4-flash-free-2026w48-r1 | 98.3 | 98.7
+    2026w48 bugfix (2 runs): run id | old total | new total
+    bf-a-mimo-v2-6-pro-2026w48-r1 | 100 | 100
+    bf-b-mimo-v2-6-pro-2026w48-r1 | 100 | 100
+    2026w48 change (2 runs): run id | old total | new total
+    ch-a-mimo-v2-6-pro-2026w48-r1 | 100 | 100
+    ch-b-mimo-v2-6-pro-2026w48-r1 | 100 | 100
+    2026w47 build (6 runs): run id | old total | new total
+    a-qwen3-8-flash-2026w47-r3 | 94.8 | 96
+    b-qwen3-8-flash-2026w47-r3 | 98.2 | 98.7
+    a-qwen3-8-flash-2026w47-r2 | 95.2 | 96.2
+    b-qwen3-8-flash-2026w47-r2 | 97.5 | 98.5
+    a-qwen3-8-flash-2026w47-r1 | 96.5 | 97.5
+    b-qwen3-8-flash-2026w47-r1 | 97.5 | 98.7
+    2026w47 bugfix (2 runs): run id | old total | new total
+    bf-a-qwen3-8-flash-2026w47-r1 | 100 | 100
+    bf-b-qwen3-8-flash-2026w47-r1 | 100 | 100
+    2026w47 change (2 runs): run id | old total | new total
+    ch-a-qwen3-8-flash-2026w47-r1 | 100 | 100
+    ch-b-qwen3-8-flash-2026w47-r1 | 100 | 100
+    2026w46 build (18 runs): run id | old total | new total
+    a-mimo-v2-6-flash-2026w46-r3 | 95 | 96.2
+    b-mimo-v2-6-flash-2026w46-r3 | 95.8 | 97.3
+    a-muse-spark-1-3-contributor-2026w46-r3 | 93.7 | 94.7
+    b-muse-spark-1-3-contributor-2026w46-r3 | 92.8 | 94.8
+    a-glm-5-3-flash-2026w46-r3 | 89.8 | 92.4
+    b-glm-5-3-flash-2026w46-r3 | 96.7 | 98.7
+    a-mimo-v2-6-flash-2026w46-r2 | 91.7 | 93.7
+    b-mimo-v2-6-flash-2026w46-r2 | 97.8 | 98.7
+    a-muse-spark-1-3-contributor-2026w46-r2 | 93.8 | 94.8
+    b-muse-spark-1-3-contributor-2026w46-r2 | 95.2 | 97.2
+    a-glm-5-3-flash-2026w46-r2 | 90.8 | 92.3
+    b-glm-5-3-flash-2026w46-r2 | 93.8 | 94.8
+    a-mimo-v2-6-flash-2026w46-r1 | 95.7 | 96.2
+    b-mimo-v2-6-flash-2026w46-r1 | 97.7 | 98.7
+    a-muse-spark-1-3-contributor-2026w46-r1 | 93.8 | 94.8
+    b-muse-spark-1-3-contributor-2026w46-r1 | 96.2 | 97.2
+    a-glm-5-3-flash-2026w46-r1 | 89.9 | 92.4
+    b-glm-5-3-flash-2026w46-r1 | 93.4 | 94.9
+    2026w46 bugfix (12 runs): run id | old total | new total
+    bf-a-beam-free-2026w46-r1 | 100 | 100
+    bf-b-beam-free-2026w46-r1 | 100 | 100
+    bf-a-glm-5-3-flash-2026w46-r1 | 100 | 100
+    bf-b-glm-5-3-flash-2026w46-r1 | 100 | 100
+    bf-a-iceman-contributor-free-2026w46-r1 | 100 | 100
+    bf-b-iceman-contributor-free-2026w46-r1 | 100 | 100
+    bf-a-mimo-v2-6-flash-2026w46-r1 | 100 | 100
+    bf-b-mimo-v2-6-flash-2026w46-r1 | 100 | 100
+    bf-a-muse-spark-1-3-contributor-2026w46-r1 | 100 | 100
+    bf-b-muse-spark-1-3-contributor-2026w46-r1 | 100 | 100
+    bf-b-kimi-k2-7-code-2026w46-r1 | 96.4 | 96.4
+    bf-a-kimi-k2-7-code-2026w46-r1 | 92.9 | 92.9
+    2026w46 change (12 runs): run id | old total | new total
+    ch-a-beam-free-2026w46-r1 | 100 | 100
+    ch-b-beam-free-2026w46-r1 | 100 | 100
+    ch-a-glm-5-3-flash-2026w46-r1 | 100 | 100
+    ch-b-glm-5-3-flash-2026w46-r1 | 100 | 100
+    ch-a-iceman-contributor-free-2026w46-r1 | 100 | 100
+    ch-b-iceman-contributor-free-2026w46-r1 | 100 | 100
+    ch-a-kimi-k2-7-code-2026w46-r1 | 100 | 100
+    ch-b-kimi-k2-7-code-2026w46-r1 | 100 | 100
+    ch-a-mimo-v2-6-flash-2026w46-r1 | 100 | 100
+    ch-b-mimo-v2-6-flash-2026w46-r1 | 100 | 100
+    ch-a-muse-spark-1-3-contributor-2026w46-r1 | 100 | 100
+    ch-b-muse-spark-1-3-contributor-2026w46-r1 | 100 | 100
+    2026w43 build (8 runs): run id | old total | new total
+    a-deepseek-v4-1-flash-2026w43-r1 | 95 | 96
+    b-deepseek-v4-1-flash-2026w43-r1 | 97.7 | 98.7
+    a-gpt-6-luna-2026w43-r1 | 94.5 | 96
+    b-gpt-6-luna-2026w43-r1 | 98.7 | 98.7
+    a-minimax-m3-1-flash-2026w43-r1 | 91.1 | 92.4
+    b-minimax-m3-1-flash-2026w43-r1 | 96.7 | 98.7
+    a-claude-haiku-5-5-2026w43-r1 | 88.9 | 89.9
+    b-claude-haiku-5-5-2026w43-r1 | 97.7 | 98.7
+  - Runs with a change of more than 5 points (3 runs):
+    `a-hy4-flash-free-2026w48-r3` 63.3 to 91.1,
+    `a-mimo-v2-6-pro-2026w48-r2` 71.5 to 96.2,
+    `a-hy4-flash-free-2026w48-r2` 71.9 to 96.
   - Verify: the report reaches the PM, with each changed public score listed.
+  - Evidence: report under this task.
   - Lane: light. A text report.
-- [ ] 4.5 The publication. Rebuild the site data with the export the harness
+- [~] 4.5 The publication. Rebuild the site data with the export the harness
   uses: `python3 harness/export-site-data.py` and
   `python3 harness/generate-model-pages.py`, then the model-guide builder
   (`harness/model-guide/update.sh`, preview first, then `--docs --no-commit`),
