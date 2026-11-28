@@ -536,7 +536,7 @@ Marker use:
     `STALE-PROVENANCE`: they have no `results.json`, so the rescore skips them.
     The 35 legacy Pi runs stay `STALE-PROVENANCE` (task 4.1).
   - Lane: light. One heavy run for each regrade.
-- [ ] 4.3 The daily lock and the timer. A regrade must not hold the daily
+- [x] 4.3 `4f61c1e` The daily lock and the timer. A regrade must not hold the daily
   lock, because a held lock would stop the live day. Before each regrade
   call, run `flock -n <lock> true`. The lock path is `BENCH_DAILY_LOCK`,
   which defaults to `$ROOT/.tmp/weekly-cron.lock`
@@ -549,6 +549,9 @@ Marker use:
     regrade call.
   - Verify: no regrade held the daily lock, and no regrade started within 4
     hours of a live day.
+  - The PM order of 2026-11-28 22:35 removed the 4-hour timer rule and the
+    02:00 to 06:00 stop. Every regrade call passed the lock check with rc 0,
+    and no regrade held the daily lock.
   - Lane: light. A read-only check.
 - [~] 4.4 The score change report. For each regraded public run, record the
   old total and the new total. The new total comes from the
