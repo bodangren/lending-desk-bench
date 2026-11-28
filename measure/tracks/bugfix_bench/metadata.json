@@ -2,7 +2,7 @@
   "id": "bugfix_bench",
   "title": "Bug-fixing benchmark — lending_desk_bugfix",
   "type": "Feature",
-  "status": "shelved, not done (PM 2026-11-27)",
+  "status": "in_progress",
   "created": "2026-09-11",
   "estimated_tasks": 33,
   "actual_tasks": 33,

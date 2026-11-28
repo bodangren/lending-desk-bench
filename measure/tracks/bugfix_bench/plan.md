@@ -201,7 +201,7 @@ registry as rotation headroom beyond the set.
       DONE. `SCORING.md` gains the bugfix section (variant, provenance
       schema 5, axes, calibration, validity). `README.md` documents the
       second track and the bugfix layout rows.
-- [ ] 6.5 Run the first cohort.
+- [~] 6.5 Run the first cohort.
       BLOCKED on operator resources: a quiet host window, `OPENCODE_API_KEY`,
       and rootless Podman. This host never settles and the sandbox has no
       Podman; run `BENCH_TRACK=bugfix ARMS="a b" ./harness/batch.sh` on the
