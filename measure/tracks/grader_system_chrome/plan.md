@@ -429,7 +429,7 @@ Marker use:
     do-a-hy4-flash-free-2026w48-r1 | docs-and-ops | 100
     do-a-hungerg-free-2026w48-r1 | docs-and-ops | 100
   - Lane: light. A read-only list.
-- [~] 4.2 The regrade. Regrade the 82 runs of task 4.1, newest first, one run
+- [x] 4.2 `4f61c1e` The regrade. Regrade the 82 runs of task 4.1, newest first, one run
   for each `heavy-run.sh` call, with no model call. Keep the rule of task 4.3
   before each call.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh <run-id>'`.
@@ -525,6 +525,16 @@ Marker use:
     a-claude-haiku-5-5-2026w43-r1 | lock rc 0 | REGRADED total=89.9 valid=true | old 88.9
     b-claude-haiku-5-5-2026w43-r1 | lock rc 0 | REGRADED total=98.7 valid=true | old 97.7
   - The 82 runs of the list are regraded, all `valid=true`. After the last run, `WEEK=all ./rescore-doctor.sh` ran through `heavy-run.sh` (log `.tmp/gsc/logs/rescore-doctor.log`). The totals of the 82 runs did not change in the rescore.
+  - Result (2026-11-29): the regrade records are in this task, committed in
+    `4f61c1e`. The per-run logs are `.tmp/gsc/logs/<run-id>.log`, the lists
+    `.tmp/gsc/block.txt` and `.tmp/gsc/block2.txt`.
+  - Freshness (`harness/score-freshness.ts --many` through `heavy-run.sh`, on the
+    145 runs of task 4.1): each of the 82 regraded runs is `TRUSTED`. The 6
+    `docs-and-ops` runs and 19 of the 22 `tests` runs are `TRUSTED` after the
+    rescore. The 3 other `tests` runs (`tt-a-glm-5-3-flash-2026w46-r1`,
+    `tt-a-kimi-k2-7-code-2026w46-r1`, `tt-a-mimo-v2-6-flash-2026w46-r1`) stay
+    `STALE-PROVENANCE`: they have no `results.json`, so the rescore skips them.
+    The 35 legacy Pi runs stay `STALE-PROVENANCE` (task 4.1).
   - Lane: light. One heavy run for each regrade.
 - [ ] 4.3 The daily lock and the timer. A regrade must not hold the daily
   lock, because a held lock would stop the live day. Before each regrade
@@ -540,7 +550,7 @@ Marker use:
   - Verify: no regrade held the daily lock, and no regrade started within 4
     hours of a live day.
   - Lane: light. A read-only check.
-- [ ] 4.4 The score change report. For each regraded public run, record the
+- [~] 4.4 The score change report. For each regraded public run, record the
   old total and the new total. The new total comes from the
   `[<run-id>] REGRADED total=<n> valid=<bool>` line of the log. The old total
   comes from the `score.json` of `artifacts.prev-<stamp>/`. List each run with
