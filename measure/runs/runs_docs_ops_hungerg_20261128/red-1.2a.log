@@ -4,7 +4,7 @@ status: pass
 track: runs_docs_ops_hungerg_20261128
 phase: Phase 1: Docs and ops runs for hungerg-free
 baseline_sha: 1725af6
-commits: RED_SHA
+commits: 10abaf068293492d5fa2d982b3cd4309c47b9424
 tests_run: harness/tests/meta/docs-ops-wording.test.ts via heavy-run.sh (vitest run tests/meta/docs-ops-wording.test.ts --configLoader native --maxWorkers=1); summary Tests 3 failed | 44 passed (47); the 3 failures are the F13 restoration cases, each failing with D.sections.rollback in grade.failed as required; all 5 F13 guards and every other test in the file pass
 files_changed: harness/tests/meta/docs-ops-wording.test.ts (new describe review-a r6 F13: 3 restoration cases, 5 guard cases); measure/tracks/runs_docs_ops_hungerg_20261128/plan.md (task 1.2a evidence); measure/runs/runs_docs_ops_hungerg_20261128/red-1.2a.log (this log)
 plan_updates: task 1.2a holds the test file path, the failing case names and the Red commit sha, marked [x] with the sha on the line
