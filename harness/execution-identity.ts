@@ -46,7 +46,9 @@ type AgentIdentity = {
   runtime_flags_sha256: string;
   cli_flags: string[];
   cli_flags_sha256: string;
-  credential: { integration: "opencode"; method: "oauth"; refresh_token_delivered: false };
+  credential:
+    | { integration: "opencode"; method: "oauth"; refresh_token_delivered: false }
+    | { integration: "volcengine-agent-plan"; method: "standalone"; refresh_token_delivered: false };
 };
 type NotInvokedIdentity = {
   schema: 2;
@@ -250,8 +252,11 @@ function validateOpencodeIdentity(identity: JsonRecord, expected: { runId: strin
   errors.push(...validateSkills(identity, expected.arm));
   errors.push(...validateFlagEvidence(identity));
   const credential = isRecord(identity.credential) ? identity.credential : undefined;
-  if (!credential || credential.integration !== "opencode" || credential.method !== "oauth" ||
-      credential.refresh_token_delivered !== false) {
+  const credentialKnown = credential !== undefined && (
+    (credential.integration === "opencode" && credential.method === "oauth") ||
+    (credential.integration === "volcengine-agent-plan" && credential.method === "standalone")
+  );
+  if (!credential || !credentialKnown || credential.refresh_token_delivered !== false) {
     errors.push("execution credential descriptor is invalid");
   }
   return errors;

@@ -98,6 +98,12 @@ describe("resolved executor identity", () => {
       expect(validateExecutionIdentity({ ...identity, runtime_flags: [...identity.runtime_flags, "--unsafe"] }, { runId: input.runId, arm: "b", mode: "agent" })).not.toEqual([]);
       expect(validateExecutionIdentity({ ...identity, cli_flags_sha256: "" }, { runId: input.runId, arm: "b", mode: "agent" })).not.toEqual([]);
       expect(validateExecutionIdentity({ ...identity, cli_flags: [...identity.cli_flags, "--no-session"] }, { runId: input.runId, arm: "b", mode: "agent" })).not.toEqual([]);
+      // The Ark Agent Plan descriptor is valid; a mixed or delivered-refresh descriptor is not.
+      const ark = { integration: "volcengine-agent-plan", method: "standalone", refresh_token_delivered: false };
+      expect(validateExecutionIdentity({ ...identity, credential: ark }, { runId: input.runId, arm: "b", mode: "agent" })).toEqual([]);
+      expect(validateExecutionIdentity({ ...identity, credential: { ...ark, method: "oauth" } }, { runId: input.runId, arm: "b", mode: "agent" })).not.toEqual([]);
+      expect(validateExecutionIdentity({ ...identity, credential: { ...ark, integration: "opencode" } }, { runId: input.runId, arm: "b", mode: "agent" })).not.toEqual([]);
+      expect(validateExecutionIdentity({ ...identity, credential: { ...ark, refresh_token_delivered: true } }, { runId: input.runId, arm: "b", mode: "agent" })).not.toEqual([]);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }
