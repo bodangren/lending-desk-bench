@@ -215,7 +215,7 @@ Marker use:
   `daily_model_schedule` on 2026-11-27 ("not needed"), so that track runs no
   day check.
   - Lane: light. This task records the evidence.
-- [~] 2.3 The pilot regrade. Regrade 1 public build run,
+- [x] 2.3 The pilot regrade. Regrade 1 public build run,
   `a-hy4-flash-free-2026w48-r2`, which shows 71.9 on the site now. The grader
   change `05c1975` changes the suite hash, so every stored grade before it is
   stale. Record the old total, the new total, and the wall time of the run.
@@ -231,6 +231,22 @@ Marker use:
     old total comes from the `score.json` of `artifacts.prev-<stamp>/`.
   - Verify: this task holds the wall time of one regrade. The time of task 4.2
     uses that value.
+  - Result (2026-11-28, checked before the call: lock free, timer 5 h 28 min away).
+    Start 19:31:36, end 19:36:41 (+07). The log holds
+    `[a-hy4-flash-free-2026w48-r2] REGRADED total=96 valid=true adherence=1`.
+    Old total 71.9 (`artifacts.prev-20261128193524/score.json`). New total 96.
+  - Wall time: 305 s for the whole call. The wait before the regrade started
+    was about 224 s (start to the `artifacts.prev` stamp 19:35:24). The regrade
+    itself took 77 s (`grading_seconds` 69).
+  - `artifacts.prev-20261128193524/` exists. `execution-identity.json` and
+    `session.json.gz` have the same checksums before and after, and no new
+    transcript was written (the files date from 2026-11-28 12:13 and 12:20).
+    The call made no model call.
+  - The new total is 1.5 points above the diagnostic proof `rv-1128-hy4-1`
+    (94.5). Both runs fail only `M.closeout` and `P.dedup-item`. The gap is the
+    quality axis (0.983 against 0.833, from the doctor warnings). The change from
+    the old total is the 13 criteria and 3 probes of the due-date locator
+    (`05c1975`), which now pass.
   - Lane: light. One heavy run.
 - [x] 2.4 (commit 2672686) The rescore SKIP lines. `grep -c "graded before the system Chrome move; regrade needed" reports/cron-daily.log` printed 139 on 2026-11-28 (above 0).
   - Lane: light. A read-only check.
@@ -260,82 +276,82 @@ Marker use:
     collection record) over 9 recent runs of 2026w48 and `rv-1128-*`. The
     list of 82 runs is 1.8 to 4.9 hours of grade time before graft and doctor
     time. The pilot of task 2.3 sets the real value.
-  - To regrade (82 runs, newest first). Columns: run id, track, public total now.
+  - To regrade (82 runs, newest first). Columns: run id, track, stored total of the run before the regrade.
     a-hungerg-free-2026w48-r3 | build | 95.7
-    b-hungerg-free-2026w48-r3 | build | 100.0
+    b-hungerg-free-2026w48-r3 | build | 100
     a-mimo-v2-6-pro-2026w48-r3 | build | 94.7
-    b-mimo-v2-6-pro-2026w48-r3 | build | 98.0
-    a-hy4-flash-free-2026w48-r3 | build | 92.8
-    b-hy4-flash-free-2026w48-r3 | build | 98.3
+    b-mimo-v2-6-pro-2026w48-r3 | build | 98
+    a-hy4-flash-free-2026w48-r3 | build | 63.3
+    b-hy4-flash-free-2026w48-r3 | build | 97.2
     a-hungerg-free-2026w48-r2 | build | 95.2
     b-hungerg-free-2026w48-r2 | build | 99.5
-    a-mimo-v2-6-pro-2026w48-r2 | build | 94.5
-    b-mimo-v2-6-pro-2026w48-r2 | build | 98.0
+    a-mimo-v2-6-pro-2026w48-r2 | build | 71.5
+    b-mimo-v2-6-pro-2026w48-r2 | build | 96.8
     a-hy4-flash-free-2026w48-r2 | build | 71.9
     b-hy4-flash-free-2026w48-r2 | build | 97.7
     a-hungerg-free-2026w48-r1 | build | 92.8
     b-hungerg-free-2026w48-r1 | build | 95.8
     a-mimo-v2-6-pro-2026w48-r1 | build | 94.5
-    b-mimo-v2-6-pro-2026w48-r1 | build | 96.8
-    a-hy4-flash-free-2026w48-r1 | build | 63.3
-    b-hy4-flash-free-2026w48-r1 | build | 97.2
-    bf-a-mimo-v2-6-pro-2026w48-r1 | bugfix | 100.0
-    bf-b-mimo-v2-6-pro-2026w48-r1 | bugfix | 100.0
-    ch-a-mimo-v2-6-pro-2026w48-r1 | change | 100.0
-    ch-b-mimo-v2-6-pro-2026w48-r1 | change | 100.0
-    a-qwen3-8-flash-2026w47-r3 | build | 96.5
+    b-mimo-v2-6-pro-2026w48-r1 | build | 98.5
+    a-hy4-flash-free-2026w48-r1 | build | 92.8
+    b-hy4-flash-free-2026w48-r1 | build | 98.3
+    bf-a-mimo-v2-6-pro-2026w48-r1 | bugfix | 100
+    bf-b-mimo-v2-6-pro-2026w48-r1 | bugfix | 100
+    ch-a-mimo-v2-6-pro-2026w48-r1 | change | 100
+    ch-b-mimo-v2-6-pro-2026w48-r1 | change | 100
+    a-qwen3-8-flash-2026w47-r3 | build | 94.8
     b-qwen3-8-flash-2026w47-r3 | build | 98.2
     a-qwen3-8-flash-2026w47-r2 | build | 95.2
     b-qwen3-8-flash-2026w47-r2 | build | 97.5
-    a-qwen3-8-flash-2026w47-r1 | build | 94.8
+    a-qwen3-8-flash-2026w47-r1 | build | 96.5
     b-qwen3-8-flash-2026w47-r1 | build | 97.5
-    bf-a-qwen3-8-flash-2026w47-r1 | bugfix | 100.0
-    bf-b-qwen3-8-flash-2026w47-r1 | bugfix | 100.0
-    ch-a-qwen3-8-flash-2026w47-r1 | change | 100.0
-    ch-b-qwen3-8-flash-2026w47-r1 | change | 100.0
-    a-mimo-v2-6-flash-2026w46-r3 | build | 95.0
-    b-mimo-v2-6-flash-2026w46-r3 | build | 97.8
-    a-muse-spark-1-3-contributor-2026w46-r3 | build | 93.8
-    b-muse-spark-1-3-contributor-2026w46-r3 | build | 96.2
-    a-glm-5-3-flash-2026w46-r3 | build | 90.8
+    bf-a-qwen3-8-flash-2026w47-r1 | bugfix | 100
+    bf-b-qwen3-8-flash-2026w47-r1 | bugfix | 100
+    ch-a-qwen3-8-flash-2026w47-r1 | change | 100
+    ch-b-qwen3-8-flash-2026w47-r1 | change | 100
+    a-mimo-v2-6-flash-2026w46-r3 | build | 95
+    b-mimo-v2-6-flash-2026w46-r3 | build | 95.8
+    a-muse-spark-1-3-contributor-2026w46-r3 | build | 93.7
+    b-muse-spark-1-3-contributor-2026w46-r3 | build | 92.8
+    a-glm-5-3-flash-2026w46-r3 | build | 89.8
     b-glm-5-3-flash-2026w46-r3 | build | 96.7
-    a-mimo-v2-6-flash-2026w46-r2 | build | 95.0
-    b-mimo-v2-6-flash-2026w46-r2 | build | 97.7
+    a-mimo-v2-6-flash-2026w46-r2 | build | 91.7
+    b-mimo-v2-6-flash-2026w46-r2 | build | 97.8
     a-muse-spark-1-3-contributor-2026w46-r2 | build | 93.8
     b-muse-spark-1-3-contributor-2026w46-r2 | build | 95.2
-    a-glm-5-3-flash-2026w46-r2 | build | 89.9
+    a-glm-5-3-flash-2026w46-r2 | build | 90.8
     b-glm-5-3-flash-2026w46-r2 | build | 93.8
-    a-mimo-v2-6-flash-2026w46-r1 | build | 91.7
+    a-mimo-v2-6-flash-2026w46-r1 | build | 95.7
     b-mimo-v2-6-flash-2026w46-r1 | build | 97.7
     a-muse-spark-1-3-contributor-2026w46-r1 | build | 93.8
-    b-muse-spark-1-3-contributor-2026w46-r1 | build | 92.8
+    b-muse-spark-1-3-contributor-2026w46-r1 | build | 96.2
     a-glm-5-3-flash-2026w46-r1 | build | 89.9
     b-glm-5-3-flash-2026w46-r1 | build | 93.4
-    bf-a-beam-free-2026w46-r1 | bugfix | 100.0
-    bf-b-beam-free-2026w46-r1 | bugfix | 100.0
-    bf-a-glm-5-3-flash-2026w46-r1 | bugfix | 100.0
-    bf-b-glm-5-3-flash-2026w46-r1 | bugfix | 100.0
-    bf-a-iceman-contributor-free-2026w46-r1 | bugfix | 100.0
-    bf-b-iceman-contributor-free-2026w46-r1 | bugfix | 100.0
-    bf-a-mimo-v2-6-flash-2026w46-r1 | bugfix | 100.0
-    bf-b-mimo-v2-6-flash-2026w46-r1 | bugfix | 100.0
-    bf-a-muse-spark-1-3-contributor-2026w46-r1 | bugfix | 100.0
-    bf-b-muse-spark-1-3-contributor-2026w46-r1 | bugfix | 100.0
+    bf-a-beam-free-2026w46-r1 | bugfix | 100
+    bf-b-beam-free-2026w46-r1 | bugfix | 100
+    bf-a-glm-5-3-flash-2026w46-r1 | bugfix | 100
+    bf-b-glm-5-3-flash-2026w46-r1 | bugfix | 100
+    bf-a-iceman-contributor-free-2026w46-r1 | bugfix | 100
+    bf-b-iceman-contributor-free-2026w46-r1 | bugfix | 100
+    bf-a-mimo-v2-6-flash-2026w46-r1 | bugfix | 100
+    bf-b-mimo-v2-6-flash-2026w46-r1 | bugfix | 100
+    bf-a-muse-spark-1-3-contributor-2026w46-r1 | bugfix | 100
+    bf-b-muse-spark-1-3-contributor-2026w46-r1 | bugfix | 100
     bf-b-kimi-k2-7-code-2026w46-r1 | bugfix | 96.4
     bf-a-kimi-k2-7-code-2026w46-r1 | bugfix | 92.9
-    ch-a-beam-free-2026w46-r1 | change | 100.0
-    ch-b-beam-free-2026w46-r1 | change | 100.0
-    ch-a-glm-5-3-flash-2026w46-r1 | change | 100.0
-    ch-b-glm-5-3-flash-2026w46-r1 | change | 100.0
-    ch-a-iceman-contributor-free-2026w46-r1 | change | 100.0
-    ch-b-iceman-contributor-free-2026w46-r1 | change | 100.0
-    ch-a-kimi-k2-7-code-2026w46-r1 | change | 100.0
-    ch-b-kimi-k2-7-code-2026w46-r1 | change | 100.0
-    ch-a-mimo-v2-6-flash-2026w46-r1 | change | 100.0
-    ch-b-mimo-v2-6-flash-2026w46-r1 | change | 100.0
-    ch-a-muse-spark-1-3-contributor-2026w46-r1 | change | 100.0
-    ch-b-muse-spark-1-3-contributor-2026w46-r1 | change | 100.0
-    a-deepseek-v4-1-flash-2026w43-r1 | build | 95.0
+    ch-a-beam-free-2026w46-r1 | change | 100
+    ch-b-beam-free-2026w46-r1 | change | 100
+    ch-a-glm-5-3-flash-2026w46-r1 | change | 100
+    ch-b-glm-5-3-flash-2026w46-r1 | change | 100
+    ch-a-iceman-contributor-free-2026w46-r1 | change | 100
+    ch-b-iceman-contributor-free-2026w46-r1 | change | 100
+    ch-a-kimi-k2-7-code-2026w46-r1 | change | 100
+    ch-b-kimi-k2-7-code-2026w46-r1 | change | 100
+    ch-a-mimo-v2-6-flash-2026w46-r1 | change | 100
+    ch-b-mimo-v2-6-flash-2026w46-r1 | change | 100
+    ch-a-muse-spark-1-3-contributor-2026w46-r1 | change | 100
+    ch-b-muse-spark-1-3-contributor-2026w46-r1 | change | 100
+    a-deepseek-v4-1-flash-2026w43-r1 | build | 95
     b-deepseek-v4-1-flash-2026w43-r1 | build | 97.7
     a-gpt-6-luna-2026w43-r1 | build | 94.5
     b-gpt-6-luna-2026w43-r1 | build | 98.7
@@ -345,13 +361,13 @@ Marker use:
     b-claude-haiku-5-5-2026w43-r1 | build | 97.7
   - Cannot be regraded (35 runs). Reason for each: legacy Pi executor.
     `regrade-run.sh` prints one `SKIP` line and keeps every artifact byte.
-    b-mimo-v2-6-flash-2026w39 | build | 95.0
+    b-mimo-v2-6-flash-2026w39 | build | 95
     a-mimo-v2-6-flash-2026w39 | build | 7.9
     b-qwen3-8-flash-2026w38 | build | 30.3
     b-muse-spark-1-3-contributor-2026w38 | build | 93.7
-    b-mimo-v2-5-2026w38 | build | 91.0
+    b-mimo-v2-5-2026w38 | build | 91
     b-longcat-2-0-2026w38 | build | 76.9
-    b-gpt-5-6-luna-2026w38 | build | 95.0
+    b-gpt-5-6-luna-2026w38 | build | 95
     b-glm-5-3-flash-2026w38 | build | 57.2
     a-muse-spark-1-3-contributor-2026w38 | build | 92.7
     a-muse-spark-1-2-contributor-2026w38 | build | 89.3
@@ -359,22 +375,22 @@ Marker use:
     a-longcat-2-0-2026w38 | build | 90.1
     a-glm-5-3-flash-2026w38 | build | 90.4
     a-deepseek-v4-1-flash-2026w38 | build | 90.9
-    bf-a-qwen3-8-flash-2026w37 | bugfix | 100.0
+    bf-a-qwen3-8-flash-2026w37 | bugfix | 100
     bf-a-qwen3-7-plus-2026w37 | bugfix | 89.4
     bf-a-qwen3-6-plus-2026w37 | bugfix | 92.7
-    bf-a-omen-alpha-2026w37 | bugfix | 100.0
+    bf-a-omen-alpha-2026w37 | bugfix | 100
     bf-a-muse-spark-1-3-contributor-2026w37 | bugfix | 98.9
-    bf-a-muse-spark-1-2-contributor-2026w37 | bugfix | 100.0
+    bf-a-muse-spark-1-2-contributor-2026w37 | bugfix | 100
     bf-a-minimax-m3-2026w37 | bugfix | 96.4
     bf-a-minimax-m2-7-2026w37 | bugfix | 58.7
     bf-a-minimax-m2-5-2026w37 | bugfix | 85.3
     bf-a-mimo-v2-5-pro-2026w37 | bugfix | 76.9
     bf-a-mimo-v2-5-2026w37 | bugfix | 96.4
-    bf-a-longcat-2-0-2026w37 | bugfix | 86.0
-    bf-a-gpt-5-6-luna-2026w37 | bugfix | 100.0
+    bf-a-longcat-2-0-2026w37 | bugfix | 86
+    bf-a-gpt-5-6-luna-2026w37 | bugfix | 100
     bf-a-glm-5-3-flash-2026w37 | bugfix | 96.4
-    bf-a-deepseek-v4-flash-vision-exp-2026w37 | bugfix | 100.0
-    bf-a-deepseek-v4-1-flash-2026w37 | bugfix | 100.0
+    bf-a-deepseek-v4-flash-vision-exp-2026w37 | bugfix | 100
+    bf-a-deepseek-v4-1-flash-2026w37 | bugfix | 100
     b-qwen3-7-plus-2026w37 | build | 62.7
     a-qwen3-8-flash-2026w37 | build | 94.3
     a-qwen3-7-plus-2026w37 | build | 62.8
@@ -389,31 +405,31 @@ Marker use:
     tt-b-qwen3-8-flash-2026w47-r1 | tests | 28.3
     tt-a-qwen3-8-flash-2026w47-r1 | tests | 96.8
     tt-b-muse-spark-1-3-contributor-2026w46-r1 | tests | 92.5
-    tt-b-mimo-v2-6-flash-2026w46-r1 | tests | 96.0
+    tt-b-mimo-v2-6-flash-2026w46-r1 | tests | 96
     tt-b-kimi-k2-7-code-2026w46-r1 | tests | 98.5
     tt-b-iceman-contributor-free-2026w46-r1 | tests | 89.9
     tt-b-glm-5-3-flash-2026w46-r1 | tests | 87.7
     tt-a-muse-spark-1-3-contributor-2026w46-r1 | tests | 90.9
-    tt-a-mimo-v2-6-flash-2026w46-r1 | tests | 0.0
-    tt-a-kimi-k2-7-code-2026w46-r1 | tests | 0.0
+    tt-a-mimo-v2-6-flash-2026w46-r1 | tests | 0
+    tt-a-kimi-k2-7-code-2026w46-r1 | tests | 0
     tt-a-iceman-contributor-free-2026w46-r1 | tests | 80.1
-    tt-a-glm-5-3-flash-2026w46-r1 | tests | 0.0
+    tt-a-glm-5-3-flash-2026w46-r1 | tests | 0
     tt-a-beam-free-2026w46-r1 | tests | 96.3
     tt-b-muse-spark-1-2-contributor-2026w43-r1 | tests | 93.9
     tt-b-mimo-v2-5-2026w43-r1 | tests | 91.6
-    tt-b-deepseek-v4-1-flash-2026w43-r1 | tests | 98.0
+    tt-b-deepseek-v4-1-flash-2026w43-r1 | tests | 98
     tt-a-minimax-m3-1-flash-2026w43-r1 | tests | 93.2
     tt-a-gpt-6-luna-2026w43-r1 | tests | 93.5
     tt-a-gpt-5-6-luna-2026w43-r1 | tests | 79.4
     tt-a-claude-haiku-5-5-2026w43-r1 | tests | 98.7
-    do-b-muse-spark-1-3-contributor-2026w48-r1 | docs-and-ops | 100.0
-    do-b-hy4-flash-free-2026w48-r1 | docs-and-ops | 100.0
-    do-b-hungerg-free-2026w48-r1 | docs-and-ops | 100.0
+    do-b-muse-spark-1-3-contributor-2026w48-r1 | docs-and-ops | 100
+    do-b-hy4-flash-free-2026w48-r1 | docs-and-ops | 100
+    do-b-hungerg-free-2026w48-r1 | docs-and-ops | 98.3
     do-a-muse-spark-1-3-contributor-2026w48-r1 | docs-and-ops | 99.3
-    do-a-hy4-flash-free-2026w48-r1 | docs-and-ops | 100.0
-    do-a-hungerg-free-2026w48-r1 | docs-and-ops | 100.0
+    do-a-hy4-flash-free-2026w48-r1 | docs-and-ops | 100
+    do-a-hungerg-free-2026w48-r1 | docs-and-ops | 100
   - Lane: light. A read-only list.
-- [ ] 4.2 The regrade. Regrade the 82 runs of task 4.1, newest first, one run
+- [~] 4.2 The regrade. Regrade the 82 runs of task 4.1, newest first, one run
   for each `heavy-run.sh` call, with no model call. Keep the rule of task 4.3
   before each call.
   - Command: `HEAVY_MIN_AVAIL_MB=1500 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && ./regrade-run.sh <run-id>'`.
@@ -423,6 +439,53 @@ Marker use:
   - Verify: `harness/score-freshness.ts --many` on the 4.1 list shows no
     `STALE-PROVENANCE` for a regraded run, a `tests` run, or a `docs-and-ops` run.
   - Verify: this task holds the OK, FAIL, and SKIP counts.
+  - Record of each call (run id | lock check | timer left | REGRADED line | old total). The lock check and the timer read of task 4.3 are in each line.
+    a-hy4-flash-free-2026w48-r2 | lock rc 0 | timer left 5h28m | REGRADED total=96 valid=true | old 71.9 (pilot, task 2.3)
+    a-hungerg-free-2026w48-r3 | lock rc 0 | timer left 5h22m | REGRADED total=96.2 valid=true adherence=1 | old 95.7 | wall 102s
+    b-hungerg-free-2026w48-r3 | lock rc 0 | timer left 5h20m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 217s
+    a-mimo-v2-6-pro-2026w48-r3 | lock rc 0 | timer left 5h16m | REGRADED total=96.2 valid=true adherence=1 | old 94.7 | wall 264s
+    b-mimo-v2-6-pro-2026w48-r3 | lock rc 0 | timer left 5h12m | REGRADED total=98.5 valid=true adherence=1 | old 98 | wall 149s
+    a-hy4-flash-free-2026w48-r3 | lock rc 0 | timer left 5h10m | REGRADED total=91.1 valid=true adherence=0.5 | old 63.3 | wall 75s
+    b-hy4-flash-free-2026w48-r3 | lock rc 0 | timer left 5h08m | REGRADED total=98.7 valid=true adherence=1 | old 97.2 | wall 85s
+    a-hungerg-free-2026w48-r2 | lock rc 0 | timer left 5h07m | REGRADED total=96.2 valid=true adherence=1 | old 95.2 | wall 91s
+    b-hungerg-free-2026w48-r2 | lock rc 0 | timer left 5h05m | REGRADED total=100 valid=true adherence=1 | old 99.5 | wall 96s
+    a-mimo-v2-6-pro-2026w48-r2 | lock rc 0 | timer left 5h04m | REGRADED total=96.2 valid=true adherence=1 | old 71.5 | wall 87s
+    b-mimo-v2-6-pro-2026w48-r2 | lock rc 0 | timer left 5h02m | REGRADED total=100 valid=true adherence=1 | old 96.8 | wall 72s
+    b-hy4-flash-free-2026w48-r2 | lock rc 0 | timer left 5h01m | REGRADED total=98.7 valid=true adherence=1 | old 97.7 | wall 73s
+    a-hungerg-free-2026w48-r1 | lock rc 0 | timer left 5h00m | REGRADED total=94.8 valid=true adherence=1 | old 92.8 | wall 109s
+    b-hungerg-free-2026w48-r1 | lock rc 0 | timer left 4h58m | REGRADED total=95.2 valid=true adherence=1 | old 95.8 | wall 81s
+    a-mimo-v2-6-pro-2026w48-r1 | lock rc 0 | timer left 4h57m | REGRADED total=95 valid=true adherence=1 | old 94.5 | wall 83s
+    b-mimo-v2-6-pro-2026w48-r1 | lock rc 0 | timer left 4h55m | REGRADED total=100 valid=true adherence=1 | old 98.5 | wall 79s
+    a-hy4-flash-free-2026w48-r1 | lock rc 0 | timer left 4h54m | REGRADED total=93.8 valid=true adherence=1 | old 92.8 | wall 96s
+    b-hy4-flash-free-2026w48-r1 | lock rc 0 | timer left 4h52m | REGRADED total=98.7 valid=true adherence=1 | old 98.3 | wall 91s
+    bf-a-mimo-v2-6-pro-2026w48-r1 | lock rc 0 | timer left 4h51m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 103s
+    bf-b-mimo-v2-6-pro-2026w48-r1 | lock rc 0 | timer left 4h49m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 145s
+    ch-a-mimo-v2-6-pro-2026w48-r1 | lock rc 0 | timer left 4h47m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 120s
+    ch-b-mimo-v2-6-pro-2026w48-r1 | lock rc 0 | timer left 4h45m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 314s
+    a-qwen3-8-flash-2026w47-r3 | lock rc 0 | timer left 4h40m | REGRADED total=96 valid=true adherence=1 | old 94.8 | wall 244s
+    b-qwen3-8-flash-2026w47-r3 | lock rc 0 | timer left 4h36m | REGRADED total=98.7 valid=true adherence=1 | old 98.2 | wall 85s
+    a-qwen3-8-flash-2026w47-r2 | lock rc 0 | timer left 4h34m | REGRADED total=96.2 valid=true adherence=1 | old 95.2 | wall 106s
+    b-qwen3-8-flash-2026w47-r2 | lock rc 0 | timer left 4h32m | REGRADED total=98.5 valid=true adherence=1 | old 97.5 | wall 73s
+    a-qwen3-8-flash-2026w47-r1 | lock rc 0 | timer left 4h31m | REGRADED total=97.5 valid=true adherence=1 | old 96.5 | wall 91s
+    b-qwen3-8-flash-2026w47-r1 | lock rc 0 | timer left 4h30m | REGRADED total=98.7 valid=true adherence=1 | old 97.5 | wall 181s
+    bf-a-qwen3-8-flash-2026w47-r1 | lock rc 0 | timer left 4h27m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 103s
+    bf-b-qwen3-8-flash-2026w47-r1 | lock rc 0 | timer left 4h25m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 124s
+    ch-a-qwen3-8-flash-2026w47-r1 | lock rc 0 | timer left 4h23m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 141s
+    ch-b-qwen3-8-flash-2026w47-r1 | lock rc 0 | timer left 4h20m | REGRADED total=100 valid=true adherence=1 | old 100 | wall 121s
+    a-mimo-v2-6-flash-2026w46-r3 | lock rc 0 | timer left 4h18m | REGRADED total=96.2 valid=true adherence=1 | old 95 | wall 118s
+    b-mimo-v2-6-flash-2026w46-r3 | lock rc 0 | timer left 4h16m | REGRADED total=97.3 valid=true adherence=1 | old 95.8 | wall 107s
+    a-muse-spark-1-3-contributor-2026w46-r3 | lock rc 0 | timer left 4h15m | REGRADED total=94.7 valid=true adherence=1 | old 93.7 | wall 92s
+    b-muse-spark-1-3-contributor-2026w46-r3 | lock rc 0 | timer left 4h13m | REGRADED total=94.8 valid=true adherence=1 | old 92.8 | wall 74s
+    a-glm-5-3-flash-2026w46-r3 | lock rc 0 | timer left 4h12m | REGRADED total=92.4 valid=true adherence=0.5 | old 89.8 | wall 91s
+    b-glm-5-3-flash-2026w46-r3 | lock rc 0 | timer left 4h10m | REGRADED total=98.7 valid=true adherence=1 | old 96.7 | wall 95s
+    a-mimo-v2-6-flash-2026w46-r2 | lock rc 0 | timer left 4h09m | REGRADED total=93.7 valid=true adherence=1 | old 91.7 | wall 84s
+    b-mimo-v2-6-flash-2026w46-r2 | lock rc 0 | timer left 4h07m | REGRADED total=98.7 valid=true adherence=1 | old 97.8 | wall 100s
+    a-muse-spark-1-3-contributor-2026w46-r2 | lock rc 0 | timer left 4h06m | REGRADED total=94.8 valid=true adherence=1 | old 93.8 | wall 82s
+    b-muse-spark-1-3-contributor-2026w46-r2 | lock rc 0 | timer left 4h04m | REGRADED total=97.2 valid=true adherence=1 | old 95.2 | wall 80s
+    a-glm-5-3-flash-2026w46-r2 | lock rc 0 | timer left 4h03m | REGRADED total=92.3 valid=true adherence=0.5 | old 90.8 | wall 80s
+    b-glm-5-3-flash-2026w46-r2 | lock rc 0 | timer left 4h02m | REGRADED total=94.8 valid=true adherence=0.5 | old 93.8 | wall 124s
+    a-mimo-v2-6-flash-2026w46-r1 | lock rc 0 | timer left 4h00m | REGRADED total=96.2 valid=true adherence=1 | old 95.7 | wall 174s
+  - Stopped 2026-11-28 21:02 (+07): the timer left was 3h57m before `b-mimo-v2-6-flash-2026w46-r1`. 45 runs are done (including the pilot), 37 remain. No FAIL and no SKIP. The list continues after 06:00 (+07).
   - Lane: light. One heavy run for each regrade.
 - [ ] 4.3 The daily lock and the timer. A regrade must not hold the daily
   lock, because a held lock would stop the live day. Before each regrade
@@ -447,6 +510,10 @@ Marker use:
     regraded run.
   - Verify: the list of runs with a change of more than 5 points matches the
     report.
+  - First block (2026-11-28): `a-hy4-flash-free-2026w48-r3` 63.3 to 91.1,
+    `a-mimo-v2-6-pro-2026w48-r2` 71.5 to 96.2, and the pilot
+    `a-hy4-flash-free-2026w48-r2` 71.9 to 96. All other regraded runs moved
+    3.2 points or less.
   - Verify: the report reaches the PM, with each changed public score listed.
   - Lane: light. A text report.
 - [ ] 4.5 The publication. Rebuild the site data with the export the harness
