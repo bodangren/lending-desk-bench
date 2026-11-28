@@ -2,14 +2,14 @@
 
 ## Tracks in progress
 
-- [~] **Track: Docs and ops runs for hungerg-free** — Status: blocked, waits for the F13 grader fix (PM 2026-11-28)
+- [~] **Track: Docs and ops runs for hungerg-free**
   - *Link: [runs_docs_ops_hungerg_20261128](tracks/runs_docs_ops_hungerg_20261128/)*
 
 ## All tracks
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
-| runs_docs_ops_hungerg_20261128 | Docs and ops runs for hungerg-free | Chore | blocked, waits for the F13 grader fix | 2026-11-28 |
+| runs_docs_ops_hungerg_20261128 | Docs and ops runs for hungerg-free | Chore | in progress | 2026-11-28 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
 | runs_go_new_models_20261127 | Current runs for new Go models | Chore | shelved, not done (PM 2026-11-27) | 2026-11-27 |

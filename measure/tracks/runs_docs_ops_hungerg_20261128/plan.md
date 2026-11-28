@@ -15,7 +15,13 @@ The docs-and-ops track holds runs for the hy4-flash-free and muse routes. The hu
   The live freshness checker `harness/score-freshness.ts --many` called both scores `TRUSTED` and rankable. The candidate contract, the provenance, the score, the host and the collection read current.
   The temp export of `harness/export-site-data.py` wrote the docs-and-ops track with the two new rows of `opencode-go/hungerg-free`.
 
-- [b] 1.2 Check the documentation grading of those runs by hand against the open grader findings F10 to F14 in `tech-debt.md`, section `2026-11-27 guide_docs_ops`. The arm B run carries a wrong verdict on `D.sections.rollback`, and the deduction moves the total. — deferred:grader-fix
+- [~] 1.2a Add Red tests: the release restoration check of `harness/docs-and-ops/grade-docs-ops.ts` accepts the contract fact sentence of `harness/docs-and-ops/model-visible/track/spec.md:36` ("Rollback restores the previous release and does not delete loan records.") and keeps rejecting inversions (keeps the current release; does not restore the previous release; restores the previous release by deleting loan records). Done when the tests fail on the current grader for the contract sentence only.
+
+- [ ] 1.2b Repair the release recogniser (finding F13 of `tech-debt.md`, the case of 1.2a). Done when the 1.2a tests and the existing docs-and-ops grader tests pass.
+
+- [ ] 1.2c Regrade every docs-and-ops run under `runs/` with `harness/regrade-run.sh` and record the totals. Done when each score reads fresh, trusted and rankable, and the plan holds the totals.
+
+- [ ] 1.2 Check the documentation grading of those runs by hand against the open grader findings F10 to F14 in `tech-debt.md`, section `2026-11-27 guide_docs_ops`. The arm B run carries a wrong verdict on `D.sections.rollback`, and the deduction moves the total. Continues after task 1.2c.
   Done when every verdict of the release, rollback, loan-record preservation and loan-state boundary checks is correct for the text of the run, with the deciding sentence quoted for each check.
   Arm A, `do-a-hungerg-free-2026w48-r1`. Release restoration, verdict correct: the runbook says "Restore the previous release artifact and its deployment configuration using the platform rollback procedure."
   Arm A. Loan-record preservation, verdict correct: the runbook says "Do not delete or reset loan records as part of the rollback."
@@ -27,5 +33,5 @@ The docs-and-ops track holds runs for the hy4-flash-free and muse routes. The hu
   The wrong verdict moves the total. The documentation axis of arm B holds 22 of 23 checks, and the total is 98.3. With the check passed the total is 100.
   The runs stay unpublished until the recogniser is repaired. The owner is the grader repair. The file is `harness/docs-and-ops/grade-docs-ops.ts` and the finding is F13 of `tech-debt.md`.
 
-- [b] 1.3 Publish the runs through the normal publication. The task waits on task 1.2, because the grader deduction of arm B is wrong. — deferred:grader-fix
+- [ ] 1.3 Publish the runs through the normal publication. The task waits on task 1.2, because the grader deduction of arm B is wrong. Continues after task 1.2c.
   Done when the published paths hold the new docs-and-ops rows, the live data matches the commit bytes, and the plan holds the publication commit and the push range.
