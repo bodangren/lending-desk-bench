@@ -65,7 +65,7 @@ passing on a date, year, or any digit in the section.
 
 **Guard:** `tests/mir_p1.sh` A3 (canonical). This repo's analog: parse the labeled
 vitest summary (`Test Files  N passed`, `Tests  N passed`, `N failed`) and the JSON
-report, never a digit grep (see `measure/tracks/bench_v2/test-strategy.md` §4).
+report, never a digit grep (see `measure/archive/bench_v2/test-strategy.md` §4).
 
 ---
 
@@ -157,7 +157,7 @@ line containing "never" is silently dropped.
 
 **Guard:** `tests/mir_p1.sh` A7 (canonical). This repo's analog: the frozen
 `test:meta:logic` exclude list in `harness/package.json`; growing it to reach green is
-forbidden (`measure/tracks/bench_v2/test-strategy.md` §10).
+forbidden (`measure/archive/bench_v2/test-strategy.md` §10).
 
 ---
 
@@ -245,7 +245,7 @@ tests.
 **Guard:** the `BENCH_TRACK=change` adversarial full-suite run (R2), plus the artifact
 guard `harness/tests/meta/selfcheck-env.test.ts` (added at Red `d94235b`), plus the
 `BENCH_TRACK=bugfix` spot check. Caught occurrence root-caused 2026-10-11; full
-diagnosis in `measure/tracks/bench_v2/test-strategy.md` §1–2.
+diagnosis in `measure/archive/bench_v2/test-strategy.md` §1–2.
 
 ---
 
