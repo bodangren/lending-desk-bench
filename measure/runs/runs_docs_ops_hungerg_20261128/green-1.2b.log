@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: green
+status: pass
+track: runs_docs_ops_hungerg_20261128
+phase: Phase 1: Docs and ops runs for hungerg-free
+commits: pending implementation commit
+tests_run: Red replay through heavy-run.sh exited 1 on the F13 restoration cases. The Green gate for docs-ops-wording exited 0. The separate Green gates for docs-ops-grader, docs-ops-integration, and docs-ops-registration each exited 0. Each command used `./node_modules/.bin/vitest run tests/meta/<file>.test.ts --configLoader native --maxWorkers=1`. Typecheck was not run because the harness has no tsconfig or typecheck script.
+files_changed: harness/docs-and-ops/grade-docs-ops.ts; measure/tracks/runs_docs_ops_hungerg_20261128/plan.md; measure/runs/runs_docs_ops_hungerg_20261128/green-1.2b.log
+plan_updates: task 1.2b stays [~] in the implementation commit. The plan-evidence commit records the completion SHA.
+known_failures: none
+handoff: The rollback check now tests each conjunct for negation. The preservation check accepts negated destruction verbs while the deletion rejection stays unchanged. Immutable phase_base_sha: 1725af62c6b464ff4aebb4d2774c67fcefa4c455. role_base_sha: b0edb6d6aa8be45bf94217375acfdced3d7f3063. Red commit: 10abaf068293492d5fa2d982b3cd4309c47b9424.
+END_MEASURE_AGENT_RESULT

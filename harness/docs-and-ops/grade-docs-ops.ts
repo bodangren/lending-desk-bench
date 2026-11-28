@@ -143,15 +143,18 @@ function restoresRelease(body: string): boolean {
   for (const clause of factClauses(body)) {
     if (!RESTORE_ACTION.test(clause)) continue;
     if (NEW_RELEASE.test(clause)) return false;
-    if (NEGATION.test(clause)) continue;
-    if (RESTORE_TARGET.test(clause) && RELEASE_OBJECT.test(clause)) valid = true;
+    for (const conjunct of clause.split(/\s+and\s+|,\s+/)) {
+      if (!RESTORE_ACTION.test(conjunct)) continue;
+      if (NEGATION.test(conjunct)) continue;
+      if (RESTORE_TARGET.test(conjunct) && RELEASE_OBJECT.test(conjunct)) valid = true;
+    }
   }
   return valid;
 }
 
 const LOAN_SUBJECT = /\bloans?\b/;
 const DESTROY_RECORDS = /\b(?:delete|deletes|deleted|truncate|truncates|reset|drop|wipe)\b/;
-const PRESERVE_RECORDS = /\b(?:keep|keeps|kept|preserve|preserves|preserved|retain|retained|intact|untouched|not delete|does not delete|do not delete|must not delete|never delete|no delete)\b/;
+const PRESERVE_RECORDS = /\b(?:keep|keeps|kept|preserve|preserves|preserved|retain|retained|intact|untouched|(?:(?:do|does|must|will|should)\s+)?not\s+(?:delete|deletes|deleted|drop|drops|truncate|truncates|reset|resets|wipe|wipes)|(?:never|no)\s+(?:delete|deletes|deleted|drop|drops|truncate|truncates|reset|resets|wipe|wipes))\b/;
 
 function preservesLoanRecords(body: string): boolean {
   let valid = false;
