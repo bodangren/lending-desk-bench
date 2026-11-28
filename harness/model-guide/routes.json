@@ -54,5 +54,19 @@
     "kind": "plan",
     "quota_provider": "openai",
     "quota_source": "codex"
+  },
+  {
+    "family": "GLM Flash",
+    "route": "volcengine-agent-plan/glm-5.3-flash",
+    "kind": "plan",
+    "quota_provider": "volcengine-agent-plan",
+    "quota_source": "arkcli"
+  },
+  {
+    "family": "Doubao Seed Evolving",
+    "route": "volcengine-agent-plan/doubao-seed-evolving",
+    "kind": "plan",
+    "quota_provider": "volcengine-agent-plan",
+    "quota_source": "arkcli"
   }
 ]

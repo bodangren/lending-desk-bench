@@ -2,6 +2,7 @@
 # The credential helper of the review routes (spec D14; plan task 4.6).
 #
 #   provider-credential.sh seed <provider>
+#   provider-credential.sh export <provider>
 #   provider-credential.sh scan-values <provider>
 #
 # `seed` reads the shared store with one `opencode auth export` call, retried
@@ -11,6 +12,10 @@
 # `opencode auth import`. Two active entries of one `integrationID` refuse as
 # ambiguous. The payload goes over the pipe of the import call; it never
 # touches a disk. stdout is empty.
+#
+# `export` reads the job store and prints the access-only payload of
+# `<provider>` on stdout, one JSON array, one line. The refresh value is
+# `inert`. The runner feeds that payload to the isolated agent container.
 #
 # `scan-values` reads the job store, selects the entry of `<provider>` by
 # `integrationID` and `active`, and prints its values, one per line: the
@@ -27,8 +32,8 @@ set -euo pipefail
 
 MODE="${1:-}"
 PROVIDER="${2:-}"
-if [ "$MODE" != "seed" ] && [ "$MODE" != "scan-values" ]; then
-  echo "provider-credential: the mode must be seed or scan-values" >&2
+if [ "$MODE" != "seed" ] && [ "$MODE" != "export" ] && [ "$MODE" != "scan-values" ]; then
+  echo "provider-credential: the mode must be seed, export, or scan-values" >&2
   exit 2
 fi
 if [ -z "$PROVIDER" ]; then
@@ -158,8 +163,8 @@ process.stdin.on("end", () => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     fail("the entry of provider " + provider + " holds no value");
   }
-  if (mode === "seed") {
-    // The job store holds the access value only; the refresh value is inert
+  if (mode === "seed" || mode === "export") {
+    // The payload holds the access value only; the refresh value is inert
     // (spec D14, the same rule as the Console credential helper).
     process.stdout.write(JSON.stringify([{ ...entry, value: { ...value, refresh: "inert" } }]) + "\n");
     return;
@@ -254,12 +259,25 @@ if [ "$MODE" = "seed" ]; then
   exit 0
 fi
 
-# scan-values reads the job store and prints the values of one entry.
+# The job-store read below serves both export and scan-values.
 rc=0
 out="$(run_opencode auth export --standalone 2>"$ERR_FILE")" || rc=$?
 if [ "$rc" -ne 0 ]; then
   refuse "the job store read failed"
 fi
+if [ "$MODE" = "export" ]; then
+  sel_rc=0
+  payload="$(printf '%s\n' "$out" | MG_PROVIDER="$PROVIDER" MG_MODE=export node -e "$SELECT_JS" 2>"$SEL_FILE")" || sel_rc=$?
+  if [ "$sel_rc" -ne 0 ]; then
+    if grep -qi "ambiguous" "$SEL_FILE" 2>/dev/null; then
+      refuse "the store holds two active entries of provider $PROVIDER: ambiguous"
+    fi
+    refuse "the store holds no active entry of provider $PROVIDER"
+  fi
+  printf '%s\n' "$payload"
+  exit 0
+fi
+# scan-values reads the job store and prints the values of one entry.
 sel_rc=0
 values="$(printf '%s\n' "$out" | MG_PROVIDER="$PROVIDER" MG_MODE=scan node -e "$SELECT_JS" 2>"$SEL_FILE")" || sel_rc=$?
 if [ "$sel_rc" -ne 0 ]; then

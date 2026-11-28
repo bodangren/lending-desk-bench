@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -169,5 +169,84 @@ describe("runner safety contract", () => {
     expect(run).toContain('--mount "type=bind,src=$CAND,dst=/workspace,rw"');
     expect(armB, "Arm B block is missing").toBeDefined();
     expect(armB).not.toContain("--no-context-files");
+  });
+});
+
+describe("Ark provider routes in the OpenCode runner", () => {
+  const HELPER = resolve(HARNESS, "ark-provider.sh");
+  const ROUTES = [
+    "volcengine-agent-plan/glm-5.3-flash",
+    "volcengine-agent-plan/doubao-seed-evolving",
+  ];
+
+  function isTrialRoute(provider: string, model: string): number | null {
+    return spawnSync("/bin/bash", [
+      "-c",
+      `source ${JSON.stringify(HELPER)}; ark_is_route "$1" "$2"`,
+      "ark", provider, model,
+    ], { encoding: "utf8" }).status;
+  }
+
+  it("accepts the two trial routes and rejects another volcengine model", () => {
+    for (const route of ROUTES) {
+      const [provider, model] = route.split("/");
+      expect(isTrialRoute(provider, model), route).toBe(0);
+    }
+    expect(isTrialRoute("volcengine-agent-plan", "glm-5.4"), "glm-5.4 is not a trial route").toBe(1);
+    expect(isTrialRoute("opencode-go", "glm-5.3-flash"), "the Go route is not an Ark route").toBe(1);
+  });
+
+  it("uses the Ark quota helper and skips the Console window check", () => {
+    const run = readFileSync(resolve(HARNESS, "run.sh"), "utf8");
+    expect(run, "the guard must be provider and model aware").toContain('! ark_is_route "$PROVIDER" "$MODEL"');
+    expect(run, "the Ark branch must call arkcli").toContain("ark_quota_check");
+    expect(run, "the Ark branch must not call the Go window check").toMatch(
+      /if ark_is_route "\$PROVIDER" "\$MODEL"; then\s*\n\s*if ! ark_quota_check/,
+    );
+  });
+
+  it("stages only the Ark credential and scans it for leaks", () => {
+    const run = readFileSync(resolve(HARNESS, "run.sh"), "utf8");
+    expect(run).toContain('provider-credential.sh" seed "$ARK_PROVIDER"');
+    expect(run).toContain('provider-credential.sh" export "$ARK_PROVIDER" > "$payload"');
+    expect(run).toContain('provider-credential.sh" scan-values "$ARK_PROVIDER"');
+    expect(run).toContain("scan_credential_leak \"$scan_values_json\"");
+    expect(run).toContain('CREDENTIAL_LEAK_REASON="Ark credential reached run output"');
+  });
+
+  it("records the Ark provider in execution provenance", () => {
+    const run = readFileSync(resolve(HARNESS, "run.sh"), "utf8");
+    expect(run).toContain('credential_json=\'{"integration":"volcengine-agent-plan"');
+    expect(run).toContain('ark_provider="$PROVIDER"');
+    expect(run).toContain('...(E.ARK_PROVIDER ? { provider: E.ARK_PROVIDER } : {})');
+  });
+
+  it("reads the 5h and weekly windows from arkcli and stops at 95 %", () => {
+    const temp = mkdtempSync(resolve(tmpdir(), "ark-quota-"));
+    const bin = resolve(temp, "bin");
+    mkdirSync(bin);
+    const cli = resolve(bin, "arkcli");
+    const payload = (five: number, week: number) => JSON.stringify({
+      items: [{ product: "agent-plan", periods: [
+        { label: "5h", percent: five },
+        { label: "weekly", percent: week },
+        { label: "monthly", percent: 1 },
+      ] }],
+    });
+    const env = { ...process.env, PATH: `${bin}:${process.env.PATH ?? ""}` };
+    try {
+      writeFileSync(cli, `#!${process.execPath}\nprocess.stdout.write(${JSON.stringify(payload(10, 20))});\n`);
+      chmodSync(cli, 0o755);
+      const good = spawnSync("/bin/bash", ["-c", `source ${JSON.stringify(HELPER)}; ark_quota_check`], { encoding: "utf8", env });
+      expect(good.status, good.stderr).toBe(0);
+      writeFileSync(cli, `#!${process.execPath}\nprocess.stdout.write(${JSON.stringify(payload(96, 20))});\n`);
+      const fiveBlocked = spawnSync("/bin/bash", ["-c", `source ${JSON.stringify(HELPER)}; ark_quota_check`], { encoding: "utf8", env });
+      expect(fiveBlocked.status, fiveBlocked.stderr).toBe(1);
+      writeFileSync(cli, `#!${process.execPath}\nprocess.stdout.write(${JSON.stringify(payload(10, 96))});\n`);
+      const weekBlocked = spawnSync("/bin/bash", ["-c", `source ${JSON.stringify(HELPER)}; ark_quota_check`], { encoding: "utf8", env });
+      expect(weekBlocked.status, weekBlocked.stderr).toBe(1);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
   });
 });

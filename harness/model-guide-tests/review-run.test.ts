@@ -5905,3 +5905,30 @@ describe("P4b row 4.16r6 deadline expiry and newest partial in the review runner
     }
   }, 60_000);
 });
+
+describe("Ark trial routes in the review runner", () => {
+  const ROUTES = [
+    "volcengine-agent-plan/glm-5.3-flash",
+    "volcengine-agent-plan/doubao-seed-evolving",
+  ];
+
+  it("routes.json holds both Ark trial routes with the Ark quota provider", () => {
+    const rows = JSON.parse(readFileSync(join(HARNESS, "model-guide", "routes.json"), "utf8"));
+    for (const route of ROUTES) {
+      const row = rows.find((entry: { route?: unknown }) => entry.route === route);
+      expect(row, `${route} must be a review route`).toBeDefined();
+      expect(row.kind, route).toBe("plan");
+      expect(row.quota_provider, route).toBe("volcengine-agent-plan");
+      expect(row.quota_source, route).toBe("arkcli");
+    }
+  });
+
+  it("the pilot allowlist holds both Ark routes and the region rule stays Go-only", () => {
+    const source = readFileSync(RUNNER_SOURCE, "utf8");
+    for (const route of ROUTES) {
+      expect(source, `${route} must be an allowed pilot route`).toContain(route);
+    }
+    const exclusions = source.match(/volcengine-agent-plan\/\*\) return 1 ;;/g) ?? [];
+    expect(exclusions, "both region checks must exclude the Ark provider").toHaveLength(2);
+  });
+});

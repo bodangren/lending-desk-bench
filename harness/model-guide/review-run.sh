@@ -351,7 +351,7 @@ fi
 # Review A F15). A non-pilot route keeps the isolated path below.
 is_pilot_route() {
   case "$ROUTE" in
-    claude-agent/sonnet#high|opencode-go/deepseek-v4.1-flash|opencode-go/hy4-flash-free#high|opencode-go/mimo-v2.6-flash|opencode-go/muse-spark-1.3-contributor#high|opencode-go/hungerg-free|openai/gpt-6.1-sol#high)
+    claude-agent/sonnet#high|opencode-go/deepseek-v4.1-flash|opencode-go/hy4-flash-free#high|opencode-go/mimo-v2.6-flash|opencode-go/muse-spark-1.3-contributor#high|opencode-go/hungerg-free|openai/gpt-6.1-sol#high|volcengine-agent-plan/glm-5.3-flash|volcengine-agent-plan/doubao-seed-evolving)
       return 0 ;;
   esac
   case "$ROUTE" in
@@ -1139,6 +1139,7 @@ process.stdout.write(id + "\t" + shown);
 # only, like is_region_error of the isolated path.
 is_live_region_error() {
   case "$ROUTE" in
+    volcengine-agent-plan/*) return 1 ;;
     opencode-go/*) ;;
     *) return 1 ;;
   esac
@@ -1560,6 +1561,7 @@ error_line_of() {
 is_region_error() {
   local err_path="$1" out_path="${2:-}" text=""
   case "$ROUTE" in
+    volcengine-agent-plan/*) return 1 ;;
     opencode-go/*) ;;
     *) return 1 ;;
   esac

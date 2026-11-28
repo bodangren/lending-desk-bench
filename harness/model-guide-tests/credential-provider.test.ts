@@ -1004,3 +1004,38 @@ describe("SR the seed reason of an empty or foreign store", () => {
     }
   });
 });
+
+describe("C12 the access-only export for the container payload", () => {
+  it("C12 export prints one access-only payload of the named provider", () => {
+    const fixture = buildFixture();
+    try {
+      const seed = runHelper(fixture, ["seed", PROVIDER_A]);
+      expect(seed.status, `${seed.stdout}\n${seed.stderr}`).toBe(0);
+      const result = runHelper(fixture, ["export", PROVIDER_A]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = result.stdout.trim().split("\n");
+      expect(lines, "the export must be one JSON line").toHaveLength(1);
+      const payload = JSON.parse(lines[0]);
+      expect(Array.isArray(payload)).toBe(true);
+      expect(payload).toHaveLength(1);
+      expect(payload[0].integrationID).toBe(PROVIDER_A);
+      expect(payload[0].value.access).toBe(ACCESS_A);
+      expect(payload[0].value.refresh).toBe("inert");
+      for (const value of [ACCESS_B, ORG_B, ACCESS_C, ORG_C]) {
+        expect(result.stdout, `a foreign value ${value} reached the container payload`).not.toContain(value);
+      }
+    } finally {
+      fixture.close();
+    }
+  });
+
+  it("C12 export of a provider with no entry refuses with no payload", () => {
+    const fixture = buildFixture();
+    try {
+      const result = runHelper(fixture, ["export", PROVIDER_NONE]);
+      expectRefusal(result, "export");
+    } finally {
+      fixture.close();
+    }
+  });
+});

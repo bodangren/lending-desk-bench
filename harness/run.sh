@@ -22,10 +22,14 @@ ARM="${3:?}"
 RUN_ID="${4:?}"
 validate_run_id "$RUN_ID"
 case "$ARM" in a|b) ;; *) echo "arm must be a or b" >&2; exit 2 ;; esac
-# Pi is removed (FR-10): the only agent provider is opencode-go. `local` keeps
-# the overlay/calibration path; no other provider may start an agent. Runtime
-# probes (ports/container/dependency-copy) are harness checks, not agent runs.
-if [ "$PROVIDER" != "opencode-go" ] && [ "$PROVIDER" != "local" ] && [ "${AGENT_SKIP:-0}" != "1" ] && [ -z "${BENCH_RUNTIME_PROBE:-}" ]; then
+# shellcheck source=ark-provider.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ark-provider.sh"
+# The Ark Agent Plan runs the same OpenCode container path as opencode-go, but
+# only the two trial routes are allowed. `local` keeps the overlay/calibration
+# path; runtime probes are harness checks, not agent runs.
+if [ "$PROVIDER" != "opencode-go" ] && [ "$PROVIDER" != "local" ] && \
+   ! ark_is_route "$PROVIDER" "$MODEL" && \
+   [ "${AGENT_SKIP:-0}" != "1" ] && [ -z "${BENCH_RUNTIME_PROBE:-}" ]; then
   echo "unsupported agent provider: $PROVIDER (only opencode-go runs agents)" >&2
   exit 2
 fi
@@ -88,7 +92,7 @@ source "$H/opencode-host.sh"
 WORK="$ROOT/runs/$RUN_ID"
 OUT="$WORK/artifacts"
 CAND="$WORK/candidate"
-if [ "$PROVIDER" = "opencode-go" ]; then
+if [ "$PROVIDER" = "opencode-go" ] || ark_is_route "$PROVIDER" "$MODEL"; then
   # O1: the run uses the model's default variant; THINKING never reaches the agent.
   THINKING="default"
 else
@@ -341,12 +345,19 @@ write_overlay_identity() {
 write_opencode_identity() {
   local opencode_path="$1" opencode_sha256="$2" opencode_version="$3" image_ref="$4" \
     rg_path="$5" rg_sha256="$6" rg_version="$7" runtime_flags_json="$8" cli_flags_json="$9"
+  local credential_json='{"integration":"opencode","method":"oauth","refresh_token_delivered":false}'
+  local ark_provider=""
+  if ark_is_route "$PROVIDER" "$MODEL"; then
+    credential_json='{"integration":"volcengine-agent-plan","method":"standalone","refresh_token_delivered":false}'
+    ark_provider="$PROVIDER"
+  fi
   RUN_ID="$RUN_ID" ARM="$ARM" MODEL_REF="$PROVIDER/$MODEL" IMAGE_REF="$image_ref" \
     OPENCODE_PATH="$opencode_path" OPENCODE_SHA256="$opencode_sha256" OPENCODE_VERSION="$opencode_version" \
     CONFIG_PATH="$OUT/executor/opencode.json" ENTRY_PATH="$H/opencode-entry.sh" \
     RG_PATH="$rg_path" RG_SHA256="$rg_sha256" RG_VERSION="$rg_version" \
     SKILLS_DIR="$OUT/executor/skills" \
     RUNTIME_FLAGS_JSON="$runtime_flags_json" CLI_FLAGS_JSON="$cli_flags_json" \
+    CREDENTIAL_JSON="$credential_json" ARK_PROVIDER="$ark_provider" \
     COHORT_ID="${BENCH_EXECUTOR_COHORT_ID:-}" \
     IDENTITY_PATH="$OUT/execution-identity.json" COHORT_PATH="$OUT/executor-cohort.json" \
     BINARY_RECORD_PATH="$OUT/executor/opencode-binary.json" \
@@ -389,7 +400,8 @@ const identity = {
   skills, skill_tree_sha256: sha(JSON.stringify(skills)),
   runtime_flags: runtimeFlags, runtime_flags_sha256: sha(JSON.stringify(runtimeFlags)),
   cli_flags: cliFlags, cli_flags_sha256: sha(JSON.stringify(cliFlags)),
-  credential: { integration: "opencode", method: "oauth", refresh_token_delivered: false },
+  credential: JSON.parse(E.CREDENTIAL_JSON),
+  ...(E.ARK_PROVIDER ? { provider: E.ARK_PROVIDER } : {}),
 };
 fs.writeFileSync(E.IDENTITY_PATH, JSON.stringify(identity, null, 2) + "\n");
 const cohort = {
@@ -620,7 +632,7 @@ run_agent_container() {
 
   # FR-4: resolve the catalog route and write the config before FR-3 staging.
   # Catalog models keep their exact bytes. A route failure exits the script.
-  local model_missing=0 model_entry_file="" config_tmp config_path catalog_rc=0 config_generator catalog_scanner
+  local model_missing=0 model_entry_file="" config_tmp config_path catalog_rc=0 config_generator catalog_scanner provider_entry=0
   config_path="$OUT/executor/opencode.json"
   config_tmp="$OUT/executor/opencode.json.tmp"
   mkdir -p "$OUT/executor" || { echo "could not create OpenCode config directory" >&2; exit 2; }
@@ -860,10 +872,30 @@ stream.on("end", () => {
   esac
   if [ "$model_missing" = "1" ]; then
     model_entry_file="$OUT/executor/model-entry.json"
+    if ark_is_route "$PROVIDER" "$MODEL"; then
+      provider_entry=1
+      if ! ark_cfg="$(ark_config_file)" ark_ref="$PROVIDER/$MODEL" node -e '
+const fs = require("node:fs");
+let doc;
+try { doc = JSON.parse(fs.readFileSync(process.env.ark_cfg, "utf8")); } catch { process.exit(2); }
+const ref = process.env.ark_ref;
+const separator = ref.indexOf("/");
+const providerID = ref.slice(0, separator);
+const modelID = ref.slice(separator + 1);
+const entry = doc && doc.providers && doc.providers[providerID];
+if (!entry || !entry.models || !Object.hasOwn(entry.models, modelID)) process.exit(3);
+process.stdout.write(JSON.stringify(entry) + "\n");
+' > "$model_entry_file"; then
+        rm -f "$model_entry_file"
+        echo "[$RUN_ID] the opencode config does not list $PROVIDER/$MODEL" >&2
+        exit 2
+      fi
+    else
     if ! BENCH_MODEL_API_BASE="${BENCH_MODEL_API_BASE:-http://127.0.0.1:38307}" \
       python3 -I "$H/model-api-refs.py" "$PROVIDER/$MODEL" > "$model_entry_file"; then
       rm -f "$model_entry_file"
       exit 2
+    fi
     fi
   fi
   config_generator='
@@ -888,14 +920,19 @@ if (process.env.MODEL_MISSING === "1") {
   const separator = process.env.MODEL_REF.indexOf("/");
   const providerID = process.env.MODEL_REF.slice(0, separator);
   const modelID = process.env.MODEL_REF.slice(separator + 1);
-  const entry = JSON.parse(fs.readFileSync(process.env.MODEL_ENTRY_PATH, "utf8"));
-  config.providers = { [providerID]: { models: { [modelID]: entry } } };
+  if (process.env.PROVIDER_ENTRY === "1") {
+    const provider = JSON.parse(fs.readFileSync(process.env.MODEL_ENTRY_PATH, "utf8"));
+    config.providers = { [providerID]: provider };
+  } else {
+    const entry = JSON.parse(fs.readFileSync(process.env.MODEL_ENTRY_PATH, "utf8"));
+    config.providers = { [providerID]: { models: { [modelID]: entry } } };
+  }
 }
 fs.writeFileSync(process.env.CONFIG_TMP, JSON.stringify(config, null, 2) + "\n");
 '
   if ! ARM_B="$([ "$ARM" = "b" ] && echo 1 || echo 0)" MODEL_REF="$PROVIDER/$MODEL" \
-    MODEL_MISSING="$model_missing" MODEL_ENTRY_PATH="$model_entry_file" CONFIG_TMP="$config_tmp" \
-    node -e "$config_generator" 2>/dev/null; then
+    MODEL_MISSING="$model_missing" MODEL_ENTRY_PATH="$model_entry_file" PROVIDER_ENTRY="$provider_entry" \
+    CONFIG_TMP="$config_tmp" node -e "$config_generator" 2>/dev/null; then
     rm -f "$model_entry_file" "$config_tmp" "$config_path"
     echo "could not generate OpenCode config" >&2
     exit 2
@@ -907,7 +944,7 @@ fs.writeFileSync(process.env.CONFIG_TMP, JSON.stringify(config, null, 2) + "\n")
     exit 2
   fi
 
-  # FR-3: stage the access-only Console credential under $XDG_RUNTIME_DIR.
+  # FR-3: stage the access-only provider credential under $XDG_RUNTIME_DIR.
   runtime_base="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
   mkdir -p "$runtime_base/lending-desk-bench"
   chmod 700 "$runtime_base/lending-desk-bench"
@@ -916,14 +953,33 @@ fs.writeFileSync(process.env.CONFIG_TMP, JSON.stringify(config, null, 2) + "\n")
   chmod 700 "$staging"
   CRED_STAGING="$staging"
   payload="$staging/payload"
+  if ark_is_route "$PROVIDER" "$MODEL"; then
+    if ! "$H/model-guide/provider-credential.sh" seed "$ARK_PROVIDER"; then
+      echo "[$RUN_ID] Ark credential export failed" >&2
+      return 2
+    fi
+    if ! "$H/model-guide/provider-credential.sh" export "$ARK_PROVIDER" > "$payload"; then
+      echo "[$RUN_ID] Ark credential export failed" >&2
+      return 2
+    fi
+  else
   if ! "$H/opencode-credential.sh" export > "$payload"; then
     echo "[$RUN_ID] Console credential export failed" >&2
     return 2
   fi
+  fi
   chmod 600 "$payload"
-  mapfile -t scan_values < <("$H/opencode-credential.sh" scan-values)
+  if ark_is_route "$PROVIDER" "$MODEL"; then
+    mapfile -t scan_values < <("$H/model-guide/provider-credential.sh" scan-values "$ARK_PROVIDER")
+  else
+    mapfile -t scan_values < <("$H/opencode-credential.sh" scan-values)
+  fi
   if [ "${#scan_values[@]}" -eq 0 ]; then
-    echo "[$RUN_ID] Console credential scan values are unavailable" >&2
+    if ark_is_route "$PROVIDER" "$MODEL"; then
+      echo "[$RUN_ID] Ark credential scan values are unavailable" >&2
+    else
+      echo "[$RUN_ID] Console credential scan values are unavailable" >&2
+    fi
     return 2
   fi
   scan_values_json=$(json_array "${scan_values[@]}")
@@ -1039,7 +1095,11 @@ fs.writeFileSync(process.env.CONFIG_TMP, JSON.stringify(config, null, 2) + "\n")
   if [ "$leak_rc" -eq 1 ]; then
     # The scan redacted every hit. The run still records its provenance, then
     # the score gate marks it invalid (NFR-1).
-    CREDENTIAL_LEAK_REASON="Console credential reached run output"
+    if ark_is_route "$PROVIDER" "$MODEL"; then
+      CREDENTIAL_LEAK_REASON="Ark credential reached run output"
+    else
+      CREDENTIAL_LEAK_REASON="Console credential reached run output"
+    fi
   elif [ "$leak_rc" -ne 0 ]; then
     CREDENTIAL_LEAK_REASON="credential leak scan failed"
   fi
@@ -1180,11 +1240,18 @@ else
   opencode_host_begin run
   # FR-3 run-window check, fail closed, before the agent starts. The batch
   # checks once before its first run; a serial batch can outlive a token that
-  # covered the first window.
+  # covered the first window. The Ark plan uses arkcli, not the Go usage API.
+  if ark_is_route "$PROVIDER" "$MODEL"; then
+    if ! ark_quota_check; then
+      write_invalid "Ark plan quota does not cover the run window"
+      exit 3
+    fi
+  else
   if ! cred_window_reason="$("$H/opencode-credential.sh" check-window 2>&1)"; then
     printf '%s\n' "$cred_window_reason" >&2
     write_invalid "Console credential does not cover the run window"
     exit 3
+  fi
   fi
   # The API-key provider path is gone (FR-3): the container never receives
   # OPENCODE_API_KEY and the runner ignores BENCH_PROVIDER_ENV.

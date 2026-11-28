@@ -680,7 +680,7 @@ type PreflightBatch = {
   harness: string;
   helperCalls: string;
   sleepLog: string;
-  execute: (extraEnv: Record<string, string>) => SpawnSyncReturns<string>;
+  execute: (extraEnv: Record<string, string>, args?: string[]) => SpawnSyncReturns<string>;
   runDirs: () => string[];
 };
 
@@ -751,8 +751,8 @@ exec "${realPython3}" "\$@"
   chmodSync(bin + "/python3", 0o755);
   return {
     run, root, harness, helperCalls, sleepLog,
-    execute(extraEnv) {
-      return spawnSync("/bin/bash", [resolve(harness, "batch.sh")], {
+    execute(extraEnv, args: string[] = []) {
+      return spawnSync("/bin/bash", [resolve(harness, "batch.sh"), ...args], {
         cwd: harness, encoding: "utf8", timeout: 150_000, maxBuffer: 16 * 1024 * 1024,
         env: {
           ...run.env,
@@ -888,4 +888,102 @@ describe("Review A F6: the real batch preflight block", () => {
       batch.run.cleanup();
     }
   }, 120_000);
+});
+
+describe("Ark route preflight (volcengine-agent-plan)", () => {
+  const ROUTES = [
+    "volcengine-agent-plan/glm-5.3-flash",
+    "volcengine-agent-plan/doubao-seed-evolving",
+  ];
+
+  function stageArk(five: number, week: number, models: Record<string, unknown>) {
+    const batch = preparePreflightBatch("fake-model");
+    const bin = resolve(batch.root, "bin");
+    const config = resolve(batch.root, "opencode.json");
+    writeFileSync(config, `${JSON.stringify({
+      providers: {
+        "volcengine-agent-plan": {
+          package: "aisdk:@ai-sdk/openai",
+          settings: { baseURL: "https://example.invalid" },
+          models,
+        },
+      },
+    })}\n`);
+    const cli = resolve(bin, "arkcli");
+    const usage = JSON.stringify({
+      items: [{ product: "agent-plan", periods: [
+        { label: "5h", percent: five },
+        { label: "weekly", percent: week },
+        { label: "monthly", percent: 1 },
+      ] }],
+    });
+    writeFileSync(cli, `#!${process.execPath}\nprocess.stdout.write(${JSON.stringify(usage)});\n`);
+    chmodSync(cli, 0o755);
+    return { batch, config };
+  }
+
+  it("the batch pins a full Ark route and checks the config and arkcli, not the Go model API", () => {
+    const source = batchSource();
+    expect(source, "the batch must source the shared Ark helper").toContain('source "./ark-provider.sh"');
+    expect(source, "the batch must pin a full route").toContain('ark_is_ref "$PIN_MODEL"');
+    expect(source, "the batch must have a preflight-only mode").toContain("BENCH_PREFLIGHT_ONLY");
+    expect(source, "the Ark preflight must read the opencode config").toContain("ark_config_file");
+    expect(source, "the Ark preflight must read the Ark quota").toContain("ark_quota_check");
+  });
+
+  it("preflight-only accepts both trial routes without an agent run", () => {
+    for (const route of ROUTES) {
+      const { batch, config } = stageArk(10, 20, {
+        "glm-5.3-flash": { name: "glm-5.3-flash" },
+        "doubao-seed-evolving": { name: "doubao-seed-evolving" },
+      });
+      try {
+        const result = batch.execute({ BENCH_ARK_CONFIG: config }, ["--model", route, "--preflight-only"]);
+        const lines = outputLines(result);
+        expect(result.status, `${route}\n${lines.join("\n")}`).toBe(0);
+        expect(lines).toContain(`PINNED ROUTE ${route}`);
+        expect(lines.some((line) => line.includes("EXECUTOR PREFLIGHT PASS")), route).toBe(true);
+        expect(lines.some((line) => line.includes("BATCH COMPLETE (preflight only)")), route).toBe(true);
+        expect(batch.runDirs(), `${route}: preflight-only must create no run`).toEqual([]);
+      } finally {
+        batch.run.cleanup();
+      }
+    }
+  }, 150_000);
+
+  it("rejects another volcengine model, a route outside the config, and a 95 % window", () => {
+    const models = { "glm-5.3-flash": { name: "glm-5.3-flash" } };
+    const other = stageArk(10, 20, models);
+    try {
+      const result = other.batch.execute({ BENCH_ARK_CONFIG: other.config }, [
+        "--model", "volcengine-agent-plan/glm-5.4", "--preflight-only",
+      ]);
+      expect(result.status, "glm-5.4 is not a trial route").toBe(2);
+      expect(result.stderr).toContain("--model must match");
+    } finally {
+      other.batch.run.cleanup();
+    }
+
+    const unlisted = stageArk(10, 20, models);
+    try {
+      const result = unlisted.batch.execute({ BENCH_ARK_CONFIG: unlisted.config }, [
+        "--model", "volcengine-agent-plan/doubao-seed-evolving", "--preflight-only",
+      ]);
+      expect(result.status, "a route missing from opencode.json must stop").toBe(3);
+      expect(result.stderr).toContain("the opencode config does not list volcengine-agent-plan/doubao-seed-evolving");
+    } finally {
+      unlisted.batch.run.cleanup();
+    }
+
+    const blocked = stageArk(96, 20, models);
+    try {
+      const result = blocked.batch.execute({ BENCH_ARK_CONFIG: blocked.config }, [
+        "--model", "volcengine-agent-plan/glm-5.3-flash", "--preflight-only",
+      ]);
+      expect(result.status, "a window at 95 % must stop").toBe(3);
+      expect(result.stderr).toContain("the Ark quota windows reached 95 %");
+    } finally {
+      blocked.batch.run.cleanup();
+    }
+  }, 150_000);
 });

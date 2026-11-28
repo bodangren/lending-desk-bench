@@ -45,6 +45,8 @@ fi
 source "./env.sh"
 # shellcheck source=opencode-host.sh
 source "./opencode-host.sh"
+# shellcheck source=ark-provider.sh
+source "./ark-provider.sh"
 
 # ---- OpenCode host isolation (spec D1, D6) -------------------------------------
 # This batch owns one OpenCode job folder. A batch of a daily or weekly job
@@ -62,6 +64,14 @@ case " $* " in
   *" --dry-run "*) DRY_RUN=1 ;;
 esac
 [ "${BENCH_DRY_RUN:-0}" = "1" ] && DRY_RUN=1
+
+# --preflight-only / BENCH_PREFLIGHT_ONLY run the executor preflight and stop
+# before the canary and any agent run. No model call and no credits.
+PREFLIGHT_ONLY=0
+case " $* " in
+  *" --preflight-only "*) PREFLIGHT_ONLY=1 ;;
+esac
+[ "${BENCH_PREFLIGHT_ONLY:-0}" = "1" ] && PREFLIGHT_ONLY=1
 
 # --model <id> pins one priced model (daily_model_schedule FR-7, D7): the batch
 # plans only that model and ignores FORCE and the work list. The flag keeps the
@@ -85,7 +95,7 @@ if [ -n "$_pin_prev" ]; then
 fi
 # The flag decides, not the value: an empty value is a fault, not "no pin".
 # Otherwise --model "" plans the whole work list (spec FR-7, fail closed).
-if [ "$PIN_MODEL_SET" = "1" ] && ! [[ "$PIN_MODEL" =~ ^[a-z0-9][a-z0-9.-]*$ ]]; then
+if [ "$PIN_MODEL_SET" = "1" ] && ! ark_is_ref "$PIN_MODEL" && ! [[ "$PIN_MODEL" =~ ^[a-z0-9][a-z0-9.-]*$ ]]; then
   echo "--model must match ^[a-z0-9][a-z0-9.-]*\$, got: $PIN_MODEL" >&2
   exit 2
 fi
@@ -155,6 +165,14 @@ for entry in "${ALL_LINES[@]}"; do
 done
 
 if [ -n "$PIN_MODEL" ]; then
+  if ark_is_ref "$PIN_MODEL"; then
+    # Pinned Ark route: the route comes from opencode.json, not the price table.
+    provider="${PIN_MODEL%%/*}"
+    pinned_model="${PIN_MODEL#*/}"
+    slug="${pinned_model//./-}"
+    MODELS=("$provider|$pinned_model|$slug")
+    echo "PINNED ROUTE $PIN_MODEL"
+  else
   # Pinned model: it must be a key of the price table (batch status is not
   # required, so the daily job can run any priced model).
   provider="$(node -e '
@@ -168,6 +186,7 @@ process.stdout.write(String(p.provider || "opencode-go"));
   slug="${PIN_MODEL//./-}"
   MODELS=("$provider|$PIN_MODEL|$slug")
   echo "PINNED MODEL $PIN_MODEL"
+  fi
 elif [ "${FORCE:-0}" = "1" ]; then
   # Escape hatch: the pre-bench_incremental behavior, every batch model.
   MODELS=("${ALL_LINES[@]}")
@@ -319,8 +338,12 @@ case "$PREFLIGHT_OPENCODE_VERSION" in
   *) echo "executor preflight failed: opencode 2.x is required, got: ${PREFLIGHT_OPENCODE_VERSION:-none}" >&2; exit 3 ;;
 esac
 
+if [ -n "$PIN_MODEL" ] && ark_is_ref "$PIN_MODEL"; then
+  :
+else
 if ! "$PWD/opencode-credential.sh" preflight; then
   exit 3
+fi
 fi
 
 # FR-4 helper supply: verify the resolved ripgrep helper before the batch.
@@ -360,6 +383,30 @@ MODEL_API_BASE="${BENCH_MODEL_API_BASE:-http://127.0.0.1:38307}"
 models_listed=""
 model_api_reached=""
 helper_failed=""
+if ark_is_ref "$FIRST_MODEL_REF"; then
+  # The Ark route is checked against the operator opencode.json, with no
+  # network call. The plan windows come from `arkcli usage plan`.
+  ark_cfg="$(ark_config_file)"
+  if ! ark_cfg="$ark_cfg" ark_ref="$FIRST_MODEL_REF" node -e '
+const fs = require("node:fs");
+let doc;
+try { doc = JSON.parse(fs.readFileSync(process.env.ark_cfg, "utf8")); } catch { process.exit(2); }
+const ref = process.env.ark_ref;
+const separator = ref.indexOf("/");
+const providerID = ref.slice(0, separator);
+const modelID = ref.slice(separator + 1);
+const entry = doc && doc.providers && doc.providers[providerID];
+if (!entry || !entry.models || !Object.hasOwn(entry.models, modelID)) process.exit(3);
+process.exit(0);
+' >/dev/null 2>&1; then
+    echo "executor preflight failed: the opencode config does not list $FIRST_MODEL_REF" >&2
+    exit 3
+  fi
+  if ! ark_quota_check; then
+    echo "executor preflight failed: the Ark quota windows reached 95 %" >&2
+    exit 3
+  fi
+else
 if ! "$PWD/opencode-credential.sh" seed; then
   echo "executor preflight failed: the Console credential seed failed" >&2
   exit 3
@@ -391,7 +438,12 @@ if [ "$models_listed" != "1" ]; then
   fi
   exit 3
 fi
+fi
 echo "EXECUTOR PREFLIGHT PASS $(date -Is)"
+if [ "$PREFLIGHT_ONLY" = "1" ]; then
+  echo "BATCH COMPLETE (preflight only) $(date -Is); nothing executed"
+  exit 0
+fi
 
 # ---- Canary --------------------------------------------------------------------
 # Grade the track's calibration candidate through the normal run.sh/grade.sh path
