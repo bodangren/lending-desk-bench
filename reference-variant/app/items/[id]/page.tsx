@@ -1,89 +1,80 @@
+import { cache, Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense, cache } from "react";
 import { findOpenLoan, getItem, listLoansForItem, listMembers, now } from "@/src/db";
 import { computeLoanStatus } from "@/src/lib/loans";
 import { CheckoutForm, ReturnButton } from "./checkout-form";
 
-/** One item read per request, shared by the title and the page. */
-const itemById = cache((id: string) => getItem(id));
+const memoizedItem = cache(getItem);
 
-/**
- * Item detail with loan history. See spec section D.
- */
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const item = await itemById((await params).id);
-  return { title: item ? `${item.name} — Lending Desk` : "Unknown item — Lending Desk" };
+type DetailParams = Promise<{ id: string }>;
+
+export async function generateMetadata({ params }: { params: DetailParams }): Promise<Metadata> {
+  const { id } = await params;
+  const item = await memoizedItem(id);
+  return { title: item ? `${item.name} — Lending Desk` : "Lending Desk — Not found" };
 }
 
-export default async function ItemDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ItemDetailPage({ params }: { params: DetailParams }) {
   const { id } = await params;
-  const [item, openLoan] = await Promise.all([itemById(id), findOpenLoan(id)]);
+  const [item, openLoan] = await Promise.all([memoizedItem(id), findOpenLoan(id)]);
   if (!item) notFound();
 
   return (
-    <article className="space-y-4">
-      <h1 className="text-xl font-bold">{item.name}</h1>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 text-sm">
-        <dt className="text-neutral-500">Category</dt>
-        <dd>{item.category}</dd>
-        <dt className="text-neutral-500">About</dt>
-        <dd>{item.description}</dd>
-      </dl>
-      <p className="text-sm">Status: {openLoan ? "On loan" : "Available"}</p>
+    <main className="mx-auto max-w-3xl space-y-6 p-6">
+      <header className="space-y-2 border-b border-slate-200 pb-4">
+        <h1 className="text-3xl font-bold text-slate-900">
+          <span>{item.name}</span>
+        </h1>
+        <p className="text-sm font-medium uppercase text-slate-500">{item.category}</p>
+        <p className="text-slate-700">{item.description}</p>
+      </header>
 
-      {openLoan ? (
-        <ReturnButton itemId={item.id} />
-      ) : (
-        <Suspense fallback={<p className="text-sm text-neutral-500">Loading members…</p>}>
-          <Checkout itemId={item.id} />
+      <section aria-labelledby="history-heading" className="space-y-3">
+        <h2 id="history-heading" className="text-xl font-semibold">Borrowing record</h2>
+        <Suspense fallback={<p className="text-slate-500">Loading borrowing record…</p>}>
+          <LoanHistory itemId={item.id} />
         </Suspense>
-      )}
+      </section>
 
-      <h2 className="font-semibold">History</h2>
-      <Suspense fallback={<p className="text-sm text-neutral-500">Loading history…</p>}>
-        <History itemId={item.id} />
-      </Suspense>
-    </article>
+      <section aria-label="Loan action" className="rounded-xl bg-slate-50 p-4">
+        {openLoan === null ? (
+          <Suspense fallback={<p className="text-slate-500">Loading borrower list…</p>}>
+            <CheckoutSection itemId={item.id} />
+          </Suspense>
+        ) : (
+          <ReturnButton itemId={item.id} />
+        )}
+      </section>
+    </main>
   );
 }
 
-async function Checkout({ itemId }: { itemId: string }) {
+async function CheckoutSection({ itemId }: { itemId: string }) {
   const members = await listMembers();
   return <CheckoutForm itemId={itemId} members={members} />;
 }
 
-async function History({ itemId }: { itemId: string }) {
+async function LoanHistory({ itemId }: { itemId: string }) {
   const [loans, members] = await Promise.all([listLoansForItem(itemId), listMembers()]);
-  if (loans.length === 0) return <p className="text-sm text-neutral-500">This item has never been lent.</p>;
-  const names = new Map(members.map((member) => [member.id, member.name]));
-  const at = now();
-  // ISO instants in one format order as strings; sort is stable for equal times.
-  const newestFirst = [...loans].sort((a, b) => (a.borrowedAt < b.borrowedAt ? 1 : a.borrowedAt > b.borrowedAt ? -1 : 0));
+  if (loans.length === 0) return <p className="text-slate-500">No borrowing record.</p>;
+
+  const history = loans.slice().sort(
+    (left, right) => Date.parse(right.borrowedAt) - Date.parse(left.borrowedAt),
+  );
+  const currentTime = now();
+
   return (
-    <table className="w-full text-left text-sm">
-      <thead>
-        <tr>
-          <th scope="col">Member</th>
-          <th scope="col">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {newestFirst.map((loan) => (
-          <tr key={loan.id} className="border-t border-neutral-200">
-            <td className="py-1">{names.get(loan.memberId) ?? loan.memberId}</td>
-            <td className="py-1">{computeLoanStatus(loan, at)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <ol className="divide-y divide-slate-200">
+      {history.map((loan) => {
+        const borrower = members.find((member) => member.id === loan.memberId);
+        return (
+          <li key={loan.id} className="flex justify-between gap-4 py-2">
+            <span>{borrower?.name ?? "Unknown member"}</span>
+            <span className="text-slate-600">{computeLoanStatus(loan, currentTime)}</span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

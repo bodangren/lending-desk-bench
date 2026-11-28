@@ -1,19 +1,16 @@
-const SLOTS = ["one", "two", "three", "four", "five", "six"];
-
-/**
- * Shown while the item catalogue loads. See spec section H.
- */
 export default function ItemsLoading() {
   return (
-    <section className="space-y-5">
-      <h1 className="text-xl font-bold">
+    <main className="mx-auto max-w-6xl space-y-5 p-6">
+      <h1 className="text-3xl font-bold text-slate-900">
         <span>Items</span>
       </h1>
-      <ul className="grid gap-2 md:grid-cols-2" aria-busy="true">
-        {SLOTS.map((slot) => (
-          <li key={slot} className="h-24 animate-pulse rounded-md bg-neutral-100" />
+      <div role="status" aria-label="Loading items" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }, (_, index) => (
+          <article key={`placeholder-${index}`} className="h-36 animate-pulse rounded-xl bg-slate-200">
+            <span className="sr-only">Loading item</span>
+          </article>
         ))}
-      </ul>
-    </section>
+      </div>
+    </main>
   );
 }

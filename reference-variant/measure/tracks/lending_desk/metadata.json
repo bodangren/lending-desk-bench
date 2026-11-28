@@ -1,9 +1,9 @@
 {
-  "id": "lending_desk",
-  "title": "Lending Desk — items slice",
-  "status": "complete",
-  "created": "2026-07-31",
-  "priority": "high",
   "type": "Feature",
-  "actual_tasks": 24
+  "actual_tasks": 24,
+  "priority": "high",
+  "status": "complete",
+  "title": "Lending Desk — items slice",
+  "created": "2026-07-31",
+  "id": "lending_desk"
 }

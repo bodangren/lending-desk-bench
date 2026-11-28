@@ -270,8 +270,8 @@ env() {
 #   logic -> the meta suite without the Podman isolation tests, and no controls;
 #            for hosts where the Podman probes cannot complete. The canary below
 #            still proves the grading path end to end.
-#   full  -> the meta suite plus every declared control (--all); use monthly,
-#            after a task rotation, because each control costs one graded run
+#   full  -> the meta suite, every declared control (--all), and the spec variant;
+#            use monthly, after a task rotation, because each check costs a graded run
 #   skip  -> neither; the batch prints a warning and grades anyway
 SELFCHECK="${BENCH_SELFCHECK:-meta}"
 case "$SELFCHECK" in
@@ -313,6 +313,29 @@ else
       echo "harness self-check failed: a sensitivity control did not break its targets" >&2
       exit 3
     fi
+  fi
+
+  if [ "$SELFCHECK" = full ]; then
+    variant_id="variant-build-${WEEK}-$(date +%s)"
+    variant_log="variant-selfcheck.log"
+    echo "SELF-CHECK $(date -Is) — spec variant $variant_id"
+    VARIANT_RC=0
+    if [ -n "${BENCH_HEAVY:-}" ]; then
+      HEAVY_MIN_AVAIL_MB="$HEAVY_MEM_FLOOR_MB" HEAVY_PRIORITY="$HEAVY_PRIORITY_TOKEN" HEAVY_RUN_TIMEOUT_S="$HEAVY_TIMEOUT_S" \
+        "$BENCH_HEAVY" env -u BENCH_TRACK AGENT_SKIP=1 OVERLAY="$PWD/../reference-variant" \
+        ./run.sh local reference-variant a "$variant_id" > "$variant_log" 2>&1 || VARIANT_RC=$?
+    else
+      env -u BENCH_TRACK AGENT_SKIP=1 OVERLAY="$PWD/../reference-variant" \
+        ./run.sh local reference-variant a "$variant_id" > "$variant_log" 2>&1 || VARIANT_RC=$?
+    fi
+    variant_score="../runs/$variant_id/artifacts/score.json"
+    if ! node -e 'const s=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8")); process.exit(s.valid===true && s.total===100 ? 0 : 1);' "$variant_score" 2>/dev/null; then
+      echo "harness self-check failed: $variant_id did not score a valid 100 (runner exit $VARIANT_RC)" >&2
+      echo "see harness/$variant_log and $variant_score" >&2
+      exit 3
+    fi
+    rm -rf "../runs/$variant_id/candidate/node_modules" "../runs/$variant_id/candidate/.next"
+    echo "VARIANT PASS $(date -Is) — $variant_id"
   fi
   echo "SELF-CHECK PASS $(date -Is)"
   if [ -n "${BENCH_SELFCHECK_MARKER:-}" ]; then touch "$BENCH_SELFCHECK_MARKER"; fi

@@ -1,71 +1,73 @@
-import { Suspense } from "react";
-import { countItems, listCategories, listItems, listLoans } from "@/src/db";
-import type { Item, Loan } from "@/src/db/schema";
+import { listCategories, listItems, listLoans } from "@/src/db";
 import { ItemCard } from "@/src/components/item-card";
 
-type Filters = { q?: string; category?: string };
-
-function matches(item: Item, { q, category }: Filters): boolean {
-  if (category && item.category !== category) return false;
-  if (!q) return true;
-  return item.name.toLocaleLowerCase("en").includes(q.toLocaleLowerCase("en"));
-}
-
-async function Results({ filters }: { filters: Filters }) {
-  const [items, loans] = await Promise.all([listItems(), listLoans()]);
-  const openByItem = new Map<string, Loan>();
-  for (const loan of loans) {
-    if (loan.returnedAt === null) openByItem.set(loan.itemId, loan);
-  }
-  const shown = items.filter((item) => matches(item, filters));
-  if (shown.length === 0) return <p className="text-sm">No items match your search.</p>;
-  return (
-    <ul className="grid gap-2 md:grid-cols-2">
-      {shown.map((item) => (
-        <li key={item.id}>
-          <ItemCard item={item} openLoan={openByItem.get(item.id) ?? null} />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/**
- * Item catalogue. Supports `?q=` and `?category=` filtering.
- * See spec section C.
- */
-export default async function ItemsPage({
-  searchParams,
-}: {
+type CatalogueProps = {
   searchParams: Promise<{ q?: string; category?: string }>;
+};
+
+function CatalogueGrid({
+  items,
+  loans,
+  query,
+  category,
+  categories,
+}: {
+  items: Awaited<ReturnType<typeof listItems>>;
+  loans: Awaited<ReturnType<typeof listLoans>>;
+  query?: string;
+  category?: string;
+  categories: string[];
 }) {
-  const [filters, [total, categories]] = await Promise.all([
-    searchParams,
-    Promise.all([countItems(), listCategories()]),
-  ]);
+  const needle = query?.toLocaleLowerCase("en-US");
+  const knownCategories = new Set(categories);
+  const visible = items.filter((item) => {
+    const nameMatches = needle === undefined
+      || item.name.toLocaleLowerCase("en-US").includes(needle);
+    const categoryMatches = category === undefined
+      || (knownCategories.has(item.category) && item.category === category);
+    return nameMatches && categoryMatches;
+  });
+
+  if (visible.length === 0) {
+    return <p className="text-slate-600">No items match your search.</p>;
+  }
+
   return (
-    <section className="space-y-5">
-      <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-bold">
-          <span>Items</span>
-        </h1>
-        <small className="text-neutral-500">
-          {total} tools in {categories.length} categories
-        </small>
-      </header>
-      <Suspense fallback={<Placeholder />}>
-        <Results filters={filters} />
-      </Suspense>
-    </section>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {visible.map((item) => (
+        <ItemCard
+          key={item.id}
+          item={item}
+          openLoan={loans.find((loan) => loan.itemId === item.id && loan.returnedAt === null) ?? null}
+        />
+      ))}
+    </div>
   );
 }
 
-function Placeholder() {
+export default async function ItemsPage({ searchParams }: CatalogueProps) {
+  const [params, items, categories, loans] = await Promise.all([
+    searchParams,
+    listItems(),
+    listCategories(),
+    listLoans(),
+  ]);
+  const total = items.length;
+
   return (
-    <ul className="grid gap-2 md:grid-cols-2" aria-busy="true">
-      {["a", "b", "c", "d", "e", "f"].map((slot) => (
-        <li key={slot} className="h-24 rounded-md bg-neutral-100" />
-      ))}
-    </ul>
+    <main className="mx-auto max-w-6xl space-y-5 p-6">
+      <h1 className="text-3xl font-bold text-slate-900">
+        <span>Items</span>
+      </h1>
+      <section aria-label="Item catalogue" data-total={total}>
+        <CatalogueGrid
+          items={items}
+          loans={loans}
+          query={params.q}
+          category={params.category}
+          categories={categories}
+        />
+      </section>
+    </main>
   );
 }

@@ -1,108 +1,120 @@
 "use client";
 
-import { useOptimistic, useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { checkoutItem, returnItem } from "@/src/actions/loans";
 import type { Member } from "@/src/db/schema";
 
-/**
- * A datetime-local value names a wall-clock time with no zone. Read it as UTC, so
- * the stored day is the day the desk picked, whatever the browser's zone.
- */
-function toInstant(value: string): string {
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return `${value}:00.000Z`;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+function inputAsInstant(value: string): string {
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  return new Date(hasZone ? value : `${value}Z`).toISOString();
 }
 
-/**
- * Checkout control shown on the item detail page. See spec section E.
- */
-export function CheckoutForm({
-  itemId,
-  members,
-}: {
-  itemId: string;
-  members: Member[];
-}) {
+export function CheckoutForm({ itemId, members }: { itemId: string; members: Member[] }) {
   const [error, setError] = useState<string | null>(null);
+  const [onLoan, setOnLoan] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [onLoan, markOnLoan] = useOptimistic(false, () => true);
+  const orderedMembers = members.slice().sort((left, right) => left.name.localeCompare(right.name));
+  const memberControlId = `borrower-${itemId}`;
+  const dueControlId = `deadline-${itemId}`;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const memberId = String(data.get("member") ?? "");
-    const due = toInstant(String(data.get("due") ?? ""));
+    const formData = new FormData(event.currentTarget);
+    const memberId = String(formData.get("memberId") ?? "");
+    const dueAt = String(formData.get("dueAt") ?? "");
+    setError(null);
+    setOnLoan(true);
     startTransition(async () => {
-      markOnLoan(null);
-      setError(null);
-      const result = await checkoutItem(itemId, memberId, due);
-      if (!result.ok) setError(result.error);
+      const result = await checkoutItem(itemId, memberId, inputAsInstant(dueAt));
+      if (!result.ok) {
+        setError(result.error);
+        setOnLoan(false);
+      }
     });
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2 rounded border border-neutral-300 p-3">
-      {onLoan && <p className="text-xs font-medium text-amber-800">On loan</p>}
-      <label className="text-sm">
-        Borrower
-        <select name="member" className="ml-2 rounded border border-neutral-300 px-2 py-1">
-          {members.map((member) => (
-            <option key={member.id} value={member.id}>
-              {member.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="text-sm">
-        Due
-        <input name="due" type="datetime-local" required className="ml-2 rounded border border-neutral-300 px-2 py-1" />
-      </label>
+    <form onSubmit={submit} className="space-y-4">
+      {onLoan && (
+        <span className="inline-block rounded bg-amber-200 px-3 py-1 text-sm font-semibold text-amber-950">
+          On loan
+        </span>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <label htmlFor={dueControlId} className="block text-sm font-medium">Return deadline</label>
+          <input
+            id={dueControlId}
+            type="datetime-local"
+            name="dueAt"
+            required
+            className="w-full rounded-lg border border-slate-400 p-2"
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor={memberControlId} className="block text-sm font-medium">Borrower</label>
+          <select
+            id={memberControlId}
+            name="memberId"
+            required
+            className="w-full rounded-lg border border-slate-400 p-2"
+          >
+            {orderedMembers.map((member) => (
+              <option key={member.id} value={member.id}>{member.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded bg-neutral-800 px-3 py-1 text-sm text-white disabled:opacity-50"
+        className="rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white disabled:opacity-50"
       >
-        {pending ? "Checking out…" : "Check out"}
+        {pending ? "Checking out…" : "Check out item"}
       </button>
-      <div aria-live="polite" className="text-sm text-red-700">
-        {error}
-      </div>
+
+      {error !== null && (
+        <p aria-live="assertive" className="font-medium text-red-700">{error}</p>
+      )}
     </form>
   );
 }
 
-/**
- * Return control shown when an item has an open loan. See spec section E.
- */
 export function ReturnButton({ itemId }: { itemId: string }) {
   const [error, setError] = useState<string | null>(null);
+  const [returned, setReturned] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [returned, markReturned] = useOptimistic(false, () => true);
 
   function activate() {
+    setError(null);
+    setReturned(true);
     startTransition(async () => {
-      markReturned(null);
-      setError(null);
       const result = await returnItem(itemId);
-      if (!result.ok) setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+        setReturned(false);
+      }
     });
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {returned && <p className="text-xs font-medium text-emerald-800">Available</p>}
+    <div className="flex flex-wrap items-center gap-3">
+      {returned && (
+        <span className="rounded bg-emerald-200 px-3 py-1 font-semibold text-emerald-950">Available</span>
+      )}
       <button
         type="button"
         disabled={pending}
         onClick={activate}
-        className="self-start rounded border border-neutral-400 px-3 py-1 text-sm disabled:opacity-50"
+        className="rounded-lg border border-slate-500 px-4 py-2 font-semibold disabled:opacity-50"
       >
         {pending ? "Returning…" : "Return"}
       </button>
-      <p role="alert" className="text-sm text-red-700">
-        {error}
-      </p>
+      {error !== null && (
+        <p aria-live="assertive" className="font-medium text-red-700">{error}</p>
+      )}
     </div>
   );
 }

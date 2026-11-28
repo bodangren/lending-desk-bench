@@ -2,32 +2,25 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Item, Loan } from "@/src/db/schema";
 
-/**
- * Catalogue tile for a single item.
- * `openLoan` is the item's current unreturned loan, or null when available.
- * See spec section B.
- */
-export function ItemCard({
-  item,
-  openLoan,
-}: {
-  item: Item;
-  openLoan: Loan | null;
-}) {
-  const onLoan = openLoan !== null;
+export function ItemCard({ item, openLoan }: { item: Item; openLoan: Loan | null }) {
   return (
     <Link
       href={`/items/${item.id}`}
-      className="flex items-center gap-4 rounded-md border border-neutral-300 p-3 hover:bg-neutral-50"
+      className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-white p-3"
     >
-      <div className="min-w-0 flex-1">
-        <p className={onLoan ? "text-xs font-medium text-amber-800" : "text-xs font-medium text-emerald-800"}>
-          {onLoan ? "On loan" : "Available"}
-        </p>
-        <h3 className="truncate font-semibold">{item.name}</h3>
-        <p className="text-sm text-neutral-500">{item.category}</p>
-      </div>
-      <Image unoptimized alt={item.name} src={item.imageUrl} width={64} height={64} />
+      <span className="w-fit rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-900">
+        {openLoan === null ? "Available" : "On loan"}
+      </span>
+      <p className="text-xs uppercase tracking-wide text-slate-500">{item.category}</p>
+      <Image
+        alt={item.name}
+        src={item.imageUrl}
+        width={96}
+        height={64}
+        unoptimized
+        className="h-16 w-24 rounded-md object-cover"
+      />
+      <h3 className="text-base font-bold text-slate-900">{item.name}</h3>
     </Link>
   );
 }

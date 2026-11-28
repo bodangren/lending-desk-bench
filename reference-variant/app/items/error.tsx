@@ -1,8 +1,5 @@
 "use client";
 
-/**
- * Shown when the item catalogue fails to load. See spec section H.
- */
 export default function ItemsError({
   error,
   reset,
@@ -10,16 +7,21 @@ export default function ItemsError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  void error;
+
   return (
-    <section className="space-y-3">
-      <h1 className="text-xl font-bold">
+    <main className="mx-auto max-w-3xl space-y-4 p-6">
+      <h1 className="text-3xl font-bold text-slate-900">
         <span>Items</span>
       </h1>
-      <p role="alert">Could not load items.</p>
-      <button type="button" className="rounded border border-neutral-400 px-3 py-1 text-sm" onClick={() => reset()}>
+      <button
+        type="button"
+        onClick={reset}
+        className="rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white"
+      >
         Try again
       </button>
-      {error.digest ? <small className="block text-neutral-500">Reference {error.digest}</small> : null}
-    </section>
+      <p className="text-slate-600">Could not load items.</p>
+    </main>
   );
 }

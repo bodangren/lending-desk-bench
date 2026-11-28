@@ -1,87 +1,106 @@
 import { NextResponse } from "next/server";
-import { ItemOnLoanError, LoanAlreadyClosedError, closeLoan, findOpenLoan, insertLoan, listLoans, now } from "@/src/db";
+import {
+  ItemOnLoanError,
+  LoanAlreadyClosedError,
+  closeLoan,
+  findOpenLoan,
+  insertLoan,
+  listLoans,
+  now,
+} from "@/src/db";
 import { computeLoanStatus } from "@/src/lib/loans";
 import { getStaffSession } from "@/src/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const reply = (body: unknown, status = 200) => NextResponse.json(body, { status });
+function anonymousResponse() {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
 
-/** The request body as a JSON object, or null for anything else. */
-async function readObject(request: Request): Promise<Record<string, unknown> | null> {
-  const text = await request.text();
+async function readJson(request: Request): Promise<unknown> {
   try {
-    const value: unknown = JSON.parse(text);
-    return typeof value === "object" && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : null;
+    return await request.json();
   } catch {
     return null;
   }
 }
 
-/**
- * Loans endpoint. See spec section G.
- * Supports `?itemId=` and `?overdue=true`.
- */
 export async function GET(request: Request) {
-  if (!(await getStaffSession())) return reply({ error: "Unauthorized" }, 401);
-  const search = new URL(request.url).searchParams;
-  const itemId = search.get("itemId");
-  const overdueOnly = search.get("overdue") === "true";
-  const at = now();
-  const loans = (await listLoans()).filter(
-    (loan) => (!itemId || loan.itemId === itemId) && (!overdueOnly || computeLoanStatus(loan, at) === "overdue"),
-  );
-  return reply({ loans });
+  if (!(await getStaffSession())) return anonymousResponse();
+
+  const url = new URL(request.url);
+  const itemId = url.searchParams.get("itemId");
+  const overdueOnly = url.searchParams.get("overdue") === "true";
+  const currentTime = now();
+  let loans = await listLoans();
+
+  if (itemId !== null) loans = loans.filter((loan) => loan.itemId === itemId);
+  if (overdueOnly) {
+    loans = loans.filter((loan) => computeLoanStatus(loan, currentTime) === "overdue");
+  }
+  return NextResponse.json({ loans });
 }
 
-/**
- * Create a loan from a JSON body of { itemId, memberId, dueAt }.
- * See spec section G.
- */
 export async function POST(request: Request) {
-  if (!(await getStaffSession())) return reply({ error: "Unauthorized" }, 401);
-  const body = await readObject(request);
-  const itemId = body?.itemId;
-  const memberId = body?.memberId;
-  const dueAt = body?.dueAt;
+  if (!(await getStaffSession())) return anonymousResponse();
+
+  const body = await readJson(request);
+  const fields = body !== null && typeof body === "object" ? body as Record<string, unknown> : {};
+  const { itemId, memberId, dueAt } = fields;
   if (typeof itemId !== "string" || typeof memberId !== "string" || typeof dueAt !== "string") {
-    return reply({ error: "Send itemId, memberId, and dueAt as strings" }, 400);
+    return NextResponse.json(
+      { error: "itemId, memberId and dueAt must be strings" },
+      { status: 400 },
+    );
   }
-  const due = new Date(dueAt);
-  if (Number.isNaN(due.getTime())) return reply({ error: "dueAt is not a date" }, 400);
+
+  const due = Date.parse(dueAt);
+  if (!Number.isFinite(due)) {
+    return NextResponse.json({ error: "dueAt must be an ISO 8601 value" }, { status: 400 });
+  }
+
   try {
     const loan = await insertLoan({
       itemId,
       memberId,
       borrowedAt: now().toISOString(),
-      dueAt: due.toISOString(),
+      dueAt,
       returnedAt: null,
     });
-    return reply({ loan }, 201);
+    return NextResponse.json({ loan }, { status: 201 });
   } catch (error) {
-    if (error instanceof ItemOnLoanError) return reply({ error: "Item is already on loan" }, 409);
+    if (error instanceof ItemOnLoanError) {
+      return NextResponse.json({ error: "Item is already on loan" }, { status: 409 });
+    }
     throw error;
   }
 }
 
-/**
- * Return an item from a JSON body of { itemId }.
- * See spec section G.
- */
 export async function PATCH(request: Request) {
-  if (!(await getStaffSession())) return reply({ error: "Unauthorized" }, 401);
-  const body = await readObject(request);
-  const itemId = body?.itemId;
-  if (typeof itemId !== "string") return reply({ error: "Send itemId as a string" }, 400);
-  const open = await findOpenLoan(itemId);
-  if (!open) return reply({ error: "Item is not on loan" }, 409);
+  if (!(await getStaffSession())) return anonymousResponse();
+
+  const body = await readJson(request);
+  const fields = body !== null && typeof body === "object" ? body as Record<string, unknown> : {};
+  const itemId = fields.itemId;
+  if (typeof itemId !== "string") {
+    return NextResponse.json({ error: "itemId must be a string" }, { status: 400 });
+  }
+
+  const openLoan = await findOpenLoan(itemId);
+  if (!openLoan) {
+    return NextResponse.json({ error: "Item is not on loan" }, { status: 409 });
+  }
+
   try {
-    const loan = await closeLoan(open.id, now().toISOString());
-    return loan ? reply({ loan }) : reply({ error: "Item is not on loan" }, 409);
+    const loan = await closeLoan(openLoan.id, now().toISOString());
+    if (!loan) {
+      return NextResponse.json({ error: "Item is not on loan" }, { status: 409 });
+    }
+    return NextResponse.json({ loan });
   } catch (error) {
-    if (error instanceof LoanAlreadyClosedError) return reply({ error: "Item is not on loan" }, 409);
+    if (error instanceof LoanAlreadyClosedError) {
+      return NextResponse.json({ error: "Item is not on loan" }, { status: 409 });
+    }
     throw error;
   }
 }

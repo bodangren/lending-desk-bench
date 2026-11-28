@@ -1,63 +1,71 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ItemOnLoanError, LoanAlreadyClosedError, closeLoan, findOpenLoan, insertLoan, now } from "@/src/db";
+import {
+  ItemOnLoanError,
+  LoanAlreadyClosedError,
+  closeLoan,
+  findOpenLoan,
+  insertLoan,
+  now,
+} from "@/src/db";
 import { getStaffSession } from "@/src/lib/auth";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-const fail = (error: string): ActionResult => ({ ok: false, error });
-
-function refreshViews(itemId: string): void {
-  revalidatePath("/items");
-  revalidatePath(`/items/${itemId}`);
+async function callerIsStaff(): Promise<boolean> {
+  return (await getStaffSession()) !== null;
 }
 
-/**
- * Record a loan of `itemId` to `memberId`, due at `dueAt` (ISO 8601).
- * See spec section F.
- */
 export async function checkoutItem(
   itemId: string,
   memberId: string,
   dueAt: string,
 ): Promise<ActionResult> {
-  if (!(await getStaffSession())) return fail("Not authorized");
-  const current = now();
-  const due = new Date(dueAt);
-  if (!(due.getTime() > current.getTime())) return fail("Due date must be in the future");
+  if (!(await callerIsStaff())) return { ok: false, error: "Not authorized" };
+
+  const due = Date.parse(dueAt);
+  const borrowedAt = now();
+  if (!Number.isFinite(due) || due <= borrowedAt.getTime()) {
+    return { ok: false, error: "Due date must be in the future" };
+  }
+
   try {
-    // The store refuses a second open loan when the write lands. That one check
-    // covers a stale form and two desks racing for the same item.
     await insertLoan({
       itemId,
       memberId,
-      borrowedAt: current.toISOString(),
-      dueAt: due.toISOString(),
+      borrowedAt: borrowedAt.toISOString(),
+      dueAt,
       returnedAt: null,
     });
   } catch (error) {
-    if (error instanceof ItemOnLoanError) return fail("Item is already on loan");
+    if (error instanceof ItemOnLoanError) {
+      return { ok: false, error: "Item is already on loan" };
+    }
     throw error;
   }
-  refreshViews(itemId);
+
+  revalidatePath("/items");
+  revalidatePath(`/items/${itemId}`);
   return { ok: true };
 }
 
-/**
- * Record the return of the open loan on `itemId`.
- * See spec section F.
- */
 export async function returnItem(itemId: string): Promise<ActionResult> {
-  if (!(await getStaffSession())) return fail("Not authorized");
-  const open = await findOpenLoan(itemId);
-  if (open === null) return fail("Item is not on loan");
+  if (!(await callerIsStaff())) return { ok: false, error: "Not authorized" };
+
+  const openLoan = await findOpenLoan(itemId);
+  if (!openLoan) return { ok: false, error: "Item is not on loan" };
+
   try {
-    await closeLoan(open.id, now().toISOString());
+    await closeLoan(openLoan.id, now().toISOString());
   } catch (error) {
-    if (error instanceof LoanAlreadyClosedError) return fail("Item is not on loan");
+    if (error instanceof LoanAlreadyClosedError) {
+      return { ok: false, error: "Item is not on loan" };
+    }
     throw error;
   }
-  refreshViews(itemId);
+
+  revalidatePath("/items");
+  revalidatePath(`/items/${itemId}`);
   return { ok: true };
 }
