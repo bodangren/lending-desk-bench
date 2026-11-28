@@ -1,0 +1,17 @@
+{
+  "id": "ark_glm_flash_vs_evolving_20261128",
+  "title": "GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan",
+  "type": "Chore",
+  "status": "pending",
+  "created": "2026-11-28",
+  "estimated_tasks": 4,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-28: run the A/B trial of GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan.",
+    "evidence": "Daniel, Google Task STBZUzVaT1UtMHNfdWV4Vw, 2026-11-28.",
+    "dependencies": [],
+    "related_tracks": []
+  }
+}
