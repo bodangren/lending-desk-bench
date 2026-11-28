@@ -695,11 +695,20 @@ Marker use:
 
 ## Phase 5: The close
 
-- [ ] 5.1 The final counts. Count the regraded runs as OK, FAIL, and SKIP.
+- [x] 5.1 `deeb32d` The final counts. Count the regraded runs as OK, FAIL, and SKIP.
   Count the runs that keep their stale mark, and give the reason of each:
   no candidate tree, hard violation, Pi, or no reachable week.
   - Verify: the four counts match the logs of task 4.2.
   - Verify: the reason of each stale run names one of the four reasons.
+  - Counts (2026-11-29, from the logs of task 4.2): OK 82 (the pilot and 81
+    runs, each `valid=true`), FAIL 0, SKIP 0. No `heavy-run.sh` call ended
+    with exit 75.
+  - Runs that keep the stale mark, with the reason: the 35 legacy Pi runs of
+    task 4.1 (reason: Pi); `tt-a-glm-5-3-flash-2026w46-r1`,
+    `tt-a-kimi-k2-7-code-2026w46-r1`, and `tt-a-mimo-v2-6-flash-2026w46-r1`
+    (reason: no `results.json`, the rescore skips them). Their published
+    total does not change. No run has the reasons no candidate tree, hard
+    violation, or no reachable week.
   - Lane: light. A read-only count.
 - [ ] 5.2 The report to the PM. Send the report of task 4.4 to the PM.
   - Verify: the plan records the date of the send.
