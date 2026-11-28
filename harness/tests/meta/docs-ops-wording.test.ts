@@ -149,6 +149,32 @@ describe("review-a r5 F11: contradictory preservation instructions fail", () => 
   });
 });
 
+describe("review-a r6 F13: the contract rollback sentence keeps its check", () => {
+  it.each([
+    ["contract sentence", "Rollback restores the previous release and does not delete loan records."],
+    ["contract sentence with never", "Rollback restores the previous release and never deletes loan records."],
+    ["restore joined with and", "Restore the previous release and do not delete loan records."],
+  ])("F13 restoration: %s keeps D.sections.rollback", async (_label, body) => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(oracleWithSection("Rollback", body));
+    expect(grade.failed, `F13: the contract rollback wording fails (${grade.failed.join(", ")})`)
+      .not.toContain("D.sections.rollback");
+  });
+
+  it.each([
+    ["current release kept", "Keep the current release and do not delete loan records."],
+    ["restoration denied", "Rollback does not restore the previous release and does not delete loan records."],
+    ["bare denial", "Do not restore the previous release."],
+    ["restore by deleting", "Restore the previous release by deleting the loan records."],
+    ["new release deployed", "Deploy the new release and do not delete loan records."],
+  ])("F13 guard: %s still fails D.sections.rollback", async (_label, body) => {
+    const mod = await grader();
+    const grade = mod.gradeRunbook(oracleWithSection("Rollback", body));
+    expect(grade.passed, `F13: the guarded inversion passes`).toBe(false);
+    expect(grade.failed, `F13: the guarded inversion names its check`).toContain("D.sections.rollback");
+  });
+});
+
 describe("review-a r5: the review mutations that already behave stay pinned", () => {
   it.each([
     ["restoration sentence without any release object", "Rollback", "Restore everything quickly. Keep the existing data store and loan records.\n", "D.sections.rollback"],

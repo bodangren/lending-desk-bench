@@ -1,0 +1,13 @@
+MEASURE_AGENT_RESULT
+role: mid-red
+status: pass
+track: runs_docs_ops_hungerg_20261128
+phase: Phase 1: Docs and ops runs for hungerg-free
+baseline_sha: 1725af6
+commits: RED_SHA
+tests_run: harness/tests/meta/docs-ops-wording.test.ts via heavy-run.sh (vitest run tests/meta/docs-ops-wording.test.ts --configLoader native --maxWorkers=1); summary Tests 3 failed | 44 passed (47); the 3 failures are the F13 restoration cases, each failing with D.sections.rollback in grade.failed as required; all 5 F13 guards and every other test in the file pass
+files_changed: harness/tests/meta/docs-ops-wording.test.ts (new describe review-a r6 F13: 3 restoration cases, 5 guard cases); measure/tracks/runs_docs_ops_hungerg_20261128/plan.md (task 1.2a evidence); measure/runs/runs_docs_ops_hungerg_20261128/red-1.2a.log (this log)
+plan_updates: task 1.2a holds the test file path, the failing case names and the Red commit sha, marked [x] with the sha on the line
+known_failures: F13 restoration: contract sentence keeps D.sections.rollback; F13 restoration: contract sentence with never keeps D.sections.rollback; F13 restoration: restore joined with and keeps D.sections.rollback - each fails because restoresRelease skips the clause on its negation word (grade-docs-ops.ts finding F13); these failures are the expected Red state for task 1.2b
+handoff: none - Red work complete; Green (task 1.2b) repairs restoresRelease so the contract sentence passes while the guards stay rejected
+END_MEASURE_AGENT_RESULT
