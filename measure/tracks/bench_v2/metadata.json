@@ -2,10 +2,12 @@
   "id": "bench_v2",
   "title": "Benchmark v2 \u2014 validity, fixture r2, scoring rebalance",
   "type": "Feature",
-  "status": "in_progress",
+  "status": "done",
   "created": "2026-09-24",
+  "completed": "2026-11-29",
+  "description": "Benchmark v2 adds the validity fixes, fixture revision r2, the new checks and the rebalanced scoring; the regrade and the publication were done by grader_system_chrome.",
   "estimated_tasks": 31,
-  "actual_tasks": null,
+  "actual_tasks": 35,
   "source": {
     "method": "evaluation of the published data and the harness on 2026-09-24",
     "decisions": [
