@@ -146,9 +146,22 @@ Execution notes:
       advisory notes in canary-tests.log; score unaffected); change
       12:21:00+08:00 `canary-change-2026w41-1791692460` valid=true
       total=100. The calibration candidates were not modified.
-- [~] 7.4 `regrade-run.sh` and `regrade-all.sh`; regrade every historical
+- [x] 7.4 `4f61c1e` `regrade-run.sh` and `regrade-all.sh`; regrade every historical
       agent run (w37–w39, both tracks).
-- [ ] 7.5 Export the site data and the model pages.
+      Superseded by grader_system_chrome. Its task 4.2 regraded every public
+      run that the current grader can reach (`13b970e`, `4f61c1e`). The
+      w37–w39 runs used the legacy Pi executor. `regrade-run.sh` prints one
+      SKIP line for each of them and keeps every artifact byte, so they keep
+      their stale label (grader_system_chrome task 4.1).
+- [x] 7.5 `d6be0ae` Export the site data and the model pages.
+      Superseded by grader_system_chrome task 4.5: the site data, the model
+      pages and the model guide were rebuilt and published at `d6be0ae` on
+      2026-11-29.
+
+Closed as a light close by the orchestrator on 2026-11-29, with no final
+acceptance. The code of Phases 1 to 6 runs in every live day, and the grading
+path was audited at HEAD by harness_audit Review A
+(`measure/runs/harness_audit/review-a-d695e20.json`).
 
 ## Phase 8: Documentation
 
