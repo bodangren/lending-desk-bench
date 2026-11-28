@@ -20,8 +20,9 @@ The docs-and-ops track holds runs for the hy4-flash-free and muse routes. The hu
 
 - [x] 1.2b Repair the release recogniser (finding F13 of `tech-debt.md`, the case of 1.2a). Done when the 1.2a tests and the existing docs-and-ops grader tests pass. Result: `604d841`. Log: `measure/runs/runs_docs_ops_hungerg_20261128/green-1.2b.log`. — 604d841
   Remediation r2: `9f379df`. The loan-bound negation repair and Review A regressions are recorded in `measure/runs/runs_docs_ops_hungerg_20261128/green-1.2b.log`. — 9f379df
+  Review A r2 F3 and F4 routed to tech-debt.md by orchestrator decision 2026-11-28; evidence measure/runs/runs_docs_ops_hungerg_20261128/review-a-88abf98.json.
 
-- [ ] 1.2c Regrade every docs-and-ops run under `runs/` with `harness/regrade-run.sh` and record the totals. Done when each score reads fresh, trusted and rankable, and the plan holds the totals.
+- [~] 1.2c Regrade every docs-and-ops run under `runs/` with `harness/regrade-run.sh` and record the totals. Done when each score reads fresh, trusted and rankable, and the plan holds the totals.
 
 - [ ] 1.2 Check the documentation grading of those runs by hand against the open grader findings F10 to F14 in `tech-debt.md`, section `2026-11-27 guide_docs_ops`. The arm B run carries a wrong verdict on `D.sections.rollback`, and the deduction moves the total. Continues after task 1.2c.
   Done when every verdict of the release, rollback, loan-record preservation and loan-state boundary checks is correct for the text of the run, with the deciding sentence quoted for each check.

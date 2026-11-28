@@ -445,3 +445,11 @@ Precondition for any further docs-and-ops run: the documentation grader's clause
 
 - F7: `harness/tests/meta/docs-ops-registration.test.ts:49-64` checks the canary and the regrade with source assertions. Add temporary-artifact integration coverage.
 - F9: `harness/docs-and-ops/grade-docs-ops.ts:415` writes a worker wrapper that reads a `.mutation` control file from the candidate workspace. Move the startup fault injection to a grader-owned test seam outside the candidate workspace.
+
+### Review A r2 findings (routed 2026-11-28, orchestrator decision for card runs_docs_ops_hungerg_20261128)
+
+Evidence: `measure/runs/runs_docs_ops_hungerg_20261128/review-a-88abf98.json`. The remediation round limit was reached; the grader at `9f379df` is accepted for that card.
+
+- F3 r2: `harness/docs-and-ops/grade-docs-ops.ts:140,156-164` accepts a negated destruction verb about another object as loan preservation. The sentence "Restore the previous release and do not drop logs but delete loan records." passes every check. Bind each negation to its own verb and each verb to its own object. Reject an affirmative deletion of loan records.
+- F4 r2: `harness/docs-and-ops/grade-docs-ops.ts:140-149` removes a negation that applies to two coordinated verbs. The sentence "Do not delete loan records or restore the previous release." passes every check, although it prohibits restoration. Keep the polarity of the restoration verb when one negation covers coordinated actions.
+- F5 r2: correct rollback instructions still fail `D.sections.rollback`. The wordings are "Restore the previous release without deleting loan records.", "Restore the previous release and do not remove loan records.", "Restore the previous release, not the new one. Keep the loan records." and "Restore the previous release, not the new release. Keep the loan records." These are wording gaps under F13, not regressions.
