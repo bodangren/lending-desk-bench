@@ -2,14 +2,11 @@
 
 ## Tracks in progress
 
-- [~] **Track: GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan**
-  - *Link: [ark_glm_flash_vs_evolving_20261128](tracks/ark_glm_flash_vs_evolving_20261128/)*
-
 ## All tracks
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
-| ark_glm_flash_vs_evolving_20261128 | GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan | Chore | in progress | 2026-11-28 |
+| ark_glm_flash_vs_evolving_20261128 | GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan | Chore | completed | 2026-11-28 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
 | runs_go_new_models_20261127 | Current runs for new Go models | Chore | shelved, not done (PM 2026-11-27) | 2026-11-27 |
@@ -60,6 +57,10 @@ These items have no date and no track yet.
   - *Link: [rigor_a_h](./tracks/rigor_a_h/)*
 
 ## Archived Tracks
+
+- [x] **Track: GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan**
+  *Link: [ark_glm_flash_vs_evolving_20261128](./archive/ark_glm_flash_vs_evolving_20261128/)*
+  *Build pair: GLM-5.3-Flash 96.2 (pass) against Doubao Seed Evolving 92.7 (pass). Daniel ended the trial 2026-11-28 16:00 after one Build run per model: GLM-5.3-Flash assigned, Doubao Seed Evolving shut off (9694713). Closed and archived 2026-11-28.*
 
 - [x] **Track: Change-request benchmark — lending_desk_change**
   *Link: [change_bench](./archive/change_bench/)*
