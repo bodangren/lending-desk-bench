@@ -203,7 +203,7 @@ Marker use:
   - The harness commit `96e4a48` holds the code of the check. The task made no
     code change.
 
-- [x] 2.2 The live days after `c50b836` graded on the system Chrome. The proof
+- [x] 2.2 (commit 2672686) The live days after `c50b836` graded on the system Chrome. The proof
   is the live day of 2026-11-25 (published 2026-11-26 as `162c7a2`, model
   `mimo-v2.6-pro`). Run `a-mimo-v2-6-pro-2026w48-r1` holds
   `artifacts/grader-browser.json` written 2026-11-25 19:42 with
@@ -232,22 +232,22 @@ Marker use:
   - Verify: this task holds the wall time of one regrade. The time of task 4.2
     uses that value.
   - Lane: light. One heavy run.
-- [x] 2.4 The rescore SKIP lines. `grep -c "graded before the system Chrome move; regrade needed" reports/cron-daily.log` printed 139 on 2026-11-28 (above 0).
+- [x] 2.4 (commit 2672686) The rescore SKIP lines. `grep -c "graded before the system Chrome move; regrade needed" reports/cron-daily.log` printed 139 on 2026-11-28 (above 0).
   - Lane: light. A read-only check.
 
 ## Phase 3: The human gates
 
-- [x] 3.1 The Chrome update. `google-chrome --version` printed
+- [x] 3.1 (commit 2672686) The Chrome update. `google-chrome --version` printed
   `Google Chrome 157.0.8103.78` on 2026-11-28. The apt update had run. No
   `sudo` step was needed.
   - Lane: light. A read-only check.
-- [x] 3.2 The page text. Not needed. The regrade replaces the stale scores, so
+- [x] 3.2 (commit 2672686) The page text. Not needed. The regrade replaces the stale scores, so
   no stale-mark text goes on the pages (PM 2026-11-28).
   - Lane: light. No change.
 
 ## Phase 4: The regrade (D7, D8)
 
-- [x] 4.1 The regrade list. Read on 2026-11-28 with no write to a run. The
+- [x] 4.1 (commit 2672686) The regrade list. Read on 2026-11-28 with no write to a run. The
   runs are those that feed a public score in `docs/assets/data/`:
   `benchmark.json` (models, both arms, repeat runs, history rows),
   `tracks.json`, and `bugfix.json`. `real-work.json`, `review.json`, and
@@ -474,7 +474,7 @@ Marker use:
 - [ ] 5.2 The report to the PM. Send the report of task 4.4 to the PM.
   - Verify: the plan records the date of the send.
   - Lane: light. A text report.
-- [x] 5.3 The hand-off of the open tasks. Not needed. The PM closed
+- [x] 5.3 (commit 2672686) The hand-off of the open tasks. Not needed. The PM closed
   `opencode_executor` on 2026-11-27.
   - Lane: light. No change.
 
