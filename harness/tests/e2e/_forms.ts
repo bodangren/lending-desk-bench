@@ -7,14 +7,14 @@
 import { expect, type Page } from "@playwright/test";
 
 /**
- * The due-date control, whatever input type the candidate chose. Spec E.1 asks for
- * "a due-date input" and names no type, so <input type="datetime-local"> and a text
- * input named dueAt are both correct answers. A bare input[type="date"] locator made
- * every one of those candidates fail eleven unrelated criteria on a timeout.
+ * The due-date control, found by its accessible label or by an accepted type or name.
+ * Spec E.1 names no input type or field name. The type and name branches retain the
+ * earlier accepted forms; the label branch admits a correct text input with no name.
  */
 export function dueDateInput(page: Page) {
   return page
-    .locator('input[type="date"], input[type="datetime-local"], input[name="dueAt"]')
+    .getByLabel(/due[\s-]*date/i)
+    .or(page.locator('input[type="date"], input[type="datetime-local"], input[name="dueAt"]'))
     .first();
 }
 
@@ -23,7 +23,9 @@ export async function fillDueDate(page: Page, date: string): Promise<void> {
   const input = dueDateInput(page);
   await expect(input, "the checkout form has no due-date input").toBeVisible({ timeout: 10_000 });
   const type = (await input.getAttribute("type")) ?? "";
-  await input.fill(type === "datetime-local" ? `${date}T00:00` : date);
+  // Text and date inputs accept the ISO calendar date. datetime-local also needs a time.
+  const value = type === "datetime-local" ? `${date}T00:00` : date;
+  await input.fill(value);
 }
 
 /** Wait until the store actually holds the loan, not just the optimistic badge. */
