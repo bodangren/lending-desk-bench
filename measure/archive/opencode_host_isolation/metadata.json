@@ -25,5 +25,6 @@
     "related_tracks": [
       "grader_system_chrome"
     ]
-  }
+  },
+  "description": "Every opencode that the benchmark starts uses its own job store, and the live days clean it up."
 }
