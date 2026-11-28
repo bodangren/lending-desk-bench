@@ -36,11 +36,11 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
       Deleting the array would remove the only regression test of that engine, so the
       module now carries a comment saying it is an engine fixture and grades no
       candidate.
-- [x] 1.5 Add a second correct implementation under `reference-variant/` — implementation e19d014.
+- [x] 1.5 Add a second correct implementation under `reference-variant/` — implementations e19d014, ebafc21.
       The variant differs in the due-date control, member options, card order, headings,
       wording, form state, reads, history markup, and API flow.
       `BENCH_SELFCHECK=full` now grades it through `run.sh`. Default meta mode does not.
-      No-model grades: `rv-1128-1` scored 97; `rv-1128-2` scored 100; `rv-1128-3` scored 100.
+      No-model grades: `rv-1128-1` scored 97; `rv-1128-2` scored 100; `rv-1128-3` scored 100; `rv-1128-4` scored 100.
       Final score: valid 100 with a current suite and no doctor warnings.
       Grader fixes: none. `M.closeout` was a variant defect, not a grading defect.
       The variant had changed fixture plan task 6 from "handling to" to "handling in".
