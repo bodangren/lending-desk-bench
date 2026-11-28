@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-11-28T11:06:30",
+  "generated_at": "2026-11-29T00:32:04",
   "executor": {
     "series": "opencode",
     "name": "opencode",
@@ -5894,7 +5894,7 @@
             "trusted": true,
             "publishable": true,
             "rankable": true,
-            "under_load": true
+            "under_load": false
           }
         },
         {
@@ -5964,7 +5964,7 @@
             "trusted": true,
             "publishable": true,
             "rankable": true,
-            "under_load": true
+            "under_load": false
           }
         },
         {
@@ -6034,7 +6034,7 @@
             "trusted": true,
             "publishable": true,
             "rankable": true,
-            "under_load": true
+            "under_load": false
           }
         },
         {
@@ -6104,7 +6104,7 @@
             "trusted": true,
             "publishable": true,
             "rankable": true,
-            "under_load": true
+            "under_load": false
           }
         },
         {
@@ -6174,7 +6174,7 @@
             "trusted": true,
             "publishable": true,
             "rankable": true,
-            "under_load": true
+            "under_load": false
           }
         },
         {
@@ -6244,7 +6244,7 @@
             "trusted": true,
             "publishable": true,
             "rankable": true,
-            "under_load": true
+            "under_load": false
           }
         }
       ]

@@ -1,6 +1,6 @@
 {
   "schema": "model-guide-overview/1",
-  "today": "2026-11-28",
+  "today": "2026-11-29",
   "stale": false,
   "rows": [
     {
@@ -13,11 +13,11 @@
     },
     {
       "kind": "app code",
-      "pick": "opencode-go/hungerg-free",
-      "second": "opencode-go/deepseek-v4.1-flash",
-      "evidence": "build routes: Claude Sonnet=claude-agent/sonnet#high; MiniMax M3.1 Flash=opencode-go/minimax-m3.1-flash 91.1; DeepSeek Flash=opencode-go/deepseek-v4.1-flash 95.0; Hy=opencode-go/hy4-flash-free#high 71.9; Go=opencode-go/mimo-v2.6-flash 95.0; Hungerg=opencode-go/hungerg-free 95.2; GPT Sol=openai/gpt-6.2-sol#high",
-      "evidence_date": "2026-11-28",
-      "base_line": 95.2
+      "pick": "opencode-go/mimo-v2.6-flash",
+      "second": "opencode-go/hungerg-free",
+      "evidence": "build routes: Claude Sonnet=claude-agent/sonnet#high; MiniMax M3.1 Flash=opencode-go/minimax-m3.1-flash 92.4; DeepSeek Flash=opencode-go/deepseek-v4.1-flash 96.0; Hy=opencode-go/hy4-flash-free#high 93.8; Go=opencode-go/mimo-v2.6-flash 96.2; Hungerg=opencode-go/hungerg-free 96.2; GPT Sol=openai/gpt-6.2-sol#high",
+      "evidence_date": "2026-11-29",
+      "base_line": 96.2
     },
     {
       "kind": "test writing",
@@ -32,7 +32,7 @@
       "pick": "opencode-go/hungerg-free",
       "second": "opencode-go/hy4-flash-free",
       "evidence": "track A: total 100.0 (n=1)",
-      "evidence_date": "2026-11-28",
+      "evidence_date": "2026-11-29",
       "base_line": 100
     },
     {
