@@ -47,6 +47,11 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
       It restored the task text. The plain-image doctor warning was also removed.
       Meta command: `cd harness && BENCH_META=1 ./node_modules/.bin/vitest run tests/meta/reference-variant.test.ts --maxWorkers=1`.
       Evidence: `measure/runs/harness_audit/green-1.5-evidence.log`.
+      Review A F1 fix: `05c1975` finds the due-date control by accessible label, type, or name.
+      F1 proof: `rv-1128-hy4-1` scored 94.5, up from 71.9 in `a-hy4-flash-free-2026w48-r2`; `rv-1128-5` scored 100; `rv-1128-ref-1` scored 100.
+      F1 changed criteria: `E.error-announced`, `E.error-shown`, `E.labels`, `E.member-options`, `E.optimistic`, `E.pending`, `E.submits`, `F.auth-checkout`, `F.checkout-conflict`, `F.checkout-record`, `F.future-due-date`, `F.lifecycle`, `F.post-mutation-state`.
+      F1 changed probes: `P.action-race`, `P.retry-after-error`, `P.stale-after-mutate`.
+      The proof records are diagnostic and unranked because the host was under load. The original Hy4 run stayed unchanged.
 
 ## Phase 2: The defects that decide the ranking
 
