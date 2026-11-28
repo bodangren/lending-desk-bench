@@ -146,7 +146,7 @@ Execution notes:
       advisory notes in canary-tests.log; score unaffected); change
       12:21:00+08:00 `canary-change-2026w41-1791692460` valid=true
       total=100. The calibration candidates were not modified.
-- [ ] 7.4 `regrade-run.sh` and `regrade-all.sh`; regrade every historical
+- [~] 7.4 `regrade-run.sh` and `regrade-all.sh`; regrade every historical
       agent run (w37–w39, both tracks).
 - [ ] 7.5 Export the site data and the model pages.
 

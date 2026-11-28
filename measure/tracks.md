@@ -2,6 +2,9 @@
 
 ## Tracks in progress
 
+- [~] **Track: Benchmark v2 — validity, fixture r2, scoring rebalance** — Status: in progress (PM 2026-11-29)
+  - *Link: [bench_v2](./tracks/bench_v2/)*
+
 ## All tracks
 
 | ID | Title | Type | Status | Created |
@@ -10,7 +13,7 @@
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
 | runs_go_new_models_20261127 | Current runs for new Go models | Chore | shelved, not done (PM 2026-11-27) | 2026-11-27 |
 | bench_incremental | Incremental benchmark runs — new models and failures only | Feature | shelved, not done (PM 2026-11-27) | 2026-10-17 |
-| bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | shelved, not done (PM 2026-11-27) | 2026-09-24 |
+| bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | in progress | 2026-09-24 |
 | bugfix_bench | Bug-fixing benchmark — lending_desk_bugfix | Feature | shelved, not done (PM 2026-11-27) | 2026-09-11 |
 | rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | shelved, not done (PM 2026-11-27) | 2026-10-25 |
 
@@ -33,9 +36,6 @@ These items have no date and no track yet.
 
 - [ ] **Track: Incremental benchmark runs — new models and failures only** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [bench_incremental](./tracks/bench_incremental/)*
-
-- [ ] **Track: Benchmark v2 — validity, fixture r2, scoring rebalance** — Status: shelved, not done (PM 2026-11-27)
-  - *Link: [bench_v2](./tracks/bench_v2/)*
 
 - [ ] **Track: Bug-fixing benchmark — lending_desk_bugfix** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [bugfix_bench](./tracks/bugfix_bench/)*
