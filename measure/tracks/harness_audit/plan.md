@@ -135,7 +135,7 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
       the strongest (+1.0). That is the double-count being removed, but it compresses
       the scale. Lowering `PENALTY_FULL` restores discrimination honestly. I did not
       change it, because reordering up to 13 of 19 positions is your decision.
-      Decision 2026-11-28: PENALTY_FULL stays 30. This changes no published score. Moved to tech-debt.md.
+      Decision 2026-11-28: PENALTY_FULL stays 30. This changes no published score. Moved to tech-debt.md in commit 34695bd32ece54f15670b6c47c1b91bf6ad67fc1.
 - [x] 4.3 "Uncached input" and cache hit. DONE. The results table header is now
       "Uncached input" with a tooltip saying cache reads are counted separately and
       providers split the two differently. The cache-hit column already existed there.
@@ -209,7 +209,7 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
 
 - [x] 6.1 Make the repository private, or publish `docs/` separately. `reference/` and
       `harness/tests/` are public and the container has open egress.
-      Moved to tech-debt.md (PM 2026-11-28 16:35).
+      Moved to tech-debt.md (PM 2026-11-28 16:35). Evidence: commit 34695bd32ece54f15670b6c47c1b91bf6ad67fc1.
 - [x] 6.2 Flush-order assertions. DONE. `_stream.ts` records the chunk ordinal at which
       each marker first appears, alongside the millisecond mark. `H.loading` and
       `P.streams-shell` now assert the content chunk is later than the shell chunk,
@@ -221,6 +221,6 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
       consumes it. The chunk ordinal answers the real question.
 - [x] 6.3 Grade contract violators instead of invalidating them, and flag the violation.
       5 of the invalid runs come from the all-or-nothing filesystem contract.
-      Moved to tech-debt.md (PM 2026-11-28 16:35).
+      Moved to tech-debt.md (PM 2026-11-28 16:35). Evidence: commit 34695bd32ece54f15670b6c47c1b91bf6ad67fc1.
 - [x] 6.4 Set `REPS=3`.
-      Moved to tech-debt.md (PM 2026-11-28 16:35).
+      Moved to tech-debt.md (PM 2026-11-28 16:35). Evidence: commit 34695bd32ece54f15670b6c47c1b91bf6ad67fc1.
