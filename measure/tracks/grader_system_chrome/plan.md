@@ -2,6 +2,8 @@
 
 PM 2026-11-03: light lane
 
+PM order 2026-11-28 16:35: starts after the harness_audit fixes. No new model runs and no paid route; build roles from ra-quota pick; Go paid models stay held until the 2026-12-18 reset.
+
 This plan moves the grader browser to the system Chrome and regrades the
 stale scores. Spec: `spec.md`. Base commit: `c47707f`.
 

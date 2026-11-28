@@ -2,19 +2,25 @@
 
 ## Tracks in progress
 
+- [~] **Track: Harness audit — verified grading defects** — Status: in progress (PM 2026-11-28 16:35)
+  - *Link: [harness_audit](./tracks/harness_audit/)*
+
+- [~] **Track: Grader browser: grade with the system Chrome and regrade the stale scores** — Status: in progress (PM 2026-11-28 16:35)
+  - *Link: [grader_system_chrome](./tracks/grader_system_chrome/)*
+
 ## All tracks
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
+| harness_audit | Harness audit — verified grading defects | Bug | in progress | 2026-08-30 |
+| grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | in progress | 2026-11-04 |
 | ark_glm_flash_vs_evolving_20261128 | GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan | Chore | completed | 2026-11-28 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
 | runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
 | runs_go_new_models_20261127 | Current runs for new Go models | Chore | shelved, not done (PM 2026-11-27) | 2026-11-27 |
-| grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | shelved, not done (PM 2026-11-27) | 2026-11-04 |
 | bench_incremental | Incremental benchmark runs — new models and failures only | Feature | shelved, not done (PM 2026-11-27) | 2026-10-17 |
 | bench_v2 | Benchmark v2 — validity, fixture r2, scoring rebalance | Feature | shelved, not done (PM 2026-11-27) | 2026-09-24 |
 | bugfix_bench | Bug-fixing benchmark — lending_desk_bugfix | Feature | shelved, not done (PM 2026-11-27) | 2026-09-11 |
-| harness_audit | Harness audit — verified grading defects | Bug | shelved, not done (PM 2026-11-27) | 2026-08-30 |
 | opencode_host_isolation | OpenCode host isolation: no benchmark opencode uses the shared store | Bug | shelved, not done (PM 2026-11-27) | 2026-11-06 |
 | rigor_a_h | Harder A–H criteria from interleavings, state sequences, and robustness variants | Feature | shelved, not done (PM 2026-11-27) | 2026-10-25 |
 
@@ -35,9 +41,6 @@ These items have no date and no track yet.
 - [ ] **Track: Current runs for new Go models** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [runs_go_new_models_20261127](./tracks/runs_go_new_models_20261127/)*
 
-- [ ] **Track: Grader browser: grade with the system Chrome and regrade the stale scores** — Status: shelved, not done (PM 2026-11-27)
-  - *Link: [grader_system_chrome](./tracks/grader_system_chrome/)*
-
 - [ ] **Track: Incremental benchmark runs — new models and failures only** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [bench_incremental](./tracks/bench_incremental/)*
 
@@ -46,9 +49,6 @@ These items have no date and no track yet.
 
 - [ ] **Track: Bug-fixing benchmark — lending_desk_bugfix** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [bugfix_bench](./tracks/bugfix_bench/)*
-
-- [ ] **Track: Harness audit — verified grading defects** — Status: shelved, not done (PM 2026-11-27)
-  - *Link: [harness_audit](./tracks/harness_audit/)*
 
 - [ ] **Track: OpenCode host isolation: no benchmark opencode uses the shared store** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [opencode_host_isolation](./tracks/opencode_host_isolation/)*

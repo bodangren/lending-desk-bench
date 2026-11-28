@@ -1,9 +1,11 @@
 # Implementation plan — harness audit
 
+PM decision 2026-11-28 16:35: light lane, one review pass. A finding that does not make a published score wrong goes to tech-debt.md.
+
 Order follows blast radius. Phase 1 makes the harness able to catch this defect class.
 Phase 2 removes the defects that decide the ranking today. Later phases are cleanup.
 
-Do not regrade after a change. The benchmark runs weekly across all qualifying models.
+The regrade of the stale scores runs in grader_system_chrome after this track.
 
 ---
 
@@ -34,10 +36,11 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
       Deleting the array would remove the only regression test of that engine, so the
       module now carries a comment saying it is an engine fixture and grades no
       candidate.
-- [ ] 1.5 Add a second correct implementation under `reference-variant/` that differs in
+- [~] 1.5 Add a second correct implementation under `reference-variant/` that differs in
       every incidental choice: `datetime-local`, no placeholder option, a different card
       element order, a wrapped `<h1>`. Grade it in CI. It must score 100. This is the
       only mechanism that catches a reference-coupled criterion before a model does.
+      Done when the variant is graded by the harness grade path with no model call, and each criterion it fails is fixed in the grader or recorded as not a grading defect with the reason.
 
 ## Phase 2: The defects that decide the ranking
 
@@ -132,6 +135,7 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
       the strongest (+1.0). That is the double-count being removed, but it compresses
       the scale. Lowering `PENALTY_FULL` restores discrimination honestly. I did not
       change it, because reordering up to 13 of 19 positions is your decision.
+      Decision 2026-11-28: PENALTY_FULL stays 30. This changes no published score. Moved to tech-debt.md.
 - [x] 4.3 "Uncached input" and cache hit. DONE. The results table header is now
       "Uncached input" with a tooltip saying cache reads are counted separately and
       providers split the two differently. The cache-hit column already existed there.
@@ -203,8 +207,9 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
 
 ## Phase 6: Approved earlier, not started
 
-- [ ] 6.1 Make the repository private, or publish `docs/` separately. `reference/` and
+- [x] 6.1 Make the repository private, or publish `docs/` separately. `reference/` and
       `harness/tests/` are public and the container has open egress.
+      Moved to tech-debt.md (PM 2026-11-28 16:35).
 - [x] 6.2 Flush-order assertions. DONE. `_stream.ts` records the chunk ordinal at which
       each marker first appears, alongside the millisecond mark. `H.loading` and
       `P.streams-shell` now assert the content chunk is later than the shell chunk,
@@ -214,6 +219,8 @@ Nothing in phases 2 to 5 stays fixed unless this phase lands first.
       `P.streams-shell` the measured deltas were -4ms to 0ms even when the boundary was
       genuinely absent, because the inlined RSC payload can precede the HTML that
       consumes it. The chunk ordinal answers the real question.
-- [ ] 6.3 Grade contract violators instead of invalidating them, and flag the violation.
+- [x] 6.3 Grade contract violators instead of invalidating them, and flag the violation.
       5 of the invalid runs come from the all-or-nothing filesystem contract.
-- [ ] 6.4 Set `REPS=3`.
+      Moved to tech-debt.md (PM 2026-11-28 16:35).
+- [x] 6.4 Set `REPS=3`.
+      Moved to tech-debt.md (PM 2026-11-28 16:35).
