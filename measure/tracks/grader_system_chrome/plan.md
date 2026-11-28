@@ -669,7 +669,7 @@ Marker use:
   - Verify: the report reaches the PM, with each changed public score listed.
   - Evidence: report under this task.
   - Lane: light. A text report.
-- [~] 4.5 The publication. Rebuild the site data with the export the harness
+- [x] 4.5 `d6be0ae` The publication. Rebuild the site data with the export the harness
   uses: `python3 harness/export-site-data.py` and
   `python3 harness/generate-model-pages.py`, then the model-guide builder
   (`harness/model-guide/update.sh`, preview first, then `--docs --no-commit`),
@@ -681,6 +681,16 @@ Marker use:
     (`https://bodangren.github.io/lending-desk-bench/assets/data/benchmark.json`)
     shows the new totals.
   - Verify: the live `generated_at` is newer than the end of the last regrade.
+  - Result (2026-11-29): the docs commit is `d6be0ae`. The live
+    `benchmark.json` `generated_at` is `2026-11-29T00:32:04`, newer than the
+    end of the last regrade (2026-11-28 23:43 +07). The live totals match the
+    report of task 4.4: `hy4-flash-free` Build 93.8 (was 71.9) and
+    `mimo-v2.6-pro` Build 96.2 (was 94.5). The `rg` check for `ark1128` prints
+    no line in `docs/`, and the `doubao-seed-evolving` lines are the ones of
+    the 2026-11-27 ingest. The guide rows hold no trial route.
+  - The guide builder ran with the newest private manifest
+    (`MANIFEST-2026-11-27.txt`), so `real-work.json` and `real-work.html`
+    stay unchanged.
   - Lane: light. The PM order of 2026-11-28 16:35 covers the publication.
 
 ## Phase 5: The close
