@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "role": "review-a",
+  "track": "harness_audit",
+  "phase": "Phase 1: Make the self-checks run",
+  "baseline_sha": "23cd701035f10e0d9540b4b007f0e57fa6347e2e",
+  "phase_base_sha": "50aa0e881926e0cb141c38f6931a92234a141af3",
+  "role_base_sha": "23cd701035f10e0d9540b4b007f0e57fa6347e2e",
+  "audited_head_sha": "23cd701035f10e0d9540b4b007f0e57fa6347e2e",
+  "status": "fail",
+  "summary": "The variant is correct on the stated task inputs and scores 100. A remaining due-date locator restriction deducts points from a published candidate with a correct, labelled text input. The variant does not test that choice.",
+  "blocking_findings": [
+    "F1 [Blocker] review-a: FIX — harness/tests/e2e/_forms.ts:15-26 restricts text inputs to name=\"dueAt\", but fixture/measure/tracks/lending_desk/spec.md:50,63-64 states no input type or name. The variant uses both datetime-local and dueAt (reference-variant/app/items/[id]/checkout-form.tsx:46-52). Published Hy4 Flash Free run a-hy4-flash-free-2026w48-r2 uses a labelled text input with no name attribute (candidate/app/items/[id]/checkout-form.tsx:101-112). Its action receives the parsed date at lines 24-33,51-66. The run's artifacts/e2e.log:195-249 proves that E.member-options and E.labels fail only because the locator finds no element. Its artifacts/score.json:132,135,427 records both failures and 71.9. docs/assets/data/benchmark.json:11735-11782 publishes this run as the ranked median. Accept the spec-compliant input without depending on a field name. Cover the labelled text-input case in a regression check and regrade affected records."
+  ],
+  "nonblocking_findings": [
+    "F2 [Nit] review-a: TECH-DEBT — harness/tests/e2e/detail.spec.ts:121,148,160,176,184 and probes.spec.ts:124,146,152 require an idle checkout button name matching /check ?out/i. E.2-E.4 (fixture spec:51-55) specifies the call and pending text, not the idle label or optimistic badge wording. The variant's label \"Check out item\" and badges \"On loan\" and \"Available\" (checkout-form.tsx:38-41,75,104-105) retain those words. The test would reject an otherwise correct \"Lend item\" control or different equivalent optimistic text. No published score impact from this wording was established.",
+    "F3 [Nit] review-a: TECH-DEBT — harness/tests/unit/track-plan.test.ts:80-87 fixes the complete task text. fixture/AGENTS.md:4-7,22 permits progress in the plan and requires all tasks complete, but does not forbid a meaning-preserving wording change. The first variant grade lost M.closeout because it corrected \"handling to\" to \"handling in\" (green-1.5-evidence.log). Restoring that text hides this restriction. No selected published run with complete task markers and closeout metadata was found to fail only this comparison.",
+    "F4 [Nit] review-a: TECH-DEBT — harness/tests/meta/reference-variant.test.ts:30-39 selects the first full-mode conditional, which is the one-line control_scope condition at harness/batch.sh:310. The assertion would still pass if the variant call moved outside its actual full-mode conditional at line 318. Lines 63-65 also allow a missing badge marker because indexOf returns -1. Add a behavioral gate test and require each card marker to exist before comparing positions. Current code is correctly gated; no published score impact was established.",
+    "F5 [Nit] review-a: TECH-DEBT — measure/tracks/harness_audit/plan.md:43-49 records the run IDs and final grade in Git, but the cited raw report and score artifacts are Git-ignored (.gitignore:11). Record a durable evidence snapshot or digest. Task 1.5 adds no pinned test count. Pre-existing counts at plan.md:19,57 pin 121 meta tests and 26 Playwright tests. No publication impact was established.",
+    "F6 [Nit] review-a: TECH-DEBT — harness/tests/e2e/error.spec.ts:13-21 verifies that clicking Try again does not navigate, but does not verify that a retry occurs. harness/tests/e2e/catalogue.spec.ts:168-175 and _stream.ts:76-79 count arbitrary elements rather than six placeholder tiles. The variant has a real reset callback and six actual placeholder articles. No published candidate with a false pass on either behavior was established."
+  ],
+  "evidence": [
+    "HEAD is 23cd701035f10e0d9540b4b007f0e57fa6347e2e. The exact diff from 50aa0e881926e0cb141c38f6931a92234a141af3 changes 14 files. git diff --check reports no issues.",
+    "Q1: No definite A-H checkbox violation on stated inputs. A is implemented at reference-variant/src/lib/loans.ts:5-11; B at src/components/item-card.tsx:5-26; C at app/items/page.tsx:21-70; D at app/items/[id]/page.tsx:12-78; E at checkout-form.tsx:20-119; F at src/actions/loans.ts:20-71; G at app/api/loans/route.ts:28-106; H at app/items/loading.tsx:1-16 and error.tsx:17-24. Export names and signatures match the fixture. The variant omits unknown item/member validation that the reference adds, but the spec states no corresponding error contract.",
+    "Q2: Differences: reference checkout-form.tsx:33-43 uses a date input, placeholder and source-order members; variant checkout-form.tsx:16,44-75 uses datetime-local, no placeholder and sorted members. Reference item-card.tsx:11-27 puts image first and badge last; variant item-card.tsx:11-23 puts badge first and name last. Reference app/items/page.tsx:46 and loading.tsx:4 have plain headings; variant page.tsx:59-61 and loading.tsx:4-6 wrap them. Reference detail page:54-68 puts action before history; variant detail page:33-48 reverses this and changes the history heading. Variant helper names memoizedItem, BorrowerPicker, HistoryRecords and CatalogueGrid differ from reference loadItem, CheckoutSection, LoanHistory and ItemGrid. Variant route:20-26 shares JSON handling and skips the reference existence and pre-write reads. Variant catalogue page:48-55 reads items, categories and loans together rather than count/categories followed by a separate suspense grid.",
+    "Q2 continued: Open choices that still match: both forms use name=\"memberId\" and name=\"dueAt\" and a native select; both idle labels contain Check out and both optimistic states use On loan and Available. Both detail implementations memoize getItem with React cache, read item/open loan together, and use separate suspense boundaries plus listLoansForItem/listMembers in parallel (reference detail page:13,32,54-80; variant detail page:8,20,33-59). Both catalogue grids use loans.find for each item (reference page:24; variant page:41). Both use Next Image and Link (reference and variant item-card.tsx:1-2). Names of exported symbols and specified wording are contract requirements, not incidental choices.",
+    "Q3: The recorded 100 is genuine, not evidence of exhaustive freedom from reference coupling. All four saved score records match the plan totals. The final candidate has byte-identical content in every one of the eleven overlay files. runs/rv-1128-4/artifacts/score.json:82-179 shows no doctor warnings, every scored criterion and probe true, and both modernization advisory checks false. Lines 191-192 and 241 record valid provenance, a current suite and total 100; lines 212,226-231 identify an overlay with no invoked agent. F1 demonstrates a false failure in an actual published run. F2 and F3 identify further restrictions without proven publication impact.",
+    "Q4: harness/batch.sh:276,284-342 defaults to meta, retains the existing weekly marker and self-checks, and grades the variant only inside the full branch. Lines 325-329 scrub BENCH_TRACK, set AGENT_SKIP and supply an overlay. harness/run.sh:43 defaults to build; lines 1217-1264 skip the agent branch under AGENT_SKIP=1. batch.sh:331-335 rejects missing, invalid or sub-100 score output with exit 3. The command-scoped environment does not change later model runs. The full batch path was not executed in this audit.",
+    "Q5: The meta test passed with exit 0 (three tests). The exact writable-path assertion at reference-variant.test.ts:42-47 prevents an absent file or empty variant from passing. Missing directories throw at line 11. Lines 50-65 meaningfully guard several incidental choices, but F4 identifies structural test gaps. No extra fixture or batch run was permitted.",
+    "Q6: The cited log and score artifacts are ignored by Git. The committed plan records implementation commits, run IDs, totals, disposition and the meta command; the full logs are not durable in Git. No new pinned test count was added by task 1.5, but plan.md:19,57 has historical counts. The permitted test does not verify those counts. The final score and meta command results match the task 1.5 claims.",
+    "Routing: Measure index and anti-pattern catalog were read. measure_status reports all six phases closed. The selected track has no test-strategy.md. build-graph is installed but no graph database exists; no new database was built under the cheap-command and report-only constraints. Git export and caller search verified the variant contracts.",
+    "A3: the full gate parses JSON and tests numeric equality, not bare digits. A4: the exact nonempty writable-path list prevents a missing overlay from passing; the prior M.plan-complete checks ORIGINAL_TASKS.length at track-plan.test.ts:75. A5: the permitted meta test passes and the saved grade claims match the artifacts. No other framework changes were in scope."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git diff --stat 50aa0e8..23cd701",
+    "git diff 50aa0e8..23cd701",
+    "git diff --check 50aa0e8..23cd701",
+    "git grep -n '^export ' -- fixture/app/items fixture/app/api/loans fixture/src/actions/loans.ts fixture/src/lib/loans.ts fixture/src/components/item-card.tsx reference-variant",
+    "git check-ignore -v measure/runs/harness_audit/green-1.5-evidence.log runs/rv-1128-4/artifacts/score.json",
+    "/home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && BENCH_META=1 ./node_modules/.bin/vitest run tests/meta/reference-variant.test.ts --maxWorkers=1' — exit 0",
+    "Read-only comparison of all final candidate overlay files and saved score JSON records; no mismatches.",
+    "Read-only examination of published run sources and failed criterion logs; no grade or batch run."
+  ],
+  "changed_files": [
+    "harness/batch.sh",
+    "harness/tests/meta/reference-variant.test.ts",
+    "measure/tracks/harness_audit/plan.md",
+    "reference-variant/app/api/loans/route.ts",
+    "reference-variant/app/items/[id]/checkout-form.tsx",
+    "reference-variant/app/items/[id]/page.tsx",
+    "reference-variant/app/items/error.tsx",
+    "reference-variant/app/items/loading.tsx",
+    "reference-variant/app/items/page.tsx",
+    "reference-variant/measure/tracks/lending_desk/metadata.json",
+    "reference-variant/measure/tracks/lending_desk/plan.md",
+    "reference-variant/src/actions/loans.ts",
+    "reference-variant/src/components/item-card.tsx",
+    "reference-variant/src/lib/loans.ts"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "retry_implementation",
+  "confidence": "high",
+  "route": "openai/gpt-6.2-sol#high",
+  "ratings": [
+    {"axis": "correctness", "score": 3, "evidence": "The variant scores 100, but harness/tests/e2e/_forms.ts:17 rejects the correct text input of a published candidate."},
+    {"axis": "test_meaning", "score": 3, "evidence": "The three variant meta tests pass, but the full-mode conditional assertion at reference-variant.test.ts:30 selects the wrong conditional."},
+    {"axis": "scope_discipline", "score": 5, "evidence": "The exact phase diff changes only the overlay, its guard, the full self-check and plan evidence."},
+    {"axis": "evidence_quality", "score": 3, "evidence": "The final overlay matches its saved score candidate, but plan.md:49 cites a Git-ignored report."}
+  ]
+}

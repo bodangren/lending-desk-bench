@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: harness_audit
+phase: Phase 1: Make the self-checks run
+commits: none
+tests_run: /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'cd harness && BENCH_META=1 ./node_modules/.bin/vitest run tests/meta/reference-variant.test.ts --maxWorkers=1' — PASS (3 tests); no grade or batch run
+files_changed: measure/runs/harness_audit/review-a-23cd701.json; measure/runs/harness_audit/review-a-23cd701.log
+plan_updates: none
+known_failures: F1 — A published candidate lost E.member-options and E.labels because the due-date selector rejects a correctly labelled text input without a name attribute.
+handoff: FAIL. Route F1 to Green for a bounded fix and regrade the affected scores. Route F2-F6 to tech-debt. Variant grade 100 is verified. Audit base 50aa0e881926e0cb141c38f6931a92234a141af3; role base and audited HEAD 23cd701035f10e0d9540b4b007f0e57fa6347e2e.
+END_MEASURE_AGENT_RESULT

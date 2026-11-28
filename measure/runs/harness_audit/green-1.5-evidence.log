@@ -1,0 +1,58 @@
+Green evidence — harness_audit task 1.5
+Date: 2026-11-28
+phase_base_sha: 50aa0e881926e0cb141c38f6931a92234a141af3
+role_base_sha: 50aa0e881926e0cb141c38f6931a92234a141af3
+implementation_commits: e19d0144737c8f68dd908d2f2d3a1abd96ab5be7; ebafc21d1643b20ffa21ccd85a66dba22a048d4c
+
+No Red command ran. The PM recorded the variant itself as the failing check.
+The selected track has no test-strategy.md or workflow.md at the requested paths.
+
+Grade command pattern:
+HEAVY_PRIORITY=p2 HEAVY_RUN_TIMEOUT_S=1800 /home/daniebo/Desktop/advantage-pr/scripts/jobs/heavy-run.sh -c 'AGENT_SKIP=1 BENCH_TRACK=build OVERLAY=/home/daniebo/Desktop/lending-desk-bench/reference-variant harness/run.sh local reference-variant a <run-id>'
+
+rv-1128-1:
+  gate typecheck=true build=true
+  TOTAL 97
+  M.closeout=false
+  doctor warnings=1
+  Artifact: runs/rv-1128-1/artifacts/score.json
+  Disposition b: the variant changed fixture plan task 6 from "handling to" to "handling in".
+  Contract source: fixture/AGENTS.md line 6 and fixture/measure/tracks/lending_desk/plan.md line 16.
+  The variant restored the task text. It also replaced the plain image with next/image.
+
+rv-1128-2:
+  gate typecheck=true build=true
+  TOTAL 100
+  doctor warnings=0
+  Artifact: runs/rv-1128-2/artifacts/score.json
+
+rv-1128-3:
+  gate typecheck=true build=true
+  TOTAL 100
+  suite_current=true
+  provenance_valid=true
+  doctor warnings=0
+  Artifact: runs/rv-1128-3/artifacts/score.json
+
+rv-1128-4:
+  gate typecheck=true build=true
+  TOTAL 100
+  suite_current=true
+  provenance_valid=true
+  doctor warnings=0
+  Artifact: runs/rv-1128-4/artifacts/score.json
+  Commit ebafc21 renamed internal helpers that matched reference names.
+
+No criterion graded an unstated requirement. No grader criterion, control, or matrix entry changed.
+No sensitivity control ran. No control target changed.
+
+Meta command:
+cd harness && BENCH_META=1 ./node_modules/.bin/vitest run tests/meta/reference-variant.test.ts --maxWorkers=1
+Result: exit 0.
+
+Static checks:
+git diff --check
+bash -n harness/batch.sh
+Result: exit 0.
+
+The host reported under_load=true on each grade. Every product criterion and probe passed on the final grade.

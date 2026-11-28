@@ -1,0 +1,12 @@
+MEASURE_AGENT_RESULT
+role: review-a
+status: complete
+track: harness_audit
+phase: Phase 1: Make the self-checks run
+commits: none
+tests_run: heavy-run.sh -c 'cd harness && BENCH_META=1 ./node_modules/.bin/vitest run tests/meta/due-date-input.test.ts tests/meta/reference-variant.test.ts --maxWorkers=1' — PASS, exit 0
+files_changed: measure/runs/harness_audit/review-a-d695e20.json and review-a-d695e20.log
+plan_updates: none
+known_failures: none blocking; F7 is tech debt
+handoff: F1 closed. All 13 criteria and three probe changes follow the missing locator fix. Both references score 100. F2-F6 are recorded. Record F7 as tech debt. Use diagnostic scores only as evidence, not published results. Proceed to the separate regrade track.
+END_MEASURE_AGENT_RESULT
