@@ -2,9 +2,6 @@
 
 ## Tracks in progress
 
-- [~] **Track: Harness audit — verified grading defects** — Status: in progress (PM 2026-11-28 16:35)
-  - *Link: [harness_audit](./tracks/harness_audit/)*
-
 - [~] **Track: Grader browser: grade with the system Chrome and regrade the stale scores** — Status: in progress (PM 2026-11-28 16:35)
   - *Link: [grader_system_chrome](./tracks/grader_system_chrome/)*
 
@@ -12,7 +9,6 @@
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
-| harness_audit | Harness audit — verified grading defects | Bug | in progress | 2026-08-30 |
 | grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | in progress | 2026-11-04 |
 | ark_glm_flash_vs_evolving_20261128 | GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan | Chore | completed | 2026-11-28 |
 | runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
@@ -57,6 +53,10 @@ These items have no date and no track yet.
   - *Link: [rigor_a_h](./tracks/rigor_a_h/)*
 
 ## Archived Tracks
+
+- [x] **Track: Harness audit — verified grading defects**
+  *Link: [harness_audit](./archive/harness_audit/)*
+  *The verified grading defects are fixed, the reference variant grades at 100 in the full self-check, and the due-date locator finds a labelled input.*
 
 - [x] **Track: GLM-5.3 Flash against Doubao Seed Evolving on the Ark Agent Plan**
   *Link: [ark_glm_flash_vs_evolving_20261128](./archive/ark_glm_flash_vs_evolving_20261128/)*

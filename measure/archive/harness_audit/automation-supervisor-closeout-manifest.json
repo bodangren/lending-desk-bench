@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "track": "harness_audit",
+  "title": "Harness audit — verified grading defects",
+  "status": "done",
+  "closed_out": "2026-11-28",
+  "closed_by": "claude-sonnet-5-5",
+  "pre_closeout_head": "7bda0d240a8bd1beac0bc2ebd3c88e54a585c115",
+  "archive_move": {
+    "from": "measure/tracks/harness_audit",
+    "to": "measure/archive/harness_audit",
+    "method": "git mv"
+  },
+  "lane": "light",
+  "audits": [
+    {
+      "role": "review-a",
+      "kind": "review pass r2",
+      "path": "measure/runs/harness_audit/review-a-d695e20.json",
+      "status": "pass",
+      "audited_head": "d695e202077f4e54a7b424469c609812bc0a0416",
+      "scope_note": "The light lane ran one review pass. No final acceptance ran. The review files are Git-ignored and stay in the local worktree."
+    },
+    {
+      "role": "measure-closeout",
+      "kind": "closeout gate",
+      "command": "python3 /home/daniebo/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py closeout --repo /home/daniebo/Desktop/lending-desk-bench --track harness_audit",
+      "status": "pass"
+    }
+  ],
+  "plan_evidence": {
+    "task_lines": 39,
+    "all_complete": true,
+    "commit_shas": [
+      "c37c4f1c6b703d950985fa1c5fafe0a3263027e3",
+      "e2c5d7699dfaef6348fff90e1836427eb3f8a3e6",
+      "2346ef0d7960aa773284419a340e5ba217c01ef6",
+      "e19d0144737c8f68dd908d2f2d3a1abd96ab5be7",
+      "ebafc21d1643b20ffa21ccd85a66dba22a048d4c",
+      "05c197543a466ce884b69625f5f0d2308d0e50ea",
+      "34695bd32ece54f15670b6c47c1b91bf6ad67fc1"
+    ],
+    "sha_notes": "Tasks 1.1 to 6.2 cite c37c4f1, which holds the audit changes. Tasks 4.1 and 4.2 also cite e2c5d76 and 2346ef0. Tasks 6.1, 6.3 and 6.4 cite 34695bd, the move to tech-debt.md. Task 1.5 cites e19d014, ebafc21 and 05c1975."
+  },
+  "tech_debt": "tech-debt.md sections '2026-11-28 harness_audit (moved, not a wrong score)' and '2026-11-28 harness_audit Review A (23cd701)'"
+}

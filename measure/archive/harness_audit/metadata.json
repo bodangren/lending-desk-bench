@@ -2,10 +2,10 @@
   "id": "harness_audit",
   "title": "Harness audit — verified grading defects",
   "type": "Bug",
-  "status": "in_progress",
+  "status": "done",
   "created": "2026-08-30",
   "estimated_tasks": 39,
-  "actual_tasks": 35,
+  "actual_tasks": 39,
   "source": {
     "method": "five-agent review, then a second adversarial verification pass per scope",
     "reviewed": 60,
@@ -16,5 +16,7 @@
     "evidence": "runs/*/artifacts/score.json — 28 run directories, 19 valid records",
     "raw": "scratchpad/verified-*.json"
   },
-  "lane": "light"
+  "lane": "light",
+  "description": "The verified grading defects are fixed, the reference variant grades at 100 in the full self-check, and the due-date locator finds a labelled input.",
+  "completed": "2026-11-28"
 }

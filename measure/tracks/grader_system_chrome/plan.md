@@ -202,7 +202,7 @@ Marker use:
   - The counts per executor kind: non-pi 218, pi 93.
   - The harness commit `96e4a48` holds the code of the check. The task made no
     code change.
-- [ ] 2.2 The first live day. The live day grades with the system Chrome.
+- [~] 2.2 The first live day. The live day grades with the system Chrome.
   The self-check and the canary of the batch run inside the batch
   (`harness/batch.sh:204-346`). The day record names the model and the run
   ids. Right after this live day, the orchestrator runs the gates of
