@@ -42,7 +42,7 @@ defect is absent.
 | `SCORING.md` | Scoring, validity, and calibration rules. |
 | `PLAN.md` | OpenCode Go rewrite plan. |
 | `measure/tracks/bugfix_bench/` | Spec and plan for the bug-fix track. |
-| `measure/tracks/bench_v2/` | Validity fixes, fixture r2, weights, adherence, new checks. |
+| `measure/archive/bench_v2/` | Validity fixes, fixture r2, weights, adherence, new checks. |
 | `measure/tracks/tests_bench/`, `change_bench/` | Specs and plans for the two newest tracks. |
 
 ## Tracks

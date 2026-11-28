@@ -14,7 +14,7 @@ Four tracks share the machinery:
 | `change` | `ch-` | Add four requested behaviors to the finished app |
 
 The build sections below apply to the build track; each other track has its own section at
-the end. Track design records: `measure/tracks/bench_v2`, `bugfix_bench`, `tests_bench`,
+the end. Track design records: `measure/archive/bench_v2`, `bugfix_bench`, `tests_bench`,
 and `change_bench`.
 
 ## Fixture revisions
