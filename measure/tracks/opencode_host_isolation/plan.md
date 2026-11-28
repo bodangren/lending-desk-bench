@@ -999,7 +999,7 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     A later change by a process without the `BENCH_OPENCODE_JOB` marker is
     outside the bench.
   - Lane: light. A read-only check.
-- [~] 3.2 The live day uses the new setting (spec FR-10). Read the part of
+- [x] 3.2 `fd10466` The live day uses the new setting (spec FR-10). Read the part of
   `reports/cron-daily.log` from the line `DAILY START 2026-11-08T01:00` to
   the next `DAILY END` line.
   Note (2026-11-08): the run of 2026-11-08 01:00 stopped at the seed (spec EV16). This task reads the first live day after Phase 4, Wed 2026-11-11 01:00 or later.
@@ -1014,6 +1014,43 @@ code commit of tasks 1.8-1.11, verified by tasks 1.10 and 1.11).
     `.tmp/opencode-host-daily-*` folder exists.
   - Verify: the hash of `~/.local/state/opencode/service.json` equals the
     value of task 3.1.
+  - Evidence: lines under this task. Read on 2026-11-29 01:35 +07. The live
+    day is 2026-11-26 (the first full live day after Phase 4). Its part of
+    `reports/cron-daily.log` runs from line 15315
+    (`DAILY START 2026-11-26T01:00:02+07:00`) to line 18152
+    (`DAILY END 2026-11-26T09:07:15+07:00`). The `CLEANUP` line is line 18153.
+  - Verify: one `DAILY OPENCODE_HOME` line and one `OPENCODE_HOME CLEANUP`
+    line with the same path — PASS. Line 15316 holds
+    `DAILY OPENCODE_HOME /home/daniebo/Desktop/lending-desk-bench/.tmp/opencode-host-daily-574534`.
+    Line 18153 holds `OPENCODE_HOME CLEANUP stopped=0 path=` with the same
+    path.
+  - Verify: no `OPENCODE_HOME CLEANUP FAIL` line — PASS. The count in the
+    whole log is 0.
+  - Verify: `SELF-CHECK <time> — test:meta:logic` and no
+    `sensitivity controls` line — PASS. Line 15322 holds
+    `SELF-CHECK 2026-11-26T01:00:10+07:00 — test:meta:logic`. The count of
+    `sensitivity controls` in the whole log is 0.
+  - Verify: after the service ends, only the OpenChamber server runs and no
+    `.tmp/opencode-host-daily-*` folder exists — PASS. The glob
+    `.tmp/opencode-host-*` matches no folder. No process has
+    `--service` in its command line. The only `opencode serve` process is pid
+    1308916 (`--port 34223`, started 2026-11-25 18:41, cwd `/home/daniebo`).
+    The other `opencode` lines are the `opencode-pty` daemon pid 1310351 and
+    the `claude` sessions of other projects.
+  - Verify: the hash of `service.json` equals the 3.1 value — deviation. The
+    file `~/.local/state/opencode/service.json` does not exist, so `sha256sum`
+    and `stat` print no value. The 3.1 value is
+    `833140b40b299e5ecdc4d28c2b66bbea6429cda1f91a47ba6aeca70fe7a35e89`. The
+    mtime of the folder `~/.local/state/opencode` is 2026-11-26 23:00 +07,
+    after the live day ended at 09:07. The detached service pid 3179063 of
+    task 3.1 does not exist now. No process has `BENCH_OPENCODE_JOB` in its
+    environ (0 in each of the 15 pids that match `opencode`). A change without
+    the bench marker is outside the bench, as task 3.1 says.
+  - Extra evidence, the later days (each a short run, one `DAILY OPENCODE_HOME`
+    line and one `OPENCODE_HOME CLEANUP stopped=0` line with the same path):
+    2026-11-27 (lines 18154 to 18162, `opencode-host-daily-2889582`),
+    2026-11-28 (lines 18164 to 18172, `opencode-host-daily-4084570`), and
+    2026-11-29 (lines 18174 to 18182, `opencode-host-daily-3228359`).
   - Lane: light. The live day runs on its own timer. This task records it.
 - [ ] 3.3 The close. Mark the track complete in `measure/tracks.md` and
   `metadata.json`. Send the result to the PM with a "facts changed" list.
