@@ -6,7 +6,7 @@ The docs-and-ops track holds runs for the hy4-flash-free and muse routes. The hu
 
 ## Phase 1: Docs and ops runs for hungerg-free
 
-- [x] 1.1 Add the docs-and-ops runs for `opencode-go/hungerg-free` on arm A and arm B. Result: `do-a-hungerg-free-2026w48-r1` total `100`, `do-b-hungerg-free-2026w48-r1` total `98.3`. Both scores read fresh, trusted, publishable and rankable. — SHA
+- [x] 1.1 Add the docs-and-ops runs for `opencode-go/hungerg-free` on arm A and arm B. Result: `do-a-hungerg-free-2026w48-r1` total `100`, `do-b-hungerg-free-2026w48-r1` total `98.3`. Both scores read fresh, trusted, publishable and rankable. Commit `e41b663`. — e41b663
   Done when both arms hold a run, each score reads fresh, trusted, publishable and rankable, and the plan holds the run ids and the totals.
   Run through `heavy-run.sh` with `BENCH_TRACK=docs-and-ops` and one batch at a time. Start no other batch.
   Command: `cd harness && BENCH_TRACK=docs-and-ops ARMS='a b' ./batch.sh --model hungerg-free` through `heavy-run.sh`.
