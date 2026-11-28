@@ -172,6 +172,9 @@ process.stdin.on("end", () => {
   const usable = (text) => typeof text === "string" && text !== "" && text !== "inert";
   const lines = [];
   if (usable(value.access)) lines.push(value.access);
+  // An API-key entry (the Ark Agent Plan) holds its secret in `key`. An OAuth
+  // entry holds a placeholder there, so only the key type prints it.
+  if (value.type === "key" && usable(value.key)) lines.push(value.key);
   const metadata = value.metadata;
   if (metadata && typeof metadata === "object" && usable(metadata.orgID)) lines.push(metadata.orgID);
   for (const line of lines) process.stdout.write(line + "\n");

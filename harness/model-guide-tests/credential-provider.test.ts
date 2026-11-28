@@ -1039,3 +1039,27 @@ describe("C12 the access-only export for the container payload", () => {
     }
   });
 });
+
+describe("C13 the API-key entry", () => {
+  it("C13 scan-values prints the key of a key-type entry", () => {
+    const fixture = buildFixture();
+    try {
+      const keyValue = "FAKE-APIKEY-VOLCENGINE-0004";
+      writeFileSync(
+        fixture.shared,
+        `${JSON.stringify([{ integrationID: PROVIDER_A, active: true, value: { type: "key", key: keyValue, refresh: "inert" } }])}\n`,
+      );
+      const seed = runHelper(fixture, ["seed", PROVIDER_A]);
+      expect(seed.status, `${seed.stdout}\n${seed.stderr}`).toBe(0);
+      const result = runHelper(fixture, ["scan-values", PROVIDER_A]);
+      expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+      const lines = result.stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+      expect(lines, "scan-values must print the key and no inert line").toEqual([keyValue]);
+    } finally {
+      fixture.close();
+    }
+  });
+});
