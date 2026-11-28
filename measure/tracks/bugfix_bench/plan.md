@@ -206,6 +206,28 @@ registry as rotation headroom beyond the set.
       and rootless Podman. This host never settles and the sandbox has no
       Podman; run `BENCH_TRACK=bugfix ARMS="a b" ./harness/batch.sh` on the
       grading host, then publish only trusted records.
+      Step 3 check at HEAD `0ec436b`, 2026-11-29 (no model call):
+      a. Canary `canary-bugfix-2026w48-1795894362` (clean set, `heavy-run.sh`,
+      the command of `harness/batch.sh` line 489): `valid=true`, total 100,
+      gate true, T0 100%, T1 100%, T2 100%. The grade ran on a contended host,
+      so `trusted` and `publishable` read false (diagnostic run).
+      b. `verify-bugs.ts --all` through `heavy-run.sh`, exit 0: each of the 13
+      registry bugs prints PASS and no line holds FAIL or UNEXPECTED. The
+      reports are `runs/<id>/artifacts/bug-verification.json` for the 13 runs
+      `bug-adhoc-mx0tbvlk-c6c64d` to `bug-adhoc-mx0u2l2j-46cdd5` (log `.tmp/gsc/logs/verify-bugs-all.log`).
+      c. Freshness (`harness/score-freshness.ts --many`, through
+      `heavy-run.sh`) on the 16 published `bf-` runs of 2026w46, 2026w47 and
+      2026w48: all 16 read `STALE-PROVENANCE`, not TRUSTED. The runs hold
+      runner hash `ee4819cd` (current) and suite hash `0473685a`. The suite
+      hash of HEAD and of the working tree is `25aedcfe`. The runs of
+      2026-11-28, the rescore of 23:54 and the canary of 02:32 all stored
+      `0473685a`, and the freshness check of 2026-11-29 00:10 read all 16 as
+      TRUSTED. No tracked or untracked file under the hashed folders differs
+      from HEAD now, so the tree state that gave `0473685a` is not known.
+      Free routes among the 16 (route name ends in `-free`): `beam-free` and
+      `iceman-contributor-free` (2026w46, `a` and `b` arms).
+      Open: the step-3 condition "each reads TRUSTED" does not hold. The task
+      stays `[~]`. The harness is not changed.
 - [x] 6.6 Document set rotation.
       DONE. `sets/clean.json` documents the calibration set; v1 notes record
       the freeze. The v2 procedure: add registry entries, run
