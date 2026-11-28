@@ -53,4 +53,4 @@ Red/Green order: write the fixture, grader, registration, and guide tests first.
 
 ## Backlog
 
-- docs-and-ops run for opencode-go/hungerg-free: runs when the provider rate limit ends (about 2026-11-28 07:50 +07)
+- Moved to runs_docs_ops_hungerg_20261128.

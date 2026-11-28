@@ -1,0 +1,19 @@
+{
+  "id": "runs_docs_ops_hungerg_20261128",
+  "title": "Docs and ops runs for hungerg-free",
+  "type": "Chore",
+  "status": "pending",
+  "created": "2026-11-28",
+  "estimated_tasks": 3,
+  "actual_tasks": null,
+  "author_model": null,
+  "lane": "light",
+  "source": {
+    "method": "PM decision 2026-11-28: run the docs-and-ops track for the hungerg-free route, check the documentation verdicts by hand, and publish the runs.",
+    "evidence": "measure/archive/guide_docs_ops_20261127/plan.md task 1.5 and the plan Backlog line.",
+    "dependencies": [],
+    "related_tracks": [
+      "model_guide"
+    ]
+  }
+}

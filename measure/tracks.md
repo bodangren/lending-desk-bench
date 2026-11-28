@@ -2,18 +2,16 @@
 
 ## Tracks in progress
 
-- [ ] **Track: Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5**
-  - *Link: [runs_current_4models_20261127](tracks/runs_current_4models_20261127/)*
-
-- [ ] **Track: Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash**
-  - *Link: [runs_tests_track_20261127](tracks/runs_tests_track_20261127/)*
+- [~] **Track: Docs and ops runs for hungerg-free**
+  - *Link: [runs_docs_ops_hungerg_20261128](tracks/runs_docs_ops_hungerg_20261128/)*
 
 ## All tracks
 
 | ID | Title | Type | Status | Created |
 |---|---|---|---|---|
-| runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | pending | 2026-11-27 |
-| runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | pending | 2026-11-27 |
+| runs_docs_ops_hungerg_20261128 | Docs and ops runs for hungerg-free | Chore | in progress | 2026-11-28 |
+| runs_current_4models_20261127 | Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5 | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
+| runs_tests_track_20261127 | Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash | Chore | shelved, waits for the Go month reset 2026-12-18 | 2026-11-27 |
 | runs_go_new_models_20261127 | Current runs for new Go models | Chore | shelved, not done (PM 2026-11-27) | 2026-11-27 |
 | grader_system_chrome | Grader browser: grade with the system Chrome and regrade the stale scores | Chore | shelved, not done (PM 2026-11-27) | 2026-11-04 |
 | bench_incremental | Incremental benchmark runs — new models and failures only | Feature | shelved, not done (PM 2026-11-27) | 2026-10-17 |
@@ -30,6 +28,12 @@ These items have no date and no track yet.
 - **Replay track:** real past tasks with hidden tests (PM 2026-11-14, order item 7). No date.
 
 ## Shelved Tracks
+
+- [ ] **Track: Current runs for deepseek-v4.1-flash, gpt-6-luna, minimax-m3.1-flash, and claude-haiku-5-5** — Status: shelved, waits for the Go month reset 2026-12-18 (PM 2026-11-28)
+  - *Link: [runs_current_4models_20261127](./tracks/runs_current_4models_20261127/)*
+
+- [ ] **Track: Tests runs for glm-5.3-flash, kimi-k2.7-code, mimo-v2.6-flash, and qwen3.8-flash** — Status: shelved, waits for the Go month reset 2026-12-18 (PM 2026-11-28)
+  - *Link: [runs_tests_track_20261127](./tracks/runs_tests_track_20261127/)*
 
 - [ ] **Track: Current runs for new Go models** — Status: shelved, not done (PM 2026-11-27)
   - *Link: [runs_go_new_models_20261127](./tracks/runs_go_new_models_20261127/)*
@@ -125,7 +129,7 @@ These items have no date and no track yet.
 
 - [x] **Track: Model guide docs and ops row** — The guide has a docs and ops row from the docs-and-ops track.
   *Link: [guide_docs_ops_20261127](./archive/guide_docs_ops_20261127/)*
-  *Model guide docs and ops row: the docs-and-ops fixture, grader and registration, the session routes, and the published docs and ops row. Phase acceptance passed at 071a4d1; publication at 656207d. The hungerg-free run sits in the plan Backlog. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
+  *Model guide docs and ops row: the docs-and-ops fixture, grader and registration, the session routes, and the published docs and ops row. Phase acceptance passed at 071a4d1; publication at 656207d. The hungerg-free run moved to runs_docs_ops_hungerg_20261128. Closed 2026-11-27 and archived 2026-11-27 by the PM board review.*
 
 - [x] **Track: Go price table for the new Go models** — The price table holds gemini-4-argon, longcat-2.5, and qwen4-max.
   *Link: [go_pricing_3models_20261128](./archive/go_pricing_3models_20261128/)*

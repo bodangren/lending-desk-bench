@@ -4,8 +4,6 @@ PM decision 2026-11-27: light lane.
 
 ## Phase 1: Current Lending, Bugfix, and Change runs
 
-## Backlog
-
 - [ ] 1.1 Add a current run for `deepseek-v4.1-flash` on Lending, Bugfix, and Change.
   Runs when `ra-quota` shows GO for `opencode-go`: `2026-12-18T20:16:59+07:00`.
 
