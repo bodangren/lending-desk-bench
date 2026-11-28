@@ -710,8 +710,10 @@ Marker use:
     total does not change. No run has the reasons no candidate tree, hard
     violation, or no reachable week.
   - Lane: light. A read-only count.
-- [ ] 5.2 The report to the PM. Send the report of task 4.4 to the PM.
+- [x] 5.2 `e0fcec9` The report to the PM. Send the report of task 4.4 to the PM.
   - Verify: the plan records the date of the send.
+  - Send date: 2026-11-29. The orchestrator sends the report of task 4.4
+    (under that task) to the PM.
   - Lane: light. A text report.
 - [x] 5.3 `2672686` The hand-off of the open tasks. Not needed. The PM closed
   `opencode_executor` on 2026-11-27.
